@@ -1,5 +1,29 @@
 # Invoice Generator Project Context
 
+## Docker-First Development Rules (CRITICAL - READ FIRST)
+- **NEVER run npm/pip/commands directly on host machine**
+- **ALWAYS use `docker compose exec` or rebuild containers**
+- **All dependency changes require container rebuild**
+- **Host machine changes don't affect running containers**
+- **This is a containerized project - containers are the source of truth**
+- **Use `docker compose` command (NOT docker-compose hyphenated)**
+
+## Common Commands for This Project
+- Install dependencies: `docker compose -f docker-compose.dev.yml exec app npm install <package>`
+- Rebuild after changes: `docker compose -f docker-compose.dev.yml build`
+- Development: `docker compose -f docker-compose.dev.yml up`
+- Production: `docker compose -f docker-compose.prod.yml up`
+- Build: `docker compose build`
+- Cleanup: `docker system prune -af`
+- Backup: `./scripts/backup.sh`
+
+## Critical Reminders
+- This is a containerized project - containers are the source of truth
+- Before any package installs, ask: "Should this run in container?"
+- Always check current working directory and container status
+- Use `docker compose exec` for interactive commands (NOT docker-compose)
+- Rebuild containers after dependency changes
+
 ## Project Overview
 - **Complete Indonesian Business Management System** (not just invoice generator)
 - **Quotation-to-Invoice Workflow**: Central business process with approval/decline flow  
@@ -35,12 +59,8 @@
 - Read-only filesystems where possible
 - Regular vulnerability scanning
 
-## Common Commands
-- Development: `docker-compose -f docker-compose.dev.yml up`
-- Production: `docker-compose -f docker-compose.prod.yml up`  
-- Build: `docker-compose build`
-- Cleanup: `docker system prune -af`
-- Backup: `./scripts/backup.sh`
+## Legacy Commands Section (MOVED TO TOP)
+- See "Common Commands for This Project" section above for Docker-first commands
 
 ## Business Workflow (CORE REQUIREMENTS)
 - **Client Dealing** → [Production/Social Media] → **New Quotation**
