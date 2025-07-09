@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint-staged for staged files
+npx lint-staged
+
+# Run type check
+npm run type-check
+
+# Check for undefined safety patterns
+echo "🔍 Checking for unsafe patterns..."
+
+# Check for direct property access without null checks
+if grep -r "\.startsWith\|\.endsWith\|\.includes\|\.toLowerCase\|\.toUpperCase" src/ --include="*.ts" --include="*.tsx" | grep -v "safeString\|?\."; then
+  echo "❌ Found unsafe string method calls. Use safeString() or optional chaining."
+  exit 1
+fi
+
+# Check for direct array operations without checks
+if grep -r "\.filter\|\.map\|\.reduce" src/ --include="*.ts" --include="*.tsx" | grep -v "safeArray\|Array\.isArray\|?\."; then
+  echo "⚠️  Found potential unsafe array operations. Consider using safeArray()."
+  # This is a warning, not an error
+fi
+
+# Check for console.log in production code
+if grep -r "console\.log" src/ --include="*.ts" --include="*.tsx" --exclude-dir=utils --exclude="*test*"; then
+  echo "⚠️  Found console.log statements. Consider using proper logging."
+  # This is a warning, not an error
+fi
+
+echo "✅ Pre-commit checks passed!"

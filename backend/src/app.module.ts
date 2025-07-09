@@ -1,0 +1,56 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { ClientsModule } from './modules/clients/clients.module';
+import { ProjectsModule } from './modules/projects/projects.module';
+import { QuotationsModule } from './modules/quotations/quotations.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
+import { PdfModule } from './modules/pdf/pdf.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { PrismaModule } from './modules/prisma/prisma.module';
+import { HealthModule } from './health/health.module';
+import { MetricsModule } from './metrics/metrics.module';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute
+      },
+    ]),
+    PrismaModule,
+    AuthModule,
+    UsersModule,
+    ClientsModule,
+    ProjectsModule,
+    QuotationsModule,
+    InvoicesModule,
+    PdfModule,
+    ReportsModule,
+    SettingsModule,
+    HealthModule,
+    MetricsModule,
+  ],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
+  ],
+})
+export class AppModule {}

@@ -1,0 +1,32 @@
+{
+  "name": "invoice-generator-e2e",
+  "version": "1.0.0",
+  "description": "Comprehensive E2E Test Suite for Indonesian Business Management System",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:optimized": "./run-e2e-optimized.sh",
+    "test:host": "./run-e2e-host.sh",
+    "test:simple": "./run-simple-test.sh",
+    "test:buttons": "playwright test tests/comprehensive-button-clicks.test.ts",
+    "test:quick": "playwright test tests/quick-validation.test.ts",
+    "test:infrastructure": "playwright test tests/infrastructure-test.test.ts",
+    "install-deps": "npx playwright install --with-deps",
+    "show-report": "npx playwright show-report",
+    "clean": "rm -rf test-results/ playwright-report/",
+    "clean:docker": "docker compose -f docker-compose.services-only.yml down --volumes && docker compose -f docker-compose.app.yml down --volumes"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.48.0",
+    "dotenv": "^16.4.5",
+    "pg": "^8.16.3",
+    "redis": "^5.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.6.3"
+  }
+}

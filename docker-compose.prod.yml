@@ -1,0 +1,196 @@
+version: '3.8'
+
+services:
+  # Web Application (Production)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: invoice-app-prod
+    depends_on:
+      - db
+      - redis
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://invoiceuser:${DB_PASSWORD}@db:5432/invoices
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - FROM_EMAIL=${FROM_EMAIL}
+      - CORS_ORIGIN=https://your-domain.com
+      - FRONTEND_URL=https://your-domain.com
+      - LOG_LEVEL=info
+    networks:
+      - invoice-network
+    volumes:
+      - ./uploads:/app/uploads:rw
+      - ./storage:/app/storage:rw
+      - ./logs:/app/logs:rw
+      - ./backup:/app/backup:rw
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    
+  # Database Service (Production)
+  db:
+    image: postgres:15-alpine
+    container_name: invoice-db-prod
+    environment:
+      - POSTGRES_DB=invoices
+      - POSTGRES_USER=invoiceuser
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_INITDB_ARGS="--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+      - ./backup:/backup:rw
+    networks:
+      - invoice-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invoiceuser -d invoices"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    command: >
+      postgres 
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.max=10000
+      -c pg_stat_statements.track=all
+      -c log_statement=error
+      -c log_min_duration_statement=1000
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+    
+  # Redis for session management and caching (Production)
+  redis:
+    image: redis:7-alpine
+    container_name: invoice-redis-prod
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - invoice-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    
+  # Reverse proxy with SSL termination
+  nginx:
+    image: nginx:alpine
+    container_name: invoice-nginx-prod
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx:rw
+    networks:
+      - invoice-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  # Database backup service
+  backup:
+    image: postgres:15-alpine
+    container_name: invoice-backup-prod
+    depends_on:
+      - db
+    environment:
+      - POSTGRES_DB=invoices
+      - POSTGRES_USER=invoiceuser
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./backup:/backup:rw
+      - ./scripts:/scripts:ro
+    networks:
+      - invoice-network
+    restart: "no"
+    command: |
+      sh -c "
+        while ! pg_isready -h db -U invoiceuser; do
+          echo 'Waiting for database...'
+          sleep 2
+        done
+        echo 'Database is ready, starting backup service...'
+        while true; do
+          pg_dump -h db -U invoiceuser -d invoices > /backup/backup_$$(date +%Y%m%d_%H%M%S).sql
+          echo 'Backup completed at $$(date)'
+          sleep 86400
+        done
+      "
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+volumes:
+  postgres_prod_data:
+    driver: local
+  redis_prod_data:
+    driver: local
+  
+networks:
+  invoice-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

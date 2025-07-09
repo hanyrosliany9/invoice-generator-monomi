@@ -1,0 +1,80 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: invoice-app-dev
+    depends_on:
+      - db
+      - redis
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://invoiceuser:devpassword@db:5432/invoices
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=dev-jwt-secret-key
+      - FRONTEND_URL=http://localhost:3000
+      - SKIP_DB_INIT=true
+    ports:
+      - "3000:3000"
+      - "5000:5000"
+      - "9229:9229" # Debug port
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      - ./shared:/app/shared
+      - ./uploads:/app/uploads
+      - ./storage:/app/storage
+      - /app/backend/node_modules
+      - /app/frontend/node_modules
+      - /app/backend/dist
+    networks:
+      - invoice-network
+    restart: unless-stopped
+    working_dir: /app
+    command: >
+      sh -c "
+        cd /app/backend && npm run start:dev &
+        cd /app/frontend && npm run dev -- --port 3000 --host &
+        wait
+      "
+
+  db:
+    image: postgres:15-alpine
+    container_name: invoice-db-dev
+    environment:
+      - POSTGRES_DB=invoices
+      - POSTGRES_USER=invoiceuser
+      - POSTGRES_PASSWORD=devpassword
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - invoice-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invoiceuser -d invoices"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    
+  redis:
+    image: redis:7-alpine
+    container_name: invoice-redis-dev
+    ports:
+      - "6383:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - invoice-network
+    restart: unless-stopped
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+  
+networks:
+  invoice-network:
+    driver: bridge

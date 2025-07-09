@@ -1,0 +1,316 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  quotations    Quotation[]
+  invoices      Invoice[]
+  auditLogs     AuditLog[]
+  preferences   UserPreferences?
+
+  @@map("users")
+}
+
+// Client Management
+model Client {
+  id      String  @id @default(cuid())
+  name    String
+  email   String?
+  phone   String
+  address String?
+  company String?
+  
+  // Contact details
+  contactPerson String?
+  
+  // Business details
+  paymentTerms String? // Default payment terms
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  quotations Quotation[]
+  invoices   Invoice[]
+  projects   Project[]
+
+  @@map("clients")
+}
+
+// Project Management
+model Project {
+  id          String      @id @default(cuid())
+  number      String      @unique // Project number for reference
+  description String      // Project description
+  output      String      // Expected deliverables/output
+  type        ProjectType // Production or Social Media
+  
+  // Client reference
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+  
+  // Project timeline
+  startDate DateTime?
+  endDate   DateTime?
+  
+  // Budget information
+  estimatedBudget Decimal? @db.Decimal(12, 2)
+  
+  status    ProjectStatus @default(PLANNING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // Relations
+  quotations Quotation[]
+  invoices   Invoice[]
+
+  @@map("projects")
+}
+
+// Quotation Management
+model Quotation {
+  id              String          @id @default(cuid())
+  quotationNumber String          @unique
+  date            DateTime        @default(now())
+  validUntil      DateTime
+  
+  // Client information
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+  
+  // Project information
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+  
+  // Financial details
+  amountPerProject Decimal @db.Decimal(12, 2)
+  totalAmount      Decimal @db.Decimal(12, 2)
+  
+  // Terms and conditions
+  terms String?
+  
+  // Status management
+  status QuotationStatus @default(DRAFT)
+  
+  // User tracking
+  createdBy String
+  user      User   @relation(fields: [createdBy], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  invoices Invoice[]
+
+  @@map("quotations")
+}
+
+// Invoice Management
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  creationDate  DateTime      @default(now())
+  dueDate       DateTime
+  
+  // Reference to quotation (optional - invoices can be standalone)
+  quotationId String?
+  quotation   Quotation? @relation(fields: [quotationId], references: [id])
+  
+  // Client information (denormalized for invoice independence)
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+  
+  // Project information (denormalized)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+  
+  // Financial details
+  amountPerProject Decimal @db.Decimal(12, 2)
+  totalAmount      Decimal @db.Decimal(12, 2)
+  
+  // Payment information
+  paymentInfo String // Bank details, payment methods
+  
+  // Indonesian compliance
+  materaiRequired Boolean @default(false) // Auto-calculated if > 5M IDR
+  materaiApplied  Boolean @default(false) // User confirms materai applied
+  
+  // Terms and signature
+  terms     String?
+  signature String? // Digital signature or file path
+  
+  // Status management
+  status InvoiceStatus @default(DRAFT)
+  
+  // User tracking
+  createdBy String
+  user      User   @relation(fields: [createdBy], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  payments Payment[]
+
+  @@map("invoices")
+}
+
+// Payment Tracking
+model Payment {
+  id                String        @id @default(cuid())
+  invoiceId         String
+  invoice           Invoice       @relation(fields: [invoiceId], references: [id])
+  amount            Decimal       @db.Decimal(12, 2)
+  paymentDate       DateTime
+  paymentMethod     PaymentMethod
+  transactionRef    String?       // Reference from payment gateway
+  bankDetails       String?       // Bank transfer details
+  status            PaymentStatus @default(PENDING)
+  confirmedAt       DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payments")
+}
+
+// Audit Trail
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String   // CREATE, UPDATE, DELETE
+  entityType String   // quotation, invoice, etc.
+  entityId   String   // ID of the affected entity
+  oldValues  Json?    // Previous state
+  newValues  Json?    // New state
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  USER
+  VIEWER
+}
+
+enum ProjectType {
+  PRODUCTION
+  SOCIAL_MEDIA
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  APPROVED
+  DECLINED
+  REVISED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CASH
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  REFUNDED
+}
+
+// Settings Models
+model UserPreferences {
+  id                  String  @id @default(cuid())
+  userId              String  @unique
+  user                User    @relation(fields: [userId], references: [id])
+  timezone            String  @default("Asia/Jakarta")
+  language            String  @default("id")
+  emailNotifications  Boolean @default(true)
+  pushNotifications   Boolean @default(true)
+  theme               String  @default("light")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
+}
+
+model CompanySettings {
+  id          String  @id @default("default")
+  companyName String  @default("PT Teknologi Indonesia")
+  address     String?
+  phone       String?
+  email       String?
+  website     String?
+  taxNumber   String? // NPWP
+  currency    String  @default("IDR")
+  
+  // Bank accounts
+  bankBCA     String?
+  bankMandiri String?
+  bankBNI     String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("company_settings")
+}
+
+model SystemSettings {
+  id                    String  @id @default("default")
+  defaultPaymentTerms   String  @default("NET 30")
+  materaiThreshold      Int     @default(5000000)
+  invoicePrefix         String  @default("INV-")
+  quotationPrefix       String  @default("QT-")
+  autoBackup            Boolean @default(true)
+  backupFrequency       String  @default("daily")
+  backupTime            String  @default("02:00")
+  autoMateraiReminder   Boolean @default(true)
+  defaultCurrency       String  @default("IDR")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
