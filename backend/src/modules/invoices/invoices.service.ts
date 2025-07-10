@@ -30,31 +30,58 @@ export class InvoicesService {
       throw new NotFoundException(`Project dengan ID ${createInvoiceDto.projectId} tidak ditemukan`);
     }
 
+    // Validate business rules
+    await this.validateBusinessRules(createInvoiceDto);
+
     // Generate invoice number
     const invoiceNumber = await this.generateInvoiceNumber();
     
     // Auto-calculate materai
     const materaiRequired = createInvoiceDto.totalAmount > 5000000;
     
-    return this.prisma.invoice.create({
-      data: {
-        ...createInvoiceDto,
-        invoiceNumber,
-        materaiRequired,
-        materaiApplied: createInvoiceDto.materaiApplied || false,
-        createdBy: userId,
-      },
-      include: {
-        client: true,
-        project: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    // Sanitize input data
+    const sanitizedData = {
+      ...createInvoiceDto,
+      paymentInfo: this.sanitizeInput(createInvoiceDto.paymentInfo),
+      terms: createInvoiceDto.terms ? this.sanitizeInput(createInvoiceDto.terms) : null,
+    };
+    
+    return this.prisma.$transaction(async (prisma) => {
+      const invoice = await prisma.invoice.create({
+        data: {
+          ...sanitizedData,
+          invoiceNumber,
+          materaiRequired,
+          materaiApplied: createInvoiceDto.materaiApplied || false,
+          createdBy: userId,
+        },
+        include: {
+          client: true,
+          project: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
+      });
+
+      // Create audit log
+      await prisma.auditLog.create({
+        data: {
+          action: 'CREATE',
+          entityType: 'invoice',
+          entityId: invoice.id,
+          newValues: invoice as any,
+          userId: userId,
+        },
+      }).catch(() => {
+        // Audit log is optional, don't fail the transaction if audit table doesn't exist
+      });
+
+      return invoice;
     });
   }
 
@@ -321,5 +348,29 @@ export class InvoicesService {
         dueDate: 'asc',
       },
     });
+  }
+
+  private sanitizeInput(input: string): string {
+    return input.trim().replace(/<[^>]*>/g, '');
+  }
+
+  private async validateBusinessRules(dto: CreateInvoiceDto) {
+    // Check due date is in future
+    const dueDate = new Date(dto.dueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (dueDate <= today) {
+      throw new BadRequestException('Tanggal jatuh tempo harus di masa depan');
+    }
+    
+    // Check amount is reasonable
+    if (dto.totalAmount < 1000) {
+      throw new BadRequestException('Jumlah invoice minimal Rp 1.000');
+    }
+    
+    if (dto.totalAmount > 1000000000) {
+      throw new BadRequestException('Jumlah invoice melebihi batas maksimal');
+    }
   }
 }
