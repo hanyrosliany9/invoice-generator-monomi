@@ -71,8 +71,15 @@ export const invoiceService = {
 
   // Create new invoice
   createInvoice: async (data: CreateInvoiceRequest): Promise<Invoice> => {
-    const response = await apiClient.post('/invoices', data)
-    return response.data.data
+    const requestId = `invoice_${Date.now()}_${Math.random()}`;
+    
+    const response = await apiClient.post('/invoices', data, {
+      headers: {
+        'X-Request-ID': requestId
+      }
+    });
+    
+    return response.data.data;
   },
 
   // Update existing invoice

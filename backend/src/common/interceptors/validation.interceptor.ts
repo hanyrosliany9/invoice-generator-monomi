@@ -5,7 +5,7 @@ import {
   CallHandler,
   BadRequestException,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 @Injectable()
@@ -13,37 +13,44 @@ export class ValidationInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
       catchError((error) => {
-        if (error.response && error.response.statusCode === 400) {
-          // Transform validation errors to Indonesian
-          const response = error.response;
-          if (response.message && Array.isArray(response.message)) {
-            const translatedMessages = response.message.map(msg => this.translateValidationMessage(msg));
-            throw new BadRequestException({
+        if (error instanceof BadRequestException) {
+          const response = error.getResponse();
+          
+          // Format validation errors properly
+          if (typeof response === 'object' && 'message' in response) {
+            const formattedError = {
               statusCode: 400,
-              message: translatedMessages,
-              error: 'Bad Request',
-            });
+              timestamp: new Date().toISOString(),
+              message: 'Validation failed',
+              errors: this.formatValidationErrors(response.message as string | string[])
+            };
+            
+            return throwError(() => new BadRequestException(formattedError));
           }
         }
-        throw error;
+        return throwError(() => error);
       }),
     );
   }
 
-  private translateValidationMessage(message: string): string {
-    // Common validation error translations
-    const translations = {
-      'email must be an email': 'Format email tidak valid',
-      'password must be longer than or equal to 8 characters': 'Password harus minimal 8 karakter',
-      'name should not be empty': 'Nama tidak boleh kosong',
-      'phone should not be empty': 'Nomor telepon tidak boleh kosong',
-      'clientId should not be empty': 'ID klien tidak boleh kosong',
-      'projectId should not be empty': 'ID proyek tidak boleh kosong',
-      'amount must be a positive number': 'Jumlah harus berupa angka positif',
-      'dueDate must be a valid date': 'Tanggal jatuh tempo harus valid',
-      'terms should not be empty': 'Syarat dan ketentuan tidak boleh kosong',
-    };
-
-    return translations[message] || message;
+  private formatValidationErrors(messages: string | string[]): Record<string, string> {
+    const errors: Record<string, string> = {};
+    
+    if (Array.isArray(messages)) {
+      messages.forEach(msg => {
+        // Extract field name from validation message
+        const match = msg.match(/^(\w+)\s/);
+        if (match) {
+          const field = match[1];
+          errors[field] = msg;
+        } else {
+          errors['general'] = msg;
+        }
+      });
+    } else {
+      errors['general'] = messages;
+    }
+    
+    return errors;
   }
 }
