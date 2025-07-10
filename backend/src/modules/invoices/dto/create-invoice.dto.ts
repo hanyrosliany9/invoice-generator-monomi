@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsUUID, IsDateString, IsPositive, IsBoolean, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsDateString, IsPositive, IsBoolean, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { InvoiceStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
@@ -26,21 +26,21 @@ export class CreateInvoiceDto {
     required: false,
   })
   @IsOptional()
-  @IsUUID('4', { message: 'ID quotation tidak valid' })
+  @IsString({ message: 'ID quotation harus berupa string yang valid' })
   quotationId?: string;
 
   @ApiProperty({
     description: 'ID klien',
     example: 'clx123456789',
   })
-  @IsUUID('4', { message: 'ID klien tidak valid' })
+  @IsString({ message: 'ID klien harus berupa string yang valid' })
   clientId: string;
 
   @ApiProperty({
     description: 'ID proyek',
     example: 'clx123456789',
   })
-  @IsUUID('4', { message: 'ID proyek tidak valid' })
+  @IsString({ message: 'ID proyek harus berupa string yang valid' })
   projectId: string;
 
   @ApiProperty({
@@ -109,6 +109,6 @@ export class CreateInvoiceDto {
     required: false,
   })
   @IsOptional()
-  @IsUUID('4', { message: 'ID pembuat tidak valid' })
+  @IsString({ message: 'ID pembuat harus berupa string yang valid' })
   createdBy?: string;
 }

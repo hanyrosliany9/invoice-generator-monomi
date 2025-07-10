@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsUUID, IsDateString, IsDecimal, IsPositive } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsDateString, IsDecimal, IsPositive } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ProjectType, ProjectStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
@@ -39,7 +39,7 @@ export class CreateProjectDto {
     description: 'ID klien',
     example: 'clx123456789',
   })
-  @IsUUID('4', { message: 'ID klien tidak valid' })
+  @IsString({ message: 'ID klien harus berupa string yang valid' })
   clientId: string;
 
   @ApiProperty({

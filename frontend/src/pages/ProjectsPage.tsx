@@ -215,8 +215,8 @@ export const ProjectsPage: React.FC = () => {
   const handleFormSubmit = (values: any) => {
     const data = {
       ...values,
-      startDate: values.dateRange[0].format('YYYY-MM-DD'),
-      endDate: values.dateRange[1].format('YYYY-MM-DD')
+      startDate: values.dateRange[0].startOf('day').toISOString(),
+      endDate: values.dateRange[1].endOf('day').toISOString()
     }
     delete data.dateRange
 

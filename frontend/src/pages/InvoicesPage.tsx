@@ -240,7 +240,7 @@ export const InvoicesPage: React.FC = () => {
     
     const data = {
       ...values,
-      dueDate: values.dueDate.format('YYYY-MM-DD'),
+      dueDate: values.dueDate.endOf('day').toISOString(),
       amountPerProject: totalAmount, // Set same as total
       totalAmount: totalAmount,
       materaiRequired: requiresMaterai(totalAmount),
