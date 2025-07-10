@@ -22,6 +22,7 @@ export class ValidationInterceptor implements NestInterceptor {
               statusCode: 400,
               timestamp: new Date().toISOString(),
               message: 'Validation failed',
+              details: response.message,
               errors: this.formatValidationErrors(response.message as string | string[])
             };
             
