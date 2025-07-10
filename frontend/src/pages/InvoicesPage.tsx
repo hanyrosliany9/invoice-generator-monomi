@@ -42,7 +42,8 @@ import {
   SendOutlined,
   BankOutlined,
   WarningOutlined,
-  LinkOutlined
+  LinkOutlined,
+  CloseOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -281,7 +282,7 @@ export const InvoicesPage: React.FC = () => {
       onOk: () => {
         sendMutation.mutate({ 
           id: invoice.id, 
-          email: invoice.client?.email 
+          email: invoice.client?.email || undefined 
         })
       }
     })
@@ -317,6 +318,135 @@ export const InvoicesPage: React.FC = () => {
         paidAt: values.paidAt.format('YYYY-MM-DD')
       })
     }
+  }
+
+  // Batch operation handlers
+  const handleBatchSend = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('Pilih invoice yang akan dikirim')
+      return
+    }
+
+    // Filter only DRAFT invoices
+    const draftInvoices = invoices.filter(invoice => 
+      selectedRowKeys.includes(invoice.id) && invoice.status === 'DRAFT'
+    )
+
+    if (draftInvoices.length === 0) {
+      message.warning('Pilih invoice dengan status Draft untuk dikirim')
+      return
+    }
+
+    if (draftInvoices.length < selectedRowKeys.length) {
+      message.warning(`Hanya ${draftInvoices.length} dari ${selectedRowKeys.length} invoice yang dapat dikirim (hanya status Draft)`)
+    }
+
+    setBatchLoading(true)
+    try {
+      const promises = draftInvoices.map(invoice => 
+        sendMutation.mutateAsync({ 
+          id: invoice.id, 
+          email: invoice.client?.email || undefined 
+        })
+      )
+      await Promise.all(promises)
+      message.success(`${draftInvoices.length} invoice berhasil dikirim`)
+      setSelectedRowKeys([])
+    } catch (error) {
+      message.error('Gagal mengirim beberapa invoice')
+    } finally {
+      setBatchLoading(false)
+    }
+  }
+
+  const handleBatchMarkPaid = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('Pilih invoice yang akan ditandai lunas')
+      return
+    }
+
+    // Filter only SENT and OVERDUE invoices
+    const payableInvoices = invoices.filter(invoice => 
+      selectedRowKeys.includes(invoice.id) && 
+      (invoice.status === 'SENT' || invoice.status === 'OVERDUE')
+    )
+
+    if (payableInvoices.length === 0) {
+      message.warning('Pilih invoice dengan status Terkirim atau Jatuh Tempo untuk ditandai lunas')
+      return
+    }
+
+    if (payableInvoices.length < selectedRowKeys.length) {
+      message.warning(`Hanya ${payableInvoices.length} dari ${selectedRowKeys.length} invoice yang dapat ditandai lunas`)
+    }
+
+    setBatchLoading(true)
+    try {
+      const promises = payableInvoices.map(invoice => 
+        paymentMutation.mutateAsync({ 
+          id: invoice.id, 
+          paidAt: dayjs().format('YYYY-MM-DD')
+        })
+      )
+      await Promise.all(promises)
+      message.success(`${payableInvoices.length} invoice berhasil ditandai lunas`)
+      setSelectedRowKeys([])
+    } catch (error) {
+      message.error('Gagal menandai lunas beberapa invoice')
+    } finally {
+      setBatchLoading(false)
+    }
+  }
+
+  const handleBatchPrint = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('Pilih invoice yang akan dicetak')
+      return
+    }
+
+    setBatchLoading(true)
+    try {
+      const promises = selectedRowKeys.map(id => 
+        printMutation.mutateAsync({ id })
+      )
+      await Promise.all(promises)
+      message.success(`${selectedRowKeys.length} invoice berhasil dicetak`)
+      setSelectedRowKeys([])
+    } catch (error) {
+      message.error('Gagal mencetak beberapa invoice')
+    } finally {
+      setBatchLoading(false)
+    }
+  }
+
+  const handleBatchDelete = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('Pilih invoice yang akan dihapus')
+      return
+    }
+
+    Modal.confirm({
+      title: 'Konfirmasi Hapus',
+      content: `Apakah Anda yakin ingin menghapus ${selectedRowKeys.length} invoice? Tindakan ini tidak dapat dibatalkan.`,
+      okText: 'Ya, Hapus',
+      cancelText: 'Batal',
+      okType: 'danger',
+      onOk: async () => {
+        setBatchLoading(true)
+        try {
+          const promises = selectedRowKeys.map(id => 
+            deleteMutation.mutateAsync(id)
+          )
+          await Promise.all(promises)
+          message.success(`${selectedRowKeys.length} invoice berhasil dihapus`)
+          setSelectedRowKeys([])
+        } catch (error) {
+          message.error('Gagal menghapus beberapa invoice')
+        } finally {
+          setBatchLoading(false)
+        }
+      }
+    })
   }
 
   const rowSelection = {
@@ -395,7 +525,7 @@ export const InvoicesPage: React.FC = () => {
       label: 'Hapus',
       danger: true,
       onClick: () => handleDelete(invoice.id)
-    } as MenuProps['items'][number])
+    })
 
     return items
   }
@@ -911,6 +1041,57 @@ export const InvoicesPage: React.FC = () => {
             </Button>
           </Space>
         </div>
+        
+        {/* Batch Operations */}
+        {selectedRowKeys.length > 0 && (
+          <Card className="mb-4" size="small">
+            <div className="flex justify-between items-center">
+              <Typography.Text strong>{selectedRowKeys.length} invoice dipilih</Typography.Text>
+              <Space>
+                <Button 
+                  size="small"
+                  icon={<SendOutlined />}
+                  loading={batchLoading}
+                  onClick={handleBatchSend}
+                >
+                  Kirim
+                </Button>
+                <Button 
+                  size="small"
+                  icon={<CheckCircleOutlined />}
+                  loading={batchLoading}
+                  onClick={handleBatchMarkPaid}
+                >
+                  Tandai Lunas
+                </Button>
+                <Button 
+                  size="small"
+                  icon={<PrinterOutlined />}
+                  loading={batchLoading}
+                  onClick={handleBatchPrint}
+                >
+                  Print
+                </Button>
+                <Button 
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  danger
+                  loading={batchLoading}
+                  onClick={handleBatchDelete}
+                >
+                  Hapus
+                </Button>
+                <Button 
+                  size="small"
+                  icon={<CloseOutlined />}
+                  onClick={() => setSelectedRowKeys([])}
+                >
+                  Batal Pilih
+                </Button>
+              </Space>
+            </div>
+          </Card>
+        )}
       </div>
 
       {/* Main Table */}
