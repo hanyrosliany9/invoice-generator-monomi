@@ -919,14 +919,7 @@ export const QuotationsPage: React.FC = () => {
           dataSource={filteredQuotations}
           loading={isLoading}
           rowKey="id"
-          rowSelection={{
-            selectedRowKeys,
-            onChange: setSelectedRowKeys,
-            type: 'checkbox',
-            getCheckboxProps: (record) => ({
-              disabled: record.status === 'APPROVED' && selectedRowKeys.includes(record.id),
-            }),
-          }}
+          rowSelection={rowSelection}
           pagination={{
             total: filteredQuotations.length,
             pageSize: 10,
