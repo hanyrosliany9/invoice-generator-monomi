@@ -36,10 +36,10 @@ export class PdfService {
         format: 'A4',
         printBackground: true,
         margin: {
-          top: '0.5in',
-          right: '0.5in',
-          bottom: '0.5in',
-          left: '0.5in',
+          top: '0.3in',
+          right: '0.3in',
+          bottom: '0.3in',
+          left: '0.3in',
         },
       });
 
@@ -114,12 +114,21 @@ export class PdfService {
       totalAmount,
       paymentInfo,
       terms,
-      materaiRequired,
-      materaiApplied,
+      materaiRequired = false,
+      materaiApplied = false,
+      includeTax = false,
+      taxRate = 0.11,
+      taxLabel = "PPN",
+      taxExemptReason = null,
     } = invoiceData;
 
     // Get company settings
     const companyData = await this.getCompanySettings();
+
+    // Enhanced tax calculations (optional)
+    const subTotal = Number(amountPerProject) || 0;
+    const taxAmount = includeTax ? (subTotal * taxRate) : 0;
+    const finalTotal = subTotal + taxAmount;
 
     // Format currency in Indonesian Rupiah
     const formatIDR = (amount: number) => {
@@ -168,8 +177,8 @@ export class PdfService {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 20mm;
-      padding-bottom: 5mm;
+      margin-bottom: 12mm;
+      padding-bottom: 3mm;
       border-bottom: 2px solid #dc2626;
     }
     .company-info {
@@ -191,7 +200,7 @@ export class PdfService {
       flex: 1;
     }
     .invoice-title h1 {
-      font-size: 28px;
+      font-size: 24px;
       color: #dc2626;
       margin: 0;
       font-weight: bold;
@@ -211,7 +220,7 @@ export class PdfService {
     .invoice-details {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 15mm;
+      margin-bottom: 6mm;
     }
     .client-info, .invoice-info {
       flex: 1;
@@ -227,8 +236,8 @@ export class PdfService {
       text-transform: uppercase;
     }
     .info-item {
-      margin-bottom: 1.5mm;
-      font-size: 11px;
+      margin-bottom: 1mm;
+      font-size: 10px;
     }
     .info-label {
       font-weight: bold;
@@ -241,7 +250,7 @@ export class PdfService {
     .service-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 10mm;
+      margin-bottom: 5mm;
       border: 1px solid #ddd;
     }
     .service-table th {
@@ -268,9 +277,9 @@ export class PdfService {
       text-align: right;
     }
     .service-table td {
-      padding: 3mm;
+      padding: 2mm;
       border-bottom: 1px solid #eee;
-      font-size: 11px;
+      font-size: 10px;
     }
     .service-table td:first-child {
       text-align: center;
@@ -290,11 +299,11 @@ export class PdfService {
       width: 50%;
       margin-left: auto;
       border-collapse: collapse;
-      margin-bottom: 15mm;
+      margin-bottom: 6mm;
     }
     .summary-table td {
-      padding: 2mm 5mm;
-      font-size: 11px;
+      padding: 1.5mm 4mm;
+      font-size: 10px;
       border-bottom: 1px solid #eee;
     }
     .summary-table td:first-child {
@@ -317,9 +326,10 @@ export class PdfService {
     .materai-notice {
       background-color: #fef3c7;
       border: 1px solid #f59e0b;
-      border-radius: 4px;
-      padding: 8mm;
-      margin-bottom: 10mm;
+      border-radius: 2px;
+      padding: 3mm;
+      margin-bottom: 4mm;
+      font-size: 10px;
     }
     .materai-notice.applied {
       background-color: #d1fae5;
@@ -337,10 +347,10 @@ export class PdfService {
     
     /* Payment Information (Invoice-specific) */
     .payment-info {
-      margin-bottom: 10mm;
-      padding: 8mm;
+      margin-bottom: 4mm;
+      padding: 4mm;
       background-color: #f3f4f6;
-      border-radius: 4px;
+      border-radius: 2px;
     }
     .payment-title {
       font-weight: bold;
@@ -350,19 +360,19 @@ export class PdfService {
     }
     .payment-details {
       white-space: pre-line;
-      line-height: 1.3;
-      font-size: 10px;
+      line-height: 1.2;
+      font-size: 9px;
     }
     
     /* Footer Layout */
     .footer-section {
       display: flex;
       justify-content: space-between;
-      margin-top: 15mm;
+      margin-top: 8mm;
     }
     .terms-section {
       flex: 1;
-      margin-right: 15mm;
+      margin-right: 10mm;
     }
     .terms-title {
       font-size: 12px;
@@ -371,8 +381,8 @@ export class PdfService {
       margin-bottom: 3mm;
     }
     .terms-content {
-      font-size: 10px;
-      line-height: 1.3;
+      font-size: 9px;
+      line-height: 1.2;
       color: #666;
     }
     .signature-section {
@@ -381,7 +391,7 @@ export class PdfService {
     }
     .signature-box {
       border: 1px solid #ddd;
-      padding: 8mm;
+      padding: 6mm;
       background-color: #f9f9f9;
     }
     .signature-title {
@@ -488,19 +498,28 @@ export class PdfService {
       </tbody>
     </table>
 
-    <!-- Summary Table -->
+    <!-- Summary Table with Optional Tax -->
     <table class="summary-table">
       <tr>
         <td>Sub Total</td>
-        <td>${formatIDR(amountPerProject)}</td>
+        <td>${formatIDR(subTotal)}</td>
       </tr>
+      ${includeTax ? `
       <tr>
-        <td>Tax (PPN 11%)</td>
-        <td>${formatIDR(Number(amountPerProject) * 0.11)}</td>
+        <td>Tax (${taxLabel} ${Math.round(taxRate * 100)}%)</td>
+        <td>${formatIDR(taxAmount)}</td>
       </tr>
+      ` : ''}
+      ${taxExemptReason ? `
+      <tr>
+        <td colspan="2" style="font-size: 10px; color: #666; text-align: center; padding: 5px;">
+          ${taxExemptReason}
+        </td>
+      </tr>
+      ` : ''}
       <tr class="summary-total">
         <td>TOTAL</td>
-        <td>${formatIDR(totalAmount)}</td>
+        <td>${formatIDR(finalTotal)}</td>
       </tr>
     </table>
 
@@ -666,7 +685,7 @@ export class PdfService {
     .quotation-details {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 15mm;
+      margin-bottom: 10mm;
     }
     .client-info, .quotation-info {
       flex: 1;
@@ -682,8 +701,8 @@ export class PdfService {
       text-transform: uppercase;
     }
     .info-item {
-      margin-bottom: 1.5mm;
-      font-size: 11px;
+      margin-bottom: 1mm;
+      font-size: 10px;
     }
     .info-label {
       font-weight: bold;
@@ -696,7 +715,7 @@ export class PdfService {
     .service-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 10mm;
+      margin-bottom: 5mm;
       border: 1px solid #ddd;
     }
     .service-table th {
@@ -723,9 +742,9 @@ export class PdfService {
       text-align: right;
     }
     .service-table td {
-      padding: 3mm;
+      padding: 2mm;
       border-bottom: 1px solid #eee;
-      font-size: 11px;
+      font-size: 10px;
     }
     .service-table td:first-child {
       text-align: center;
@@ -745,11 +764,11 @@ export class PdfService {
       width: 50%;
       margin-left: auto;
       border-collapse: collapse;
-      margin-bottom: 15mm;
+      margin-bottom: 6mm;
     }
     .summary-table td {
-      padding: 2mm 5mm;
-      font-size: 11px;
+      padding: 1.5mm 4mm;
+      font-size: 10px;
       border-bottom: 1px solid #eee;
     }
     .summary-table td:first-child {
@@ -772,11 +791,11 @@ export class PdfService {
     .footer-section {
       display: flex;
       justify-content: space-between;
-      margin-top: 15mm;
+      margin-top: 8mm;
     }
     .terms-section {
       flex: 1;
-      margin-right: 15mm;
+      margin-right: 10mm;
     }
     .terms-title {
       font-size: 12px;
@@ -785,8 +804,8 @@ export class PdfService {
       margin-bottom: 3mm;
     }
     .terms-content {
-      font-size: 10px;
-      line-height: 1.3;
+      font-size: 9px;
+      line-height: 1.2;
       color: #666;
     }
     .signature-section {
@@ -795,7 +814,7 @@ export class PdfService {
     }
     .signature-box {
       border: 1px solid #ddd;
-      padding: 8mm;
+      padding: 6mm;
       background-color: #f9f9f9;
     }
     .signature-title {
