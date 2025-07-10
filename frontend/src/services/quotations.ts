@@ -99,4 +99,20 @@ export const quotationService = {
     const response = await apiClient.get(`/quotations/recent?limit=${limit}`)
     return response.data.data
   },
+
+  // Download quotation PDF
+  downloadQuotationPDF: async (id: string): Promise<Blob> => {
+    const response = await apiClient.get(`/pdf/quotation/${id}`, {
+      responseType: 'blob',
+    })
+    return response.data
+  },
+
+  // Preview quotation PDF
+  previewQuotationPDF: async (id: string): Promise<Blob> => {
+    const response = await apiClient.get(`/pdf/quotation/${id}/preview`, {
+      responseType: 'blob',
+    })
+    return response.data
+  },
 }
