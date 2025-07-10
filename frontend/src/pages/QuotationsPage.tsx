@@ -203,12 +203,14 @@ export const QuotationsPage: React.FC = () => {
   }
 
   const handleFormSubmit = (values: any) => {
+    const totalAmount = safeNumber(values.totalAmount);
+    
     const data = {
       ...values,
       validUntil: values.validUntil.format('YYYY-MM-DD'),
-      amountPerProject: safeNumber(values.amountPerProject),
-      totalAmount: safeNumber(values.totalAmount)
-    }
+      amountPerProject: totalAmount, // Set same as total
+      totalAmount: totalAmount
+    };
 
     if (editingQuotation) {
       updateMutation.mutate({ id: editingQuotation.id, data })
@@ -712,44 +714,22 @@ export const QuotationsPage: React.FC = () => {
             </Col>
           </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="amountPerProject"
-                label="Jumlah per Proyek"
-                rules={[
-                  { required: true, message: 'Masukkan jumlah per proyek' },
-                  { type: 'number', min: 0, message: 'Jumlah harus lebih dari 0' }
-                ]}
-              >
-                <InputNumber
-                  placeholder="0"
-                  prefix="IDR"
-                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-                  parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
-                  style={{ width: '100%' }}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="totalAmount"
-                label="Total Jumlah"
-                rules={[
-                  { required: true, message: 'Masukkan total jumlah' },
-                  { type: 'number', min: 0, message: 'Total harus lebih dari 0' }
-                ]}
-              >
-                <InputNumber
-                  placeholder="0"
-                  prefix="IDR"
-                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-                  parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
-                  style={{ width: '100%' }}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item
+            name="totalAmount"
+            label="Total Jumlah"
+            rules={[
+              { required: true, message: 'Masukkan total jumlah' },
+              { type: 'number', min: 0, message: 'Total harus lebih dari 0' }
+            ]}
+          >
+            <InputNumber
+              placeholder="0"
+              prefix="IDR"
+              formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+              parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
 
           <Form.Item
             name="validUntil"
