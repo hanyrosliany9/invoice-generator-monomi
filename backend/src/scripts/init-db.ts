@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { execSync } from 'child_process';
+import * as path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -11,10 +13,59 @@ async function initDatabase() {
     await prisma.$connect();
     console.log('✅ Database connection successful');
 
-    // Check if admin user exists
-    const existingAdmin = await prisma.user.findFirst({
-      where: { email: 'admin@monomi.id' }
-    });
+    // Check if database schema exists, create if not
+    console.log('📋 Checking database schema...');
+    let schemaExists = false;
+    try {
+      const result = await prisma.$queryRaw`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'`;
+      if (Array.isArray(result) && result.length > 0) {
+        console.log('✅ Database schema verified');
+        schemaExists = true;
+      } else {
+        throw new Error('Users table not found');
+      }
+    } catch (schemaError) {
+      console.log('📋 Database schema not found, creating tables...');
+      try {
+        // Automatically run prisma db push to create schema
+        console.log('⚡ Running Prisma schema push...');
+        const backendPath = path.resolve(process.cwd());
+        execSync('npx prisma db push', { 
+          cwd: backendPath,
+          stdio: 'inherit',
+          timeout: 30000
+        });
+        
+        // Reconnect to ensure Prisma picks up new schema
+        console.log('🔄 Reconnecting to database...');
+        await prisma.$disconnect();
+        await prisma.$connect();
+        
+        // Verify schema was created
+        console.log('🔍 Verifying schema creation...');
+        const verifyResult = await prisma.$queryRaw`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'`;
+        if (Array.isArray(verifyResult) && verifyResult.length > 0) {
+          console.log('✅ Database schema created and verified successfully');
+          schemaExists = true;
+        } else {
+          throw new Error('Schema creation failed - users table still not found');
+        }
+      } catch (pushError) {
+        console.error('❌ Failed to create database schema:', pushError.message);
+        throw new Error('Could not create database schema automatically');
+      }
+    }
+
+    // Check if admin user exists (now safe because tables exist)
+    let existingAdmin;
+    try {
+      existingAdmin = await prisma.user.findFirst({
+        where: { email: 'admin@monomi.id' }
+      });
+    } catch (userCheckError) {
+      console.log('⚠️  Users table not found, assuming first-time setup');
+      existingAdmin = null;
+    }
 
     if (!existingAdmin) {
       console.log('👤 Creating default admin user...');

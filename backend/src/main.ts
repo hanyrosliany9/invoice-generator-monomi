@@ -16,9 +16,13 @@ async function bootstrap() {
     // Initialize database first (disabled temporarily for quick startup)
     if (process.env.SKIP_DB_INIT !== 'true') {
       try {
+        logger.log('🔧 Starting database initialization...');
         await initDatabase();
+        logger.log('✅ Database initialization completed successfully');
       } catch (error) {
-        logger.warn('Database initialization failed, continuing with startup:', error.message);
+        logger.error('❌ Database initialization failed:', error.message);
+        logger.error('❌ Full error:', error);
+        logger.warn('⚠️  Continuing with startup, but login may not work until database is properly initialized');
       }
     } else {
       logger.log('Database initialization skipped');

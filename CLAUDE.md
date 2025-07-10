@@ -59,6 +59,14 @@
 - Read-only filesystems where possible
 - Regular vulnerability scanning
 
+## Database Initialization (IMPORTANT)
+- **Database auto-initialization is ENABLED** in development (`SKIP_DB_INIT=false`)
+- On first startup, containers will automatically:
+  - Create database schema from Prisma
+  - Run database seeders with test data
+  - Create default admin user: `admin@monomi.id` / `password123`
+- This ensures consistent setup for all developers
+
 ## Legacy Commands Section (MOVED TO TOP)
 - See "Common Commands for This Project" section above for Docker-first commands
 
