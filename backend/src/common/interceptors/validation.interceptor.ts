@@ -26,9 +26,14 @@ export class ValidationInterceptor implements NestInterceptor {
               errors: this.formatValidationErrors(response.message as string | string[])
             };
             
+            // Log validation errors for debugging
+            console.error('Validation failed:', formattedError.errors);
+            
             return throwError(() => new BadRequestException(formattedError));
           }
         }
+        
+        // Pass through the original error if it's not a validation error
         return throwError(() => error);
       }),
     );

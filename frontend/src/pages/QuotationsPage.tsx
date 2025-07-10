@@ -207,7 +207,7 @@ export const QuotationsPage: React.FC = () => {
     
     const data = {
       ...values,
-      validUntil: values.validUntil.format('YYYY-MM-DD'),
+      validUntil: values.validUntil.endOf('day').toISOString(),
       amountPerProject: totalAmount, // Set same as total
       totalAmount: totalAmount
     };

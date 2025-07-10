@@ -27,7 +27,7 @@ export class QuotationsController {
   @Post()
   @ApiOperation({ summary: 'Buat quotation baru' })
   create(@Body() createQuotationDto: CreateQuotationDto, @Request() req) {
-    return this.quotationsService.create(createQuotationDto, req.user.sub);
+    return this.quotationsService.create(createQuotationDto, req.user.id);
   }
 
   @Get()

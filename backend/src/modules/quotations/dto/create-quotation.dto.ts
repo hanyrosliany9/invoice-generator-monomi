@@ -1,14 +1,14 @@
-import { IsString, IsNumber, IsDateString, IsOptional, IsUUID, Min } from 'class-validator';
+import { IsString, IsNumber, IsDateString, IsOptional, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
 export class CreateQuotationDto {
   @ApiProperty({ description: 'ID klien' })
-  @IsUUID('4', { message: 'Client ID harus berupa UUID yang valid' })
+  @IsString({ message: 'Client ID harus berupa string yang valid' })
   clientId: string;
 
   @ApiProperty({ description: 'ID proyek' })
-  @IsUUID('4', { message: 'Project ID harus berupa UUID yang valid' })
+  @IsString({ message: 'Project ID harus berupa string yang valid' })
   projectId: string;
 
   @ApiProperty({ description: 'Jumlah per proyek', example: 5000000 })
