@@ -14,10 +14,26 @@ export class InvoicesService {
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto, userId: string) {
-    // Generate unique invoice number if not provided
-    const invoiceNumber = createInvoiceDto.invoiceNumber || await this.generateInvoiceNumber();
+    // Validate client exists
+    const client = await this.prisma.client.findUnique({ 
+      where: { id: createInvoiceDto.clientId } 
+    });
+    if (!client) {
+      throw new NotFoundException(`Client dengan ID ${createInvoiceDto.clientId} tidak ditemukan`);
+    }
     
-    // Calculate if materai is required (> 5 million IDR)
+    // Validate project exists
+    const project = await this.prisma.project.findUnique({ 
+      where: { id: createInvoiceDto.projectId } 
+    });
+    if (!project) {
+      throw new NotFoundException(`Project dengan ID ${createInvoiceDto.projectId} tidak ditemukan`);
+    }
+
+    // Generate invoice number
+    const invoiceNumber = await this.generateInvoiceNumber();
+    
+    // Auto-calculate materai
     const materaiRequired = createInvoiceDto.totalAmount > 5000000;
     
     return this.prisma.invoice.create({
@@ -25,12 +41,12 @@ export class InvoicesService {
         ...createInvoiceDto,
         invoiceNumber,
         materaiRequired,
+        materaiApplied: createInvoiceDto.materaiApplied || false,
         createdBy: userId,
       },
       include: {
         client: true,
         project: true,
-        quotation: true,
         user: {
           select: {
             id: true,
