@@ -673,12 +673,12 @@ export const ClientsPage: React.FC = () => {
 
       {/* View Modal */}
       <Modal
-        title={`Detail Klien - ${selectedClient?.name}`}
+        title={`${t('clients.detail')} - ${selectedClient?.name}`}
         open={viewModalVisible}
         onCancel={() => setViewModalVisible(false)}
         footer={[
           <Button key="close" onClick={() => setViewModalVisible(false)}>
-            Tutup
+            {t('common.close')}
           </Button>
         ]}
         width={800}
@@ -687,22 +687,22 @@ export const ClientsPage: React.FC = () => {
           <div className="space-y-4">
             <Row gutter={16}>
               <Col span={12}>
-                <Text strong>Nama Klien:</Text>
+                <Text strong>{t('clients.fields.name')}:</Text>
                 <div>{selectedClient.name}</div>
               </Col>
               <Col span={12}>
-                <Text strong>Perusahaan:</Text>
+                <Text strong>{t('clients.fields.company')}:</Text>
                 <div>{selectedClient.company}</div>
               </Col>
             </Row>
             
             <Row gutter={16}>
               <Col span={12}>
-                <Text strong>Contact Person:</Text>
+                <Text strong>{t('clients.fields.contactPerson')}:</Text>
                 <div>{selectedClient.contactPerson}</div>
               </Col>
               <Col span={12}>
-                <Text strong>Status:</Text>
+                <Text strong>{t('common.status')}:</Text>
                 <div>
                   <Tag color={getStatusColor(selectedClient.status || 'inactive')}>
                     {getStatusText(selectedClient.status || 'inactive')}
@@ -713,11 +713,11 @@ export const ClientsPage: React.FC = () => {
 
             <Row gutter={16}>
               <Col span={12}>
-                <Text strong>Email:</Text>
+                <Text strong>{t('clients.fields.email')}:</Text>
                 <div>{selectedClient.email}</div>
               </Col>
               <Col span={12}>
-                <Text strong>Telepon:</Text>
+                <Text strong>{t('clients.fields.phone')}:</Text>
                 <div>{selectedClient.phone}</div>
               </Col>
             </Row>

@@ -1012,24 +1012,34 @@ export const InvoicesPage: React.FC = () => {
             <Row gutter={16}>
               <Col span={12}>
                 <Text strong>Klien:</Text>
-                <div>{selectedInvoice.clientName}</div>
+                <div>{selectedInvoice.client?.name || 'N/A'}</div>
+                <div style={{ fontSize: '12px', color: '#666' }}>{selectedInvoice.client?.company}</div>
               </Col>
               <Col span={12}>
                 <Text strong>Proyek:</Text>
-                <div>{selectedInvoice.projectName}</div>
+                <div>{selectedInvoice.project?.number} - {selectedInvoice.project?.description || 'N/A'}</div>
               </Col>
             </Row>
             
             <Row gutter={16}>
               <Col span={12}>
                 <Text strong>Jumlah:</Text>
-                <div className="idr-amount">{formatIDR(selectedInvoice.amount)}</div>
+                <div className="idr-amount">{formatIDR(selectedInvoice.totalAmount)}</div>
               </Col>
               <Col span={12}>
                 <Text strong>Status:</Text>
                 <div>
-                  <Tag color={getStatusColor(selectedInvoice.status)}>
-                    {t(`invoices.statuses.${selectedInvoice.status}`)}
+                  <Tag color={getStatusColor(selectedInvoice.status.toLowerCase())}>
+                    {(() => {
+                      const statusMap = {
+                        'DRAFT': 'Draft',
+                        'SENT': 'Terkirim', 
+                        'PAID': 'Lunas',
+                        'OVERDUE': 'Jatuh Tempo',
+                        'CANCELLED': 'Dibatalkan'
+                      }
+                      return statusMap[selectedInvoice.status as keyof typeof statusMap] || selectedInvoice.status
+                    })()} 
                   </Tag>
                 </div>
               </Col>
@@ -1059,7 +1069,7 @@ export const InvoicesPage: React.FC = () => {
               <Row gutter={16}>
                 <Col span={12}>
                   <Text strong>Berdasarkan Quotation:</Text>
-                  <div>{selectedInvoice.quotationId}</div>
+                  <div>{selectedInvoice.quotation?.quotationNumber || selectedInvoice.quotationId || 'Manual Invoice'}</div>
                 </Col>
               </Row>
             )}

@@ -26,6 +26,11 @@ export interface Quotation {
     description: string
     type: string
   }
+  user?: {
+    id: string
+    name: string
+    email: string
+  }
 }
 
 export interface CreateQuotationRequest {

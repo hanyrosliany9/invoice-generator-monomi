@@ -36,6 +36,10 @@ export interface Invoice {
     description: string
     type: string
   }
+  quotation?: {
+    id: string
+    quotationNumber: string
+  }
 }
 
 export interface CreateInvoiceRequest {

@@ -785,11 +785,12 @@ export const QuotationsPage: React.FC = () => {
             <Row gutter={16}>
               <Col span={12}>
                 <Text strong>Klien:</Text>
-                <div>{selectedQuotation.clientId}</div>
+                <div>{selectedQuotation.client?.name || 'N/A'}</div>
+                <div style={{ fontSize: '12px', color: '#666' }}>{selectedQuotation.client?.company}</div>
               </Col>
               <Col span={12}>
                 <Text strong>Proyek:</Text>
-                <div>{selectedQuotation.projectId}</div>
+                <div>{selectedQuotation.project?.number} - {selectedQuotation.project?.description || 'N/A'}</div>
               </Col>
             </Row>
             
@@ -801,8 +802,17 @@ export const QuotationsPage: React.FC = () => {
               <Col span={12}>
                 <Text strong>Status:</Text>
                 <div>
-                  <Tag color={getStatusColor(selectedQuotation.status)}>
-                    {t(`quotations.statuses.${selectedQuotation.status}`)}
+                  <Tag color={getStatusColor(selectedQuotation.status.toLowerCase())}>
+                    {(() => {
+                      const statusMap = {
+                        'DRAFT': 'Draft',
+                        'SENT': 'Terkirim',
+                        'APPROVED': 'Disetujui',
+                        'DECLINED': 'Ditolak',
+                        'REVISED': 'Revisi'
+                      }
+                      return statusMap[selectedQuotation.status as keyof typeof statusMap] || selectedQuotation.status
+                    })()} 
                   </Tag>
                 </div>
               </Col>
@@ -822,16 +832,22 @@ export const QuotationsPage: React.FC = () => {
             {selectedQuotation.terms && (
               <div>
                 <Text strong>Syarat & Ketentuan:</Text>
-                <div>{selectedQuotation.terms}</div>
+                <div style={{ padding: '8px', backgroundColor: '#f9f9f9', borderRadius: '4px' }}>
+                  {selectedQuotation.terms}
+                </div>
               </div>
             )}
 
-            {selectedQuotation.terms && (
-              <div>
-                <Text strong>Catatan:</Text>
-                <div>{selectedQuotation.terms}</div>
-              </div>
-            )}
+            <Row gutter={16}>
+              <Col span={12}>
+                <Text strong>Dibuat Oleh:</Text>
+                <div>{selectedQuotation.user?.name || selectedQuotation.user?.email || 'N/A'}</div>
+              </Col>
+              <Col span={12}>
+                <Text strong>Diperbarui:</Text>
+                <div>{dayjs(selectedQuotation.updatedAt).format('DD/MM/YYYY HH:mm')}</div>
+              </Col>
+            </Row>
 
             {requiresMaterai(selectedQuotation.totalAmount) && (
               <Alert

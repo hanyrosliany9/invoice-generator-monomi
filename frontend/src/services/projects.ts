@@ -19,6 +19,10 @@ export interface Project {
     company: string
     email: string
   }
+  _count?: {
+    quotations: number
+    invoices: number
+  }
 }
 
 export interface CreateProjectRequest {

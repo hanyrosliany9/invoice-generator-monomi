@@ -896,7 +896,8 @@ export const ProjectsPage: React.FC = () => {
               </Col>
               <Col span={12}>
                 <Text strong>Klien:</Text>
-                <div>{selectedProject.clientId}</div>
+                <div>{selectedProject.client?.name || 'N/A'}</div>
+                <div style={{ fontSize: '12px', color: '#666' }}>{selectedProject.client?.company}</div>
               </Col>
             </Row>
             
@@ -913,7 +914,16 @@ export const ProjectsPage: React.FC = () => {
                 <Text strong>Status:</Text>
                 <div>
                   <Tag color={getStatusColor(selectedProject.status)} icon={getStatusIcon(selectedProject.status)}>
-                    {t(`projects.statuses.${selectedProject.status}`)}
+                    {(() => {
+                      const statusMap = {
+                        'PLANNING': 'Perencanaan',
+                        'IN_PROGRESS': 'Sedang Berjalan',
+                        'ON_HOLD': 'Ditunda',
+                        'COMPLETED': 'Selesai',
+                        'CANCELLED': 'Dibatalkan'
+                      }
+                      return statusMap[selectedProject.status as keyof typeof statusMap] || selectedProject.status
+                    })()} 
                   </Tag>
                 </div>
               </Col>
@@ -967,7 +977,7 @@ export const ProjectsPage: React.FC = () => {
                 <Card>
                   <Statistic
                     title="Quotations"
-                    value={0}
+                    value={selectedProject._count?.quotations || 0}
                     prefix={<FileTextOutlined />}
                   />
                 </Card>
@@ -976,7 +986,7 @@ export const ProjectsPage: React.FC = () => {
                 <Card>
                   <Statistic
                     title="Invoices"
-                    value={0}
+                    value={selectedProject._count?.invoices || 0}
                     prefix={<FileTextOutlined />}
                   />
                 </Card>
@@ -984,8 +994,8 @@ export const ProjectsPage: React.FC = () => {
               <Col span={6}>
                 <Card>
                   <Statistic
-                    title="Sudah Dibayar"
-                    value={formatIDR(selectedProject.estimatedBudget)}
+                    title="Budget Aktual"
+                    value={formatIDR(0)}
                     valueStyle={{ color: '#52c41a' }}
                   />
                 </Card>
@@ -993,7 +1003,7 @@ export const ProjectsPage: React.FC = () => {
               <Col span={6}>
                 <Card>
                   <Statistic
-                    title="Belum Dibayar"
+                    title="Sisa Budget"
                     value={formatIDR(selectedProject.estimatedBudget)}
                     valueStyle={{ color: '#fa8c16' }}
                   />
