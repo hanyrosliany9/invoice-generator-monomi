@@ -85,6 +85,8 @@ export const InvoicesPage: React.FC = () => {
   const [form] = Form.useForm()
   const [paymentForm] = Form.useForm()
   const { message } = App.useApp()
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
+  const [batchLoading, setBatchLoading] = useState(false)
 
   // Queries
   const { data: invoices = [], isLoading, error: invoicesError } = useQuery({
@@ -315,6 +317,25 @@ export const InvoicesPage: React.FC = () => {
         paidAt: values.paidAt.format('YYYY-MM-DD')
       })
     }
+  }
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys: React.Key[]) => {
+      setSelectedRowKeys(newSelectedRowKeys as string[])
+    },
+    onSelectAll: (selected: boolean, _selectedRows: Invoice[], _changeRows: Invoice[]) => {
+      if (selected) {
+        const allKeys = filteredInvoices.map(i => i.id)
+        setSelectedRowKeys(allKeys)
+      } else {
+        setSelectedRowKeys([])
+      }
+    },
+    getCheckboxProps: (record: Invoice) => ({
+      disabled: false,
+      name: record.invoiceNumber,
+    }),
   }
 
   const getActionMenuItems = (invoice: Invoice) => {
@@ -899,6 +920,7 @@ export const InvoicesPage: React.FC = () => {
           dataSource={filteredInvoices}
           loading={isLoading}
           rowKey="id"
+          rowSelection={rowSelection}
           pagination={{
             total: filteredInvoices.length,
             pageSize: 10,
