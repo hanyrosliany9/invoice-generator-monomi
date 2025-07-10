@@ -131,12 +131,12 @@ export class PdfService {
       }).format(amount);
     };
 
-    // Format date in Indonesian format
+    // Format date in Indonesian format (short format for compact design)
     const formatDate = (date: string) => {
       return new Date(date).toLocaleDateString('id-ID', {
         year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
       });
     };
 
@@ -151,122 +151,175 @@ export class PdfService {
     body {
       font-family: 'Arial', sans-serif;
       margin: 0;
-      padding: 0;
+      padding: 15mm;
       background-color: #ffffff;
       color: #333;
-      line-height: 1.6;
+      line-height: 1.4;
+      font-size: 12px;
     }
     .invoice-container {
-      max-width: 21cm;
+      max-width: 190mm;
       margin: 0 auto;
-      padding: 1cm;
       background-color: white;
     }
+    
+    /* Header - Clean and Professional */
     .header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2cm;
-      border-bottom: 3px solid #dc2626;
-      padding-bottom: 1cm;
+      align-items: flex-start;
+      margin-bottom: 20mm;
+      padding-bottom: 5mm;
+      border-bottom: 2px solid #dc2626;
     }
     .company-info {
       flex: 1;
     }
     .company-name {
-      font-size: 28px;
+      font-size: 20px;
       font-weight: bold;
       color: #dc2626;
-      margin-bottom: 0.5cm;
+      margin-bottom: 2mm;
     }
-    .company-details {
-      font-size: 14px;
+    .company-tagline {
+      font-size: 11px;
       color: #666;
-      line-height: 1.4;
+      margin-bottom: 3mm;
     }
     .invoice-title {
       text-align: right;
       flex: 1;
     }
     .invoice-title h1 {
-      font-size: 32px;
+      font-size: 28px;
       color: #dc2626;
       margin: 0;
       font-weight: bold;
     }
     .invoice-number {
-      font-size: 16px;
+      font-size: 14px;
       color: #666;
-      margin-top: 0.5cm;
+      margin-top: 2mm;
     }
+    .invoice-date {
+      font-size: 12px;
+      color: #666;
+      margin-top: 1mm;
+    }
+    
+    /* Two Column Layout */
     .invoice-details {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 2cm;
+      margin-bottom: 15mm;
     }
     .client-info, .invoice-info {
       flex: 1;
     }
     .client-info {
-      margin-right: 2cm;
+      margin-right: 15mm;
     }
     .section-title {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: bold;
       color: #dc2626;
-      margin-bottom: 0.5cm;
-      border-bottom: 1px solid #dc2626;
-      padding-bottom: 0.2cm;
+      margin-bottom: 3mm;
+      text-transform: uppercase;
     }
-    .info-row {
-      display: flex;
-      margin-bottom: 0.3cm;
+    .info-item {
+      margin-bottom: 1.5mm;
+      font-size: 11px;
     }
     .info-label {
       font-weight: bold;
-      width: 120px;
       color: #555;
+      display: inline-block;
+      width: 35mm;
     }
-    .info-value {
-      flex: 1;
-    }
-    .project-details {
-      margin-bottom: 2cm;
-      padding: 1cm;
-      background-color: #f9f9f9;
-      border-left: 4px solid #dc2626;
-    }
-    .amount-table {
+    
+    /* Professional Service Table */
+    .service-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 2cm;
+      margin-bottom: 10mm;
+      border: 1px solid #ddd;
     }
-    .amount-table th,
-    .amount-table td {
-      padding: 0.5cm;
+    .service-table th {
+      background-color: #dc2626;
+      color: white;
+      padding: 3mm;
+      text-align: center;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .service-table th:first-child {
+      width: 8%;
+      text-align: center;
+    }
+    .service-table th:nth-child(2) {
+      width: 52%;
       text-align: left;
-      border-bottom: 1px solid #ddd;
     }
-    .amount-table th {
+    .service-table th:nth-child(3),
+    .service-table th:nth-child(4),
+    .service-table th:nth-child(5) {
+      width: 13.33%;
+      text-align: right;
+    }
+    .service-table td {
+      padding: 3mm;
+      border-bottom: 1px solid #eee;
+      font-size: 11px;
+    }
+    .service-table td:first-child {
+      text-align: center;
+      font-weight: bold;
+    }
+    .service-table td:nth-child(3),
+    .service-table td:nth-child(4),
+    .service-table td:nth-child(5) {
+      text-align: right;
+    }
+    .service-table tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    
+    /* Summary Section */
+    .summary-table {
+      width: 50%;
+      margin-left: auto;
+      border-collapse: collapse;
+      margin-bottom: 15mm;
+    }
+    .summary-table td {
+      padding: 2mm 5mm;
+      font-size: 11px;
+      border-bottom: 1px solid #eee;
+    }
+    .summary-table td:first-child {
+      text-align: right;
+      font-weight: bold;
+      color: #555;
+    }
+    .summary-table td:last-child {
+      text-align: right;
+      width: 40mm;
+    }
+    .summary-total {
       background-color: #dc2626;
       color: white;
       font-weight: bold;
+      font-size: 12px;
     }
-    .amount-table .amount {
-      text-align: right;
-      font-weight: bold;
-    }
-    .total-row {
-      background-color: #f9f9f9;
-      font-weight: bold;
-      font-size: 16px;
-    }
+    
+    /* Materai Notice (Invoice-specific) */
     .materai-notice {
       background-color: #fef3c7;
       border: 1px solid #f59e0b;
       border-radius: 4px;
-      padding: 1cm;
-      margin-bottom: 2cm;
+      padding: 8mm;
+      margin-bottom: 10mm;
     }
     .materai-notice.applied {
       background-color: #d1fae5;
@@ -275,169 +328,180 @@ export class PdfService {
     .materai-title {
       font-weight: bold;
       color: #f59e0b;
-      margin-bottom: 0.3cm;
+      margin-bottom: 2mm;
+      font-size: 11px;
     }
     .materai-notice.applied .materai-title {
       color: #10b981;
     }
+    
+    /* Payment Information (Invoice-specific) */
     .payment-info {
-      margin-bottom: 2cm;
-      padding: 1cm;
+      margin-bottom: 10mm;
+      padding: 8mm;
       background-color: #f3f4f6;
       border-radius: 4px;
     }
     .payment-title {
       font-weight: bold;
       color: #dc2626;
-      margin-bottom: 0.5cm;
+      margin-bottom: 3mm;
+      font-size: 12px;
     }
     .payment-details {
       white-space: pre-line;
-      line-height: 1.5;
+      line-height: 1.3;
+      font-size: 10px;
     }
-    .terms {
-      margin-bottom: 2cm;
-      padding: 1cm;
-      background-color: #f9f9f9;
-      border-radius: 4px;
+    
+    /* Footer Layout */
+    .footer-section {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15mm;
+    }
+    .terms-section {
+      flex: 1;
+      margin-right: 15mm;
     }
     .terms-title {
+      font-size: 12px;
       font-weight: bold;
       color: #dc2626;
-      margin-bottom: 0.5cm;
+      margin-bottom: 3mm;
     }
-    .footer {
-      margin-top: 3cm;
-      text-align: center;
-      font-size: 12px;
+    .terms-content {
+      font-size: 10px;
+      line-height: 1.3;
       color: #666;
-      border-top: 1px solid #ddd;
-      padding-top: 1cm;
     }
     .signature-section {
-      margin-top: 2cm;
-      text-align: right;
+      flex: 1;
+      text-align: center;
     }
     .signature-box {
-      display: inline-block;
+      border: 1px solid #ddd;
+      padding: 8mm;
+      background-color: #f9f9f9;
+    }
+    .signature-title {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 8mm;
+    }
+    .signature-name {
+      font-size: 12px;
+      font-weight: bold;
+      color: #dc2626;
+    }
+    .signature-position {
+      font-size: 10px;
+      color: #666;
+      margin-top: 1mm;
+    }
+    
+    /* Contact Bar */
+    .contact-bar {
+      margin-top: 10mm;
       text-align: center;
-      width: 200px;
+      padding: 3mm;
+      background-color: #f3f4f6;
+      border-radius: 2px;
+      font-size: 10px;
+      color: #666;
     }
-    .signature-line {
-      border-top: 1px solid #333;
-      margin-top: 3cm;
-      padding-top: 0.3cm;
-    }
+    
     @media print {
-      body { margin: 0; }
-      .invoice-container { margin: 0; padding: 0.5cm; }
+      body { 
+        margin: 0; 
+        padding: 10mm;
+      }
+      .invoice-container { 
+        margin: 0; 
+        padding: 0;
+      }
     }
   </style>
 </head>
 <body>
   <div class="invoice-container">
-    <!-- Header -->
+    <!-- Professional Header -->
     <div class="header">
       <div class="company-info">
         <div class="company-name">${companyData.companyName}</div>
-        <div class="company-details">
-          ${companyData.address}<br>
-          ${companyData.phone ? `Telp: ${companyData.phone}<br>` : ''}
-          ${companyData.email ? `Email: ${companyData.email}<br>` : ''}
-          ${companyData.website ? `Website: ${companyData.website}<br>` : ''}
-          ${companyData.taxNumber ? `NPWP: ${companyData.taxNumber}` : ''}
-        </div>
+        <div class="company-tagline">Professional Business Solutions</div>
       </div>
       <div class="invoice-title">
         <h1>INVOICE</h1>
         <div class="invoice-number">No: ${invoiceNumber}</div>
+        <div class="invoice-date">Date: ${formatDate(creationDate)}</div>
       </div>
     </div>
 
-    <!-- Invoice Details -->
+    <!-- Clean Two-Column Layout -->
     <div class="invoice-details">
       <div class="client-info">
-        <div class="section-title">Kepada:</div>
-        <div class="info-row">
-          <div class="info-label">Nama:</div>
-          <div class="info-value">${client.name}</div>
-        </div>
-        ${client.company ? `
-        <div class="info-row">
-          <div class="info-label">Perusahaan:</div>
-          <div class="info-value">${client.company}</div>
-        </div>
-        ` : ''}
-        <div class="info-row">
-          <div class="info-label">Telepon:</div>
-          <div class="info-value">${client.phone}</div>
-        </div>
-        ${client.email ? `
-        <div class="info-row">
-          <div class="info-label">Email:</div>
-          <div class="info-value">${client.email}</div>
-        </div>
-        ` : ''}
-        ${client.address ? `
-        <div class="info-row">
-          <div class="info-label">Alamat:</div>
-          <div class="info-value">${client.address}</div>
-        </div>
-        ` : ''}
+        <div class="section-title">Invoice To</div>
+        <div class="info-item">${client.name}</div>
+        ${client.company ? `<div class="info-item">${client.company}</div>` : ''}
+        <div class="info-item">Phone: ${client.phone || 'N/A'}</div>
+        ${client.email ? `<div class="info-item">Email: ${client.email}</div>` : ''}
+        ${client.address ? `<div class="info-item">${client.address}</div>` : ''}
       </div>
       
       <div class="invoice-info">
-        <div class="section-title">Detail Invoice:</div>
-        <div class="info-row">
-          <div class="info-label">Tanggal:</div>
-          <div class="info-value">${formatDate(creationDate)}</div>
+        <div class="section-title">Invoice Details</div>
+        <div class="info-item">
+          <span class="info-label">Invoice No:</span> ${invoiceNumber}
         </div>
-        <div class="info-row">
-          <div class="info-label">Jatuh Tempo:</div>
-          <div class="info-value">${formatDate(dueDate)}</div>
+        <div class="info-item">
+          <span class="info-label">Invoice Date:</span> ${formatDate(creationDate)}
+        </div>
+        <div class="info-item">
+          <span class="info-label">Due Date:</span> ${formatDate(dueDate)}
+        </div>
+        <div class="info-item">
+          <span class="info-label">Payment Method:</span> Transfer Bank
         </div>
       </div>
     </div>
 
-    <!-- Project Details -->
-    <div class="project-details">
-      <div class="section-title">Detail Proyek:</div>
-      <div class="info-row">
-        <div class="info-label">Nomor Proyek:</div>
-        <div class="info-value">${project.number}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Deskripsi:</div>
-        <div class="info-value">${project.description}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Output:</div>
-        <div class="info-value">${project.output}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Tipe:</div>
-        <div class="info-value">${project.type === 'PRODUCTION' ? 'Produksi' : 'Media Sosial'}</div>
-      </div>
-    </div>
-
-    <!-- Amount Table -->
-    <table class="amount-table">
+    <!-- Professional Service Table -->
+    <table class="service-table">
       <thead>
         <tr>
-          <th>Deskripsi</th>
-          <th>Jumlah</th>
+          <th>#</th>
+          <th>Description</th>
+          <th>Price</th>
+          <th>Quantity</th>
+          <th>Amount</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>Biaya Proyek: ${project.description}</td>
-          <td class="amount">${formatIDR(amountPerProject)}</td>
-        </tr>
-        <tr class="total-row">
-          <td><strong>Total</strong></td>
-          <td class="amount"><strong>${formatIDR(totalAmount)}</strong></td>
+          <td>01</td>
+          <td>${project.description}</td>
+          <td>${formatIDR(amountPerProject)}</td>
+          <td>1</td>
+          <td>${formatIDR(amountPerProject)}</td>
         </tr>
       </tbody>
+    </table>
+
+    <!-- Summary Table -->
+    <table class="summary-table">
+      <tr>
+        <td>Sub Total</td>
+        <td>${formatIDR(amountPerProject)}</td>
+      </tr>
+      <tr>
+        <td>Tax (PPN 11%)</td>
+        <td>${formatIDR(Number(amountPerProject) * 0.11)}</td>
+      </tr>
+      <tr class="summary-total">
+        <td>TOTAL</td>
+        <td>${formatIDR(totalAmount)}</td>
+      </tr>
     </table>
 
     <!-- Materai Notice -->
@@ -469,27 +533,28 @@ export class PdfService {
       ` : ''}
     </div>
 
-    <!-- Terms and Conditions -->
-    ${terms ? `
-    <div class="terms">
-      <div class="terms-title">Syarat & Ketentuan:</div>
-      <div>${terms}</div>
-    </div>
-    ` : ''}
-
-    <!-- Signature Section -->
-    <div class="signature-section">
-      <div class="signature-box">
-        <div>Hormat kami,</div>
-        <div class="signature-line">
-          ${companyData.companyName}
+    <!-- Footer Section -->
+    <div class="footer-section">
+      <div class="terms-section">
+        <div class="terms-title">Terms & Conditions</div>
+        <div class="terms-content">
+          ${terms || 'Payment due within 30 days. All prices in Indonesian Rupiah (IDR). This invoice is valid until the due date.'}
+        </div>
+      </div>
+      
+      <div class="signature-section">
+        <div class="signature-box">
+          <div class="signature-title">Authorized Signature</div>
+          <div style="height: 15mm;"></div>
+          <div class="signature-name">${companyData.companyName}</div>
+          <div class="signature-position">Management</div>
         </div>
       </div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-      <div>Terima kasih atas kepercayaan Anda. Dokumen ini dibuat secara otomatis oleh sistem.</div>
+    <!-- Contact Information Bar -->
+    <div class="contact-bar">
+      Contact: ${companyData.phone || 'N/A'} | ${companyData.address || 'N/A'} | ${companyData.email || 'N/A'}
     </div>
   </div>
 </body>

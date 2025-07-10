@@ -33,7 +33,8 @@ import {
   SendOutlined,
   MoreOutlined,
   ExportOutlined,
-  FileAddOutlined
+  FileAddOutlined,
+  PrinterOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -65,6 +66,8 @@ export const QuotationsPage: React.FC = () => {
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null)
   const [viewModalVisible, setViewModalVisible] = useState(false)
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
+  const [pdfPreviewVisible, setPdfPreviewVisible] = useState(false)
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('')
   const [form] = Form.useForm()
   const { message } = App.useApp()
 
@@ -202,6 +205,57 @@ export const QuotationsPage: React.FC = () => {
     invoiceMutation.mutate(quotation.id)
   }
 
+  const handlePrintQuotation = async (quotation: Quotation) => {
+    try {
+      message.loading({ content: 'Mengunduh PDF quotation...', key: 'pdf' })
+      const blob = await quotationService.downloadQuotationPDF(quotation.id)
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Quotation-${quotation.quotationNumber}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+      
+      message.success({ content: 'PDF quotation berhasil diunduh', key: 'pdf' })
+    } catch (error) {
+      console.error('Error downloading quotation PDF:', error)
+      message.error({ content: 'Gagal mengunduh PDF quotation', key: 'pdf' })
+    }
+  }
+
+  const handlePreviewPDF = async (quotation: Quotation) => {
+    try {
+      message.loading({ content: 'Memuat preview PDF...', key: 'preview' })
+      const blob = await quotationService.previewQuotationPDF(quotation.id)
+      
+      // Create preview URL
+      const url = window.URL.createObjectURL(blob)
+      setPdfPreviewUrl(url)
+      setPdfPreviewVisible(true)
+      setSelectedQuotation(quotation)
+      
+      message.success({ content: 'Preview PDF berhasil dimuat', key: 'preview' })
+    } catch (error) {
+      console.error('Error previewing quotation PDF:', error)
+      message.error({ content: 'Gagal memuat preview PDF', key: 'preview' })
+    }
+  }
+
+  const handleClosePdfPreview = () => {
+    setPdfPreviewVisible(false)
+    if (pdfPreviewUrl) {
+      window.URL.revokeObjectURL(pdfPreviewUrl)
+      setPdfPreviewUrl('')
+    }
+    setSelectedQuotation(null)
+  }
+
   const handleFormSubmit = (values: any) => {
     const totalAmount = safeNumber(values.totalAmount);
     
@@ -232,6 +286,18 @@ export const QuotationsPage: React.FC = () => {
         icon: <EditOutlined />,
         label: 'Edit',
         onClick: () => handleEdit(quotation)
+      },
+      {
+        key: 'print',
+        icon: <PrinterOutlined />,
+        label: 'Print PDF',
+        onClick: () => handlePrintQuotation(quotation)
+      },
+      {
+        key: 'preview',
+        icon: <FileTextOutlined />,
+        label: 'Preview PDF',
+        onClick: () => handlePreviewPDF(quotation)
       }
     ]
 
@@ -858,6 +924,32 @@ export const QuotationsPage: React.FC = () => {
               />
             )}
           </div>
+        )}
+      </Modal>
+
+      {/* PDF Preview Modal */}
+      <Modal
+        title={`Preview PDF - ${selectedQuotation?.quotationNumber || ''}`}
+        open={pdfPreviewVisible}
+        onCancel={handleClosePdfPreview}
+        footer={[
+          <Button key="close" onClick={handleClosePdfPreview}>
+            Tutup
+          </Button>,
+          <Button key="download" type="primary" icon={<PrinterOutlined />} onClick={() => selectedQuotation && handlePrintQuotation(selectedQuotation)}>
+            Download PDF
+          </Button>
+        ]}
+        width="90%"
+        style={{ top: 20 }}
+        styles={{ body: { height: '80vh', padding: 0 } }}
+      >
+        {pdfPreviewUrl && (
+          <iframe
+            src={pdfPreviewUrl}
+            style={{ width: '100%', height: '100%', border: 'none' }}
+            title="PDF Preview"
+          />
         )}
       </Modal>
     </div>
