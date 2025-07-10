@@ -43,25 +43,34 @@ export const projectService = {
   // Get all projects
   getProjects: async (): Promise<Project[]> => {
     const response = await apiClient.get('/projects')
-    return response.data.data
+    return response?.data?.data || []
   },
 
   // Get project by ID
   getProject: async (id: string): Promise<Project> => {
     const response = await apiClient.get(`/projects/${id}`)
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Project not found')
+    }
+    return response.data.data
   },
 
   // Create new project
   createProject: async (data: CreateProjectRequest): Promise<Project> => {
     const response = await apiClient.post('/projects', data)
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Project creation failed')
+    }
+    return response.data.data
   },
 
   // Update existing project
   updateProject: async (id: string, data: UpdateProjectRequest): Promise<Project> => {
     const response = await apiClient.patch(`/projects/${id}`, data)
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Project update failed')
+    }
+    return response.data.data
   },
 
   // Delete project
@@ -72,30 +81,33 @@ export const projectService = {
   // Update project status
   updateStatus: async (id: string, status: string): Promise<Project> => {
     const response = await apiClient.patch(`/projects/${id}/status`, { status })
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Project status update failed')
+    }
+    return response.data.data
   },
 
   // Get projects by client
   getProjectsByClient: async (clientId: string): Promise<Project[]> => {
     const response = await apiClient.get(`/projects/by-client/${clientId}`)
-    return response.data
+    return response?.data?.data || []
   },
 
   // Get project statistics
   getProjectStats: async () => {
     const response = await apiClient.get('/projects/stats')
-    return response.data
+    return response?.data?.data || {}
   },
 
   // Get projects by type
   getProjectsByType: async (type: string) => {
     const response = await apiClient.get(`/projects/by-type/${type}`)
-    return response.data
+    return response?.data?.data || []
   },
 
   // Get project timeline
   getProjectTimeline: async (id: string) => {
     const response = await apiClient.get(`/projects/${id}/timeline`)
-    return response.data
+    return response?.data?.data || {}
   },
 }

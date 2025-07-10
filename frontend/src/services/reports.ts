@@ -113,34 +113,34 @@ export const reportsService = {
     
     const url = `/reports/revenue${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
     const response = await apiClient.get(url)
-    return response.data.data
+    return response?.data?.data || { totalRevenue: 0, averageRevenue: 0, revenueByPeriod: [], invoiceCount: 0 }
   },
 
   // Get client analytics
   getClientAnalytics: async (limit?: number): Promise<ClientAnalytics> => {
     const url = `/reports/clients${limit ? `?limit=${limit}` : ''}`
     const response = await apiClient.get(url)
-    return response.data.data
+    return response?.data?.data || { topClients: [], totalClients: 0 }
   },
 
   // Get project analytics
   getProjectAnalytics: async (limit?: number): Promise<ProjectAnalytics> => {
     const url = `/reports/projects${limit ? `?limit=${limit}` : ''}`
     const response = await apiClient.get(url)
-    return response.data.data
+    return response?.data?.data || { topProjects: [], projectTypes: [], totalProjects: 0 }
   },
 
   // Get payment analytics
   getPaymentAnalytics: async (): Promise<PaymentAnalytics> => {
     const response = await apiClient.get('/reports/payments')
-    return response.data.data
+    return response?.data?.data || { invoicesByStatus: [], overdueInvoices: [], overdueCount: 0, overdueAmount: 0, paymentTrends: [] }
   },
 
   // Get business overview
   getBusinessOverview: async (period?: string): Promise<BusinessOverview> => {
     const url = `/reports/overview${period ? `?period=${period}` : ''}`
     const response = await apiClient.get(url)
-    return response.data.data
+    return response?.data?.data || { revenue: { totalRevenue: 0, averageRevenue: 0, revenueByPeriod: [], invoiceCount: 0 }, clients: { topClients: [], totalClients: 0 }, projects: { topProjects: [], projectTypes: [], totalProjects: 0 }, payments: { invoicesByStatus: [], overdueInvoices: [], overdueCount: 0, overdueAmount: 0, paymentTrends: [] }, generatedAt: new Date().toISOString() }
   },
 
   // Get financial summary
@@ -154,7 +154,7 @@ export const reportsService = {
     
     const url = `/reports/financial-summary${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
     const response = await apiClient.get(url)
-    return response.data.data
+    return response?.data?.data || { period: { startDate: '', endDate: '' }, quotations: { total: 0, approved: 0, pending: 0, totalValue: 0 }, invoices: { total: 0, paid: 0, pending: 0, overdue: 0, totalValue: 0, paidValue: 0, materaiRequired: 0 }, newClients: 0, newProjects: 0, conversionRate: '0%', paymentRate: '0%' }
   },
 
   // Export reports (placeholder for future implementation)

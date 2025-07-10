@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { QuotationStatus } from '@prisma/client';
 
 @Injectable()
 export class QuotationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService
+  ) {}
 
   async create(createQuotationDto: CreateQuotationDto, userId: string) {
     // Generate unique quotation number
@@ -50,6 +54,13 @@ export class QuotationsService {
               id: true,
               name: true,
               email: true,
+            },
+          },
+          invoices: {
+            select: {
+              id: true,
+              invoiceNumber: true,
+              status: true,
             },
           },
         },
@@ -118,7 +129,7 @@ export class QuotationsService {
   async updateStatus(id: string, status: QuotationStatus) {
     const quotation = await this.findOne(id);
 
-    return this.prisma.quotation.update({
+    const updatedQuotation = await this.prisma.quotation.update({
       where: { id },
       data: { status },
       include: {
@@ -126,6 +137,16 @@ export class QuotationsService {
         project: true,
       },
     });
+
+    // Send notification about status change
+    try {
+      await this.notificationsService.sendQuotationStatusUpdate(id, status);
+    } catch (error) {
+      // Log error but don't fail the status update
+      console.error('Failed to send status update notification:', error);
+    }
+
+    return updatedQuotation;
   }
 
   async remove(id: string) {

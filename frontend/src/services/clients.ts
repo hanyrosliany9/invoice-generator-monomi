@@ -43,24 +43,33 @@ export const clientService = {
   // Get all clients
   getClients: async (): Promise<Client[]> => {
     const response = await apiClient.get('/clients')
-    return response.data.data
+    return response?.data?.data || []
   },
 
   // Get client by ID
   getClient: async (id: string): Promise<Client> => {
     const response = await apiClient.get(`/clients/${id}`)
+    if (!response?.data?.data) {
+      throw new Error('Client not found')
+    }
     return response.data.data
   },
 
   // Create new client
   createClient: async (data: CreateClientRequest): Promise<Client> => {
     const response = await apiClient.post('/clients', data)
+    if (!response?.data?.data) {
+      throw new Error('Client creation failed')
+    }
     return response.data.data
   },
 
   // Update existing client
   updateClient: async (id: string, data: UpdateClientRequest): Promise<Client> => {
     const response = await apiClient.patch(`/clients/${id}`, data)
+    if (!response?.data?.data) {
+      throw new Error('Client update failed')
+    }
     return response.data.data
   },
 
@@ -72,6 +81,6 @@ export const clientService = {
   // Get client statistics
   getClientStats: async () => {
     const response = await apiClient.get('/clients/stats')
-    return response.data.data
+    return response?.data?.data || {}
   },
 }

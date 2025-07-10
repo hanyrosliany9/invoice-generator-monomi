@@ -59,14 +59,16 @@ const RevenueChart: React.FC<RevenueChartProps> = ({
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const value = payload?.[0]?.value
+      if (value === undefined || value === null) return null
       return (
         <div 
           className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg"
           style={{ border: '1px solid #e2e8f0' }}
         >
-          <p className="text-gray-800 font-medium">{`Bulan: ${label}`}</p>
+          <p className="text-gray-800 font-medium">{`Bulan: ${label || 'Unknown'}`}</p>
           <p className="text-blue-600 font-semibold">
-            {`Pendapatan: ${formatCompactCurrency(payload[0].value)}`}
+            {`Pendapatan: ${formatCompactCurrency(value)}`}
           </p>
         </div>
       )

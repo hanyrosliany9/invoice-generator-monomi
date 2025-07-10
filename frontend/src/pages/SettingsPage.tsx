@@ -35,6 +35,7 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../store/auth'
 import { settingsService } from '../services/settings'
+import { authService } from '../services/auth'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -142,15 +143,26 @@ export const SettingsPage: React.FC = () => {
     }
   })
 
+  const changePasswordMutation = useMutation({
+    mutationFn: authService.changePassword,
+    onSuccess: () => {
+      message.success('Password berhasil diubah')
+      securityForm.resetFields()
+    },
+    onError: (error: any) => {
+      message.error(`Gagal mengubah password: ${error.message}`)
+    }
+  })
+
   const handleSaveProfile = async (values: ProfileFormValues) => {
     updateUserMutation.mutate(values)
   }
 
   const handleChangePassword = async (values: PasswordFormValues) => {
-    // TODO: Implement password change API call (requires separate endpoint)
-    console.log('Password change request:', values)
-    message.success('Password updated successfully')
-    securityForm.resetFields()
+    changePasswordMutation.mutate({
+      currentPassword: values.currentPassword,
+      newPassword: values.newPassword
+    })
   }
 
   const handleSaveCompany = async (values: CompanyFormValues) => {
@@ -552,7 +564,7 @@ export const SettingsPage: React.FC = () => {
                   size="large"
                   style={{ width: '100%' }}
                   formatter={(value) => `Rp ${value || 0}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={(value) => Number((value || '').replace(/Rp\s?|(,*)/g, '')) as any}
+                  parser={(value) => Number((value || '').replace(/Rp\s?|(,*)/g, ''))}
                   defaultValue={5000000}
                 />
               </Form.Item>

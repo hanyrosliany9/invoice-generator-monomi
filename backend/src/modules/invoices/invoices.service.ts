@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuotationsService } from '../quotations/quotations.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InvoiceStatus, QuotationStatus } from '@prisma/client';
@@ -11,6 +12,7 @@ export class InvoicesService {
   constructor(
     private prisma: PrismaService,
     private quotationsService: QuotationsService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto, userId: string) {
@@ -119,6 +121,14 @@ export class InvoicesService {
     
     // Update quotation status to indicate it has been converted to invoice
     await this.quotationsService.updateStatus(quotationId, QuotationStatus.APPROVED);
+    
+    // Send notification about invoice generation
+    try {
+      await this.notificationsService.sendInvoiceGenerated(invoice.id, quotationId);
+    } catch (error) {
+      // Log error but don't fail the invoice creation
+      console.error('Failed to send invoice generation notification:', error);
+    }
     
     return invoice;
   }

@@ -92,50 +92,77 @@ export const settingsService = {
   // User settings
   getUserSettings: async (): Promise<UserSettings> => {
     const response = await apiClient.get('/settings/user')
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Failed to retrieve user settings')
+    }
+    return response.data.data
   },
 
   updateUserSettings: async (data: UpdateUserSettingsDto): Promise<any> => {
     const response = await apiClient.put('/settings/user', data)
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Failed to update user settings')
+    }
+    return response.data.data
   },
 
   // Company settings
   getCompanySettings: async (): Promise<CompanySettings> => {
     const response = await apiClient.get('/settings/company')
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Failed to retrieve company settings')
+    }
+    return response.data.data
   },
 
   updateCompanySettings: async (data: UpdateCompanySettingsDto): Promise<CompanySettings> => {
     const response = await apiClient.put('/settings/company', data)
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Failed to update company settings')
+    }
+    return response.data.data
   },
 
   // System settings
   getSystemSettings: async (): Promise<SystemSettings> => {
     const response = await apiClient.get('/settings/system')
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Failed to retrieve system settings')
+    }
+    return response.data.data
   },
 
   updateSystemSettings: async (data: UpdateSystemSettingsDto): Promise<SystemSettings> => {
     const response = await apiClient.put('/settings/system', data)
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Failed to update system settings')
+    }
+    return response.data.data
   },
 
   // Notification settings
   getNotificationSettings: async (): Promise<NotificationSettings> => {
     const response = await apiClient.get('/settings/notifications')
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Failed to retrieve notification settings')
+    }
+    return response.data.data
   },
 
   updateNotificationSettings: async (data: NotificationSettings): Promise<NotificationSettings> => {
     const response = await apiClient.put('/settings/notifications', data)
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Failed to update notification settings')
+    }
+    return response.data.data
   },
 
   // Reset settings
   resetSettings: async (): Promise<{ message: string }> => {
     const response = await apiClient.post('/settings/reset')
-    return response.data
+    if (!response?.data?.data) {
+      throw new Error('Failed to reset settings')
+    }
+    return response.data.data
   }
 }

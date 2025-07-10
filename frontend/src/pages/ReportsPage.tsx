@@ -11,7 +11,8 @@ import {
   Space,
   Table,
   Progress,
-  Tag
+  Tag,
+  App
 } from 'antd'
 import { 
   BarChartOutlined,
@@ -25,10 +26,11 @@ import {
   FileTextOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { reportsService } from '../services/reports'
 import { safeNumber, safeDivision, safeArray, safeGet, formatIDR } from '../utils/currency'
 import { RevenueChart, PaymentChart, QuarterlyChart } from '../components/charts'
+import ChartErrorBoundary from '../components/ChartErrorBoundary'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -37,6 +39,7 @@ const { Option } = Select
 
 export const ReportsPage: React.FC = () => {
   const { t } = useTranslation()
+  const { message } = App.useApp()
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null)
   const [reportType, setReportType] = useState('monthly')
 
@@ -182,12 +185,61 @@ export const ReportsPage: React.FC = () => {
     },
   ]
 
+  // Export mutations
+  const pdfExportMutation = useMutation({
+    mutationFn: (params: { reportType: string; dateRange?: [dayjs.Dayjs, dayjs.Dayjs] | null }) => {
+      return reportsService.exportToPDF(params.reportType, {
+        period: reportType,
+        startDate: params.dateRange?.[0]?.format('YYYY-MM-DD'),
+        endDate: params.dateRange?.[1]?.format('YYYY-MM-DD')
+      })
+    },
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `laporan-${reportType}-${dayjs().format('YYYY-MM-DD')}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      message.success('Laporan PDF berhasil diunduh')
+    },
+    onError: (error: any) => {
+      message.error(`Gagal mengunduh laporan PDF: ${error.message}`)
+    }
+  })
+
+  const excelExportMutation = useMutation({
+    mutationFn: (params: { reportType: string; dateRange?: [dayjs.Dayjs, dayjs.Dayjs] | null }) => {
+      return reportsService.exportToExcel(params.reportType, {
+        period: reportType,
+        startDate: params.dateRange?.[0]?.format('YYYY-MM-DD'),
+        endDate: params.dateRange?.[1]?.format('YYYY-MM-DD')
+      })
+    },
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `laporan-${reportType}-${dayjs().format('YYYY-MM-DD')}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      message.success('Laporan Excel berhasil diunduh')
+    },
+    onError: (error: any) => {
+      message.error(`Gagal mengunduh laporan Excel: ${error.message}`)
+    }
+  })
+
   const handleExportPdf = () => {
-    // TODO: Implement PDF export functionality
+    pdfExportMutation.mutate({ reportType: 'business-overview', dateRange })
   }
 
   const handleExportExcel = () => {
-    // TODO: Implement Excel export functionality
+    excelExportMutation.mutate({ reportType: 'business-overview', dateRange })
   }
 
   return (
@@ -375,17 +427,21 @@ export const ReportsPage: React.FC = () => {
             }}
           >
             {reportType === 'quarterly' ? (
-              <QuarterlyChart 
-                data={revenueData?.revenueByPeriod || []} 
-                loading={revenueLoading}
-                height={350}
-              />
+              <ChartErrorBoundary chartType="Kuartalan">
+                <QuarterlyChart 
+                  data={revenueData?.revenueByPeriod || []} 
+                  loading={revenueLoading}
+                  height={350}
+                />
+              </ChartErrorBoundary>
             ) : (
-              <RevenueChart 
-                data={revenueData?.revenueByPeriod || []} 
-                loading={revenueLoading}
-                height={350}
-              />
+              <ChartErrorBoundary chartType="Pendapatan">
+                <RevenueChart 
+                  data={revenueData?.revenueByPeriod || []} 
+                  loading={revenueLoading}
+                  height={350}
+                />
+              </ChartErrorBoundary>
             )}
           </Card>
         </Col>
@@ -404,11 +460,13 @@ export const ReportsPage: React.FC = () => {
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
             }}
           >
-            <PaymentChart 
-              data={paymentData?.invoicesByStatus || []} 
-              loading={paymentLoading}
-              height={350}
-            />
+            <ChartErrorBoundary chartType="Pembayaran">
+              <PaymentChart 
+                data={paymentData?.invoicesByStatus || []} 
+                loading={paymentLoading}
+                height={350}
+              />
+            </ChartErrorBoundary>
           </Card>
         </Col>
       </Row>
@@ -429,11 +487,13 @@ export const ReportsPage: React.FC = () => {
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
             }}
           >
-            <RevenueChart 
-              data={paymentData?.paymentTrends || []} 
-              loading={paymentLoading}
-              height={250}
-            />
+            <ChartErrorBoundary chartType="Tren Pembayaran">
+              <RevenueChart 
+                data={paymentData?.paymentTrends || []} 
+                loading={paymentLoading}
+                height={250}
+              />
+            </ChartErrorBoundary>
           </Card>
         </Col>
       </Row>

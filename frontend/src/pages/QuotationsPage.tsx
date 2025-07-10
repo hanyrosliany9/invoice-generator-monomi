@@ -18,7 +18,8 @@ import {
   Row,
   Col,
   Statistic,
-  Alert
+  Alert,
+  MenuProps
 } from 'antd'
 import {
   PlusOutlined,
@@ -34,14 +35,17 @@ import {
   MoreOutlined,
   ExportOutlined,
   FileAddOutlined,
-  PrinterOutlined
+  PrinterOutlined,
+  LinkOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { formatIDR, requiresMaterai, safeNumber, safeString, safeArray } from '../utils/currency'
 import { quotationService, Quotation } from '../services/quotations'
 import { clientService } from '../services/clients'
 import { projectService } from '../services/projects'
+import { WorkflowProgress, WorkflowTimeline } from '../components/workflow'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -59,6 +63,7 @@ const { TextArea } = Input
 export const QuotationsPage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -68,7 +73,12 @@ export const QuotationsPage: React.FC = () => {
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
   const [pdfPreviewVisible, setPdfPreviewVisible] = useState(false)
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('')
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
+  const [batchLoading, setBatchLoading] = useState(false)
+  const [statusModalVisible, setStatusModalVisible] = useState(false)
+  const [statusQuotation, setStatusQuotation] = useState<Quotation | null>(null)
   const [form] = Form.useForm()
+  const [statusForm] = Form.useForm()
   const { message } = App.useApp()
 
   // Queries
@@ -131,7 +141,11 @@ export const QuotationsPage: React.FC = () => {
     mutationFn: quotationService.generateInvoice,
     onSuccess: (data) => {
       message.success(`Invoice ${data.invoiceId} berhasil dibuat`)
-      // Navigate to invoice page or refresh invoices
+      // Navigate to the newly created invoice
+      navigate(`/invoices/${data.invoiceId}`)
+      // Refresh both quotations and invoices data
+      queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
     }
   })
 
@@ -160,13 +174,24 @@ export const QuotationsPage: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     const colors = {
-      draft: 'default',
-      sent: 'blue',
-      approved: 'green',
-      declined: 'red',
-      revised: 'orange'
+      DRAFT: 'default',
+      SENT: 'blue',
+      APPROVED: 'green',
+      DECLINED: 'red',
+      REVISED: 'orange'
     }
-    return colors[status as keyof typeof colors] || 'default'
+    return colors[status.toUpperCase() as keyof typeof colors] || 'default'
+  }
+
+  const getStatusText = (status: string) => {
+    const statusMap = {
+      'DRAFT': 'Draft',
+      'SENT': 'Terkirim',
+      'APPROVED': 'Disetujui',
+      'DECLINED': 'Ditolak',
+      'REVISED': 'Revisi'
+    }
+    return statusMap[status as keyof typeof statusMap] || status
   }
 
   const handleCreate = () => {
@@ -197,12 +222,124 @@ export const QuotationsPage: React.FC = () => {
     statusMutation.mutate({ id: quotation.id, status: newStatus })
   }
 
+  const handleOpenStatusModal = (quotation: Quotation) => {
+    setStatusQuotation(quotation)
+    setStatusModalVisible(true)
+    statusForm.setFieldsValue({ status: quotation.status })
+  }
+
+  const handleStatusModalOk = () => {
+    statusForm.validateFields().then((values) => {
+      if (statusQuotation) {
+        handleStatusChange(statusQuotation, values.status)
+        setStatusModalVisible(false)
+        setStatusQuotation(null)
+        statusForm.resetFields()
+      }
+    }).catch((errorInfo) => {
+      console.log('Validation failed:', errorInfo)
+    })
+  }
+
+  const handleStatusModalCancel = () => {
+    setStatusModalVisible(false)
+    setStatusQuotation(null)
+    statusForm.resetFields()
+  }
+
   const handleGenerateInvoice = (quotation: Quotation) => {
     if (quotation.status !== 'APPROVED') {
       message.error('Hanya quotation yang disetujui dapat dijadikan invoice')
       return
     }
     invoiceMutation.mutate(quotation.id)
+  }
+
+  // Batch operations
+  const handleBatchStatusChange = async (newStatus: string) => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('Pilih quotation yang akan diubah statusnya')
+      return
+    }
+
+    setBatchLoading(true)
+    try {
+      const promises = selectedRowKeys.map(id => 
+        statusMutation.mutateAsync({ id, status: newStatus })
+      )
+      await Promise.all(promises)
+      message.success(`${selectedRowKeys.length} quotation berhasil diubah statusnya`)
+      setSelectedRowKeys([])
+    } catch (error) {
+      message.error('Gagal mengubah status beberapa quotation')
+    } finally {
+      setBatchLoading(false)
+    }
+  }
+
+  const handleBatchInvoiceGeneration = async () => {
+    const approvedQuotations = quotations.filter(q => 
+      selectedRowKeys.includes(q.id) && q.status === 'APPROVED'
+    )
+
+    if (approvedQuotations.length === 0) {
+      message.warning('Pilih quotation yang sudah disetujui untuk dibuat invoice')
+      return
+    }
+
+    setBatchLoading(true)
+    try {
+      const promises = approvedQuotations.map(q => 
+        invoiceMutation.mutateAsync(q.id)
+      )
+      await Promise.all(promises)
+      message.success(`${approvedQuotations.length} invoice berhasil dibuat`)
+      setSelectedRowKeys([])
+    } catch (error) {
+      message.error('Gagal membuat beberapa invoice')
+    } finally {
+      setBatchLoading(false)
+    }
+  }
+
+  const handleBatchDelete = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('Pilih quotation yang akan dihapus')
+      return
+    }
+
+    setBatchLoading(true)
+    try {
+      const promises = selectedRowKeys.map(id => 
+        deleteMutation.mutateAsync(id)
+      )
+      await Promise.all(promises)
+      message.success(`${selectedRowKeys.length} quotation berhasil dihapus`)
+      setSelectedRowKeys([])
+    } catch (error) {
+      message.error('Gagal menghapus beberapa quotation')
+    } finally {
+      setBatchLoading(false)
+    }
+  }
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys: React.Key[]) => {
+      setSelectedRowKeys(newSelectedRowKeys as string[])
+    },
+    onSelectAll: (selected: boolean, selectedRows: Quotation[], changeRows: Quotation[]) => {
+      if (selected) {
+        const allKeys = filteredQuotations.map(q => q.id)
+        setSelectedRowKeys(allKeys)
+      } else {
+        setSelectedRowKeys([])
+      }
+    },
+    getCheckboxProps: (record: Quotation) => ({
+      disabled: false,
+      name: record.quotationNumber,
+    }),
   }
 
   const handlePrintQuotation = async (quotation: Quotation) => {
@@ -301,6 +438,19 @@ export const QuotationsPage: React.FC = () => {
       }
     ]
 
+    // Add "View Invoice" button for quotations that have been converted to invoices
+    if (quotation.invoices && quotation.invoices.length > 0) {
+      const invoice = quotation.invoices[0] // Get the first/primary invoice
+      if (invoice) {
+        items.splice(4, 0, {
+          key: 'view-invoice',
+          icon: <LinkOutlined />,
+          label: 'Lihat Invoice',
+          onClick: () => navigate(`/invoices/${invoice.id}`)
+        })
+      }
+    }
+
     // Status-specific actions
     if (quotation.status === 'DRAFT') {
       items.push({
@@ -342,9 +492,17 @@ export const QuotationsPage: React.FC = () => {
         key: 'revise',
         icon: <SyncOutlined />,
         label: 'Revisi',
-        onClick: () => handleStatusChange(quotation, 'revised')
+        onClick: () => handleStatusChange(quotation, 'REVISED')
       })
     }
+
+    // Add general status change option for all quotations
+    items.push({
+      key: 'change-status',
+      icon: <EditOutlined />,
+      label: 'Ubah Status',
+      onClick: () => handleOpenStatusModal(quotation)
+    })
 
     items.push({
       key: 'delete',
@@ -352,7 +510,7 @@ export const QuotationsPage: React.FC = () => {
       label: 'Hapus',
       danger: true,
       onClick: () => handleDelete(quotation.id)
-    } as any)
+    } as MenuProps['items'][number])
 
     return items
   }
@@ -404,24 +562,11 @@ export const QuotationsPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => {
-        const getStatusText = (status: string) => {
-          const statusMap = {
-            'DRAFT': 'Draft',
-            'SENT': 'Terkirim',
-            'APPROVED': 'Disetujui',
-            'DECLINED': 'Ditolak',
-            'REVISED': 'Revisi'
-          }
-          return statusMap[status as keyof typeof statusMap] || status
-        }
-        
-        return (
-          <Tag color={getStatusColor(status.toLowerCase())}>
-            {getStatusText(status)}
-          </Tag>
-        )
-      },
+      render: (status: string) => (
+        <Tag color={getStatusColor(status)}>
+          {getStatusText(status)}
+        </Tag>
+      ),
       filters: [
         { text: 'Draft', value: 'DRAFT' },
         { text: 'Terkirim', value: 'SENT' },
@@ -709,6 +854,62 @@ export const QuotationsPage: React.FC = () => {
             </Button>
           </Space>
         </div>
+
+        {/* Batch Operations */}
+        {selectedRowKeys.length > 0 && (
+          <Card className="mb-4" size="small">
+            <div className="flex justify-between items-center">
+              <Text strong>{selectedRowKeys.length} quotation dipilih</Text>
+              <Space>
+                <Button 
+                  size="small"
+                  loading={batchLoading}
+                  onClick={() => handleBatchStatusChange('SENT')}
+                >
+                  Kirim
+                </Button>
+                <Button 
+                  size="small"
+                  loading={batchLoading}
+                  onClick={() => handleBatchStatusChange('APPROVED')}
+                >
+                  Setujui
+                </Button>
+                <Button 
+                  size="small"
+                  loading={batchLoading}
+                  onClick={() => handleBatchStatusChange('DECLINED')}
+                >
+                  Tolak
+                </Button>
+                <Button 
+                  size="small"
+                  type="primary"
+                  loading={batchLoading}
+                  onClick={handleBatchInvoiceGeneration}
+                  icon={<FileAddOutlined />}
+                >
+                  Buat Invoice
+                </Button>
+                <Button 
+                  size="small"
+                  danger
+                  loading={batchLoading}
+                  onClick={handleBatchDelete}
+                  icon={<DeleteOutlined />}
+                >
+                  Hapus
+                </Button>
+                <Button 
+                  size="small"
+                  onClick={() => setSelectedRowKeys([])}
+                >
+                  Batal Pilih
+                </Button>
+              </Space>
+            </div>
+          </Card>
+        )}
       </div>
 
       {/* Main Table */}
@@ -718,6 +919,14 @@ export const QuotationsPage: React.FC = () => {
           dataSource={filteredQuotations}
           loading={isLoading}
           rowKey="id"
+          rowSelection={{
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+            type: 'checkbox',
+            getCheckboxProps: (record) => ({
+              disabled: record.status === 'APPROVED' && selectedRowKeys.includes(record.id),
+            }),
+          }}
           pagination={{
             total: filteredQuotations.length,
             pageSize: 10,
@@ -844,7 +1053,7 @@ export const QuotationsPage: React.FC = () => {
             Tutup
           </Button>
         ]}
-        width={800}
+        width={1000}
       >
         {selectedQuotation && (
           <div className="space-y-4">
@@ -868,17 +1077,8 @@ export const QuotationsPage: React.FC = () => {
               <Col span={12}>
                 <Text strong>Status:</Text>
                 <div>
-                  <Tag color={getStatusColor(selectedQuotation.status.toLowerCase())}>
-                    {(() => {
-                      const statusMap = {
-                        'DRAFT': 'Draft',
-                        'SENT': 'Terkirim',
-                        'APPROVED': 'Disetujui',
-                        'DECLINED': 'Ditolak',
-                        'REVISED': 'Revisi'
-                      }
-                      return statusMap[selectedQuotation.status as keyof typeof statusMap] || selectedQuotation.status
-                    })()} 
+                  <Tag color={getStatusColor(selectedQuotation.status)}>
+                    {getStatusText(selectedQuotation.status)}
                   </Tag>
                 </div>
               </Col>
@@ -914,6 +1114,27 @@ export const QuotationsPage: React.FC = () => {
                 <div>{dayjs(selectedQuotation.updatedAt).format('DD/MM/YYYY HH:mm')}</div>
               </Col>
             </Row>
+
+            {/* Workflow Progress */}
+            <div className="mt-6">
+              <WorkflowProgress
+                currentStatus={selectedQuotation.status}
+                invoiceId={selectedQuotation.invoices?.[0]?.id}
+                showActions={false}
+              />
+            </div>
+
+            {/* Workflow Timeline */}
+            <div className="mt-6">
+              <WorkflowTimeline
+                quotationId={selectedQuotation.quotationNumber}
+                currentStatus={selectedQuotation.status}
+                createdAt={selectedQuotation.createdAt}
+                updatedAt={selectedQuotation.updatedAt}
+                invoiceId={selectedQuotation.invoices?.[0]?.id}
+                invoiceCreatedAt={selectedQuotation.invoices?.[0]?.id ? selectedQuotation.updatedAt : undefined}
+              />
+            </div>
 
             {requiresMaterai(selectedQuotation.totalAmount) && (
               <Alert
@@ -951,6 +1172,47 @@ export const QuotationsPage: React.FC = () => {
             title="PDF Preview"
           />
         )}
+      </Modal>
+
+      {/* Status Change Modal */}
+      <Modal
+        title="Ubah Status Quotation"
+        open={statusModalVisible}
+        onOk={handleStatusModalOk}
+        onCancel={handleStatusModalCancel}
+        width={400}
+      >
+        <Form
+          form={statusForm}
+          layout="vertical"
+          initialValues={{ status: statusQuotation?.status }}
+        >
+          <Form.Item
+            label="Status Baru"
+            name="status"
+            rules={[{ required: true, message: 'Pilih status baru' }]}
+          >
+            <Select placeholder="Pilih status">
+              <Select.Option value="DRAFT">Draft</Select.Option>
+              <Select.Option value="SENT">Terkirim</Select.Option>
+              <Select.Option value="APPROVED">Disetujui</Select.Option>
+              <Select.Option value="DECLINED">Ditolak</Select.Option>
+              <Select.Option value="REVISED">Revisi</Select.Option>
+            </Select>
+          </Form.Item>
+          
+          {statusQuotation && (
+            <div style={{ padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '4px', marginTop: '12px' }}>
+              <Text strong>Quotation: </Text>
+              <Text>{statusQuotation.quotationNumber}</Text>
+              <br />
+              <Text strong>Status Saat Ini: </Text>
+              <Tag color={getStatusColor(statusQuotation.status)}>
+                {getStatusText(statusQuotation.status)}
+              </Tag>
+            </div>
+          )}
+        </Form>
       </Modal>
     </div>
   )

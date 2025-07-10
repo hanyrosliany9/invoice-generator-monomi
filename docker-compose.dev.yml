@@ -15,6 +15,11 @@ services:
       - JWT_SECRET=dev-jwt-secret-key
       - FRONTEND_URL=http://localhost:3000
       - SKIP_DB_INIT=false
+      - SMTP_HOST=localhost
+      - SMTP_PORT=587
+      - SMTP_USER=dev@monomi.finance
+      - SMTP_PASSWORD=dev-password
+      - FROM_EMAIL=dev@monomi.finance
     ports:
       - "3000:3000"
       - "5000:5000"

@@ -22,7 +22,8 @@ import {
   Badge,
   Progress,
   Divider,
-  Skeleton
+  Skeleton,
+  MenuProps
 } from 'antd'
 import {
   PlusOutlined,
@@ -40,14 +41,17 @@ import {
   PrinterOutlined,
   SendOutlined,
   BankOutlined,
-  WarningOutlined
+  WarningOutlined,
+  LinkOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { formatIDR, requiresMaterai, getMateraiAmount, safeNumber, safeDivision, safeString, safeArray } from '../utils/currency'
 import { invoiceService, Invoice } from '../services/invoices'
 import { clientService } from '../services/clients'
 import { projectService } from '../services/projects'
+import { WorkflowProgress, WorkflowTimeline } from '../components/workflow'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -68,6 +72,7 @@ const { TextArea } = Input
 export const InvoicesPage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -142,6 +147,36 @@ export const InvoicesPage: React.FC = () => {
       setPaymentModalVisible(false)
       paymentForm.resetFields()
       message.success('Invoice berhasil ditandai lunas')
+    }
+  })
+
+  const sendMutation = useMutation({
+    mutationFn: ({ id, email }: { id: string; email?: string }) =>
+      invoiceService.sendInvoice(id, email),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      message.success('Invoice berhasil dikirim')
+    },
+    onError: (error: any) => {
+      message.error(`Gagal mengirim invoice: ${error.message}`)
+    }
+  })
+
+  const printMutation = useMutation({
+    mutationFn: ({ id }: { id: string }) => invoiceService.generatePDF(id),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob)
+      const printWindow = window.open(url, '_blank')
+      if (printWindow) {
+        printWindow.onload = () => {
+          printWindow.print()
+        }
+      }
+      window.URL.revokeObjectURL(url)
+      message.success('Invoice siap untuk dicetak')
+    },
+    onError: (error: any) => {
+      message.error(`Gagal mencetak invoice: ${error.message}`)
     }
   })
 
@@ -235,6 +270,25 @@ export const InvoicesPage: React.FC = () => {
     })
   }
 
+  const handleSendInvoice = (invoice: Invoice) => {
+    Modal.confirm({
+      title: 'Kirim Invoice',
+      content: `Apakah Anda yakin ingin mengirim invoice ${getInvoiceNumber(invoice)} ke ${getClientName(invoice)}?`,
+      okText: 'Ya, Kirim',
+      cancelText: 'Batal',
+      onOk: () => {
+        sendMutation.mutate({ 
+          id: invoice.id, 
+          email: invoice.client?.email 
+        })
+      }
+    })
+  }
+
+  const handlePrintInvoice = (invoice: Invoice) => {
+    printMutation.mutate({ id: invoice.id })
+  }
+
   const handleFormSubmit = (values: any) => {
     const totalAmount = safeNumber(values.totalAmount);
     
@@ -281,17 +335,27 @@ export const InvoicesPage: React.FC = () => {
         key: 'print',
         icon: <PrinterOutlined />,
         label: 'Print',
-        onClick: () => {},  // TODO: Implement print functionality
+        onClick: () => handlePrintInvoice(invoice),
         'data-testid': 'generate-pdf-button'
       }
     ]
+
+    // Add "View Quotation" button for quotation-based invoices
+    if (invoice.quotationId) {
+      items.splice(2, 0, {
+        key: 'view-quotation',
+        icon: <LinkOutlined />,
+        label: 'Lihat Quotation',
+        onClick: () => navigate(`/quotations`)
+      })
+    }
 
     if (invoice.status === 'DRAFT') {
       items.push({
         key: 'send',
         icon: <SendOutlined />,
         label: 'Kirim',
-        onClick: () => {}  // TODO: Implement send functionality
+        onClick: () => handleSendInvoice(invoice)
       })
     }
 
@@ -310,7 +374,7 @@ export const InvoicesPage: React.FC = () => {
       label: 'Hapus',
       danger: true,
       onClick: () => handleDelete(invoice.id)
-    } as any)
+    } as MenuProps['items'][number])
 
     return items
   }
@@ -1005,7 +1069,7 @@ export const InvoicesPage: React.FC = () => {
             Tutup
           </Button>
         ]}
-        width={800}
+        width={1000}
       >
         {selectedInvoice && (
           <div className="space-y-4">
@@ -1104,6 +1168,29 @@ export const InvoicesPage: React.FC = () => {
                 <div>{selectedInvoice.terms}</div>
               </div>
             )}
+
+            {/* Workflow Information for Quotation-based Invoices */}
+            {selectedInvoice.quotationId && (
+              <div className="mt-6">
+                <WorkflowProgress
+                  currentStatus="APPROVED"
+                  invoiceId={selectedInvoice.id}
+                  showActions={false}
+                />
+              </div>
+            )}
+
+            {/* Invoice Timeline */}
+            <div className="mt-6">
+              <WorkflowTimeline
+                quotationId={selectedInvoice.quotation?.quotationNumber || 'Direct Invoice'}
+                currentStatus={selectedInvoice.quotationId ? 'APPROVED' : 'INVOICE'}
+                createdAt={selectedInvoice.createdAt}
+                updatedAt={selectedInvoice.updatedAt}
+                invoiceId={selectedInvoice.id}
+                invoiceCreatedAt={selectedInvoice.createdAt}
+              />
+            </div>
           </div>
         )}
       </Modal>

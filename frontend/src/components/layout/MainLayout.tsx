@@ -10,7 +10,8 @@ import {
   ProjectOutlined,
   BarChartOutlined,
   SettingOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  BranchesOutlined
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -45,6 +46,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       key: '/invoices',
       icon: <FileDoneOutlined />,
       label: t('navigation.invoices'),
+    },
+    {
+      key: '/workflow',
+      icon: <BranchesOutlined />,
+      label: 'Workflow',
     },
     {
       key: '/clients',

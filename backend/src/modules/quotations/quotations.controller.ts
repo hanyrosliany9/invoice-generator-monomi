@@ -79,9 +79,11 @@ export class QuotationsController {
   @ApiOperation({ summary: 'Update status quotation' })
   updateStatus(
     @Param('id') id: string,
-    @Body() body: { status: QuotationStatus },
+    @Body() body: { status: string },
   ) {
-    return this.quotationsService.updateStatus(id, body.status);
+    // Convert lowercase status to uppercase enum
+    const normalizedStatus = body.status.toUpperCase() as QuotationStatus;
+    return this.quotationsService.updateStatus(id, normalizedStatus);
   }
 
   @Post(':id/generate-invoice')

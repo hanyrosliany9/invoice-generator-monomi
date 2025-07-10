@@ -93,7 +93,7 @@ export interface ValidInvoice {
   clientName: string
   projectName: string
   amount: number
-  status: 'draft' | 'sent' | 'paid' | 'overdue'
+  status: 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED'
   dueDate: string
   materaiRequired: boolean
   materaiApplied: boolean
@@ -102,7 +102,7 @@ export interface ValidInvoice {
 export const isValidInvoice = (value: unknown): value is ValidInvoice => {
   if (!isObject(value)) return false
   
-  const validStatuses = ['draft', 'sent', 'paid', 'overdue']
+  const validStatuses = ['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED']
   
   return hasStringProperty(value, 'id') &&
          hasStringProperty(value, 'number') &&
@@ -123,8 +123,8 @@ export interface ValidProject {
   number: string
   description: string
   clientName: string
-  type: 'production' | 'socialMedia'
-  status: 'planning' | 'inProgress' | 'completed' | 'cancelled'
+  type: 'PRODUCTION' | 'SOCIAL_MEDIA'
+  status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
   estimatedBudget: number
   actualBudget: number
   totalPaid: number
@@ -137,8 +137,8 @@ export interface ValidProject {
 export const isValidProject = (value: unknown): value is ValidProject => {
   if (!isObject(value)) return false
   
-  const validTypes = ['production', 'socialMedia']
-  const validStatuses = ['planning', 'inProgress', 'completed', 'cancelled']
+  const validTypes = ['PRODUCTION', 'SOCIAL_MEDIA']
+  const validStatuses = ['PLANNING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
   
   return hasStringProperty(value, 'id') &&
          hasStringProperty(value, 'number') &&
@@ -163,14 +163,14 @@ export interface ValidQuotation {
   clientName: string
   projectName: string
   amount: number
-  status: 'draft' | 'sent' | 'approved' | 'declined' | 'revised'
+  status: 'DRAFT' | 'SENT' | 'APPROVED' | 'DECLINED' | 'REVISED'
   validUntil: string
 }
 
 export const isValidQuotation = (value: unknown): value is ValidQuotation => {
   if (!isObject(value)) return false
   
-  const validStatuses = ['draft', 'sent', 'approved', 'declined', 'revised']
+  const validStatuses = ['DRAFT', 'SENT', 'APPROVED', 'DECLINED', 'REVISED']
   
   return hasStringProperty(value, 'id') &&
          hasStringProperty(value, 'number') &&

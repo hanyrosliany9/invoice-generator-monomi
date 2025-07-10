@@ -84,18 +84,19 @@ const PaymentChart: React.FC<PaymentChartProps> = ({
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload
+      const data = payload?.[0]?.payload
+      if (!data) return null
       return (
         <div 
           className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg"
           style={{ border: '1px solid #e2e8f0' }}
         >
-          <p className="text-gray-800 font-medium">{`Status: ${data.name}`}</p>
+          <p className="text-gray-800 font-medium">{`Status: ${data.name || 'Unknown'}`}</p>
           <p className="text-blue-600 font-semibold">
-            {`Nilai: ${formatIDR(data.value)}`}
+            {`Nilai: ${formatIDR(data.value || 0)}`}
           </p>
           <p className="text-gray-600">
-            {`Jumlah: ${data.count} invoice`}
+            {`Jumlah: ${data.count || 0} invoice`}
           </p>
         </div>
       )

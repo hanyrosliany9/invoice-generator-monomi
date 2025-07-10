@@ -21,14 +21,25 @@ export interface RegisterRequest {
   name: string
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+}
+
 export const authService = {
   login: async (data: LoginRequest): Promise<LoginResponse> => {
     const response = await apiClient.post('/auth/login', data)
+    if (!response?.data?.data) {
+      throw new Error('Login failed')
+    }
     return response.data.data
   },
 
   register: async (data: RegisterRequest) => {
     const response = await apiClient.post('/auth/register', data)
+    if (!response?.data?.data) {
+      throw new Error('Registration failed')
+    }
     return response.data.data
   },
 
@@ -36,6 +47,17 @@ export const authService = {
     const response = await apiClient.get('/auth/profile', {
       headers: { Authorization: `Bearer ${token}` }
     })
+    if (!response?.data?.data) {
+      throw new Error('Token validation failed')
+    }
+    return response.data.data
+  },
+
+  changePassword: async (data: ChangePasswordRequest): Promise<{ message: string }> => {
+    const response = await apiClient.put('/auth/change-password', data)
+    if (!response?.data?.data) {
+      throw new Error('Password change failed')
+    }
     return response.data.data
   },
 }

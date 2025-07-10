@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 import { AuthModule } from './modules/auth/auth.module';
@@ -8,6 +9,8 @@ import { ClientsModule } from './modules/clients/clients.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { QuotationsModule } from './modules/quotations/quotations.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { WorkflowModule } from './modules/workflow/workflow.module';
 import { PdfModule } from './modules/pdf/pdf.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { SettingsModule } from './modules/settings/settings.module';
@@ -23,6 +26,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute
@@ -36,6 +40,8 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     ProjectsModule,
     QuotationsModule,
     InvoicesModule,
+    NotificationsModule,
+    WorkflowModule,
     PdfModule,
     ReportsModule,
     SettingsModule,

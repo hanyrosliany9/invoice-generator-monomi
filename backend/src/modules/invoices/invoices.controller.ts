@@ -236,9 +236,11 @@ export class InvoicesController {
   })
   async updateStatus(
     @Param('id') id: string,
-    @Body('status') status: InvoiceStatus,
+    @Body('status') status: string,
   ) {
-    return this.invoicesService.updateStatus(id, status);
+    // Convert lowercase status to uppercase enum
+    const normalizedStatus = status.toUpperCase() as InvoiceStatus;
+    return this.invoicesService.updateStatus(id, normalizedStatus);
   }
 
   @Patch(':id/materai')
