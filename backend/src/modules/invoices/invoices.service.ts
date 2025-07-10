@@ -107,14 +107,20 @@ export class InvoicesService {
       quotationId,
       clientId: quotation.clientId,
       projectId: quotation.projectId,
-      amountPerProject: quotation.amountPerProject.toNumber(),
-      totalAmount: quotation.totalAmount.toNumber(),
+      amountPerProject: parseFloat(quotation.amountPerProject.toString()),
+      totalAmount: parseFloat(quotation.totalAmount.toString()),
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
       paymentInfo: 'Bank BCA: 1234567890 a.n. Perusahaan\nBank Mandiri: 0987654321 a.n. Perusahaan',
       terms: quotation.terms,
     };
 
-    return this.create(invoiceData, userId);
+    // Create invoice and update quotation status
+    const invoice = await this.create(invoiceData, userId);
+    
+    // Update quotation status to indicate it has been converted to invoice
+    await this.quotationsService.updateStatus(quotationId, QuotationStatus.APPROVED);
+    
+    return invoice;
   }
 
   async findAll(page = 1, limit = 10, status?: InvoiceStatus) {

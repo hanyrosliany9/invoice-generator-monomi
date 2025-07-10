@@ -14,15 +14,19 @@ import { QuotationsService } from './quotations.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ApiBearerAuth, ApiTags, ApiQuery, ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiQuery, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuotationStatus } from '@prisma/client';
+import { InvoicesService } from '../invoices/invoices.service';
 
 @ApiTags('quotations')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('quotations')
 export class QuotationsController {
-  constructor(private readonly quotationsService: QuotationsService) {}
+  constructor(
+    private readonly quotationsService: QuotationsService,
+    private readonly invoicesService: InvoicesService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Buat quotation baru' })
@@ -78,6 +82,35 @@ export class QuotationsController {
     @Body() body: { status: QuotationStatus },
   ) {
     return this.quotationsService.updateStatus(id, body.status);
+  }
+
+  @Post(':id/generate-invoice')
+  @ApiOperation({ summary: 'Generate invoice dari quotation yang disetujui' })
+  @ApiResponse({
+    status: 201,
+    description: 'Invoice berhasil dibuat dari quotation',
+    schema: {
+      type: 'object',
+      properties: {
+        invoiceId: { type: 'string' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Quotation belum disetujui atau sudah memiliki invoice',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Quotation tidak ditemukan',
+  })
+  async generateInvoice(@Param('id') id: string, @Request() req) {
+    const invoice = await this.invoicesService.createFromQuotation(id, req.user.id);
+    return {
+      invoiceId: invoice.id,
+      message: 'Invoice berhasil dibuat dari quotation',
+    };
   }
 
   @Delete(':id')
