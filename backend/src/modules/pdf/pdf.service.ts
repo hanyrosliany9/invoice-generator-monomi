@@ -2,10 +2,17 @@ import { Injectable } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
 import { join } from 'path';
 import { readFileSync } from 'fs';
+import { SettingsService } from '../settings/settings.service';
+import { InvoicesService } from '../invoices/invoices.service';
+import { QuotationsService } from '../quotations/quotations.service';
 
 @Injectable()
 export class PdfService {
   private templatePath = join(__dirname, 'templates');
+
+  constructor(
+    private readonly settingsService: SettingsService,
+  ) {}
 
   async generateInvoicePDF(invoiceData: any): Promise<Buffer> {
     const browser = await puppeteer.launch({
@@ -20,7 +27,7 @@ export class PdfService {
       await page.setViewport({ width: 794, height: 1123 });
       
       // Generate HTML content
-      const htmlContent = this.generateInvoiceHTML(invoiceData);
+      const htmlContent = await this.generateInvoiceHTML(invoiceData);
       
       // Set content and generate PDF
       await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
@@ -55,7 +62,7 @@ export class PdfService {
       await page.setViewport({ width: 794, height: 1123 });
       
       // Generate HTML content
-      const htmlContent = this.generateQuotationHTML(quotationData);
+      const htmlContent = await this.generateQuotationHTML(quotationData);
       
       // Set content and generate PDF
       await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
@@ -77,7 +84,26 @@ export class PdfService {
     }
   }
 
-  private generateInvoiceHTML(invoiceData: any): string {
+  private async getCompanySettings() {
+    try {
+      return await this.settingsService.getCompanySettings();
+    } catch (error) {
+      // Return default fallback settings
+      return {
+        companyName: 'PT Teknologi Indonesia',
+        address: 'Jakarta, Indonesia',
+        phone: '',
+        email: '',
+        website: '',
+        taxNumber: '',
+        bankBCA: '',
+        bankMandiri: '',
+        bankBNI: '',
+      };
+    }
+  }
+
+  private async generateInvoiceHTML(invoiceData: any): Promise<string> {
     const {
       invoiceNumber,
       creationDate,
@@ -91,6 +117,9 @@ export class PdfService {
       materaiRequired,
       materaiApplied,
     } = invoiceData;
+
+    // Get company settings
+    const companyData = await this.getCompanySettings();
 
     // Format currency in Indonesian Rupiah
     const formatIDR = (amount: number) => {
@@ -310,12 +339,13 @@ export class PdfService {
     <!-- Header -->
     <div class="header">
       <div class="company-info">
-        <div class="company-name">Sistem Manajemen Bisnis</div>
+        <div class="company-name">${companyData.companyName}</div>
         <div class="company-details">
-          Jl. Contoh No. 123<br>
-          Jakarta 12345, Indonesia<br>
-          Telp: (021) 123-4567<br>
-          Email: info@bisnis.co.id
+          ${companyData.address}<br>
+          ${companyData.phone ? `Telp: ${companyData.phone}<br>` : ''}
+          ${companyData.email ? `Email: ${companyData.email}<br>` : ''}
+          ${companyData.website ? `Website: ${companyData.website}<br>` : ''}
+          ${companyData.taxNumber ? `NPWP: ${companyData.taxNumber}` : ''}
         </div>
       </div>
       <div class="invoice-title">
@@ -429,6 +459,14 @@ export class PdfService {
     <div class="payment-info">
       <div class="payment-title">Informasi Pembayaran:</div>
       <div class="payment-details">${paymentInfo}</div>
+      ${companyData.bankBCA || companyData.bankMandiri || companyData.bankBNI ? `
+      <div style="margin-top: 10px;">
+        <strong>Rekening Bank:</strong><br>
+        ${companyData.bankBCA ? `BCA: ${companyData.bankBCA} a.n. ${companyData.companyName}<br>` : ''}
+        ${companyData.bankMandiri ? `Mandiri: ${companyData.bankMandiri} a.n. ${companyData.companyName}<br>` : ''}
+        ${companyData.bankBNI ? `BNI: ${companyData.bankBNI} a.n. ${companyData.companyName}<br>` : ''}
+      </div>
+      ` : ''}
     </div>
 
     <!-- Terms and Conditions -->
@@ -444,7 +482,7 @@ export class PdfService {
       <div class="signature-box">
         <div>Hormat kami,</div>
         <div class="signature-line">
-          Sistem Manajemen Bisnis
+          ${companyData.companyName}
         </div>
       </div>
     </div>
@@ -458,7 +496,7 @@ export class PdfService {
 </html>`;
   }
 
-  private generateQuotationHTML(quotationData: any): string {
+  private async generateQuotationHTML(quotationData: any): Promise<string> {
     const {
       quotationNumber,
       date,
@@ -470,6 +508,9 @@ export class PdfService {
       terms,
     } = quotationData;
 
+    // Get company settings
+    const companyData = await this.getCompanySettings();
+
     // Format currency in Indonesian Rupiah
     const formatIDR = (amount: number) => {
       return new Intl.NumberFormat('id-ID', {
@@ -480,12 +521,12 @@ export class PdfService {
       }).format(amount);
     };
 
-    // Format date in Indonesian format
+    // Format date in Indonesian format (short format for compact design)
     const formatDate = (date: string) => {
       return new Date(date).toLocaleDateString('id-ID', {
         year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
       });
     };
 
@@ -500,299 +541,340 @@ export class PdfService {
     body {
       font-family: 'Arial', sans-serif;
       margin: 0;
-      padding: 0;
+      padding: 15mm;
       background-color: #ffffff;
       color: #333;
-      line-height: 1.6;
+      line-height: 1.4;
+      font-size: 12px;
     }
     .quotation-container {
-      max-width: 21cm;
+      max-width: 190mm;
       margin: 0 auto;
-      padding: 1cm;
       background-color: white;
     }
+    
+    /* Header - Clean and Professional */
     .header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2cm;
-      border-bottom: 3px solid #2563eb;
-      padding-bottom: 1cm;
+      align-items: flex-start;
+      margin-bottom: 20mm;
+      padding-bottom: 5mm;
+      border-bottom: 2px solid #1e40af;
     }
     .company-info {
       flex: 1;
     }
     .company-name {
-      font-size: 28px;
+      font-size: 20px;
       font-weight: bold;
-      color: #2563eb;
-      margin-bottom: 0.5cm;
+      color: #1e40af;
+      margin-bottom: 2mm;
     }
-    .company-details {
-      font-size: 14px;
+    .company-tagline {
+      font-size: 11px;
       color: #666;
-      line-height: 1.4;
+      margin-bottom: 3mm;
     }
     .quotation-title {
       text-align: right;
       flex: 1;
     }
     .quotation-title h1 {
-      font-size: 32px;
-      color: #2563eb;
+      font-size: 28px;
+      color: #1e40af;
       margin: 0;
       font-weight: bold;
     }
     .quotation-number {
-      font-size: 16px;
+      font-size: 14px;
       color: #666;
-      margin-top: 0.5cm;
+      margin-top: 2mm;
     }
+    .quotation-date {
+      font-size: 12px;
+      color: #666;
+      margin-top: 1mm;
+    }
+    
+    /* Two Column Layout */
     .quotation-details {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 2cm;
+      margin-bottom: 15mm;
     }
     .client-info, .quotation-info {
       flex: 1;
     }
     .client-info {
-      margin-right: 2cm;
+      margin-right: 15mm;
     }
     .section-title {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: bold;
-      color: #2563eb;
-      margin-bottom: 0.5cm;
-      border-bottom: 1px solid #2563eb;
-      padding-bottom: 0.2cm;
+      color: #1e40af;
+      margin-bottom: 3mm;
+      text-transform: uppercase;
     }
-    .info-row {
-      display: flex;
-      margin-bottom: 0.3cm;
+    .info-item {
+      margin-bottom: 1.5mm;
+      font-size: 11px;
     }
     .info-label {
       font-weight: bold;
-      width: 120px;
       color: #555;
+      display: inline-block;
+      width: 35mm;
     }
-    .info-value {
-      flex: 1;
-    }
-    .project-details {
-      margin-bottom: 2cm;
-      padding: 1cm;
-      background-color: #f9f9f9;
-      border-left: 4px solid #2563eb;
-    }
-    .amount-table {
+    
+    /* Professional Service Table */
+    .service-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 2cm;
+      margin-bottom: 10mm;
+      border: 1px solid #ddd;
     }
-    .amount-table th,
-    .amount-table td {
-      padding: 0.5cm;
+    .service-table th {
+      background-color: #1e40af;
+      color: white;
+      padding: 3mm;
+      text-align: center;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .service-table th:first-child {
+      width: 8%;
+      text-align: center;
+    }
+    .service-table th:nth-child(2) {
+      width: 52%;
       text-align: left;
-      border-bottom: 1px solid #ddd;
     }
-    .amount-table th {
-      background-color: #2563eb;
+    .service-table th:nth-child(3),
+    .service-table th:nth-child(4),
+    .service-table th:nth-child(5) {
+      width: 13.33%;
+      text-align: right;
+    }
+    .service-table td {
+      padding: 3mm;
+      border-bottom: 1px solid #eee;
+      font-size: 11px;
+    }
+    .service-table td:first-child {
+      text-align: center;
+      font-weight: bold;
+    }
+    .service-table td:nth-child(3),
+    .service-table td:nth-child(4),
+    .service-table td:nth-child(5) {
+      text-align: right;
+    }
+    .service-table tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    
+    /* Summary Section */
+    .summary-table {
+      width: 50%;
+      margin-left: auto;
+      border-collapse: collapse;
+      margin-bottom: 15mm;
+    }
+    .summary-table td {
+      padding: 2mm 5mm;
+      font-size: 11px;
+      border-bottom: 1px solid #eee;
+    }
+    .summary-table td:first-child {
+      text-align: right;
+      font-weight: bold;
+      color: #555;
+    }
+    .summary-table td:last-child {
+      text-align: right;
+      width: 40mm;
+    }
+    .summary-total {
+      background-color: #1e40af;
       color: white;
       font-weight: bold;
+      font-size: 12px;
     }
-    .amount-table .amount {
-      text-align: right;
-      font-weight: bold;
+    
+    /* Footer Layout */
+    .footer-section {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15mm;
     }
-    .total-row {
-      background-color: #f9f9f9;
-      font-weight: bold;
-      font-size: 16px;
-    }
-    .validity-notice {
-      background-color: #fef3c7;
-      border: 1px solid #f59e0b;
-      border-radius: 4px;
-      padding: 1cm;
-      margin-bottom: 2cm;
-    }
-    .validity-title {
-      font-weight: bold;
-      color: #f59e0b;
-      margin-bottom: 0.3cm;
-    }
-    .terms {
-      margin-bottom: 2cm;
-      padding: 1cm;
-      background-color: #f9f9f9;
-      border-radius: 4px;
+    .terms-section {
+      flex: 1;
+      margin-right: 15mm;
     }
     .terms-title {
-      font-weight: bold;
-      color: #2563eb;
-      margin-bottom: 0.5cm;
-    }
-    .footer {
-      margin-top: 3cm;
-      text-align: center;
       font-size: 12px;
+      font-weight: bold;
+      color: #1e40af;
+      margin-bottom: 3mm;
+    }
+    .terms-content {
+      font-size: 10px;
+      line-height: 1.3;
       color: #666;
-      border-top: 1px solid #ddd;
-      padding-top: 1cm;
     }
     .signature-section {
-      margin-top: 2cm;
-      text-align: right;
+      flex: 1;
+      text-align: center;
     }
     .signature-box {
-      display: inline-block;
+      border: 1px solid #ddd;
+      padding: 8mm;
+      background-color: #f9f9f9;
+    }
+    .signature-title {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 8mm;
+    }
+    .signature-name {
+      font-size: 12px;
+      font-weight: bold;
+      color: #1e40af;
+    }
+    .signature-position {
+      font-size: 10px;
+      color: #666;
+      margin-top: 1mm;
+    }
+    
+    /* Contact Bar */
+    .contact-bar {
+      margin-top: 10mm;
       text-align: center;
-      width: 200px;
+      padding: 3mm;
+      background-color: #f3f4f6;
+      border-radius: 2px;
+      font-size: 10px;
+      color: #666;
     }
-    .signature-line {
-      border-top: 1px solid #333;
-      margin-top: 3cm;
-      padding-top: 0.3cm;
-    }
+    
     @media print {
-      body { margin: 0; }
-      .quotation-container { margin: 0; padding: 0.5cm; }
+      body { 
+        margin: 0; 
+        padding: 10mm;
+      }
+      .quotation-container { 
+        margin: 0; 
+        padding: 0;
+      }
     }
   </style>
 </head>
 <body>
   <div class="quotation-container">
-    <!-- Header -->
+    <!-- Professional Header -->
     <div class="header">
       <div class="company-info">
-        <div class="company-name">Sistem Manajemen Bisnis</div>
-        <div class="company-details">
-          Jl. Contoh No. 123<br>
-          Jakarta 12345, Indonesia<br>
-          Telp: (021) 123-4567<br>
-          Email: info@bisnis.co.id
-        </div>
+        <div class="company-name">${companyData.companyName}</div>
+        <div class="company-tagline">Professional Business Solutions</div>
       </div>
       <div class="quotation-title">
         <h1>QUOTATION</h1>
         <div class="quotation-number">No: ${quotationNumber}</div>
+        <div class="quotation-date">Date: ${formatDate(date)}</div>
       </div>
     </div>
 
-    <!-- Quotation Details -->
+    <!-- Clean Two-Column Layout -->
     <div class="quotation-details">
       <div class="client-info">
-        <div class="section-title">Kepada:</div>
-        <div class="info-row">
-          <div class="info-label">Nama:</div>
-          <div class="info-value">${client.name}</div>
-        </div>
-        ${client.company ? `
-        <div class="info-row">
-          <div class="info-label">Perusahaan:</div>
-          <div class="info-value">${client.company}</div>
-        </div>
-        ` : ''}
-        <div class="info-row">
-          <div class="info-label">Telepon:</div>
-          <div class="info-value">${client.phone}</div>
-        </div>
-        ${client.email ? `
-        <div class="info-row">
-          <div class="info-label">Email:</div>
-          <div class="info-value">${client.email}</div>
-        </div>
-        ` : ''}
-        ${client.address ? `
-        <div class="info-row">
-          <div class="info-label">Alamat:</div>
-          <div class="info-value">${client.address}</div>
-        </div>
-        ` : ''}
+        <div class="section-title">Quotation To</div>
+        <div class="info-item">${client.name}</div>
+        ${client.company ? `<div class="info-item">${client.company}</div>` : ''}
+        <div class="info-item">Phone: ${client.phone || 'N/A'}</div>
+        ${client.email ? `<div class="info-item">Email: ${client.email}</div>` : ''}
+        ${client.address ? `<div class="info-item">${client.address}</div>` : ''}
       </div>
       
       <div class="quotation-info">
-        <div class="section-title">Detail Quotation:</div>
-        <div class="info-row">
-          <div class="info-label">Tanggal:</div>
-          <div class="info-value">${formatDate(date)}</div>
+        <div class="section-title">Quotation Details</div>
+        <div class="info-item">
+          <span class="info-label">Quotation No:</span> ${quotationNumber}
         </div>
-        <div class="info-row">
-          <div class="info-label">Berlaku Hingga:</div>
-          <div class="info-value">${formatDate(validUntil)}</div>
+        <div class="info-item">
+          <span class="info-label">Quotation Date:</span> ${formatDate(date)}
+        </div>
+        <div class="info-item">
+          <span class="info-label">Valid Until:</span> ${formatDate(validUntil)}
+        </div>
+        <div class="info-item">
+          <span class="info-label">Payment Method:</span> Transfer Bank
         </div>
       </div>
     </div>
 
-    <!-- Project Details -->
-    <div class="project-details">
-      <div class="section-title">Detail Proyek:</div>
-      <div class="info-row">
-        <div class="info-label">Nomor Proyek:</div>
-        <div class="info-value">${project.number}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Deskripsi:</div>
-        <div class="info-value">${project.description}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Output:</div>
-        <div class="info-value">${project.output}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Tipe:</div>
-        <div class="info-value">${project.type === 'PRODUCTION' ? 'Produksi' : 'Media Sosial'}</div>
-      </div>
-    </div>
-
-    <!-- Amount Table -->
-    <table class="amount-table">
+    <!-- Professional Service Table -->
+    <table class="service-table">
       <thead>
         <tr>
-          <th>Deskripsi</th>
-          <th>Jumlah</th>
+          <th>#</th>
+          <th>Description</th>
+          <th>Price</th>
+          <th>Quantity</th>
+          <th>Amount</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>Biaya Proyek: ${project.description}</td>
-          <td class="amount">${formatIDR(amountPerProject)}</td>
-        </tr>
-        <tr class="total-row">
-          <td><strong>Total</strong></td>
-          <td class="amount"><strong>${formatIDR(totalAmount)}</strong></td>
+          <td>01</td>
+          <td>${project.description}</td>
+          <td>${formatIDR(amountPerProject)}</td>
+          <td>1</td>
+          <td>${formatIDR(amountPerProject)}</td>
         </tr>
       </tbody>
     </table>
 
-    <!-- Validity Notice -->
-    <div class="validity-notice">
-      <div class="validity-title">📅 Masa Berlaku Quotation</div>
-      <div>Quotation ini berlaku hingga ${formatDate(validUntil)}. Setelah tanggal tersebut, harga dapat berubah.</div>
-    </div>
+    <!-- Summary Table -->
+    <table class="summary-table">
+      <tr>
+        <td>Sub Total</td>
+        <td>${formatIDR(amountPerProject)}</td>
+      </tr>
+      <tr>
+        <td>Tax (PPN 11%)</td>
+        <td>${formatIDR(Number(amountPerProject) * 0.11)}</td>
+      </tr>
+      <tr class="summary-total">
+        <td>TOTAL</td>
+        <td>${formatIDR(totalAmount)}</td>
+      </tr>
+    </table>
 
-    <!-- Terms and Conditions -->
-    ${terms ? `
-    <div class="terms">
-      <div class="terms-title">Syarat & Ketentuan:</div>
-      <div>${terms}</div>
-    </div>
-    ` : ''}
-
-    <!-- Signature Section -->
-    <div class="signature-section">
-      <div class="signature-box">
-        <div>Hormat kami,</div>
-        <div class="signature-line">
-          Sistem Manajemen Bisnis
+    <!-- Footer Section -->
+    <div class="footer-section">
+      <div class="terms-section">
+        <div class="terms-title">Terms & Conditions</div>
+        <div class="terms-content">
+          ${terms || 'Payment due within 30 days. All prices in Indonesian Rupiah (IDR). This quotation is valid until the specified date.'}
+        </div>
+      </div>
+      
+      <div class="signature-section">
+        <div class="signature-box">
+          <div class="signature-title">Authorized Signature</div>
+          <div style="height: 15mm;"></div>
+          <div class="signature-name">${companyData.companyName}</div>
+          <div class="signature-position">Management</div>
         </div>
       </div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-      <div>Terima kasih atas kepercayaan Anda. Dokumen ini dibuat secara otomatis oleh sistem.</div>
+    <!-- Contact Information Bar -->
+    <div class="contact-bar">
+      Contact: ${companyData.phone || 'N/A'} | ${companyData.address || 'N/A'} | ${companyData.email || 'N/A'}
     </div>
   </div>
 </body>
