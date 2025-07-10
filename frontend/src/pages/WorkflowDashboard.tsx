@@ -75,20 +75,18 @@ interface StatusStats {
 const workflowService = {
   getActiveWorkflows: async (): Promise<{ data: WorkflowItem[], total: number }> => {
     const response = await apiClient.get('/workflow/active')
-    const responseData = response?.data?.data || response?.data || {}
+    const responseData = response?.data?.data || {}
     return {
-      data: Array.isArray(responseData.data) ? responseData.data : Array.isArray(responseData) ? responseData : [],
+      data: Array.isArray(responseData.data) ? responseData.data : [],
       total: responseData.total || 0
     }
   },
 
   getWorkflowStats: async (): Promise<WorkflowStats> => {
     const response = await apiClient.get('/workflow/stats')
-    return response.data?.data || {
-      totalActive: 0,
-      pendingQuotations: 0,
-      activeInvoices: 0,
-      overdueItems: 0,
+    return response.data?.data?.data || {
+      quotations: [],
+      invoices: [],
       alerts: { overdueInvoices: 0, expiringQuotations: 0 }
     }
   },
