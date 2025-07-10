@@ -97,6 +97,12 @@ export const InvoicesPage: React.FC = () => {
     queryFn: projectService.getProjects
   })
 
+  // Debug: Log available data
+  React.useEffect(() => {
+    console.log('Available clients:', clients);
+    console.log('Available projects:', projects);
+  }, [clients, projects]);
+
   // Mutations
   const createMutation = useMutation({
     mutationFn: invoiceService.createInvoice,
@@ -230,14 +236,18 @@ export const InvoicesPage: React.FC = () => {
   }
 
   const handleFormSubmit = (values: any) => {
+    console.log('Form values being submitted:', values);
+    
     const data = {
       ...values,
       dueDate: values.dueDate.format('YYYY-MM-DD'),
       amountPerProject: safeNumber(values.amountPerProject),
       totalAmount: safeNumber(values.totalAmount),
       materaiRequired: requiresMaterai(safeNumber(values.totalAmount)),
-      materaiApplied: false
-    }
+      materaiApplied: values.materaiApplied || false
+    };
+    
+    console.log('Data being sent to API:', data);
 
     if (editingInvoice) {
       updateMutation.mutate({ id: editingInvoice.id, data })
