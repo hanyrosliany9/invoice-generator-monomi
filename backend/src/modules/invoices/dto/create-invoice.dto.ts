@@ -85,6 +85,15 @@ export class CreateInvoiceDto {
   terms?: string;
 
   @ApiProperty({
+    description: 'Apakah materai sudah ditempel',
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'Materai applied harus berupa boolean' })
+  materaiApplied?: boolean;
+
+  @ApiProperty({
     description: 'Status invoice',
     enum: InvoiceStatus,
     example: InvoiceStatus.DRAFT,
