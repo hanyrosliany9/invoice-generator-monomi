@@ -622,38 +622,39 @@ export const InvoicesPage: React.FC = () => {
           <Col xs={24} lg={8}>
             <Card 
               style={{
-                borderRadius: '16px',
-                border: '1px solid #16a34a',
-                boxShadow: '0 4px 12px rgba(34, 197, 94, 0.15)',
-                background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+                borderRadius: '20px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                color: '#ffffff',
                 transition: 'all 0.3s ease'
               }}
-              className="hover:shadow-lg hover:scale-[1.02]"
+              className="hover:shadow-2xl hover:scale-[1.02]"
             >
               {isLoading ? (
-                <Skeleton.Input active size="large" style={{ width: '100%', height: '120px' }} />
+                <Skeleton.Input active size="large" style={{ width: '100%', height: '120px', backgroundColor: 'rgba(255, 255, 255, 0.2)' }} />
               ) : (
                 <>
                   <Statistic
                     title="Sudah Dibayar"
                     value={formatIDR(stats.paidValue)}
                     prefix={<BankOutlined style={{ 
-                      fontSize: '24px', 
-                      color: '#52c41a',
-                      background: 'rgba(82, 196, 26, 0.1)',
-                      padding: '8px',
-                      borderRadius: '12px'
+                      fontSize: '32px', 
+                      color: '#ffffff',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      padding: '12px',
+                      borderRadius: '16px'
                     }} />}
                     valueStyle={{ 
-                      color: '#1e293b', 
-                      fontSize: '28px', 
-                      fontWeight: 700 
+                      color: '#ffffff', 
+                      fontSize: '32px', 
+                      fontWeight: 800 
                     }}
                   />
                   <Progress
                     percent={Math.round(paymentRate)}
                     size="small"
-                    strokeColor="#52c41a"
+                    strokeColor="rgba(255, 255, 255, 0.8)"
                     className="mt-2"
                   />
                 </>
