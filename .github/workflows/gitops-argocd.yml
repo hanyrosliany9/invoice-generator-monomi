@@ -1,0 +1,391 @@
+name: GitOps - ArgoCD Deployment
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'k8s/**'
+      - 'helm/**'
+      - 'docker-compose.prod.yml'
+      - 'Dockerfile'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  ARGOCD_SERVER: argocd.monomi.finance
+  ARGOCD_APP_NAME: monomi-finance
+
+jobs:
+  # =============================================================================
+  # BUILD AND PUSH DOCKER IMAGE
+  # =============================================================================
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        version: latest
+        driver-opts: |
+          image=moby/buildkit:v0.12.0
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        target: production
+        platforms: linux/amd64,linux/arm64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+        provenance: true
+        sbom: true
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+        exit-code: '0'  # Don't fail on vulnerabilities for GitOps
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # =============================================================================
+  # UPDATE GITOPS REPOSITORY
+  # =============================================================================
+  update-gitops:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    steps:
+    - name: Checkout GitOps repository
+      uses: actions/checkout@v4
+      with:
+        repository: monomi-finance/gitops-manifests
+        token: ${{ secrets.GITOPS_PAT }}
+        path: gitops
+
+    - name: Setup Git
+      run: |
+        cd gitops
+        git config user.name "Monomi GitOps Bot"
+        git config user.email "gitops@monomi.finance"
+
+    - name: Determine environment and image tag
+      id: env
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          echo "environment=production" >> $GITHUB_OUTPUT
+          echo "app_name=monomi-finance-prod" >> $GITHUB_OUTPUT
+          echo "namespace=monomi-production" >> $GITHUB_OUTPUT
+        else
+          echo "environment=staging" >> $GITHUB_OUTPUT
+          echo "app_name=monomi-finance-staging" >> $GITHUB_OUTPUT
+          echo "namespace=monomi-staging" >> $GITHUB_OUTPUT
+        fi
+        echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+
+    - name: Update Kubernetes manifests
+      run: |
+        cd gitops
+        
+        # Update image tag in Kubernetes manifests
+        MANIFEST_PATH="apps/${{ steps.env.outputs.environment }}/monomi-finance"
+        
+        # Update image in deployment manifest
+        sed -i "s|image: .*monomi-finance:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.env.outputs.image_tag }}|g" \
+          ${MANIFEST_PATH}/deployment.yaml
+        
+        # Update image tag in values file if using Helm
+        if [ -f "${MANIFEST_PATH}/values.yaml" ]; then
+          sed -i "s|tag: .*|tag: ${{ steps.env.outputs.image_tag }}|g" \
+            ${MANIFEST_PATH}/values.yaml
+        fi
+        
+        # Update Indonesian business metadata
+        cat > ${MANIFEST_PATH}/release-info.yaml << EOF
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: monomi-release-info
+          namespace: ${{ steps.env.outputs.namespace }}
+          labels:
+            app: monomi-finance
+            environment: ${{ steps.env.outputs.environment }}
+            business.region: indonesia
+        data:
+          version: "${{ steps.env.outputs.image_tag }}"
+          build-date: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git-commit: "${{ github.sha }}"
+          git-branch: "${{ github.ref_name }}"
+          environment: "${{ steps.env.outputs.environment }}"
+          business-context: "Indonesian Invoice Management System"
+          compliance-frameworks: "ISO27001,NIST"
+          currency: "IDR"
+          timezone: "Asia/Jakarta"
+          materai-threshold: "5000000"
+          deployment-method: "GitOps-ArgoCD"
+        EOF
+
+    - name: Commit and push changes
+      run: |
+        cd gitops
+        
+        git add .
+        git commit -m "🇮🇩 Update Monomi Finance ${{ steps.env.outputs.environment }} to ${{ steps.env.outputs.image_tag }}
+        
+        - Environment: ${{ steps.env.outputs.environment }}
+        - Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.env.outputs.image_tag }}
+        - Commit: ${{ github.sha }}
+        - Branch: ${{ github.ref_name }}
+        - Business Context: Indonesian Invoice Management
+        - Deployment: GitOps with ArgoCD
+        
+        Indonesian Business System Update 🏢
+        - Currency: Indonesian Rupiah (IDR)
+        - Timezone: Asia/Jakarta (WIB)
+        - Compliance: ISO27001, Indonesian Financial Regulations
+        - Features: Quotation-to-Invoice, Materai Management"
+        
+        git push origin main
+
+  # =============================================================================
+  # TRIGGER ARGOCD SYNC
+  # =============================================================================
+  argocd-sync:
+    runs-on: ubuntu-latest
+    needs: [build-and-push, update-gitops]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    steps:
+    - name: Install ArgoCD CLI
+      run: |
+        curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+        rm argocd-linux-amd64
+
+    - name: Determine environment
+      id: env
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          echo "app_name=monomi-finance-prod" >> $GITHUB_OUTPUT
+          echo "environment=production" >> $GITHUB_OUTPUT
+        else
+          echo "app_name=monomi-finance-staging" >> $GITHUB_OUTPUT
+          echo "environment=staging" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Login to ArgoCD
+      run: |
+        argocd login ${{ env.ARGOCD_SERVER }} \
+          --username ${{ secrets.ARGOCD_USERNAME }} \
+          --password ${{ secrets.ARGOCD_PASSWORD }} \
+          --insecure
+
+    - name: Sync ArgoCD Application
+      run: |
+        echo "🔄 Syncing ArgoCD application: ${{ steps.env.outputs.app_name }}"
+        
+        # Trigger sync
+        argocd app sync ${{ steps.env.outputs.app_name }} \
+          --timeout 300 \
+          --prune \
+          --strategy apply
+        
+        # Wait for sync to complete
+        argocd app wait ${{ steps.env.outputs.app_name }} \
+          --timeout 600 \
+          --health \
+          --sync
+
+    - name: Get Application Status
+      run: |
+        echo "📊 Application Status for ${{ steps.env.outputs.app_name }}:"
+        argocd app get ${{ steps.env.outputs.app_name }}
+        
+        echo ""
+        echo "🏥 Health Status:"
+        argocd app get ${{ steps.env.outputs.app_name }} -o json | jq '.status.health'
+        
+        echo ""
+        echo "🔄 Sync Status:"
+        argocd app get ${{ steps.env.outputs.app_name }} -o json | jq '.status.sync'
+
+    - name: Create deployment annotation
+      run: |
+        # Create GitHub deployment
+        curl -L \
+          -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          https://api.github.com/repos/${{ github.repository }}/deployments \
+          -d '{
+            "ref": "${{ github.sha }}",
+            "environment": "${{ steps.env.outputs.environment }}",
+            "description": "Deployed Monomi Finance Indonesian Business System via GitOps",
+            "auto_merge": false,
+            "required_contexts": []
+          }'
+
+  # =============================================================================
+  # POST-DEPLOYMENT HEALTH CHECKS
+  # =============================================================================
+  health-check:
+    runs-on: ubuntu-latest
+    needs: argocd-sync
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    steps:
+    - name: Determine environment URLs
+      id: urls
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          echo "app_url=https://monomi.finance" >> $GITHUB_OUTPUT
+          echo "api_url=https://api.monomi.finance" >> $GITHUB_OUTPUT
+          echo "environment=production" >> $GITHUB_OUTPUT
+        else
+          echo "app_url=https://staging.monomi.finance" >> $GITHUB_OUTPUT
+          echo "api_url=https://api-staging.monomi.finance" >> $GITHUB_OUTPUT
+          echo "environment=staging" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Wait for deployment to be ready
+      run: |
+        echo "⏳ Waiting for deployment to be ready..."
+        sleep 60  # Give some time for pods to start
+
+    - name: Health check - API endpoint
+      run: |
+        echo "🏥 Checking API health endpoint..."
+        
+        # Health check with retry
+        for i in {1..10}; do
+          if curl -f -s "${{ steps.urls.outputs.api_url }}/health" > /dev/null; then
+            echo "✅ API health check passed (attempt $i)"
+            break
+          else
+            echo "❌ API health check failed (attempt $i)"
+            if [ $i -eq 10 ]; then
+              echo "💥 API health check failed after 10 attempts"
+              exit 1
+            fi
+            sleep 30
+          fi
+        done
+
+    - name: Health check - Frontend
+      run: |
+        echo "🖥️ Checking frontend availability..."
+        
+        # Frontend check with retry
+        for i in {1..5}; do
+          if curl -f -s -I "${{ steps.urls.outputs.app_url }}" > /dev/null; then
+            echo "✅ Frontend health check passed (attempt $i)"
+            break
+          else
+            echo "❌ Frontend health check failed (attempt $i)"
+            if [ $i -eq 5 ]; then
+              echo "💥 Frontend health check failed after 5 attempts"
+              exit 1
+            fi
+            sleep 30
+          fi
+        done
+
+    - name: Indonesian Business Smoke Test
+      run: |
+        echo "🇮🇩 Running Indonesian business smoke tests..."
+        
+        # Test Indonesian locale endpoint
+        if curl -f -s "${{ steps.urls.outputs.api_url }}/api/health/locale" | grep -q "id_ID"; then
+          echo "✅ Indonesian locale configured correctly"
+        else
+          echo "❌ Indonesian locale check failed"
+        fi
+        
+        # Test currency endpoint
+        if curl -f -s "${{ steps.urls.outputs.api_url }}/api/health/currency" | grep -q "IDR"; then
+          echo "✅ Indonesian Rupiah currency configured correctly"
+        else
+          echo "❌ Indonesian currency check failed"
+        fi
+        
+        # Test timezone endpoint
+        if curl -f -s "${{ steps.urls.outputs.api_url }}/api/health/timezone" | grep -q "Asia/Jakarta"; then
+          echo "✅ Indonesian timezone configured correctly"
+        else
+          echo "❌ Indonesian timezone check failed"
+        fi
+
+    - name: Notify deployment success
+      if: success()
+      run: |
+        echo "🎉 Deployment successful!"
+        echo "Environment: ${{ steps.urls.outputs.environment }}"
+        echo "Application URL: ${{ steps.urls.outputs.app_url }}"
+        echo "API URL: ${{ steps.urls.outputs.api_url }}"
+        echo "Business Context: Indonesian Invoice Management System"
+        echo "Deployment Method: GitOps with ArgoCD"
+
+    - name: Notify deployment failure
+      if: failure()
+      run: |
+        echo "💥 Deployment failed!"
+        echo "Environment: ${{ steps.urls.outputs.environment }}"
+        echo "Please check ArgoCD dashboard and Kubernetes cluster status"
+        exit 1

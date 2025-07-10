@@ -1,0 +1,138 @@
+# =============================================================================
+# LOKI CONFIGURATION
+# Log Aggregation for Monomi Finance - Indonesian Business Management System
+# =============================================================================
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  http_server_read_timeout: 30s
+  http_server_write_timeout: 30s
+
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: boltdb-shipper
+      object_store: filesystem
+      schema: v11
+      index:
+        prefix: index_
+        period: 24h
+
+
+# Limits configuration for Indonesian business workload
+limits_config:
+  # General limits
+  enforce_metric_name: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+  creation_grace_period: 10m
+  
+  # Ingestion limits
+  ingestion_rate_mb: 10
+  ingestion_burst_size_mb: 20
+  max_line_size: 256000
+  max_line_size_truncate: false
+  
+  # Query limits  
+  max_entries_limit_per_query: 5000
+  max_global_streams_per_user: 10000
+  max_query_length: 721h
+  max_query_parallelism: 32
+  max_streams_per_user: 0
+  max_concurrent_tail_requests: 10
+  
+  # Retention (Indonesian financial data requirements)
+  retention_period: 2555d  # 7 years for Indonesian tax compliance
+
+# Log retention rules for Indonesian business compliance
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 2555d  # 7 years retention for Indonesian financial records
+
+# Indonesian business log parsing
+analytics:
+  reporting_enabled: false
+
+# Performance tuning for Indonesian business load
+ingester:
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 5m
+  max_chunk_age: 1h
+  chunk_target_size: 1048576
+  chunk_retain_period: 30s
+  max_transfer_retries: 0
+
+# Storage configuration optimized for Indonesian business logs
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /loki/boltdb-shipper-active
+    cache_location: /loki/boltdb-shipper-cache
+    cache_ttl: 24h
+    shared_store: filesystem
+  filesystem:
+    directory: /loki/chunks
+
+# Compactor for log cleanup
+compactor:
+  working_directory: /loki/boltdb-shipper-compactor
+  shared_store: filesystem
+
+# Frontend worker
+frontend_worker:
+  match_max_concurrent: true
+
+# Query scheduler
+query_scheduler:
+  max_outstanding_requests_per_tenant: 100
+
+# Distributor configuration
+distributor:
+  ring:
+    kvstore:
+      store: inmemory
+
+# Ruler configuration for Indonesian business alerts
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+  rule_path: /loki/rules
+  alertmanager_url: http://alertmanager:9093
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true
+  enable_alertmanager_v2: true
+
+# Tracing configuration
+tracing:
+  enabled: false

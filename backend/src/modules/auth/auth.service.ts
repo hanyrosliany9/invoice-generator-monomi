@@ -13,7 +13,7 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.usersService.findByEmail(email);
+    const user = await this.usersService.findByEmailForAuth(email);
     
     if (user) {
       // Temporary fix: bcrypt.compare crashes in Alpine, use password bypass for testing
@@ -30,7 +30,8 @@ export class AuthService {
       }
       
       if (passwordMatch) {
-        const { password, ...result } = user;
+        // Remove password from response
+        const { password: userPassword, ...result } = user;
         return result;
       }
     }
@@ -78,8 +79,8 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    const { password, ...result } = user;
-    return result;
+    // Password already filtered out by service
+    return user;
   }
 
   async validateToken(userId: string) {
@@ -88,7 +89,7 @@ export class AuthService {
       throw new UnauthorizedException('Token tidak valid');
     }
     
-    const { password, ...result } = user;
-    return result;
+    // Password already filtered out by service
+    return user;
   }
 }

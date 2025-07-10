@@ -1,0 +1,317 @@
+# =============================================================================
+# PROMTAIL CONFIGURATION
+# Log Collection for Monomi Finance - Indonesian Business Management System
+# =============================================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # =============================================================================
+  # SYSTEM LOGS
+  # =============================================================================
+  - job_name: system-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: system-logs
+          environment: production
+          service: monomi-finance
+          country: indonesia
+          __path__: /var/log/syslog
+
+  # =============================================================================
+  # DOCKER CONTAINER LOGS - MONOMI FINANCE SERVICES
+  # =============================================================================
+  - job_name: docker-containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["logging=promtail"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container_name'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'logstream'
+      - source_labels: ['__meta_docker_container_label_logging_job_name']
+        target_label: 'job'
+
+  # =============================================================================
+  # MONOMI BACKEND LOGS
+  # =============================================================================
+  - job_name: monomi-backend
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: monomi-backend
+          service: monomi-finance
+          component: backend
+          environment: production
+          country: indonesia
+          business_type: invoice-management
+          __path__: /var/lib/docker/containers/*/monomi-backend-*.log
+    pipeline_stages:
+      # Parse JSON logs from NestJS
+      - json:
+          expressions:
+            timestamp: timestamp
+            level: level
+            message: message
+            context: context
+            trace: trace
+            user_id: userId
+            invoice_id: invoiceId
+            quotation_id: quotationId
+            amount_idr: amountIDR
+            materai_required: materiRequired
+      
+      # Extract Indonesian business metrics
+      - regex:
+          expression: '(?P<business_event>invoice_created|quotation_approved|materai_required|payment_received)'
+          source: message
+      
+      # Add business labels
+      - labels:
+          level:
+          context:
+          business_event:
+          user_id:
+          invoice_id:
+          quotation_id:
+      
+      # Set timestamp
+      - timestamp:
+          source: timestamp
+          format: RFC3339
+
+  # =============================================================================
+  # MONOMI FRONTEND LOGS
+  # =============================================================================
+  - job_name: monomi-frontend
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: monomi-frontend
+          service: monomi-finance
+          component: frontend
+          environment: production
+          country: indonesia
+          __path__: /var/lib/docker/containers/*/monomi-frontend-*.log
+    pipeline_stages:
+      # Parse console logs and React errors
+      - regex:
+          expression: '(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z) (?P<level>\w+) (?P<message>.*)'
+      
+      # Extract user interactions
+      - regex:
+          expression: '(?P<user_action>login|logout|invoice_view|quotation_create|dashboard_load)'
+          source: message
+      
+      - labels:
+          level:
+          user_action:
+      
+      - timestamp:
+          source: timestamp
+          format: RFC3339
+
+  # =============================================================================
+  # POSTGRESQL LOGS
+  # =============================================================================
+  - job_name: postgresql
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: postgresql
+          service: database
+          component: postgres
+          environment: production
+          country: indonesia
+          __path__: /var/lib/docker/containers/*/postgres-*.log
+    pipeline_stages:
+      # Parse PostgreSQL log format
+      - regex:
+          expression: '(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} \w+) \[(?P<pid>\d+)\] (?P<level>\w+): (?P<message>.*)'
+      
+      # Extract SQL operation types
+      - regex:
+          expression: '(?P<sql_operation>SELECT|INSERT|UPDATE|DELETE|CREATE|DROP)'
+          source: message
+      
+      # Extract slow queries (Indonesian business context)
+      - regex:
+          expression: 'duration: (?P<duration>\d+\.\d+) ms'
+          source: message
+      
+      - labels:
+          level:
+          sql_operation:
+          pid:
+      
+      - timestamp:
+          source: timestamp
+          format: '2006-01-02 15:04:05.000 MST'
+
+  # =============================================================================
+  # REDIS LOGS
+  # =============================================================================
+  - job_name: redis
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: redis
+          service: cache
+          component: redis
+          environment: production
+          country: indonesia
+          __path__: /var/lib/docker/containers/*/redis-*.log
+    pipeline_stages:
+      # Parse Redis log format
+      - regex:
+          expression: '(?P<pid>\d+):(?P<role>\w+) (?P<timestamp>\d{2} \w+ \d{4} \d{2}:\d{2}:\d{2}\.\d{3}) (?P<level>.) (?P<message>.*)'
+      
+      - labels:
+          level:
+          role:
+          pid:
+
+  # =============================================================================
+  # NGINX ACCESS & ERROR LOGS
+  # =============================================================================
+  - job_name: nginx-access
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nginx-access
+          service: webserver
+          component: nginx
+          log_type: access
+          environment: production
+          country: indonesia
+          __path__: /var/lib/docker/containers/*/nginx-*-access.log
+    pipeline_stages:
+      # Parse Nginx access log format
+      - regex:
+          expression: '(?P<remote_addr>\S+) - (?P<remote_user>\S+) \[(?P<timestamp>[^\]]+)\] "(?P<method>\S+) (?P<path>\S+) (?P<protocol>\S+)" (?P<status>\d+) (?P<bytes_sent>\d+) "(?P<referer>[^"]*)" "(?P<user_agent>[^"]*)"'
+      
+      # Extract Indonesian business endpoints
+      - regex:
+          expression: '\/api\/(?P<api_endpoint>invoices|quotations|materai|clients|dashboard)'
+          source: path
+      
+      - labels:
+          method:
+          status:
+          api_endpoint:
+          remote_addr:
+      
+      - timestamp:
+          source: timestamp
+          format: '02/Jan/2006:15:04:05 -0700'
+
+  - job_name: nginx-error
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nginx-error
+          service: webserver
+          component: nginx
+          log_type: error
+          environment: production
+          country: indonesia
+          __path__: /var/lib/docker/containers/*/nginx-*-error.log
+
+  # =============================================================================
+  # SECURITY AUDIT LOGS
+  # =============================================================================
+  - job_name: security-audit
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: security-audit
+          service: security
+          component: audit
+          environment: production
+          country: indonesia
+          compliance: iso27001
+          __path__: /var/log/audit/audit.log
+    pipeline_stages:
+      # Parse audit log entries
+      - regex:
+          expression: 'type=(?P<audit_type>\w+) msg=audit\((?P<timestamp>\d+\.\d+):\d+\): (?P<message>.*)'
+      
+      # Extract security events
+      - regex:
+          expression: '(?P<security_event>login|logout|failed_auth|privilege_escalation|file_access)'
+          source: message
+      
+      - labels:
+          audit_type:
+          security_event:
+      
+      - timestamp:
+          source: timestamp
+          format: unix
+
+  # =============================================================================
+  # INDONESIAN BUSINESS SPECIFIC LOGS
+  # =============================================================================
+  - job_name: materai-compliance
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: materai-compliance
+          service: compliance
+          component: materai
+          environment: production
+          country: indonesia
+          regulation: materai-duty
+          __path__: /var/lib/docker/containers/*/materai-*.log
+    pipeline_stages:
+      # Parse materai compliance logs
+      - json:
+          expressions:
+            timestamp: timestamp
+            invoice_id: invoiceId
+            amount_idr: amountIDR
+            materai_required: materiRequired
+            materai_applied: materiApplied
+            compliance_status: complianceStatus
+      
+      - labels:
+          invoice_id:
+          materai_required:
+          materai_applied:
+          compliance_status:
+      
+      - timestamp:
+          source: timestamp
+          format: RFC3339
+
+# =============================================================================
+# GLOBAL CONFIGURATION
+# =============================================================================
+
+# Limits for Indonesian business log volume
+limits_config:
+  readline_rate: 10000
+  readline_burst: 20000

@@ -13,37 +13,37 @@ export const dashboardService = {
   // Get quotation statistics
   getQuotationStats: async (): Promise<QuotationStats> => {
     const response = await apiClient.get('/quotations/stats')
-    return response.data
+    return response.data.data
   },
 
   // Get recent quotations
   getRecentQuotations: async (limit: number = 5): Promise<RecentQuotation[]> => {
     const response = await apiClient.get(`/quotations/recent?limit=${limit}`)
-    return response.data
+    return response.data.data
   },
 
   // Get invoice statistics
   getInvoiceStats: async (): Promise<InvoiceStats> => {
     const response = await apiClient.get('/invoices/stats')
-    return response.data
+    return response.data.data
   },
 
   // Get recent invoices
   getRecentInvoices: async (limit: number = 5): Promise<RecentInvoice[]> => {
     const response = await apiClient.get(`/invoices/recent?limit=${limit}`)
-    return response.data
+    return response.data.data
   },
 
   // Get client statistics
   getClientStats: async (): Promise<ClientStats> => {
     const response = await apiClient.get('/clients/stats')
-    return response.data
+    return response.data.data
   },
 
   // Get project statistics
   getProjectStats: async (): Promise<ProjectStats> => {
     const response = await apiClient.get('/projects/stats')
-    return response.data
+    return response.data.data
   },
 
   // Get combined dashboard statistics

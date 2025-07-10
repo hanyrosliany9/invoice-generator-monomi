@@ -33,6 +33,30 @@ const RevenueChart: React.FC<RevenueChartProps> = ({
     formattedRevenue: formatCompactCurrency(item.amount)
   }))
 
+  // Handle empty data state based on 2025 best practices
+  if (chartData.length === 0 || chartData.every(item => item.revenue === 0)) {
+    return (
+      <div 
+        style={{ 
+          width: '100%', 
+          height: `${height}px`,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: '#fafafa',
+          border: '1px dashed #d9d9d9',
+          borderRadius: '8px',
+          color: '#8c8c8c'
+        }}
+      >
+        <div style={{ fontSize: '24px', marginBottom: '8px' }}>📊</div>
+        <div style={{ fontSize: '14px', fontWeight: 500 }}>Tidak Ada Data Pendapatan</div>
+        <div style={{ fontSize: '12px', marginTop: '4px' }}>Data akan muncul setelah ada transaksi</div>
+      </div>
+    )
+  }
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -83,8 +107,15 @@ const RevenueChart: React.FC<RevenueChartProps> = ({
             stroke="#1e40af"
             strokeWidth={3}
             dot={{ fill: '#1e40af', strokeWidth: 2, r: 6 }}
-            activeDot={{ r: 8, fill: '#1e40af' }}
+            activeDot={{ 
+              r: 8, 
+              fill: '#1e40af', 
+              stroke: '#ffffff', 
+              strokeWidth: 2,
+              filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.2))'
+            }}
             name="Pendapatan Bulanan"
+            connectNulls={false}
           />
         </LineChart>
       </ResponsiveContainer>

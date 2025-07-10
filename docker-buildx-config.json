@@ -1,0 +1,39 @@
+{
+  "buildkitVersion": "v0.12.0",
+  "config": {
+    "buildx": {
+      "default": {
+        "use": true,
+        "platform": "linux/amd64"
+      },
+      "builders": {
+        "multiarch": {
+          "driver": "docker-container",
+          "platforms": ["linux/amd64", "linux/arm64"],
+          "buildkit": {
+            "config": {
+              "security.insecure": false,
+              "cache.max-size": "10GB",
+              "cache.ttl": "24h",
+              "cache.compression": "gzip",
+              "cache.import.compression": "gzip",
+              "cache.export.compression": "gzip",
+              "cache.importMode": "restore",
+              "cache.exportMode": "max",
+              "registry.mirror": {
+                "docker.io": ["https://registry-1.docker.io"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "experimental": {
+      "buildkit": true,
+      "cache": {
+        "type": "registry",
+        "mode": "max"
+      }
+    }
+  }
+}

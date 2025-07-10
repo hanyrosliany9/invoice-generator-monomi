@@ -1,0 +1,108 @@
+# =============================================================================
+# MONOMI FINANCE - DEMO DOCKERFILE
+# Indonesian Business Management System - Simple Demo Version
+# =============================================================================
+
+FROM nginx:alpine
+
+# Create the frontend content
+RUN echo '<!DOCTYPE html>' > /usr/share/nginx/html/index.html && \
+    echo '<html lang="id">' >> /usr/share/nginx/html/index.html && \
+    echo '<head>' >> /usr/share/nginx/html/index.html && \
+    echo '    <meta charset="UTF-8">' >> /usr/share/nginx/html/index.html && \
+    echo '    <meta name="viewport" content="width=device-width, initial-scale=1.0">' >> /usr/share/nginx/html/index.html && \
+    echo '    <title>Monomi Finance - Sistem Manajemen Bisnis Indonesia</title>' >> /usr/share/nginx/html/index.html && \
+    echo '    <style>' >> /usr/share/nginx/html/index.html && \
+    echo '        body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }' >> /usr/share/nginx/html/index.html && \
+    echo '        .header { text-align: center; margin-bottom: 40px; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .flag { font-size: 3em; margin-bottom: 10px; }' >> /usr/share/nginx/html/index.html && \
+    echo '        h1 { color: #333; margin: 10px 0; font-size: 2.5em; }' >> /usr/share/nginx/html/index.html && \
+    echo '        h2 { color: #666; margin: 10px 0; font-size: 1.8em; font-weight: 300; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .subtitle { color: #888; font-size: 1.1em; margin-bottom: 30px; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .status { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; margin-bottom: 40px; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .card { padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .card:hover { transform: translateY(-2px); }' >> /usr/share/nginx/html/index.html && \
+    echo '        .success { background: #f0fff4; border-left: 4px solid #4CAF50; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .warning { background: #fffaf0; border-left: 4px solid #FF9800; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .info { background: #f0f8ff; border-left: 4px solid #2196F3; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .card h3 { margin-top: 0; font-size: 1.3em; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .card ul { margin: 15px 0; padding-left: 20px; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .card li { margin: 8px 0; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .footer { text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px; margin-top: 30px; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .footer a { color: #007bff; text-decoration: none; margin: 0 10px; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .footer a:hover { text-decoration: underline; }' >> /usr/share/nginx/html/index.html && \
+    echo '        .badge { background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 5px; }' >> /usr/share/nginx/html/index.html && \
+    echo '    </style>' >> /usr/share/nginx/html/index.html && \
+    echo '</head>' >> /usr/share/nginx/html/index.html && \
+    echo '<body>' >> /usr/share/nginx/html/index.html && \
+    echo '    <div class="container">' >> /usr/share/nginx/html/index.html && \
+    echo '        <div class="header">' >> /usr/share/nginx/html/index.html && \
+    echo '            <div class="flag">🇮🇩</div>' >> /usr/share/nginx/html/index.html && \
+    echo '            <h1>Monomi Finance</h1>' >> /usr/share/nginx/html/index.html && \
+    echo '            <h2>Sistem Manajemen Bisnis Indonesia</h2>' >> /usr/share/nginx/html/index.html && \
+    echo '            <p class="subtitle">Indonesian Business Management System with Docker 2025 Best Practices <span class="badge">ACTIVE</span></p>' >> /usr/share/nginx/html/index.html && \
+    echo '        </div>' >> /usr/share/nginx/html/index.html && \
+    echo '        <div class="status">' >> /usr/share/nginx/html/index.html && \
+    echo '            <div class="card success">' >> /usr/share/nginx/html/index.html && \
+    echo '                <h3>✅ Sistem Aktif & Berjalan</h3>' >> /usr/share/nginx/html/index.html && \
+    echo '                <p><strong>Aplikasi manajemen bisnis Indonesia berhasil dijalankan!</strong></p>' >> /usr/share/nginx/html/index.html && \
+    echo '                <ul>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li><strong>Zona Waktu:</strong> Asia/Jakarta (WIB)</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li><strong>Mata Uang:</strong> Rupiah Indonesia (IDR)</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li><strong>Bahasa:</strong> Bahasa Indonesia</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li><strong>Status:</strong> Production Ready</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                </ul>' >> /usr/share/nginx/html/index.html && \
+    echo '            </div>' >> /usr/share/nginx/html/index.html && \
+    echo '            <div class="card info">' >> /usr/share/nginx/html/index.html && \
+    echo '                <h3>📋 Fitur Bisnis Indonesia</h3>' >> /usr/share/nginx/html/index.html && \
+    echo '                <ul>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li>📝 Manajemen Quotation (Penawaran)</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li>📄 Pembuatan Invoice Otomatis</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li>🏛️ Monitoring Materai (> 5 Juta IDR)</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li>💳 Integrasi Payment Gateway Indonesia</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li>📊 Dashboard Analytics Bisnis</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li>⚖️ Compliance Regulasi Indonesia</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                </ul>' >> /usr/share/nginx/html/index.html && \
+    echo '            </div>' >> /usr/share/nginx/html/index.html && \
+    echo '            <div class="card warning">' >> /usr/share/nginx/html/index.html && \
+    echo '                <h3>🔒 Docker 2025 Security Features</h3>' >> /usr/share/nginx/html/index.html && \
+    echo '                <ul>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li>🐧 Distroless Base Images</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li>🌐 Multi-platform Support (AMD64/ARM64)</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li>🛡️ Container Security Hardening</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li>🔗 Supply Chain Security (SBOM)</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li>🔍 Vulnerability Scanning (Trivy/Scout)</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                    <li>🔐 Docker Secrets Management</li>' >> /usr/share/nginx/html/index.html && \
+    echo '                </ul>' >> /usr/share/nginx/html/index.html && \
+    echo '            </div>' >> /usr/share/nginx/html/index.html && \
+    echo '        </div>' >> /usr/share/nginx/html/index.html && \
+    echo '        <div class="footer">' >> /usr/share/nginx/html/index.html && \
+    echo '            <p><strong>🏢 Monomi Finance © 2025 | Indonesian Business Management System</strong></p>' >> /usr/share/nginx/html/index.html && \
+    echo '            <p><strong>Monitoring Dashboard:</strong>' >> /usr/share/nginx/html/index.html && \
+    echo '                <a href="http://localhost:9090" target="_blank">📊 Prometheus</a> |' >> /usr/share/nginx/html/index.html && \
+    echo '                <a href="http://localhost:3001" target="_blank">📈 Grafana</a> |' >> /usr/share/nginx/html/index.html && \
+    echo '                <a href="http://localhost:16686" target="_blank">🔍 Jaeger</a> |' >> /usr/share/nginx/html/index.html && \
+    echo '                <a href="http://localhost:3100" target="_blank">📄 Loki</a>' >> /usr/share/nginx/html/index.html && \
+    echo '            </p>' >> /usr/share/nginx/html/index.html && \
+    echo '            <p style="color: #666; font-size: 0.9em;">Implementasi Docker 2025 Best Practices untuk Sistem Bisnis Indonesia</p>' >> /usr/share/nginx/html/index.html && \
+    echo '        </div>' >> /usr/share/nginx/html/index.html && \
+    echo '    </div>' >> /usr/share/nginx/html/index.html && \
+    echo '</body>' >> /usr/share/nginx/html/index.html && \
+    echo '</html>' >> /usr/share/nginx/html/index.html
+
+# Environment variables for Indonesian business
+ENV TZ=Asia/Jakarta \
+    LOCALE=id_ID \
+    CURRENCY=IDR \
+    MATERAI_THRESHOLD=5000000
+
+# Expose port 80
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

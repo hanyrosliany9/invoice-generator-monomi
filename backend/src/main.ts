@@ -4,6 +4,8 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { initDatabase } from './scripts/init-db';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { ValidationInterceptor } from './common/interceptors/validation.interceptor';
 
 const logger = new Logger('Bootstrap');
 
@@ -55,6 +57,12 @@ async function bootstrap() {
         forbidNonWhitelisted: true,
         disableErrorMessages: process.env.NODE_ENV === 'production',
       }),
+    );
+
+    // Global interceptors
+    app.useGlobalInterceptors(
+      new ValidationInterceptor(),
+      new ResponseInterceptor()
     );
 
     // API prefix

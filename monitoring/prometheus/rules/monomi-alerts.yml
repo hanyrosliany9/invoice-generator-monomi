@@ -1,0 +1,260 @@
+# =============================================================================
+# PROMETHEUS ALERTING RULES
+# Monomi Finance - Indonesian Business Management System
+# =============================================================================
+
+groups:
+  - name: monomi-application-alerts
+    rules:
+      # Application availability alerts
+      - alert: MonomiFrontendDown
+        expr: up{job="monomi-frontend"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: frontend
+          service: monomi-finance
+        annotations:
+          summary: "Monomi Finance frontend is down"
+          description: "Frontend service has been down for more than 30 seconds"
+          runbook_url: "https://docs.monomi.finance/runbooks/frontend-down"
+
+      - alert: MonomieBackendDown
+        expr: up{job="monomi-backend"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: backend
+          service: monomi-finance
+        annotations:
+          summary: "Monomi Finance backend is down"
+          description: "Backend service has been down for more than 30 seconds"
+          runbook_url: "https://docs.monomi.finance/runbooks/backend-down"
+
+      # High response time alerts
+      - alert: MonomieBackendHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="monomi-backend"}[5m])) > 2
+        for: 2m
+        labels:
+          severity: warning
+          component: backend
+          service: monomi-finance
+        annotations:
+          summary: "High response time on Monomi Backend"
+          description: "95th percentile response time is {{ $value }}s"
+
+      # Error rate alerts
+      - alert: MonomieBackendHighErrorRate
+        expr: rate(http_requests_total{job="monomi-backend",status=~"5.."}[5m]) / rate(http_requests_total{job="monomi-backend"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          component: backend
+          service: monomi-finance
+        annotations:
+          summary: "High error rate on Monomi Backend"
+          description: "Error rate is {{ $value | humanizePercentage }}"
+
+  - name: monomi-business-alerts
+    rules:
+      # Indonesian business-specific alerts
+      - alert: MonomieInvoiceProcessingHigh
+        expr: rate(monomi_invoice_processing_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: business
+          service: monomi-finance
+          business_type: invoice
+        annotations:
+          summary: "High invoice processing rate"
+          description: "Invoice processing rate is {{ $value }} per second"
+
+      - alert: MonomieQuotationFailureHigh
+        expr: rate(monomi_quotation_failures_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: business
+          service: monomi-finance
+          business_type: quotation
+        annotations:
+          summary: "High quotation failure rate"
+          description: "Quotation failure rate is {{ $value }} per second"
+
+      - alert: MonomieMateriRequirement
+        expr: monomi_invoice_amount_idr > 5000000
+        for: 0s
+        labels:
+          severity: info
+          component: business
+          service: monomi-finance
+          business_type: materai
+        annotations:
+          summary: "Invoice requires Materai stamp"
+          description: "Invoice amount {{ $value }} IDR requires Materai stamp"
+
+  - name: monomi-infrastructure-alerts
+    rules:
+      # Database alerts
+      - alert: MonomiePostgreSQLDown
+        expr: up{job="postgres-exporter"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: database
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL has been down for more than 30 seconds"
+
+      - alert: MonomiePostgreSQLHighConnections
+        expr: pg_stat_activity_count > 80
+        for: 2m
+        labels:
+          severity: warning
+          component: database
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL high connection count"
+          description: "Connection count is {{ $value }}"
+
+      - alert: MonomiePostgreSQLSlowQueries
+        expr: pg_stat_activity_max_tx_duration{datname="invoices"} > 60
+        for: 2m
+        labels:
+          severity: warning
+          component: database
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL slow query detected"
+          description: "Slow query running for {{ $value }} seconds"
+
+      # Redis alerts
+      - alert: MonomieRedisDown
+        expr: up{job="redis-exporter"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: cache
+          service: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been down for more than 30 seconds"
+
+      - alert: MonomieRedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 2m
+        labels:
+          severity: warning
+          component: cache
+          service: redis
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+  - name: monomi-system-alerts
+    rules:
+      # System resource alerts
+      - alert: MonomieHighCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 2m
+        labels:
+          severity: warning
+          component: system
+          service: node
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      - alert: MonomieHighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.85
+        for: 2m
+        labels:
+          severity: warning
+          component: system
+          service: node
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: MonomieHighDiskUsage
+        expr: (node_filesystem_size_bytes{fstype!="tmpfs"} - node_filesystem_free_bytes{fstype!="tmpfs"}) / node_filesystem_size_bytes{fstype!="tmpfs"} > 0.85
+        for: 2m
+        labels:
+          severity: warning
+          component: system
+          service: node
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is {{ $value | humanizePercentage }}"
+
+      # Container alerts
+      - alert: MonomieContainerDown
+        expr: up{job="cadvisor"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: container
+          service: docker
+        annotations:
+          summary: "Container monitoring is down"
+          description: "cAdvisor has been down for more than 30 seconds"
+
+      - alert: MonomieContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name=~"monomi-.*"}[5m]) > 0.8
+        for: 2m
+        labels:
+          severity: warning
+          component: container
+          service: docker
+        annotations:
+          summary: "Container high CPU usage"
+          description: "Container {{ $labels.name }} CPU usage is {{ $value }}%"
+
+      - alert: MonomieContainerHighMemory
+        expr: container_memory_usage_bytes{name=~"monomi-.*"} / container_spec_memory_limit_bytes{name=~"monomi-.*"} > 0.85
+        for: 2m
+        labels:
+          severity: warning
+          component: container
+          service: docker
+        annotations:
+          summary: "Container high memory usage"
+          description: "Container {{ $labels.name }} memory usage is {{ $value | humanizePercentage }}"
+
+  - name: monomi-security-alerts
+    rules:
+      # Security-related alerts
+      - alert: MonomieSecurityScanFailed
+        expr: increase(monomi_security_scan_failures_total[24h]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          component: security
+          service: monomi-finance
+        annotations:
+          summary: "Security scan failed"
+          description: "Security scan has failed {{ $value }} times in the last 24 hours"
+
+      - alert: MonomieUnauthorizedAccess
+        expr: increase(monomi_unauthorized_requests_total[5m]) > 10
+        for: 0s
+        labels:
+          severity: warning
+          component: security
+          service: monomi-finance
+        annotations:
+          summary: "High unauthorized access attempts"
+          description: "{{ $value }} unauthorized access attempts in the last 5 minutes"
+
+      - alert: MonomieVulnerabilityDetected
+        expr: increase(monomi_vulnerabilities_total[1h]) > 0
+        for: 0s
+        labels:
+          severity: high
+          component: security
+          service: monomi-finance
+        annotations:
+          summary: "New vulnerability detected"
+          description: "{{ $value }} new vulnerabilities detected in the last hour"

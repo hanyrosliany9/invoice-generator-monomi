@@ -33,6 +33,30 @@ const QuarterlyChart: React.FC<QuarterlyChartProps> = ({
     formattedRevenue: formatCompactCurrency(item.amount)
   }))
 
+  // Handle empty data state based on 2025 best practices
+  if (chartData.length === 0 || chartData.every(item => item.revenue === 0)) {
+    return (
+      <div 
+        style={{ 
+          width: '100%', 
+          height: `${height}px`,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: '#fafafa',
+          border: '1px dashed #d9d9d9',
+          borderRadius: '8px',
+          color: '#8c8c8c'
+        }}
+      >
+        <div style={{ fontSize: '24px', marginBottom: '8px' }}>📈</div>
+        <div style={{ fontSize: '14px', fontWeight: 500 }}>Tidak Ada Data Kuartalan</div>
+        <div style={{ fontSize: '12px', marginTop: '4px' }}>Data akan muncul setelah ada transaksi kuartalan</div>
+      </div>
+    )
+  }
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (

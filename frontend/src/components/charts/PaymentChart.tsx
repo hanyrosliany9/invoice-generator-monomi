@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   PieChart,
   Pie,
@@ -25,6 +25,9 @@ const PaymentChart: React.FC<PaymentChartProps> = ({
   loading = false, 
   height = 300 
 }) => {
+  // State for tracking hover/active segment
+  const [activeIndex, setActiveIndex] = useState<number>(-1)
+
   if (loading) {
     return <Skeleton.Input active style={{ width: '100%', height: `${height}px` }} />
   }
@@ -54,6 +57,30 @@ const PaymentChart: React.FC<PaymentChartProps> = ({
     status: item.status,
     color: statusColors[item.status as keyof typeof statusColors] || '#6b7280'
   })).filter(item => item.value > 0)
+
+  // Handle empty data state based on 2025 best practices
+  if (chartData.length === 0) {
+    return (
+      <div 
+        style={{ 
+          width: '100%', 
+          height: `${height}px`,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: '#fafafa',
+          border: '1px dashed #d9d9d9',
+          borderRadius: '8px',
+          color: '#8c8c8c'
+        }}
+      >
+        <div style={{ fontSize: '24px', marginBottom: '8px' }}>💳</div>
+        <div style={{ fontSize: '14px', fontWeight: 500 }}>Tidak Ada Data Pembayaran</div>
+        <div style={{ fontSize: '12px', marginTop: '4px' }}>Data akan muncul setelah ada invoice</div>
+      </div>
+    )
+  }
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -99,6 +126,15 @@ const PaymentChart: React.FC<PaymentChartProps> = ({
     )
   }
 
+  // Hover event handlers to fix transparency issue
+  const onPieEnter = (_: any, index: number) => {
+    setActiveIndex(index)
+  }
+
+  const onPieLeave = () => {
+    setActiveIndex(-1)
+  }
+
   return (
     <div style={{ width: '100%', height: `${height}px` }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -112,9 +148,21 @@ const PaymentChart: React.FC<PaymentChartProps> = ({
             outerRadius={80}
             fill="#8884d8"
             dataKey="value"
+            onMouseEnter={onPieEnter}
+            onMouseLeave={onPieLeave}
+            isAnimationActive={false}
           >
             {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
+              <Cell 
+                key={`cell-${index}`} 
+                fill={activeIndex === index ? entry.color : activeIndex === -1 ? entry.color : '#e5e7eb'}
+                stroke={activeIndex === index ? '#ffffff' : 'none'}
+                strokeWidth={activeIndex === index ? 3 : 0}
+                style={{
+                  filter: activeIndex === index ? 'brightness(1.1)' : 'none',
+                  cursor: 'pointer'
+                }}
+              />
             ))}
           </Pie>
           <Tooltip content={<CustomTooltip />} />

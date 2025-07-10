@@ -1,0 +1,122 @@
+# Docker Scout Configuration
+# Continuous vulnerability scanning for Monomi Finance
+name: monomi-finance-vulnerability-scan
+
+# Scanning configurations
+scanning:
+  # Critical vulnerability threshold
+  critical_threshold: 0
+  # High vulnerability threshold
+  high_threshold: 5
+  # Medium vulnerability threshold
+  medium_threshold: 10
+  # Low vulnerability threshold
+  low_threshold: 20
+  
+  # Scanning targets
+  targets:
+    - image: monomi-app:latest
+      platform: linux/amd64
+    - image: monomi-backend:latest
+      platform: linux/amd64
+    - image: monomi-frontend:latest
+      platform: linux/amd64
+    
+  # Scanning schedule
+  schedule:
+    - cron: "0 6 * * *"  # Daily at 6 AM
+    - on_build: true
+    - on_push: true
+    
+  # Exclusions
+  exclusions:
+    # Exclude development dependencies
+    - path: "*/node_modules/*/dev-dependencies/*"
+    # Exclude test files
+    - path: "*/test/*"
+    - path: "*/tests/*"
+    # Exclude documentation
+    - path: "*/docs/*"
+    - path: "*/README.md"
+    
+  # Ignore specific CVEs (after assessment)
+  ignore_cves:
+    # Example: CVE-2023-12345 - assessed as false positive
+    # - "CVE-2023-12345"
+    
+# Reporting configuration
+reporting:
+  format: json
+  output_path: "./security-reports/"
+  
+  # Notification settings
+  notifications:
+    on_critical: true
+    on_high: true
+    on_medium: false
+    on_low: false
+    
+  # SARIF output for GitHub integration
+  sarif:
+    enabled: true
+    output_path: "./security-reports/sarif/"
+    
+# Policy configuration
+policy:
+  # Fail build on critical vulnerabilities
+  fail_on_critical: true
+  # Fail build on high vulnerabilities (>5)
+  fail_on_high: true
+  # Warn on medium vulnerabilities
+  warn_on_medium: true
+  # Log low vulnerabilities
+  log_on_low: true
+  
+  # Base image policy
+  base_image_policy:
+    # Only allow official images
+    official_only: true
+    # Require specific tags (no latest)
+    require_explicit_tags: true
+    # Minimum supported version
+    min_version_check: true
+    
+  # Dependency policy
+  dependency_policy:
+    # Check for known malicious packages
+    malicious_check: true
+    # Check for deprecated packages
+    deprecated_check: true
+    # Check for unmaintained packages
+    unmaintained_check: true
+    # Minimum security score
+    min_security_score: 7.0
+    
+# Integration settings
+integrations:
+  # GitHub Advanced Security
+  github:
+    enabled: true
+    upload_sarif: true
+    
+  # Slack notifications
+  slack:
+    enabled: false
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+    
+  # Email notifications
+  email:
+    enabled: false
+    recipients:
+      - security@monomi.finance
+      
+# Metadata
+metadata:
+  project: "Monomi Finance Invoice Generator"
+  team: "Security Team"
+  contact: "security@monomi.finance"
+  environment: "production"
+  compliance:
+    - "ISO 27001"
+    - "Indonesian Financial Regulations"
+    - "GDPR"

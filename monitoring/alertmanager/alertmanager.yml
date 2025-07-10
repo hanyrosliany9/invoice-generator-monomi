@@ -1,0 +1,311 @@
+# =============================================================================
+# ALERTMANAGER CONFIGURATION
+# Alert Management for Monomi Finance - Indonesian Business Management System
+# =============================================================================
+
+global:
+  # SMTP server configuration for Indonesian business alerts
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@monomi.finance'
+  smtp_auth_username: 'alerts@monomi.finance'
+  smtp_auth_password: 'monomi_smtp_password_2025'
+  smtp_require_tls: true
+  
+  # Slack configuration for team notifications
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+  
+  # Indonesian timezone
+  oph_api_url: 'http://localhost:5001/'
+
+# Templates for Indonesian business alerts
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Alert routing configuration
+route:
+  group_by: ['alertname', 'service', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'monomi-default'
+  
+  routes:
+    # Critical business alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'monomi-critical'
+      group_wait: 10s
+      repeat_interval: 5m
+    
+    # Indonesian business-specific alerts
+    - match:
+        component: business
+      receiver: 'monomi-business-team'
+      group_interval: 2m
+      repeat_interval: 1h
+    
+    # Materai compliance alerts
+    - match:
+        business_type: materai
+      receiver: 'monomi-compliance-team'
+      group_interval: 1m
+      repeat_interval: 30m
+    
+    # Security alerts
+    - match:
+        component: security
+      receiver: 'monomi-security-team'
+      group_wait: 5s
+      repeat_interval: 10m
+    
+    # Database alerts
+    - match:
+        service: postgresql
+      receiver: 'monomi-database-team'
+      group_interval: 3m
+      repeat_interval: 30m
+    
+    # Infrastructure alerts
+    - match:
+        component: system
+      receiver: 'monomi-infrastructure-team'
+      group_interval: 5m
+      repeat_interval: 2h
+
+# Inhibition rules to prevent alert spam
+inhibit_rules:
+  # Inhibit warning alerts when critical alerts are firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service', 'instance']
+  
+  # Inhibit backend alerts when frontend is down
+  - source_match:
+      alertname: 'MonomiFrontendDown'
+    target_match:
+      component: 'backend'
+    equal: ['service']
+
+# Receiver configurations
+receivers:
+  # =============================================================================
+  # DEFAULT RECEIVER
+  # =============================================================================
+  - name: 'monomi-default'
+    email_configs:
+      - to: 'admin@monomi.finance'
+        subject: '[Monomi Finance] {{ .GroupLabels.alertname }} - {{ .GroupLabels.severity }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          Component: {{ .Labels.component }}
+          Severity: {{ .Labels.severity }}
+          
+          Labels:
+          {{ range .Labels.SortedPairs }}  {{ .Name }}: {{ .Value }}
+          {{ end }}
+          
+          Grafana Dashboard: http://localhost:3001/d/monomi-overview
+          {{ end }}
+        headers:
+          Subject: '[Monomi Finance Alert] {{ .GroupLabels.alertname }}'
+
+  # =============================================================================
+  # CRITICAL ALERTS - IMMEDIATE RESPONSE
+  # =============================================================================
+  - name: 'monomi-critical'
+    email_configs:
+      - to: 'admin@monomi.finance,devops@monomi.finance,cto@monomi.finance'
+        subject: '🚨 CRITICAL: {{ .GroupLabels.alertname }} - Monomi Finance'
+        body: |
+          🚨 CRITICAL ALERT - IMMEDIATE ACTION REQUIRED 🚨
+          
+          Time: {{ .Alerts.Firing | len }} alert(s) firing
+          
+          {{ range .Alerts }}
+          📋 Alert: {{ .Annotations.summary }}
+          📝 Description: {{ .Annotations.description }}
+          🏢 Service: {{ .Labels.service }}
+          ⚙️  Component: {{ .Labels.component }}
+          🌏 Country: Indonesia
+          
+          🔗 Runbook: {{ .Annotations.runbook_url }}
+          📊 Grafana: http://localhost:3001/d/monomi-overview
+          📈 Prometheus: http://localhost:9090/alerts
+          {{ end }}
+        headers:
+          Subject: '🚨 CRITICAL ALERT: {{ .GroupLabels.alertname }} - Monomi Finance'
+          Priority: 'urgent'
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#monomi-critical-alerts'
+        title: '🚨 Critical Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Service:* {{ .Labels.service }}
+          *Component:* {{ .Labels.component }}
+          *Severity:* {{ .Labels.severity }}
+          
+          <http://localhost:3001/d/monomi-overview|📊 Grafana Dashboard>
+          <http://localhost:9090/alerts|📈 Prometheus Alerts>
+          {{ end }}
+
+  # =============================================================================
+  # BUSINESS TEAM - INDONESIAN BUSINESS LOGIC
+  # =============================================================================
+  - name: 'monomi-business-team'
+    email_configs:
+      - to: 'business@monomi.finance,finance@monomi.finance'
+        subject: '[Monomi Business] {{ .GroupLabels.alertname }} - {{ .GroupLabels.business_type }}'
+        body: |
+          Indonesian Business Alert 🇮🇩
+          
+          {{ range .Alerts }}
+          Business Event: {{ .Annotations.summary }}
+          Details: {{ .Annotations.description }}
+          Business Type: {{ .Labels.business_type }}
+          Component: {{ .Labels.component }}
+          
+          Indonesian Business Context:
+          {{ if eq .Labels.business_type "invoice" }}
+          📄 Invoice Processing Alert
+          💰 This may affect invoice generation and payment processing
+          {{ else if eq .Labels.business_type "quotation" }}
+          📋 Quotation Management Alert  
+          💼 This may affect client quotation workflow
+          {{ else if eq .Labels.business_type "materai" }}
+          🏛️ Materai Compliance Alert
+          ⚖️ Indonesian stamp duty regulation compliance
+          {{ end }}
+          
+          Dashboard: http://localhost:3001/d/monomi-business
+          {{ end }}
+
+  # =============================================================================
+  # COMPLIANCE TEAM - MATERAI & INDONESIAN REGULATIONS
+  # =============================================================================
+  - name: 'monomi-compliance-team'
+    email_configs:
+      - to: 'compliance@monomi.finance,legal@monomi.finance'
+        subject: '[Materai Compliance] {{ .GroupLabels.alertname }} - Indonesian Regulation'
+        body: |
+          🏛️ MATERAI COMPLIANCE ALERT - INDONESIAN REGULATION 🇮🇩
+          
+          {{ range .Alerts }}
+          Compliance Issue: {{ .Annotations.summary }}
+          Details: {{ .Annotations.description }}
+          
+          Regulatory Context:
+          - Indonesian Stamp Duty (Materai) Requirement
+          - Threshold: 5,000,000 IDR
+          - Legal Compliance: Required for invoices above threshold
+          - Regulation: Indonesian Tax Law on Stamp Duty
+          
+          Action Required:
+          1. Verify invoice amount calculation
+          2. Ensure Materai stamp application process
+          3. Update compliance documentation
+          4. Notify client of Materai requirement
+          
+          Compliance Dashboard: http://localhost:3001/d/monomi-compliance
+          {{ end }}
+
+  # =============================================================================
+  # SECURITY TEAM - SECURITY & AUDIT
+  # =============================================================================
+  - name: 'monomi-security-team'
+    email_configs:
+      - to: 'security@monomi.finance,admin@monomi.finance'
+        subject: '🔒 SECURITY ALERT: {{ .GroupLabels.alertname }} - Monomi Finance'
+        body: |
+          🔒 SECURITY ALERT - IMMEDIATE INVESTIGATION REQUIRED 🔒
+          
+          {{ range .Alerts }}
+          Security Event: {{ .Annotations.summary }}
+          Details: {{ .Annotations.description }}
+          Component: {{ .Labels.component }}
+          
+          Indonesian Financial Security Context:
+          🏦 This affects Indonesian business financial data security
+          ⚖️ ISO 27001 and Indonesian data protection compliance required
+          🔍 Immediate audit trail investigation needed
+          
+          Security Actions:
+          1. Investigate security event immediately
+          2. Check audit logs for anomalies
+          3. Verify Indonesian data protection compliance
+          4. Document incident for regulatory reporting
+          
+          Security Dashboard: http://localhost:3001/d/monomi-security
+          Audit Logs: http://localhost:3100/explore
+          {{ end }}
+
+  # =============================================================================
+  # DATABASE TEAM - POSTGRESQL & DATA
+  # =============================================================================
+  - name: 'monomi-database-team'
+    email_configs:
+      - to: 'database@monomi.finance,devops@monomi.finance'
+        subject: '[Database] {{ .GroupLabels.alertname }} - PostgreSQL'
+        body: |
+          🗄️ DATABASE ALERT - POSTGRESQL 🗄️
+          
+          {{ range .Alerts }}
+          Database Issue: {{ .Annotations.summary }}
+          Details: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          
+          Indonesian Business Data Context:
+          💾 Financial data integrity critical for Indonesian business
+          📊 Invoice and quotation data must remain available
+          ⏰ 7-year retention required for Indonesian tax compliance
+          
+          Database Actions:
+          1. Check PostgreSQL performance metrics
+          2. Verify backup integrity
+          3. Monitor connection pools
+          4. Ensure data consistency for financial records
+          
+          Database Dashboard: http://localhost:3001/d/monomi-database
+          {{ end }}
+
+  # =============================================================================
+  # INFRASTRUCTURE TEAM - SYSTEM & CONTAINERS
+  # =============================================================================
+  - name: 'monomi-infrastructure-team'
+    email_configs:
+      - to: 'infrastructure@monomi.finance,devops@monomi.finance'
+        subject: '[Infrastructure] {{ .GroupLabels.alertname }} - System Alert'
+        body: |
+          ⚙️ INFRASTRUCTURE ALERT - SYSTEM MONITORING ⚙️
+          
+          {{ range .Alerts }}
+          Infrastructure Issue: {{ .Annotations.summary }}
+          Details: {{ .Annotations.description }}
+          Component: {{ .Labels.component }}
+          Service: {{ .Labels.service }}
+          
+          Indonesian Business Infrastructure Context:
+          🏢 Critical for Indonesian business operations
+          ⏱️ Business hours: 09:00-17:00 WIB (UTC+7)
+          📈 Peak usage during Indonesian business hours
+          
+          Infrastructure Actions:
+          1. Check system resource utilization
+          2. Monitor container health
+          3. Verify network connectivity
+          4. Scale resources if needed for business peak hours
+          
+          Infrastructure Dashboard: http://localhost:3001/d/monomi-infrastructure
+          {{ end }}
+
+# Alert templates directory
+templates:
+  - '/etc/alertmanager/templates/default.tmpl'

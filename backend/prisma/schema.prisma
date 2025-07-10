@@ -54,6 +54,9 @@ model Client {
   invoices   Invoice[]
   projects   Project[]
 
+  @@index([name])
+  @@index([email])
+  @@index([createdAt])
   @@map("clients")
 }
 
@@ -84,6 +87,11 @@ model Project {
   quotations Quotation[]
   invoices   Invoice[]
 
+  @@index([number])
+  @@index([status])
+  @@index([type])
+  @@index([clientId])
+  @@index([createdAt])
   @@map("projects")
 }
 
@@ -122,6 +130,12 @@ model Quotation {
   // Relations
   invoices Invoice[]
 
+  @@index([quotationNumber])
+  @@index([status])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([createdAt])
+  @@index([validUntil])
   @@map("quotations")
 }
 
@@ -172,6 +186,14 @@ model Invoice {
   // Relations
   payments Payment[]
 
+  @@index([invoiceNumber])
+  @@index([status])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([createdAt])
+  @@index([dueDate])
+  @@index([materaiRequired])
+  @@index([quotationId])
   @@map("invoices")
 }
 

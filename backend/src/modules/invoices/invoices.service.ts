@@ -4,6 +4,7 @@ import { QuotationsService } from '../quotations/quotations.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InvoiceStatus, QuotationStatus } from '@prisma/client';
+import { PaginatedResponse } from '../../common/dto/api-response.dto';
 
 @Injectable()
 export class InvoicesService {
@@ -102,15 +103,16 @@ export class InvoicesService {
       this.prisma.invoice.count({ where }),
     ]);
 
-    return {
-      data: invoices,
-      pagination: {
+    return new PaginatedResponse(
+      invoices,
+      {
         page,
         limit,
         total,
         pages: Math.ceil(total / limit),
       },
-    };
+      'Invoices retrieved successfully'
+    );
   }
 
   async findOne(id: string) {

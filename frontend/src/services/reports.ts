@@ -113,34 +113,34 @@ export const reportsService = {
     
     const url = `/reports/revenue${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
     const response = await apiClient.get(url)
-    return response.data
+    return response.data.data
   },
 
   // Get client analytics
   getClientAnalytics: async (limit?: number): Promise<ClientAnalytics> => {
     const url = `/reports/clients${limit ? `?limit=${limit}` : ''}`
     const response = await apiClient.get(url)
-    return response.data
+    return response.data.data
   },
 
   // Get project analytics
   getProjectAnalytics: async (limit?: number): Promise<ProjectAnalytics> => {
     const url = `/reports/projects${limit ? `?limit=${limit}` : ''}`
     const response = await apiClient.get(url)
-    return response.data
+    return response.data.data
   },
 
   // Get payment analytics
   getPaymentAnalytics: async (): Promise<PaymentAnalytics> => {
     const response = await apiClient.get('/reports/payments')
-    return response.data
+    return response.data.data
   },
 
   // Get business overview
   getBusinessOverview: async (period?: string): Promise<BusinessOverview> => {
     const url = `/reports/overview${period ? `?period=${period}` : ''}`
     const response = await apiClient.get(url)
-    return response.data
+    return response.data.data
   },
 
   // Get financial summary
@@ -154,7 +154,7 @@ export const reportsService = {
     
     const url = `/reports/financial-summary${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
     const response = await apiClient.get(url)
-    return response.data
+    return response.data.data
   },
 
   // Export reports (placeholder for future implementation)

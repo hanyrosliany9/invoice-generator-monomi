@@ -53,29 +53,34 @@ export class ReportsService {
       },
     });
 
-    // Get client details
-    const topClients = await Promise.all(
-      clientRevenue
-        .sort((a, b) => parseFloat(b._sum.totalAmount?.toString() || '0') - parseFloat(a._sum.totalAmount?.toString() || '0'))
-        .slice(0, limit || 10)
-        .map(async (item) => {
-          const client = await this.prisma.client.findUnique({
-            where: { id: item.clientId },
-            select: {
-              id: true,
-              name: true,
-              company: true,
-              email: true,
-            },
-          });
-          
-          return {
-            client,
-            revenue: parseFloat(item._sum.totalAmount?.toString() || '0'),
-            invoiceCount: item._count.id,
-          };
-        })
-    );
+    // Get client details with optimized query
+    const topClientIds = clientRevenue
+      .sort((a, b) => parseFloat(b._sum.totalAmount?.toString() || '0') - parseFloat(a._sum.totalAmount?.toString() || '0'))
+      .slice(0, limit || 10)
+      .map(item => item.clientId);
+
+    const clients = await this.prisma.client.findMany({
+      where: {
+        id: { in: topClientIds },
+      },
+      select: {
+        id: true,
+        name: true,
+        company: true,
+        email: true,
+      },
+    });
+
+    const clientMap = new Map(clients.map(client => [client.id, client]));
+
+    const topClients = clientRevenue
+      .sort((a, b) => parseFloat(b._sum.totalAmount?.toString() || '0') - parseFloat(a._sum.totalAmount?.toString() || '0'))
+      .slice(0, limit || 10)
+      .map(item => ({
+        client: clientMap.get(item.clientId),
+        revenue: parseFloat(item._sum.totalAmount?.toString() || '0'),
+        invoiceCount: item._count.id,
+      }));
 
     return {
       topClients,

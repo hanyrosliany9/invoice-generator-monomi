@@ -49,9 +49,8 @@ export class UsersController {
       password: hashedPassword,
     });
 
-    // Remove password from response
-    const { password, ...result } = user;
-    return result;
+    // Password already filtered out by service
+    return user;
   }
 
   @Get()
@@ -80,8 +79,8 @@ export class UsersController {
       throw new Error('Pengguna tidak ditemukan');
     }
 
-    const { password, ...result } = user;
-    return result;
+    // User already has password filtered out by service
+    return user;
   }
 
   @Patch(':id')

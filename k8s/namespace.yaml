@@ -1,0 +1,73 @@
+# =============================================================================
+# KUBERNETES NAMESPACE
+# Monomi Finance - Indonesian Business Management System
+# =============================================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monomi-finance
+  labels:
+    name: monomi-finance
+    app: monomi-finance
+    environment: production
+    business.region: indonesia
+    business.type: financial-management
+    compliance.framework: iso27001,nist
+    security.hardening: enabled
+    monitoring.enabled: "true"
+    istio-injection: enabled
+  annotations:
+    description: "Monomi Finance Indonesian Business Management System"
+    business.context: "Invoice and Quotation Management for Indonesian Market"
+    compliance.retention: "7-years"  # Indonesian tax law requirement
+    currency: "IDR"
+    timezone: "Asia/Jakarta"
+    locale: "id_ID"
+    materai.threshold: "5000000"  # 5M IDR Materai requirement
+    security.pod-security-policy: "restricted"
+    network.policy: "enabled"
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monomi-staging
+  labels:
+    name: monomi-staging
+    app: monomi-finance
+    environment: staging
+    business.region: indonesia
+    business.type: financial-management
+    compliance.framework: iso27001,nist
+    security.hardening: enabled
+    monitoring.enabled: "true"
+    istio-injection: enabled
+  annotations:
+    description: "Monomi Finance Indonesian Business Management System - Staging"
+    business.context: "Staging environment for Indonesian Invoice Management"
+    compliance.retention: "7-years"
+    currency: "IDR"
+    timezone: "Asia/Jakarta"
+    locale: "id_ID"
+    materai.threshold: "5000000"
+    security.pod-security-policy: "restricted"
+    network.policy: "enabled"
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monomi-monitoring
+  labels:
+    name: monomi-monitoring
+    app: monitoring-stack
+    environment: production
+    business.region: indonesia
+    monitoring.type: observability
+    security.hardening: enabled
+  annotations:
+    description: "Monitoring and Observability for Monomi Finance"
+    business.context: "Prometheus, Grafana, Loki, Jaeger for Indonesian Business System"
+    compliance.framework: "ISO27001,NIST"
+    security.pod-security-policy: "restricted"

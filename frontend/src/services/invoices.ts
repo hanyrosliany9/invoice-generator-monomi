@@ -3,15 +3,15 @@ import { apiClient } from '../config/api'
 export interface Invoice {
   id: string
   invoiceNumber: string
-  number?: string // alias for invoiceNumber
+  number?: string
   creationDate: string
   dueDate: string
   quotationId?: string
   clientId: string
   projectId: string
-  amountPerProject: string
-  totalAmount: string
-  amount?: number // parsed totalAmount
+  amountPerProject: string | number
+  totalAmount: string | number
+  amount?: string | number
   paymentInfo: string
   materaiRequired: boolean
   materaiApplied: boolean
@@ -22,6 +22,8 @@ export interface Invoice {
   createdAt: string
   updatedAt: string
   paidAt?: string
+  clientName?: string
+  projectName?: string
   client?: {
     id: string
     name: string
@@ -34,16 +36,13 @@ export interface Invoice {
     description: string
     type: string
   }
-  // Computed properties for compatibility
-  clientName?: string
-  projectName?: string
 }
 
 export interface CreateInvoiceRequest {
   clientId: string
   projectId: string
-  amountPerProject: string
-  totalAmount: string
+  amountPerProject: string | number
+  totalAmount: string | number
   paymentInfo: string
   terms: string
   dueDate: string
@@ -67,19 +66,19 @@ export const invoiceService = {
   // Get invoice by ID
   getInvoice: async (id: string): Promise<Invoice> => {
     const response = await apiClient.get(`/invoices/${id}`)
-    return response.data
+    return response.data.data
   },
 
   // Create new invoice
   createInvoice: async (data: CreateInvoiceRequest): Promise<Invoice> => {
     const response = await apiClient.post('/invoices', data)
-    return response.data
+    return response.data.data
   },
 
   // Update existing invoice
   updateInvoice: async (id: string, data: UpdateInvoiceRequest): Promise<Invoice> => {
     const response = await apiClient.patch(`/invoices/${id}`, data)
-    return response.data
+    return response.data.data
   },
 
   // Delete invoice
@@ -90,13 +89,13 @@ export const invoiceService = {
   // Update invoice status
   updateStatus: async (id: string, status: string): Promise<Invoice> => {
     const response = await apiClient.patch(`/invoices/${id}/status`, { status })
-    return response.data
+    return response.data.data
   },
 
   // Mark invoice as paid
   markAsPaid: async (id: string): Promise<Invoice> => {
     const response = await apiClient.patch(`/invoices/${id}/mark-paid`)
-    return response.data
+    return response.data.data
   },
 
   // Generate PDF
@@ -115,18 +114,18 @@ export const invoiceService = {
   // Get invoice statistics
   getInvoiceStats: async () => {
     const response = await apiClient.get('/invoices/stats')
-    return response.data
+    return response.data.data
   },
 
   // Get recent invoices
   getRecentInvoices: async (limit: number = 5) => {
     const response = await apiClient.get(`/invoices/recent?limit=${limit}`)
-    return response.data
+    return response.data.data
   },
 
   // Get overdue invoices
   getOverdueInvoices: async () => {
     const response = await apiClient.get('/invoices/overdue')
-    return response.data
+    return response.data.data
   },
 }

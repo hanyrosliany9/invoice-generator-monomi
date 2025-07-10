@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useAuthStore } from '../store/auth'
 
 // API Configuration
 export const API_CONFIG = {
@@ -21,17 +22,10 @@ export const apiClient = axios.create({
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
-    // Get token from localStorage (zustand persist stores it there)
-    const authStorage = localStorage.getItem('auth-storage')
-    if (authStorage) {
-      try {
-        const { state } = JSON.parse(authStorage)
-        if (state?.token) {
-          config.headers.Authorization = `Bearer ${state.token}`
-        }
-      } catch (error) {
-        console.error('Error parsing auth storage:', error)
-      }
+    // Get token from Zustand auth store
+    const token = useAuthStore.getState().token
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
@@ -45,8 +39,8 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear auth storage on 401 errors
-      localStorage.removeItem('auth-storage')
+      // Clear auth state using Zustand store
+      useAuthStore.getState().logout()
       // Redirect to login (you may need to handle this based on your routing)
       window.location.href = '/login'
     }

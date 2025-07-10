@@ -7,6 +7,7 @@ import {
   Typography,
   Tag,
   Input,
+  InputNumber,
   Select,
   Modal,
   Form,
@@ -205,7 +206,8 @@ export const QuotationsPage: React.FC = () => {
     const data = {
       ...values,
       validUntil: values.validUntil.format('YYYY-MM-DD'),
-      amount: values.items?.reduce((sum: number, item: any) => sum + (safeNumber(item.quantity) * safeNumber(item.unitPrice)), 0) || 0
+      amountPerProject: safeNumber(values.amountPerProject),
+      totalAmount: safeNumber(values.totalAmount)
     }
 
     if (editingQuotation) {
@@ -310,7 +312,7 @@ export const QuotationsPage: React.FC = () => {
       title: 'Jumlah',
       key: 'totalAmount',
       render: (_: any, quotation: Quotation) => {
-        const amount = parseFloat(quotation.totalAmount) || 0
+        const amount = typeof quotation.totalAmount === 'number' ? quotation.totalAmount : parseFloat(quotation.totalAmount) || 0
         return (
           <div>
             <Text className="idr-amount">{formatIDR(amount)}</Text>
@@ -324,7 +326,11 @@ export const QuotationsPage: React.FC = () => {
           </div>
         )
       },
-      sorter: (a: Quotation, b: Quotation) => parseFloat(a.totalAmount) - parseFloat(b.totalAmount)
+      sorter: (a: Quotation, b: Quotation) => {
+        const aAmount = typeof a.totalAmount === 'number' ? a.totalAmount : parseFloat(a.totalAmount) || 0
+        const bAmount = typeof b.totalAmount === 'number' ? b.totalAmount : parseFloat(b.totalAmount) || 0
+        return aAmount - bAmount
+      }
     },
     {
       title: 'Status',
@@ -706,6 +712,45 @@ export const QuotationsPage: React.FC = () => {
             </Col>
           </Row>
 
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="amountPerProject"
+                label="Jumlah per Proyek"
+                rules={[
+                  { required: true, message: 'Masukkan jumlah per proyek' },
+                  { type: 'number', min: 0, message: 'Jumlah harus lebih dari 0' }
+                ]}
+              >
+                <InputNumber
+                  placeholder="0"
+                  prefix="IDR"
+                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                  parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="totalAmount"
+                label="Total Jumlah"
+                rules={[
+                  { required: true, message: 'Masukkan total jumlah' },
+                  { type: 'number', min: 0, message: 'Total harus lebih dari 0' }
+                ]}
+              >
+                <InputNumber
+                  placeholder="0"
+                  prefix="IDR"
+                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                  parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Form.Item
             name="validUntil"
             label="Berlaku Hingga"
@@ -717,15 +762,9 @@ export const QuotationsPage: React.FC = () => {
           <Form.Item
             name="terms"
             label="Syarat & Ketentuan"
+            rules={[{ required: true, message: 'Masukkan syarat dan ketentuan' }]}
           >
             <TextArea rows={4} placeholder="Masukkan syarat dan ketentuan..." />
-          </Form.Item>
-
-          <Form.Item
-            name="notes"
-            label="Catatan"
-          >
-            <TextArea rows={3} placeholder="Catatan tambahan..." />
           </Form.Item>
 
           <div className="flex justify-end space-x-2">

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { PaginatedResponse } from '../../common/dto/api-response.dto';
 
 @Injectable()
 export class ClientsService {
@@ -48,15 +49,16 @@ export class ClientsService {
       this.prisma.client.count({ where }),
     ]);
 
-    return {
-      data: clients,
-      pagination: {
+    return new PaginatedResponse(
+      clients,
+      {
         page,
         limit,
         total,
         pages: Math.ceil(total / limit),
       },
-    };
+      'Clients retrieved successfully'
+    );
   }
 
   async findOne(id: string) {

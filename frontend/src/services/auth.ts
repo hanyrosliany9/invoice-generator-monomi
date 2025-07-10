@@ -24,18 +24,18 @@ export interface RegisterRequest {
 export const authService = {
   login: async (data: LoginRequest): Promise<LoginResponse> => {
     const response = await apiClient.post('/auth/login', data)
-    return response.data
+    return response.data.data
   },
 
   register: async (data: RegisterRequest) => {
     const response = await apiClient.post('/auth/register', data)
-    return response.data
+    return response.data.data
   },
 
   validateToken: async (token: string) => {
     const response = await apiClient.get('/auth/profile', {
       headers: { Authorization: `Bearer ${token}` }
     })
-    return response.data
+    return response.data.data
   },
 }

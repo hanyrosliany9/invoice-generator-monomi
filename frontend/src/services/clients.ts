@@ -9,18 +9,22 @@ export interface Client {
   company: string
   contactPerson: string
   paymentTerms: string
+  status?: string
   taxNumber?: string
   bankAccount?: string
   notes?: string
-  status?: 'active' | 'inactive'
-  createdAt: string
-  updatedAt: string
-  // Statistics (optional for compatibility)
-  totalQuotations?: number
-  totalInvoices?: number
+  lastTransaction?: string
   totalPaid?: number
   totalPending?: number
-  lastTransaction?: string
+  totalQuotations?: number
+  totalInvoices?: number
+  createdAt: string
+  updatedAt: string
+  _count?: {
+    quotations: number
+    invoices: number
+    projects: number
+  }
 }
 
 export interface CreateClientRequest {
@@ -31,9 +35,6 @@ export interface CreateClientRequest {
   company: string
   contactPerson: string
   paymentTerms: string
-  taxNumber?: string
-  bankAccount?: string
-  notes?: string
 }
 
 export interface UpdateClientRequest extends Partial<CreateClientRequest> {}
@@ -48,19 +49,19 @@ export const clientService = {
   // Get client by ID
   getClient: async (id: string): Promise<Client> => {
     const response = await apiClient.get(`/clients/${id}`)
-    return response.data
+    return response.data.data
   },
 
   // Create new client
   createClient: async (data: CreateClientRequest): Promise<Client> => {
     const response = await apiClient.post('/clients', data)
-    return response.data
+    return response.data.data
   },
 
   // Update existing client
   updateClient: async (id: string, data: UpdateClientRequest): Promise<Client> => {
     const response = await apiClient.patch(`/clients/${id}`, data)
-    return response.data
+    return response.data.data
   },
 
   // Delete client
@@ -71,6 +72,6 @@ export const clientService = {
   // Get client statistics
   getClientStats: async () => {
     const response = await apiClient.get('/clients/stats')
-    return response.data
+    return response.data.data
   },
 }

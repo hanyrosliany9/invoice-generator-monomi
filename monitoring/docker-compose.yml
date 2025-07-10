@@ -1,0 +1,347 @@
+# =============================================================================
+# MONOMI FINANCE - COMPREHENSIVE MONITORING STACK
+# Prometheus + Grafana + Loki + AlertManager + Node Exporter
+# =============================================================================
+
+version: '3.8'
+
+networks:
+  monitoring:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  loki_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+
+services:
+  # =============================================================================
+  # PROMETHEUS - METRICS COLLECTION
+  # =============================================================================
+  prometheus:
+    image: prom/prometheus:v2.48.1
+    container_name: monomi-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=10GB'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--web.external-url=http://localhost:9090'
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=100m
+    user: "65534:65534"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # =============================================================================
+  # GRAFANA - VISUALIZATION & DASHBOARDS
+  # =============================================================================
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: monomi-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=monomi_secure_grafana_2025
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_USERS_ALLOW_ORG_CREATE=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_COOKIE_SAMESITE=strict
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      - GF_USERS_DEFAULT_THEME=dark
+      - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    user: "472:472"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # =============================================================================
+  # LOKI - LOG AGGREGATION
+  # =============================================================================
+  loki:
+    image: grafana/loki:2.9.3
+    container_name: monomi-loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=100m
+    user: "10001:10001"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # =============================================================================
+  # PROMTAIL - LOG COLLECTION
+  # =============================================================================
+  promtail:
+    image: grafana/promtail:2.9.3
+    container_name: monomi-promtail
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=50m
+    user: "root:root"
+    restart: unless-stopped
+
+  # =============================================================================
+  # ALERTMANAGER - ALERT MANAGEMENT
+  # =============================================================================
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: monomi-alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+      - '--web.route-prefix=/'
+    ports:
+      - "9093:9093"
+    volumes:
+      - alertmanager_data:/alertmanager
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=50m
+    user: "65534:65534"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # =============================================================================
+  # NODE EXPORTER - SYSTEM METRICS
+  # =============================================================================
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: monomi-node-exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.netdev.device-exclude=^veth.*$$'
+      - '--collector.processes'
+      - '--collector.systemd'
+      - '--no-collector.ipvs'
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /run/systemd/private:/run/systemd/private:ro
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    user: "65534:65534"
+    restart: unless-stopped
+
+  # =============================================================================
+  # CADVISOR - CONTAINER METRICS
+  # =============================================================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: monomi-cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    restart: unless-stopped
+
+  # =============================================================================
+  # POSTGRES EXPORTER - DATABASE METRICS
+  # =============================================================================
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: monomi-postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://invoiceuser:devpassword@host.docker.internal:5436/invoices?sslmode=disable
+      - PG_EXPORTER_AUTO_DISCOVER_DATABASES=true
+    ports:
+      - "9187:9187"
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    user: "65534:65534"
+    restart: unless-stopped
+
+  # =============================================================================
+  # REDIS EXPORTER - REDIS METRICS
+  # =============================================================================
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.55.0
+    container_name: monomi-redis-exporter
+    environment:
+      - REDIS_ADDR=host.docker.internal:6383
+      - REDIS_PASSWORD=redis-dev-password
+    ports:
+      - "9121:9121"
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    user: "65534:65534"
+    restart: unless-stopped
+
+  # =============================================================================
+  # NGINX EXPORTER - WEB SERVER METRICS
+  # =============================================================================
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:0.11.0
+    container_name: monomi-nginx-exporter
+    command:
+      - '-nginx.scrape-uri=http://host.docker.internal:80/nginx_status'
+    ports:
+      - "9113:9113"
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    user: "65534:65534"
+    restart: unless-stopped
+
+  # =============================================================================
+  # OPENTELEMETRY COLLECTOR - APM & DISTRIBUTED TRACING
+  # =============================================================================
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.91.0
+    container_name: monomi-otel-collector
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./opentelemetry/otel-collector.yml:/etc/otel-collector-config.yml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8889:8889"   # Prometheus metrics
+      - "13133:13133" # Health check
+      - "1777:1777"   # pprof
+      - "55679:55679" # zpages
+      - "14250:14250" # Jaeger gRPC
+      - "14268:14268" # Jaeger HTTP
+      - "6831:6831/udp" # Jaeger compact
+      - "6832:6832/udp" # Jaeger binary
+    environment:
+      - HONEYCOMB_API_KEY=your_honeycomb_api_key_here
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=100m
+    user: "10001:10001"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:13133/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # =============================================================================
+  # JAEGER - DISTRIBUTED TRACING UI
+  # =============================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:1.51.0
+    container_name: monomi-jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "9411:9411"   # Zipkin compatibility
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=100m
+    user: "10001:10001"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:16686/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped

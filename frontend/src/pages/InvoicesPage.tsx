@@ -7,6 +7,7 @@ import {
   Typography,
   Tag,
   Input,
+  InputNumber,
   Select,
   Modal,
   Form,
@@ -138,11 +139,11 @@ export const InvoicesPage: React.FC = () => {
     }
   })
 
-  // Helper functions to compute missing properties
-  const getInvoiceNumber = (invoice: Invoice) => invoice.number || invoice.invoiceNumber
-  const getClientName = (invoice: Invoice) => invoice.clientName || invoice.client?.name || 'Unknown Client'
-  const getProjectName = (invoice: Invoice) => invoice.projectName || invoice.project?.description || 'Unknown Project'
-  const getAmount = (invoice: Invoice) => invoice.amount || safeNumber(invoice.totalAmount)
+  // Helper functions to safely access properties
+  const getInvoiceNumber = (invoice: Invoice) => invoice.invoiceNumber || 'Unknown'
+  const getClientName = (invoice: Invoice) => invoice.client?.name || 'Unknown Client'
+  const getProjectName = (invoice: Invoice) => invoice.project?.description || 'Unknown Project'
+  const getAmount = (invoice: Invoice) => safeNumber(invoice.totalAmount)
 
   // Filtered data
   const filteredInvoices = safeArray(invoices).filter(invoice => {
@@ -232,8 +233,9 @@ export const InvoicesPage: React.FC = () => {
     const data = {
       ...values,
       dueDate: values.dueDate.format('YYYY-MM-DD'),
-      amount: values.items?.reduce((sum: number, item: any) => sum + (safeNumber(item.quantity) * safeNumber(item.unitPrice)), 0) || 0,
-      materaiRequired: requiresMaterai(values.amount || 0),
+      amountPerProject: safeNumber(values.amountPerProject),
+      totalAmount: safeNumber(values.totalAmount),
+      materaiRequired: requiresMaterai(safeNumber(values.totalAmount)),
       materaiApplied: false
     }
 
@@ -886,6 +888,45 @@ export const InvoicesPage: React.FC = () => {
             </Col>
           </Row>
 
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="amountPerProject"
+                label="Jumlah per Proyek"
+                rules={[
+                  { required: true, message: 'Masukkan jumlah per proyek' },
+                  { type: 'number', min: 0, message: 'Jumlah harus lebih dari 0' }
+                ]}
+              >
+                <InputNumber
+                  placeholder="0"
+                  prefix="IDR"
+                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                  parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="totalAmount"
+                label="Total Jumlah"
+                rules={[
+                  { required: true, message: 'Masukkan total jumlah' },
+                  { type: 'number', min: 0, message: 'Total harus lebih dari 0' }
+                ]}
+              >
+                <InputNumber
+                  placeholder="0"
+                  prefix="IDR"
+                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                  parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Form.Item
             name="dueDate"
             label="Batas Pembayaran"
@@ -903,10 +944,11 @@ export const InvoicesPage: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            name="notes"
-            label="Catatan"
+            name="terms"
+            label="Syarat dan Ketentuan"
+            rules={[{ required: true, message: 'Masukkan syarat dan ketentuan' }]}
           >
-            <TextArea rows={3} placeholder="Catatan tambahan..." />
+            <TextArea rows={3} placeholder="Pembayaran dalam 30 hari..." />
           </Form.Item>
 
           <div className="flex justify-end space-x-2">
