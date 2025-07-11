@@ -155,15 +155,18 @@ export const QuotationsPage: React.FC = () => {
 
   // Price inheritance effect
   useEffect(() => {
-    const projectId = form.getFieldValue('projectId')
-    if (projectId) {
-      const project = projects.find(p => p.id === projectId)
-      if (project) {
-        setSelectedProject(project)
-        if (priceInheritanceMode === 'inherit') {
-          // Use project basePrice or estimatedBudget
-          const inheritedPrice = project.basePrice || project.estimatedBudget || 0
-          form.setFieldsValue({ totalAmount: inheritedPrice })
+    // Only proceed if form is initialized and connected
+    if (form && form.getFieldsValue) {
+      const projectId = form.getFieldValue('projectId')
+      if (projectId) {
+        const project = projects.find(p => p.id === projectId)
+        if (project) {
+          setSelectedProject(project)
+          if (priceInheritanceMode === 'inherit') {
+            // Use project basePrice or estimatedBudget
+            const inheritedPrice = project.basePrice || project.estimatedBudget || 0
+            form.setFieldsValue({ totalAmount: inheritedPrice })
+          }
         }
       }
     }
