@@ -168,6 +168,9 @@ model Invoice {
   // Indonesian compliance
   materaiRequired Boolean @default(false) // Auto-calculated if > 5M IDR
   materaiApplied  Boolean @default(false) // User confirms materai applied
+  materaiAppliedAt DateTime? // When materai was applied
+  materaiAppliedBy String? // User who applied materai
+  materaiAmount   Decimal? @db.Decimal(12, 2) // Amount of stamp duty
   
   // Terms and signature
   terms     String?

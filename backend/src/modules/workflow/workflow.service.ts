@@ -3,6 +3,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { InvoiceStatus, QuotationStatus } from '@prisma/client';
+import { WorkflowSummaryDto, WorkflowStatsDto, WorkflowCheckResultDto } from './dto';
+import { TransformationUtil } from '../../common/utils/transformation.util';
 
 export interface WorkflowSummary {
   id: string;
@@ -213,15 +215,77 @@ export class WorkflowService {
   }
 
   // Manual trigger for testing
-  async runWorkflowChecks(): Promise<void> {
+  async runWorkflowChecks(): Promise<WorkflowCheckResultDto> {
     this.logger.log('🔄 Running manual workflow checks...');
-    await this.processExpiredQuotations();
-    await this.processOverdueInvoices();
-    await this.processMateraiReminders();
+    const startTime = Date.now();
+    const errors: string[] = [];
+    let expiredQuotations = 0;
+    let overdueInvoices = 0;
+    let materaiReminders = 0;
+    let notificationsSent = 0;
+
+    try {
+      // Count expired quotations
+      const expiredQuotationsResult = await this.prisma.quotation.count({
+        where: {
+          status: { in: [QuotationStatus.SENT, QuotationStatus.DRAFT] },
+          validUntil: { lt: new Date() }
+        }
+      });
+      expiredQuotations = expiredQuotationsResult;
+
+      await this.processExpiredQuotations();
+    } catch (error) {
+      errors.push(`Quotation processing: ${error.message}`);
+    }
+
+    try {
+      // Count overdue invoices
+      const overdueInvoicesResult = await this.prisma.invoice.count({
+        where: {
+          status: InvoiceStatus.SENT,
+          dueDate: { lt: new Date() }
+        }
+      });
+      overdueInvoices = overdueInvoicesResult;
+
+      await this.processOverdueInvoices();
+    } catch (error) {
+      errors.push(`Invoice processing: ${error.message}`);
+    }
+
+    try {
+      // Count materai reminders
+      const materaiRemindersResult = await this.prisma.invoice.count({
+        where: {
+          materaiRequired: true,
+          materaiApplied: false,
+          status: { in: [InvoiceStatus.SENT, InvoiceStatus.OVERDUE] }
+        }
+      });
+      materaiReminders = materaiRemindersResult;
+
+      await this.processMateraiReminders();
+    } catch (error) {
+      errors.push(`Materai processing: ${error.message}`);
+    }
+
+    const executionTime = Date.now() - startTime;
+    notificationsSent = expiredQuotations + overdueInvoices + materaiReminders;
+
     this.logger.log('✅ Manual workflow checks completed');
+
+    return {
+      expiredQuotations,
+      overdueInvoices,
+      materaiReminders,
+      notificationsSent,
+      executionTime,
+      errors: errors.length > 0 ? errors : undefined
+    };
   }
 
-  async getActiveWorkflows(): Promise<WorkflowSummary[]> {
+  async getActiveWorkflows(): Promise<WorkflowSummaryDto[]> {
     try {
       const [activeQuotations, activeInvoices] = await Promise.all([
         // Active quotations (not declined or converted to invoice)
@@ -257,40 +321,48 @@ export class WorkflowService {
         })
       ]);
 
-      const workflows: WorkflowSummary[] = [];
+      const workflows: WorkflowSummaryDto[] = [];
 
       // Add quotations that haven't been converted to invoices
       for (const quotation of activeQuotations) {
         if (quotation.invoices.length === 0) {
+          const daysRemaining = Math.ceil((new Date(quotation.validUntil).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
           workflows.push({
             id: quotation.id,
             type: 'quotation',
             number: quotation.quotationNumber,
             clientName: quotation.client?.name || 'Unknown',
             status: quotation.status,
-            totalAmount: Number(quotation.totalAmount),
-            validUntil: new Date(quotation.validUntil),
-            createdAt: new Date(quotation.createdAt)
+            totalAmount: TransformationUtil.decimalToString(quotation.totalAmount),
+            validUntil: TransformationUtil.dateToString(quotation.validUntil),
+            createdAt: TransformationUtil.dateToString(quotation.createdAt),
+            daysRemaining: daysRemaining > 0 ? daysRemaining : 0,
+            isUrgent: daysRemaining <= 3 && daysRemaining > 0,
+            priority: daysRemaining <= 1 ? 'HIGH' : daysRemaining <= 3 ? 'MEDIUM' : 'LOW'
           });
         }
       }
 
       // Add active invoices
       for (const invoice of activeInvoices) {
+        const daysRemaining = Math.ceil((new Date(invoice.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
         workflows.push({
           id: invoice.id,
           type: 'invoice',
           number: invoice.invoiceNumber,
           clientName: invoice.client?.name || 'Unknown',
           status: invoice.status,
-          totalAmount: Number(invoice.totalAmount),
-          dueDate: new Date(invoice.dueDate),
-          createdAt: new Date(invoice.createdAt)
+          totalAmount: TransformationUtil.decimalToString(invoice.totalAmount),
+          dueDate: TransformationUtil.dateToString(invoice.dueDate),
+          createdAt: TransformationUtil.dateToString(invoice.createdAt),
+          daysRemaining: daysRemaining > 0 ? daysRemaining : 0,
+          isUrgent: daysRemaining <= 3 || invoice.status === InvoiceStatus.OVERDUE,
+          priority: invoice.status === InvoiceStatus.OVERDUE || daysRemaining <= 0 ? 'HIGH' : daysRemaining <= 3 ? 'MEDIUM' : 'LOW'
         });
       }
 
       // Sort by creation date (newest first)
-      workflows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      workflows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       return workflows;
     } catch (error) {
@@ -299,7 +371,7 @@ export class WorkflowService {
     }
   }
 
-  async getWorkflowStats(): Promise<any> {
+  async getWorkflowStats(): Promise<WorkflowStatsDto> {
     try {
       const [quotationStats, invoiceStats] = await Promise.all([
         this.prisma.quotation.groupBy({
@@ -338,17 +410,50 @@ export class WorkflowService {
         }
       });
 
+      const materaiReminders = await this.prisma.invoice.count({
+        where: {
+          materaiRequired: true,
+          materaiApplied: false,
+          status: { in: [InvoiceStatus.SENT, InvoiceStatus.OVERDUE] }
+        }
+      });
+
+      // Calculate totals
+      const totalQuotationValue = quotationStats.reduce((sum, stat) => sum + Number(stat._sum.totalAmount || 0), 0);
+      const totalInvoiceValue = invoiceStats.reduce((sum, stat) => sum + Number(stat._sum.totalAmount || 0), 0);
+      const totalActiveWorkflows = quotationStats.reduce((sum, stat) => sum + stat._count, 0) + 
+                                   invoiceStats.reduce((sum, stat) => sum + stat._count, 0);
+      const highPriorityCount = overdueInvoices + expiringQuotations;
+
       return {
-        quotations: quotationStats,
-        invoices: invoiceStats,
+        quotations: quotationStats.map(stat => ({
+          status: stat.status,
+          _count: stat._count,
+          _sum: {
+            totalAmount: TransformationUtil.decimalToString(stat._sum.totalAmount)
+          }
+        })),
+        invoices: invoiceStats.map(stat => ({
+          status: stat.status,
+          _count: stat._count,
+          _sum: {
+            totalAmount: TransformationUtil.decimalToString(stat._sum.totalAmount)
+          }
+        })),
         alerts: {
           overdueInvoices,
-          expiringQuotations
+          expiringQuotations,
+          materaiReminders
+        },
+        summary: {
+          totalActiveWorkflows,
+          totalValue: (totalQuotationValue + totalInvoiceValue).toString(),
+          highPriorityCount
         }
       };
     } catch (error) {
       this.logger.error(`Error getting workflow stats: ${error.message}`);
-      return null;
+      throw error;
     }
   }
 }

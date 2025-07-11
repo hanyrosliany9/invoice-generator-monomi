@@ -327,4 +327,58 @@ export class NotificationsService {
       this.logger.error(`Failed to send quotation expiring notification: ${error.message}`);
     }
   }
+
+  async getNotificationTemplates() {
+    return {
+      templates: [
+        {
+          type: 'QUOTATION_STATUS_CHANGE',
+          name: 'Perubahan Status Quotation',
+          description: 'Dikirim ketika status quotation berubah',
+          variables: ['quotationNumber', 'newStatus', 'clientName', 'projectName', 'totalAmount']
+        },
+        {
+          type: 'INVOICE_GENERATED',
+          name: 'Invoice Dibuat',
+          description: 'Dikirim ketika invoice dibuat dari quotation',
+          variables: ['invoiceNumber', 'quotationNumber', 'clientName', 'projectName', 'totalAmount', 'dueDate', 'materaiRequired']
+        },
+        {
+          type: 'QUOTATION_EXPIRING',
+          name: 'Quotation Akan Berakhir',
+          description: 'Dikirim ketika quotation akan berakhir',
+          variables: ['quotationNumber', 'clientName', 'daysRemaining', 'validUntil', 'totalAmount']
+        },
+        {
+          type: 'INVOICE_OVERDUE',
+          name: 'Invoice Jatuh Tempo',
+          description: 'Dikirim ketika invoice melewati tanggal jatuh tempo',
+          variables: ['invoiceNumber', 'clientName', 'dueDate', 'daysOverdue', 'totalAmount']
+        },
+        {
+          type: 'MATERAI_REMINDER',
+          name: 'Pengingat Materai',
+          description: 'Dikirim untuk invoice yang memerlukan materai',
+          variables: ['invoiceNumber', 'totalAmount']
+        }
+      ]
+    };
+  }
+
+  async getNotificationStats() {
+    // In a real implementation, you would query a notification_logs table
+    // For now, return mock data
+    return {
+      totalSent: 0,
+      totalFailed: 0,
+      byType: {
+        'QUOTATION_STATUS_CHANGE': 0,
+        'INVOICE_GENERATED': 0,
+        'QUOTATION_EXPIRING': 0,
+        'INVOICE_OVERDUE': 0,
+        'MATERAI_REMINDER': 0
+      },
+      recentNotifications: []
+    };
+  }
 }

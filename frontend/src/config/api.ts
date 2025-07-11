@@ -19,6 +19,9 @@ export const apiClient = axios.create({
   headers: DEFAULT_HEADERS,
 })
 
+// Export alias for backward compatibility
+export const api = apiClient
+
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {

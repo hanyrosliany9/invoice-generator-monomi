@@ -2,6 +2,7 @@ import { IsString, IsOptional, IsEnum, IsDateString, IsPositive, IsBoolean, IsNu
 import { ApiProperty } from '@nestjs/swagger';
 import { InvoiceStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
+import { FinancialTransform } from '../../../common/dto/financial-data.dto';
 
 export class CreateInvoiceDto {
   @ApiProperty({
@@ -47,7 +48,7 @@ export class CreateInvoiceDto {
     description: 'Jumlah per proyek',
     example: 5000000,
   })
-  @Transform(({ value }) => parseFloat(value))
+  @FinancialTransform()
   @IsPositive({ message: 'Jumlah per proyek harus lebih dari 0' })
   amountPerProject: number;
 
@@ -55,7 +56,7 @@ export class CreateInvoiceDto {
     description: 'Total jumlah',
     example: 5000000,
   })
-  @Transform(({ value }) => parseFloat(value))
+  @FinancialTransform()
   @IsPositive({ message: 'Total jumlah harus lebih dari 0' })
   totalAmount: number;
 

@@ -18,20 +18,28 @@ export class ApiResponse<T> {
   @ApiProperty({ description: 'Response data' })
   data: T;
 
-  @ApiProperty({ description: 'Success status', example: true })
-  success: boolean;
-
   @ApiProperty({ description: 'Response message', example: 'Operation successful' })
-  message?: string;
+  message: string;
+
+  @ApiProperty({ description: 'Response status', example: 'success' })
+  status: 'success' | 'error';
 
   @ApiProperty({ description: 'Timestamp', example: '2024-01-01T00:00:00Z' })
-  timestamp: string;
+  timestamp?: string;
 
-  constructor(data: T, message?: string) {
+  constructor(data: T, message: string, status: 'success' | 'error' = 'success') {
     this.data = data;
-    this.success = true;
     this.message = message;
+    this.status = status;
     this.timestamp = new Date().toISOString();
+  }
+
+  static success<T>(data: T, message: string = 'Operation successful'): ApiResponse<T> {
+    return new ApiResponse(data, message, 'success');
+  }
+
+  static error<T>(message: string, data: T = null as T): ApiResponse<T> {
+    return new ApiResponse(data, message, 'error');
   }
 }
 

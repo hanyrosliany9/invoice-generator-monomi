@@ -1,4 +1,6 @@
 import { apiClient } from '../config/api'
+import { paymentsService } from './payments'
+import { Payment } from '../types/payment'
 
 export interface Invoice {
   id: string
@@ -22,6 +24,22 @@ export interface Invoice {
   createdAt: string
   updatedAt: string
   paidAt?: string
+  
+  // Payment tracking
+  paymentSummary?: {
+    totalPaid: string
+    remainingAmount: string
+    paymentCount: number
+    lastPaymentDate?: string
+  }
+  
+  // Business status
+  businessStatus?: {
+    isOverdue: boolean
+    daysOverdue: number
+    daysToDue: number
+    materaiStatus: 'NOT_REQUIRED' | 'REQUIRED' | 'APPLIED'
+  }
   clientName?: string
   projectName?: string
   client?: {
@@ -153,5 +171,91 @@ export const invoiceService = {
   getOverdueInvoices: async () => {
     const response = await apiClient.get('/invoices/overdue')
     return response?.data?.data || []
+  },
+
+  // Get invoice with payment information
+  getInvoiceWithPayments: async (id: string): Promise<Invoice & { payments: Payment[] }> => {
+    const [invoice, payments] = await Promise.all([
+      invoiceService.getInvoice(id),
+      paymentsService.getPaymentsByInvoice(id)
+    ])
+    
+    const paymentSummary = paymentsService.calculatePaymentSummary(payments, invoice.totalAmount)
+    const businessStatus = invoiceService.calculateBusinessStatus(invoice)
+    
+    return {
+      ...invoice,
+      payments,
+      paymentSummary,
+      businessStatus
+    }
+  },
+
+  // Calculate business status for invoice
+  calculateBusinessStatus: (invoice: Invoice) => {
+    const now = new Date()
+    const dueDate = new Date(invoice.dueDate)
+    const isOverdue = now > dueDate && invoice.status !== 'PAID'
+    const daysToDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    const daysOverdue = isOverdue ? Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)) : 0
+    
+    let materaiStatus: 'NOT_REQUIRED' | 'REQUIRED' | 'APPLIED' = 'NOT_REQUIRED'
+    if (invoice.materaiRequired) {
+      materaiStatus = invoice.materaiApplied ? 'APPLIED' : 'REQUIRED'
+    }
+    
+    return {
+      isOverdue,
+      daysOverdue,
+      daysToDue,
+      materaiStatus
+    }
+  },
+
+  // Add payment to invoice
+  addPayment: async (invoiceId: string, paymentData: {
+    amount: string | number
+    paymentDate: string
+    paymentMethod: string
+    transactionRef?: string
+    bankDetails?: string
+  }) => {
+    return await paymentsService.createPayment({
+      invoiceId,
+      ...paymentData
+    })
+  },
+
+  // Get payment summary for invoice
+  getPaymentSummary: async (invoiceId: string) => {
+    const [invoice, payments] = await Promise.all([
+      invoiceService.getInvoice(invoiceId),
+      paymentsService.getPaymentsByInvoice(invoiceId)
+    ])
+    
+    return paymentsService.calculatePaymentSummary(payments, invoice.totalAmount)
+  },
+
+  // Check if invoice is fully paid
+  isFullyPaid: async (invoiceId: string): Promise<boolean> => {
+    const summary = await invoiceService.getPaymentSummary(invoiceId)
+    return parseFloat(summary.remainingAmount) <= 0
+  },
+
+  // Format invoice amount for display
+  formatAmount: (amount: string | number): string => {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(num)
+  },
+
+  // Check if materai is required
+  requiresMaterai: (amount: string | number): boolean => {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount
+    return num > 5000000 // 5 million IDR threshold
   },
 }
