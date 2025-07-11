@@ -13,6 +13,7 @@ export interface Project {
   basePrice?: string        // Price cascade support
   priceBreakdown?: any      // Detailed price breakdown
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
+  totalRevenue?: number     // Total revenue from all related invoices
   createdAt: string
   updatedAt: string
   client?: {

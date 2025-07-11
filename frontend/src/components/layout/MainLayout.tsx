@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Avatar, Button, Dropdown, Layout, Menu, Typography } from 'antd'
 import { 
   BarChartOutlined, 
@@ -16,6 +16,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../../store/auth'
 import { BreadcrumbProvider } from '../navigation'
+import MobileQuickActions from '../ui/MobileQuickActions'
+import MobileEntityNav from '../ui/MobileEntityNav'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -26,10 +28,33 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const [mobileQuickActionsVisible, setMobileQuickActionsVisible] = useState(false)
+  const [entityCounts, setEntityCounts] = useState({
+    clients: 0,
+    projects: 0,
+    quotations: 0,
+    invoices: 0
+  })
+  
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useTranslation()
   const { user, logout } = useAuthStore()
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile)
+    }
+  }, [])
 
   const menuItems = [
     {
@@ -110,18 +135,32 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     return '/dashboard'
   }
 
+  const getCurrentEntityContext = () => {
+    const path = location.pathname
+    if (path.startsWith('/clients')) return { type: 'client' as const, id: '', name: 'Client Management' }
+    if (path.startsWith('/projects')) return { type: 'project' as const, id: '', name: 'Project Management' }
+    if (path.startsWith('/quotations')) return { type: 'quotation' as const, id: '', name: 'Quotation Management' }
+    if (path.startsWith('/invoices')) return { type: 'invoice' as const, id: '', name: 'Invoice Management' }
+    return undefined
+  }
+
+  const handleMobileQuickActions = () => {
+    setMobileQuickActionsVisible(true)
+  }
+
   return (
     <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      <Sider 
-        trigger={null} 
-        collapsible 
-        collapsed={collapsed}
-        style={{
-          background: '#ffffff',
-          borderRight: '1px solid #e2e8f0',
-          boxShadow: '2px 0 8px rgba(0, 0, 0, 0.06)',
-        }}
-      >
+      {!isMobile && (
+        <Sider 
+          trigger={null} 
+          collapsible 
+          collapsed={collapsed}
+          style={{
+            background: '#ffffff',
+            borderRight: '1px solid #e2e8f0',
+            boxShadow: '2px 0 8px rgba(0, 0, 0, 0.06)',
+          }}
+        >
         <div style={{ 
           padding: '20px 16px', 
           textAlign: 'center', 
@@ -163,7 +202,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             paddingTop: '8px'
           }}
         />
-      </Sider>
+        </Sider>
+      )}
       
       <Layout>
         <Header 
@@ -192,21 +232,23 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             opacity: 0.4,
             pointerEvents: 'none'
           }} />
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            style={{
-              fontSize: '18px',
-              width: 48,
-              height: 48,
-              color: '#ffffff',
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: 'none',
-              borderRadius: '12px',
-              zIndex: 1
-            }}
-          />
+          {!isMobile && (
+            <Button
+              type="text"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              onClick={() => setCollapsed(!collapsed)}
+              style={{
+                fontSize: '18px',
+                width: 48,
+                height: 48,
+                color: '#ffffff',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: 'none',
+                borderRadius: '12px',
+                zIndex: 1
+              }}
+            />
+          )}
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', zIndex: 1 }}>
             <Text style={{ 
@@ -238,14 +280,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         
         <Content
           style={{
-            margin: '32px 24px 24px 24px',
-            padding: '32px',
+            margin: isMobile ? '16px 8px 80px 8px' : '32px 24px 24px 24px',
+            padding: isMobile ? '16px' : '32px',
             background: '#ffffff',
-            borderRadius: '20px',
+            borderRadius: isMobile ? '12px' : '20px',
             overflow: 'auto',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
             border: '1px solid #e2e8f0',
-            marginTop: '-16px', // Overlap with header for modern effect
+            marginTop: isMobile ? '0px' : '-16px', // Overlap with header for modern effect
             position: 'relative',
             zIndex: 2
           }}
@@ -255,6 +297,24 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </BreadcrumbProvider>
         </Content>
       </Layout>
+      
+      {/* Mobile Components */}
+      {isMobile && (
+        <>
+          <MobileEntityNav
+            counts={entityCounts}
+            onQuickActionPress={handleMobileQuickActions}
+            visible={true}
+          />
+          
+          <MobileQuickActions
+            visible={mobileQuickActionsVisible}
+            onClose={() => setMobileQuickActionsVisible(false)}
+            currentEntity={getCurrentEntityContext()}
+            relatedCounts={entityCounts}
+          />
+        </>
+      )}
     </Layout>
   )
 }

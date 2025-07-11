@@ -18,6 +18,9 @@ export interface Client {
   totalPending?: number
   totalQuotations?: number
   totalInvoices?: number
+  totalProjects?: number
+  pendingQuotations?: number
+  overdueInvoices?: number
   createdAt: string
   updatedAt: string
   _count?: {

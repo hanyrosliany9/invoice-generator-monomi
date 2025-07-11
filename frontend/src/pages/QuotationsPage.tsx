@@ -47,6 +47,7 @@ import { Quotation, quotationService } from '../services/quotations'
 import { clientService } from '../services/clients'
 import { projectService } from '../services/projects'
 import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
+import WorkflowIndicator from '../components/ui/WorkflowIndicator'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -737,6 +738,13 @@ export const QuotationsPage: React.FC = () => {
     <div>
       <div className="mb-6">
         <Title level={2}>{t('quotations.title')}</Title>
+        
+        <WorkflowIndicator 
+          currentEntity="quotation" 
+          entityData={selectedQuotation || {}} 
+          compact 
+          className="mb-4"
+        />
         
         {/* Statistics */}
         <Row gutter={[24, 24]} className="mb-6">

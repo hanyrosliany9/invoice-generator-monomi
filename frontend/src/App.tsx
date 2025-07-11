@@ -12,6 +12,7 @@ import { ClientsPage } from './pages/ClientsPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { SettingsPage } from './pages/SettingsPage'
+import './styles/relationships.css'
 
 function App() {
   const { isAuthenticated } = useAuthStore()

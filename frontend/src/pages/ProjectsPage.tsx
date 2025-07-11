@@ -19,6 +19,7 @@ import {
   Statistic,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd'
 import {
@@ -47,6 +48,7 @@ import { formatIDR, safeArray, safeNumber, safeString } from '../utils/currency'
 import { Project, projectService } from '../services/projects'
 import { clientService } from '../services/clients'
 import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
+import WorkflowIndicator from '../components/ui/WorkflowIndicator'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -277,17 +279,87 @@ export const ProjectsPage: React.FC = () => {
       sorter: (a: Project, b: Project) => a.number.localeCompare(b.number)
     },
     {
-      title: 'Klien',
-      key: 'clientName',
+      title: 'Client & Pipeline',
+      key: 'clientPipeline',
       render: (_: any, project: Project) => (
-        <Button 
-          type="link" 
-          onClick={() => navigateToClient(project.client?.id || '')}
-          className="text-blue-600 hover:text-blue-800 p-0"
-          disabled={!project.client?.id}
-        >
-          {project.client?.name || 'N/A'}
-        </Button>
+        <div className="space-y-3">
+          {/* Client Info */}
+          <div>
+            <Button 
+              type="link" 
+              onClick={() => navigateToClient(project.client?.id || '')}
+              className="text-blue-600 hover:text-blue-800 p-0 font-medium text-sm"
+              disabled={!project.client?.id}
+            >
+              🏢 {project.client?.name || 'N/A'}
+            </Button>
+            {project.client?.company && (
+              <div className="text-xs text-gray-500 mt-0.5">{project.client.company}</div>
+            )}
+          </div>
+          
+          {/* Business Pipeline Metrics */}
+          <div className="bg-blue-50 border border-blue-100 p-2.5 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">Business Pipeline</span>
+            </div>
+            
+            <div className="space-y-2">
+              {/* Quotations */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Quotations</span>
+                <Button 
+                  type="link" 
+                  size="small"
+                  onClick={() => navigate(`/quotations?projectId=${project.id}`)}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800 p-0 h-auto"
+                >
+                  <Badge count={project._count?.quotations || 0} color="blue" size="small">
+                    📋
+                  </Badge>
+                </Button>
+              </div>
+              
+              {/* Invoices */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Invoices</span>
+                <Button 
+                  type="link" 
+                  size="small"
+                  onClick={() => navigate(`/invoices?projectId=${project.id}`)}
+                  className="text-sm font-medium text-green-600 hover:text-green-800 p-0 h-auto"
+                >
+                  <Badge count={project._count?.invoices || 0} color="green" size="small">
+                    💰
+                  </Badge>
+                </Button>
+              </div>
+              
+              {/* Revenue */}
+              <div className="flex items-center justify-between pt-1 border-t border-blue-200">
+                <span className="text-sm font-medium text-gray-700">Revenue</span>
+                <span className="text-sm font-semibold text-green-600">
+                  {formatIDR(project.totalRevenue || 0)}
+                </span>
+              </div>
+            </div>
+            
+            {/* Quick Action */}
+            <div className="mt-2.5 pt-2 border-t border-blue-200">
+              <Tooltip title="Create quotation for this project">
+                <Button 
+                  type="text" 
+                  size="small" 
+                  icon={<PlusOutlined />}
+                  onClick={() => navigate(`/quotations/create?projectId=${project.id}&clientId=${project.clientId}`)}
+                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 w-full text-xs"
+                >
+                  Create Quotation
+                </Button>
+              </Tooltip>
+            </div>
+          </div>
+        </div>
       ),
       sorter: (a: Project, b: Project) => (a.client?.name || '').localeCompare(b.client?.name || '')
     },
@@ -456,6 +528,13 @@ export const ProjectsPage: React.FC = () => {
     <div>
       <div className="mb-6">
         <Title level={2}>{t('projects.title')}</Title>
+        
+        <WorkflowIndicator 
+          currentEntity="project" 
+          entityData={selectedProject || {}} 
+          compact 
+          className="mb-4"
+        />
         
         {/* Statistics */}
         <Row gutter={[24, 24]} className="mb-6">

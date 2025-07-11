@@ -55,6 +55,7 @@ import { projectService } from '../services/projects'
 import { quotationService } from '../services/quotations'
 import { InvoiceStatus } from '../types/invoice'
 import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
+import WorkflowIndicator from '../components/ui/WorkflowIndicator'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -703,21 +704,62 @@ export const InvoicesPage: React.FC = () => {
 
   const columns = [
     {
-      title: 'Nomor',
-      key: 'number',
+      title: 'Invoice & Context',
+      key: 'invoiceContext',
       render: (_: any, invoice: Invoice) => (
-        <div>
+        <div className="space-y-1">
           <div className="font-medium">{getInvoiceNumber(invoice)}</div>
-          {invoice.quotationId && (
-            <Button 
-              type="link" 
-              size="small"
-              onClick={() => navigateToQuotation(invoice.quotationId || '')}
-              className="text-xs text-gray-500 hover:text-blue-600 p-0"
-            >
-              <LinkOutlined /> Dari Quotation
-            </Button>
-          )}
+          
+          {/* Relationship Context */}
+          <div className="text-xs space-y-1">
+            {invoice.quotationId && (
+              <div className="flex items-center space-x-1">
+                <span className="text-gray-500">from</span>
+                <Button 
+                  type="link" 
+                  size="small"
+                  onClick={() => navigateToQuotation(invoice.quotationId || '')}
+                  className="text-xs text-blue-600 hover:text-blue-800 p-0"
+                >
+                  📋 {invoice.quotation?.quotationNumber || 'Quotation'}
+                </Button>
+              </div>
+            )}
+            
+            {invoice.project && (
+              <div className="flex items-center space-x-1">
+                <span className="text-gray-500">project</span>
+                <Button 
+                  type="link" 
+                  size="small"
+                  onClick={() => navigate(`/projects?projectId=${invoice.project.id}`)}
+                  className="text-xs text-purple-600 hover:text-purple-800 p-0"
+                >
+                  📊 {invoice.project.number}
+                </Button>
+              </div>
+            )}
+            
+            {!invoice.quotationId && (
+              <Badge size="small" color="orange" text="Direct Invoice" />
+            )}
+          </div>
+          
+          {/* Status Indicators */}
+          <div className="flex space-x-1">
+            {invoice.materaiRequired && (
+              <Tooltip title={`Materai ${invoice.materaiApplied ? 'applied' : 'required'}`}>
+                <span className={`text-xs ${invoice.materaiApplied ? 'text-green-600' : 'text-orange-600'}`}>
+                  📋 {invoice.materaiApplied ? '✓' : '!'}
+                </span>
+              </Tooltip>
+            )}
+            {isOverdue(invoice) && (
+              <Tooltip title="Invoice is overdue">
+                <span className="text-xs text-red-600">⏰</span>
+              </Tooltip>
+            )}
+          </div>
         </div>
       ),
       sorter: (a: Invoice, b: Invoice) => getInvoiceNumber(a).localeCompare(getInvoiceNumber(b))
@@ -848,6 +890,13 @@ export const InvoicesPage: React.FC = () => {
         <Title level={2} style={{ color: '#1e293b', marginBottom: '24px' }}>
           {t('invoices.title')}
         </Title>
+        
+        <WorkflowIndicator 
+          currentEntity="invoice" 
+          entityData={selectedInvoice || {}} 
+          compact 
+          className="mb-4"
+        />
         
         {/* Loading state for entire statistics section */}
         {isLoading && (
