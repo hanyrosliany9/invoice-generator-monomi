@@ -261,8 +261,8 @@ export const materaiService = {
   // Sort invoices by materai urgency
   sortInvoicesByMateraiUrgency: (invoices: any[]): any[] => {
     return [...invoices].sort((a, b) => {
-      const urgencyOrder = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 }
-      return (urgencyOrder[b.urgencyLevel] || 0) - (urgencyOrder[a.urgencyLevel] || 0)
+      const urgencyOrder = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 } as const
+      return (urgencyOrder[b.urgencyLevel as keyof typeof urgencyOrder] || 0) - (urgencyOrder[a.urgencyLevel as keyof typeof urgencyOrder] || 0)
     })
   }
 }

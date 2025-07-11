@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -19,7 +19,8 @@ import {
   Col,
   Statistic,
   Alert,
-  MenuProps
+  MenuProps,
+  Radio
 } from 'antd'
 import {
   PlusOutlined,
@@ -46,6 +47,7 @@ import { quotationService, Quotation } from '../services/quotations'
 import { clientService } from '../services/clients'
 import { projectService } from '../services/projects'
 import { WorkflowProgress, WorkflowTimeline } from '../components/workflow'
+import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -77,6 +79,8 @@ export const QuotationsPage: React.FC = () => {
   const [batchLoading, setBatchLoading] = useState(false)
   const [statusModalVisible, setStatusModalVisible] = useState(false)
   const [statusQuotation, setStatusQuotation] = useState<Quotation | null>(null)
+  const [priceInheritanceMode, setPriceInheritanceMode] = useState<'inherit' | 'custom'>('inherit')
+  const [selectedProject, setSelectedProject] = useState<any>(null)
   const [form] = Form.useForm()
   const [statusForm] = Form.useForm()
   const { message } = App.useApp()
@@ -149,6 +153,22 @@ export const QuotationsPage: React.FC = () => {
     }
   })
 
+  // Price inheritance effect
+  useEffect(() => {
+    const projectId = form.getFieldValue('projectId')
+    if (projectId) {
+      const project = projects.find(p => p.id === projectId)
+      if (project) {
+        setSelectedProject(project)
+        if (priceInheritanceMode === 'inherit') {
+          // Use project basePrice or estimatedBudget
+          const inheritedPrice = project.basePrice || project.estimatedBudget || 0
+          form.setFieldsValue({ totalAmount: inheritedPrice })
+        }
+      }
+    }
+  }, [form, projects, priceInheritanceMode])
+
   // Filtered data
   const filteredQuotations = safeArray(quotations).filter(quotation => {
     const searchLower = safeString(searchText).toLowerCase()
@@ -194,15 +214,46 @@ export const QuotationsPage: React.FC = () => {
     return statusMap[status as keyof typeof statusMap] || status
   }
 
+  // Navigation functions for clickable table links
+  const navigateToClient = useCallback((_clientId: string) => {
+    navigate('/clients')
+  }, [navigate])
+
+  const navigateToProject = useCallback((_projectId: string) => {
+    navigate('/projects')
+  }, [navigate])
+
   const handleCreate = () => {
     setEditingQuotation(null)
     setModalVisible(true)
+    setPriceInheritanceMode('inherit')
+    setSelectedProject(null)
     form.resetFields()
   }
 
   const handleEdit = (quotation: Quotation) => {
     setEditingQuotation(quotation)
     setModalVisible(true)
+    
+    // Set selected project for price inheritance
+    if (quotation.projectId) {
+      const project = projects.find(p => p.id === quotation.projectId)
+      if (project) {
+        setSelectedProject(project)
+        
+        // Determine price inheritance mode
+        const projectPrice = parseFloat(String(project.basePrice || project.estimatedBudget || '0'))
+        const quotationPrice = parseFloat(String(quotation.totalAmount || '0'))
+        
+        // If quotation price matches project price, assume inheritance mode
+        if (Math.abs(projectPrice - quotationPrice) < 0.01) {
+          setPriceInheritanceMode('inherit')
+        } else {
+          setPriceInheritanceMode('custom')
+        }
+      }
+    }
+    
     form.setFieldsValue({
       ...quotation,
       validUntil: dayjs(quotation.validUntil)
@@ -253,6 +304,32 @@ export const QuotationsPage: React.FC = () => {
       return
     }
     invoiceMutation.mutate(quotation.id)
+  }
+
+  const handleProjectChange = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId)
+    if (project) {
+      setSelectedProject(project)
+      if (priceInheritanceMode === 'inherit') {
+        // Use project basePrice or estimatedBudget
+        const inheritedPrice = project.basePrice || project.estimatedBudget || 0
+        form.setFieldsValue({ totalAmount: inheritedPrice })
+      }
+    }
+  }
+
+  const handlePriceInheritanceModeChange = (e: any) => {
+    const mode = e.target.value
+    setPriceInheritanceMode(mode)
+    
+    if (mode === 'inherit' && selectedProject) {
+      // Use project basePrice or estimatedBudget
+      const inheritedPrice = selectedProject.basePrice || selectedProject.estimatedBudget || 0
+      form.setFieldsValue({ totalAmount: inheritedPrice })
+    } else if (mode === 'custom') {
+      // Clear the amount field for custom input
+      form.setFieldsValue({ totalAmount: undefined })
+    }
   }
 
   // Batch operations
@@ -328,7 +405,7 @@ export const QuotationsPage: React.FC = () => {
     onChange: (newSelectedRowKeys: React.Key[]) => {
       setSelectedRowKeys(newSelectedRowKeys as string[])
     },
-    onSelectAll: (selected: boolean, selectedRows: Quotation[], changeRows: Quotation[]) => {
+    onSelectAll: (selected: boolean) => {
       if (selected) {
         const allKeys = filteredQuotations.map(q => q.id)
         setSelectedRowKeys(allKeys)
@@ -411,7 +488,7 @@ export const QuotationsPage: React.FC = () => {
   }
 
   const getActionMenuItems = (quotation: Quotation) => {
-    const items = [
+    const items: NonNullable<MenuProps['items']> = [
       {
         key: 'view',
         icon: <EyeOutlined />,
@@ -510,7 +587,7 @@ export const QuotationsPage: React.FC = () => {
       label: 'Hapus',
       danger: true,
       onClick: () => handleDelete(quotation.id)
-    } as MenuProps['items'][number])
+    })
 
     return items
   }
@@ -525,13 +602,31 @@ export const QuotationsPage: React.FC = () => {
     {
       title: 'Klien',
       key: 'clientName',
-      render: (_: any, quotation: Quotation) => quotation.client?.name || 'N/A',
+      render: (_: any, quotation: Quotation) => (
+        <Button 
+          type="link" 
+          onClick={() => navigateToClient(quotation.client?.id || '')}
+          className="text-blue-600 hover:text-blue-800 p-0"
+          disabled={!quotation.client?.id}
+        >
+          {quotation.client?.name || 'N/A'}
+        </Button>
+      ),
       sorter: (a: Quotation, b: Quotation) => (a.client?.name || '').localeCompare(b.client?.name || '')
     },
     {
       title: 'Proyek',
       key: 'projectName',
-      render: (_: any, quotation: Quotation) => quotation.project?.description || 'N/A',
+      render: (_: any, quotation: Quotation) => (
+        <Button 
+          type="link" 
+          onClick={() => navigateToProject(quotation.project?.id || '')}
+          className="text-blue-600 hover:text-blue-800 p-0"
+          disabled={!quotation.project?.id}
+        >
+          {quotation.project?.description || 'N/A'}
+        </Button>
+      ),
       sorter: (a: Quotation, b: Quotation) => (a.project?.description || '').localeCompare(b.project?.description || '')
     },
     {
@@ -971,7 +1066,7 @@ export const QuotationsPage: React.FC = () => {
                 label="Proyek"
                 rules={[{ required: true, message: 'Pilih proyek' }]}
               >
-                <Select placeholder="Pilih proyek">
+                <Select placeholder="Pilih proyek" onChange={handleProjectChange}>
                   {safeArray(projects).map(project => (
                     <Option key={project.id} value={project.id}>
                       {project.number} - {project.description}
@@ -981,6 +1076,35 @@ export const QuotationsPage: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
+
+          {/* Price Inheritance Section */}
+          <Card size="small" style={{ marginBottom: 16, backgroundColor: '#f9f9f9' }}>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Text strong>Pengaturan Harga</Text>
+              <Radio.Group
+                value={priceInheritanceMode}
+                onChange={handlePriceInheritanceModeChange}
+              >
+                <Radio value="inherit">
+                  Gunakan Harga dari Proyek
+                  {selectedProject && (
+                    <Text type="secondary" style={{ marginLeft: 8 }}>
+                      ({formatIDR(selectedProject.basePrice || selectedProject.estimatedBudget || 0)})
+                    </Text>
+                  )}
+                </Radio>
+                <Radio value="custom">Masukkan Harga Kustom</Radio>
+              </Radio.Group>
+              
+              {priceInheritanceMode === 'inherit' && selectedProject && (
+                <Alert
+                  message={`Harga akan otomatis diambil dari proyek: ${formatIDR(selectedProject.basePrice || selectedProject.estimatedBudget || 0)}`}
+                  type="info"
+                  showIcon
+                />
+              )}
+            </Space>
+          </Card>
 
           <Form.Item
             name="totalAmount"
@@ -995,6 +1119,7 @@ export const QuotationsPage: React.FC = () => {
               prefix="IDR"
               formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
               parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
+              disabled={priceInheritanceMode === 'inherit'}
               style={{ width: '100%' }}
             />
           </Form.Item>
@@ -1050,6 +1175,19 @@ export const QuotationsPage: React.FC = () => {
       >
         {selectedQuotation && (
           <div className="space-y-4">
+            {/* Breadcrumb Navigation */}
+            <div className="mb-4">
+              <EntityBreadcrumb
+                entityType="quotation"
+                entityData={selectedQuotation}
+                className="mb-2"
+              />
+              <RelatedEntitiesPanel
+                entityType="quotation"
+                entityData={selectedQuotation}
+                className="mb-4"
+              />
+            </div>
             <Row gutter={16}>
               <Col span={12}>
                 <Text strong>Klien:</Text>

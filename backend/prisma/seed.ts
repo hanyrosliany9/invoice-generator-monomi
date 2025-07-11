@@ -93,7 +93,7 @@ async function main() {
     update: {},
     create: {
       id: 'project-1',
-      number: 'PRJ-202501-001',
+      number: 'PRJ-PH-202501-001',
       description: 'Pembuatan Website E-commerce',
       output: 'Website e-commerce lengkap dengan dashboard admin, sistem pembayaran, dan mobile responsive',
       type: 'PRODUCTION',
@@ -101,6 +101,13 @@ async function main() {
       startDate: new Date('2025-01-01'),
       endDate: new Date('2025-03-31'),
       estimatedBudget: 75000000,
+      basePrice: 75000000,
+      priceBreakdown: {
+        design: 15000000,
+        development: 45000000,
+        testing: 10000000,
+        deployment: 5000000
+      },
       status: 'IN_PROGRESS',
     },
   });
@@ -110,7 +117,7 @@ async function main() {
     update: {},
     create: {
       id: 'project-2',
-      number: 'PRJ-202501-002',
+      number: 'PRJ-SM-202501-001',
       description: 'Konten Media Sosial Januari-Maret',
       output: 'Konten Instagram, Facebook, dan TikTok untuk 3 bulan (90 post + 30 stories)',
       type: 'SOCIAL_MEDIA',
@@ -118,6 +125,12 @@ async function main() {
       startDate: new Date('2025-01-01'),
       endDate: new Date('2025-03-31'),
       estimatedBudget: 15000000,
+      basePrice: 15000000,
+      priceBreakdown: {
+        contentCreation: 10000000,
+        scheduling: 3000000,
+        reporting: 2000000
+      },
       status: 'IN_PROGRESS',
     },
   });
@@ -127,7 +140,7 @@ async function main() {
     update: {},
     create: {
       id: 'project-3',
-      number: 'PRJ-202501-003',
+      number: 'PRJ-PH-202501-002',
       description: 'Sistem Inventory Management',
       output: 'Aplikasi desktop untuk manajemen stok, laporan penjualan, dan integrasi barcode',
       type: 'PRODUCTION',
@@ -135,6 +148,13 @@ async function main() {
       startDate: new Date('2025-02-01'),
       endDate: new Date('2025-05-31'),
       estimatedBudget: 120000000,
+      basePrice: 120000000,
+      priceBreakdown: {
+        analysis: 20000000,
+        development: 80000000,
+        testing: 15000000,
+        training: 5000000
+      },
       status: 'PLANNING',
     },
   });

@@ -564,7 +564,7 @@ export const SettingsPage: React.FC = () => {
                   size="large"
                   style={{ width: '100%' }}
                   formatter={(value) => `Rp ${value || 0}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={(value) => Number((value || '').replace(/Rp\s?|(,*)/g, ''))}
+                  parser={(value) => Number((value || '').replace(/Rp\s?|(,*)/g, '')) as any}
                   defaultValue={5000000}
                 />
               </Form.Item>

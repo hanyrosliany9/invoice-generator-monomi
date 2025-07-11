@@ -10,6 +10,8 @@ export interface Project {
   startDate: string
   endDate: string
   estimatedBudget: string
+  basePrice?: string        // Price cascade support
+  priceBreakdown?: any      // Detailed price breakdown
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
   createdAt: string
   updatedAt: string
@@ -33,6 +35,8 @@ export interface CreateProjectRequest {
   startDate: string
   endDate: string
   estimatedBudget: string
+  basePrice?: string        // Optional price cascade support
+  priceBreakdown?: any      // Optional detailed price breakdown
 }
 
 export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {

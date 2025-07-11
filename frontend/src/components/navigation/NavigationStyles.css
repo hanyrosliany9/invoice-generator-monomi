@@ -1,0 +1,365 @@
+/**
+ * Navigation Components Styling
+ * Mobile-first responsive design for Indonesian Business Management System
+ * Entity relationship breadcrumb navigation and related entities panel
+ */
+
+/* ===== BREADCRUMB STYLES ===== */
+
+/* Main breadcrumb container */
+.entity-breadcrumb.responsive-breadcrumb {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Mobile breadcrumb styling */
+.entity-breadcrumb .mobile-breadcrumb {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.entity-breadcrumb .mobile-breadcrumb .truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+/* Desktop breadcrumb styling */
+.entity-breadcrumb .ant-breadcrumb {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+}
+
+.entity-breadcrumb .ant-breadcrumb .ant-breadcrumb-link {
+  color: #374151;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.entity-breadcrumb .ant-breadcrumb .ant-breadcrumb-link:hover {
+  color: #1d4ed8;
+}
+
+/* Breadcrumb separators */
+.entity-breadcrumb .ant-breadcrumb .ant-breadcrumb-separator {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+/* Status badges in breadcrumb */
+.entity-breadcrumb .status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-left: 6px;
+}
+
+.entity-breadcrumb .status-badge.status-draft {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.entity-breadcrumb .status-badge.status-sent {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.entity-breadcrumb .status-badge.status-approved {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.entity-breadcrumb .status-badge.status-paid {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.entity-breadcrumb .status-badge.status-declined,
+.entity-breadcrumb .status-badge.status-overdue,
+.entity-breadcrumb .status-badge.status-cancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Entity icons styling */
+.entity-breadcrumb .entity-icon {
+  font-size: 16px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* ===== MOBILE DRAWER STYLES ===== */
+
+/* Mobile breadcrumb drawer */
+.mobile-breadcrumb-drawer .ant-drawer-header {
+  background: #1f2937;
+  color: #ffffff;
+  border-bottom: 1px solid #374151;
+}
+
+.mobile-breadcrumb-drawer .ant-drawer-header .ant-drawer-title {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.mobile-breadcrumb-drawer .ant-drawer-close {
+  color: #ffffff;
+}
+
+.mobile-breadcrumb-drawer .ant-drawer-body {
+  padding: 16px;
+  background: #f9fafb;
+}
+
+/* Mobile drawer navigation items */
+.mobile-breadcrumb-drawer .drawer-nav-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.mobile-breadcrumb-drawer .drawer-nav-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-breadcrumb-drawer .drawer-nav-item.current {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+
+.mobile-breadcrumb-drawer .drawer-nav-item.current:hover {
+  background: #1e40af;
+  border-color: #1e40af;
+}
+
+/* ===== RELATED ENTITIES PANEL STYLES ===== */
+
+/* Related entities panel container */
+.related-entities-panel.responsive-related-panel {
+  position: relative;
+  z-index: 10;
+}
+
+/* Related entities dropdown */
+.related-entities-dropdown {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.related-entities-dropdown .ant-dropdown-menu {
+  padding: 8px 0;
+  max-height: 400px;
+  overflow-y: auto;
+  background: #ffffff;
+}
+
+.related-entities-dropdown .ant-dropdown-menu-item {
+  padding: 0;
+  margin: 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.related-entities-dropdown .ant-dropdown-menu-item:last-child {
+  border-bottom: none;
+}
+
+/* Related entity items */
+.related-entities-dropdown .related-entity-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  transition: background-color 0.2s ease;
+  min-height: 60px;
+}
+
+.related-entities-dropdown .related-entity-item:hover {
+  background: #f8fafc;
+}
+
+.related-entities-dropdown .related-entity-item .entity-info {
+  flex: 1;
+  margin-left: 12px;
+}
+
+.related-entities-dropdown .related-entity-item .entity-info .entity-name {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 2px;
+}
+
+.related-entities-dropdown .related-entity-item .entity-info .entity-meta {
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.related-entities-dropdown .related-entity-item .entity-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Entity type icons */
+.related-entities-dropdown .entity-type-icon {
+  font-size: 18px;
+  color: #6b7280;
+  width: 20px;
+  text-align: center;
+}
+
+.related-entities-dropdown .entity-type-icon.client {
+  color: #8b5cf6;
+}
+
+.related-entities-dropdown .entity-type-icon.project {
+  color: #f59e0b;
+}
+
+.related-entities-dropdown .entity-type-icon.quotation {
+  color: #1d4ed8;
+}
+
+.related-entities-dropdown .entity-type-icon.invoice {
+  color: #059669;
+}
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+
+/* Small screens (mobile phones) */
+@media (max-width: 640px) {
+  .entity-breadcrumb .mobile-breadcrumb .truncate {
+    max-width: 100px;
+  }
+  
+  .related-entities-dropdown {
+    max-width: 95vw;
+    margin: 0 auto;
+  }
+  
+  .related-entities-dropdown .related-entity-item {
+    padding: 10px 12px;
+    min-height: 50px;
+  }
+  
+  .related-entities-dropdown .related-entity-item .entity-info .entity-name {
+    font-size: 14px;
+  }
+  
+  .related-entities-dropdown .related-entity-item .entity-info .entity-meta {
+    font-size: 11px;
+  }
+}
+
+/* Medium screens (tablets) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .entity-breadcrumb .ant-breadcrumb {
+    padding: 10px 14px;
+  }
+  
+  .entity-breadcrumb .mobile-breadcrumb .truncate {
+    max-width: 150px;
+  }
+  
+  .related-entities-dropdown {
+    max-width: 350px;
+  }
+}
+
+/* Large screens (desktops) */
+@media (min-width: 1025px) {
+  .entity-breadcrumb .ant-breadcrumb {
+    padding: 14px 18px;
+  }
+  
+  .related-entities-dropdown {
+    max-width: 400px;
+  }
+  
+  .related-entities-dropdown .related-entity-item {
+    padding: 14px 18px;
+    min-height: 70px;
+  }
+}
+
+/* ===== ACCESSIBILITY ENHANCEMENTS ===== */
+
+/* Focus states */
+.entity-breadcrumb .ant-btn:focus,
+.related-entities-panel .ant-btn:focus {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.2);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .entity-breadcrumb .ant-breadcrumb {
+    border-color: #000000;
+  }
+  
+  .entity-breadcrumb .ant-breadcrumb .ant-breadcrumb-link {
+    color: #000000;
+  }
+  
+  .related-entities-dropdown .related-entity-item {
+    border-bottom-color: #000000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .entity-breadcrumb .ant-breadcrumb .ant-breadcrumb-link,
+  .related-entities-dropdown .related-entity-item,
+  .mobile-breadcrumb-drawer .drawer-nav-item {
+    transition: none;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+
+@media print {
+  .entity-breadcrumb.responsive-breadcrumb {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+  
+  .entity-breadcrumb .mobile-breadcrumb,
+  .related-entities-panel {
+    display: none;
+  }
+  
+  .entity-breadcrumb .ant-breadcrumb {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+}

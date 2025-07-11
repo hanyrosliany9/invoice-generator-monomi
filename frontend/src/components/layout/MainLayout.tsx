@@ -16,6 +16,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../../store/auth'
+import { BreadcrumbProvider } from '../navigation'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -255,7 +256,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             zIndex: 2
           }}
         >
-          {children}
+          <BreadcrumbProvider>
+            {children}
+          </BreadcrumbProvider>
         </Content>
       </Layout>
     </Layout>

@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
-import { QuotationStatus } from '@prisma/client';
+import { QuotationStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class QuotationsService {
@@ -217,5 +217,38 @@ export class QuotationsService {
       total,
       byStatus: statusCounts,
     };
+  }
+
+  async inheritPriceFromProject(projectId: string, customPrice?: Prisma.Decimal): Promise<Prisma.Decimal> {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { 
+        basePrice: true,
+        estimatedBudget: true,
+        id: true 
+      }
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project tidak ditemukan');
+    }
+
+    // If custom price is provided, use it
+    if (customPrice !== undefined && customPrice !== null) {
+      return customPrice;
+    }
+
+    // If project has base price, use it
+    if (project.basePrice !== null) {
+      return project.basePrice;
+    }
+
+    // Fallback to estimated budget
+    if (project.estimatedBudget !== null) {
+      return project.estimatedBudget;
+    }
+
+    // If no price information available, return 0
+    return new Prisma.Decimal(0);
   }
 }

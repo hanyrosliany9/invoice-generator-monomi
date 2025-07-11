@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { Component, ErrorInfo, ReactNode } from 'react'
 import { Alert, Button, Space } from 'antd'
 import { ExclamationCircleOutlined, ReloadOutlined } from '@ant-design/icons'
 
@@ -15,7 +15,7 @@ interface State {
 }
 
 class FormErrorBoundary extends Component<Props, State> {
-  public state: State = {
+  public override state: State = {
     hasError: false,
     error: null,
   }
@@ -27,7 +27,7 @@ class FormErrorBoundary extends Component<Props, State> {
     }
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('FormErrorBoundary caught an error:', error, errorInfo)
     
     // Call custom error handler if provided
@@ -48,7 +48,7 @@ class FormErrorBoundary extends Component<Props, State> {
     }
   }
 
-  public render() {
+  public override render() {
     if (this.state.hasError) {
       return (
         <div style={{ padding: '16px' }}>

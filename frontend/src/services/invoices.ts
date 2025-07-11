@@ -236,7 +236,8 @@ export const invoiceService = {
   }) => {
     return await paymentsService.createPayment({
       invoiceId,
-      ...paymentData
+      ...paymentData,
+      paymentMethod: paymentData.paymentMethod as any
     })
   },
 

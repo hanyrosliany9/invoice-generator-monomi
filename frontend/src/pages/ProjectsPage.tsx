@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -42,9 +42,11 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { formatIDR, safeNumber, safeString, safeArray } from '../utils/currency'
 import { projectService, Project } from '../services/projects'
 import { clientService } from '../services/clients'
+import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -63,6 +65,7 @@ const { RangePicker } = DatePicker
 export const ProjectsPage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -188,6 +191,11 @@ export const ProjectsPage: React.FC = () => {
     return dayjs(endDate).diff(dayjs(), 'days')
   }
 
+  // Navigation function for clickable table links
+  const navigateToClient = useCallback((_clientId: string) => {
+    navigate('/clients')
+  }, [navigate])
+
   const handleCreate = () => {
     setEditingProject(null)
     setModalVisible(true)
@@ -271,7 +279,16 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Klien',
       key: 'clientName',
-      render: (_: any, project: Project) => project.client?.name || 'N/A',
+      render: (_: any, project: Project) => (
+        <Button 
+          type="link" 
+          onClick={() => navigateToClient(project.client?.id || '')}
+          className="text-blue-600 hover:text-blue-800 p-0"
+          disabled={!project.client?.id}
+        >
+          {project.client?.name || 'N/A'}
+        </Button>
+      ),
       sorter: (a: Project, b: Project) => (a.client?.name || '').localeCompare(b.client?.name || '')
     },
     {
@@ -876,6 +893,19 @@ export const ProjectsPage: React.FC = () => {
       >
         {selectedProject && (
           <div className="space-y-4">
+            {/* Breadcrumb Navigation */}
+            <div className="mb-4">
+              <EntityBreadcrumb
+                entityType="project"
+                entityData={selectedProject}
+                className="mb-2"
+              />
+              <RelatedEntitiesPanel
+                entityType="project"
+                entityData={selectedProject}
+                className="mb-4"
+              />
+            </div>
             <Row gutter={16}>
               <Col span={12}>
                 <Text strong>Nomor Proyek:</Text>

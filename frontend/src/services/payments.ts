@@ -115,11 +115,12 @@ export const paymentsService = {
       .sort((a, b) => new Date(b.confirmedAt || b.createdAt).getTime() - new Date(a.confirmedAt || a.createdAt).getTime())
       .at(0)
     
+    const lastDate = lastPayment?.confirmedAt || lastPayment?.createdAt
     return {
       totalPaid: totalPaid.toFixed(2),
       remainingAmount: remainingAmount.toFixed(2),
       paymentCount: confirmedPayments.length,
-      lastPaymentDate: lastPayment?.confirmedAt || lastPayment?.createdAt
+      ...(lastDate && { lastPaymentDate: lastDate })
     }
   },
 

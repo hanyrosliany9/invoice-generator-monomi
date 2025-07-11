@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -22,7 +22,8 @@ import {
   Badge,
   Progress,
   Divider,
-  Skeleton
+  Skeleton,
+  Radio
 } from 'antd'
 import {
   PlusOutlined,
@@ -51,8 +52,10 @@ import { formatIDR, requiresMaterai, getMateraiAmount, safeNumber, safeDivision,
 import { invoiceService, Invoice } from '../services/invoices'
 import { clientService } from '../services/clients'
 import { projectService } from '../services/projects'
+import { quotationService } from '../services/quotations'
 import { WorkflowProgress, WorkflowTimeline } from '../components/workflow'
 import { InvoiceStatus } from '../types/invoice'
+import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -91,6 +94,9 @@ export const InvoicesPage: React.FC = () => {
   const { message } = App.useApp()
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [batchLoading, setBatchLoading] = useState(false)
+  const [priceInheritanceMode, setPriceInheritanceMode] = useState<'inherit' | 'custom'>('inherit')
+  const [selectedQuotation, setSelectedQuotation] = useState<any>(null)
+  const [quotationId, setQuotationId] = useState<string | null>(null)
 
 
   // Queries
@@ -109,11 +115,31 @@ export const InvoicesPage: React.FC = () => {
     queryFn: projectService.getProjects
   })
 
+  const { data: quotations = [] } = useQuery({
+    queryKey: ['quotations'],
+    queryFn: quotationService.getQuotations
+  })
+
   // Debug: Log available data
   React.useEffect(() => {
     console.log('Available clients:', clients);
     console.log('Available projects:', projects);
   }, [clients, projects]);
+
+  // Price inheritance effect
+  useEffect(() => {
+    if (quotationId) {
+      const quotation = quotations.find(q => q.id === quotationId)
+      if (quotation) {
+        setSelectedQuotation(quotation)
+        if (priceInheritanceMode === 'inherit') {
+          // Use quotation totalAmount or amountPerProject
+          const inheritedPrice = quotation.totalAmount || quotation.amountPerProject || 0
+          form.setFieldsValue({ totalAmount: inheritedPrice })
+        }
+      }
+    }
+  }, [form, quotations, priceInheritanceMode, quotationId]);
 
   // Mutations
   const createMutation = useMutation({
@@ -205,6 +231,19 @@ export const InvoicesPage: React.FC = () => {
   const getProjectName = (invoice: Invoice) => invoice.project?.description || 'Unknown Project'
   const getAmount = (invoice: Invoice) => safeNumber(invoice.totalAmount)
 
+  // Navigation functions for clickable table links
+  const navigateToClient = useCallback((_clientId: string) => {
+    navigate('/clients')
+  }, [navigate])
+
+  const navigateToProject = useCallback((_projectId: string) => {
+    navigate('/projects')
+  }, [navigate])
+
+  const navigateToQuotation = useCallback((_quotationId: string) => {
+    navigate('/quotations')
+  }, [navigate])
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'DRAFT': return 'default'
@@ -294,12 +333,36 @@ export const InvoicesPage: React.FC = () => {
   const handleCreate = () => {
     setEditingInvoice(null)
     setModalVisible(true)
+    setPriceInheritanceMode('inherit')
+    setSelectedQuotation(null)
+    setQuotationId(null)
     form.resetFields()
   }
 
   const handleEdit = (invoice: Invoice) => {
     setEditingInvoice(invoice)
     setModalVisible(true)
+    
+    // Set selected quotation for price inheritance
+    if (invoice.quotationId) {
+      const quotation = quotations.find(q => q.id === invoice.quotationId)
+      if (quotation) {
+        setSelectedQuotation(quotation)
+        setQuotationId(invoice.quotationId)
+        
+        // Determine price inheritance mode
+        const quotationPrice = parseFloat(String(quotation.totalAmount || quotation.amountPerProject || '0'))
+        const invoicePrice = parseFloat(String(invoice.totalAmount || '0'))
+        
+        // If invoice price matches quotation price, assume inheritance mode
+        if (Math.abs(quotationPrice - invoicePrice) < 0.01) {
+          setPriceInheritanceMode('inherit')
+        } else {
+          setPriceInheritanceMode('custom')
+        }
+      }
+    }
+    
     form.setFieldsValue({
       ...invoice,
       dueDate: dayjs(invoice.dueDate)
@@ -348,6 +411,40 @@ export const InvoicesPage: React.FC = () => {
 
   const handlePrintInvoice = (invoice: Invoice) => {
     printMutation.mutate({ id: invoice.id })
+  }
+
+  const handleQuotationChange = (quotationId: string) => {
+    const quotation = quotations.find(q => q.id === quotationId)
+    if (quotation) {
+      setSelectedQuotation(quotation)
+      setQuotationId(quotationId)
+      
+      // Auto-populate fields from quotation
+      form.setFieldsValue({
+        clientId: quotation.clientId,
+        projectId: quotation.projectId
+      })
+      
+      if (priceInheritanceMode === 'inherit') {
+        // Use quotation totalAmount or amountPerProject
+        const inheritedPrice = quotation.totalAmount || quotation.amountPerProject || 0
+        form.setFieldsValue({ totalAmount: inheritedPrice })
+      }
+    }
+  }
+
+  const handlePriceInheritanceModeChange = (e: any) => {
+    const mode = e.target.value
+    setPriceInheritanceMode(mode)
+    
+    if (mode === 'inherit' && selectedQuotation) {
+      // Use quotation totalAmount or amountPerProject
+      const inheritedPrice = selectedQuotation.totalAmount || selectedQuotation.amountPerProject || 0
+      form.setFieldsValue({ totalAmount: inheritedPrice })
+    } else if (mode === 'custom') {
+      // Clear the amount field for custom input
+      form.setFieldsValue({ totalAmount: undefined })
+    }
   }
 
   const handleFormSubmit = (values: any) => {
@@ -609,19 +706,51 @@ export const InvoicesPage: React.FC = () => {
     {
       title: 'Nomor',
       key: 'number',
-      render: (_: any, invoice: Invoice) => getInvoiceNumber(invoice),
+      render: (_: any, invoice: Invoice) => (
+        <div>
+          <div className="font-medium">{getInvoiceNumber(invoice)}</div>
+          {invoice.quotationId && (
+            <Button 
+              type="link" 
+              size="small"
+              onClick={() => navigateToQuotation(invoice.quotationId || '')}
+              className="text-xs text-gray-500 hover:text-blue-600 p-0"
+            >
+              <LinkOutlined /> Dari Quotation
+            </Button>
+          )}
+        </div>
+      ),
       sorter: (a: Invoice, b: Invoice) => getInvoiceNumber(a).localeCompare(getInvoiceNumber(b))
     },
     {
       title: 'Klien',
       key: 'clientName',
-      render: (_: any, invoice: Invoice) => getClientName(invoice),
+      render: (_: any, invoice: Invoice) => (
+        <Button 
+          type="link" 
+          onClick={() => navigateToClient(invoice.client?.id || '')}
+          className="text-blue-600 hover:text-blue-800 p-0"
+          disabled={!invoice.client?.id}
+        >
+          {getClientName(invoice)}
+        </Button>
+      ),
       sorter: (a: Invoice, b: Invoice) => getClientName(a).localeCompare(getClientName(b))
     },
     {
       title: 'Proyek',
       key: 'projectName',
-      render: (_: any, invoice: Invoice) => getProjectName(invoice),
+      render: (_: any, invoice: Invoice) => (
+        <Button 
+          type="link" 
+          onClick={() => navigateToProject(invoice.project?.id || '')}
+          className="text-blue-600 hover:text-blue-800 p-0"
+          disabled={!invoice.project?.id}
+        >
+          {getProjectName(invoice)}
+        </Button>
+      ),
       sorter: (a: Invoice, b: Invoice) => getProjectName(a).localeCompare(getProjectName(b))
     },
     {
@@ -1194,7 +1323,22 @@ export const InvoicesPage: React.FC = () => {
           onFinish={handleFormSubmit}
         >
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={8}>
+              <Form.Item
+                name="quotationId"
+                label="Quotation (Opsional)"
+                tooltip="Pilih quotation untuk mengisi data otomatis"
+              >
+                <Select placeholder="Pilih quotation" allowClear onChange={handleQuotationChange}>
+                  {safeArray(quotations).filter(q => q.status === 'APPROVED').map(quotation => (
+                    <Option key={quotation.id} value={quotation.id}>
+                      {quotation.quotationNumber} - {quotation.client?.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
               <Form.Item
                 name="clientId"
                 label="Klien"
@@ -1209,7 +1353,7 @@ export const InvoicesPage: React.FC = () => {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item
                 name="projectId"
                 label="Proyek"
@@ -1226,6 +1370,37 @@ export const InvoicesPage: React.FC = () => {
             </Col>
           </Row>
 
+          {/* Price Inheritance Section */}
+          {quotationId && (
+            <Card size="small" style={{ marginBottom: 16, backgroundColor: '#f9f9f9' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Text strong>Pengaturan Harga</Text>
+                <Radio.Group
+                  value={priceInheritanceMode}
+                  onChange={handlePriceInheritanceModeChange}
+                >
+                  <Radio value="inherit">
+                    Gunakan Harga dari Quotation
+                    {selectedQuotation && (
+                      <Text type="secondary" style={{ marginLeft: 8 }}>
+                        ({formatIDR(selectedQuotation.totalAmount || selectedQuotation.amountPerProject || 0)})
+                      </Text>
+                    )}
+                  </Radio>
+                  <Radio value="custom">Masukkan Harga Kustom</Radio>
+                </Radio.Group>
+                
+                {priceInheritanceMode === 'inherit' && selectedQuotation && (
+                  <Alert
+                    message={`Harga akan otomatis diambil dari quotation: ${formatIDR(selectedQuotation.totalAmount || selectedQuotation.amountPerProject || 0)}`}
+                    type="info"
+                    showIcon
+                  />
+                )}
+              </Space>
+            </Card>
+          )}
+
           <Form.Item
             name="totalAmount"
             label="Total Jumlah"
@@ -1239,6 +1414,7 @@ export const InvoicesPage: React.FC = () => {
               prefix="IDR"
               formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
               parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
+              disabled={Boolean(quotationId && priceInheritanceMode === 'inherit')}
               style={{ width: '100%' }}
             />
           </Form.Item>
@@ -1338,6 +1514,19 @@ export const InvoicesPage: React.FC = () => {
       >
         {selectedInvoice && (
           <div className="space-y-4">
+            {/* Breadcrumb Navigation */}
+            <div className="mb-4">
+              <EntityBreadcrumb
+                entityType="invoice"
+                entityData={selectedInvoice}
+                className="mb-2"
+              />
+              <RelatedEntitiesPanel
+                entityType="invoice"
+                entityData={selectedInvoice}
+                className="mb-4"
+              />
+            </div>
             <Row gutter={16}>
               <Col span={12}>
                 <Text strong>Klien:</Text>

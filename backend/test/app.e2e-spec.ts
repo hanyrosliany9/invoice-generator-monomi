@@ -162,7 +162,7 @@ describe('Indonesian Business Management System (e2e)', () => {
         .expect(200)
         .expect((res) => {
           expect(res.body.id).toBe('project-1');
-          expect(res.body.number).toBe('PRJ-202501-001');
+          expect(res.body.number).toBe('PRJ-PH-202501-001');
           expect(res.body.description).toBe('Pembuatan Website E-commerce');
         });
     });

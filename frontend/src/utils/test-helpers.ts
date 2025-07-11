@@ -27,7 +27,7 @@ export const createMockInvoice = (overrides: Partial<ValidInvoice> = {}): ValidI
   clientName: 'Test Client',
   projectName: 'Test Project',
   amount: 1000000,
-  status: 'draft',
+  status: 'DRAFT',
   dueDate: '2025-08-01',
   materaiRequired: false,
   materaiApplied: false,
@@ -36,11 +36,11 @@ export const createMockInvoice = (overrides: Partial<ValidInvoice> = {}): ValidI
 
 export const createMockProject = (overrides: Partial<ValidProject> = {}): ValidProject => ({
   id: 'project-1',
-  number: 'PRJ-2025-001',
+  number: 'PRJ-PH-202507-001',
   description: 'Test Project',
   clientName: 'Test Client',
-  type: 'production',
-  status: 'planning',
+  type: 'PRODUCTION',
+  status: 'PLANNING',
   estimatedBudget: 2000000,
   actualBudget: 1800000,
   totalPaid: 1000000,
@@ -57,7 +57,7 @@ export const createMockQuotation = (overrides: Partial<ValidQuotation> = {}): Va
   clientName: 'Test Client',
   projectName: 'Test Project',
   amount: 1500000,
-  status: 'draft',
+  status: 'DRAFT',
   validUntil: '2025-08-01',
   ...overrides
 })

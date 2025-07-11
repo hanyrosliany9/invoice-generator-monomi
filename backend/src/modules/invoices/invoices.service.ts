@@ -4,7 +4,7 @@ import { QuotationsService } from '../quotations/quotations.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
-import { InvoiceStatus, QuotationStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
+import { InvoiceStatus, QuotationStatus, PaymentMethod, PaymentStatus, Prisma } from '@prisma/client';
 import { PaginatedResponse } from '../../common/dto/api-response.dto';
 
 @Injectable()
@@ -443,6 +443,55 @@ export class InvoicesService {
         dueDate: 'asc',
       },
     });
+  }
+
+  async inheritPriceFromQuotation(quotationId: string, customPrice?: Prisma.Decimal): Promise<Prisma.Decimal> {
+    const quotation = await this.prisma.quotation.findUnique({
+      where: { id: quotationId },
+      select: { 
+        totalAmount: true,
+        amountPerProject: true,
+        id: true,
+        project: {
+          select: {
+            basePrice: true,
+            estimatedBudget: true
+          }
+        }
+      }
+    });
+
+    if (!quotation) {
+      throw new NotFoundException('Quotation tidak ditemukan');
+    }
+
+    // If custom price is provided, use it
+    if (customPrice !== undefined && customPrice !== null) {
+      return customPrice;
+    }
+
+    // If quotation has total amount, use it
+    if (quotation.totalAmount !== null) {
+      return quotation.totalAmount;
+    }
+
+    // Fallback to quotation amount per project
+    if (quotation.amountPerProject !== null) {
+      return quotation.amountPerProject;
+    }
+
+    // Fallback to project base price
+    if (quotation.project?.basePrice !== null) {
+      return quotation.project.basePrice;
+    }
+
+    // Final fallback to project estimated budget
+    if (quotation.project?.estimatedBudget !== null) {
+      return quotation.project.estimatedBudget;
+    }
+
+    // If no price information available, return 0
+    return new Prisma.Decimal(0);
   }
 
   private sanitizeInput(input: string): string {

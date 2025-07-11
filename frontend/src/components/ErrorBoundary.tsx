@@ -1,8 +1,8 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { Component, ErrorInfo, ReactNode } from 'react'
 import { Alert, Button, Typography, Space } from 'antd'
 import { ExclamationCircleOutlined, ReloadOutlined } from '@ant-design/icons'
 
-const { Title, Paragraph } = Typography
+const { Paragraph } = Typography
 
 interface Props {
   children: ReactNode
@@ -17,7 +17,7 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
+  public override state: State = {
     hasError: false,
     error: null,
     errorInfo: null,
@@ -31,7 +31,7 @@ class ErrorBoundary extends Component<Props, State> {
     }
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo)
     
     this.setState({
@@ -57,7 +57,7 @@ class ErrorBoundary extends Component<Props, State> {
     })
   }
 
-  public render() {
+  public override render() {
     if (this.state.hasError) {
       // Custom fallback UI
       if (this.props.fallback) {
@@ -88,7 +88,7 @@ class ErrorBoundary extends Component<Props, State> {
                   </Button>
                 </Space>
 
-                {process.env.NODE_ENV === 'development' && this.state.error && (
+                {process.env['NODE_ENV'] === 'development' && this.state.error && (
                   <details style={{ marginTop: '16px' }}>
                     <summary style={{ cursor: 'pointer', fontSize: '14px' }}>
                       Detail Error (Development)

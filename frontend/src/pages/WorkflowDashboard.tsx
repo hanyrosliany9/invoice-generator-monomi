@@ -11,7 +11,6 @@ import {
   Button,
   Space,
   Tabs,
-  Progress,
   Timeline,
   Empty,
   Spin
@@ -25,7 +24,6 @@ import {
   ReloadOutlined,
   WarningOutlined
 } from '@ant-design/icons'
-import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { formatIDR, safeNumber, safeArray } from '../utils/currency'
@@ -97,7 +95,6 @@ const workflowService = {
 }
 
 export const WorkflowDashboard: React.FC = () => {
-  const { t } = useTranslation()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
 
@@ -227,7 +224,7 @@ export const WorkflowDashboard: React.FC = () => {
     {
       title: 'Status',
       key: 'status',
-      render: (_, record: WorkflowItem) => (
+      render: (_: any, record: WorkflowItem) => (
         <Tag color={getStatusColor(record.status, record.type)}>
           {getStatusText(record.status, record.type)}
         </Tag>
@@ -244,7 +241,7 @@ export const WorkflowDashboard: React.FC = () => {
     {
       title: 'Urgensi',
       key: 'urgency',
-      render: (_, record: WorkflowItem) => {
+      render: (_: any, record: WorkflowItem) => {
         const urgency = getUrgencyLevel(record)
         return (
           <Tag color={urgency.color} icon={
@@ -309,16 +306,16 @@ export const WorkflowDashboard: React.FC = () => {
       </div>
 
       {/* Alerts */}
-      {(stats?.alerts?.overdueInvoices > 0 || stats?.alerts?.expiringQuotations > 0) && (
+      {((stats?.alerts?.overdueInvoices || 0) > 0 || (stats?.alerts?.expiringQuotations || 0) > 0) && (
         <Alert
           message="Perhatian Diperlukan"
           description={
             <div>
-              {stats?.alerts?.overdueInvoices > 0 && (
-                <div>• {stats?.alerts?.overdueInvoices} invoice terlambat pembayaran</div>
+              {(stats?.alerts?.overdueInvoices || 0) > 0 && (
+                <div>• {stats?.alerts?.overdueInvoices || 0} invoice terlambat pembayaran</div>
               )}
-              {stats?.alerts?.expiringQuotations > 0 && (
-                <div>• {stats?.alerts?.expiringQuotations} quotation akan kadaluarsa dalam 3 hari</div>
+              {(stats?.alerts?.expiringQuotations || 0) > 0 && (
+                <div>• {stats?.alerts?.expiringQuotations || 0} quotation akan kadaluarsa dalam 3 hari</div>
               )}
             </div>
           }
@@ -474,7 +471,7 @@ export const WorkflowDashboard: React.FC = () => {
                         <div className="text-right text-sm text-gray-500">
                           {dayjs(item.createdAt).format('DD/MM/YYYY')}
                           <div>
-                            <Tag color={urgency.color} size="small">
+                            <Tag color={urgency.color}>
                               {urgency.text}
                             </Tag>
                           </div>

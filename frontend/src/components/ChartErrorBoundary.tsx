@@ -1,5 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { Alert, Button, Empty } from 'antd'
+import { Component, ErrorInfo, ReactNode } from 'react'
+import { Button, Empty } from 'antd'
 import { ReloadOutlined, BarChartOutlined } from '@ant-design/icons'
 
 interface Props {
@@ -14,7 +14,7 @@ interface State {
 }
 
 class ChartErrorBoundary extends Component<Props, State> {
-  public state: State = {
+  public override state: State = {
     hasError: false,
     error: null,
   }
@@ -26,7 +26,7 @@ class ChartErrorBoundary extends Component<Props, State> {
     }
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ChartErrorBoundary caught an error:', error, errorInfo)
     
     // Call custom error handler if provided
@@ -42,7 +42,7 @@ class ChartErrorBoundary extends Component<Props, State> {
     })
   }
 
-  public render() {
+  public override render() {
     if (this.state.hasError) {
       return (
         <div style={{ 

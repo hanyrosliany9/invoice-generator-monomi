@@ -10,7 +10,7 @@ export class ProjectsService {
 
   async create(createProjectDto: CreateProjectDto) {
     // Generate unique project number if not provided
-    const projectNumber = createProjectDto.number || await this.generateProjectNumber();
+    const projectNumber = createProjectDto.number || await this.generateProjectNumber(createProjectDto.type);
     
     return this.prisma.project.create({
       data: {
@@ -120,26 +120,25 @@ export class ProjectsService {
     });
   }
 
-  async generateProjectNumber(): Promise<string> {
+  async generateProjectNumber(projectType: ProjectType): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
     const month = (now.getMonth() + 1).toString().padStart(2, '0');
     
-    // Get count of projects this month
-    const startOfMonth = new Date(year, now.getMonth(), 1);
-    const endOfMonth = new Date(year, now.getMonth() + 1, 0);
+    // Add project type prefix
+    const typePrefix = projectType === ProjectType.SOCIAL_MEDIA ? 'SM' : 'PH';
     
-    const count = await this.prisma.project.count({
+    // Count existing projects for this type and month
+    const existingProjects = await this.prisma.project.count({
       where: {
-        createdAt: {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        },
-      },
+        number: {
+          startsWith: `PRJ-${typePrefix}-${year}${month}-`
+        }
+      }
     });
-
-    const sequence = (count + 1).toString().padStart(3, '0');
-    return `PRJ-${year}${month}-${sequence}`;
+    
+    const sequence = (existingProjects + 1).toString().padStart(3, '0');
+    return `PRJ-${typePrefix}-${year}${month}-${sequence}`;
   }
 
   async getProjectStats() {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -38,8 +38,10 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { formatIDR, safeNumber, safeString, safeArray } from '../utils/currency'
 import { clientService, Client } from '../services/clients'
+import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -50,6 +52,7 @@ const { TextArea } = Input
 export const ClientsPage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -134,6 +137,15 @@ export const ClientsPage: React.FC = () => {
     if (safeCompany.startsWith('CV.') || safeCompany.startsWith('CV ')) return <TeamOutlined />
     return <UserOutlined />
   }
+
+  // Navigation functions for clickable table links
+  const navigateToQuotations = useCallback(() => {
+    navigate('/quotations')
+  }, [navigate])
+
+  const navigateToInvoices = useCallback(() => {
+    navigate('/invoices')
+  }, [navigate])
 
   const handleCreate = () => {
     setEditingClient(null)
@@ -230,11 +242,25 @@ export const ClientsPage: React.FC = () => {
         <div className="space-y-1">
           <div className="flex justify-between">
             <span className="text-sm text-gray-500">Quotations:</span>
-            <span className="text-sm font-medium">{client.totalQuotations}</span>
+            <Button 
+              type="link" 
+              size="small"
+              onClick={navigateToQuotations}
+              className="text-sm font-medium text-blue-600 hover:text-blue-800 p-0"
+            >
+              {client.totalQuotations}
+            </Button>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-gray-500">Invoices:</span>
-            <span className="text-sm font-medium">{client.totalInvoices}</span>
+            <Button 
+              type="link" 
+              size="small"
+              onClick={navigateToInvoices}
+              className="text-sm font-medium text-blue-600 hover:text-blue-800 p-0"
+            >
+              {client.totalInvoices}
+            </Button>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-gray-500">Lunas:</span>
@@ -685,6 +711,19 @@ export const ClientsPage: React.FC = () => {
       >
         {selectedClient && (
           <div className="space-y-4">
+            {/* Breadcrumb Navigation */}
+            <div className="mb-4">
+              <EntityBreadcrumb
+                entityType="client"
+                entityData={selectedClient}
+                className="mb-2"
+              />
+              <RelatedEntitiesPanel
+                entityType="client"
+                entityData={selectedClient}
+                className="mb-4"
+              />
+            </div>
             <Row gutter={16}>
               <Col span={12}>
                 <Text strong>{t('clients.fields.name')}:</Text>
