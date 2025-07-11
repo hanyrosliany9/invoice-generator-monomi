@@ -223,7 +223,7 @@ export const ProjectsPage: React.FC = () => {
     if (editingProject) {
       updateMutation.mutate({ id: editingProject.id, data })
     } else {
-      createMutation.mutate({ ...data, status: 'planning', progress: 0 })
+      createMutation.mutate({ ...data, status: 'PLANNING' })
     }
   }
 
@@ -736,32 +736,19 @@ export const ProjectsPage: React.FC = () => {
           layout="vertical"
           onFinish={handleFormSubmit}
         >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="number"
-                label={t('projects.number')}
-                rules={[{ required: true, message: 'Nomor proyek wajib diisi' }]}
-              >
-                <Input placeholder="PRJ-2024-001" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="clientId"
-                label="Klien"
-                rules={[{ required: true, message: 'Pilih klien' }]}
-              >
-                <Select placeholder="Pilih klien">
-                  {safeArray(clients).map(client => (
-                    <Option key={client.id} value={client.id}>
-                      {client.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item
+            name="clientId"
+            label="Klien"
+            rules={[{ required: true, message: 'Pilih klien' }]}
+          >
+            <Select placeholder="Pilih klien">
+              {safeArray(clients).map(client => (
+                <Option key={client.id} value={client.id}>
+                  {client.name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
 
           <Form.Item
             name="description"
@@ -787,8 +774,8 @@ export const ProjectsPage: React.FC = () => {
                 rules={[{ required: true, message: 'Pilih tipe proyek' }]}
               >
                 <Select placeholder="Pilih tipe proyek">
-                  <Option value="production">Produksi</Option>
-                  <Option value="socialMedia">Media Sosial</Option>
+                  <Option value="PRODUCTION">Produksi</Option>
+                  <Option value="SOCIAL_MEDIA">Media Sosial</Option>
                 </Select>
               </Form.Item>
             </Col>
