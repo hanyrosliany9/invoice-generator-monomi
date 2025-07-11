@@ -1,6 +1,4 @@
 import { apiClient } from '../config/api'
-import { paymentsService } from './payments'
-import { Payment } from '../types/payment'
 import { InvoiceStatus } from '../types/invoice'
 
 export interface Invoice {
@@ -187,23 +185,6 @@ export const invoiceService = {
     return response?.data?.data || []
   },
 
-  // Get invoice with payment information
-  getInvoiceWithPayments: async (id: string): Promise<Invoice & { payments: Payment[] }> => {
-    const [invoice, payments] = await Promise.all([
-      invoiceService.getInvoice(id),
-      paymentsService.getPaymentsByInvoice(id)
-    ])
-    
-    const paymentSummary = paymentsService.calculatePaymentSummary(payments, invoice.totalAmount)
-    const businessStatus = invoiceService.calculateBusinessStatus(invoice)
-    
-    return {
-      ...invoice,
-      payments,
-      paymentSummary,
-      businessStatus
-    }
-  },
 
   // Calculate business status for invoice
   calculateBusinessStatus: (invoice: Invoice) => {
@@ -226,36 +207,6 @@ export const invoiceService = {
     }
   },
 
-  // Add payment to invoice
-  addPayment: async (invoiceId: string, paymentData: {
-    amount: string | number
-    paymentDate: string
-    paymentMethod: string
-    transactionRef?: string
-    bankDetails?: string
-  }) => {
-    return await paymentsService.createPayment({
-      invoiceId,
-      ...paymentData,
-      paymentMethod: paymentData.paymentMethod as any
-    })
-  },
-
-  // Get payment summary for invoice
-  getPaymentSummary: async (invoiceId: string) => {
-    const [invoice, payments] = await Promise.all([
-      invoiceService.getInvoice(invoiceId),
-      paymentsService.getPaymentsByInvoice(invoiceId)
-    ])
-    
-    return paymentsService.calculatePaymentSummary(payments, invoice.totalAmount)
-  },
-
-  // Check if invoice is fully paid
-  isFullyPaid: async (invoiceId: string): Promise<boolean> => {
-    const summary = await invoiceService.getPaymentSummary(invoiceId)
-    return parseFloat(summary.remainingAmount) <= 0
-  },
 
   // Format invoice amount for display
   formatAmount: (amount: string | number): string => {
