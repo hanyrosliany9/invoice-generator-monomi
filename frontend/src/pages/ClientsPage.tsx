@@ -2,7 +2,6 @@ import React, { useCallback, useState } from 'react'
 import {
   App,
   Avatar,
-  Badge,
   Button,
   Card,
   Col,
@@ -17,7 +16,6 @@ import {
   Statistic,
   Table,
   Tag,
-  Tooltip,
   Typography
 } from 'antd'
 import {
@@ -45,6 +43,9 @@ import { formatIDR, safeArray, safeNumber, safeString } from '../utils/currency'
 import { Client, clientService } from '../services/clients'
 import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
 import WorkflowIndicator from '../components/ui/WorkflowIndicator'
+import MetricBadge from '../components/ui/MetricBadge'
+import RevenueIndicator from '../components/ui/RevenueIndicator'
+import HealthScore from '../components/ui/HealthScore'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -243,89 +244,43 @@ export const ClientsPage: React.FC = () => {
       title: 'Business Overview',
       key: 'business',
       render: (_: any, client: Client) => (
-        <div className="space-y-2">
-          {/* Projects Section */}
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-500">Projects:</span>
-            <Button 
-              type="link" 
-              size="small"
-              onClick={() => navigate(`/projects?clientId=${client.id}`)}
-              className="text-sm font-medium text-purple-600 hover:text-purple-800 p-0"
-            >
-              📊 {client.totalProjects || 0}
-            </Button>
-          </div>
-          
-          {/* Quotations Section */}
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-500">Quotations:</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <HealthScore 
+              client={client} 
+              size="small" 
+            />
             <div className="flex items-center space-x-2">
-              <Button 
-                type="link" 
-                size="small"
+              <MetricBadge 
+                icon="📊" 
+                value={client.totalProjects || 0} 
+                color="purple" 
+                onClick={() => navigate(`/projects?clientId=${client.id}`)}
+                tooltip="View projects"
+              />
+              <MetricBadge 
+                icon="📋" 
+                value={client.totalQuotations || 0} 
+                color="blue"
+                badge={(client.pendingQuotations || 0) > 0 ? (client.pendingQuotations || 0) : null}
                 onClick={() => navigateToQuotations(client.id)}
-                className="text-sm font-medium text-blue-600 hover:text-blue-800 p-0"
-              >
-                📋 {client.totalQuotations}
-              </Button>
-              {client.pendingQuotations > 0 && (
-                <Badge count={client.pendingQuotations} size="small" color="orange" />
-              )}
-            </div>
-          </div>
-          
-          {/* Invoices Section */}
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-500">Invoices:</span>
-            <div className="flex items-center space-x-2">
-              <Button 
-                type="link" 
-                size="small"
+                tooltip={`View quotations${(client.pendingQuotations || 0) > 0 ? ` (${client.pendingQuotations || 0} pending)` : ''}`}
+              />
+              <MetricBadge 
+                icon="💰" 
+                value={client.totalInvoices || 0} 
+                color="green"
+                badge={(client.overdueInvoices || 0) > 0 ? (client.overdueInvoices || 0) : null}
                 onClick={() => navigateToInvoices(client.id)}
-                className="text-sm font-medium text-green-600 hover:text-green-800 p-0"
-              >
-                💰 {client.totalInvoices}
-              </Button>
-              {client.overdueInvoices > 0 && (
-                <Badge count={client.overdueInvoices} size="small" color="red" />
-              )}
+                tooltip={`View invoices${(client.overdueInvoices || 0) > 0 ? ` (${client.overdueInvoices || 0} overdue)` : ''}`}
+              />
             </div>
           </div>
-          
-          {/* Revenue Summary */}
-          <div className="flex justify-between">
-            <span className="text-sm text-gray-500">Lunas:</span>
-            <span className="text-sm font-medium text-green-600">{formatIDR(client.totalPaid || 0)}</span>
-          </div>
-          {(client.totalPending || 0) > 0 && (
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Pending:</span>
-              <span className="text-sm font-medium text-orange-600">{formatIDR(client.totalPending || 0)}</span>
-            </div>
-          )}
-          
-          {/* Quick Actions */}
-          <div className="flex space-x-1 mt-2 pt-1 border-t border-gray-100">
-            <Tooltip title="Create new project">
-              <Button 
-                type="text" 
-                size="small" 
-                icon={<PlusOutlined />}
-                onClick={() => navigate(`/projects/create?clientId=${client.id}`)}
-                className="text-purple-600 hover:text-purple-800 hover:bg-purple-50"
-              />
-            </Tooltip>
-            <Tooltip title="Create quotation">
-              <Button 
-                type="text" 
-                size="small" 
-                icon={<FileTextOutlined />}
-                onClick={() => navigate(`/quotations/create?clientId=${client.id}`)}
-                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-              />
-            </Tooltip>
-          </div>
+          <RevenueIndicator 
+            paid={client.totalPaid || 0} 
+            pending={client.totalPending || 0} 
+            compact 
+          />
         </div>
       ),
       sorter: (a: Client, b: Client) => (a.totalPaid || 0) - (b.totalPaid || 0)
