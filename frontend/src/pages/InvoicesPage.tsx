@@ -53,7 +53,6 @@ import { invoiceService, Invoice } from '../services/invoices'
 import { clientService } from '../services/clients'
 import { projectService } from '../services/projects'
 import { quotationService } from '../services/quotations'
-import { WorkflowProgress, WorkflowTimeline } from '../components/workflow'
 import { InvoiceStatus } from '../types/invoice'
 import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
 import dayjs from 'dayjs'
@@ -1623,28 +1622,6 @@ export const InvoicesPage: React.FC = () => {
               </div>
             )}
 
-            {/* Workflow Information for Quotation-based Invoices */}
-            {selectedInvoice.quotationId && (
-              <div className="mt-6">
-                <WorkflowProgress
-                  currentStatus="APPROVED"
-                  invoiceId={selectedInvoice.id}
-                  showActions={false}
-                />
-              </div>
-            )}
-
-            {/* Invoice Timeline */}
-            <div className="mt-6">
-              <WorkflowTimeline
-                quotationId={selectedInvoice.quotation?.quotationNumber || 'Direct Invoice'}
-                currentStatus={selectedInvoice.quotationId ? 'APPROVED' : 'INVOICE'}
-                createdAt={selectedInvoice.createdAt}
-                updatedAt={selectedInvoice.updatedAt}
-                invoiceId={selectedInvoice.id}
-                invoiceCreatedAt={selectedInvoice.createdAt}
-              />
-            </div>
           </div>
         )}
       </Modal>

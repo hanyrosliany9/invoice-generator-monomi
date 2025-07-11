@@ -46,7 +46,6 @@ import { formatIDR, requiresMaterai, safeArray, safeNumber, safeString } from '.
 import { Quotation, quotationService } from '../services/quotations'
 import { clientService } from '../services/clients'
 import { projectService } from '../services/projects'
-import { WorkflowProgress, WorkflowTimeline } from '../components/workflow'
 import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
 import dayjs from 'dayjs'
 
@@ -1288,26 +1287,6 @@ export const QuotationsPage: React.FC = () => {
               </Col>
             </Row>
 
-            {/* Workflow Progress */}
-            <div className="mt-6">
-              <WorkflowProgress
-                currentStatus={selectedQuotation.status}
-                invoiceId={selectedQuotation.invoices?.[0]?.id}
-                showActions={false}
-              />
-            </div>
-
-            {/* Workflow Timeline */}
-            <div className="mt-6">
-              <WorkflowTimeline
-                quotationId={selectedQuotation.quotationNumber}
-                currentStatus={selectedQuotation.status}
-                createdAt={selectedQuotation.createdAt}
-                updatedAt={selectedQuotation.updatedAt}
-                invoiceId={selectedQuotation.invoices?.[0]?.id}
-                invoiceCreatedAt={selectedQuotation.invoices?.[0]?.id ? selectedQuotation.updatedAt : undefined}
-              />
-            </div>
 
             {requiresMaterai(selectedQuotation.totalAmount) && (
               <Alert

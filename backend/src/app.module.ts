@@ -11,7 +11,6 @@ import { QuotationsModule } from './modules/quotations/quotations.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
-import { WorkflowModule } from './modules/workflow/workflow.module';
 import { MateraiModule } from './modules/materai/materai.module';
 import { LocalizationModule } from './modules/localization/localization.module';
 import { PdfModule } from './modules/pdf/pdf.module';
@@ -45,7 +44,6 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     InvoicesModule,
     PaymentsModule,
     NotificationsModule,
-    WorkflowModule,
     MateraiModule,
     LocalizationModule,
     PdfModule,

@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { Avatar, Button, Dropdown, Layout, Menu, Typography } from 'antd'
 import { 
   BarChartOutlined, 
-  BranchesOutlined,
   DashboardOutlined,
   FileDoneOutlined,
   FileTextOutlined,
@@ -47,11 +46,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       key: '/invoices',
       icon: <FileDoneOutlined />,
       label: t('navigation.invoices'),
-    },
-    {
-      key: '/workflow',
-      icon: <BranchesOutlined />,
-      label: 'Workflow',
     },
     {
       key: '/clients',
