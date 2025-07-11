@@ -14,13 +14,13 @@ export class CreateQuotationDto {
   @ApiProperty({ description: 'Jumlah per proyek', example: 5000000 })
   @Transform(({ value }) => parseFloat(value))
   @IsNumber({}, { message: 'Jumlah per proyek harus berupa angka' })
-  @Min(0, { message: 'Jumlah per proyek harus lebih besar dari 0' })
+  @Min(0.01, { message: 'Jumlah per proyek harus lebih besar dari 0' })
   amountPerProject: number;
 
   @ApiProperty({ description: 'Total jumlah', example: 5000000 })
   @Transform(({ value }) => parseFloat(value))
   @IsNumber({}, { message: 'Total jumlah harus berupa angka' })
-  @Min(0, { message: 'Total jumlah harus lebih besar dari 0' })
+  @Min(0.01, { message: 'Total jumlah harus lebih besar dari 0' })
   totalAmount: number;
 
   @ApiProperty({ description: 'Tanggal berlaku hingga' })

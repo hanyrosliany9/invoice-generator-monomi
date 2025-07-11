@@ -1,13 +1,13 @@
 import React from 'react'
-import { Timeline, Tag, Typography } from 'antd'
+import { Tag, Timeline, Typography } from 'antd'
 import {
-  EditOutlined,
-  SendOutlined,
   CheckCircleOutlined,
-  FileTextOutlined,
+  ClockCircleOutlined,
   CloseCircleOutlined,
-  SyncOutlined,
-  ClockCircleOutlined
+  EditOutlined,
+  FileTextOutlined,
+  SendOutlined,
+  SyncOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 

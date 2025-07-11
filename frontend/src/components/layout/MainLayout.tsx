@@ -1,19 +1,19 @@
 import React, { useState } from 'react'
-import { Layout, Menu, Button, Avatar, Dropdown, Typography } from 'antd'
+import { Avatar, Button, Dropdown, Layout, Menu, Typography } from 'antd'
 import { 
-  MenuFoldOutlined, 
-  MenuUnfoldOutlined,
+  BarChartOutlined, 
+  BranchesOutlined,
   DashboardOutlined,
-  FileTextOutlined,
   FileDoneOutlined,
-  UserOutlined,
-  ProjectOutlined,
-  BarChartOutlined,
-  SettingOutlined,
+  FileTextOutlined,
   LogoutOutlined,
-  BranchesOutlined
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  ProjectOutlined,
+  SettingOutlined,
+  UserOutlined
 } from '@ant-design/icons'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../../store/auth'
 import { BreadcrumbProvider } from '../navigation'

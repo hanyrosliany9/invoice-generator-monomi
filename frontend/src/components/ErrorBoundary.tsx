@@ -1,5 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
-import { Alert, Button, Typography, Space } from 'antd'
+import { Alert, Button, Space, Typography } from 'antd'
 import { ExclamationCircleOutlined, ReloadOutlined } from '@ant-design/icons'
 
 const { Paragraph } = Typography
@@ -102,7 +102,7 @@ class ErrorBoundary extends Component<Props, State> {
                       overflowX: 'auto'
                     }}>
                       {this.state.error.toString()}
-                      {this.state.errorInfo && this.state.errorInfo.componentStack}
+                      {this.state.errorInfo?.componentStack}
                     </pre>
                   </details>
                 )}

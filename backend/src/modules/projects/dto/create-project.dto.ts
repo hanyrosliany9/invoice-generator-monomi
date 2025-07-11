@@ -1,7 +1,41 @@
-import { IsString, IsOptional, IsEnum, IsDateString, IsDecimal, IsPositive } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsDateString, IsDecimal, IsPositive, IsArray, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ProjectType, ProjectStatus } from '@prisma/client';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
+
+export class ProjectItemDto {
+  @ApiProperty({
+    description: 'Nama item/produk',
+    example: 'Video Promosi 30 detik',
+  })
+  @IsString({ message: 'Nama item harus berupa string' })
+  name: string;
+
+  @ApiProperty({
+    description: 'Deskripsi item',
+    example: 'Video promosi produk dengan durasi 30 detik, format MP4 1080p',
+  })
+  @IsString({ message: 'Deskripsi item harus berupa string' })
+  description: string;
+
+  @ApiProperty({
+    description: 'Harga item',
+    example: 2500000,
+  })
+  @Transform(({ value }) => parseFloat(value))
+  @IsPositive({ message: 'Harga item harus lebih dari 0' })
+  price: number;
+
+  @ApiProperty({
+    description: 'Kuantitas',
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => parseInt(value))
+  @IsPositive({ message: 'Kuantitas harus lebih dari 0' })
+  quantity?: number;
+}
 
 export class CreateProjectDto {
   @ApiProperty({
@@ -61,7 +95,7 @@ export class CreateProjectDto {
   endDate?: string;
 
   @ApiProperty({
-    description: 'Estimasi budget',
+    description: 'Estimasi budget (opsional, akan dihitung otomatis dari produk)',
     example: 5000000,
     required: false,
   })
@@ -69,6 +103,17 @@ export class CreateProjectDto {
   @Transform(({ value }) => parseFloat(value))
   @IsPositive({ message: 'Budget harus lebih dari 0' })
   estimatedBudget?: number;
+
+  @ApiProperty({
+    description: 'Daftar produk/item dalam proyek',
+    type: [ProjectItemDto],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray({ message: 'Products harus berupa array' })
+  @ValidateNested({ each: true })
+  @Type(() => ProjectItemDto)
+  products?: ProjectItemDto[];
 
   @ApiProperty({
     description: 'Status proyek',

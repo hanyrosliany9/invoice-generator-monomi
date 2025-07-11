@@ -1,4 +1,4 @@
-import { Component, ReactNode, ErrorInfo } from 'react'
+import { Component, ErrorInfo, ReactNode } from 'react'
 import { Alert, Button, Space, Typography } from 'antd'
 import { ExclamationCircleOutlined, ReloadOutlined } from '@ant-design/icons'
 

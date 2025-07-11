@@ -1,12 +1,12 @@
 import React from 'react';
-import { Button, Card, Space, Typography, Tag, Tooltip, Divider } from 'antd';
+import { Button, Card, Divider, Space, Tag, Tooltip, Typography } from 'antd';
 import { 
-  SendOutlined, 
   CheckCircleOutlined, 
-  PrinterOutlined, 
-  DeleteOutlined,
-  CloseOutlined,
-  InfoCircleOutlined
+  CloseOutlined, 
+  DeleteOutlined, 
+  InfoCircleOutlined,
+  PrinterOutlined,
+  SendOutlined
 } from '@ant-design/icons';
 import { InvoiceStatus } from '../types/invoice';
 import { BulkInvoiceStatusEditor } from './BulkInvoiceStatusEditor';

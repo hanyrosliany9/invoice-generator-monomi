@@ -120,11 +120,6 @@ export const InvoicesPage: React.FC = () => {
     queryFn: quotationService.getQuotations
   })
 
-  // Debug: Log available data
-  React.useEffect(() => {
-    console.log('Available clients:', clients);
-    console.log('Available projects:', projects);
-  }, [clients, projects]);
 
   // Price inheritance effect
   useEffect(() => {
@@ -240,8 +235,8 @@ export const InvoicesPage: React.FC = () => {
     navigate('/projects')
   }, [navigate])
 
-  const navigateToQuotation = useCallback((_quotationId: string) => {
-    navigate('/quotations')
+  const navigateToQuotation = useCallback((quotationId: string) => {
+    navigate("/quotations?viewQuotation=" + quotationId)
   }, [navigate])
 
   const getStatusColor = (status: string) => {
@@ -448,8 +443,18 @@ export const InvoicesPage: React.FC = () => {
   }
 
   const handleFormSubmit = (values: any) => {
-    const totalAmount = safeNumber(values.totalAmount);
+    let totalAmount = safeNumber(values.totalAmount);
     
+    // Fix for price inheritance mode: when field is disabled, get inherited price
+    if (priceInheritanceMode === "inherit" && selectedQuotation && totalAmount === 0) {
+      totalAmount = selectedQuotation.totalAmount || selectedQuotation.amountPerProject || 0;
+    }
+    
+    // Validation: ensure we have a valid amount
+    if (totalAmount <= 0) {
+      message.error("Total amount harus lebih dari 0. Pastikan quotation memiliki harga yang valid.");
+      return;
+    }
     const data = {
       ...values,
       dueDate: values.dueDate.endOf('day').toISOString(),
@@ -1414,7 +1419,7 @@ export const InvoicesPage: React.FC = () => {
               prefix="IDR"
               formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
               parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
-              disabled={Boolean(quotationId && priceInheritanceMode === 'inherit')}
+              readOnly={Boolean(quotationId && priceInheritanceMode === "inherit")}
               style={{ width: '100%' }}
             />
           </Form.Item>

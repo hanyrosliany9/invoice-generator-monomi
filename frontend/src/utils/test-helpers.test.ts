@@ -1,32 +1,32 @@
 /**
  * Tests for safe utilities and edge cases
  */
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { 
-  safeString, 
-  safeNumber, 
   safeArray, 
   safeDivision, 
-  safeGet,
+  safeEnum, 
+  safeGet, 
   safeGetNested,
-  safeEnum,
+  safeNumber,
   safePercentage,
-  safePhoneFormat
+  safePhoneFormat,
+  safeString
 } from './currency'
 import { 
-  isValidClient, 
+  hasStringProperty, 
  
-  validateClientArray,
-  hasStringProperty,
   isDefined,
-  isNotEmpty
+  isNotEmpty,
+  isValidClient,
+  validateClientArray
 } from './type-guards'
 import {
-  createMockClient,
-  createInvalidClient,
-  stringTestCases,
-  numberTestCases,
   arrayTestCases,
+  createInvalidClient,
+  createMockClient,
+  numberTestCases,
+  stringTestCases,
   testWithAllCases
 } from './test-helpers'
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
@@ -13,6 +13,20 @@ export class QuotationsService {
   ) {}
 
   async create(createQuotationDto: CreateQuotationDto, userId: string) {
+    // Validate that the project belongs to the selected client
+    const project = await this.prisma.project.findUnique({
+      where: { id: createQuotationDto.projectId },
+      select: { clientId: true, id: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project tidak ditemukan');
+    }
+
+    if (project.clientId !== createQuotationDto.clientId) {
+      throw new BadRequestException('Project yang dipilih tidak sesuai dengan klien yang dipilih');
+    }
+
     // Generate unique quotation number
     const quotationNumber = await this.generateQuotationNumber();
     
@@ -138,6 +152,17 @@ export class QuotationsService {
       },
     });
 
+    // Auto-generate invoice when quotation is approved
+    if (status === QuotationStatus.APPROVED) {
+      try {
+        await this.autoGenerateInvoice(updatedQuotation);
+        console.log(`✅ Auto-generated invoice for approved quotation ${updatedQuotation.quotationNumber}`);
+      } catch (error) {
+        console.error(`❌ Failed to auto-generate invoice for quotation ${updatedQuotation.quotationNumber}:`, error.message);
+        // Don't fail the status update, but log the error
+      }
+    }
+
     // Send notification about status change
     try {
       await this.notificationsService.sendQuotationStatusUpdate(id, status);
@@ -248,7 +273,67 @@ export class QuotationsService {
       return project.estimatedBudget;
     }
 
-    // If no price information available, return 0
-    return new Prisma.Decimal(0);
+    // If no price information available, throw an error
+    throw new NotFoundException('Project tidak memiliki informasi harga. Silakan set basePrice atau estimatedBudget pada project terlebih dahulu.');
+  }
+
+  private async autoGenerateInvoice(quotation: any) {
+    // Generate unique invoice number
+    const invoiceNumber = await this.generateInvoiceNumber();
+    
+    // Calculate due date (default 30 days from now)
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
+    
+    // Check if materai is required (> 5M IDR)
+    const materaiRequired = Number(quotation.totalAmount) > 5000000;
+    
+    // Create invoice from quotation data
+    const invoice = await this.prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        dueDate,
+        quotationId: quotation.id,
+        clientId: quotation.clientId,
+        projectId: quotation.projectId,
+        amountPerProject: quotation.amountPerProject,
+        totalAmount: quotation.totalAmount,
+        paymentInfo: 'Bank Transfer - Lihat detail di company settings',
+        materaiRequired,
+        materaiApplied: false,
+        terms: quotation.terms || 'Pembayaran dalam 30 hari setelah invoice diterima',
+        createdBy: quotation.createdBy,
+      },
+      include: {
+        client: true,
+        project: true,
+        quotation: true,
+      },
+    });
+
+    console.log(`📄 Auto-generated invoice ${invoiceNumber} from quotation ${quotation.quotationNumber}`);
+    return invoice;
+  }
+
+  private async generateInvoiceNumber(): Promise<string> {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    
+    // Get count of invoices this month
+    const startOfMonth = new Date(year, now.getMonth(), 1);
+    const endOfMonth = new Date(year, now.getMonth() + 1, 0);
+    
+    const count = await this.prisma.invoice.count({
+      where: {
+        createdAt: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+      },
+    });
+
+    const sequence = (count + 1).toString().padStart(3, '0');
+    return `INV-${year}${month}-${sequence}`;
   }
 }

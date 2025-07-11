@@ -47,7 +47,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { formatIDR, requiresMaterai, getMateraiAmount, safeNumber, safeDivision, safeString, safeArray } from '../utils/currency'
 import { invoiceService, Invoice } from '../services/invoices'
 import { clientService } from '../services/clients'
@@ -77,10 +77,12 @@ export const InvoicesPage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [materaiFilter, setMateraiFilter] = useState<string>('')
+  const [filteredByClient, setFilteredByClient] = useState<string  < /dev/null |  null>(null)
   const [modalVisible, setModalVisible] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
   const [viewModalVisible, setViewModalVisible] = useState(false)
@@ -120,11 +122,6 @@ export const InvoicesPage: React.FC = () => {
     queryFn: quotationService.getQuotations
   })
 
-  // Debug: Log available data
-  React.useEffect(() => {
-    console.log('Available clients:', clients);
-    console.log('Available projects:', projects);
-  }, [clients, projects]);
 
   // Price inheritance effect
   useEffect(() => {
@@ -139,7 +136,16 @@ export const InvoicesPage: React.FC = () => {
         }
       }
     }
-  }, [form, quotations, priceInheritanceMode, quotationId]);
+  }, [form, quotations, priceInheritanceMode, quotationId])
+  // Client filtering effect
+  useEffect(() => {
+    const clientFilter = searchParams.get("clientId")
+    if (clientFilter) {
+      setFilteredByClient(clientFilter)
+    } else {
+      setFilteredByClient(null)
+    }
+  }, [searchParams])
 
   // Mutations
   const createMutation = useMutation({
@@ -240,8 +246,8 @@ export const InvoicesPage: React.FC = () => {
     navigate('/projects')
   }, [navigate])
 
-  const navigateToQuotation = useCallback((_quotationId: string) => {
-    navigate('/quotations')
+  const navigateToQuotation = useCallback((quotationId: string) => {
+    navigate("/quotations?viewQuotation=" + quotationId)
   }, [navigate])
 
   const getStatusColor = (status: string) => {
@@ -299,7 +305,8 @@ export const InvoicesPage: React.FC = () => {
                           (materaiFilter === 'required' && invoice?.materaiRequired) ||
                           (materaiFilter === 'applied' && invoice?.materaiApplied) ||
                           (materaiFilter === 'pending' && invoice?.materaiRequired && !invoice?.materaiApplied)
-    return matchesSearch && matchesStatus && matchesMaterai
+    const matchesClient = !filteredByClient || invoice?.clientId === filteredByClient
+    return matchesSearch && matchesStatus && matchesMaterai && matchesClient
   })
 
   // Statistics
@@ -448,8 +455,18 @@ export const InvoicesPage: React.FC = () => {
   }
 
   const handleFormSubmit = (values: any) => {
-    const totalAmount = safeNumber(values.totalAmount);
+    let totalAmount = safeNumber(values.totalAmount);
     
+    // Fix for price inheritance mode: when field is disabled, get inherited price
+    if (priceInheritanceMode === "inherit" && selectedQuotation && totalAmount === 0) {
+      totalAmount = selectedQuotation.totalAmount || selectedQuotation.amountPerProject || 0;
+    }
+    
+    // Validation: ensure we have a valid amount
+    if (totalAmount <= 0) {
+      message.error("Total amount harus lebih dari 0. Pastikan quotation memiliki harga yang valid.");
+      return;
+    }
     const data = {
       ...values,
       dueDate: values.dueDate.endOf('day').toISOString(),
@@ -1414,7 +1431,7 @@ export const InvoicesPage: React.FC = () => {
               prefix="IDR"
               formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
               parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
-              disabled={Boolean(quotationId && priceInheritanceMode === 'inherit')}
+              readOnly={Boolean(quotationId && priceInheritanceMode === "inherit")}
               style={{ width: '100%' }}
             />
           </Form.Item>

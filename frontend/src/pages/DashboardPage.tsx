@@ -1,17 +1,17 @@
 import React from 'react'
-import { Row, Col, Card, Statistic, Typography, Table, Tag, Space, Spin, Alert } from 'antd'
+import { Alert, Card, Col, Row, Space, Spin, Statistic, Table, Tag, Typography } from 'antd'
 import { 
-  FileTextOutlined, 
+  ClockCircleOutlined, 
   FileDoneOutlined, 
-  UserOutlined, 
+  FileTextOutlined, 
   ProjectOutlined,
   RiseOutlined,
-  ClockCircleOutlined 
+  UserOutlined 
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { formatIDR, safeString } from '../utils/currency'
 import { useDashboardData } from '../hooks/useDashboard'
-import { RecentQuotation, RecentInvoice } from '../types/dashboard'
+import { RecentInvoice, RecentQuotation } from '../types/dashboard'
 
 const { Title, Text } = Typography
 

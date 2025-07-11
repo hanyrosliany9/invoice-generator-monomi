@@ -1,5 +1,5 @@
 import { api } from '../config/api'
-import { WorkflowSummary, WorkflowStats, WorkflowCheckResult, WorkflowResponse } from '../types/workflow'
+import { WorkflowCheckResult, WorkflowResponse, WorkflowStats, WorkflowSummary } from '../types/workflow'
 
 export const workflowService = {
   // Get all active workflows

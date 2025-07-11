@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tag, Tooltip } from 'antd';
-import { ExclamationCircleOutlined, CheckCircleOutlined, ClockCircleOutlined, SendOutlined, FileTextOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined, FileTextOutlined, SendOutlined } from '@ant-design/icons';
 import { InvoiceStatus } from '../types/invoice';
 
 interface InvoiceStatusDisplayProps {

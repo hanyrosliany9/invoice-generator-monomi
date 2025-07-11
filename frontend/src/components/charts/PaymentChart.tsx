@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
 import {
-  PieChart,
-  Pie,
   Cell,
-  Tooltip,
+  Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
-  Legend
+  Tooltip
 } from 'recharts'
 import { Skeleton } from 'antd'
 import { formatIDR, safeArray, safeNumber } from '../../utils/currency'
@@ -83,7 +83,7 @@ const PaymentChart: React.FC<PaymentChartProps> = ({
   }
 
   const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
+    if (active && payload?.length) {
       const data = payload?.[0]?.payload
       if (!data) return null
       return (

@@ -1,9 +1,9 @@
 import { api } from '../config/api'
 import { 
-  NotificationTemplate, 
+  NotificationResponse, 
   NotificationStats, 
-  SendNotificationRequest, 
-  NotificationResponse 
+  NotificationTemplate, 
+  SendNotificationRequest 
 } from '../types/notification'
 
 export const notificationsService = {

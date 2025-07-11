@@ -1,13 +1,13 @@
 import React from 'react'
 import {
-  BarChart,
   Bar,
-  XAxis,
-  YAxis,
+  BarChart,
   CartesianGrid,
-  Tooltip,
+  Legend,
   ResponsiveContainer,
-  Legend
+  Tooltip,
+  XAxis,
+  YAxis
 } from 'recharts'
 import { Skeleton } from 'antd'
 import { formatCompactCurrency, safeArray, safeNumber } from '../../utils/currency'
@@ -58,7 +58,7 @@ const QuarterlyChart: React.FC<QuarterlyChartProps> = ({
   }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
+    if (active && payload?.length) {
       const value = payload?.[0]?.value
       if (value === undefined || value === null) return null
       return (

@@ -1,11 +1,11 @@
 import { api } from '../config/api'
 import { 
-  Payment, 
   CreatePaymentRequest, 
-  UpdatePaymentRequest, 
+  Payment, 
+  PaymentResponse, 
   PaymentStats, 
-  PaymentResponse,
-  PaymentStatus 
+  PaymentStatus,
+  UpdatePaymentRequest 
 } from '../types/payment'
 
 export const paymentsService = {

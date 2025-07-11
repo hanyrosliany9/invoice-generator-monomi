@@ -1,46 +1,46 @@
-import React, { useState, useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 import {
-  Table,
+  App,
+  Avatar,
   Button,
   Card,
-  Space,
-  Typography,
-  Tag,
-  Input,
-  Select,
-  Modal,
-  Form,
-  App,
-  Dropdown,
-  Row,
   Col,
+  Divider,
+  Dropdown,
+  Form,
+  Input,
+  Modal,
+  Row,
+  Select,
+  Space,
   Statistic,
-  Avatar,
-  Divider
+  Table,
+  Tag,
+  Typography
 } from 'antd'
 import {
+  BankOutlined,
+  DeleteOutlined,
+  DollarOutlined,
+  EditOutlined,
+  ExportOutlined,
+  EyeOutlined,
+  FileTextOutlined,
+  MailOutlined,
+  MoreOutlined,
+  PhoneOutlined,
   PlusOutlined,
   SearchOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  UserOutlined,
-  PhoneOutlined,
-  MailOutlined,
-  BankOutlined,
-  MoreOutlined,
-  ExportOutlined,
-  UploadOutlined,
-  FileTextOutlined,
-  DollarOutlined,
+  ShopOutlined,
   TeamOutlined,
-  ShopOutlined
+  UploadOutlined,
+  UserOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { formatIDR, safeNumber, safeString, safeArray } from '../utils/currency'
-import { clientService, Client } from '../services/clients'
+import { formatIDR, safeArray, safeNumber, safeString } from '../utils/currency'
+import { Client, clientService } from '../services/clients'
 import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
 import dayjs from 'dayjs'
 
@@ -139,12 +139,13 @@ export const ClientsPage: React.FC = () => {
   }
 
   // Navigation functions for clickable table links
-  const navigateToQuotations = useCallback(() => {
-    navigate('/quotations')
+
+  const navigateToQuotations = useCallback((clientId?: string) => {
+    navigate(clientId ? "/quotations?clientId=" + clientId : "/quotations")
   }, [navigate])
 
-  const navigateToInvoices = useCallback(() => {
-    navigate('/invoices')
+  const navigateToInvoices = useCallback((clientId?: string) => {
+    navigate(clientId ? "/invoices?clientId=" + clientId : "/invoices")
   }, [navigate])
 
   const handleCreate = () => {
@@ -245,7 +246,7 @@ export const ClientsPage: React.FC = () => {
             <Button 
               type="link" 
               size="small"
-              onClick={navigateToQuotations}
+              onClick={() => navigateToQuotations(client.id)}
               className="text-sm font-medium text-blue-600 hover:text-blue-800 p-0"
             >
               {client.totalQuotations}
@@ -256,7 +257,7 @@ export const ClientsPage: React.FC = () => {
             <Button 
               type="link" 
               size="small"
-              onClick={navigateToInvoices}
+              onClick={() => navigateToInvoices(client.id)}
               className="text-sm font-medium text-blue-600 hover:text-blue-800 p-0"
             >
               {client.totalInvoices}

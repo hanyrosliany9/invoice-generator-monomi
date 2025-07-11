@@ -1,6 +1,6 @@
 import React from 'react'
-import { Form, Input, Button, Alert, Checkbox } from 'antd'
-import { UserOutlined, LockOutlined } from '@ant-design/icons'
+import { Alert, Button, Checkbox, Form, Input } from 'antd'
+import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'

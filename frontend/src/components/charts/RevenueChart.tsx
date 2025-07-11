@@ -1,13 +1,13 @@
 import React from 'react'
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
   CartesianGrid,
-  Tooltip,
+  Legend,
+  Line,
+  LineChart,
   ResponsiveContainer,
-  Legend
+  Tooltip,
+  XAxis,
+  YAxis
 } from 'recharts'
 import { Skeleton } from 'antd'
 import { formatCompactCurrency, formatMonthYear, safeArray, safeNumber } from '../../utils/currency'
@@ -58,7 +58,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({
   }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
+    if (active && payload?.length) {
       const value = payload?.[0]?.value
       if (value === undefined || value === null) return null
       return (

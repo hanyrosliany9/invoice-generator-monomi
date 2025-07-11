@@ -1,13 +1,13 @@
 import { api } from '../config/api'
 import { 
-  MateraiCheckResult,
-  MateraiStats,
-  MateraiConfig,
-  MateraiComplianceResult,
   ApplyMateraiRequest,
   BulkApplyMateraiRequest,
-  UpdateMateraiConfigRequest,
-  MateraiResponse
+  MateraiCheckResult,
+  MateraiComplianceResult,
+  MateraiConfig,
+  MateraiResponse,
+  MateraiStats,
+  UpdateMateraiConfigRequest
 } from '../types/materai'
 
 export const materaiService = {
@@ -214,7 +214,7 @@ export const materaiService = {
       errors.push('Stamp duty amount cannot be negative')
     }
     
-    if (config.reminderDays && config.reminderDays.some(day => day < 0)) {
+    if (config.reminderDays?.some(day => day < 0)) {
       errors.push('Reminder days cannot be negative')
     }
     

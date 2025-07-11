@@ -1,6 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
 import { Button, Empty } from 'antd'
-import { ReloadOutlined, BarChartOutlined } from '@ant-design/icons'
+import { BarChartOutlined, ReloadOutlined } from '@ant-design/icons'
 
 interface Props {
   children: ReactNode

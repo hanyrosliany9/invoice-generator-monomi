@@ -12,10 +12,37 @@ export class ProjectsService {
     // Generate unique project number if not provided
     const projectNumber = createProjectDto.number || await this.generateProjectNumber(createProjectDto.type);
     
+    // Calculate base price from products if provided
+    let basePrice = null;
+    let priceBreakdown = null;
+    
+    if (createProjectDto.products && createProjectDto.products.length > 0) {
+      basePrice = createProjectDto.products.reduce((total, product) => {
+        const quantity = product.quantity || 1;
+        return total + (product.price * quantity);
+      }, 0);
+      
+      priceBreakdown = {
+        products: createProjectDto.products.map(product => ({
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          quantity: product.quantity || 1,
+          subtotal: product.price * (product.quantity || 1),
+        })),
+        total: basePrice,
+        calculatedAt: new Date().toISOString(),
+      };
+    }
+    
+    const { products, ...projectData } = createProjectDto;
+    
     return this.prisma.project.create({
       data: {
-        ...createProjectDto,
+        ...projectData,
         number: projectNumber,
+        basePrice: basePrice,
+        priceBreakdown: priceBreakdown,
       },
       include: {
         client: true,

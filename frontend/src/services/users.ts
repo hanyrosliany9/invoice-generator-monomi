@@ -1,5 +1,5 @@
 import { api } from '../config/api'
-import { User, CreateUserRequest, UpdateUserRequest, UserFilters, UserStats, UserResponse } from '../types/user'
+import { CreateUserRequest, UpdateUserRequest, User, UserFilters, UserResponse, UserStats } from '../types/user'
 
 export const usersService = {
   // Get all users with optional filters

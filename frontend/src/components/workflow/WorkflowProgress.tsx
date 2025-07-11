@@ -1,11 +1,11 @@
 import React from 'react'
 import { Steps, Tag } from 'antd'
 import {
-  EditOutlined,
-  SendOutlined,
   CheckCircleOutlined,
+  CloseCircleOutlined,
+  EditOutlined,
   FileTextOutlined,
-  CloseCircleOutlined
+  SendOutlined
 } from '@ant-design/icons'
 
 export interface WorkflowProgressProps {
