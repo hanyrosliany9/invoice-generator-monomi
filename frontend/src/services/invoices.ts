@@ -1,6 +1,7 @@
 import { apiClient } from '../config/api'
 import { paymentsService } from './payments'
 import { Payment } from '../types/payment'
+import { InvoiceStatus } from '../types/invoice'
 
 export interface Invoice {
   id: string
@@ -134,10 +135,23 @@ export const invoiceService = {
   },
 
   // Mark invoice as paid
-  markAsPaid: async (id: string): Promise<Invoice> => {
-    const response = await apiClient.patch(`/invoices/${id}/mark-paid`)
+  markAsPaid: async (id: string, paymentData?: {
+    paymentMethod?: string;
+    paymentDate?: string;
+    notes?: string;
+  }): Promise<Invoice> => {
+    const response = await apiClient.patch(`/invoices/${id}/mark-paid`, paymentData)
     if (!response?.data?.data) {
       throw new Error('Invoice payment marking failed')
+    }
+    return response.data.data
+  },
+
+  // Bulk update invoice status
+  bulkUpdateStatus: async (ids: string[], status: InvoiceStatus): Promise<{ count: number }> => {
+    const response = await apiClient.post(`/invoices/bulk-status-update`, { ids, status })
+    if (!response?.data?.data) {
+      throw new Error('Bulk status update failed')
     }
     return response.data.data
   },
@@ -257,5 +271,70 @@ export const invoiceService = {
   requiresMaterai: (amount: string | number): boolean => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount
     return num > 5000000 // 5 million IDR threshold
+  },
+
+  // Get status color for UI
+  getStatusColor: (status: InvoiceStatus): string => {
+    switch (status) {
+      case InvoiceStatus.DRAFT:
+        return 'text-gray-600 bg-gray-100'
+      case InvoiceStatus.SENT:
+        return 'text-blue-600 bg-blue-100'
+      case InvoiceStatus.PAID:
+        return 'text-green-600 bg-green-100'
+      case InvoiceStatus.OVERDUE:
+        return 'text-red-600 bg-red-100'
+      case InvoiceStatus.CANCELLED:
+        return 'text-red-600 bg-red-100'
+      default:
+        return 'text-gray-600 bg-gray-100'
+    }
+  },
+
+  // Get Indonesian status label
+  getStatusLabel: (status: InvoiceStatus): string => {
+    switch (status) {
+      case InvoiceStatus.DRAFT:
+        return 'Draft'
+      case InvoiceStatus.SENT:
+        return 'Terkirim'
+      case InvoiceStatus.PAID:
+        return 'Lunas'
+      case InvoiceStatus.OVERDUE:
+        return 'Jatuh Tempo'
+      case InvoiceStatus.CANCELLED:
+        return 'Dibatalkan'
+      default:
+        return status
+    }
+  },
+
+  // Get available status transitions
+  getAvailableStatusTransitions: (currentStatus: InvoiceStatus): { value: InvoiceStatus; label: string }[] => {
+    const transitions: Record<InvoiceStatus, { value: InvoiceStatus; label: string }[]> = {
+      [InvoiceStatus.DRAFT]: [
+        { value: InvoiceStatus.SENT, label: 'Kirim' },
+        { value: InvoiceStatus.CANCELLED, label: 'Batalkan' }
+      ],
+      [InvoiceStatus.SENT]: [
+        { value: InvoiceStatus.PAID, label: 'Tandai Lunas' },
+        { value: InvoiceStatus.OVERDUE, label: 'Tandai Jatuh Tempo' },
+        { value: InvoiceStatus.CANCELLED, label: 'Batalkan' }
+      ],
+      [InvoiceStatus.OVERDUE]: [
+        { value: InvoiceStatus.PAID, label: 'Tandai Lunas' },
+        { value: InvoiceStatus.CANCELLED, label: 'Batalkan' }
+      ],
+      [InvoiceStatus.PAID]: [], // Paid invoices cannot be changed
+      [InvoiceStatus.CANCELLED]: [] // Cancelled invoices cannot be changed
+    };
+
+    return transitions[currentStatus] || [];
+  },
+
+  // Validate status transition
+  canTransitionTo: (currentStatus: InvoiceStatus, newStatus: InvoiceStatus): boolean => {
+    const availableTransitions = invoiceService.getAvailableStatusTransitions(currentStatus);
+    return availableTransitions.some(transition => transition.value === newStatus);
   },
 }

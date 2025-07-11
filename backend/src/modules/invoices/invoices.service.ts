@@ -4,7 +4,7 @@ import { QuotationsService } from '../quotations/quotations.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
-import { InvoiceStatus, QuotationStatus } from '@prisma/client';
+import { InvoiceStatus, QuotationStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
 import { PaginatedResponse } from '../../common/dto/api-response.dto';
 
 @Injectable()
@@ -229,6 +229,9 @@ export class InvoicesService {
   async updateStatus(id: string, status: InvoiceStatus) {
     const invoice = await this.findOne(id);
 
+    // Validate status transition
+    this.validateStatusTransition(invoice.status, status);
+
     return this.prisma.invoice.update({
       where: { id },
       data: { status },
@@ -237,6 +240,82 @@ export class InvoicesService {
         project: true,
       },
     });
+  }
+
+  async markAsPaid(id: string, paymentData?: { paymentMethod?: string; paymentDate?: string; notes?: string }) {
+    const invoice = await this.findOne(id);
+
+    // Validate that invoice can be marked as paid
+    if (invoice.status !== InvoiceStatus.SENT && invoice.status !== InvoiceStatus.OVERDUE) {
+      throw new BadRequestException('Hanya invoice dengan status SENT atau OVERDUE yang dapat ditandai sebagai lunas');
+    }
+
+    const updatedInvoice = await this.prisma.invoice.update({
+      where: { id },
+      data: { status: InvoiceStatus.PAID },
+      include: {
+        client: true,
+        project: true,
+      },
+    });
+
+    // Create payment record if payment data is provided
+    if (paymentData) {
+      await this.prisma.payment.create({
+        data: {
+          invoiceId: id,
+          amount: invoice.totalAmount,
+          paymentMethod: (paymentData.paymentMethod as PaymentMethod) || PaymentMethod.BANK_TRANSFER,
+          paymentDate: paymentData.paymentDate ? new Date(paymentData.paymentDate) : new Date(),
+          bankDetails: paymentData.notes, // Use bankDetails field for notes
+          status: PaymentStatus.CONFIRMED,
+          confirmedAt: new Date(),
+        },
+      });
+    }
+
+    return updatedInvoice;
+  }
+
+  async bulkUpdateStatus(ids: string[], status: InvoiceStatus) {
+    // Validate all invoices first
+    const invoices = await this.prisma.invoice.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, status: true },
+    });
+
+    if (invoices.length !== ids.length) {
+      throw new BadRequestException('Beberapa invoice tidak ditemukan');
+    }
+
+    // Validate all status transitions
+    for (const invoice of invoices) {
+      this.validateStatusTransition(invoice.status, status);
+    }
+
+    // Update all invoices
+    return this.prisma.invoice.updateMany({
+      where: { id: { in: ids } },
+      data: { status },
+    });
+  }
+
+  private validateStatusTransition(currentStatus: InvoiceStatus, newStatus: InvoiceStatus) {
+    const validTransitions: Record<InvoiceStatus, InvoiceStatus[]> = {
+      [InvoiceStatus.DRAFT]: [InvoiceStatus.SENT, InvoiceStatus.CANCELLED],
+      [InvoiceStatus.SENT]: [InvoiceStatus.PAID, InvoiceStatus.OVERDUE, InvoiceStatus.CANCELLED],
+      [InvoiceStatus.OVERDUE]: [InvoiceStatus.PAID, InvoiceStatus.CANCELLED],
+      [InvoiceStatus.PAID]: [], // Paid invoices cannot be changed
+      [InvoiceStatus.CANCELLED]: [], // Cancelled invoices cannot be changed
+    };
+
+    const allowedTransitions = validTransitions[currentStatus] || [];
+    
+    if (!allowedTransitions.includes(newStatus)) {
+      throw new BadRequestException(
+        `Tidak dapat mengubah status dari ${currentStatus} ke ${newStatus}. Transisi yang diizinkan: ${allowedTransitions.join(', ')}`
+      );
+    }
   }
 
   async updateMateraiStatus(id: string, materaiApplied: boolean) {

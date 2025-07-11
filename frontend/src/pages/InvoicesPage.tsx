@@ -22,8 +22,7 @@ import {
   Badge,
   Progress,
   Divider,
-  Skeleton,
-  MenuProps
+  Skeleton
 } from 'antd'
 import {
   PlusOutlined,
@@ -53,6 +52,7 @@ import { invoiceService, Invoice } from '../services/invoices'
 import { clientService } from '../services/clients'
 import { projectService } from '../services/projects'
 import { WorkflowProgress, WorkflowTimeline } from '../components/workflow'
+import { InvoiceStatus } from '../types/invoice'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -83,11 +83,15 @@ export const InvoicesPage: React.FC = () => {
   const [viewModalVisible, setViewModalVisible] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [paymentModalVisible, setPaymentModalVisible] = useState(false)
+  const [statusModalVisible, setStatusModalVisible] = useState(false)
+  const [statusInvoice, setStatusInvoice] = useState<Invoice | null>(null)
   const [form] = Form.useForm()
   const [paymentForm] = Form.useForm()
+  const [statusForm] = Form.useForm()
   const { message } = App.useApp()
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [batchLoading, setBatchLoading] = useState(false)
+
 
   // Queries
   const { data: invoices = [], isLoading, error: invoicesError } = useQuery({
@@ -183,11 +187,67 @@ export const InvoicesPage: React.FC = () => {
     }
   })
 
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) => 
+      invoiceService.updateStatus(id, status as InvoiceStatus),
+    onSuccess: () => {
+      message.success('Status invoice berhasil diubah')
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+    },
+    onError: (error: any) => {
+      message.error(error.message || 'Gagal mengubah status invoice')
+    }
+  })
+
   // Helper functions to safely access properties
   const getInvoiceNumber = (invoice: Invoice) => invoice.invoiceNumber || 'Unknown'
   const getClientName = (invoice: Invoice) => invoice.client?.name || 'Unknown Client'
   const getProjectName = (invoice: Invoice) => invoice.project?.description || 'Unknown Project'
   const getAmount = (invoice: Invoice) => safeNumber(invoice.totalAmount)
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'DRAFT': return 'default'
+      case 'SENT': return 'blue'
+      case 'PAID': return 'green'
+      case 'OVERDUE': return 'red'
+      case 'CANCELLED': return 'default'
+      default: return 'default'
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'DRAFT': return 'Draft'
+      case 'SENT': return 'Terkirim'
+      case 'PAID': return 'Lunas'
+      case 'OVERDUE': return 'Jatuh Tempo'
+      case 'CANCELLED': return 'Dibatalkan'
+      default: return status
+    }
+  }
+
+  const getValidStatusTransitions = (currentStatus: string) => {
+    const transitions: Record<string, { value: string; label: string }[]> = {
+      'DRAFT': [
+        { value: 'SENT', label: 'Terkirim' },
+        { value: 'CANCELLED', label: 'Dibatalkan' }
+      ],
+      'SENT': [
+        { value: 'PAID', label: 'Lunas' },
+        { value: 'OVERDUE', label: 'Jatuh Tempo' },
+        { value: 'CANCELLED', label: 'Dibatalkan' }
+      ],
+      'OVERDUE': [
+        { value: 'PAID', label: 'Lunas' },
+        { value: 'CANCELLED', label: 'Dibatalkan' }
+      ],
+      'PAID': [], // Paid invoices cannot be changed
+      'CANCELLED': [] // Cancelled invoices cannot be changed
+    }
+
+    return transitions[currentStatus] || []
+  }
 
   // Filtered data
   const filteredInvoices = safeArray(invoices).filter(invoice => {
@@ -221,16 +281,6 @@ export const InvoicesPage: React.FC = () => {
 
   const paymentRate = safeDivision(stats.paidValue, stats.totalValue) * 100
 
-  const getStatusColor = (status: string) => {
-    const colors = {
-      draft: 'default',
-      sent: 'blue',
-      paid: 'green',
-      overdue: 'red',
-      cancelled: 'volcano'
-    }
-    return colors[status as keyof typeof colors] || 'default'
-  }
 
   const isOverdue = (invoice: Invoice) => {
     return invoice.status !== 'PAID' && dayjs().isAfter(dayjs(invoice.dueDate))
@@ -265,28 +315,36 @@ export const InvoicesPage: React.FC = () => {
     deleteMutation.mutate(id)
   }
 
-  const handleMarkPaid = (invoice: Invoice) => {
-    setSelectedInvoice(invoice)
-    setPaymentModalVisible(true)
-    paymentForm.setFieldsValue({
-      paidAt: dayjs()
+
+  const handleStatusChange = (invoice: Invoice, newStatus: string) => {
+    statusMutation.mutate({ id: invoice.id, status: newStatus })
+  }
+
+  const handleOpenStatusModal = (invoice: Invoice) => {
+    setStatusInvoice(invoice)
+    setStatusModalVisible(true)
+    statusForm.setFieldsValue({ status: invoice.status })
+  }
+
+  const handleStatusModalOk = () => {
+    statusForm.validateFields().then((values) => {
+      if (statusInvoice) {
+        handleStatusChange(statusInvoice, values.status)
+        setStatusModalVisible(false)
+        setStatusInvoice(null)
+        statusForm.resetFields()
+      }
+    }).catch((errorInfo) => {
+      console.log('Validation failed:', errorInfo)
     })
   }
 
-  const handleSendInvoice = (invoice: Invoice) => {
-    Modal.confirm({
-      title: 'Kirim Invoice',
-      content: `Apakah Anda yakin ingin mengirim invoice ${getInvoiceNumber(invoice)} ke ${getClientName(invoice)}?`,
-      okText: 'Ya, Kirim',
-      cancelText: 'Batal',
-      onOk: () => {
-        sendMutation.mutate({ 
-          id: invoice.id, 
-          email: invoice.client?.email || undefined 
-        })
-      }
-    })
+  const handleStatusModalCancel = () => {
+    setStatusModalVisible(false)
+    setStatusInvoice(null)
+    statusForm.resetFields()
   }
+
 
   const handlePrintInvoice = (invoice: Invoice) => {
     printMutation.mutate({ id: invoice.id })
@@ -346,7 +404,7 @@ export const InvoicesPage: React.FC = () => {
       const promises = draftInvoices.map(invoice => 
         sendMutation.mutateAsync({ 
           id: invoice.id, 
-          email: invoice.client?.email || undefined 
+          ...(invoice.client?.email && { email: invoice.client.email }) 
         })
       )
       await Promise.all(promises)
@@ -486,8 +544,7 @@ export const InvoicesPage: React.FC = () => {
         key: 'print',
         icon: <PrinterOutlined />,
         label: 'Print',
-        onClick: () => handlePrintInvoice(invoice),
-        'data-testid': 'generate-pdf-button'
+        onClick: () => handlePrintInvoice(invoice)
       }
     ]
 
@@ -497,38 +554,56 @@ export const InvoicesPage: React.FC = () => {
         key: 'view-quotation',
         icon: <LinkOutlined />,
         label: 'Lihat Quotation',
-        onClick: () => navigate(`/quotations`)
+        onClick: () => navigate('/quotations')
       })
     }
 
+    // Add contextual status actions (similar to quotation page)
     if (invoice.status === 'DRAFT') {
       items.push({
         key: 'send',
         icon: <SendOutlined />,
         label: 'Kirim',
-        onClick: () => handleSendInvoice(invoice)
+        onClick: () => handleStatusChange(invoice, 'SENT')
       })
     }
 
-    if (invoice.status === 'SENT' || invoice.status === 'OVERDUE') {
+    if (invoice.status === 'SENT') {
       items.push({
         key: 'mark-paid',
         icon: <CheckCircleOutlined />,
         label: 'Tandai Lunas',
-        onClick: () => handleMarkPaid(invoice)
+        onClick: () => handleStatusChange(invoice, 'PAID')
       })
     }
+
+    if (invoice.status === 'OVERDUE') {
+      items.push({
+        key: 'mark-paid',
+        icon: <CheckCircleOutlined />,
+        label: 'Tandai Lunas',
+        onClick: () => handleStatusChange(invoice, 'PAID')
+      })
+    }
+
+    // Add general status change option (similar to quotation page)
+    items.push({
+      key: 'change-status',
+      icon: <EditOutlined />,
+      label: 'Ubah Status',
+      onClick: () => handleOpenStatusModal(invoice)
+    })
 
     items.push({
       key: 'delete',
       icon: <DeleteOutlined />,
       label: 'Hapus',
-      danger: true,
       onClick: () => handleDelete(invoice.id)
     })
 
     return items
   }
+
 
   const columns = [
     {
@@ -576,33 +651,20 @@ export const InvoicesPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string, record: Invoice) => {
-        const getStatusText = (status: string) => {
-          const statusMap = {
-            'DRAFT': 'Draft',
-            'SENT': 'Terkirim',
-            'PAID': 'Lunas',
-            'OVERDUE': 'Jatuh Tempo',
-            'CANCELLED': 'Dibatalkan'
-          }
-          return statusMap[status as keyof typeof statusMap] || status
-        }
-        
-        return (
-          <div>
-            <Tag color={getStatusColor(status.toLowerCase())}>
-              {getStatusText(status)}
-            </Tag>
-            {isOverdue(record) && status !== 'PAID' && (
-              <div className="mt-1">
-                <Tag color="red">
-                  <ExclamationCircleOutlined /> Jatuh Tempo
-                </Tag>
-              </div>
-            )}
-          </div>
-        )
-      },
+      render: (status: string, record: Invoice) => (
+        <div>
+          <Tag color={getStatusColor(status)}>
+            {getStatusText(status)}
+          </Tag>
+          {isOverdue(record) && status !== 'PAID' && (
+            <div className="mt-1">
+              <Tag color="red">
+                <ExclamationCircleOutlined /> Jatuh Tempo
+              </Tag>
+            </div>
+          )}
+        </div>
+      ),
       filters: [
         { text: 'Draft', value: 'DRAFT' },
         { text: 'Terkirim', value: 'SENT' },
@@ -1396,6 +1458,35 @@ export const InvoicesPage: React.FC = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Status Change Modal */}
+      <Modal
+        title="Ubah Status Invoice"
+        open={statusModalVisible}
+        onOk={handleStatusModalOk}
+        onCancel={handleStatusModalCancel}
+        width={400}
+      >
+        <Form
+          form={statusForm}
+          layout="vertical"
+          initialValues={{ status: statusInvoice?.status }}
+        >
+          <Form.Item
+            label="Status Baru"
+            name="status"
+            rules={[{ required: true, message: 'Pilih status baru' }]}
+          >
+            <Select placeholder="Pilih status">
+              {getValidStatusTransitions(statusInvoice?.status || 'DRAFT').map((transition) => (
+                <Select.Option key={transition.value} value={transition.value}>
+                  {transition.label}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   )

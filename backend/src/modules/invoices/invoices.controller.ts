@@ -12,10 +12,11 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { BulkUpdateStatusDto } from './dto/bulk-update-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { InvoiceStatus } from '@prisma/client';
 
@@ -241,6 +242,36 @@ export class InvoicesController {
     // Convert lowercase status to uppercase enum
     const normalizedStatus = status.toUpperCase() as InvoiceStatus;
     return this.invoicesService.updateStatus(id, normalizedStatus);
+  }
+
+  @Patch(':id/mark-paid')
+  @ApiOperation({ summary: 'Tandai invoice sebagai lunas' })
+  @ApiResponse({
+    status: 200,
+    description: 'Invoice berhasil ditandai sebagai lunas',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Invoice tidak ditemukan',
+  })
+  async markAsPaid(
+    @Param('id') id: string,
+    @Body() paymentData?: { paymentMethod?: string; paymentDate?: string; notes?: string },
+  ) {
+    return this.invoicesService.markAsPaid(id, paymentData);
+  }
+
+  @Post('bulk-status-update')
+  @ApiOperation({ summary: 'Memperbarui status beberapa invoice sekaligus' })
+  @ApiBody({ type: BulkUpdateStatusDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Status invoice berhasil diperbarui',
+  })
+  async bulkUpdateStatus(
+    @Body() bulkUpdateData: BulkUpdateStatusDto,
+  ) {
+    return this.invoicesService.bulkUpdateStatus(bulkUpdateData.ids, bulkUpdateData.status);
   }
 
   @Patch(':id/materai')
