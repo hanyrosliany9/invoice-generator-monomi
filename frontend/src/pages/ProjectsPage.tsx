@@ -537,20 +537,26 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Nilai Proyek',
       key: 'budget',
-      render: (_: any, project: Project) => (
-        <div className="text-sm">
-          <div>Nilai: <Text strong>{formatIDR(project.basePrice || project.estimatedBudget || 0)}</Text></div>
-          <div>Aktual: <Text strong>{formatIDR(project.basePrice || project.estimatedBudget || 0)}</Text></div>
-          <div className="mt-1">
-            <Text type="success">Dibayar: {formatIDR(project.basePrice || project.estimatedBudget || 0)}</Text>
-          </div>
-          {false && (
-            <div>
-              <Text type="warning">Pending: {formatIDR(project.basePrice || project.estimatedBudget || 0)}</Text>
+      render: (_: any, project: Project) => {
+        const budget = safeNumber(project.basePrice || project.estimatedBudget || 0)
+        const totalRevenue = safeNumber(project.totalRevenue || 0)
+        const pendingAmount = Math.max(budget - totalRevenue, 0)
+        
+        return (
+          <div className="text-sm">
+            <div>Nilai: <Text strong>{formatIDR(budget)}</Text></div>
+            <div>Aktual: <Text strong>{formatIDR(budget)}</Text></div>
+            <div className="mt-1">
+              <Text type="success">Dibayar: {formatIDR(totalRevenue)}</Text>
             </div>
-          )}
-        </div>
-      ),
+            {pendingAmount > 0 && (
+              <div>
+                <Text type="warning">Pending: {formatIDR(pendingAmount)}</Text>
+              </div>
+            )}
+          </div>
+        )
+      },
       sorter: (a: Project, b: Project) => parseFloat(a.estimatedBudget || a.basePrice || '0') - parseFloat(b.estimatedBudget || b.basePrice || '0')
     },
     {
