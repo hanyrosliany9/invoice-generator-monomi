@@ -210,16 +210,17 @@ export const InvoicesPage: React.FC = () => {
     }
   ], [handleCreate, handleFocusSearch, handleExport, handleRefresh, handleShowHelp, handleToggleMateraiFilter, handleBulkOperations]);
 
-  // Memoized global actions to prevent infinite re-renders
+  // DON'T pass navigate function - it changes on every render
+  // Pass null for navigation and handle it differently
   const globalActions = useMemo(() => ({
-    onNavigate: (path: string) => navigate(path),
+    onNavigate: undefined, // Remove this to prevent infinite loops
     onCreateNew: handleCreate,
     onSearch: handleFocusSearch,
     onExport: handleExport,
     onRefresh: handleRefresh
-  }), [navigate, handleCreate, handleFocusSearch, handleExport, handleRefresh]);
+  }), [handleCreate, handleFocusSearch, handleExport, handleRefresh]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts WITHOUT navigation to prevent infinite loops
   const shortcuts = usePageShortcuts('invoices', shortcutsArray, globalActions);
 
   // Queries

@@ -149,11 +149,11 @@ export const useKeyboardShortcuts = ({
 }: UseKeyboardShortcutsProps) => {
   const [state, setState] = useState<KeyboardShortcutsState>({
     isHelpVisible: false,
-    shortcuts,
+    shortcuts: [], // Initialize empty, will use passed shortcuts directly
     pressedKeys: new Set()
   });
 
-  // Handle keyboard events
+  // Handle keyboard events - USE PASSED SHORTCUTS DIRECTLY
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (!enabled) return;
     
@@ -222,36 +222,22 @@ export const useKeyboardShortcuts = ({
     };
   }, [handleKeyDown, handleKeyUp, enabled]);
 
-  // Update shortcuts when prop changes
-  useEffect(() => {
-    setState(prev => ({
-      ...prev,
-      shortcuts
-    }));
-  }, [shortcuts]);
+  // REMOVED problematic useEffect that caused infinite loops
+  // Now using passed shortcuts directly instead of storing in state
 
   return {
     ...state,
+    shortcuts, // Return passed shortcuts directly
     toggleHelp,
     addShortcut: (shortcut: KeyboardShortcut) => {
-      setState(prev => ({
-        ...prev,
-        shortcuts: [...prev.shortcuts, shortcut]
-      }));
+      // This functionality is now handled by passing new shortcuts array
+      console.warn('addShortcut is deprecated - pass new shortcuts array instead');
     },
     removeShortcut: (key: string) => {
-      setState(prev => ({
-        ...prev,
-        shortcuts: prev.shortcuts.filter(s => s.key !== key)
-      }));
+      console.warn('removeShortcut is deprecated - pass new shortcuts array instead');
     },
     updateShortcut: (key: string, updates: Partial<KeyboardShortcut>) => {
-      setState(prev => ({
-        ...prev,
-        shortcuts: prev.shortcuts.map(s => 
-          s.key === key ? { ...s, ...updates } : s
-        )
-      }));
+      console.warn('updateShortcut is deprecated - pass new shortcuts array instead');
     }
   };
 };
@@ -268,42 +254,48 @@ export const usePageShortcuts = (
     onNavigate?: (page: string) => void;
   }
 ) => {
-  // Memoize navigation function to prevent recreation
-  const navigate = useCallback(globalActions?.onNavigate || (() => {}), [globalActions?.onNavigate]);
-
-  // Memoize navigation shortcuts to prevent recreation
-  const navigationShortcuts = useMemo(() => [
-    {
-      key: 'alt+1',
-      description: 'Go to Invoices',
-      action: () => navigate('/invoices'),
-      category: 'navigation' as const
-    },
-    {
-      key: 'alt+2', 
-      description: 'Go to Clients',
-      action: () => navigate('/clients'),
-      category: 'navigation' as const
-    },
-    {
-      key: 'alt+3',
-      description: 'Go to Projects', 
-      action: () => navigate('/projects'),
-      category: 'navigation' as const
-    },
-    {
-      key: 'alt+4',
-      description: 'Go to Quotations',
-      action: () => navigate('/quotations'),
-      category: 'navigation' as const
-    },
-    {
-      key: 'alt+0',
-      description: 'Go to Dashboard',
-      action: () => navigate('/'),
-      category: 'navigation' as const
+  // Skip navigation shortcuts entirely to prevent infinite loops
+  // Navigation will be handled separately without causing re-renders
+  const navigationShortcuts = useMemo(() => {
+    // If no navigation function provided, return empty array
+    if (!globalActions?.onNavigate) {
+      return [];
     }
-  ], [navigate]);
+    
+    const navigate = globalActions.onNavigate;
+    return [
+      {
+        key: 'alt+1',
+        description: 'Go to Invoices',
+        action: () => navigate('/invoices'),
+        category: 'navigation' as const
+      },
+      {
+        key: 'alt+2', 
+        description: 'Go to Clients',
+        action: () => navigate('/clients'),
+        category: 'navigation' as const
+      },
+      {
+        key: 'alt+3',
+        description: 'Go to Projects', 
+        action: () => navigate('/projects'),
+        category: 'navigation' as const
+      },
+      {
+        key: 'alt+4',
+        description: 'Go to Quotations',
+        action: () => navigate('/quotations'),
+        category: 'navigation' as const
+      },
+      {
+        key: 'alt+0',
+        description: 'Go to Dashboard',
+        action: () => navigate('/'),
+        category: 'navigation' as const
+      }
+    ];
+  }, [globalActions?.onNavigate]);
 
   // Memoize global action shortcuts to prevent recreation
   const globalActionShortcuts = useMemo(() => [
