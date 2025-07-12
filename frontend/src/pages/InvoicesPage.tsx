@@ -232,16 +232,16 @@ export const InvoicesPage: React.FC = () => {
   const getAmount = (invoice: Invoice) => safeNumber(invoice.totalAmount)
 
   // Navigation functions for clickable table links
-  const navigateToClient = useCallback((_clientId: string) => {
-    navigate('/clients')
+  const navigateToClient = useCallback((clientId: string) => {
+    navigate(`/clients?clientId=${clientId}`)
   }, [navigate])
 
-  const navigateToProject = useCallback((_projectId: string) => {
-    navigate('/projects')
+  const navigateToProject = useCallback((projectId: string) => {
+    navigate(`/projects?projectId=${projectId}`)
   }, [navigate])
 
-  const navigateToQuotation = useCallback((_quotationId: string) => {
-    navigate('/quotations')
+  const navigateToQuotation = useCallback((quotationId: string) => {
+    navigate(`/quotations?viewQuotation=${quotationId}`)
   }, [navigate])
 
   const getStatusColor = (status: string) => {
@@ -651,7 +651,7 @@ export const InvoicesPage: React.FC = () => {
         key: 'view-quotation',
         icon: <LinkOutlined />,
         label: 'Lihat Quotation',
-        onClick: () => navigate('/quotations')
+        onClick: () => navigateToQuotation(invoice.quotationId || '')
       })
     }
 
@@ -732,10 +732,10 @@ export const InvoicesPage: React.FC = () => {
                 <Button 
                   type="link" 
                   size="small"
-                  onClick={() => navigate(`/projects?projectId=${invoice.project.id}`)}
+                  onClick={() => navigate(`/projects?projectId=${invoice.project?.id}`)}
                   className="text-xs text-purple-600 hover:text-purple-800 p-0"
                 >
-                  📊 {invoice.project.number}
+                  📊 {invoice.project?.number}
                 </Button>
               </div>
             )}

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   App,
   Avatar,
@@ -38,7 +38,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { formatIDR, safeArray, safeNumber, safeString } from '../utils/currency'
 import { Client, clientService } from '../services/clients'
 import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
@@ -57,6 +57,7 @@ export const ClientsPage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -103,6 +104,23 @@ export const ClientsPage: React.FC = () => {
       message.success(t('messages.success.deleted', { item: 'Klien' }))
     }
   })
+
+  // Handle URL parameters for direct navigation
+  useEffect(() => {
+    // Handle clientId query parameter (show specific client detail)
+    const viewClientId = searchParams.get("clientId")
+    if (viewClientId && clients.length > 0) {
+      const client = clients.find(c => c.id === viewClientId)
+      if (client) {
+        setSelectedClient(client)
+        setViewModalVisible(true)
+        // Clear the URL parameter after opening modal
+        const newSearchParams = new URLSearchParams(searchParams)
+        newSearchParams.delete("clientId")
+        navigate("/clients", { replace: true })
+      }
+    }
+  }, [searchParams, clients, navigate])
 
   // Filtered data
   const filteredClients = safeArray(clients).filter(client => {

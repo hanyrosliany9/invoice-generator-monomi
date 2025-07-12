@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   App,
   Badge,
@@ -19,7 +19,6 @@ import {
   Statistic,
   Table,
   Tag,
-  Tooltip,
   Typography,
 } from 'antd'
 import {
@@ -43,7 +42,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { formatIDR, safeArray, safeNumber, safeString } from '../utils/currency'
 import { Project, projectService } from '../services/projects'
 import { clientService } from '../services/clients'
@@ -68,6 +67,7 @@ export const ProjectsPage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -121,6 +121,35 @@ export const ProjectsPage: React.FC = () => {
     }
   })
 
+  // Handle URL parameters for direct navigation
+  useEffect(() => {
+    // Handle viewProject query parameter (show specific project detail)
+    const viewProjectId = searchParams.get("projectId")
+    if (viewProjectId && projects.length > 0) {
+      const project = projects.find(p => p.id === viewProjectId)
+      if (project) {
+        setSelectedProject(project)
+        setViewModalVisible(true)
+        // Clear the URL parameter after opening modal
+        const newSearchParams = new URLSearchParams(searchParams)
+        newSearchParams.delete("projectId")
+        navigate("/projects", { replace: true })
+      }
+    }
+  }, [searchParams, projects, navigate])
+
+  // Handle clientId query parameter for filtering
+  const clientFilter = searchParams.get("clientId")
+  const [filteredByClient, setFilteredByClient] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (clientFilter) {
+      setFilteredByClient(clientFilter)
+    } else {
+      setFilteredByClient(null)
+    }
+  }, [clientFilter])
+
   // Filtered data
   const filteredProjects = safeArray(projects).filter(project => {
     const searchLower = safeString(searchText).toLowerCase()
@@ -130,7 +159,8 @@ export const ProjectsPage: React.FC = () => {
                          safeString(project?.client?.company).toLowerCase().includes(searchLower)
     const matchesStatus = !statusFilter || project?.status === statusFilter
     const matchesType = !typeFilter || project?.type === typeFilter
-    return matchesSearch && matchesStatus && matchesType
+    const matchesClient = !filteredByClient || project?.clientId === filteredByClient
+    return matchesSearch && matchesStatus && matchesType && matchesClient
   })
 
   // Statistics
@@ -194,8 +224,8 @@ export const ProjectsPage: React.FC = () => {
   }
 
   // Navigation function for clickable table links
-  const navigateToClient = useCallback((_clientId: string) => {
-    navigate('/clients')
+  const navigateToClient = useCallback((clientId: string) => {
+    navigate(`/clients?clientId=${clientId}`)
   }, [navigate])
 
   const handleCreate = () => {
@@ -279,87 +309,17 @@ export const ProjectsPage: React.FC = () => {
       sorter: (a: Project, b: Project) => a.number.localeCompare(b.number)
     },
     {
-      title: 'Client & Pipeline',
-      key: 'clientPipeline',
+      title: 'Klien',
+      key: 'clientName',
       render: (_: any, project: Project) => (
-        <div className="space-y-3">
-          {/* Client Info */}
-          <div>
-            <Button 
-              type="link" 
-              onClick={() => navigateToClient(project.client?.id || '')}
-              className="text-blue-600 hover:text-blue-800 p-0 font-medium text-sm"
-              disabled={!project.client?.id}
-            >
-              🏢 {project.client?.name || 'N/A'}
-            </Button>
-            {project.client?.company && (
-              <div className="text-xs text-gray-500 mt-0.5">{project.client.company}</div>
-            )}
-          </div>
-          
-          {/* Business Pipeline Metrics */}
-          <div className="bg-blue-50 border border-blue-100 p-2.5 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Business Pipeline</span>
-            </div>
-            
-            <div className="space-y-2">
-              {/* Quotations */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Quotations</span>
-                <Button 
-                  type="link" 
-                  size="small"
-                  onClick={() => navigate(`/quotations?projectId=${project.id}`)}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-800 p-0 h-auto"
-                >
-                  <Badge count={project._count?.quotations || 0} color="blue" size="small">
-                    📋
-                  </Badge>
-                </Button>
-              </div>
-              
-              {/* Invoices */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Invoices</span>
-                <Button 
-                  type="link" 
-                  size="small"
-                  onClick={() => navigate(`/invoices?projectId=${project.id}`)}
-                  className="text-sm font-medium text-green-600 hover:text-green-800 p-0 h-auto"
-                >
-                  <Badge count={project._count?.invoices || 0} color="green" size="small">
-                    💰
-                  </Badge>
-                </Button>
-              </div>
-              
-              {/* Revenue */}
-              <div className="flex items-center justify-between pt-1 border-t border-blue-200">
-                <span className="text-sm font-medium text-gray-700">Revenue</span>
-                <span className="text-sm font-semibold text-green-600">
-                  {formatIDR(project.totalRevenue || 0)}
-                </span>
-              </div>
-            </div>
-            
-            {/* Quick Action */}
-            <div className="mt-2.5 pt-2 border-t border-blue-200">
-              <Tooltip title="Create quotation for this project">
-                <Button 
-                  type="text" 
-                  size="small" 
-                  icon={<PlusOutlined />}
-                  onClick={() => navigate(`/quotations/create?projectId=${project.id}&clientId=${project.clientId}`)}
-                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 w-full text-xs"
-                >
-                  Create Quotation
-                </Button>
-              </Tooltip>
-            </div>
-          </div>
-        </div>
+        <Button 
+          type="link" 
+          onClick={() => navigateToClient(project.client?.id || '')}
+          className="text-blue-600 hover:text-blue-800 p-0"
+          disabled={!project.client?.id}
+        >
+          {project.client?.name || 'N/A'}
+        </Button>
       ),
       sorter: (a: Project, b: Project) => (a.client?.name || '').localeCompare(b.client?.name || '')
     },
