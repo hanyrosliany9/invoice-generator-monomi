@@ -1229,10 +1229,6 @@ export const ProjectsPage: React.FC = () => {
                 </div>
               </Col>
               <Col span={12}>
-                <Text strong>Estimasi Budget:</Text>
-                <div className="idr-amount">{formatIDR(selectedProject.estimatedBudget || selectedProject.basePrice || 0)}</div>
-                <Text strong>Budget Aktual:</Text>
-                <div className="idr-amount">{formatIDR(selectedProject.basePrice || selectedProject.estimatedBudget || 0)}</div>
               </Col>
             </Row>
 
