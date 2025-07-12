@@ -101,7 +101,7 @@ const EntityCard: React.FC<{
         <Space>
           {getEntityIcon(entity.type)}
           <Text strong>{entity.name}</Text>
-          <Tag color="blue" size="small">
+          <Tag color="blue">
             {relationshipLabels[relationship]}
           </Tag>
         </Space>
@@ -113,7 +113,7 @@ const EntityCard: React.FC<{
         )}
         
         {entity.status && (
-          <Tag color={getStatusColor(entity.status)} size="small">
+          <Tag color={getStatusColor(entity.status)}>
             {entity.status}
           </Tag>
         )}
@@ -214,7 +214,7 @@ const NextActionItem: React.FC<{
         <Space>
           <span>{action.icon}</span>
           <Text strong>{action.label}</Text>
-          <Tag color={getPriorityColor()} size="small">
+          <Tag color={getPriorityColor()}>
             {action.priority.toUpperCase()}
           </Tag>
         </Space>
@@ -435,7 +435,6 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
                     </Text>
                     <Tag 
                       color={step.isCompleted ? 'success' : step.isCurrent ? 'processing' : 'default'}
-                      size="small"
                     >
                       {step.isCompleted ? 'Selesai' : step.isCurrent ? 'Aktif' : 'Pending'}
                     </Tag>

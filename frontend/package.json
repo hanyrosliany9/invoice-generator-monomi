@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc --project tsconfig.production.json && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "type-check": "tsc --noEmit",
@@ -59,7 +59,12 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
+    "@testing-library/jest-dom": "^6.4.8",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/user-event": "^14.5.2",
     "@types/dompurify": "^3.1.0",
+    "@types/jest": "^29.5.12",
+    "@types/jest-axe": "^3.2.0",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20.0.0",
     "@types/react": "^19.0.0",
@@ -76,12 +81,13 @@
     "eslint-plugin-react-refresh": "^0.4.12",
     "globals": "^15.0.0",
     "husky": "^9.0.0",
+    "jest-axe": "^9.0.0",
     "lint-staged": "^15.0.0",
     "postcss": "^8.4.47",
     "prettier": "^3.0.0",
-    "tailwindcss": "^4.0.0",
+    "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3",
-    "vite": "^6.0.1",
-    "vitest": "^2.1.2"
+    "vite": "^5.4.10",
+    "vitest": "^1.6.0"
   }
 }

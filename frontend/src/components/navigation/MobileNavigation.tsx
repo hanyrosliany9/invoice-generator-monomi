@@ -162,7 +162,6 @@ const SwipeableBreadcrumb: React.FC<{
               </Text>
               <Tag 
                 color={getEntityColor(currentItem.entityType)}
-                size="small"
               >
                 {currentItem.entityType.toUpperCase()}
               </Tag>

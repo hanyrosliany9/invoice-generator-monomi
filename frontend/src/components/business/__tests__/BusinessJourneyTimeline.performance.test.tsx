@@ -254,7 +254,7 @@ describe('BusinessJourneyTimeline Performance Tests', () => {
 
   describe('Memory Usage', () => {
     it('should not cause memory leaks', async () => {
-      const initialMemory = performance.memory?.usedJSHeapSize || 0
+      const initialMemory = (performance as any).memory?.usedJSHeapSize || 0
       
       const { unmount } = renderWithProviders(
         <BusinessJourneyTimeline 
@@ -266,7 +266,7 @@ describe('BusinessJourneyTimeline Performance Tests', () => {
         expect(screen.getByText('Event 1')).toBeInTheDocument()
       })
 
-      const peakMemory = performance.memory?.usedJSHeapSize || 0
+      const peakMemory = (performance as any).memory?.usedJSHeapSize || 0
       
       unmount()
       
@@ -278,7 +278,7 @@ describe('BusinessJourneyTimeline Performance Tests', () => {
       // Wait for cleanup
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      const finalMemory = performance.memory?.usedJSHeapSize || 0
+      const finalMemory = (performance as any).memory?.usedJSHeapSize || 0
       
       // Memory should not increase significantly after unmount
       const memoryIncrease = finalMemory - initialMemory
@@ -292,7 +292,7 @@ describe('BusinessJourneyTimeline Performance Tests', () => {
         json: async () => ({ success: true, data: largeDataset })
       })
 
-      const initialMemory = performance.memory?.usedJSHeapSize || 0
+      const initialMemory = (performance as any).memory?.usedJSHeapSize || 0
       
       renderWithProviders(
         <BusinessJourneyTimeline 
@@ -305,7 +305,7 @@ describe('BusinessJourneyTimeline Performance Tests', () => {
         expect(screen.getByText('Event 1')).toBeInTheDocument()
       })
 
-      const finalMemory = performance.memory?.usedJSHeapSize || 0
+      const finalMemory = (performance as any).memory?.usedJSHeapSize || 0
       const memoryIncrease = finalMemory - initialMemory
       
       // Should not use more than 50MB for 1000 events

@@ -73,7 +73,7 @@ const WorkflowIndicator: React.FC<WorkflowIndicatorProps> = ({
   const steps = buildWorkflowSteps()
   const currentIndex = steps.findIndex(step => step.current)
 
-  const stepItems = steps.map((step, index) => ({
+  const stepItems = steps.map((step) => ({
     title: compact ? undefined : (showLabels ? step.title : step.entityName || step.title),
     description: compact ? undefined : (showLabels ? step.entityName : undefined),
     icon: step.completed ? <CheckCircleOutlined /> : 

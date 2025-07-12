@@ -145,7 +145,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
                   </Text>
                 )}
                 {entity.status && (
-                  <Tag color={getStatusColor(entity.status)} size="small">
+                  <Tag color={getStatusColor(entity.status)}>
                     {entity.status}
                   </Tag>
                 )}

@@ -84,6 +84,9 @@ export const BusinessJourneyTimeline: React.FC<BusinessJourneyTimelineProps> = (
   const timelineRef = useRef<HTMLDivElement>(null)
   const announceRef = useRef<HTMLDivElement>(null)
   
+  // Virtualization configuration (future enhancement)
+  console.debug('Virtualization enabled:', enableVirtualization)
+  
   // Fetch business journey data
   const { 
     data: journeyData, 

@@ -36,7 +36,7 @@ import {
   CopyOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { formatIDR, formatDateIndonesian } from '../../utils/currency'
+import { formatIDR, formatIndonesianDate } from '../../utils/currency'
 
 const { Text, Paragraph, Title } = Typography
 const { TextArea } = Input
@@ -233,14 +233,14 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
       // Date formatting
       const dueDate = new Date()
       dueDate.setDate(dueDate.getDate() + 30) // 30 days from now
-      processedMessage = processedMessage.replace(/\{\{due_date\}\}/g, formatDateIndonesian(dueDate))
+      processedMessage = processedMessage.replace(/\{\{due_date\}\}/g, formatIndonesianDate(dueDate))
     }
     
     return processedMessage
   }, [businessEntity])
   
   // Send WhatsApp message
-  const handleSendMessage = useCallback((message: string, template?: WhatsAppTemplate) => {
+  const handleSendMessage = useCallback((messageText: string, template?: WhatsAppTemplate) => {
     if (!selectedContact) {
       message.error('Pilih kontak terlebih dahulu')
       return
@@ -255,7 +255,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
     }
     
     // Add business etiquette if enabled
-    let finalMessage = message
+    let finalMessage = messageText
     if (businessEtiquetteEnabled && template?.useBusinessEtiquette) {
       const greeting = getIndonesianTimeGreeting()
       if (!finalMessage.toLowerCase().includes('selamat')) {
@@ -363,7 +363,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
                             <Space>
                               {contact.name}
                               {contact.preferredLanguage === 'id' && (
-                                <Tag size="small" color="blue">ID</Tag>
+                                <Tag color="blue" style={{ fontSize: '12px' }}>ID</Tag>
                               )}
                             </Space>
                           }
@@ -437,7 +437,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
                             {template.category === 'materai' && <FileTextOutlined />}
                             {template.name}
                             {template.indonesianBusinessContext && (
-                              <Tag size="small" color="green">ID Bisnis</Tag>
+                              <Tag color="green" style={{ fontSize: '12px' }}>ID Bisnis</Tag>
                             )}
                           </Space>
                         </Option>
@@ -541,10 +541,10 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
                       extra={
                         <Space>
                           {template.indonesianBusinessContext && (
-                            <Tag size="small" color="green">ID Bisnis</Tag>
+                            <Tag color="green" style={{ fontSize: '12px' }}>ID Bisnis</Tag>
                           )}
                           {template.useBusinessEtiquette && (
-                            <Tag size="small" color="blue">Etika</Tag>
+                            <Tag color="blue" style={{ fontSize: '12px' }}>Etika</Tag>
                           )}
                         </Space>
                       }
@@ -621,7 +621,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
                           {msg.message}
                         </Paragraph>
                         <Text type="secondary" style={{ fontSize: '11px' }}>
-                          {formatDateIndonesian(msg.timestamp)}
+                          {formatIndonesianDate(msg.timestamp)}
                         </Text>
                       </div>
                     }

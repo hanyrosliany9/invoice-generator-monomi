@@ -28,7 +28,6 @@ import {
 } from 'antd'
 import {
   SecurityScanOutlined,
-  ShieldOutlined,
   WarningOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
@@ -42,10 +41,11 @@ import {
   DownloadOutlined,
   MonitorOutlined,
   AlertOutlined,
-  DashboardOutlined
+  DashboardOutlined,
+  DollarOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { formatDateIndonesian, formatIDR } from '../../utils/currency'
+import { formatIndonesianDate, formatIDR } from '../../utils/currency'
 import { materaiValidationService, MateraiValidationResult } from '../../services/materaiValidation'
 import xssPrevention from '../../utils/xssPrevention'
 
@@ -392,7 +392,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
         <Space>
           <Text>{type}</Text>
           {record.indonesianSpecific && (
-            <Tag color="blue" size="small">Indonesian</Tag>
+            <Tag color="blue" style={{ fontSize: '12px' }}>Indonesian</Tag>
           )}
         </Space>
       ),
@@ -418,7 +418,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
       key: 'timestamp',
       render: (timestamp: Date) => (
         <Text style={{ fontSize: '12px' }}>
-          {formatDateIndonesian(timestamp)}
+          {formatIndonesianDate(timestamp)}
         </Text>
       ),
       width: 120
@@ -476,7 +476,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
         <Col>
           <Space>
-            <ShieldOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+            <SafetyOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
             <Title level={3} style={{ margin: 0 }}>
               Security & Compliance Dashboard
             </Title>
@@ -525,7 +525,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
             <Text>Score: {complianceState.overall.score}/100</Text>
           </Space>
         }
-        description={`Last updated: ${formatDateIndonesian(complianceState.overall.lastUpdated)}`}
+        description={`Last updated: ${formatIndonesianDate(complianceState.overall.lastUpdated)}`}
         type={complianceState.overall.score >= 90 ? 'success' : 
               complianceState.overall.score >= 70 ? 'warning' : 'error'}
         showIcon
@@ -542,7 +542,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
                   <Space>
                     {metric.name}
                     {metric.indonesianRequirement && (
-                      <Tag color="blue" size="small">ID</Tag>
+                      <Tag color="blue" style={{ fontSize: '12px' }}>ID</Tag>
                     )}
                   </Space>
                 }
@@ -553,7 +553,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
                   fontSize: '16px'
                 }}
                 prefix={
-                  metric.name.includes('Security') ? <ShieldOutlined /> :
+                  metric.name.includes('Security') ? <SafetyOutlined /> :
                   metric.name.includes('Materai') ? <FileProtectOutlined /> :
                   metric.name.includes('Indonesian') ? <AuditOutlined /> :
                   metric.name.includes('XSS') ? <BugOutlined /> :
@@ -599,7 +599,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
                   <Statistic
                     title="Threats Blocked (24h)"
                     value={complianceState.xss.threatsBlocked}
-                    prefix={<ShieldOutlined />}
+                    prefix={<SafetyOutlined />}
                   />
                   <Statistic
                     title="Active Vulnerabilities"
@@ -608,7 +608,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
                     prefix={<BugOutlined />}
                   />
                   <Text type="secondary">
-                    Last scan: {formatDateIndonesian(complianceState.xss.lastScan)}
+                    Last scan: {formatIndonesianDate(complianceState.xss.lastScan)}
                   </Text>
                 </Space>
               </Card>
@@ -665,7 +665,6 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
                     message={`${complianceState.privacy.sensitiveDataExposures} sensitive data exposures detected`}
                     type={complianceState.privacy.sensitiveDataExposures === 0 ? 'success' : 'error'}
                     showIcon
-                    size="small"
                   />
                 </Space>
               </Card>
@@ -955,7 +954,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
             </div>
             
             <Text type="secondary">
-              Reported: {formatDateIndonesian(selectedAlert.timestamp)}
+              Reported: {formatIndonesianDate(selectedAlert.timestamp)}
             </Text>
           </Space>
         )}

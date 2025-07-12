@@ -332,15 +332,15 @@ export const IndonesianCulturalUXProvider: React.FC<{ children: React.ReactNode 
     const contextType = context || 'general'
     
     if (contextType === 'business') {
-      return messages.honorifics.business[0] // Default to formal business honorific
+      return messages.honorifics.business[0] || '' // Default to formal business honorific
     }
     
     if (gender) {
       const honorifics = messages.honorifics[gender]
-      return honorifics[0] // Default to most formal
+      return honorifics[0] || '' // Default to most formal
     }
     
-    return messages.honorifics.general[0]
+    return messages.honorifics.general[0] || ''
   }, [preferences.useHonorificTitles, messages])
 
   // Get business phrase with template substitution
@@ -359,18 +359,18 @@ export const IndonesianCulturalUXProvider: React.FC<{ children: React.ReactNode 
   // Format WhatsApp message with Indonesian business etiquette
   const formatWhatsAppMessage = useCallback((template: string, data: Record<string, any>) => {
     const greeting = getGreeting(undefined, true)
-    const honorific = getHonorific(data.gender, 'business')
+    const honorific = getHonorific(data['gender'], 'business')
     
     let message = template
     
     // Add greeting if not present
     if (!message.includes('Selamat')) {
-      message = `${greeting} ${honorific} ${data.clientName || 'Yang Terhormat'},\n\n${message}`
+      message = `${greeting} ${honorific} ${data['clientName'] || 'Yang Terhormat'},\n\n${message}`
     }
     
     // Add closing if not present
     if (!message.includes('Terima kasih')) {
-      message += `\n\n${messages.businessPhrases.thankYou}.\n\nSalam hormat,\n${data.senderName || 'Tim Kami'}`
+      message += `\n\n${messages.businessPhrases.thankYou}.\n\nSalam hormat,\n${data['senderName'] || 'Tim Kami'}`
     }
     
     // Replace template variables

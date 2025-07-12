@@ -1,7 +1,7 @@
 // UX Metrics Collection Utility - Performance Monitoring for Indonesian Business System
 // Enhanced with Core Web Vitals tracking and user behavior analytics
 
-import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals'
+import { onCLS, onFID, onFCP, onLCP, onTTFB } from 'web-vitals'
 import { UXMetrics, BusinessJourneyTimelinePerformance } from '../types/businessJourney.types'
 
 interface UXMetricsCollectorConfig {
@@ -47,27 +47,27 @@ export class UXMetricsCollector {
   private initializeWebVitals(): void {
     if (typeof window === 'undefined') return
     
-    getCLS((metric) => {
+    onCLS((metric: any) => {
       this.performanceData.cls = metric.value
       this.sendMetricToAnalytics('cls', metric.value)
     })
     
-    getFID((metric) => {
+    onFID((metric: any) => {
       this.performanceData.fid = metric.value
       this.sendMetricToAnalytics('fid', metric.value)
     })
     
-    getFCP((metric) => {
+    onFCP((metric: any) => {
       this.performanceData.fcp = metric.value
       this.sendMetricToAnalytics('fcp', metric.value)
     })
     
-    getLCP((metric) => {
+    onLCP((metric: any) => {
       this.performanceData.lcp = metric.value
       this.sendMetricToAnalytics('lcp', metric.value)
     })
     
-    getTTFB((metric) => {
+    onTTFB((metric: any) => {
       this.performanceData.ttfb = metric.value
       this.sendMetricToAnalytics('ttfb', metric.value)
     })

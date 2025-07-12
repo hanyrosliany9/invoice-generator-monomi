@@ -14,27 +14,33 @@ export interface BusinessJourneyEvent {
   relatedEntity?: RelatedEntity
 }
 
-export type BusinessJourneyEventType =
-  | 'client_created'
-  | 'project_started'
-  | 'quotation_draft'
-  | 'quotation_sent'
-  | 'quotation_approved'
-  | 'quotation_declined'
-  | 'quotation_revised'
-  | 'invoice_generated'
-  | 'invoice_sent'
-  | 'payment_received'
-  | 'payment_overdue'
-  | 'materai_required'
-  | 'materai_applied'
+export enum BusinessJourneyEventType {
+  CLIENT_CREATED = 'client_created',
+  PROJECT_STARTED = 'project_started',
+  QUOTATION_DRAFT = 'quotation_draft',
+  QUOTATION_SENT = 'quotation_sent',
+  QUOTATION_APPROVED = 'quotation_approved',
+  QUOTATION_DECLINED = 'quotation_declined',
+  QUOTATION_REVISED = 'quotation_revised',
+  INVOICE_GENERATED = 'invoice_generated',
+  INVOICE_SENT = 'invoice_sent',
+  PAYMENT_RECEIVED = 'payment_received',
+  PAYMENT_OVERDUE = 'payment_overdue',
+  MATERAI_REQUIRED = 'materai_required',
+  MATERAI_APPLIED = 'materai_applied'
+}
 
-export type BusinessJourneyEventStatus =
-  | 'pending'
-  | 'in_progress'
-  | 'completed'
-  | 'cancelled'
-  | 'requires_attention'
+export enum BusinessJourneyEventStatus {
+  PENDING = 'pending',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
+  REQUIRES_ATTENTION = 'requires_attention'
+}
+
+// Type aliases for backward compatibility
+export type BusinessJourneyEventTypeUnion = keyof typeof BusinessJourneyEventType | BusinessJourneyEventType
+export type BusinessJourneyEventStatusUnion = keyof typeof BusinessJourneyEventStatus | BusinessJourneyEventStatus
 
 export interface BusinessJourneyEventMetadata {
   userCreated: string

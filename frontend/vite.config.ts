@@ -34,9 +34,19 @@ export default defineConfig({
       },
     },
   },
+  css: {
+    modules: {
+      localsConvention: 'camelCase',
+      generateScopedName: '[name]__[local]___[hash:base64:5]'
+    }
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,
+    minify: false,
+    rollupOptions: {
+      treeshake: false
+    }
   },
   test: {
     globals: true,

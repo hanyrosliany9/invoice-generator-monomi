@@ -40,7 +40,7 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { formatDateIndonesian } from '../../utils/currency'
+import { formatIndonesianDate } from '../../utils/currency'
 import { usePerformanceMonitor, PerformanceMetric, PerformanceAlert } from '../../hooks/usePerformanceMonitor'
 
 const { Title, Text, Paragraph } = Typography
@@ -69,7 +69,7 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
     vitals,
     businessMetrics,
     score,
-    metrics,
+    getMetrics,
     alerts,
     isLoading,
     getRecommendations,
@@ -241,7 +241,7 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
         <Space>
           <Text strong>{name}</Text>
           {record.indonesianContext && (
-            <Tag color="blue" size="small">Indonesian</Tag>
+            <Tag color="blue" style={{ fontSize: '12px' }}>Indonesian</Tag>
           )}
         </Space>
       )
@@ -277,7 +277,7 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
       title: 'Time',
       dataIndex: 'timestamp',
       key: 'timestamp',
-      render: (timestamp: Date) => formatDateIndonesian(timestamp),
+      render: (timestamp: Date) => formatIndonesianDate(timestamp),
       sorter: (a: PerformanceMetric, b: PerformanceMetric) => a.timestamp.getTime() - b.timestamp.getTime()
     },
     {
@@ -497,7 +497,7 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
                       }}
                       prefix={card.icon}
                     />
-                    <Tag color="blue" size="small" style={{ marginTop: 4 }}>
+                    <Tag color="blue" style={{ marginTop: 4, fontSize: '12px' }}>
                       Indonesian Context
                     </Tag>
                   </Card>
@@ -540,7 +540,7 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
                         </Tag>
                         {alert.metric}
                         {alert.indonesianContext && (
-                          <Tag color="blue" size="small">Indonesian</Tag>
+                          <Tag color="blue" style={{ fontSize: '12px' }}>Indonesian</Tag>
                         )}
                       </Space>
                     }
@@ -572,7 +572,7 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
           <Card>
             <Table
               columns={metricsColumns}
-              dataSource={metrics.slice(-100)} // Show last 100 metrics
+              dataSource={getMetrics().slice(-100)} // Show last 100 metrics
               rowKey={(record) => `${record.name}-${record.timestamp.getTime()}`}
               size="small"
               pagination={{ pageSize: 20 }}
@@ -690,7 +690,7 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
                 </Col>
               </Row>
               <Divider />
-              <Text strong>Timestamp:</Text> {formatDateIndonesian(selectedMetric.timestamp)}
+              <Text strong>Timestamp:</Text> {formatIndonesianDate(selectedMetric.timestamp)}
             </Card>
 
             {selectedMetric.metadata && (

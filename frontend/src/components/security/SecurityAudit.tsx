@@ -24,7 +24,6 @@ import {
 } from 'antd'
 import {
   SecurityScanOutlined,
-  ShieldOutlined,
   WarningOutlined,
   CheckCircleOutlined,
   BugOutlined,
@@ -34,10 +33,12 @@ import {
   DownloadOutlined,
   FileProtectOutlined,
   SafetyOutlined,
-  AuditOutlined
+  AuditOutlined,
+  SettingOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { formatDateIndonesian } from '../../utils/currency'
+import { formatIndonesianDate } from '../../utils/currency'
 
 const { Title, Text, Paragraph } = Typography
 const { TabPane } = Tabs
@@ -537,12 +538,12 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         <div>
           <Text strong>{title}</Text>
           {record.affectsIndonesianCompliance && (
-            <Tag color="blue" size="small" style={{ marginLeft: 8 }}>
+            <Tag color="blue" style={{ marginLeft: 8, fontSize: '12px' }}>
               ID Compliance
             </Tag>
           )}
           {record.materaiRelated && (
-            <Tag color="orange" size="small" style={{ marginLeft: 4 }}>
+            <Tag color="orange" style={{ marginLeft: 4, fontSize: '12px' }}>
               Materai
             </Tag>
           )}
@@ -641,7 +642,7 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
                 value={currentScan.score}
                 suffix="/100"
                 valueStyle={{ color: getScoreColor(currentScan.score) }}
-                prefix={<ShieldOutlined />}
+                prefix={<SecurityScanOutlined />}
               />
             </Card>
           </Col>
@@ -793,7 +794,7 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
                 >
                   <div>
                     <Text strong>
-                      {formatDateIndonesian(scan.timestamp)} - Score: {scan.score}/100
+                      {formatIndonesianDate(scan.timestamp)} - Score: {scan.score}/100
                     </Text>
                     <br />
                     <Text type="secondary">
@@ -839,7 +840,7 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
                     </Tag>
                   </p>
                   <p><strong>Location:</strong> <Text code>{selectedVulnerability.location}</Text></p>
-                  <p><strong>Found At:</strong> {formatDateIndonesian(selectedVulnerability.foundAt)}</p>
+                  <p><strong>Found At:</strong> {formatIndonesianDate(selectedVulnerability.foundAt)}</p>
                   {selectedVulnerability.cwe && (
                     <p><strong>CWE:</strong> {selectedVulnerability.cwe}</p>
                   )}

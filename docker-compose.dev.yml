@@ -14,7 +14,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=dev-jwt-secret-key
       - FRONTEND_URL=http://localhost:3000
-      - SKIP_DB_INIT=false
+      - SKIP_DB_INIT=${SKIP_DB_INIT:-false}
       - SMTP_HOST=localhost
       - SMTP_PORT=587
       - SMTP_USER=dev@monomi.finance
@@ -37,9 +37,23 @@ services:
       - invoice-network
     restart: unless-stopped
     working_dir: /app
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/api/v1/health && curl -f http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     command: >
       sh -c "
-        cd /app/backend && npm run start:dev &
+        cd /app/backend && 
+        echo '🔧 Checking database initialization...' &&
+        npx prisma migrate deploy &&
+        npx prisma generate &&
+        if [ \"$SKIP_DB_INIT\" = \"false\" ]; then
+          echo '🌱 Running database seeding...' &&
+          npx prisma db seed || echo '⚠️  Seeding failed or already completed'
+        fi &&
+        npm run start:dev &
         cd /app/frontend && npm run dev -- --port 3000 --host &
         wait
       "

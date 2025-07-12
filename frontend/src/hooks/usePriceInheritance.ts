@@ -371,7 +371,7 @@ export const usePriceInheritanceFormField = (
   fieldName: string,
   form: any, // Ant Design form instance
   options: UsePriceInheritanceOptions
-) => {
+): [PriceInheritanceState, PriceInheritanceActions] => {
   const [state, actions] = usePriceInheritance({
     ...options,
     onConfigChange: (config) => {

@@ -405,7 +405,6 @@ export const BusinessFlowNavigator: React.FC<BusinessFlowNavigatorProps> = ({
                       </Text>
                       <Tag 
                         color={step.isCompleted ? 'success' : step.isCurrent ? 'processing' : 'default'}
-                        size="small"
                       >
                         {step.isCompleted ? 'Selesai' : step.isCurrent ? 'Sedang Berlangsung' : 'Pending'}
                       </Tag>
@@ -438,7 +437,7 @@ export const BusinessFlowNavigator: React.FC<BusinessFlowNavigatorProps> = ({
             } 
             key="details"
           >
-            <Space direction="vertical" size="medium" style={{ width: '100%' }}>
+            <Space direction="vertical" size={16} style={{ width: '100%' }}>
               <div className={styles.stageHeader}>
                 <Space>
                   <span style={{ fontSize: '24px' }}>{selectedConfig.icon}</span>

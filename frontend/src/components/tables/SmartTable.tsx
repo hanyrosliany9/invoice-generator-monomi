@@ -18,7 +18,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { usePerformanceMonitor } from '../../hooks/usePerformanceMonitor'
-import { formatIDR, formatDateIndonesian } from '../../utils/currency'
+import { formatIDR, formatIndonesianDate } from '../../utils/currency'
 
 const { Text, Title } = Typography
 const { Option } = Select
@@ -222,10 +222,10 @@ const SmartTable = <T extends BusinessEntity>({
             {record.tags && record.tags.length > 0 && (
               <Space wrap>
                 {record.tags.slice(0, 2).map(tag => (
-                  <Tag key={tag} size="small">{tag}</Tag>
+                  <Tag key={tag}>{tag}</Tag>
                 ))}
                 {record.tags.length > 2 && (
-                  <Tag size="small">+{record.tags.length - 2}</Tag>
+                  <Tag>+{record.tags.length - 2}</Tag>
                 )}
               </Space>
             )}
@@ -260,7 +260,7 @@ const SmartTable = <T extends BusinessEntity>({
               {formatIDR(amount)}
             </Text>
             {enableMateraiIndicator && record.materaiRequired && (
-              <Tag color="orange" size="small">
+              <Tag color="orange">
                 Materai: {formatIDR(record.materaiAmount || 10000)}
               </Tag>
             )}
@@ -307,10 +307,10 @@ const SmartTable = <T extends BusinessEntity>({
         sorter: true,
         render: (date: Date, record: T) => (
           <Space direction="vertical" size="small">
-            <Text>{formatDateIndonesian(date)}</Text>
+            <Text>{formatIndonesianDate(date)}</Text>
             {record.dueDate && (
               <Text type="secondary" style={{ fontSize: '11px' }}>
-                Jatuh tempo: {formatDateIndonesian(record.dueDate)}
+                Jatuh tempo: {formatIndonesianDate(record.dueDate)}
               </Text>
             )}
           </Space>
@@ -403,7 +403,7 @@ const SmartTable = <T extends BusinessEntity>({
       onRowSelect(selectedRows)
     },
     getCheckboxProps: (record: T) => ({
-      disabled: record.status === 'deleted',
+      disabled: (record as any).status === 'deleted',
     }),
   } : undefined
   
@@ -423,7 +423,7 @@ const SmartTable = <T extends BusinessEntity>({
       // Handle column filters
       const newFilters: Record<string, any> = {}
       Object.entries(filters).forEach(([key, value]) => {
-        if (value && value.length > 0) {
+        if (value && Array.isArray(value) && value.length > 0) {
           newFilters[key] = value
         }
       })

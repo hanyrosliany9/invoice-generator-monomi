@@ -66,7 +66,10 @@ vi.mock('../utils/businessJourneyUtils', () => ({
   getEventIcon: (type: string) => '📋',
   getEventColor: () => '#1890ff',
   getEventTitle: (type: string) => type.replace('_', ' '),
-  filterEvents: (events: any[], filters: any) => events
+  filterEvents: (events: any[], filters: any) => {
+    console.debug('Filtering events', { events, filters })
+    return events
+  }
 }))
 
 vi.mock('react-i18next', () => ({

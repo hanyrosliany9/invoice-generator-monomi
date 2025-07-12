@@ -165,7 +165,7 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
                 key={action.type}
                 type="default"
                 size="large"
-                disabled={action.disabled}
+                disabled={action.disabled || false}
                 onClick={() => handleActionPress(action)}
                 className={`
                   h-auto p-4 border-2 rounded-lg transition-all duration-200
@@ -187,7 +187,7 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
                     >
                       {action.icon}
                     </span>
-                    {action.badge > 0 && (
+                    {action.badge && action.badge > 0 && (
                       <Badge 
                         count={action.badge} 
                         size="small"

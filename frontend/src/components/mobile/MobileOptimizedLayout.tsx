@@ -17,13 +17,10 @@ import {
   Affix,
   FloatButton,
   BackTop,
-  notification
 } from 'antd'
 import {
   MenuOutlined,
   BellOutlined,
-  MessageOutlined,
-  PhoneOutlined,
   HomeOutlined,
   FileTextOutlined,
   DollarOutlined,
@@ -34,10 +31,8 @@ import {
   WhatsAppOutlined,
   ArrowUpOutlined
 } from '@ant-design/icons'
-import { useTranslation } from 'react-i18next'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
-import { formatIDR } from '../../utils/currency'
 
 const { Header, Content, Footer } = Layout
 const { Text, Title } = Typography
@@ -114,36 +109,29 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
   showBottomNavigation = true,
   showFloatingActions = true,
   quickActions = [],
-  showQuickActionFab = true,
+  // showQuickActionFab = true,
   enableWhatsAppIntegration = true,
   whatsappConfig,
   showIndonesianShortcuts = true,
-  enableMateraiQuickCheck = true,
   adaptiveHeader = true,
   stickyHeader = true,
-  swipeNavigation = true,
-  pullToRefresh = true,
-  lazyLoadContent = true,
-  prefetchRoutes = [],
+  pullToRefresh = false,
+  lazyLoadContent = false,
   onQuickAction,
   onWhatsAppSend,
   onNavigationChange
 }) => {
-  const { t } = useTranslation()
-  const location = useLocation()
   const navigate = useNavigate()
   
   // Responsive breakpoints
   const isMobile = useMediaQuery('(max-width: 768px)')
-  const isTablet = useMediaQuery('(max-width: 1024px)')
-  const isSmallMobile = useMediaQuery('(max-width: 480px)')
   
   // State management
   const [drawerVisible, setDrawerVisible] = useState(false)
-  const [quickActionsVisible, setQuickActionsVisible] = useState(false)
+  // const [quickActionsVisible] = useState(false)
   const [headerVisible, setHeaderVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
-  const [notifications, setNotifications] = useState(3) // Mock notification count
+  const [notifications] = useState(3) // Mock notification count
   
   // Default Indonesian business navigation items
   const defaultNavigationItems: MobileNavigationItem[] = useMemo(() => [
@@ -257,11 +245,11 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
     const threshold = 80
     
     const handleTouchStart = (e: TouchEvent) => {
-      startY = e.touches[0].clientY
+      startY = e.touches[0]?.clientY || 0
     }
     
     const handleTouchMove = (e: TouchEvent) => {
-      const currentY = e.touches[0].clientY
+      const currentY = e.touches[0]?.clientY || 0
       pullDistance = currentY - startY
       
       if (pullDistance > 0 && window.scrollY === 0) {
@@ -296,6 +284,7 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
   }, [pullToRefresh, isMobile])
   
   // WhatsApp integration functions
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const sendWhatsAppMessage = (recipient: string, message: string) => {
     if (!enableWhatsAppIntegration || !whatsappConfig?.enabled) return
     
@@ -306,6 +295,7 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
     onWhatsAppSend?.(recipient, message)
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getWhatsAppTemplate = (type: keyof NonNullable<WhatsAppConfig['quickTemplates']>) => {
     return whatsappConfig?.quickTemplates?.[type] || 'Pesan dari Monomi Business'
   }
@@ -434,13 +424,13 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
                 background: location.pathname === item.path ? '#e6f7ff' : 'transparent'
               }}
             >
-              <Badge count={item.badge} size="small">
-                {React.cloneElement(item.icon as React.ReactElement, {
-                  style: { 
-                    fontSize: '20px',
-                    color: location.pathname === item.path ? '#1890ff' : '#666'
-                  }
-                })}
+              <Badge count={item.badge}>
+                <span style={{
+                  fontSize: '20px',
+                  color: location.pathname === item.path ? '#1890ff' : '#666'
+                }}>
+                  {item.icon}
+                </span>
               </Badge>
               <Text
                 style={{

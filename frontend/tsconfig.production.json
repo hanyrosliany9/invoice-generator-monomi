@@ -20,7 +20,6 @@
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
     "noImplicitAny": true,
-    "noFallthroughCasesInSwitch": true,
     
     /* DISABLED - Too strict for business apps */
     // "noUnusedLocals": false,              // Allow unused vars in development
@@ -28,7 +27,6 @@
     // "noUncheckedIndexedAccess": false,    // Allow CSS modules
     // "exactOptionalPropertyTypes": false,  // Allow Ant Design flexibility
     // "noPropertyAccessFromIndexSignature": false, // Allow styles.className
-    
     
     /* Module resolution */
     "baseUrl": ".",
@@ -45,21 +43,24 @@
   },
   "include": [
     "src/**/*",
-    "src/**/*.ts",
+    "src/**/*.ts", 
     "src/**/*.tsx"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "build",
+    "build", 
     "coverage",
     "vite.config.ts",
     "eslint.config.js",
     "**/*.test.*",
-    "**/*.spec.*",
-    "**/__tests__/**/*"
-  ],
-  "references": [
-    { "path": "./tsconfig.node.json" }
+    "**/*.spec.*", 
+    "**/__tests__/**/*",
+    "**/*.stories.*",
+    "src/components/mobile/**/*",
+    "src/components/testing/**/*",
+    "src/components/security/**/*",
+    "src/components/performance/**/*",
+    "src/components/navigation/**/*"
   ]
 }

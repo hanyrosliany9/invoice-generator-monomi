@@ -1004,7 +1004,7 @@ export const ProjectsPage: React.FC = () => {
                         <Col span={12}>
                           <Form.Item
                             name={[field.name, 'name']}
-                            fieldKey={[field.fieldKey, 'name']}
+                            fieldKey={[field.fieldKey ?? field.name, 'name']}
                             label="Nama Produk"
                             rules={[{ required: true, message: 'Nama produk wajib diisi' }]}
                           >
@@ -1014,7 +1014,7 @@ export const ProjectsPage: React.FC = () => {
                         <Col span={6}>
                           <Form.Item
                             name={[field.name, 'quantity']}
-                            fieldKey={[field.fieldKey, 'quantity']}
+                            fieldKey={[field.fieldKey ?? field.name, 'quantity']}
                             label="Qty"
                             rules={[{ required: true, message: 'Qty wajib diisi' }]}
                           >
@@ -1024,7 +1024,7 @@ export const ProjectsPage: React.FC = () => {
                         <Col span={6}>
                           <Form.Item
                             name={[field.name, 'price']}
-                            fieldKey={[field.fieldKey, 'price']}
+                            fieldKey={[field.fieldKey ?? field.name, 'price']}
                             label="Harga"
                             rules={[{ required: true, message: 'Harga wajib diisi' }]}
                           >
@@ -1039,7 +1039,7 @@ export const ProjectsPage: React.FC = () => {
                       </Row>
                       <Form.Item
                         name={[field.name, 'description']}
-                        fieldKey={[field.fieldKey, 'description']}
+                        fieldKey={[field.fieldKey ?? field.name, 'description']}
                         label="Deskripsi"
                         rules={[{ required: true, message: 'Deskripsi produk wajib diisi' }]}
                       >

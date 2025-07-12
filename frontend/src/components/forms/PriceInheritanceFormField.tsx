@@ -6,7 +6,11 @@ import { Form, FormItemProps } from 'antd'
 import { useWatch } from 'antd/es/form/Form'
 
 import { PriceInheritanceFlow } from './PriceInheritanceFlow'
-import { usePriceInheritanceFormField } from '../../hooks/usePriceInheritance'
+import { 
+  usePriceInheritanceFormField,
+  PriceInheritanceState,
+  PriceInheritanceActions 
+} from '../../hooks/usePriceInheritance'
 import {
   PriceInheritanceMode,
   PriceValidationResult,
@@ -78,7 +82,7 @@ export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps>
   const fieldValue = useWatch(name, form)
   
   // Initialize price inheritance hook with form integration
-  const [state, actions] = usePriceInheritanceFormField(fieldName, form, {
+  const [state, actions]: [PriceInheritanceState, PriceInheritanceActions] = usePriceInheritanceFormField(fieldName, form, {
     entityType,
     entityId,
     defaultMode,
@@ -139,7 +143,7 @@ export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps>
   }
 
   // Handle amount changes
-  const handleAmountChange = (amount: number, config: PriceInheritanceConfig) => {
+  const handleAmountChange = (amount: number) => {
     // Update form field
     form.setFieldValue(name, amount)
     
@@ -174,7 +178,7 @@ export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps>
     // Indonesian business validation
     if (enableMateraiValidation) {
       rules.push({
-        validator: (_, value) => {
+        validator: (_: any, value: any) => {
           if (value >= 5000000 && !state.validationResult?.materaiCompliance?.required) {
             return Promise.reject(new Error('Materai diperlukan untuk transaksi di atas Rp 5 juta'))
           }
@@ -187,9 +191,9 @@ export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps>
     rules.push({
       validator: () => {
         if (state.validationResult && !state.validationResult.isValid) {
-          const blockingErrors = state.validationResult.errors.filter(error => error.isBlocking)
+          const blockingErrors = state.validationResult.errors?.filter(error => error.isBlocking) || []
           if (blockingErrors.length > 0) {
-            return Promise.reject(new Error(blockingErrors[0].message))
+            return Promise.reject(new Error(blockingErrors[0]?.message || 'Validation error'))
           }
         }
         return Promise.resolve()
@@ -253,7 +257,7 @@ export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps>
         compactMode={compactMode}
         onModeChange={handleModeChange}
         onSourceChange={actions.setSelectedSource}
-        onValidationChange={onValidationChange}
+        onValidationChange={onValidationChange || (() => {})}
         indonesianLocale={indonesianLocale}
         trackUserInteraction={enableUserTesting}
         ariaLabel={`${label} - Form field for ${entityType} ${entityId}`}

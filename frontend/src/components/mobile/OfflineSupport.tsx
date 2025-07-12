@@ -16,25 +16,18 @@ import {
   Row,
   Col,
   Badge,
-  Divider,
-  Spin,
   message
 } from 'antd'
 import {
   WifiOutlined,
   DisconnectOutlined,
   SyncOutlined,
-  CloudUploadOutlined,
-  CloudDownloadOutlined,
-  SaveOutlined,
   WarningOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  DatabaseOutlined,
-  MobileOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { formatIDR, formatDateIndonesian } from '../../utils/currency'
+import { formatIDR, formatIndonesianDate } from '../../utils/currency'
 
 const { Text, Title } = Typography
 
@@ -502,7 +495,7 @@ export const OfflineStatus: React.FC<{ showDetails?: boolean }> = ({ showDetails
               <Button
                 size="small"
                 type="primary"
-                icon={<SyncOutlined spinning={state.isSyncing} />}
+                icon={<SyncOutlined />}
                 onClick={() => syncNow()}
                 disabled={state.isSyncing}
               >
@@ -559,7 +552,7 @@ export const OfflineDetails: React.FC = () => {
           <Col span={12}>
             <Statistic
               title="Sync Terakhir"
-              value={state.lastSync ? formatDateIndonesian(state.lastSync) : 'Belum pernah'}
+              value={state.lastSync ? formatIndonesianDate(state.lastSync) : 'Belum pernah'}
               prefix={<ClockCircleOutlined />}
             />
           </Col>
@@ -647,13 +640,13 @@ export const OfflineDetails: React.FC = () => {
                   description={
                     <div>
                       <Text type="secondary">
-                        {formatDateIndonesian(item.timestamp)}
+                        {formatIndonesianDate(item.timestamp)}
                       </Text>
                       {item.retryCount > 0 && (
                         <Text type="secondary"> • Retry: {item.retryCount}</Text>
                       )}
                       {item.indonesianBusinessContext?.requiresMaterai && (
-                        <Tag color="orange" size="small" style={{ marginLeft: 8 }}>
+                        <Tag color="orange" style={{ marginLeft: 8, fontSize: '12px' }}>
                           Materai: {formatIDR(item.indonesianBusinessContext.materaiAmount || 10000)}
                         </Tag>
                       )}
@@ -678,6 +671,16 @@ export const OfflineDetails: React.FC = () => {
         </Card>
       )}
     </Space>
+  )
+}
+
+// Main OfflineSupport component that combines all functionality
+export const OfflineSupport: React.FC = () => {
+  return (
+    <OfflineProvider>
+      <OfflineStatus showDetails={true} />
+      <OfflineDetails />
+    </OfflineProvider>
   )
 }
 

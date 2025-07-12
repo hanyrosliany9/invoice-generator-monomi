@@ -15,7 +15,7 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../../store/auth'
-import { BreadcrumbProvider } from '../navigation'
+// import { BreadcrumbProvider } from '../navigation'
 import MobileQuickActions from '../ui/MobileQuickActions'
 import MobileEntityNav from '../ui/MobileEntityNav'
 
@@ -30,7 +30,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileQuickActionsVisible, setMobileQuickActionsVisible] = useState(false)
-  const [entityCounts, setEntityCounts] = useState({
+  const [entityCounts] = useState({
     clients: 0,
     projects: 0,
     quotations: 0,
@@ -292,9 +292,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             zIndex: 2
           }}
         >
-          <BreadcrumbProvider>
-            {children}
-          </BreadcrumbProvider>
+          {children}
         </Content>
       </Layout>
       
@@ -310,7 +308,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <MobileQuickActions
             visible={mobileQuickActionsVisible}
             onClose={() => setMobileQuickActionsVisible(false)}
-            currentEntity={getCurrentEntityContext()}
+            currentEntity={getCurrentEntityContext() || { type: 'client', id: '', name: 'Dashboard' }}
             relatedCounts={entityCounts}
           />
         </>

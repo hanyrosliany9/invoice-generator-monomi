@@ -22,8 +22,8 @@ import {
   Skeleton,
   Empty,
   Affix,
-  FloatButton,
-  Swiper
+  FloatButton
+  // Swiper // TODO: Install swiper package
 } from 'antd'
 import {
   EyeOutlined,
@@ -45,13 +45,13 @@ import {
   CalendarOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { Swiper as SwiperComponent, SwiperSlide } from 'swiper/react'
-import { formatIDR, formatDateIndonesian } from '../../utils/currency'
+// import { Swiper as SwiperComponent, SwiperSlide } from 'swiper/react' // TODO: Install swiper package
+import { formatIDR, formatIndonesianDate } from '../../utils/currency'
 import { BusinessEntity } from '../tables/SmartTable'
 
-// Import Swiper styles
-import 'swiper/css'
-import 'swiper/css/pagination'
+// TODO: Install Swiper package and uncomment these imports
+// import 'swiper/css'
+// import 'swiper/css/pagination'
 
 const { Text, Title } = Typography
 const { Option } = Select
@@ -352,12 +352,12 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
                   {formatIDR(item.amount)}
                 </Text>
                 {showMateraiIndicators && item.materaiRequired && (
-                  <Tag color="orange" size="small">
+                  <Tag color="orange">
                     Materai: {formatIDR(item.materaiAmount || 10000)}
                   </Tag>
                 )}
                 {item.ppnRate && (
-                  <Tag size="small">PPN: {item.ppnRate}%</Tag>
+                  <Tag>PPN: {item.ppnRate}%</Tag>
                 )}
               </Space>
               
@@ -366,13 +366,13 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
                 <CalendarOutlined style={{ color: '#666' }} />
                 <Text type="secondary" style={{ fontSize: '11px' }}>
                   {indonesianDateFormat ? 
-                    formatDateIndonesian(item.createdAt) : 
+                    formatIndonesianDate(item.createdAt) : 
                     item.createdAt.toLocaleDateString()
                   }
                 </Text>
                 {item.dueDate && (
                   <Text type="secondary" style={{ fontSize: '11px' }}>
-                    • Jatuh tempo: {formatDateIndonesian(item.dueDate)}
+                    • Jatuh tempo: {formatIndonesianDate(item.dueDate)}
                   </Text>
                 )}
               </Space>
@@ -416,7 +416,7 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
               <Button
                 key={action.key}
                 type={action.primary ? 'primary' : 'default'}
-                danger={action.danger}
+                danger={action.danger || false}
                 icon={action.icon}
                 onClick={() => action.onClick(item)}
                 style={{ backgroundColor: action.color }}

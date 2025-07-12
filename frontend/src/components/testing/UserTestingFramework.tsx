@@ -270,15 +270,20 @@ export const UserTestingProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (taskIndex === -1) return prev
 
       const task = prev.tasks[taskIndex]
-      task.endTime = new Date()
-      task.status = success ? 'completed' : 'failed'
-      task.completed = success
+      if (task) {
+        task.endTime = new Date()
+        task.status = success ? 'completed' : 'failed'
+        task.completed = success
+      }
 
       // Move to next task if available
       const nextTaskIndex = taskIndex + 1
       if (nextTaskIndex < prev.tasks.length) {
-        prev.tasks[nextTaskIndex].status = 'in_progress'
-        prev.tasks[nextTaskIndex].startTime = new Date()
+        const nextTask = prev.tasks[nextTaskIndex]
+        if (nextTask) {
+          nextTask.status = 'in_progress'
+          nextTask.startTime = new Date()
+        }
       }
 
       return {
@@ -514,7 +519,6 @@ const UserTestingSessionModal: React.FC<{
                     <Alert
                       message={`${task.errors.length} error ditemukan`}
                       type="warning"
-                      size="small"
                       style={{ marginTop: 8 }}
                     />
                   )}

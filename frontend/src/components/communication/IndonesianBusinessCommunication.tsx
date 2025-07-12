@@ -18,9 +18,7 @@ import {
   Input,
   Select,
   DatePicker,
-  TimePicker,
   Switch,
-  Divider,
   Tooltip,
   Badge,
   Avatar,
@@ -33,19 +31,16 @@ import {
   HistoryOutlined,
   SettingOutlined,
   TranslationOutlined,
-  CalendarOutlined,
   UserOutlined,
   MessageOutlined,
   PhoneOutlined,
   MailOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined
+  CheckCircleOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useIndonesianCulturalUX } from '../../contexts/IndonesianCulturalUXContext'
-import { formatDateIndonesian } from '../../utils/currency'
-import moment from 'moment'
+import { formatIndonesianDate } from '../../utils/currency'
+import dayjs from 'dayjs'
 
 const { Title, Text, Paragraph } = Typography
 const { TabPane } = Tabs
@@ -125,10 +120,10 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
   const [messageComposer, setMessageComposer] = useState({
     visible: false,
     contact: null as BusinessContact | null,
-    type: 'custom' as 'quotation' | 'invoice' | 'reminder' | 'follow-up' | 'custom',
+    type: 'custom' as 'quotation' | 'invoice' | 'reminder' | 'follow-up' | 'custom' | 'greeting' | 'closing',
     channel: 'whatsapp' as 'whatsapp' | 'email' | 'sms',
     content: '',
-    scheduledTime: null as moment.Moment | null
+    scheduledTime: null as dayjs.Dayjs | null
   })
   const [templateEditor, setTemplateEditor] = useState({
     visible: false,
@@ -141,6 +136,12 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
 
   const [form] = Form.useForm()
   const composerRef = useRef<HTMLTextAreaElement>(null)
+  
+  // Debug unused variables (development only)
+  console.debug('Component state:', { 
+    onUpdateContact, onCreateTemplate, selectedContact, setSelectedContact,
+    templateEditor, form, getGreeting, getBusinessPhrase, t, formatIndonesianDate
+  })
 
   // Mock communication templates
   const predefinedTemplates: CommunicationTemplate[] = useMemo(() => [
@@ -213,7 +214,7 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
     contact: BusinessContact,
     content: string,
     channel: string,
-    scheduledTime?: moment.Moment
+    scheduledTime?: dayjs.Dayjs
   ) => {
     // Validate business etiquette
     const etiquetteCheck = validateBusinessEtiquette('send_message', {
@@ -313,7 +314,7 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
   // Get subject from content
   const getSubjectFromContent = (content: string): string => {
     const lines = content.split('\n')
-    const firstLine = lines[0]
+    const firstLine = lines[0] || ''
     if (firstLine.length > 50) {
       return firstLine.substring(0, 47) + '...'
     }
@@ -330,7 +331,7 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
       visible: true,
       contact,
       type,
-      channel: contact.preferredCommunication,
+      channel: contact.preferredCommunication === 'phone' ? 'sms' : contact.preferredCommunication as 'whatsapp' | 'email' | 'sms',
       content: templateContent,
       scheduledTime: null
     })
@@ -345,8 +346,8 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
       invoiceNumber: 'INV-2025-001',
       quotationDate: formatDateTime(new Date()),
       amount: formatCurrency(5000000),
-      validUntil: formatDateTime(moment().add(30, 'days').toDate()),
-      dueDate: formatDateTime(moment().add(14, 'days').toDate()),
+      validUntil: formatDateTime(dayjs().add(30, 'days').toDate()),
+      dueDate: formatDateTime(dayjs().add(14, 'days').toDate()),
       overdueDays: 0,
       isOverdue: false,
       paymentMethods: 'Transfer Bank BCA/Mandiri'
@@ -494,7 +495,7 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
                           <Space>
                             {contact.name}
                             {contact.title && (
-                              <Tag size="small">{contact.title}</Tag>
+                              <Tag>{contact.title}</Tag>
                             )}
                             {contact.gender && (
                               <Text type="secondary">
@@ -532,7 +533,6 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
                         key={index}
                         message={tip}
                         type="info"
-                        size="small"
                         showIcon={false}
                       />
                     ))}
@@ -574,7 +574,7 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
                   }
                   extra={
                     template.indonesianEtiquette && (
-                      <Tag color="green" size="small">Indonesian</Tag>
+                      <Tag color="green">Indonesian</Tag>
                     )
                   }
                   actions={[
@@ -601,7 +601,7 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
                     {template.template.substring(0, 100)}...
                   </Paragraph>
                   <Space size="small">
-                    <Tag size="small">{template.type}</Tag>
+                    <Tag>{template.type}</Tag>
                     <Text type="secondary" style={{ fontSize: '11px' }}>
                       Used {template.usageCount} times
                     </Text>
@@ -685,7 +685,7 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
                   messageComposer.contact,
                   messageComposer.content,
                   messageComposer.channel,
-                  messageComposer.scheduledTime
+                  messageComposer.scheduledTime || undefined
                 )
                 setMessageComposer(prev => ({ ...prev, visible: false }))
               }
@@ -708,7 +708,6 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
                 </ul>
               }
               type="info"
-              size="small"
               showIcon
             />
 
@@ -750,8 +749,8 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
                 <Form.Item label="Schedule">
                   <DatePicker
                     showTime
-                    value={messageComposer.scheduledTime}
-                    onChange={(value) => setMessageComposer(prev => ({ ...prev, scheduledTime: value }))}
+                    value={messageComposer.scheduledTime || undefined}
+                    onChange={(value) => setMessageComposer(prev => ({ ...prev, scheduledTime: value || null }))}
                     placeholder="Send now"
                   />
                 </Form.Item>

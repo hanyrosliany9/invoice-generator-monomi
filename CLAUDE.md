@@ -9,9 +9,12 @@
 - **Use `docker compose` command (NOT docker-compose hyphenated)**
 
 ## Common Commands for This Project
+- **Quick Start**: `docker compose -f docker-compose.dev.yml up` (auto-seeds database)
+- **Validate Environment**: `./scripts/validate-dev-environment.sh`
+- **Manual Database Reset**: `docker compose -f docker-compose.dev.yml exec app npm run db:reset`
+- **Manual Seeding**: `docker compose -f docker-compose.dev.yml exec app npm run db:seed`
 - Install dependencies: `docker compose -f docker-compose.dev.yml exec app npm install <package>`
 - Rebuild after changes: `docker compose -f docker-compose.dev.yml build`
-- Development: `docker compose -f docker-compose.dev.yml up`
 - Production: `docker compose -f docker-compose.prod.yml up`
 - Build: `docker compose build`
 - Cleanup: `docker system prune -af`

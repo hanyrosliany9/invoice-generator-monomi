@@ -13,38 +13,29 @@ import {
   Tooltip, 
   Button,
   Drawer,
-  Tree,
   Input,
   Tag,
-  Row,
-  Col,
-  Divider,
   Timeline,
   Avatar,
-  Progress,
   Statistic
 } from 'antd'
 import {
   MenuOutlined,
   SearchOutlined,
   BellOutlined,
-  QuestionCircleOutlined,
   FileTextOutlined,
   DollarOutlined,
   ProjectOutlined,
   UserOutlined,
   SettingOutlined,
   BarChartOutlined,
-  CalendarOutlined,
   HomeOutlined,
-  RightOutlined,
   WarningOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined
 } from '@ant-design/icons'
-import { useTranslation } from 'react-i18next'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { formatIDR, formatDateIndonesian } from '../../utils/currency'
+import { useNavigate } from 'react-router-dom'
+import { formatIDR, formatIndonesianDate } from '../../utils/currency'
 
 const { Sider, Content } = Layout
 const { Text, Title } = Typography
@@ -138,15 +129,11 @@ const InformationArchitecture: React.FC<InformationArchitectureProps> = ({
   showBusinessContext = true,
   showNotifications = true,
   showQuickActions = true,
-  enableMateraiReminders = true,
-  showIndonesianHolidays = true,
   enableBusinessInsights = true,
   onNavigate,
   onNotificationClick,
   onTaskClick
 }) => {
-  const { t } = useTranslation()
-  const location = useLocation()
   const navigate = useNavigate()
   
   // State management
@@ -183,6 +170,7 @@ const InformationArchitecture: React.FC<InformationArchitectureProps> = ({
         items.push({
           title: label,
           path: '/' + pathSegments.slice(0, index + 1).join('/'),
+          icon: <FileTextOutlined />
         })
       })
     }
@@ -231,7 +219,7 @@ const InformationArchitecture: React.FC<InformationArchitectureProps> = ({
         label: 'Quotation',
         icon: <FileTextOutlined />,
         path: '/quotations',
-        badge: businessInsights?.urgentTasksCount,
+        badge: businessInsights?.urgentTasksCount || 0,
         businessPriority: 'high',
         description: 'Kelola penawaran harga untuk klien'
       },
@@ -418,7 +406,7 @@ const InformationArchitecture: React.FC<InformationArchitectureProps> = ({
       {/* Upcoming tasks */}
       {businessContext?.upcomingTasks && businessContext.upcomingTasks.length > 0 && (
         <Card size="small" title="Tugas Mendatang">
-          <Timeline size="small">
+          <Timeline>
             {businessContext.upcomingTasks.slice(0, 5).map(task => (
               <Timeline.Item
                 key={task.id}
@@ -436,7 +424,7 @@ const InformationArchitecture: React.FC<InformationArchitectureProps> = ({
                   <Text strong style={{ fontSize: '12px' }}>{task.title}</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: '11px' }}>
-                    {formatDateIndonesian(task.dueDate)} • {task.type}
+                    {formatIndonesianDate(task.dueDate)} • {task.type}
                   </Text>
                 </div>
               </Timeline.Item>
@@ -546,7 +534,6 @@ const InformationArchitecture: React.FC<InformationArchitectureProps> = ({
                 <Breadcrumb.Item
                   key={index}
                   onClick={() => item.path && navigate(item.path)}
-                  style={{ cursor: item.path ? 'pointer' : 'default' }}
                 >
                   <Space size="small">
                     {item.icon}

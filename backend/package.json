@@ -22,7 +22,11 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force",
+    "db:init": "prisma migrate deploy && prisma generate && prisma db seed",
+    "dev:setup": "npm run db:init && npm run start:dev",
+    "dev:validate": "../scripts/validate-dev-environment.sh"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
