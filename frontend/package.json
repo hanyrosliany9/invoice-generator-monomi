@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --project tsconfig.production.json && vite build",
+    "build": "tsc --project tsconfig.production.json && NODE_ENV=production vite build",
+    "build:analyze": "npm run build && npx vite-bundle-analyzer dist/",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "type-check": "tsc --noEmit",

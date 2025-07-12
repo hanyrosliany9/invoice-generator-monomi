@@ -5,7 +5,29 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react({
+      // SWC optimization options
+      jsxRuntime: 'automatic',
+      plugins: process.env.NODE_ENV === 'production' ? [
+        ['@swc/plugin-remove-console', {}]
+      ] : []
+    })
+  ],
+  
+  // Optimize dependencies pre-bundling
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'antd',
+      '@ant-design/icons',
+      'axios',
+      'dayjs',
+      'recharts'
+    ],
+    exclude: ['@testing-library/react']
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -42,10 +64,37 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
-    minify: false,
+    sourcemap: process.env.NODE_ENV === 'development',
+    minify: 'esbuild',
+    target: 'es2020',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
-      treeshake: false
+      treeshake: {
+        moduleSideEffects: false,
+        propertyReadSideEffects: false,
+        unknownGlobalSideEffects: false
+      },
+      output: {
+        manualChunks: {
+          // Vendor chunks for better caching
+          'react-vendor': ['react', 'react-dom'],
+          'antd-vendor': ['antd', '@ant-design/icons'],
+          'chart-vendor': ['recharts', 'ag-grid-community', 'ag-grid-react'],
+          'utils-vendor': ['axios', 'dayjs', 'i18next', 'react-i18next', 'zod']
+        },
+        // Optimize chunk names for caching
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
+      }
+    },
+    esbuild: {
+      drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+      legalComments: 'none',
+      minifyIdentifiers: true,
+      minifySyntax: true,
+      minifyWhitespace: true
     }
   },
   test: {
