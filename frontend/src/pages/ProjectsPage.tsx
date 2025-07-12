@@ -214,10 +214,10 @@ export const ProjectsPage: React.FC = () => {
     cancelled: safeProjects.filter(p => p?.status === 'CANCELLED').length,
     production: safeProjects.filter(p => p?.type === 'PRODUCTION').length,
     socialMedia: safeProjects.filter(p => p?.type === 'SOCIAL_MEDIA').length,
-    totalBudget: safeProjects.reduce((sum, p) => sum + safeNumber(p?.estimatedBudget), 0),
-    totalActual: safeProjects.reduce((sum, p) => sum + safeNumber(p?.estimatedBudget), 0),
-    totalRevenue: safeProjects.reduce((sum, p) => sum + safeNumber(p?.estimatedBudget), 0),
-    totalPending: safeProjects.reduce((sum, p) => sum + safeNumber(p?.estimatedBudget), 0)
+    totalBudget: safeProjects.reduce((sum, p) => sum + safeNumber(p?.estimatedBudget || p?.basePrice), 0),
+    totalActual: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.estimatedBudget), 0),
+    totalRevenue: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.estimatedBudget), 0),
+    totalPending: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.estimatedBudget), 0)
   }
 
   const getStatusColor = (status: string) => {
@@ -526,23 +526,23 @@ export const ProjectsPage: React.FC = () => {
       sorter: (a: Project, b: Project) => dayjs(a.endDate).unix() - dayjs(b.endDate).unix()
     },
     {
-      title: 'Budget',
+      title: 'Nilai Proyek',
       key: 'budget',
       render: (_: any, project: Project) => (
         <div className="text-sm">
-          <div>Estimasi: <Text strong>{formatIDR(project.estimatedBudget)}</Text></div>
-          <div>Aktual: <Text strong>{formatIDR(project.estimatedBudget)}</Text></div>
+          <div>Nilai: <Text strong>{formatIDR(project.basePrice || project.estimatedBudget || 0)}</Text></div>
+          <div>Aktual: <Text strong>{formatIDR(project.basePrice || project.estimatedBudget || 0)}</Text></div>
           <div className="mt-1">
-            <Text type="success">Dibayar: {formatIDR(project.estimatedBudget)}</Text>
+            <Text type="success">Dibayar: {formatIDR(project.basePrice || project.estimatedBudget || 0)}</Text>
           </div>
           {false && (
             <div>
-              <Text type="warning">Pending: {formatIDR(project.estimatedBudget)}</Text>
+              <Text type="warning">Pending: {formatIDR(project.basePrice || project.estimatedBudget || 0)}</Text>
             </div>
           )}
         </div>
       ),
-      sorter: (a: Project, b: Project) => parseFloat(a.estimatedBudget) - parseFloat(b.estimatedBudget)
+      sorter: (a: Project, b: Project) => parseFloat(a.estimatedBudget || a.basePrice || '0') - parseFloat(b.estimatedBudget || b.basePrice || '0')
     },
     {
       title: 'Aksi',
@@ -962,41 +962,15 @@ export const ProjectsPage: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            name="output"
-            label={t('projects.output')}
-            rules={[{ required: true, message: 'Output proyek wajib diisi' }]}
+            name="type"
+            label={t('projects.type')}
+            rules={[{ required: true, message: 'Pilih tipe proyek' }]}
           >
-            <TextArea rows={3} placeholder="Deskripsi output yang akan dihasilkan" />
+            <Select placeholder="Pilih tipe proyek">
+              <Option value="PRODUCTION">Produksi</Option>
+              <Option value="SOCIAL_MEDIA">Media Sosial</Option>
+            </Select>
           </Form.Item>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="type"
-                label={t('projects.type')}
-                rules={[{ required: true, message: 'Pilih tipe proyek' }]}
-              >
-                <Select placeholder="Pilih tipe proyek">
-                  <Option value="PRODUCTION">Produksi</Option>
-                  <Option value="SOCIAL_MEDIA">Media Sosial</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="estimatedBudget"
-                label={t('projects.estimatedBudget')}
-                rules={[{ required: true, message: 'Estimasi budget wajib diisi' }]}
-              >
-                <InputNumber
-                  style={{ width: '100%' }}
-                  formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                  parser={(value) => value!.replace(/\./g, '')}
-                  placeholder="0"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
 
           <Form.Item label="Produk & Harga">
             <Form.List name="products">
@@ -1217,12 +1191,14 @@ export const ProjectsPage: React.FC = () => {
               </Col>
             </Row>
 
-            <Row gutter={16}>
-              <Col span={24}>
-                <Text strong>Output:</Text>
-                <div>{selectedProject.output}</div>
-              </Col>
-            </Row>
+            {selectedProject.output && (
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Text strong>Output:</Text>
+                  <div>{selectedProject.output}</div>
+                </Col>
+              </Row>
+            )}
 
             <Row gutter={16}>
               <Col span={12}>
@@ -1244,9 +1220,9 @@ export const ProjectsPage: React.FC = () => {
               </Col>
               <Col span={12}>
                 <Text strong>Estimasi Budget:</Text>
-                <div className="idr-amount">{formatIDR(selectedProject.estimatedBudget)}</div>
+                <div className="idr-amount">{formatIDR(selectedProject.estimatedBudget || selectedProject.basePrice || 0)}</div>
                 <Text strong>Budget Aktual:</Text>
-                <div className="idr-amount">{formatIDR(selectedProject.estimatedBudget)}</div>
+                <div className="idr-amount">{formatIDR(selectedProject.basePrice || selectedProject.estimatedBudget || 0)}</div>
               </Col>
             </Row>
 
@@ -1285,7 +1261,7 @@ export const ProjectsPage: React.FC = () => {
                 <Card>
                   <Statistic
                     title="Sisa Budget"
-                    value={formatIDR(selectedProject.estimatedBudget)}
+                    value={formatIDR(selectedProject.estimatedBudget || selectedProject.basePrice || 0)}
                     valueStyle={{ color: '#fa8c16' }}
                   />
                 </Card>

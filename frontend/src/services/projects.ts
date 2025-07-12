@@ -4,12 +4,12 @@ export interface Project {
   id: string
   number: string
   description: string
-  output: string
+  output?: string           // Optional - legacy field, can be derived from products
   type: 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER'
   clientId: string
   startDate: string
   endDate: string
-  estimatedBudget: string
+  estimatedBudget?: string  // Optional - calculated from products
   basePrice?: string        // Price cascade support
   priceBreakdown?: any      // Detailed price breakdown
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
@@ -30,14 +30,20 @@ export interface Project {
 
 export interface CreateProjectRequest {
   description: string
-  output: string
+  output?: string           // Optional - can be derived from product descriptions
   type: 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER'
   clientId: string
   startDate: string
   endDate: string
-  estimatedBudget: string
+  estimatedBudget?: string  // Optional - calculated from products
   basePrice?: string        // Optional price cascade support
   priceBreakdown?: any      // Optional detailed price breakdown
+  products?: Array<{        // Product/service items for automatic calculations
+    name: string
+    description: string
+    price: number
+    quantity?: number
+  }>
 }
 
 export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {

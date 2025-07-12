@@ -55,11 +55,13 @@ export class CreateProjectDto {
   description: string;
 
   @ApiProperty({
-    description: 'Output yang diharapkan',
+    description: 'Output yang diharapkan (opsional, dapat diturunkan dari deskripsi produk)',
     example: 'Video promosi 30 detik, format MP4',
+    required: false,
   })
+  @IsOptional()
   @IsString({ message: 'Output harus berupa string' })
-  output: string;
+  output?: string;
 
   @ApiProperty({
     description: 'Tipe proyek',
