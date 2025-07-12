@@ -26,10 +26,12 @@ import {
   ExportOutlined,
   EyeOutlined,
   FileTextOutlined,
+  FundOutlined,
   MailOutlined,
   MoreOutlined,
   PhoneOutlined,
   PlusOutlined,
+  ProjectOutlined,
   SearchOutlined,
   ShopOutlined,
   TeamOutlined,
@@ -338,44 +340,48 @@ export const ClientsPage: React.FC = () => {
       title: 'Business Overview',
       key: 'business',
       render: (_: any, client: Client) => (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <HealthScore 
-              client={client} 
-              size="small" 
-            />
-            <div className="flex items-center space-x-2">
-              <MetricBadge 
-                icon="📊" 
-                value={client.totalProjects || 0} 
-                color="purple" 
-                onClick={() => navigate(`/projects?clientId=${client.id}`)}
-                tooltip="View projects"
-              />
-              <MetricBadge 
-                icon="📋" 
-                value={client.totalQuotations || 0} 
-                color="blue"
-                badge={(client.pendingQuotations || 0) > 0 ? (client.pendingQuotations || 0) : null}
-                onClick={() => navigateToQuotations(client.id)}
-                tooltip={`View quotations${(client.pendingQuotations || 0) > 0 ? ` (${client.pendingQuotations || 0} pending)` : ''}`}
-              />
-              <MetricBadge 
-                icon="💰" 
-                value={client.totalInvoices || 0} 
-                color="green"
-                badge={(client.overdueInvoices || 0) > 0 ? (client.overdueInvoices || 0) : null}
-                onClick={() => navigateToInvoices(client.id)}
-                tooltip={`View invoices${(client.overdueInvoices || 0) > 0 ? ` (${client.overdueInvoices || 0} overdue)` : ''}`}
-              />
-            </div>
-          </div>
-          <RevenueIndicator 
-            paid={client.totalPaid || 0} 
-            pending={client.totalPending || 0} 
-            compact 
+        <div className="flex items-center space-x-4">
+          <HealthScore 
+            client={client} 
+            size="small" 
           />
+          <div className="flex items-center space-x-2">
+            <MetricBadge 
+              icon={<ProjectOutlined />} 
+              value={client.totalProjects || 0} 
+              color="purple" 
+              onClick={() => navigate(`/projects?clientId=${client.id}`)}
+              tooltip="View projects"
+            />
+            <MetricBadge 
+              icon={<FileTextOutlined />} 
+              value={client.totalQuotations || 0} 
+              color="blue"
+              badge={(client.pendingQuotations || 0) > 0 ? (client.pendingQuotations || 0) : null}
+              onClick={() => navigateToQuotations(client.id)}
+              tooltip={`View quotations${(client.pendingQuotations || 0) > 0 ? ` (${client.pendingQuotations || 0} pending)` : ''}`}
+            />
+            <MetricBadge 
+              icon={<FundOutlined />} 
+              value={client.totalInvoices || 0} 
+              color="green"
+              badge={(client.overdueInvoices || 0) > 0 ? (client.overdueInvoices || 0) : null}
+              onClick={() => navigateToInvoices(client.id)}
+              tooltip={`View invoices${(client.overdueInvoices || 0) > 0 ? ` (${client.overdueInvoices || 0} overdue)` : ''}`}
+            />
+          </div>
         </div>
+      )
+    },
+    {
+      title: 'Revenue',
+      key: 'revenue',
+      render: (_: any, client: Client) => (
+        <RevenueIndicator 
+          paid={client.totalPaid || 0} 
+          pending={client.totalPending || 0} 
+          compact 
+        />
       ),
       sorter: (a: Client, b: Client) => (a.totalPaid || 0) - (b.totalPaid || 0)
     },

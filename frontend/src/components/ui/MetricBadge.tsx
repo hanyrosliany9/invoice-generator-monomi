@@ -2,7 +2,7 @@ import React from 'react'
 import { Badge, Button, Tooltip } from 'antd'
 
 interface MetricBadgeProps {
-  icon: string
+  icon: React.ReactNode
   value: number
   color: 'purple' | 'blue' | 'green' | 'orange' | 'red'
   badge?: number | null
@@ -52,7 +52,7 @@ const MetricBadge: React.FC<MetricBadgeProps> = ({
       onClick={onClick}
       className={`flex items-center space-x-1 px-2 py-1 rounded-md ${colors.text} ${colors.bg} font-medium text-sm border-0 ${className}`}
     >
-      <span className="text-xs">{icon}</span>
+      <span className="text-sm">{icon}</span>
       <span>{value}</span>
     </Button>
   )
