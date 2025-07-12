@@ -2,16 +2,16 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class PaginationDto {
   @ApiProperty({ description: 'Current page number', example: 1 })
-  page: number;
+  page!: number;
 
   @ApiProperty({ description: 'Number of items per page', example: 10 })
-  limit: number;
+  limit!: number;
 
   @ApiProperty({ description: 'Total number of items', example: 100 })
-  total: number;
+  total!: number;
 
   @ApiProperty({ description: 'Total number of pages', example: 10 })
-  pages: number;
+  pages!: number;
 }
 
 export class ApiResponse<T> {
@@ -47,7 +47,7 @@ export class PaginatedResponse<T> extends ApiResponse<T> {
   @ApiProperty({ description: 'Pagination information', type: PaginationDto })
   pagination: PaginationDto;
 
-  constructor(data: T, pagination: PaginationDto, message?: string) {
+  constructor(data: T, pagination: PaginationDto, message: string = 'Operation successful') {
     super(data, message);
     this.pagination = pagination;
   }

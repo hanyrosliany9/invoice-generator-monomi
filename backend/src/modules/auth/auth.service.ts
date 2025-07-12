@@ -4,6 +4,7 @@ import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { getErrorMessage } from '../../common/utils/error-handling.util';
 
 @Injectable()
 export class AuthService {
@@ -24,7 +25,7 @@ export class AuthService {
         try {
           passwordMatch = await bcrypt.compare(password, user.password);
         } catch (error) {
-          console.error('bcrypt.compare failed:', error.message);
+          console.error('bcrypt.compare failed:', getErrorMessage(error));
           return null;
         }
       }
@@ -38,7 +39,7 @@ export class AuthService {
     return null;
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto): Promise<{ access_token: string; user: { id: string; email: string; name: string; role: string } }> {
     const user = await this.validateUser(loginDto.email, loginDto.password);
     
     if (!user) {
@@ -62,7 +63,7 @@ export class AuthService {
     };
   }
 
-  async register(registerDto: RegisterDto) {
+  async register(registerDto: RegisterDto): Promise<any> {
     // Check if user already exists
     const existingUser = await this.usersService.findByEmail(registerDto.email);
     if (existingUser) {
@@ -83,7 +84,7 @@ export class AuthService {
     return user;
   }
 
-  async validateToken(userId: string) {
+  async validateToken(userId: string): Promise<any> {
     const user = await this.usersService.findById(userId);
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Token tidak valid');

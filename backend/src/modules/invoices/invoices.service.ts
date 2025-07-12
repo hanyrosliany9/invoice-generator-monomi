@@ -15,7 +15,7 @@ export class InvoicesService {
     private notificationsService: NotificationsService,
   ) {}
 
-  async create(createInvoiceDto: CreateInvoiceDto, userId: string) {
+  async create(createInvoiceDto: CreateInvoiceDto, userId: string): Promise<any> {
     // Validate client exists
     const client = await this.prisma.client.findUnique({ 
       where: { id: createInvoiceDto.clientId } 
@@ -87,7 +87,7 @@ export class InvoicesService {
     });
   }
 
-  async createFromQuotation(quotationId: string, userId: string) {
+  async createFromQuotation(quotationId: string, userId: string): Promise<any> {
     // Get the quotation
     const quotation = await this.quotationsService.findOne(quotationId);
     
@@ -147,7 +147,7 @@ export class InvoicesService {
     return invoice;
   }
 
-  async findAll(page = 1, limit = 10, status?: InvoiceStatus) {
+  async findAll(page = 1, limit = 10, status?: InvoiceStatus): Promise<PaginatedResponse<any[]>> {
     const skip = (page - 1) * limit;
     
     const where = status ? { status } : {};
@@ -188,7 +188,7 @@ export class InvoicesService {
     );
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<any> {
     const invoice = await this.prisma.invoice.findUnique({
       where: { id },
       include: {
@@ -213,7 +213,7 @@ export class InvoicesService {
     return invoice;
   }
 
-  async update(id: string, updateInvoiceDto: UpdateInvoiceDto) {
+  async update(id: string, updateInvoiceDto: UpdateInvoiceDto): Promise<any> {
     const invoice = await this.findOne(id);
 
     // Recalculate materai requirement if total amount changed
@@ -240,7 +240,7 @@ export class InvoicesService {
     });
   }
 
-  async updateStatus(id: string, status: InvoiceStatus) {
+  async updateStatus(id: string, status: InvoiceStatus): Promise<any> {
     const invoice = await this.findOne(id);
 
     // Validate status transition
@@ -256,7 +256,7 @@ export class InvoicesService {
     });
   }
 
-  async markAsPaid(id: string, paymentData?: { paymentMethod?: string; paymentDate?: string; notes?: string }) {
+  async markAsPaid(id: string, paymentData?: { paymentMethod?: string; paymentDate?: string; notes?: string }): Promise<any> {
     const invoice = await this.findOne(id);
 
     // Validate that invoice can be marked as paid
@@ -291,7 +291,7 @@ export class InvoicesService {
     return updatedInvoice;
   }
 
-  async bulkUpdateStatus(ids: string[], status: InvoiceStatus) {
+  async bulkUpdateStatus(ids: string[], status: InvoiceStatus): Promise<any> {
     // Validate all invoices first
     const invoices = await this.prisma.invoice.findMany({
       where: { id: { in: ids } },
@@ -332,7 +332,7 @@ export class InvoicesService {
     }
   }
 
-  async updateMateraiStatus(id: string, materaiApplied: boolean) {
+  async updateMateraiStatus(id: string, materaiApplied: boolean): Promise<any> {
     const invoice = await this.findOne(id);
 
     if (!invoice.materaiRequired) {
@@ -349,7 +349,7 @@ export class InvoicesService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<any> {
     const invoice = await this.findOne(id);
 
     // Only allow deletion of draft invoices
@@ -384,7 +384,7 @@ export class InvoicesService {
     return `INV-${year}${month}-${sequence}`;
   }
 
-  async getRecentInvoices(limit = 5) {
+  async getRecentInvoices(limit = 5): Promise<any[]> {
     return this.prisma.invoice.findMany({
       take: limit,
       include: {
@@ -397,7 +397,7 @@ export class InvoicesService {
     });
   }
 
-  async getInvoiceStats() {
+  async getInvoiceStats(): Promise<{ total: number; byStatus: Record<string, number>; totalRevenue: number; overdueCount: number }> {
     const [total, byStatus, totalRevenue, overdueCount] = await Promise.all([
       this.prisma.invoice.count(),
       this.prisma.invoice.groupBy({
@@ -434,7 +434,7 @@ export class InvoicesService {
     };
   }
 
-  async getOverdueInvoices() {
+  async getOverdueInvoices(): Promise<any[]> {
     return this.prisma.invoice.findMany({
       where: {
         OR: [

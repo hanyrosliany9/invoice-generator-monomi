@@ -7,6 +7,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../../../common/decorators/public.decorator';
+import { getErrorMessage } from '../../../common/utils/error-handling.util';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -16,7 +17,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
-  canActivate(context: ExecutionContext) {
+  override canActivate(context: ExecutionContext) {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -38,17 +39,17 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     try {
       return super.canActivate(context);
     } catch (error) {
-      this.logger.error(`Authentication failed for ${request.method} ${request.url}:`, error.message);
+      this.logger.error(`Authentication failed for ${request.method} ${request.url}:`, getErrorMessage(error));
       throw error;
     }
   }
 
-  handleRequest(err: any, user: any, info: any, context: ExecutionContext) {
+  override handleRequest(err: any, user: any, info: any, context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
     
     if (err) {
-      this.logger.error(`JWT Auth Error for ${request.method} ${request.url}:`, err.message);
-      throw new UnauthorizedException('Authentication failed: ' + err.message);
+      this.logger.error(`JWT Auth Error for ${request.method} ${request.url}:`, getErrorMessage(err));
+      throw new UnauthorizedException('Authentication failed: ' + getErrorMessage(err));
     }
     
     if (!user) {

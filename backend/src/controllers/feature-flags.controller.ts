@@ -1,7 +1,8 @@
 // Feature Flags Controller for Indonesian Business Management System
 // API endpoints for safe deployment, rollout management, and rollback capabilities
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, HttpStatus, HttpException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, HttpStatus, HttpException } from '@nestjs/common';
+import { getErrorMessage } from '../common/utils/error-handling.util';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { FeatureFlagsService } from '../services/feature-flags.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
@@ -51,7 +52,7 @@ export class FeatureFlagsController {
       };
     } catch (error) {
       throw new HttpException(
-        `Failed to retrieve user feature flags: ${error.message}`,
+        `Failed to retrieve user feature flags: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -79,7 +80,7 @@ export class FeatureFlagsController {
       };
     } catch (error) {
       throw new HttpException(
-        `Failed to retrieve feature flags: ${error.message}`,
+        `Failed to retrieve feature flags: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -109,7 +110,7 @@ export class FeatureFlagsController {
         throw error;
       }
       throw new HttpException(
-        `Failed to retrieve feature flag: ${error.message}`,
+        `Failed to retrieve feature flag: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -149,7 +150,7 @@ export class FeatureFlagsController {
         throw error;
       }
       throw new HttpException(
-        `Failed to create feature flag: ${error.message}`,
+        `Failed to create feature flag: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -177,7 +178,7 @@ export class FeatureFlagsController {
       };
     } catch (error) {
       throw new HttpException(
-        `Failed to update feature flag: ${error.message}`,
+        `Failed to update feature flag: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -219,7 +220,7 @@ export class FeatureFlagsController {
         throw error;
       }
       throw new HttpException(
-        `Failed to enable feature flag: ${error.message}`,
+        `Failed to enable feature flag: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -252,7 +253,7 @@ export class FeatureFlagsController {
       };
     } catch (error) {
       throw new HttpException(
-        `Failed to disable feature flag: ${error.message}`,
+        `Failed to disable feature flag: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -294,7 +295,7 @@ export class FeatureFlagsController {
         throw error;
       }
       throw new HttpException(
-        `Failed to update rollout percentage: ${error.message}`,
+        `Failed to update rollout percentage: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -326,7 +327,7 @@ export class FeatureFlagsController {
       };
     } catch (error) {
       throw new HttpException(
-        `Failed to retrieve feature statistics: ${error.message}`,
+        `Failed to retrieve feature statistics: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -350,7 +351,7 @@ export class FeatureFlagsController {
       };
     } catch (error) {
       throw new HttpException(
-        `Failed to retrieve rollout health: ${error.message}`,
+        `Failed to retrieve rollout health: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -388,7 +389,7 @@ export class FeatureFlagsController {
       };
     } catch (error) {
       throw new HttpException(
-        `Emergency rollback failed: ${error.message}`,
+        `Emergency rollback failed: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -417,7 +418,7 @@ export class FeatureFlagsController {
       };
     } catch (error) {
       throw new HttpException(
-        `Failed to retrieve Indonesian validation: ${error.message}`,
+        `Failed to retrieve Indonesian validation: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -453,7 +454,7 @@ export class FeatureFlagsController {
       };
     } catch (error) {
       throw new HttpException(
-        `Failed to retrieve audit log: ${error.message}`,
+        `Failed to retrieve audit log: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -481,7 +482,7 @@ export class FeatureFlagsController {
       };
     } catch (error) {
       throw new HttpException(
-        `Feature flag test failed: ${error.message}`,
+        `Feature flag test failed: ${getErrorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

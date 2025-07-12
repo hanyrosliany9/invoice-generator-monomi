@@ -3,6 +3,7 @@
 
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
+import { getErrorMessage } from '../../common/utils/error-handling.util'
 import {
   CreateBusinessJourneyEventDto,
   UpdateBusinessJourneyEventDto,
@@ -90,7 +91,7 @@ export class BusinessJourneyService {
 
       return this.mapEventToResponse(event)
     } catch (error) {
-      this.logger.error(`Failed to create business journey event: ${error.message}`)
+      this.logger.error(`Failed to create business journey event: ${getErrorMessage(error)}`)
       throw new BadRequestException('Failed to create business journey event')
     }
   }
@@ -150,7 +151,7 @@ export class BusinessJourneyService {
         materaiCompliance
       }
     } catch (error) {
-      this.logger.error(`Failed to get client timeline: ${error.message}`)
+      this.logger.error(`Failed to get client timeline: ${getErrorMessage(error)}`)
       if (error instanceof NotFoundException) {
         throw error
       }
@@ -209,7 +210,7 @@ export class BusinessJourneyService {
 
       return this.mapEventToResponse(updatedEvent)
     } catch (error) {
-      this.logger.error(`Failed to update business journey event: ${error.message}`)
+      this.logger.error(`Failed to update business journey event: ${getErrorMessage(error)}`)
       if (error instanceof NotFoundException) {
         throw error
       }
@@ -232,7 +233,7 @@ export class BusinessJourneyService {
         where: { id: eventId }
       })
     } catch (error) {
-      this.logger.error(`Failed to delete business journey event: ${error.message}`)
+      this.logger.error(`Failed to delete business journey event: ${getErrorMessage(error)}`)
       if (error instanceof NotFoundException) {
         throw error
       }
@@ -279,7 +280,7 @@ export class BusinessJourneyService {
 
       return await this.createEvent(createEventDto, userId)
     } catch (error) {
-      this.logger.error(`Failed to auto-create event: ${error.message}`)
+      this.logger.error(`Failed to auto-create event: ${getErrorMessage(error)}`)
       return null
     }
   }
@@ -302,7 +303,7 @@ export class BusinessJourneyService {
         }
       })
     } catch (error) {
-      this.logger.error(`Failed to record UX metrics: ${error.message}`)
+      this.logger.error(`Failed to record UX metrics: ${getErrorMessage(error)}`)
       // Don't throw error for metrics recording failures
     }
   }
@@ -634,7 +635,7 @@ export class BusinessJourneyService {
         complianceStatus: event.metadata.complianceStatus,
         createdAt: event.metadata.createdAt,
         updatedAt: event.metadata.updatedAt
-      } : null,
+      } : undefined,
       relatedEntity: this.buildRelatedEntity(event)
     }
   }

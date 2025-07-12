@@ -17,6 +17,7 @@ import {
   Request,
   Logger
 } from '@nestjs/common'
+import { getErrorMessage } from '../../common/utils/error-handling.util'
 import {
   ApiTags,
   ApiOperation,
@@ -103,7 +104,7 @@ export class PriceInheritanceController {
       return sources
 
     } catch (error) {
-      this.logger.error(`Failed to get price sources: ${error.message}`, error.stack)
+      this.logger.error(`Failed to get price sources: ${getErrorMessage(error)}`, error.stack)
       throw error
     }
   }
@@ -147,7 +148,7 @@ export class PriceInheritanceController {
       return validation
 
     } catch (error) {
-      this.logger.error(`Price validation failed: ${error.message}`, error.stack)
+      this.logger.error(`Price validation failed: ${getErrorMessage(error)}`, error.stack)
       throw error
     }
   }
@@ -194,7 +195,7 @@ export class PriceInheritanceController {
       return result
 
     } catch (error) {
-      this.logger.error(`Failed to create price inheritance: ${error.message}`, error.stack)
+      this.logger.error(`Failed to create price inheritance: ${getErrorMessage(error)}`, error.stack)
       throw error
     }
   }
@@ -251,7 +252,7 @@ export class PriceInheritanceController {
       return result
 
     } catch (error) {
-      this.logger.error(`Failed to update price inheritance ${id}: ${error.message}`, error.stack)
+      this.logger.error(`Failed to update price inheritance ${id}: ${getErrorMessage(error)}`, error.stack)
       throw error
     }
   }
@@ -313,7 +314,7 @@ export class PriceInheritanceController {
       return analytics
 
     } catch (error) {
-      this.logger.error(`Failed to get price inheritance analytics: ${error.message}`, error.stack)
+      this.logger.error(`Failed to get price inheritance analytics: ${getErrorMessage(error)}`, error.stack)
       throw error
     }
   }

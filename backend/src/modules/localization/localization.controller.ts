@@ -11,6 +11,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { LocalizationService } from './localization.service';
 import { CalculateVATDto, FormatCurrencyDto, ValidateBusinessDataDto } from './dto';
+import { getErrorMessage } from '../../common/utils/error-handling.util';
 
 @ApiTags('localization')
 @ApiBearerAuth()
@@ -36,7 +37,7 @@ export class LocalizationController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -69,7 +70,7 @@ export class LocalizationController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -92,7 +93,7 @@ export class LocalizationController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -124,7 +125,7 @@ export class LocalizationController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -153,7 +154,7 @@ export class LocalizationController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -183,7 +184,7 @@ export class LocalizationController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -214,7 +215,7 @@ export class LocalizationController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -237,7 +238,7 @@ export class LocalizationController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -265,7 +266,7 @@ export class LocalizationController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -297,7 +298,7 @@ export class LocalizationController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }

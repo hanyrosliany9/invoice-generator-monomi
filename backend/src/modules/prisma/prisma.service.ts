@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { getErrorMessage } from '../../common/utils/error-handling.util';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -41,7 +42,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       await this.$queryRaw`SELECT 1`;
       return { status: 'ok', message: 'Database is healthy' };
     } catch (error) {
-      return { status: 'error', message: 'Database connection failed', error: error.message };
+      return { status: 'error', message: 'Database connection failed', error: getErrorMessage(error) };
     }
   }
 }

@@ -8,13 +8,13 @@ import { PaginatedResponse } from '../../common/dto/api-response.dto';
 export class ClientsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createClientDto: CreateClientDto) {
+  async create(createClientDto: CreateClientDto): Promise<any> {
     return this.prisma.client.create({
       data: createClientDto,
     });
   }
 
-  async findAll(page = 1, limit = 10, search?: string) {
+  async findAll(page = 1, limit = 10, search?: string): Promise<PaginatedResponse<any[]>> {
     const skip = (page - 1) * limit;
     
     const where = search
@@ -61,7 +61,7 @@ export class ClientsService {
     );
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<any> {
     const client = await this.prisma.client.findUnique({
       where: { id },
       include: {
@@ -100,7 +100,7 @@ export class ClientsService {
     return client;
   }
 
-  async update(id: string, updateClientDto: UpdateClientDto) {
+  async update(id: string, updateClientDto: UpdateClientDto): Promise<any> {
     const client = await this.findOne(id);
 
     return this.prisma.client.update({
@@ -109,7 +109,7 @@ export class ClientsService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<any> {
     const client = await this.findOne(id);
 
     // Check if client has associated records
@@ -126,7 +126,7 @@ export class ClientsService {
       },
     });
 
-    if (hasRecords._count.quotations > 0 || hasRecords._count.invoices > 0 || hasRecords._count.projects > 0) {
+    if (hasRecords && (hasRecords._count.quotations > 0 || hasRecords._count.invoices > 0 || hasRecords._count.projects > 0)) {
       throw new Error('Tidak dapat menghapus klien yang memiliki quotation, invoice, atau proyek');
     }
 
@@ -135,7 +135,7 @@ export class ClientsService {
     });
   }
 
-  async getClientStats() {
+  async getClientStats(): Promise<{ total: number; recent: any[] }> {
     const [total, recentClients] = await Promise.all([
       this.prisma.client.count(),
       this.prisma.client.findMany({

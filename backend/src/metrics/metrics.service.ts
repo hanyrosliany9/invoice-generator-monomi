@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../modules/prisma/prisma.service';
+import { getErrorMessage } from '../common/utils/error-handling.util';
 
 @Injectable()
 export class MetricsService {
@@ -66,7 +67,7 @@ export class MetricsService {
         },
         database: {
           status: 'unhealthy',
-          error: error.message,
+          error: getErrorMessage(error),
         },
         business: {
           users: 0,

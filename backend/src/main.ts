@@ -6,6 +6,7 @@ import { AppModule } from './app.module';
 import { initDatabase } from './scripts/init-db';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { ValidationInterceptor } from './common/interceptors/validation.interceptor';
+import { getErrorMessage } from './common/utils/error-handling.util';
 
 const logger = new Logger('Bootstrap');
 
@@ -20,7 +21,7 @@ async function bootstrap() {
         await initDatabase();
         logger.log('✅ Database initialization completed successfully');
       } catch (error) {
-        logger.error('❌ Database initialization failed:', error.message);
+        logger.error('❌ Database initialization failed:', getErrorMessage(error));
         logger.error('❌ Full error:', error);
         logger.warn('⚠️  Continuing with startup, but login may not work until database is properly initialized');
       }

@@ -327,7 +327,7 @@ async function main() {
         action: 'CREATE',
         entityType: 'quotation',
         entityId: quotation1.id,
-        oldValues: null,
+        oldValues: undefined,
         newValues: {
           quotationNumber: quotation1.quotationNumber,
           status: 'DRAFT',
@@ -351,7 +351,7 @@ async function main() {
         action: 'CREATE',
         entityType: 'invoice',
         entityId: invoice1.id,
-        oldValues: null,
+        oldValues: undefined,
         newValues: {
           invoiceNumber: invoice1.invoiceNumber,
           status: 'DRAFT',

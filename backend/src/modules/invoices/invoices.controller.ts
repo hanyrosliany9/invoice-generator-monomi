@@ -37,7 +37,7 @@ export class InvoicesController {
     status: 400,
     description: 'Data tidak valid',
   })
-  async create(@Body() createInvoiceDto: CreateInvoiceDto, @Request() req) {
+  async create(@Body() createInvoiceDto: CreateInvoiceDto, @Request() req: any) {
     return this.invoicesService.create(createInvoiceDto, req.user.id);
   }
 
@@ -55,7 +55,7 @@ export class InvoicesController {
     status: 404,
     description: 'Quotation tidak ditemukan',
   })
-  async createFromQuotation(@Param('quotationId') quotationId: string, @Request() req) {
+  async createFromQuotation(@Param('quotationId') quotationId: string, @Request() req: any) {
     return this.invoicesService.createFromQuotation(quotationId, req.user.id);
   }
 

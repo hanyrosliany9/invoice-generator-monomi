@@ -23,7 +23,7 @@ export class SettingsController {
 
   @Get('user')
   @ApiOperation({ summary: 'Get user settings' })
-  async getUserSettings(@Request() req) {
+  async getUserSettings(@Request() req: any) {
     console.log('Controller: req.user =', req.user);
     console.log('Controller: req.user.id =', req.user?.id);
     return this.settingsService.getUserSettings(req.user?.id);
@@ -32,7 +32,7 @@ export class SettingsController {
   @Put('user')
   @ApiOperation({ summary: 'Update user settings' })
   async updateUserSettings(
-    @Request() req,
+    @Request() req: any,
     @Body() updateUserSettingsDto: UpdateUserSettingsDto,
   ) {
     return this.settingsService.updateUserSettings(req.user.id, updateUserSettingsDto);
@@ -68,14 +68,14 @@ export class SettingsController {
 
   @Get('notifications')
   @ApiOperation({ summary: 'Get notification preferences' })
-  async getNotificationSettings(@Request() req) {
+  async getNotificationSettings(@Request() req: any) {
     return this.settingsService.getNotificationSettings(req.user.id);
   }
 
   @Put('notifications')
   @ApiOperation({ summary: 'Update notification preferences' })
   async updateNotificationSettings(
-    @Request() req,
+    @Request() req: any,
     @Body() notificationSettings: any,
   ) {
     return this.settingsService.updateNotificationSettings(req.user.id, notificationSettings);
@@ -83,7 +83,7 @@ export class SettingsController {
 
   @Post('reset')
   @ApiOperation({ summary: 'Reset settings to default' })
-  async resetSettings(@Request() req) {
+  async resetSettings(@Request() req: any) {
     return this.settingsService.resetUserSettings(req.user.id);
   }
 }

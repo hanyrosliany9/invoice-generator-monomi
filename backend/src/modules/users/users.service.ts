@@ -95,7 +95,7 @@ export class UsersService {
     return user ? this.transformToResponse(user) : null;
   }
 
-  async findByEmail(email: string) {
+  async findByEmail(email: string): Promise<{ id: string; email: string; name: string; role: string; isActive: boolean; createdAt: Date; updatedAt: Date } | null> {
     return this.prisma.user.findUnique({
       where: { email },
       select: {
@@ -110,7 +110,7 @@ export class UsersService {
     });
   }
 
-  async findByEmailForAuth(email: string) {
+  async findByEmailForAuth(email: string): Promise<any> {
     return this.prisma.user.findUnique({
       where: { email },
     });
@@ -135,14 +135,14 @@ export class UsersService {
     return this.transformToResponse(user);
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<any> {
     return this.prisma.user.update({
       where: { id },
       data: { isActive: false },
     });
   }
 
-  async getUserStats() {
+  async getUserStats(): Promise<{ totalUsers: number; activeUsers: number; inactiveUsers: number; roleDistribution: Record<string, any>; recentUsers: any[] }> {
     const [totalUsers, roleStats, activeUsers, recentUsers] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.groupBy({
@@ -173,7 +173,7 @@ export class UsersService {
       roleDistribution: roleStats.reduce((acc, stat) => {
         acc[stat.role] = stat._count;
         return acc;
-      }, {}),
+      }, {} as Record<string, any>),
       recentUsers: recentUsers.map(user => ({
         ...user,
         createdAt: TransformationUtil.dateToString(user.createdAt)

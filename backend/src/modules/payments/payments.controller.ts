@@ -3,6 +3,7 @@ import { PaymentsService } from './payments.service'
 import { CreatePaymentDto, UpdatePaymentDto, PaymentResponseDto } from './dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { ApiResponse } from '../../common/dto/api-response.dto'
+import { getErrorMessage } from '../../common/utils/error-handling.util'
 
 @Controller('payments')
 @UseGuards(JwtAuthGuard)
@@ -22,7 +23,7 @@ export class PaymentsController {
     } catch (error) {
       return {
         data: null,
-        message: error.message || 'Failed to create payment',
+        message: getErrorMessage(error) || 'Failed to create payment',
         status: 'error'
       }
     }
@@ -40,7 +41,7 @@ export class PaymentsController {
     } catch (error) {
       return {
         data: [],
-        message: error.message || 'Failed to retrieve payments',
+        message: getErrorMessage(error) || 'Failed to retrieve payments',
         status: 'error'
       }
     }
@@ -58,7 +59,7 @@ export class PaymentsController {
     } catch (error) {
       return {
         data: null,
-        message: error.message || 'Failed to retrieve payment statistics',
+        message: getErrorMessage(error) || 'Failed to retrieve payment statistics',
         status: 'error'
       }
     }
@@ -76,7 +77,7 @@ export class PaymentsController {
     } catch (error) {
       return {
         data: [],
-        message: error.message || 'Failed to retrieve invoice payments',
+        message: getErrorMessage(error) || 'Failed to retrieve invoice payments',
         status: 'error'
       }
     }
@@ -94,7 +95,7 @@ export class PaymentsController {
     } catch (error) {
       return {
         data: null,
-        message: error.message || 'Failed to retrieve payment',
+        message: getErrorMessage(error) || 'Failed to retrieve payment',
         status: 'error'
       }
     }
@@ -112,7 +113,7 @@ export class PaymentsController {
     } catch (error) {
       return {
         data: null,
-        message: error.message || 'Failed to update payment',
+        message: getErrorMessage(error) || 'Failed to update payment',
         status: 'error'
       }
     }
@@ -134,7 +135,7 @@ export class PaymentsController {
     } catch (error) {
       return {
         data: null,
-        message: error.message || 'Failed to confirm payment',
+        message: getErrorMessage(error) || 'Failed to confirm payment',
         status: 'error'
       }
     }
@@ -153,7 +154,7 @@ export class PaymentsController {
     } catch (error) {
       return {
         data: null,
-        message: error.message || 'Failed to delete payment',
+        message: getErrorMessage(error) || 'Failed to delete payment',
         status: 'error'
       }
     }

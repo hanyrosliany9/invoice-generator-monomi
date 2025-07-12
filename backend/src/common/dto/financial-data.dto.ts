@@ -1,5 +1,4 @@
 import { Transform } from 'class-transformer'
-import { Decimal } from '@prisma/client/runtime/library'
 
 /**
  * Custom transformer for financial data

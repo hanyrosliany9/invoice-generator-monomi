@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { NotificationType, SendNotificationDto } from './dto/send-notification.dto';
+import { getErrorMessage } from '../../common/utils/error-handling.util';
 
 @Injectable()
 export class NotificationsService {
@@ -73,7 +74,7 @@ export class NotificationsService {
       // Log notification in database
       await this.logNotification(dto, 'SENT');
     } catch (error) {
-      this.logger.error(`Failed to send notification: ${error.message}`, error.stack);
+      this.logger.error(`Failed to send notification: ${getErrorMessage(error)}`, error.stack);
       await this.logNotification(dto, 'FAILED');
       throw error;
     }
@@ -217,7 +218,7 @@ export class NotificationsService {
       // For now, we'll just log to console
       this.logger.log(`Notification ${status}: ${dto.type} to ${dto.to}`);
     } catch (error) {
-      this.logger.error(`Failed to log notification: ${error.message}`);
+      this.logger.error(`Failed to log notification: ${getErrorMessage(error)}`);
     }
   }
 
@@ -257,7 +258,7 @@ export class NotificationsService {
         }
       });
     } catch (error) {
-      this.logger.error(`Failed to send quotation status update: ${error.message}`);
+      this.logger.error(`Failed to send quotation status update: ${getErrorMessage(error)}`);
     }
   }
 
@@ -294,7 +295,7 @@ export class NotificationsService {
         }
       });
     } catch (error) {
-      this.logger.error(`Failed to send invoice generated notification: ${error.message}`);
+      this.logger.error(`Failed to send invoice generated notification: ${getErrorMessage(error)}`);
     }
   }
 
@@ -324,7 +325,7 @@ export class NotificationsService {
         }
       });
     } catch (error) {
-      this.logger.error(`Failed to send quotation expiring notification: ${error.message}`);
+      this.logger.error(`Failed to send quotation expiring notification: ${getErrorMessage(error)}`);
     }
   }
 

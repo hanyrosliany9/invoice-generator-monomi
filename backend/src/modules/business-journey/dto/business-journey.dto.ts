@@ -662,8 +662,8 @@ export class BusinessJourneyEventResponseDto {
   @ApiPropertyOptional()
   paymentId?: string
 
-  @ApiProperty()
-  metadata: BusinessJourneyEventMetadataResponseDto
+  @ApiPropertyOptional()
+  metadata?: BusinessJourneyEventMetadataResponseDto
 
   // Related entity information
   @ApiPropertyOptional()

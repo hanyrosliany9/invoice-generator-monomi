@@ -30,7 +30,7 @@ export class QuotationsController {
 
   @Post()
   @ApiOperation({ summary: 'Buat quotation baru' })
-  create(@Body() createQuotationDto: CreateQuotationDto, @Request() req) {
+  create(@Body() createQuotationDto: CreateQuotationDto, @Request() req: any) {
     return this.quotationsService.create(createQuotationDto, req.user.id);
   }
 
@@ -107,7 +107,7 @@ export class QuotationsController {
     status: 404,
     description: 'Quotation tidak ditemukan',
   })
-  async generateInvoice(@Param('id') id: string, @Request() req) {
+  async generateInvoice(@Param('id') id: string, @Request() req: any) {
     const invoice = await this.invoicesService.createFromQuotation(id, req.user.id);
     
     // Check if this is an existing invoice by looking at creation timestamp

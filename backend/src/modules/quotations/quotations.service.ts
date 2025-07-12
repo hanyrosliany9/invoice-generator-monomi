@@ -4,6 +4,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { QuotationStatus, Prisma } from '@prisma/client';
+import { getErrorMessage } from '../../common/utils/error-handling.util';
 
 @Injectable()
 export class QuotationsService {
@@ -12,7 +13,7 @@ export class QuotationsService {
     private notificationsService: NotificationsService
   ) {}
 
-  async create(createQuotationDto: CreateQuotationDto, userId: string) {
+  async create(createQuotationDto: CreateQuotationDto, userId: string): Promise<any> {
     // Validate that the project belongs to the selected client
     const project = await this.prisma.project.findUnique({
       where: { id: createQuotationDto.projectId },
@@ -50,7 +51,7 @@ export class QuotationsService {
     });
   }
 
-  async findAll(page = 1, limit = 10, status?: QuotationStatus) {
+  async findAll(page = 1, limit = 10, status?: QuotationStatus): Promise<{ data: any[]; pagination: { page: number; limit: number; total: number; pages: number } }> {
     const skip = (page - 1) * limit;
     
     const where = status ? { status } : {};
@@ -96,7 +97,7 @@ export class QuotationsService {
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<any> {
     const quotation = await this.prisma.quotation.findUnique({
       where: { id },
       include: {
@@ -120,7 +121,7 @@ export class QuotationsService {
     return quotation;
   }
 
-  async update(id: string, updateQuotationDto: UpdateQuotationDto) {
+  async update(id: string, updateQuotationDto: UpdateQuotationDto): Promise<any> {
     const quotation = await this.findOne(id);
 
     return this.prisma.quotation.update({
@@ -140,7 +141,7 @@ export class QuotationsService {
     });
   }
 
-  async updateStatus(id: string, status: QuotationStatus) {
+  async updateStatus(id: string, status: QuotationStatus): Promise<any> {
     const quotation = await this.findOne(id);
 
     const updatedQuotation = await this.prisma.quotation.update({
@@ -158,7 +159,7 @@ export class QuotationsService {
         await this.autoGenerateInvoice(updatedQuotation);
         console.log(`✅ Auto-generated invoice for approved quotation ${updatedQuotation.quotationNumber}`);
       } catch (error) {
-        console.error(`❌ Failed to auto-generate invoice for quotation ${updatedQuotation.quotationNumber}:`, error.message);
+        console.error(`❌ Failed to auto-generate invoice for quotation ${updatedQuotation.quotationNumber}:`, getErrorMessage(error));
         // Don't fail the status update, but log the error
       }
     }
@@ -174,7 +175,7 @@ export class QuotationsService {
     return updatedQuotation;
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<any> {
     const quotation = await this.findOne(id);
 
     // Only allow deletion of draft quotations
@@ -209,7 +210,7 @@ export class QuotationsService {
     return `QT-${year}${month}-${sequence}`;
   }
 
-  async getRecentQuotations(limit = 5) {
+  async getRecentQuotations(limit = 5): Promise<any[]> {
     return this.prisma.quotation.findMany({
       take: limit,
       include: {
@@ -222,7 +223,7 @@ export class QuotationsService {
     });
   }
 
-  async getQuotationStats() {
+  async getQuotationStats(): Promise<{ total: number; byStatus: Record<string, number> }> {
     const [total, byStatus] = await Promise.all([
       this.prisma.quotation.count(),
       this.prisma.quotation.groupBy({
@@ -277,7 +278,7 @@ export class QuotationsService {
     throw new NotFoundException('Project tidak memiliki informasi harga. Silakan set basePrice atau estimatedBudget pada project terlebih dahulu.');
   }
 
-  private async autoGenerateInvoice(quotation: any) {
+  private async autoGenerateInvoice(quotation: any): Promise<any> {
     // Generate unique invoice number
     const invoiceNumber = await this.generateInvoiceNumber();
     

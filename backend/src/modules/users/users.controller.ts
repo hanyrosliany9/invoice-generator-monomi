@@ -18,6 +18,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto, UserResponseDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiResponse as ApiResponseDto } from '../../common/dto/api-response.dto';
+import { getErrorMessage } from '../../common/utils/error-handling.util';
 import * as bcrypt from 'bcrypt';
 
 @ApiTags('Users')
@@ -41,7 +42,7 @@ export class UsersController {
     status: 409,
     description: 'Email sudah terdaftar',
   })
-  async create(@Body() createUserDto: CreateUserDto): Promise<ApiResponseDto<UserResponseDto>> {
+  async create(@Body() createUserDto: CreateUserDto): Promise<ApiResponseDto<UserResponseDto | null>> {
     try {
       // Hash password before creating user
       const saltRounds = 10;
@@ -54,7 +55,7 @@ export class UsersController {
 
       return ApiResponseDto.success(user, 'Pengguna berhasil dibuat');
     } catch (error) {
-      if (error.code === 'P2002') {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
         return ApiResponseDto.error('Email sudah terdaftar', null);
       }
       return ApiResponseDto.error('Gagal membuat pengguna', null);
@@ -113,7 +114,7 @@ export class UsersController {
     status: 404,
     description: 'Pengguna tidak ditemukan',
   })
-  async findOne(@Param('id') id: string): Promise<ApiResponseDto<UserResponseDto>> {
+  async findOne(@Param('id') id: string): Promise<ApiResponseDto<UserResponseDto | null>> {
     try {
       const user = await this.usersService.findById(id);
       if (!user) {
@@ -135,7 +136,7 @@ export class UsersController {
     status: 404,
     description: 'Pengguna tidak ditemukan',
   })
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto): Promise<ApiResponseDto<UserResponseDto>> {
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto): Promise<ApiResponseDto<UserResponseDto | null>> {
     try {
       // Hash password if provided
       if (updateUserDto.password) {
@@ -146,7 +147,7 @@ export class UsersController {
       const user = await this.usersService.update(id, updateUserDto);
       return ApiResponseDto.success(user, 'Pengguna berhasil diperbarui');
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
         return ApiResponseDto.error('Pengguna tidak ditemukan', null);
       }
       return ApiResponseDto.error('Gagal memperbarui pengguna', null);
@@ -159,7 +160,7 @@ export class UsersController {
     status: 200,
     description: 'Pengguna berhasil diaktifkan',
   })
-  async activateUser(@Param('id') id: string): Promise<ApiResponseDto<UserResponseDto>> {
+  async activateUser(@Param('id') id: string): Promise<ApiResponseDto<UserResponseDto | null>> {
     try {
       const user = await this.usersService.update(id, { isActive: true });
       return ApiResponseDto.success(user, 'Pengguna berhasil diaktifkan');
@@ -174,7 +175,7 @@ export class UsersController {
     status: 200,
     description: 'Pengguna berhasil dinonaktifkan',
   })
-  async deactivateUser(@Param('id') id: string): Promise<ApiResponseDto<UserResponseDto>> {
+  async deactivateUser(@Param('id') id: string): Promise<ApiResponseDto<UserResponseDto | null>> {
     try {
       const user = await this.usersService.update(id, { isActive: false });
       return ApiResponseDto.success(user, 'Pengguna berhasil dinonaktifkan');

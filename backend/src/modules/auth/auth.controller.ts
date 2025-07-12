@@ -106,7 +106,7 @@ export class AuthController {
     status: 401,
     description: 'Token tidak valid',
   })
-  async getProfile(@Request() req) {
+  async getProfile(@Request() req: any) {
     return req.user;
   }
 

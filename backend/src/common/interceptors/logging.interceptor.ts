@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { getErrorMessage } from '../utils/error-handling.util';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -48,7 +49,7 @@ export class LoggingInterceptor implements NestInterceptor {
           const { statusCode } = response;
           const responseTime = Date.now() - now;
           
-          this.logger.error(`${method} ${url} - ${statusCode} - ${responseTime}ms - Error: ${error.message}`);
+          this.logger.error(`${method} ${url} - ${statusCode} - ${responseTime}ms - Error: ${getErrorMessage(error)}`);
         },
       }),
     );

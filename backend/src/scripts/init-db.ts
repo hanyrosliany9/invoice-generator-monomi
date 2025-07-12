@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { execSync } from 'child_process';
 import * as path from 'path';
+import { getErrorMessage } from '../common/utils/error-handling.util';
 
 const prisma = new PrismaClient();
 
@@ -51,7 +52,7 @@ async function initDatabase() {
           throw new Error('Schema creation failed - users table still not found');
         }
       } catch (pushError) {
-        console.error('❌ Failed to create database schema:', pushError.message);
+        console.error('❌ Failed to create database schema:', getErrorMessage(pushError));
         throw new Error('Could not create database schema automatically');
       }
     }

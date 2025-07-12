@@ -14,6 +14,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { MateraiService } from './materai.service';
 import { ApplyMateraiDto, BulkApplyMateraiDto, UpdateMateraiConfigDto } from './dto';
+import { getErrorMessage } from '../../common/utils/error-handling.util';
 
 @ApiTags('materai')
 @ApiBearerAuth()
@@ -63,7 +64,7 @@ export class MateraiController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -98,7 +99,7 @@ export class MateraiController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -132,7 +133,7 @@ export class MateraiController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -175,7 +176,7 @@ export class MateraiController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -228,7 +229,7 @@ export class MateraiController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -251,7 +252,7 @@ export class MateraiController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -274,7 +275,7 @@ export class MateraiController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -297,7 +298,7 @@ export class MateraiController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }
@@ -320,7 +321,7 @@ export class MateraiController {
     } catch (error) {
       return {
         data: null,
-        message: error.message,
+        message: getErrorMessage(error),
         status: 'error'
       };
     }

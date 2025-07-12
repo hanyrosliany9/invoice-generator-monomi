@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { Decimal } from '@prisma/client/runtime/library';
 import { TransformationUtil } from '../../common/utils/transformation.util';
+import { getErrorMessage } from '../../common/utils/error-handling.util';
 
 export interface MateraiConfig {
   enabled: boolean;
@@ -144,7 +145,7 @@ export class MateraiService {
         success.push(invoiceId);
       } catch (error) {
         failed.push(invoiceId);
-        this.logger.error(`Failed to apply materai to invoice ${invoiceId}: ${error.message}`);
+        this.logger.error(`Failed to apply materai to invoice ${invoiceId}: ${getErrorMessage(error)}`);
       }
     }
 

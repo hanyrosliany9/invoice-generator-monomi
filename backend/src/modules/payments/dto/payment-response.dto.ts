@@ -1,17 +1,17 @@
 import { PaymentMethod, PaymentStatus } from '@prisma/client'
 
 export class PaymentResponseDto {
-  id: string
-  invoiceId: string
-  amount: string // Convert Decimal to string for frontend
-  paymentDate: string
-  paymentMethod: PaymentMethod
+  id!: string
+  invoiceId!: string
+  amount!: string // Convert Decimal to string for frontend
+  paymentDate!: string
+  paymentMethod!: PaymentMethod
   transactionRef?: string
   bankDetails?: string
-  status: PaymentStatus
+  status!: PaymentStatus
   confirmedAt?: string
-  createdAt: string
-  updatedAt: string
+  createdAt!: string
+  updatedAt!: string
   
   // Relations
   invoice?: {
