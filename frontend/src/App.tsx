@@ -10,6 +10,7 @@ import { QuotationsPage } from './pages/QuotationsPage'
 import { InvoicesPage } from './pages/InvoicesPage'
 import { ClientsPage } from './pages/ClientsPage'
 import { ProjectsPage } from './pages/ProjectsPage'
+import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import './styles/relationships.css'
@@ -46,7 +47,8 @@ function App() {
                     <Route path="/quotations/*" element={<QuotationsPage />} />
                     <Route path="/invoices/*" element={<InvoicesPage />} />
                     <Route path="/clients/*" element={<ClientsPage />} />
-                    <Route path="/projects/*" element={<ProjectsPage />} />
+                    <Route path="/projects" element={<ProjectsPage />} />
+                    <Route path="/projects/:id" element={<ProjectDetailPage />} />
                     <Route path="/reports" element={<ReportsPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />

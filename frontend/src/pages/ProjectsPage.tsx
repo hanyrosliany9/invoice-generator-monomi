@@ -46,7 +46,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { formatIDR, safeArray, safeNumber, safeString } from '../utils/currency'
 import { Project, projectService } from '../services/projects'
 import { clientService } from '../services/clients'
-import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
 import WorkflowIndicator from '../components/ui/WorkflowIndicator'
 import dayjs from 'dayjs'
 
@@ -74,8 +73,6 @@ export const ProjectsPage: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('')
   const [modalVisible, setModalVisible] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
-  const [viewModalVisible, setViewModalVisible] = useState(false)
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [batchLoading, setBatchLoading] = useState(false)
   const [form] = Form.useForm()
@@ -172,18 +169,11 @@ export const ProjectsPage: React.FC = () => {
 
   // Handle URL parameters for direct navigation
   useEffect(() => {
-    // Handle viewProject query parameter (show specific project detail)
+    // Handle viewProject query parameter (navigate to specific project detail page)
     const viewProjectId = searchParams.get("projectId")
-    if (viewProjectId && projects.length > 0) {
-      const project = projects.find(p => p.id === viewProjectId)
-      if (project) {
-        setSelectedProject(project)
-        setViewModalVisible(true)
-        // Clear the URL parameter after opening modal
-        const newSearchParams = new URLSearchParams(searchParams)
-        newSearchParams.delete("projectId")
-        navigate("/projects", { replace: true })
-      }
+    if (viewProjectId) {
+      // Navigate to dedicated project detail page
+      navigate(`/projects/${viewProjectId}`, { replace: true })
     }
   }, [searchParams, projects, navigate])
 
@@ -293,8 +283,7 @@ export const ProjectsPage: React.FC = () => {
   }
 
   const handleView = (project: Project) => {
-    setSelectedProject(project)
-    setViewModalVisible(true)
+    navigate(`/projects/${project.id}`)
   }
 
   const handleDelete = (id: string) => {
@@ -588,12 +577,6 @@ export const ProjectsPage: React.FC = () => {
       <div className="mb-6">
         <Title level={2}>{t('projects.title')}</Title>
         
-        <WorkflowIndicator 
-          currentEntity="project" 
-          entityData={selectedProject || {}} 
-          compact 
-          className="mb-4"
-        />
         
         {/* Statistics */}
         <Row gutter={[24, 24]} className="mb-6">
@@ -1147,172 +1130,6 @@ export const ProjectsPage: React.FC = () => {
         </Form>
       </Modal>
 
-      {/* View Modal */}
-      <Modal
-        title={`Detail Proyek - ${selectedProject?.number}`}
-        open={viewModalVisible}
-        onCancel={() => setViewModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setViewModalVisible(false)}>
-            Tutup
-          </Button>
-        ]}
-        width={900}
-      >
-        {selectedProject && (
-          <div className="space-y-4">
-            {/* Breadcrumb Navigation */}
-            <div className="mb-4">
-              <EntityBreadcrumb
-                entityType="project"
-                entityData={selectedProject}
-                className="mb-2"
-              />
-              <RelatedEntitiesPanel
-                entityType="project"
-                entityData={selectedProject}
-                className="mb-4"
-              />
-            </div>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>Nomor Proyek:</Text>
-                <div>{selectedProject.number}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Klien:</Text>
-                <div>{selectedProject.client?.name || 'N/A'}</div>
-                <div style={{ fontSize: '12px', color: '#666' }}>{selectedProject.client?.company}</div>
-              </Col>
-            </Row>
-            
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>Tipe:</Text>
-                <div>
-                  <Tag color={getTypeColor(selectedProject.type)}>
-                    {getTypeText(selectedProject.type)}
-                  </Tag>
-                </div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Status:</Text>
-                <div>
-                  <Tag color={getStatusColor(selectedProject.status)} icon={getStatusIcon(selectedProject.status)}>
-                    {(() => {
-                      const statusMap = {
-                        'PLANNING': 'Perencanaan',
-                        'IN_PROGRESS': 'Sedang Berjalan',
-                        'ON_HOLD': 'Ditunda',
-                        'COMPLETED': 'Selesai',
-                        'CANCELLED': 'Dibatalkan'
-                      }
-                      return statusMap[selectedProject.status as keyof typeof statusMap] || selectedProject.status
-                    })()} 
-                  </Tag>
-                </div>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col span={24}>
-                <Text strong>Deskripsi:</Text>
-                <div>{selectedProject.description}</div>
-              </Col>
-            </Row>
-
-            {selectedProject.output && (
-              <Row gutter={16}>
-                <Col span={24}>
-                  <Text strong>Output:</Text>
-                  <div>{selectedProject.output}</div>
-                </Col>
-              </Row>
-            )}
-
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>Tanggal Mulai:</Text>
-                <div>{dayjs(selectedProject.startDate).format('DD/MM/YYYY')}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Tanggal Selesai:</Text>
-                <div>{dayjs(selectedProject.endDate).format('DD/MM/YYYY')}</div>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>Progress:</Text>
-                <div className="mt-2">
-                  <Progress percent={0} />
-                </div>
-              </Col>
-              <Col span={12}>
-              </Col>
-            </Row>
-
-            <Divider />
-
-            <Title level={4}>Statistik Keuangan</Title>
-            <Row gutter={16}>
-              <Col span={6}>
-                <Card>
-                  <Statistic
-                    title="Quotations"
-                    value={selectedProject._count?.quotations || 0}
-                    prefix={<FileTextOutlined />}
-                  />
-                </Card>
-              </Col>
-              <Col span={6}>
-                <Card>
-                  <Statistic
-                    title="Invoices"
-                    value={selectedProject._count?.invoices || 0}
-                    prefix={<FileTextOutlined />}
-                  />
-                </Card>
-              </Col>
-              <Col span={6}>
-                <Card>
-                  <Statistic
-                    title="Budget Aktual"
-                    value={formatIDR(0)}
-                    valueStyle={{ color: '#52c41a' }}
-                  />
-                </Card>
-              </Col>
-              <Col span={6}>
-                <Card>
-                  <Statistic
-                    title="Sisa Budget"
-                    value={formatIDR(selectedProject.estimatedBudget || selectedProject.basePrice || 0)}
-                    valueStyle={{ color: '#fa8c16' }}
-                  />
-                </Card>
-              </Col>
-            </Row>
-
-            <Divider />
-
-            <Title level={4}>Tim Proyek</Title>
-            <Row gutter={16}>
-              {/* Team members not available in current Project interface */}
-              <Col span={24}>
-                <Text>Tim proyek tidak tersedia</Text>
-              </Col>
-            </Row>
-
-            {selectedProject.output && (
-              <div className="mt-4">
-                <Text strong>Output:</Text>
-                <div>{selectedProject.output}</div>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
     </div>
   )
 }
