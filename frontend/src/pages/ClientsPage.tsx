@@ -893,22 +893,22 @@ export const ClientsPage: React.FC = () => {
             </div>
             <Row gutter={16}>
               <Col span={12}>
-                <Text strong>{t('clients.fields.name')}:</Text>
+                <Text strong>{t('clients.name')}:</Text>
                 <div>{selectedClient.name}</div>
               </Col>
               <Col span={12}>
-                <Text strong>{t('clients.fields.company')}:</Text>
+                <Text strong>{t('clients.company')}:</Text>
                 <div>{selectedClient.company}</div>
               </Col>
             </Row>
             
             <Row gutter={16}>
               <Col span={12}>
-                <Text strong>{t('clients.fields.contactPerson')}:</Text>
+                <Text strong>{t('clients.contactPerson')}:</Text>
                 <div>{selectedClient.contactPerson}</div>
               </Col>
               <Col span={12}>
-                <Text strong>{t('common.status')}:</Text>
+                <Text strong>Status:</Text>
                 <div>
                   <Tag color={getStatusColor(selectedClient.status || 'inactive')}>
                     {getStatusText(selectedClient.status || 'inactive')}
@@ -919,25 +919,25 @@ export const ClientsPage: React.FC = () => {
 
             <Row gutter={16}>
               <Col span={12}>
-                <Text strong>{t('clients.fields.email')}:</Text>
+                <Text strong>{t('clients.email')}:</Text>
                 <div>{selectedClient.email}</div>
               </Col>
               <Col span={12}>
-                <Text strong>{t('clients.fields.phone')}:</Text>
+                <Text strong>{t('clients.phone')}:</Text>
                 <div>{selectedClient.phone}</div>
               </Col>
             </Row>
 
             <Row gutter={16}>
               <Col span={24}>
-                <Text strong>Alamat:</Text>
+                <Text strong>{t('clients.address')}:</Text>
                 <div>{selectedClient.address}</div>
               </Col>
             </Row>
 
             <Row gutter={16}>
               <Col span={12}>
-                <Text strong>Syarat Pembayaran:</Text>
+                <Text strong>{t('clients.paymentTerms')}:</Text>
                 <div>{selectedClient.paymentTerms}</div>
               </Col>
               <Col span={12}>

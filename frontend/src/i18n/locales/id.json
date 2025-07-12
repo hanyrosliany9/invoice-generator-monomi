@@ -5,6 +5,7 @@
     "delete": "Hapus",
     "edit": "Edit",
     "create": "Buat",
+    "close": "Tutup",
     "loading": "Memuat...",
     "search": "Cari",
     "filter": "Filter",
@@ -214,6 +215,7 @@
   "clients": {
     "title": "Klien",
     "create": "Tambah Klien",
+    "detail": "Detail Klien",
     "name": "Nama",
     "email": "Email",
     "phone": "Telepon",
