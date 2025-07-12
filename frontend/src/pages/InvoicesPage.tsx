@@ -140,8 +140,11 @@ export const InvoicesPage: React.FC = () => {
   }, []);
 
   const handleExport = useCallback(() => {
-    message.info('Export feature coming soon');
-  }, []);
+    message.info({
+      content: 'Fitur export invoice sedang dalam pengembangan. Data invoice akan dapat di-export dalam format CSV/Excel pada update mendatang.',
+      duration: 4
+    })
+  }, [message]);
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['invoices'] });
@@ -1385,7 +1388,13 @@ export const InvoicesPage: React.FC = () => {
           </Space>
           
           <Space>
-            <Button data-testid="invoice-export-button" icon={<ExportOutlined />}>Export</Button>
+            <Button 
+              data-testid="invoice-export-button" 
+              icon={<ExportOutlined />}
+              onClick={handleExport}
+            >
+              Export
+            </Button>
             <Button
               data-testid="create-invoice-button"
               type="primary"

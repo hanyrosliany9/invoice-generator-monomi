@@ -92,6 +92,14 @@ export const QuotationsPage: React.FC = () => {
   const [statusForm] = Form.useForm()
   const { message } = App.useApp()
 
+  // Export functionality
+  const handleExport = useCallback(() => {
+    message.info({
+      content: 'Fitur export quotation sedang dalam pengembangan. Data quotation akan dapat di-export dalam format CSV/Excel pada update mendatang.',
+      duration: 4
+    })
+  }, [message])
+
   // Queries
   const { data: quotations = [], isLoading } = useQuery({
     queryKey: ['quotations'],
@@ -1022,7 +1030,13 @@ export const QuotationsPage: React.FC = () => {
           </Space>
           
           <Space>
-            <Button data-testid="quotation-export-button" icon={<ExportOutlined />}>Export</Button>
+            <Button 
+              data-testid="quotation-export-button" 
+              icon={<ExportOutlined />}
+              onClick={handleExport}
+            >
+              Export
+            </Button>
             <Button
               data-testid="create-quotation-button"
               type="primary"

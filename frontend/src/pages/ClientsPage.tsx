@@ -72,6 +72,22 @@ export const ClientsPage: React.FC = () => {
   const [form] = Form.useForm()
   const { message } = App.useApp()
 
+  // Export functionality
+  const handleExport = useCallback(() => {
+    message.info({
+      content: 'Fitur export sedang dalam pengembangan. Data klien akan dapat di-export dalam format CSV/Excel pada update mendatang.',
+      duration: 4
+    })
+  }, [message])
+
+  // Import functionality
+  const handleImport = useCallback(() => {
+    message.info({
+      content: 'Fitur import sedang dalam pengembangan. Import data klien dari CSV/Excel akan tersedia pada update mendatang.',
+      duration: 4
+    })
+  }, [message])
+
   // Queries
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ['clients'],
@@ -679,8 +695,20 @@ export const ClientsPage: React.FC = () => {
           </Space>
           
           <Space>
-            <Button data-testid="client-import-button" icon={<UploadOutlined />}>Import</Button>
-            <Button data-testid="client-export-button" icon={<ExportOutlined />}>Export</Button>
+            <Button 
+              data-testid="client-import-button" 
+              icon={<UploadOutlined />}
+              onClick={handleImport}
+            >
+              Import
+            </Button>
+            <Button 
+              data-testid="client-export-button" 
+              icon={<ExportOutlined />}
+              onClick={handleExport}
+            >
+              Export
+            </Button>
             <Button
               data-testid="create-client-button"
               type="primary"

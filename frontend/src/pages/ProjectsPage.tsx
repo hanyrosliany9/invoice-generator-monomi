@@ -81,6 +81,14 @@ export const ProjectsPage: React.FC = () => {
   const [form] = Form.useForm()
   const { message } = App.useApp()
 
+  // Export functionality
+  const handleExport = useCallback(() => {
+    message.info({
+      content: 'Fitur export proyek sedang dalam pengembangan. Data proyek akan dapat di-export dalam format CSV/Excel pada update mendatang.',
+      duration: 4
+    })
+  }, [message])
+
   // Queries
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ['projects'],
@@ -904,7 +912,13 @@ export const ProjectsPage: React.FC = () => {
           </Space>
           
           <Space>
-            <Button data-testid="project-export-button" icon={<ExportOutlined />}>Export</Button>
+            <Button 
+              data-testid="project-export-button" 
+              icon={<ExportOutlined />}
+              onClick={handleExport}
+            >
+              Export
+            </Button>
             <Button
               data-testid="create-project-button"
               type="primary"
