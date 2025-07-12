@@ -110,7 +110,7 @@ export const InvoicesPage: React.FC = () => {
   const [form] = Form.useForm()
   const [paymentForm] = Form.useForm()
   const [statusForm] = Form.useForm()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [batchLoading, setBatchLoading] = useState(false)
   const [priceInheritanceMode, setPriceInheritanceMode] = useState<'inherit' | 'custom'>('inherit')
@@ -699,7 +699,7 @@ export const InvoicesPage: React.FC = () => {
       return
     }
 
-    Modal.confirm({
+    modal.confirm({
       title: 'Konfirmasi Hapus',
       content: `Apakah Anda yakin ingin menghapus ${selectedRowKeys.length} invoice? Tindakan ini tidak dapat dibatalkan.`,
       okText: 'Ya, Hapus',

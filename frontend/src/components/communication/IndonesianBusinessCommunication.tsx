@@ -23,7 +23,7 @@ import {
   Badge,
   Avatar,
   Empty,
-  message
+  App
 } from 'antd'
 import {
   WhatsAppOutlined,
@@ -102,6 +102,7 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
   onCreateTemplate
 }) => {
   const { t } = useTranslation()
+  const { message, modal } = App.useApp()
   const {
     preferences,
     formatCurrency,
@@ -224,7 +225,7 @@ const IndonesianBusinessCommunication: React.FC<IndonesianBusinessCommunicationP
     })
 
     if (!etiquetteCheck.valid) {
-      Modal.confirm({
+      modal.confirm({
         title: 'Perhatian Etika Bisnis',
         content: (
           <div>
