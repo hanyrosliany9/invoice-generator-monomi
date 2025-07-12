@@ -100,12 +100,23 @@ export const quotationService = {
   },
 
   // Generate invoice from quotation
-  generateInvoice: async (id: string): Promise<{ invoiceId: string }> => {
+  generateInvoice: async (id: string): Promise<{ 
+    invoiceId: string
+    message: string
+    isExisting: boolean
+    invoice: {
+      id: string
+      invoiceNumber: string
+      status: string
+      totalAmount: string
+      createdAt: string
+    }
+  }> => {
     const response = await apiClient.post(`/quotations/${id}/generate-invoice`)
-    if (!response?.data?.data) {
+    if (!response?.data) {
       throw new Error('Failed to generate invoice')
     }
-    return response.data.data
+    return response.data
   },
 
   // Get quotation statistics

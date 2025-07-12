@@ -98,10 +98,24 @@ export class InvoicesService {
     // Check if invoice already exists for this quotation
     const existingInvoice = await this.prisma.invoice.findFirst({
       where: { quotationId },
+      include: {
+        client: true,
+        project: true,
+        quotation: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        payments: true,
+      },
     });
 
     if (existingInvoice) {
-      throw new BadRequestException('Invoice sudah dibuat untuk quotation ini');
+      // Return existing invoice instead of throwing error
+      return existingInvoice;
     }
 
     // Create invoice from quotation data

@@ -109,9 +109,24 @@ export class QuotationsController {
   })
   async generateInvoice(@Param('id') id: string, @Request() req) {
     const invoice = await this.invoicesService.createFromQuotation(id, req.user.id);
+    
+    // Check if this is an existing invoice by looking at creation timestamp
+    const quotation = await this.quotationsService.findOne(id);
+    const existingInvoice = quotation.invoices && quotation.invoices.length > 0;
+    
     return {
       invoiceId: invoice.id,
-      message: 'Invoice berhasil dibuat dari quotation',
+      message: existingInvoice 
+        ? 'Invoice sudah tersedia untuk quotation ini' 
+        : 'Invoice berhasil dibuat dari quotation',
+      isExisting: existingInvoice,
+      invoice: {
+        id: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        status: invoice.status,
+        totalAmount: invoice.totalAmount,
+        createdAt: invoice.createdAt,
+      },
     };
   }
 

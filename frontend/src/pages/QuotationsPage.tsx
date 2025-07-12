@@ -82,6 +82,11 @@ export const QuotationsPage: React.FC = () => {
   const [statusQuotation, setStatusQuotation] = useState<Quotation | null>(null)
   const [priceInheritanceMode, setPriceInheritanceMode] = useState<'inherit' | 'custom'>('inherit')
   const [selectedProject, setSelectedProject] = useState<any>(null)
+  const [invoiceResultModal, setInvoiceResultModal] = useState<{
+    visible: boolean
+    data: any
+    quotation: Quotation | null
+  }>({ visible: false, data: null, quotation: null })
   const [form] = Form.useForm()
   const [statusForm] = Form.useForm()
   const { message } = App.useApp()
@@ -144,10 +149,17 @@ export const QuotationsPage: React.FC = () => {
 
   const invoiceMutation = useMutation({
     mutationFn: quotationService.generateInvoice,
-    onSuccess: (data) => {
-      message.success(`Invoice ${data.invoiceId} berhasil dibuat`)
-      // Navigate to the newly created invoice
-      navigate(`/invoices/${data.invoiceId}`)
+    onSuccess: (data, quotationId) => {
+      // Find the quotation to get context information
+      const quotation = quotations.find(q => q.id === quotationId)
+      
+      // Show modal with invoice details and options
+      setInvoiceResultModal({
+        visible: true,
+        data: data,
+        quotation: quotation || null
+      })
+      
       // Refresh both quotations and invoices data
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
@@ -1373,6 +1385,96 @@ export const QuotationsPage: React.FC = () => {
             </div>
           )}
         </Form>
+      </Modal>
+
+      {/* Invoice Generation Result Modal */}
+      <Modal
+        title={
+          <Space>
+            <CheckCircleOutlined style={{ color: '#52c41a' }} />
+            {invoiceResultModal.data?.isExisting ? 'Invoice Sudah Tersedia' : 'Invoice Berhasil Dibuat'}
+          </Space>
+        }
+        open={invoiceResultModal.visible}
+        onCancel={() => setInvoiceResultModal({ visible: false, data: null, quotation: null })}
+        footer={[
+          <Button 
+            key="stay" 
+            onClick={() => setInvoiceResultModal({ visible: false, data: null, quotation: null })}
+          >
+            Tetap di Quotations
+          </Button>,
+          <Button 
+            key="view" 
+            type="primary"
+            icon={<EyeOutlined />}
+            onClick={() => {
+              setInvoiceResultModal({ visible: false, data: null, quotation: null })
+              navigate(`/invoices`, {
+                state: {
+                  highlightInvoice: invoiceResultModal.data?.invoiceId,
+                  fromQuotation: true,
+                  quotationNumber: invoiceResultModal.quotation?.quotationNumber
+                }
+              })
+            }}
+          >
+            Lihat Invoice
+          </Button>
+        ]}
+        width={500}
+      >
+        <div style={{ padding: '16px 0' }}>
+          {invoiceResultModal.data && (
+            <>
+              <Alert
+                message={invoiceResultModal.data.message}
+                type={invoiceResultModal.data.isExisting ? "info" : "success"}
+                showIcon
+                style={{ marginBottom: '16px' }}
+              />
+              
+              <div style={{ background: '#f8f9fa', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+                <Row gutter={[16, 8]}>
+                  <Col span={12}>
+                    <Text strong>Invoice Number:</Text>
+                    <br />
+                    <Text copyable>{invoiceResultModal.data.invoice?.invoiceNumber}</Text>
+                  </Col>
+                  <Col span={12}>
+                    <Text strong>Status:</Text>
+                    <br />
+                    <Tag color="blue">{invoiceResultModal.data.invoice?.status}</Tag>
+                  </Col>
+                  <Col span={12}>
+                    <Text strong>Total Amount:</Text>
+                    <br />
+                    <Text>{formatIDR(safeNumber(invoiceResultModal.data.invoice?.totalAmount))}</Text>
+                  </Col>
+                  <Col span={12}>
+                    <Text strong>Created:</Text>
+                    <br />
+                    <Text>{dayjs(invoiceResultModal.data.invoice?.createdAt).format('DD/MM/YYYY HH:mm')}</Text>
+                  </Col>
+                </Row>
+              </div>
+
+              {invoiceResultModal.quotation && (
+                <div style={{ background: '#f0f8ff', padding: '12px', borderRadius: '6px', border: '1px solid #d4edda' }}>
+                  <Text strong style={{ color: '#0066cc' }}>Quotation Context:</Text>
+                  <br />
+                  <Text>
+                    {invoiceResultModal.quotation.quotationNumber} - {invoiceResultModal.quotation.client?.name}
+                  </Text>
+                  <br />
+                  <Text type="secondary">
+                    {invoiceResultModal.quotation.project?.description}
+                  </Text>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </Modal>
     </div>
   )
