@@ -1,0 +1,652 @@
+/* MobileNavigation Component Styles - Indonesian Business Management System */
+/* Optimized mobile navigation with touch gestures and Indonesian UX patterns */
+
+.mobileNavigation {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: #ffffff;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Mobile Header */
+.mobileHeader {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  color: #ffffff;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.menuButton,
+.moreButton {
+  color: #ffffff;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menuButton:hover,
+.moreButton:hover,
+.menuButton:focus,
+.moreButton:focus {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.entityInfo {
+  flex: 1;
+  margin: 0 12px;
+  overflow: hidden;
+}
+
+.entityName {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entitySubtext {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  display: block;
+  margin-top: 2px;
+}
+
+/* Swipeable Breadcrumb */
+.swipeableBreadcrumb {
+  position: relative;
+  padding: 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e8e8e8;
+  transition: transform 0.3s ease;
+  touch-action: pan-y;
+}
+
+.breadcrumbIndicators {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d9d9d9;
+  transition: all 0.2s ease;
+}
+
+.activeIndicator {
+  background: #1890ff;
+  transform: scale(1.2);
+}
+
+.breadcrumbCard {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.breadcrumbCard:hover {
+  border-color: #91caff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.breadcrumbCard:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.breadcrumbTitle {
+  font-size: 16px;
+  color: #262626;
+}
+
+.entityNumber {
+  font-size: 12px;
+  color: #8c8c8c;
+  font-style: italic;
+}
+
+.entityAmount {
+  font-size: 14px;
+  color: #52c41a;
+  font-weight: 500;
+  background: #f6ffed;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #b7eb8f;
+}
+
+.navArrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.navArrow:hover {
+  background: #ffffff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Quick Actions Section */
+.quickActionsSection {
+  padding: 16px;
+  background: #ffffff;
+}
+
+.sectionTitle {
+  color: #262626;
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quickActionsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.actionCard {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionCard:hover {
+  border-color: #91caff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.actionCard:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.actionCard .ant-card-body {
+  padding: 12px 8px;
+  width: 100%;
+}
+
+.actionAvatar {
+  margin-bottom: 6px;
+}
+
+.actionLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #262626;
+  text-align: center;
+  display: block;
+  line-height: 1.3;
+  max-width: 100%;
+}
+
+.actionTiming {
+  font-size: 10px;
+  color: #8c8c8c;
+  text-align: center;
+  display: block;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+/* Indonesian Shortcuts */
+.indonesianShortcuts {
+  padding: 16px;
+  background: linear-gradient(135deg, #fffbe6 0%, #fff7e6 100%);
+  border-top: 1px solid #ffe58f;
+  margin-top: auto;
+}
+
+.shortcutsTitle {
+  color: #d48806;
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.shortcutButton {
+  border-radius: 6px;
+  font-size: 12px;
+  height: 36px;
+  padding: 0 12px;
+  margin: 4px 6px 4px 0;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.shortcutButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.shortcutButton:active {
+  transform: translateY(0);
+}
+
+/* Navigation Drawer */
+.navigationDrawer .ant-drawer-header {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  color: #ffffff;
+  border-bottom: 1px solid #91caff;
+}
+
+.navigationDrawer .ant-drawer-title {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.navigationDrawer .ant-drawer-close {
+  color: #ffffff;
+}
+
+.navigationDrawer .ant-drawer-body {
+  padding: 16px;
+  background: #f8f9fa;
+}
+
+.drawerEntityCard {
+  background: linear-gradient(135deg, #f0f8ff 0%, #e6f4ff 100%);
+  border: 1px solid #91caff;
+  border-radius: 8px;
+}
+
+.drawerSectionTitle {
+  color: #1c4ed8;
+  margin: 16px 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #91caff;
+}
+
+.drawerBreadcrumbItem {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.drawerBreadcrumbItem:hover {
+  border-color: #91caff;
+  background: #f0f8ff;
+  transform: translateX(4px);
+}
+
+.activeBreadcrumbItem {
+  background: #e6f4ff;
+  border-color: #1890ff;
+  font-weight: 600;
+}
+
+.drawerActionItem {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.drawerActionItem:hover {
+  border-color: #91caff;
+  background: #f0f8ff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.actionDescription {
+  font-size: 12px;
+  color: #595959;
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+.etiquetteHint {
+  font-size: 11px;
+  color: #d48806;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .mobileHeader {
+    padding: 8px 12px;
+  }
+
+  .entityName {
+    font-size: 15px;
+  }
+
+  .entitySubtext {
+    font-size: 11px;
+  }
+
+  .swipeableBreadcrumb {
+    padding: 12px;
+  }
+
+  .breadcrumbTitle {
+    font-size: 15px;
+  }
+
+  .quickActionsSection {
+    padding: 12px;
+  }
+
+  .quickActionsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .actionCard {
+    min-height: 80px;
+  }
+
+  .actionLabel {
+    font-size: 11px;
+  }
+
+  .actionTiming {
+    font-size: 9px;
+  }
+
+  .indonesianShortcuts {
+    padding: 12px;
+  }
+
+  .shortcutsTitle {
+    font-size: 13px;
+  }
+
+  .shortcutButton {
+    font-size: 11px;
+    height: 32px;
+    padding: 0 8px;
+  }
+
+  .navigationDrawer .ant-drawer-body {
+    padding: 12px;
+  }
+
+  .drawerSectionTitle {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 375px) {
+  .mobileHeader {
+    padding: 6px 8px;
+  }
+
+  .menuButton,
+  .moreButton {
+    min-width: 40px;
+    min-height: 40px;
+    font-size: 16px;
+  }
+
+  .entityInfo {
+    margin: 0 8px;
+  }
+
+  .quickActionsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .actionCard {
+    min-height: 72px;
+  }
+
+  .actionCard .ant-card-body {
+    padding: 8px 6px;
+  }
+
+  .shortcutButton {
+    font-size: 10px;
+    height: 28px;
+    padding: 0 6px;
+    margin: 2px 4px 2px 0;
+  }
+}
+
+/* Touch Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .breadcrumbCard:hover {
+    transform: none;
+  }
+
+  .actionCard:hover {
+    transform: none;
+  }
+
+  .shortcutButton:hover {
+    transform: none;
+  }
+
+  .drawerBreadcrumbItem:hover {
+    transform: none;
+  }
+
+  .drawerActionItem:hover {
+    transform: none;
+  }
+
+  /* Enhance touch targets */
+  .breadcrumbCard,
+  .actionCard,
+  .shortcutButton,
+  .drawerBreadcrumbItem,
+  .drawerActionItem {
+    min-height: 44px;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .mobileHeader {
+    background: #000000;
+    border-bottom: 2px solid #ffffff;
+  }
+
+  .breadcrumbCard {
+    border: 2px solid #000000;
+    background: #ffffff;
+  }
+
+  .actionCard {
+    border: 2px solid #000000;
+    background: #ffffff;
+  }
+
+  .shortcutButton {
+    border: 2px solid #000000;
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .indonesianShortcuts {
+    background: #ffffff;
+    border-top: 2px solid #000000;
+  }
+
+  .drawerEntityCard {
+    background: #ffffff;
+    border: 2px solid #000000;
+  }
+
+  .drawerBreadcrumbItem,
+  .drawerActionItem {
+    border: 2px solid #000000;
+    background: #ffffff;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .breadcrumbCard,
+  .actionCard,
+  .shortcutButton,
+  .drawerBreadcrumbItem,
+  .drawerActionItem,
+  .swipeableBreadcrumb,
+  .indicator {
+    transition: none;
+  }
+
+  .breadcrumbCard:hover,
+  .actionCard:hover,
+  .shortcutButton:hover {
+    transform: none;
+  }
+
+  .drawerBreadcrumbItem:hover {
+    transform: none;
+  }
+}
+
+/* Focus Management */
+.mobileNavigation [role="button"]:focus,
+.mobileNavigation .ant-btn:focus,
+.mobileNavigation .ant-card:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Loading States */
+.mobileNavigation .ant-skeleton {
+  padding: 16px;
+}
+
+/* Animation for new content */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.actionCard,
+.drawerBreadcrumbItem,
+.drawerActionItem {
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* Swipe feedback */
+.swipeableBreadcrumb {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Safe area for notched devices */
+@supports (padding: env(safe-area-inset-top)) {
+  .mobileHeader {
+    padding-top: calc(8px + env(safe-area-inset-top));
+  }
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  .indonesianShortcuts {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Dark mode support (future enhancement) */
+@media (prefers-color-scheme: dark) {
+  .mobileNavigation {
+    background: #141414;
+    color: #ffffff;
+  }
+
+  .breadcrumbCard,
+  .actionCard {
+    background: #262626;
+    border-color: #434343;
+    color: #ffffff;
+  }
+
+  .quickActionsSection {
+    background: #1f1f1f;
+  }
+
+  .navigationDrawer .ant-drawer-body {
+    background: #141414;
+  }
+
+  .drawerBreadcrumbItem,
+  .drawerActionItem {
+    background: #262626;
+    border-color: #434343;
+    color: #ffffff;
+  }
+}
+
+/* Screen Reader Only Content */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -1,0 +1,330 @@
+# Docker Compose Test Configuration - Indonesian Business Management System
+# Optimized testing environment with enhanced configurations and Indonesian business context
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # APPLICATION UNDER TEST
+  # =============================================================================
+  app-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+      args:
+        - NODE_ENV=test
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: invoice-app-test
+    depends_on:
+      db-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://testuser:testpassword@db-test:5432/invoices_test
+      - REDIS_URL=redis://redis-test:6379
+      - JWT_SECRET=test-jwt-secret-key-for-indonesian-business
+      - FRONTEND_URL=http://localhost:3000
+      - API_BASE_URL=http://localhost:5000
+      - SKIP_DB_INIT=false
+      - ENABLE_TEST_DATA=true
+      - INDONESIA_TIMEZONE=Asia/Jakarta
+      - DEFAULT_CURRENCY=IDR
+      - MATERAI_THRESHOLD=5000000
+      - ENABLE_PERFORMANCE_MONITORING=true
+      - LOG_LEVEL=debug
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+      - PUPPETEER_ARGS=--no-sandbox,--disable-setuid-sandbox,--disable-web-security
+    ports:
+      - "3001:3000"  # Frontend test port
+      - "5001:5000"  # Backend test port
+      - "9230:9229"  # Debug port for testing
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      - ./shared:/app/shared
+      - ./test-uploads:/app/uploads
+      - ./test-storage:/app/storage
+      - ./test-reports:/app/reports
+      - /app/backend/node_modules
+      - /app/frontend/node_modules
+      - /app/backend/dist
+    networks:
+      - test-network
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    command: >
+      sh -c "
+        echo '🇮🇩 Starting Indonesian Business Management System - Test Environment' &&
+        cd /app/backend && npm run db:migrate && npm run db:seed &&
+        echo '✅ Database initialized with Indonesian test data' &&
+        cd /app/backend && npm run start:dev &
+        cd /app/frontend && npm run dev -- --port 3000 --host &
+        echo '⏳ Waiting for services to be ready...' &&
+        sleep 30 &&
+        echo '🚀 Indonesian Business Test Environment Ready!' &&
+        wait
+      "
+
+  # =============================================================================
+  # TEST DATABASE (PostgreSQL 15)
+  # =============================================================================
+  db-test:
+    image: postgres:15-alpine
+    container_name: invoice-db-test
+    environment:
+      - POSTGRES_DB=invoices_test
+      - POSTGRES_USER=testuser
+      - POSTGRES_PASSWORD=testpassword
+      - POSTGRES_INITDB_ARGS="--encoding=UTF8 --locale=C --lc-collate=C --lc-ctype=C"
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+      - ./database/test-data:/test-data:ro
+    networks:
+      - test-network
+    restart: "no"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d invoices_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    command: >
+      postgres 
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.max=10000
+      -c pg_stat_statements.track=all
+      -c log_statement=all
+      -c log_min_duration_statement=0
+      -c max_connections=100
+      -c shared_buffers=128MB
+      -c effective_cache_size=256MB
+      -c maintenance_work_mem=32MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=8MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+
+  # =============================================================================
+  # TEST REDIS (Session & Caching)
+  # =============================================================================
+  redis-test:
+    image: redis:7-alpine
+    container_name: invoice-redis-test
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_test_data:/data
+    networks:
+      - test-network
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  # =============================================================================
+  # PERFORMANCE TESTING SERVICE
+  # =============================================================================
+  performance-test:
+    image: node:20-alpine
+    container_name: invoice-performance-test
+    depends_on:
+      app-test:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=test
+      - TARGET_URL=http://app-test:5000
+      - FRONTEND_URL=http://app-test:3000
+      - TEST_DURATION=60s
+      - CONCURRENT_USERS=10
+      - RAMP_UP_TIME=10s
+    volumes:
+      - ./tests/performance:/tests
+      - ./test-reports:/reports
+    networks:
+      - test-network
+    restart: "no"
+    working_dir: /tests
+    command: >
+      sh -c "
+        npm install -g autocannon lighthouse k6 &&
+        echo '🇮🇩 Running Indonesian Business Performance Tests...' &&
+        echo '📊 Testing Quotation Performance...' &&
+        autocannon -c 10 -d 30 http://app-test:5000/api/quotations &&
+        echo '📊 Testing Invoice Performance...' &&
+        autocannon -c 5 -d 30 http://app-test:5000/api/invoices &&
+        echo '📊 Testing Materai Calculation Performance...' &&
+        autocannon -c 20 -d 15 http://app-test:5000/api/materai/calculate &&
+        echo '📊 Testing Frontend Performance...' &&
+        lighthouse http://app-test:3000 --output=json --output-path=/reports/lighthouse.json --chrome-flags='--headless --no-sandbox' &&
+        echo '✅ Performance testing completed!'
+      "
+
+  # =============================================================================
+  # ACCESSIBILITY TESTING SERVICE
+  # =============================================================================
+  accessibility-test:
+    image: node:20-alpine
+    container_name: invoice-accessibility-test
+    depends_on:
+      app-test:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=test
+      - TARGET_URL=http://app-test:3000
+    volumes:
+      - ./test-reports:/reports
+    networks:
+      - test-network
+    restart: "no"
+    command: >
+      sh -c "
+        apk add --no-cache chromium &&
+        npm install -g @axe-core/cli pa11y &&
+        echo '🇮🇩 Running Indonesian Business Accessibility Tests...' &&
+        echo '♿ Testing WCAG 2.1 AA Compliance...' &&
+        axe http://app-test:3000 --exit --format=json --output=/reports/axe-results.json &&
+        echo '♿ Testing Indonesian Language Accessibility...' &&
+        axe http://app-test:3000?lang=id --exit --format=json --output=/reports/axe-indonesian.json &&
+        echo '♿ Testing Pa11y Compliance...' &&
+        pa11y http://app-test:3000 --reporter json --standard WCAG2AA > /reports/pa11y-results.json &&
+        echo '✅ Accessibility testing completed!'
+      "
+
+  # =============================================================================
+  # SECURITY TESTING SERVICE
+  # =============================================================================
+  security-test:
+    image: owasp/zap2docker-stable
+    container_name: invoice-security-test
+    depends_on:
+      app-test:
+        condition: service_healthy
+    environment:
+      - ZAP_PROXY_PORT=8080
+    volumes:
+      - ./test-reports:/zap/reports
+    networks:
+      - test-network
+    restart: "no"
+    command: >
+      sh -c "
+        echo '🇮🇩 Running Indonesian Business Security Tests...' &&
+        echo '🔒 Running OWASP ZAP Baseline Scan...' &&
+        zap-baseline.py -t http://app-test:3000 -r /zap/reports/baseline-report.html &&
+        echo '🔒 Running API Security Scan...' &&
+        zap-api-scan.py -t http://app-test:5000/api -r /zap/reports/api-report.html &&
+        echo '✅ Security testing completed!'
+      "
+
+  # =============================================================================
+  # LOAD TESTING SERVICE
+  # =============================================================================
+  load-test:
+    image: grafana/k6:latest
+    container_name: invoice-load-test
+    depends_on:
+      app-test:
+        condition: service_healthy
+    environment:
+      - API_BASE_URL=http://app-test:5000
+      - FRONTEND_URL=http://app-test:3000
+      - VUS=50
+      - DURATION=5m
+    volumes:
+      - ./tests/load:/scripts
+      - ./test-reports:/reports
+    networks:
+      - test-network
+    restart: "no"
+    working_dir: /scripts
+    command: >
+      run indonesian-business-load-test.js
+      --out json=/reports/k6-results.json
+      --summary-export=/reports/k6-summary.json
+
+  # =============================================================================
+  # DATABASE MIGRATION TESTING
+  # =============================================================================
+  migration-test:
+    image: node:20-alpine
+    container_name: invoice-migration-test
+    depends_on:
+      db-test:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://testuser:testpassword@db-test:5432/invoices_test
+      - NODE_ENV=test
+    volumes:
+      - ./backend:/app/backend
+      - ./test-reports:/reports
+    networks:
+      - test-network
+    restart: "no"
+    working_dir: /app/backend
+    command: >
+      sh -c "
+        npm ci &&
+        echo '🇮🇩 Testing Indonesian Business Database Migrations...' &&
+        echo '📊 Running Prisma migrations...' &&
+        npx prisma migrate deploy &&
+        echo '📊 Generating Prisma client...' &&
+        npx prisma generate &&
+        echo '📊 Running database seed with Indonesian data...' &&
+        npm run db:seed &&
+        echo '📊 Validating database schema...' &&
+        npx prisma validate &&
+        echo '✅ Database migration testing completed!'
+      "
+
+volumes:
+  postgres_test_data:
+    driver: local
+  redis_test_data:
+    driver: local
+
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16

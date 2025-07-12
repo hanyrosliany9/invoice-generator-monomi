@@ -59,6 +59,46 @@ export const parseIDR = (idrString: string | null | undefined): number => {
 }
 
 /**
+ * Enhanced IDR amount parsing for price inheritance flow
+ * Handles various input formats including rupiah symbols and separators
+ */
+export const parseIDRAmount = (value: string): number => {
+  if (!value || typeof value !== 'string') {
+    return 0
+  }
+
+  // Remove currency symbols and whitespace
+  let cleaned = value
+    .replace(/[Rp\s]/g, '')
+    .replace(/[.,]/g, (match, offset, string) => {
+      // Keep dots as thousand separators, commas as decimal separators
+      // In Indonesian format: 1.000.000,50
+      const restOfString = string.slice(offset + 1)
+      const hasMoreDigits = /\d/.test(restOfString)
+      const remainingLength = restOfString.replace(/[^\d]/g, '').length
+      
+      // If this is the last separator or there are 1-2 digits after, it's decimal
+      if (match === ',' || (!hasMoreDigits || remainingLength <= 2)) {
+        return '.'
+      }
+      // Otherwise it's a thousand separator, remove it
+      return ''
+    })
+
+  // Remove any remaining non-numeric characters except decimal point
+  cleaned = cleaned.replace(/[^\d.]/g, '')
+
+  // Handle multiple decimal points (keep only the last one)
+  const parts = cleaned.split('.')
+  if (parts.length > 2) {
+    cleaned = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1]
+  }
+
+  const parsed = parseFloat(cleaned)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+/**
  * Format number with thousand separators (dots)
  */
 export const formatNumber = (amount: number | string | null | undefined): string => {
@@ -72,14 +112,30 @@ export const formatNumber = (amount: number | string | null | undefined): string
  */
 export const requiresMaterai = (amount: number | string | null | undefined): boolean => {
   const numericAmount = safeNumber(amount)
-  return numericAmount > 5_000_000
+  return numericAmount >= 5_000_000
 }
 
 /**
- * Get materai amount (fixed IDR 10,000)
+ * Get materai amount (updated 2025 regulations)
  */
-export const getMateraiAmount = (): number => {
-  return 10_000
+export const getMateraiAmount = (invoiceAmount?: number): number => {
+  if (!invoiceAmount) return 10_000
+  const numericAmount = safeNumber(invoiceAmount)
+  
+  if (numericAmount < 5_000_000) {
+    return 0 // No materai required
+  } else if (numericAmount < 1_000_000_000) {
+    return 10_000 // 10,000 IDR materai
+  } else {
+    return 20_000 // 20,000 IDR materai for transactions >= 1 billion IDR
+  }
+}
+
+/**
+ * Calculate materai amount based on Indonesian regulations (alias for compatibility)
+ */
+export const calculateMateraiAmount = (invoiceAmount: number): number => {
+  return getMateraiAmount(invoiceAmount)
 }
 
 /**
@@ -401,4 +457,197 @@ export const safePhoneFormat = (
   }
   
   return safePhone
+}
+
+/**
+ * Format currency for screen readers with Indonesian pronunciation
+ */
+export const formatIDRForScreenReader = (amount: number): string => {
+  if (!Number.isFinite(amount)) {
+    return 'nol rupiah'
+  }
+
+  const absAmount = Math.abs(amount)
+  const isNegative = amount < 0
+
+  let result = ''
+  
+  if (isNegative) {
+    result += 'minus '
+  }
+
+  // Handle large numbers with Indonesian terms
+  if (absAmount >= 1000000000000) {
+    const trillions = Math.floor(absAmount / 1000000000000)
+    result += `${trillions} triliun `
+    const remainder = absAmount % 1000000000000
+    if (remainder > 0) {
+      result += formatIDRForScreenReader(remainder)
+    }
+  } else if (absAmount >= 1000000000) {
+    const billions = Math.floor(absAmount / 1000000000)
+    result += `${billions} miliar `
+    const remainder = absAmount % 1000000000
+    if (remainder > 0) {
+      result += formatIDRForScreenReader(remainder)
+    }
+  } else if (absAmount >= 1000000) {
+    const millions = Math.floor(absAmount / 1000000)
+    result += `${millions} juta `
+    const remainder = absAmount % 1000000
+    if (remainder > 0) {
+      result += formatIDRForScreenReader(remainder)
+    }
+  } else if (absAmount >= 1000) {
+    const thousands = Math.floor(absAmount / 1000)
+    result += `${thousands} ribu `
+    const remainder = absAmount % 1000
+    if (remainder > 0) {
+      result += `${remainder} `
+    }
+  } else {
+    result += `${absAmount} `
+  }
+
+  result += 'rupiah'
+  
+  return result.trim()
+}
+
+/**
+ * Validate Indonesian currency amount with business rules
+ */
+export const validateIDRAmount = (
+  amount: number,
+  options: {
+    min?: number
+    max?: number
+    allowZero?: boolean
+    allowNegative?: boolean
+  } = {}
+): {
+  isValid: boolean
+  errors: string[]
+  warnings: string[]
+} => {
+  const {
+    min = 0,
+    max = 999999999999, // 999 billion IDR
+    allowZero = true,
+    allowNegative = false
+  } = options
+
+  const errors: string[] = []
+  const warnings: string[] = []
+
+  // Basic validation
+  if (!Number.isFinite(amount)) {
+    errors.push('Jumlah harus berupa angka yang valid')
+    return { isValid: false, errors, warnings }
+  }
+
+  if (amount < 0 && !allowNegative) {
+    errors.push('Jumlah tidak boleh negatif')
+  }
+
+  if (amount === 0 && !allowZero) {
+    errors.push('Jumlah harus lebih besar dari nol')
+  }
+
+  if (amount < min) {
+    errors.push(`Jumlah tidak boleh kurang dari ${formatIDR(min)}`)
+  }
+
+  if (amount > max) {
+    errors.push(`Jumlah tidak boleh lebih dari ${formatIDR(max)}`)
+  }
+
+  // Indonesian business warnings
+  if (amount >= 5000000 && amount < 10000000) {
+    warnings.push('Transaksi ini mungkin memerlukan materai sesuai peraturan Indonesia')
+  }
+
+  if (amount >= 5000000) {
+    warnings.push('Transaksi ini memerlukan materai sesuai UU No. 13 Tahun 1985')
+  }
+
+  if (amount >= 100000000) {
+    warnings.push('Transaksi besar - pertimbangkan untuk menggunakan komunikasi formal')
+  }
+
+  if (amount >= 1000000000) {
+    warnings.push('Transaksi sangat besar - mungkin memerlukan persetujuan khusus')
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings
+  }
+}
+
+/**
+ * Get amount metadata for Indonesian business context
+ */
+export const getAmountMetadata = (amount: number): {
+  requiresMaterai: boolean
+  materaiAmount: number
+  isLargeAmount: boolean
+  riskLevel: 'low' | 'medium' | 'high'
+  recommendedActions: string[]
+} => {
+  const numericAmount = safeNumber(amount)
+  const requiresMateraiFlag = requiresMaterai(numericAmount)
+  const materaiAmount = getMateraiAmount(numericAmount)
+  const isLargeAmount = numericAmount >= 100000000
+  
+  let riskLevel: 'low' | 'medium' | 'high' = 'low'
+  const recommendedActions: string[] = []
+
+  if (numericAmount >= 1000000000) {
+    riskLevel = 'high'
+    recommendedActions.push('Gunakan komunikasi formal')
+    recommendedActions.push('Pertimbangkan persetujuan manajemen')
+    recommendedActions.push('Dokumentasikan dengan lengkap')
+  } else if (numericAmount >= 100000000) {
+    riskLevel = 'medium'
+    recommendedActions.push('Gunakan komunikasi semi-formal')
+    recommendedActions.push('Pastikan dokumentasi lengkap')
+  }
+
+  if (requiresMateraiFlag) {
+    recommendedActions.push(`Siapkan materai ${formatIDR(materaiAmount)}`)
+  }
+
+  return {
+    requiresMaterai: requiresMateraiFlag,
+    materaiAmount,
+    isLargeAmount,
+    riskLevel,
+    recommendedActions
+  }
+}
+
+/**
+ * Format percentage for Indonesian locale
+ */
+export const formatPercentage = (
+  value: number,
+  options: {
+    minimumFractionDigits?: number
+    maximumFractionDigits?: number
+  } = {}
+): string => {
+  const {
+    minimumFractionDigits = 1,
+    maximumFractionDigits = 2
+  } = options
+
+  const formatter = new Intl.NumberFormat('id-ID', {
+    style: 'percent',
+    minimumFractionDigits,
+    maximumFractionDigits
+  })
+
+  return formatter.format(value / 100)
 }

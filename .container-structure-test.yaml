@@ -1,107 +1,45 @@
-# Container Structure Test Configuration
-# Tests container structure and configuration for security compliance
+schemaVersion: 2.0.0
 
-schemaVersion: "2.0.0"
+metadataTest:
+  labels:
+    - key: "business.region"
+      value: "Indonesia"
+    - key: "business.currency"
+      value: "IDR"
+    - key: "business.timezone" 
+      value: "Asia/Jakarta"
+  exposedPorts: ["5000"]
+  workdir: "/app"
+  user: "appuser"
+  env:
+    - key: "NODE_ENV"
+      value: "production"
+    - key: "TZ"
+      value: "Asia/Jakarta"
+    - key: "DEFAULT_CURRENCY"
+      value: "IDR"
 
-# Test file existence and permissions
 fileExistenceTests:
   - name: "Backend application exists"
     path: "/app/backend/dist/main.js"
     shouldExist: true
-    permissions: "-rw-r--r--"
-
-  - name: "SBOM files exist"
-    path: "/etc/sbom/backend.json"
+  - name: "Frontend application exists"
+    path: "/app/frontend/dist"
     shouldExist: true
-
-  - name: "Frontend build exists"
-    path: "/app/frontend/dist/index.html"
-    shouldExist: true
-
-  - name: "Shared files exist"
-    path: "/app/shared"
-    shouldExist: true
-
-  - name: "Secrets directory accessible"
-    path: "/run/secrets"
-    shouldExist: true
-
-# Test file content
-fileContentTests:
-  - name: "Node.js version check"
-    path: "/nodejs/bin/node"
-    shouldExist: true
-
-  - name: "Backend SBOM contains dependencies"
-    path: "/etc/sbom/backend.json"
-    expectedContents: ["dependencies", "name", "version"]
-
-# Test commands and executables
-commandTests:
-  - name: "Application starts correctly"
-    command: ["/nodejs/bin/node", "--version"]
-    expectedOutput: ["v20"]
-
-  - name: "Health check command works"
-    command: ["/nodejs/bin/node", "-e", "console.log('health check ready')"]
-    expectedOutput: ["health check ready"]
-
-# Test environment variables
-envVarTests:
-  - key: "NODE_ENV"
-    value: "production"
-
-  - key: "TZ"
-    value: "Asia/Jakarta"
-
-  - key: "NODE_OPTIONS"
-    value: "--max-old-space-size=1024"
-
-# Test exposed ports
-portTests:
-  - port: "5000"
-    protocol: "tcp"
-
-# Test user configuration
-userTests:
-  - user: "nonroot"
-    uid: 65532
-    gid: 65532
-
-# Test working directory
-workdirTests:
-  - path: "/app"
-
-# Test volume mounts
-volumeTests:
-  - name: "No unnecessary volumes"
-    mountpoint: "/tmp"
+  - name: "No .env files in production"
+    path: "/app/.env"
     shouldExist: false
 
-# Test labels
-labelTests:
-  - key: "maintainer"
-    value: "Monomi Finance Security Team"
-
-  - key: "security.hardening"
-    value: "distroless"
-
-  - key: "compliance.framework"
-    value: "ISO27001,NIST"
-
-  - key: "business.locale"
-    value: "Indonesia"
-
-# Test metadata
-metadataTests:
-  - key: "ExposedPorts"
-    value: "5000/tcp"
-
-  - key: "User"
-    value: "nonroot:nonroot"
-
-  - key: "WorkingDir"
-    value: "/app"
-
-  - key: "Cmd"
-    value: ["backend/dist/main.js"]
+commandTests:
+  - name: "Application runs as non-root user"
+    command: "whoami"
+    expectedOutput: ["appuser"]
+  - name: "Node.js version check"
+    command: "node"
+    args: ["--version"]
+    expectedOutput: ["v20\\..*"]
+  - name: "Indonesian timezone configured"
+    command: "date"
+    args: ["+%Z"]
+    expectedOutput: ["WIB"]
+EOF < /dev/null

@@ -1,0 +1,621 @@
+/* BusinessFlowNavigator Component Styles - Indonesian Business Management System */
+/* Comprehensive styling for business workflow navigation with Indonesian context */
+
+.businessFlowNavigator {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+}
+
+.businessFlowNavigator .ant-card-head {
+  background: linear-gradient(135deg, #f0f8ff 0%, #e6f4ff 100%);
+  border-bottom: 1px solid #91caff;
+}
+
+.businessFlowNavigator .ant-card-head-title {
+  font-weight: 600;
+  color: #1c4ed8;
+}
+
+/* Progress Overview */
+.progressOverview {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.progressSection {
+  margin-bottom: 12px;
+}
+
+.progressLabel {
+  display: block;
+  font-size: 13px;
+  color: #595959;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.progressBar {
+  margin: 0;
+}
+
+.progressBar .ant-progress-text {
+  font-weight: 600;
+  color: #1890ff;
+}
+
+.etaSection {
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.etaLabel {
+  font-size: 13px;
+  color: #595959;
+}
+
+.etaValue {
+  font-size: 14px;
+  color: #1890ff;
+  background: #e6f4ff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #91caff;
+}
+
+/* Steps Container */
+.stepsContainer {
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 20px;
+  margin: 16px 0;
+}
+
+.businessSteps {
+  width: 100%;
+}
+
+.businessSteps .ant-steps-item {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.businessSteps .ant-steps-item:hover {
+  background: #f8f9fa;
+  border-radius: 4px;
+  padding: 8px;
+  margin: -8px;
+}
+
+.businessSteps .ant-steps-item-icon {
+  border-color: #d9d9d9;
+  background: #ffffff;
+}
+
+.businessSteps .ant-steps-item-process .ant-steps-item-icon {
+  border-color: #1890ff;
+  background: #e6f4ff;
+}
+
+.businessSteps .ant-steps-item-finish .ant-steps-item-icon {
+  border-color: #52c41a;
+  background: #f6ffed;
+}
+
+.businessSteps .ant-steps-item-error .ant-steps-item-icon {
+  border-color: #ff4d4f;
+  background: #fff2f0;
+}
+
+.stepItem .ant-steps-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.stepItem .ant-steps-item-description {
+  font-size: 11px;
+  color: #8c8c8c;
+}
+
+/* Collapsible Panels */
+.flowPanels {
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+}
+
+.flowPanels .ant-collapse-header {
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 500;
+  color: #262626;
+}
+
+.flowPanels .ant-collapse-header:hover {
+  background: #f0f8ff;
+}
+
+.flowPanels .ant-collapse-content-box {
+  padding: 20px;
+  background: #ffffff;
+}
+
+/* Detail Timeline */
+.detailTimeline {
+  margin: 16px 0;
+}
+
+.detailTimeline .ant-timeline-item-content {
+  margin-left: 8px;
+  min-height: 48px;
+}
+
+.currentStepText {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.stepDescription {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #595959;
+  line-height: 1.4;
+}
+
+.stepDuration {
+  font-size: 11px;
+  color: #8c8c8c;
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+/* Stage Details */
+.stageHeader {
+  background: linear-gradient(135deg, #f0f8ff 0%, #e6f4ff 100%);
+  border: 1px solid #91caff;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.stageTitle {
+  margin: 0 0 8px 0;
+  color: #1c4ed8;
+  font-size: 18px;
+}
+
+.keyActivities {
+  background: #f8f9fa;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.activitiesList {
+  margin: 8px 0 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.activityItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: #595959;
+  line-height: 1.4;
+}
+
+.activityIcon {
+  color: #52c41a;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.stageMeta {
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Cultural Notes */
+.culturalNotesCard {
+  background: linear-gradient(135deg, #fffbe6 0%, #fff7e6 100%);
+  border: 1px solid #ffe58f;
+  border-radius: 6px;
+}
+
+.culturalNotesCard .ant-card-body {
+  padding: 16px;
+}
+
+.culturalTitle {
+  color: #d48806;
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.culturalNote {
+  background: #ffffff;
+  border: 1px solid #ffe58f;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.culturalNote:last-child {
+  margin-bottom: 0;
+}
+
+.noteTitle {
+  color: #d48806;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.noteDescription {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #ad6800;
+  line-height: 1.4;
+}
+
+.noteExamples {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #fff1b8;
+}
+
+.examplesLabel {
+  font-size: 11px;
+  color: #ad6800;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.examplesList {
+  margin: 0;
+  padding-left: 16px;
+  list-style: disc;
+}
+
+.exampleItem {
+  font-size: 11px;
+  color: #ad6800;
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .businessFlowNavigator {
+    margin-bottom: 16px;
+  }
+
+  .businessFlowNavigator .ant-card-body {
+    padding: 16px 12px;
+  }
+
+  .progressOverview {
+    padding: 12px;
+  }
+
+  .progressLabel,
+  .etaLabel {
+    font-size: 12px;
+  }
+
+  .etaValue {
+    font-size: 13px;
+    padding: 2px 6px;
+  }
+
+  .stepsContainer {
+    padding: 16px 12px;
+  }
+
+  .businessSteps .ant-steps-item-title {
+    font-size: 12px;
+  }
+
+  .businessSteps .ant-steps-item-description {
+    font-size: 10px;
+  }
+
+  .flowPanels .ant-collapse-content-box {
+    padding: 16px 12px;
+  }
+
+  .stageHeader {
+    padding: 12px;
+  }
+
+  .stageTitle {
+    font-size: 16px;
+  }
+
+  .keyActivities {
+    padding: 12px;
+  }
+
+  .activityItem {
+    font-size: 12px;
+  }
+
+  .culturalNotesCard .ant-card-body {
+    padding: 12px;
+  }
+
+  .culturalNote {
+    padding: 8px;
+  }
+
+  .noteTitle {
+    font-size: 12px;
+  }
+
+  .noteDescription {
+    font-size: 11px;
+  }
+
+  .examplesLabel,
+  .exampleItem {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .businessSteps {
+    direction: column;
+  }
+
+  .businessSteps .ant-steps-item {
+    margin-bottom: 8px;
+    padding: 8px;
+    background: #fafafa;
+    border-radius: 4px;
+    border: 1px solid #f0f0f0;
+  }
+
+  .detailTimeline .ant-timeline-item-content {
+    margin-left: 4px;
+  }
+
+  .progressOverview {
+    padding: 8px;
+  }
+
+  .stepsContainer {
+    padding: 8px;
+  }
+
+  .flowPanels .ant-collapse-content-box {
+    padding: 12px 8px;
+  }
+
+  .stageHeader {
+    padding: 8px;
+  }
+
+  .keyActivities {
+    padding: 8px;
+  }
+
+  .culturalNote {
+    padding: 6px;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .businessFlowNavigator {
+    border: 2px solid #000000;
+  }
+
+  .progressOverview {
+    background: #ffffff;
+    border: 2px solid #000000;
+  }
+
+  .stepsContainer {
+    background: #ffffff;
+    border: 2px solid #000000;
+  }
+
+  .businessSteps .ant-steps-item-icon {
+    border-color: #000000;
+    background: #ffffff;
+  }
+
+  .businessSteps .ant-steps-item:hover {
+    background: #000000;
+    color: #ffffff;
+  }
+
+  .flowPanels {
+    border: 2px solid #000000;
+  }
+
+  .flowPanels .ant-collapse-header {
+    background: #ffffff;
+    border-bottom: 2px solid #000000;
+  }
+
+  .stageHeader {
+    background: #ffffff;
+    border: 2px solid #000000;
+  }
+
+  .keyActivities {
+    background: #ffffff;
+    border: 2px solid #000000;
+  }
+
+  .culturalNotesCard {
+    background: #ffffff;
+    border: 2px solid #000000;
+  }
+
+  .culturalNote {
+    background: #ffffff;
+    border: 2px solid #000000;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .businessSteps .ant-steps-item,
+  .flowPanels .ant-collapse-header {
+    transition: none;
+  }
+
+  .businessSteps .ant-steps-item:hover {
+    transform: none;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .businessFlowNavigator {
+    border: 1px solid #000000;
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+
+  .businessFlowNavigator .ant-card-head {
+    background: #ffffff;
+    border-bottom: 1px solid #000000;
+  }
+
+  .progressOverview {
+    background: #ffffff;
+    border: 1px solid #000000;
+  }
+
+  .stepsContainer {
+    background: #ffffff;
+    border: 1px solid #000000;
+  }
+
+  .flowPanels {
+    border: 1px solid #000000;
+  }
+
+  .flowPanels .ant-collapse-header {
+    background: #ffffff;
+  }
+
+  .stageHeader {
+    background: #ffffff;
+    border: 1px solid #000000;
+  }
+
+  .culturalNotesCard {
+    background: #ffffff;
+    border: 1px solid #000000;
+  }
+}
+
+/* Focus Management */
+.businessFlowNavigator:focus-within {
+  box-shadow: 0 0 0 2px #1890ff;
+}
+
+.businessSteps .ant-steps-item:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Loading States */
+.businessFlowNavigator .ant-skeleton {
+  padding: 20px;
+}
+
+/* Animation for content */
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.flowPanels .ant-collapse-content {
+  animation: slideInDown 0.3s ease-out;
+}
+
+/* Accessibility Enhancements */
+.businessFlowNavigator [role="button"]:focus,
+.businessFlowNavigator .ant-btn:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Screen Reader Only Content */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Custom progress bar styling */
+.progressBar .ant-progress-bg {
+  transition: width 0.6s ease;
+}
+
+/* Step hover effects */
+.businessSteps .ant-steps-item-process:hover .ant-steps-item-icon {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+.businessSteps .ant-steps-item-finish:hover .ant-steps-item-icon {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+/* Timeline customizations */
+.detailTimeline .ant-timeline-item-head {
+  background: #ffffff;
+  border: 2px solid;
+}
+
+.detailTimeline .ant-timeline-item-tail {
+  border-left: 2px solid #e8e8e8;
+}
+
+/* Stage meta tags styling */
+.stageMeta .ant-tag {
+  margin: 2px 4px 2px 0;
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 6px;
+  line-height: 1.2;
+}

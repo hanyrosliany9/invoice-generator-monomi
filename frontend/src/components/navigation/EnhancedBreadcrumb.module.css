@@ -1,0 +1,449 @@
+/* Enhanced Breadcrumb Component Styles - Indonesian Business Management System */
+/* Comprehensive styling with accessibility, mobile optimization, and Indonesian UX patterns */
+
+.enhancedBreadcrumb {
+  width: 100%;
+  margin-bottom: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Stage Indicator */
+.stageIndicator {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.stageBadge {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Main Breadcrumb Card */
+.breadcrumbCard {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  padding: 16px 20px;
+  transition: box-shadow 0.2s ease;
+}
+
+.breadcrumbCard:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Breadcrumb Path */
+.breadcrumbPath {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.breadcrumbItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.breadcrumbItem:hover {
+  background-color: #f8f9fa;
+}
+
+.activeBreadcrumb {
+  background-color: #e6f4ff;
+  border: 1px solid #91caff;
+  font-weight: 600;
+}
+
+/* Icons */
+.icon {
+  font-size: 16px;
+  color: #8c8c8c;
+  transition: color 0.2s ease;
+}
+
+.activeIcon {
+  font-size: 16px;
+  color: #1890ff;
+}
+
+/* Labels */
+.label {
+  color: #595959;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.clickableLabel {
+  color: #1890ff;
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.clickableLabel:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+.clickableLabel:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Entity Information */
+.entityNumber {
+  font-size: 12px;
+  color: #8c8c8c;
+  font-style: italic;
+}
+
+.amount {
+  font-size: 12px;
+  color: #52c41a;
+  font-weight: 500;
+}
+
+/* Status Badges */
+.statusBadge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1.2;
+}
+
+.materaiBadge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: #fff7e6;
+  border: 1px solid #ffd591;
+  color: #d48806;
+}
+
+/* Ellipsis Button */
+.ellipsisButton {
+  padding: 4px 8px;
+  font-size: 14px;
+  color: #8c8c8c;
+  border: 1px dashed #d9d9d9;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ellipsisButton:hover {
+  color: #1890ff;
+  border-color: #91caff;
+  background-color: #f0f8ff;
+}
+
+.ellipsisButton:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Actions Bar */
+.actionsBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 12px;
+}
+
+.relationshipButton {
+  color: #1890ff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.relationshipButton:hover {
+  background-color: #e6f4ff;
+  border-radius: 4px;
+}
+
+.relationshipButton:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.nextActionsButton {
+  font-size: 12px;
+  padding: 6px 12px;
+  height: auto;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.nextActionsButton:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Business Context Card */
+.businessContextCard {
+  background: linear-gradient(135deg, #f0f8ff 0%, #e6f4ff 100%);
+  border: 1px solid #91caff;
+  border-radius: 8px;
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.contextTitle {
+  color: #1c4ed8;
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Business Flow Steps */
+.completedStep {
+  color: #52c41a;
+  font-size: 14px;
+}
+
+.currentStep {
+  color: #1890ff;
+  font-size: 14px;
+  animation: pulse 2s infinite;
+}
+
+.pendingStep {
+  color: #faad14;
+  font-size: 14px;
+}
+
+.currentStepText {
+  font-weight: 600;
+  color: #1890ff;
+}
+
+.duration {
+  font-size: 11px;
+  color: #8c8c8c;
+  font-style: italic;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .enhancedBreadcrumb {
+    margin-bottom: 16px;
+  }
+
+  .breadcrumbCard {
+    padding: 12px 16px;
+    border-radius: 6px;
+  }
+
+  .breadcrumbPath {
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .breadcrumbItem {
+    padding: 4px 8px;
+    gap: 6px;
+  }
+
+  .label,
+  .clickableLabel {
+    font-size: 13px;
+  }
+
+  .icon,
+  .activeIcon {
+    font-size: 14px;
+  }
+
+  .actionsBar {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .businessContextCard {
+    padding: 12px;
+    margin-top: 12px;
+  }
+
+  .contextTitle {
+    font-size: 13px;
+  }
+
+  /* Touch-friendly button sizes */
+  .ellipsisButton,
+  .relationshipButton,
+  .nextActionsButton {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .breadcrumbPath {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .breadcrumbItem {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 8px 12px;
+  }
+
+  .actionsBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .relationshipButton,
+  .nextActionsButton {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .breadcrumbCard {
+    border: 2px solid #000000;
+    background: #ffffff;
+  }
+
+  .activeBreadcrumb {
+    background-color: #000000;
+    color: #ffffff;
+    border: 2px solid #000000;
+  }
+
+  .clickableLabel {
+    color: #0000ee;
+    text-decoration: underline;
+  }
+
+  .icon,
+  .activeIcon {
+    color: #000000;
+  }
+
+  .relationshipButton,
+  .nextActionsButton {
+    border: 2px solid #000000;
+    background-color: #ffffff;
+    color: #000000;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .breadcrumbCard,
+  .breadcrumbItem,
+  .clickableLabel,
+  .relationshipButton,
+  .nextActionsButton,
+  .ellipsisButton {
+    transition: none;
+  }
+
+  .currentStep {
+    animation: none;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .enhancedBreadcrumb {
+    margin-bottom: 12px;
+  }
+
+  .breadcrumbCard {
+    border: 1px solid #000000;
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+
+  .businessContextCard {
+    background: #ffffff;
+    border: 1px solid #000000;
+  }
+
+  .actionsBar {
+    display: none;
+  }
+}
+
+/* Focus Management */
+.enhancedBreadcrumb:focus-within .breadcrumbCard {
+  box-shadow: 0 0 0 2px #1890ff;
+}
+
+/* Screen Reader Only Content */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* RTL Support for potential multi-language expansion */
+[dir="rtl"] .breadcrumbPath {
+  direction: rtl;
+}
+
+[dir="rtl"] .breadcrumbItem {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .actionsBar {
+  flex-direction: row-reverse;
+}

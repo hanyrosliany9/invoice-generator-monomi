@@ -1,0 +1,506 @@
+/* BusinessJourneyTimeline CSS Module - Indonesian Business Management System */
+/* Enhanced with accessibility, mobile optimization, and Indonesian cultural patterns */
+
+.businessJourneyContainer {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* Accessibility - Screen reader only content */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Timeline Container */
+.timelineContainer {
+  position: relative;
+  padding: 16px 0;
+  min-height: 200px;
+}
+
+.timelineCard {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 16px;
+}
+
+.accessibleTimeline {
+  /* Ensure sufficient color contrast */
+  --timeline-color-primary: #1f2937; /* 4.5:1 contrast ratio */
+  --timeline-color-secondary: #6b7280; /* 4.5:1 contrast ratio */
+  --focus-outline: 2px solid #2563eb; /* High contrast focus indicator */
+  --success-color: #059669;
+  --warning-color: #d97706;
+  --error-color: #dc2626;
+  --info-color: #2563eb;
+}
+
+/* Timeline Dot - Enhanced for accessibility */
+.timelineDot {
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--timeline-color-primary);
+  color: white;
+  min-width: 44px; /* Minimum touch target size WCAG AA */
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
+}
+
+.timelineDot:focus {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+  transform: scale(1.1);
+}
+
+.timelineDot:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--info-color);
+}
+
+.timelineDot:active {
+  transform: scale(0.98);
+}
+
+/* Timeline Item Wrapper */
+.timelineItemWrapper {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.timelineItemWrapper:last-child {
+  border-bottom: none;
+}
+
+/* Event Content */
+.eventContent {
+  padding: 12px 16px;
+  background: #fafafa;
+  border-radius: 6px;
+  margin-left: 12px;
+  position: relative;
+  border-left: 3px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.eventContent:hover {
+  background: #f5f5f5;
+  border-left-color: var(--info-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.eventHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.eventTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--timeline-color-primary);
+  margin: 0;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.eventDate {
+  font-size: 12px;
+  color: var(--timeline-color-secondary);
+  white-space: nowrap;
+  background: #fff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.eventDescription {
+  font-size: 14px;
+  color: var(--timeline-color-secondary);
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
+.eventAmount {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--success-color);
+  background: #f0f9ff;
+  padding: 4px 12px;
+  border-radius: 16px;
+  display: inline-block;
+  border: 1px solid #bae6fd;
+  margin: 8px 0;
+}
+
+.eventActions {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Filters Card */
+.filtersCard {
+  margin-bottom: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+/* Virtualized Timeline */
+.virtualizedTimeline {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+}
+
+/* Timeline Footer */
+.timelineFooter {
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #e5e7eb;
+  font-size: 13px;
+  color: var(--timeline-color-secondary);
+  text-align: center;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .timelineDot {
+    border: 3px solid;
+    background: #000000;
+    color: #ffffff;
+  }
+  
+  .eventTitle {
+    font-weight: bold;
+    color: #000000;
+  }
+  
+  .eventContent {
+    border: 2px solid #000000;
+    background: #ffffff;
+  }
+  
+  .eventAmount {
+    border: 2px solid #000000;
+    background: #ffffff;
+    color: #000000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .timelineDot {
+    transition: none;
+  }
+  
+  .timelineDot:hover {
+    transform: none;
+  }
+  
+  .eventContent {
+    transition: none;
+  }
+}
+
+/* Mobile Optimization - Indonesian users primarily mobile */
+@media (max-width: 768px) {
+  .businessJourneyContainer {
+    padding: 0 8px;
+  }
+  
+  .timelineContainer {
+    padding: 12px 0;
+  }
+  
+  .timelineDot {
+    min-width: 48px; /* Larger touch target for mobile */
+    min-height: 48px;
+    font-size: 18px;
+  }
+  
+  .eventContent {
+    margin-left: 8px;
+    padding: 12px;
+  }
+  
+  .eventHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .eventTitle {
+    font-size: 15px;
+  }
+  
+  .eventDate {
+    font-size: 11px;
+    align-self: flex-end;
+  }
+  
+  .eventDescription {
+    font-size: 13px;
+  }
+  
+  .eventAmount {
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+  
+  .eventActions {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+  
+  .filtersCard {
+    padding: 8px;
+  }
+  
+  .filtersCard .ant-space {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .filtersCard .ant-space .ant-space-item {
+    width: 100%;
+  }
+  
+  .filtersCard .ant-input-search,
+  .filtersCard .ant-picker,
+  .filtersCard .ant-select {
+    width: 100% !important;
+  }
+  
+  .timelineFooter {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .timelineFooter .ant-space {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/* Tablet Optimization */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .eventHeader {
+    gap: 8px;
+  }
+  
+  .filtersCard .ant-space {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 375px) {
+  .timelineDot {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+  
+  .eventContent {
+    margin-left: 4px;
+    padding: 8px;
+  }
+  
+  .eventTitle {
+    font-size: 14px;
+  }
+  
+  .eventDescription {
+    font-size: 12px;
+  }
+  
+  .eventAmount {
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+}
+
+/* Dark mode support (if enabled) */
+@media (prefers-color-scheme: dark) {
+  .businessJourneyContainer {
+    color: #f3f4f6;
+  }
+  
+  .timelineCard {
+    background: #1f2937;
+    border-color: #374151;
+  }
+  
+  .eventContent {
+    background: #374151;
+    border-left-color: #6b7280;
+    color: #f3f4f6;
+  }
+  
+  .eventContent:hover {
+    background: #4b5563;
+    border-left-color: #60a5fa;
+  }
+  
+  .eventTitle {
+    color: #f9fafb;
+  }
+  
+  .eventDescription {
+    color: #d1d5db;
+  }
+  
+  .eventDate {
+    background: #4b5563;
+    color: #d1d5db;
+    border-color: #6b7280;
+  }
+  
+  .eventAmount {
+    background: #064e3b;
+    color: #10b981;
+    border-color: #047857;
+  }
+  
+  .filtersCard {
+    background: #374151;
+    border-color: #4b5563;
+  }
+  
+  .timelineFooter {
+    background: #374151;
+    border-color: #4b5563;
+    color: #d1d5db;
+  }
+}
+
+/* Indonesian Cultural Adaptations */
+.indonesianBusinessPattern {
+  /* Warmer color palette reflecting Indonesian culture */
+  --indo-gold: #f59e0b;
+  --indo-red: #dc2626;
+  --indo-green: #059669;
+  --indo-blue: #2563eb;
+}
+
+/* WhatsApp Integration Styling */
+.whatsappButton {
+  background-color: #25d366 !important;
+  border-color: #25d366 !important;
+  color: white !important;
+}
+
+.whatsappButton:hover {
+  background-color: #128c7e !important;
+  border-color: #128c7e !important;
+}
+
+/* Materai Compliance Styling */
+.materaiWarning {
+  border-left: 4px solid #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.materaiRequired {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Loading States */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 0;
+  color: var(--timeline-color-secondary);
+}
+
+.loadingSpinner {
+  margin-bottom: 16px;
+}
+
+/* Error States */
+.errorContainer {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.errorMessage {
+  color: var(--error-color);
+  margin-bottom: 16px;
+}
+
+/* Empty States */
+.emptyContainer {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--timeline-color-secondary);
+}
+
+/* Performance Optimizations */
+.timelineItemWrapper {
+  contain: layout style;
+  will-change: transform;
+}
+
+.eventContent {
+  contain: layout style;
+}
+
+/* Print Styles */
+@media print {
+  .filtersCard {
+    display: none;
+  }
+  
+  .eventActions {
+    display: none;
+  }
+  
+  .timelineDot {
+    background: #000 !important;
+    color: #fff !important;
+    box-shadow: none;
+  }
+  
+  .eventContent {
+    background: #fff !important;
+    border: 1px solid #000;
+    box-shadow: none;
+  }
+  
+  .businessJourneyContainer {
+    max-width: none;
+    padding: 0;
+  }
+}
