@@ -82,6 +82,7 @@ export const QuotationsPage: React.FC = () => {
   const [statusQuotation, setStatusQuotation] = useState<Quotation | null>(null)
   const [priceInheritanceMode, setPriceInheritanceMode] = useState<'inherit' | 'custom'>('inherit')
   const [selectedProject, setSelectedProject] = useState<any>(null)
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
   const [invoiceResultModal, setInvoiceResultModal] = useState<{
     visible: boolean
     data: any
@@ -270,6 +271,7 @@ export const QuotationsPage: React.FC = () => {
     setModalVisible(true)
     setPriceInheritanceMode('inherit')
     setSelectedProject(null)
+    setSelectedClientId(null)
     form.resetFields()
   }
 
@@ -277,7 +279,10 @@ export const QuotationsPage: React.FC = () => {
     setEditingQuotation(quotation)
     setModalVisible(true)
     
-    // Set selected project for price inheritance
+    // Set selected client and project for price inheritance
+    if (quotation.clientId) {
+      setSelectedClientId(quotation.clientId)
+    }
     if (quotation.projectId) {
       const project = projects.find(p => p.id === quotation.projectId)
       if (project) {
@@ -348,25 +353,41 @@ export const QuotationsPage: React.FC = () => {
     invoiceMutation.mutate(quotation.id)
   }
 
+  const handleClientChange = (clientId: string) => {
+    setSelectedClientId(clientId)
+    // Reset project selection when client changes
+    setSelectedProject(null)
+    form.setFieldsValue({ projectId: undefined, totalAmount: undefined })
+  }
+
   const handleProjectChange = (projectId: string) => {
     const project = projects.find(p => p.id === projectId)
     if (project) {
       setSelectedProject(project)
       if (priceInheritanceMode === 'inherit') {
-        // Use project basePrice or estimatedBudget
-        const inheritedPrice = project.basePrice || project.estimatedBudget || 0
+        // Use project basePrice or estimatedBudget - convert string to number
+        const basePrice = project.basePrice ? parseFloat(project.basePrice) : 0
+        const estimatedBudget = project.estimatedBudget ? parseFloat(project.estimatedBudget) : 0
+        const inheritedPrice = basePrice || estimatedBudget || 0
         form.setFieldsValue({ totalAmount: inheritedPrice })
       }
     }
   }
+
+  // Filter projects by selected client
+  const filteredProjects = selectedClientId 
+    ? projects.filter(project => project.clientId === selectedClientId)
+    : []
 
   const handlePriceInheritanceModeChange = (e: any) => {
     const mode = e.target.value
     setPriceInheritanceMode(mode)
     
     if (mode === 'inherit' && selectedProject) {
-      // Use project basePrice or estimatedBudget
-      const inheritedPrice = selectedProject.basePrice || selectedProject.estimatedBudget || 0
+      // Use project basePrice or estimatedBudget - convert string to number
+      const basePrice = selectedProject.basePrice ? parseFloat(selectedProject.basePrice) : 0
+      const estimatedBudget = selectedProject.estimatedBudget ? parseFloat(selectedProject.estimatedBudget) : 0
+      const inheritedPrice = basePrice || estimatedBudget || 0
       form.setFieldsValue({ totalAmount: inheritedPrice })
     } else if (mode === 'custom') {
       // Clear the amount field for custom input
@@ -516,7 +537,9 @@ export const QuotationsPage: React.FC = () => {
     let totalAmount = safeNumber(values.totalAmount);
     // Fix for price inheritance mode: when field is disabled, get inherited price
     if (priceInheritanceMode === "inherit" && selectedProject && totalAmount === 0) {
-      totalAmount = selectedProject.basePrice || selectedProject.estimatedBudget || 0;
+      const basePrice = selectedProject.basePrice ? parseFloat(selectedProject.basePrice) : 0
+      const estimatedBudget = selectedProject.estimatedBudget ? parseFloat(selectedProject.estimatedBudget) : 0
+      totalAmount = basePrice || estimatedBudget || 0;
     }
     
     // Validation: ensure we have a valid amount
@@ -1094,6 +1117,8 @@ export const QuotationsPage: React.FC = () => {
         onCancel={() => {
           setModalVisible(false)
           setEditingQuotation(null)
+          setSelectedClientId(null)
+          setSelectedProject(null)
           form.resetFields()
         }}
         footer={null}
@@ -1112,7 +1137,7 @@ export const QuotationsPage: React.FC = () => {
                 label="Klien"
                 rules={[{ required: true, message: 'Pilih klien' }]}
               >
-                <Select placeholder="Pilih klien">
+                <Select placeholder="Pilih klien" onChange={handleClientChange}>
                   {safeArray(clients).map(client => (
                     <Option key={client.id} value={client.id}>
                       {client.name}
@@ -1127,8 +1152,13 @@ export const QuotationsPage: React.FC = () => {
                 label="Proyek"
                 rules={[{ required: true, message: 'Pilih proyek' }]}
               >
-                <Select placeholder="Pilih proyek" onChange={handleProjectChange}>
-                  {safeArray(projects).map(project => (
+                <Select 
+                  placeholder="Pilih proyek" 
+                  onChange={handleProjectChange}
+                  disabled={!selectedClientId}
+                  notFoundContent={!selectedClientId ? "Pilih klien terlebih dahulu" : "Tidak ada proyek"}
+                >
+                  {safeArray(filteredProjects).map(project => (
                     <Option key={project.id} value={project.id}>
                       {project.number} - {project.description}
                     </Option>
@@ -1150,7 +1180,7 @@ export const QuotationsPage: React.FC = () => {
                   Gunakan Harga dari Proyek
                   {selectedProject && (
                     <Text type="secondary" style={{ marginLeft: 8 }}>
-                      ({formatIDR(selectedProject.basePrice || selectedProject.estimatedBudget || 0)})
+                      ({formatIDR(parseFloat(selectedProject.basePrice || selectedProject.estimatedBudget || '0'))})
                     </Text>
                   )}
                 </Radio>
@@ -1159,7 +1189,7 @@ export const QuotationsPage: React.FC = () => {
               
               {priceInheritanceMode === 'inherit' && selectedProject && (
                 <Alert
-                  message={`Harga akan otomatis diambil dari proyek: ${formatIDR(selectedProject.basePrice || selectedProject.estimatedBudget || 0)}`}
+                  message={`Harga akan otomatis diambil dari proyek: ${formatIDR(parseFloat(selectedProject.basePrice || selectedProject.estimatedBudget || '0'))}`}
                   type="info"
                   showIcon
                 />
