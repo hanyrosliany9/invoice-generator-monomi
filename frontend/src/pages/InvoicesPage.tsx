@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Table,
   Button,
@@ -133,72 +133,94 @@ export const InvoicesPage: React.FC = () => {
     form.resetFields()
   }
 
-  // Keyboard shortcuts
-  const shortcuts = usePageShortcuts('invoices', [
+  // Memoized keyboard shortcut actions to prevent infinite re-renders
+  const handleFocusSearch = useCallback(() => {
+    const searchInput = document.querySelector('[data-testid="invoice-search-input"]') as HTMLInputElement;
+    searchInput?.focus();
+  }, []);
+
+  const handleExport = useCallback(() => {
+    message.info('Export feature coming soon');
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['invoices'] });
+  }, [queryClient]);
+
+  const handleShowHelp = useCallback(() => {
+    setShowKeyboardHelp(true);
+  }, []);
+
+  const handleToggleMateraiFilter = useCallback(() => {
+    setMateraiFilter(materaiFilter === 'required' ? '' : 'required');
+    message.success('Materai filter toggled');
+  }, [materaiFilter]);
+
+  const handleBulkOperations = useCallback(() => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('Select invoices first for bulk operations');
+    } else {
+      message.info(`${selectedRowKeys.length} invoices selected for bulk operations`);
+    }
+  }, [selectedRowKeys.length]);
+
+  // Memoized shortcuts array to prevent infinite re-renders
+  const shortcutsArray = useMemo(() => [
     {
       key: 'ctrl+n',
       description: 'Create New Invoice',
       action: handleCreate,
-      category: 'actions'
+      category: 'actions' as const
     },
     {
       key: 'ctrl+k',
       description: 'Focus Search',
-      action: () => {
-        const searchInput = document.querySelector('[data-testid="invoice-search-input"]') as HTMLInputElement;
-        searchInput?.focus();
-      },
-      category: 'actions'
+      action: handleFocusSearch,
+      category: 'actions' as const
     },
     {
       key: 'ctrl+e',
       description: 'Export Invoices', 
-      action: () => message.info('Export feature coming soon'),
-      category: 'actions'
+      action: handleExport,
+      category: 'actions' as const
     },
     {
       key: 'f5',
       description: 'Refresh Data',
-      action: () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
-      category: 'actions'
+      action: handleRefresh,
+      category: 'actions' as const
     },
     {
       key: 'f1',
       description: 'Show Keyboard Shortcuts',
-      action: () => setShowKeyboardHelp(true),
-      category: 'general'
+      action: handleShowHelp,
+      category: 'general' as const
     },
     {
       key: 'alt+m',
       description: 'Toggle Materai Filter',
-      action: () => {
-        setMateraiFilter(materaiFilter === 'required' ? '' : 'required');
-        message.success('Materai filter toggled');
-      },
-      category: 'actions'
+      action: handleToggleMateraiFilter,
+      category: 'actions' as const
     },
     {
       key: 'ctrl+shift+b',
       description: 'Focus Bulk Operations',
-      action: () => {
-        if (selectedRowKeys.length === 0) {
-          message.warning('Select invoices first for bulk operations');
-        } else {
-          message.info(`${selectedRowKeys.length} invoices selected for bulk operations`);
-        }
-      },
-      category: 'actions'
+      action: handleBulkOperations,
+      category: 'actions' as const
     }
-  ], {
-    onNavigate: (path) => navigate(path),
+  ], [handleCreate, handleFocusSearch, handleExport, handleRefresh, handleShowHelp, handleToggleMateraiFilter, handleBulkOperations]);
+
+  // Memoized global actions to prevent infinite re-renders
+  const globalActions = useMemo(() => ({
+    onNavigate: (path: string) => navigate(path),
     onCreateNew: handleCreate,
-    onSearch: () => {
-      const searchInput = document.querySelector('[data-testid="invoice-search-input"]') as HTMLInputElement;
-      searchInput?.focus();
-    },
-    onExport: () => message.info('Export feature coming soon'),
-    onRefresh: () => queryClient.invalidateQueries({ queryKey: ['invoices'] })
-  });
+    onSearch: handleFocusSearch,
+    onExport: handleExport,
+    onRefresh: handleRefresh
+  }), [navigate, handleCreate, handleFocusSearch, handleExport, handleRefresh]);
+
+  // Keyboard shortcuts
+  const shortcuts = usePageShortcuts('invoices', shortcutsArray, globalActions);
 
   // Queries
   const { data: invoices = [], isLoading, error: invoicesError } = useQuery({

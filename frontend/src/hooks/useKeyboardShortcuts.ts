@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useMemo } from 'react';
 import { message } from 'antd';
 
 interface KeyboardShortcut {
@@ -268,45 +268,45 @@ export const usePageShortcuts = (
     onNavigate?: (page: string) => void;
   }
 ) => {
-  const navigate = globalActions?.onNavigate || (() => {});
-  
-  const allShortcuts: KeyboardShortcut[] = [
-    // Page-specific shortcuts
-    ...pageShortcuts.map(s => ({ ...s, context: pageName })),
-    
-    // Global navigation shortcuts
+  // Memoize navigation function to prevent recreation
+  const navigate = useCallback(globalActions?.onNavigate || (() => {}), [globalActions?.onNavigate]);
+
+  // Memoize navigation shortcuts to prevent recreation
+  const navigationShortcuts = useMemo(() => [
     {
       key: 'alt+1',
       description: 'Go to Invoices',
       action: () => navigate('/invoices'),
-      category: 'navigation'
+      category: 'navigation' as const
     },
     {
       key: 'alt+2', 
       description: 'Go to Clients',
       action: () => navigate('/clients'),
-      category: 'navigation'
+      category: 'navigation' as const
     },
     {
       key: 'alt+3',
       description: 'Go to Projects', 
       action: () => navigate('/projects'),
-      category: 'navigation'
+      category: 'navigation' as const
     },
     {
       key: 'alt+4',
       description: 'Go to Quotations',
       action: () => navigate('/quotations'),
-      category: 'navigation'
+      category: 'navigation' as const
     },
     {
       key: 'alt+0',
       description: 'Go to Dashboard',
       action: () => navigate('/'),
-      category: 'navigation'
-    },
-    
-    // Global action shortcuts
+      category: 'navigation' as const
+    }
+  ], [navigate]);
+
+  // Memoize global action shortcuts to prevent recreation
+  const globalActionShortcuts = useMemo(() => [
     ...(globalActions?.onCreateNew ? [{
       key: 'ctrl+n',
       description: 'Create New',
@@ -330,8 +330,21 @@ export const usePageShortcuts = (
       description: 'Refresh Page',
       action: globalActions.onRefresh,
       category: 'actions' as const
-    }] : []),
-  ];
+    }] : [])
+  ], [globalActions?.onCreateNew, globalActions?.onSearch, globalActions?.onExport, globalActions?.onRefresh]);
+
+  // Memoize page-specific shortcuts to prevent recreation
+  const contextualShortcuts = useMemo(() => 
+    pageShortcuts.map(s => ({ ...s, context: pageName })), 
+    [pageShortcuts, pageName]
+  );
+
+  // Memoize all shortcuts to prevent infinite re-renders
+  const allShortcuts = useMemo(() => [
+    ...contextualShortcuts,
+    ...navigationShortcuts,
+    ...globalActionShortcuts
+  ], [contextualShortcuts, navigationShortcuts, globalActionShortcuts]);
 
   return useKeyboardShortcuts({
     shortcuts: allShortcuts,
