@@ -150,9 +150,36 @@ export const QuotationsPage: React.FC = () => {
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       quotationService.updateStatus(id, status),
-    onSuccess: () => {
+    onSuccess: async (data, variables) => {
+      // Always invalidate quotations
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
-      message.success('Status berhasil diperbarui')
+      
+      // If approved, also invalidate invoices and show special message
+      if (variables.status === 'APPROVED') {
+        // Add small delay to ensure backend invoice creation completes
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['invoices'] })
+        }, 500)
+        
+        message.success({
+          content: (
+            <div>
+              ✅ Quotation disetujui! Invoice otomatis telah dibuat.{' '}
+              <Button 
+                type="link" 
+                size="small" 
+                onClick={() => navigate('/invoices')}
+                style={{ padding: 0, height: 'auto' }}
+              >
+                Lihat Invoice
+              </Button>
+            </div>
+          ),
+          duration: 6
+        })
+      } else {
+        message.success('Status berhasil diperbarui')
+      }
     }
   })
 
@@ -416,7 +443,32 @@ export const QuotationsPage: React.FC = () => {
         statusMutation.mutateAsync({ id, status: newStatus })
       )
       await Promise.all(promises)
-      message.success(`${selectedRowKeys.length} quotation berhasil diubah statusnya`)
+      
+      // Special message for batch approvals
+      if (newStatus === 'APPROVED') {
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['invoices'] })
+        }, 500)
+        message.success({
+          content: (
+            <div>
+              ✅ {selectedRowKeys.length} quotation disetujui! Invoice otomatis telah dibuat untuk setiap quotation.{' '}
+              <Button 
+                type="link" 
+                size="small" 
+                onClick={() => navigate('/invoices')}
+                style={{ padding: 0, height: 'auto' }}
+              >
+                Lihat Invoice
+              </Button>
+            </div>
+          ),
+          duration: 6
+        })
+      } else {
+        message.success(`${selectedRowKeys.length} quotation berhasil diubah statusnya`)
+      }
+      
       setSelectedRowKeys([])
     } catch (error) {
       message.error('Gagal mengubah status beberapa quotation')
