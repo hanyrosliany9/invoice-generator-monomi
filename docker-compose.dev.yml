@@ -30,9 +30,12 @@ services:
       - ./shared:/app/shared
       - ./uploads:/app/uploads
       - ./storage:/app/storage
+      - ./.npmrc:/app/.npmrc
       - /app/backend/node_modules
       - /app/frontend/node_modules
       - /app/backend/dist
+      - vite_cache:/tmp/.vite
+      - npm_cache:/tmp/.npm
     networks:
       - invoice-network
     restart: unless-stopped
@@ -45,6 +48,8 @@ services:
       start_period: 60s
     command: >
       sh -c "
+        echo '🧹 Cleaning caches...' &&
+        rm -rf /tmp/.vite/* /tmp/.npm/* &&
         cd /app/backend && 
         echo '🔧 Checking database initialization...' &&
         npx prisma migrate deploy &&
@@ -53,8 +58,11 @@ services:
           echo '🌱 Running database seeding...' &&
           npx prisma db seed || echo '⚠️  Seeding failed or already completed'
         fi &&
+        echo '🚀 Starting backend server...' &&
         npm run start:dev &
-        cd /app/frontend && npm run dev -- --port 3000 --host &
+        cd /app/frontend &&
+        echo '🚀 Starting frontend development server...' &&
+        npm run dev &
         wait
       "
 
@@ -93,6 +101,8 @@ services:
 volumes:
   postgres_dev_data:
   redis_dev_data:
+  vite_cache:
+  npm_cache:
   
 networks:
   invoice-network:

@@ -60,6 +60,10 @@ model Client {
   @@index([name])
   @@index([email])
   @@index([createdAt])
+  @@index([phone])
+  // Composite indexes for client search and filtering
+  @@index([status, createdAt])
+  @@index([name, status])
   @@map("clients")
 }
 
@@ -98,6 +102,10 @@ model Project {
   @@index([type])
   @@index([clientId])
   @@index([createdAt])
+  // Composite indexes for performance optimization
+  @@index([clientId, status])
+  @@index([type, status])
+  @@index([status, createdAt])
   @@map("projects")
 }
 
@@ -143,6 +151,11 @@ model Quotation {
   @@index([projectId])
   @@index([createdAt])
   @@index([validUntil])
+  // Composite indexes for performance optimization
+  @@index([clientId, status])
+  @@index([status, validUntil])
+  @@index([projectId, status])
+  @@index([createdAt, status])
   @@map("quotations")
 }
 
@@ -205,6 +218,13 @@ model Invoice {
   @@index([dueDate])
   @@index([materaiRequired])
   @@index([quotationId])
+  // Composite indexes for performance optimization - Critical queries
+  @@index([clientId, status])
+  @@index([status, dueDate])
+  @@index([status, createdAt])
+  @@index([materaiRequired, totalAmount])
+  @@index([materaiRequired, materaiApplied, status])
+  @@index([createdAt, status])
   @@map("invoices")
 }
 
@@ -227,6 +247,14 @@ model Payment {
   // Relations
   businessJourneyEvents BusinessJourneyEvent[]
 
+  // Indexes for performance optimization
+  @@index([invoiceId])
+  @@index([status])
+  @@index([paymentDate])
+  @@index([paymentMethod])
+  // Composite indexes for common queries
+  @@index([status, paymentDate])
+  @@index([invoiceId, status])
   @@map("payments")
 }
 
@@ -269,6 +297,11 @@ model BusinessJourneyEvent {
   @@index([invoiceId])
   @@index([createdAt])
   @@index([amount])
+  // Composite indexes for business analytics and timeline queries
+  @@index([clientId, type, createdAt])
+  @@index([clientId, status, createdAt])
+  @@index([type, status])
+  @@index([status, createdAt])
   @@map("business_journey_events")
 }
 

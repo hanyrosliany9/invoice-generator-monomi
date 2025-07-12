@@ -15,7 +15,7 @@ export default defineConfig({
     })
   ],
   
-  // Optimize dependencies pre-bundling
+  // Optimize dependencies pre-bundling with cache control
   optimizeDeps: {
     include: [
       'react',
@@ -26,8 +26,15 @@ export default defineConfig({
       'dayjs',
       'recharts'
     ],
-    exclude: ['@testing-library/react']
+    exclude: ['@testing-library/react'],
+    force: true,
+    esbuildOptions: {
+      target: 'es2020'
+    }
   },
+  
+  // Clear cache on startup - use writable directory
+  cacheDir: 'node_modules/.vite',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -36,6 +43,14 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3000,
+    watch: {
+      usePolling: true,
+      interval: 1000,
+    },
+    fs: {
+      strict: false,
+      allow: ['..'],
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

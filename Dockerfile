@@ -65,17 +65,18 @@ FROM base AS development
 COPY backend/package*.json ./backend/
 COPY frontend/package*.json ./frontend/
 
-# Install all dependencies (including dev dependencies)
-RUN cd backend && npm install
-RUN cd frontend && npm install
+# Install all dependencies (including dev dependencies) with clean cache
+RUN cd backend && npm cache clean --force && npm install --no-audit --no-fund
+RUN cd frontend && npm cache clean --force && npm install --legacy-peer-deps --no-audit --no-fund
 
 # Copy source code
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
 COPY shared/ ./shared/
 
-# Create necessary directories
-RUN mkdir -p uploads storage logs backend/dist
+# Create necessary directories with proper permissions for Vite
+RUN mkdir -p uploads storage logs backend/dist frontend/.vite frontend/node_modules/.vite backend/.tmp && \
+    chmod -R 755 uploads storage logs backend/dist frontend/.vite backend/.tmp
 
 # Change ownership to app user
 RUN chown -R appuser:appuser /app
