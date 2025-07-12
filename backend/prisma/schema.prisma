@@ -23,10 +23,11 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  quotations    Quotation[]
-  invoices      Invoice[]
-  auditLogs     AuditLog[]
-  preferences   UserPreferences?
+  quotations           Quotation[]
+  invoices             Invoice[]
+  auditLogs            AuditLog[]
+  preferences          UserPreferences?
+  businessJourneyEvents BusinessJourneyEvent[]
 
   @@map("users")
 }
@@ -45,14 +46,16 @@ model Client {
   
   // Business details
   paymentTerms String? // Default payment terms
+  status       String  @default("active") // Client status: active, inactive
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  quotations Quotation[]
-  invoices   Invoice[]
-  projects   Project[]
+  quotations           Quotation[]
+  invoices             Invoice[]
+  projects             Project[]
+  businessJourneyEvents BusinessJourneyEvent[]
 
   @@index([name])
   @@index([email])
@@ -86,8 +89,9 @@ model Project {
   updatedAt DateTime      @updatedAt
 
   // Relations
-  quotations Quotation[]
-  invoices   Invoice[]
+  quotations           Quotation[]
+  invoices             Invoice[]
+  businessJourneyEvents BusinessJourneyEvent[]
 
   @@index([number])
   @@index([status])
@@ -130,7 +134,8 @@ model Quotation {
   updatedAt DateTime @updatedAt
 
   // Relations
-  invoices Invoice[]
+  invoices             Invoice[]
+  businessJourneyEvents BusinessJourneyEvent[]
 
   @@index([quotationNumber])
   @@index([status])
@@ -189,7 +194,8 @@ model Invoice {
   updatedAt DateTime @updatedAt
 
   // Relations
-  payments Payment[]
+  payments             Payment[]
+  businessJourneyEvents BusinessJourneyEvent[]
 
   @@index([invoiceNumber])
   @@index([status])
@@ -218,7 +224,115 @@ model Payment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  businessJourneyEvents BusinessJourneyEvent[]
+
   @@map("payments")
+}
+
+// Business Journey Tracking
+model BusinessJourneyEvent {
+  id          String                       @id @default(cuid())
+  type        BusinessJourneyEventType
+  title       String
+  description String
+  status      BusinessJourneyEventStatus   @default(PENDING)
+  amount      Decimal?                     @db.Decimal(12, 2)
+  
+  // Entity relationships
+  clientId     String?
+  client       Client?    @relation(fields: [clientId], references: [id])
+  projectId    String?
+  project      Project?   @relation(fields: [projectId], references: [id])
+  quotationId  String?
+  quotation    Quotation? @relation(fields: [quotationId], references: [id])
+  invoiceId    String?
+  invoice      Invoice?   @relation(fields: [invoiceId], references: [id])
+  paymentId    String?
+  payment      Payment?   @relation(fields: [paymentId], references: [id])
+  
+  // Metadata
+  metadata BusinessJourneyEventMetadata?
+  
+  // User tracking
+  createdBy String
+  user      User   @relation(fields: [createdBy], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([status])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([quotationId])
+  @@index([invoiceId])
+  @@index([createdAt])
+  @@index([amount])
+  @@map("business_journey_events")
+}
+
+// Business Journey Event Metadata
+model BusinessJourneyEventMetadata {
+  id       String @id @default(cuid())
+  eventId  String @unique
+  event    BusinessJourneyEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  // User information
+  userCreated   String
+  userModified  String?
+  
+  // System information
+  source       BusinessJourneyEventSource @default(SYSTEM)
+  priority     BusinessJourneyPriority    @default(MEDIUM)
+  
+  // Additional data
+  tags              String[] // Array of tags
+  relatedDocuments  String[] // Array of document IDs
+  notes             String?
+  ipAddress         String?
+  userAgent         String?
+  
+  // Indonesian business context
+  materaiRequired   Boolean @default(false)
+  materaiAmount     Decimal? @db.Decimal(12, 2)
+  complianceStatus  String? // Compliance status with Indonesian regulations
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([source])
+  @@index([priority])
+  @@index([materaiRequired])
+  @@map("business_journey_event_metadata")
+}
+
+// UX Analytics for Performance Monitoring
+model UXMetrics {
+  id            String   @id @default(cuid())
+  componentName String
+  eventType     String   // 'render', 'interaction', 'error'
+  metricName    String   // 'load_time', 'interaction_delay', etc.
+  value         Float
+  
+  // Context
+  userId        String?
+  sessionId     String?
+  clientId      String?
+  url           String?
+  userAgent     String?
+  
+  // Performance data
+  performanceData Json? // Core Web Vitals and other metrics
+  
+  createdAt DateTime @default(now())
+
+  @@index([componentName])
+  @@index([eventType])
+  @@index([metricName])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("ux_metrics")
 }
 
 // Audit Trail
@@ -286,13 +400,53 @@ enum PaymentStatus {
   REFUNDED
 }
 
+// Business Journey Enums
+enum BusinessJourneyEventType {
+  CLIENT_CREATED
+  PROJECT_STARTED
+  QUOTATION_DRAFT
+  QUOTATION_SENT
+  QUOTATION_APPROVED
+  QUOTATION_DECLINED
+  QUOTATION_REVISED
+  INVOICE_GENERATED
+  INVOICE_SENT
+  PAYMENT_RECEIVED
+  PAYMENT_OVERDUE
+  MATERAI_REQUIRED
+  MATERAI_APPLIED
+}
+
+enum BusinessJourneyEventStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REQUIRES_ATTENTION
+}
+
+enum BusinessJourneyEventSource {
+  SYSTEM
+  USER
+  API
+  WEBHOOK
+}
+
+enum BusinessJourneyPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 // Settings Models
 model UserPreferences {
   id                  String  @id @default(cuid())
   userId              String  @unique
   user                User    @relation(fields: [userId], references: [id])
   timezone            String  @default("Asia/Jakarta")
-  language            String  @default("id")
+  language            String  @default("id-ID")
+  currency            String  @default("IDR")
   emailNotifications  Boolean @default(true)
   pushNotifications   Boolean @default(true)
   theme               String  @default("light")
@@ -340,4 +494,43 @@ model SystemSettings {
   updatedAt DateTime @updatedAt
 
   @@map("system_settings")
+}
+
+// Feature Flags System
+model FeatureFlag {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  description   String?
+  enabled       Boolean  @default(false)
+  globalEnabled Boolean  @default(false)
+  targetUsers   String[] // Array of user IDs
+  targetGroups  String[] // Array of group names
+  rules         Json?    // Additional targeting rules
+  expiresAt     DateTime?
+  disabledReason String?
+  disabledAt    DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  events FeatureFlagEvent[]
+  
+  @@map("feature_flags")
+}
+
+model FeatureFlagEvent {
+  id           String    @id @default(cuid())
+  flagId       String
+  flag         FeatureFlag @relation(fields: [flagId], references: [id])
+  userId       String?
+  eventType    String    // 'enabled', 'disabled', 'viewed', 'clicked'
+  metadata     Json?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([flagId])
+  @@index([userId])
+  @@index([eventType])
+  @@map("feature_flag_events")
 }

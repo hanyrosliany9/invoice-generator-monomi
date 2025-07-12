@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsOptional, IsPhoneNumber } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsPhoneNumber, IsIn } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateClientDto {
@@ -60,4 +60,15 @@ export class CreateClientDto {
   @IsOptional()
   @IsString({ message: 'Syarat pembayaran harus berupa string' })
   paymentTerms?: string;
+
+  @ApiProperty({
+    description: 'Status klien',
+    example: 'active',
+    enum: ['active', 'inactive'],
+    required: false,
+    default: 'active'
+  })
+  @IsOptional()
+  @IsIn(['active', 'inactive'], { message: 'Status harus berupa active atau inactive' })
+  status?: string;
 }
