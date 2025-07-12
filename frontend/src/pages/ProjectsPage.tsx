@@ -998,6 +998,84 @@ export const ProjectsPage: React.FC = () => {
             </Col>
           </Row>
 
+          <Form.Item label="Produk & Harga">
+            <Form.List name="products">
+              {(fields, { add, remove }) => (
+                <div>
+                  {fields.map((field) => (
+                    <Card 
+                      key={field.key} 
+                      size="small" 
+                      style={{ marginBottom: 8 }}
+                      extra={
+                        <Button 
+                          type="text" 
+                          danger 
+                          size="small" 
+                          onClick={() => remove(field.name)}
+                          icon={<DeleteOutlined />}
+                        />
+                      }
+                    >
+                      <Row gutter={8}>
+                        <Col span={12}>
+                          <Form.Item
+                            {...field}
+                            name={[field.name, 'name']}
+                            label="Nama Produk"
+                            rules={[{ required: true, message: 'Nama produk wajib diisi' }]}
+                          >
+                            <Input placeholder="Nama produk/layanan" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item
+                            {...field}
+                            name={[field.name, 'quantity']}
+                            label="Qty"
+                            rules={[{ required: true, message: 'Qty wajib diisi' }]}
+                          >
+                            <InputNumber min={1} placeholder="1" style={{ width: '100%' }} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item
+                            {...field}
+                            name={[field.name, 'price']}
+                            label="Harga"
+                            rules={[{ required: true, message: 'Harga wajib diisi' }]}
+                          >
+                            <InputNumber
+                              style={{ width: '100%' }}
+                              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                              parser={(value) => value!.replace(/\./g, '')}
+                              placeholder="0"
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                      <Form.Item
+                        {...field}
+                        name={[field.name, 'description']}
+                        label="Deskripsi"
+                      >
+                        <Input.TextArea rows={2} placeholder="Deskripsi produk/layanan" />
+                      </Form.Item>
+                    </Card>
+                  ))}
+                  <Button
+                    type="dashed"
+                    onClick={() => add()}
+                    block
+                    icon={<PlusOutlined />}
+                  >
+                    Tambah Produk
+                  </Button>
+                </div>
+              )}
+            </Form.List>
+          </Form.Item>
+
           <Form.Item
             name="dateRange"
             label="Periode Proyek"
