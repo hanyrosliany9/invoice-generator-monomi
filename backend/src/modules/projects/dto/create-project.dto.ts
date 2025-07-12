@@ -61,6 +61,7 @@ export class CreateProjectDto {
   })
   @IsOptional()
   @IsString({ message: 'Output harus berupa string' })
+  @Transform(({ value }) => value === '' ? undefined : value)
   output?: string;
 
   @ApiProperty({

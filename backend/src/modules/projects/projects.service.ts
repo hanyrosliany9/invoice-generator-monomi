@@ -35,7 +35,7 @@ export class ProjectsService {
       };
     }
     
-    const { products, ...projectData } = createProjectDto;
+    const { products, clientId, ...projectData } = createProjectDto;
     
     return this.prisma.project.create({
       data: {
@@ -43,6 +43,10 @@ export class ProjectsService {
         number: projectNumber,
         basePrice: basePrice,
         priceBreakdown: priceBreakdown,
+        output: projectData.output || '', // Provide default empty string if not provided
+        client: {
+          connect: { id: clientId }
+        }
       },
       include: {
         client: true,

@@ -317,6 +317,15 @@ export const ProjectsPage: React.FC = () => {
     }
     delete data.dateRange
 
+    // Clean undefined values and empty strings to prevent validation errors
+    Object.keys(data).forEach(key => {
+      if (data[key] === undefined || data[key] === null || data[key] === '') {
+        delete data[key]
+      }
+    })
+
+    console.log('Submitting project data:', JSON.stringify(data, null, 2))
+
     if (editingProject) {
       updateMutation.mutate({ id: editingProject.id, data })
     } else {
@@ -994,8 +1003,8 @@ export const ProjectsPage: React.FC = () => {
                       <Row gutter={8}>
                         <Col span={12}>
                           <Form.Item
-                            {...field}
                             name={[field.name, 'name']}
+                            fieldKey={[field.fieldKey, 'name']}
                             label="Nama Produk"
                             rules={[{ required: true, message: 'Nama produk wajib diisi' }]}
                           >
@@ -1004,8 +1013,8 @@ export const ProjectsPage: React.FC = () => {
                         </Col>
                         <Col span={6}>
                           <Form.Item
-                            {...field}
                             name={[field.name, 'quantity']}
+                            fieldKey={[field.fieldKey, 'quantity']}
                             label="Qty"
                             rules={[{ required: true, message: 'Qty wajib diisi' }]}
                           >
@@ -1014,8 +1023,8 @@ export const ProjectsPage: React.FC = () => {
                         </Col>
                         <Col span={6}>
                           <Form.Item
-                            {...field}
                             name={[field.name, 'price']}
+                            fieldKey={[field.fieldKey, 'price']}
                             label="Harga"
                             rules={[{ required: true, message: 'Harga wajib diisi' }]}
                           >
@@ -1029,9 +1038,10 @@ export const ProjectsPage: React.FC = () => {
                         </Col>
                       </Row>
                       <Form.Item
-                        {...field}
                         name={[field.name, 'description']}
+                        fieldKey={[field.fieldKey, 'description']}
                         label="Deskripsi"
+                        rules={[{ required: true, message: 'Deskripsi produk wajib diisi' }]}
                       >
                         <Input.TextArea rows={2} placeholder="Deskripsi produk/layanan" />
                       </Form.Item>
