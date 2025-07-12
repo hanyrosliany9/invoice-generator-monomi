@@ -59,6 +59,21 @@ export class ClientsService {
                 projects: true,
               },
             },
+            // Include actual data for business metrics calculation
+            quotations: {
+              select: {
+                id: true,
+                status: true,
+                totalAmount: true,
+              },
+            },
+            invoices: {
+              select: {
+                id: true,
+                status: true,
+                totalAmount: true,
+              },
+            },
           },
           orderBy: {
             createdAt: 'desc',
@@ -67,8 +82,44 @@ export class ClientsService {
         this.prisma.client.count({ where }),
       ]);
 
+      // Transform clients data to include business metrics
+      const clientsWithMetrics = clients.map(client => {
+        // Calculate quotation metrics
+        const totalQuotations = client._count.quotations;
+        const pendingQuotations = client.quotations.filter(q => 
+          q.status === 'DRAFT' || q.status === 'SENT'
+        ).length;
+
+        // Calculate invoice metrics
+        const totalInvoices = client._count.invoices;
+        const overdueInvoices = client.invoices.filter(i => i.status === 'OVERDUE').length;
+        
+        // Calculate revenue metrics
+        const totalPaid = client.invoices
+          .filter(i => i.status === 'PAID')
+          .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
+        
+        const totalPending = client.invoices
+          .filter(i => ['SENT', 'OVERDUE'].includes(i.status))
+          .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
+
+        // Remove the detailed data and add calculated metrics
+        const { quotations, invoices, ...clientData } = client;
+        
+        return {
+          ...clientData,
+          totalProjects: client._count.projects,
+          totalQuotations,
+          pendingQuotations,
+          totalInvoices,
+          overdueInvoices,
+          totalPaid,
+          totalPending,
+        };
+      });
+
       return new PaginatedResponse(
-        clients,
+        clientsWithMetrics,
         {
           page,
           limit,
@@ -119,7 +170,42 @@ export class ClientsService {
         throw new NotFoundException('Klien tidak ditemukan');
       }
 
-      return client;
+      // Calculate business metrics for individual client
+      const totalQuotations = client._count.quotations;
+      const pendingQuotations = client.quotations.filter(q => 
+        q.status === 'DRAFT' || q.status === 'SENT'
+      ).length;
+
+      const totalInvoices = client._count.invoices;
+      const overdueInvoices = client.invoices.filter(i => i.status === 'OVERDUE').length;
+      
+      // Calculate revenue metrics from ALL invoices (not just the recent 5)
+      const allInvoices = await this.prisma.invoice.findMany({
+        where: { clientId: id },
+        select: {
+          status: true,
+          totalAmount: true,
+        },
+      });
+
+      const totalPaid = allInvoices
+        .filter(i => i.status === 'PAID')
+        .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
+      
+      const totalPending = allInvoices
+        .filter(i => ['SENT', 'OVERDUE'].includes(i.status))
+        .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
+
+      return {
+        ...client,
+        totalProjects: client._count.projects,
+        totalQuotations,
+        pendingQuotations,
+        totalInvoices,
+        overdueInvoices,
+        totalPaid,
+        totalPending,
+      };
     } catch (error) {
       handleServiceError(error, 'find client', 'klien');
     }
@@ -171,15 +257,67 @@ export class ClientsService {
             select: {
               quotations: true,
               invoices: true,
+              projects: true,
+            },
+          },
+          // Include actual data for business metrics calculation
+          quotations: {
+            select: {
+              id: true,
+              status: true,
+              totalAmount: true,
+            },
+          },
+          invoices: {
+            select: {
+              id: true,
+              status: true,
+              totalAmount: true,
             },
           },
         },
       }),
     ]);
 
+    // Transform recent clients data to include business metrics
+    const recentClientsWithMetrics = recentClients.map(client => {
+      // Calculate quotation metrics
+      const totalQuotations = client._count.quotations;
+      const pendingQuotations = client.quotations.filter(q => 
+        q.status === 'DRAFT' || q.status === 'SENT'
+      ).length;
+
+      // Calculate invoice metrics
+      const totalInvoices = client._count.invoices;
+      const overdueInvoices = client.invoices.filter(i => i.status === 'OVERDUE').length;
+      
+      // Calculate revenue metrics
+      const totalPaid = client.invoices
+        .filter(i => i.status === 'PAID')
+        .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
+      
+      const totalPending = client.invoices
+        .filter(i => ['SENT', 'OVERDUE'].includes(i.status))
+        .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
+
+      // Remove the detailed data and add calculated metrics
+      const { quotations, invoices, ...clientData } = client;
+      
+      return {
+        ...clientData,
+        totalProjects: client._count.projects,
+        totalQuotations,
+        pendingQuotations,
+        totalInvoices,
+        overdueInvoices,
+        totalPaid,
+        totalPending,
+      };
+    });
+
     return {
       total,
-      recent: recentClients,
+      recent: recentClientsWithMetrics,
     };
   }
 }
