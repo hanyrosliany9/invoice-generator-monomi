@@ -318,4 +318,301 @@ export class MateraiService {
       recommendations
     };
   }
+
+  // Enhanced automation features for workflow efficiency
+
+  /**
+   * Smart materai detection with auto-suggestions
+   */
+  async smartMateraiDetection(invoiceId: string): Promise<{
+    autoDetected: boolean;
+    suggestion: {
+      action: 'APPLY_MATERAI' | 'NO_MATERAI_NEEDED' | 'REVIEW_REQUIRED';
+      confidence: number;
+      reasoning: string;
+      estimatedCost: number;
+      urgencyLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    };
+    complianceRisk: {
+      level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+      penalties: string[];
+      timeToCompliance: number; // days
+    };
+    automation: {
+      canAutoApply: boolean;
+      requiresUserConfirmation: boolean;
+      blockers: string[];
+    };
+  }> {
+    try {
+      const invoice = await this.prisma.invoice.findUnique({
+        where: { id: invoiceId },
+        include: {
+          client: true,
+          project: true,
+          quotation: true
+        }
+      });
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      const amount = Number(invoice.totalAmount);
+      const threshold = this.materaiConfig.threshold;
+      const requiresMaterai = amount > threshold;
+      
+      // Calculate confidence based on amount proximity to threshold
+      let confidence = 100;
+      if (Math.abs(amount - threshold) / threshold < 0.1) {
+        confidence = 75; // Lower confidence if close to threshold
+      }
+
+      // Determine action
+      let action: 'APPLY_MATERAI' | 'NO_MATERAI_NEEDED' | 'REVIEW_REQUIRED';
+      let reasoning: string;
+      
+      if (requiresMaterai) {
+        action = 'APPLY_MATERAI';
+        reasoning = `Invoice senilai ${TransformationUtil.formatIDR(amount)} melebihi batas materai ${TransformationUtil.formatIDR(threshold)}. Materai wajib diterapkan sesuai UU No. 13 Tahun 1985.`;
+      } else if (amount > threshold * 0.9) {
+        action = 'REVIEW_REQUIRED';
+        reasoning = `Invoice senilai ${TransformationUtil.formatIDR(amount)} mendekati batas materai. Pastikan perhitungan sudah benar.`;
+        confidence = 60;
+      } else {
+        action = 'NO_MATERAI_NEEDED';
+        reasoning = `Invoice senilai ${TransformationUtil.formatIDR(amount)} di bawah batas materai. Tidak diperlukan materai.`;
+      }
+
+      // Calculate urgency based on invoice status and due date
+      let urgencyLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'LOW';
+      if (requiresMaterai && !invoice.materaiApplied) {
+        const daysUntilDue = Math.ceil(
+          (new Date(invoice.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+        );
+        
+        if (daysUntilDue <= 1) urgencyLevel = 'CRITICAL';
+        else if (daysUntilDue <= 3) urgencyLevel = 'HIGH';
+        else if (daysUntilDue <= 7) urgencyLevel = 'MEDIUM';
+      }
+
+      // Assess compliance risk
+      let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'LOW';
+      const penalties: string[] = [];
+      let timeToCompliance = 30;
+
+      if (requiresMaterai && !invoice.materaiApplied) {
+        if (invoice.status === 'OVERDUE') {
+          riskLevel = 'CRITICAL';
+          penalties.push('Denda 2x lipat nilai materai (Rp 20.000)');
+          penalties.push('Risiko sengketa hukum');
+          timeToCompliance = 0;
+        } else if (invoice.status === 'SENT') {
+          riskLevel = 'HIGH';
+          penalties.push('Denda 2x lipat nilai materai jika terlambat');
+          timeToCompliance = Math.max(0, Math.ceil(
+            (new Date(invoice.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+          ));
+        } else {
+          riskLevel = 'MEDIUM';
+          timeToCompliance = 14;
+        }
+      }
+
+      // Determine automation capabilities
+      const blockers: string[] = [];
+      let canAutoApply = this.materaiConfig.autoApply && requiresMaterai;
+      let requiresUserConfirmation = !this.materaiConfig.autoApply || confidence < 90;
+
+      if (invoice.status === 'PAID') {
+        blockers.push('Invoice sudah dibayar, tidak dapat diubah');
+        canAutoApply = false;
+      }
+
+      if (invoice.materaiApplied) {
+        blockers.push('Materai sudah diterapkan');
+        canAutoApply = false;
+      }
+
+      return {
+        autoDetected: true,
+        suggestion: {
+          action,
+          confidence,
+          reasoning,
+          estimatedCost: requiresMaterai ? this.materaiConfig.stampDutyAmount : 0,
+          urgencyLevel
+        },
+        complianceRisk: {
+          level: riskLevel,
+          penalties,
+          timeToCompliance
+        },
+        automation: {
+          canAutoApply,
+          requiresUserConfirmation,
+          blockers
+        }
+      };
+    } catch (error) {
+      this.logger.error('Smart materai detection failed:', error);
+      throw new Error(`Smart materai detection failed: ${getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * Auto-apply materai with compliance validation
+   */
+  async autoApplyMaterai(invoiceId: string, userId: string): Promise<{
+    applied: boolean;
+    materaiAmount: number;
+    complianceNotes: string;
+    timestamp: Date;
+  }> {
+    try {
+      const detection = await this.smartMateraiDetection(invoiceId);
+      
+      if (!detection.automation.canAutoApply) {
+        throw new Error(`Cannot auto-apply materai: ${detection.automation.blockers.join(', ')}`);
+      }
+
+      if (detection.suggestion.action !== 'APPLY_MATERAI') {
+        throw new Error(`Auto-apply not recommended: ${detection.suggestion.reasoning}`);
+      }
+
+      // Apply materai
+      await this.applyMaterai(invoiceId, userId);
+
+      const timestamp = new Date();
+      const complianceNotes = `Materai diterapkan otomatis pada ${timestamp.toISOString()}. ` +
+        `Nilai invoice: ${detection.suggestion.estimatedCost > 0 ? TransformationUtil.formatIDR(detection.suggestion.estimatedCost) : 'N/A'}. ` +
+        `Dasar hukum: UU No. 13 Tahun 1985. ` +
+        `Diproses oleh: Sistem Otomatis (User: ${userId}).`;
+
+      // Track business journey event
+      const event = await this.prisma.businessJourneyEvent.create({
+        data: {
+          type: 'MATERAI_APPLIED',
+          title: 'Materai Diterapkan Otomatis',
+          description: complianceNotes,
+          status: 'COMPLETED',
+          amount: detection.suggestion.estimatedCost,
+          invoiceId: invoiceId,
+          createdBy: userId,
+        }
+      });
+      
+      // Create metadata separately
+      await this.prisma.businessJourneyEventMetadata.create({
+        data: {
+          eventId: event.id,
+          userCreated: userId,
+          source: 'SYSTEM',
+          priority: detection.suggestion.urgencyLevel === 'CRITICAL' ? 'HIGH' : 'MEDIUM',
+          tags: ['automation', 'materai', 'compliance'],
+          relatedDocuments: [invoiceId],
+          materaiRequired: true,
+          materaiAmount: this.materaiConfig.stampDutyAmount,
+          complianceStatus: 'COMPLIANT',
+        }
+      });
+
+      return {
+        applied: true,
+        materaiAmount: this.materaiConfig.stampDutyAmount,
+        complianceNotes,
+        timestamp
+      };
+    } catch (error) {
+      this.logger.error('Auto-apply materai failed:', error);
+      throw new Error(`Auto-apply materai failed: ${getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * Bulk smart materai detection for multiple invoices
+   */
+  async bulkSmartMateraiDetection(invoiceIds: string[]): Promise<{
+    results: Array<{
+      invoiceId: string;
+      invoiceNumber: string;
+      detection: any;
+      recommendation: string;
+    }>;
+    summary: {
+      requireMaterai: number;
+      noMateraiNeeded: number;
+      reviewRequired: number;
+      totalEstimatedCost: number;
+      highRiskCount: number;
+    };
+  }> {
+    try {
+      const results = [];
+      let requireMaterai = 0;
+      let noMateraiNeeded = 0;
+      let reviewRequired = 0;
+      let totalEstimatedCost = 0;
+      let highRiskCount = 0;
+
+      for (const invoiceId of invoiceIds) {
+        try {
+          const detection = await this.smartMateraiDetection(invoiceId);
+          const invoice = await this.prisma.invoice.findUnique({
+            where: { id: invoiceId },
+            select: { invoiceNumber: true }
+          });
+
+          let recommendation = '';
+          switch (detection.suggestion.action) {
+            case 'APPLY_MATERAI':
+              requireMaterai++;
+              recommendation = `Terapkan materai (${TransformationUtil.formatIDR(detection.suggestion.estimatedCost)})`;
+              totalEstimatedCost += detection.suggestion.estimatedCost;
+              break;
+            case 'NO_MATERAI_NEEDED':
+              noMateraiNeeded++;
+              recommendation = 'Tidak perlu materai';
+              break;
+            case 'REVIEW_REQUIRED':
+              reviewRequired++;
+              recommendation = 'Perlu review manual';
+              break;
+          }
+
+          if (['HIGH', 'CRITICAL'].includes(detection.complianceRisk.level)) {
+            highRiskCount++;
+          }
+
+          results.push({
+            invoiceId,
+            invoiceNumber: invoice?.invoiceNumber || 'Unknown',
+            detection,
+            recommendation
+          });
+        } catch (error) {
+          results.push({
+            invoiceId,
+            invoiceNumber: 'Error',
+            detection: null,
+            recommendation: `Error: ${getErrorMessage(error)}`
+          });
+        }
+      }
+
+      return {
+        results,
+        summary: {
+          requireMaterai,
+          noMateraiNeeded,
+          reviewRequired,
+          totalEstimatedCost,
+          highRiskCount
+        }
+      };
+    } catch (error) {
+      this.logger.error('Bulk smart materai detection failed:', error);
+      throw new Error(`Bulk smart materai detection failed: ${getErrorMessage(error)}`);
+    }
+  }
 }

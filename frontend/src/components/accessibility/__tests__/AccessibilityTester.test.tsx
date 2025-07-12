@@ -2,11 +2,9 @@
 // Comprehensive testing for WCAG 2.1 AA compliance testing functionality
 // NOTE: This file has been simplified pending installation of testing library dependencies
 
-// import React from 'react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 import AccessibilityTester from '../AccessibilityTester'
-// import { AccessibilityProvider } from '../../../contexts/AccessibilityContext'
 
 // Mock dependencies
 vi.mock('react-i18next', () => ({

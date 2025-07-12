@@ -52,7 +52,7 @@ import { formatIDR, requiresMaterai, getMateraiAmount, safeNumber, safeDivision,
 import { invoiceService, Invoice } from '../services/invoices'
 import { clientService } from '../services/clients'
 import { projectService } from '../services/projects'
-import { quotationService } from '../services/quotations'
+import { quotationService, Quotation } from '../services/quotations'
 import { InvoiceStatus } from '../types/invoice'
 import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
 import WorkflowIndicator from '../components/ui/WorkflowIndicator'
@@ -95,7 +95,7 @@ export const InvoicesPage: React.FC = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [batchLoading, setBatchLoading] = useState(false)
   const [priceInheritanceMode, setPriceInheritanceMode] = useState<'inherit' | 'custom'>('inherit')
-  const [selectedQuotation, setSelectedQuotation] = useState<any>(null)
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
   const [quotationId, setQuotationId] = useState<string | null>(null)
 
 

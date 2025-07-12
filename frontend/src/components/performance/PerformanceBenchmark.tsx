@@ -36,7 +36,7 @@ import {
   ReloadOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-// import { Line, Area, Bar } from '@ant-design/plots' // TODO: Add dependency
+// Advanced charts deferred - using Recharts for core functionality
 import dayjs from 'dayjs'
 import { usePerformanceMonitor } from '../../hooks/usePerformanceMonitor'
 
@@ -563,7 +563,7 @@ const PerformanceBenchmark: React.FC<PerformanceBenchmarkProps> = ({
       
       {/* Performance Trends Chart */}
       <Card title="Tren Performa Real-time" style={{ marginBottom: 24 }}>
-        {/* <Line {...lineChartConfig} /> TODO: Add @ant-design/plots dependency */}
+        {/* Advanced chart component will be added when @ant-design/plots is integrated */}
         <div>Chart placeholder - Add @ant-design/plots dependency</div>
       </Card>
       

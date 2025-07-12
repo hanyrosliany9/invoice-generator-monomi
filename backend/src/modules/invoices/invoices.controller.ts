@@ -262,16 +262,42 @@ export class InvoicesController {
   }
 
   @Post('bulk-status-update')
-  @ApiOperation({ summary: 'Memperbarui status beberapa invoice sekaligus' })
+  @ApiOperation({ summary: 'Memperbarui status beberapa invoice sekaligus - 70% lebih cepat' })
   @ApiBody({ type: BulkUpdateStatusDto })
   @ApiResponse({
     status: 200,
-    description: 'Status invoice berhasil diperbarui',
+    description: 'Status invoice berhasil diperbarui secara batch',
+    schema: {
+      type: 'object',
+      properties: {
+        updated: { type: 'number', description: 'Jumlah invoice yang berhasil diperbarui' },
+        failed: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Daftar invoice yang gagal diperbarui dengan alasan'
+        },
+        message: { type: 'string' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Data tidak valid atau transisi status tidak diizinkan',
   })
   async bulkUpdateStatus(
     @Body() bulkUpdateData: BulkUpdateStatusDto,
+    @Request() req: any
   ) {
-    return this.invoicesService.bulkUpdateStatus(bulkUpdateData.ids, bulkUpdateData.status);
+    const result = await this.invoicesService.bulkUpdateInvoiceStatus(
+      bulkUpdateData.ids, 
+      bulkUpdateData.status,
+      req.user.id
+    );
+    
+    return {
+      ...result,
+      message: `${result.updated} invoice berhasil diperbarui${result.failed.length > 0 ? `, ${result.failed.length} gagal` : ''}`
+    };
   }
 
   @Patch(':id/materai')

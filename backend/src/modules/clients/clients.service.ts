@@ -3,37 +3,108 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { PaginatedResponse } from '../../common/dto/api-response.dto';
+import { handleServiceError, validateIndonesianBusinessRules, sanitizeIndonesianInput } from '../../common/utils/error-handling.util';
 
 @Injectable()
 export class ClientsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createClientDto: CreateClientDto): Promise<any> {
-    return this.prisma.client.create({
-      data: createClientDto,
-    });
+    try {
+      // Validate Indonesian business rules
+      validateIndonesianBusinessRules(createClientDto);
+
+      // Sanitize input data
+      const sanitizedData = {
+        ...createClientDto,
+        name: sanitizeIndonesianInput(createClientDto.name),
+        company: createClientDto.company ? sanitizeIndonesianInput(createClientDto.company) : null,
+        address: createClientDto.address ? sanitizeIndonesianInput(createClientDto.address) : null,
+        contactPerson: createClientDto.contactPerson ? sanitizeIndonesianInput(createClientDto.contactPerson) : null,
+      };
+
+      return await this.prisma.client.create({
+        data: sanitizedData,
+      });
+    } catch (error) {
+      handleServiceError(error, 'create client', 'klien');
+    }
   }
 
   async findAll(page = 1, limit = 10, search?: string): Promise<PaginatedResponse<any[]>> {
-    const skip = (page - 1) * limit;
-    
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' as const } },
-            { email: { contains: search, mode: 'insensitive' as const } },
-            { phone: { contains: search, mode: 'insensitive' as const } },
-            { company: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
-      : {};
+    try {
+      const skip = (page - 1) * limit;
+      
+      const where = search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { email: { contains: search, mode: 'insensitive' as const } },
+              { phone: { contains: search, mode: 'insensitive' as const } },
+              { company: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {};
 
-    const [clients, total] = await Promise.all([
-      this.prisma.client.findMany({
-        where,
-        skip,
-        take: limit,
+      const [clients, total] = await Promise.all([
+        this.prisma.client.findMany({
+          where,
+          skip,
+          take: limit,
+          include: {
+            _count: {
+              select: {
+                quotations: true,
+                invoices: true,
+                projects: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+        this.prisma.client.count({ where }),
+      ]);
+
+      return new PaginatedResponse(
+        clients,
+        {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+        'Data klien berhasil diambil'
+      );
+    } catch (error) {
+      handleServiceError(error, 'find all clients', 'klien');
+    }
+  }
+
+  async findOne(id: string): Promise<any> {
+    try {
+      const client = await this.prisma.client.findUnique({
+        where: { id },
         include: {
+          quotations: {
+            take: 5,
+            orderBy: { createdAt: 'desc' },
+            include: {
+              project: true,
+            },
+          },
+          invoices: {
+            take: 5,
+            orderBy: { createdAt: 'desc' },
+            include: {
+              project: true,
+            },
+          },
+          projects: {
+            take: 5,
+            orderBy: { createdAt: 'desc' },
+          },
           _count: {
             select: {
               quotations: true,
@@ -42,62 +113,16 @@ export class ClientsService {
             },
           },
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      }),
-      this.prisma.client.count({ where }),
-    ]);
+      });
 
-    return new PaginatedResponse(
-      clients,
-      {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-      'Clients retrieved successfully'
-    );
-  }
+      if (!client) {
+        throw new NotFoundException('Klien tidak ditemukan');
+      }
 
-  async findOne(id: string): Promise<any> {
-    const client = await this.prisma.client.findUnique({
-      where: { id },
-      include: {
-        quotations: {
-          take: 5,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            project: true,
-          },
-        },
-        invoices: {
-          take: 5,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            project: true,
-          },
-        },
-        projects: {
-          take: 5,
-          orderBy: { createdAt: 'desc' },
-        },
-        _count: {
-          select: {
-            quotations: true,
-            invoices: true,
-            projects: true,
-          },
-        },
-      },
-    });
-
-    if (!client) {
-      throw new NotFoundException('Klien tidak ditemukan');
+      return client;
+    } catch (error) {
+      handleServiceError(error, 'find client', 'klien');
     }
-
-    return client;
   }
 
   async update(id: string, updateClientDto: UpdateClientDto): Promise<any> {

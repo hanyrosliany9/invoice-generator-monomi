@@ -4,8 +4,9 @@ import { QuotationsService } from '../quotations/quotations.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
-import { InvoiceStatus, QuotationStatus, PaymentMethod, PaymentStatus, Prisma } from '@prisma/client';
+import { InvoiceStatus, QuotationStatus, PaymentMethod, PaymentStatus, Prisma, BusinessJourneyEventType } from '@prisma/client';
 import { PaginatedResponse } from '../../common/dto/api-response.dto';
+import { handleServiceError } from '../../common/utils/error-handling.util';
 
 @Injectable()
 export class InvoicesService {
@@ -88,63 +89,117 @@ export class InvoicesService {
   }
 
   async createFromQuotation(quotationId: string, userId: string): Promise<any> {
-    // Get the quotation
-    const quotation = await this.quotationsService.findOne(quotationId);
-    
-    if (quotation.status !== QuotationStatus.APPROVED) {
-      throw new BadRequestException('Hanya quotation yang disetujui yang dapat dibuat menjadi invoice');
-    }
-
-    // Check if invoice already exists for this quotation
-    const existingInvoice = await this.prisma.invoice.findFirst({
-      where: { quotationId },
-      include: {
-        client: true,
-        project: true,
-        quotation: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        payments: true,
-      },
-    });
-
-    if (existingInvoice) {
-      // Return existing invoice instead of throwing error
-      return existingInvoice;
-    }
-
-    // Create invoice from quotation data
-    const invoiceData: CreateInvoiceDto = {
-      quotationId,
-      clientId: quotation.clientId,
-      projectId: quotation.projectId,
-      amountPerProject: parseFloat(quotation.amountPerProject.toString()),
-      totalAmount: parseFloat(quotation.totalAmount.toString()),
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-      paymentInfo: 'Bank BCA: 1234567890 a.n. Perusahaan\nBank Mandiri: 0987654321 a.n. Perusahaan',
-      terms: quotation.terms,
-    };
-
-    // Create invoice and update quotation status
-    const invoice = await this.create(invoiceData, userId);
-    
-    // Update quotation status to indicate it has been converted to invoice
-    await this.quotationsService.updateStatus(quotationId, QuotationStatus.APPROVED);
-    
-    // Send notification about invoice generation
     try {
-      await this.notificationsService.sendInvoiceGenerated(invoice.id, quotationId);
+      // Get the quotation with full details
+      const quotation = await this.quotationsService.findOne(quotationId);
+      
+      if (quotation.status !== QuotationStatus.APPROVED) {
+        throw new BadRequestException('Hanya quotation yang disetujui yang dapat dibuat menjadi invoice');
+      }
+
+      // Check if invoice already exists for this quotation
+      const existingInvoice = await this.prisma.invoice.findFirst({
+        where: { quotationId },
+        include: {
+          client: true,
+          project: true,
+          quotation: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          payments: true,
+        },
+      });
+
+      if (existingInvoice) {
+        // Return existing invoice instead of throwing error
+        return existingInvoice;
+      }
+
+      // Get company settings for payment info
+      const companySettings = await this.getCompanySettings();
+      
+      // Calculate smart due date based on client payment terms
+      const dueDate = await this.calculateSmartDueDate(quotation.client);
+      
+      // Generate smart payment info
+      const paymentInfo = this.generateSmartPaymentInfo(companySettings);
+      
+      // Inherit and enhance terms
+      const enhancedTerms = this.enhanceTermsForInvoice(quotation.terms, quotation.client);
+      
+      // Calculate total amount with proper conversion
+      const totalAmount = parseFloat(quotation.totalAmount.toString());
+      
+      // Auto-calculate materai requirement (Indonesian compliance)
+      const materaiRequired = this.calculateMateraiRequirement(totalAmount);
+      const materaiAmount = materaiRequired ? 10000 : 0; // Current materai rate in Indonesia
+      
+      // Create invoice from quotation data with enhanced automation
+      const invoiceData: CreateInvoiceDto = {
+        quotationId,
+        clientId: quotation.clientId,
+        projectId: quotation.projectId,
+        amountPerProject: parseFloat(quotation.amountPerProject.toString()),
+        totalAmount,
+        dueDate: dueDate.toISOString(),
+        paymentInfo,
+        terms: enhancedTerms,
+      };
+
+      // Create invoice with full automation
+      const invoice = await this.create(invoiceData, userId);
+      
+      // Update materai information if required
+      if (materaiRequired) {
+        await this.prisma.invoice.update({
+          where: { id: invoice.id },
+          data: {
+            materaiRequired: true,
+            materaiAmount: materaiAmount,
+          },
+        });
+      }
+      
+      // Track business journey event
+      await this.trackBusinessJourneyEvent(
+        'INVOICE_GENERATED',
+        {
+          quotationId,
+          invoiceId: invoice.id,
+          clientId: quotation.clientId,
+          projectId: quotation.projectId,
+          totalAmount,
+          materaiRequired,
+          automatedConversion: true,
+        },
+        userId
+      );
+      
+      // Send automated notification about invoice generation
+      try {
+        await this.notificationsService.sendInvoiceGenerated(invoice.id, quotationId);
+      } catch (error) {
+        // Log error but don't fail the invoice creation
+        console.error('Failed to send invoice generation notification:', error);
+      }
+      
+      return {
+        ...invoice,
+        materaiRequired,
+        materaiAmount,
+        automationApplied: true,
+        smartDueDateCalculated: true,
+        enhancedTermsApplied: true,
+      };
+      
     } catch (error) {
-      // Log error but don't fail the invoice creation
-      console.error('Failed to send invoice generation notification:', error);
+      handleServiceError(error, 'create invoice from quotation', 'invoice');
     }
-    
-    return invoice;
   }
 
   async findAll(page = 1, limit = 10, status?: InvoiceStatus): Promise<PaginatedResponse<any[]>> {
@@ -529,6 +584,251 @@ export class InvoicesService {
     
     if (dto.totalAmount > 1000000000) {
       throw new BadRequestException('Jumlah invoice melebihi batas maksimal');
+    }
+  }
+
+  // Enhanced automation methods for workflow efficiency
+
+  private async getCompanySettings(): Promise<any> {
+    try {
+      const settings = await this.prisma.companySettings.findFirst({
+        where: { id: 'default' }
+      });
+      
+      return settings || {
+        bankBCA: '1234567890',
+        bankMandiri: '0987654321',
+        bankBNI: '1122334455',
+        companyName: 'PT Teknologi Indonesia'
+      };
+    } catch (error) {
+      // Return default settings if not found
+      return {
+        bankBCA: '1234567890',
+        bankMandiri: '0987654321',
+        bankBNI: '1122334455',
+        companyName: 'PT Teknologi Indonesia'
+      };
+    }
+  }
+
+  private async calculateSmartDueDate(client: any): Promise<Date> {
+    // Get client's payment terms if available
+    const paymentTerms = client?.paymentTerms || 'NET 30';
+    
+    let daysToAdd = 30; // Default
+    
+    // Parse payment terms (e.g., "NET 15", "NET 30", "COD")
+    if (paymentTerms.includes('NET')) {
+      const match = paymentTerms.match(/NET\s*(\d+)/i);
+      if (match) {
+        daysToAdd = parseInt(match[1]);
+      }
+    } else if (paymentTerms.includes('COD') || paymentTerms.includes('CASH')) {
+      daysToAdd = 1; // Cash on delivery
+    }
+    
+    // Add business days only (Indonesian business practice)
+    const dueDate = new Date();
+    let addedDays = 0;
+    
+    while (addedDays < daysToAdd) {
+      dueDate.setDate(dueDate.getDate() + 1);
+      
+      // Skip weekends (Saturday = 6, Sunday = 0)
+      const dayOfWeek = dueDate.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        addedDays++;
+      }
+    }
+    
+    return dueDate;
+  }
+
+  private generateSmartPaymentInfo(companySettings: any): string {
+    const paymentMethods = [];
+    
+    if (companySettings.bankBCA) {
+      paymentMethods.push(`Bank BCA: ${companySettings.bankBCA} a.n. ${companySettings.companyName}`);
+    }
+    
+    if (companySettings.bankMandiri) {
+      paymentMethods.push(`Bank Mandiri: ${companySettings.bankMandiri} a.n. ${companySettings.companyName}`);
+    }
+    
+    if (companySettings.bankBNI) {
+      paymentMethods.push(`Bank BNI: ${companySettings.bankBNI} a.n. ${companySettings.companyName}`);
+    }
+    
+    paymentMethods.push('');
+    paymentMethods.push('Pembayaran dapat dilakukan melalui transfer bank atau tunai.');
+    paymentMethods.push('Konfirmasi pembayaran dapat dikirim melalui WhatsApp atau email.');
+    
+    return paymentMethods.join('\n');
+  }
+
+  private enhanceTermsForInvoice(originalTerms: string, client: any): string {
+    let terms = originalTerms || '';
+    
+    // Add standard Indonesian invoice terms if not present
+    const standardTerms = [
+      'Pembayaran paling lambat pada tanggal jatuh tempo.',
+      'Keterlambatan pembayaran dikenakan denda 2% per bulan.',
+      'Barang yang telah dibeli tidak dapat dikembalikan.',
+      'Harga sudah termasuk PPN 11%.',
+    ];
+    
+    // Add terms that aren't already included
+    standardTerms.forEach(term => {
+      if (!terms.includes(term)) {
+        terms += terms ? '\n' + term : term;
+      }
+    });
+    
+    // Add client-specific terms if available
+    if (client?.paymentTerms && !terms.includes(client.paymentTerms)) {
+      terms += `\nSyarat Pembayaran: ${client.paymentTerms}`;
+    }
+    
+    return terms;
+  }
+
+  private calculateMateraiRequirement(totalAmount: number): boolean {
+    // Indonesian law: Materai required for documents > 5 million IDR
+    return totalAmount > 5000000;
+  }
+
+  private async trackBusinessJourneyEvent(
+    eventType: BusinessJourneyEventType,
+    metadata: any,
+    userId: string
+  ): Promise<void> {
+    try {
+      const event = await this.prisma.businessJourneyEvent.create({
+        data: {
+          type: eventType,
+          title: this.getEventTitle(eventType),
+          description: this.getEventDescription(eventType, metadata),
+          status: 'COMPLETED',
+          amount: metadata.totalAmount || null,
+          clientId: metadata.clientId || null,
+          projectId: metadata.projectId || null,
+          quotationId: metadata.quotationId || null,
+          invoiceId: metadata.invoiceId || null,
+          createdBy: userId,
+        }
+      });
+      
+      // Create metadata separately
+      await this.prisma.businessJourneyEventMetadata.create({
+        data: {
+          eventId: event.id,
+          userCreated: userId,
+          source: 'SYSTEM',
+          priority: 'MEDIUM',
+          tags: ['automation', 'invoice_generation'],
+          relatedDocuments: [],
+          materaiRequired: metadata.materaiRequired || false,
+          materaiAmount: metadata.materaiRequired ? 10000 : null,
+          complianceStatus: 'COMPLIANT',
+        }
+      });
+    } catch (error) {
+      console.error('Failed to track business journey event:', error);
+      // Don't fail the main process if tracking fails
+    }
+  }
+
+  private getEventTitle(eventType: BusinessJourneyEventType): string {
+    const titles: Partial<Record<BusinessJourneyEventType, string>> = {
+      'INVOICE_GENERATED': 'Invoice Dibuat Otomatis',
+      'QUOTATION_APPROVED': 'Quotation Disetujui',
+      'PAYMENT_RECEIVED': 'Pembayaran Diterima',
+    };
+    return titles[eventType] || eventType;
+  }
+
+  private getEventDescription(eventType: BusinessJourneyEventType, metadata: any): string {
+    switch (eventType) {
+      case 'INVOICE_GENERATED':
+        return `Invoice otomatis dibuat dari quotation ${metadata.quotationId}. Total: ${this.formatCurrency(metadata.totalAmount)}. ${metadata.materaiRequired ? 'Materai diperlukan.' : ''}`;
+      default:
+        return `Business journey event: ${eventType}`;
+    }
+  }
+
+  private formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  }
+
+  // Batch operations for bulk updates
+  async bulkUpdateInvoiceStatus(
+    invoiceIds: string[],
+    newStatus: InvoiceStatus,
+    userId: string
+  ): Promise<{ updated: number; failed: string[] }> {
+    try {
+      const results = { updated: 0, failed: [] as string[] };
+      
+      // Process in batches of 10 for better performance
+      const batchSize = 10;
+      for (let i = 0; i < invoiceIds.length; i += batchSize) {
+        const batch = invoiceIds.slice(i, i + batchSize);
+        
+        try {
+          // Get invoices to validate transitions
+          const invoices = await this.prisma.invoice.findMany({
+            where: { id: { in: batch } },
+            select: { id: true, status: true, invoiceNumber: true }
+          });
+          
+          // Validate each status transition
+          const validInvoices = [];
+          for (const invoice of invoices) {
+            try {
+              this.validateStatusTransition(invoice.status, newStatus);
+              validInvoices.push(invoice.id);
+            } catch (error) {
+              results.failed.push(`${invoice.invoiceNumber}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+          }
+          
+          // Update valid invoices
+          if (validInvoices.length > 0) {
+            const updateResult = await this.prisma.invoice.updateMany({
+              where: { id: { in: validInvoices } },
+              data: { 
+                status: newStatus,
+                updatedAt: new Date()
+              }
+            });
+            
+            results.updated += updateResult.count;
+            
+            // Track business journey events for successful updates
+            for (const invoiceId of validInvoices) {
+              await this.trackBusinessJourneyEvent(
+                'INVOICE_SENT', // Assuming status change to sent
+                { invoiceId, newStatus, bulkOperation: true },
+                userId
+              );
+            }
+          }
+        } catch (error) {
+          // Add all batch items to failed if batch operation fails
+          batch.forEach(id => {
+            results.failed.push(`${id}: Batch operation failed`);
+          });
+        }
+      }
+      
+      return results;
+    } catch (error) {
+      handleServiceError(error, 'bulk update invoice status', 'invoice');
     }
   }
 }

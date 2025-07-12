@@ -2,7 +2,6 @@
 // Testing for accessible form components with Indonesian business context
 // NOTE: This file has been simplified pending installation of testing library dependencies
 
-// import React from 'react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 import {
