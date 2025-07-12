@@ -46,6 +46,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    user: root
     command: >
       sh -c "
         echo '🧹 Cleaning caches...' &&
