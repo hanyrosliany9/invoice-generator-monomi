@@ -65,6 +65,8 @@ export const ClientsPage: React.FC = () => {
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [viewModalVisible, setViewModalVisible] = useState(false)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
+  const [batchLoading, setBatchLoading] = useState(false)
   const [form] = Form.useForm()
   const { message } = App.useApp()
 
@@ -102,6 +104,39 @@ export const ClientsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       message.success(t('messages.success.deleted', { item: 'Klien' }))
+    }
+  })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => clientService.deleteClient(id)))
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+      setSelectedRowKeys([])
+      setBatchLoading(false)
+      message.success(`Berhasil menghapus ${selectedRowKeys.length} klien`)
+    },
+    onError: () => {
+      setBatchLoading(false)
+      message.error('Gagal menghapus klien')
+    }
+  })
+
+  const bulkUpdateStatusMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[], status: 'active' | 'inactive' }) => {
+      await Promise.all(ids.map(id => clientService.updateClient(id, { status })))
+    },
+    onSuccess: (_, { status }) => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+      setSelectedRowKeys([])
+      setBatchLoading(false)
+      const statusText = status === 'active' ? 'aktif' : 'tidak aktif'
+      message.success(`Berhasil mengubah status ${selectedRowKeys.length} klien menjadi ${statusText}`)
+    },
+    onError: () => {
+      setBatchLoading(false)
+      message.error('Gagal mengubah status klien')
     }
   })
 
@@ -191,11 +226,33 @@ export const ClientsPage: React.FC = () => {
     deleteMutation.mutate(id)
   }
 
+  const handleBulkDelete = () => {
+    if (selectedRowKeys.length === 0) return
+    setBatchLoading(true)
+    bulkDeleteMutation.mutate(selectedRowKeys)
+  }
+
+  const handleBulkActivate = () => {
+    if (selectedRowKeys.length === 0) return
+    setBatchLoading(true)
+    bulkUpdateStatusMutation.mutate({ ids: selectedRowKeys, status: 'active' })
+  }
+
+  const handleBulkDeactivate = () => {
+    if (selectedRowKeys.length === 0) return
+    setBatchLoading(true)
+    bulkUpdateStatusMutation.mutate({ ids: selectedRowKeys, status: 'inactive' })
+  }
+
+  const handleClearSelection = () => {
+    setSelectedRowKeys([])
+  }
+
   const handleFormSubmit = (values: any) => {
     if (editingClient) {
       updateMutation.mutate({ id: editingClient.id, data: values })
     } else {
-      createMutation.mutate({ ...values, status: 'active' })
+      createMutation.mutate(values)
     }
   }
 
@@ -221,6 +278,25 @@ export const ClientsPage: React.FC = () => {
         onClick: () => handleDelete(client.id)
       }
     ]
+  }
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys: React.Key[]) => {
+      setSelectedRowKeys(newSelectedRowKeys as string[])
+    },
+    onSelectAll: (selected: boolean) => {
+      if (selected) {
+        const allKeys = filteredClients.map(client => client.id)
+        setSelectedRowKeys(allKeys)
+      } else {
+        setSelectedRowKeys([])
+      }
+    },
+    getCheckboxProps: (record: Client) => ({
+      disabled: false,
+      name: record.name,
+    }),
   }
 
   const columns = [
@@ -518,6 +594,62 @@ export const ClientsPage: React.FC = () => {
           </Col>
         </Row>
 
+        {/* Bulk Actions Toolbar */}
+        {selectedRowKeys.length > 0 && (
+          <Card className="mb-4 border-blue-200 bg-blue-50" size="small">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <Text strong className="text-blue-700">
+                  {selectedRowKeys.length} klien dipilih
+                </Text>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    size="small"
+                    type="primary"
+                    loading={batchLoading}
+                    onClick={handleBulkActivate}
+                    disabled={selectedRowKeys.length === 0}
+                  >
+                    Aktifkan ({selectedRowKeys.filter(id => {
+                      const client = filteredClients.find(c => c.id === id)
+                      return client?.status === 'inactive'
+                    }).length})
+                  </Button>
+                  <Button
+                    size="small"
+                    loading={batchLoading}
+                    onClick={handleBulkDeactivate}
+                    disabled={selectedRowKeys.length === 0}
+                  >
+                    Nonaktifkan ({selectedRowKeys.filter(id => {
+                      const client = filteredClients.find(c => c.id === id)
+                      return client?.status === 'active'
+                    }).length})
+                  </Button>
+                  <Button
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    loading={batchLoading}
+                    onClick={handleBulkDelete}
+                    disabled={selectedRowKeys.length === 0}
+                  >
+                    Hapus ({selectedRowKeys.length})
+                  </Button>
+                </div>
+              </div>
+              <Button
+                size="small"
+                type="text"
+                onClick={handleClearSelection}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                Batal
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Controls */}
         <div className="flex justify-between items-center mb-4">
           <Space>
@@ -562,6 +694,7 @@ export const ClientsPage: React.FC = () => {
           dataSource={filteredClients}
           loading={isLoading}
           rowKey="id"
+          rowSelection={rowSelection}
           pagination={{
             total: filteredClients.length,
             pageSize: 10,

@@ -40,7 +40,9 @@ export interface CreateClientRequest {
   paymentTerms: string
 }
 
-export interface UpdateClientRequest extends Partial<CreateClientRequest> {}
+export interface UpdateClientRequest extends Partial<CreateClientRequest> {
+  status?: string
+}
 
 export const clientService = {
   // Get all clients

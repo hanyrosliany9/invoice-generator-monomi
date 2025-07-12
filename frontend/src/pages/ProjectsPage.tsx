@@ -76,6 +76,8 @@ export const ProjectsPage: React.FC = () => {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [viewModalVisible, setViewModalVisible] = useState(false)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
+  const [batchLoading, setBatchLoading] = useState(false)
   const [form] = Form.useForm()
   const { message } = App.useApp()
 
@@ -118,6 +120,45 @@ export const ProjectsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       message.success(t('messages.success.deleted', { item: 'Proyek' }))
+    }
+  })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => projectService.deleteProject(id)))
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      setSelectedRowKeys([])
+      setBatchLoading(false)
+      message.success(`Berhasil menghapus ${selectedRowKeys.length} proyek`)
+    },
+    onError: () => {
+      setBatchLoading(false)
+      message.error('Gagal menghapus proyek')
+    }
+  })
+
+  const bulkUpdateStatusMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[], status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD' }) => {
+      await Promise.all(ids.map(id => projectService.updateProject(id, { status })))
+    },
+    onSuccess: (_, { status }) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      setSelectedRowKeys([])
+      setBatchLoading(false)
+      const statusText = {
+        'PLANNING': 'perencanaan',
+        'IN_PROGRESS': 'sedang berjalan',
+        'COMPLETED': 'selesai',
+        'CANCELLED': 'dibatalkan',
+        'ON_HOLD': 'ditahan'
+      }[status] || status
+      message.success(`Berhasil mengubah status ${selectedRowKeys.length} proyek menjadi ${statusText}`)
+    },
+    onError: () => {
+      setBatchLoading(false)
+      message.error('Gagal mengubah status proyek')
     }
   })
 
@@ -252,6 +293,22 @@ export const ProjectsPage: React.FC = () => {
     deleteMutation.mutate(id)
   }
 
+  const handleBulkDelete = () => {
+    if (selectedRowKeys.length === 0) return
+    setBatchLoading(true)
+    bulkDeleteMutation.mutate(selectedRowKeys)
+  }
+
+  const handleBulkStatusUpdate = (status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD') => {
+    if (selectedRowKeys.length === 0) return
+    setBatchLoading(true)
+    bulkUpdateStatusMutation.mutate({ ids: selectedRowKeys, status })
+  }
+
+  const handleClearSelection = () => {
+    setSelectedRowKeys([])
+  }
+
   const handleFormSubmit = (values: any) => {
     const data = {
       ...values,
@@ -289,6 +346,25 @@ export const ProjectsPage: React.FC = () => {
         onClick: () => handleDelete(project.id)
       }
     ]
+  }
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys: React.Key[]) => {
+      setSelectedRowKeys(newSelectedRowKeys as string[])
+    },
+    onSelectAll: (selected: boolean) => {
+      if (selected) {
+        const allKeys = filteredProjects.map(project => project.id)
+        setSelectedRowKeys(allKeys)
+      } else {
+        setSelectedRowKeys([])
+      }
+    },
+    getCheckboxProps: (record: Project) => ({
+      disabled: false,
+      name: record.number,
+    }),
   }
 
   const columns = [
@@ -706,6 +782,76 @@ export const ProjectsPage: React.FC = () => {
           </Col>
         </Row>
 
+        {/* Bulk Actions Toolbar */}
+        {selectedRowKeys.length > 0 && (
+          <Card className="mb-4 border-blue-200 bg-blue-50" size="small">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <Text strong className="text-blue-700">
+                  {selectedRowKeys.length} proyek dipilih
+                </Text>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    size="small"
+                    type="primary"
+                    icon={<PlayCircleOutlined />}
+                    loading={batchLoading}
+                    onClick={() => handleBulkStatusUpdate('IN_PROGRESS')}
+                    disabled={selectedRowKeys.length === 0}
+                  >
+                    Mulai ({selectedRowKeys.filter(id => {
+                      const project = filteredProjects.find(p => p.id === id)
+                      return project?.status === 'PLANNING'
+                    }).length})
+                  </Button>
+                  <Button
+                    size="small"
+                    icon={<CheckCircleOutlined />}
+                    loading={batchLoading}
+                    onClick={() => handleBulkStatusUpdate('COMPLETED')}
+                    disabled={selectedRowKeys.length === 0}
+                  >
+                    Selesaikan ({selectedRowKeys.filter(id => {
+                      const project = filteredProjects.find(p => p.id === id)
+                      return project?.status === 'IN_PROGRESS'
+                    }).length})
+                  </Button>
+                  <Button
+                    size="small"
+                    icon={<StopOutlined />}
+                    loading={batchLoading}
+                    onClick={() => handleBulkStatusUpdate('ON_HOLD')}
+                    disabled={selectedRowKeys.length === 0}
+                  >
+                    Tahan ({selectedRowKeys.filter(id => {
+                      const project = filteredProjects.find(p => p.id === id)
+                      return project?.status === 'IN_PROGRESS'
+                    }).length})
+                  </Button>
+                  <Button
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    loading={batchLoading}
+                    onClick={handleBulkDelete}
+                    disabled={selectedRowKeys.length === 0}
+                  >
+                    Hapus ({selectedRowKeys.length})
+                  </Button>
+                </div>
+              </div>
+              <Button
+                size="small"
+                type="text"
+                onClick={handleClearSelection}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                Batal
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Controls */}
         <div className="flex justify-between items-center mb-4">
           <Space>
@@ -763,6 +909,7 @@ export const ProjectsPage: React.FC = () => {
           dataSource={filteredProjects}
           loading={isLoading}
           rowKey="id"
+          rowSelection={rowSelection}
           pagination={{
             total: filteredProjects.length,
             pageSize: 10,
