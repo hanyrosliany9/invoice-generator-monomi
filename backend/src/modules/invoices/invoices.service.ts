@@ -429,7 +429,7 @@ export class InvoicesService {
     return {
       total,
       byStatus: statusCounts,
-      totalRevenue: totalRevenue._sum.totalAmount || 0,
+      totalRevenue: totalRevenue._sum.totalAmount ? Number(totalRevenue._sum.totalAmount) : 0,
       overdueCount,
     };
   }

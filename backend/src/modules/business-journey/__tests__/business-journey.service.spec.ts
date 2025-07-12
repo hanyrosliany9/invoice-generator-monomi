@@ -158,6 +158,7 @@ describe('BusinessJourneyService', () => {
         amount: 6000000, // Above 5M IDR threshold
         metadata: {
           ...createEventDto.metadata,
+          userCreated: mockUserId, // Ensure userCreated is explicitly set
           materaiRequired: false // Should trigger warning
         }
       }
@@ -552,8 +553,11 @@ describe('BusinessJourneyService', () => {
       )
 
       expect(result).toBeDefined()
-      expect(result!.type).toBe(BusinessJourneyEventType.INVOICE_GENERATED)
-      expect(result!.metadata.materaiRequired).toBe(true)
+      expect(result).not.toBeNull()
+      if (result) {
+        expect(result.type).toBe(BusinessJourneyEventType.INVOICE_GENERATED)
+        expect(result.metadata?.materaiRequired).toBe(true)
+      }
     })
 
     it('should return null for unsupported entity/action combinations', async () => {

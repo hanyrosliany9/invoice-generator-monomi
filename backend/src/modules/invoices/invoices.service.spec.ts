@@ -67,7 +67,6 @@ describe('InvoicesService', () => {
       const expectedInvoice = {
         id: 'invoice-1',
         invoiceNumber: 'INV-202501-001',
-        totalAmount: 75000000,
         materaiRequired: true,
         materaiApplied: false,
         status: InvoiceStatus.DRAFT,
@@ -102,7 +101,6 @@ describe('InvoicesService', () => {
       const expectedInvoice = {
         id: 'invoice-1',
         invoiceNumber: 'INV-202501-001',
-        totalAmount: 3000000,
         materaiRequired: false,
         materaiApplied: false,
         status: InvoiceStatus.DRAFT,

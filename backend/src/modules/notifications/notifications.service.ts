@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { NotificationType, SendNotificationDto } from './dto/send-notification.dto';
-import { getErrorMessage } from '../../common/utils/error-handling.util';
+import { getErrorMessage, isError } from '../../common/utils/error-handling.util';
 
 @Injectable()
 export class NotificationsService {
@@ -74,7 +74,7 @@ export class NotificationsService {
       // Log notification in database
       await this.logNotification(dto, 'SENT');
     } catch (error) {
-      this.logger.error(`Failed to send notification: ${getErrorMessage(error)}`, error.stack);
+      this.logger.error(`Failed to send notification: ${getErrorMessage(error)}`, isError(error) ? error.stack : undefined);
       await this.logNotification(dto, 'FAILED');
       throw error;
     }
@@ -235,7 +235,7 @@ export class NotificationsService {
         return;
       }
 
-      const statusMap = {
+      const statusMap: Record<string, string> = {
         'DRAFT': 'Draft',
         'SENT': 'Terkirim',
         'APPROVED': 'Disetujui',

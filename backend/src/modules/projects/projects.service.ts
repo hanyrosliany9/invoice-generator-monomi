@@ -42,7 +42,7 @@ export class ProjectsService {
         ...projectData,
         number: projectNumber,
         basePrice: basePrice,
-        priceBreakdown: priceBreakdown,
+        priceBreakdown: priceBreakdown || undefined,
         output: projectData.output || '', // Provide default empty string if not provided
         client: {
           connect: { id: clientId }
@@ -142,7 +142,7 @@ export class ProjectsService {
       },
     });
 
-    if (hasRecords._count.quotations > 0 || hasRecords._count.invoices > 0) {
+    if (hasRecords && (hasRecords._count.quotations > 0 || hasRecords._count.invoices > 0)) {
       throw new Error('Tidak dapat menghapus proyek yang memiliki quotation atau invoice');
     }
 

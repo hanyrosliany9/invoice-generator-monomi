@@ -13,5 +13,5 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @IsOptional()
   @IsString({ message: 'Password harus berupa string' })
   @MinLength(6, { message: 'Password minimal 6 karakter' })
-  password?: string;
+  override password?: string;
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, HttpCode, HttpStatus, BadRequestException, NotFoundException } from '@nestjs/common'
 import { PaymentsService } from './payments.service'
 import { CreatePaymentDto, UpdatePaymentDto, PaymentResponseDto } from './dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
@@ -21,11 +21,7 @@ export class PaymentsController {
         status: 'success'
       }
     } catch (error) {
-      return {
-        data: null,
-        message: getErrorMessage(error) || 'Failed to create payment',
-        status: 'error'
-      }
+      throw new BadRequestException(getErrorMessage(error) || 'Failed to create payment')
     }
   }
 
@@ -93,11 +89,7 @@ export class PaymentsController {
         status: 'success'
       }
     } catch (error) {
-      return {
-        data: null,
-        message: getErrorMessage(error) || 'Failed to retrieve payment',
-        status: 'error'
-      }
+      throw new NotFoundException(getErrorMessage(error) || 'Failed to retrieve payment')
     }
   }
 
@@ -111,11 +103,7 @@ export class PaymentsController {
         status: 'success'
       }
     } catch (error) {
-      return {
-        data: null,
-        message: getErrorMessage(error) || 'Failed to update payment',
-        status: 'error'
-      }
+      throw new BadRequestException(getErrorMessage(error) || 'Failed to update payment')
     }
   }
 
@@ -133,11 +121,7 @@ export class PaymentsController {
         status: 'success'
       }
     } catch (error) {
-      return {
-        data: null,
-        message: getErrorMessage(error) || 'Failed to confirm payment',
-        status: 'error'
-      }
+      throw new BadRequestException(getErrorMessage(error) || 'Failed to confirm payment')
     }
   }
 
