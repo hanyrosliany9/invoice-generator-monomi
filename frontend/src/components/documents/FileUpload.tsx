@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, Button, message, List, Typography, Tag, Space, Popconfirm } from 'antd';
-import { UploadOutlined, DeleteOutlined, DownloadOutlined, FileOutlined } from '@ant-design/icons';
+import { Upload, Button, message, List, Typography, Tag, Space, Popconfirm, Modal } from 'antd';
+import { UploadOutlined, DeleteOutlined, DownloadOutlined, FileOutlined, EyeOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 
 const { Text } = Typography;
@@ -30,6 +30,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onDocumentsChange,
 }) => {
   const [uploading, setUploading] = useState(false);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -152,6 +154,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     }
   };
 
+  const handlePreview = (document: Document) => {
+    setPreviewDocument(document);
+    setPreviewVisible(true);
+  };
+
   const handleDelete = async (documentId: string) => {
     try {
       const response = await fetch(`/api/v1/documents/${documentId}`, {
@@ -167,6 +174,51 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     } catch (error) {
       message.error('Delete failed');
     }
+  };
+
+  const renderPreviewContent = () => {
+    if (!previewDocument) return null;
+
+    const previewUrl = `/api/v1/documents/preview/${previewDocument.id}`;
+    const { mimeType } = previewDocument;
+
+    if (mimeType === 'application/pdf') {
+      return (
+        <iframe
+          src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=1`}
+          style={{ width: '100%', height: '100%', border: 'none' }}
+          title={previewDocument.originalFileName}
+        />
+      );
+    }
+
+    if (mimeType.startsWith('image/')) {
+      return (
+        <div style={{ textAlign: 'center', height: '100%', overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img
+            src={previewUrl}
+            alt={previewDocument.originalFileName}
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+          />
+        </div>
+      );
+    }
+
+    // For other file types (Word, Excel, etc.)
+    return (
+      <div style={{ textAlign: 'center', padding: '40px' }}>
+        <FileOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
+        <p>Preview not available for this file type.</p>
+        <p>You can download the file to view it.</p>
+        <Button
+          type="primary"
+          icon={<DownloadOutlined />}
+          onClick={() => handleDownload(previewDocument.id, previewDocument.originalFileName)}
+        >
+          Download File
+        </Button>
+      </div>
+    );
   };
 
   return (
@@ -200,6 +252,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           renderItem={(doc) => (
             <List.Item
               actions={[
+                <Button
+                  key="preview"
+                  type="text"
+                  icon={<EyeOutlined />}
+                  onClick={() => handlePreview(doc)}
+                  title="Preview"
+                />,
                 <Button
                   key="download"
                   type="text"
@@ -254,6 +313,44 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <p>No documents uploaded yet</p>
         </div>
       )}
+
+      {/* Preview Modal */}
+      <Modal
+        title={previewDocument ? `Preview: ${previewDocument.originalFileName}` : 'Preview'}
+        open={previewVisible}
+        onCancel={() => {
+          setPreviewVisible(false);
+          setPreviewDocument(null);
+        }}
+        width="95vw"
+        style={{ 
+          top: 20,
+          paddingBottom: 0,
+          maxWidth: 'none'
+        }}
+        bodyStyle={{
+          height: '85vh',
+          padding: 0,
+          overflow: 'hidden'
+        }}
+        footer={[
+          <Button key="download" icon={<DownloadOutlined />} onClick={() => {
+            if (previewDocument) {
+              handleDownload(previewDocument.id, previewDocument.originalFileName);
+            }
+          }}>
+            Download
+          </Button>,
+          <Button key="close" onClick={() => {
+            setPreviewVisible(false);
+            setPreviewDocument(null);
+          }}>
+            Close
+          </Button>,
+        ]}
+      >
+        {renderPreviewContent()}
+      </Modal>
     </div>
   );
 };

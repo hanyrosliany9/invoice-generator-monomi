@@ -127,6 +127,27 @@ export class DocumentsController {
     return res.sendFile(document.filePath);
   }
 
+  @Get('preview/:id')
+  async previewDocument(@Param('id') id: string, @Res() res: Response) {
+    const document = await this.documentsService.getDocumentById(id);
+    
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    if (!fs.existsSync(document.filePath)) {
+      throw new NotFoundException('File not found on disk');
+    }
+
+    res.setHeader('Content-Type', document.mimeType);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${document.originalFileName}"`,
+    );
+    
+    return res.sendFile(document.filePath);
+  }
+
   @Delete(':id')
   async deleteDocument(@Param('id') id: string) {
     const document = await this.documentsService.getDocumentById(id);
