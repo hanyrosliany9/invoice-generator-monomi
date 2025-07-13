@@ -42,6 +42,7 @@ import {
   MoreOutlined,
   PlusOutlined,
   PrinterOutlined,
+  ProjectOutlined,
   SearchOutlined,
   SendOutlined,
   SettingOutlined,
@@ -900,7 +901,7 @@ export const InvoicesPage: React.FC = () => {
                   onClick={() => navigateToQuotation(invoice.quotationId || '')}
                   className='text-xs text-blue-600 hover:text-blue-800 p-0'
                 >
-                  📋 {invoice.quotation?.quotationNumber || 'Quotation'}
+                  <FileTextOutlined /> {invoice.quotation?.quotationNumber || 'Quotation'}
                 </Button>
               </div>
             )}
@@ -916,7 +917,7 @@ export const InvoicesPage: React.FC = () => {
                   }
                   className='text-xs text-purple-600 hover:text-purple-800 p-0'
                 >
-                  📊 {invoice.project?.number}
+                  <ProjectOutlined /> {invoice.project?.number}
                 </Button>
               </div>
             )}
@@ -935,13 +936,13 @@ export const InvoicesPage: React.FC = () => {
                 <span
                   className={`text-xs ${invoice.materaiApplied ? 'text-green-600' : 'text-orange-600'}`}
                 >
-                  📋 {invoice.materaiApplied ? '✓' : '!'}
+                  <FileTextOutlined /> {invoice.materaiApplied ? '✓' : '!'}
                 </span>
               </Tooltip>
             )}
             {isOverdue(invoice) && (
               <Tooltip title='Invoice is overdue'>
-                <span className='text-xs text-red-600'>⏰</span>
+                <span className='text-xs text-red-600'><ClockCircleOutlined /></span>
               </Tooltip>
             )}
           </div>
@@ -1751,7 +1752,7 @@ export const InvoicesPage: React.FC = () => {
 
                 {priceInheritanceMode === 'inherit' && selectedQuotation && (
                   <Alert
-                    message={`💡 Smart inheritance: ${formatIDR(selectedQuotation.totalAmount || selectedQuotation.amountPerProject || 0)} will be automatically applied`}
+                    message={`Smart inheritance: ${formatIDR(selectedQuotation.totalAmount || selectedQuotation.amountPerProject || 0)} will be automatically applied`}
                     type='info'
                     showIcon
                     style={{
@@ -1762,7 +1763,7 @@ export const InvoicesPage: React.FC = () => {
                 )}
 
                 <div className='text-xs text-gray-500 mt-2'>
-                  💡 Tip: This smart feature reduces data entry by 50% and
+                  Tip: This smart feature reduces data entry by 50% and
                   prevents pricing errors
                 </div>
               </Space>
