@@ -1,11 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { InvoicesService } from './invoices.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { QuotationsService } from '../quotations/quotations.service';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { InvoiceStatus, QuotationStatus } from '@prisma/client';
+import { Test, TestingModule } from "@nestjs/testing";
+import { InvoicesService } from "./invoices.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { QuotationsService } from "../quotations/quotations.service";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { InvoiceStatus, QuotationStatus } from "@prisma/client";
 
-describe('InvoicesService', () => {
+describe("InvoicesService", () => {
   let service: InvoicesService;
   let prismaService: PrismaService;
   let quotationsService: QuotationsService;
@@ -48,25 +48,25 @@ describe('InvoicesService', () => {
     quotationsService = module.get<QuotationsService>(QuotationsService);
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(service).toBeDefined();
   });
 
-  describe('create', () => {
-    it('should create invoice with materai calculation', async () => {
+  describe("create", () => {
+    it("should create invoice with materai calculation", async () => {
       const createInvoiceDto = {
-        clientId: 'client-1',
-        projectId: 'project-1',
+        clientId: "client-1",
+        projectId: "project-1",
         amountPerProject: 75000000,
         totalAmount: 75000000,
-        dueDate: new Date('2025-02-09').toISOString(),
-        paymentInfo: 'Bank details',
-        terms: 'Payment terms',
+        dueDate: new Date("2025-02-09").toISOString(),
+        paymentInfo: "Bank details",
+        terms: "Payment terms",
       };
 
       const expectedInvoice = {
-        id: 'invoice-1',
-        invoiceNumber: 'INV-202501-001',
+        id: "invoice-1",
+        invoiceNumber: "INV-202501-001",
         materaiRequired: true,
         materaiApplied: false,
         status: InvoiceStatus.DRAFT,
@@ -75,32 +75,32 @@ describe('InvoicesService', () => {
 
       mockPrismaService.invoice.create.mockResolvedValue(expectedInvoice);
 
-      const result = await service.create(createInvoiceDto, 'user-id');
+      const result = await service.create(createInvoiceDto, "user-id");
 
       expect(result).toEqual(expectedInvoice);
       expect(mockPrismaService.invoice.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           materaiRequired: true,
-          createdBy: 'user-id',
+          createdBy: "user-id",
         }),
         include: expect.any(Object),
       });
     });
 
-    it('should not require materai for amounts under 5 million', async () => {
+    it("should not require materai for amounts under 5 million", async () => {
       const createInvoiceDto = {
-        clientId: 'client-1',
-        projectId: 'project-1',
+        clientId: "client-1",
+        projectId: "project-1",
         amountPerProject: 3000000,
         totalAmount: 3000000,
-        dueDate: new Date('2025-02-09').toISOString(),
-        paymentInfo: 'Bank details',
-        terms: 'Payment terms',
+        dueDate: new Date("2025-02-09").toISOString(),
+        paymentInfo: "Bank details",
+        terms: "Payment terms",
       };
 
       const expectedInvoice = {
-        id: 'invoice-1',
-        invoiceNumber: 'INV-202501-001',
+        id: "invoice-1",
+        invoiceNumber: "INV-202501-001",
         materaiRequired: false,
         materaiApplied: false,
         status: InvoiceStatus.DRAFT,
@@ -109,7 +109,7 @@ describe('InvoicesService', () => {
 
       mockPrismaService.invoice.create.mockResolvedValue(expectedInvoice);
 
-      const result = await service.create(createInvoiceDto, 'user-id');
+      const result = await service.create(createInvoiceDto, "user-id");
 
       expect(result).toEqual(expectedInvoice);
       expect(mockPrismaService.invoice.create).toHaveBeenCalledWith({
@@ -121,25 +121,25 @@ describe('InvoicesService', () => {
     });
   });
 
-  describe('createFromQuotation', () => {
-    it('should create invoice from approved quotation', async () => {
-      const quotationId = 'quotation-1';
+  describe("createFromQuotation", () => {
+    it("should create invoice from approved quotation", async () => {
+      const quotationId = "quotation-1";
       const mockQuotation = {
         id: quotationId,
         status: QuotationStatus.APPROVED,
-        clientId: 'client-1',
-        projectId: 'project-1',
+        clientId: "client-1",
+        projectId: "project-1",
         amountPerProject: { toNumber: () => 75000000 },
         totalAmount: { toNumber: () => 75000000 },
-        terms: 'Payment terms',
+        terms: "Payment terms",
       };
 
       mockQuotationsService.findOne.mockResolvedValue(mockQuotation);
       mockPrismaService.invoice.findFirst.mockResolvedValue(null);
 
       const expectedInvoice = {
-        id: 'invoice-1',
-        invoiceNumber: 'INV-202501-001',
+        id: "invoice-1",
+        invoiceNumber: "INV-202501-001",
         quotationId,
         totalAmount: 75000000,
         materaiRequired: true,
@@ -148,7 +148,7 @@ describe('InvoicesService', () => {
 
       mockPrismaService.invoice.create.mockResolvedValue(expectedInvoice);
 
-      const result = await service.createFromQuotation(quotationId, 'user-id');
+      const result = await service.createFromQuotation(quotationId, "user-id");
 
       expect(result).toEqual(expectedInvoice);
       expect(mockQuotationsService.findOne).toHaveBeenCalledWith(quotationId);
@@ -157,39 +157,39 @@ describe('InvoicesService', () => {
       });
     });
 
-    it('should throw error for non-approved quotation', async () => {
-      const quotationId = 'quotation-1';
+    it("should throw error for non-approved quotation", async () => {
+      const quotationId = "quotation-1";
       const mockQuotation = {
         id: quotationId,
         status: QuotationStatus.SENT,
-        clientId: 'client-1',
-        projectId: 'project-1',
+        clientId: "client-1",
+        projectId: "project-1",
         amountPerProject: { toNumber: () => 75000000 },
         totalAmount: { toNumber: () => 75000000 },
-        terms: 'Payment terms',
+        terms: "Payment terms",
       };
 
       mockQuotationsService.findOne.mockResolvedValue(mockQuotation);
 
       await expect(
-        service.createFromQuotation(quotationId, 'user-id'),
+        service.createFromQuotation(quotationId, "user-id"),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw error if invoice already exists for quotation', async () => {
-      const quotationId = 'quotation-1';
+    it("should throw error if invoice already exists for quotation", async () => {
+      const quotationId = "quotation-1";
       const mockQuotation = {
         id: quotationId,
         status: QuotationStatus.APPROVED,
-        clientId: 'client-1',
-        projectId: 'project-1',
+        clientId: "client-1",
+        projectId: "project-1",
         amountPerProject: { toNumber: () => 75000000 },
         totalAmount: { toNumber: () => 75000000 },
-        terms: 'Payment terms',
+        terms: "Payment terms",
       };
 
       const existingInvoice = {
-        id: 'invoice-1',
+        id: "invoice-1",
         quotationId,
       };
 
@@ -197,14 +197,14 @@ describe('InvoicesService', () => {
       mockPrismaService.invoice.findFirst.mockResolvedValue(existingInvoice);
 
       await expect(
-        service.createFromQuotation(quotationId, 'user-id'),
+        service.createFromQuotation(quotationId, "user-id"),
       ).rejects.toThrow(BadRequestException);
     });
   });
 
-  describe('updateMateraiStatus', () => {
-    it('should update materai status for invoice that requires it', async () => {
-      const invoiceId = 'invoice-1';
+  describe("updateMateraiStatus", () => {
+    it("should update materai status for invoice that requires it", async () => {
+      const invoiceId = "invoice-1";
       const mockInvoice = {
         id: invoiceId,
         materaiRequired: true,
@@ -229,8 +229,8 @@ describe('InvoicesService', () => {
       });
     });
 
-    it('should throw error for invoice that does not require materai', async () => {
-      const invoiceId = 'invoice-1';
+    it("should throw error for invoice that does not require materai", async () => {
+      const invoiceId = "invoice-1";
       const mockInvoice = {
         id: invoiceId,
         materaiRequired: false,
@@ -245,8 +245,8 @@ describe('InvoicesService', () => {
     });
   });
 
-  describe('generateInvoiceNumber', () => {
-    it('should generate invoice number with correct format', async () => {
+  describe("generateInvoiceNumber", () => {
+    it("should generate invoice number with correct format", async () => {
       mockPrismaService.invoice.count.mockResolvedValue(5);
 
       const result = await service.generateInvoiceNumber();
@@ -263,8 +263,8 @@ describe('InvoicesService', () => {
     });
   });
 
-  describe('getInvoiceStats', () => {
-    it('should return invoice statistics', async () => {
+  describe("getInvoiceStats", () => {
+    it("should return invoice statistics", async () => {
       const mockTotal = 10;
       const mockByStatus = [
         { status: InvoiceStatus.DRAFT, _count: { status: 2 } },

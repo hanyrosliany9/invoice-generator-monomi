@@ -1,5 +1,5 @@
 import React from 'react'
-import { Row, Col, Spin } from 'antd'
+import { Col, Row, Spin } from 'antd'
 
 interface EntityFormLayoutProps {
   children: React.ReactNode
@@ -21,39 +21,35 @@ export const EntityFormLayout: React.FC<EntityFormLayoutProps> = ({
   'data-testid': dataTestId,
 }) => {
   return (
-    <div 
+    <div
       className={className}
       data-testid={dataTestId}
-      style={{ 
-        padding: '16px 24px', 
-        maxWidth: '1400px', 
-        margin: '0 auto' 
+      style={{
+        padding: '16px 24px',
+        maxWidth: '1400px',
+        margin: '0 auto',
       }}
     >
-      <Spin spinning={loading} tip="Loading...">
+      <Spin spinning={loading} tip='Loading...'>
         {/* Hero Section */}
-        <div style={{ marginBottom: '24px' }}>
-          {hero}
-        </div>
-        
+        <div style={{ marginBottom: '24px' }}>{hero}</div>
+
         {/* Main Content Area */}
         <Row gutter={[24, 24]}>
           {/* Main Form Content */}
-          <Col 
-            xs={24} 
-            md={sidebar ? 16 : 24} 
+          <Col
+            xs={24}
+            md={sidebar ? 16 : 24}
             lg={preview ? 12 : sidebar ? 18 : 24}
           >
-            <div>
-              {children}
-            </div>
+            <div>{children}</div>
           </Col>
-          
+
           {/* Sidebar */}
           {sidebar && (
-            <Col 
-              xs={24} 
-              md={8} 
+            <Col
+              xs={24}
+              md={8}
               lg={preview ? 6 : 6}
               style={{
                 order: 1,
@@ -71,12 +67,12 @@ export const EntityFormLayout: React.FC<EntityFormLayoutProps> = ({
               </div>
             </Col>
           )}
-          
+
           {/* Preview Panel */}
           {preview && (
-            <Col 
-              xs={24} 
-              md={sidebar ? 24 : 8} 
+            <Col
+              xs={24}
+              md={sidebar ? 24 : 8}
               lg={6}
               style={{
                 order: 2,

@@ -1,22 +1,22 @@
 // Feature Flags Backend Service for Indonesian Business Management System
 // Implements safe deployment, rollout management, and rollback capabilities
 
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../modules/prisma/prisma.service';
-import { 
-  INDONESIAN_BUSINESS_FEATURE_FLAGS, 
-  ENVIRONMENT_CONFIG, 
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../modules/prisma/prisma.service";
+import {
+  INDONESIAN_BUSINESS_FEATURE_FLAGS,
+  ENVIRONMENT_CONFIG,
   SAFETY_CHECKS_CONFIG,
   INDONESIAN_REGION_ROLLOUT_STRATEGIES,
-  BUSINESS_SIZE_ROLLOUT_CONFIG 
-} from '../config/feature-flags.config';
+  BUSINESS_SIZE_ROLLOUT_CONFIG,
+} from "../config/feature-flags.config";
 
 export interface FeatureFlagUser {
   id: string;
   email: string;
   region: string;
-  businessSize: 'micro' | 'small' | 'medium';
-  userType: 'admin' | 'staff' | 'client';
+  businessSize: "micro" | "small" | "medium";
+  userType: "admin" | "staff" | "client";
   registrationDate: Date;
   preferences: {
     language: string;
@@ -26,7 +26,7 @@ export interface FeatureFlagUser {
 }
 
 export interface RolloutConfig {
-  strategy: 'instant' | 'gradual' | 'canary' | 'blue_green';
+  strategy: "instant" | "gradual" | "canary" | "blue_green";
   duration?: number;
   canaryPercentage?: number;
   healthChecks?: string[];
@@ -73,26 +73,26 @@ export class FeatureFlagsService {
     const userProfile = await this.prisma.user.findUnique({
       where: { id: user.id },
       include: {
-        preferences: true
-      }
+        preferences: true,
+      },
     });
 
     if (!userProfile) {
-      throw new Error('User profile not found');
+      throw new Error("User profile not found");
     }
 
     return {
       id: userProfile.id,
       email: userProfile.email,
-      region: 'Jakarta',
-      businessSize: 'medium',
-      userType: userProfile.role as 'admin' | 'staff' | 'client',
+      region: "Jakarta",
+      businessSize: "medium",
+      userType: userProfile.role as "admin" | "staff" | "client",
       registrationDate: userProfile.createdAt,
       preferences: {
-        language: userProfile.preferences?.language || 'id-ID',
-        timezone: userProfile.preferences?.timezone || 'Asia/Jakarta',
-        currency: userProfile.preferences?.currency || 'IDR'
-      }
+        language: userProfile.preferences?.language || "id-ID",
+        timezone: userProfile.preferences?.timezone || "Asia/Jakarta",
+        currency: userProfile.preferences?.currency || "IDR",
+      },
     };
   }
 
@@ -100,10 +100,11 @@ export class FeatureFlagsService {
    * Get feature flags for specific user
    */
   async getUserFeatureFlags(
-    user: FeatureFlagUser, 
-    flagIds?: string[]
+    user: FeatureFlagUser,
+    flagIds?: string[],
   ): Promise<Record<string, boolean>> {
-    const targetFlags = flagIds || Object.keys(INDONESIAN_BUSINESS_FEATURE_FLAGS);
+    const targetFlags =
+      flagIds || Object.keys(INDONESIAN_BUSINESS_FEATURE_FLAGS);
     const results: Record<string, boolean> = {};
 
     for (const flagId of targetFlags) {
@@ -119,39 +120,49 @@ export class FeatureFlagsService {
   /**
    * Check if feature is enabled for specific user
    */
-  async isFeatureEnabledForUser(flagId: string, user: FeatureFlagUser): Promise<boolean> {
+  async isFeatureEnabledForUser(
+    flagId: string,
+    user: FeatureFlagUser,
+  ): Promise<boolean> {
     const config = INDONESIAN_BUSINESS_FEATURE_FLAGS[flagId];
-    
+
     if (!config) {
       this.logger.warn(`Feature flag '${flagId}' not found in configuration`);
       return false;
     }
 
     // Check environment-specific enablement
-    const currentEnv = process.env.NODE_ENV || 'development';
+    const currentEnv = process.env.NODE_ENV || "development";
     if (!config.environments[currentEnv as keyof typeof config.environments]) {
       return false;
     }
 
     // Get current flag state from database
     const flagState = await this.getFeatureFlagState(flagId);
-    
+
     if (!flagState?.enabled) {
       return false;
     }
 
     // Check target regions (Indonesian business context)
-    if (config.targetRegions.length > 0 && !config.targetRegions.includes(user.region)) {
+    if (
+      config.targetRegions.length > 0 &&
+      !config.targetRegions.includes(user.region)
+    ) {
       return false;
     }
 
     // Check business size targeting
-    if (config.targetBusinessSizes.length > 0 && !config.targetBusinessSizes.includes(user.businessSize)) {
+    if (
+      config.targetBusinessSizes.length > 0 &&
+      !config.targetBusinessSizes.includes(user.businessSize)
+    ) {
       return false;
     }
 
     // Check rollout percentage with consistent user bucketing
-    const rolloutPercentage = (flagState.rules as any)?.rolloutPercentage || 100;
+    const rolloutPercentage =
+      (flagState.rules as any)?.rolloutPercentage || 100;
     if (rolloutPercentage < 100) {
       const userBucket = this.getUserBucket(user.id, flagId);
       if (userBucket > rolloutPercentage) {
@@ -176,12 +187,12 @@ export class FeatureFlagsService {
    * Enable feature flag with rollout strategy
    */
   async enableFeatureFlag(
-    flagId: string, 
-    rolloutConfig: RolloutConfig, 
-    adminUserId: string
+    flagId: string,
+    rolloutConfig: RolloutConfig,
+    adminUserId: string,
   ): Promise<any> {
     const config = INDONESIAN_BUSINESS_FEATURE_FLAGS[flagId];
-    
+
     if (!config) {
       throw new Error(`Feature flag '${flagId}' not found`);
     }
@@ -189,7 +200,9 @@ export class FeatureFlagsService {
     // Perform safety checks
     const safetyCheck = await this.performSafetyChecks(flagId);
     if (!safetyCheck.safe) {
-      throw new Error(`Safety checks failed: ${safetyCheck.blockers.join(', ')}`);
+      throw new Error(
+        `Safety checks failed: ${safetyCheck.blockers.join(", ")}`,
+      );
     }
 
     // Create or update flag in database
@@ -197,26 +210,28 @@ export class FeatureFlagsService {
       where: { name: flagId },
       update: {
         enabled: true,
-        rules: rolloutConfig as any
+        rules: rolloutConfig as any,
       },
       create: {
         name: config.name,
         description: config.description,
         enabled: true,
-        rules: rolloutConfig as any
-      }
+        rules: rolloutConfig as any,
+      },
     });
 
     // Execute rollout strategy
     await this.executeRolloutStrategy(flagId, rolloutConfig);
 
     // Log rollout event
-    await this.logFeatureFlagEvent(flagId, 'ENABLED', adminUserId, {
+    await this.logFeatureFlagEvent(flagId, "ENABLED", adminUserId, {
       strategy: rolloutConfig.strategy,
-      safetyChecks: safetyCheck
+      safetyChecks: safetyCheck,
     });
 
-    this.logger.log(`🚀 Feature '${flagId}' enabled with ${rolloutConfig.strategy} strategy`);
+    this.logger.log(
+      `🚀 Feature '${flagId}' enabled with ${rolloutConfig.strategy} strategy`,
+    );
 
     return flagState;
   }
@@ -225,30 +240,36 @@ export class FeatureFlagsService {
    * Disable feature flag (immediate rollback)
    */
   async disableFeatureFlag(
-    flagId: string, 
-    reason: string, 
-    adminUserId: string
+    flagId: string,
+    reason: string,
+    adminUserId: string,
   ): Promise<any> {
     const flagState = await this.prisma.featureFlag.update({
       where: { name: flagId },
       data: {
         enabled: false,
-        rules: { rolloutPercentage: 0, rollbackReason: reason, rollbackTimestamp: new Date() },
+        rules: {
+          rolloutPercentage: 0,
+          rollbackReason: reason,
+          rollbackTimestamp: new Date(),
+        },
         disabledReason: reason,
-        disabledAt: new Date()
-      }
+        disabledAt: new Date(),
+      },
     });
 
     // Log rollback event
-    await this.logFeatureFlagEvent(flagId, 'DISABLED', adminUserId, {
+    await this.logFeatureFlagEvent(flagId, "DISABLED", adminUserId, {
       reason,
-      rollbackType: 'manual'
+      rollbackType: "manual",
     });
 
     // Send rollback notification
-    await this.sendRollbackNotification(flagId, reason, 'manual');
+    await this.sendRollbackNotification(flagId, reason, "manual");
 
-    this.logger.log(`🔄 Feature '${flagId}' disabled and rolled back: ${reason}`);
+    this.logger.log(
+      `🔄 Feature '${flagId}' disabled and rolled back: ${reason}`,
+    );
 
     return flagState;
   }
@@ -257,33 +278,36 @@ export class FeatureFlagsService {
    * Update rollout percentage
    */
   async updateRolloutPercentage(
-    flagId: string, 
-    percentage: number, 
-    adminUserId: string
+    flagId: string,
+    percentage: number,
+    adminUserId: string,
   ): Promise<any> {
     const previousState = await this.getFeatureFlagState(flagId);
-    
+
     const flagState = await this.prisma.featureFlag.update({
       where: { name: flagId },
       data: {
         enabled: percentage > 0,
-        rules: { rolloutPercentage: percentage }
-      }
+        rules: { rolloutPercentage: percentage },
+      },
     });
 
     // Monitor health during rollout increase
-    const previousPercentage = (previousState?.rules as any)?.rolloutPercentage || 0;
+    const previousPercentage =
+      (previousState?.rules as any)?.rolloutPercentage || 0;
     if (percentage > previousPercentage) {
       this.scheduleHealthMonitoring(flagId, percentage);
     }
 
     // Log rollout update
-    await this.logFeatureFlagEvent(flagId, 'ROLLOUT_UPDATED', adminUserId, {
+    await this.logFeatureFlagEvent(flagId, "ROLLOUT_UPDATED", adminUserId, {
       previousPercentage,
-      newPercentage: percentage
+      newPercentage: percentage,
     });
 
-    this.logger.log(`📊 Feature '${flagId}' rollout updated: ${previousPercentage}% → ${percentage}%`);
+    this.logger.log(
+      `📊 Feature '${flagId}' rollout updated: ${previousPercentage}% → ${percentage}%`,
+    );
 
     return flagState;
   }
@@ -296,36 +320,48 @@ export class FeatureFlagsService {
       safe: true,
       warnings: [],
       blockers: [],
-      recommendations: []
+      recommendations: [],
     };
 
     // Check business hours (Indonesian timezone)
     if (SAFETY_CHECKS_CONFIG.businessHours.enabled) {
-      const jakartaTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
+      const jakartaTime = new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Jakarta",
+      });
       const currentHour = new Date(jakartaTime).getHours();
-      
+
       if (currentHour < 8 || currentHour > 17) {
-        result.warnings.push('Deployment outside Indonesian business hours (08:00-17:00 WIB)');
+        result.warnings.push(
+          "Deployment outside Indonesian business hours (08:00-17:00 WIB)",
+        );
       }
     }
 
     // Check prayer time (Friday 11:30-13:00 WIB)
     if (SAFETY_CHECKS_CONFIG.prayerTime.enabled) {
-      const jakartaTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
+      const jakartaTime = new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Jakarta",
+      });
       const currentTime = new Date(jakartaTime);
       const currentDay = currentTime.getDay();
       const currentHour = currentTime.getHours();
       const currentMinute = currentTime.getMinutes();
-      
-      if (currentDay === 5 && 
-          ((currentHour === 11 && currentMinute >= 30) || 
-           currentHour === 12 || 
-           (currentHour === 13 && currentMinute <= 0))) {
+
+      if (
+        currentDay === 5 &&
+        ((currentHour === 11 && currentMinute >= 30) ||
+          currentHour === 12 ||
+          (currentHour === 13 && currentMinute <= 0))
+      ) {
         if (SAFETY_CHECKS_CONFIG.prayerTime.fridayPrayer.blockDeployment) {
           result.safe = false;
-          result.blockers.push('Deployment blocked during Friday prayer time (11:30-13:00 WIB)');
+          result.blockers.push(
+            "Deployment blocked during Friday prayer time (11:30-13:00 WIB)",
+          );
         } else {
-          result.warnings.push('Deployment during Friday prayer time - consider rescheduling');
+          result.warnings.push(
+            "Deployment during Friday prayer time - consider rescheduling",
+          );
         }
       }
     }
@@ -333,21 +369,30 @@ export class FeatureFlagsService {
     // Check Indonesian holidays
     if (SAFETY_CHECKS_CONFIG.holidays.enabled) {
       const isHoliday = await this.checkIndonesianHoliday();
-      if (isHoliday && SAFETY_CHECKS_CONFIG.holidays.blockDeploymentOnHolidays) {
+      if (
+        isHoliday &&
+        SAFETY_CHECKS_CONFIG.holidays.blockDeploymentOnHolidays
+      ) {
         result.safe = false;
-        result.blockers.push('Deployment blocked on Indonesian holiday');
+        result.blockers.push("Deployment blocked on Indonesian holiday");
       }
     }
 
     // Check cultural validation requirements
     if (SAFETY_CHECKS_CONFIG.culturalValidation.enabled) {
       const culturalScore = await this.getCulturalValidationScore(flagId);
-      if (culturalScore < SAFETY_CHECKS_CONFIG.culturalValidation.minimumScore) {
+      if (
+        culturalScore < SAFETY_CHECKS_CONFIG.culturalValidation.minimumScore
+      ) {
         if (SAFETY_CHECKS_CONFIG.culturalValidation.blockOnLowScore) {
           result.safe = false;
-          result.blockers.push(`Cultural validation score too low: ${culturalScore}/100`);
+          result.blockers.push(
+            `Cultural validation score too low: ${culturalScore}/100`,
+          );
         } else {
-          result.warnings.push(`Cultural validation score below threshold: ${culturalScore}/100`);
+          result.warnings.push(
+            `Cultural validation score below threshold: ${culturalScore}/100`,
+          );
         }
       }
     }
@@ -355,17 +400,26 @@ export class FeatureFlagsService {
     // Check materai compliance
     if (SAFETY_CHECKS_CONFIG.materaiCompliance.enabled) {
       const materaiCompliant = await this.checkMateraiCompliance(flagId);
-      if (!materaiCompliant && SAFETY_CHECKS_CONFIG.materaiCompliance.blockOnComplianceFailure) {
+      if (
+        !materaiCompliant &&
+        SAFETY_CHECKS_CONFIG.materaiCompliance.blockOnComplianceFailure
+      ) {
         result.safe = false;
-        result.blockers.push('Materai compliance validation failed');
+        result.blockers.push("Materai compliance validation failed");
       }
     }
 
     // Generate recommendations
     if (result.warnings.length > 0 || result.blockers.length > 0) {
-      result.recommendations.push('Review Indonesian business context requirements');
-      result.recommendations.push('Consider scheduling deployment during optimal hours');
-      result.recommendations.push('Validate cultural appropriateness and compliance');
+      result.recommendations.push(
+        "Review Indonesian business context requirements",
+      );
+      result.recommendations.push(
+        "Consider scheduling deployment during optimal hours",
+      );
+      result.recommendations.push(
+        "Validate cultural appropriateness and compliance",
+      );
     }
 
     return result;
@@ -391,7 +445,7 @@ export class FeatureFlagsService {
       culturalValidationScore: usageMetrics.culturalValidationScore,
       materaiComplianceRate: usageMetrics.materaiComplianceRate,
       whatsappIntegrationUsage: usageMetrics.whatsappIntegrationUsage,
-      performanceImpact: performanceMetrics
+      performanceImpact: performanceMetrics,
     };
   }
 
@@ -401,8 +455,8 @@ export class FeatureFlagsService {
   async performEmergencyRollback(
     flagId: string,
     reason: string,
-    severity: 'low' | 'medium' | 'high' | 'critical',
-    adminUserId: string
+    severity: "low" | "medium" | "high" | "critical",
+    adminUserId: string,
   ): Promise<any> {
     // Immediate disable
     const flagState = await this.prisma.featureFlag.update({
@@ -411,18 +465,20 @@ export class FeatureFlagsService {
         enabled: false,
         rules: { rolloutPercentage: 0, rollbackSeverity: severity },
         disabledReason: reason,
-        disabledAt: new Date()
-      }
+        disabledAt: new Date(),
+      },
     });
 
     // Log emergency rollback
-    await this.logFeatureFlagEvent(flagId, 'EMERGENCY_ROLLBACK', adminUserId, {
+    await this.logFeatureFlagEvent(flagId, "EMERGENCY_ROLLBACK", adminUserId, {
       reason,
       severity,
-      rollbackType: 'emergency'
+      rollbackType: "emergency",
     });
 
-    this.logger.error(`🚨 EMERGENCY ROLLBACK: Feature '${flagId}' - ${reason} (Severity: ${severity})`);
+    this.logger.error(
+      `🚨 EMERGENCY ROLLBACK: Feature '${flagId}' - ${reason} (Severity: ${severity})`,
+    );
 
     return flagState;
   }
@@ -430,29 +486,35 @@ export class FeatureFlagsService {
   /**
    * Send emergency alert for rollback
    */
-  async sendEmergencyAlert(flagId: string, reason: string, severity: string): Promise<void> {
+  async sendEmergencyAlert(
+    flagId: string,
+    reason: string,
+    severity: string,
+  ): Promise<void> {
     // Implementation would send alerts via email, Slack, SMS, etc.
-    this.logger.error(`🚨 EMERGENCY ALERT: Feature flag '${flagId}' emergency rollback - ${reason} (${severity})`);
-    
+    this.logger.error(
+      `🚨 EMERGENCY ALERT: Feature flag '${flagId}' emergency rollback - ${reason} (${severity})`,
+    );
+
     // Log to audit trail
-    await this.logFeatureFlagEvent(flagId, 'EMERGENCY_ALERT_SENT', 'system', {
+    await this.logFeatureFlagEvent(flagId, "EMERGENCY_ALERT_SENT", "system", {
       reason,
       severity,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
 
   // Private helper methods
 
-  private determineBusinessSize(company: any): 'micro' | 'small' | 'medium' {
-    if (!company) return 'micro';
-    
+  private determineBusinessSize(company: any): "micro" | "small" | "medium" {
+    if (!company) return "micro";
+
     const employees = company.employeeCount || 0;
     const revenue = company.annualRevenue || 0;
-    
-    if (employees <= 4 || revenue <= 300000000) return 'micro'; // <= 300M IDR
-    if (employees <= 19 || revenue <= 2500000000) return 'small'; // <= 2.5B IDR
-    return 'medium';
+
+    if (employees <= 4 || revenue <= 300000000) return "micro"; // <= 300M IDR
+    if (employees <= 19 || revenue <= 2500000000) return "small"; // <= 2.5B IDR
+    return "medium";
   }
 
   private getUserBucket(userId: string, flagId: string): number {
@@ -461,7 +523,7 @@ export class FeatureFlagsService {
     let hash = 0;
     for (let i = 0; i < combined.length; i++) {
       const char = combined.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
     return Math.abs(hash) % 100;
@@ -469,22 +531,25 @@ export class FeatureFlagsService {
 
   private async getFeatureFlagState(flagId: string): Promise<any> {
     return await this.prisma.featureFlag.findUnique({
-      where: { name: flagId }
+      where: { name: flagId },
     });
   }
 
-  private async executeRolloutStrategy(flagId: string, config: RolloutConfig): Promise<void> {
+  private async executeRolloutStrategy(
+    flagId: string,
+    config: RolloutConfig,
+  ): Promise<void> {
     switch (config.strategy) {
-      case 'instant':
+      case "instant":
         await this.instantRollout(flagId);
         break;
-      case 'gradual':
+      case "gradual":
         await this.gradualRollout(flagId, config);
         break;
-      case 'canary':
+      case "canary":
         await this.canaryRollout(flagId, config);
         break;
-      case 'blue_green':
+      case "blue_green":
         await this.blueGreenRollout(flagId, config);
         break;
     }
@@ -493,26 +558,29 @@ export class FeatureFlagsService {
   private async instantRollout(flagId: string): Promise<void> {
     await this.prisma.featureFlag.update({
       where: { name: flagId },
-      data: { enabled: true }
+      data: { enabled: true },
     });
-    
+
     this.logger.log(`🚀 Instant rollout completed: ${flagId}`);
   }
 
-  private async gradualRollout(flagId: string, config: RolloutConfig): Promise<void> {
+  private async gradualRollout(
+    flagId: string,
+    config: RolloutConfig,
+  ): Promise<void> {
     const duration = config.duration || 60; // minutes
     const steps = 10;
     const stepDuration = (duration / steps) * 60 * 1000; // milliseconds
 
     for (let step = 1; step <= steps; step++) {
       const percentage = (step / steps) * 100;
-      
+
       await this.prisma.featureFlag.update({
         where: { name: flagId },
-        data: { 
+        data: {
           enabled: percentage > 0,
-          rules: { rolloutPercentage: percentage }
-        }
+          rules: { rolloutPercentage: percentage },
+        },
       });
 
       this.logger.log(`📈 Gradual rollout: ${flagId} at ${percentage}%`);
@@ -521,24 +589,29 @@ export class FeatureFlagsService {
       await this.monitorRolloutHealth(flagId);
 
       if (step < steps) {
-        await new Promise(resolve => setTimeout(resolve, stepDuration));
+        await new Promise((resolve) => setTimeout(resolve, stepDuration));
       }
     }
   }
 
-  private async canaryRollout(flagId: string, config: RolloutConfig): Promise<void> {
+  private async canaryRollout(
+    flagId: string,
+    config: RolloutConfig,
+  ): Promise<void> {
     const canaryPercentage = config.canaryPercentage || 5;
-    
+
     // Start canary
     await this.prisma.featureFlag.update({
       where: { name: flagId },
-      data: { 
+      data: {
         enabled: canaryPercentage > 0,
-        rules: { rolloutPercentage: canaryPercentage }
-      }
+        rules: { rolloutPercentage: canaryPercentage },
+      },
     });
 
-    this.logger.log(`🐤 Canary rollout started: ${flagId} at ${canaryPercentage}%`);
+    this.logger.log(
+      `🐤 Canary rollout started: ${flagId} at ${canaryPercentage}%`,
+    );
 
     // Monitor canary for 30 minutes
     const canaryHealthy = await this.monitorCanaryHealth(flagId, 30);
@@ -547,104 +620,129 @@ export class FeatureFlagsService {
       // Proceed with full rollout
       await this.prisma.featureFlag.update({
         where: { name: flagId },
-        data: { enabled: true }
+        data: { enabled: true },
       });
       this.logger.log(`✅ Canary successful: ${flagId} fully deployed`);
     } else {
       // Rollback canary
       await this.prisma.featureFlag.update({
         where: { name: flagId },
-        data: { 
+        data: {
           enabled: false,
-          rules: { rolloutPercentage: 0 }
-        }
+          rules: { rolloutPercentage: 0 },
+        },
       });
       this.logger.error(`❌ Canary failed: ${flagId} rolled back`);
-      throw new Error('Canary deployment failed health checks');
+      throw new Error("Canary deployment failed health checks");
     }
   }
 
-  private async blueGreenRollout(flagId: string, config: RolloutConfig): Promise<void> {
+  private async blueGreenRollout(
+    flagId: string,
+    config: RolloutConfig,
+  ): Promise<void> {
     // Blue-green deployment simulation
     this.logger.log(`🔄 Blue-Green deployment: ${flagId}`);
-    
+
     await this.prisma.featureFlag.update({
       where: { name: flagId },
-      data: { enabled: true }
+      data: { enabled: true },
     });
-    
+
     this.logger.log(`✅ Blue-Green deployment completed: ${flagId}`);
   }
 
-  private async scheduleHealthMonitoring(flagId: string, percentage: number): Promise<void> {
+  private async scheduleHealthMonitoring(
+    flagId: string,
+    percentage: number,
+  ): Promise<void> {
     // Schedule background health monitoring
-    setTimeout(async () => {
-      await this.monitorRolloutHealth(flagId);
-    }, 5 * 60 * 1000); // Monitor after 5 minutes
+    setTimeout(
+      async () => {
+        await this.monitorRolloutHealth(flagId);
+      },
+      5 * 60 * 1000,
+    ); // Monitor after 5 minutes
   }
 
   private async monitorRolloutHealth(flagId: string): Promise<boolean> {
     const metrics = await this.getUsageMetrics(flagId);
     const performanceMetrics = await this.getPerformanceMetrics(flagId);
-    
+
     // Check error rate threshold
     if (metrics.errorRate > 0.05) {
-      this.logger.warn(`⚠️ High error rate for ${flagId}: ${metrics.errorRate * 100}%`);
+      this.logger.warn(
+        `⚠️ High error rate for ${flagId}: ${metrics.errorRate * 100}%`,
+      );
       return false;
     }
 
     // Check performance impact
     if (performanceMetrics.lcp > 4000) {
-      this.logger.warn(`⚠️ Performance degradation for ${flagId}: LCP ${performanceMetrics.lcp}ms`);
+      this.logger.warn(
+        `⚠️ Performance degradation for ${flagId}: LCP ${performanceMetrics.lcp}ms`,
+      );
       return false;
     }
 
     // Check cultural validation score
     if (metrics.culturalValidationScore < 70) {
-      this.logger.warn(`⚠️ Cultural validation score below threshold for ${flagId}: ${metrics.culturalValidationScore}/100`);
+      this.logger.warn(
+        `⚠️ Cultural validation score below threshold for ${flagId}: ${metrics.culturalValidationScore}/100`,
+      );
       return false;
     }
 
     return true;
   }
 
-  private async monitorCanaryHealth(flagId: string, durationMinutes: number): Promise<boolean> {
+  private async monitorCanaryHealth(
+    flagId: string,
+    durationMinutes: number,
+  ): Promise<boolean> {
     // Simulate canary monitoring
-    await new Promise(resolve => setTimeout(resolve, 60000)); // 1 minute simulation
-    
+    await new Promise((resolve) => setTimeout(resolve, 60000)); // 1 minute simulation
+
     const healthy = await this.monitorRolloutHealth(flagId);
-    this.logger.log(`🔍 Canary health check for ${flagId}: ${healthy ? 'HEALTHY' : 'UNHEALTHY'}`);
-    
+    this.logger.log(
+      `🔍 Canary health check for ${flagId}: ${healthy ? "HEALTHY" : "UNHEALTHY"}`,
+    );
+
     return healthy;
   }
 
-  private async logFeatureUsage(user: FeatureFlagUser, flags: Record<string, boolean>): Promise<void> {
+  private async logFeatureUsage(
+    user: FeatureFlagUser,
+    flags: Record<string, boolean>,
+  ): Promise<void> {
     // Log to analytics service
     this.logger.debug(`Feature usage logged for user ${user.id}:`, flags);
   }
 
   private async logFeatureFlagEvent(
-    flagId: string, 
-    event: string, 
-    userId: string, 
-    metadata: any
+    flagId: string,
+    event: string,
+    userId: string,
+    metadata: any,
   ): Promise<void> {
     await this.prisma.featureFlagEvent.create({
       data: {
         flagId,
         eventType: event,
         userId,
-        metadata: metadata as any
-      }
+        metadata: metadata as any,
+      },
     });
   }
 
   private async sendRollbackNotification(
-    flagId: string, 
-    reason: string, 
-    type: string
+    flagId: string,
+    reason: string,
+    type: string,
   ): Promise<void> {
-    this.logger.log(`📧 Rollback notification sent for ${flagId}: ${reason} (${type})`);
+    this.logger.log(
+      `📧 Rollback notification sent for ${flagId}: ${reason} (${type})`,
+    );
   }
 
   private async checkIndonesianHoliday(): Promise<boolean> {
@@ -674,16 +772,16 @@ export class FeatureFlagsService {
         Jakarta: 400,
         Surabaya: 200,
         Bandung: 150,
-        Yogyakarta: 100
+        Yogyakarta: 100,
       },
       businessSizeBreakdown: {
         micro: 300,
         small: 500,
-        medium: 200
+        medium: 200,
       },
       culturalValidationScore: 87,
       materaiComplianceRate: 0.95,
-      whatsappIntegrationUsage: 0.75
+      whatsappIntegrationUsage: 0.75,
     };
   }
 
@@ -692,19 +790,19 @@ export class FeatureFlagsService {
     return {
       lcp: 2800,
       fcp: 1600,
-      ttfb: 900
+      ttfb: 900,
     };
   }
 
   async getAllFeatureFlags(query: any): Promise<any[]> {
     return await this.prisma.featureFlag.findMany({
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { updatedAt: "desc" },
     });
   }
 
   async getFeatureFlag(flagId: string): Promise<any> {
     return await this.prisma.featureFlag.findUnique({
-      where: { name: flagId }
+      where: { name: flagId },
     });
   }
 
@@ -713,23 +811,29 @@ export class FeatureFlagsService {
       data: {
         ...createDto,
         createdBy: adminUserId,
-        updatedBy: adminUserId
-      }
+        updatedBy: adminUserId,
+      },
     });
   }
 
-  async updateFeatureFlag(flagId: string, updateDto: any, adminUserId: string): Promise<any> {
+  async updateFeatureFlag(
+    flagId: string,
+    updateDto: any,
+    adminUserId: string,
+  ): Promise<any> {
     return await this.prisma.featureFlag.update({
       where: { name: flagId },
       data: {
         ...updateDto,
         updatedBy: adminUserId,
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     });
   }
 
-  async validateIndonesianBusinessContext(createDto: any): Promise<{ valid: boolean; reason?: string }> {
+  async validateIndonesianBusinessContext(
+    createDto: any,
+  ): Promise<{ valid: boolean; reason?: string }> {
     // Validate Indonesian business context for new feature flags
     return { valid: true };
   }
@@ -737,32 +841,38 @@ export class FeatureFlagsService {
   async getRolloutHealth(flagId: string): Promise<any> {
     const metrics = await this.getUsageMetrics(flagId);
     const performanceMetrics = await this.getPerformanceMetrics(flagId);
-    
+
     return {
       flagId,
       healthy: metrics.errorRate < 0.05 && performanceMetrics.lcp < 4000,
       metrics,
       performanceMetrics,
-      lastChecked: new Date()
+      lastChecked: new Date(),
     };
   }
 
   async generateHealthRecommendations(flagId: string): Promise<string[]> {
     const health = await this.getRolloutHealth(flagId);
     const recommendations: string[] = [];
-    
+
     if (health.metrics.errorRate > 0.03) {
-      recommendations.push('Monitor error rates closely and consider gradual rollback');
+      recommendations.push(
+        "Monitor error rates closely and consider gradual rollback",
+      );
     }
-    
+
     if (health.performanceMetrics.lcp > 3000) {
-      recommendations.push('Optimize performance for Indonesian network conditions');
+      recommendations.push(
+        "Optimize performance for Indonesian network conditions",
+      );
     }
-    
+
     if (health.metrics.culturalValidationScore < 80) {
-      recommendations.push('Review cultural appropriateness for Indonesian business context');
+      recommendations.push(
+        "Review cultural appropriateness for Indonesian business context",
+      );
     }
-    
+
     return recommendations;
   }
 
@@ -773,22 +883,22 @@ export class FeatureFlagsService {
       materaiCompliant: await this.checkMateraiCompliance(flagId),
       businessHoursCheck: true,
       prayerTimeCheck: true,
-      holidayCheck: !(await this.checkIndonesianHoliday())
+      holidayCheck: !(await this.checkIndonesianHoliday()),
     };
   }
 
   async getAuditLog(flagId: string, options: any): Promise<any> {
     const events = await this.prisma.featureFlagEvent.findMany({
       where: { flagId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: options.limit,
-      skip: options.offset
+      skip: options.offset,
     });
-    
+
     const total = await this.prisma.featureFlagEvent.count({
-      where: { flagId }
+      where: { flagId },
     });
-    
+
     return { events, total };
   }
 
@@ -801,13 +911,13 @@ export class FeatureFlagsService {
         configurationValid: true,
         dependenciesSatisfied: true,
         culturalValidationPassed: true,
-        performanceWithinThresholds: true
+        performanceWithinThresholds: true,
       },
       recommendations: [
-        'Configuration is valid for Indonesian business context',
-        'All dependencies are satisfied',
-        'Cultural validation passed with good score'
-      ]
+        "Configuration is valid for Indonesian business context",
+        "All dependencies are satisfied",
+        "Cultural validation passed with good score",
+      ],
     };
   }
 }

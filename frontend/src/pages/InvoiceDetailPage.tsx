@@ -1,31 +1,32 @@
 import React, { useState } from 'react'
 import {
+  Alert,
+  Avatar,
+  Badge,
+  Breadcrumb,
   Button,
   Card,
   Col,
+  DatePicker,
+  Descriptions,
+  FloatButton,
+  Form,
+  Input,
+  Modal,
   Progress,
+  Result,
   Row,
+  Select,
   Space,
   Statistic,
   Tabs,
   Tag,
-  Typography,
-  Avatar,
-  Badge,
-  FloatButton,
-  Breadcrumb,
-  Result,
-  Descriptions,
   Timeline,
-  Modal,
-  Alert,
-  Form,
-  Input,
-  DatePicker,
-  Select,
+  Typography,
 } from 'antd'
 import {
   ArrowLeftOutlined,
+  BankOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -33,19 +34,18 @@ import {
   DollarOutlined,
   EditOutlined,
   ExportOutlined,
-  FileTextOutlined,
   FilePdfOutlined,
+  FileTextOutlined,
+  MailOutlined,
+  PrinterOutlined,
   ProjectOutlined,
   SendOutlined,
   UserOutlined,
   WarningOutlined,
   WhatsAppOutlined,
-  BankOutlined,
-  MailOutlined,
-  PrinterOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { formatIDR, safeNumber, safeString } from '../utils/currency'
 import { Invoice, invoiceService } from '../services/invoices'
@@ -80,8 +80,11 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
 
   // Mark as paid mutation
   const markAsPaidMutation = useMutation({
-    mutationFn: (paymentData: { paymentMethod?: string; paymentDate?: string; notes?: string }) => 
-      invoiceService.markAsPaid(id!, paymentData),
+    mutationFn: (paymentData: {
+      paymentMethod?: string
+      paymentDate?: string
+      notes?: string
+    }) => invoiceService.markAsPaid(id!, paymentData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoice', id] })
       setPaymentModalVisible(false)
@@ -94,9 +97,9 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
     onError: () => {
       Modal.error({
         title: 'Failed to Record Payment',
-        content: 'There was an error recording the payment. Please try again.'
+        content: 'There was an error recording the payment. Please try again.',
       })
-    }
+    },
   })
 
   const handleBack = () => {
@@ -106,11 +109,36 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
   // Status configuration
   const getStatusConfig = (status: Invoice['status']) => {
     const configs = {
-      DRAFT: { color: 'default', icon: <EditOutlined />, text: 'Draft', progress: 20 },
-      SENT: { color: 'blue', icon: <SendOutlined />, text: 'Sent', progress: 60 },
-      PAID: { color: 'green', icon: <CheckCircleOutlined />, text: 'Paid', progress: 100 },
-      OVERDUE: { color: 'red', icon: <ClockCircleOutlined />, text: 'Overdue', progress: 80 },
-      CANCELLED: { color: 'red', icon: <CloseCircleOutlined />, text: 'Cancelled', progress: 100 },
+      DRAFT: {
+        color: 'default',
+        icon: <EditOutlined />,
+        text: 'Draft',
+        progress: 20,
+      },
+      SENT: {
+        color: 'blue',
+        icon: <SendOutlined />,
+        text: 'Sent',
+        progress: 60,
+      },
+      PAID: {
+        color: 'green',
+        icon: <CheckCircleOutlined />,
+        text: 'Paid',
+        progress: 100,
+      },
+      OVERDUE: {
+        color: 'red',
+        icon: <ClockCircleOutlined />,
+        text: 'Overdue',
+        progress: 80,
+      },
+      CANCELLED: {
+        color: 'red',
+        icon: <CloseCircleOutlined />,
+        text: 'Cancelled',
+        progress: 100,
+      },
     }
     return configs[status] || configs.DRAFT
   }
@@ -120,7 +148,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
     if (!invoice.materaiRequired) {
       return { status: 'not_required', color: 'default', text: 'Not Required' }
     }
-    return invoice.materaiApplied 
+    return invoice.materaiApplied
       ? { status: 'applied', color: 'green', text: 'Applied' }
       : { status: 'required', color: 'orange', text: 'Required' }
   }
@@ -130,35 +158,35 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
     const now = dayjs()
     const dueDate = dayjs(invoice.dueDate)
     const daysUntilDue = dueDate.diff(now, 'day')
-    
+
     if (invoice.status === 'PAID') {
       return { status: 'paid', color: 'green', text: 'Paid', urgency: 'none' }
     }
-    
+
     if (daysUntilDue < 0) {
       const daysOverdue = Math.abs(daysUntilDue)
-      return { 
-        status: 'overdue', 
-        color: 'red', 
-        text: `${daysOverdue} days overdue`, 
-        urgency: 'critical' 
+      return {
+        status: 'overdue',
+        color: 'red',
+        text: `${daysOverdue} days overdue`,
+        urgency: 'critical',
       }
     }
-    
+
     if (daysUntilDue <= 3) {
-      return { 
-        status: 'due_soon', 
-        color: 'orange', 
-        text: `Due in ${daysUntilDue} days`, 
-        urgency: 'high' 
+      return {
+        status: 'due_soon',
+        color: 'orange',
+        text: `Due in ${daysUntilDue} days`,
+        urgency: 'high',
       }
     }
-    
-    return { 
-      status: 'pending', 
-      color: 'blue', 
-      text: `Due in ${daysUntilDue} days`, 
-      urgency: 'low' 
+
+    return {
+      status: 'pending',
+      color: 'blue',
+      text: `Due in ${daysUntilDue} days`,
+      urgency: 'low',
     }
   }
 
@@ -168,15 +196,19 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
       {
         children: 'Invoice created',
         color: 'green',
-        dot: <CheckCircleOutlined style={{ fontSize: '16px' }} />
-      }
+        dot: <CheckCircleOutlined style={{ fontSize: '16px' }} />,
+      },
     ]
 
-    if (invoice.status === 'SENT' || invoice.status === 'PAID' || invoice.status === 'OVERDUE') {
+    if (
+      invoice.status === 'SENT' ||
+      invoice.status === 'PAID' ||
+      invoice.status === 'OVERDUE'
+    ) {
       timeline.push({
         children: 'Invoice sent to client',
         color: 'blue',
-        dot: <SendOutlined style={{ fontSize: '16px' }} />
+        dot: <SendOutlined style={{ fontSize: '16px' }} />,
       })
     }
 
@@ -184,7 +216,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
       timeline.push({
         children: `Payment received${invoice.paidAt ? ` on ${dayjs(invoice.paidAt).format('DD MMM YYYY')}` : ''}`,
         color: 'green',
-        dot: <CheckCircleOutlined style={{ fontSize: '16px' }} />
+        dot: <CheckCircleOutlined style={{ fontSize: '16px' }} />,
       })
     }
 
@@ -192,7 +224,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
       timeline.push({
         children: 'Invoice overdue',
         color: 'red',
-        dot: <ClockCircleOutlined style={{ fontSize: '16px' }} />
+        dot: <ClockCircleOutlined style={{ fontSize: '16px' }} />,
       })
     }
 
@@ -204,11 +236,11 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
   }
 
   const handlePaymentSubmit = () => {
-    form.validateFields().then((values) => {
+    form.validateFields().then(values => {
       markAsPaidMutation.mutate({
         paymentMethod: values.paymentMethod,
         paymentDate: values.paymentDate?.toISOString(),
-        notes: values.notes
+        notes: values.notes,
       })
     })
   }
@@ -230,11 +262,11 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
       <div style={{ padding: '24px' }}>
         <Card>
           <Result
-            status="404"
-            title="Invoice Not Found"
+            status='404'
+            title='Invoice Not Found'
             subTitle="The invoice you're looking for doesn't exist."
             extra={
-              <Button type="primary" onClick={handleBack}>
+              <Button type='primary' onClick={handleBack}>
                 Back to Invoices
               </Button>
             }
@@ -250,19 +282,17 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
   const paymentTimeline = getPaymentTimeline(invoice)
 
   return (
-    <div style={{ 
-      padding: '16px 24px', 
-      maxWidth: '1400px', 
-      margin: '0 auto'
-    }}>
+    <div
+      style={{
+        padding: '16px 24px',
+        maxWidth: '1400px',
+        margin: '0 auto',
+      }}
+    >
       {/* Breadcrumb Navigation */}
       <Breadcrumb style={{ marginBottom: '24px' }}>
         <Breadcrumb.Item>
-          <Button 
-            type="text" 
-            icon={<ArrowLeftOutlined />} 
-            onClick={handleBack}
-          >
+          <Button type='text' icon={<ArrowLeftOutlined />} onClick={handleBack}>
             Invoices
           </Button>
         </Breadcrumb.Item>
@@ -271,38 +301,40 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
 
       {/* Header Section - Hero Card */}
       <Card style={{ marginBottom: '24px' }}>
-        <Row gutter={[16, 16]} align="middle">
+        <Row gutter={[16, 16]} align='middle'>
           <Col xs={24} lg={16}>
-            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+            <Space direction='vertical' size='small' style={{ width: '100%' }}>
               <div>
-                <Space align="center">
-                  <Avatar 
-                    size={64} 
-                    icon={<FileTextOutlined />} 
-                    style={{ backgroundColor: statusConfig.color === 'default' ? '#d9d9d9' : statusConfig.color }}
+                <Space align='center'>
+                  <Avatar
+                    size={64}
+                    icon={<FileTextOutlined />}
+                    style={{
+                      backgroundColor:
+                        statusConfig.color === 'default'
+                          ? '#d9d9d9'
+                          : statusConfig.color,
+                    }}
                   />
                   <div>
                     <Title level={3} style={{ margin: 0 }}>
                       {invoice.invoiceNumber}
                     </Title>
-                    <Text type="secondary" style={{ fontSize: '16px' }}>
+                    <Text type='secondary' style={{ fontSize: '16px' }}>
                       {formatIDR(invoice.totalAmount)}
                     </Text>
                     <div style={{ marginTop: '8px' }}>
-                      <Tag 
-                        color={statusConfig.color} 
-                        icon={statusConfig.icon}
-                      >
+                      <Tag color={statusConfig.color} icon={statusConfig.icon}>
                         {statusConfig.text}
                       </Tag>
-                      <Tag 
+                      <Tag
                         color={paymentStatus.color}
                         icon={<CalendarOutlined />}
                       >
                         {paymentStatus.text}
                       </Tag>
                       {invoice.materaiRequired && (
-                        <Tag 
+                        <Tag
                           color={materaiConfig.color}
                           icon={<BankOutlined />}
                         >
@@ -313,14 +345,14 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                   </div>
                 </Space>
               </div>
-              
+
               <div style={{ marginTop: '16px' }}>
                 <Space wrap>
                   {invoice.client && (
                     <Space>
                       <UserOutlined />
                       <Text strong>{invoice.client.name}</Text>
-                      <Text type="secondary">({invoice.client.company})</Text>
+                      <Text type='secondary'>({invoice.client.company})</Text>
                     </Space>
                   )}
                   {invoice.project && (
@@ -333,38 +365,42 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
               </div>
             </Space>
           </Col>
-          
+
           <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-              <Button 
-                type="primary" 
+            <Space direction='vertical' size='middle' style={{ width: '100%' }}>
+              <Button
+                type='primary'
                 icon={<EditOutlined />}
-                size="large"
+                size='large'
                 block
-                aria-label="Edit invoice"
+                aria-label='Edit invoice'
               >
                 Edit Invoice
               </Button>
-              
-              <Button 
+
+              <Button
                 icon={<FilePdfOutlined />}
-                size="large"
+                size='large'
                 block
                 onClick={handlePdfPreview}
-                aria-label="View PDF"
+                aria-label='View PDF'
               >
                 View PDF
               </Button>
 
               {invoice.status !== 'PAID' && invoice.status !== 'CANCELLED' && (
-                <Button 
+                <Button
                   icon={<DollarOutlined />}
-                  size="large"
+                  size='large'
                   block
                   loading={markAsPaidMutation.isPending}
                   onClick={handleMarkAsPaid}
-                  aria-label="Mark as paid"
-                  style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
+                  aria-label='Mark as paid'
+                  style={{
+                    backgroundColor: '#52c41a',
+                    borderColor: '#52c41a',
+                    color: 'white',
+                  }}
                 >
                   Mark as Paid
                 </Button>
@@ -380,7 +416,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
           <Col xs={24} md={12}>
             <div style={{ textAlign: 'center' }}>
               <Progress
-                type="circle"
+                type='circle'
                 percent={statusConfig.progress}
                 size={120}
                 strokeColor={{
@@ -389,7 +425,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                   '80%': invoice.status === 'OVERDUE' ? '#ff4d4f' : '#faad14',
                   '100%': invoice.status === 'PAID' ? '#52c41a' : '#ff4d4f',
                 }}
-                format={(percent) => (
+                format={percent => (
                   <span>
                     {statusConfig.icon}
                     <div style={{ fontSize: '12px', marginTop: '4px' }}>
@@ -403,36 +439,42 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
               </Title>
             </div>
           </Col>
-          
+
           <Col xs={24} md={12}>
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Space direction='vertical' size='large' style={{ width: '100%' }}>
               <div>
-                <Text type="secondary">Creation Date</Text>
+                <Text type='secondary'>Creation Date</Text>
                 <div>
                   <CalendarOutlined style={{ marginRight: '8px' }} />
-                  <Text strong>{dayjs(invoice.creationDate).format('DD MMM YYYY')}</Text>
+                  <Text strong>
+                    {dayjs(invoice.creationDate).format('DD MMM YYYY')}
+                  </Text>
                 </div>
               </div>
-              
+
               <div>
-                <Text type="secondary">Due Date</Text>
+                <Text type='secondary'>Due Date</Text>
                 <div>
                   <CalendarOutlined style={{ marginRight: '8px' }} />
-                  <Text strong>{dayjs(invoice.dueDate).format('DD MMM YYYY')}</Text>
+                  <Text strong>
+                    {dayjs(invoice.dueDate).format('DD MMM YYYY')}
+                  </Text>
                   {paymentStatus.urgency === 'critical' && (
-                    <Badge 
-                      count="OVERDUE" 
+                    <Badge
+                      count='OVERDUE'
                       style={{ backgroundColor: '#ff4d4f', marginLeft: '8px' }}
                     />
                   )}
                 </div>
               </div>
-              
+
               <div>
-                <Text type="secondary">Payment Info</Text>
+                <Text type='secondary'>Payment Info</Text>
                 <div>
                   <BankOutlined style={{ marginRight: '8px' }} />
-                  <Text strong>{invoice.paymentInfo || 'Standard payment terms'}</Text>
+                  <Text strong>
+                    {invoice.paymentInfo || 'Standard payment terms'}
+                  </Text>
                 </div>
               </div>
             </Space>
@@ -443,9 +485,9 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
       {/* Overdue/Materai Alerts */}
       {paymentStatus.urgency === 'critical' && (
         <Alert
-          message="Invoice Overdue"
+          message='Invoice Overdue'
           description={`This invoice is ${paymentStatus.text}. Please follow up with the client for payment.`}
-          type="error"
+          type='error'
           showIcon
           style={{ marginBottom: '24px' }}
         />
@@ -453,9 +495,9 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
 
       {invoice.materaiRequired && !invoice.materaiApplied && (
         <Alert
-          message="Materai Required"
-          description="This invoice requires a 10,000 IDR materai stamp due to the amount exceeding 5 million IDR."
-          type="warning"
+          message='Materai Required'
+          description='This invoice requires a 10,000 IDR materai stamp due to the amount exceeding 5 million IDR.'
+          type='warning'
           showIcon
           style={{ marginBottom: '24px' }}
         />
@@ -466,51 +508,61 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
         <Col xs={12} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Total Amount"
+              title='Total Amount'
               value={invoice.totalAmount}
-              formatter={(value) => formatIDR(Number(value))}
+              formatter={value => formatIDR(Number(value))}
               prefix={<DollarOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
           </Card>
         </Col>
-        
+
         <Col xs={12} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Paid Amount"
+              title='Paid Amount'
               value={invoice.paymentSummary?.totalPaid || 0}
-              formatter={(value) => formatIDR(Number(value))}
+              formatter={value => formatIDR(Number(value))}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
             />
           </Card>
         </Col>
-        
+
         <Col xs={12} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Outstanding"
-              value={invoice.paymentSummary?.remainingAmount || invoice.totalAmount}
-              formatter={(value) => formatIDR(Number(value))}
+              title='Outstanding'
+              value={
+                invoice.paymentSummary?.remainingAmount || invoice.totalAmount
+              }
+              formatter={value => formatIDR(Number(value))}
               prefix={<ClockCircleOutlined />}
-              valueStyle={{ 
-                color: invoice.status === 'PAID' ? '#52c41a' : 
-                       paymentStatus.urgency === 'critical' ? '#ff4d4f' : '#faad14' 
+              valueStyle={{
+                color:
+                  invoice.status === 'PAID'
+                    ? '#52c41a'
+                    : paymentStatus.urgency === 'critical'
+                      ? '#ff4d4f'
+                      : '#faad14',
               }}
             />
           </Card>
         </Col>
-        
+
         <Col xs={12} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Days Until Due"
+              title='Days Until Due'
               value={Math.max(0, dayjs(invoice.dueDate).diff(dayjs(), 'day'))}
               prefix={<CalendarOutlined />}
-              valueStyle={{ 
-                color: paymentStatus.urgency === 'critical' ? '#ff4d4f' : 
-                       paymentStatus.urgency === 'high' ? '#faad14' : '#52c41a' 
+              valueStyle={{
+                color:
+                  paymentStatus.urgency === 'critical'
+                    ? '#ff4d4f'
+                    : paymentStatus.urgency === 'high'
+                      ? '#faad14'
+                      : '#52c41a',
               }}
             />
           </Card>
@@ -520,7 +572,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
       {/* Detailed Sections - Tabbed Interface */}
       <Card>
         <Tabs
-          defaultActiveKey="details"
+          defaultActiveKey='details'
           items={[
             {
               key: 'details',
@@ -532,29 +584,45 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
               ),
               children: (
                 <div>
-                  <Descriptions title="Invoice Information" bordered column={{ xs: 1, sm: 2 }}>
-                    <Descriptions.Item label="Invoice Number">{invoice.invoiceNumber}</Descriptions.Item>
-                    <Descriptions.Item label="Status">
+                  <Descriptions
+                    title='Invoice Information'
+                    bordered
+                    column={{ xs: 1, sm: 2 }}
+                  >
+                    <Descriptions.Item label='Invoice Number'>
+                      {invoice.invoiceNumber}
+                    </Descriptions.Item>
+                    <Descriptions.Item label='Status'>
                       <Tag color={statusConfig.color} icon={statusConfig.icon}>
                         {statusConfig.text}
                       </Tag>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Creation Date">{dayjs(invoice.creationDate).format('DD MMM YYYY')}</Descriptions.Item>
-                    <Descriptions.Item label="Due Date">{dayjs(invoice.dueDate).format('DD MMM YYYY')}</Descriptions.Item>
-                    <Descriptions.Item label="Total Amount">{formatIDR(invoice.totalAmount)}</Descriptions.Item>
-                    <Descriptions.Item label="Amount Per Project">{formatIDR(invoice.amountPerProject)}</Descriptions.Item>
-                    <Descriptions.Item label="Materai Required">
+                    <Descriptions.Item label='Creation Date'>
+                      {dayjs(invoice.creationDate).format('DD MMM YYYY')}
+                    </Descriptions.Item>
+                    <Descriptions.Item label='Due Date'>
+                      {dayjs(invoice.dueDate).format('DD MMM YYYY')}
+                    </Descriptions.Item>
+                    <Descriptions.Item label='Total Amount'>
+                      {formatIDR(invoice.totalAmount)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label='Amount Per Project'>
+                      {formatIDR(invoice.amountPerProject)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label='Materai Required'>
                       {invoice.materaiRequired ? (
                         <Tag color={materaiConfig.color}>
                           {materaiConfig.text}
                         </Tag>
                       ) : (
-                        <Tag color="default">Not Required</Tag>
+                        <Tag color='default'>Not Required</Tag>
                       )}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Last Updated">{dayjs(invoice.updatedAt).format('DD MMM YYYY HH:mm')}</Descriptions.Item>
+                    <Descriptions.Item label='Last Updated'>
+                      {dayjs(invoice.updatedAt).format('DD MMM YYYY HH:mm')}
+                    </Descriptions.Item>
                   </Descriptions>
-                  
+
                   {invoice.terms && (
                     <div style={{ marginTop: '24px' }}>
                       <Title level={5}>Terms & Conditions</Title>
@@ -583,35 +651,35 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                 <div>
                   <Title level={4}>Payment Timeline</Title>
                   <Timeline items={paymentTimeline} />
-                  
+
                   {invoice.paymentSummary && (
                     <div style={{ marginTop: '24px' }}>
                       <Title level={5}>Payment Summary</Title>
                       <Row gutter={[16, 16]}>
                         <Col xs={24} md={8}>
-                          <Card size="small">
+                          <Card size='small'>
                             <Statistic
-                              title="Total Paid"
+                              title='Total Paid'
                               value={invoice.paymentSummary.totalPaid}
-                              formatter={(value) => formatIDR(Number(value))}
+                              formatter={value => formatIDR(Number(value))}
                               valueStyle={{ color: '#52c41a' }}
                             />
                           </Card>
                         </Col>
                         <Col xs={24} md={8}>
-                          <Card size="small">
+                          <Card size='small'>
                             <Statistic
-                              title="Remaining"
+                              title='Remaining'
                               value={invoice.paymentSummary.remainingAmount}
-                              formatter={(value) => formatIDR(Number(value))}
+                              formatter={value => formatIDR(Number(value))}
                               valueStyle={{ color: '#faad14' }}
                             />
                           </Card>
                         </Col>
                         <Col xs={24} md={8}>
-                          <Card size="small">
+                          <Card size='small'>
                             <Statistic
-                              title="Payment Count"
+                              title='Payment Count'
                               value={invoice.paymentSummary.paymentCount}
                               valueStyle={{ color: '#1890ff' }}
                             />
@@ -636,33 +704,49 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                   <Row gutter={[16, 24]}>
                     {invoice.client && (
                       <Col xs={24} md={12}>
-                        <Card title="Client Information" size="small">
+                        <Card title='Client Information' size='small'>
                           <Descriptions column={1}>
-                            <Descriptions.Item label="Name">{invoice.client.name}</Descriptions.Item>
-                            <Descriptions.Item label="Company">{invoice.client.company}</Descriptions.Item>
-                            <Descriptions.Item label="Email">{invoice.client.email}</Descriptions.Item>
+                            <Descriptions.Item label='Name'>
+                              {invoice.client.name}
+                            </Descriptions.Item>
+                            <Descriptions.Item label='Company'>
+                              {invoice.client.company}
+                            </Descriptions.Item>
+                            <Descriptions.Item label='Email'>
+                              {invoice.client.email}
+                            </Descriptions.Item>
                           </Descriptions>
-                          <Button 
-                            type="link" 
-                            onClick={() => navigate(`/clients/${invoice.client!.id}`)}
+                          <Button
+                            type='link'
+                            onClick={() =>
+                              navigate(`/clients/${invoice.client!.id}`)
+                            }
                           >
                             View Client Details
                           </Button>
                         </Card>
                       </Col>
                     )}
-                    
+
                     {invoice.project && (
                       <Col xs={24} md={12}>
-                        <Card title="Project Information" size="small">
+                        <Card title='Project Information' size='small'>
                           <Descriptions column={1}>
-                            <Descriptions.Item label="Project Number">{invoice.project.number}</Descriptions.Item>
-                            <Descriptions.Item label="Description">{invoice.project.description}</Descriptions.Item>
-                            <Descriptions.Item label="Type">{invoice.project.type}</Descriptions.Item>
+                            <Descriptions.Item label='Project Number'>
+                              {invoice.project.number}
+                            </Descriptions.Item>
+                            <Descriptions.Item label='Description'>
+                              {invoice.project.description}
+                            </Descriptions.Item>
+                            <Descriptions.Item label='Type'>
+                              {invoice.project.type}
+                            </Descriptions.Item>
                           </Descriptions>
-                          <Button 
-                            type="link" 
-                            onClick={() => navigate(`/projects/${invoice.project!.id}`)}
+                          <Button
+                            type='link'
+                            onClick={() =>
+                              navigate(`/projects/${invoice.project!.id}`)
+                            }
                           >
                             View Project Details
                           </Button>
@@ -672,13 +756,17 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
 
                     {invoice.quotation && (
                       <Col xs={24} md={12}>
-                        <Card title="Related Quotation" size="small">
+                        <Card title='Related Quotation' size='small'>
                           <Descriptions column={1}>
-                            <Descriptions.Item label="Quotation Number">{invoice.quotation.quotationNumber}</Descriptions.Item>
+                            <Descriptions.Item label='Quotation Number'>
+                              {invoice.quotation.quotationNumber}
+                            </Descriptions.Item>
                           </Descriptions>
-                          <Button 
-                            type="link" 
-                            onClick={() => navigate(`/quotations/${invoice.quotation!.id}`)}
+                          <Button
+                            type='link'
+                            onClick={() =>
+                              navigate(`/quotations/${invoice.quotation!.id}`)
+                            }
                           >
                             View Quotation Details
                           </Button>
@@ -699,16 +787,18 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
               ),
               children: (
                 <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <FilePdfOutlined style={{ fontSize: '48px', color: '#d9d9d9' }} />
-                  <Title level={4} type="secondary">
+                  <FilePdfOutlined
+                    style={{ fontSize: '48px', color: '#d9d9d9' }}
+                  />
+                  <Title level={4} type='secondary'>
                     Document Management
                   </Title>
-                  <Text type="secondary">
+                  <Text type='secondary'>
                     PDF documents and file attachments coming soon.
                   </Text>
                   <div style={{ marginTop: '16px' }}>
-                    <Button 
-                      type="primary" 
+                    <Button
+                      type='primary'
                       icon={<FilePdfOutlined />}
                       onClick={handlePdfPreview}
                     >
@@ -724,67 +814,69 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
 
       {/* Payment Modal */}
       <Modal
-        title="Mark Invoice as Paid"
+        title='Mark Invoice as Paid'
         open={paymentModalVisible}
         onCancel={() => setPaymentModalVisible(false)}
         onOk={handlePaymentSubmit}
         confirmLoading={markAsPaidMutation.isPending}
       >
-        <Form form={form} layout="vertical">
+        <Form form={form} layout='vertical'>
           <Form.Item
-            label="Payment Method"
-            name="paymentMethod"
-            rules={[{ required: true, message: 'Please select payment method' }]}
+            label='Payment Method'
+            name='paymentMethod'
+            rules={[
+              { required: true, message: 'Please select payment method' },
+            ]}
           >
-            <Select placeholder="Select payment method">
-              <Select.Option value="bank_transfer">Bank Transfer</Select.Option>
-              <Select.Option value="cash">Cash</Select.Option>
-              <Select.Option value="credit_card">Credit Card</Select.Option>
-              <Select.Option value="gopay">GoPay</Select.Option>
-              <Select.Option value="ovo">OVO</Select.Option>
-              <Select.Option value="dana">DANA</Select.Option>
-              <Select.Option value="other">Other</Select.Option>
+            <Select placeholder='Select payment method'>
+              <Select.Option value='bank_transfer'>Bank Transfer</Select.Option>
+              <Select.Option value='cash'>Cash</Select.Option>
+              <Select.Option value='credit_card'>Credit Card</Select.Option>
+              <Select.Option value='gopay'>GoPay</Select.Option>
+              <Select.Option value='ovo'>OVO</Select.Option>
+              <Select.Option value='dana'>DANA</Select.Option>
+              <Select.Option value='other'>Other</Select.Option>
             </Select>
           </Form.Item>
 
           <Form.Item
-            label="Payment Date"
-            name="paymentDate"
+            label='Payment Date'
+            name='paymentDate'
             rules={[{ required: true, message: 'Please select payment date' }]}
           >
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item
-            label="Notes"
-            name="notes"
-          >
-            <Input.TextArea rows={3} placeholder="Additional notes about the payment..." />
+          <Form.Item label='Notes' name='notes'>
+            <Input.TextArea
+              rows={3}
+              placeholder='Additional notes about the payment...'
+            />
           </Form.Item>
         </Form>
       </Modal>
 
       {/* PDF Preview Modal */}
       <Modal
-        title="Invoice PDF Preview"
+        title='Invoice PDF Preview'
         open={pdfModalVisible}
         onCancel={() => setPdfModalVisible(false)}
         width={800}
         footer={[
-          <Button key="close" onClick={() => setPdfModalVisible(false)}>
+          <Button key='close' onClick={() => setPdfModalVisible(false)}>
             Close
           </Button>,
-          <Button key="download" type="primary" icon={<ExportOutlined />}>
+          <Button key='download' type='primary' icon={<ExportOutlined />}>
             Download PDF
-          </Button>
+          </Button>,
         ]}
       >
         <div style={{ textAlign: 'center', padding: '40px' }}>
           <FilePdfOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
-          <Title level={4} type="secondary">
+          <Title level={4} type='secondary'>
             PDF Preview
           </Title>
-          <Text type="secondary">
+          <Text type='secondary'>
             PDF preview functionality will be implemented here.
           </Text>
         </div>
@@ -792,28 +884,28 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
 
       {/* Floating Action Button */}
       <FloatButton.Group>
-        <FloatButton 
-          icon={<EditOutlined />} 
-          tooltip="Edit Invoice"
-          aria-label="Edit invoice"
+        <FloatButton
+          icon={<EditOutlined />}
+          tooltip='Edit Invoice'
+          aria-label='Edit invoice'
         />
-        <FloatButton 
-          icon={<FilePdfOutlined />} 
-          tooltip="View PDF"
+        <FloatButton
+          icon={<FilePdfOutlined />}
+          tooltip='View PDF'
           onClick={handlePdfPreview}
-          aria-label="View PDF"
+          aria-label='View PDF'
         />
-        <FloatButton 
-          icon={<MailOutlined />} 
-          tooltip="Send via Email"
-          aria-label="Send via email"
+        <FloatButton
+          icon={<MailOutlined />}
+          tooltip='Send via Email'
+          aria-label='Send via email'
         />
         {invoice.status !== 'PAID' && invoice.status !== 'CANCELLED' && (
-          <FloatButton 
-            icon={<DollarOutlined />} 
-            tooltip="Mark as Paid"
+          <FloatButton
+            icon={<DollarOutlined />}
+            tooltip='Mark as Paid'
             onClick={handleMarkAsPaid}
-            aria-label="Mark as paid"
+            aria-label='Mark as paid'
           />
         )}
       </FloatButton.Group>

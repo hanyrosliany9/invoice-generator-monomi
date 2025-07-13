@@ -59,20 +59,24 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div style={{ padding: '24px', textAlign: 'center' }}>
           <Alert
-            message="Something went wrong"
+            message='Something went wrong'
             description={
               <div>
-                <Text>An unexpected error occurred. Please try refreshing the page.</Text>
+                <Text>
+                  An unexpected error occurred. Please try refreshing the page.
+                </Text>
                 {import.meta.env.DEV && this.state.error && (
                   <details style={{ marginTop: '16px', textAlign: 'left' }}>
                     <summary>Error details (development only)</summary>
-                    <pre style={{ 
-                      backgroundColor: '#f5f5f5', 
-                      padding: '8px', 
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      overflow: 'auto'
-                    }}>
+                    <pre
+                      style={{
+                        backgroundColor: '#f5f5f5',
+                        padding: '8px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        overflow: 'auto',
+                      }}
+                    >
                       {this.state.error.toString()}
                       {this.state.errorInfo?.componentStack}
                     </pre>
@@ -80,15 +84,19 @@ export class ErrorBoundary extends Component<Props, State> {
                 )}
               </div>
             }
-            type="error"
+            type='error'
             showIcon
             icon={<ExclamationCircleOutlined />}
             action={
               <Space>
-                <Button size="small" onClick={this.handleReset}>
+                <Button size='small' onClick={this.handleReset}>
                   Try Again
                 </Button>
-                <Button size="small" icon={<ReloadOutlined />} onClick={this.handleReload}>
+                <Button
+                  size='small'
+                  icon={<ReloadOutlined />}
+                  onClick={this.handleReload}
+                >
                   Reload Page
                 </Button>
               </Space>

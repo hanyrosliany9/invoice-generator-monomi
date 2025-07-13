@@ -33,8 +33,13 @@ export interface FocusManager {
   setFocus: (element: string | HTMLElement) => boolean
   getFocusableElements: (container?: HTMLElement) => FocusableElement[]
   createSkipLink: (target: string, text: string) => HTMLElement
-  enableKeyboardNavigation: (options: KeyboardNavigationOptions) => KeyboardNavigationController
-  announceToScreenReader: (message: string, priority?: 'polite' | 'assertive') => void
+  enableKeyboardNavigation: (
+    options: KeyboardNavigationOptions
+  ) => KeyboardNavigationController
+  announceToScreenReader: (
+    message: string,
+    priority?: 'polite' | 'assertive'
+  ) => void
 }
 
 export interface FocusTrap {
@@ -69,7 +74,8 @@ class FocusTrapImpl implements FocusTrap {
   private updateFocusableElements(): void {
     this.focusableElements = this.getFocusableElements(this.options.element)
     this.firstFocusableElement = this.focusableElements[0] || null
-    this.lastFocusableElement = this.focusableElements[this.focusableElements.length - 1] || null
+    this.lastFocusableElement =
+      this.focusableElements[this.focusableElements.length - 1] || null
   }
 
   private getFocusableElements(container: HTMLElement): FocusableElement[] {
@@ -82,11 +88,13 @@ class FocusTrapImpl implements FocusTrap {
       '[tabindex]:not([tabindex="-1"])',
       '[contenteditable="true"]',
       'audio[controls]',
-      'video[controls]'
+      'video[controls]',
     ].join(', ')
 
-    const elements = Array.from(container.querySelectorAll(focusableSelectors)) as FocusableElement[]
-    
+    const elements = Array.from(
+      container.querySelectorAll(focusableSelectors)
+    ) as FocusableElement[]
+
     return elements.filter(element => {
       // Check if element is visible and not hidden
       const style = window.getComputedStyle(element)
@@ -156,7 +164,9 @@ class FocusTrapImpl implements FocusTrap {
     // Set initial focus
     if (this.options.initialFocus) {
       if (typeof this.options.initialFocus === 'string') {
-        const element = this.options.element.querySelector(this.options.initialFocus) as FocusableElement
+        const element = this.options.element.querySelector(
+          this.options.initialFocus
+        ) as FocusableElement
         element?.focus()
       } else {
         this.options.initialFocus.focus()
@@ -209,12 +219,13 @@ class KeyboardNavigationControllerImpl implements KeyboardNavigationController {
 
   constructor(options: KeyboardNavigationOptions) {
     this.options = {
-      selector: 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])',
+      selector:
+        'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])',
       loop: true,
       direction: 'both',
       skipDisabled: true,
       announceNavigation: true,
-      ...options
+      ...options,
     }
     this.updateFocusableElements()
   }
@@ -247,25 +258,37 @@ class KeyboardNavigationControllerImpl implements KeyboardNavigationController {
 
     switch (key) {
       case 'ArrowDown':
-        if (this.options.direction === 'vertical' || this.options.direction === 'both') {
+        if (
+          this.options.direction === 'vertical' ||
+          this.options.direction === 'both'
+        ) {
           this.next()
           handled = true
         }
         break
       case 'ArrowUp':
-        if (this.options.direction === 'vertical' || this.options.direction === 'both') {
+        if (
+          this.options.direction === 'vertical' ||
+          this.options.direction === 'both'
+        ) {
           this.previous()
           handled = true
         }
         break
       case 'ArrowRight':
-        if (this.options.direction === 'horizontal' || this.options.direction === 'both') {
+        if (
+          this.options.direction === 'horizontal' ||
+          this.options.direction === 'both'
+        ) {
           this.next()
           handled = true
         }
         break
       case 'ArrowLeft':
-        if (this.options.direction === 'horizontal' || this.options.direction === 'both') {
+        if (
+          this.options.direction === 'horizontal' ||
+          this.options.direction === 'both'
+        ) {
           this.previous()
           handled = true
         }
@@ -291,22 +314,25 @@ class KeyboardNavigationControllerImpl implements KeyboardNavigationController {
 
   private updateCurrentIndex(): void {
     const activeElement = document.activeElement
-    this.currentIndex = this.focusableElements.findIndex(element => element === activeElement)
+    this.currentIndex = this.focusableElements.findIndex(
+      element => element === activeElement
+    )
   }
 
   private focusElement(index: number): void {
     if (index >= 0 && index < this.focusableElements.length) {
       const element = this.focusableElements[index]
       if (!element) return
-      
+
       element.focus()
       this.currentIndex = index
 
       if (this.options.announceNavigation) {
-        const elementText = element.textContent?.trim() || 
-                           element.getAttribute('aria-label') ||
-                           element.getAttribute('title') ||
-                           'Element'
+        const elementText =
+          element.textContent?.trim() ||
+          element.getAttribute('aria-label') ||
+          element.getAttribute('title') ||
+          'Element'
         announceToScreenReader(
           `Navigated to ${elementText}, ${index + 1} of ${this.focusableElements.length}`,
           'polite'
@@ -363,7 +389,7 @@ class KeyboardNavigationControllerImpl implements KeyboardNavigationController {
 
 // Screen reader announcement utility
 export const announceToScreenReader = (
-  message: string, 
+  message: string,
   priority: 'polite' | 'assertive' = 'polite'
 ): void => {
   const announcer = getOrCreateAnnouncer(priority)
@@ -376,7 +402,9 @@ export const announceToScreenReader = (
 }
 
 // Get or create screen reader announcer element
-const getOrCreateAnnouncer = (priority: 'polite' | 'assertive'): HTMLElement => {
+const getOrCreateAnnouncer = (
+  priority: 'polite' | 'assertive'
+): HTMLElement => {
   const id = `screen-reader-announcer-${priority}`
   let announcer = document.getElementById(id)
 
@@ -386,7 +414,7 @@ const getOrCreateAnnouncer = (priority: 'polite' | 'assertive'): HTMLElement => 
     announcer.setAttribute('aria-live', priority)
     announcer.setAttribute('aria-atomic', 'true')
     announcer.setAttribute('aria-relevant', 'text')
-    
+
     // Hide visually but keep accessible to screen readers
     announcer.style.cssText = `
       position: absolute !important;
@@ -395,7 +423,7 @@ const getOrCreateAnnouncer = (priority: 'polite' | 'assertive'): HTMLElement => 
       height: 1px !important;
       overflow: hidden !important;
     `
-    
+
     document.body.appendChild(announcer)
   }
 
@@ -409,7 +437,9 @@ const focusManagerImpl: FocusManager = {
   },
 
   restoreFocus: (): void => {
-    const lastFocused = document.querySelector('[data-last-focused]') as HTMLElement
+    const lastFocused = document.querySelector(
+      '[data-last-focused]'
+    ) as HTMLElement
     if (lastFocused) {
       lastFocused.focus()
       lastFocused.removeAttribute('data-last-focused')
@@ -421,7 +451,8 @@ const focusManagerImpl: FocusManager = {
       let targetElement: HTMLElement | null = null
 
       if (typeof element === 'string') {
-        targetElement = document.querySelector(element) || document.getElementById(element)
+        targetElement =
+          document.querySelector(element) || document.getElementById(element)
       } else {
         targetElement = element
       }
@@ -455,11 +486,13 @@ const focusManagerImpl: FocusManager = {
       '[tabindex]:not([tabindex="-1"])',
       '[contenteditable="true"]',
       'audio[controls]',
-      'video[controls]'
+      'video[controls]',
     ].join(', ')
 
-    const elements = Array.from(root.querySelectorAll(focusableSelectors)) as FocusableElement[]
-    
+    const elements = Array.from(
+      root.querySelectorAll(focusableSelectors)
+    ) as FocusableElement[]
+
     return elements.filter(element => {
       const style = window.getComputedStyle(element)
       return (
@@ -476,7 +509,7 @@ const focusManagerImpl: FocusManager = {
     skipLink.href = `#${target}`
     skipLink.textContent = text
     skipLink.className = 'skip-link'
-    
+
     // Style for skip link (hidden until focused)
     skipLink.style.cssText = `
       position: absolute;
@@ -499,7 +532,7 @@ const focusManagerImpl: FocusManager = {
       skipLink.style.top = '-40px'
     })
 
-    skipLink.addEventListener('click', (event) => {
+    skipLink.addEventListener('click', event => {
       event.preventDefault()
       const targetElement = document.getElementById(target)
       if (targetElement) {
@@ -512,21 +545,25 @@ const focusManagerImpl: FocusManager = {
     return skipLink
   },
 
-  enableKeyboardNavigation: (options: KeyboardNavigationOptions): KeyboardNavigationController => {
+  enableKeyboardNavigation: (
+    options: KeyboardNavigationOptions
+  ): KeyboardNavigationController => {
     return new KeyboardNavigationControllerImpl(options)
   },
 
-  announceToScreenReader
+  announceToScreenReader,
 }
 
 // Indonesian-specific focus management utilities
 export const indonesianFocusUtils = {
   // Focus on materai calculation result
   focusOnMateraiResult: (amount: number): void => {
-    const materaiElement = document.querySelector('[data-testid="materai-result"]') as HTMLElement
+    const materaiElement = document.querySelector(
+      '[data-testid="materai-result"]'
+    ) as HTMLElement
     if (materaiElement && focusManagerImpl.setFocus(materaiElement)) {
       const required = amount >= 5000000
-      const message = required 
+      const message = required
         ? `Materai diperlukan untuk nilai ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount)}`
         : 'Materai tidak diperlukan untuk nilai ini'
       announceToScreenReader(message, 'assertive')
@@ -535,7 +572,9 @@ export const indonesianFocusUtils = {
 
   // Focus on quotation step
   focusOnQuotationStep: (stepNumber: number, totalSteps: number): void => {
-    const stepElement = document.querySelector(`[data-testid="quotation-step-${stepNumber}"]`) as HTMLElement
+    const stepElement = document.querySelector(
+      `[data-testid="quotation-step-${stepNumber}"]`
+    ) as HTMLElement
     if (stepElement && focusManagerImpl.setFocus(stepElement)) {
       announceToScreenReader(
         `Langkah ${stepNumber} dari ${totalSteps} dalam proses quotation`,
@@ -546,9 +585,14 @@ export const indonesianFocusUtils = {
 
   // Focus on validation error in Indonesian context
   focusOnValidationError: (fieldName: string, errorMessage: string): void => {
-    const errorElement = document.querySelector(`[data-testid="${fieldName}-error"]`) as HTMLElement
+    const errorElement = document.querySelector(
+      `[data-testid="${fieldName}-error"]`
+    ) as HTMLElement
     if (errorElement && focusManagerImpl.setFocus(errorElement)) {
-      announceToScreenReader(`Error pada ${fieldName}: ${errorMessage}`, 'assertive')
+      announceToScreenReader(
+        `Error pada ${fieldName}: ${errorMessage}`,
+        'assertive'
+      )
     }
   },
 
@@ -556,17 +600,26 @@ export const indonesianFocusUtils = {
   createBusinessSkipLinks: (): HTMLElement[] => {
     const skipLinks = [
       focusManagerImpl.createSkipLink('main-content', 'Skip to main content'),
-      focusManagerImpl.createSkipLink('quotation-form', 'Skip to quotation form'),
-      focusManagerImpl.createSkipLink('client-info', 'Skip to client information'),
-      focusManagerImpl.createSkipLink('materai-calculation', 'Skip to materai calculation'),
-      focusManagerImpl.createSkipLink('navigation', 'Skip to navigation')
+      focusManagerImpl.createSkipLink(
+        'quotation-form',
+        'Skip to quotation form'
+      ),
+      focusManagerImpl.createSkipLink(
+        'client-info',
+        'Skip to client information'
+      ),
+      focusManagerImpl.createSkipLink(
+        'materai-calculation',
+        'Skip to materai calculation'
+      ),
+      focusManagerImpl.createSkipLink('navigation', 'Skip to navigation'),
     ]
 
     // Insert at the beginning of the document
     const container = document.createElement('div')
     container.setAttribute('aria-label', 'Skip navigation links')
     skipLinks.forEach(link => container.appendChild(link))
-    
+
     if (document.body.firstChild) {
       document.body.insertBefore(container, document.body.firstChild)
     } else {
@@ -574,7 +627,7 @@ export const indonesianFocusUtils = {
     }
 
     return skipLinks
-  }
+  },
 }
 
 // React hook for focus management
@@ -587,9 +640,12 @@ export const useFocusManagement = () => {
     return focusManagerImpl.setFocus(element)
   }, [])
 
-  const createKeyboardNavigation = React.useCallback((options: KeyboardNavigationOptions) => {
-    return focusManagerImpl.enableKeyboardNavigation(options)
-  }, [])
+  const createKeyboardNavigation = React.useCallback(
+    (options: KeyboardNavigationOptions) => {
+      return focusManagerImpl.enableKeyboardNavigation(options)
+    },
+    []
+  )
 
   return {
     trap,
@@ -598,7 +654,7 @@ export const useFocusManagement = () => {
     restoreFocus: focusManagerImpl.restoreFocus,
     getFocusableElements: focusManagerImpl.getFocusableElements,
     announceToScreenReader: focusManagerImpl.announceToScreenReader,
-    indonesianFocusUtils
+    indonesianFocusUtils,
   }
 }
 

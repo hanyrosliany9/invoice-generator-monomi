@@ -74,7 +74,10 @@ export const clientService = {
   },
 
   // Update existing client
-  updateClient: async (id: string, data: UpdateClientRequest): Promise<Client> => {
+  updateClient: async (
+    id: string,
+    data: UpdateClientRequest
+  ): Promise<Client> => {
     const response = await apiClient.patch(`/clients/${id}`, data)
     if (!response?.data?.data) {
       throw new Error('Client update failed')

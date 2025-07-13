@@ -15,7 +15,7 @@ import {
   BusinessFlowStep,
   NextAction,
   BusinessRule,
-  BusinessStage
+  BusinessStage,
 } from '../types/navigation.types'
 
 // Extend Jest matchers
@@ -24,17 +24,13 @@ expect.extend(toHaveNoViolations)
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 // Test utilities
 const renderWithRouter = (ui: React.ReactElement) => {
-  return render(
-    <BrowserRouter>
-      {ui}
-    </BrowserRouter>
-  )
+  return render(<BrowserRouter>{ui}</BrowserRouter>)
 }
 
 // Mock data
@@ -46,8 +42,8 @@ const mockCurrentEntity: EntityReference = {
   status: 'SENT',
   href: '/invoices/123',
   metadata: {
-    amount: 50000000
-  }
+    amount: 50000000,
+  },
 }
 
 const mockBusinessRules: BusinessRule[] = [
@@ -55,19 +51,21 @@ const mockBusinessRules: BusinessRule[] = [
     id: 'materai-rule',
     type: 'requirement',
     message: 'Invoice dengan nilai di atas Rp 5 juta harus menggunakan materai',
-    indonesianContext: 'Sesuai dengan peraturan pemerintah Indonesia tentang bea materai',
+    indonesianContext:
+      'Sesuai dengan peraturan pemerintah Indonesia tentang bea materai',
     action: {
       label: 'Tambah Materai',
       href: '/materai/add',
-      onClick: vi.fn()
-    }
+      onClick: vi.fn(),
+    },
   },
   {
     id: 'payment-suggestion',
     type: 'suggestion',
     message: 'Gunakan WhatsApp untuk follow-up pembayaran yang lebih personal',
-    indonesianContext: 'WhatsApp adalah platform komunikasi bisnis yang populer di Indonesia'
-  }
+    indonesianContext:
+      'WhatsApp adalah platform komunikasi bisnis yang populer di Indonesia',
+  },
 ]
 
 const mockRelationshipContext: RelationshipContext = {
@@ -79,8 +77,8 @@ const mockRelationshipContext: RelationshipContext = {
     status: 'IN_PROGRESS',
     href: '/projects/456',
     metadata: {
-      amount: 75000000
-    }
+      amount: 75000000,
+    },
   },
   childEntities: [
     {
@@ -89,7 +87,7 @@ const mockRelationshipContext: RelationshipContext = {
       name: 'Payment PMNT-001',
       number: 'PMNT-001',
       status: 'PENDING',
-      href: '/payments/001'
+      href: '/payments/001',
     },
     {
       id: 'payment-002',
@@ -97,8 +95,8 @@ const mockRelationshipContext: RelationshipContext = {
       name: 'Payment PMNT-002',
       number: 'PMNT-002',
       status: 'COMPLETED',
-      href: '/payments/002'
-    }
+      href: '/payments/002',
+    },
   ],
   relatedEntities: [
     {
@@ -107,20 +105,21 @@ const mockRelationshipContext: RelationshipContext = {
       name: 'Quotation Q-001',
       number: 'Q-001',
       status: 'APPROVED',
-      href: '/quotations/123'
-    }
+      href: '/quotations/123',
+    },
   ],
   businessFlow: [
     {
       id: 'step-1',
       stage: 'approved' as BusinessStage,
       title: 'Quotation Disetujui',
-      description: 'Klien telah menyetujui quotation dengan nilai yang disepakati',
+      description:
+        'Klien telah menyetujui quotation dengan nilai yang disepakati',
       isCompleted: true,
       isCurrent: false,
       isAvailable: true,
       expectedDuration: '1 hari',
-      businessRules: [mockBusinessRules[0]]
+      businessRules: [mockBusinessRules[0]],
     },
     {
       id: 'step-2',
@@ -131,7 +130,7 @@ const mockRelationshipContext: RelationshipContext = {
       isCurrent: true,
       isAvailable: true,
       expectedDuration: '1 hari',
-      businessRules: [mockBusinessRules[1]]
+      businessRules: [mockBusinessRules[1]],
     },
     {
       id: 'step-3',
@@ -141,8 +140,8 @@ const mockRelationshipContext: RelationshipContext = {
       isCompleted: false,
       isCurrent: false,
       isAvailable: true,
-      expectedDuration: '7-14 hari'
-    }
+      expectedDuration: '7-14 hari',
+    },
   ],
   nextPossibleActions: [
     {
@@ -156,8 +155,8 @@ const mockRelationshipContext: RelationshipContext = {
       indonesianEtiquette: {
         suggestedTiming: 'Hari Senin-Kamis, 09:00-16:00 WIB',
         communicationStyle: 'semi-formal' as any,
-        preferredChannels: ['whatsapp', 'email']
-      }
+        preferredChannels: ['whatsapp', 'email'],
+      },
     },
     {
       id: 'generate-receipt',
@@ -170,10 +169,10 @@ const mockRelationshipContext: RelationshipContext = {
       indonesianEtiquette: {
         suggestedTiming: 'Setelah konfirmasi pembayaran diterima',
         communicationStyle: 'formal' as any,
-        preferredChannels: ['email']
-      }
-    }
-  ]
+        preferredChannels: ['email'],
+      },
+    },
+  ],
 }
 
 describe('RelationshipPanel Component', () => {
@@ -216,7 +215,7 @@ describe('RelationshipPanel Component', () => {
 
       const currencyElements = screen.getAllByText(/Rp/)
       expect(currencyElements.length).toBeGreaterThan(0)
-      
+
       currencyElements.forEach(element => {
         expect(element.textContent).toMatch(/Rp\s[\d.,]+/)
       })
@@ -224,7 +223,7 @@ describe('RelationshipPanel Component', () => {
 
     it('should show empty state when no relationships exist', () => {
       const emptyContext: RelationshipContext = {}
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={emptyContext}
@@ -232,7 +231,9 @@ describe('RelationshipPanel Component', () => {
         />
       )
 
-      expect(screen.getByText('Tidak ada informasi relasi tersedia')).toBeInTheDocument()
+      expect(
+        screen.getByText('Tidak ada informasi relasi tersedia')
+      ).toBeInTheDocument()
     })
   })
 
@@ -245,7 +246,9 @@ describe('RelationshipPanel Component', () => {
         />
       )
 
-      expect(screen.getByText('Website Development Project')).toBeInTheDocument()
+      expect(
+        screen.getByText('Website Development Project')
+      ).toBeInTheDocument()
       expect(screen.getByText('Induk')).toBeInTheDocument()
     })
 
@@ -278,7 +281,7 @@ describe('RelationshipPanel Component', () => {
     it('should handle entity clicks', async () => {
       const onEntityClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -287,10 +290,14 @@ describe('RelationshipPanel Component', () => {
         />
       )
 
-      const entityCard = screen.getByText('Website Development Project').closest('[role="button"]')
+      const entityCard = screen
+        .getByText('Website Development Project')
+        .closest('[role="button"]')
       if (entityCard) {
         await user.click(entityCard)
-        expect(onEntityClick).toHaveBeenCalledWith(mockRelationshipContext.parentEntity)
+        expect(onEntityClick).toHaveBeenCalledWith(
+          mockRelationshipContext.parentEntity
+        )
       }
     })
   })
@@ -298,7 +305,7 @@ describe('RelationshipPanel Component', () => {
   describe('Business Flow Visualization', () => {
     it('should display business flow timeline', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -318,7 +325,7 @@ describe('RelationshipPanel Component', () => {
 
     it('should show step statuses correctly', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -336,7 +343,7 @@ describe('RelationshipPanel Component', () => {
 
     it('should display expected durations', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -354,7 +361,7 @@ describe('RelationshipPanel Component', () => {
 
     it('should show Indonesian business rules', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -376,7 +383,7 @@ describe('RelationshipPanel Component', () => {
   describe('Next Actions', () => {
     it('should display next actions tab', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -393,7 +400,7 @@ describe('RelationshipPanel Component', () => {
 
     it('should show action details with Indonesian etiquette', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -413,7 +420,7 @@ describe('RelationshipPanel Component', () => {
     it('should handle action clicks', async () => {
       const onActionClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -434,7 +441,7 @@ describe('RelationshipPanel Component', () => {
 
     it('should display priority indicators', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -454,7 +461,7 @@ describe('RelationshipPanel Component', () => {
   describe('Indonesian Business Rules', () => {
     it('should display business rule types with appropriate icons', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -467,13 +474,15 @@ describe('RelationshipPanel Component', () => {
       const flowTab = screen.getByText(/Alur Bisnis/)
       await user.click(flowTab)
 
-      expect(screen.getByText(/materai harus menggunakan materai/)).toBeInTheDocument()
+      expect(
+        screen.getByText(/materai harus menggunakan materai/)
+      ).toBeInTheDocument()
       expect(screen.getByText(/WhatsApp untuk follow-up/)).toBeInTheDocument()
     })
 
     it('should show Indonesian context for business rules', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -486,13 +495,17 @@ describe('RelationshipPanel Component', () => {
       const flowTab = screen.getByText(/Alur Bisnis/)
       await user.click(flowTab)
 
-      expect(screen.getByText(/peraturan pemerintah Indonesia/)).toBeInTheDocument()
-      expect(screen.getByText(/platform komunikasi bisnis yang populer/)).toBeInTheDocument()
+      expect(
+        screen.getByText(/peraturan pemerintah Indonesia/)
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(/platform komunikasi bisnis yang populer/)
+      ).toBeInTheDocument()
     })
 
     it('should handle business rule actions', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -527,7 +540,7 @@ describe('RelationshipPanel Component', () => {
 
     it('should support keyboard navigation between tabs', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -540,7 +553,7 @@ describe('RelationshipPanel Component', () => {
       // Tab through the tabs
       await user.tab()
       await user.tab()
-      
+
       // Arrow keys should work for tab navigation
       await user.keyboard('{ArrowRight}')
       await user.keyboard('{Enter}')
@@ -564,7 +577,7 @@ describe('RelationshipPanel Component', () => {
     it('should support keyboard navigation for entity cards', async () => {
       const onEntityClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -573,11 +586,13 @@ describe('RelationshipPanel Component', () => {
         />
       )
 
-      const entityCard = screen.getByText('Website Development Project').closest('[role="button"]')
+      const entityCard = screen
+        .getByText('Website Development Project')
+        .closest('[role="button"]')
       if (entityCard) {
         entityCard.focus()
         expect(entityCard).toHaveFocus()
-        
+
         await user.keyboard('{Enter}')
         expect(onEntityClick).toHaveBeenCalled()
       }
@@ -585,7 +600,7 @@ describe('RelationshipPanel Component', () => {
 
     it('should announce tab changes to screen readers', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -632,11 +647,13 @@ describe('RelationshipPanel Component', () => {
         />
       )
 
-      const entityCard = screen.getByText('Website Development Project').closest('.entityCard')
+      const entityCard = screen
+        .getByText('Website Development Project')
+        .closest('.entityCard')
       if (entityCard) {
         fireEvent.touchStart(entityCard)
         fireEvent.touchEnd(entityCard)
-        
+
         // Should not throw errors
         expect(entityCard).toBeInTheDocument()
       }
@@ -653,7 +670,7 @@ describe('RelationshipPanel Component', () => {
           name: `Payment ${index + 1}`,
           number: `PMNT-${index + 1}`,
           status: 'PENDING',
-          href: `/payments/${index + 1}`
+          href: `/payments/${index + 1}`,
         })),
         relatedEntities: Array.from({ length: 30 }, (_, index) => ({
           id: `related-${index}`,
@@ -661,12 +678,12 @@ describe('RelationshipPanel Component', () => {
           name: `Quotation ${index + 1}`,
           number: `Q-${index + 1}`,
           status: 'APPROVED',
-          href: `/quotations/${index + 1}`
-        }))
+          href: `/quotations/${index + 1}`,
+        })),
       }
 
       const startTime = performance.now()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={largeContext}
@@ -675,10 +692,10 @@ describe('RelationshipPanel Component', () => {
       )
 
       const endTime = performance.now()
-      
+
       // Should render quickly even with many entities
       expect(endTime - startTime).toBeLessThan(200)
-      
+
       // Should show entity counts
       expect(screen.getByText('Entitas Turunan (50)')).toBeInTheDocument()
       expect(screen.getByText('Entitas Terkait (30)')).toBeInTheDocument()
@@ -686,7 +703,7 @@ describe('RelationshipPanel Component', () => {
 
     it('should handle rapid tab switching without performance issues', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <RelationshipPanel
           context={mockRelationshipContext}
@@ -700,10 +717,10 @@ describe('RelationshipPanel Component', () => {
       for (let i = 0; i < 5; i++) {
         const flowTab = screen.getByText(/Alur Bisnis/)
         await user.click(flowTab)
-        
+
         const actionsTab = screen.getByText(/Aksi Berikutnya/)
         await user.click(actionsTab)
-        
+
         const relationshipsTab = screen.getByText(/Relasi/)
         await user.click(relationshipsTab)
       }
@@ -718,11 +735,11 @@ describe('RelationshipPanel Component', () => {
       const entityWithoutMetadata: EntityReference = {
         id: 'simple',
         type: 'client',
-        name: 'Simple Client'
+        name: 'Simple Client',
       }
 
       const contextWithoutMetadata: RelationshipContext = {
-        parentEntity: entityWithoutMetadata
+        parentEntity: entityWithoutMetadata,
       }
 
       renderWithRouter(
@@ -745,9 +762,9 @@ describe('RelationshipPanel Component', () => {
             description: '',
             isCompleted: false,
             isCurrent: true,
-            isAvailable: true
-          }
-        ]
+            isAvailable: true,
+          },
+        ],
       }
 
       renderWithRouter(

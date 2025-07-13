@@ -1,7 +1,14 @@
 // Accessibility Context - Indonesian Business Management System
 // Comprehensive WCAG 2.1 AA compliance provider for Indonesian business applications
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 
 // WCAG 2.1 AA Compliance levels
 export type AccessibilityLevel = 'A' | 'AA' | 'AAA'
@@ -15,22 +22,22 @@ export interface AccessibilitySettings {
   fontSize: FontSize
   highContrast: boolean
   reducedMotion: boolean
-  
+
   // Screen reader support
   screenReaderEnabled: boolean
   announceChanges: boolean
   verboseDescriptions: boolean
-  
+
   // Navigation preferences
   keyboardNavigation: boolean
   focusIndicators: boolean
   skipLinks: boolean
-  
+
   // Indonesian specific
   indonesianLanguageSupport: boolean
   bahasaIndonesiaScreenReader: boolean
   culturallyAppropriateIcons: boolean
-  
+
   // Business context
   materaiAccessibilityAlerts: boolean
   businessWorkflowSupport: boolean
@@ -59,7 +66,12 @@ export interface AccessibilityState {
 
 export interface AccessibilityIssue {
   id: string
-  type: 'color-contrast' | 'missing-label' | 'focus-management' | 'screen-reader' | 'keyboard-navigation'
+  type:
+    | 'color-contrast'
+    | 'missing-label'
+    | 'focus-management'
+    | 'screen-reader'
+    | 'keyboard-navigation'
   severity: 'error' | 'warning' | 'info'
   element: string
   description: string
@@ -75,7 +87,7 @@ export interface AccessibilityContextType {
   setFocus: (elementId: string) => void
   checkCompliance: () => Promise<void>
   getAccessibleLabel: (key: string, context?: any) => string
-  
+
   // Indonesian business specific helpers
   announceMonetaryValue: (amount: number, currency?: string) => void
   announceMateraiRequirement: (required: boolean, amount?: number) => void
@@ -98,30 +110,34 @@ const DEFAULT_SETTINGS: AccessibilitySettings = {
   culturallyAppropriateIcons: true,
   materaiAccessibilityAlerts: true,
   businessWorkflowSupport: true,
-  financialDataAnnouncements: true
+  financialDataAnnouncements: true,
 }
 
-const AccessibilityContext = createContext<AccessibilityContextType | null>(null)
+const AccessibilityContext = createContext<AccessibilityContextType | null>(
+  null
+)
 
-export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [state, setState] = useState<AccessibilityState>({
     settings: DEFAULT_SETTINGS,
     compliance: {
       level: 'AA',
       score: 0,
       issues: [],
-      lastChecked: new Date()
+      lastChecked: new Date(),
     },
     screenReader: {
       active: false,
       announcements: [],
-      currentRegion: null
+      currentRegion: null,
     },
     keyboard: {
       trapFocus: false,
       currentFocusedId: null,
-      focusHistory: []
-    }
+      focusHistory: [],
+    },
   })
 
   // Detect system preferences
@@ -130,7 +146,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       const mediaQueries = {
         prefersDark: window.matchMedia('(prefers-color-scheme: dark)'),
         prefersReduced: window.matchMedia('(prefers-reduced-motion: reduce)'),
-        prefersHighContrast: window.matchMedia('(prefers-contrast: high)')
+        prefersHighContrast: window.matchMedia('(prefers-contrast: high)'),
       }
 
       setState(prev => ({
@@ -139,20 +155,20 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
           ...prev.settings,
           colorScheme: mediaQueries.prefersDark.matches ? 'dark' : 'light',
           reducedMotion: mediaQueries.prefersReduced.matches,
-          highContrast: mediaQueries.prefersHighContrast.matches
-        }
+          highContrast: mediaQueries.prefersHighContrast.matches,
+        },
       }))
 
       // Listen for changes
-      mediaQueries.prefersDark.addEventListener('change', (e) => {
+      mediaQueries.prefersDark.addEventListener('change', e => {
         updateSettings({ colorScheme: e.matches ? 'dark' : 'light' })
       })
 
-      mediaQueries.prefersReduced.addEventListener('change', (e) => {
+      mediaQueries.prefersReduced.addEventListener('change', e => {
         updateSettings({ reducedMotion: e.matches })
       })
 
-      mediaQueries.prefersHighContrast.addEventListener('change', (e) => {
+      mediaQueries.prefersHighContrast.addEventListener('change', e => {
         updateSettings({ highContrast: e.matches })
       })
     }
@@ -166,10 +182,14 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       // Check for common screen readers
       const userAgent = navigator.userAgent.toLowerCase()
       const screenReaderPatterns = [
-        'nvda', 'jaws', 'voiceover', 'orca', 'talkback'
+        'nvda',
+        'jaws',
+        'voiceover',
+        'orca',
+        'talkback',
       ]
-      
-      const hasScreenReader = screenReaderPatterns.some(pattern => 
+
+      const hasScreenReader = screenReaderPatterns.some(pattern =>
         userAgent.includes(pattern)
       )
 
@@ -181,8 +201,8 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         ...prev,
         screenReader: {
           ...prev.screenReader,
-          active: hasScreenReader || hasAriaSupport
-        }
+          active: hasScreenReader || hasAriaSupport,
+        },
       }))
     }
 
@@ -198,8 +218,8 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     const fontSizeMap = {
       small: '0.875',
       medium: '1',
-      large: '1.125', 
-      'extra-large': '1.25'
+      large: '1.125',
+      'extra-large': '1.25',
     }
 
     root.style.setProperty('--font-size-scale', fontSizeMap[settings.fontSize])
@@ -215,73 +235,87 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     )
 
     // Focus indicators
-    root.setAttribute('data-focus-indicators', settings.focusIndicators.toString())
-
+    root.setAttribute(
+      'data-focus-indicators',
+      settings.focusIndicators.toString()
+    )
   }, [state.settings])
 
-  const updateSettings = useCallback((newSettings: Partial<AccessibilitySettings>) => {
-    setState(prev => ({
-      ...prev,
-      settings: { ...prev.settings, ...newSettings }
-    }))
+  const updateSettings = useCallback(
+    (newSettings: Partial<AccessibilitySettings>) => {
+      setState(prev => ({
+        ...prev,
+        settings: { ...prev.settings, ...newSettings },
+      }))
 
-    // Store in localStorage for persistence
-    const currentSettings = { ...state.settings, ...newSettings }
-    localStorage.setItem('accessibility-settings', JSON.stringify(currentSettings))
-  }, [state.settings])
+      // Store in localStorage for persistence
+      const currentSettings = { ...state.settings, ...newSettings }
+      localStorage.setItem(
+        'accessibility-settings',
+        JSON.stringify(currentSettings)
+      )
+    },
+    [state.settings]
+  )
 
   // Screen reader announcements
-  const announce = useCallback((message: string, priority: 'polite' | 'assertive' = 'polite') => {
-    if (!state.settings.announceChanges) return
+  const announce = useCallback(
+    (message: string, priority: 'polite' | 'assertive' = 'polite') => {
+      if (!state.settings.announceChanges) return
 
-    // Create live region if it doesn't exist
-    let liveRegion = document.getElementById('accessibility-announcements')
-    if (!liveRegion) {
-      liveRegion = document.createElement('div')
-      liveRegion.id = 'accessibility-announcements'
-      liveRegion.setAttribute('aria-live', priority)
-      liveRegion.setAttribute('aria-atomic', 'true')
-      liveRegion.style.position = 'absolute'
-      liveRegion.style.left = '-10000px'
-      liveRegion.style.width = '1px'
-      liveRegion.style.height = '1px'
-      liveRegion.style.overflow = 'hidden'
-      document.body.appendChild(liveRegion)
-    }
-
-    // Update the live region
-    liveRegion.textContent = message
-
-    // Store announcement in state
-    setState(prev => ({
-      ...prev,
-      screenReader: {
-        ...prev.screenReader,
-        announcements: [...prev.screenReader.announcements.slice(-9), message]
+      // Create live region if it doesn't exist
+      let liveRegion = document.getElementById('accessibility-announcements')
+      if (!liveRegion) {
+        liveRegion = document.createElement('div')
+        liveRegion.id = 'accessibility-announcements'
+        liveRegion.setAttribute('aria-live', priority)
+        liveRegion.setAttribute('aria-atomic', 'true')
+        liveRegion.style.position = 'absolute'
+        liveRegion.style.left = '-10000px'
+        liveRegion.style.width = '1px'
+        liveRegion.style.height = '1px'
+        liveRegion.style.overflow = 'hidden'
+        document.body.appendChild(liveRegion)
       }
-    }))
 
-    // Clear after reading
-    setTimeout(() => {
-      if (liveRegion) {
-        liveRegion.textContent = ''
-      }
-    }, 100)
-  }, [state.settings.announceChanges])
+      // Update the live region
+      liveRegion.textContent = message
+
+      // Store announcement in state
+      setState(prev => ({
+        ...prev,
+        screenReader: {
+          ...prev.screenReader,
+          announcements: [
+            ...prev.screenReader.announcements.slice(-9),
+            message,
+          ],
+        },
+      }))
+
+      // Clear after reading
+      setTimeout(() => {
+        if (liveRegion) {
+          liveRegion.textContent = ''
+        }
+      }, 100)
+    },
+    [state.settings.announceChanges]
+  )
 
   // Focus management
   const setFocus = useCallback((elementId: string) => {
     const element = document.getElementById(elementId)
     if (element) {
       element.focus()
-      
+
       setState(prev => ({
         ...prev,
         keyboard: {
           ...prev.keyboard,
           currentFocusedId: elementId,
-          focusHistory: [...prev.keyboard.focusHistory.slice(-9), elementId]
-        }
+          focusHistory: [...prev.keyboard.focusHistory.slice(-9), elementId],
+        },
       }))
     }
   }, [])
@@ -289,7 +323,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   // Compliance checking
   const checkCompliance = useCallback(async () => {
     const issues: AccessibilityIssue[] = []
-    
+
     // Check color contrast
     const checkColorContrast = () => {
       const elements = document.querySelectorAll('*')
@@ -297,9 +331,12 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         const styles = window.getComputedStyle(element)
         const bgColor = styles.backgroundColor
         const textColor = styles.color
-        
+
         // Simple contrast check (in production, use proper contrast ratio calculation)
-        if (bgColor !== 'rgba(0, 0, 0, 0)' && textColor !== 'rgba(0, 0, 0, 0)') {
+        if (
+          bgColor !== 'rgba(0, 0, 0, 0)' &&
+          textColor !== 'rgba(0, 0, 0, 0)'
+        ) {
           // This is a simplified check - implement proper contrast ratio calculation
           const contrastRatio = calculateContrastRatio(bgColor, textColor)
           if (contrastRatio < 4.5) {
@@ -309,9 +346,10 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
               severity: 'error',
               element: element.tagName.toLowerCase(),
               description: `Insufficient color contrast ratio: ${contrastRatio.toFixed(2)}`,
-              recommendation: 'Increase color contrast to meet WCAG AA standard (4.5:1)',
+              recommendation:
+                'Increase color contrast to meet WCAG AA standard (4.5:1)',
               wcagGuideline: 'WCAG 2.1 SC 1.4.3',
-              indonesianSpecific: false
+              indonesianSpecific: false,
             })
           }
         }
@@ -322,10 +360,11 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     const checkMissingLabels = () => {
       const inputs = document.querySelectorAll('input, select, textarea')
       inputs.forEach((input, index) => {
-        const hasLabel = input.getAttribute('aria-label') || 
-                        input.getAttribute('aria-labelledby') ||
-                        document.querySelector(`label[for="${input.id}"]`)
-        
+        const hasLabel =
+          input.getAttribute('aria-label') ||
+          input.getAttribute('aria-labelledby') ||
+          document.querySelector(`label[for="${input.id}"]`)
+
         if (!hasLabel) {
           issues.push({
             id: `label-${index}`,
@@ -333,9 +372,10 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
             severity: 'error',
             element: input.tagName.toLowerCase(),
             description: 'Form control missing accessible label',
-            recommendation: 'Add aria-label, aria-labelledby, or associated label element',
+            recommendation:
+              'Add aria-label, aria-labelledby, or associated label element',
             wcagGuideline: 'WCAG 2.1 SC 4.1.2',
-            indonesianSpecific: false
+            indonesianSpecific: false,
           })
         }
       })
@@ -346,7 +386,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       const interactiveElements = document.querySelectorAll(
         'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])'
       )
-      
+
       interactiveElements.forEach((element, index) => {
         const tabIndex = element.getAttribute('tabindex')
         if (tabIndex && parseInt(tabIndex) > 0) {
@@ -355,10 +395,11 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
             type: 'keyboard-navigation',
             severity: 'warning',
             element: element.tagName.toLowerCase(),
-            description: 'Positive tabindex found - may disrupt natural tab order',
+            description:
+              'Positive tabindex found - may disrupt natural tab order',
             recommendation: 'Use tabindex="0" or rely on natural tab order',
             wcagGuideline: 'WCAG 2.1 SC 2.4.3',
-            indonesianSpecific: false
+            indonesianSpecific: false,
           })
         }
       })
@@ -371,7 +412,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Calculate compliance score
     const totalElements = document.querySelectorAll('*').length
-    const score = Math.max(0, 100 - (issues.length / totalElements * 100))
+    const score = Math.max(0, 100 - (issues.length / totalElements) * 100)
 
     setState(prev => ({
       ...prev,
@@ -379,46 +420,58 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         level: score >= 95 ? 'AAA' : score >= 85 ? 'AA' : 'A',
         score: Math.round(score),
         issues,
-        lastChecked: new Date()
-      }
+        lastChecked: new Date(),
+      },
     }))
   }, [])
 
   // Indonesian business specific helpers
-  const announceMonetaryValue = useCallback((amount: number, currency: string = 'IDR') => {
-    if (!state.settings.financialDataAnnouncements) return
+  const announceMonetaryValue = useCallback(
+    (amount: number, currency: string = 'IDR') => {
+      if (!state.settings.financialDataAnnouncements) return
 
-    const formatter = new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: currency
-    })
+      const formatter = new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: currency,
+      })
 
-    const formattedAmount = formatter.format(amount)
-    announce(`Nilai: ${formattedAmount}`, 'polite')
-  }, [announce, state.settings.financialDataAnnouncements])
+      const formattedAmount = formatter.format(amount)
+      announce(`Nilai: ${formattedAmount}`, 'polite')
+    },
+    [announce, state.settings.financialDataAnnouncements]
+  )
 
-  const announceMateraiRequirement = useCallback((required: boolean, amount?: number) => {
-    if (!state.settings.materaiAccessibilityAlerts) return
+  const announceMateraiRequirement = useCallback(
+    (required: boolean, amount?: number) => {
+      if (!state.settings.materaiAccessibilityAlerts) return
 
-    if (required && amount) {
-      announce(`Materai diperlukan: ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount)}`, 'assertive')
-    } else if (required) {
-      announce('Materai diperlukan untuk transaksi ini', 'assertive')
-    } else {
-      announce('Materai tidak diperlukan', 'polite')
-    }
-  }, [announce, state.settings.materaiAccessibilityAlerts])
+      if (required && amount) {
+        announce(
+          `Materai diperlukan: ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount)}`,
+          'assertive'
+        )
+      } else if (required) {
+        announce('Materai diperlukan untuk transaksi ini', 'assertive')
+      } else {
+        announce('Materai tidak diperlukan', 'polite')
+      }
+    },
+    [announce, state.settings.materaiAccessibilityAlerts]
+  )
 
-  const announceBusinessWorkflowStep = useCallback((step: string, context?: any) => {
-    if (!state.settings.businessWorkflowSupport) return
+  const announceBusinessWorkflowStep = useCallback(
+    (step: string, context?: any) => {
+      if (!state.settings.businessWorkflowSupport) return
 
-    let message = `Langkah: ${step}`
-    if (context?.stepNumber && context?.totalSteps) {
-      message += ` (${context.stepNumber} dari ${context.totalSteps})`
-    }
+      let message = `Langkah: ${step}`
+      if (context?.stepNumber && context?.totalSteps) {
+        message += ` (${context.stepNumber} dari ${context.totalSteps})`
+      }
 
-    announce(message, 'polite')
-  }, [announce, state.settings.businessWorkflowSupport])
+      announce(message, 'polite')
+    },
+    [announce, state.settings.businessWorkflowSupport]
+  )
 
   // Accessible label helper
   const getAccessibleLabel = useCallback((key: string, context?: any) => {
@@ -431,7 +484,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       'materai.not-required': 'Materai tidak diperlukan',
       'save.button': 'Simpan perubahan',
       'cancel.button': 'Batalkan',
-      'delete.button': 'Hapus item'
+      'delete.button': 'Hapus item',
     }
 
     let label = labels[key] || key
@@ -459,27 +512,30 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [])
 
-  const contextValue: AccessibilityContextType = useMemo(() => ({
-    state,
-    updateSettings,
-    announce,
-    setFocus,
-    checkCompliance,
-    getAccessibleLabel,
-    announceMonetaryValue,
-    announceMateraiRequirement,
-    announceBusinessWorkflowStep
-  }), [
-    state,
-    updateSettings,
-    announce,
-    setFocus,
-    checkCompliance,
-    getAccessibleLabel,
-    announceMonetaryValue,
-    announceMateraiRequirement,
-    announceBusinessWorkflowStep
-  ])
+  const contextValue: AccessibilityContextType = useMemo(
+    () => ({
+      state,
+      updateSettings,
+      announce,
+      setFocus,
+      checkCompliance,
+      getAccessibleLabel,
+      announceMonetaryValue,
+      announceMateraiRequirement,
+      announceBusinessWorkflowStep,
+    }),
+    [
+      state,
+      updateSettings,
+      announce,
+      setFocus,
+      checkCompliance,
+      getAccessibleLabel,
+      announceMonetaryValue,
+      announceMateraiRequirement,
+      announceBusinessWorkflowStep,
+    ]
+  )
 
   return (
     <AccessibilityContext.Provider value={contextValue}>
@@ -492,7 +548,9 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 export const useAccessibility = (): AccessibilityContextType => {
   const context = useContext(AccessibilityContext)
   if (!context) {
-    throw new Error('useAccessibility must be used within AccessibilityProvider')
+    throw new Error(
+      'useAccessibility must be used within AccessibilityProvider'
+    )
   }
   return context
 }
@@ -502,7 +560,7 @@ const calculateContrastRatio = (color1: string, color2: string): number => {
   // This is a simplified implementation
   // In production, implement proper contrast ratio calculation
   // using WCAG guidelines
-  
+
   const getLuminance = (color: string): number => {
     // Parse RGB values and calculate relative luminance
     // This is a placeholder - implement proper luminance calculation
@@ -511,10 +569,10 @@ const calculateContrastRatio = (color1: string, color2: string): number => {
 
   const l1 = getLuminance(color1)
   const l2 = getLuminance(color2)
-  
+
   const lighter = Math.max(l1, l2)
   const darker = Math.min(l1, l2)
-  
+
   return (lighter + 0.05) / (darker + 0.05)
 }
 

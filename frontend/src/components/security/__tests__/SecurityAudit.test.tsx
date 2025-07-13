@@ -6,17 +6,20 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 
-import SecurityAudit, { SecurityVulnerability, SecurityScanResult } from '../SecurityAudit'
+import SecurityAudit, {
+  SecurityVulnerability,
+  SecurityScanResult,
+} from '../SecurityAudit'
 
 // Mock dependencies
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 vi.mock('../../../utils/currency', () => ({
-  formatDateIndonesian: (date: Date) => date.toLocaleDateString('id-ID')
+  formatDateIndonesian: (date: Date) => date.toLocaleDateString('id-ID'),
 }))
 
 // Mock data
@@ -35,7 +38,7 @@ const mockVulnerabilities: SecurityVulnerability[] = [
     foundAt: new Date('2025-01-01'),
     status: 'open',
     affectsIndonesianCompliance: false,
-    businessCritical: true
+    businessCritical: true,
   },
   {
     id: 'materai_001',
@@ -50,8 +53,8 @@ const mockVulnerabilities: SecurityVulnerability[] = [
     status: 'open',
     affectsIndonesianCompliance: true,
     materaiRelated: true,
-    businessCritical: true
-  }
+    businessCritical: true,
+  },
 ]
 
 const mockScanResult: SecurityScanResult = {
@@ -66,7 +69,7 @@ const mockScanResult: SecurityScanResult = {
   materaiCompliance: 90,
   privacyCompliance: 80,
   authenticationSecurity: 88,
-  dataProtection: 85
+  dataProtection: 85,
 }
 
 const defaultProps = {
@@ -74,7 +77,7 @@ const defaultProps = {
   scanInterval: 60,
   showIndonesianCompliance: true,
   enableMateraiValidation: true,
-  enablePrivacyChecks: true
+  enablePrivacyChecks: true,
 }
 
 // Mock setTimeout to control timing in tests
@@ -95,19 +98,27 @@ describe('SecurityAudit Component', () => {
     it('should render security audit interface correctly', () => {
       render(<SecurityAudit {...defaultProps} />)
 
-      expect(screen.getByText('Security Audit - Indonesian Business Compliance')).toBeInTheDocument()
+      expect(
+        screen.getByText('Security Audit - Indonesian Business Compliance')
+      ).toBeInTheDocument()
       expect(screen.getByText('Mulai Scan')).toBeInTheDocument()
       expect(screen.getByText('Export Report')).toBeInTheDocument()
     })
 
     it('should show Indonesian compliance features when enabled', () => {
-      render(<SecurityAudit {...defaultProps} showIndonesianCompliance={true} />)
+      render(
+        <SecurityAudit {...defaultProps} showIndonesianCompliance={true} />
+      )
 
-      expect(screen.getByText('Security Audit - Indonesian Business Compliance')).toBeInTheDocument()
+      expect(
+        screen.getByText('Security Audit - Indonesian Business Compliance')
+      ).toBeInTheDocument()
     })
 
     it('should render without Indonesian compliance when disabled', () => {
-      render(<SecurityAudit {...defaultProps} showIndonesianCompliance={false} />)
+      render(
+        <SecurityAudit {...defaultProps} showIndonesianCompliance={false} />
+      )
 
       // Should still render the main component
       expect(screen.getByText('Mulai Scan')).toBeInTheDocument()
@@ -117,7 +128,7 @@ describe('SecurityAudit Component', () => {
   describe('Security Scanning', () => {
     it('should start security scan when button is clicked', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
+
       render(<SecurityAudit {...defaultProps} />)
 
       const scanButton = screen.getByText('Mulai Scan')
@@ -125,12 +136,14 @@ describe('SecurityAudit Component', () => {
 
       // Should show scanning state
       expect(screen.getByText('Scanning...')).toBeInTheDocument()
-      expect(screen.getByText('Security Scan in Progress...')).toBeInTheDocument()
+      expect(
+        screen.getByText('Security Scan in Progress...')
+      ).toBeInTheDocument()
     })
 
     it('should show scan progress during scanning', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
+
       render(<SecurityAudit {...defaultProps} />)
 
       const scanButton = screen.getByText('Mulai Scan')
@@ -143,7 +156,7 @@ describe('SecurityAudit Component', () => {
 
     it('should disable scan button during active scan', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
+
       render(<SecurityAudit {...defaultProps} />)
 
       const scanButton = screen.getByText('Mulai Scan')
@@ -156,12 +169,9 @@ describe('SecurityAudit Component', () => {
     it('should complete scan and show results', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
       const onScanComplete = vi.fn()
-      
+
       render(
-        <SecurityAudit 
-          {...defaultProps} 
-          onScanComplete={onScanComplete}
-        />
+        <SecurityAudit {...defaultProps} onScanComplete={onScanComplete} />
       )
 
       const scanButton = screen.getByText('Mulai Scan')
@@ -182,7 +192,7 @@ describe('SecurityAudit Component', () => {
   describe('Security Scores Display', () => {
     it('should display security scores after scan', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
+
       render(<SecurityAudit {...defaultProps} />)
 
       // Trigger scan
@@ -210,12 +220,7 @@ describe('SecurityAudit Component', () => {
 
   describe('Indonesian Business Features', () => {
     it('should include materai validation when enabled', async () => {
-      render(
-        <SecurityAudit 
-          {...defaultProps} 
-          enableMateraiValidation={true}
-        />
-      )
+      render(<SecurityAudit {...defaultProps} enableMateraiValidation={true} />)
 
       const scanButton = screen.getByText('Mulai Scan')
       expect(scanButton).toBeInTheDocument()
@@ -225,12 +230,7 @@ describe('SecurityAudit Component', () => {
     })
 
     it('should include privacy checks when enabled', async () => {
-      render(
-        <SecurityAudit 
-          {...defaultProps} 
-          enablePrivacyChecks={true}
-        />
-      )
+      render(<SecurityAudit {...defaultProps} enablePrivacyChecks={true} />)
 
       const scanButton = screen.getByText('Mulai Scan')
       expect(scanButton).toBeInTheDocument()
@@ -240,7 +240,7 @@ describe('SecurityAudit Component', () => {
 
     it('should show Indonesian-specific compliance scores', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
+
       render(<SecurityAudit {...defaultProps} />)
 
       const scanButton = screen.getByText('Mulai Scan')
@@ -258,7 +258,7 @@ describe('SecurityAudit Component', () => {
   describe('Vulnerability Management', () => {
     it('should display vulnerabilities in table format', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
+
       render(<SecurityAudit {...defaultProps} />)
 
       // Start scan
@@ -276,7 +276,7 @@ describe('SecurityAudit Component', () => {
 
     it('should show vulnerability details when clicked', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
+
       render(<SecurityAudit {...defaultProps} />)
 
       const scanButton = screen.getByText('Mulai Scan')
@@ -293,7 +293,7 @@ describe('SecurityAudit Component', () => {
 
     it('should categorize Indonesian-specific vulnerabilities', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
+
       render(<SecurityAudit {...defaultProps} />)
 
       const scanButton = screen.getByText('Mulai Scan')
@@ -354,10 +354,10 @@ describe('SecurityAudit Component', () => {
     it('should call onVulnerabilityFound when vulnerability is detected', async () => {
       const onVulnerabilityFound = vi.fn()
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
+
       render(
-        <SecurityAudit 
-          {...defaultProps} 
+        <SecurityAudit
+          {...defaultProps}
           onVulnerabilityFound={onVulnerabilityFound}
         />
       )
@@ -377,12 +377,9 @@ describe('SecurityAudit Component', () => {
     it('should call onScanComplete when scan finishes', async () => {
       const onScanComplete = vi.fn()
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
+
       render(
-        <SecurityAudit 
-          {...defaultProps} 
-          onScanComplete={onScanComplete}
-        />
+        <SecurityAudit {...defaultProps} onScanComplete={onScanComplete} />
       )
 
       const scanButton = screen.getByText('Mulai Scan')
@@ -397,7 +394,7 @@ describe('SecurityAudit Component', () => {
 
     it('should handle export report action', async () => {
       const user = userEvent.setup()
-      
+
       render(<SecurityAudit {...defaultProps} />)
 
       const exportButton = screen.getByText('Export Report')
@@ -411,11 +408,7 @@ describe('SecurityAudit Component', () => {
   describe('Auto-scan Functionality', () => {
     it('should start auto-scan when enabled', () => {
       render(
-        <SecurityAudit 
-          {...defaultProps} 
-          autoScan={true}
-          scanInterval={1}
-        />
+        <SecurityAudit {...defaultProps} autoScan={true} scanInterval={1} />
       )
 
       // Auto-scan should be set up (can't easily test the interval without more complex mocking)
@@ -423,12 +416,7 @@ describe('SecurityAudit Component', () => {
     })
 
     it('should not auto-scan when disabled', () => {
-      render(
-        <SecurityAudit 
-          {...defaultProps} 
-          autoScan={false}
-        />
-      )
+      render(<SecurityAudit {...defaultProps} autoScan={false} />)
 
       // Should not automatically start scanning
       expect(screen.getByText('Mulai Scan')).toBeInTheDocument()
@@ -439,7 +427,7 @@ describe('SecurityAudit Component', () => {
   describe('Error Handling', () => {
     it('should handle scan failures gracefully', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
+
       render(<SecurityAudit {...defaultProps} />)
 
       const scanButton = screen.getByText('Mulai Scan')
@@ -465,13 +453,17 @@ describe('SecurityAudit Component', () => {
     it('should have proper ARIA labels and roles', () => {
       render(<SecurityAudit {...defaultProps} />)
 
-      expect(screen.getByRole('button', { name: /mulai scan/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /export report/i })).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /mulai scan/i })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /export report/i })
+      ).toBeInTheDocument()
     })
 
     it('should support keyboard navigation', async () => {
       const user = userEvent.setup()
-      
+
       render(<SecurityAudit {...defaultProps} />)
 
       // Should be able to navigate with keyboard
@@ -483,13 +475,8 @@ describe('SecurityAudit Component', () => {
   describe('Indonesian Compliance Specific Tests', () => {
     it('should validate materai calculations in security context', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
-      render(
-        <SecurityAudit 
-          {...defaultProps} 
-          enableMateraiValidation={true}
-        />
-      )
+
+      render(<SecurityAudit {...defaultProps} enableMateraiValidation={true} />)
 
       const scanButton = screen.getByText('Mulai Scan')
       await user.click(scanButton)
@@ -504,13 +491,8 @@ describe('SecurityAudit Component', () => {
 
     it('should check Indonesian privacy law compliance', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
-      render(
-        <SecurityAudit 
-          {...defaultProps} 
-          enablePrivacyChecks={true}
-        />
-      )
+
+      render(<SecurityAudit {...defaultProps} enablePrivacyChecks={true} />)
 
       const scanButton = screen.getByText('Mulai Scan')
       await user.click(scanButton)
@@ -525,7 +507,7 @@ describe('SecurityAudit Component', () => {
 
     it('should identify Indonesian business critical vulnerabilities', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      
+
       render(<SecurityAudit {...defaultProps} />)
 
       const scanButton = screen.getByText('Mulai Scan')

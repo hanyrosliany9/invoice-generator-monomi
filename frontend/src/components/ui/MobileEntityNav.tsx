@@ -1,14 +1,14 @@
 import React from 'react'
-import { Button, Badge, Space } from 'antd'
-import { 
-  UserOutlined, 
-  ProjectOutlined, 
-  FileTextOutlined, 
+import { Badge, Button, Space } from 'antd'
+import {
   DollarOutlined,
+  FileTextOutlined,
+  HomeOutlined,
   PlusOutlined,
-  HomeOutlined
+  ProjectOutlined,
+  UserOutlined,
 } from '@ant-design/icons'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 interface EntityNavItem {
   key: string
@@ -36,7 +36,7 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
   counts = { clients: 0, projects: 0, quotations: 0, invoices: 0 },
   onQuickActionPress,
   className = '',
-  visible = true
+  visible = true,
 }) => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -48,7 +48,7 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
       icon: <HomeOutlined />,
       path: '/dashboard',
       color: '#8c8c8c',
-      activeColor: '#1890ff'
+      activeColor: '#1890ff',
     },
     {
       key: 'clients',
@@ -57,7 +57,7 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
       path: '/clients',
       count: counts.clients,
       color: '#8c8c8c',
-      activeColor: '#1890ff'
+      activeColor: '#1890ff',
     },
     {
       key: 'projects',
@@ -66,7 +66,7 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
       path: '/projects',
       count: counts.projects,
       color: '#8c8c8c',
-      activeColor: '#52c41a'
+      activeColor: '#52c41a',
     },
     {
       key: 'quotations',
@@ -75,7 +75,7 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
       path: '/quotations',
       count: counts.quotations,
       color: '#8c8c8c',
-      activeColor: '#faad14'
+      activeColor: '#faad14',
     },
     {
       key: 'invoices',
@@ -84,8 +84,8 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
       path: '/invoices',
       count: counts.invoices,
       color: '#8c8c8c',
-      activeColor: '#f5222d'
-    }
+      activeColor: '#f5222d',
+    },
   ]
 
   const isActiveRoute = (path: string) => {
@@ -110,7 +110,7 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
   }
 
   return (
-    <div 
+    <div
       className={`
         mobile-entity-nav fixed bottom-0 left-0 right-0 z-50 
         bg-white border-t border-gray-200 px-2 py-1
@@ -119,19 +119,19 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
       style={{
         boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.05)',
         backdropFilter: 'blur(8px)',
-        background: 'rgba(255, 255, 255, 0.95)'
+        background: 'rgba(255, 255, 255, 0.95)',
       }}
     >
-      <div className="flex items-center justify-between max-w-md mx-auto">
+      <div className='flex items-center justify-between max-w-md mx-auto'>
         {/* Navigation Items */}
-        {navItems.map((item) => {
+        {navItems.map(item => {
           const isActive = isActiveRoute(item.path)
-          
+
           return (
             <Button
               key={item.key}
-              type="text"
-              size="small"
+              type='text'
+              size='small'
               onClick={() => handleNavigation(item)}
               className={`
                 flex flex-col items-center justify-center p-1 h-auto min-w-0
@@ -141,27 +141,29 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
               style={{
                 border: 'none',
                 boxShadow: 'none',
-                width: '60px'
+                width: '60px',
               }}
             >
-              <div className="flex flex-col items-center space-y-1">
+              <div className='flex flex-col items-center space-y-1'>
                 {/* Icon with Badge */}
-                <div className="relative flex items-center justify-center">
-                  <span 
-                    style={{ 
+                <div className='relative flex items-center justify-center'>
+                  <span
+                    style={{
                       color: isActive ? item.activeColor : item.color,
-                      fontSize: '18px'
+                      fontSize: '18px',
                     }}
-                    className="transition-colors duration-200"
+                    className='transition-colors duration-200'
                   >
                     {item.icon}
                   </span>
                   {item.count !== undefined && item.count > 0 && (
-                    <Badge 
-                      count={item.count} 
-                      size="small"
-                      style={{ 
-                        backgroundColor: isActive ? item.activeColor : '#ff4d4f',
+                    <Badge
+                      count={item.count}
+                      size='small'
+                      style={{
+                        backgroundColor: isActive
+                          ? item.activeColor
+                          : '#ff4d4f',
                         position: 'absolute',
                         top: '-6px',
                         right: '-8px',
@@ -169,20 +171,20 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
                         height: '16px',
                         lineHeight: '16px',
                         minWidth: '16px',
-                        padding: '0 4px'
+                        padding: '0 4px',
                       }}
                     />
                   )}
                 </div>
-                
+
                 {/* Label */}
-                <span 
-                  style={{ 
+                <span
+                  style={{
                     color: isActive ? item.activeColor : item.color,
                     fontSize: '10px',
-                    fontWeight: isActive ? '600' : '400'
+                    fontWeight: isActive ? '600' : '400',
                   }}
-                  className="transition-colors duration-200"
+                  className='transition-colors duration-200'
                 >
                   {item.label}
                 </span>
@@ -193,24 +195,24 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
 
         {/* Quick Action Button */}
         <Button
-          type="primary"
-          shape="circle"
-          size="large"
+          type='primary'
+          shape='circle'
+          size='large'
           icon={<PlusOutlined />}
           onClick={handleQuickAction}
-          className="flex items-center justify-center"
+          className='flex items-center justify-center'
           style={{
             background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
             border: 'none',
             boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)',
             width: '48px',
-            height: '48px'
+            height: '48px',
           }}
         />
       </div>
 
       {/* Safe Area Padding for iOS */}
-      <div className="h-safe-area-inset-bottom" />
+      <div className='h-safe-area-inset-bottom' />
     </div>
   )
 }

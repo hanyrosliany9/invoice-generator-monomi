@@ -1,10 +1,14 @@
 // Price Inheritance Service - Indonesian Business Management System
 // Comprehensive price inheritance with Indonesian business compliance and validation
 
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
-import { 
-  CreatePriceInheritanceDto, 
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import {
+  CreatePriceInheritanceDto,
   UpdatePriceInheritanceDto,
   PriceInheritanceResponseDto,
   PriceValidationResponseDto,
@@ -14,38 +18,38 @@ import {
   IndonesianBusinessRule,
   PriceInheritanceMode,
   PriceSourceType,
-  CommunicationStyle
-} from './dto/price-inheritance.dto'
+  CommunicationStyle,
+} from "./dto/price-inheritance.dto";
 
 interface PriceValidationRule {
-  id: string
-  type: IndonesianBusinessRule | 'pricing' | 'business_logic'
-  severity: ValidationSeverity
-  message: string
-  indonesianContext?: string
-  suggestedAction?: string
-  isBlocking?: boolean
+  id: string;
+  type: IndonesianBusinessRule | "pricing" | "business_logic";
+  severity: ValidationSeverity;
+  message: string;
+  indonesianContext?: string;
+  suggestedAction?: string;
+  isBlocking?: boolean;
   metadata?: {
-    threshold?: number
-    calculatedValue?: number
-    requiredDocuments?: string[]
-  }
+    threshold?: number;
+    calculatedValue?: number;
+    requiredDocuments?: string[];
+  };
 }
 
 interface IndonesianComplianceResult {
-  materaiRequired: boolean
-  materaiAmount: number
+  materaiRequired: boolean;
+  materaiAmount: number;
   taxCompliance: {
-    ppnRequired: boolean
-    ppnRate: number
-    pphRequired: boolean
-    pphRate: number
-  }
+    ppnRequired: boolean;
+    ppnRate: number;
+    pphRequired: boolean;
+    pphRate: number;
+  };
   businessEtiquette: {
-    suggestedTiming: string
-    communicationStyle: CommunicationStyle
-    culturalNotes: string[]
-  }
+    suggestedTiming: string;
+    communicationStyle: CommunicationStyle;
+    culturalNotes: string[];
+  };
 }
 
 @Injectable()
@@ -56,30 +60,30 @@ export class PriceInheritanceService {
    * Get available price sources for a given entity
    */
   async getAvailableSources(
-    entityType: 'quotation' | 'invoice',
+    entityType: "quotation" | "invoice",
     entityId: string,
-    userId: string
+    userId: string,
   ): Promise<PriceSourceDto[]> {
     // Validate user access
-    await this.validateUserAccess(entityType, entityId, userId)
+    await this.validateUserAccess(entityType, entityId, userId);
 
-    const sources: PriceSourceDto[] = []
+    const sources: PriceSourceDto[] = [];
 
-    if (entityType === 'quotation') {
+    if (entityType === "quotation") {
       // For quotations, get project as source
       const quotation = await this.prisma.quotation.findUnique({
         where: { id: entityId },
         include: {
           project: {
             include: {
-              client: true
-            }
-          }
-        }
-      })
+              client: true,
+            },
+          },
+        },
+      });
 
       if (!quotation?.project) {
-        throw new NotFoundException('Project not found for quotation')
+        throw new NotFoundException("Project not found for quotation");
       }
 
       sources.push({
@@ -90,21 +94,21 @@ export class PriceInheritanceService {
         originalAmount: Number(quotation.totalAmount) || 0,
         lastUpdated: quotation.project.updatedAt,
         metadata: {
-          createdBy: 'system',
-          notes: quotation.project.description
-        }
-      })
+          createdBy: "system",
+          notes: quotation.project.description,
+        },
+      });
 
       // Get previous quotations for this project
       const previousQuotations = await this.prisma.quotation.findMany({
         where: {
           projectId: quotation.projectId,
           id: { not: entityId },
-          status: 'APPROVED'
+          status: "APPROVED",
         },
-        orderBy: { createdAt: 'desc' },
-        take: 3
-      })
+        orderBy: { createdAt: "desc" },
+        take: 3,
+      });
 
       for (const prevQuotation of previousQuotations) {
         sources.push({
@@ -116,12 +120,11 @@ export class PriceInheritanceService {
           lastUpdated: prevQuotation.updatedAt,
           metadata: {
             approvedBy: prevQuotation.createdBy,
-            notes: prevQuotation.terms || 'No notes available'
-          }
-        })
+            notes: prevQuotation.terms || "No notes available",
+          },
+        });
       }
-
-    } else if (entityType === 'invoice') {
+    } else if (entityType === "invoice") {
       // For invoices, get quotation and project as sources
       const invoice = await this.prisma.invoice.findUnique({
         where: { id: entityId },
@@ -130,16 +133,16 @@ export class PriceInheritanceService {
             include: {
               project: {
                 include: {
-                  client: true
-                }
-              }
-            }
-          }
-        }
-      })
+                  client: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
       if (!invoice?.quotation) {
-        throw new NotFoundException('Quotation not found for invoice')
+        throw new NotFoundException("Quotation not found for invoice");
       }
 
       // Add quotation as primary source
@@ -152,9 +155,9 @@ export class PriceInheritanceService {
         lastUpdated: invoice.quotation.updatedAt,
         metadata: {
           approvedBy: invoice.quotation.createdBy,
-          notes: invoice.quotation.terms || 'No notes available'
-        }
-      })
+          notes: invoice.quotation.terms || "No notes available",
+        },
+      });
 
       // Add project as secondary source
       if (invoice.quotation.project) {
@@ -167,13 +170,13 @@ export class PriceInheritanceService {
           lastUpdated: invoice.quotation.project.updatedAt,
           metadata: {
             createdBy: invoice.quotation.createdBy,
-            notes: invoice.quotation.project.description
-          }
-        })
+            notes: invoice.quotation.project.description,
+          },
+        });
       }
     }
 
-    return sources
+    return sources;
   }
 
   /**
@@ -183,92 +186,106 @@ export class PriceInheritanceService {
     amount: number,
     mode: PriceInheritanceMode,
     sourceId?: string,
-    inheritedAmount?: number
+    inheritedAmount?: number,
   ): Promise<PriceValidationResponseDto> {
-    const rules: PriceValidationRule[] = []
-    const warnings: PriceValidationRule[] = []
-    const errors: PriceValidationRule[] = []
-    const suggestions: PriceValidationRule[] = []
+    const rules: PriceValidationRule[] = [];
+    const warnings: PriceValidationRule[] = [];
+    const errors: PriceValidationRule[] = [];
+    const suggestions: PriceValidationRule[] = [];
 
     // Basic amount validation
     if (!Number.isFinite(amount) || amount <= 0) {
       errors.push({
-        id: 'invalid-amount',
-        type: 'pricing',
+        id: "invalid-amount",
+        type: "pricing",
         severity: ValidationSeverity.ERROR,
-        message: 'Jumlah harus berupa angka yang valid dan lebih besar dari nol',
-        isBlocking: true
-      })
+        message:
+          "Jumlah harus berupa angka yang valid dan lebih besar dari nol",
+        isBlocking: true,
+      });
     }
 
     // Price deviation validation
-    if (mode === PriceInheritanceMode.CUSTOM && inheritedAmount && inheritedAmount > 0) {
-      const deviation = Math.abs((amount - inheritedAmount) / inheritedAmount) * 100
+    if (
+      mode === PriceInheritanceMode.CUSTOM &&
+      inheritedAmount &&
+      inheritedAmount > 0
+    ) {
+      const deviation =
+        Math.abs((amount - inheritedAmount) / inheritedAmount) * 100;
 
       if (deviation > 50) {
         warnings.push({
-          id: 'extreme-deviation',
-          type: 'pricing',
+          id: "extreme-deviation",
+          type: "pricing",
           severity: ValidationSeverity.WARNING,
           message: `Harga menyimpang ${deviation.toFixed(1)}% dari sumber`,
-          indonesianContext: 'Penyimpangan harga yang besar dapat mempengaruhi profitabilitas dan daya saing',
-          suggestedAction: 'Pertimbangkan untuk meninjau kembali harga atau dokumentasikan alasan penyimpangan',
+          indonesianContext:
+            "Penyimpangan harga yang besar dapat mempengaruhi profitabilitas dan daya saing",
+          suggestedAction:
+            "Pertimbangkan untuk meninjau kembali harga atau dokumentasikan alasan penyimpangan",
           metadata: {
             threshold: 50,
-            calculatedValue: deviation
-          }
-        })
+            calculatedValue: deviation,
+          },
+        });
       } else if (deviation > 20) {
         suggestions.push({
-          id: 'significant-deviation',
-          type: 'pricing',
+          id: "significant-deviation",
+          type: "pricing",
           severity: ValidationSeverity.INFO,
           message: `Harga menyimpang ${deviation.toFixed(1)}% dari sumber`,
-          indonesianContext: 'Penyimpangan moderat masih dapat diterima dengan justifikasi yang tepat',
-          suggestedAction: 'Berikan penjelasan untuk penyimpangan harga kepada klien'
-        })
+          indonesianContext:
+            "Penyimpangan moderat masih dapat diterima dengan justifikasi yang tepat",
+          suggestedAction:
+            "Berikan penjelasan untuk penyimpangan harga kepada klien",
+        });
       }
     }
 
     // Indonesian compliance validation
-    const compliance = await this.validateIndonesianCompliance(amount)
+    const compliance = await this.validateIndonesianCompliance(amount);
 
     if (compliance.materaiRequired) {
       suggestions.push({
-        id: 'materai-required',
+        id: "materai-required",
         type: IndonesianBusinessRule.MATERAI,
         severity: ValidationSeverity.INFO,
         message: `Materai Rp ${this.formatIDR(compliance.materaiAmount)} diperlukan`,
-        indonesianContext: 'Sesuai dengan UU No. 13 Tahun 1985 tentang Bea Materai',
-        suggestedAction: 'Siapkan materai sebelum mencetak dokumen',
+        indonesianContext:
+          "Sesuai dengan UU No. 13 Tahun 1985 tentang Bea Materai",
+        suggestedAction: "Siapkan materai sebelum mencetak dokumen",
         metadata: {
-          requiredDocuments: ['Materai', 'Dokumen asli untuk ditempel materai']
-        }
-      })
+          requiredDocuments: ["Materai", "Dokumen asli untuk ditempel materai"],
+        },
+      });
     }
 
     // Business etiquette validation
     if (amount >= 100000000) {
       suggestions.push({
-        id: 'formal-communication',
+        id: "formal-communication",
         type: IndonesianBusinessRule.BUSINESS_ETIQUETTE,
         severity: ValidationSeverity.INFO,
-        message: 'Transaksi besar memerlukan komunikasi formal',
-        indonesianContext: 'Dalam budaya bisnis Indonesia, transaksi besar memerlukan pendekatan yang lebih formal dan personal',
-        suggestedAction: 'Gunakan gaya komunikasi formal dan pertimbangkan pertemuan langsung'
-      })
+        message: "Transaksi besar memerlukan komunikasi formal",
+        indonesianContext:
+          "Dalam budaya bisnis Indonesia, transaksi besar memerlukan pendekatan yang lebih formal dan personal",
+        suggestedAction:
+          "Gunakan gaya komunikasi formal dan pertimbangkan pertemuan langsung",
+      });
     }
 
     // Tax compliance
     if (compliance.taxCompliance.ppnRequired) {
       suggestions.push({
-        id: 'ppn-compliance',
+        id: "ppn-compliance",
         type: IndonesianBusinessRule.TAX_COMPLIANCE,
         severity: ValidationSeverity.INFO,
         message: `PPN ${compliance.taxCompliance.ppnRate}% perlu diperhitungkan`,
-        indonesianContext: 'Sesuai dengan peraturan perpajakan Indonesia yang berlaku',
-        suggestedAction: 'Pastikan perhitungan PPN sudah benar dalam dokumen'
-      })
+        indonesianContext:
+          "Sesuai dengan peraturan perpajakan Indonesia yang berlaku",
+        suggestedAction: "Pastikan perhitungan PPN sudah benar dalam dokumen",
+      });
     }
 
     return {
@@ -278,8 +295,8 @@ export class PriceInheritanceService {
       suggestions,
       compliance,
       totalRules: rules.length,
-      validationTimestamp: new Date()
-    }
+      validationTimestamp: new Date(),
+    };
   }
 
   /**
@@ -287,27 +304,30 @@ export class PriceInheritanceService {
    */
   async createPriceInheritance(
     dto: CreatePriceInheritanceDto,
-    userId: string
+    userId: string,
   ): Promise<PriceInheritanceResponseDto> {
     // Validate the configuration
     const validation = await this.validatePriceInheritance(
       dto.currentAmount,
       dto.mode,
       dto.sourceId,
-      dto.inheritedAmount
-    )
+      dto.inheritedAmount,
+    );
 
     if (!validation.isValid) {
       throw new BadRequestException({
-        message: 'Konfigurasi harga tidak valid',
-        errors: validation.errors
-      })
+        message: "Konfigurasi harga tidak valid",
+        errors: validation.errors,
+      });
     }
 
     // Calculate final configuration
-    const deviationPercentage = dto.inheritedAmount && dto.inheritedAmount > 0
-      ? Math.abs((dto.currentAmount - dto.inheritedAmount) / dto.inheritedAmount) * 100
-      : 0
+    const deviationPercentage =
+      dto.inheritedAmount && dto.inheritedAmount > 0
+        ? Math.abs(
+            (dto.currentAmount - dto.inheritedAmount) / dto.inheritedAmount,
+          ) * 100
+        : 0;
 
     const config = {
       mode: dto.mode,
@@ -317,17 +337,17 @@ export class PriceInheritanceService {
       deviationPercentage,
       requiresApproval: deviationPercentage > 20,
       createdBy: userId,
-      createdAt: new Date()
-    }
+      createdAt: new Date(),
+    };
 
     // Store user interaction for analytics (if tracking enabled)
     if (dto.trackUserInteraction) {
       await this.trackUserInteraction(dto.entityType, dto.entityId, userId, {
-        action: 'price_inheritance_created',
+        action: "price_inheritance_created",
         mode: dto.mode,
         amount: dto.currentAmount,
-        deviation: deviationPercentage
-      })
+        deviation: deviationPercentage,
+      });
     }
 
     return {
@@ -337,9 +357,9 @@ export class PriceInheritanceService {
         entityType: dto.entityType,
         entityId: dto.entityId,
         calculatedAt: new Date(),
-        version: '1.0'
-      }
-    }
+        version: "1.0",
+      },
+    };
   }
 
   /**
@@ -348,19 +368,22 @@ export class PriceInheritanceService {
   async updatePriceInheritance(
     id: string,
     dto: UpdatePriceInheritanceDto,
-    userId: string
+    userId: string,
   ): Promise<PriceInheritanceResponseDto> {
     // Similar to create but with update logic
     const validation = await this.validatePriceInheritance(
       dto.currentAmount,
       dto.mode,
       dto.sourceId,
-      dto.inheritedAmount
-    )
+      dto.inheritedAmount,
+    );
 
-    const deviationPercentage = dto.inheritedAmount && dto.inheritedAmount > 0
-      ? Math.abs((dto.currentAmount - dto.inheritedAmount) / dto.inheritedAmount) * 100
-      : 0
+    const deviationPercentage =
+      dto.inheritedAmount && dto.inheritedAmount > 0
+        ? Math.abs(
+            (dto.currentAmount - dto.inheritedAmount) / dto.inheritedAmount,
+          ) * 100
+        : 0;
 
     const config = {
       mode: dto.mode,
@@ -370,8 +393,8 @@ export class PriceInheritanceService {
       deviationPercentage,
       requiresApproval: deviationPercentage > 20,
       updatedBy: userId,
-      updatedAt: new Date()
-    }
+      updatedAt: new Date(),
+    };
 
     return {
       config,
@@ -380,9 +403,9 @@ export class PriceInheritanceService {
         entityType: dto.entityType,
         entityId: dto.entityId,
         calculatedAt: new Date(),
-        version: '1.0'
-      }
-    }
+        version: "1.0",
+      },
+    };
   }
 
   /**
@@ -391,7 +414,7 @@ export class PriceInheritanceService {
   async getPriceInheritanceAnalytics(
     dateFrom: Date,
     dateTo: Date,
-    userId?: string
+    userId?: string,
   ) {
     // Implementation for analytics data
     return {
@@ -399,12 +422,12 @@ export class PriceInheritanceService {
       modeDistribution: {
         inherit: 0,
         custom: 0,
-        partial: 0
+        partial: 0,
       },
       averageDeviation: 0,
       complianceRate: 0,
-      userSatisfaction: 0
-    }
+      userSatisfaction: 0,
+    };
   }
 
   // Private helper methods
@@ -412,25 +435,25 @@ export class PriceInheritanceService {
   private async validateUserAccess(
     entityType: string,
     entityId: string,
-    userId: string
+    userId: string,
   ): Promise<void> {
     // Implement user access validation based on entity type
     const user = await this.prisma.user.findUnique({
-      where: { id: userId }
-    })
+      where: { id: userId },
+    });
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException("User not found");
     }
 
     // Add role-based access control logic here
   }
 
   private async validateIndonesianCompliance(
-    amount: number
+    amount: number,
   ): Promise<IndonesianComplianceResult> {
-    const materaiRequired = amount >= 5000000
-    const materaiAmount = this.calculateMateraiAmount(amount)
+    const materaiRequired = amount >= 5000000;
+    const materaiAmount = this.calculateMateraiAmount(amount);
 
     return {
       materaiRequired,
@@ -439,55 +462,58 @@ export class PriceInheritanceService {
         ppnRequired: true, // PPN is generally required in Indonesia
         ppnRate: 11, // Current PPN rate in Indonesia
         pphRequired: amount >= 50000000, // PPh for large transactions
-        pphRate: 2.5 // Typical PPh rate
+        pphRate: 2.5, // Typical PPh rate
       },
       businessEtiquette: {
         suggestedTiming: this.getBusinessTiming(),
-        communicationStyle: amount >= 100000000 ? CommunicationStyle.FORMAL : CommunicationStyle.SEMI_FORMAL,
+        communicationStyle:
+          amount >= 100000000
+            ? CommunicationStyle.FORMAL
+            : CommunicationStyle.SEMI_FORMAL,
         culturalNotes: [
-          'Dalam budaya Indonesia, transparansi harga sangat dihargai',
-          'Berikan penjelasan yang jelas untuk setiap penyimpangan harga',
-          'Sertakan breakdown detail untuk membangun kepercayaan klien'
-        ]
-      }
-    }
+          "Dalam budaya Indonesia, transparansi harga sangat dihargai",
+          "Berikan penjelasan yang jelas untuk setiap penyimpangan harga",
+          "Sertakan breakdown detail untuk membangun kepercayaan klien",
+        ],
+      },
+    };
   }
 
   private calculateMateraiAmount(amount: number): number {
     if (amount < 5000000) {
-      return 0
+      return 0;
     } else if (amount < 1000000000) {
-      return 10000 // 10,000 IDR materai
+      return 10000; // 10,000 IDR materai
     } else {
-      return 20000 // 20,000 IDR materai for high-value transactions
+      return 20000; // 20,000 IDR materai for high-value transactions
     }
   }
 
   private getBusinessTiming(): string {
-    const hour = new Date().getHours()
+    const hour = new Date().getHours();
     if (hour >= 9 && hour <= 12) {
-      return 'Pagi (09:00-12:00 WIB) - Waktu terbaik untuk diskusi bisnis'
+      return "Pagi (09:00-12:00 WIB) - Waktu terbaik untuk diskusi bisnis";
     } else if (hour >= 13 && hour <= 16) {
-      return 'Siang (13:00-16:00 WIB) - Waktu yang baik untuk negosiasi'
+      return "Siang (13:00-16:00 WIB) - Waktu yang baik untuk negosiasi";
     } else {
-      return 'Sore/Malam - Pertimbangkan untuk menunda diskusi harga ke hari kerja'
+      return "Sore/Malam - Pertimbangkan untuk menunda diskusi harga ke hari kerja";
     }
   }
 
   private formatIDR(amount: number): string {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount)
+      maximumFractionDigits: 0,
+    }).format(amount);
   }
 
   private async trackUserInteraction(
     entityType: string,
     entityId: string,
     userId: string,
-    data: any
+    data: any,
   ): Promise<void> {
     // Track user interactions for UX analytics
     try {
@@ -504,7 +530,7 @@ export class PriceInheritanceService {
       // })
     } catch (error) {
       // Log error but don't fail the main operation
-      console.error('Failed to track user interaction:', error)
+      console.error("Failed to track user interaction:", error);
     }
   }
 
@@ -514,14 +540,14 @@ export class PriceInheritanceService {
    * Smart price inheritance with automatic selection and validation
    */
   async smartPriceInheritance(
-    entityType: 'quotation' | 'invoice',
+    entityType: "quotation" | "invoice",
     entityId: string,
     options?: {
       preferLatest?: boolean;
       fallbackToProject?: boolean;
       applyDiscounts?: boolean;
       validateBusinessRules?: boolean;
-    }
+    },
   ): Promise<{
     selectedSource: PriceSourceDto;
     inheritedPrice: number;
@@ -540,29 +566,44 @@ export class PriceInheritanceService {
     };
   }> {
     try {
-      const sources = await this.getAvailableSources(entityType, entityId, 'system');
-      
+      const sources = await this.getAvailableSources(
+        entityType,
+        entityId,
+        "system",
+      );
+
       if (sources.length === 0) {
-        throw new BadRequestException('No price sources available for inheritance');
+        throw new BadRequestException(
+          "No price sources available for inheritance",
+        );
       }
 
       // Smart selection algorithm
       let selectedSource = sources[0];
       let confidence = 50;
-      let reasoning = 'Default selection';
-      
+      let reasoning = "Default selection";
+
       // Prioritize by type and recency
-      const quotationSources = sources.filter((s: PriceSourceDto) => s.type === PriceSourceType.QUOTATION);
-      const projectSources = sources.filter((s: PriceSourceDto) => s.type === PriceSourceType.PROJECT);
-      
-      if (quotationSources.length > 0 && (options?.preferLatest !== false)) {
+      const quotationSources = sources.filter(
+        (s: PriceSourceDto) => s.type === PriceSourceType.QUOTATION,
+      );
+      const projectSources = sources.filter(
+        (s: PriceSourceDto) => s.type === PriceSourceType.PROJECT,
+      );
+
+      if (quotationSources.length > 0 && options?.preferLatest !== false) {
         // Prefer most recent approved quotation
-        selectedSource = quotationSources.sort((a: PriceSourceDto, b: PriceSourceDto) => 
-          new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+        selectedSource = quotationSources.sort(
+          (a: PriceSourceDto, b: PriceSourceDto) =>
+            new Date(b.lastUpdated).getTime() -
+            new Date(a.lastUpdated).getTime(),
         )[0];
         confidence = 90;
         reasoning = `Selected most recent quotation: ${selectedSource.entityName}`;
-      } else if (projectSources.length > 0 && options?.fallbackToProject !== false) {
+      } else if (
+        projectSources.length > 0 &&
+        options?.fallbackToProject !== false
+      ) {
         // Fallback to project base price
         selectedSource = projectSources[0];
         confidence = 70;
@@ -572,10 +613,10 @@ export class PriceInheritanceService {
       // Apply smart discounts if applicable
       let inheritedPrice = selectedSource.originalAmount;
       let appliedDiscounts = 0;
-      
+
       if (options?.applyDiscounts) {
         // Apply volume discount for repeat clients
-        if (entityType === 'quotation' || entityType === 'invoice') {
+        if (entityType === "quotation" || entityType === "invoice") {
           const clientHistory = await this.getClientPriceHistory(entityId);
           if (clientHistory.totalProjects > 3) {
             appliedDiscounts = inheritedPrice * 0.05; // 5% loyalty discount
@@ -590,13 +631,13 @@ export class PriceInheritanceService {
         const validation = await this.validatePriceInheritanceInternal(
           entityType,
           entityId,
-          inheritedPrice
+          inheritedPrice,
         );
         warnings.push(...validation.warnings);
-        
+
         if (validation.errors.length > 0) {
           confidence = Math.min(confidence, 60);
-          reasoning += `. Validation warnings: ${validation.warnings.join(', ')}`;
+          reasoning += `. Validation warnings: ${validation.warnings.join(", ")}`;
         }
       }
 
@@ -607,7 +648,7 @@ export class PriceInheritanceService {
         .map((source: PriceSourceDto) => ({
           source,
           price: source.originalAmount,
-          reason: this.getAlternativeReason(source)
+          reason: this.getAlternativeReason(source),
         }));
 
       return {
@@ -620,11 +661,13 @@ export class PriceInheritanceService {
         automation: {
           fullyAutomated: confidence >= 80 && warnings.length === 0,
           requiresConfirmation: confidence < 80 || warnings.length > 0,
-          warnings
-        }
+          warnings,
+        },
       };
     } catch (error) {
-      throw new BadRequestException(`Smart price inheritance failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new BadRequestException(
+        `Smart price inheritance failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -653,25 +696,25 @@ export class PriceInheritanceService {
         where: { id: quotationId },
         include: {
           client: true,
-          project: true
-        }
+          project: true,
+        },
       });
 
       if (!quotation) {
-        throw new NotFoundException('Quotation not found');
+        throw new NotFoundException("Quotation not found");
       }
 
       // Inherit price with smart calculations
       const basePrice = Number(quotation.amountPerProject);
       const totalAmount = Number(quotation.totalAmount);
-      
+
       // Inherit and enhance terms
-      let terms = quotation.terms || '';
-      if (!terms.includes('Pembayaran')) {
-        terms += terms ? '\n' : '';
-        terms += 'Pembayaran paling lambat pada tanggal jatuh tempo.';
+      let terms = quotation.terms || "";
+      if (!terms.includes("Pembayaran")) {
+        terms += terms ? "\n" : "";
+        terms += "Pembayaran paling lambat pada tanggal jatuh tempo.";
       }
-      
+
       // Auto-calculate materai
       const materaiRequired = totalAmount > 5000000;
       const materaiAmount = materaiRequired ? 10000 : 0;
@@ -681,16 +724,25 @@ export class PriceInheritanceService {
         priceInheritance: true,
         termsInheritance: terms !== quotation.terms,
         materaiCalculation: true,
-        dueDateCalculation: true
+        dueDateCalculation: true,
       };
 
       // Calculate data entry reduction
       const manualFields = [
-        'clientId', 'projectId', 'amountPerProject', 'totalAmount',
-        'terms', 'paymentInfo', 'dueDate', 'materaiRequired'
+        "clientId",
+        "projectId",
+        "amountPerProject",
+        "totalAmount",
+        "terms",
+        "paymentInfo",
+        "dueDate",
+        "materaiRequired",
       ];
-      const automatedFields = Object.values(automationApplied).filter(Boolean).length;
-      const reductionPercentage = Math.round((automatedFields / manualFields.length) * 100);
+      const automatedFields =
+        Object.values(automationApplied).filter(Boolean).length;
+      const reductionPercentage = Math.round(
+        (automatedFields / manualFields.length) * 100,
+      );
 
       return {
         success: true,
@@ -699,13 +751,15 @@ export class PriceInheritanceService {
           totalAmount,
           terms,
           materaiRequired,
-          materaiAmount
+          materaiAmount,
         },
         automationApplied,
-        dataEntryReduction: `${reductionPercentage}% data entry reduction (${automatedFields}/${manualFields.length} fields automated)`
+        dataEntryReduction: `${reductionPercentage}% data entry reduction (${automatedFields}/${manualFields.length} fields automated)`,
       };
     } catch (error) {
-      throw new BadRequestException(`Streamlined inheritance failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new BadRequestException(
+        `Streamlined inheritance failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -714,10 +768,10 @@ export class PriceInheritanceService {
    */
   async bulkPriceInheritance(
     operations: Array<{
-      entityType: 'quotation' | 'invoice';
+      entityType: "quotation" | "invoice";
       entityId: string;
       targetPrice?: number;
-    }>
+    }>,
   ): Promise<{
     results: Array<{
       entityId: string;
@@ -749,8 +803,8 @@ export class PriceInheritanceService {
               preferLatest: true,
               fallbackToProject: true,
               applyDiscounts: true,
-              validateBusinessRules: true
-            }
+              validateBusinessRules: true,
+            },
           );
 
           results.push({
@@ -762,22 +816,25 @@ export class PriceInheritanceService {
 
           successful++;
           totalConfidence += inheritance.confidence;
-          totalAutomationFields += inheritance.automation.fullyAutomated ? 8 : 4; // Estimate
-
+          totalAutomationFields += inheritance.automation.fullyAutomated
+            ? 8
+            : 4; // Estimate
         } catch (error) {
           results.push({
             entityId: operation.entityId,
             success: false,
             inheritedPrice: 0,
             automation: null,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : "Unknown error",
           });
           failed++;
         }
       }
 
-      const averageConfidence = operations.length > 0 ? totalConfidence / operations.length : 0;
-      const averageAutomation = operations.length > 0 ? totalAutomationFields / operations.length : 0;
+      const averageConfidence =
+        operations.length > 0 ? totalConfidence / operations.length : 0;
+      const averageAutomation =
+        operations.length > 0 ? totalAutomationFields / operations.length : 0;
       const dataEntryReduction = Math.round((averageAutomation / 10) * 100); // Out of 10 possible fields
 
       return {
@@ -786,11 +843,13 @@ export class PriceInheritanceService {
           successful,
           failed,
           totalDataEntryReduction: `${dataEntryReduction}% average data entry reduction`,
-          averageConfidence: Math.round(averageConfidence)
-        }
+          averageConfidence: Math.round(averageConfidence),
+        },
       };
     } catch (error) {
-      throw new BadRequestException(`Bulk price inheritance failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new BadRequestException(
+        `Bulk price inheritance failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -807,13 +866,13 @@ export class PriceInheritanceService {
       return {
         totalProjects: 1,
         averageProjectValue: 0,
-        lastProjectDate: null
+        lastProjectDate: null,
       };
     } catch (error) {
       return {
         totalProjects: 0,
         averageProjectValue: 0,
-        lastProjectDate: null
+        lastProjectDate: null,
       };
     }
   }
@@ -821,7 +880,7 @@ export class PriceInheritanceService {
   private async validatePriceInheritanceInternal(
     entityType: string,
     entityId: string,
-    price: number
+    price: number,
   ): Promise<{
     valid: boolean;
     errors: string[];
@@ -832,34 +891,35 @@ export class PriceInheritanceService {
 
     // Basic validations
     if (price <= 0) {
-      errors.push('Price must be greater than zero');
+      errors.push("Price must be greater than zero");
     }
 
-    if (price > 10000000000) { // 10 billion IDR
-      warnings.push('Price is unusually high, please verify');
+    if (price > 10000000000) {
+      // 10 billion IDR
+      warnings.push("Price is unusually high, please verify");
     }
 
     if (price < 1000) {
-      warnings.push('Price is very low for Indonesian business standards');
+      warnings.push("Price is very low for Indonesian business standards");
     }
 
     return {
       valid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 
   private getAlternativeReason(source: PriceSourceDto): string {
     switch (source.type) {
       case PriceSourceType.QUOTATION:
-        return `Alternative quotation from ${new Date(source.lastUpdated).toLocaleDateString('id-ID')}`;
+        return `Alternative quotation from ${new Date(source.lastUpdated).toLocaleDateString("id-ID")}`;
       case PriceSourceType.PROJECT:
         return `Project base price: ${source.entityName}`;
       // case PriceSourceType.INVOICE:
       //   return `Previous invoice pricing`;
       default:
-        return 'Alternative pricing source';
+        return "Alternative pricing source";
     }
   }
 }

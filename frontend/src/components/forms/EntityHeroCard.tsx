@@ -1,14 +1,14 @@
 import React from 'react'
 import {
-  Card,
-  Row,
-  Col,
-  Space,
   Avatar,
-  Typography,
-  Button,
-  Tag,
   Breadcrumb,
+  Button,
+  Card,
+  Col,
+  Row,
+  Space,
+  Tag,
+  Typography,
 } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -58,7 +58,7 @@ const formatValue = (value: string | number, format?: string): string => {
       minimumFractionDigits: 0,
     }).format(value)
   }
-  
+
   if (format === 'date' && typeof value === 'string') {
     return new Date(value).toLocaleDateString('id-ID', {
       year: 'numeric',
@@ -66,11 +66,11 @@ const formatValue = (value: string | number, format?: string): string => {
       day: 'numeric',
     })
   }
-  
+
   if (format === 'number' && typeof value === 'number') {
     return new Intl.NumberFormat('id-ID').format(value)
   }
-  
+
   return String(value)
 }
 
@@ -103,11 +103,7 @@ export const EntityHeroCard: React.FC<EntityHeroCardProps> = ({
       {/* Breadcrumb Navigation */}
       <Breadcrumb style={{ marginBottom: '24px' }}>
         <Breadcrumb.Item>
-          <Button 
-            type="text" 
-            icon={<ArrowLeftOutlined />} 
-            onClick={handleBack}
-          >
+          <Button type='text' icon={<ArrowLeftOutlined />} onClick={handleBack}>
             {breadcrumb[0]}
           </Button>
         </Breadcrumb.Item>
@@ -117,25 +113,25 @@ export const EntityHeroCard: React.FC<EntityHeroCardProps> = ({
       </Breadcrumb>
 
       {/* Hero Card */}
-      <Card 
-        style={{ 
+      <Card
+        style={{
           background: 'linear-gradient(135deg, #f6f9fc 0%, #ffffff 100%)',
           borderRadius: '16px',
           marginBottom: '24px',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
         }}
       >
-        <Row gutter={[16, 16]} align="middle">
+        <Row gutter={[16, 16]} align='middle'>
           <Col xs={24} lg={16}>
-            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+            <Space direction='vertical' size='small' style={{ width: '100%' }}>
               <div>
-                <Space align="center" size="large">
+                <Space align='center' size='large'>
                   {avatar ? (
                     typeof avatar === 'string' ? (
-                      <Avatar 
-                        size={64} 
+                      <Avatar
+                        size={64}
                         src={avatar}
-                        style={{ 
+                        style={{
                           borderRadius: '16px',
                           border: '2px solid #f0f0f0',
                         }}
@@ -144,10 +140,10 @@ export const EntityHeroCard: React.FC<EntityHeroCardProps> = ({
                       avatar
                     )
                   ) : (
-                    <Avatar 
-                      size={64} 
+                    <Avatar
+                      size={64}
                       icon={icon}
-                      style={{ 
+                      style={{
                         backgroundColor: '#1890ff',
                         borderRadius: '16px',
                       }}
@@ -158,15 +154,23 @@ export const EntityHeroCard: React.FC<EntityHeroCardProps> = ({
                       {title}
                     </Title>
                     {subtitle && (
-                      <Text type="secondary" style={{ fontSize: '16px' }}>
+                      <Text type='secondary' style={{ fontSize: '16px' }}>
                         {subtitle}
                       </Text>
                     )}
                     {status && (
                       <div style={{ marginTop: '8px' }}>
-                        <Tag color={status.type === 'success' ? 'green' : 
-                                   status.type === 'warning' ? 'orange' :
-                                   status.type === 'error' ? 'red' : 'blue'}>
+                        <Tag
+                          color={
+                            status.type === 'success'
+                              ? 'green'
+                              : status.type === 'warning'
+                                ? 'orange'
+                                : status.type === 'error'
+                                  ? 'red'
+                                  : 'blue'
+                          }
+                        >
                           {status.message}
                         </Tag>
                       </div>
@@ -174,13 +178,16 @@ export const EntityHeroCard: React.FC<EntityHeroCardProps> = ({
                   </div>
                 </Space>
               </div>
-              
+
               {metadata.length > 0 && (
                 <div style={{ marginTop: '16px' }}>
-                  <Space wrap size="large">
+                  <Space wrap size='large'>
                     {metadata.map((item, index) => (
                       <div key={index}>
-                        <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
+                        <Text
+                          type='secondary'
+                          style={{ fontSize: '12px', display: 'block' }}
+                        >
                           {item.label}
                         </Text>
                         <Text strong style={{ fontSize: '14px' }}>
@@ -193,16 +200,20 @@ export const EntityHeroCard: React.FC<EntityHeroCardProps> = ({
               )}
             </Space>
           </Col>
-          
+
           {actions.length > 0 && (
             <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Space
+                direction='vertical'
+                size='middle'
+                style={{ width: '100%' }}
+              >
                 {actions.map((action, index) => (
                   <Button
                     key={index}
                     type={action.type || 'default'}
                     icon={action.icon}
-                    size="large"
+                    size='large'
                     block
                     loading={action.loading}
                     disabled={action.disabled}

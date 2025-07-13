@@ -11,7 +11,7 @@ import { PriceInheritanceFlow } from '../PriceInheritanceFlow'
 import {
   PriceInheritanceFlowProps,
   PriceSource,
-  PriceValidationRule
+  PriceValidationRule,
 } from '../types/priceInheritance.types'
 
 // Extend Jest matchers
@@ -20,34 +20,37 @@ expect.extend(toHaveNoViolations)
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 // Mock currency utilities
 vi.mock('../../../utils/currency', () => ({
   formatIDR: (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`,
-  parseIDRAmount: (value: string) => parseInt(value.replace(/[^\d]/g, ''), 10) || 0,
-  calculateMateraiAmount: (amount: number) => amount >= 5000000 ? (amount >= 1000000000 ? 20000 : 10000) : 0,
+  parseIDRAmount: (value: string) =>
+    parseInt(value.replace(/[^\d]/g, ''), 10) || 0,
+  calculateMateraiAmount: (amount: number) =>
+    amount >= 5000000 ? (amount >= 1000000000 ? 20000 : 10000) : 0,
   validateIDRAmount: (amount: number) => ({
     isValid: amount > 0,
     errors: amount <= 0 ? ['Jumlah harus lebih besar dari nol'] : [],
-    warnings: amount >= 5000000 ? ['Memerlukan materai'] : []
+    warnings: amount >= 5000000 ? ['Memerlukan materai'] : [],
   }),
   getAmountMetadata: (amount: number) => ({
     requiresMaterai: amount >= 5000000,
     materaiAmount: amount >= 5000000 ? 10000 : 0,
     isLargeAmount: amount >= 100000000,
-    riskLevel: amount >= 1000000000 ? 'high' : amount >= 100000000 ? 'medium' : 'low',
-    recommendedActions: []
-  })
+    riskLevel:
+      amount >= 1000000000 ? 'high' : amount >= 100000000 ? 'medium' : 'low',
+    recommendedActions: [],
+  }),
 }))
 
 // Mock UX metrics
 vi.mock('../../../utils/performance/uxMetrics', () => ({
   useUXMetrics: () => ({
-    trackInteraction: (action: string) => () => {}
-  })
+    trackInteraction: (action: string) => () => {},
+  }),
 }))
 
 // Mock data
@@ -55,7 +58,7 @@ const mockSourceEntity = {
   id: 'project-123',
   type: 'project' as const,
   name: 'Website Development Project',
-  number: 'PRJ-001'
+  number: 'PRJ-001',
 }
 
 const mockPriceSources: PriceSource[] = [
@@ -68,8 +71,8 @@ const mockPriceSources: PriceSource[] = [
     lastUpdated: new Date('2025-01-01'),
     metadata: {
       createdBy: 'John Doe',
-      notes: 'Initial project estimate'
-    }
+      notes: 'Initial project estimate',
+    },
   },
   {
     id: 'source-2',
@@ -77,8 +80,8 @@ const mockPriceSources: PriceSource[] = [
     entityName: 'Previous Quotation',
     entityNumber: 'Q-001',
     originalAmount: 45000000,
-    lastUpdated: new Date('2025-01-10')
-  }
+    lastUpdated: new Date('2025-01-10'),
+  },
 ]
 
 const mockValidationRules: PriceValidationRule[] = [
@@ -87,8 +90,8 @@ const mockValidationRules: PriceValidationRule[] = [
     type: 'pricing',
     severity: 'error',
     message: 'Minimum amount is Rp 1,000,000',
-    isBlocking: true
-  }
+    isBlocking: true,
+  },
 ]
 
 const defaultProps: PriceInheritanceFlowProps = {
@@ -104,7 +107,7 @@ const defaultProps: PriceInheritanceFlowProps = {
   showVisualIndicators: true,
   showDeviationWarnings: true,
   indonesianLocale: true,
-  trackUserInteraction: true
+  trackUserInteraction: true,
 }
 
 describe('PriceInheritanceFlow Component', () => {
@@ -115,37 +118,41 @@ describe('PriceInheritanceFlow Component', () => {
   describe('Basic Rendering', () => {
     it('should render with default props', () => {
       render(<PriceInheritanceFlow {...defaultProps} />)
-      
+
       expect(screen.getByText('Konfigurasi Harga')).toBeInTheDocument()
-      expect(screen.getByText('Website Development Project (PRJ-001)')).toBeInTheDocument()
+      expect(
+        screen.getByText('Website Development Project (PRJ-001)')
+      ).toBeInTheDocument()
       expect(screen.getByText('Mode Harga:')).toBeInTheDocument()
     })
 
     it('should display available price sources', () => {
       render(<PriceInheritanceFlow {...defaultProps} />)
-      
+
       expect(screen.getByText('Sumber Harga:')).toBeInTheDocument()
       // Ant Design Select component will show selected value
-      expect(screen.getByDisplayValue(/Website Development/)).toBeInTheDocument()
+      expect(
+        screen.getByDisplayValue(/Website Development/)
+      ).toBeInTheDocument()
     })
 
     it('should show mode selection with correct options', () => {
       render(<PriceInheritanceFlow {...defaultProps} />)
-      
+
       expect(screen.getByText('Gunakan Harga dari Sumber')).toBeInTheDocument()
       expect(screen.getByText('Masukkan Harga Kustom')).toBeInTheDocument()
     })
 
     it('should display current amount in IDR format', () => {
       render(<PriceInheritanceFlow {...defaultProps} />)
-      
+
       // Should show the formatted amount
       expect(screen.getByDisplayValue(/50\.000\.000/)).toBeInTheDocument()
     })
 
     it('should show visual indicators when enabled', () => {
       render(<PriceInheritanceFlow {...defaultProps} />)
-      
+
       // Should show mode tag
       expect(screen.getByText('Otomatis')).toBeInTheDocument()
     })
@@ -155,12 +162,9 @@ describe('PriceInheritanceFlow Component', () => {
     it('should switch to custom mode when selected', async () => {
       const user = userEvent.setup()
       const onModeChange = vi.fn()
-      
+
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          onModeChange={onModeChange}
-        />
+        <PriceInheritanceFlow {...defaultProps} onModeChange={onModeChange} />
       )
 
       const customRadio = screen.getByLabelText(/Masukkan Harga Kustom/)
@@ -171,30 +175,20 @@ describe('PriceInheritanceFlow Component', () => {
 
     it('should enable amount input in custom mode', async () => {
       const user = userEvent.setup()
-      
-      render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          defaultMode="custom"
-        />
-      )
+
+      render(<PriceInheritanceFlow {...defaultProps} defaultMode='custom' />)
 
       const amountInput = screen.getByRole('spinbutton')
       expect(amountInput).not.toBeDisabled()
-      
+
       await user.clear(amountInput)
       await user.type(amountInput, '75000000')
-      
+
       expect(amountInput).toHaveValue(75000000)
     })
 
     it('should disable amount input in inherit mode', () => {
-      render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          defaultMode="inherit"
-        />
-      )
+      render(<PriceInheritanceFlow {...defaultProps} defaultMode='inherit' />)
 
       const amountInput = screen.getByRole('spinbutton')
       expect(amountInput).toBeDisabled()
@@ -202,7 +196,7 @@ describe('PriceInheritanceFlow Component', () => {
 
     it('should show correct tag for each mode', async () => {
       const user = userEvent.setup()
-      
+
       render(<PriceInheritanceFlow {...defaultProps} />)
 
       // Initially should show "Otomatis" for inherit mode
@@ -223,10 +217,10 @@ describe('PriceInheritanceFlow Component', () => {
     it('should change price when different source is selected', async () => {
       const user = userEvent.setup()
       const onAmountChange = vi.fn()
-      
+
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
+        <PriceInheritanceFlow
+          {...defaultProps}
           onAmountChange={onAmountChange}
         />
       )
@@ -234,7 +228,7 @@ describe('PriceInheritanceFlow Component', () => {
       // Open source selector and select different source
       const sourceSelect = screen.getByRole('combobox')
       await user.click(sourceSelect)
-      
+
       const secondSource = screen.getByText('Previous Quotation')
       await user.click(secondSource)
 
@@ -243,7 +237,7 @@ describe('PriceInheritanceFlow Component', () => {
         45000000,
         expect.objectContaining({
           mode: 'inherit',
-          currentAmount: 45000000
+          currentAmount: 45000000,
         })
       )
     })
@@ -251,17 +245,17 @@ describe('PriceInheritanceFlow Component', () => {
     it('should handle source change callback', async () => {
       const user = userEvent.setup()
       const onSourceChange = vi.fn()
-      
+
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
+        <PriceInheritanceFlow
+          {...defaultProps}
           onSourceChange={onSourceChange}
         />
       )
 
       const sourceSelect = screen.getByRole('combobox')
       await user.click(sourceSelect)
-      
+
       const secondSource = screen.getByText('Previous Quotation')
       await user.click(secondSource)
 
@@ -269,7 +263,7 @@ describe('PriceInheritanceFlow Component', () => {
         expect.objectContaining({
           id: 'source-2',
           type: 'quotation',
-          originalAmount: 45000000
+          originalAmount: 45000000,
         })
       )
     })
@@ -278,42 +272,41 @@ describe('PriceInheritanceFlow Component', () => {
   describe('Price Deviation Detection', () => {
     it('should show deviation indicator when in custom mode', async () => {
       const user = userEvent.setup()
-      
+
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          defaultMode="custom"
+        <PriceInheritanceFlow
+          {...defaultProps}
+          defaultMode='custom'
           currentAmount={60000000} // 20% higher than source
         />
       )
 
       // Should show deviation percentage
       expect(screen.getByText(/20\.0%/)).toBeInTheDocument()
-      expect(screen.getByText(/Penyimpangan dari Website Development/)).toBeInTheDocument()
+      expect(
+        screen.getByText(/Penyimpangan dari Website Development/)
+      ).toBeInTheDocument()
     })
 
     it('should show warning for significant deviation', async () => {
       const user = userEvent.setup()
-      
+
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          defaultMode="custom"
+        <PriceInheritanceFlow
+          {...defaultProps}
+          defaultMode='custom'
           currentAmount={80000000} // 60% higher than source
         />
       )
 
       // Should show deviation warning
-      expect(screen.getByText(/Harga menyimpang 60\.0% dari sumber/)).toBeInTheDocument()
+      expect(
+        screen.getByText(/Harga menyimpang 60\.0% dari sumber/)
+      ).toBeInTheDocument()
     })
 
     it('should hide deviation indicator in inherit mode', () => {
-      render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          defaultMode="inherit"
-        />
-      )
+      render(<PriceInheritanceFlow {...defaultProps} defaultMode='inherit' />)
 
       // Should not show deviation indicator
       expect(screen.queryByText(/Penyimpangan dari/)).not.toBeInTheDocument()
@@ -323,8 +316,8 @@ describe('PriceInheritanceFlow Component', () => {
   describe('Indonesian Business Validation', () => {
     it('should show materai requirement for large amounts', () => {
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
+        <PriceInheritanceFlow
+          {...defaultProps}
           currentAmount={60000000} // > 5 million, requires materai
         />
       )
@@ -335,8 +328,8 @@ describe('PriceInheritanceFlow Component', () => {
 
     it('should not show materai requirement for small amounts', () => {
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
+        <PriceInheritanceFlow
+          {...defaultProps}
           currentAmount={3000000} // < 5 million, no materai needed
         />
       )
@@ -346,21 +339,23 @@ describe('PriceInheritanceFlow Component', () => {
 
     it('should show business etiquette guidance', () => {
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
+        <PriceInheritanceFlow
+          {...defaultProps}
           enableBusinessEtiquette={true}
         />
       )
 
-      expect(screen.getByText('Panduan Etika Bisnis Indonesia')).toBeInTheDocument()
+      expect(
+        screen.getByText('Panduan Etika Bisnis Indonesia')
+      ).toBeInTheDocument()
     })
 
     it('should open etiquette guide modal', async () => {
       const user = userEvent.setup()
-      
+
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
+        <PriceInheritanceFlow
+          {...defaultProps}
           enableBusinessEtiquette={true}
         />
       )
@@ -368,26 +363,30 @@ describe('PriceInheritanceFlow Component', () => {
       const guideButton = screen.getByText('Lihat Panduan Lengkap')
       await user.click(guideButton)
 
-      expect(screen.getByText('🇮🇩 Panduan Etika Bisnis Indonesia')).toBeInTheDocument()
+      expect(
+        screen.getByText('🇮🇩 Panduan Etika Bisnis Indonesia')
+      ).toBeInTheDocument()
     })
   })
 
   describe('Validation and Error Handling', () => {
     it('should show validation errors for invalid amounts', () => {
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
+        <PriceInheritanceFlow
+          {...defaultProps}
           currentAmount={0} // Invalid amount
         />
       )
 
-      expect(screen.getByText(/Jumlah harus lebih besar dari nol/)).toBeInTheDocument()
+      expect(
+        screen.getByText(/Jumlah harus lebih besar dari nol/)
+      ).toBeInTheDocument()
     })
 
     it('should show validation warnings', () => {
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
+        <PriceInheritanceFlow
+          {...defaultProps}
           currentAmount={6000000} // Amount that triggers warning
         />
       )
@@ -397,10 +396,10 @@ describe('PriceInheritanceFlow Component', () => {
 
     it('should call validation change callback', () => {
       const onValidationChange = vi.fn()
-      
+
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
+        <PriceInheritanceFlow
+          {...defaultProps}
           onValidationChange={onValidationChange}
           currentAmount={0}
         />
@@ -411,9 +410,9 @@ describe('PriceInheritanceFlow Component', () => {
           isValid: false,
           errors: expect.arrayContaining([
             expect.objectContaining({
-              message: expect.stringContaining('nol')
-            })
-          ])
+              message: expect.stringContaining('nol'),
+            }),
+          ]),
         })
       )
     })
@@ -422,12 +421,9 @@ describe('PriceInheritanceFlow Component', () => {
   describe('User Testing Integration', () => {
     it('should track user interactions when enabled', async () => {
       const user = userEvent.setup()
-      
+
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          trackUserInteraction={true}
-        />
+        <PriceInheritanceFlow {...defaultProps} trackUserInteraction={true} />
       )
 
       // Simulate user interactions
@@ -440,12 +436,9 @@ describe('PriceInheritanceFlow Component', () => {
 
     it('should not track interactions when disabled', async () => {
       const user = userEvent.setup()
-      
+
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          trackUserInteraction={false}
-        />
+        <PriceInheritanceFlow {...defaultProps} trackUserInteraction={false} />
       )
 
       const customRadio = screen.getByLabelText(/Masukkan Harga Kustom/)
@@ -457,15 +450,14 @@ describe('PriceInheritanceFlow Component', () => {
 
     it('should track help usage', async () => {
       const user = userEvent.setup()
-      
+
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          trackUserInteraction={true}
-        />
+        <PriceInheritanceFlow {...defaultProps} trackUserInteraction={true} />
       )
 
-      const helpButton = screen.getByRole('button', { name: /Bantuan pengaturan harga/ })
+      const helpButton = screen.getByRole('button', {
+        name: /Bantuan pengaturan harga/,
+      })
       await user.click(helpButton)
 
       // Should track help view
@@ -476,14 +468,14 @@ describe('PriceInheritanceFlow Component', () => {
   describe('Accessibility', () => {
     it('should pass accessibility tests', async () => {
       const { container } = render(<PriceInheritanceFlow {...defaultProps} />)
-      
+
       const results = await axe(container)
       expect(results).toHaveNoViolations()
     })
 
     it('should support keyboard navigation', async () => {
       const user = userEvent.setup()
-      
+
       render(<PriceInheritanceFlow {...defaultProps} />)
 
       // Tab through interactive elements
@@ -500,9 +492,9 @@ describe('PriceInheritanceFlow Component', () => {
 
     it('should have proper ARIA labels', () => {
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          ariaLabel="Konfigurasi pewarisan harga"
+        <PriceInheritanceFlow
+          {...defaultProps}
+          ariaLabel='Konfigurasi pewarisan harga'
         />
       )
 
@@ -512,10 +504,7 @@ describe('PriceInheritanceFlow Component', () => {
 
     it('should support screen reader announcements', () => {
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          currentAmount={60000000}
-        />
+        <PriceInheritanceFlow {...defaultProps} currentAmount={60000000} />
       )
 
       // Should have live regions for dynamic content
@@ -538,7 +527,7 @@ describe('PriceInheritanceFlow Component', () => {
         const styles = window.getComputedStyle(button)
         const minWidth = parseInt(styles.minWidth) || button.offsetWidth
         const minHeight = parseInt(styles.minHeight) || button.offsetHeight
-        
+
         // Should meet minimum 44px touch target size (with some tolerance)
         expect(Math.max(minWidth, minHeight)).toBeGreaterThanOrEqual(40)
       })
@@ -547,24 +536,14 @@ describe('PriceInheritanceFlow Component', () => {
 
   describe('Compact Mode', () => {
     it('should render in compact mode', () => {
-      render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          compactMode={true}
-        />
-      )
+      render(<PriceInheritanceFlow {...defaultProps} compactMode={true} />)
 
       const container = screen.getByTestId('price-inheritance-flow')
       expect(container).toHaveClass('compact')
     })
 
     it('should hide summary in compact mode', () => {
-      render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          compactMode={true}
-        />
-      )
+      render(<PriceInheritanceFlow {...defaultProps} compactMode={true} />)
 
       expect(screen.queryByText('Jumlah Final:')).not.toBeInTheDocument()
       expect(screen.queryByText('Status:')).not.toBeInTheDocument()
@@ -574,14 +553,14 @@ describe('PriceInheritanceFlow Component', () => {
   describe('Indonesian Localization', () => {
     it('should format currency in Indonesian locale', () => {
       render(<PriceInheritanceFlow {...defaultProps} />)
-      
+
       // Should use Indonesian number formatting with dots as thousand separators
       expect(screen.getByDisplayValue(/50\.000\.000/)).toBeInTheDocument()
     })
 
     it('should use Indonesian business terminology', () => {
       render(<PriceInheritanceFlow {...defaultProps} />)
-      
+
       expect(screen.getByText('Konfigurasi Harga')).toBeInTheDocument()
       expect(screen.getByText('Mode Harga:')).toBeInTheDocument()
       expect(screen.getByText('Sumber Harga:')).toBeInTheDocument()
@@ -589,10 +568,7 @@ describe('PriceInheritanceFlow Component', () => {
 
     it('should show Indonesian business guidance', () => {
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          currentAmount={60000000}
-        />
+        <PriceInheritanceFlow {...defaultProps} currentAmount={60000000} />
       )
 
       expect(screen.getByText(/sesuai peraturan Indonesia/)).toBeInTheDocument()
@@ -606,34 +582,34 @@ describe('PriceInheritanceFlow Component', () => {
         type: 'project' as const,
         entityName: `Project ${index + 1}`,
         originalAmount: (index + 1) * 1000000,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       }))
 
       const startTime = performance.now()
-      
+
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
+        <PriceInheritanceFlow
+          {...defaultProps}
           availableSources={largeSources}
         />
       )
 
       const endTime = performance.now()
-      
+
       // Should render quickly even with many sources
       expect(endTime - startTime).toBeLessThan(100)
     })
 
     it('should handle rapid mode switching', async () => {
       const user = userEvent.setup()
-      
+
       render(<PriceInheritanceFlow {...defaultProps} />)
 
       // Rapid mode switching
       for (let i = 0; i < 5; i++) {
         const inheritRadio = screen.getByLabelText(/Gunakan Harga dari Sumber/)
         await user.click(inheritRadio)
-        
+
         const customRadio = screen.getByLabelText(/Masukkan Harga Kustom/)
         await user.click(customRadio)
       }
@@ -645,12 +621,7 @@ describe('PriceInheritanceFlow Component', () => {
 
   describe('Error States', () => {
     it('should handle empty sources gracefully', () => {
-      render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          availableSources={[]}
-        />
-      )
+      render(<PriceInheritanceFlow {...defaultProps} availableSources={[]} />)
 
       // Should disable inherit mode when no sources available
       const inheritRadio = screen.getByLabelText(/Gunakan Harga dari Sumber/)
@@ -659,13 +630,8 @@ describe('PriceInheritanceFlow Component', () => {
 
     it('should handle invalid amount gracefully', async () => {
       const user = userEvent.setup()
-      
-      render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          defaultMode="custom"
-        />
-      )
+
+      render(<PriceInheritanceFlow {...defaultProps} defaultMode='custom' />)
 
       const amountInput = screen.getByRole('spinbutton')
       await user.clear(amountInput)
@@ -681,12 +647,12 @@ describe('PriceInheritanceFlow Component', () => {
         type: 'project',
         entityName: 'Simple Project',
         originalAmount: 25000000,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       }
 
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
+        <PriceInheritanceFlow
+          {...defaultProps}
           availableSources={[sourceWithoutMetadata]}
         />
       )
@@ -697,24 +663,14 @@ describe('PriceInheritanceFlow Component', () => {
 
   describe('Summary Display', () => {
     it('should show final amount in summary', () => {
-      render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          compactMode={false}
-        />
-      )
+      render(<PriceInheritanceFlow {...defaultProps} compactMode={false} />)
 
       expect(screen.getByText('Jumlah Final:')).toBeInTheDocument()
       expect(screen.getByText(/Rp.*50\.000\.000/)).toBeInTheDocument()
     })
 
     it('should show validation status in summary', () => {
-      render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
-          compactMode={false}
-        />
-      )
+      render(<PriceInheritanceFlow {...defaultProps} compactMode={false} />)
 
       expect(screen.getByText('Status:')).toBeInTheDocument()
       expect(screen.getByText('Valid')).toBeInTheDocument()
@@ -722,8 +678,8 @@ describe('PriceInheritanceFlow Component', () => {
 
     it('should show error status for invalid amounts', () => {
       render(
-        <PriceInheritanceFlow 
-          {...defaultProps} 
+        <PriceInheritanceFlow
+          {...defaultProps}
           currentAmount={0}
           compactMode={false}
         />

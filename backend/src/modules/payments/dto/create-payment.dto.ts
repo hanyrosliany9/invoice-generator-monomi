@@ -1,27 +1,34 @@
-import { IsString, IsNotEmpty, IsDecimal, IsDateString, IsEnum, IsOptional } from 'class-validator'
-import { Transform } from 'class-transformer'
-import { PaymentMethod } from '@prisma/client'
+import {
+  IsString,
+  IsNotEmpty,
+  IsDecimal,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+} from "class-validator";
+import { Transform } from "class-transformer";
+import { PaymentMethod } from "@prisma/client";
 
 export class CreatePaymentDto {
   @IsString()
   @IsNotEmpty()
-  invoiceId!: string
+  invoiceId!: string;
 
   @Transform(({ value }) => parseFloat(value))
-  @IsDecimal({ decimal_digits: '2' })
-  amount!: number
+  @IsDecimal({ decimal_digits: "2" })
+  amount!: number;
 
   @IsDateString()
-  paymentDate!: string
+  paymentDate!: string;
 
   @IsEnum(PaymentMethod)
-  paymentMethod!: PaymentMethod
+  paymentMethod!: PaymentMethod;
 
   @IsOptional()
   @IsString()
-  transactionRef?: string
+  transactionRef?: string;
 
   @IsOptional()
   @IsString()
-  bankDetails?: string
+  bankDetails?: string;
 }

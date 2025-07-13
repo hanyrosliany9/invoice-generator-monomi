@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer'
+import { Transform } from "class-transformer";
 
 /**
  * Custom transformer for financial data
@@ -6,15 +6,14 @@ import { Transform } from 'class-transformer'
  */
 export const FinancialTransform = () => {
   return Transform(({ value }) => {
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       // Remove currency formatting and convert to number
-      const cleaned = value.replace(/[^\d.-]/g, '')
-      return parseFloat(cleaned) || 0
+      const cleaned = value.replace(/[^\d.-]/g, "");
+      return parseFloat(cleaned) || 0;
     }
-    if (typeof value === 'number') {
-      return value
+    if (typeof value === "number") {
+      return value;
     }
-    return 0
-  })
-}
-
+    return 0;
+  });
+};

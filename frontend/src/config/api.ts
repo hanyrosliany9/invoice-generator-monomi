@@ -24,7 +24,7 @@ export const api = apiClient
 
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
-  (config) => {
+  config => {
     // Get token from Zustand auth store
     const token = useAuthStore.getState().token
     if (token) {
@@ -32,15 +32,15 @@ apiClient.interceptors.request.use(
     }
     return config
   },
-  (error) => {
+  error => {
     return Promise.reject(error)
   }
 )
 
 // Response interceptor to handle auth errors
 apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  response => response,
+  error => {
     if (error.response?.status === 401) {
       // Clear auth state using Zustand store
       useAuthStore.getState().logout()

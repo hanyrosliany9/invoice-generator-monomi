@@ -10,7 +10,11 @@ import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 
 import BusinessJourneyTimeline from '../BusinessJourneyTimeline'
-import { BusinessJourneyEvent, BusinessJourneyEventType, BusinessJourneyEventStatus } from '../types/businessJourney.types'
+import {
+  BusinessJourneyEvent,
+  BusinessJourneyEventType,
+  BusinessJourneyEventStatus,
+} from '../types/businessJourney.types'
 
 // Extend Jest matchers
 expect.extend(toHaveNoViolations)
@@ -23,10 +27,10 @@ vi.mock('../utils/uxMetrics', () => ({
     metricsCollector: {
       trackComponentPerformance: vi.fn(() => ({
         markRenderStart: vi.fn(),
-        markRenderComplete: vi.fn()
-      }))
-    }
-  })
+        markRenderComplete: vi.fn(),
+      })),
+    },
+  }),
 }))
 
 // Mock the business journey utils
@@ -36,40 +40,42 @@ vi.mock('../utils/businessJourneyUtils', () => ({
     formatIDRForScreenReader: (amount: number) => `${amount} rupiah`,
     generateAriaLabel: (event: any) => `${event.title} - ${event.status}`,
     announceToScreenReader: vi.fn(),
-    debounce: (fn: any) => fn
+    debounce: (fn: any) => fn,
   },
   getEventIcon: (type: string) => '📋',
   getEventColor: () => '#1890ff',
   getEventTitle: (type: string) => type.replace('_', ' '),
   filterEvents: (events: any[], filters: any) => events,
-  generateAriaLabel: (event: any) => `${event.title} - ${event.status}`
+  generateAriaLabel: (event: any) => `${event.title} - ${event.status}`,
 }))
 
 // Mock i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 // Mock fetch for API calls
 global.fetch = vi.fn()
 
 // Test utilities
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
     },
-  },
-})
+  })
 
-const renderWithProviders = (ui: React.ReactElement, { queryClient = createTestQueryClient() } = {}) => {
+const renderWithProviders = (
+  ui: React.ReactElement,
+  { queryClient = createTestQueryClient() } = {}
+) => {
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {ui}
-      </BrowserRouter>
+      <BrowserRouter>{ui}</BrowserRouter>
     </QueryClientProvider>
   )
 }
@@ -98,8 +104,8 @@ const mockBusinessJourneyData = {
         relatedDocuments: [],
         materaiRequired: false,
         createdAt: '2025-01-01T10:00:00Z',
-        updatedAt: '2025-01-01T10:00:00Z'
-      }
+        updatedAt: '2025-01-01T10:00:00Z',
+      },
     },
     {
       id: 'event-2',
@@ -119,15 +125,15 @@ const mockBusinessJourneyData = {
         materaiRequired: true,
         materaiAmount: 10000,
         createdAt: '2025-01-05T14:30:00Z',
-        updatedAt: '2025-01-05T14:30:00Z'
+        updatedAt: '2025-01-05T14:30:00Z',
       },
       relatedEntity: {
         id: 'invoice-123',
         type: 'invoice',
         name: 'Invoice INV-001',
-        number: 'INV-001'
-      }
-    }
+        number: 'INV-001',
+      },
+    },
   ],
   summary: {
     totalProjects: 2,
@@ -136,15 +142,15 @@ const mockBusinessJourneyData = {
     totalPayments: 1,
     averageProjectValue: 25000000,
     averagePaymentDelay: 15,
-    completionRate: 80
+    completionRate: 80,
   },
   materaiCompliance: {
     required: true,
     totalRequiredAmount: 10000,
     appliedAmount: 0,
     pendingAmount: 10000,
-    compliancePercentage: 0
-  }
+    compliancePercentage: 0,
+  },
 }
 
 describe('BusinessJourneyTimeline', () => {
@@ -153,29 +159,23 @@ describe('BusinessJourneyTimeline', () => {
     // Mock successful API response
     ;(global.fetch as any).mockResolvedValue({
       ok: true,
-      json: async () => ({ success: true, data: mockBusinessJourneyData })
+      json: async () => ({ success: true, data: mockBusinessJourneyData }),
     })
   })
 
   describe('Rendering and Basic Functionality', () => {
     it('renders without crashing', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
-        expect(screen.getByText('Memuat perjalanan bisnis...')).toBeInTheDocument()
+        expect(
+          screen.getByText('Memuat perjalanan bisnis...')
+        ).toBeInTheDocument()
       })
     })
 
     it('displays timeline events after loading', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
@@ -184,11 +184,7 @@ describe('BusinessJourneyTimeline', () => {
     })
 
     it('shows materai compliance warning when required', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Materai Diperlukan')).toBeInTheDocument()
@@ -197,11 +193,7 @@ describe('BusinessJourneyTimeline', () => {
     })
 
     it('displays WhatsApp share button for applicable events', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         const whatsappButtons = screen.getAllByText('Kirim via WhatsApp')
@@ -213,14 +205,13 @@ describe('BusinessJourneyTimeline', () => {
   describe('Filtering and Search', () => {
     it('renders filter controls when showFilters is true', async () => {
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-          showFilters={true}
-        />
+        <BusinessJourneyTimeline clientId='client-123' showFilters={true} />
       )
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText('Cari aktivitas...')).toBeInTheDocument()
+        expect(
+          screen.getByPlaceholderText('Cari aktivitas...')
+        ).toBeInTheDocument()
         expect(screen.getByText('Dari tanggal')).toBeInTheDocument()
         expect(screen.getByText('Filter jenis aktivitas')).toBeInTheDocument()
       })
@@ -229,14 +220,13 @@ describe('BusinessJourneyTimeline', () => {
     it('filters events when search term is entered', async () => {
       const user = userEvent.setup()
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-          showFilters={true}
-        />
+        <BusinessJourneyTimeline clientId='client-123' showFilters={true} />
       )
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText('Cari aktivitas...')).toBeInTheDocument()
+        expect(
+          screen.getByPlaceholderText('Cari aktivitas...')
+        ).toBeInTheDocument()
       })
 
       const searchInput = screen.getByPlaceholderText('Cari aktivitas...')
@@ -248,7 +238,7 @@ describe('BusinessJourneyTimeline', () => {
           expect.stringContaining('/api/business-journey/client-123'),
           expect.objectContaining({
             method: 'POST',
-            body: expect.stringContaining('Invoice')
+            body: expect.stringContaining('Invoice'),
           })
         )
       })
@@ -257,17 +247,19 @@ describe('BusinessJourneyTimeline', () => {
     it('calls onFilterChange when filters are modified', async () => {
       const onFilterChange = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
+        <BusinessJourneyTimeline
+          clientId='client-123'
           showFilters={true}
           onFilterChange={onFilterChange}
         />
       )
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText('Cari aktivitas...')).toBeInTheDocument()
+        expect(
+          screen.getByPlaceholderText('Cari aktivitas...')
+        ).toBeInTheDocument()
       })
 
       const searchInput = screen.getByPlaceholderText('Cari aktivitas...')
@@ -283,10 +275,10 @@ describe('BusinessJourneyTimeline', () => {
     it('calls onEventClick when event is clicked', async () => {
       const onEventClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
+        <BusinessJourneyTimeline
+          clientId='client-123'
           onEventClick={onEventClick}
         />
       )
@@ -301,7 +293,7 @@ describe('BusinessJourneyTimeline', () => {
       expect(onEventClick).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'event-1',
-          type: BusinessJourneyEventType.CLIENT_CREATED
+          type: BusinessJourneyEventType.CLIENT_CREATED,
         })
       )
     })
@@ -310,12 +302,8 @@ describe('BusinessJourneyTimeline', () => {
       const originalOpen = window.open
       window.open = vi.fn()
       const user = userEvent.setup()
-      
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Kirim via WhatsApp')).toBeInTheDocument()
@@ -336,13 +324,13 @@ describe('BusinessJourneyTimeline', () => {
   describe('Accessibility (WCAG 2.1 AA)', () => {
     it('should not have any accessibility violations', async () => {
       const { container } = renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
+        <BusinessJourneyTimeline clientId='client-123' />
       )
 
       await waitFor(() => {
-        expect(screen.getByText('Memuat perjalanan bisnis...')).toBeInTheDocument()
+        expect(
+          screen.getByText('Memuat perjalanan bisnis...')
+        ).toBeInTheDocument()
       })
 
       const results = await axe(container)
@@ -350,14 +338,12 @@ describe('BusinessJourneyTimeline', () => {
     })
 
     it('has proper ARIA labels and roles', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
-        const timeline = screen.getByRole('region', { name: /perjalanan bisnis timeline/i })
+        const timeline = screen.getByRole('region', {
+          name: /perjalanan bisnis timeline/i,
+        })
         expect(timeline).toBeInTheDocument()
       })
 
@@ -367,11 +353,7 @@ describe('BusinessJourneyTimeline', () => {
 
     it('supports keyboard navigation', async () => {
       const user = userEvent.setup()
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
@@ -381,7 +363,7 @@ describe('BusinessJourneyTimeline', () => {
       firstButton.focus()
 
       await user.keyboard('{Tab}')
-      
+
       const secondButton = screen.getAllByRole('button')[1]
       expect(secondButton).toHaveFocus()
     })
@@ -390,15 +372,15 @@ describe('BusinessJourneyTimeline', () => {
       const mockAnnounce = vi.fn()
       vi.doMock('../utils/businessJourneyUtils', () => ({
         ...vi.importActual('../utils/businessJourneyUtils'),
-        announceToScreenReader: mockAnnounce
+        announceToScreenReader: mockAnnounce,
       }))
 
       const onEventClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
+        <BusinessJourneyTimeline
+          clientId='client-123'
           onEventClick={onEventClick}
         />
       )
@@ -421,18 +403,18 @@ describe('BusinessJourneyTimeline', () => {
         events: Array.from({ length: 25 }, (_, i) => ({
           ...mockBusinessJourneyData.events[0],
           id: `event-${i}`,
-          title: `Event ${i}`
-        }))
+          title: `Event ${i}`,
+        })),
       }
 
       ;(global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => ({ success: true, data: largeDataset })
+        json: async () => ({ success: true, data: largeDataset }),
       })
 
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
+        <BusinessJourneyTimeline
+          clientId='client-123'
           enableVirtualization={true}
         />
       )
@@ -446,10 +428,7 @@ describe('BusinessJourneyTimeline', () => {
 
     it('respects maxEvents prop', async () => {
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-          maxEvents={1}
-        />
+        <BusinessJourneyTimeline clientId='client-123' maxEvents={1} />
       )
 
       await waitFor(() => {
@@ -463,11 +442,7 @@ describe('BusinessJourneyTimeline', () => {
     it('displays error message when API call fails', async () => {
       ;(global.fetch as any).mockRejectedValue(new Error('API Error'))
 
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Gagal Memuat Data')).toBeInTheDocument()
@@ -479,33 +454,27 @@ describe('BusinessJourneyTimeline', () => {
       const emptyData = {
         ...mockBusinessJourneyData,
         events: [],
-        totalEvents: 0
+        totalEvents: 0,
       }
 
       ;(global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => ({ success: true, data: emptyData })
+        json: async () => ({ success: true, data: emptyData }),
       })
 
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
-        expect(screen.getByText('Belum ada aktivitas bisnis')).toBeInTheDocument()
+        expect(
+          screen.getByText('Belum ada aktivitas bisnis')
+        ).toBeInTheDocument()
       })
     })
   })
 
   describe('Indonesian Localization', () => {
     it('displays text in Bahasa Indonesia', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
@@ -514,11 +483,7 @@ describe('BusinessJourneyTimeline', () => {
     })
 
     it('formats currency in IDR', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Rp 10.000.000')).toBeInTheDocument()
@@ -526,15 +491,13 @@ describe('BusinessJourneyTimeline', () => {
     })
 
     it('shows materai compliance in Indonesian', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Materai Diperlukan')).toBeInTheDocument()
-        expect(screen.getByText(/materai sesuai peraturan Indonesia/)).toBeInTheDocument()
+        expect(
+          screen.getByText(/materai sesuai peraturan Indonesia/)
+        ).toBeInTheDocument()
       })
     })
   })
@@ -549,10 +512,7 @@ describe('BusinessJourneyTimeline', () => {
       })
 
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-          showFilters={true}
-        />
+        <BusinessJourneyTimeline clientId='client-123' showFilters={true} />
       )
 
       await waitFor(() => {
@@ -561,16 +521,14 @@ describe('BusinessJourneyTimeline', () => {
       })
 
       // On mobile, filters should stack vertically
-      const filterContainer = screen.getByPlaceholderText('Cari aktivitas...').closest('.ant-space')
+      const filterContainer = screen
+        .getByPlaceholderText('Cari aktivitas...')
+        .closest('.ant-space')
       expect(filterContainer).toHaveClass('ant-space-vertical')
     })
 
     it('has minimum touch target sizes (44px)', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         const buttons = screen.getAllByRole('button')
@@ -578,7 +536,7 @@ describe('BusinessJourneyTimeline', () => {
           const styles = window.getComputedStyle(button)
           const minWidth = parseInt(styles.minWidth)
           const minHeight = parseInt(styles.minHeight)
-          
+
           expect(minWidth).toBeGreaterThanOrEqual(44)
           expect(minHeight).toBeGreaterThanOrEqual(44)
         })
@@ -589,14 +547,14 @@ describe('BusinessJourneyTimeline', () => {
   describe('Data Privacy and User Permissions', () => {
     it('hides financial data when user lacks permissions', async () => {
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
+        <BusinessJourneyTimeline
+          clientId='client-123'
           userPermissions={{
             canViewFinancials: false,
             canViewPersonalData: true,
             canEditEvents: false,
             canDeleteEvents: false,
-            canExportData: false
+            canExportData: false,
           }}
         />
       )
@@ -608,9 +566,9 @@ describe('BusinessJourneyTimeline', () => {
 
     it('anonymizes data in restricted privacy mode', async () => {
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-          dataPrivacyLevel="restricted"
+        <BusinessJourneyTimeline
+          clientId='client-123'
+          dataPrivacyLevel='restricted'
         />
       )
 

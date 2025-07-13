@@ -10,7 +10,10 @@ import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 
 import BusinessJourneyTimeline from '../BusinessJourneyTimeline'
-import { BusinessJourneyEventType, BusinessJourneyEventStatus } from '../types/businessJourney.types'
+import {
+  BusinessJourneyEventType,
+  BusinessJourneyEventStatus,
+} from '../types/businessJourney.types'
 
 // Extend Jest matchers
 expect.extend(toHaveNoViolations)
@@ -21,24 +24,24 @@ configureAxe({
     // Enable all WCAG 2.1 AA rules
     'color-contrast': { enabled: true },
     'focus-order-semantics': { enabled: true },
-    'keyboard': { enabled: true },
-    'label': { enabled: true },
-    'language': { enabled: true },
+    keyboard: { enabled: true },
+    label: { enabled: true },
+    language: { enabled: true },
     'name-role-value': { enabled: true },
-    'parsing': { enabled: true },
+    parsing: { enabled: true },
     'sensory-characteristics': { enabled: true },
-    'structure': { enabled: true },
+    structure: { enabled: true },
     'text-alternatives': { enabled: true },
     'time-limits': { enabled: true },
-    
+
     // Indonesian-specific accessibility considerations
     'html-has-lang': { enabled: true },
     'page-has-heading-one': { enabled: true },
-    'region': { enabled: true },
+    region: { enabled: true },
     'landmark-unique': { enabled: true },
-    'landmark-main-is-top-level': { enabled: true }
+    'landmark-main-is-top-level': { enabled: true },
   },
-  tags: ['wcag2a', 'wcag2aa', 'wcag21aa']
+  tags: ['wcag2a', 'wcag2aa', 'wcag21aa'],
 })
 
 // Mock dependencies with accessibility support
@@ -49,19 +52,20 @@ vi.mock('../utils/uxMetrics', () => ({
     metricsCollector: {
       trackComponentPerformance: vi.fn(() => ({
         markRenderStart: vi.fn(),
-        markRenderComplete: vi.fn()
-      }))
-    }
-  })
+        markRenderComplete: vi.fn(),
+      })),
+    },
+  }),
 }))
 
 vi.mock('../utils/businessJourneyUtils', () => ({
   businessJourneyUtils: {
     formatIDR: (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`,
     formatIDRForScreenReader: (amount: number) => `${amount} rupiah Indonesia`,
-    generateAriaLabel: (event: any) => `${event.title} pada ${new Date(event.createdAt).toLocaleDateString('id-ID')} dengan status ${event.status}`,
+    generateAriaLabel: (event: any) =>
+      `${event.title} pada ${new Date(event.createdAt).toLocaleDateString('id-ID')} dengan status ${event.status}`,
     announceToScreenReader: vi.fn(),
-    debounce: (fn: any) => fn
+    debounce: (fn: any) => fn,
   },
   getEventIcon: (type: string) => '📋',
   getEventColor: () => '#1890ff',
@@ -69,31 +73,35 @@ vi.mock('../utils/businessJourneyUtils', () => ({
   filterEvents: (events: any[], filters: any) => {
     console.debug('Filtering events', { events, filters })
     return events
-  }
+  },
 }))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 global.fetch = vi.fn()
 
 // Test utilities
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
     },
-  },
-})
+  })
 
-const renderWithProviders = (ui: React.ReactElement, { queryClient = createTestQueryClient() } = {}) => {
+const renderWithProviders = (
+  ui: React.ReactElement,
+  { queryClient = createTestQueryClient() } = {}
+) => {
   return render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <div lang="id" role="main">
+        <div lang='id' role='main'>
           {ui}
         </div>
       </BrowserRouter>
@@ -112,7 +120,8 @@ const mockAccessibilityData = {
       id: 'event-1',
       type: BusinessJourneyEventType.CLIENT_CREATED,
       title: 'Klien Dibuat',
-      description: 'Klien PT Aksesibilitas Indonesia telah ditambahkan ke sistem manajemen bisnis',
+      description:
+        'Klien PT Aksesibilitas Indonesia telah ditambahkan ke sistem manajemen bisnis',
       status: BusinessJourneyEventStatus.COMPLETED,
       amount: null,
       createdAt: '2025-01-01T10:00:00Z',
@@ -125,14 +134,15 @@ const mockAccessibilityData = {
         relatedDocuments: [],
         materaiRequired: false,
         createdAt: '2025-01-01T10:00:00Z',
-        updatedAt: '2025-01-01T10:00:00Z'
-      }
+        updatedAt: '2025-01-01T10:00:00Z',
+      },
     },
     {
       id: 'event-2',
       type: BusinessJourneyEventType.QUOTATION_SENT,
       title: 'Quotation Dikirim',
-      description: 'Quotation Q-001 telah dikirim kepada PT Aksesibilitas Indonesia via email dan WhatsApp',
+      description:
+        'Quotation Q-001 telah dikirim kepada PT Aksesibilitas Indonesia via email dan WhatsApp',
       status: BusinessJourneyEventStatus.IN_PROGRESS,
       amount: 25000000,
       createdAt: '2025-01-03T14:30:00Z',
@@ -145,20 +155,21 @@ const mockAccessibilityData = {
         relatedDocuments: ['quotation-123'],
         materaiRequired: false,
         createdAt: '2025-01-03T14:30:00Z',
-        updatedAt: '2025-01-03T14:30:00Z'
+        updatedAt: '2025-01-03T14:30:00Z',
       },
       relatedEntity: {
         id: 'quotation-123',
         type: 'quotation',
         name: 'Quotation Q-001',
-        number: 'Q-001'
-      }
+        number: 'Q-001',
+      },
     },
     {
       id: 'event-3',
       type: BusinessJourneyEventType.INVOICE_GENERATED,
       title: 'Invoice Dibuat',
-      description: 'Invoice INV-001 dengan nilai Rp 50.000.000 telah dibuat dan memerlukan materai',
+      description:
+        'Invoice INV-001 dengan nilai Rp 50.000.000 telah dibuat dan memerlukan materai',
       status: BusinessJourneyEventStatus.COMPLETED,
       amount: 50000000,
       createdAt: '2025-01-10T09:15:00Z',
@@ -172,15 +183,15 @@ const mockAccessibilityData = {
         materaiRequired: true,
         materaiAmount: 10000,
         createdAt: '2025-01-10T09:15:00Z',
-        updatedAt: '2025-01-10T09:15:00Z'
+        updatedAt: '2025-01-10T09:15:00Z',
       },
       relatedEntity: {
         id: 'invoice-123',
         type: 'invoice',
         name: 'Invoice INV-001',
-        number: 'INV-001'
-      }
-    }
+        number: 'INV-001',
+      },
+    },
   ],
   summary: {
     totalProjects: 1,
@@ -189,15 +200,15 @@ const mockAccessibilityData = {
     totalPayments: 0,
     averageProjectValue: 50000000,
     averagePaymentDelay: 0,
-    completionRate: 100
+    completionRate: 100,
   },
   materaiCompliance: {
     required: true,
     totalRequiredAmount: 10000,
     appliedAmount: 0,
     pendingAmount: 10000,
-    compliancePercentage: 0
-  }
+    compliancePercentage: 0,
+  },
 }
 
 describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
@@ -205,17 +216,14 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
     vi.clearAllMocks()
     ;(global.fetch as any).mockResolvedValue({
       ok: true,
-      json: async () => ({ success: true, data: mockAccessibilityData })
+      json: async () => ({ success: true, data: mockAccessibilityData }),
     })
   })
 
   describe('Automated Accessibility Testing', () => {
     it('should pass all WCAG 2.1 AA automated tests', async () => {
       const { container } = renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-          showFilters={true}
-        />
+        <BusinessJourneyTimeline clientId='client-123' showFilters={true} />
       )
 
       await waitFor(() => {
@@ -230,13 +238,13 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
       ;(global.fetch as any).mockImplementation(() => new Promise(() => {})) // Never resolves
 
       const { container } = renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
+        <BusinessJourneyTimeline clientId='client-123' />
       )
 
       await waitFor(() => {
-        expect(screen.getByText('Memuat perjalanan bisnis...')).toBeInTheDocument()
+        expect(
+          screen.getByText('Memuat perjalanan bisnis...')
+        ).toBeInTheDocument()
       })
 
       const results = await axe(container)
@@ -247,9 +255,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
       ;(global.fetch as any).mockRejectedValue(new Error('API Error'))
 
       const { container } = renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
+        <BusinessJourneyTimeline clientId='client-123' />
       )
 
       await waitFor(() => {
@@ -264,22 +270,22 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
       const emptyData = {
         ...mockAccessibilityData,
         events: [],
-        totalEvents: 0
+        totalEvents: 0,
       }
 
       ;(global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => ({ success: true, data: emptyData })
+        json: async () => ({ success: true, data: emptyData }),
       })
 
       const { container } = renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
+        <BusinessJourneyTimeline clientId='client-123' />
       )
 
       await waitFor(() => {
-        expect(screen.getByText('Belum ada aktivitas bisnis')).toBeInTheDocument()
+        expect(
+          screen.getByText('Belum ada aktivitas bisnis')
+        ).toBeInTheDocument()
       })
 
       const results = await axe(container)
@@ -290,10 +296,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
   describe('Semantic HTML and ARIA', () => {
     it('should use proper semantic HTML structure', async () => {
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-          showFilters={true}
-        />
+        <BusinessJourneyTimeline clientId='client-123' showFilters={true} />
       )
 
       await waitFor(() => {
@@ -301,12 +304,14 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
       })
 
       // Check for proper landmark structure
-      expect(screen.getByRole('region', { name: /perjalanan bisnis timeline/i })).toBeInTheDocument()
-      
+      expect(
+        screen.getByRole('region', { name: /perjalanan bisnis timeline/i })
+      ).toBeInTheDocument()
+
       // Check for proper heading structure
       const headings = screen.getAllByRole('heading')
       expect(headings.length).toBeGreaterThan(0)
-      
+
       // Check for articles (timeline events)
       const articles = screen.getAllByRole('article')
       expect(articles.length).toBe(3) // Based on mock data
@@ -317,11 +322,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
     })
 
     it('should have proper ARIA labels and descriptions', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
@@ -346,11 +347,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
     })
 
     it('should have live region for announcements', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
@@ -363,20 +360,24 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
 
     it('should provide proper form labels and descriptions', async () => {
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-          showFilters={true}
-        />
+        <BusinessJourneyTimeline clientId='client-123' showFilters={true} />
       )
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText('Cari aktivitas...')).toBeInTheDocument()
+        expect(
+          screen.getByPlaceholderText('Cari aktivitas...')
+        ).toBeInTheDocument()
       })
 
       const searchInput = screen.getByPlaceholderText('Cari aktivitas...')
-      expect(searchInput).toHaveAttribute('aria-label', 'Cari dalam perjalanan bisnis')
+      expect(searchInput).toHaveAttribute(
+        'aria-label',
+        'Cari dalam perjalanan bisnis'
+      )
 
-      const eventTypeSelect = screen.getByLabelText('Filter berdasarkan jenis aktivitas')
+      const eventTypeSelect = screen.getByLabelText(
+        'Filter berdasarkan jenis aktivitas'
+      )
       expect(eventTypeSelect).toBeInTheDocument()
     })
   })
@@ -385,10 +386,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
     it('should support full keyboard navigation', async () => {
       const user = userEvent.setup()
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-          showFilters={true}
-        />
+        <BusinessJourneyTimeline clientId='client-123' showFilters={true} />
       )
 
       await waitFor(() => {
@@ -408,32 +406,32 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
       await user.tab()
       await user.tab() // Skip to end date
       await user.tab()
-      const eventTypeSelect = screen.getByLabelText('Filter berdasarkan jenis aktivitas')
+      const eventTypeSelect = screen.getByLabelText(
+        'Filter berdasarkan jenis aktivitas'
+      )
       expect(eventTypeSelect).toHaveFocus()
 
       // Tab to timeline events
       await user.tab()
-      const firstTimelineDot = screen.getAllByRole('button').find(button => 
-        button.getAttribute('aria-label')?.includes('Klien Dibuat')
-      )
+      const firstTimelineDot = screen
+        .getAllByRole('button')
+        .find(button =>
+          button.getAttribute('aria-label')?.includes('Klien Dibuat')
+        )
       expect(firstTimelineDot).toHaveFocus()
     })
 
     it('should support arrow key navigation between timeline events', async () => {
       const user = userEvent.setup()
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
       })
 
-      const timelineDots = screen.getAllByRole('button').filter(button =>
-        button.getAttribute('aria-label')?.includes('pada')
-      )
+      const timelineDots = screen
+        .getAllByRole('button')
+        .filter(button => button.getAttribute('aria-label')?.includes('pada'))
 
       // Focus first timeline dot
       timelineDots[0].focus()
@@ -450,10 +448,10 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
     it('should activate events with Enter and Space keys', async () => {
       const onEventClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
+        <BusinessJourneyTimeline
+          clientId='client-123'
           onEventClick={onEventClick}
         />
       )
@@ -476,10 +474,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
 
     it('should have proper focus indicators', async () => {
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-          showFilters={true}
-        />
+        <BusinessJourneyTimeline clientId='client-123' showFilters={true} />
       )
 
       await waitFor(() => {
@@ -487,16 +482,16 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
       })
 
       const buttons = screen.getAllByRole('button')
-      
+
       buttons.forEach(button => {
         button.focus()
         const styles = window.getComputedStyle(button, ':focus')
-        
+
         // Check that focus indicator exists (outline or box-shadow)
         expect(
-          styles.outline !== 'none' || 
-          styles.boxShadow !== 'none' ||
-          styles.border !== 'none'
+          styles.outline !== 'none' ||
+            styles.boxShadow !== 'none' ||
+            styles.border !== 'none'
         ).toBe(true)
       })
     })
@@ -504,11 +499,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
 
   describe('Screen Reader Support', () => {
     it('should provide meaningful content for screen readers', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
@@ -527,15 +518,15 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
       const mockAnnounce = vi.fn()
       vi.doMock('../utils/businessJourneyUtils', () => ({
         ...vi.importActual('../utils/businessJourneyUtils'),
-        announceToScreenReader: mockAnnounce
+        announceToScreenReader: mockAnnounce,
       }))
 
       const onEventClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
+        <BusinessJourneyTimeline
+          clientId='client-123'
           onEventClick={onEventClick}
         />
       )
@@ -553,18 +544,16 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
     })
 
     it('should handle screen reader-only content properly', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
       })
 
       // Check for screen reader only announcements area
-      const srOnlyElements = document.querySelectorAll('.sr-only, [class*="srOnly"]')
+      const srOnlyElements = document.querySelectorAll(
+        '.sr-only, [class*="srOnly"]'
+      )
       expect(srOnlyElements.length).toBeGreaterThan(0)
 
       srOnlyElements.forEach(element => {
@@ -592,18 +581,14 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
     })
 
     it('should have minimum touch target sizes (44px)', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
       })
 
       const touchTargets = screen.getAllByRole('button')
-      
+
       touchTargets.forEach(target => {
         const rect = target.getBoundingClientRect()
         expect(rect.width).toBeGreaterThanOrEqual(44)
@@ -613,10 +598,10 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
 
     it('should support touch interactions', async () => {
       const onEventClick = vi.fn()
-      
+
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
+        <BusinessJourneyTimeline
+          clientId='client-123'
           onEventClick={onEventClick}
         />
       )
@@ -626,7 +611,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
       })
 
       const firstTimelineDot = screen.getAllByRole('button')[0]
-      
+
       // Simulate touch events
       fireEvent.touchStart(firstTimelineDot)
       fireEvent.touchEnd(firstTimelineDot)
@@ -637,10 +622,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
 
     it('should have appropriate spacing for mobile touch', async () => {
       renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-          showFilters={true}
-        />
+        <BusinessJourneyTimeline clientId='client-123' showFilters={true} />
       )
 
       await waitFor(() => {
@@ -649,17 +631,17 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
 
       // Check that interactive elements have sufficient spacing
       const buttons = screen.getAllByRole('button')
-      
+
       for (let i = 0; i < buttons.length - 1; i++) {
         const currentButton = buttons[i]
         const nextButton = buttons[i + 1]
-        
+
         const currentRect = currentButton.getBoundingClientRect()
         const nextRect = nextButton.getBoundingClientRect()
-        
+
         // Calculate distance between buttons
         const distance = Math.abs(nextRect.top - currentRect.bottom)
-        
+
         // Should have at least 8px spacing for touch accessibility
         expect(distance).toBeGreaterThanOrEqual(8)
       }
@@ -683,11 +665,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
         })),
       })
 
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
@@ -719,11 +697,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
         })),
       })
 
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
@@ -741,11 +715,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
 
   describe('Internationalization (i18n) Accessibility', () => {
     it('should have proper language attributes', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
@@ -757,11 +727,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
     })
 
     it('should format dates and numbers for Indonesian locale', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
@@ -777,11 +743,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
     })
 
     it('should provide proper reading direction (LTR for Indonesian)', async () => {
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Klien Dibuat')).toBeInTheDocument()
@@ -797,11 +759,7 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
     it('should announce errors to screen readers', async () => {
       ;(global.fetch as any).mockRejectedValue(new Error('Network Error'))
 
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Gagal Memuat Data')).toBeInTheDocument()
@@ -820,22 +778,18 @@ describe('BusinessJourneyTimeline Accessibility (WCAG 2.1 AA)', () => {
       ;(global.fetch as any).mockRejectedValue(new Error('Network Error'))
 
       const user = userEvent.setup()
-      renderWithProviders(
-        <BusinessJourneyTimeline 
-          clientId="client-123"
-        />
-      )
+      renderWithProviders(<BusinessJourneyTimeline clientId='client-123' />)
 
       await waitFor(() => {
         expect(screen.getByText('Gagal Memuat Data')).toBeInTheDocument()
       })
 
       const retryButton = screen.getByRole('button', { name: /coba lagi/i })
-      
+
       // Test keyboard activation of retry
       retryButton.focus()
       expect(retryButton).toHaveFocus()
-      
+
       await user.keyboard('{Enter}')
       expect(global.fetch).toHaveBeenCalledTimes(2) // Initial call + retry
     })

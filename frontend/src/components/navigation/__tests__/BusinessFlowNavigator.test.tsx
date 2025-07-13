@@ -14,7 +14,7 @@ import {
   BusinessFlowStep,
   WorkflowRequirement,
   WorkflowRecommendation,
-  CulturalNote
+  CulturalNote,
 } from '../types/navigation.types'
 
 // Extend Jest matchers
@@ -23,17 +23,13 @@ expect.extend(toHaveNoViolations)
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 // Test utilities
 const renderWithRouter = (ui: React.ReactElement) => {
-  return render(
-    <BrowserRouter>
-      {ui}
-    </BrowserRouter>
-  )
+  return render(<BrowserRouter>{ui}</BrowserRouter>)
 }
 
 // Mock data
@@ -52,9 +48,10 @@ const mockBusinessFlowSteps: BusinessFlowStep[] = [
         id: 'prospect-rule-1',
         type: 'suggestion',
         message: 'Gunakan pendekatan yang sopan dan profesional',
-        indonesianContext: 'Dalam budaya Indonesia, kesopanan dan respek sangat dihargai'
-      }
-    ]
+        indonesianContext:
+          'Dalam budaya Indonesia, kesopanan dan respek sangat dihargai',
+      },
+    ],
   },
   {
     id: 'step-2',
@@ -70,9 +67,10 @@ const mockBusinessFlowSteps: BusinessFlowStep[] = [
         id: 'quotation-rule-1',
         type: 'requirement',
         message: 'Sertakan detail pajak PPN 11% dalam quotation',
-        indonesianContext: 'Sesuai dengan peraturan perpajakan Indonesia yang berlaku'
-      }
-    ]
+        indonesianContext:
+          'Sesuai dengan peraturan perpajakan Indonesia yang berlaku',
+      },
+    ],
   },
   {
     id: 'step-3',
@@ -88,14 +86,15 @@ const mockBusinessFlowSteps: BusinessFlowStep[] = [
         id: 'approved-rule-1',
         type: 'requirement',
         message: 'Buat kontrak kerja sebelum memulai proyek',
-        indonesianContext: 'Kontrak kerja melindungi kedua belah pihak secara hukum',
+        indonesianContext:
+          'Kontrak kerja melindungi kedua belah pihak secara hukum',
         action: {
           label: 'Buat Kontrak',
           href: '/contracts/create',
-          onClick: vi.fn()
-        }
-      }
-    ]
+          onClick: vi.fn(),
+        },
+      },
+    ],
   },
   {
     id: 'step-4',
@@ -111,9 +110,10 @@ const mockBusinessFlowSteps: BusinessFlowStep[] = [
         id: 'invoicing-rule-1',
         type: 'warning',
         message: 'Pastikan invoice di atas Rp 5 juta menggunakan materai',
-        indonesianContext: 'Sesuai dengan UU No. 13 Tahun 1985 tentang Bea Materai'
-      }
-    ]
+        indonesianContext:
+          'Sesuai dengan UU No. 13 Tahun 1985 tentang Bea Materai',
+      },
+    ],
   },
   {
     id: 'step-5',
@@ -123,7 +123,7 @@ const mockBusinessFlowSteps: BusinessFlowStep[] = [
     isCompleted: false,
     isCurrent: false,
     isAvailable: true,
-    expectedDuration: '7-30 hari'
+    expectedDuration: '7-30 hari',
   },
   {
     id: 'step-6',
@@ -133,8 +133,8 @@ const mockBusinessFlowSteps: BusinessFlowStep[] = [
     isCompleted: false,
     isCurrent: false,
     isAvailable: false,
-    expectedDuration: '-'
-  }
+    expectedDuration: '-',
+  },
 ]
 
 describe('BusinessFlowNavigator Component', () => {
@@ -146,7 +146,7 @@ describe('BusinessFlowNavigator Component', () => {
     it('should render with current stage and steps', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -158,7 +158,7 @@ describe('BusinessFlowNavigator Component', () => {
     it('should display current stage icon and title', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -170,14 +170,14 @@ describe('BusinessFlowNavigator Component', () => {
     it('should show progress overview when enabled', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
           showProgress={true}
         />
       )
 
       expect(screen.getByText('Progress Keseluruhan:')).toBeInTheDocument()
-      
+
       // Should show progress bar
       const progressBar = document.querySelector('.ant-progress')
       expect(progressBar).toBeInTheDocument()
@@ -186,7 +186,7 @@ describe('BusinessFlowNavigator Component', () => {
     it('should show ETA when enabled', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
           showETA={true}
         />
@@ -198,7 +198,7 @@ describe('BusinessFlowNavigator Component', () => {
     it('should calculate progress correctly', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
           showProgress={true}
         />
@@ -214,7 +214,7 @@ describe('BusinessFlowNavigator Component', () => {
     it('should display all workflow steps in correct order', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -230,10 +230,10 @@ describe('BusinessFlowNavigator Component', () => {
     it('should handle stage clicks', async () => {
       const onStageClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
           onStageClick={onStageClick}
         />
@@ -249,7 +249,7 @@ describe('BusinessFlowNavigator Component', () => {
     it('should show step statuses correctly', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -262,7 +262,7 @@ describe('BusinessFlowNavigator Component', () => {
     it('should display expected durations', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -276,10 +276,10 @@ describe('BusinessFlowNavigator Component', () => {
   describe('Timeline Detail Panel', () => {
     it('should show detailed timeline when panel is expanded', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -294,10 +294,10 @@ describe('BusinessFlowNavigator Component', () => {
 
     it('should show step descriptions in timeline', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -305,16 +305,22 @@ describe('BusinessFlowNavigator Component', () => {
       const timelinePanel = screen.getByText('Timeline Detail')
       await user.click(timelinePanel)
 
-      expect(screen.getByText('Menjalin komunikasi awal dengan calon klien potensial')).toBeInTheDocument()
-      expect(screen.getByText('Menyusun penawaran harga dan scope kerja yang detail')).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          'Menjalin komunikasi awal dengan calon klien potensial'
+        )
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Menyusun penawaran harga dan scope kerja yang detail')
+      ).toBeInTheDocument()
     })
 
     it('should highlight current step in timeline', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -329,10 +335,10 @@ describe('BusinessFlowNavigator Component', () => {
 
     it('should show step status badges', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -349,10 +355,10 @@ describe('BusinessFlowNavigator Component', () => {
   describe('Stage Details Panel', () => {
     it('should show selected stage details', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -366,10 +372,10 @@ describe('BusinessFlowNavigator Component', () => {
 
     it('should show stage-specific activities', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -385,10 +391,10 @@ describe('BusinessFlowNavigator Component', () => {
 
     it('should display duration and stakeholder information', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -404,10 +410,10 @@ describe('BusinessFlowNavigator Component', () => {
   describe('Indonesian Cultural Context', () => {
     it('should show cultural context panel when enabled', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
           indonesianContext={true}
         />
@@ -416,15 +422,17 @@ describe('BusinessFlowNavigator Component', () => {
       const culturePanel = screen.getByText('Konteks Budaya Indonesia')
       await user.click(culturePanel)
 
-      expect(screen.getByText('🇮🇩 Panduan Budaya Bisnis Indonesia')).toBeInTheDocument()
+      expect(
+        screen.getByText('🇮🇩 Panduan Budaya Bisnis Indonesia')
+      ).toBeInTheDocument()
     })
 
     it('should display cultural notes for current stage', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="prospect"
+          currentStage='prospect'
           steps={mockBusinessFlowSteps}
           indonesianContext={true}
         />
@@ -439,10 +447,10 @@ describe('BusinessFlowNavigator Component', () => {
 
     it('should show cultural examples and guidelines', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="prospect"
+          currentStage='prospect'
           steps={mockBusinessFlowSteps}
           indonesianContext={true}
         />
@@ -457,10 +465,10 @@ describe('BusinessFlowNavigator Component', () => {
 
     it('should handle stage-specific cultural notes', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="invoicing"
+          currentStage='invoicing'
           steps={mockBusinessFlowSteps}
           indonesianContext={true}
         />
@@ -480,10 +488,10 @@ describe('BusinessFlowNavigator Component', () => {
   describe('Business Rules Integration', () => {
     it('should display business rules in timeline', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
           indonesianContext={true}
         />
@@ -498,10 +506,10 @@ describe('BusinessFlowNavigator Component', () => {
 
     it('should show different rule types with appropriate styling', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
           indonesianContext={true}
         />
@@ -517,10 +525,10 @@ describe('BusinessFlowNavigator Component', () => {
 
     it('should handle business rule actions', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
           indonesianContext={true}
         />
@@ -532,7 +540,8 @@ describe('BusinessFlowNavigator Component', () => {
       const contractButton = screen.getByText('Buat Kontrak')
       await user.click(contractButton)
 
-      const rule = mockBusinessFlowSteps.find(step => step.stage === 'approved')?.businessRules?.[0]
+      const rule = mockBusinessFlowSteps.find(step => step.stage === 'approved')
+        ?.businessRules?.[0]
       expect(rule?.action?.onClick).toHaveBeenCalled()
     })
   })
@@ -541,7 +550,7 @@ describe('BusinessFlowNavigator Component', () => {
     it('should pass accessibility tests', async () => {
       const { container } = renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -552,17 +561,17 @@ describe('BusinessFlowNavigator Component', () => {
 
     it('should support keyboard navigation through steps', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
 
       // Steps should be keyboard navigable
       await user.tab()
-      
+
       // Test arrow key navigation if implemented
       await user.keyboard('{ArrowRight}')
       await user.keyboard('{Enter}')
@@ -571,7 +580,7 @@ describe('BusinessFlowNavigator Component', () => {
     it('should have proper ARIA labels for progress elements', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
           showProgress={true}
         />
@@ -583,10 +592,10 @@ describe('BusinessFlowNavigator Component', () => {
 
     it('should announce step changes to screen readers', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -601,10 +610,10 @@ describe('BusinessFlowNavigator Component', () => {
 
     it('should support screen reader navigation through timeline', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -621,10 +630,7 @@ describe('BusinessFlowNavigator Component', () => {
   describe('Error Handling', () => {
     it('should handle empty steps array gracefully', () => {
       renderWithRouter(
-        <BusinessFlowNavigator
-          currentStage="prospect"
-          steps={[]}
-        />
+        <BusinessFlowNavigator currentStage='prospect' steps={[]} />
       )
 
       expect(screen.getByText('Alur Bisnis Indonesia')).toBeInTheDocument()
@@ -633,7 +639,9 @@ describe('BusinessFlowNavigator Component', () => {
     it('should handle invalid current stage', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="invalid" as any
+          currentStage='invalid'
+          as
+          any
           steps={mockBusinessFlowSteps}
         />
       )
@@ -651,14 +659,14 @@ describe('BusinessFlowNavigator Component', () => {
           description: '',
           isCompleted: false,
           isCurrent: true,
-          isAvailable: true
+          isAvailable: true,
           // Missing expectedDuration and businessRules
-        }
+        },
       ]
 
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="prospect"
+          currentStage='prospect'
           steps={incompleteSteps}
         />
       )
@@ -669,7 +677,7 @@ describe('BusinessFlowNavigator Component', () => {
     it('should handle cancelled stage appropriately', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="cancelled"
+          currentStage='cancelled'
           steps={mockBusinessFlowSteps}
           showProgress={true}
         />
@@ -691,30 +699,27 @@ describe('BusinessFlowNavigator Component', () => {
         isCurrent: index === 5,
         isAvailable: index <= 5,
         expectedDuration: `${index + 1} hari`,
-        businessRules: []
+        businessRules: [],
       }))
 
       const startTime = performance.now()
-      
+
       renderWithRouter(
-        <BusinessFlowNavigator
-          currentStage="prospect"
-          steps={complexSteps}
-        />
+        <BusinessFlowNavigator currentStage='prospect' steps={complexSteps} />
       )
 
       const endTime = performance.now()
-      
+
       // Should render quickly even with many steps
       expect(endTime - startTime).toBeLessThan(150)
     })
 
     it('should handle rapid panel switching efficiently', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
           indonesianContext={true}
         />
@@ -724,16 +729,18 @@ describe('BusinessFlowNavigator Component', () => {
       for (let i = 0; i < 5; i++) {
         const timelinePanel = screen.getByText('Timeline Detail')
         await user.click(timelinePanel)
-        
+
         const detailsPanel = screen.getByText(/Detail Tahap:/)
         await user.click(detailsPanel)
-        
+
         const culturePanel = screen.getByText('Konteks Budaya Indonesia')
         await user.click(culturePanel)
       }
 
       // Should still work correctly
-      expect(screen.getByText('🇮🇩 Panduan Budaya Bisnis Indonesia')).toBeInTheDocument()
+      expect(
+        screen.getByText('🇮🇩 Panduan Budaya Bisnis Indonesia')
+      ).toBeInTheDocument()
     })
   })
 
@@ -750,7 +757,7 @@ describe('BusinessFlowNavigator Component', () => {
     it('should adapt layout for mobile devices', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
@@ -761,16 +768,16 @@ describe('BusinessFlowNavigator Component', () => {
     it('should handle touch interactions on mobile', () => {
       renderWithRouter(
         <BusinessFlowNavigator
-          currentStage="approved"
+          currentStage='approved'
           steps={mockBusinessFlowSteps}
         />
       )
 
       const step = screen.getByText('Prospek Klien')
-      
+
       fireEvent.touchStart(step)
       fireEvent.touchEnd(step)
-      
+
       // Should not throw errors
       expect(step).toBeInTheDocument()
     })

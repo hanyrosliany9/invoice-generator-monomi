@@ -1,33 +1,33 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerModule } from '@nestjs/throttler';
-import { APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
-import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
-import { ClientsModule } from './modules/clients/clients.module';
-import { ProjectsModule } from './modules/projects/projects.module';
-import { QuotationsModule } from './modules/quotations/quotations.module';
-import { InvoicesModule } from './modules/invoices/invoices.module';
-import { PaymentsModule } from './modules/payments/payments.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
-import { MateraiModule } from './modules/materai/materai.module';
-import { LocalizationModule } from './modules/localization/localization.module';
-import { PdfModule } from './modules/pdf/pdf.module';
-import { ReportsModule } from './modules/reports/reports.module';
-import { SettingsModule } from './modules/settings/settings.module';
-import { BusinessJourneyModule } from './modules/business-journey/business-journey.module';
-import { PrismaModule } from './modules/prisma/prisma.module';
-import { HealthModule } from './health/health.module';
-import { MetricsModule } from './metrics/metrics.module';
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { ScheduleModule } from "@nestjs/schedule";
+import { ThrottlerModule } from "@nestjs/throttler";
+import { APP_INTERCEPTOR, APP_FILTER } from "@nestjs/core";
+import { AuthModule } from "./modules/auth/auth.module";
+import { UsersModule } from "./modules/users/users.module";
+import { ClientsModule } from "./modules/clients/clients.module";
+import { ProjectsModule } from "./modules/projects/projects.module";
+import { QuotationsModule } from "./modules/quotations/quotations.module";
+import { InvoicesModule } from "./modules/invoices/invoices.module";
+import { PaymentsModule } from "./modules/payments/payments.module";
+import { NotificationsModule } from "./modules/notifications/notifications.module";
+import { MateraiModule } from "./modules/materai/materai.module";
+import { LocalizationModule } from "./modules/localization/localization.module";
+import { PdfModule } from "./modules/pdf/pdf.module";
+import { ReportsModule } from "./modules/reports/reports.module";
+import { SettingsModule } from "./modules/settings/settings.module";
+import { BusinessJourneyModule } from "./modules/business-journey/business-journey.module";
+import { PrismaModule } from "./modules/prisma/prisma.module";
+import { HealthModule } from "./health/health.module";
+import { MetricsModule } from "./metrics/metrics.module";
+import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
+import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ".env",
     }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([

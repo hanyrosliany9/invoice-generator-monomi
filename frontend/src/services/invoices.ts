@@ -23,7 +23,7 @@ export interface Invoice {
   createdAt: string
   updatedAt: string
   paidAt?: string
-  
+
   // Payment tracking
   paymentSummary?: {
     totalPaid: string
@@ -31,7 +31,7 @@ export interface Invoice {
     paymentCount: number
     lastPaymentDate?: string
   }
-  
+
   // Business status
   businessStatus?: {
     isOverdue: boolean
@@ -95,22 +95,25 @@ export const invoiceService = {
 
   // Create new invoice
   createInvoice: async (data: CreateInvoiceRequest): Promise<Invoice> => {
-    const requestId = `invoice_${Date.now()}_${Math.random()}`;
-    
+    const requestId = `invoice_${Date.now()}_${Math.random()}`
+
     const response = await apiClient.post('/invoices', data, {
       headers: {
-        'X-Request-ID': requestId
-      }
-    });
-    
+        'X-Request-ID': requestId,
+      },
+    })
+
     if (!response?.data?.data) {
       throw new Error('Invoice creation failed')
     }
-    return response.data.data;
+    return response.data.data
   },
 
   // Update existing invoice
-  updateInvoice: async (id: string, data: UpdateInvoiceRequest): Promise<Invoice> => {
+  updateInvoice: async (
+    id: string,
+    data: UpdateInvoiceRequest
+  ): Promise<Invoice> => {
     const response = await apiClient.patch(`/invoices/${id}`, data)
     if (!response?.data?.data) {
       throw new Error('Invoice update failed')
@@ -133,12 +136,18 @@ export const invoiceService = {
   },
 
   // Mark invoice as paid
-  markAsPaid: async (id: string, paymentData?: {
-    paymentMethod?: string;
-    paymentDate?: string;
-    notes?: string;
-  }): Promise<Invoice> => {
-    const response = await apiClient.patch(`/invoices/${id}/mark-paid`, paymentData)
+  markAsPaid: async (
+    id: string,
+    paymentData?: {
+      paymentMethod?: string
+      paymentDate?: string
+      notes?: string
+    }
+  ): Promise<Invoice> => {
+    const response = await apiClient.patch(
+      `/invoices/${id}/mark-paid`,
+      paymentData
+    )
     if (!response?.data?.data) {
       throw new Error('Invoice payment marking failed')
     }
@@ -146,8 +155,14 @@ export const invoiceService = {
   },
 
   // Bulk update invoice status
-  bulkUpdateStatus: async (ids: string[], status: InvoiceStatus): Promise<{ count: number }> => {
-    const response = await apiClient.post(`/invoices/bulk-status-update`, { ids, status })
+  bulkUpdateStatus: async (
+    ids: string[],
+    status: InvoiceStatus
+  ): Promise<{ count: number }> => {
+    const response = await apiClient.post(`/invoices/bulk-status-update`, {
+      ids,
+      status,
+    })
     if (!response?.data?.data) {
       throw new Error('Bulk status update failed')
     }
@@ -157,7 +172,7 @@ export const invoiceService = {
   // Generate PDF
   generatePDF: async (id: string): Promise<Blob> => {
     const response = await apiClient.get(`/pdf/invoice/${id}`, {
-      responseType: 'blob'
+      responseType: 'blob',
     })
     return response.data
   },
@@ -185,28 +200,30 @@ export const invoiceService = {
     return response?.data?.data || []
   },
 
-
   // Calculate business status for invoice
   calculateBusinessStatus: (invoice: Invoice) => {
     const now = new Date()
     const dueDate = new Date(invoice.dueDate)
     const isOverdue = now > dueDate && invoice.status !== 'PAID'
-    const daysToDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    const daysOverdue = isOverdue ? Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)) : 0
-    
+    const daysToDue = Math.ceil(
+      (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    )
+    const daysOverdue = isOverdue
+      ? Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+      : 0
+
     let materaiStatus: 'NOT_REQUIRED' | 'REQUIRED' | 'APPLIED' = 'NOT_REQUIRED'
     if (invoice.materaiRequired) {
       materaiStatus = invoice.materaiApplied ? 'APPLIED' : 'REQUIRED'
     }
-    
+
     return {
       isOverdue,
       daysOverdue,
       daysToDue,
-      materaiStatus
+      materaiStatus,
     }
   },
-
 
   // Format invoice amount for display
   formatAmount: (amount: string | number): string => {
@@ -215,7 +232,7 @@ export const invoiceService = {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(num)
   },
 
@@ -262,31 +279,42 @@ export const invoiceService = {
   },
 
   // Get available status transitions
-  getAvailableStatusTransitions: (currentStatus: InvoiceStatus): { value: InvoiceStatus; label: string }[] => {
-    const transitions: Record<InvoiceStatus, { value: InvoiceStatus; label: string }[]> = {
+  getAvailableStatusTransitions: (
+    currentStatus: InvoiceStatus
+  ): { value: InvoiceStatus; label: string }[] => {
+    const transitions: Record<
+      InvoiceStatus,
+      { value: InvoiceStatus; label: string }[]
+    > = {
       [InvoiceStatus.DRAFT]: [
         { value: InvoiceStatus.SENT, label: 'Kirim' },
-        { value: InvoiceStatus.CANCELLED, label: 'Batalkan' }
+        { value: InvoiceStatus.CANCELLED, label: 'Batalkan' },
       ],
       [InvoiceStatus.SENT]: [
         { value: InvoiceStatus.PAID, label: 'Tandai Lunas' },
         { value: InvoiceStatus.OVERDUE, label: 'Tandai Jatuh Tempo' },
-        { value: InvoiceStatus.CANCELLED, label: 'Batalkan' }
+        { value: InvoiceStatus.CANCELLED, label: 'Batalkan' },
       ],
       [InvoiceStatus.OVERDUE]: [
         { value: InvoiceStatus.PAID, label: 'Tandai Lunas' },
-        { value: InvoiceStatus.CANCELLED, label: 'Batalkan' }
+        { value: InvoiceStatus.CANCELLED, label: 'Batalkan' },
       ],
       [InvoiceStatus.PAID]: [], // Paid invoices cannot be changed
-      [InvoiceStatus.CANCELLED]: [] // Cancelled invoices cannot be changed
-    };
+      [InvoiceStatus.CANCELLED]: [], // Cancelled invoices cannot be changed
+    }
 
-    return transitions[currentStatus] || [];
+    return transitions[currentStatus] || []
   },
 
   // Validate status transition
-  canTransitionTo: (currentStatus: InvoiceStatus, newStatus: InvoiceStatus): boolean => {
-    const availableTransitions = invoiceService.getAvailableStatusTransitions(currentStatus);
-    return availableTransitions.some(transition => transition.value === newStatus);
+  canTransitionTo: (
+    currentStatus: InvoiceStatus,
+    newStatus: InvoiceStatus
+  ): boolean => {
+    const availableTransitions =
+      invoiceService.getAvailableStatusTransitions(currentStatus)
+    return availableTransitions.some(
+      transition => transition.value === newStatus
+    )
   },
 }

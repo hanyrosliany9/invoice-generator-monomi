@@ -47,7 +47,8 @@ export interface CreateQuotationRequest {
   validUntil: string
 }
 
-export interface UpdateQuotationRequest extends Partial<CreateQuotationRequest> {
+export interface UpdateQuotationRequest
+  extends Partial<CreateQuotationRequest> {
   status?: 'DRAFT' | 'SENT' | 'APPROVED' | 'DECLINED' | 'REVISED'
 }
 
@@ -77,7 +78,10 @@ export const quotationService = {
   },
 
   // Update existing quotation
-  updateQuotation: async (id: string, data: UpdateQuotationRequest): Promise<Quotation> => {
+  updateQuotation: async (
+    id: string,
+    data: UpdateQuotationRequest
+  ): Promise<Quotation> => {
     const response = await apiClient.patch(`/quotations/${id}`, data)
     if (!response?.data?.data) {
       throw new Error('Failed to update quotation')
@@ -92,7 +96,9 @@ export const quotationService = {
 
   // Update quotation status
   updateStatus: async (id: string, status: string): Promise<Quotation> => {
-    const response = await apiClient.patch(`/quotations/${id}/status`, { status })
+    const response = await apiClient.patch(`/quotations/${id}/status`, {
+      status,
+    })
     if (!response?.data?.data) {
       throw new Error('Failed to update quotation status')
     }
@@ -100,7 +106,9 @@ export const quotationService = {
   },
 
   // Generate invoice from quotation
-  generateInvoice: async (id: string): Promise<{ 
+  generateInvoice: async (
+    id: string
+  ): Promise<{
     invoiceId: string
     message: string
     isExisting: boolean

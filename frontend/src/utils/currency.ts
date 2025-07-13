@@ -1,34 +1,39 @@
 /**
  * Safe number conversion that prevents NaN
  */
-export const safeNumber = (value: number | string | null | undefined): number => {
+export const safeNumber = (
+  value: number | string | null | undefined
+): number => {
   if (value === null || value === undefined || value === '') {
     return 0
   }
-  
+
   if (typeof value === 'number') {
     return isNaN(value) ? 0 : value
   }
-  
+
   if (typeof value === 'string') {
     const parsed = parseFloat(value.replace(/[^\d.-]/g, ''))
     return isNaN(parsed) ? 0 : parsed
   }
-  
+
   return 0
 }
 
 /**
  * Safe division that prevents division by zero
  */
-export const safeDivision = (numerator: number, denominator: number): number => {
+export const safeDivision = (
+  numerator: number,
+  denominator: number
+): number => {
   const safeNum = safeNumber(numerator)
   const safeDenom = safeNumber(denominator)
-  
+
   if (safeDenom === 0) {
     return 0
   }
-  
+
   const result = safeNum / safeDenom
   return isNaN(result) ? 0 : result
 }
@@ -36,7 +41,9 @@ export const safeDivision = (numerator: number, denominator: number): number => 
 /**
  * Format Indonesian Rupiah currency
  */
-export const formatIDR = (amount: number | string | null | undefined): string => {
+export const formatIDR = (
+  amount: number | string | null | undefined
+): string => {
   const numericAmount = safeNumber(amount)
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -51,7 +58,7 @@ export const formatIDR = (amount: number | string | null | undefined): string =>
  */
 export const parseIDR = (idrString: string | null | undefined): number => {
   if (!idrString) return 0
-  
+
   // Remove 'Rp', spaces, and dots, then convert to number
   const cleanString = idrString.replace(/Rp\s?|\.|\s|,/g, '')
   const parsed = parseInt(cleanString, 10)
@@ -76,9 +83,9 @@ export const parseIDRAmount = (value: string): number => {
       const restOfString = string.slice(offset + 1)
       const hasMoreDigits = /\d/.test(restOfString)
       const remainingLength = restOfString.replace(/[^\d]/g, '').length
-      
+
       // If this is the last separator or there are 1-2 digits after, it's decimal
-      if (match === ',' || (!hasMoreDigits || remainingLength <= 2)) {
+      if (match === ',' || !hasMoreDigits || remainingLength <= 2) {
         return '.'
       }
       // Otherwise it's a thousand separator, remove it
@@ -101,7 +108,9 @@ export const parseIDRAmount = (value: string): number => {
 /**
  * Format number with thousand separators (dots)
  */
-export const formatNumber = (amount: number | string | null | undefined): string => {
+export const formatNumber = (
+  amount: number | string | null | undefined
+): string => {
   const numericAmount = safeNumber(amount)
   return new Intl.NumberFormat('id-ID').format(numericAmount)
 }
@@ -110,7 +119,9 @@ export const formatNumber = (amount: number | string | null | undefined): string
  * Check if amount requires materai (stamp duty)
  * Indonesian law requires materai for invoices > 5 million IDR
  */
-export const requiresMaterai = (amount: number | string | null | undefined): boolean => {
+export const requiresMaterai = (
+  amount: number | string | null | undefined
+): boolean => {
   const numericAmount = safeNumber(amount)
   return numericAmount >= 5_000_000
 }
@@ -121,7 +132,7 @@ export const requiresMaterai = (amount: number | string | null | undefined): boo
 export const getMateraiAmount = (invoiceAmount?: number): number => {
   if (!invoiceAmount) return 10_000
   const numericAmount = safeNumber(invoiceAmount)
-  
+
   if (numericAmount < 5_000_000) {
     return 0 // No materai required
   } else if (numericAmount < 1_000_000_000) {
@@ -195,10 +206,10 @@ export const safeGetNested = (
   if (!obj || typeof obj !== 'object') {
     return fallback
   }
-  
+
   return path.split('.').reduce((current, key) => {
-    return (current && typeof current === 'object' && key in current) 
-      ? current[key] 
+    return current && typeof current === 'object' && key in current
+      ? current[key]
       : fallback
   }, obj)
 }
@@ -239,9 +250,9 @@ export const safeMerge = <T extends Record<string, any>>(
   target: T | null | undefined,
   source: Partial<T> | null | undefined
 ): T => {
-  const safeTarget = target || {} as T
+  const safeTarget = target || ({} as T)
   const safeSource = source || {}
-  
+
   return { ...safeTarget, ...safeSource }
 }
 
@@ -252,7 +263,7 @@ export const safeDeepClone = <T>(value: T | null | undefined): T | null => {
   if (value === null || value === undefined) {
     return null
   }
-  
+
   try {
     return JSON.parse(JSON.stringify(value))
   } catch (error) {
@@ -269,10 +280,10 @@ export const safeSet = <T extends Record<string, any>>(
   path: string,
   value: any
 ): T => {
-  const safeObj = obj || {} as T
+  const safeObj = obj || ({} as T)
   const keys = path.split('.')
   let current: any = safeObj
-  
+
   for (let i = 0; i < keys.length - 1; i++) {
     const key = keys[i]
     if (!key) continue
@@ -281,7 +292,7 @@ export const safeSet = <T extends Record<string, any>>(
     }
     current = current[key]
   }
-  
+
   const lastKey = keys[keys.length - 1]
   if (lastKey) {
     current[lastKey] = value
@@ -321,7 +332,7 @@ export const safeFormatDate = (
   date: string | Date | null | undefined
 ): string => {
   if (!date) return ''
-  
+
   try {
     // Use dayjs for date formatting (assuming it's available)
     return new Date(date).toLocaleDateString('id-ID')
@@ -338,12 +349,12 @@ export const formatIndonesianDate = (
   date: string | Date | null | undefined
 ): string => {
   if (!date) return ''
-  
+
   try {
     return new Date(date).toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
     })
   } catch (error) {
     console.error('formatIndonesianDate: Invalid date', date, error)
@@ -358,11 +369,11 @@ export const formatMonthYear = (
   date: string | Date | null | undefined
 ): string => {
   if (!date) return ''
-  
+
   try {
     return new Date(date).toLocaleDateString('id-ID', {
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
     })
   } catch (error) {
     console.error('formatMonthYear: Invalid date', date, error)
@@ -373,9 +384,11 @@ export const formatMonthYear = (
 /**
  * Format compact currency for charts (K, M, B)
  */
-export const formatCompactCurrency = (amount: number | string | null | undefined): string => {
+export const formatCompactCurrency = (
+  amount: number | string | null | undefined
+): string => {
   const numericAmount = safeNumber(amount)
-  
+
   if (numericAmount >= 1_000_000_000) {
     return `Rp ${(numericAmount / 1_000_000_000).toFixed(1)}M`
   } else if (numericAmount >= 1_000_000) {
@@ -411,11 +424,13 @@ export const safePercentage = (
 ): number => {
   const safeNum = safeNumber(numerator)
   const safeDenom = safeNumber(denominator)
-  
+
   if (safeDenom === 0) return 0
-  
+
   const percentage = (safeNum / safeDenom) * 100
-  return Math.round(percentage * Math.pow(10, decimals)) / Math.pow(10, decimals)
+  return (
+    Math.round(percentage * Math.pow(10, decimals)) / Math.pow(10, decimals)
+  )
 }
 
 /**
@@ -426,36 +441,37 @@ export const safeUrl = (
   protocol: string = 'https://'
 ): string => {
   const safeUrlString = safeString(url).trim()
-  
+
   if (!safeUrlString) return ''
-  
+
   // Add protocol if missing
-  if (!safeUrlString.startsWith('http://') && !safeUrlString.startsWith('https://')) {
+  if (
+    !safeUrlString.startsWith('http://') &&
+    !safeUrlString.startsWith('https://')
+  ) {
     return `${protocol}${safeUrlString}`
   }
-  
+
   return safeUrlString
 }
 
 /**
  * Safe phone number formatting for Indonesian numbers
  */
-export const safePhoneFormat = (
-  phone: string | null | undefined
-): string => {
+export const safePhoneFormat = (phone: string | null | undefined): string => {
   const safePhone = safeString(phone).replace(/\D/g, '')
-  
+
   if (!safePhone) return ''
-  
+
   // Format Indonesian phone numbers
   if (safePhone.startsWith('62')) {
     return `+${safePhone.substring(0, 2)} ${safePhone.substring(2, 5)} ${safePhone.substring(5, 9)} ${safePhone.substring(9)}`
   }
-  
+
   if (safePhone.startsWith('0')) {
     return `${safePhone.substring(0, 4)} ${safePhone.substring(4, 8)} ${safePhone.substring(8)}`
   }
-  
+
   return safePhone
 }
 
@@ -471,7 +487,7 @@ export const formatIDRForScreenReader = (amount: number): string => {
   const isNegative = amount < 0
 
   let result = ''
-  
+
   if (isNegative) {
     result += 'minus '
   }
@@ -510,7 +526,7 @@ export const formatIDRForScreenReader = (amount: number): string => {
   }
 
   result += 'rupiah'
-  
+
   return result.trim()
 }
 
@@ -534,7 +550,7 @@ export const validateIDRAmount = (
     min = 0,
     max = 999999999999, // 999 billion IDR
     allowZero = true,
-    allowNegative = false
+    allowNegative = false,
   } = options
 
   const errors: string[] = []
@@ -564,32 +580,42 @@ export const validateIDRAmount = (
 
   // Indonesian business warnings
   if (amount >= 5000000 && amount < 10000000) {
-    warnings.push('Transaksi ini mungkin memerlukan materai sesuai peraturan Indonesia')
+    warnings.push(
+      'Transaksi ini mungkin memerlukan materai sesuai peraturan Indonesia'
+    )
   }
 
   if (amount >= 5000000) {
-    warnings.push('Transaksi ini memerlukan materai sesuai UU No. 13 Tahun 1985')
+    warnings.push(
+      'Transaksi ini memerlukan materai sesuai UU No. 13 Tahun 1985'
+    )
   }
 
   if (amount >= 100000000) {
-    warnings.push('Transaksi besar - pertimbangkan untuk menggunakan komunikasi formal')
+    warnings.push(
+      'Transaksi besar - pertimbangkan untuk menggunakan komunikasi formal'
+    )
   }
 
   if (amount >= 1000000000) {
-    warnings.push('Transaksi sangat besar - mungkin memerlukan persetujuan khusus')
+    warnings.push(
+      'Transaksi sangat besar - mungkin memerlukan persetujuan khusus'
+    )
   }
 
   return {
     isValid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   }
 }
 
 /**
  * Get amount metadata for Indonesian business context
  */
-export const getAmountMetadata = (amount: number): {
+export const getAmountMetadata = (
+  amount: number
+): {
   requiresMaterai: boolean
   materaiAmount: number
   isLargeAmount: boolean
@@ -600,7 +626,7 @@ export const getAmountMetadata = (amount: number): {
   const requiresMateraiFlag = requiresMaterai(numericAmount)
   const materaiAmount = getMateraiAmount(numericAmount)
   const isLargeAmount = numericAmount >= 100000000
-  
+
   let riskLevel: 'low' | 'medium' | 'high' = 'low'
   const recommendedActions: string[] = []
 
@@ -624,7 +650,7 @@ export const getAmountMetadata = (amount: number): {
     materaiAmount,
     isLargeAmount,
     riskLevel,
-    recommendedActions
+    recommendedActions,
   }
 }
 
@@ -638,15 +664,12 @@ export const formatPercentage = (
     maximumFractionDigits?: number
   } = {}
 ): string => {
-  const {
-    minimumFractionDigits = 1,
-    maximumFractionDigits = 2
-  } = options
+  const { minimumFractionDigits = 1, maximumFractionDigits = 2 } = options
 
   const formatter = new Intl.NumberFormat('id-ID', {
     style: 'percent',
     minimumFractionDigits,
-    maximumFractionDigits
+    maximumFractionDigits,
   })
 
   return formatter.format(value / 100)

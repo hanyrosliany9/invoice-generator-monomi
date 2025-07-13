@@ -2,7 +2,13 @@
 // Comprehensive testing for smart table with performance and Indonesian business features
 
 import React from 'react'
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi } from 'vitest'
@@ -17,24 +23,24 @@ vi.mock('../../../hooks/usePerformanceMonitor', () => ({
     getMetrics: vi.fn(() => []),
     getAverageTime: vi.fn(() => 50),
     getSlowOperations: vi.fn(() => []),
-    getOptimizationSuggestions: vi.fn(() => [])
-  })
+    getOptimizationSuggestions: vi.fn(() => []),
+  }),
 }))
 
 vi.mock('../../../utils/currency', () => ({
   formatIDR: (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`,
-  formatDateIndonesian: (date: Date) => date.toLocaleDateString('id-ID')
+  formatDateIndonesian: (date: Date) => date.toLocaleDateString('id-ID'),
 }))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 vi.mock('react-router-dom', () => ({
   useLocation: () => ({ pathname: '/test' }),
-  useNavigate: () => vi.fn()
+  useNavigate: () => vi.fn(),
 }))
 
 // Test wrapper component
@@ -42,14 +48,12 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
-      mutations: { retry: false }
-    }
+      mutations: { retry: false },
+    },
   })
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   )
 }
 
@@ -65,7 +69,7 @@ const mockBusinessEntities: BusinessEntity[] = [
       name: 'John Doe',
       company: 'PT. Tech Solutions',
       phone: '+62812345678',
-      email: 'john@techsolutions.co.id'
+      email: 'john@techsolutions.co.id',
     },
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-15'),
@@ -76,7 +80,7 @@ const mockBusinessEntities: BusinessEntity[] = [
     pphRate: 2,
     tags: ['web', 'development'],
     priority: 'high',
-    assignedTo: 'developer-1'
+    assignedTo: 'developer-1',
   },
   {
     id: 'quotation-2',
@@ -88,7 +92,7 @@ const mockBusinessEntities: BusinessEntity[] = [
       name: 'Jane Smith',
       company: 'CV. Mobile Innovations',
       phone: '+62812345679',
-      email: 'jane@mobileinnovations.co.id'
+      email: 'jane@mobileinnovations.co.id',
     },
     createdAt: new Date('2025-01-10'),
     updatedAt: new Date('2025-01-10'),
@@ -97,7 +101,7 @@ const mockBusinessEntities: BusinessEntity[] = [
     materaiAmount: 10000,
     ppnRate: 11,
     tags: ['mobile', 'app'],
-    priority: 'medium'
+    priority: 'medium',
   },
   {
     id: 'invoice-1',
@@ -108,20 +112,20 @@ const mockBusinessEntities: BusinessEntity[] = [
     client: {
       name: 'Bob Wilson',
       company: 'UD. Web Services',
-      email: 'bob@webservices.co.id'
+      email: 'bob@webservices.co.id',
     },
     createdAt: new Date('2024-12-15'),
     updatedAt: new Date('2025-01-05'),
     materaiRequired: false,
     ppnRate: 11,
-    priority: 'low'
-  }
+    priority: 'low',
+  },
 ]
 
 const defaultProps: SmartTableProps = {
   entityType: 'quotations',
   data: mockBusinessEntities,
-  loading: false
+  loading: false,
 }
 
 describe('SmartTable Component', () => {
@@ -139,7 +143,9 @@ describe('SmartTable Component', () => {
 
       // Check if data is rendered
       expect(screen.getByText('QUO-001')).toBeInTheDocument()
-      expect(screen.getByText('Website Development Project')).toBeInTheDocument()
+      expect(
+        screen.getByText('Website Development Project')
+      ).toBeInTheDocument()
       expect(screen.getByText('PT. Tech Solutions')).toBeInTheDocument()
       expect(screen.getByText('Rp 75.000.000')).toBeInTheDocument()
     })
@@ -216,7 +222,7 @@ describe('SmartTable Component', () => {
   describe('Search and Filtering', () => {
     it('should filter data based on global search', async () => {
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
           <SmartTable {...defaultProps} enableGlobalSearch={true} />
@@ -224,18 +230,22 @@ describe('SmartTable Component', () => {
       )
 
       const searchInput = screen.getByPlaceholderText('Cari quotations...')
-      
+
       await user.type(searchInput, 'Website')
-      
+
       // Should show only entries containing "Website"
-      expect(screen.getByText('Website Development Project')).toBeInTheDocument()
+      expect(
+        screen.getByText('Website Development Project')
+      ).toBeInTheDocument()
       expect(screen.getByText('Website Maintenance')).toBeInTheDocument()
-      expect(screen.queryByText('Mobile App Development')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('Mobile App Development')
+      ).not.toBeInTheDocument()
     })
 
     it('should clear search when clear button is clicked', async () => {
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
           <SmartTable {...defaultProps} enableGlobalSearch={true} />
@@ -243,22 +253,22 @@ describe('SmartTable Component', () => {
       )
 
       const searchInput = screen.getByPlaceholderText('Cari quotations...')
-      
+
       await user.type(searchInput, 'Website')
-      
+
       // Find and click clear button
       const clearButton = document.querySelector('.ant-input-clear-icon')
       if (clearButton) {
         await user.click(clearButton)
       }
-      
+
       // All data should be visible again
       expect(screen.getByText('Mobile App Development')).toBeInTheDocument()
     })
 
     it('should reset all filters when reset button is clicked', async () => {
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
           <SmartTable {...defaultProps} />
@@ -269,7 +279,9 @@ describe('SmartTable Component', () => {
       await user.click(resetButton)
 
       // All data should be visible
-      expect(screen.getByText('Website Development Project')).toBeInTheDocument()
+      expect(
+        screen.getByText('Website Development Project')
+      ).toBeInTheDocument()
       expect(screen.getByText('Mobile App Development')).toBeInTheDocument()
     })
   })
@@ -298,8 +310,10 @@ describe('SmartTable Component', () => {
 
       // Total amount should be sum of all amounts
       const totalAmount = 75000000 + 125000000 + 2500000
-      expect(screen.getByText(`Rp ${totalAmount.toLocaleString('id-ID')}`)).toBeInTheDocument()
-      
+      expect(
+        screen.getByText(`Rp ${totalAmount.toLocaleString('id-ID')}`)
+      ).toBeInTheDocument()
+
       // High value count should be 2 (amounts >= 5 million)
       expect(screen.getByText('2')).toBeInTheDocument()
     })
@@ -309,7 +323,7 @@ describe('SmartTable Component', () => {
     it('should call onRowAction when action buttons are clicked', async () => {
       const onRowAction = vi.fn()
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
           <SmartTable {...defaultProps} onRowAction={onRowAction} />
@@ -326,7 +340,7 @@ describe('SmartTable Component', () => {
     it('should show create invoice button for approved quotations', () => {
       render(
         <TestWrapper>
-          <SmartTable {...defaultProps} entityType="quotations" />
+          <SmartTable {...defaultProps} entityType='quotations' />
         </TestWrapper>
       )
 
@@ -339,11 +353,11 @@ describe('SmartTable Component', () => {
         key: 'custom',
         label: 'Custom Action',
         icon: <span>C</span>,
-        onClick: vi.fn()
+        onClick: vi.fn(),
       }
-      
+
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
           <SmartTable {...defaultProps} customActions={[customAction]} />
@@ -361,7 +375,7 @@ describe('SmartTable Component', () => {
     it('should handle row selection when onRowSelect is provided', async () => {
       const onRowSelect = vi.fn()
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
           <SmartTable {...defaultProps} onRowSelect={onRowSelect} />
@@ -370,7 +384,8 @@ describe('SmartTable Component', () => {
 
       // Find and click first checkbox
       const checkboxes = document.querySelectorAll('.ant-checkbox-input')
-      if (checkboxes[1]) { // [0] is select all, [1] is first row
+      if (checkboxes[1]) {
+        // [0] is select all, [1] is first row
         await user.click(checkboxes[1])
       }
 
@@ -380,7 +395,7 @@ describe('SmartTable Component', () => {
     it('should show selection summary when rows are selected', async () => {
       const onRowSelect = vi.fn()
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
           <SmartTable {...defaultProps} onRowSelect={onRowSelect} />
@@ -402,7 +417,7 @@ describe('SmartTable Component', () => {
   describe('Sorting and Pagination', () => {
     it('should handle table sorting', async () => {
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
           <SmartTable {...defaultProps} />
@@ -424,9 +439,9 @@ describe('SmartTable Component', () => {
       const manyItems = Array.from({ length: 100 }, (_, i) => ({
         ...mockBusinessEntities[0],
         id: `item-${i}`,
-        number: `NUM-${i.toString().padStart(3, '0')}`
+        number: `NUM-${i.toString().padStart(3, '0')}`,
       }))
-      
+
       render(
         <TestWrapper>
           <SmartTable {...defaultProps} data={manyItems} pageSize={25} />
@@ -452,7 +467,7 @@ describe('SmartTable Component', () => {
     it('should handle export action', async () => {
       const user = userEvent.setup()
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-      
+
       render(
         <TestWrapper>
           <SmartTable {...defaultProps} enableExport={true} />
@@ -465,7 +480,7 @@ describe('SmartTable Component', () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Exporting')
       )
-      
+
       consoleSpy.mockRestore()
     })
   })
@@ -485,11 +500,11 @@ describe('SmartTable Component', () => {
 
     it('should track performance when enabled', () => {
       const onPerformanceIssue = vi.fn()
-      
+
       render(
         <TestWrapper>
-          <SmartTable 
-            {...defaultProps} 
+          <SmartTable
+            {...defaultProps}
             trackPerformance={true}
             onPerformanceIssue={onPerformanceIssue}
           />
@@ -515,7 +530,7 @@ describe('SmartTable Component', () => {
 
     it('should support keyboard navigation', async () => {
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
           <SmartTable {...defaultProps} />
@@ -523,7 +538,7 @@ describe('SmartTable Component', () => {
       )
 
       const table = screen.getByRole('table')
-      
+
       // Focus table and navigate with keyboard
       await user.click(table)
       await user.keyboard('{Tab}')
@@ -538,8 +553,8 @@ describe('SmartTable Component', () => {
       const malformedData = [
         {
           ...mockBusinessEntities[0],
-          client: null // Malformed client data
-        }
+          client: null, // Malformed client data
+        },
       ] as any
 
       render(
@@ -557,7 +572,7 @@ describe('SmartTable Component', () => {
         {
           id: 'test-1',
           // Missing required fields
-        }
+        },
       ] as any
 
       render(

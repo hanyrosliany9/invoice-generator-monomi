@@ -8,10 +8,10 @@ export default defineConfig({
   plugins: [
     react({
       // SWC optimization options
-      jsxRuntime: 'automatic'
-    })
+      jsxRuntime: 'automatic',
+    }),
   ],
-  
+
   // Optimize dependencies pre-bundling with cache control
   optimizeDeps: {
     include: [
@@ -21,15 +21,15 @@ export default defineConfig({
       '@ant-design/icons',
       'axios',
       'dayjs',
-      'recharts'
+      'recharts',
     ],
     exclude: ['@testing-library/react'],
     force: true,
     esbuildOptions: {
-      target: 'es2020'
-    }
+      target: 'es2020',
+    },
   },
-  
+
   // Clear cache on startup - use writable directory
   cacheDir: 'node_modules/.vite',
   resolve: {
@@ -56,14 +56,18 @@ export default defineConfig({
         ws: true,
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
-            console.log('proxy error', err);
-          });
+            console.log('proxy error', err)
+          })
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request to the Target:', req.method, req.url);
-          });
+            console.log('Sending Request to the Target:', req.method, req.url)
+          })
           proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
-          });
+            console.log(
+              'Received Response from the Target:',
+              proxyRes.statusCode,
+              req.url
+            )
+          })
         },
       },
     },
@@ -71,8 +75,8 @@ export default defineConfig({
   css: {
     modules: {
       localsConvention: 'camelCase',
-      generateScopedName: '[name]__[local]___[hash:base64:5]'
-    }
+      generateScopedName: '[name]__[local]___[hash:base64:5]',
+    },
   },
   build: {
     outDir: 'dist',
@@ -85,22 +89,23 @@ export default defineConfig({
       treeshake: {
         moduleSideEffects: false,
         propertyReadSideEffects: false,
-        unknownGlobalSideEffects: false
+        unknownGlobalSideEffects: false,
       },
       output: {
         // Simplified chunk optimization - let Vite handle automatically
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
-        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
-      }
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
+      },
     },
     esbuild: {
-      drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+      drop:
+        process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
       legalComments: 'none',
       minifyIdentifiers: true,
       minifySyntax: true,
-      minifyWhitespace: true
-    }
+      minifyWhitespace: true,
+    },
   },
   test: {
     globals: true,
@@ -119,8 +124,8 @@ export default defineConfig({
         'src/**/*.stories.{ts,tsx}',
         'src/test-setup.ts',
         'src/main.tsx',
-        'src/vite-env.d.ts'
-      ]
-    }
+        'src/vite-env.d.ts',
+      ],
+    },
   },
 })

@@ -1,77 +1,88 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  Table,
+  Alert,
+  App,
+  Badge,
   Button,
   Card,
-  Space,
-  Typography,
-  Tag,
+  Col,
+  DatePicker,
+  Divider,
+  Dropdown,
+  Form,
   Input,
   InputNumber,
-  Select,
   Modal,
-  Form,
-  DatePicker,
-  App,
-  Tooltip,
-  Dropdown,
-  Row,
-  Col,
-  Statistic,
-  Alert,
-  Badge,
   Progress,
-  Divider,
+  Radio,
+  Row,
+  Select,
   Skeleton,
-  Radio
+  Space,
+  Statistic,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
 } from 'antd'
 import {
-  PlusOutlined,
-  SearchOutlined,
-  EditOutlined,
+  BankOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CloseOutlined,
   DeleteOutlined,
+  DollarOutlined,
+  EditOutlined,
+  ExclamationCircleOutlined,
+  ExportOutlined,
   EyeOutlined,
   FileTextOutlined,
-  DollarOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  MoreOutlined,
-  ExportOutlined,
-  PrinterOutlined,
-  SendOutlined,
-  BankOutlined,
-  WarningOutlined,
+  KeyOutlined,
   LinkOutlined,
-  CloseOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  PrinterOutlined,
+  SearchOutlined,
+  SendOutlined,
   SettingOutlined,
-  KeyOutlined
+  WarningOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { formatIDR, requiresMaterai, getMateraiAmount, safeNumber, safeDivision, safeString, safeArray } from '../utils/currency'
-import { invoiceService, Invoice } from '../services/invoices'
+import {
+  formatIDR,
+  getMateraiAmount,
+  requiresMaterai,
+  safeArray,
+  safeDivision,
+  safeNumber,
+  safeString,
+} from '../utils/currency'
+import { Invoice, invoiceService } from '../services/invoices'
 import { clientService } from '../services/clients'
 import { projectService } from '../services/projects'
-import { quotationService, Quotation } from '../services/quotations'
+import { Quotation, quotationService } from '../services/quotations'
 import { InvoiceStatus } from '../types/invoice'
-import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
+import {
+  EntityBreadcrumb,
+  RelatedEntitiesPanel,
+} from '../components/navigation'
 import WorkflowIndicator from '../components/ui/WorkflowIndicator'
-import { 
-  InvoicePageSkeleton, 
-  InvoiceTableRowSkeleton, 
-  StatisticsCardSkeleton,
+import {
+  BatchOperationsSkeleton,
+  InvoicePageSkeleton,
+  InvoiceTableRowSkeleton,
   ModalContentSkeleton,
-  BatchOperationsSkeleton
+  StatisticsCardSkeleton,
 } from '../components/ui/SkeletonLoaders'
 import { ActionableError } from '../components/ui/ActionableError'
-import { 
-  ProgressiveDisclosure, 
-  AdvancedSection, 
+import {
+  AdvancedSection,
   FeatureToggle,
+  ProgressiveDisclosure,
   QuickAccessPanel,
-  SmartSuggestions
+  SmartSuggestions,
 } from '../components/ui/ProgressiveDisclosure'
 import { usePageShortcuts } from '../hooks/useKeyboardShortcuts'
 import KeyboardShortcutsHelp from '../components/ui/KeyboardShortcutsHelp'
@@ -80,8 +91,6 @@ import dayjs from 'dayjs'
 const { Title, Text } = Typography
 const { Option } = Select
 const { TextArea } = Input
-
-
 
 // Unused interface - commented out to fix TypeScript error
 // interface InvoiceItem {
@@ -96,7 +105,7 @@ export const InvoicesPage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  
+
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [materaiFilter, setMateraiFilter] = useState<string>('')
@@ -112,10 +121,14 @@ export const InvoicesPage: React.FC = () => {
   const { message, modal } = App.useApp()
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [batchLoading, setBatchLoading] = useState(false)
-  const [priceInheritanceMode, setPriceInheritanceMode] = useState<'inherit' | 'custom'>('inherit')
-  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
+  const [priceInheritanceMode, setPriceInheritanceMode] = useState<
+    'inherit' | 'custom'
+  >('inherit')
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(
+    null
+  )
   const [quotationId, setQuotationId] = useState<string | null>(null)
-  
+
   // UX Enhancement states
   const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false)
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
@@ -129,124 +142,147 @@ export const InvoicesPage: React.FC = () => {
 
   // Memoized keyboard shortcut actions to prevent infinite re-renders
   const handleFocusSearch = useCallback(() => {
-    const searchInput = document.querySelector('[data-testid="invoice-search-input"]') as HTMLInputElement;
-    searchInput?.focus();
-  }, []);
+    const searchInput = document.querySelector(
+      '[data-testid="invoice-search-input"]'
+    ) as HTMLInputElement
+    searchInput?.focus()
+  }, [])
 
   const handleExport = useCallback(() => {
     message.info({
-      content: 'Fitur export invoice sedang dalam pengembangan. Data invoice akan dapat di-export dalam format CSV/Excel pada update mendatang.',
-      duration: 4
+      content:
+        'Fitur export invoice sedang dalam pengembangan. Data invoice akan dapat di-export dalam format CSV/Excel pada update mendatang.',
+      duration: 4,
     })
-  }, [message]);
+  }, [message])
 
   const handleRefresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['invoices'] });
-  }, [queryClient]);
+    queryClient.invalidateQueries({ queryKey: ['invoices'] })
+  }, [queryClient])
 
   const handleShowHelp = useCallback(() => {
-    setShowKeyboardHelp(true);
-  }, []);
+    setShowKeyboardHelp(true)
+  }, [])
 
   const handleToggleMateraiFilter = useCallback(() => {
-    setMateraiFilter(materaiFilter === 'required' ? '' : 'required');
-    message.success('Materai filter toggled');
-  }, [materaiFilter]);
+    setMateraiFilter(materaiFilter === 'required' ? '' : 'required')
+    message.success('Materai filter toggled')
+  }, [materaiFilter])
 
   const handleBulkOperations = useCallback(() => {
     if (selectedRowKeys.length === 0) {
-      message.warning('Select invoices first for bulk operations');
+      message.warning('Select invoices first for bulk operations')
     } else {
-      message.info(`${selectedRowKeys.length} invoices selected for bulk operations`);
+      message.info(
+        `${selectedRowKeys.length} invoices selected for bulk operations`
+      )
     }
-  }, [selectedRowKeys.length]);
+  }, [selectedRowKeys.length])
 
   // Memoized shortcuts array to prevent infinite re-renders
-  const shortcutsArray = useMemo(() => [
-    {
-      key: 'ctrl+n',
-      description: 'Create New Invoice',
-      action: handleCreate,
-      category: 'actions' as const
-    },
-    {
-      key: 'ctrl+k',
-      description: 'Focus Search',
-      action: handleFocusSearch,
-      category: 'actions' as const
-    },
-    {
-      key: 'ctrl+e',
-      description: 'Export Invoices', 
-      action: handleExport,
-      category: 'actions' as const
-    },
-    {
-      key: 'f5',
-      description: 'Refresh Data',
-      action: handleRefresh,
-      category: 'actions' as const
-    },
-    {
-      key: 'f1',
-      description: 'Show Keyboard Shortcuts',
-      action: handleShowHelp,
-      category: 'general' as const
-    },
-    {
-      key: 'alt+m',
-      description: 'Toggle Materai Filter',
-      action: handleToggleMateraiFilter,
-      category: 'actions' as const
-    },
-    {
-      key: 'ctrl+shift+b',
-      description: 'Focus Bulk Operations',
-      action: handleBulkOperations,
-      category: 'actions' as const
-    }
-  ], [handleCreate, handleFocusSearch, handleExport, handleRefresh, handleShowHelp, handleToggleMateraiFilter, handleBulkOperations]);
+  const shortcutsArray = useMemo(
+    () => [
+      {
+        key: 'ctrl+n',
+        description: 'Create New Invoice',
+        action: handleCreate,
+        category: 'actions' as const,
+      },
+      {
+        key: 'ctrl+k',
+        description: 'Focus Search',
+        action: handleFocusSearch,
+        category: 'actions' as const,
+      },
+      {
+        key: 'ctrl+e',
+        description: 'Export Invoices',
+        action: handleExport,
+        category: 'actions' as const,
+      },
+      {
+        key: 'f5',
+        description: 'Refresh Data',
+        action: handleRefresh,
+        category: 'actions' as const,
+      },
+      {
+        key: 'f1',
+        description: 'Show Keyboard Shortcuts',
+        action: handleShowHelp,
+        category: 'general' as const,
+      },
+      {
+        key: 'alt+m',
+        description: 'Toggle Materai Filter',
+        action: handleToggleMateraiFilter,
+        category: 'actions' as const,
+      },
+      {
+        key: 'ctrl+shift+b',
+        description: 'Focus Bulk Operations',
+        action: handleBulkOperations,
+        category: 'actions' as const,
+      },
+    ],
+    [
+      handleCreate,
+      handleFocusSearch,
+      handleExport,
+      handleRefresh,
+      handleShowHelp,
+      handleToggleMateraiFilter,
+      handleBulkOperations,
+    ]
+  )
 
   // DON'T pass navigate function - it changes on every render
   // Pass null for navigation and handle it differently
-  const globalActions = useMemo(() => ({
-    onNavigate: undefined, // Remove this to prevent infinite loops
-    onCreateNew: handleCreate,
-    onSearch: handleFocusSearch,
-    onExport: handleExport,
-    onRefresh: handleRefresh
-  }), [handleCreate, handleFocusSearch, handleExport, handleRefresh]);
+  const globalActions = useMemo(
+    () => ({
+      onNavigate: undefined, // Remove this to prevent infinite loops
+      onCreateNew: handleCreate,
+      onSearch: handleFocusSearch,
+      onExport: handleExport,
+      onRefresh: handleRefresh,
+    }),
+    [handleCreate, handleFocusSearch, handleExport, handleRefresh]
+  )
 
   // Keyboard shortcuts WITHOUT navigation to prevent infinite loops
-  const shortcuts = usePageShortcuts('invoices', shortcutsArray, globalActions);
+  const shortcuts = usePageShortcuts('invoices', shortcutsArray, globalActions)
 
   // Queries
-  const { data: invoices = [], isLoading, error: invoicesError } = useQuery({
+  const {
+    data: invoices = [],
+    isLoading,
+    error: invoicesError,
+  } = useQuery({
     queryKey: ['invoices'],
     queryFn: invoiceService.getInvoices,
-    refetchInterval: autoRefresh ? 30000 : false // Auto-refresh every 30 seconds if enabled
+    refetchInterval: autoRefresh ? 30000 : false, // Auto-refresh every 30 seconds if enabled
   })
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: clientService.getClients
+    queryFn: clientService.getClients,
   })
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: projectService.getProjects
+    queryFn: projectService.getProjects,
   })
 
   const { data: quotations = [] } = useQuery({
     queryKey: ['quotations'],
-    queryFn: quotationService.getQuotations
+    queryFn: quotationService.getQuotations,
   })
 
   // Debug: Log available data
   React.useEffect(() => {
-    console.log('Available clients:', clients);
-    console.log('Available projects:', projects);
-  }, [clients, projects]);
+    console.log('Available clients:', clients)
+    console.log('Available projects:', projects)
+  }, [clients, projects])
 
   // Price inheritance effect
   useEffect(() => {
@@ -256,12 +292,13 @@ export const InvoicesPage: React.FC = () => {
         setSelectedQuotation(quotation)
         if (priceInheritanceMode === 'inherit') {
           // Use quotation totalAmount or amountPerProject
-          const inheritedPrice = quotation.totalAmount || quotation.amountPerProject || 0
+          const inheritedPrice =
+            quotation.totalAmount || quotation.amountPerProject || 0
           form.setFieldsValue({ totalAmount: inheritedPrice })
         }
       }
     }
-  }, [form, quotations, priceInheritanceMode, quotationId]);
+  }, [form, quotations, priceInheritanceMode, quotationId])
 
   // Mutations
   const createMutation = useMutation({
@@ -271,7 +308,7 @@ export const InvoicesPage: React.FC = () => {
       setModalVisible(false)
       form.resetFields()
       message.success(t('messages.success.created', { item: 'Invoice' }))
-    }
+    },
   })
 
   const updateMutation = useMutation({
@@ -283,7 +320,7 @@ export const InvoicesPage: React.FC = () => {
       setEditingInvoice(null)
       form.resetFields()
       message.success(t('messages.success.updated', { item: 'Invoice' }))
-    }
+    },
   })
 
   const deleteMutation = useMutation({
@@ -291,7 +328,7 @@ export const InvoicesPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       message.success(t('messages.success.deleted', { item: 'Invoice' }))
-    }
+    },
   })
 
   const paymentMutation = useMutation({
@@ -303,7 +340,7 @@ export const InvoicesPage: React.FC = () => {
       setPaymentInvoice(null)
       paymentForm.resetFields()
       message.success('Invoice berhasil ditandai lunas')
-    }
+    },
   })
 
   const sendMutation = useMutation({
@@ -315,12 +352,12 @@ export const InvoicesPage: React.FC = () => {
     },
     onError: (error: any) => {
       message.error(`Gagal mengirim invoice: ${error.message}`)
-    }
+    },
   })
 
   const printMutation = useMutation({
     mutationFn: ({ id }: { id: string }) => invoiceService.generatePDF(id),
-    onSuccess: (blob) => {
+    onSuccess: blob => {
       const url = window.URL.createObjectURL(blob)
       const printWindow = window.open(url, '_blank')
       if (printWindow) {
@@ -333,11 +370,11 @@ export const InvoicesPage: React.FC = () => {
     },
     onError: (error: any) => {
       message.error(`Gagal mencetak invoice: ${error.message}`)
-    }
+    },
   })
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => 
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
       invoiceService.updateStatus(id, status as InvoiceStatus),
     onSuccess: () => {
       message.success('Status invoice berhasil diubah')
@@ -345,67 +382,91 @@ export const InvoicesPage: React.FC = () => {
     },
     onError: (error: any) => {
       message.error(error.message || 'Gagal mengubah status invoice')
-    }
+    },
   })
 
   // Helper functions to safely access properties
-  const getInvoiceNumber = (invoice: Invoice) => invoice.invoiceNumber || 'Unknown'
-  const getClientName = (invoice: Invoice) => invoice.client?.name || 'Unknown Client'
-  const getProjectName = (invoice: Invoice) => invoice.project?.description || 'Unknown Project'
+  const getInvoiceNumber = (invoice: Invoice) =>
+    invoice.invoiceNumber || 'Unknown'
+  const getClientName = (invoice: Invoice) =>
+    invoice.client?.name || 'Unknown Client'
+  const getProjectName = (invoice: Invoice) =>
+    invoice.project?.description || 'Unknown Project'
   const getAmount = (invoice: Invoice) => safeNumber(invoice.totalAmount)
 
   // Navigation functions for clickable table links
-  const navigateToClient = useCallback((clientId: string) => {
-    navigate(`/clients?clientId=${clientId}`)
-  }, [navigate])
+  const navigateToClient = useCallback(
+    (clientId: string) => {
+      navigate(`/clients?clientId=${clientId}`)
+    },
+    [navigate]
+  )
 
-  const navigateToProject = useCallback((projectId: string) => {
-    navigate(`/projects?projectId=${projectId}`)
-  }, [navigate])
+  const navigateToProject = useCallback(
+    (projectId: string) => {
+      navigate(`/projects?projectId=${projectId}`)
+    },
+    [navigate]
+  )
 
-  const navigateToQuotation = useCallback((quotationId: string) => {
-    navigate(`/quotations?viewQuotation=${quotationId}`)
-  }, [navigate])
+  const navigateToQuotation = useCallback(
+    (quotationId: string) => {
+      navigate(`/quotations?viewQuotation=${quotationId}`)
+    },
+    [navigate]
+  )
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'DRAFT': return 'default'
-      case 'SENT': return 'blue'
-      case 'PAID': return 'green'
-      case 'OVERDUE': return 'red'
-      case 'CANCELLED': return 'default'
-      default: return 'default'
+      case 'DRAFT':
+        return 'default'
+      case 'SENT':
+        return 'blue'
+      case 'PAID':
+        return 'green'
+      case 'OVERDUE':
+        return 'red'
+      case 'CANCELLED':
+        return 'default'
+      default:
+        return 'default'
     }
   }
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'DRAFT': return 'Draft'
-      case 'SENT': return 'Terkirim'
-      case 'PAID': return 'Lunas'
-      case 'OVERDUE': return 'Jatuh Tempo'
-      case 'CANCELLED': return 'Dibatalkan'
-      default: return status
+      case 'DRAFT':
+        return 'Draft'
+      case 'SENT':
+        return 'Terkirim'
+      case 'PAID':
+        return 'Lunas'
+      case 'OVERDUE':
+        return 'Jatuh Tempo'
+      case 'CANCELLED':
+        return 'Dibatalkan'
+      default:
+        return status
     }
   }
 
   const getValidStatusTransitions = (currentStatus: string) => {
     const transitions: Record<string, { value: string; label: string }[]> = {
-      'DRAFT': [
+      DRAFT: [
         { value: 'SENT', label: 'Terkirim' },
-        { value: 'CANCELLED', label: 'Dibatalkan' }
+        { value: 'CANCELLED', label: 'Dibatalkan' },
       ],
-      'SENT': [
+      SENT: [
         { value: 'PAID', label: 'Lunas' },
         { value: 'OVERDUE', label: 'Jatuh Tempo' },
-        { value: 'CANCELLED', label: 'Dibatalkan' }
+        { value: 'CANCELLED', label: 'Dibatalkan' },
       ],
-      'OVERDUE': [
+      OVERDUE: [
         { value: 'PAID', label: 'Lunas' },
-        { value: 'CANCELLED', label: 'Dibatalkan' }
+        { value: 'CANCELLED', label: 'Dibatalkan' },
       ],
-      'PAID': [], // Paid invoices cannot be changed
-      'CANCELLED': [] // Cancelled invoices cannot be changed
+      PAID: [], // Paid invoices cannot be changed
+      CANCELLED: [], // Cancelled invoices cannot be changed
     }
 
     return transitions[currentStatus] || []
@@ -414,14 +475,20 @@ export const InvoicesPage: React.FC = () => {
   // Filtered data
   const filteredInvoices = safeArray(invoices).filter(invoice => {
     const searchLower = safeString(searchText).toLowerCase()
-    const matchesSearch = safeString(getInvoiceNumber(invoice)).toLowerCase().includes(searchLower) ||
-                         safeString(getClientName(invoice)).toLowerCase().includes(searchLower) ||
-                         safeString(getProjectName(invoice)).toLowerCase().includes(searchLower)
+    const matchesSearch =
+      safeString(getInvoiceNumber(invoice))
+        .toLowerCase()
+        .includes(searchLower) ||
+      safeString(getClientName(invoice)).toLowerCase().includes(searchLower) ||
+      safeString(getProjectName(invoice)).toLowerCase().includes(searchLower)
     const matchesStatus = !statusFilter || invoice?.status === statusFilter
-    const matchesMaterai = !materaiFilter || 
-                          (materaiFilter === 'required' && invoice?.materaiRequired) ||
-                          (materaiFilter === 'applied' && invoice?.materaiApplied) ||
-                          (materaiFilter === 'pending' && invoice?.materaiRequired && !invoice?.materaiApplied)
+    const matchesMaterai =
+      !materaiFilter ||
+      (materaiFilter === 'required' && invoice?.materaiRequired) ||
+      (materaiFilter === 'applied' && invoice?.materaiApplied) ||
+      (materaiFilter === 'pending' &&
+        invoice?.materaiRequired &&
+        !invoice?.materaiApplied)
     return matchesSearch && matchesStatus && matchesMaterai
   })
 
@@ -434,15 +501,22 @@ export const InvoicesPage: React.FC = () => {
     paid: safeInvoices.filter(i => i?.status === 'PAID').length,
     overdue: safeInvoices.filter(i => i?.status === 'OVERDUE').length,
     totalValue: safeInvoices.reduce((sum, i) => sum + getAmount(i), 0),
-    paidValue: safeInvoices.filter(i => i?.status === 'PAID').reduce((sum, i) => sum + getAmount(i), 0),
-    pendingValue: safeInvoices.filter(i => i?.status === 'SENT').reduce((sum, i) => sum + getAmount(i), 0),
-    overdueValue: safeInvoices.filter(i => i?.status === 'OVERDUE').reduce((sum, i) => sum + getAmount(i), 0),
+    paidValue: safeInvoices
+      .filter(i => i?.status === 'PAID')
+      .reduce((sum, i) => sum + getAmount(i), 0),
+    pendingValue: safeInvoices
+      .filter(i => i?.status === 'SENT')
+      .reduce((sum, i) => sum + getAmount(i), 0),
+    overdueValue: safeInvoices
+      .filter(i => i?.status === 'OVERDUE')
+      .reduce((sum, i) => sum + getAmount(i), 0),
     materaiRequired: safeInvoices.filter(i => i?.materaiRequired).length,
-    materaiPending: safeInvoices.filter(i => i?.materaiRequired && !i?.materaiApplied).length
+    materaiPending: safeInvoices.filter(
+      i => i?.materaiRequired && !i?.materaiApplied
+    ).length,
   }
 
   const paymentRate = safeDivision(stats.paidValue, stats.totalValue) * 100
-
 
   const isOverdue = (invoice: Invoice) => {
     return invoice.status !== 'PAID' && dayjs().isAfter(dayjs(invoice.dueDate))
@@ -465,7 +539,6 @@ export const InvoicesPage: React.FC = () => {
     deleteMutation.mutate(id)
   }
 
-
   const handleStatusChange = (invoice: Invoice, newStatus: string) => {
     statusMutation.mutate({ id: invoice.id, status: newStatus })
   }
@@ -477,16 +550,19 @@ export const InvoicesPage: React.FC = () => {
   }
 
   const handleStatusModalOk = () => {
-    statusForm.validateFields().then((values) => {
-      if (statusInvoice) {
-        handleStatusChange(statusInvoice, values.status)
-        setStatusModalVisible(false)
-        setStatusInvoice(null)
-        statusForm.resetFields()
-      }
-    }).catch((errorInfo) => {
-      console.log('Validation failed:', errorInfo)
-    })
+    statusForm
+      .validateFields()
+      .then(values => {
+        if (statusInvoice) {
+          handleStatusChange(statusInvoice, values.status)
+          setStatusModalVisible(false)
+          setStatusInvoice(null)
+          statusForm.resetFields()
+        }
+      })
+      .catch(errorInfo => {
+        console.log('Validation failed:', errorInfo)
+      })
   }
 
   const handleStatusModalCancel = () => {
@@ -494,7 +570,6 @@ export const InvoicesPage: React.FC = () => {
     setStatusInvoice(null)
     statusForm.resetFields()
   }
-
 
   const handlePrintInvoice = (invoice: Invoice) => {
     printMutation.mutate({ id: invoice.id })
@@ -505,16 +580,17 @@ export const InvoicesPage: React.FC = () => {
     if (quotation) {
       setSelectedQuotation(quotation)
       setQuotationId(quotationId)
-      
+
       // Auto-populate fields from quotation
       form.setFieldsValue({
         clientId: quotation.clientId,
-        projectId: quotation.projectId
+        projectId: quotation.projectId,
       })
-      
+
       if (priceInheritanceMode === 'inherit') {
         // Use quotation totalAmount or amountPerProject
-        const inheritedPrice = quotation.totalAmount || quotation.amountPerProject || 0
+        const inheritedPrice =
+          quotation.totalAmount || quotation.amountPerProject || 0
         form.setFieldsValue({ totalAmount: inheritedPrice })
       }
     }
@@ -523,10 +599,11 @@ export const InvoicesPage: React.FC = () => {
   const handlePriceInheritanceModeChange = (e: any) => {
     const mode = e.target.value
     setPriceInheritanceMode(mode)
-    
+
     if (mode === 'inherit' && selectedQuotation) {
       // Use quotation totalAmount or amountPerProject
-      const inheritedPrice = selectedQuotation.totalAmount || selectedQuotation.amountPerProject || 0
+      const inheritedPrice =
+        selectedQuotation.totalAmount || selectedQuotation.amountPerProject || 0
       form.setFieldsValue({ totalAmount: inheritedPrice })
     } else if (mode === 'custom') {
       // Clear the amount field for custom input
@@ -535,16 +612,16 @@ export const InvoicesPage: React.FC = () => {
   }
 
   const handleFormSubmit = (values: any) => {
-    const totalAmount = safeNumber(values.totalAmount);
-    
+    const totalAmount = safeNumber(values.totalAmount)
+
     const data = {
       ...values,
       dueDate: values.dueDate.endOf('day').toISOString(),
       amountPerProject: totalAmount, // Set same as total
       totalAmount: totalAmount,
       materaiRequired: requiresMaterai(totalAmount),
-      materaiApplied: values.materaiApplied || false
-    };
+      materaiApplied: values.materaiApplied || false,
+    }
 
     if (editingInvoice) {
       updateMutation.mutate({ id: editingInvoice.id, data })
@@ -557,7 +634,7 @@ export const InvoicesPage: React.FC = () => {
     if (paymentInvoice) {
       paymentMutation.mutate({
         id: paymentInvoice.id,
-        paidAt: values.paidAt.format('YYYY-MM-DD')
+        paidAt: values.paidAt.format('YYYY-MM-DD'),
       })
     }
   }
@@ -570,8 +647,9 @@ export const InvoicesPage: React.FC = () => {
     }
 
     // Filter only DRAFT invoices
-    const draftInvoices = invoices.filter(invoice => 
-      selectedRowKeys.includes(invoice.id) && invoice.status === 'DRAFT'
+    const draftInvoices = invoices.filter(
+      invoice =>
+        selectedRowKeys.includes(invoice.id) && invoice.status === 'DRAFT'
     )
 
     if (draftInvoices.length === 0) {
@@ -580,15 +658,17 @@ export const InvoicesPage: React.FC = () => {
     }
 
     if (draftInvoices.length < selectedRowKeys.length) {
-      message.warning(`Hanya ${draftInvoices.length} dari ${selectedRowKeys.length} invoice yang dapat dikirim (hanya status Draft)`)
+      message.warning(
+        `Hanya ${draftInvoices.length} dari ${selectedRowKeys.length} invoice yang dapat dikirim (hanya status Draft)`
+      )
     }
 
     setBatchLoading(true)
     try {
-      const promises = draftInvoices.map(invoice => 
-        sendMutation.mutateAsync({ 
-          id: invoice.id, 
-          ...(invoice.client?.email && { email: invoice.client.email }) 
+      const promises = draftInvoices.map(invoice =>
+        sendMutation.mutateAsync({
+          id: invoice.id,
+          ...(invoice.client?.email && { email: invoice.client.email }),
         })
       )
       await Promise.all(promises)
@@ -608,30 +688,37 @@ export const InvoicesPage: React.FC = () => {
     }
 
     // Filter only SENT and OVERDUE invoices
-    const payableInvoices = invoices.filter(invoice => 
-      selectedRowKeys.includes(invoice.id) && 
-      (invoice.status === 'SENT' || invoice.status === 'OVERDUE')
+    const payableInvoices = invoices.filter(
+      invoice =>
+        selectedRowKeys.includes(invoice.id) &&
+        (invoice.status === 'SENT' || invoice.status === 'OVERDUE')
     )
 
     if (payableInvoices.length === 0) {
-      message.warning('Pilih invoice dengan status Terkirim atau Jatuh Tempo untuk ditandai lunas')
+      message.warning(
+        'Pilih invoice dengan status Terkirim atau Jatuh Tempo untuk ditandai lunas'
+      )
       return
     }
 
     if (payableInvoices.length < selectedRowKeys.length) {
-      message.warning(`Hanya ${payableInvoices.length} dari ${selectedRowKeys.length} invoice yang dapat ditandai lunas`)
+      message.warning(
+        `Hanya ${payableInvoices.length} dari ${selectedRowKeys.length} invoice yang dapat ditandai lunas`
+      )
     }
 
     setBatchLoading(true)
     try {
-      const promises = payableInvoices.map(invoice => 
-        paymentMutation.mutateAsync({ 
-          id: invoice.id, 
-          paidAt: dayjs().format('YYYY-MM-DD')
+      const promises = payableInvoices.map(invoice =>
+        paymentMutation.mutateAsync({
+          id: invoice.id,
+          paidAt: dayjs().format('YYYY-MM-DD'),
         })
       )
       await Promise.all(promises)
-      message.success(`${payableInvoices.length} invoice berhasil ditandai lunas`)
+      message.success(
+        `${payableInvoices.length} invoice berhasil ditandai lunas`
+      )
       setSelectedRowKeys([])
     } catch (error) {
       message.error('Gagal menandai lunas beberapa invoice')
@@ -648,7 +735,7 @@ export const InvoicesPage: React.FC = () => {
 
     setBatchLoading(true)
     try {
-      const promises = selectedRowKeys.map(id => 
+      const promises = selectedRowKeys.map(id =>
         printMutation.mutateAsync({ id })
       )
       await Promise.all(promises)
@@ -676,7 +763,7 @@ export const InvoicesPage: React.FC = () => {
       onOk: async () => {
         setBatchLoading(true)
         try {
-          const promises = selectedRowKeys.map(id => 
+          const promises = selectedRowKeys.map(id =>
             deleteMutation.mutateAsync(id)
           )
           await Promise.all(promises)
@@ -687,7 +774,7 @@ export const InvoicesPage: React.FC = () => {
         } finally {
           setBatchLoading(false)
         }
-      }
+      },
     })
   }
 
@@ -696,7 +783,11 @@ export const InvoicesPage: React.FC = () => {
     onChange: (newSelectedRowKeys: React.Key[]) => {
       setSelectedRowKeys(newSelectedRowKeys as string[])
     },
-    onSelectAll: (selected: boolean, _selectedRows: Invoice[], _changeRows: Invoice[]) => {
+    onSelectAll: (
+      selected: boolean,
+      _selectedRows: Invoice[],
+      _changeRows: Invoice[]
+    ) => {
       if (selected) {
         const allKeys = filteredInvoices.map(i => i.id)
         setSelectedRowKeys(allKeys)
@@ -716,20 +807,20 @@ export const InvoicesPage: React.FC = () => {
         key: 'view',
         icon: <EyeOutlined />,
         label: 'Lihat Detail',
-        onClick: () => handleView(invoice)
+        onClick: () => handleView(invoice),
       },
       {
         key: 'edit',
         icon: <EditOutlined />,
         label: 'Edit',
-        onClick: () => handleEdit(invoice)
+        onClick: () => handleEdit(invoice),
       },
       {
         key: 'print',
         icon: <PrinterOutlined />,
         label: 'Print',
-        onClick: () => handlePrintInvoice(invoice)
-      }
+        onClick: () => handlePrintInvoice(invoice),
+      },
     ]
 
     // Add "View Quotation" button for quotation-based invoices
@@ -738,7 +829,7 @@ export const InvoicesPage: React.FC = () => {
         key: 'view-quotation',
         icon: <LinkOutlined />,
         label: 'Lihat Quotation',
-        onClick: () => navigateToQuotation(invoice.quotationId || '')
+        onClick: () => navigateToQuotation(invoice.quotationId || ''),
       })
     }
 
@@ -748,7 +839,7 @@ export const InvoicesPage: React.FC = () => {
         key: 'send',
         icon: <SendOutlined />,
         label: 'Kirim',
-        onClick: () => handleStatusChange(invoice, 'SENT')
+        onClick: () => handleStatusChange(invoice, 'SENT'),
       })
     }
 
@@ -757,7 +848,7 @@ export const InvoicesPage: React.FC = () => {
         key: 'mark-paid',
         icon: <CheckCircleOutlined />,
         label: 'Tandai Lunas',
-        onClick: () => handleStatusChange(invoice, 'PAID')
+        onClick: () => handleStatusChange(invoice, 'PAID'),
       })
     }
 
@@ -766,7 +857,7 @@ export const InvoicesPage: React.FC = () => {
         key: 'mark-paid',
         icon: <CheckCircleOutlined />,
         label: 'Tandai Lunas',
-        onClick: () => handleStatusChange(invoice, 'PAID')
+        onClick: () => handleStatusChange(invoice, 'PAID'),
       })
     }
 
@@ -775,111 +866,119 @@ export const InvoicesPage: React.FC = () => {
       key: 'change-status',
       icon: <EditOutlined />,
       label: 'Ubah Status',
-      onClick: () => handleOpenStatusModal(invoice)
+      onClick: () => handleOpenStatusModal(invoice),
     })
 
     items.push({
       key: 'delete',
       icon: <DeleteOutlined />,
       label: 'Hapus',
-      onClick: () => handleDelete(invoice.id)
+      onClick: () => handleDelete(invoice.id),
     })
 
     return items
   }
-
 
   const columns = [
     {
       title: 'Invoice & Context',
       key: 'invoiceContext',
       render: (_: any, invoice: Invoice) => (
-        <div className="space-y-1">
-          <div className="font-medium">{getInvoiceNumber(invoice)}</div>
-          
+        <div className='space-y-1'>
+          <div className='font-medium'>{getInvoiceNumber(invoice)}</div>
+
           {/* Relationship Context */}
-          <div className="text-xs space-y-1">
+          <div className='text-xs space-y-1'>
             {invoice.quotationId && (
-              <div className="flex items-center space-x-1">
-                <span className="text-gray-500">from</span>
-                <Button 
-                  type="link" 
-                  size="small"
+              <div className='flex items-center space-x-1'>
+                <span className='text-gray-500'>from</span>
+                <Button
+                  type='link'
+                  size='small'
                   onClick={() => navigateToQuotation(invoice.quotationId || '')}
-                  className="text-xs text-blue-600 hover:text-blue-800 p-0"
+                  className='text-xs text-blue-600 hover:text-blue-800 p-0'
                 >
                   📋 {invoice.quotation?.quotationNumber || 'Quotation'}
                 </Button>
               </div>
             )}
-            
+
             {invoice.project && (
-              <div className="flex items-center space-x-1">
-                <span className="text-gray-500">project</span>
-                <Button 
-                  type="link" 
-                  size="small"
-                  onClick={() => navigate(`/projects?projectId=${invoice.project?.id}`)}
-                  className="text-xs text-purple-600 hover:text-purple-800 p-0"
+              <div className='flex items-center space-x-1'>
+                <span className='text-gray-500'>project</span>
+                <Button
+                  type='link'
+                  size='small'
+                  onClick={() =>
+                    navigate(`/projects?projectId=${invoice.project?.id}`)
+                  }
+                  className='text-xs text-purple-600 hover:text-purple-800 p-0'
                 >
                   📊 {invoice.project?.number}
                 </Button>
               </div>
             )}
-            
+
             {!invoice.quotationId && (
-              <Badge size="small" color="orange" text="Direct Invoice" />
+              <Badge size='small' color='orange' text='Direct Invoice' />
             )}
           </div>
-          
+
           {/* Status Indicators */}
-          <div className="flex space-x-1">
+          <div className='flex space-x-1'>
             {invoice.materaiRequired && (
-              <Tooltip title={`Materai ${invoice.materaiApplied ? 'applied' : 'required'}`}>
-                <span className={`text-xs ${invoice.materaiApplied ? 'text-green-600' : 'text-orange-600'}`}>
+              <Tooltip
+                title={`Materai ${invoice.materaiApplied ? 'applied' : 'required'}`}
+              >
+                <span
+                  className={`text-xs ${invoice.materaiApplied ? 'text-green-600' : 'text-orange-600'}`}
+                >
                   📋 {invoice.materaiApplied ? '✓' : '!'}
                 </span>
               </Tooltip>
             )}
             {isOverdue(invoice) && (
-              <Tooltip title="Invoice is overdue">
-                <span className="text-xs text-red-600">⏰</span>
+              <Tooltip title='Invoice is overdue'>
+                <span className='text-xs text-red-600'>⏰</span>
               </Tooltip>
             )}
           </div>
         </div>
       ),
-      sorter: (a: Invoice, b: Invoice) => getInvoiceNumber(a).localeCompare(getInvoiceNumber(b))
+      sorter: (a: Invoice, b: Invoice) =>
+        getInvoiceNumber(a).localeCompare(getInvoiceNumber(b)),
     },
     {
       title: 'Klien',
       key: 'clientName',
       render: (_: any, invoice: Invoice) => (
-        <Button 
-          type="link" 
+        <Button
+          type='link'
           onClick={() => navigateToClient(invoice.client?.id || '')}
-          className="text-blue-600 hover:text-blue-800 p-0"
+          className='text-blue-600 hover:text-blue-800 p-0'
           disabled={!invoice.client?.id}
         >
           {getClientName(invoice)}
         </Button>
       ),
-      sorter: (a: Invoice, b: Invoice) => getClientName(a).localeCompare(getClientName(b))
+      sorter: (a: Invoice, b: Invoice) =>
+        getClientName(a).localeCompare(getClientName(b)),
     },
     {
       title: 'Proyek',
       key: 'projectName',
       render: (_: any, invoice: Invoice) => (
-        <Button 
-          type="link" 
+        <Button
+          type='link'
           onClick={() => navigateToProject(invoice.project?.id || '')}
-          className="text-blue-600 hover:text-blue-800 p-0"
+          className='text-blue-600 hover:text-blue-800 p-0'
           disabled={!invoice.project?.id}
         >
           {getProjectName(invoice)}
         </Button>
       ),
-      sorter: (a: Invoice, b: Invoice) => getProjectName(a).localeCompare(getProjectName(b))
+      sorter: (a: Invoice, b: Invoice) =>
+        getProjectName(a).localeCompare(getProjectName(b)),
     },
     {
       title: 'Jumlah',
@@ -888,13 +987,23 @@ export const InvoicesPage: React.FC = () => {
         const amount = getAmount(invoice)
         return (
           <div>
-            <Text className="idr-amount">{formatIDR(amount)}</Text>
+            <Text className='idr-amount'>{formatIDR(amount)}</Text>
             {invoice.materaiRequired && (
-              <div className="flex items-center mt-1">
-                <Tooltip title={invoice.materaiApplied ? 'Materai sudah ditempel' : 'Materai belum ditempel'}>
+              <div className='flex items-center mt-1'>
+                <Tooltip
+                  title={
+                    invoice.materaiApplied
+                      ? 'Materai sudah ditempel'
+                      : 'Materai belum ditempel'
+                  }
+                >
                   <Badge
                     status={invoice.materaiApplied ? 'success' : 'warning'}
-                    text={<span style={{ fontSize: '11px' }}>Materai {formatIDR(getMateraiAmount())}</span>}
+                    text={
+                      <span style={{ fontSize: '11px' }}>
+                        Materai {formatIDR(getMateraiAmount())}
+                      </span>
+                    }
                   />
                 </Tooltip>
               </div>
@@ -902,7 +1011,7 @@ export const InvoicesPage: React.FC = () => {
           </div>
         )
       },
-      sorter: (a: Invoice, b: Invoice) => getAmount(a) - getAmount(b)
+      sorter: (a: Invoice, b: Invoice) => getAmount(a) - getAmount(b),
     },
     {
       title: 'Status',
@@ -910,12 +1019,10 @@ export const InvoicesPage: React.FC = () => {
       key: 'status',
       render: (status: string, record: Invoice) => (
         <div>
-          <Tag color={getStatusColor(status)}>
-            {getStatusText(status)}
-          </Tag>
+          <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
           {isOverdue(record) && status !== 'PAID' && (
-            <div className="mt-1">
-              <Tag color="red">
+            <div className='mt-1'>
+              <Tag color='red'>
                 <ExclamationCircleOutlined /> Jatuh Tempo
               </Tag>
             </div>
@@ -927,9 +1034,9 @@ export const InvoicesPage: React.FC = () => {
         { text: 'Terkirim', value: 'SENT' },
         { text: 'Lunas', value: 'PAID' },
         { text: 'Jatuh Tempo', value: 'OVERDUE' },
-        { text: 'Dibatalkan', value: 'CANCELLED' }
+        { text: 'Dibatalkan', value: 'CANCELLED' },
       ],
-      onFilter: (value: any, record: Invoice) => record.status === value
+      onFilter: (value: any, record: Invoice) => record.status === value,
     },
     {
       title: 'Batas Pembayaran',
@@ -938,22 +1045,31 @@ export const InvoicesPage: React.FC = () => {
       render: (date: string, record: Invoice) => {
         const daysUntilDue = getDaysUntilDue(date)
         const isLate = isOverdue(record)
-        
+
         return (
           <div>
             <div>{dayjs(date).format('DD/MM/YYYY')}</div>
             {record.status !== 'PAID' && (
-              <Text 
-                type={isLate ? 'danger' : daysUntilDue <= 3 ? 'warning' : 'secondary'}
+              <Text
+                type={
+                  isLate
+                    ? 'danger'
+                    : daysUntilDue <= 3
+                      ? 'warning'
+                      : 'secondary'
+                }
                 style={{ fontSize: '11px' }}
               >
-                {isLate ? `Telat ${Math.abs(daysUntilDue)} hari` : `${daysUntilDue} hari lagi`}
+                {isLate
+                  ? `Telat ${Math.abs(daysUntilDue)} hari`
+                  : `${daysUntilDue} hari lagi`}
               </Text>
             )}
           </div>
         )
       },
-      sorter: (a: Invoice, b: Invoice) => dayjs(a.dueDate).unix() - dayjs(b.dueDate).unix()
+      sorter: (a: Invoice, b: Invoice) =>
+        dayjs(a.dueDate).unix() - dayjs(b.dueDate).unix(),
     },
     {
       title: 'Aksi',
@@ -963,162 +1079,197 @@ export const InvoicesPage: React.FC = () => {
         <Dropdown
           menu={{ items: getActionMenuItems(invoice) }}
           trigger={['click']}
-          placement="bottomRight"
+          placement='bottomRight'
         >
           <Button icon={<MoreOutlined />} />
         </Dropdown>
-      )
-    }
+      ),
+    },
   ]
 
   return (
     <div>
-      <div className="mb-6">
+      <div className='mb-6'>
         <Title level={2} style={{ color: '#1e293b', marginBottom: '24px' }}>
           {t('invoices.title')}
         </Title>
-        
-        
+
         {/* Loading state for entire statistics section */}
         {isLoading && (
-          <div className="text-center py-4 mb-6" role="status" aria-label="Loading invoice statistics">
-            <Text type="secondary">Memuat statistik invoice...</Text>
+          <div
+            className='text-center py-4 mb-6'
+            role='status'
+            aria-label='Loading invoice statistics'
+          >
+            <Text type='secondary'>Memuat statistik invoice...</Text>
           </div>
         )}
-        
+
         {/* Statistics */}
-        <Row gutter={[24, 24]} className="mb-6">
+        <Row gutter={[24, 24]} className='mb-6'>
           <Col xs={24} sm={12} lg={6}>
-            <Card 
+            <Card
               style={{
                 borderRadius: '16px',
                 border: '1px solid #e2e8f0',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
                 background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
               }}
-              className="hover:shadow-lg"
+              className='hover:shadow-lg'
             >
               {isLoading ? (
-                <Skeleton.Input active size="small" style={{ width: '100%', height: '80px' }} />
+                <Skeleton.Input
+                  active
+                  size='small'
+                  style={{ width: '100%', height: '80px' }}
+                />
               ) : invoicesError ? (
-                <div className="text-center py-4" role="alert">
-                  <Text type="danger">-</Text>
+                <div className='text-center py-4' role='alert'>
+                  <Text type='danger'>-</Text>
                 </div>
               ) : (
                 <Statistic
-                  title="Total Invoice"
+                  title='Total Invoice'
                   value={stats.total}
-                  prefix={<FileTextOutlined style={{ 
-                    fontSize: '24px', 
-                    color: '#1e40af',
-                    background: 'rgba(30, 64, 175, 0.15)',
-                    padding: '8px',
-                    borderRadius: '12px'
-                  }} />}
-                  valueStyle={{ 
-                    color: '#1e293b', 
-                    fontSize: '28px', 
-                    fontWeight: 700 
+                  prefix={
+                    <FileTextOutlined
+                      style={{
+                        fontSize: '24px',
+                        color: '#1e40af',
+                        background: 'rgba(30, 64, 175, 0.15)',
+                        padding: '8px',
+                        borderRadius: '12px',
+                      }}
+                    />
+                  }
+                  valueStyle={{
+                    color: '#1e293b',
+                    fontSize: '28px',
+                    fontWeight: 700,
                   }}
                 />
               )}
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card 
+            <Card
               style={{
                 borderRadius: '16px',
                 border: '1px solid #e2e8f0',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
                 background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
               }}
-              className="hover:shadow-lg"
+              className='hover:shadow-lg'
             >
               {isLoading ? (
-                <Skeleton.Input active size="small" style={{ width: '100%', height: '80px' }} />
+                <Skeleton.Input
+                  active
+                  size='small'
+                  style={{ width: '100%', height: '80px' }}
+                />
               ) : (
                 <Statistic
-                  title="Lunas"
+                  title='Lunas'
                   value={stats.paid}
-                  prefix={<CheckCircleOutlined style={{ 
-                    fontSize: '24px', 
-                    color: '#52c41a',
-                    background: 'rgba(82, 196, 26, 0.1)',
-                    padding: '8px',
-                    borderRadius: '12px'
-                  }} />}
-                  valueStyle={{ 
-                    color: '#1e293b', 
-                    fontSize: '28px', 
-                    fontWeight: 700 
+                  prefix={
+                    <CheckCircleOutlined
+                      style={{
+                        fontSize: '24px',
+                        color: '#52c41a',
+                        background: 'rgba(82, 196, 26, 0.1)',
+                        padding: '8px',
+                        borderRadius: '12px',
+                      }}
+                    />
+                  }
+                  valueStyle={{
+                    color: '#1e293b',
+                    fontSize: '28px',
+                    fontWeight: 700,
                   }}
                 />
               )}
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card 
+            <Card
               style={{
                 borderRadius: '16px',
                 border: '1px solid #e2e8f0',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
                 background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
               }}
-              className="hover:shadow-lg"
+              className='hover:shadow-lg'
             >
               {isLoading ? (
-                <Skeleton.Input active size="small" style={{ width: '100%', height: '80px' }} />
+                <Skeleton.Input
+                  active
+                  size='small'
+                  style={{ width: '100%', height: '80px' }}
+                />
               ) : (
                 <Statistic
-                  title="Tertunda"
+                  title='Tertunda'
                   value={stats.sent}
-                  prefix={<ClockCircleOutlined style={{ 
-                    fontSize: '24px', 
-                    color: '#1890ff',
-                    background: 'rgba(24, 144, 255, 0.1)',
-                    padding: '8px',
-                    borderRadius: '12px'
-                  }} />}
-                  valueStyle={{ 
-                    color: '#1e293b', 
-                    fontSize: '28px', 
-                    fontWeight: 700 
+                  prefix={
+                    <ClockCircleOutlined
+                      style={{
+                        fontSize: '24px',
+                        color: '#1890ff',
+                        background: 'rgba(24, 144, 255, 0.1)',
+                        padding: '8px',
+                        borderRadius: '12px',
+                      }}
+                    />
+                  }
+                  valueStyle={{
+                    color: '#1e293b',
+                    fontSize: '28px',
+                    fontWeight: 700,
                   }}
                 />
               )}
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card 
+            <Card
               style={{
                 borderRadius: '16px',
                 border: '1px solid #e2e8f0',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
                 background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
               }}
-              className="hover:shadow-lg"
+              className='hover:shadow-lg'
             >
               {isLoading ? (
-                <Skeleton.Input active size="small" style={{ width: '100%', height: '80px' }} />
+                <Skeleton.Input
+                  active
+                  size='small'
+                  style={{ width: '100%', height: '80px' }}
+                />
               ) : (
                 <Statistic
-                  title="Jatuh Tempo"
+                  title='Jatuh Tempo'
                   value={stats.overdue}
-                  prefix={<ExclamationCircleOutlined style={{ 
-                    fontSize: '24px', 
-                    color: '#f5222d',
-                    background: 'rgba(245, 34, 45, 0.1)',
-                    padding: '8px',
-                    borderRadius: '12px'
-                  }} />}
-                  valueStyle={{ 
-                    color: '#1e293b', 
-                    fontSize: '28px', 
-                    fontWeight: 700 
+                  prefix={
+                    <ExclamationCircleOutlined
+                      style={{
+                        fontSize: '24px',
+                        color: '#f5222d',
+                        background: 'rgba(245, 34, 45, 0.1)',
+                        padding: '8px',
+                        borderRadius: '12px',
+                      }}
+                    />
+                  }
+                  valueStyle={{
+                    color: '#1e293b',
+                    fontSize: '28px',
+                    fontWeight: 700,
                   }}
                 />
               )}
@@ -1127,112 +1278,148 @@ export const InvoicesPage: React.FC = () => {
         </Row>
 
         {/* Revenue Statistics */}
-        <Row gutter={[24, 24]} className="mb-6">
+        <Row gutter={[24, 24]} className='mb-6'>
           <Col xs={24} lg={8}>
-            <Card 
+            <Card
               style={{
                 borderRadius: '20px',
                 border: '1px solid #e2e8f0',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
                 background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                 color: '#ffffff',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
               }}
-              className="hover:shadow-2xl hover:scale-[1.02]"
+              className='hover:shadow-2xl hover:scale-[1.02]'
             >
               {isLoading ? (
-                <Skeleton.Input active size="large" style={{ width: '100%', height: '120px', backgroundColor: 'rgba(255, 255, 255, 0.2)' }} />
+                <Skeleton.Input
+                  active
+                  size='large'
+                  style={{
+                    width: '100%',
+                    height: '120px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  }}
+                />
               ) : (
                 <Statistic
-                  title="Total Pendapatan"
+                  title='Total Pendapatan'
                   value={formatIDR(stats.totalValue)}
-                  prefix={<DollarOutlined style={{ 
-                    fontSize: '32px', 
+                  prefix={
+                    <DollarOutlined
+                      style={{
+                        fontSize: '32px',
+                        color: '#ffffff',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        padding: '12px',
+                        borderRadius: '16px',
+                      }}
+                    />
+                  }
+                  valueStyle={{
                     color: '#ffffff',
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    padding: '12px',
-                    borderRadius: '16px'
-                  }} />}
-                  valueStyle={{ 
-                    color: '#ffffff', 
-                    fontSize: '32px', 
-                    fontWeight: 800 
+                    fontSize: '32px',
+                    fontWeight: 800,
                   }}
                 />
               )}
             </Card>
           </Col>
           <Col xs={24} lg={8}>
-            <Card 
+            <Card
               style={{
                 borderRadius: '20px',
                 border: '1px solid #e2e8f0',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
                 background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                 color: '#ffffff',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
               }}
-              className="hover:shadow-2xl hover:scale-[1.02]"
+              className='hover:shadow-2xl hover:scale-[1.02]'
             >
               {isLoading ? (
-                <Skeleton.Input active size="large" style={{ width: '100%', height: '120px', backgroundColor: 'rgba(255, 255, 255, 0.2)' }} />
+                <Skeleton.Input
+                  active
+                  size='large'
+                  style={{
+                    width: '100%',
+                    height: '120px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  }}
+                />
               ) : (
                 <>
                   <Statistic
-                    title="Sudah Dibayar"
+                    title='Sudah Dibayar'
                     value={formatIDR(stats.paidValue)}
-                    prefix={<BankOutlined style={{ 
-                      fontSize: '32px', 
+                    prefix={
+                      <BankOutlined
+                        style={{
+                          fontSize: '32px',
+                          color: '#ffffff',
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          padding: '12px',
+                          borderRadius: '16px',
+                        }}
+                      />
+                    }
+                    valueStyle={{
                       color: '#ffffff',
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      padding: '12px',
-                      borderRadius: '16px'
-                    }} />}
-                    valueStyle={{ 
-                      color: '#ffffff', 
-                      fontSize: '32px', 
-                      fontWeight: 800 
+                      fontSize: '32px',
+                      fontWeight: 800,
                     }}
                   />
                   <Progress
                     percent={Math.round(paymentRate)}
-                    size="small"
-                    strokeColor="rgba(255, 255, 255, 0.8)"
-                    className="mt-2"
+                    size='small'
+                    strokeColor='rgba(255, 255, 255, 0.8)'
+                    className='mt-2'
                   />
                 </>
               )}
             </Card>
           </Col>
           <Col xs={24} lg={8}>
-            <Card 
+            <Card
               style={{
                 borderRadius: '20px',
                 border: '1px solid #e2e8f0',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
                 background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                 color: '#ffffff',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
               }}
-              className="hover:shadow-2xl hover:scale-[1.02]"
+              className='hover:shadow-2xl hover:scale-[1.02]'
             >
               {isLoading ? (
-                <Skeleton.Input active size="large" style={{ width: '100%', height: '120px', backgroundColor: 'rgba(255, 255, 255, 0.2)' }} />
+                <Skeleton.Input
+                  active
+                  size='large'
+                  style={{
+                    width: '100%',
+                    height: '120px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  }}
+                />
               ) : (
                 <Statistic
-                  title="Belum Dibayar"
+                  title='Belum Dibayar'
                   value={formatIDR(stats.pendingValue + stats.overdueValue)}
-                  prefix={<ClockCircleOutlined style={{ 
-                    fontSize: '32px', 
+                  prefix={
+                    <ClockCircleOutlined
+                      style={{
+                        fontSize: '32px',
+                        color: '#ffffff',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        padding: '12px',
+                        borderRadius: '16px',
+                      }}
+                    />
+                  }
+                  valueStyle={{
                     color: '#ffffff',
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    padding: '12px',
-                    borderRadius: '16px'
-                  }} />}
-                  valueStyle={{ 
-                    color: '#ffffff', 
-                    fontSize: '32px', 
-                    fontWeight: 800 
+                    fontSize: '32px',
+                    fontWeight: 800,
                   }}
                 />
               )}
@@ -1241,68 +1428,84 @@ export const InvoicesPage: React.FC = () => {
         </Row>
 
         {/* Materai Statistics */}
-        <Row gutter={[24, 24]} className="mb-6">
+        <Row gutter={[24, 24]} className='mb-6'>
           <Col xs={24} lg={12}>
-            <Card 
+            <Card
               style={{
                 borderRadius: '16px',
                 border: '1px solid #e2e8f0',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
                 background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
               }}
-              className="hover:shadow-lg hover:scale-[1.01]"
+              className='hover:shadow-lg hover:scale-[1.01]'
             >
               {isLoading ? (
-                <Skeleton.Input active size="small" style={{ width: '100%', height: '80px' }} />
+                <Skeleton.Input
+                  active
+                  size='small'
+                  style={{ width: '100%', height: '80px' }}
+                />
               ) : (
                 <Statistic
-                  title="Invoice Memerlukan Materai"
+                  title='Invoice Memerlukan Materai'
                   value={stats.materaiRequired}
-                  prefix={<FileTextOutlined style={{ 
-                    fontSize: '24px', 
-                    color: '#7c3aed',
-                    background: 'rgba(124, 58, 237, 0.15)',
-                    padding: '8px',
-                    borderRadius: '12px'
-                  }} />}
-                  valueStyle={{ 
-                    color: '#1e293b', 
-                    fontSize: '28px', 
-                    fontWeight: 700 
+                  prefix={
+                    <FileTextOutlined
+                      style={{
+                        fontSize: '24px',
+                        color: '#7c3aed',
+                        background: 'rgba(124, 58, 237, 0.15)',
+                        padding: '8px',
+                        borderRadius: '12px',
+                      }}
+                    />
+                  }
+                  valueStyle={{
+                    color: '#1e293b',
+                    fontSize: '28px',
+                    fontWeight: 700,
                   }}
                 />
               )}
             </Card>
           </Col>
           <Col xs={24} lg={12}>
-            <Card 
+            <Card
               style={{
                 borderRadius: '16px',
                 border: '1px solid #e2e8f0',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
                 background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
               }}
-              className="hover:shadow-lg hover:scale-[1.01]"
+              className='hover:shadow-lg hover:scale-[1.01]'
             >
               {isLoading ? (
-                <Skeleton.Input active size="small" style={{ width: '100%', height: '80px' }} />
+                <Skeleton.Input
+                  active
+                  size='small'
+                  style={{ width: '100%', height: '80px' }}
+                />
               ) : (
                 <Statistic
-                  title="Materai Belum Ditempel"
+                  title='Materai Belum Ditempel'
                   value={stats.materaiPending}
-                  prefix={<WarningOutlined style={{ 
-                    fontSize: '24px', 
-                    color: '#ea580c',
-                    background: 'rgba(234, 88, 12, 0.15)',
-                    padding: '8px',
-                    borderRadius: '12px'
-                  }} />}
-                  valueStyle={{ 
-                    color: '#1e293b', 
-                    fontSize: '28px', 
-                    fontWeight: 700 
+                  prefix={
+                    <WarningOutlined
+                      style={{
+                        fontSize: '24px',
+                        color: '#ea580c',
+                        background: 'rgba(234, 88, 12, 0.15)',
+                        padding: '8px',
+                        borderRadius: '12px',
+                      }}
+                    />
+                  }
+                  valueStyle={{
+                    color: '#1e293b',
+                    fontSize: '28px',
+                    fontWeight: 700,
                   }}
                 />
               )}
@@ -1311,55 +1514,55 @@ export const InvoicesPage: React.FC = () => {
         </Row>
 
         {/* Controls */}
-        <div className="flex justify-between items-center mb-4">
+        <div className='flex justify-between items-center mb-4'>
           <Space>
             <Input
-              data-testid="invoice-search-input"
-              placeholder="Cari invoice..."
+              data-testid='invoice-search-input'
+              placeholder='Cari invoice...'
               prefix={<SearchOutlined />}
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={e => setSearchText(e.target.value)}
               style={{ width: 300 }}
             />
             <Select
-              data-testid="invoice-filter-button"
-              placeholder="Filter status"
+              data-testid='invoice-filter-button'
+              placeholder='Filter status'
               value={statusFilter}
               onChange={setStatusFilter}
               style={{ width: 150 }}
               allowClear
             >
-              <Option value="DRAFT">Draft</Option>
-              <Option value="SENT">Terkirim</Option>
-              <Option value="PAID">Lunas</Option>
-              <Option value="OVERDUE">Jatuh Tempo</Option>
-              <Option value="CANCELLED">Dibatalkan</Option>
+              <Option value='DRAFT'>Draft</Option>
+              <Option value='SENT'>Terkirim</Option>
+              <Option value='PAID'>Lunas</Option>
+              <Option value='OVERDUE'>Jatuh Tempo</Option>
+              <Option value='CANCELLED'>Dibatalkan</Option>
             </Select>
             <Select
-              data-testid="materai-reminder-button"
-              placeholder="Filter materai"
+              data-testid='materai-reminder-button'
+              placeholder='Filter materai'
               value={materaiFilter}
               onChange={setMateraiFilter}
               style={{ width: 150 }}
               allowClear
             >
-              <Option value="required">Perlu Materai</Option>
-              <Option value="applied">Sudah Ditempel</Option>
-              <Option value="pending">Belum Ditempel</Option>
+              <Option value='required'>Perlu Materai</Option>
+              <Option value='applied'>Sudah Ditempel</Option>
+              <Option value='pending'>Belum Ditempel</Option>
             </Select>
           </Space>
-          
+
           <Space>
-            <Button 
-              data-testid="invoice-export-button" 
+            <Button
+              data-testid='invoice-export-button'
               icon={<ExportOutlined />}
               onClick={handleExport}
             >
               Export
             </Button>
             <Button
-              data-testid="create-invoice-button"
-              type="primary"
+              data-testid='create-invoice-button'
+              type='primary'
               icon={<PlusOutlined />}
               onClick={handleCreate}
             >
@@ -1367,39 +1570,41 @@ export const InvoicesPage: React.FC = () => {
             </Button>
           </Space>
         </div>
-        
+
         {/* Batch Operations */}
         {selectedRowKeys.length > 0 && (
-          <Card className="mb-4" size="small">
-            <div className="flex justify-between items-center">
-              <Typography.Text strong>{selectedRowKeys.length} invoice dipilih</Typography.Text>
+          <Card className='mb-4' size='small'>
+            <div className='flex justify-between items-center'>
+              <Typography.Text strong>
+                {selectedRowKeys.length} invoice dipilih
+              </Typography.Text>
               <Space>
-                <Button 
-                  size="small"
+                <Button
+                  size='small'
                   icon={<SendOutlined />}
                   loading={batchLoading}
                   onClick={handleBatchSend}
                 >
                   Kirim
                 </Button>
-                <Button 
-                  size="small"
+                <Button
+                  size='small'
                   icon={<CheckCircleOutlined />}
                   loading={batchLoading}
                   onClick={handleBatchMarkPaid}
                 >
                   Tandai Lunas
                 </Button>
-                <Button 
-                  size="small"
+                <Button
+                  size='small'
                   icon={<PrinterOutlined />}
                   loading={batchLoading}
                   onClick={handleBatchPrint}
                 >
                   Print
                 </Button>
-                <Button 
-                  size="small"
+                <Button
+                  size='small'
                   icon={<DeleteOutlined />}
                   danger
                   loading={batchLoading}
@@ -1407,8 +1612,8 @@ export const InvoicesPage: React.FC = () => {
                 >
                   Hapus
                 </Button>
-                <Button 
-                  size="small"
+                <Button
+                  size='small'
                   icon={<CloseOutlined />}
                   onClick={() => setSelectedRowKeys([])}
                 >
@@ -1426,7 +1631,7 @@ export const InvoicesPage: React.FC = () => {
           columns={columns}
           dataSource={filteredInvoices}
           loading={isLoading}
-          rowKey="id"
+          rowKey='id'
           rowSelection={rowSelection}
           pagination={{
             total: filteredInvoices.length,
@@ -1452,34 +1657,40 @@ export const InvoicesPage: React.FC = () => {
         width={800}
       >
         <Form
-          data-testid="invoice-form"
+          data-testid='invoice-form'
           form={form}
-          layout="vertical"
+          layout='vertical'
           onFinish={handleFormSubmit}
         >
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item
-                name="quotationId"
-                label="Quotation (Opsional)"
-                tooltip="Pilih quotation untuk mengisi data otomatis"
+                name='quotationId'
+                label='Quotation (Opsional)'
+                tooltip='Pilih quotation untuk mengisi data otomatis'
               >
-                <Select placeholder="Pilih quotation" allowClear onChange={handleQuotationChange}>
-                  {safeArray(quotations).filter(q => q.status === 'APPROVED').map(quotation => (
-                    <Option key={quotation.id} value={quotation.id}>
-                      {quotation.quotationNumber} - {quotation.client?.name}
-                    </Option>
-                  ))}
+                <Select
+                  placeholder='Pilih quotation'
+                  allowClear
+                  onChange={handleQuotationChange}
+                >
+                  {safeArray(quotations)
+                    .filter(q => q.status === 'APPROVED')
+                    .map(quotation => (
+                      <Option key={quotation.id} value={quotation.id}>
+                        {quotation.quotationNumber} - {quotation.client?.name}
+                      </Option>
+                    ))}
                 </Select>
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item
-                name="clientId"
-                label="Klien"
+                name='clientId'
+                label='Klien'
                 rules={[{ required: true, message: 'Pilih klien' }]}
               >
-                <Select placeholder="Pilih klien">
+                <Select placeholder='Pilih klien'>
                   {safeArray(clients).map(client => (
                     <Option key={client.id} value={client.id}>
                       {client.name}
@@ -1490,11 +1701,11 @@ export const InvoicesPage: React.FC = () => {
             </Col>
             <Col span={8}>
               <Form.Item
-                name="projectId"
-                label="Proyek"
+                name='projectId'
+                label='Proyek'
                 rules={[{ required: true, message: 'Pilih proyek' }]}
               >
-                <Select placeholder="Pilih proyek">
+                <Select placeholder='Pilih proyek'>
                   {safeArray(projects).map(project => (
                     <Option key={project.id} value={project.id}>
                       {project.number} - {project.description}
@@ -1508,87 +1719,108 @@ export const InvoicesPage: React.FC = () => {
           {/* Enhanced Price Inheritance Section */}
           {quotationId && (
             <ProgressiveDisclosure
-              title="Smart Price Inheritance"
-              description="Automatically inherit prices from quotations with 50% less data entry"
-              level="basic"
-              badge="SMART"
+              title='Smart Price Inheritance'
+              description='Automatically inherit prices from quotations with 50% less data entry'
+              level='basic'
+              badge='SMART'
               defaultOpen={true}
             >
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <Space direction='vertical' style={{ width: '100%' }}>
                 <Radio.Group
                   value={priceInheritanceMode}
                   onChange={handlePriceInheritanceModeChange}
                 >
-                  <Radio value="inherit">
+                  <Radio value='inherit'>
                     🤖 Auto-inherit from Quotation
                     {selectedQuotation && (
-                      <Text type="secondary" style={{ marginLeft: 8 }}>
-                        ({formatIDR(selectedQuotation.totalAmount || selectedQuotation.amountPerProject || 0)})
+                      <Text type='secondary' style={{ marginLeft: 8 }}>
+                        (
+                        {formatIDR(
+                          selectedQuotation.totalAmount ||
+                            selectedQuotation.amountPerProject ||
+                            0
+                        )}
+                        )
                       </Text>
                     )}
                   </Radio>
-                  <Radio value="custom">✏️ Enter Custom Price</Radio>
+                  <Radio value='custom'>✏️ Enter Custom Price</Radio>
                 </Radio.Group>
-                
+
                 {priceInheritanceMode === 'inherit' && selectedQuotation && (
                   <Alert
                     message={`💡 Smart inheritance: ${formatIDR(selectedQuotation.totalAmount || selectedQuotation.amountPerProject || 0)} will be automatically applied`}
-                    type="info"
+                    type='info'
                     showIcon
-                    style={{ backgroundColor: '#e6f7ff', border: '1px solid #91d5ff' }}
+                    style={{
+                      backgroundColor: '#e6f7ff',
+                      border: '1px solid #91d5ff',
+                    }}
                   />
                 )}
-                
-                <div className="text-xs text-gray-500 mt-2">
-                  💡 Tip: This smart feature reduces data entry by 50% and prevents pricing errors
+
+                <div className='text-xs text-gray-500 mt-2'>
+                  💡 Tip: This smart feature reduces data entry by 50% and
+                  prevents pricing errors
                 </div>
               </Space>
             </ProgressiveDisclosure>
           )}
 
           <Form.Item
-            name="totalAmount"
-            label="Total Jumlah"
+            name='totalAmount'
+            label='Total Jumlah'
             rules={[
               { required: true, message: 'Masukkan total jumlah' },
-              { type: 'number', min: 0, message: 'Total harus lebih dari 0' }
+              { type: 'number', min: 0, message: 'Total harus lebih dari 0' },
             ]}
           >
             <InputNumber
-              placeholder="0"
-              prefix="IDR"
-              formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-              parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
-              disabled={Boolean(quotationId && priceInheritanceMode === 'inherit')}
+              placeholder='0'
+              prefix='IDR'
+              formatter={value =>
+                value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
+              }
+              parser={value => (value ? value.replace(/\$\s?|(,*)/g, '') : '')}
+              disabled={Boolean(
+                quotationId && priceInheritanceMode === 'inherit'
+              )}
               style={{ width: '100%' }}
             />
           </Form.Item>
 
           <Form.Item
-            name="dueDate"
-            label="Batas Pembayaran"
+            name='dueDate'
+            label='Batas Pembayaran'
             rules={[{ required: true, message: 'Pilih tanggal' }]}
           >
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
           <Form.Item
-            name="paymentInfo"
-            label="Informasi Pembayaran"
-            rules={[{ required: true, message: 'Masukkan informasi pembayaran' }]}
+            name='paymentInfo'
+            label='Informasi Pembayaran'
+            rules={[
+              { required: true, message: 'Masukkan informasi pembayaran' },
+            ]}
           >
-            <TextArea rows={3} placeholder="Contoh: Bank BCA: 123-456-789 a.n. Perusahaan" />
+            <TextArea
+              rows={3}
+              placeholder='Contoh: Bank BCA: 123-456-789 a.n. Perusahaan'
+            />
           </Form.Item>
 
           <Form.Item
-            name="terms"
-            label="Syarat dan Ketentuan"
-            rules={[{ required: true, message: 'Masukkan syarat dan ketentuan' }]}
+            name='terms'
+            label='Syarat dan Ketentuan'
+            rules={[
+              { required: true, message: 'Masukkan syarat dan ketentuan' },
+            ]}
           >
-            <TextArea rows={3} placeholder="Pembayaran dalam 30 hari..." />
+            <TextArea rows={3} placeholder='Pembayaran dalam 30 hari...' />
           </Form.Item>
 
-          <div className="flex justify-end space-x-2">
+          <div className='flex justify-end space-x-2'>
             <Button
               onClick={() => {
                 setModalVisible(false)
@@ -1599,8 +1831,8 @@ export const InvoicesPage: React.FC = () => {
               {t('common.cancel')}
             </Button>
             <Button
-              type="primary"
-              htmlType="submit"
+              type='primary'
+              htmlType='submit'
               loading={createMutation.isPending || updateMutation.isPending}
             >
               {t('common.save')}
@@ -1622,27 +1854,29 @@ export const InvoicesPage: React.FC = () => {
       >
         <Form
           form={paymentForm}
-          layout="vertical"
+          layout='vertical'
           onFinish={handlePaymentSubmit}
         >
           <Form.Item
-            name="paidAt"
-            label="Tanggal Pembayaran"
+            name='paidAt'
+            label='Tanggal Pembayaran'
             rules={[{ required: true, message: 'Pilih tanggal pembayaran' }]}
           >
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
-          <div className="flex justify-end space-x-2">
-            <Button onClick={() => {
-              setPaymentModalVisible(false)
-              setPaymentInvoice(null)
-            }}>
+          <div className='flex justify-end space-x-2'>
+            <Button
+              onClick={() => {
+                setPaymentModalVisible(false)
+                setPaymentInvoice(null)
+              }}
+            >
               {t('common.cancel')}
             </Button>
             <Button
-              type="primary"
-              htmlType="submit"
+              type='primary'
+              htmlType='submit'
               loading={paymentMutation.isPending}
             >
               Tandai Lunas
@@ -1651,10 +1885,9 @@ export const InvoicesPage: React.FC = () => {
         </Form>
       </Modal>
 
-
       {/* Status Change Modal */}
       <Modal
-        title="Ubah Status Invoice"
+        title='Ubah Status Invoice'
         open={statusModalVisible}
         onOk={handleStatusModalOk}
         onCancel={handleStatusModalCancel}
@@ -1662,31 +1895,36 @@ export const InvoicesPage: React.FC = () => {
       >
         <Form
           form={statusForm}
-          layout="vertical"
+          layout='vertical'
           initialValues={{ status: statusInvoice?.status }}
         >
           <Form.Item
-            label="Status Baru"
-            name="status"
+            label='Status Baru'
+            name='status'
             rules={[{ required: true, message: 'Pilih status baru' }]}
           >
-            <Select placeholder="Pilih status">
-              {getValidStatusTransitions(statusInvoice?.status || 'DRAFT').map((transition) => (
-                <Select.Option key={transition.value} value={transition.value}>
-                  {transition.label}
-                </Select.Option>
-              ))}
+            <Select placeholder='Pilih status'>
+              {getValidStatusTransitions(statusInvoice?.status || 'DRAFT').map(
+                transition => (
+                  <Select.Option
+                    key={transition.value}
+                    value={transition.value}
+                  >
+                    {transition.label}
+                  </Select.Option>
+                )
+              )}
             </Select>
           </Form.Item>
         </Form>
       </Modal>
-      
+
       {/* Keyboard Shortcuts Help Modal */}
       <KeyboardShortcutsHelp
         visible={showKeyboardHelp}
         onClose={() => setShowKeyboardHelp(false)}
         shortcuts={shortcuts.shortcuts}
-        currentPage="invoices"
+        currentPage='invoices'
       />
     </div>
   )

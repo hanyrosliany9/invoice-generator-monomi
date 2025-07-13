@@ -11,14 +11,14 @@ import {
   AccessibleNumberInput,
   AccessibleTextArea,
   AccessibleDatePicker,
-  AccessibleFormActions
+  AccessibleFormActions,
 } from '../AccessibleForm'
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 describe('AccessibleForm Components', () => {

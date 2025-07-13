@@ -3,10 +3,17 @@
  * These utilities help test components and functions with various edge cases
  */
 
-import { ValidClient, ValidInvoice, ValidProject, ValidQuotation } from './type-guards'
+import {
+  ValidClient,
+  ValidInvoice,
+  ValidProject,
+  ValidQuotation,
+} from './type-guards'
 
 // Mock data generators for testing
-export const createMockClient = (overrides: Partial<ValidClient> = {}): ValidClient => ({
+export const createMockClient = (
+  overrides: Partial<ValidClient> = {}
+): ValidClient => ({
   id: 'client-1',
   name: 'Test Client',
   email: 'test@example.com',
@@ -18,10 +25,12 @@ export const createMockClient = (overrides: Partial<ValidClient> = {}): ValidCli
   totalPending: 500000,
   totalQuotations: 5,
   totalInvoices: 3,
-  ...overrides
+  ...overrides,
 })
 
-export const createMockInvoice = (overrides: Partial<ValidInvoice> = {}): ValidInvoice => ({
+export const createMockInvoice = (
+  overrides: Partial<ValidInvoice> = {}
+): ValidInvoice => ({
   id: 'invoice-1',
   number: 'INV-2025-001',
   clientName: 'Test Client',
@@ -31,10 +40,12 @@ export const createMockInvoice = (overrides: Partial<ValidInvoice> = {}): ValidI
   dueDate: '2025-08-01',
   materaiRequired: false,
   materaiApplied: false,
-  ...overrides
+  ...overrides,
 })
 
-export const createMockProject = (overrides: Partial<ValidProject> = {}): ValidProject => ({
+export const createMockProject = (
+  overrides: Partial<ValidProject> = {}
+): ValidProject => ({
   id: 'project-1',
   number: 'PRJ-PH-202507-001',
   description: 'Test Project',
@@ -48,10 +59,12 @@ export const createMockProject = (overrides: Partial<ValidProject> = {}): ValidP
   startDate: '2025-07-01',
   endDate: '2025-08-01',
   progress: 50,
-  ...overrides
+  ...overrides,
 })
 
-export const createMockQuotation = (overrides: Partial<ValidQuotation> = {}): ValidQuotation => ({
+export const createMockQuotation = (
+  overrides: Partial<ValidQuotation> = {}
+): ValidQuotation => ({
   id: 'quotation-1',
   number: 'QT-2025-001',
   clientName: 'Test Client',
@@ -59,11 +72,13 @@ export const createMockQuotation = (overrides: Partial<ValidQuotation> = {}): Va
   amount: 1500000,
   status: 'DRAFT',
   validUntil: '2025-08-01',
-  ...overrides
+  ...overrides,
 })
 
 // Edge case data generators
-export const createInvalidClient = (type: 'null' | 'undefined' | 'empty' | 'partial' | 'wrong-types') => {
+export const createInvalidClient = (
+  type: 'null' | 'undefined' | 'empty' | 'partial' | 'wrong-types'
+) => {
   switch (type) {
     case 'null':
       return null
@@ -80,14 +95,16 @@ export const createInvalidClient = (type: 'null' | 'undefined' | 'empty' | 'part
         email: '', // Empty string
         company: undefined, // Should be string
         totalPaid: 'not-a-number', // Should be number
-        status: 'invalid-status' // Should be 'active' | 'inactive'
+        status: 'invalid-status', // Should be 'active' | 'inactive'
       }
     default:
       return null
   }
 }
 
-export const createInvalidArray = (type: 'null' | 'undefined' | 'not-array' | 'mixed' | 'empty') => {
+export const createInvalidArray = (
+  type: 'null' | 'undefined' | 'not-array' | 'mixed' | 'empty'
+) => {
   switch (type) {
     case 'null':
       return null
@@ -96,7 +113,13 @@ export const createInvalidArray = (type: 'null' | 'undefined' | 'not-array' | 'm
     case 'not-array':
       return 'not an array'
     case 'mixed':
-      return [createMockClient(), null, undefined, 'invalid', createMockClient()]
+      return [
+        createMockClient(),
+        null,
+        undefined,
+        'invalid',
+        createMockClient(),
+      ]
     case 'empty':
       return []
     default:
@@ -107,25 +130,28 @@ export const createInvalidArray = (type: 'null' | 'undefined' | 'not-array' | 'm
 // Test scenarios for API responses
 export const apiResponseScenarios = {
   success: {
-    data: [createMockClient(), createMockClient({ id: 'client-2', name: 'Client 2' })]
+    data: [
+      createMockClient(),
+      createMockClient({ id: 'client-2', name: 'Client 2' }),
+    ],
   },
   emptyArray: {
-    data: []
+    data: [],
   },
   nullData: {
-    data: null
+    data: null,
   },
   undefinedData: {
-    data: undefined
+    data: undefined,
   },
   invalidData: {
-    data: 'not an array'
+    data: 'not an array',
   },
   mixedData: {
-    data: [createMockClient(), null, undefined, { invalid: 'object' }]
+    data: [createMockClient(), null, undefined, { invalid: 'object' }],
   },
   serverError: null,
-  networkError: undefined
+  networkError: undefined,
 }
 
 // Test utilities for form validation
@@ -134,33 +160,33 @@ export const formTestCases = {
     name: 'Test Client',
     email: 'test@example.com',
     company: 'PT Test Company',
-    phone: '021-12345678'
+    phone: '021-12345678',
   },
   emptyForm: {},
   nullForm: null,
   undefinedForm: undefined,
   partialForm: {
-    name: 'Test Client'
+    name: 'Test Client',
     // Missing required fields
   },
   invalidTypes: {
     name: 123,
     email: null,
     company: undefined,
-    phone: ''
+    phone: '',
   },
   emptyStrings: {
     name: '',
     email: '',
     company: '',
-    phone: ''
+    phone: '',
   },
   whitespaceStrings: {
     name: '   ',
     email: '  ',
     company: '\t',
-    phone: '\n'
-  }
+    phone: '\n',
+  },
 }
 
 // Test utilities for string operations
@@ -175,7 +201,7 @@ export const stringTestCases = {
   number: 123,
   boolean: true,
   object: { toString: () => 'object string' },
-  array: ['array', 'string']
+  array: ['array', 'string'],
 }
 
 // Test utilities for number operations
@@ -193,7 +219,7 @@ export const numberTestCases = {
   empty: '',
   boolean: true,
   object: { valueOf: () => 456 },
-  array: [123]
+  array: [123],
 }
 
 // Test utilities for array operations
@@ -206,8 +232,12 @@ export const arrayTestCases = {
   number: 123,
   object: { 0: 'a', 1: 'b', length: 2 }, // Array-like object
   mixed: [1, 'string', null, undefined, { id: 1 }],
-  nested: [[1, 2], [3, 4], [5, 6]],
-  sparse: [1, , , 4, 5] // Sparse array
+  nested: [
+    [1, 2],
+    [3, 4],
+    [5, 6],
+  ],
+  sparse: [1, , , 4, 5], // Sparse array
 }
 
 // Test utilities for date operations
@@ -219,7 +249,7 @@ export const dateTestCases = {
   undefined: undefined,
   empty: '',
   timestamp: 1720512000000,
-  invalidTimestamp: 'invalid timestamp'
+  invalidTimestamp: 'invalid timestamp',
 }
 
 // Helper functions for testing
@@ -230,7 +260,10 @@ export const expectSafeOperation = <T>(
 ): void => {
   try {
     const result = operation()
-    if (typeof global !== 'undefined' && typeof (global as any).expect !== 'undefined') {
+    if (
+      typeof global !== 'undefined' &&
+      typeof (global as any).expect !== 'undefined'
+    ) {
       const expect = (global as any).expect
       expect(result).not.toBeNull()
       expect(result).not.toBeUndefined()
@@ -238,7 +271,10 @@ export const expectSafeOperation = <T>(
     }
   } catch (error) {
     console.warn(`Safe operation failed: ${description}`, error)
-    if (typeof global !== 'undefined' && typeof (global as any).expect !== 'undefined') {
+    if (
+      typeof global !== 'undefined' &&
+      typeof (global as any).expect !== 'undefined'
+    ) {
       const expect = (global as any).expect
       expect(fallback).toBeDefined()
     }
@@ -252,7 +288,11 @@ export const testWithAllCases = <T>(
   description: string
 ): void => {
   // This function is designed to be used in test files where test and expect are available
-  if (typeof global !== 'undefined' && typeof (global as any).test !== 'undefined' && typeof (global as any).expect !== 'undefined') {
+  if (
+    typeof global !== 'undefined' &&
+    typeof (global as any).test !== 'undefined' &&
+    typeof (global as any).expect !== 'undefined'
+  ) {
     const test = (global as any).test
     const expect = (global as any).expect
     Object.entries(testCases).forEach(([caseName, testValue]) => {
@@ -267,19 +307,25 @@ export const testWithAllCases = <T>(
 // Mock API responses for testing
 export const mockApiResponses = {
   clients: {
-    success: () => Promise.resolve({ data: [createMockClient(), createMockClient({ id: 'client-2' })] }),
+    success: () =>
+      Promise.resolve({
+        data: [createMockClient(), createMockClient({ id: 'client-2' })],
+      }),
     empty: () => Promise.resolve({ data: [] }),
     error: () => Promise.reject(new Error('API Error')),
     invalid: () => Promise.resolve({ data: 'invalid data' }),
     null: () => Promise.resolve({ data: null }),
-    undefined: () => Promise.resolve({ data: undefined })
+    undefined: () => Promise.resolve({ data: undefined }),
   },
   invoices: {
-    success: () => Promise.resolve({ data: [createMockInvoice(), createMockInvoice({ id: 'invoice-2' })] }),
+    success: () =>
+      Promise.resolve({
+        data: [createMockInvoice(), createMockInvoice({ id: 'invoice-2' })],
+      }),
     empty: () => Promise.resolve({ data: [] }),
     error: () => Promise.reject(new Error('API Error')),
-    invalid: () => Promise.resolve({ data: 'invalid data' })
-  }
+    invalid: () => Promise.resolve({ data: 'invalid data' }),
+  },
 }
 
 // Component testing utilities
@@ -292,9 +338,9 @@ export const renderWithSafeData = (props: any = {}) => {
     projects: props.projects || [],
     quotations: props.quotations || [],
     loading: props.loading || false,
-    error: props.error || null
+    error: props.error || null,
   }
-  
+
   return { props: safeProps }
 }
 
@@ -305,14 +351,14 @@ export const measureSafeOperation = <T>(
 ): { result: T; averageTime: number } => {
   const start = performance.now()
   let result: T
-  
+
   for (let i = 0; i < iterations; i++) {
     result = operation()
   }
-  
+
   const end = performance.now()
   const averageTime = (end - start) / iterations
-  
+
   return { result: result!, averageTime }
 }
 
@@ -322,19 +368,19 @@ export const testMemoryLeak = (
   iterations: number = 1000
 ): boolean => {
   const initialMemory = (performance as any).memory?.usedJSHeapSize || 0
-  
+
   for (let i = 0; i < iterations; i++) {
     operation()
   }
-  
+
   // Force garbage collection if available
   if (typeof global !== 'undefined' && (global as any).gc) {
-    (global as any).gc()
+    ;(global as any).gc()
   }
-  
+
   const finalMemory = (performance as any).memory?.usedJSHeapSize || 0
   const memoryIncrease = finalMemory - initialMemory
-  
+
   // If memory increased by more than 10MB, consider it a potential leak
   return memoryIncrease < 10 * 1024 * 1024
 }
@@ -358,5 +404,5 @@ export default {
   mockApiResponses,
   renderWithSafeData,
   measureSafeOperation,
-  testMemoryLeak
+  testMemoryLeak,
 }

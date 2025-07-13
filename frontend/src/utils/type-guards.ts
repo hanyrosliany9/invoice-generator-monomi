@@ -29,26 +29,37 @@ export const isDefined = <T>(value: T | null | undefined): value is T => {
   return value !== null && value !== undefined
 }
 
-export const isNotEmpty = (value: string | null | undefined): value is string => {
+export const isNotEmpty = (
+  value: string | null | undefined
+): value is string => {
   return isString(value) && value.trim().length > 0
 }
 
 // Enhanced object validation
-export const hasProperty = <T extends Record<string, unknown>, K extends string>(
+export const hasProperty = <
+  T extends Record<string, unknown>,
+  K extends string,
+>(
   obj: T,
   key: K
 ): obj is T & Record<K, unknown> => {
   return isObject(obj) && key in obj
 }
 
-export const hasStringProperty = <T extends Record<string, unknown>, K extends string>(
+export const hasStringProperty = <
+  T extends Record<string, unknown>,
+  K extends string,
+>(
   obj: T,
   key: K
 ): obj is T & Record<K, string> => {
   return hasProperty(obj, key) && isString(obj[key])
 }
 
-export const hasNumberProperty = <T extends Record<string, unknown>, K extends string>(
+export const hasNumberProperty = <
+  T extends Record<string, unknown>,
+  K extends string,
+>(
   obj: T,
   key: K
 ): obj is T & Record<K, number> => {
@@ -72,19 +83,21 @@ export interface ValidClient {
 
 export const isValidClient = (value: unknown): value is ValidClient => {
   if (!isObject(value)) return false
-  
-  return hasStringProperty(value, 'id') &&
-         hasStringProperty(value, 'name') &&
-         hasStringProperty(value, 'email') &&
-         hasStringProperty(value, 'company') &&
-         hasStringProperty(value, 'contactPerson') &&
-         hasStringProperty(value, 'phone') &&
-         hasProperty(value, 'status') &&
-         (value.status === 'active' || value.status === 'inactive') &&
-         hasNumberProperty(value, 'totalPaid') &&
-         hasNumberProperty(value, 'totalPending') &&
-         hasNumberProperty(value, 'totalQuotations') &&
-         hasNumberProperty(value, 'totalInvoices')
+
+  return (
+    hasStringProperty(value, 'id') &&
+    hasStringProperty(value, 'name') &&
+    hasStringProperty(value, 'email') &&
+    hasStringProperty(value, 'company') &&
+    hasStringProperty(value, 'contactPerson') &&
+    hasStringProperty(value, 'phone') &&
+    hasProperty(value, 'status') &&
+    (value.status === 'active' || value.status === 'inactive') &&
+    hasNumberProperty(value, 'totalPaid') &&
+    hasNumberProperty(value, 'totalPending') &&
+    hasNumberProperty(value, 'totalQuotations') &&
+    hasNumberProperty(value, 'totalInvoices')
+  )
 }
 
 export interface ValidInvoice {
@@ -101,21 +114,23 @@ export interface ValidInvoice {
 
 export const isValidInvoice = (value: unknown): value is ValidInvoice => {
   if (!isObject(value)) return false
-  
+
   const validStatuses = ['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED']
-  
-  return hasStringProperty(value, 'id') &&
-         hasStringProperty(value, 'number') &&
-         hasStringProperty(value, 'clientName') &&
-         hasStringProperty(value, 'projectName') &&
-         hasNumberProperty(value, 'amount') &&
-         hasProperty(value, 'status') &&
-         validStatuses.includes(value.status as string) &&
-         hasStringProperty(value, 'dueDate') &&
-         hasProperty(value, 'materaiRequired') &&
-         isBoolean(value.materaiRequired) &&
-         hasProperty(value, 'materaiApplied') &&
-         isBoolean(value.materaiApplied)
+
+  return (
+    hasStringProperty(value, 'id') &&
+    hasStringProperty(value, 'number') &&
+    hasStringProperty(value, 'clientName') &&
+    hasStringProperty(value, 'projectName') &&
+    hasNumberProperty(value, 'amount') &&
+    hasProperty(value, 'status') &&
+    validStatuses.includes(value.status as string) &&
+    hasStringProperty(value, 'dueDate') &&
+    hasProperty(value, 'materaiRequired') &&
+    isBoolean(value.materaiRequired) &&
+    hasProperty(value, 'materaiApplied') &&
+    isBoolean(value.materaiApplied)
+  )
 }
 
 export interface ValidProject {
@@ -136,25 +151,27 @@ export interface ValidProject {
 
 export const isValidProject = (value: unknown): value is ValidProject => {
   if (!isObject(value)) return false
-  
+
   const validTypes = ['PRODUCTION', 'SOCIAL_MEDIA']
   const validStatuses = ['PLANNING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
-  
-  return hasStringProperty(value, 'id') &&
-         hasStringProperty(value, 'number') &&
-         hasStringProperty(value, 'description') &&
-         hasStringProperty(value, 'clientName') &&
-         hasProperty(value, 'type') &&
-         validTypes.includes(value.type as string) &&
-         hasProperty(value, 'status') &&
-         validStatuses.includes(value.status as string) &&
-         hasNumberProperty(value, 'basePrice') &&
-         hasNumberProperty(value, 'actualBudget') &&
-         hasNumberProperty(value, 'totalPaid') &&
-         hasNumberProperty(value, 'totalPending') &&
-         hasStringProperty(value, 'startDate') &&
-         hasStringProperty(value, 'endDate') &&
-         hasNumberProperty(value, 'progress')
+
+  return (
+    hasStringProperty(value, 'id') &&
+    hasStringProperty(value, 'number') &&
+    hasStringProperty(value, 'description') &&
+    hasStringProperty(value, 'clientName') &&
+    hasProperty(value, 'type') &&
+    validTypes.includes(value.type as string) &&
+    hasProperty(value, 'status') &&
+    validStatuses.includes(value.status as string) &&
+    hasNumberProperty(value, 'basePrice') &&
+    hasNumberProperty(value, 'actualBudget') &&
+    hasNumberProperty(value, 'totalPaid') &&
+    hasNumberProperty(value, 'totalPending') &&
+    hasStringProperty(value, 'startDate') &&
+    hasStringProperty(value, 'endDate') &&
+    hasNumberProperty(value, 'progress')
+  )
 }
 
 export interface ValidQuotation {
@@ -169,17 +186,19 @@ export interface ValidQuotation {
 
 export const isValidQuotation = (value: unknown): value is ValidQuotation => {
   if (!isObject(value)) return false
-  
+
   const validStatuses = ['DRAFT', 'SENT', 'APPROVED', 'DECLINED', 'REVISED']
-  
-  return hasStringProperty(value, 'id') &&
-         hasStringProperty(value, 'number') &&
-         hasStringProperty(value, 'clientName') &&
-         hasStringProperty(value, 'projectName') &&
-         hasNumberProperty(value, 'amount') &&
-         hasProperty(value, 'status') &&
-         validStatuses.includes(value.status as string) &&
-         hasStringProperty(value, 'validUntil')
+
+  return (
+    hasStringProperty(value, 'id') &&
+    hasStringProperty(value, 'number') &&
+    hasStringProperty(value, 'clientName') &&
+    hasStringProperty(value, 'projectName') &&
+    hasNumberProperty(value, 'amount') &&
+    hasProperty(value, 'status') &&
+    validStatuses.includes(value.status as string) &&
+    hasStringProperty(value, 'validUntil')
+  )
 }
 
 // Array validators
@@ -230,14 +249,17 @@ export const validateApiArrayResponse = <T>(
 }
 
 // Create typed safe getters
-export const createSafeGetter = <T extends Record<string, unknown>, K extends keyof T>(
+export const createSafeGetter = <
+  T extends Record<string, unknown>,
+  K extends keyof T,
+>(
   validator: (value: unknown) => value is T[K]
 ) => {
   return (obj: T | null | undefined, key: K, fallback: T[K]): T[K] => {
     if (!obj || !hasProperty(obj, key as string)) {
       return fallback
     }
-    
+
     const value = obj[key]
     return validator(value) ? value : fallback
   }
@@ -259,32 +281,29 @@ export const assertDefined = <T>(
   return value
 }
 
-export const assertString = (
-  value: unknown,
-  context: string
-): string => {
+export const assertString = (value: unknown, context: string): string => {
   if (!isString(value)) {
-    throw new Error(`Expected string in context: ${context}, got: ${typeof value}`)
+    throw new Error(
+      `Expected string in context: ${context}, got: ${typeof value}`
+    )
   }
   return value
 }
 
-export const assertNumber = (
-  value: unknown,
-  context: string
-): number => {
+export const assertNumber = (value: unknown, context: string): number => {
   if (!isNumber(value)) {
-    throw new Error(`Expected number in context: ${context}, got: ${typeof value}`)
+    throw new Error(
+      `Expected number in context: ${context}, got: ${typeof value}`
+    )
   }
   return value
 }
 
-export const assertArray = <T>(
-  value: unknown,
-  context: string
-): T[] => {
+export const assertArray = <T>(value: unknown, context: string): T[] => {
   if (!isArray(value)) {
-    throw new Error(`Expected array in context: ${context}, got: ${typeof value}`)
+    throw new Error(
+      `Expected array in context: ${context}, got: ${typeof value}`
+    )
   }
   return value as T[]
 }

@@ -8,321 +8,337 @@ import {
   Body,
   Query,
   UseGuards,
-  Request
-} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { MateraiService } from './materai.service';
-import { ApplyMateraiDto, BulkApplyMateraiDto, UpdateMateraiConfigDto } from './dto';
-import { getErrorMessage } from '../../common/utils/error-handling.util';
+  Request,
+} from "@nestjs/common";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from "@nestjs/swagger";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { MateraiService } from "./materai.service";
+import {
+  ApplyMateraiDto,
+  BulkApplyMateraiDto,
+  UpdateMateraiConfigDto,
+} from "./dto";
+import { getErrorMessage } from "../../common/utils/error-handling.util";
 
-@ApiTags('materai')
+@ApiTags("materai")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('materai')
+@Controller("materai")
 export class MateraiController {
   constructor(private readonly materaiService: MateraiService) {}
 
-  @Get('check/:invoiceId')
-  @ApiOperation({ summary: 'Check if invoice requires materai' })
+  @Get("check/:invoiceId")
+  @ApiOperation({ summary: "Check if invoice requires materai" })
   @ApiResponse({
     status: 200,
-    description: 'Materai requirement check result',
+    description: "Materai requirement check result",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
         data: {
-          type: 'object',
+          type: "object",
           properties: {
-            required: { type: 'boolean' },
-            amount: { type: 'number' },
-            threshold: { type: 'number' },
-            message: { type: 'string' },
+            required: { type: "boolean" },
+            amount: { type: "number" },
+            threshold: { type: "number" },
+            message: { type: "string" },
             compliance: {
-              type: 'object',
+              type: "object",
               properties: {
-                lawReference: { type: 'string' },
-                effectiveDate: { type: 'string' },
-                penalty: { type: 'string' }
-              }
-            }
-          }
+                lawReference: { type: "string" },
+                effectiveDate: { type: "string" },
+                penalty: { type: "string" },
+              },
+            },
+          },
         },
-        message: { type: 'string' },
-        status: { type: 'string', enum: ['success', 'error'] }
-      }
-    }
+        message: { type: "string" },
+        status: { type: "string", enum: ["success", "error"] },
+      },
+    },
   })
-  async checkMateraiRequirement(@Param('invoiceId') invoiceId: string) {
+  async checkMateraiRequirement(@Param("invoiceId") invoiceId: string) {
     try {
-      const result = await this.materaiService.checkMateraiRequirement(invoiceId);
+      const result =
+        await this.materaiService.checkMateraiRequirement(invoiceId);
       return {
         data: result,
-        message: 'Materai requirement checked successfully',
-        status: 'success'
+        message: "Materai requirement checked successfully",
+        status: "success",
       };
     } catch (error) {
       return {
         data: null,
         message: getErrorMessage(error),
-        status: 'error'
+        status: "error",
       };
     }
   }
 
-  @Post('apply/:invoiceId')
-  @ApiOperation({ summary: 'Apply materai to invoice' })
+  @Post("apply/:invoiceId")
+  @ApiOperation({ summary: "Apply materai to invoice" })
   @ApiResponse({
     status: 201,
-    description: 'Materai applied successfully',
+    description: "Materai applied successfully",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        data: { type: 'null' },
-        message: { type: 'string' },
-        status: { type: 'string', enum: ['success', 'error'] }
-      }
-    }
+        data: { type: "null" },
+        message: { type: "string" },
+        status: { type: "string", enum: ["success", "error"] },
+      },
+    },
   })
   async applyMaterai(
-    @Param('invoiceId') invoiceId: string,
+    @Param("invoiceId") invoiceId: string,
     @Body() applyMateraiDto: ApplyMateraiDto,
-    @Request() req: any
+    @Request() req: any,
   ) {
     try {
       await this.materaiService.applyMaterai(invoiceId, req.user.id);
       return {
         data: null,
-        message: 'Materai applied successfully',
-        status: 'success'
+        message: "Materai applied successfully",
+        status: "success",
       };
     } catch (error) {
       return {
         data: null,
         message: getErrorMessage(error),
-        status: 'error'
+        status: "error",
       };
     }
   }
 
-  @Delete('remove/:invoiceId')
-  @ApiOperation({ summary: 'Remove materai from invoice' })
+  @Delete("remove/:invoiceId")
+  @ApiOperation({ summary: "Remove materai from invoice" })
   @ApiResponse({
     status: 200,
-    description: 'Materai removed successfully',
+    description: "Materai removed successfully",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        data: { type: 'null' },
-        message: { type: 'string' },
-        status: { type: 'string', enum: ['success', 'error'] }
-      }
-    }
+        data: { type: "null" },
+        message: { type: "string" },
+        status: { type: "string", enum: ["success", "error"] },
+      },
+    },
   })
   async removeMaterai(
-    @Param('invoiceId') invoiceId: string,
-    @Request() req: any
+    @Param("invoiceId") invoiceId: string,
+    @Request() req: any,
   ) {
     try {
       await this.materaiService.removeMaterai(invoiceId, req.user.id);
       return {
         data: null,
-        message: 'Materai removed successfully',
-        status: 'success'
+        message: "Materai removed successfully",
+        status: "success",
       };
     } catch (error) {
       return {
         data: null,
         message: getErrorMessage(error),
-        status: 'error'
+        status: "error",
       };
     }
   }
 
-  @Post('bulk-apply')
-  @ApiOperation({ summary: 'Apply materai to multiple invoices' })
+  @Post("bulk-apply")
+  @ApiOperation({ summary: "Apply materai to multiple invoices" })
   @ApiResponse({
     status: 201,
-    description: 'Bulk materai application result',
+    description: "Bulk materai application result",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
         data: {
-          type: 'object',
+          type: "object",
           properties: {
-            success: { type: 'array', items: { type: 'string' } },
-            failed: { type: 'array', items: { type: 'string' } }
-          }
+            success: { type: "array", items: { type: "string" } },
+            failed: { type: "array", items: { type: "string" } },
+          },
         },
-        message: { type: 'string' },
-        status: { type: 'string', enum: ['success', 'error'] }
-      }
-    }
+        message: { type: "string" },
+        status: { type: "string", enum: ["success", "error"] },
+      },
+    },
   })
   async bulkApplyMaterai(
     @Body() bulkApplyMateraiDto: BulkApplyMateraiDto,
-    @Request() req: any
+    @Request() req: any,
   ) {
     try {
       const result = await this.materaiService.bulkApplyMaterai(
         bulkApplyMateraiDto.invoiceIds,
-        req.user.id
+        req.user.id,
       );
       return {
         data: result,
         message: `Materai applied to ${result.success.length} invoices, ${result.failed.length} failed`,
-        status: 'success'
+        status: "success",
       };
     } catch (error) {
       return {
         data: null,
         message: getErrorMessage(error),
-        status: 'error'
+        status: "error",
       };
     }
   }
 
-  @Get('stats')
-  @ApiOperation({ summary: 'Get materai statistics' })
+  @Get("stats")
+  @ApiOperation({ summary: "Get materai statistics" })
   @ApiResponse({
     status: 200,
-    description: 'Materai statistics retrieved successfully',
+    description: "Materai statistics retrieved successfully",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
         data: {
-          type: 'object',
+          type: "object",
           properties: {
-            totalInvoicesRequiringMaterai: { type: 'number' },
-            totalInvoicesWithMaterai: { type: 'number' },
-            totalInvoicesWithoutMaterai: { type: 'number' },
-            complianceRate: { type: 'number' },
-            totalStampDutyAmount: { type: 'number' },
+            totalInvoicesRequiringMaterai: { type: "number" },
+            totalInvoicesWithMaterai: { type: "number" },
+            totalInvoicesWithoutMaterai: { type: "number" },
+            complianceRate: { type: "number" },
+            totalStampDutyAmount: { type: "number" },
             recentMateraiApplications: {
-              type: 'array',
+              type: "array",
               items: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  invoiceId: { type: 'string' },
-                  invoiceNumber: { type: 'string' },
-                  amount: { type: 'string' },
-                  appliedAt: { type: 'string' },
-                  clientName: { type: 'string' }
-                }
-              }
-            }
-          }
+                  invoiceId: { type: "string" },
+                  invoiceNumber: { type: "string" },
+                  amount: { type: "string" },
+                  appliedAt: { type: "string" },
+                  clientName: { type: "string" },
+                },
+              },
+            },
+          },
         },
-        message: { type: 'string' },
-        status: { type: 'string', enum: ['success', 'error'] }
-      }
-    }
+        message: { type: "string" },
+        status: { type: "string", enum: ["success", "error"] },
+      },
+    },
   })
   async getMateraiStats() {
     try {
       const stats = await this.materaiService.getMateraiStats();
       return {
         data: stats,
-        message: 'Materai statistics retrieved successfully',
-        status: 'success'
+        message: "Materai statistics retrieved successfully",
+        status: "success",
       };
     } catch (error) {
       return {
         data: null,
         message: getErrorMessage(error),
-        status: 'error'
+        status: "error",
       };
     }
   }
 
-  @Get('reminders')
-  @ApiOperation({ summary: 'Get invoices requiring materai reminders' })
+  @Get("reminders")
+  @ApiOperation({ summary: "Get invoices requiring materai reminders" })
   @ApiResponse({
     status: 200,
-    description: 'Invoices requiring materai reminders retrieved successfully'
+    description: "Invoices requiring materai reminders retrieved successfully",
   })
   async getInvoicesRequiringMateraiReminders() {
     try {
-      const invoices = await this.materaiService.getInvoicesRequiringMateraiReminders();
+      const invoices =
+        await this.materaiService.getInvoicesRequiringMateraiReminders();
       return {
         data: invoices,
-        message: 'Invoices requiring materai reminders retrieved successfully',
-        status: 'success'
+        message: "Invoices requiring materai reminders retrieved successfully",
+        status: "success",
       };
     } catch (error) {
       return {
         data: null,
         message: getErrorMessage(error),
-        status: 'error'
+        status: "error",
       };
     }
   }
 
-  @Get('config')
-  @ApiOperation({ summary: 'Get materai configuration' })
+  @Get("config")
+  @ApiOperation({ summary: "Get materai configuration" })
   @ApiResponse({
     status: 200,
-    description: 'Materai configuration retrieved successfully'
+    description: "Materai configuration retrieved successfully",
   })
   async getMateraiConfig() {
     try {
       const config = this.materaiService.getMateraiConfig();
       return {
         data: config,
-        message: 'Materai configuration retrieved successfully',
-        status: 'success'
+        message: "Materai configuration retrieved successfully",
+        status: "success",
       };
     } catch (error) {
       return {
         data: null,
         message: getErrorMessage(error),
-        status: 'error'
+        status: "error",
       };
     }
   }
 
-  @Patch('config')
-  @ApiOperation({ summary: 'Update materai configuration' })
+  @Patch("config")
+  @ApiOperation({ summary: "Update materai configuration" })
   @ApiResponse({
     status: 200,
-    description: 'Materai configuration updated successfully'
+    description: "Materai configuration updated successfully",
   })
-  async updateMateraiConfig(@Body() updateMateraiConfigDto: UpdateMateraiConfigDto) {
+  async updateMateraiConfig(
+    @Body() updateMateraiConfigDto: UpdateMateraiConfigDto,
+  ) {
     try {
-      const config = await this.materaiService.updateMateraiConfig(updateMateraiConfigDto);
+      const config = await this.materaiService.updateMateraiConfig(
+        updateMateraiConfigDto,
+      );
       return {
         data: config,
-        message: 'Materai configuration updated successfully',
-        status: 'success'
+        message: "Materai configuration updated successfully",
+        status: "success",
       };
     } catch (error) {
       return {
         data: null,
         message: getErrorMessage(error),
-        status: 'error'
+        status: "error",
       };
     }
   }
 
-  @Get('validate/:invoiceId')
-  @ApiOperation({ summary: 'Validate materai compliance for invoice' })
+  @Get("validate/:invoiceId")
+  @ApiOperation({ summary: "Validate materai compliance for invoice" })
   @ApiResponse({
     status: 200,
-    description: 'Materai compliance validation result'
+    description: "Materai compliance validation result",
   })
-  async validateMateraiCompliance(@Param('invoiceId') invoiceId: string) {
+  async validateMateraiCompliance(@Param("invoiceId") invoiceId: string) {
     try {
-      const result = await this.materaiService.validateMateraiCompliance(invoiceId);
+      const result =
+        await this.materaiService.validateMateraiCompliance(invoiceId);
       return {
         data: result,
-        message: 'Materai compliance validated successfully',
-        status: 'success'
+        message: "Materai compliance validated successfully",
+        status: "success",
       };
     } catch (error) {
       return {
         data: null,
         message: getErrorMessage(error),
-        status: 'error'
+        status: "error",
       };
     }
   }

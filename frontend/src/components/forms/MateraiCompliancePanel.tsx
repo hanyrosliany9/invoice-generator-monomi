@@ -1,21 +1,21 @@
 import React from 'react'
 import {
-  Card,
   Alert,
-  Statistic,
-  Row,
+  Card,
   Col,
-  Tag,
-  Space,
-  Typography,
-  Tooltip,
   Progress,
+  Row,
+  Space,
+  Statistic,
+  Tag,
+  Tooltip,
+  Typography,
 } from 'antd'
 import {
   BankOutlined,
-  WarningOutlined,
   CheckCircleOutlined,
   InfoCircleOutlined,
+  WarningOutlined,
 } from '@ant-design/icons'
 import { formatIDR } from '../../utils/currency'
 
@@ -44,8 +44,11 @@ export const MateraiCompliancePanel: React.FC<MateraiCompliancePanelProps> = ({
   'data-testid': dataTestId,
 }) => {
   const requiresMaterai = totalAmount > MATERAI_THRESHOLD
-  const thresholdPercentage = Math.min((totalAmount / MATERAI_THRESHOLD) * 100, 100)
-  
+  const thresholdPercentage = Math.min(
+    (totalAmount / MATERAI_THRESHOLD) * 100,
+    100
+  )
+
   const getStatusConfig = (status: MateraiStatus, required: boolean) => {
     if (!required) {
       return {
@@ -63,7 +66,8 @@ export const MateraiCompliancePanel: React.FC<MateraiCompliancePanelProps> = ({
           color: 'success',
           icon: <CheckCircleOutlined />,
           message: 'Materai applied',
-          description: 'Document complies with Indonesian stamp duty requirements',
+          description:
+            'Document complies with Indonesian stamp duty requirements',
           alertType: 'success' as const,
         }
       case 'REQUIRED':
@@ -88,19 +92,19 @@ export const MateraiCompliancePanel: React.FC<MateraiCompliancePanelProps> = ({
   const statusConfig = getStatusConfig(currentStatus, requiresMaterai)
 
   return (
-    <Card 
+    <Card
       className={className}
       data-testid={dataTestId}
       title={
         <Space>
           <BankOutlined />
           <span>Materai Compliance</span>
-          <Tooltip title="Indonesian stamp duty requirements for documents over 5 million IDR">
+          <Tooltip title='Indonesian stamp duty requirements for documents over 5 million IDR'>
             <InfoCircleOutlined style={{ color: '#1890ff' }} />
           </Tooltip>
         </Space>
       }
-      size="small"
+      size='small'
     >
       {/* Compliance Status Alert */}
       <Alert
@@ -118,10 +122,10 @@ export const MateraiCompliancePanel: React.FC<MateraiCompliancePanelProps> = ({
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Statistic
-                title="Document Total"
+                title='Document Total'
                 value={totalAmount}
-                formatter={(value) => formatIDR(Number(value))}
-                valueStyle={{ 
+                formatter={value => formatIDR(Number(value))}
+                valueStyle={{
                   color: requiresMaterai ? '#faad14' : '#52c41a',
                   fontSize: '18px',
                 }}
@@ -129,10 +133,10 @@ export const MateraiCompliancePanel: React.FC<MateraiCompliancePanelProps> = ({
             </Col>
             <Col xs={24} sm={12}>
               <Statistic
-                title="Materai Threshold"
+                title='Materai Threshold'
                 value={MATERAI_THRESHOLD}
-                formatter={(value) => formatIDR(Number(value))}
-                valueStyle={{ 
+                formatter={value => formatIDR(Number(value))}
+                valueStyle={{
                   color: '#8c8c8c',
                   fontSize: '18px',
                 }}
@@ -142,8 +146,14 @@ export const MateraiCompliancePanel: React.FC<MateraiCompliancePanelProps> = ({
 
           {/* Threshold Progress Bar */}
           <div style={{ marginTop: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <Text type="secondary">Amount vs Threshold</Text>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: '8px',
+              }}
+            >
+              <Text type='secondary'>Amount vs Threshold</Text>
               <Text strong>{thresholdPercentage.toFixed(1)}%</Text>
             </div>
             <Progress
@@ -153,7 +163,7 @@ export const MateraiCompliancePanel: React.FC<MateraiCompliancePanelProps> = ({
                 '80%': '#faad14',
                 '100%': '#ff4d4f',
               }}
-              size="small"
+              size='small'
               showInfo={false}
             />
           </div>
@@ -162,25 +172,25 @@ export const MateraiCompliancePanel: React.FC<MateraiCompliancePanelProps> = ({
 
       {/* Materai Information */}
       {requiresMaterai && (
-        <Card size="small" style={{ backgroundColor: '#fff7e6' }}>
+        <Card size='small' style={{ backgroundColor: '#fff7e6' }}>
           <Title level={5} style={{ margin: 0, marginBottom: '8px' }}>
             <BankOutlined style={{ marginRight: '8px', color: '#faad14' }} />
             Materai Requirements
           </Title>
-          <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          <Space direction='vertical' size='small' style={{ width: '100%' }}>
             <div>
               <Text strong>Stamp Value: </Text>
               <Text code>{formatIDR(MATERAI_VALUE)}</Text>
             </div>
             <div>
               <Text strong>Application: </Text>
-              <Text type="secondary">
+              <Text type='secondary'>
                 Physical stamp must be affixed to the original document
               </Text>
             </div>
             <div>
               <Text strong>Legal Basis: </Text>
-              <Text type="secondary">
+              <Text type='secondary'>
                 UU No. 10 Tahun 2020 (Stamp Duty Law)
               </Text>
             </div>
@@ -191,7 +201,7 @@ export const MateraiCompliancePanel: React.FC<MateraiCompliancePanelProps> = ({
       {/* Status Tags */}
       <div style={{ marginTop: '16px', textAlign: 'center' }}>
         <Space wrap>
-          <Tag 
+          <Tag
             color={statusConfig.color}
             icon={statusConfig.icon}
             style={{ fontSize: '14px', padding: '4px 12px' }}
@@ -199,23 +209,27 @@ export const MateraiCompliancePanel: React.FC<MateraiCompliancePanelProps> = ({
             {statusConfig.message}
           </Tag>
           {requiresMaterai && (
-            <Tag color="orange">
-              {formatIDR(MATERAI_VALUE)} Required
-            </Tag>
+            <Tag color='orange'>{formatIDR(MATERAI_VALUE)} Required</Tag>
           )}
-          <Tag color="blue">
-            Indonesian Compliance
-          </Tag>
+          <Tag color='blue'>Indonesian Compliance</Tag>
         </Space>
       </div>
 
       {/* Compliance Notes */}
-      <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f6ffed', borderRadius: '6px' }}>
-        <Text type="secondary" style={{ fontSize: '12px' }}>
+      <div
+        style={{
+          marginTop: '16px',
+          padding: '12px',
+          backgroundColor: '#f6ffed',
+          borderRadius: '6px',
+        }}
+      >
+        <Text type='secondary' style={{ fontSize: '12px' }}>
           <InfoCircleOutlined style={{ marginRight: '4px' }} />
-          <strong>Note:</strong> Materai (stamp duty) is automatically calculated based on document total. 
-          For amounts above {formatIDR(MATERAI_THRESHOLD)}, a physical {formatIDR(MATERAI_VALUE)} stamp 
-          must be applied to the original document as per Indonesian law.
+          <strong>Note:</strong> Materai (stamp duty) is automatically
+          calculated based on document total. For amounts above{' '}
+          {formatIDR(MATERAI_THRESHOLD)}, a physical {formatIDR(MATERAI_VALUE)}{' '}
+          stamp must be applied to the original document as per Indonesian law.
         </Text>
       </div>
     </Card>

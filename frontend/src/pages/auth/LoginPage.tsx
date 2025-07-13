@@ -21,7 +21,7 @@ export const LoginPage: React.FC = () => {
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
-    onSuccess: (data) => {
+    onSuccess: data => {
       login(data.user, data.access_token)
       navigate('/dashboard')
     },
@@ -39,87 +39,105 @@ export const LoginPage: React.FC = () => {
       {loginMutation.error && (
         <Alert
           message={loginMutation.error?.message || t('auth.invalidCredentials')}
-          type="error"
+          type='error'
           showIcon
-          style={{ 
+          style={{
             marginBottom: '24px',
             borderRadius: '12px',
             border: '1px solid #fecaca',
-            background: '#fef2f2'
+            background: '#fef2f2',
           }}
         />
       )}
-      
+
       <Form
         form={form}
-        name="login"
+        name='login'
         onFinish={handleSubmit}
-        layout="vertical"
-        size="large"
+        layout='vertical'
+        size='large'
         style={{ marginTop: '8px' }}
-        data-testid="login-form"
+        data-testid='login-form'
       >
         <Form.Item
-          name="email"
-          label={<span style={{ color: '#374151', fontWeight: 600 }}>{t('auth.email')}</span>}
+          name='email'
+          label={
+            <span style={{ color: '#374151', fontWeight: 600 }}>
+              {t('auth.email')}
+            </span>
+          }
           rules={[
-            { required: true, message: t('validation.required', { field: 'Email' }) },
+            {
+              required: true,
+              message: t('validation.required', { field: 'Email' }),
+            },
             { type: 'email', message: t('validation.email') },
           ]}
           style={{ marginBottom: '24px' }}
         >
           <Input
             prefix={<UserOutlined style={{ color: '#6b7280' }} />}
-            placeholder="nama@email.com"
+            placeholder='nama@email.com'
             style={{
               borderRadius: '12px',
               border: '2px solid #e5e7eb',
               padding: '12px 16px',
               fontSize: '16px',
-              height: '52px'
+              height: '52px',
             }}
-            data-testid="email-input"
+            data-testid='email-input'
           />
         </Form.Item>
 
         <Form.Item
-          name="password"
-          label={<span style={{ color: '#374151', fontWeight: 600 }}>{t('auth.password')}</span>}
+          name='password'
+          label={
+            <span style={{ color: '#374151', fontWeight: 600 }}>
+              {t('auth.password')}
+            </span>
+          }
           rules={[
-            { required: true, message: t('validation.required', { field: 'Password' }) },
+            {
+              required: true,
+              message: t('validation.required', { field: 'Password' }),
+            },
           ]}
           style={{ marginBottom: '24px' }}
         >
           <Input.Password
             prefix={<LockOutlined style={{ color: '#6b7280' }} />}
-            placeholder="Masukkan password"
+            placeholder='Masukkan password'
             style={{
               borderRadius: '12px',
               border: '2px solid #e5e7eb',
               padding: '12px 16px',
               fontSize: '16px',
-              height: '52px'
+              height: '52px',
             }}
-            data-testid="password-input"
+            data-testid='password-input'
           />
         </Form.Item>
 
         <Form.Item style={{ marginBottom: '32px' }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center' 
-          }}>
-            <Form.Item name="remember" valuePropName="checked" noStyle>
-              <Checkbox style={{ color: '#6b7280' }}>{t('auth.rememberMe')}</Checkbox>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Form.Item name='remember' valuePropName='checked' noStyle>
+              <Checkbox style={{ color: '#6b7280' }}>
+                {t('auth.rememberMe')}
+              </Checkbox>
             </Form.Item>
-            <a 
-              href="#" 
-              style={{ 
-                color: '#6366f1', 
+            <a
+              href='#'
+              style={{
+                color: '#6366f1',
                 textDecoration: 'none',
                 fontWeight: 600,
-                fontSize: '14px'
+                fontSize: '14px',
               }}
             >
               {t('auth.forgotPassword')}
@@ -129,8 +147,8 @@ export const LoginPage: React.FC = () => {
 
         <Form.Item>
           <Button
-            type="primary"
-            htmlType="submit"
+            type='primary'
+            htmlType='submit'
             loading={loginMutation.isPending}
             block
             style={{
@@ -141,9 +159,9 @@ export const LoginPage: React.FC = () => {
               fontSize: '16px',
               fontWeight: 600,
               boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
             }}
-            data-testid="login-button"
+            data-testid='login-button'
           >
             {t('auth.login')}
           </Button>

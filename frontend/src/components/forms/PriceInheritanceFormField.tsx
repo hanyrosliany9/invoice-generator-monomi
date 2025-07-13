@@ -6,51 +6,54 @@ import { Form, FormItemProps } from 'antd'
 import { useWatch } from 'antd/es/form/Form'
 
 import { PriceInheritanceFlow } from './PriceInheritanceFlow'
-import { 
-  usePriceInheritanceFormField,
+import {
+  PriceInheritanceActions,
   PriceInheritanceState,
-  PriceInheritanceActions 
+  usePriceInheritanceFormField,
 } from '../../hooks/usePriceInheritance'
 import {
+  PriceInheritanceConfig,
   PriceInheritanceMode,
   PriceValidationResult,
-  PriceInheritanceConfig
 } from './types/priceInheritance.types'
 
-export interface PriceInheritanceFormFieldProps extends Omit<FormItemProps, 'children'> {
+export interface PriceInheritanceFormFieldProps
+  extends Omit<FormItemProps, 'children'> {
   // Form integration
   name: string | string[]
   form?: any // Ant Design form instance
-  
+
   // Entity configuration
   entityType: 'quotation' | 'invoice'
   entityId: string
-  
+
   // Price inheritance options
   defaultMode?: PriceInheritanceMode
   allowCustomOverride?: boolean
   enableMateraiValidation?: boolean
   enableBusinessEtiquette?: boolean
   enableUserTesting?: boolean
-  
+
   // UI configuration
   showVisualIndicators?: boolean
   showDeviationWarnings?: boolean
   compactMode?: boolean
-  
+
   // Event handlers
   onValidationChange?: (result: PriceValidationResult) => void
   onConfigChange?: (config: PriceInheritanceConfig) => void
   onModeChange?: (mode: PriceInheritanceMode) => void
-  
+
   // Indonesian localization
   indonesianLocale?: boolean
-  
+
   // Custom validation rules (in addition to price inheritance)
   additionalRules?: any[]
 }
 
-export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps> = ({
+export const PriceInheritanceFormField: React.FC<
+  PriceInheritanceFormFieldProps
+> = ({
   name,
   form: externalForm,
   entityType,
@@ -74,35 +77,36 @@ export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps>
 }) => {
   const internalForm = Form.useFormInstance()
   const form = externalForm || internalForm
-  
+
   // Get field name as string for easier handling
   const fieldName = Array.isArray(name) ? name.join('.') : name
-  
+
   // Watch the form field value
   const fieldValue = useWatch(name, form)
-  
+
   // Initialize price inheritance hook with form integration
-  const [state, actions]: [PriceInheritanceState, PriceInheritanceActions] = usePriceInheritanceFormField(fieldName, form, {
-    entityType,
-    entityId,
-    defaultMode,
-    enableRealTimeValidation: true,
-    enableUserTesting,
-    onValidationChange: (result) => {
-      // Update form validation state
-      updateFormValidation(result)
-      onValidationChange?.(result)
-    },
-    onConfigChange: (config) => {
-      // Sync with external handlers
-      onConfigChange?.(config)
-    }
-  })
+  const [state, actions]: [PriceInheritanceState, PriceInheritanceActions] =
+    usePriceInheritanceFormField(fieldName, form, {
+      entityType,
+      entityId,
+      defaultMode,
+      enableRealTimeValidation: true,
+      enableUserTesting,
+      onValidationChange: result => {
+        // Update form validation state
+        updateFormValidation(result)
+        onValidationChange?.(result)
+      },
+      onConfigChange: config => {
+        // Sync with external handlers
+        onConfigChange?.(config)
+      },
+    })
 
   // Update form field validation based on price inheritance validation
   const updateFormValidation = (validationResult: PriceValidationResult) => {
     const formValidationRules = [...additionalRules]
-    
+
     // Add price inheritance validation rules
     if (!validationResult.isValid) {
       formValidationRules.push({
@@ -110,23 +114,27 @@ export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps>
           const errorMessages = validationResult.errors
             .filter(error => error.isBlocking)
             .map(error => error.message)
-          
+
           if (errorMessages.length > 0) {
             return Promise.reject(new Error(errorMessages.join(', ')))
           }
-          
+
           return Promise.resolve()
-        }
+        },
       })
     }
-    
+
     // Update form field rules dynamically
-    form.setFields([{
-      name,
-      errors: validationResult.isValid ? [] : validationResult.errors
-        .filter(error => error.isBlocking)
-        .map(error => error.message)
-    }])
+    form.setFields([
+      {
+        name,
+        errors: validationResult.isValid
+          ? []
+          : validationResult.errors
+              .filter(error => error.isBlocking)
+              .map(error => error.message),
+      },
+    ])
   }
 
   // Sync external field value changes with price inheritance
@@ -146,7 +154,7 @@ export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps>
   const handleAmountChange = (amount: number) => {
     // Update form field
     form.setFieldValue(name, amount)
-    
+
     // Trigger form validation
     form.validateFields([name])
   }
@@ -154,67 +162,85 @@ export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps>
   // Generate validation rules for the form field
   const validationRules = useMemo(() => {
     const rules = [...additionalRules]
-    
+
     if (required) {
       rules.push({
         required: true,
-        message: 'Jumlah harga harus diisi'
+        message: 'Jumlah harga harus diisi',
       })
     }
-    
+
     // Basic amount validation
     rules.push({
       type: 'number',
       min: 0,
-      message: 'Jumlah harus lebih besar dari nol'
+      message: 'Jumlah harus lebih besar dari nol',
     })
-    
+
     rules.push({
       type: 'number',
       max: 999999999999,
-      message: 'Jumlah terlalu besar'
+      message: 'Jumlah terlalu besar',
     })
-    
+
     // Indonesian business validation
     if (enableMateraiValidation) {
       rules.push({
         validator: (_: any, value: any) => {
-          if (value >= 5000000 && !state.validationResult?.materaiCompliance?.required) {
-            return Promise.reject(new Error('Materai diperlukan untuk transaksi di atas Rp 5 juta'))
+          if (
+            value >= 5000000 &&
+            !state.validationResult?.materaiCompliance?.required
+          ) {
+            return Promise.reject(
+              new Error('Materai diperlukan untuk transaksi di atas Rp 5 juta')
+            )
           }
           return Promise.resolve()
-        }
+        },
       })
     }
-    
+
     // Price inheritance specific validation
     rules.push({
       validator: () => {
         if (state.validationResult && !state.validationResult.isValid) {
-          const blockingErrors = state.validationResult.errors?.filter(error => error.isBlocking) || []
+          const blockingErrors =
+            state.validationResult.errors?.filter(error => error.isBlocking) ||
+            []
           if (blockingErrors.length > 0) {
-            return Promise.reject(new Error(blockingErrors[0]?.message || 'Validation error'))
+            return Promise.reject(
+              new Error(blockingErrors[0]?.message || 'Validation error')
+            )
           }
         }
         return Promise.resolve()
-      }
+      },
     })
-    
+
     return rules
-  }, [additionalRules, required, enableMateraiValidation, state.validationResult])
+  }, [
+    additionalRules,
+    required,
+    enableMateraiValidation,
+    state.validationResult,
+  ])
 
   // Handle loading states in form
   useEffect(() => {
     if (state.isLoadingSources || state.isValidating || state.isSaving) {
-      form.setFields([{
-        name,
-        validating: true
-      }])
+      form.setFields([
+        {
+          name,
+          validating: true,
+        },
+      ])
     } else {
-      form.setFields([{
-        name,
-        validating: false
-      }])
+      form.setFields([
+        {
+          name,
+          validating: false,
+        },
+      ])
     }
   }, [state.isLoadingSources, state.isValidating, state.isSaving, form, name])
 
@@ -225,15 +251,18 @@ export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps>
       label={label}
       rules={validationRules}
       validateStatus={
-        state.error ? 'error' : 
-        state.validationResult && !state.validationResult.isValid ? 'error' :
-        state.validationResult?.warnings.length ? 'warning' : 
-        'success'
+        state.error
+          ? 'error'
+          : state.validationResult && !state.validationResult.isValid
+            ? 'error'
+            : state.validationResult?.warnings.length
+              ? 'warning'
+              : 'success'
       }
       help={
-        state.error || 
-        (state.validationResult && !state.validationResult.isValid 
-          ? state.validationResult.errors.find(e => e.isBlocking)?.message 
+        state.error ||
+        (state.validationResult && !state.validationResult.isValid
+          ? state.validationResult.errors.find(e => e.isBlocking)?.message
           : undefined)
       }
       hasFeedback={!compactMode}
@@ -243,11 +272,17 @@ export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps>
           id: entityId,
           type: entityType === 'quotation' ? 'project' : 'quotation',
           name: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} ${entityId}`,
-          number: entityId
+          number: entityId,
         }}
         currentAmount={state.currentAmount}
         onAmountChange={handleAmountChange}
-        availableSources={state.isLoadingSources ? [] : state.selectedSource ? [state.selectedSource] : []}
+        availableSources={
+          state.isLoadingSources
+            ? []
+            : state.selectedSource
+              ? [state.selectedSource]
+              : []
+        }
         defaultMode={defaultMode}
         allowCustomOverride={allowCustomOverride}
         enableMateraiValidation={enableMateraiValidation}
@@ -268,23 +303,26 @@ export const PriceInheritanceFormField: React.FC<PriceInheritanceFormFieldProps>
 }
 
 // Enhanced form field with additional features
-export interface EnhancedPriceInheritanceFormFieldProps extends PriceInheritanceFormFieldProps {
+export interface EnhancedPriceInheritanceFormFieldProps
+  extends PriceInheritanceFormFieldProps {
   // Advanced features
   enableAutoSave?: boolean
   autoSaveDelay?: number
   showAnalytics?: boolean
   enableA11yAnnouncements?: boolean
-  
+
   // Integration with other form fields
   dependentFields?: string[]
   triggerFields?: string[]
-  
+
   // Custom renderers
   renderSummary?: (state: any) => React.ReactNode
   renderValidationSummary?: (result: PriceValidationResult) => React.ReactNode
 }
 
-export const EnhancedPriceInheritanceFormField: React.FC<EnhancedPriceInheritanceFormFieldProps> = ({
+export const EnhancedPriceInheritanceFormField: React.FC<
+  EnhancedPriceInheritanceFormFieldProps
+> = ({
   enableAutoSave = false,
   autoSaveDelay = 2000,
   showAnalytics = false,
@@ -296,11 +334,11 @@ export const EnhancedPriceInheritanceFormField: React.FC<EnhancedPriceInheritanc
   ...props
 }) => {
   const form = Form.useFormInstance()
-  
+
   // Auto-save functionality
   useEffect(() => {
     if (!enableAutoSave) return
-    
+
     const timeoutId = setTimeout(async () => {
       try {
         await form.validateFields()
@@ -310,13 +348,13 @@ export const EnhancedPriceInheritanceFormField: React.FC<EnhancedPriceInheritanc
         console.log('Auto-save skipped due to validation errors')
       }
     }, autoSaveDelay)
-    
+
     return () => clearTimeout(timeoutId)
   }, [form.getFieldsValue(), enableAutoSave, autoSaveDelay])
-  
+
   // Watch dependent fields
   const dependentValues = useWatch(dependentFields, form)
-  
+
   // Update price inheritance when dependent fields change
   useEffect(() => {
     if (dependentFields.length > 0) {
@@ -324,21 +362,19 @@ export const EnhancedPriceInheritanceFormField: React.FC<EnhancedPriceInheritanc
       console.log('Dependent fields changed:', dependentValues)
     }
   }, [dependentValues, dependentFields])
-  
+
   return (
-    <div className="enhanced-price-inheritance-field">
+    <div className='enhanced-price-inheritance-field'>
       <PriceInheritanceFormField {...props} />
-      
+
       {showAnalytics && (
-        <div className="price-inheritance-analytics">
+        <div className='price-inheritance-analytics'>
           {/* Analytics component would go here */}
         </div>
       )}
-      
+
       {renderSummary && (
-        <div className="price-inheritance-summary">
-          {renderSummary({})}
-        </div>
+        <div className='price-inheritance-summary'>{renderSummary({})}</div>
       )}
     </div>
   )

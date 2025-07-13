@@ -20,19 +20,19 @@ vi.mock('../../../hooks/useMediaQuery', () => ({
   useIsMobile: () => true,
   useIsTablet: () => false,
   useIsDesktop: () => false,
-  useIsSmallMobile: () => false
+  useIsSmallMobile: () => false,
 }))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 vi.mock('react-router-dom', () => ({
   ...vi.importActual('react-router-dom'),
   useLocation: () => ({ pathname: '/dashboard' }),
-  useNavigate: () => vi.fn()
+  useNavigate: () => vi.fn(),
 }))
 
 // Mock Ant Design components that might cause issues in tests
@@ -40,31 +40,33 @@ vi.mock('antd', async () => {
   const actual = await vi.importActual('antd')
   return {
     ...actual,
-    Affix: ({ children }: { children: React.ReactNode }) => <div data-testid="affix">{children}</div>,
+    Affix: ({ children }: { children: React.ReactNode }) => (
+      <div data-testid='affix'>{children}</div>
+    ),
     FloatButton: {
-      Group: ({ children }: { children: React.ReactNode }) => <div data-testid="float-button-group">{children}</div>
+      Group: ({ children }: { children: React.ReactNode }) => (
+        <div data-testid='float-button-group'>{children}</div>
+      ),
     },
-    BackTop: ({ children }: { children: React.ReactNode }) => <div data-testid="back-top">{children}</div>
+    BackTop: ({ children }: { children: React.ReactNode }) => (
+      <div data-testid='back-top'>{children}</div>
+    ),
   }
 })
 
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <BrowserRouter>
-      {children}
-    </BrowserRouter>
-  )
+  return <BrowserRouter>{children}</BrowserRouter>
 }
 
 const defaultProps = {
-  children: <div data-testid="test-content">Test Content</div>
+  children: <div data-testid='test-content'>Test Content</div>,
 }
 
 describe('MobileOptimizedLayout Component', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     // Mock window.matchMedia
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -98,7 +100,10 @@ describe('MobileOptimizedLayout Component', () => {
     it('should show bottom navigation on mobile', () => {
       render(
         <TestWrapper>
-          <MobileOptimizedLayout {...defaultProps} showBottomNavigation={true} />
+          <MobileOptimizedLayout
+            {...defaultProps}
+            showBottomNavigation={true}
+          />
         </TestWrapper>
       )
 
@@ -122,7 +127,7 @@ describe('MobileOptimizedLayout Component', () => {
   describe('Navigation Functionality', () => {
     it('should open navigation drawer when menu button is clicked', async () => {
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
           <MobileOptimizedLayout {...defaultProps} />
@@ -140,11 +145,11 @@ describe('MobileOptimizedLayout Component', () => {
     it('should handle navigation item clicks', async () => {
       const onNavigationChange = vi.fn()
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
-            {...defaultProps} 
+          <MobileOptimizedLayout
+            {...defaultProps}
             onNavigationChange={onNavigationChange}
           />
         </TestWrapper>
@@ -173,14 +178,14 @@ describe('MobileOptimizedLayout Component', () => {
           path: '/quotations',
           badge: 5,
           quickAction: true,
-          indonesianPriority: 'high' as const
-        }
+          indonesianPriority: 'high' as const,
+        },
       ]
 
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
-            {...defaultProps} 
+          <MobileOptimizedLayout
+            {...defaultProps}
             navigationItems={navigationItems}
           />
         </TestWrapper>
@@ -194,11 +199,11 @@ describe('MobileOptimizedLayout Component', () => {
   describe('Indonesian Business Features', () => {
     it('should show Indonesian business shortcuts when enabled', async () => {
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
-            {...defaultProps} 
+          <MobileOptimizedLayout
+            {...defaultProps}
             showIndonesianShortcuts={true}
           />
         </TestWrapper>
@@ -209,7 +214,9 @@ describe('MobileOptimizedLayout Component', () => {
       await user.click(menuButton)
 
       await waitFor(() => {
-        expect(screen.getByText('Shortcut Bisnis Indonesia')).toBeInTheDocument()
+        expect(
+          screen.getByText('Shortcut Bisnis Indonesia')
+        ).toBeInTheDocument()
         expect(screen.getByText('Cek Materai')).toBeInTheDocument()
         expect(screen.getByText('Kalkulator PPN')).toBeInTheDocument()
         expect(screen.getByText('Template WhatsApp')).toBeInTheDocument()
@@ -219,10 +226,10 @@ describe('MobileOptimizedLayout Component', () => {
     it('should handle WhatsApp integration when enabled', async () => {
       const onQuickAction = vi.fn()
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
+          <MobileOptimizedLayout
             {...defaultProps}
             enableWhatsAppIntegration={true}
             onQuickAction={onQuickAction}
@@ -240,10 +247,10 @@ describe('MobileOptimizedLayout Component', () => {
     it('should show materai quick check when enabled', async () => {
       const onQuickAction = vi.fn()
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
+          <MobileOptimizedLayout
             {...defaultProps}
             enableMateraiQuickCheck={true}
             onQuickAction={onQuickAction}
@@ -275,13 +282,13 @@ describe('MobileOptimizedLayout Component', () => {
           label: 'Custom Action',
           icon: <span>C</span>,
           onClick: vi.fn(),
-          indonesianContext: true
-        }
+          indonesianContext: true,
+        },
       ]
 
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
+          <MobileOptimizedLayout
             {...defaultProps}
             quickActions={customQuickActions}
             showFloatingActions={true}
@@ -296,20 +303,20 @@ describe('MobileOptimizedLayout Component', () => {
       const mockAction = vi.fn()
       const onQuickAction = vi.fn()
       const user = userEvent.setup()
-      
+
       const customQuickActions = [
         {
           key: 'test_action',
           label: 'Test Action',
           icon: <span>T</span>,
           onClick: mockAction,
-          indonesianContext: true
-        }
+          indonesianContext: true,
+        },
       ]
 
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
+          <MobileOptimizedLayout
             {...defaultProps}
             quickActions={customQuickActions}
             onQuickAction={onQuickAction}
@@ -327,7 +334,7 @@ describe('MobileOptimizedLayout Component', () => {
     it('should adapt header for mobile', () => {
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
+          <MobileOptimizedLayout
             {...defaultProps}
             adaptiveHeader={true}
             stickyHeader={true}
@@ -341,7 +348,9 @@ describe('MobileOptimizedLayout Component', () => {
 
     it('should show compact elements on small mobile', () => {
       // Mock small mobile viewport
-      vi.mocked(require('../../../hooks/useMediaQuery').useMediaQuery).mockImplementation((query: string) => {
+      vi.mocked(
+        require('../../../hooks/useMediaQuery').useMediaQuery
+      ).mockImplementation((query: string) => {
         if (query.includes('max-width: 480px')) return true
         return false
       })
@@ -366,13 +375,13 @@ describe('MobileOptimizedLayout Component', () => {
           quotation: 'Template quotation',
           invoice: 'Template invoice',
           reminder: 'Template reminder',
-          thank_you: 'Template thank you'
-        }
+          thank_you: 'Template thank you',
+        },
       }
 
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
+          <MobileOptimizedLayout
             {...defaultProps}
             enableWhatsAppIntegration={true}
             whatsappConfig={whatsappConfig}
@@ -381,7 +390,9 @@ describe('MobileOptimizedLayout Component', () => {
       )
 
       // WhatsApp button should be present when enabled
-      expect(screen.getByRole('button', { name: /whatsapp/i })).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /whatsapp/i })
+      ).toBeInTheDocument()
     })
   })
 
@@ -389,10 +400,7 @@ describe('MobileOptimizedLayout Component', () => {
     it('should handle touch events for pull to refresh', () => {
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
-            {...defaultProps}
-            pullToRefresh={true}
-          />
+          <MobileOptimizedLayout {...defaultProps} pullToRefresh={true} />
         </TestWrapper>
       )
 
@@ -412,12 +420,14 @@ describe('MobileOptimizedLayout Component', () => {
 
       // Check for main navigation elements
       expect(screen.getByRole('button', { name: /menu/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /notification/i })).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /notification/i })
+      ).toBeInTheDocument()
     })
 
     it('should support keyboard navigation', async () => {
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
           <MobileOptimizedLayout {...defaultProps} />
@@ -426,7 +436,7 @@ describe('MobileOptimizedLayout Component', () => {
 
       // Test tab navigation
       await user.tab()
-      
+
       // Should be able to navigate through interactive elements
       expect(document.activeElement).toBeDefined()
     })
@@ -436,10 +446,7 @@ describe('MobileOptimizedLayout Component', () => {
     it('should support lazy loading when enabled', () => {
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
-            {...defaultProps}
-            lazyLoadContent={true}
-          />
+          <MobileOptimizedLayout {...defaultProps} lazyLoadContent={true} />
         </TestWrapper>
       )
 
@@ -449,10 +456,10 @@ describe('MobileOptimizedLayout Component', () => {
 
     it('should handle prefetch routes', () => {
       const prefetchRoutes = ['/quotations', '/invoices']
-      
+
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
+          <MobileOptimizedLayout
             {...defaultProps}
             prefetchRoutes={prefetchRoutes}
           />
@@ -468,10 +475,10 @@ describe('MobileOptimizedLayout Component', () => {
     it('should call onQuickAction when quick actions are triggered', async () => {
       const onQuickAction = vi.fn()
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
+          <MobileOptimizedLayout
             {...defaultProps}
             onQuickAction={onQuickAction}
             enableWhatsAppIntegration={true}
@@ -489,10 +496,10 @@ describe('MobileOptimizedLayout Component', () => {
     it('should call onNavigationChange when navigation changes', async () => {
       const onNavigationChange = vi.fn()
       const user = userEvent.setup()
-      
+
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
+          <MobileOptimizedLayout
             {...defaultProps}
             onNavigationChange={onNavigationChange}
           />
@@ -531,7 +538,7 @@ describe('MobileOptimizedLayout Component', () => {
     it('should handle network connectivity changes', () => {
       // Mock online/offline events
       const mockAddEventListener = vi.spyOn(window, 'addEventListener')
-      
+
       render(
         <TestWrapper>
           <MobileOptimizedLayout {...defaultProps} />
@@ -539,8 +546,14 @@ describe('MobileOptimizedLayout Component', () => {
       )
 
       // Should set up event listeners for online/offline
-      expect(mockAddEventListener).toHaveBeenCalledWith('online', expect.any(Function))
-      expect(mockAddEventListener).toHaveBeenCalledWith('offline', expect.any(Function))
+      expect(mockAddEventListener).toHaveBeenCalledWith(
+        'online',
+        expect.any(Function)
+      )
+      expect(mockAddEventListener).toHaveBeenCalledWith(
+        'offline',
+        expect.any(Function)
+      )
     })
   })
 
@@ -567,20 +580,20 @@ describe('MobileOptimizedLayout Component', () => {
           label: 'High Priority Item',
           icon: <span>H</span>,
           path: '/high',
-          indonesianPriority: 'high' as const
+          indonesianPriority: 'high' as const,
         },
         {
           key: 'low_priority',
           label: 'Low Priority Item',
           icon: <span>L</span>,
           path: '/low',
-          indonesianPriority: 'low' as const
-        }
+          indonesianPriority: 'low' as const,
+        },
       ]
 
       render(
         <TestWrapper>
-          <MobileOptimizedLayout 
+          <MobileOptimizedLayout
             {...defaultProps}
             navigationItems={navigationItems}
           />

@@ -1,12 +1,12 @@
-import { IsString, IsEmail, IsOptional, IsEnum } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsEmail, IsOptional, IsEnum } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
 export enum NotificationType {
-  QUOTATION_STATUS_CHANGE = 'QUOTATION_STATUS_CHANGE',
-  INVOICE_GENERATED = 'INVOICE_GENERATED',
-  QUOTATION_EXPIRING = 'QUOTATION_EXPIRING',
-  INVOICE_OVERDUE = 'INVOICE_OVERDUE',
-  MATERAI_REMINDER = 'MATERAI_REMINDER'
+  QUOTATION_STATUS_CHANGE = "QUOTATION_STATUS_CHANGE",
+  INVOICE_GENERATED = "INVOICE_GENERATED",
+  QUOTATION_EXPIRING = "QUOTATION_EXPIRING",
+  INVOICE_OVERDUE = "INVOICE_OVERDUE",
+  MATERAI_REMINDER = "MATERAI_REMINDER",
 }
 
 export class SendNotificationDto {

@@ -27,7 +27,7 @@ export enum BusinessJourneyEventType {
   PAYMENT_RECEIVED = 'payment_received',
   PAYMENT_OVERDUE = 'payment_overdue',
   MATERAI_REQUIRED = 'materai_required',
-  MATERAI_APPLIED = 'materai_applied'
+  MATERAI_APPLIED = 'materai_applied',
 }
 
 export enum BusinessJourneyEventStatus {
@@ -35,12 +35,16 @@ export enum BusinessJourneyEventStatus {
   IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed',
   CANCELLED = 'cancelled',
-  REQUIRES_ATTENTION = 'requires_attention'
+  REQUIRES_ATTENTION = 'requires_attention',
 }
 
 // Type aliases for backward compatibility
-export type BusinessJourneyEventTypeUnion = keyof typeof BusinessJourneyEventType | BusinessJourneyEventType
-export type BusinessJourneyEventStatusUnion = keyof typeof BusinessJourneyEventStatus | BusinessJourneyEventStatus
+export type BusinessJourneyEventTypeUnion =
+  | keyof typeof BusinessJourneyEventType
+  | BusinessJourneyEventType
+export type BusinessJourneyEventStatusUnion =
+  | keyof typeof BusinessJourneyEventStatus
+  | BusinessJourneyEventStatus
 
 export interface BusinessJourneyEventMetadata {
   userCreated: string
@@ -213,5 +217,7 @@ export interface BusinessJourneyApiResponse {
 
 // Event handlers
 export type BusinessJourneyEventHandler = (event: BusinessJourneyEvent) => void
-export type BusinessJourneyFilterHandler = (filters: BusinessJourneyFilters) => void
+export type BusinessJourneyFilterHandler = (
+  filters: BusinessJourneyFilters
+) => void
 export type BusinessJourneyErrorHandler = (error: BusinessJourneyError) => void

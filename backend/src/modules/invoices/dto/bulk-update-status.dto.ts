@@ -1,12 +1,12 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { InvoiceStatus } from '@prisma/client';
+import { ApiProperty } from "@nestjs/swagger";
+import { IsArray, IsEnum, IsNotEmpty, IsString } from "class-validator";
+import { InvoiceStatus } from "@prisma/client";
 
 export class BulkUpdateStatusDto {
   @ApiProperty({
-    description: 'Array of invoice IDs to update',
+    description: "Array of invoice IDs to update",
     type: [String],
-    example: ['inv-001', 'inv-002', 'inv-003']
+    example: ["inv-001", "inv-002", "inv-003"],
   })
   @IsArray()
   @IsString({ each: true })
@@ -14,9 +14,9 @@ export class BulkUpdateStatusDto {
   ids: string[];
 
   @ApiProperty({
-    description: 'New status for all invoices',
+    description: "New status for all invoices",
     enum: InvoiceStatus,
-    example: InvoiceStatus.SENT
+    example: InvoiceStatus.SENT,
   })
   @IsEnum(InvoiceStatus)
   status: InvoiceStatus;

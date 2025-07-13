@@ -115,7 +115,9 @@ export const settingsService = {
     return response.data.data
   },
 
-  updateCompanySettings: async (data: UpdateCompanySettingsDto): Promise<CompanySettings> => {
+  updateCompanySettings: async (
+    data: UpdateCompanySettingsDto
+  ): Promise<CompanySettings> => {
     const response = await apiClient.put('/settings/company', data)
     if (!response?.data?.data) {
       throw new Error('Failed to update company settings')
@@ -132,7 +134,9 @@ export const settingsService = {
     return response.data.data
   },
 
-  updateSystemSettings: async (data: UpdateSystemSettingsDto): Promise<SystemSettings> => {
+  updateSystemSettings: async (
+    data: UpdateSystemSettingsDto
+  ): Promise<SystemSettings> => {
     const response = await apiClient.put('/settings/system', data)
     if (!response?.data?.data) {
       throw new Error('Failed to update system settings')
@@ -149,7 +153,9 @@ export const settingsService = {
     return response.data.data
   },
 
-  updateNotificationSettings: async (data: NotificationSettings): Promise<NotificationSettings> => {
+  updateNotificationSettings: async (
+    data: NotificationSettings
+  ): Promise<NotificationSettings> => {
     const response = await apiClient.put('/settings/notifications', data)
     if (!response?.data?.data) {
       throw new Error('Failed to update notification settings')
@@ -164,5 +170,5 @@ export const settingsService = {
       throw new Error('Failed to reset settings')
     }
     return response.data.data
-  }
+  },
 }

@@ -1,9 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateClientDto } from './dto/create-client.dto';
-import { UpdateClientDto } from './dto/update-client.dto';
-import { PaginatedResponse } from '../../common/dto/api-response.dto';
-import { handleServiceError, validateIndonesianBusinessRules, sanitizeIndonesianInput } from '../../common/utils/error-handling.util';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateClientDto } from "./dto/create-client.dto";
+import { UpdateClientDto } from "./dto/update-client.dto";
+import { PaginatedResponse } from "../../common/dto/api-response.dto";
+import {
+  handleServiceError,
+  validateIndonesianBusinessRules,
+  sanitizeIndonesianInput,
+} from "../../common/utils/error-handling.util";
 
 @Injectable()
 export class ClientsService {
@@ -18,30 +22,40 @@ export class ClientsService {
       const sanitizedData = {
         ...createClientDto,
         name: sanitizeIndonesianInput(createClientDto.name),
-        company: createClientDto.company ? sanitizeIndonesianInput(createClientDto.company) : null,
-        address: createClientDto.address ? sanitizeIndonesianInput(createClientDto.address) : null,
-        contactPerson: createClientDto.contactPerson ? sanitizeIndonesianInput(createClientDto.contactPerson) : null,
+        company: createClientDto.company
+          ? sanitizeIndonesianInput(createClientDto.company)
+          : null,
+        address: createClientDto.address
+          ? sanitizeIndonesianInput(createClientDto.address)
+          : null,
+        contactPerson: createClientDto.contactPerson
+          ? sanitizeIndonesianInput(createClientDto.contactPerson)
+          : null,
       };
 
       return await this.prisma.client.create({
         data: sanitizedData,
       });
     } catch (error) {
-      handleServiceError(error, 'create client', 'klien');
+      handleServiceError(error, "create client", "klien");
     }
   }
 
-  async findAll(page = 1, limit = 10, search?: string): Promise<PaginatedResponse<any[]>> {
+  async findAll(
+    page = 1,
+    limit = 10,
+    search?: string,
+  ): Promise<PaginatedResponse<any[]>> {
     try {
       const skip = (page - 1) * limit;
-      
+
       const where = search
         ? {
             OR: [
-              { name: { contains: search, mode: 'insensitive' as const } },
-              { email: { contains: search, mode: 'insensitive' as const } },
-              { phone: { contains: search, mode: 'insensitive' as const } },
-              { company: { contains: search, mode: 'insensitive' as const } },
+              { name: { contains: search, mode: "insensitive" as const } },
+              { email: { contains: search, mode: "insensitive" as const } },
+              { phone: { contains: search, mode: "insensitive" as const } },
+              { company: { contains: search, mode: "insensitive" as const } },
             ],
           }
         : {};
@@ -76,36 +90,38 @@ export class ClientsService {
             },
           },
           orderBy: {
-            createdAt: 'desc',
+            createdAt: "desc",
           },
         }),
         this.prisma.client.count({ where }),
       ]);
 
       // Transform clients data to include business metrics
-      const clientsWithMetrics = clients.map(client => {
+      const clientsWithMetrics = clients.map((client) => {
         // Calculate quotation metrics
         const totalQuotations = client._count.quotations;
-        const pendingQuotations = client.quotations.filter(q => 
-          q.status === 'DRAFT' || q.status === 'SENT'
+        const pendingQuotations = client.quotations.filter(
+          (q) => q.status === "DRAFT" || q.status === "SENT",
         ).length;
 
         // Calculate invoice metrics
         const totalInvoices = client._count.invoices;
-        const overdueInvoices = client.invoices.filter(i => i.status === 'OVERDUE').length;
-        
+        const overdueInvoices = client.invoices.filter(
+          (i) => i.status === "OVERDUE",
+        ).length;
+
         // Calculate revenue metrics
         const totalPaid = client.invoices
-          .filter(i => i.status === 'PAID')
+          .filter((i) => i.status === "PAID")
           .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
-        
+
         const totalPending = client.invoices
-          .filter(i => ['SENT', 'OVERDUE'].includes(i.status))
+          .filter((i) => ["SENT", "OVERDUE"].includes(i.status))
           .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
 
         // Remove the detailed data and add calculated metrics
         const { quotations, invoices, ...clientData } = client;
-        
+
         return {
           ...clientData,
           totalProjects: client._count.projects,
@@ -126,10 +142,10 @@ export class ClientsService {
           total,
           pages: Math.ceil(total / limit),
         },
-        'Data klien berhasil diambil'
+        "Data klien berhasil diambil",
       );
     } catch (error) {
-      handleServiceError(error, 'find all clients', 'klien');
+      handleServiceError(error, "find all clients", "klien");
     }
   }
 
@@ -140,21 +156,21 @@ export class ClientsService {
         include: {
           quotations: {
             take: 5,
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
             include: {
               project: true,
             },
           },
           invoices: {
             take: 5,
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
             include: {
               project: true,
             },
           },
           projects: {
             take: 5,
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
           },
           _count: {
             select: {
@@ -167,18 +183,20 @@ export class ClientsService {
       });
 
       if (!client) {
-        throw new NotFoundException('Klien tidak ditemukan');
+        throw new NotFoundException("Klien tidak ditemukan");
       }
 
       // Calculate business metrics for individual client
       const totalQuotations = client._count.quotations;
-      const pendingQuotations = client.quotations.filter(q => 
-        q.status === 'DRAFT' || q.status === 'SENT'
+      const pendingQuotations = client.quotations.filter(
+        (q) => q.status === "DRAFT" || q.status === "SENT",
       ).length;
 
       const totalInvoices = client._count.invoices;
-      const overdueInvoices = client.invoices.filter(i => i.status === 'OVERDUE').length;
-      
+      const overdueInvoices = client.invoices.filter(
+        (i) => i.status === "OVERDUE",
+      ).length;
+
       // Calculate revenue metrics from ALL invoices (not just the recent 5)
       const allInvoices = await this.prisma.invoice.findMany({
         where: { clientId: id },
@@ -189,11 +207,11 @@ export class ClientsService {
       });
 
       const totalPaid = allInvoices
-        .filter(i => i.status === 'PAID')
+        .filter((i) => i.status === "PAID")
         .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
-      
+
       const totalPending = allInvoices
-        .filter(i => ['SENT', 'OVERDUE'].includes(i.status))
+        .filter((i) => ["SENT", "OVERDUE"].includes(i.status))
         .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
 
       return {
@@ -207,7 +225,7 @@ export class ClientsService {
         totalPending,
       };
     } catch (error) {
-      handleServiceError(error, 'find client', 'klien');
+      handleServiceError(error, "find client", "klien");
     }
   }
 
@@ -237,8 +255,15 @@ export class ClientsService {
       },
     });
 
-    if (hasRecords && (hasRecords._count.quotations > 0 || hasRecords._count.invoices > 0 || hasRecords._count.projects > 0)) {
-      throw new Error('Tidak dapat menghapus klien yang memiliki quotation, invoice, atau proyek');
+    if (
+      hasRecords &&
+      (hasRecords._count.quotations > 0 ||
+        hasRecords._count.invoices > 0 ||
+        hasRecords._count.projects > 0)
+    ) {
+      throw new Error(
+        "Tidak dapat menghapus klien yang memiliki quotation, invoice, atau proyek",
+      );
     }
 
     return this.prisma.client.delete({
@@ -251,7 +276,7 @@ export class ClientsService {
       this.prisma.client.count(),
       this.prisma.client.findMany({
         take: 5,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: {
           _count: {
             select: {
@@ -280,29 +305,31 @@ export class ClientsService {
     ]);
 
     // Transform recent clients data to include business metrics
-    const recentClientsWithMetrics = recentClients.map(client => {
+    const recentClientsWithMetrics = recentClients.map((client) => {
       // Calculate quotation metrics
       const totalQuotations = client._count.quotations;
-      const pendingQuotations = client.quotations.filter(q => 
-        q.status === 'DRAFT' || q.status === 'SENT'
+      const pendingQuotations = client.quotations.filter(
+        (q) => q.status === "DRAFT" || q.status === "SENT",
       ).length;
 
       // Calculate invoice metrics
       const totalInvoices = client._count.invoices;
-      const overdueInvoices = client.invoices.filter(i => i.status === 'OVERDUE').length;
-      
+      const overdueInvoices = client.invoices.filter(
+        (i) => i.status === "OVERDUE",
+      ).length;
+
       // Calculate revenue metrics
       const totalPaid = client.invoices
-        .filter(i => i.status === 'PAID')
+        .filter((i) => i.status === "PAID")
         .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
-      
+
       const totalPending = client.invoices
-        .filter(i => ['SENT', 'OVERDUE'].includes(i.status))
+        .filter((i) => ["SENT", "OVERDUE"].includes(i.status))
         .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
 
       // Remove the detailed data and add calculated metrics
       const { quotations, invoices, ...clientData } = client;
-      
+
       return {
         ...clientData,
         totalProjects: client._count.projects,

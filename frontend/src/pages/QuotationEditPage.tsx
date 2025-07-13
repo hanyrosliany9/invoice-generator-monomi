@@ -1,46 +1,49 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  DatePicker,
   Form,
   Input,
-  Button,
-  Row,
-  Col,
-  Card,
-  Space,
-  Select,
-  DatePicker,
   message,
-  Typography,
-  Alert,
-  Tag,
-  Spin,
   Result,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Tag,
+  Typography,
 } from 'antd'
 import {
+  CalendarOutlined,
+  CheckCircleOutlined,
+  DollarOutlined,
+  ExportOutlined,
   FileTextOutlined,
+  ProjectOutlined,
   SaveOutlined,
   SendOutlined,
-  DollarOutlined,
-  CalendarOutlined,
-  ProjectOutlined,
   UndoOutlined,
-  CheckCircleOutlined,
-  ExportOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
-import { 
-  EntityHeroCard, 
-  EntityFormLayout, 
-  ProgressiveSection,
+import {
+  EntityFormLayout,
+  EntityHeroCard,
   FormStatistics,
   IDRCurrencyInput,
   MateraiCompliancePanel,
   PreviewPanel,
+  ProgressiveSection,
 } from '../components/forms'
-import { quotationService, UpdateQuotationRequest } from '../services/quotations'
+import {
+  quotationService,
+  UpdateQuotationRequest,
+} from '../services/quotations'
 import { projectService } from '../services/projects'
 import { clientService } from '../services/clients'
 import { formatIDR } from '../utils/currency'
@@ -66,7 +69,8 @@ export const QuotationEditPage: React.FC = () => {
   const queryClient = useQueryClient()
   const [autoSaving, setAutoSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
-  const [originalValues, setOriginalValues] = useState<QuotationFormData | null>(null)
+  const [originalValues, setOriginalValues] =
+    useState<QuotationFormData | null>(null)
   const [previewData, setPreviewData] = useState<any>(null)
 
   // Fetch quotation data
@@ -81,19 +85,13 @@ export const QuotationEditPage: React.FC = () => {
   })
 
   // Fetch clients for selection
-  const {
-    data: clients = [],
-    isLoading: clientsLoading,
-  } = useQuery({
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ['clients'],
     queryFn: clientService.getClients,
   })
 
   // Fetch projects for selection
-  const {
-    data: projects = [],
-    isLoading: projectsLoading,
-  } = useQuery({
+  const { data: projects = [], isLoading: projectsLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: projectService.getProjects,
   })
@@ -117,13 +115,17 @@ export const QuotationEditPage: React.FC = () => {
   // Generate invoice mutation
   const generateInvoiceMutation = useMutation({
     mutationFn: quotationService.generateInvoice,
-    onSuccess: (result) => {
+    onSuccess: result => {
       queryClient.invalidateQueries({ queryKey: ['quotation', id] })
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       if (result.isExisting) {
-        message.info(`Invoice ${result.invoice.invoiceNumber} already exists for this quotation`)
+        message.info(
+          `Invoice ${result.invoice.invoiceNumber} already exists for this quotation`
+        )
       } else {
-        message.success(`Invoice ${result.invoice.invoiceNumber} generated successfully`)
+        message.success(
+          `Invoice ${result.invoice.invoiceNumber} generated successfully`
+        )
       }
       navigate(`/invoices/${result.invoiceId}`)
     },
@@ -152,9 +154,11 @@ export const QuotationEditPage: React.FC = () => {
 
   // Update preview data when form changes
   const updatePreviewData = (values: any) => {
-    const selectedClient = clients.find(c => c.id === values.clientId) || quotation?.client
-    const selectedProject = projects.find(p => p.id === values.projectId) || quotation?.project
-    
+    const selectedClient =
+      clients.find(c => c.id === values.clientId) || quotation?.client
+    const selectedProject =
+      projects.find(p => p.id === values.projectId) || quotation?.project
+
     setPreviewData({
       ...values,
       client: selectedClient,
@@ -167,14 +171,16 @@ export const QuotationEditPage: React.FC = () => {
   // Track form changes
   const handleFormChange = () => {
     const currentValues = form.getFieldsValue()
-    const changed = originalValues && JSON.stringify(currentValues) !== JSON.stringify(originalValues)
+    const changed =
+      originalValues &&
+      JSON.stringify(currentValues) !== JSON.stringify(originalValues)
     setHasChanges(!!changed)
     updatePreviewData(currentValues)
   }
 
   const handleSubmit = async (values: QuotationFormData) => {
     if (!id) return
-    
+
     const quotationData: UpdateQuotationRequest = {
       clientId: values.clientId,
       projectId: values.projectId,
@@ -184,7 +190,7 @@ export const QuotationEditPage: React.FC = () => {
       validUntil: values.validUntil.toISOString(),
       status: values.status,
     }
-    
+
     updateQuotationMutation.mutate({ id, data: quotationData })
   }
 
@@ -218,7 +224,7 @@ export const QuotationEditPage: React.FC = () => {
   if (isLoading) {
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>
-        <Spin size="large" tip="Loading quotation data..." />
+        <Spin size='large' tip='Loading quotation data...' />
       </div>
     )
   }
@@ -227,11 +233,11 @@ export const QuotationEditPage: React.FC = () => {
     return (
       <div style={{ padding: '24px' }}>
         <Result
-          status="404"
-          title="Quotation Not Found"
+          status='404'
+          title='Quotation Not Found'
           subTitle="The quotation you're trying to edit doesn't exist."
           extra={
-            <Button type="primary" onClick={() => navigate('/quotations')}>
+            <Button type='primary' onClick={() => navigate('/quotations')}>
               Back to Quotations
             </Button>
           }
@@ -246,12 +252,18 @@ export const QuotationEditPage: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'DRAFT': return 'blue'
-      case 'SENT': return 'orange'
-      case 'APPROVED': return 'green'
-      case 'DECLINED': return 'red'
-      case 'REVISED': return 'purple'
-      default: return 'default'
+      case 'DRAFT':
+        return 'blue'
+      case 'SENT':
+        return 'orange'
+      case 'APPROVED':
+        return 'green'
+      case 'DECLINED':
+        return 'red'
+      case 'REVISED':
+        return 'purple'
+      default:
+        return 'default'
     }
   }
 
@@ -263,72 +275,80 @@ export const QuotationEditPage: React.FC = () => {
       avatar={quotation.client?.name?.charAt(0).toUpperCase()}
       breadcrumb={['Quotations', quotation.quotationNumber, 'Edit']}
       metadata={[
-        { 
-          label: 'Created', 
-          value: quotation.createdAt, 
-          format: 'date' 
+        {
+          label: 'Created',
+          value: quotation.createdAt,
+          format: 'date',
         },
-        { 
-          label: 'Valid Until', 
-          value: quotation.validUntil, 
-          format: 'date' 
+        {
+          label: 'Valid Until',
+          value: quotation.validUntil,
+          format: 'date',
         },
-        { 
-          label: 'Status', 
-          value: quotation.status 
+        {
+          label: 'Status',
+          value: quotation.status,
         },
       ]}
       actions={[
-        ...(canEdit ? [
-          {
-            label: 'Revert Changes',
-            type: 'default' as const,
-            icon: <UndoOutlined />,
-            onClick: handleRevertChanges,
-            disabled: !hasChanges,
-          },
-          {
-            label: 'Save Changes',
-            type: 'primary' as const,
-            icon: <SaveOutlined />,
-            onClick: () => form.submit(),
-            loading: updateQuotationMutation.isPending,
-            disabled: !hasChanges,
-          },
-        ] : []),
-        ...(canGenerateInvoice ? [
-          {
-            label: 'Generate Invoice',
-            type: 'primary' as const,
-            icon: <ExportOutlined />,
-            onClick: handleGenerateInvoice,
-            loading: generateInvoiceMutation.isPending,
-          },
-        ] : []),
+        ...(canEdit
+          ? [
+              {
+                label: 'Revert Changes',
+                type: 'default' as const,
+                icon: <UndoOutlined />,
+                onClick: handleRevertChanges,
+                disabled: !hasChanges,
+              },
+              {
+                label: 'Save Changes',
+                type: 'primary' as const,
+                icon: <SaveOutlined />,
+                onClick: () => form.submit(),
+                loading: updateQuotationMutation.isPending,
+                disabled: !hasChanges,
+              },
+            ]
+          : []),
+        ...(canGenerateInvoice
+          ? [
+              {
+                label: 'Generate Invoice',
+                type: 'primary' as const,
+                icon: <ExportOutlined />,
+                onClick: handleGenerateInvoice,
+                loading: generateInvoiceMutation.isPending,
+              },
+            ]
+          : []),
       ]}
       status={
-        !canEdit ? {
-          type: 'warning',
-          message: `Quotation is ${quotation.status.toLowerCase()} and cannot be edited`
-        } : hasChanges ? {
-          type: 'warning',
-          message: 'You have unsaved changes'
-        } : {
-          type: 'info',
-          message: 'Auto-saved 2 minutes ago'
-        }
+        !canEdit
+          ? {
+              type: 'warning',
+              message: `Quotation is ${quotation.status.toLowerCase()} and cannot be edited`,
+            }
+          : hasChanges
+            ? {
+                type: 'warning',
+                message: 'You have unsaved changes',
+              }
+            : {
+                type: 'info',
+                message: 'Auto-saved 2 minutes ago',
+              }
       }
     />
   )
 
   return (
-    <EntityFormLayout 
+    <EntityFormLayout
       hero={heroCard}
       sidebar={
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space direction='vertical' size='large' style={{ width: '100%' }}>
           {/* Real-time Statistics */}
           <FormStatistics
-            title="Quotation Overview"
+            title='Quotation Overview'
             stats={[
               {
                 label: 'Project Value',
@@ -346,28 +366,37 @@ export const QuotationEditPage: React.FC = () => {
               },
               {
                 label: 'Days Remaining',
-                value: Math.max(0, dayjs(quotation.validUntil).diff(dayjs(), 'day')),
+                value: Math.max(
+                  0,
+                  dayjs(quotation.validUntil).diff(dayjs(), 'day')
+                ),
                 format: 'duration',
                 icon: <CalendarOutlined />,
-                color: dayjs(quotation.validUntil).diff(dayjs(), 'day') > 7 ? '#722ed1' : '#ff4d4f',
+                color:
+                  dayjs(quotation.validUntil).diff(dayjs(), 'day') > 7
+                    ? '#722ed1'
+                    : '#ff4d4f',
               },
             ]}
-            layout="vertical"
-            size="small"
+            layout='vertical'
+            size='small'
           />
 
           {/* Status Information */}
-          <Card size="small" title="Quotation Status">
-            <Tag color={getStatusColor(quotation.status)} style={{ marginBottom: '8px' }}>
+          <Card size='small' title='Quotation Status'>
+            <Tag
+              color={getStatusColor(quotation.status)}
+              style={{ marginBottom: '8px' }}
+            >
               {quotation.status}
             </Tag>
             <div>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+              <Text type='secondary' style={{ fontSize: '12px' }}>
                 Created by: {quotation.user?.name || 'Unknown'}
               </Text>
             </div>
             <div>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+              <Text type='secondary' style={{ fontSize: '12px' }}>
                 Related invoices: {quotation.invoices?.length || 0}
               </Text>
             </div>
@@ -384,9 +413,9 @@ export const QuotationEditPage: React.FC = () => {
       }
       preview={
         <PreviewPanel
-          mode="live"
+          mode='live'
           data={previewData}
-          template="quotation"
+          template='quotation'
           showPdf={false}
           allowDownload={quotation.status !== 'DRAFT'}
         />
@@ -394,10 +423,10 @@ export const QuotationEditPage: React.FC = () => {
     >
       <Form
         form={form}
-        layout="vertical"
+        layout='vertical'
         onFinish={handleSubmit}
         onValuesChange={handleFormChange}
-        autoComplete="off"
+        autoComplete='off'
         style={{ width: '100%' }}
         disabled={!canEdit}
       >
@@ -405,42 +434,48 @@ export const QuotationEditPage: React.FC = () => {
         {!canEdit && (
           <Alert
             style={{ marginBottom: '24px' }}
-            message="Quotation Cannot Be Edited"
+            message='Quotation Cannot Be Edited'
             description={`This quotation is ${quotation.status.toLowerCase()} and cannot be modified. Only draft and revised quotations can be edited.`}
-            type="warning"
+            type='warning'
             showIcon
           />
         )}
 
         {/* Project & Client Selection */}
         <ProgressiveSection
-          title="Project & Client Selection"
-          subtitle="Project and client information for this quotation"
+          title='Project & Client Selection'
+          subtitle='Project and client information for this quotation'
           icon={<ProjectOutlined />}
           defaultOpen={true}
           required={true}
-          validation={hasChanges ? {
-            status: 'warning',
-            message: 'Modified fields detected'
-          } : {
-            status: 'success',
-            message: 'All required fields completed'
-          }}
+          validation={
+            hasChanges
+              ? {
+                  status: 'warning',
+                  message: 'Modified fields detected',
+                }
+              : {
+                  status: 'success',
+                  message: 'All required fields completed',
+                }
+          }
         >
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="projectId"
-                label="Project"
+                name='projectId'
+                label='Project'
                 rules={[{ required: true, message: 'Please select a project' }]}
               >
                 <Select
-                  placeholder="Select project"
-                  size="large"
+                  placeholder='Select project'
+                  size='large'
                   loading={projectsLoading}
                   showSearch
                   filterOption={(input, option) =>
-                    ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase())
+                    ((option?.label as string) ?? '')
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                   options={projects.map(project => ({
                     value: project.id,
@@ -449,20 +484,22 @@ export const QuotationEditPage: React.FC = () => {
                 />
               </Form.Item>
             </Col>
-            
+
             <Col xs={24} sm={12}>
               <Form.Item
-                name="clientId"
-                label="Client"
+                name='clientId'
+                label='Client'
                 rules={[{ required: true, message: 'Please select a client' }]}
               >
                 <Select
-                  placeholder="Select client"
-                  size="large"
+                  placeholder='Select client'
+                  size='large'
                   loading={clientsLoading}
                   showSearch
                   filterOption={(input, option) =>
-                    ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase())
+                    ((option?.label as string) ?? '')
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                   options={clients.map(client => ({
                     value: client.id,
@@ -476,8 +513,8 @@ export const QuotationEditPage: React.FC = () => {
 
         {/* Pricing Strategy */}
         <ProgressiveSection
-          title="Pricing Strategy"
-          subtitle="Project pricing and quotation amounts"
+          title='Pricing Strategy'
+          subtitle='Project pricing and quotation amounts'
           icon={<DollarOutlined />}
           defaultOpen={true}
           required={true}
@@ -485,25 +522,29 @@ export const QuotationEditPage: React.FC = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="amountPerProject"
-                label="Project Amount (IDR)"
-                rules={[{ required: true, message: 'Please enter project amount' }]}
+                name='amountPerProject'
+                label='Project Amount (IDR)'
+                rules={[
+                  { required: true, message: 'Please enter project amount' },
+                ]}
               >
                 <IDRCurrencyInput
-                  placeholder="Enter project amount"
+                  placeholder='Enter project amount'
                   showMateraiWarning={false}
                 />
               </Form.Item>
             </Col>
-            
+
             <Col xs={24} sm={12}>
               <Form.Item
-                name="totalAmount"
-                label="Total Quotation Amount (IDR)"
-                rules={[{ required: true, message: 'Please enter total amount' }]}
+                name='totalAmount'
+                label='Total Quotation Amount (IDR)'
+                rules={[
+                  { required: true, message: 'Please enter total amount' },
+                ]}
               >
                 <IDRCurrencyInput
-                  placeholder="Enter total amount"
+                  placeholder='Enter total amount'
                   showMateraiWarning={true}
                 />
               </Form.Item>
@@ -512,27 +553,43 @@ export const QuotationEditPage: React.FC = () => {
 
           {/* Pricing Calculations */}
           {totalAmount > 0 && (
-            <Card size="small" style={{ marginTop: '16px', backgroundColor: '#f0f5ff' }}>
+            <Card
+              size='small'
+              style={{ marginTop: '16px', backgroundColor: '#f0f5ff' }}
+            >
               <Title level={5} style={{ margin: 0, marginBottom: '8px' }}>
                 Pricing Breakdown
               </Title>
               <Row gutter={[16, 8]}>
                 <Col xs={12} sm={6}>
-                  <Text type="secondary">Subtotal:</Text>
-                  <div><Text strong>{formatIDR(totalAmount)}</Text></div>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Text type="secondary">PPN (11%):</Text>
-                  <div><Text strong>{formatIDR(totalAmount * 0.11)}</Text></div>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Text type="secondary">Total + Tax:</Text>
-                  <div><Text strong style={{ color: '#52c41a' }}>{formatIDR(totalAmount * 1.11)}</Text></div>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Text type="secondary">Materai:</Text>
+                  <Text type='secondary'>Subtotal:</Text>
                   <div>
-                    <Text strong style={{ color: totalAmount > 5000000 ? '#faad14' : '#52c41a' }}>
+                    <Text strong>{formatIDR(totalAmount)}</Text>
+                  </div>
+                </Col>
+                <Col xs={12} sm={6}>
+                  <Text type='secondary'>PPN (11%):</Text>
+                  <div>
+                    <Text strong>{formatIDR(totalAmount * 0.11)}</Text>
+                  </div>
+                </Col>
+                <Col xs={12} sm={6}>
+                  <Text type='secondary'>Total + Tax:</Text>
+                  <div>
+                    <Text strong style={{ color: '#52c41a' }}>
+                      {formatIDR(totalAmount * 1.11)}
+                    </Text>
+                  </div>
+                </Col>
+                <Col xs={12} sm={6}>
+                  <Text type='secondary'>Materai:</Text>
+                  <div>
+                    <Text
+                      strong
+                      style={{
+                        color: totalAmount > 5000000 ? '#faad14' : '#52c41a',
+                      }}
+                    >
                       {totalAmount > 5000000 ? 'Required' : 'Not Required'}
                     </Text>
                   </div>
@@ -544,8 +601,8 @@ export const QuotationEditPage: React.FC = () => {
 
         {/* Quotation Details */}
         <ProgressiveSection
-          title="Quotation Details"
-          subtitle="Status, validity period and terms & conditions"
+          title='Quotation Details'
+          subtitle='Status, validity period and terms & conditions'
           icon={<CalendarOutlined />}
           defaultOpen={false}
           required={true}
@@ -553,13 +610,13 @@ export const QuotationEditPage: React.FC = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="status"
-                label="Quotation Status"
+                name='status'
+                label='Quotation Status'
                 rules={[{ required: true, message: 'Please select status' }]}
               >
                 <Select
-                  placeholder="Select status"
-                  size="large"
+                  placeholder='Select status'
+                  size='large'
                   options={[
                     { value: 'DRAFT', label: 'Draft' },
                     { value: 'SENT', label: 'Sent' },
@@ -570,19 +627,19 @@ export const QuotationEditPage: React.FC = () => {
                 />
               </Form.Item>
             </Col>
-            
+
             <Col xs={24} sm={12}>
               <Form.Item
-                name="validUntil"
-                label="Valid Until"
+                name='validUntil'
+                label='Valid Until'
                 rules={[
                   { required: true, message: 'Please select validity date' },
                 ]}
               >
                 <DatePicker
-                  size="large"
+                  size='large'
                   style={{ width: '100%' }}
-                  format="DD MMM YYYY"
+                  format='DD MMM YYYY'
                 />
               </Form.Item>
             </Col>
@@ -590,16 +647,19 @@ export const QuotationEditPage: React.FC = () => {
 
           <Col xs={24}>
             <Form.Item
-              name="terms"
-              label="Terms & Conditions"
+              name='terms'
+              label='Terms & Conditions'
               rules={[
-                { required: true, message: 'Please enter terms and conditions' },
+                {
+                  required: true,
+                  message: 'Please enter terms and conditions',
+                },
                 { min: 50, message: 'Terms must be at least 50 characters' },
               ]}
             >
-              <TextArea 
+              <TextArea
                 rows={8}
-                placeholder="Enter detailed terms and conditions for this quotation..."
+                placeholder='Enter detailed terms and conditions for this quotation...'
               />
             </Form.Item>
           </Col>
@@ -607,29 +667,26 @@ export const QuotationEditPage: React.FC = () => {
 
         {/* Action Buttons */}
         <Card style={{ marginTop: '24px', textAlign: 'center' }}>
-          <Space size="large">
-            <Button 
-              size="large"
-              onClick={() => navigate(`/quotations/${id}`)}
-            >
+          <Space size='large'>
+            <Button size='large' onClick={() => navigate(`/quotations/${id}`)}>
               Cancel
             </Button>
             {canEdit && (
               <>
-                <Button 
-                  type="default" 
-                  size="large"
+                <Button
+                  type='default'
+                  size='large'
                   icon={<UndoOutlined />}
                   onClick={handleRevertChanges}
                   disabled={!hasChanges}
                 >
                   Revert Changes
                 </Button>
-                <Button 
-                  type="primary" 
-                  size="large"
+                <Button
+                  type='primary'
+                  size='large'
                   icon={<SaveOutlined />}
-                  htmlType="submit"
+                  htmlType='submit'
                   loading={updateQuotationMutation.isPending}
                   disabled={!hasChanges}
                 >
@@ -638,9 +695,9 @@ export const QuotationEditPage: React.FC = () => {
               </>
             )}
             {canGenerateInvoice && (
-              <Button 
-                type="primary" 
-                size="large"
+              <Button
+                type='primary'
+                size='large'
                 icon={<CheckCircleOutlined />}
                 onClick={handleGenerateInvoice}
                 loading={generateInvoiceMutation.isPending}

@@ -61,7 +61,14 @@ export interface UpdateMateraiConfigRequest {
 }
 
 export interface MateraiResponse {
-  data: MateraiCheckResult | MateraiStats | MateraiConfig | MateraiComplianceResult | { success: string[]; failed: string[] } | any[] | null
+  data:
+    | MateraiCheckResult
+    | MateraiStats
+    | MateraiConfig
+    | MateraiComplianceResult
+    | { success: string[]; failed: string[] }
+    | any[]
+    | null
   message: string
   status: 'success' | 'error'
 }

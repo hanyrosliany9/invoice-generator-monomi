@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
-import { 
-  Alert, 
-  Avatar, 
-  Button, 
-  Card, 
-  Col, 
-  Divider, 
-  Form, 
-  Input, 
-  InputNumber, 
+import {
+  Alert,
+  Avatar,
+  Button,
+  Card,
+  Col,
+  Divider,
+  Form,
+  Input,
+  InputNumber,
   message,
   Row,
   Select,
@@ -17,9 +17,9 @@ import {
   Tabs,
   TimePicker,
   Typography,
-  Upload
+  Upload,
 } from 'antd'
-import { 
+import {
   BellOutlined,
   CameraOutlined,
   DollarOutlined,
@@ -29,7 +29,7 @@ import {
   SettingOutlined,
   ShopOutlined,
   UndoOutlined,
-  UserOutlined
+  UserOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -107,7 +107,7 @@ export const SettingsPage: React.FC = () => {
     },
     onError: () => {
       message.error(t('messages.error.general'))
-    }
+    },
   })
 
   const updateCompanyMutation = useMutation({
@@ -118,7 +118,7 @@ export const SettingsPage: React.FC = () => {
     },
     onError: () => {
       message.error(t('messages.error.general'))
-    }
+    },
   })
 
   const updateSystemMutation = useMutation({
@@ -129,7 +129,7 @@ export const SettingsPage: React.FC = () => {
     },
     onError: () => {
       message.error(t('messages.error.general'))
-    }
+    },
   })
 
   const resetMutation = useMutation({
@@ -140,7 +140,7 @@ export const SettingsPage: React.FC = () => {
     },
     onError: () => {
       message.error(t('messages.error.general'))
-    }
+    },
   })
 
   const changePasswordMutation = useMutation({
@@ -151,7 +151,7 @@ export const SettingsPage: React.FC = () => {
     },
     onError: (error: any) => {
       message.error(`Gagal mengubah password: ${error.message}`)
-    }
+    },
   })
 
   const handleSaveProfile = async (values: ProfileFormValues) => {
@@ -161,7 +161,7 @@ export const SettingsPage: React.FC = () => {
   const handleChangePassword = async (values: PasswordFormValues) => {
     changePasswordMutation.mutate({
       currentPassword: values.currentPassword,
-      newPassword: values.newPassword
+      newPassword: values.newPassword,
     })
   }
 
@@ -185,7 +185,7 @@ export const SettingsPage: React.FC = () => {
     >
       <Form
         form={profileForm}
-        layout="vertical"
+        layout='vertical'
         onFinish={handleSaveProfile}
         initialValues={{
           name: user?.name,
@@ -193,7 +193,7 @@ export const SettingsPage: React.FC = () => {
           role: user?.role,
           phone: '',
           timezone: 'Asia/Jakarta',
-          language: 'id'
+          language: 'id',
         }}
       >
         <Row gutter={24}>
@@ -203,12 +203,12 @@ export const SettingsPage: React.FC = () => {
               icon={<UserOutlined />}
               style={{
                 backgroundColor: '#6366f1',
-                marginBottom: '16px'
+                marginBottom: '16px',
               }}
             />
             <br />
             <Upload showUploadList={false}>
-              <Button icon={<CameraOutlined />} type="dashed">
+              <Button icon={<CameraOutlined />} type='dashed'>
                 Change Avatar
               </Button>
             </Upload>
@@ -218,55 +218,55 @@ export const SettingsPage: React.FC = () => {
         <Row gutter={24}>
           <Col span={12}>
             <Form.Item
-              label="Name"
-              name="name"
+              label='Name'
+              name='name'
               rules={[{ required: true, message: 'Please input your name!' }]}
             >
-              <Input size="large" placeholder="Full Name" />
+              <Input size='large' placeholder='Full Name' />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item
-              label="Email"
-              name="email"
+              label='Email'
+              name='email'
               rules={[
                 { required: true, message: 'Please input your email!' },
-                { type: 'email', message: 'Please enter a valid email!' }
+                { type: 'email', message: 'Please enter a valid email!' },
               ]}
             >
-              <Input size="large" placeholder="email@company.com" />
+              <Input size='large' placeholder='email@company.com' />
             </Form.Item>
           </Col>
         </Row>
 
         <Row gutter={24}>
           <Col span={12}>
-            <Form.Item label="Phone" name="phone">
-              <Input size="large" placeholder="+62 812 3456 7890" />
+            <Form.Item label='Phone' name='phone'>
+              <Input size='large' placeholder='+62 812 3456 7890' />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item label="Role" name="role">
-              <Input size="large" disabled />
+            <Form.Item label='Role' name='role'>
+              <Input size='large' disabled />
             </Form.Item>
           </Col>
         </Row>
 
         <Row gutter={24}>
           <Col span={12}>
-            <Form.Item label={t('settings.timezone')} name="timezone">
-              <Select size="large">
-                <Option value="Asia/Jakarta">Asia/Jakarta (WIB)</Option>
-                <Option value="Asia/Makassar">Asia/Makassar (WITA)</Option>
-                <Option value="Asia/Jayapura">Asia/Jayapura (WIT)</Option>
+            <Form.Item label={t('settings.timezone')} name='timezone'>
+              <Select size='large'>
+                <Option value='Asia/Jakarta'>Asia/Jakarta (WIB)</Option>
+                <Option value='Asia/Makassar'>Asia/Makassar (WITA)</Option>
+                <Option value='Asia/Jayapura'>Asia/Jayapura (WIT)</Option>
               </Select>
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item label={t('settings.language')} name="language">
-              <Select size="large">
-                <Option value="id">Bahasa Indonesia</Option>
-                <Option value="en">English</Option>
+            <Form.Item label={t('settings.language')} name='language'>
+              <Select size='large'>
+                <Option value='id'>Bahasa Indonesia</Option>
+                <Option value='en'>English</Option>
               </Select>
             </Form.Item>
           </Col>
@@ -274,16 +274,16 @@ export const SettingsPage: React.FC = () => {
 
         <Form.Item>
           <Button
-            data-testid="save-settings-button"
-            type="primary"
-            htmlType="submit"
+            data-testid='save-settings-button'
+            type='primary'
+            htmlType='submit'
             loading={updateUserMutation.isPending}
             icon={<SaveOutlined />}
-            size="large"
+            size='large'
             style={{
               background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
               border: 'none',
-              borderRadius: '8px'
+              borderRadius: '8px',
             }}
           >
             {t('settings.saveSettings')}
@@ -297,47 +297,51 @@ export const SettingsPage: React.FC = () => {
     <Card
       title={
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <SecurityScanOutlined style={{ marginRight: '8px', color: '#6366f1' }} />
+          <SecurityScanOutlined
+            style={{ marginRight: '8px', color: '#6366f1' }}
+          />
           {t('settings.security')}
         </div>
       }
       style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
     >
       <Alert
-        message="Security Tip"
-        description="Use a strong password with at least 8 characters, including uppercase, lowercase, numbers, and special characters."
-        type="info"
+        message='Security Tip'
+        description='Use a strong password with at least 8 characters, including uppercase, lowercase, numbers, and special characters.'
+        type='info'
         showIcon
         style={{ marginBottom: '24px', borderRadius: '8px' }}
       />
 
       <Form
         form={securityForm}
-        layout="vertical"
+        layout='vertical'
         onFinish={handleChangePassword}
       >
         <Form.Item
           label={t('settings.currentPassword')}
-          name="currentPassword"
-          rules={[{ required: true, message: 'Please input your current password!' }]}
+          name='currentPassword'
+          rules={[
+            { required: true, message: 'Please input your current password!' },
+          ]}
         >
-          <Input.Password size="large" placeholder="Enter current password" />
+          <Input.Password size='large' placeholder='Enter current password' />
         </Form.Item>
 
         <Form.Item
           label={t('settings.newPassword')}
-          name="newPassword"
+          name='newPassword'
           rules={[
             { required: true, message: 'Please input your new password!' },
-            { min: 8, message: 'Password must be at least 8 characters!' }
+            { min: 8, message: 'Password must be at least 8 characters!' },
           ]}
         >
-          <Input.Password size="large" placeholder="Enter new password" />
+          <Input.Password size='large' placeholder='Enter new password' />
         </Form.Item>
 
         <Form.Item
           label={t('settings.confirmPassword')}
-          name="confirmPassword"
+          name='confirmPassword'
           dependencies={['newPassword']}
           rules={[
             { required: true, message: 'Please confirm your password!' },
@@ -346,26 +350,28 @@ export const SettingsPage: React.FC = () => {
                 if (!value || getFieldValue('newPassword') === value) {
                   return Promise.resolve()
                 }
-                return Promise.reject(new Error('The two passwords do not match!'))
+                return Promise.reject(
+                  new Error('The two passwords do not match!')
+                )
               },
             }),
           ]}
         >
-          <Input.Password size="large" placeholder="Confirm new password" />
+          <Input.Password size='large' placeholder='Confirm new password' />
         </Form.Item>
 
         <Form.Item>
           <Button
-            data-testid="save-settings-button"
-            type="primary"
-            htmlType="submit"
+            data-testid='save-settings-button'
+            type='primary'
+            htmlType='submit'
             loading={updateUserMutation.isPending}
             icon={<SaveOutlined />}
-            size="large"
+            size='large'
             style={{
               background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
               border: 'none',
-              borderRadius: '8px'
+              borderRadius: '8px',
             }}
           >
             {t('settings.changePassword')}
@@ -387,7 +393,7 @@ export const SettingsPage: React.FC = () => {
     >
       <Form
         form={companyForm}
-        layout="vertical"
+        layout='vertical'
         onFinish={handleSaveCompany}
         initialValues={{
           companyName: 'PT Teknologi Indonesia',
@@ -396,63 +402,67 @@ export const SettingsPage: React.FC = () => {
           email: 'info@teknologi.co.id',
           website: 'https://teknologi.co.id',
           taxNumber: '01.234.567.8-901.000',
-          currency: 'IDR'
+          currency: 'IDR',
         }}
       >
         <Row gutter={24}>
           <Col span={12}>
             <Form.Item
-              label="Company Name"
-              name="companyName"
-              rules={[{ required: true, message: 'Please input company name!' }]}
+              label='Company Name'
+              name='companyName'
+              rules={[
+                { required: true, message: 'Please input company name!' },
+              ]}
             >
-              <Input size="large" placeholder="PT Technology Indonesia" />
+              <Input size='large' placeholder='PT Technology Indonesia' />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item
-              label="Tax Number (NPWP)"
-              name="taxNumber"
+              label='Tax Number (NPWP)'
+              name='taxNumber'
               rules={[{ required: true, message: 'Please input tax number!' }]}
             >
-              <Input size="large" placeholder="01.234.567.8-901.000" />
+              <Input size='large' placeholder='01.234.567.8-901.000' />
             </Form.Item>
           </Col>
         </Row>
 
         <Form.Item
-          label="Address"
-          name="address"
+          label='Address'
+          name='address'
           rules={[{ required: true, message: 'Please input company address!' }]}
         >
-          <TextArea rows={3} placeholder="Complete company address" />
+          <TextArea rows={3} placeholder='Complete company address' />
         </Form.Item>
 
         <Row gutter={24}>
           <Col span={8}>
             <Form.Item
-              label="Phone"
-              name="phone"
-              rules={[{ required: true, message: 'Please input phone number!' }]}
+              label='Phone'
+              name='phone'
+              rules={[
+                { required: true, message: 'Please input phone number!' },
+              ]}
             >
-              <Input size="large" placeholder="021-1234567" />
+              <Input size='large' placeholder='021-1234567' />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item
-              label="Email"
-              name="email"
+              label='Email'
+              name='email'
               rules={[
                 { required: true, message: 'Please input email!' },
-                { type: 'email', message: 'Please enter a valid email!' }
+                { type: 'email', message: 'Please enter a valid email!' },
               ]}
             >
-              <Input size="large" placeholder="info@company.com" />
+              <Input size='large' placeholder='info@company.com' />
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item label="Website" name="website">
-              <Input size="large" placeholder="https://company.com" />
+            <Form.Item label='Website' name='website'>
+              <Input size='large' placeholder='https://company.com' />
             </Form.Item>
           </Col>
         </Row>
@@ -461,34 +471,34 @@ export const SettingsPage: React.FC = () => {
 
         <Row gutter={24}>
           <Col span={8}>
-            <Form.Item label="Bank BCA" name="bankBCA">
-              <Input size="large" placeholder="1234567890" />
+            <Form.Item label='Bank BCA' name='bankBCA'>
+              <Input size='large' placeholder='1234567890' />
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item label="Bank Mandiri" name="bankMandiri">
-              <Input size="large" placeholder="0987654321" />
+            <Form.Item label='Bank Mandiri' name='bankMandiri'>
+              <Input size='large' placeholder='0987654321' />
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item label="Bank BNI" name="bankBNI">
-              <Input size="large" placeholder="1122334455" />
+            <Form.Item label='Bank BNI' name='bankBNI'>
+              <Input size='large' placeholder='1122334455' />
             </Form.Item>
           </Col>
         </Row>
 
         <Form.Item>
           <Button
-            data-testid="save-settings-button"
-            type="primary"
-            htmlType="submit"
+            data-testid='save-settings-button'
+            type='primary'
+            htmlType='submit'
             loading={updateCompanyMutation.isPending}
             icon={<SaveOutlined />}
-            size="large"
+            size='large'
             style={{
               background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
               border: 'none',
-              borderRadius: '8px'
+              borderRadius: '8px',
             }}
           >
             {t('settings.saveSettings')}
@@ -499,7 +509,7 @@ export const SettingsPage: React.FC = () => {
   )
 
   const SystemSettings = () => (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <Space direction='vertical' size='large' style={{ width: '100%' }}>
       <Card
         title={
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -509,27 +519,51 @@ export const SettingsPage: React.FC = () => {
         }
         style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
       >
-        <Form layout="vertical" onFinish={handleSaveSystem}>
+        <Form layout='vertical' onFinish={handleSaveSystem}>
           <Row gutter={24}>
             <Col span={12}>
-              <Form.Item label={t('settings.emailNotifications')} name="emailNotifications" valuePropName="checked">
+              <Form.Item
+                label={t('settings.emailNotifications')}
+                name='emailNotifications'
+                valuePropName='checked'
+              >
                 <Switch defaultChecked />
               </Form.Item>
-              <Form.Item label="Invoice Reminders" name="invoiceReminders" valuePropName="checked">
+              <Form.Item
+                label='Invoice Reminders'
+                name='invoiceReminders'
+                valuePropName='checked'
+              >
                 <Switch defaultChecked />
               </Form.Item>
-              <Form.Item label="Payment Notifications" name="paymentNotifications" valuePropName="checked">
+              <Form.Item
+                label='Payment Notifications'
+                name='paymentNotifications'
+                valuePropName='checked'
+              >
                 <Switch defaultChecked />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Overdue Alerts" name="overdueAlerts" valuePropName="checked">
+              <Form.Item
+                label='Overdue Alerts'
+                name='overdueAlerts'
+                valuePropName='checked'
+              >
                 <Switch defaultChecked />
               </Form.Item>
-              <Form.Item label="System Updates" name="systemUpdates" valuePropName="checked">
+              <Form.Item
+                label='System Updates'
+                name='systemUpdates'
+                valuePropName='checked'
+              >
                 <Switch />
               </Form.Item>
-              <Form.Item label="Marketing Emails" name="marketingEmails" valuePropName="checked">
+              <Form.Item
+                label='Marketing Emails'
+                name='marketingEmails'
+                valuePropName='checked'
+              >
                 <Switch />
               </Form.Item>
             </Col>
@@ -546,25 +580,29 @@ export const SettingsPage: React.FC = () => {
         }
         style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
       >
-        <Form layout="vertical">
+        <Form layout='vertical'>
           <Row gutter={24}>
             <Col span={12}>
-              <Form.Item label="Default Payment Terms" name="paymentTerms">
-                <Select size="large" defaultValue="NET 30">
-                  <Option value="NET 7">NET 7 Days</Option>
-                  <Option value="NET 14">NET 14 Days</Option>
-                  <Option value="NET 30">NET 30 Days</Option>
-                  <Option value="NET 60">NET 60 Days</Option>
+              <Form.Item label='Default Payment Terms' name='paymentTerms'>
+                <Select size='large' defaultValue='NET 30'>
+                  <Option value='NET 7'>NET 7 Days</Option>
+                  <Option value='NET 14'>NET 14 Days</Option>
+                  <Option value='NET 30'>NET 30 Days</Option>
+                  <Option value='NET 60'>NET 60 Days</Option>
                 </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Auto Materai Threshold" name="materaiThreshold">
+              <Form.Item label='Auto Materai Threshold' name='materaiThreshold'>
                 <InputNumber
-                  size="large"
+                  size='large'
                   style={{ width: '100%' }}
-                  formatter={(value) => `Rp ${value || 0}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={(value) => Number((value || '').replace(/Rp\s?|(,*)/g, '')) as any}
+                  formatter={value =>
+                    `Rp ${value || 0}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                  }
+                  parser={value =>
+                    Number((value || '').replace(/Rp\s?|(,*)/g, '')) as any
+                  }
                   defaultValue={5000000}
                 />
               </Form.Item>
@@ -573,13 +611,13 @@ export const SettingsPage: React.FC = () => {
 
           <Row gutter={24}>
             <Col span={12}>
-              <Form.Item label="Invoice Prefix" name="invoicePrefix">
-                <Input size="large" defaultValue="INV-" placeholder="INV-" />
+              <Form.Item label='Invoice Prefix' name='invoicePrefix'>
+                <Input size='large' defaultValue='INV-' placeholder='INV-' />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Quotation Prefix" name="quotationPrefix">
-                <Input size="large" defaultValue="QT-" placeholder="QT-" />
+              <Form.Item label='Quotation Prefix' name='quotationPrefix'>
+                <Input size='large' defaultValue='QT-' placeholder='QT-' />
               </Form.Item>
             </Col>
           </Row>
@@ -595,28 +633,35 @@ export const SettingsPage: React.FC = () => {
         }
         style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
       >
-        <Form layout="vertical">
+        <Form layout='vertical'>
           <Row gutter={24}>
             <Col span={8}>
-              <Form.Item label={t('settings.autoBackup')} name="autoBackup" valuePropName="checked">
+              <Form.Item
+                label={t('settings.autoBackup')}
+                name='autoBackup'
+                valuePropName='checked'
+              >
                 <Switch defaultChecked />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item label={t('settings.backupFrequency')} name="backupFrequency">
-                <Select size="large" defaultValue="daily">
-                  <Option value="daily">Daily</Option>
-                  <Option value="weekly">Weekly</Option>
-                  <Option value="monthly">Monthly</Option>
+              <Form.Item
+                label={t('settings.backupFrequency')}
+                name='backupFrequency'
+              >
+                <Select size='large' defaultValue='daily'>
+                  <Option value='daily'>Daily</Option>
+                  <Option value='weekly'>Weekly</Option>
+                  <Option value='monthly'>Monthly</Option>
                 </Select>
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item label="Backup Time" name="backupTime">
+              <Form.Item label='Backup Time' name='backupTime'>
                 <TimePicker
-                  size="large"
+                  size='large'
                   defaultValue={dayjs('02:00', 'HH:mm')}
-                  format="HH:mm"
+                  format='HH:mm'
                   style={{ width: '100%' }}
                 />
               </Form.Item>
@@ -626,31 +671,31 @@ export const SettingsPage: React.FC = () => {
       </Card>
 
       <div style={{ textAlign: 'center' }}>
-        <Space size="middle">
+        <Space size='middle'>
           <Button
-            data-testid="reset-settings-button"
+            data-testid='reset-settings-button'
             loading={resetMutation.isPending}
             icon={<UndoOutlined />}
-            size="large"
+            size='large'
             style={{
               borderRadius: '8px',
-              minWidth: '150px'
+              minWidth: '150px',
             }}
             onClick={() => resetMutation.mutate()}
           >
             Reset to Default
           </Button>
           <Button
-            data-testid="save-settings-button"
-            type="primary"
+            data-testid='save-settings-button'
+            type='primary'
             loading={updateSystemMutation.isPending}
             icon={<SaveOutlined />}
-            size="large"
+            size='large'
             style={{
               background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
               border: 'none',
               borderRadius: '8px',
-              minWidth: '200px'
+              minWidth: '200px',
             }}
             onClick={() => handleSaveSystem({})}
           >
@@ -668,7 +713,7 @@ export const SettingsPage: React.FC = () => {
           <SettingOutlined style={{ marginRight: '12px', color: '#6366f1' }} />
           {t('settings.title')}
         </Title>
-        <Text type="secondary" style={{ fontSize: '16px' }}>
+        <Text type='secondary' style={{ fontSize: '16px' }}>
           Manage your account and system preferences
         </Text>
       </div>
@@ -676,54 +721,54 @@ export const SettingsPage: React.FC = () => {
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
-        size="large"
+        size='large'
         style={{
           background: 'white',
           borderRadius: '16px',
           padding: '24px',
-          border: '1px solid #e2e8f0'
+          border: '1px solid #e2e8f0',
         }}
         items={[
           {
             key: 'profile',
             label: (
-              <span data-testid="profile-tab">
+              <span data-testid='profile-tab'>
                 <UserOutlined />
                 {t('settings.profile')}
               </span>
             ),
-            children: <ProfileSettings />
+            children: <ProfileSettings />,
           },
           {
             key: 'security',
             label: (
-              <span data-testid="security-tab">
+              <span data-testid='security-tab'>
                 <SecurityScanOutlined />
                 {t('settings.security')}
               </span>
             ),
-            children: <SecuritySettings />
+            children: <SecuritySettings />,
           },
           {
             key: 'company',
             label: (
-              <span data-testid="company-tab">
+              <span data-testid='company-tab'>
                 <ShopOutlined />
                 Company
               </span>
             ),
-            children: <CompanySettings />
+            children: <CompanySettings />,
           },
           {
             key: 'system',
             label: (
-              <span data-testid="system-tab">
+              <span data-testid='system-tab'>
                 <SettingOutlined />
                 System
               </span>
             ),
-            children: <SystemSettings />
-          }
+            children: <SystemSettings />,
+          },
         ]}
       />
     </div>

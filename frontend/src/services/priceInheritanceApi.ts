@@ -3,10 +3,10 @@
 
 import { apiClient } from './apiClient'
 import {
+  PriceInheritanceConfig,
+  PriceInheritanceMode,
   PriceSource,
   PriceValidationResult,
-  PriceInheritanceConfig,
-  PriceInheritanceMode
 } from '../components/forms/types/priceInheritance.types'
 
 export interface CreatePriceInheritanceRequest {
@@ -87,11 +87,13 @@ class PriceInheritanceApiService {
     entityId: string
   ): Promise<PriceSource[]> {
     try {
-      const response = await apiClient.get<PriceSource[]>(`${this.baseUrl}/sources?entityType=${entityType}&entityId=${entityId}`)
+      const response = await apiClient.get<PriceSource[]>(
+        `${this.baseUrl}/sources?entityType=${entityType}&entityId=${entityId}`
+      )
 
       return (response.data as any[]).map((source: any) => ({
         ...source,
-        lastUpdated: new Date(source.lastUpdated)
+        lastUpdated: new Date(source.lastUpdated),
       }))
     } catch (error) {
       console.error('Failed to get price sources:', error)
@@ -106,11 +108,16 @@ class PriceInheritanceApiService {
     request: ValidatePriceInheritanceRequest
   ): Promise<PriceValidationResult> {
     try {
-      const response = await apiClient.post<PriceValidationResult>(`${this.baseUrl}/validate`, request)
-      
+      const response = await apiClient.post<PriceValidationResult>(
+        `${this.baseUrl}/validate`,
+        request
+      )
+
       return {
         ...(response.data as any),
-        validationTimestamp: new Date((response.data as any).validationTimestamp)
+        validationTimestamp: new Date(
+          (response.data as any).validationTimestamp
+        ),
       }
     } catch (error) {
       console.error('Price validation failed:', error)
@@ -125,26 +132,32 @@ class PriceInheritanceApiService {
     request: CreatePriceInheritanceRequest
   ): Promise<PriceInheritanceResponse> {
     try {
-      const response = await apiClient.post<PriceInheritanceResponse>(this.baseUrl, request)
-      
+      const response = await apiClient.post<PriceInheritanceResponse>(
+        this.baseUrl,
+        request
+      )
+
       return {
         ...(response.data as any),
         metadata: {
           ...(response.data as any).metadata,
-          calculatedAt: new Date((response.data as any).metadata.calculatedAt)
-        }
+          calculatedAt: new Date((response.data as any).metadata.calculatedAt),
+        },
       }
     } catch (error: any) {
       console.error('Failed to create price inheritance:', error)
-      
+
       // Extract error message from response
-      const errorMessage = error.response?.data?.message || 'Gagal membuat konfigurasi harga'
+      const errorMessage =
+        error.response?.data?.message || 'Gagal membuat konfigurasi harga'
       const validationErrors = error.response?.data?.errors || []
-      
+
       if (validationErrors.length > 0) {
-        throw new Error(`${errorMessage}: ${validationErrors.map((e: any) => e.message).join(', ')}`)
+        throw new Error(
+          `${errorMessage}: ${validationErrors.map((e: any) => e.message).join(', ')}`
+        )
       }
-      
+
       throw new Error(errorMessage)
     }
   }
@@ -157,19 +170,23 @@ class PriceInheritanceApiService {
     request: UpdatePriceInheritanceRequest
   ): Promise<PriceInheritanceResponse> {
     try {
-      const response = await apiClient.put<PriceInheritanceResponse>(`${this.baseUrl}/${id}`, request)
-      
+      const response = await apiClient.put<PriceInheritanceResponse>(
+        `${this.baseUrl}/${id}`,
+        request
+      )
+
       return {
         ...(response.data as any),
         metadata: {
           ...(response.data as any).metadata,
-          calculatedAt: new Date((response.data as any).metadata.calculatedAt)
-        }
+          calculatedAt: new Date((response.data as any).metadata.calculatedAt),
+        },
       }
     } catch (error: any) {
       console.error('Failed to update price inheritance:', error)
-      
-      const errorMessage = error.response?.data?.message || 'Gagal memperbarui konfigurasi harga'
+
+      const errorMessage =
+        error.response?.data?.message || 'Gagal memperbarui konfigurasi harga'
       throw new Error(errorMessage)
     }
   }
@@ -188,8 +205,10 @@ class PriceInheritanceApiService {
       if (dateTo) params.dateTo = dateTo.toISOString()
       if (userId) params.userId = userId
 
-      const response = await apiClient.get<PriceInheritanceAnalytics>(`${this.baseUrl}/analytics?${new URLSearchParams(params as Record<string, string>).toString()}`)
-      
+      const response = await apiClient.get<PriceInheritanceAnalytics>(
+        `${this.baseUrl}/analytics?${new URLSearchParams(params as Record<string, string>).toString()}`
+      )
+
       return response.data as PriceInheritanceAnalytics
     } catch (error) {
       console.error('Failed to get price inheritance analytics:', error)
@@ -202,10 +221,13 @@ class PriceInheritanceApiService {
    */
   async calculateMaterai(amount: number): Promise<MateraiCalculationResponse> {
     try {
-      const response = await apiClient.post<MateraiCalculationResponse>(`${this.baseUrl}/materai/calculate`, {
-        amount
-      })
-      
+      const response = await apiClient.post<MateraiCalculationResponse>(
+        `${this.baseUrl}/materai/calculate`,
+        {
+          amount,
+        }
+      )
+
       return response.data as MateraiCalculationResponse
     } catch (error) {
       console.error('Failed to calculate materai:', error)
@@ -216,10 +238,14 @@ class PriceInheritanceApiService {
   /**
    * Get Indonesian business etiquette guidance
    */
-  async getBusinessEtiquette(amount: number): Promise<BusinessEtiquetteResponse> {
+  async getBusinessEtiquette(
+    amount: number
+  ): Promise<BusinessEtiquetteResponse> {
     try {
-      const response = await apiClient.get<BusinessEtiquetteResponse>(`${this.baseUrl}/business-etiquette/${amount}`)
-      
+      const response = await apiClient.get<BusinessEtiquetteResponse>(
+        `${this.baseUrl}/business-etiquette/${amount}`
+      )
+
       return response.data as BusinessEtiquetteResponse
     } catch (error) {
       console.error('Failed to get business etiquette:', error)
@@ -257,27 +283,34 @@ class PriceInheritanceApiService {
     requests: ValidatePriceInheritanceRequest[]
   ): Promise<PriceValidationResult[]> {
     try {
-      const promises = requests.map(request => this.validatePriceInheritance(request))
+      const promises = requests.map(request =>
+        this.validatePriceInheritance(request)
+      )
       const results = await Promise.allSettled(promises)
-      
+
       return results.map((result, index) => {
         if (result.status === 'fulfilled') {
           return result.value
         } else {
-          console.error(`Batch validation failed for request ${index}:`, result.reason)
+          console.error(
+            `Batch validation failed for request ${index}:`,
+            result.reason
+          )
           // Return a basic error validation result
           return {
             isValid: false,
-            errors: [{
-              id: 'batch-error',
-              type: 'pricing',
-              severity: 'error' as const,
-              message: 'Validasi batch gagal',
-              isBlocking: true
-            }],
+            errors: [
+              {
+                id: 'batch-error',
+                type: 'pricing',
+                severity: 'error' as const,
+                message: 'Validasi batch gagal',
+                isBlocking: true,
+              },
+            ],
             warnings: [],
             suggestions: [],
-            validationTimestamp: new Date()
+            validationTimestamp: new Date(),
           }
         }
       })

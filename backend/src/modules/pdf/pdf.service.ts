@@ -1,45 +1,43 @@
-import { Injectable } from '@nestjs/common';
-import * as puppeteer from 'puppeteer';
-import { join } from 'path';
-import { readFileSync } from 'fs';
-import { SettingsService } from '../settings/settings.service';
-import { InvoicesService } from '../invoices/invoices.service';
-import { QuotationsService } from '../quotations/quotations.service';
+import { Injectable } from "@nestjs/common";
+import * as puppeteer from "puppeteer";
+import { join } from "path";
+import { readFileSync } from "fs";
+import { SettingsService } from "../settings/settings.service";
+import { InvoicesService } from "../invoices/invoices.service";
+import { QuotationsService } from "../quotations/quotations.service";
 
 @Injectable()
 export class PdfService {
-  private templatePath = join(__dirname, 'templates');
+  private templatePath = join(__dirname, "templates");
 
-  constructor(
-    private readonly settingsService: SettingsService,
-  ) {}
+  constructor(private readonly settingsService: SettingsService) {}
 
   async generateInvoicePDF(invoiceData: any): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
     try {
       const page = await browser.newPage();
-      
+
       // Set page format for A4
       await page.setViewport({ width: 794, height: 1123 });
-      
+
       // Generate HTML content
       const htmlContent = await this.generateInvoiceHTML(invoiceData);
-      
+
       // Set content and generate PDF
-      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-      
+      await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
       const pdf = await page.pdf({
-        format: 'A4',
+        format: "A4",
         printBackground: true,
         margin: {
-          top: '0.3in',
-          right: '0.3in',
-          bottom: '0.3in',
-          left: '0.3in',
+          top: "0.3in",
+          right: "0.3in",
+          bottom: "0.3in",
+          left: "0.3in",
         },
       });
 
@@ -52,29 +50,29 @@ export class PdfService {
   async generateQuotationPDF(quotationData: any): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
     try {
       const page = await browser.newPage();
-      
+
       // Set page format for A4
       await page.setViewport({ width: 794, height: 1123 });
-      
+
       // Generate HTML content
       const htmlContent = await this.generateQuotationHTML(quotationData);
-      
+
       // Set content and generate PDF
-      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-      
+      await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
       const pdf = await page.pdf({
-        format: 'A4',
+        format: "A4",
         printBackground: true,
         margin: {
-          top: '0.5in',
-          right: '0.5in',
-          bottom: '0.5in',
-          left: '0.5in',
+          top: "0.5in",
+          right: "0.5in",
+          bottom: "0.5in",
+          left: "0.5in",
         },
       });
 
@@ -90,15 +88,15 @@ export class PdfService {
     } catch (error) {
       // Return default fallback settings
       return {
-        companyName: 'PT Teknologi Indonesia',
-        address: 'Jakarta, Indonesia',
-        phone: '',
-        email: '',
-        website: '',
-        taxNumber: '',
-        bankBCA: '',
-        bankMandiri: '',
-        bankBNI: '',
+        companyName: "PT Teknologi Indonesia",
+        address: "Jakarta, Indonesia",
+        phone: "",
+        email: "",
+        website: "",
+        taxNumber: "",
+        bankBCA: "",
+        bankMandiri: "",
+        bankBNI: "",
       };
     }
   }
@@ -127,14 +125,14 @@ export class PdfService {
 
     // Enhanced tax calculations (optional)
     const subTotal = Number(amountPerProject) || 0;
-    const taxAmount = includeTax ? (subTotal * taxRate) : 0;
+    const taxAmount = includeTax ? subTotal * taxRate : 0;
     const finalTotal = subTotal + taxAmount;
 
     // Format currency in Indonesian Rupiah
     const formatIDR = (amount: number) => {
-      return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
+      return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       }).format(amount);
@@ -142,10 +140,10 @@ export class PdfService {
 
     // Format date in Indonesian format (short format for compact design)
     const formatDate = (date: string) => {
-      return new Date(date).toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+      return new Date(date).toLocaleDateString("id-ID", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
       });
     };
 
@@ -453,10 +451,10 @@ export class PdfService {
       <div class="client-info">
         <div class="section-title">Invoice To</div>
         <div class="info-item">${client.name}</div>
-        ${client.company ? `<div class="info-item">${client.company}</div>` : ''}
-        <div class="info-item">Phone: ${client.phone || 'N/A'}</div>
-        ${client.email ? `<div class="info-item">Email: ${client.email}</div>` : ''}
-        ${client.address ? `<div class="info-item">${client.address}</div>` : ''}
+        ${client.company ? `<div class="info-item">${client.company}</div>` : ""}
+        <div class="info-item">Phone: ${client.phone || "N/A"}</div>
+        ${client.email ? `<div class="info-item">Email: ${client.email}</div>` : ""}
+        ${client.address ? `<div class="info-item">${client.address}</div>` : ""}
       </div>
       
       <div class="invoice-info">
@@ -504,19 +502,27 @@ export class PdfService {
         <td>Sub Total</td>
         <td>${formatIDR(subTotal)}</td>
       </tr>
-      ${includeTax ? `
+      ${
+        includeTax
+          ? `
       <tr>
         <td>Tax (${taxLabel} ${Math.round(taxRate * 100)}%)</td>
         <td>${formatIDR(taxAmount)}</td>
       </tr>
-      ` : ''}
-      ${taxExemptReason ? `
+      `
+          : ""
+      }
+      ${
+        taxExemptReason
+          ? `
       <tr>
         <td colspan="2" style="font-size: 10px; color: #666; text-align: center; padding: 5px;">
           ${taxExemptReason}
         </td>
       </tr>
-      ` : ''}
+      `
+          : ""
+      }
       <tr class="summary-total">
         <td>TOTAL</td>
         <td>${formatIDR(finalTotal)}</td>
@@ -524,32 +530,41 @@ export class PdfService {
     </table>
 
     <!-- Materai Notice -->
-    ${materaiRequired ? `
-    <div class="materai-notice ${materaiApplied ? 'applied' : ''}">
+    ${
+      materaiRequired
+        ? `
+    <div class="materai-notice ${materaiApplied ? "applied" : ""}">
       <div class="materai-title">
-        ${materaiApplied ? '✓ Materai Sudah Ditempel' : '⚠️ Memerlukan Materai'}
+        ${materaiApplied ? "✓ Materai Sudah Ditempel" : "⚠️ Memerlukan Materai"}
       </div>
       <div>
-        ${materaiApplied 
-          ? 'Materai senilai Rp 10.000 sudah ditempel sesuai ketentuan hukum.' 
-          : 'Invoice ini memerlukan materai senilai Rp 10.000 karena nilai transaksi lebih dari Rp 5.000.000.'
+        ${
+          materaiApplied
+            ? "Materai senilai Rp 10.000 sudah ditempel sesuai ketentuan hukum."
+            : "Invoice ini memerlukan materai senilai Rp 10.000 karena nilai transaksi lebih dari Rp 5.000.000."
         }
       </div>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <!-- Payment Information -->
     <div class="payment-info">
       <div class="payment-title">Informasi Pembayaran:</div>
       <div class="payment-details">${paymentInfo}</div>
-      ${companyData.bankBCA || companyData.bankMandiri || companyData.bankBNI ? `
+      ${
+        companyData.bankBCA || companyData.bankMandiri || companyData.bankBNI
+          ? `
       <div style="margin-top: 10px;">
         <strong>Rekening Bank:</strong><br>
-        ${companyData.bankBCA ? `BCA: ${companyData.bankBCA} a.n. ${companyData.companyName}<br>` : ''}
-        ${companyData.bankMandiri ? `Mandiri: ${companyData.bankMandiri} a.n. ${companyData.companyName}<br>` : ''}
-        ${companyData.bankBNI ? `BNI: ${companyData.bankBNI} a.n. ${companyData.companyName}<br>` : ''}
+        ${companyData.bankBCA ? `BCA: ${companyData.bankBCA} a.n. ${companyData.companyName}<br>` : ""}
+        ${companyData.bankMandiri ? `Mandiri: ${companyData.bankMandiri} a.n. ${companyData.companyName}<br>` : ""}
+        ${companyData.bankBNI ? `BNI: ${companyData.bankBNI} a.n. ${companyData.companyName}<br>` : ""}
       </div>
-      ` : ''}
+      `
+          : ""
+      }
     </div>
 
     <!-- Footer Section -->
@@ -557,7 +572,7 @@ export class PdfService {
       <div class="terms-section">
         <div class="terms-title">Terms & Conditions</div>
         <div class="terms-content">
-          ${terms || 'Payment due within 30 days. All prices in Indonesian Rupiah (IDR). This invoice is valid until the due date.'}
+          ${terms || "Payment due within 30 days. All prices in Indonesian Rupiah (IDR). This invoice is valid until the due date."}
         </div>
       </div>
       
@@ -573,7 +588,7 @@ export class PdfService {
 
     <!-- Contact Information Bar -->
     <div class="contact-bar">
-      Contact: ${companyData.phone || 'N/A'} | ${companyData.address || 'N/A'} | ${companyData.email || 'N/A'}
+      Contact: ${companyData.phone || "N/A"} | ${companyData.address || "N/A"} | ${companyData.email || "N/A"}
     </div>
   </div>
 </body>
@@ -597,9 +612,9 @@ export class PdfService {
 
     // Format currency in Indonesian Rupiah
     const formatIDR = (amount: number) => {
-      return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
+      return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       }).format(amount);
@@ -607,10 +622,10 @@ export class PdfService {
 
     // Format date in Indonesian format (short format for compact design)
     const formatDate = (date: string) => {
-      return new Date(date).toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+      return new Date(date).toLocaleDateString("id-ID", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
       });
     };
 
@@ -876,10 +891,10 @@ export class PdfService {
       <div class="client-info">
         <div class="section-title">Quotation To</div>
         <div class="info-item">${client.name}</div>
-        ${client.company ? `<div class="info-item">${client.company}</div>` : ''}
-        <div class="info-item">Phone: ${client.phone || 'N/A'}</div>
-        ${client.email ? `<div class="info-item">Email: ${client.email}</div>` : ''}
-        ${client.address ? `<div class="info-item">${client.address}</div>` : ''}
+        ${client.company ? `<div class="info-item">${client.company}</div>` : ""}
+        <div class="info-item">Phone: ${client.phone || "N/A"}</div>
+        ${client.email ? `<div class="info-item">Email: ${client.email}</div>` : ""}
+        ${client.address ? `<div class="info-item">${client.address}</div>` : ""}
       </div>
       
       <div class="quotation-info">
@@ -942,7 +957,7 @@ export class PdfService {
       <div class="terms-section">
         <div class="terms-title">Terms & Conditions</div>
         <div class="terms-content">
-          ${terms || 'Payment due within 30 days. All prices in Indonesian Rupiah (IDR). This quotation is valid until the specified date.'}
+          ${terms || "Payment due within 30 days. All prices in Indonesian Rupiah (IDR). This quotation is valid until the specified date."}
         </div>
       </div>
       
@@ -958,7 +973,7 @@ export class PdfService {
 
     <!-- Contact Information Bar -->
     <div class="contact-bar">
-      Contact: ${companyData.phone || 'N/A'} | ${companyData.address || 'N/A'} | ${companyData.email || 'N/A'}
+      Contact: ${companyData.phone || "N/A"} | ${companyData.address || "N/A"} | ${companyData.email || "N/A"}
     </div>
   </div>
 </body>

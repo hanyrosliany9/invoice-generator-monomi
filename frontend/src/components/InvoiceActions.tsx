@@ -1,8 +1,8 @@
-import React from 'react';
-import { App, Button, Dropdown, Space, Tooltip } from 'antd';
-import { 
-  CheckCircleOutlined, 
-  ClockCircleOutlined, 
+import React from 'react'
+import { App, Button, Dropdown, Space, Tooltip } from 'antd'
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleOutlined,
@@ -10,33 +10,33 @@ import {
   LinkOutlined,
   MoreOutlined,
   PrinterOutlined,
-  SendOutlined
-} from '@ant-design/icons';
-import { InvoiceStatus } from '../types/invoice';
+  SendOutlined,
+} from '@ant-design/icons'
+import { InvoiceStatus } from '../types/invoice'
 
 interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  status: InvoiceStatus;
-  quotationId?: string;
-  clientName?: string;
-  totalAmount: string | number;
-  dueDate: string;
-  isOverdue?: boolean;
-  materaiRequired?: boolean;
-  materaiApplied?: boolean;
+  id: string
+  invoiceNumber: string
+  status: InvoiceStatus
+  quotationId?: string
+  clientName?: string
+  totalAmount: string | number
+  dueDate: string
+  isOverdue?: boolean
+  materaiRequired?: boolean
+  materaiApplied?: boolean
 }
 
 interface InvoiceActionsProps {
-  invoice: Invoice;
-  onSend: (invoice: Invoice) => void;
-  onMarkPaid: (invoice: Invoice) => void;
-  onView: (invoice: Invoice) => void;
-  onEdit: (invoice: Invoice) => void;
-  onPrint: (invoice: Invoice) => void;
-  onDelete: (invoiceId: string) => void;
-  onViewQuotation?: () => void;
-  compact?: boolean;
+  invoice: Invoice
+  onSend: (invoice: Invoice) => void
+  onMarkPaid: (invoice: Invoice) => void
+  onView: (invoice: Invoice) => void
+  onEdit: (invoice: Invoice) => void
+  onPrint: (invoice: Invoice) => void
+  onDelete: (invoiceId: string) => void
+  onViewQuotation?: () => void
+  compact?: boolean
 }
 
 export const InvoiceActions: React.FC<InvoiceActionsProps> = ({
@@ -48,18 +48,21 @@ export const InvoiceActions: React.FC<InvoiceActionsProps> = ({
   onPrint,
   onDelete,
   onViewQuotation,
-  compact = false
+  compact = false,
 }) => {
-  const { modal } = App.useApp();
+  const { modal } = App.useApp()
 
   const handleDeleteWithConfirmation = () => {
     modal.confirm({
       title: 'Hapus Invoice',
       content: (
         <div>
-          <p>Apakah Anda yakin ingin menghapus invoice <strong>{invoice.invoiceNumber}</strong>?</p>
-          <p className="text-red-600 text-sm mt-2">
-            <ExclamationCircleOutlined className="mr-1" />
+          <p>
+            Apakah Anda yakin ingin menghapus invoice{' '}
+            <strong>{invoice.invoiceNumber}</strong>?
+          </p>
+          <p className='text-red-600 text-sm mt-2'>
+            <ExclamationCircleOutlined className='mr-1' />
             Tindakan ini tidak dapat dibatalkan.
           </p>
         </div>
@@ -67,9 +70,9 @@ export const InvoiceActions: React.FC<InvoiceActionsProps> = ({
       okText: 'Ya, Hapus',
       cancelText: 'Batal',
       okType: 'danger',
-      onOk: () => onDelete(invoice.id)
-    });
-  };
+      onOk: () => onDelete(invoice.id),
+    })
+  }
 
   const handleSendWithConfirmation = () => {
     modal.confirm({
@@ -77,18 +80,21 @@ export const InvoiceActions: React.FC<InvoiceActionsProps> = ({
       content: `Apakah Anda yakin ingin mengirim invoice ${invoice.invoiceNumber} ke ${invoice.clientName}?`,
       okText: 'Ya, Kirim',
       cancelText: 'Batal',
-      onOk: () => onSend(invoice)
-    });
-  };
+      onOk: () => onSend(invoice),
+    })
+  }
 
   const handleMarkPaidWithConfirmation = () => {
     modal.confirm({
       title: 'Tandai Sebagai Lunas',
       content: (
         <div>
-          <p>Tandai invoice <strong>{invoice.invoiceNumber}</strong> sebagai lunas?</p>
-          <p className="text-green-600 text-sm mt-2">
-            <CheckCircleOutlined className="mr-1" />
+          <p>
+            Tandai invoice <strong>{invoice.invoiceNumber}</strong> sebagai
+            lunas?
+          </p>
+          <p className='text-green-600 text-sm mt-2'>
+            <CheckCircleOutlined className='mr-1' />
             Pastikan pembayaran sudah diterima sebelum menandai sebagai lunas.
           </p>
         </div>
@@ -96,72 +102,72 @@ export const InvoiceActions: React.FC<InvoiceActionsProps> = ({
       okText: 'Ya, Sudah Lunas',
       cancelText: 'Belum',
       okType: 'primary',
-      onOk: () => onMarkPaid(invoice)
-    });
-  };
+      onOk: () => onMarkPaid(invoice),
+    })
+  }
 
   const getPrimaryAction = () => {
     switch (invoice.status) {
       case InvoiceStatus.DRAFT:
         return (
-          <Tooltip title="Kirim invoice ke klien">
-            <Button 
-              type="primary" 
-              size="small" 
+          <Tooltip title='Kirim invoice ke klien'>
+            <Button
+              type='primary'
+              size='small'
               icon={<SendOutlined />}
               onClick={handleSendWithConfirmation}
             >
               {!compact && 'Kirim'}
             </Button>
           </Tooltip>
-        );
-      
+        )
+
       case InvoiceStatus.SENT:
         return (
-          <Tooltip title="Tandai invoice sebagai lunas">
-            <Button 
-              type="primary" 
-              size="small" 
+          <Tooltip title='Tandai invoice sebagai lunas'>
+            <Button
+              type='primary'
+              size='small'
               icon={<CheckCircleOutlined />}
               onClick={handleMarkPaidWithConfirmation}
             >
               {!compact && 'Lunas'}
             </Button>
           </Tooltip>
-        );
-      
+        )
+
       case InvoiceStatus.OVERDUE:
         return (
-          <Tooltip title="Tindak lanjut invoice jatuh tempo">
-            <Button 
-              type="primary" 
-              danger 
-              size="small" 
+          <Tooltip title='Tindak lanjut invoice jatuh tempo'>
+            <Button
+              type='primary'
+              danger
+              size='small'
               icon={<ClockCircleOutlined />}
               onClick={handleMarkPaidWithConfirmation}
             >
               {!compact && 'Tindak Lanjut'}
             </Button>
           </Tooltip>
-        );
-      
+        )
+
       case InvoiceStatus.PAID:
         return (
-          <Tooltip title="Lihat detail invoice">
-            <Button 
-              size="small" 
+          <Tooltip title='Lihat detail invoice'>
+            <Button
+              size='small'
               icon={<EyeOutlined />}
               onClick={() => onView(invoice)}
             >
               {!compact && 'Lihat'}
             </Button>
           </Tooltip>
-        );
-      
+        )
+
       default:
-        return null;
+        return null
     }
-  };
+  }
 
   const getSecondaryActions = () => {
     const actions = [
@@ -169,22 +175,22 @@ export const InvoiceActions: React.FC<InvoiceActionsProps> = ({
         key: 'view',
         icon: <EyeOutlined />,
         label: 'Lihat Detail',
-        onClick: () => onView(invoice)
+        onClick: () => onView(invoice),
       },
       {
         key: 'edit',
         icon: <EditOutlined />,
         label: 'Edit',
         onClick: () => onEdit(invoice),
-        disabled: invoice.status === InvoiceStatus.PAID
+        disabled: invoice.status === InvoiceStatus.PAID,
       },
       {
         key: 'print',
         icon: <PrinterOutlined />,
         label: 'Print',
-        onClick: () => onPrint(invoice)
-      }
-    ];
+        onClick: () => onPrint(invoice),
+      },
+    ]
 
     // Add quotation link if exists
     if (invoice.quotationId && onViewQuotation) {
@@ -192,8 +198,8 @@ export const InvoiceActions: React.FC<InvoiceActionsProps> = ({
         key: 'view-quotation',
         icon: <LinkOutlined />,
         label: 'Lihat Quotation',
-        onClick: onViewQuotation
-      });
+        onClick: onViewQuotation,
+      })
     }
 
     // Add status-specific actions
@@ -202,59 +208,65 @@ export const InvoiceActions: React.FC<InvoiceActionsProps> = ({
         key: 'send',
         icon: <SendOutlined />,
         label: 'Kirim',
-        onClick: handleSendWithConfirmation
-      });
+        onClick: handleSendWithConfirmation,
+      })
     }
 
-    if (invoice.status === InvoiceStatus.SENT || invoice.status === InvoiceStatus.OVERDUE) {
+    if (
+      invoice.status === InvoiceStatus.SENT ||
+      invoice.status === InvoiceStatus.OVERDUE
+    ) {
       actions.push({
         key: 'mark-paid',
         icon: <CheckCircleOutlined />,
         label: 'Tandai Lunas',
-        onClick: handleMarkPaidWithConfirmation
-      });
+        onClick: handleMarkPaidWithConfirmation,
+      })
     }
 
     // Add delete action (only for drafts or cancelled)
-    if (invoice.status === InvoiceStatus.DRAFT || invoice.status === InvoiceStatus.CANCELLED) {
+    if (
+      invoice.status === InvoiceStatus.DRAFT ||
+      invoice.status === InvoiceStatus.CANCELLED
+    ) {
       actions.push({
         key: 'delete',
         icon: <DeleteOutlined />,
         label: 'Hapus',
-        onClick: handleDeleteWithConfirmation
-      });
+        onClick: handleDeleteWithConfirmation,
+      })
     }
 
-    return actions;
-  };
+    return actions
+  }
 
   if (compact) {
     return (
-      <Space size="small">
+      <Space size='small'>
         {getPrimaryAction()}
         <Dropdown
           menu={{ items: getSecondaryActions() }}
           trigger={['click']}
-          placement="bottomRight"
+          placement='bottomRight'
         >
-          <Button size="small" icon={<MoreOutlined />} />
+          <Button size='small' icon={<MoreOutlined />} />
         </Dropdown>
       </Space>
-    );
+    )
   }
 
   return (
-    <Space size="small">
+    <Space size='small'>
       {getPrimaryAction()}
       <Dropdown
         menu={{ items: getSecondaryActions() }}
         trigger={['click']}
-        placement="bottomRight"
+        placement='bottomRight'
       >
-        <Button size="small" icon={<MoreOutlined />} />
+        <Button size='small' icon={<MoreOutlined />} />
       </Dropdown>
     </Space>
-  );
-};
+  )
+}
 
-export default InvoiceActions;
+export default InvoiceActions

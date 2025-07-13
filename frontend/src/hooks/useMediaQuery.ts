@@ -1,7 +1,7 @@
 // useMediaQuery Hook - Indonesian Business Management System
 // React hook for responsive design and media query handling
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export const useMediaQuery = (query: string): boolean => {
   const [matches, setMatches] = useState(false)
@@ -11,7 +11,7 @@ export const useMediaQuery = (query: string): boolean => {
     if (typeof window === 'undefined') return
 
     const mediaQuery = window.matchMedia(query)
-    
+
     // Set initial value
     setMatches(mediaQuery.matches)
 
@@ -37,14 +37,16 @@ export const useIsMobile = () => useMediaQuery('(max-width: 768px)')
 export const useIsTablet = () => useMediaQuery('(max-width: 1024px)')
 export const useIsDesktop = () => useMediaQuery('(min-width: 1025px)')
 export const useIsSmallMobile = () => useMediaQuery('(max-width: 480px)')
-export const useIsLargeMobile = () => useMediaQuery('(min-width: 481px) and (max-width: 768px)')
+export const useIsLargeMobile = () =>
+  useMediaQuery('(min-width: 481px) and (max-width: 768px)')
 
 // Orientation hooks
 export const useIsPortrait = () => useMediaQuery('(orientation: portrait)')
 export const useIsLandscape = () => useMediaQuery('(orientation: landscape)')
 
 // High DPI/Retina display detection
-export const useIsHighDPI = () => useMediaQuery('(-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi)')
+export const useIsHighDPI = () =>
+  useMediaQuery('(-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi)')
 
 // Specific Indonesian business interface breakpoints
 export const useIndonesianBusinessBreakpoints = () => {
@@ -52,7 +54,7 @@ export const useIndonesianBusinessBreakpoints = () => {
   const isTablet = useIsTablet()
   const isDesktop = useIsDesktop()
   const isSmallMobile = useIsSmallMobile()
-  
+
   return {
     isMobile,
     isTablet,
@@ -66,7 +68,7 @@ export const useIndonesianBusinessBreakpoints = () => {
     enableTouchOptimizations: isMobile || isTablet,
     showIndonesianShortcuts: isMobile,
     useVerticalCardLayout: isMobile,
-    showBottomNavigation: isMobile
+    showBottomNavigation: isMobile,
   }
 }
 

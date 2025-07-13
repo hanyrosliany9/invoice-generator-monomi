@@ -2,24 +2,23 @@
  * Tests for safe utilities and edge cases
  */
 import { describe, expect, it } from 'vitest'
-import { 
-  safeArray, 
-  safeDivision, 
-  safeEnum, 
-  safeGet, 
+import {
+  safeArray,
+  safeDivision,
+  safeEnum,
+  safeGet,
   safeGetNested,
   safeNumber,
   safePercentage,
   safePhoneFormat,
-  safeString
+  safeString,
 } from './currency'
-import { 
-  hasStringProperty, 
- 
+import {
+  hasStringProperty,
   isDefined,
   isNotEmpty,
   isValidClient,
-  validateClientArray
+  validateClientArray,
 } from './type-guards'
 import {
   arrayTestCases,
@@ -27,7 +26,7 @@ import {
   createMockClient,
   numberTestCases,
   stringTestCases,
-  testWithAllCases
+  testWithAllCases,
 } from './test-helpers'
 
 describe('Safe String Operations', () => {
@@ -135,8 +134,8 @@ describe('Safe Object Access', () => {
     age: 30,
     address: {
       street: '123 Main St',
-      city: 'New York'
-    }
+      city: 'New York',
+    },
   }
 
   it('should safely get properties', () => {
@@ -220,7 +219,7 @@ describe('Type Guards', () => {
     it('should validate client objects', () => {
       const validClient = createMockClient()
       expect(isValidClient(validClient)).toBe(true)
-      
+
       expect(isValidClient(null)).toBe(false)
       expect(isValidClient(undefined)).toBe(false)
       expect(isValidClient({})).toBe(false)
@@ -233,11 +232,11 @@ describe('Type Guards', () => {
     it('should validate and filter client arrays', () => {
       const validClient = createMockClient()
       const invalidClient = createInvalidClient('partial')
-      
+
       const result = validateClientArray([validClient, invalidClient, null])
       expect(result).toHaveLength(1)
       expect(result[0]).toEqual(validClient)
-      
+
       expect(validateClientArray(null)).toEqual([])
       expect(validateClientArray(undefined)).toEqual([])
       expect(validateClientArray('not an array')).toEqual([])
@@ -250,18 +249,20 @@ describe('Edge Case Scenarios', () => {
     const deeplyNested = {
       level1: {
         level2: {
-          level3: null
-        }
-      }
+          level3: null,
+        },
+      },
     }
-    
-    expect(safeGetNested(deeplyNested, 'level1.level2.level3.level4', 'fallback')).toBe('fallback')
+
+    expect(
+      safeGetNested(deeplyNested, 'level1.level2.level3.level4', 'fallback')
+    ).toBe('fallback')
   })
 
   it('should handle circular references safely', () => {
     const circular: any = { name: 'circular' }
     circular.self = circular
-    
+
     expect(safeGet(circular, 'name')).toBe('circular')
     expect(safeGet(circular, 'self')).toBe(circular)
   })
@@ -287,11 +288,11 @@ describe('Edge Case Scenarios', () => {
 describe('Performance Tests', () => {
   it('should handle large arrays efficiently', () => {
     const largeArray = Array.from({ length: 10000 }, (_, i) => i)
-    
+
     const start = performance.now()
     const result = safeArray(largeArray)
     const end = performance.now()
-    
+
     expect(result).toHaveLength(10000)
     expect(end - start).toBeLessThan(100) // Should complete in less than 100ms
   })
@@ -299,7 +300,7 @@ describe('Performance Tests', () => {
   it('should handle frequent string operations efficiently', () => {
     const iterations = 1000
     const testString = 'Test string for performance'
-    
+
     const start = performance.now()
     for (let i = 0; i < iterations; i++) {
       safeString(testString)
@@ -307,7 +308,7 @@ describe('Performance Tests', () => {
       safeString(undefined)
     }
     const end = performance.now()
-    
+
     expect(end - start).toBeLessThan(50) // Should complete in less than 50ms
   })
 })
@@ -321,17 +322,17 @@ describe('Integration Tests', () => {
         null, // Invalid item
         undefined, // Invalid item
         { id: 'invalid' }, // Partial item
-      ]
+      ],
     }
-    
+
     const validatedClients = validateClientArray(apiResponse.data)
     expect(validatedClients).toHaveLength(2)
-    
+
     // Test safe operations on the validated data
     const totalRevenue = validatedClients.reduce((sum, client) => {
       return sum + safeNumber(client.totalPaid)
     }, 0)
-    
+
     expect(totalRevenue).toBe(2000000) // 2 clients × 1000000 each
   })
 
@@ -339,27 +340,27 @@ describe('Integration Tests', () => {
     const complexData = {
       clients: [
         createMockClient(),
-        createMockClient({ id: 'client-2', totalPaid: 500000 })
+        createMockClient({ id: 'client-2', totalPaid: 500000 }),
       ],
       meta: {
         pagination: {
           total: 2,
           page: 1,
-          limit: 10
-        }
-      }
+          limit: 10,
+        },
+      },
     }
-    
+
     const clients = safeArray(complexData.clients)
     const total = safeGetNested(complexData, 'meta.pagination.total', 0)
-    
+
     expect(clients).toHaveLength(2)
     expect(total).toBe(2)
-    
+
     const totalRevenue = clients.reduce((sum, client) => {
       return sum + safeNumber(client?.totalPaid)
     }, 0)
-    
+
     expect(totalRevenue).toBe(1500000)
   })
 })

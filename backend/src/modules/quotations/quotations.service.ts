@@ -1,19 +1,26 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { CreateQuotationDto } from './dto/create-quotation.dto';
-import { UpdateQuotationDto } from './dto/update-quotation.dto';
-import { QuotationStatus, Prisma } from '@prisma/client';
-import { getErrorMessage } from '../../common/utils/error-handling.util';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { NotificationsService } from "../notifications/notifications.service";
+import { CreateQuotationDto } from "./dto/create-quotation.dto";
+import { UpdateQuotationDto } from "./dto/update-quotation.dto";
+import { QuotationStatus, Prisma } from "@prisma/client";
+import { getErrorMessage } from "../../common/utils/error-handling.util";
 
 @Injectable()
 export class QuotationsService {
   constructor(
     private prisma: PrismaService,
-    private notificationsService: NotificationsService
+    private notificationsService: NotificationsService,
   ) {}
 
-  async create(createQuotationDto: CreateQuotationDto, userId: string): Promise<any> {
+  async create(
+    createQuotationDto: CreateQuotationDto,
+    userId: string,
+  ): Promise<any> {
     // Validate that the project belongs to the selected client
     const project = await this.prisma.project.findUnique({
       where: { id: createQuotationDto.projectId },
@@ -21,16 +28,18 @@ export class QuotationsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project tidak ditemukan');
+      throw new NotFoundException("Project tidak ditemukan");
     }
 
     if (project.clientId !== createQuotationDto.clientId) {
-      throw new BadRequestException('Project yang dipilih tidak sesuai dengan klien yang dipilih');
+      throw new BadRequestException(
+        "Project yang dipilih tidak sesuai dengan klien yang dipilih",
+      );
     }
 
     // Generate unique quotation number
     const quotationNumber = await this.generateQuotationNumber();
-    
+
     return this.prisma.quotation.create({
       data: {
         ...createQuotationDto,
@@ -51,11 +60,18 @@ export class QuotationsService {
     });
   }
 
-  async findAll(page = 1, limit = 10, status?: QuotationStatus): Promise<{ data: any[]; pagination: { page: number; limit: number; total: number; pages: number } }> {
+  async findAll(
+    page = 1,
+    limit = 10,
+    status?: QuotationStatus,
+  ): Promise<{
+    data: any[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }> {
     const skip = (page - 1) * limit;
-    
+
     const where = status ? { status } : {};
-    
+
     const [quotations, total] = await Promise.all([
       this.prisma.quotation.findMany({
         where,
@@ -80,7 +96,7 @@ export class QuotationsService {
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
       }),
       this.prisma.quotation.count({ where }),
@@ -115,13 +131,16 @@ export class QuotationsService {
     });
 
     if (!quotation) {
-      throw new NotFoundException('Quotation tidak ditemukan');
+      throw new NotFoundException("Quotation tidak ditemukan");
     }
 
     return quotation;
   }
 
-  async update(id: string, updateQuotationDto: UpdateQuotationDto): Promise<any> {
+  async update(
+    id: string,
+    updateQuotationDto: UpdateQuotationDto,
+  ): Promise<any> {
     const quotation = await this.findOne(id);
 
     return this.prisma.quotation.update({
@@ -157,9 +176,14 @@ export class QuotationsService {
     if (status === QuotationStatus.APPROVED) {
       try {
         await this.autoGenerateInvoice(updatedQuotation);
-        console.log(`✅ Auto-generated invoice for approved quotation ${updatedQuotation.quotationNumber}`);
+        console.log(
+          `✅ Auto-generated invoice for approved quotation ${updatedQuotation.quotationNumber}`,
+        );
       } catch (error) {
-        console.error(`❌ Failed to auto-generate invoice for quotation ${updatedQuotation.quotationNumber}:`, getErrorMessage(error));
+        console.error(
+          `❌ Failed to auto-generate invoice for quotation ${updatedQuotation.quotationNumber}:`,
+          getErrorMessage(error),
+        );
         // Don't fail the status update, but log the error
       }
     }
@@ -169,7 +193,7 @@ export class QuotationsService {
       await this.notificationsService.sendQuotationStatusUpdate(id, status);
     } catch (error) {
       // Log error but don't fail the status update
-      console.error('Failed to send status update notification:', error);
+      console.error("Failed to send status update notification:", error);
     }
 
     return updatedQuotation;
@@ -180,7 +204,7 @@ export class QuotationsService {
 
     // Only allow deletion of draft quotations
     if (quotation.status !== QuotationStatus.DRAFT) {
-      throw new Error('Hanya quotation dengan status draft yang dapat dihapus');
+      throw new Error("Hanya quotation dengan status draft yang dapat dihapus");
     }
 
     return this.prisma.quotation.delete({
@@ -191,12 +215,12 @@ export class QuotationsService {
   async generateQuotationNumber(): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    
+    const month = (now.getMonth() + 1).toString().padStart(2, "0");
+
     // Get count of quotations this month
     const startOfMonth = new Date(year, now.getMonth(), 1);
     const endOfMonth = new Date(year, now.getMonth() + 1, 0);
-    
+
     const count = await this.prisma.quotation.count({
       where: {
         createdAt: {
@@ -206,7 +230,7 @@ export class QuotationsService {
       },
     });
 
-    const sequence = (count + 1).toString().padStart(3, '0');
+    const sequence = (count + 1).toString().padStart(3, "0");
     return `QT-${year}${month}-${sequence}`;
   }
 
@@ -218,26 +242,32 @@ export class QuotationsService {
         project: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   }
 
-  async getQuotationStats(): Promise<{ total: number; byStatus: Record<string, number> }> {
+  async getQuotationStats(): Promise<{
+    total: number;
+    byStatus: Record<string, number>;
+  }> {
     const [total, byStatus] = await Promise.all([
       this.prisma.quotation.count(),
       this.prisma.quotation.groupBy({
-        by: ['status'],
+        by: ["status"],
         _count: {
           status: true,
         },
       }),
     ]);
 
-    const statusCounts = byStatus.reduce((acc, item) => {
-      acc[item.status] = item._count.status;
-      return acc;
-    }, {} as Record<string, number>);
+    const statusCounts = byStatus.reduce(
+      (acc, item) => {
+        acc[item.status] = item._count.status;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return {
       total,
@@ -245,18 +275,21 @@ export class QuotationsService {
     };
   }
 
-  async inheritPriceFromProject(projectId: string, customPrice?: Prisma.Decimal): Promise<Prisma.Decimal> {
+  async inheritPriceFromProject(
+    projectId: string,
+    customPrice?: Prisma.Decimal,
+  ): Promise<Prisma.Decimal> {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
-      select: { 
+      select: {
         basePrice: true,
         estimatedBudget: true,
-        id: true 
-      }
+        id: true,
+      },
     });
 
     if (!project) {
-      throw new NotFoundException('Project tidak ditemukan');
+      throw new NotFoundException("Project tidak ditemukan");
     }
 
     // If custom price is provided, use it
@@ -275,20 +308,22 @@ export class QuotationsService {
     }
 
     // If no price information available, throw an error
-    throw new NotFoundException('Project tidak memiliki informasi harga. Silakan set basePrice atau estimatedBudget pada project terlebih dahulu.');
+    throw new NotFoundException(
+      "Project tidak memiliki informasi harga. Silakan set basePrice atau estimatedBudget pada project terlebih dahulu.",
+    );
   }
 
   private async autoGenerateInvoice(quotation: any): Promise<any> {
     // Generate unique invoice number
     const invoiceNumber = await this.generateInvoiceNumber();
-    
+
     // Calculate due date (default 30 days from now)
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 30);
-    
+
     // Check if materai is required (> 5M IDR)
     const materaiRequired = Number(quotation.totalAmount) > 5000000;
-    
+
     // Create invoice from quotation data
     const invoice = await this.prisma.invoice.create({
       data: {
@@ -299,10 +334,12 @@ export class QuotationsService {
         projectId: quotation.projectId,
         amountPerProject: quotation.amountPerProject,
         totalAmount: quotation.totalAmount,
-        paymentInfo: 'Bank Transfer - Lihat detail di company settings',
+        paymentInfo: "Bank Transfer - Lihat detail di company settings",
         materaiRequired,
         materaiApplied: false,
-        terms: quotation.terms || 'Pembayaran dalam 30 hari setelah invoice diterima',
+        terms:
+          quotation.terms ||
+          "Pembayaran dalam 30 hari setelah invoice diterima",
         createdBy: quotation.createdBy,
       },
       include: {
@@ -312,19 +349,21 @@ export class QuotationsService {
       },
     });
 
-    console.log(`📄 Auto-generated invoice ${invoiceNumber} from quotation ${quotation.quotationNumber}`);
+    console.log(
+      `📄 Auto-generated invoice ${invoiceNumber} from quotation ${quotation.quotationNumber}`,
+    );
     return invoice;
   }
 
   private async generateInvoiceNumber(): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    
+    const month = (now.getMonth() + 1).toString().padStart(2, "0");
+
     // Get count of invoices this month
     const startOfMonth = new Date(year, now.getMonth(), 1);
     const endOfMonth = new Date(year, now.getMonth() + 1, 0);
-    
+
     const count = await this.prisma.invoice.count({
       where: {
         createdAt: {
@@ -334,7 +373,7 @@ export class QuotationsService {
       },
     });
 
-    const sequence = (count + 1).toString().padStart(3, '0');
+    const sequence = (count + 1).toString().padStart(3, "0");
     return `INV-${year}${month}-${sequence}`;
   }
 }

@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { UserResponseDto } from './dto/user-response.dto';
-import { TransformationUtil } from '../../common/utils/transformation.util';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { UserResponseDto } from "./dto/user-response.dto";
+import { TransformationUtil } from "../../common/utils/transformation.util";
 
 @Injectable()
 export class UsersService {
@@ -17,13 +17,13 @@ export class UsersService {
           select: {
             quotations: true,
             invoices: true,
-            auditLogs: true
-          }
+            auditLogs: true,
+          },
         },
-        preferences: true
-      }
+        preferences: true,
+      },
     });
-    
+
     return this.transformToResponse(user);
   }
 
@@ -39,11 +39,11 @@ export class UsersService {
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    
+
     if (filters?.search) {
       where.OR = [
-        { name: { contains: filters.search, mode: 'insensitive' } },
-        { email: { contains: filters.search, mode: 'insensitive' } }
+        { name: { contains: filters.search, mode: "insensitive" } },
+        { email: { contains: filters.search, mode: "insensitive" } },
       ];
     }
 
@@ -62,19 +62,19 @@ export class UsersService {
           select: {
             quotations: true,
             invoices: true,
-            auditLogs: true
-          }
+            auditLogs: true,
+          },
         },
-        preferences: true
+        preferences: true,
       },
       orderBy: {
-        createdAt: 'desc'
+        createdAt: "desc",
       },
       skip,
-      take: limit
+      take: limit,
     });
-    
-    return users.map(user => this.transformToResponse(user));
+
+    return users.map((user) => this.transformToResponse(user));
   }
 
   async findById(id: string): Promise<UserResponseDto | null> {
@@ -85,17 +85,25 @@ export class UsersService {
           select: {
             quotations: true,
             invoices: true,
-            auditLogs: true
-          }
+            auditLogs: true,
+          },
         },
-        preferences: true
-      }
+        preferences: true,
+      },
     });
-    
+
     return user ? this.transformToResponse(user) : null;
   }
 
-  async findByEmail(email: string): Promise<{ id: string; email: string; name: string; role: string; isActive: boolean; createdAt: Date; updatedAt: Date } | null> {
+  async findByEmail(email: string): Promise<{
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null> {
     return this.prisma.user.findUnique({
       where: { email },
       select: {
@@ -116,7 +124,10 @@ export class UsersService {
     });
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<UserResponseDto> {
     const user = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
@@ -125,13 +136,13 @@ export class UsersService {
           select: {
             quotations: true,
             invoices: true,
-            auditLogs: true
-          }
+            auditLogs: true,
+          },
         },
-        preferences: true
-      }
+        preferences: true,
+      },
     });
-    
+
     return this.transformToResponse(user);
   }
 
@@ -142,42 +153,53 @@ export class UsersService {
     });
   }
 
-  async getUserStats(): Promise<{ totalUsers: number; activeUsers: number; inactiveUsers: number; roleDistribution: Record<string, any>; recentUsers: any[] }> {
-    const [totalUsers, roleStats, activeUsers, recentUsers] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.user.groupBy({
-        by: ['role'],
-        _count: true
-      }),
-      this.prisma.user.count({
-        where: { isActive: true }
-      }),
-      this.prisma.user.findMany({
-        where: { isActive: true },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          createdAt: true
-        }
-      })
-    ]);
+  async getUserStats(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    inactiveUsers: number;
+    roleDistribution: Record<string, any>;
+    recentUsers: any[];
+  }> {
+    const [totalUsers, roleStats, activeUsers, recentUsers] = await Promise.all(
+      [
+        this.prisma.user.count(),
+        this.prisma.user.groupBy({
+          by: ["role"],
+          _count: true,
+        }),
+        this.prisma.user.count({
+          where: { isActive: true },
+        }),
+        this.prisma.user.findMany({
+          where: { isActive: true },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        }),
+      ],
+    );
 
     return {
       totalUsers,
       activeUsers,
       inactiveUsers: totalUsers - activeUsers,
-      roleDistribution: roleStats.reduce((acc, stat) => {
-        acc[stat.role] = stat._count;
-        return acc;
-      }, {} as Record<string, any>),
-      recentUsers: recentUsers.map(user => ({
+      roleDistribution: roleStats.reduce(
+        (acc, stat) => {
+          acc[stat.role] = stat._count;
+          return acc;
+        },
+        {} as Record<string, any>,
+      ),
+      recentUsers: recentUsers.map((user) => ({
         ...user,
-        createdAt: TransformationUtil.dateToString(user.createdAt)
-      }))
+        createdAt: TransformationUtil.dateToString(user.createdAt),
+      })),
     };
   }
 
@@ -191,13 +213,15 @@ export class UsersService {
       createdAt: TransformationUtil.dateToString(user.createdAt)!,
       updatedAt: TransformationUtil.dateToString(user.updatedAt)!,
       _count: user._count,
-      preferences: user.preferences ? {
-        timezone: user.preferences.timezone,
-        language: user.preferences.language,
-        emailNotifications: user.preferences.emailNotifications,
-        pushNotifications: user.preferences.pushNotifications,
-        theme: user.preferences.theme
-      } : undefined
+      preferences: user.preferences
+        ? {
+            timezone: user.preferences.timezone,
+            language: user.preferences.language,
+            emailNotifications: user.preferences.emailNotifications,
+            pushNotifications: user.preferences.pushNotifications,
+            theme: user.preferences.theme,
+          }
+        : undefined,
     };
   }
 }

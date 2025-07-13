@@ -1,20 +1,27 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsBoolean, IsNumber, IsArray, Min, Max } from 'class-validator';
+import { ApiProperty } from "@nestjs/swagger";
+import {
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  IsArray,
+  Min,
+  Max,
+} from "class-validator";
 
 export class UpdateMateraiConfigDto {
   @ApiProperty({
-    description: 'Enable or disable materai system',
+    description: "Enable or disable materai system",
     required: false,
-    example: true
+    example: true,
   })
   @IsOptional()
   @IsBoolean()
   enabled?: boolean;
 
   @ApiProperty({
-    description: 'Threshold amount in IDR for materai requirement',
+    description: "Threshold amount in IDR for materai requirement",
     required: false,
-    example: 5000000
+    example: 5000000,
   })
   @IsOptional()
   @IsNumber()
@@ -22,9 +29,9 @@ export class UpdateMateraiConfigDto {
   threshold?: number;
 
   @ApiProperty({
-    description: 'Stamp duty amount in IDR',
+    description: "Stamp duty amount in IDR",
     required: false,
-    example: 10000
+    example: 10000,
   })
   @IsOptional()
   @IsNumber()
@@ -32,19 +39,19 @@ export class UpdateMateraiConfigDto {
   stampDutyAmount?: number;
 
   @ApiProperty({
-    description: 'Enforce compliance checks',
+    description: "Enforce compliance checks",
     required: false,
-    example: true
+    example: true,
   })
   @IsOptional()
   @IsBoolean()
   enforceCompliance?: boolean;
 
   @ApiProperty({
-    description: 'Days before due date to send reminders',
+    description: "Days before due date to send reminders",
     required: false,
     type: [Number],
-    example: [30, 14, 7, 3, 1]
+    example: [30, 14, 7, 3, 1],
   })
   @IsOptional()
   @IsArray()
@@ -52,9 +59,9 @@ export class UpdateMateraiConfigDto {
   reminderDays?: number[];
 
   @ApiProperty({
-    description: 'Automatically apply materai when invoice is created',
+    description: "Automatically apply materai when invoice is created",
     required: false,
-    example: false
+    example: false,
   })
   @IsOptional()
   @IsBoolean()

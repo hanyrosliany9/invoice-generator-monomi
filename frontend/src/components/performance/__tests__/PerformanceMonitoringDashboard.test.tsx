@@ -11,12 +11,12 @@ import PerformanceMonitoringDashboard from '../PerformanceMonitoringDashboard'
 // Mock dependencies
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 vi.mock('../../../utils/currency', () => ({
-  formatDateIndonesian: (date: Date) => date.toLocaleDateString('id-ID')
+  formatDateIndonesian: (date: Date) => date.toLocaleDateString('id-ID'),
 }))
 
 // Mock the performance monitor hook
@@ -27,21 +27,21 @@ vi.mock('../../../hooks/usePerformanceMonitor', () => ({
       fid: 80,
       cls: 0.05,
       fcp: 1500,
-      ttfb: 600
+      ttfb: 600,
     },
     businessMetrics: {
       quotationLoadTime: 1800,
       invoiceRenderTime: 1200,
       materaiCalculationTime: 400,
       whatsappIntegrationTime: 800,
-      currencyFormattingTime: 30
+      currencyFormattingTime: 30,
     },
     score: {
       overall: 85,
       coreWebVitals: 90,
       businessMetrics: 88,
       indonesianExperience: 80,
-      userInteraction: 82
+      userInteraction: 82,
     },
     metrics: [
       {
@@ -51,8 +51,8 @@ vi.mock('../../../hooks/usePerformanceMonitor', () => ({
         type: 'component-render',
         threshold: 150,
         exceeded: false,
-        impact: 'user-experience'
-      }
+        impact: 'user-experience',
+      },
     ],
     alerts: [
       {
@@ -63,16 +63,19 @@ vi.mock('../../../hooks/usePerformanceMonitor', () => ({
         threshold: 2500,
         impact: 'medium',
         recommendation: 'Optimize images and reduce server response time',
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      },
     ],
     isLoading: false,
-    getRecommendations: () => ['Optimize table rendering', 'Implement caching for materai calculations'],
+    getRecommendations: () => [
+      'Optimize table rendering',
+      'Implement caching for materai calculations',
+    ],
     clearMetrics: vi.fn(),
     exportReport: () => JSON.stringify({ report: 'test' }),
     measurePerformance: vi.fn((name, fn) => fn()),
-    recordBusinessEvent: vi.fn()
-  })
+    recordBusinessEvent: vi.fn(),
+  }),
 }))
 
 // Mock URL.createObjectURL for export functionality
@@ -82,7 +85,7 @@ global.URL.revokeObjectURL = vi.fn()
 const defaultProps = {
   autoRefresh: false,
   refreshInterval: 30000,
-  showIndonesianMetrics: true
+  showIndonesianMetrics: true,
 }
 
 describe('PerformanceMonitoringDashboard Component', () => {
@@ -94,21 +97,39 @@ describe('PerformanceMonitoringDashboard Component', () => {
     it('should render performance monitoring dashboard correctly', () => {
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
-      expect(screen.getByText('Performance Monitoring Dashboard')).toBeInTheDocument()
-      expect(screen.getByText('Indonesian Business Metrics')).toBeInTheDocument()
+      expect(
+        screen.getByText('Performance Monitoring Dashboard')
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Indonesian Business Metrics')
+      ).toBeInTheDocument()
       expect(screen.getByText('Overall Score')).toBeInTheDocument()
     })
 
     it('should show Indonesian metrics when enabled', () => {
-      render(<PerformanceMonitoringDashboard {...defaultProps} showIndonesianMetrics={true} />)
+      render(
+        <PerformanceMonitoringDashboard
+          {...defaultProps}
+          showIndonesianMetrics={true}
+        />
+      )
 
-      expect(screen.getByText('Indonesian Business Metrics')).toBeInTheDocument()
+      expect(
+        screen.getByText('Indonesian Business Metrics')
+      ).toBeInTheDocument()
     })
 
     it('should hide Indonesian metrics when disabled', () => {
-      render(<PerformanceMonitoringDashboard {...defaultProps} showIndonesianMetrics={false} />)
+      render(
+        <PerformanceMonitoringDashboard
+          {...defaultProps}
+          showIndonesianMetrics={false}
+        />
+      )
 
-      expect(screen.queryByText('Indonesian Business Metrics')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('Indonesian Business Metrics')
+      ).not.toBeInTheDocument()
     })
   })
 
@@ -157,17 +178,28 @@ describe('PerformanceMonitoringDashboard Component', () => {
     it('should show metric descriptions', () => {
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
-      expect(screen.getByText('Time until largest element loads')).toBeInTheDocument()
-      expect(screen.getByText('Responsiveness to user interaction')).toBeInTheDocument()
-      expect(screen.getByText('Visual stability during loading')).toBeInTheDocument()
+      expect(
+        screen.getByText('Time until largest element loads')
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Responsiveness to user interaction')
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Visual stability during loading')
+      ).toBeInTheDocument()
     })
   })
 
   describe('Indonesian Business Tab', () => {
     it('should display Indonesian business metrics when enabled', async () => {
       const user = userEvent.setup()
-      
-      render(<PerformanceMonitoringDashboard {...defaultProps} showIndonesianMetrics={true} />)
+
+      render(
+        <PerformanceMonitoringDashboard
+          {...defaultProps}
+          showIndonesianMetrics={true}
+        />
+      )
 
       const businessTab = screen.getByText('Indonesian Business')
       await user.click(businessTab)
@@ -181,8 +213,13 @@ describe('PerformanceMonitoringDashboard Component', () => {
 
     it('should show Indonesian context tags', async () => {
       const user = userEvent.setup()
-      
-      render(<PerformanceMonitoringDashboard {...defaultProps} showIndonesianMetrics={true} />)
+
+      render(
+        <PerformanceMonitoringDashboard
+          {...defaultProps}
+          showIndonesianMetrics={true}
+        />
+      )
 
       const businessTab = screen.getByText('Indonesian Business')
       await user.click(businessTab)
@@ -195,14 +232,16 @@ describe('PerformanceMonitoringDashboard Component', () => {
   describe('Alerts Management', () => {
     it('should display performance alerts', async () => {
       const user = userEvent.setup()
-      
+
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
       const alertsTab = screen.getByText('Alerts')
       await user.click(alertsTab)
 
       expect(screen.getByText('LCP')).toBeInTheDocument()
-      expect(screen.getByText('Optimize images and reduce server response time')).toBeInTheDocument()
+      expect(
+        screen.getByText('Optimize images and reduce server response time')
+      ).toBeInTheDocument()
     })
 
     it('should show alert badge with count', () => {
@@ -215,10 +254,10 @@ describe('PerformanceMonitoringDashboard Component', () => {
     it('should handle alert acknowledgment', async () => {
       const user = userEvent.setup()
       const onAlertAcknowledged = vi.fn()
-      
+
       render(
-        <PerformanceMonitoringDashboard 
-          {...defaultProps} 
+        <PerformanceMonitoringDashboard
+          {...defaultProps}
           onAlertAcknowledged={onAlertAcknowledged}
         />
       )
@@ -236,7 +275,7 @@ describe('PerformanceMonitoringDashboard Component', () => {
   describe('Metrics Table', () => {
     it('should display metrics in table format', async () => {
       const user = userEvent.setup()
-      
+
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
       const metricsTab = screen.getByText('Metrics')
@@ -248,7 +287,7 @@ describe('PerformanceMonitoringDashboard Component', () => {
 
     it('should show metric details when clicked', async () => {
       const user = userEvent.setup()
-      
+
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
       const metricsTab = screen.getByText('Metrics')
@@ -264,24 +303,28 @@ describe('PerformanceMonitoringDashboard Component', () => {
   describe('Recommendations', () => {
     it('should display performance recommendations', async () => {
       const user = userEvent.setup()
-      
+
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
       const recommendationsTab = screen.getByText('Recommendations')
       await user.click(recommendationsTab)
 
-      expect(screen.getByText('Performance Recommendations')).toBeInTheDocument()
+      expect(
+        screen.getByText('Performance Recommendations')
+      ).toBeInTheDocument()
       expect(screen.getByText('Optimize table rendering')).toBeInTheDocument()
-      expect(screen.getByText('Implement caching for materai calculations')).toBeInTheDocument()
+      expect(
+        screen.getByText('Implement caching for materai calculations')
+      ).toBeInTheDocument()
     })
 
     it('should handle optimization application', async () => {
       const user = userEvent.setup()
       const onOptimizationApplied = vi.fn()
-      
+
       render(
-        <PerformanceMonitoringDashboard 
-          {...defaultProps} 
+        <PerformanceMonitoringDashboard
+          {...defaultProps}
           onOptimizationApplied={onOptimizationApplied}
         />
       )
@@ -297,7 +340,7 @@ describe('PerformanceMonitoringDashboard Component', () => {
 
     it('should show quick actions', async () => {
       const user = userEvent.setup()
-      
+
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
       const recommendationsTab = screen.getByText('Recommendations')
@@ -313,15 +356,17 @@ describe('PerformanceMonitoringDashboard Component', () => {
   describe('Export Functionality', () => {
     it('should handle report export', async () => {
       const user = userEvent.setup()
-      
+
       // Mock document.createElement and click
       const mockLink = {
         href: '',
         download: '',
-        click: vi.fn()
+        click: vi.fn(),
       }
-      const createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(mockLink as any)
-      
+      const createElementSpy = vi
+        .spyOn(document, 'createElement')
+        .mockReturnValue(mockLink as any)
+
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
       const exportButton = screen.getByText('Export')
@@ -337,8 +382,14 @@ describe('PerformanceMonitoringDashboard Component', () => {
   describe('Auto-refresh Functionality', () => {
     it('should set up auto-refresh when enabled', () => {
       vi.useFakeTimers()
-      
-      render(<PerformanceMonitoringDashboard {...defaultProps} autoRefresh={true} refreshInterval={1000} />)
+
+      render(
+        <PerformanceMonitoringDashboard
+          {...defaultProps}
+          autoRefresh={true}
+          refreshInterval={1000}
+        />
+      )
 
       // Fast-forward time
       vi.advanceTimersByTime(1000)
@@ -351,8 +402,10 @@ describe('PerformanceMonitoringDashboard Component', () => {
 
     it('should not set up auto-refresh when disabled', () => {
       vi.useFakeTimers()
-      
-      render(<PerformanceMonitoringDashboard {...defaultProps} autoRefresh={false} />)
+
+      render(
+        <PerformanceMonitoringDashboard {...defaultProps} autoRefresh={false} />
+      )
 
       expect(vi.getTimerCount()).toBe(0)
 
@@ -363,7 +416,7 @@ describe('PerformanceMonitoringDashboard Component', () => {
   describe('Settings Modal', () => {
     it('should open settings modal when settings button is clicked', async () => {
       const user = userEvent.setup()
-      
+
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
       const settingsButton = screen.getByText('Settings')
@@ -379,15 +432,23 @@ describe('PerformanceMonitoringDashboard Component', () => {
     it('should have proper ARIA labels and roles', () => {
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
-      expect(screen.getByRole('button', { name: /alerts/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /settings/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /export/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /alerts/i })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /settings/i })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /export/i })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /refresh/i })
+      ).toBeInTheDocument()
     })
 
     it('should support keyboard navigation', async () => {
       const user = userEvent.setup()
-      
+
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
       // Should be able to tab through interactive elements
@@ -399,16 +460,24 @@ describe('PerformanceMonitoringDashboard Component', () => {
   describe('Error Handling', () => {
     it('should handle missing performance data gracefully', () => {
       // Mock hook with null values
-      vi.mocked(require('../../../hooks/usePerformanceMonitor').usePerformanceMonitor).mockReturnValue({
+      vi.mocked(
+        require('../../../hooks/usePerformanceMonitor').usePerformanceMonitor
+      ).mockReturnValue({
         vitals: { lcp: null, fid: null, cls: null, fcp: null, ttfb: null },
         businessMetrics: {
           quotationLoadTime: null,
           invoiceRenderTime: null,
           materaiCalculationTime: null,
           whatsappIntegrationTime: null,
-          currencyFormattingTime: null
+          currencyFormattingTime: null,
         },
-        score: { overall: 0, coreWebVitals: 0, businessMetrics: 0, indonesianExperience: 0, userInteraction: 0 },
+        score: {
+          overall: 0,
+          coreWebVitals: 0,
+          businessMetrics: 0,
+          indonesianExperience: 0,
+          userInteraction: 0,
+        },
         metrics: [],
         alerts: [],
         isLoading: false,
@@ -416,21 +485,28 @@ describe('PerformanceMonitoringDashboard Component', () => {
         clearMetrics: vi.fn(),
         exportReport: () => '',
         measurePerformance: vi.fn(),
-        recordBusinessEvent: vi.fn()
+        recordBusinessEvent: vi.fn(),
       })
 
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
       // Should render without errors
-      expect(screen.getByText('Performance Monitoring Dashboard')).toBeInTheDocument()
+      expect(
+        screen.getByText('Performance Monitoring Dashboard')
+      ).toBeInTheDocument()
     })
   })
 
   describe('Indonesian Business Context', () => {
     it('should highlight Indonesian-specific metrics', async () => {
       const user = userEvent.setup()
-      
-      render(<PerformanceMonitoringDashboard {...defaultProps} showIndonesianMetrics={true} />)
+
+      render(
+        <PerformanceMonitoringDashboard
+          {...defaultProps}
+          showIndonesianMetrics={true}
+        />
+      )
 
       const businessTab = screen.getByText('Indonesian Business')
       await user.click(businessTab)
@@ -442,14 +518,16 @@ describe('PerformanceMonitoringDashboard Component', () => {
 
     it('should provide Indonesian business-specific recommendations', async () => {
       const user = userEvent.setup()
-      
+
       render(<PerformanceMonitoringDashboard {...defaultProps} />)
 
       const recommendationsTab = screen.getByText('Recommendations')
       await user.click(recommendationsTab)
 
       // Should show materai-specific optimization
-      expect(screen.getByText('Implement caching for materai calculations')).toBeInTheDocument()
+      expect(
+        screen.getByText('Implement caching for materai calculations')
+      ).toBeInTheDocument()
     })
   })
 })

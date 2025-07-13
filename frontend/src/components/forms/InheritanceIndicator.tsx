@@ -1,23 +1,23 @@
 import React from 'react'
 import {
-  Card,
-  Space,
   Button,
-  Tag,
-  Row,
+  Card,
   Col,
-  Typography,
-  Tooltip,
-  Progress,
   Divider,
+  Progress,
+  Row,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
 } from 'antd'
 import {
-  LinkOutlined,
-  EditOutlined,
-  UndoOutlined,
-  InfoCircleOutlined,
   CheckCircleOutlined,
+  EditOutlined,
   ExclamationCircleOutlined,
+  InfoCircleOutlined,
+  LinkOutlined,
+  UndoOutlined,
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { formatIDR } from '../../utils/currency'
@@ -93,25 +93,28 @@ const getSourceConfig = (source: SourceType) => {
 
 const formatValue = (value: any, field: string): string => {
   if (value === null || value === undefined) return 'Not set'
-  
-  if (field.toLowerCase().includes('amount') || field.toLowerCase().includes('price')) {
+
+  if (
+    field.toLowerCase().includes('amount') ||
+    field.toLowerCase().includes('price')
+  ) {
     return formatIDR(Number(value))
   }
-  
+
   if (field.toLowerCase().includes('date')) {
     return new Date(value).toLocaleDateString('id-ID')
   }
-  
+
   if (typeof value === 'object') {
     return JSON.stringify(value, null, 2)
   }
-  
+
   return String(value)
 }
 
 const getConfidenceColor = (confidence: number) => {
   if (confidence >= 90) return '#52c41a'
-  if (confidence >= 70) return '#faad14' 
+  if (confidence >= 70) return '#faad14'
   if (confidence >= 50) return '#fa8c16'
   return '#ff4d4f'
 }
@@ -135,18 +138,26 @@ export const InheritanceIndicator: React.FC<InheritanceIndicatorProps> = ({
 }) => {
   const navigate = useNavigate()
   const sourceConfig = getSourceConfig(source)
-  
+
   const totalFields = Object.keys(inheritedData).length
-  const inheritedFields = Object.values(inheritedData).filter(field => field.value).length
-  const inheritancePercentage = totalFields > 0 ? (inheritedFields / totalFields) * 100 : 0
+  const inheritedFields = Object.values(inheritedData).filter(
+    field => field.value
+  ).length
+  const inheritancePercentage =
+    totalFields > 0 ? (inheritedFields / totalFields) * 100 : 0
 
   const handleViewSource = () => {
     if (onViewSource) {
       onViewSource()
     } else if (sourceEntity) {
-      const basePath = source === 'quotation' ? '/quotations' : 
-                      source === 'project' ? '/projects' :
-                      source === 'client' ? '/clients' : null
+      const basePath =
+        source === 'quotation'
+          ? '/quotations'
+          : source === 'project'
+            ? '/projects'
+            : source === 'client'
+              ? '/clients'
+              : null
       if (basePath) {
         navigate(`${basePath}/${sourceEntity.id}`)
       }
@@ -157,7 +168,7 @@ export const InheritanceIndicator: React.FC<InheritanceIndicatorProps> = ({
     <Card
       className={className}
       data-testid={dataTestId}
-      size="small"
+      size='small'
       title={
         <Space>
           <span style={{ fontSize: '16px' }}>{sourceConfig.icon}</span>
@@ -171,9 +182,9 @@ export const InheritanceIndicator: React.FC<InheritanceIndicatorProps> = ({
       }
       extra={
         sourceEntity && (
-          <Button 
-            type="link" 
-            size="small"
+          <Button
+            type='link'
+            size='small'
             onClick={handleViewSource}
             icon={<LinkOutlined />}
           >
@@ -188,19 +199,19 @@ export const InheritanceIndicator: React.FC<InheritanceIndicatorProps> = ({
     >
       {/* Inheritance Summary */}
       <div style={{ marginBottom: '16px' }}>
-        <Row justify="space-between" align="middle">
+        <Row justify='space-between' align='middle'>
           <Col>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
+            <Text type='secondary' style={{ fontSize: '12px' }}>
               {sourceConfig.description}
             </Text>
           </Col>
           <Col>
-            <Space size="small">
+            <Space size='small'>
               <Text style={{ fontSize: '12px' }}>
                 {inheritedFields}/{totalFields} fields
               </Text>
               <Progress
-                type="circle"
+                type='circle'
                 percent={inheritancePercentage}
                 size={24}
                 strokeColor={sourceConfig.color}
@@ -217,15 +228,20 @@ export const InheritanceIndicator: React.FC<InheritanceIndicatorProps> = ({
       <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
         {Object.entries(inheritedData).map(([field, data]) => (
           <div key={field} style={{ marginBottom: '12px' }}>
-            <Row justify="space-between" align="top">
-              <Col flex="1">
+            <Row justify='space-between' align='top'>
+              <Col flex='1'>
                 <div>
                   <Text strong style={{ fontSize: '13px' }}>
-                    {field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                    {field
+                      .replace(/([A-Z])/g, ' $1')
+                      .replace(/^./, str => str.toUpperCase())}
+                    :
                   </Text>
                   {data.confidence && (
-                    <Tooltip title={`${getConfidenceStatus(data.confidence)} (${data.confidence}%)`}>
-                      <Tag 
+                    <Tooltip
+                      title={`${getConfidenceStatus(data.confidence)} (${data.confidence}%)`}
+                    >
+                      <Tag
                         color={getConfidenceColor(data.confidence)}
                         style={{ marginLeft: '8px', fontSize: '10px' }}
                       >
@@ -241,33 +257,34 @@ export const InheritanceIndicator: React.FC<InheritanceIndicatorProps> = ({
                 </div>
                 {data.lastUpdated && (
                   <div style={{ marginTop: '2px' }}>
-                    <Text type="secondary" style={{ fontSize: '11px' }}>
-                      Updated: {new Date(data.lastUpdated).toLocaleDateString('id-ID')}
+                    <Text type='secondary' style={{ fontSize: '11px' }}>
+                      Updated:{' '}
+                      {new Date(data.lastUpdated).toLocaleDateString('id-ID')}
                     </Text>
                   </div>
                 )}
               </Col>
-              
+
               <Col>
                 {data.editable && (
-                  <Space size="small">
+                  <Space size='small'>
                     {onEdit && (
-                      <Tooltip title="Edit this field">
-                        <Button 
-                          type="text"
-                          size="small" 
-                          icon={<EditOutlined />} 
+                      <Tooltip title='Edit this field'>
+                        <Button
+                          type='text'
+                          size='small'
+                          icon={<EditOutlined />}
                           onClick={() => onEdit(field)}
                           style={{ fontSize: '12px' }}
                         />
                       </Tooltip>
                     )}
                     {onRevert && data.value && (
-                      <Tooltip title="Revert to original">
-                        <Button 
-                          type="text"
-                          size="small" 
-                          icon={<UndoOutlined />} 
+                      <Tooltip title='Revert to original'>
+                        <Button
+                          type='text'
+                          size='small'
+                          icon={<UndoOutlined />}
                           onClick={() => onRevert(field)}
                           style={{ fontSize: '12px' }}
                         />
@@ -276,13 +293,13 @@ export const InheritanceIndicator: React.FC<InheritanceIndicatorProps> = ({
                   </Space>
                 )}
                 {!data.editable && (
-                  <Tooltip title="This field is read-only">
-                    <InfoCircleOutlined 
-                      style={{ 
-                        color: '#8c8c8c', 
+                  <Tooltip title='This field is read-only'>
+                    <InfoCircleOutlined
+                      style={{
+                        color: '#8c8c8c',
                         fontSize: '12px',
                         cursor: 'help',
-                      }} 
+                      }}
                     />
                   </Tooltip>
                 )}
@@ -294,11 +311,19 @@ export const InheritanceIndicator: React.FC<InheritanceIndicatorProps> = ({
 
       {/* Inheritance Stats */}
       <Divider style={{ margin: '12px 0' }} />
-      <div style={{ backgroundColor: '#f6ffed', padding: '8px', borderRadius: '4px' }}>
-        <Row justify="space-between" align="middle">
+      <div
+        style={{
+          backgroundColor: '#f6ffed',
+          padding: '8px',
+          borderRadius: '4px',
+        }}
+      >
+        <Row justify='space-between' align='middle'>
           <Col>
-            <Space size="small">
-              <CheckCircleOutlined style={{ color: '#52c41a', fontSize: '12px' }} />
+            <Space size='small'>
+              <CheckCircleOutlined
+                style={{ color: '#52c41a', fontSize: '12px' }}
+              />
               <Text style={{ fontSize: '11px', color: '#389e0d' }}>
                 Data automatically inherited and validated
               </Text>
@@ -306,21 +331,32 @@ export const InheritanceIndicator: React.FC<InheritanceIndicatorProps> = ({
           </Col>
           <Col>
             {inheritancePercentage === 100 ? (
-              <Tag color="green">Complete</Tag>
+              <Tag color='green'>Complete</Tag>
             ) : inheritancePercentage >= 50 ? (
-              <Tag color="orange">Partial</Tag>
+              <Tag color='orange'>Partial</Tag>
             ) : (
-              <Tag color="red">Minimal</Tag>
+              <Tag color='red'>Minimal</Tag>
             )}
           </Col>
         </Row>
       </div>
 
       {/* Inheritance Confidence Warning */}
-      {Object.values(inheritedData).some(field => field.confidence && field.confidence < 70) && (
-        <div style={{ marginTop: '8px', padding: '8px', backgroundColor: '#fff7e6', borderRadius: '4px' }}>
-          <Space size="small">
-            <ExclamationCircleOutlined style={{ color: '#faad14', fontSize: '12px' }} />
+      {Object.values(inheritedData).some(
+        field => field.confidence && field.confidence < 70
+      ) && (
+        <div
+          style={{
+            marginTop: '8px',
+            padding: '8px',
+            backgroundColor: '#fff7e6',
+            borderRadius: '4px',
+          }}
+        >
+          <Space size='small'>
+            <ExclamationCircleOutlined
+              style={{ color: '#faad14', fontSize: '12px' }}
+            />
             <Text style={{ fontSize: '11px', color: '#ad6800' }}>
               Some inherited data has low confidence. Please review and verify.
             </Text>

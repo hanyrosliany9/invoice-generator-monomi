@@ -3,7 +3,7 @@ export enum InvoiceStatus {
   SENT = 'SENT',
   PAID = 'PAID',
   OVERDUE = 'OVERDUE',
-  CANCELLED = 'CANCELLED'
+  CANCELLED = 'CANCELLED',
 }
 
 export interface Invoice {
@@ -28,7 +28,7 @@ export interface Invoice {
   createdAt: string
   updatedAt: string
   paidAt?: string
-  
+
   // Payment tracking
   paymentSummary?: {
     totalPaid: string
@@ -36,7 +36,7 @@ export interface Invoice {
     paymentCount: number
     lastPaymentDate?: string
   }
-  
+
   // Business status
   businessStatus?: {
     isOverdue: boolean
@@ -44,7 +44,7 @@ export interface Invoice {
     daysToDue: number
     materaiStatus: 'NOT_REQUIRED' | 'REQUIRED' | 'APPLIED'
   }
-  
+
   clientName?: string
   projectName?: string
   client?: {

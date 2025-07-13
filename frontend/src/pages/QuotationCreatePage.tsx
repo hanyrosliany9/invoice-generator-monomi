@@ -1,46 +1,49 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Divider,
   Form,
   Input,
-  Button,
-  Row,
-  Col,
-  Card,
-  Space,
-  Select,
-  DatePicker,
   message,
+  Row,
+  Select,
+  Space,
   Typography,
-  Alert,
-  Divider,
 } from 'antd'
 import {
+  BankOutlined,
+  CalendarOutlined,
+  DollarOutlined,
   FileTextOutlined,
+  ProjectOutlined,
   SaveOutlined,
   SendOutlined,
-  DollarOutlined,
-  CalendarOutlined,
-  ProjectOutlined,
   UserOutlined,
-  BankOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
-import { 
-  EntityHeroCard, 
-  OptimizedFormLayout, 
-  ProgressiveSection,
+import {
+  EntityHeroCard,
   FormStatistics,
   IDRCurrencyInput,
-  MateraiCompliancePanel,
   InheritanceIndicator,
+  MateraiCompliancePanel,
+  OptimizedFormLayout,
   PreviewPanel,
+  ProgressiveSection,
 } from '../components/forms'
 import { useOptimizedAutoSave } from '../hooks/useOptimizedAutoSave'
 import { useMobileOptimized } from '../hooks/useMobileOptimized'
-import { quotationService, CreateQuotationRequest } from '../services/quotations'
+import {
+  CreateQuotationRequest,
+  quotationService,
+} from '../services/quotations'
 import { projectService } from '../services/projects'
 import { clientService } from '../services/clients'
 import { formatIDR } from '../utils/currency'
@@ -64,11 +67,11 @@ export const QuotationCreatePage: React.FC = () => {
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const [previewData, setPreviewData] = useState<any>(null)
-  
+
   // Mobile optimization and performance
   const mobile = useMobileOptimized()
   const performanceSettings = mobile.getPerformanceSettings()
-  
+
   // Auto-save functionality
   const autoSave = useOptimizedAutoSave({
     delay: performanceSettings.autoSaveDelay,
@@ -76,39 +79,30 @@ export const QuotationCreatePage: React.FC = () => {
       console.log('Auto-saving quotation draft:', data)
       await new Promise(resolve => setTimeout(resolve, 300))
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Quotation auto-save failed:', error)
     },
-    enabled: true
+    enabled: true,
   })
-  
+
   const prefilledProjectId = searchParams.get('projectId')
   const prefilledClientId = searchParams.get('clientId')
   const templateId = searchParams.get('template')
 
   // Fetch clients for selection
-  const {
-    data: clients = [],
-    isLoading: clientsLoading,
-  } = useQuery({
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ['clients'],
     queryFn: clientService.getClients,
   })
 
   // Fetch projects for selection
-  const {
-    data: projects = [],
-    isLoading: projectsLoading,
-  } = useQuery({
+  const { data: projects = [], isLoading: projectsLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: projectService.getProjects,
   })
 
   // Fetch specific project if prefilled
-  const {
-    data: selectedProject,
-    isLoading: projectLoading,
-  } = useQuery({
+  const { data: selectedProject, isLoading: projectLoading } = useQuery({
     queryKey: ['project', prefilledProjectId],
     queryFn: () => projectService.getProject(prefilledProjectId!),
     enabled: !!prefilledProjectId,
@@ -117,7 +111,7 @@ export const QuotationCreatePage: React.FC = () => {
   // Create quotation mutation
   const createQuotationMutation = useMutation({
     mutationFn: quotationService.createQuotation,
-    onSuccess: (quotation) => {
+    onSuccess: quotation => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
       message.success('Quotation created successfully')
       navigate(`/quotations/${quotation.id}`)
@@ -141,7 +135,7 @@ export const QuotationCreatePage: React.FC = () => {
       form.setFieldsValue(inheritedData)
       updatePreviewData(inheritedData)
     } else if (prefilledClientId) {
-      form.setFieldsValue({ 
+      form.setFieldsValue({
         clientId: prefilledClientId,
         validUntil: dayjs().add(30, 'day'),
       })
@@ -168,8 +162,9 @@ export const QuotationCreatePage: React.FC = () => {
   // Update preview data when form changes
   const updatePreviewData = (values: any) => {
     const selectedClient = clients.find(c => c.id === values.clientId)
-    const selectedProjectData = projects.find(p => p.id === values.projectId) || selectedProject
-    
+    const selectedProjectData =
+      projects.find(p => p.id === values.projectId) || selectedProject
+
     setPreviewData({
       ...values,
       client: selectedClient,
@@ -183,7 +178,7 @@ export const QuotationCreatePage: React.FC = () => {
   const handleFormChange = () => {
     const values = form.getFieldsValue()
     updatePreviewData(values)
-    
+
     // Trigger auto-save when basic data is present
     if (values.clientId && values.projectId && values.totalAmount) {
       autoSave.triggerAutoSave(values)
@@ -199,7 +194,7 @@ export const QuotationCreatePage: React.FC = () => {
       terms: values.terms,
       validUntil: values.validUntil.toISOString(),
     }
-    
+
     createQuotationMutation.mutate(quotationData)
   }
 
@@ -214,11 +209,11 @@ export const QuotationCreatePage: React.FC = () => {
         terms: values.terms,
         validUntil: values.validUntil.toISOString(),
       }
-      
+
       const quotation = await quotationService.createQuotation(quotationData)
       // Update status to SENT
       await quotationService.updateStatus(quotation.id, 'SENT')
-      
+
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
       message.success('Quotation created and sent successfully')
       navigate(`/quotations/${quotation.id}`)
@@ -236,13 +231,17 @@ export const QuotationCreatePage: React.FC = () => {
     }
   }
 
-  const selectedClient = clients.find(c => c.id === form.getFieldValue('clientId'))
-  const currentProject = projects.find(p => p.id === form.getFieldValue('projectId')) || selectedProject
+  const selectedClient = clients.find(
+    c => c.id === form.getFieldValue('clientId')
+  )
+  const currentProject =
+    projects.find(p => p.id === form.getFieldValue('projectId')) ||
+    selectedProject
   const totalAmount = form.getFieldValue('totalAmount') || 0
 
   const getInheritedData = (): Record<string, any> => {
     if (!selectedProject) return {}
-    
+
     return {
       'Project Budget': {
         value: selectedProject.basePrice,
@@ -273,8 +272,8 @@ export const QuotationCreatePage: React.FC = () => {
 
   const heroCard = (
     <EntityHeroCard
-      title="Create New Quotation"
-      subtitle="Generate professional quotations with intelligent project data inheritance"
+      title='Create New Quotation'
+      subtitle='Generate professional quotations with intelligent project data inheritance'
       icon={<FileTextOutlined />}
       breadcrumb={['Quotations', 'Create New']}
       actions={[
@@ -297,13 +296,13 @@ export const QuotationCreatePage: React.FC = () => {
   )
 
   return (
-    <OptimizedFormLayout 
+    <OptimizedFormLayout
       hero={heroCard}
       sidebar={
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space direction='vertical' size='large' style={{ width: '100%' }}>
           {/* Real-time Statistics */}
           <FormStatistics
-            title="Quotation Overview"
+            title='Quotation Overview'
             stats={[
               {
                 label: 'Project Value',
@@ -321,21 +320,22 @@ export const QuotationCreatePage: React.FC = () => {
               },
               {
                 label: 'Valid Days',
-                value: form.getFieldValue('validUntil') ? 
-                  form.getFieldValue('validUntil').diff(dayjs(), 'day') : 30,
+                value: form.getFieldValue('validUntil')
+                  ? form.getFieldValue('validUntil').diff(dayjs(), 'day')
+                  : 30,
                 format: 'duration',
                 icon: <CalendarOutlined />,
                 color: '#722ed1',
               },
             ]}
-            layout="vertical"
-            size="small"
+            layout='vertical'
+            size='small'
           />
 
           {/* Inheritance Indicator */}
           {selectedProject && (
             <InheritanceIndicator
-              source="project"
+              source='project'
               sourceEntity={{
                 id: selectedProject.id,
                 name: selectedProject.description,
@@ -356,9 +356,9 @@ export const QuotationCreatePage: React.FC = () => {
       }
       preview={
         <PreviewPanel
-          mode="live"
+          mode='live'
           data={previewData}
-          template="quotation"
+          template='quotation'
           showPdf={false}
           allowDownload={false}
         />
@@ -366,24 +366,27 @@ export const QuotationCreatePage: React.FC = () => {
     >
       <Form
         form={form}
-        layout="vertical"
+        layout='vertical'
         onFinish={handleSubmit}
         onValuesChange={handleFormChange}
-        autoComplete="off"
+        autoComplete='off'
         style={{ width: '100%' }}
       >
         {/* Smart Context Detection */}
         {(prefilledProjectId || prefilledClientId || templateId) && (
           <Alert
             style={{ marginBottom: '24px' }}
-            message="Smart Context Detected"
+            message='Smart Context Detected'
             description={
-              prefilledProjectId ? `Creating quotation from project: ${selectedProject?.description}` :
-              prefilledClientId ? `Creating quotation for client: ${selectedClient?.name}` :
-              templateId ? `Using template: ${templateId}` :
-              'Form pre-filled with context data'
+              prefilledProjectId
+                ? `Creating quotation from project: ${selectedProject?.description}`
+                : prefilledClientId
+                  ? `Creating quotation for client: ${selectedClient?.name}`
+                  : templateId
+                    ? `Using template: ${templateId}`
+                    : 'Form pre-filled with context data'
             }
-            type="info"
+            type='info'
             showIcon
             closable
           />
@@ -391,8 +394,8 @@ export const QuotationCreatePage: React.FC = () => {
 
         {/* Project & Client Selection */}
         <ProgressiveSection
-          title="Project & Client Selection"
-          subtitle="Select the project and client for this quotation"
+          title='Project & Client Selection'
+          subtitle='Select the project and client for this quotation'
           icon={<ProjectOutlined />}
           defaultOpen={true}
           required={true}
@@ -400,17 +403,19 @@ export const QuotationCreatePage: React.FC = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="projectId"
-                label="Project"
+                name='projectId'
+                label='Project'
                 rules={[{ required: true, message: 'Please select a project' }]}
               >
                 <Select
-                  placeholder="Select project"
-                  size="large"
+                  placeholder='Select project'
+                  size='large'
                   loading={projectsLoading}
                   showSearch
                   filterOption={(input, option) =>
-                    ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase())
+                    ((option?.label as string) ?? '')
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                   options={projects.map(project => ({
                     value: project.id,
@@ -419,20 +424,22 @@ export const QuotationCreatePage: React.FC = () => {
                 />
               </Form.Item>
             </Col>
-            
+
             <Col xs={24} sm={12}>
               <Form.Item
-                name="clientId"
-                label="Client"
+                name='clientId'
+                label='Client'
                 rules={[{ required: true, message: 'Please select a client' }]}
               >
                 <Select
-                  placeholder="Select client"
-                  size="large"
+                  placeholder='Select client'
+                  size='large'
                   loading={clientsLoading}
                   showSearch
                   filterOption={(input, option) =>
-                    ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase())
+                    ((option?.label as string) ?? '')
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                   options={clients.map(client => ({
                     value: client.id,
@@ -445,21 +452,29 @@ export const QuotationCreatePage: React.FC = () => {
 
           {/* Project Context Display */}
           {currentProject && (
-            <Card size="small" style={{ marginTop: '16px', backgroundColor: '#f6ffed' }}>
+            <Card
+              size='small'
+              style={{ marginTop: '16px', backgroundColor: '#f6ffed' }}
+            >
               <Row gutter={[16, 8]}>
                 <Col xs={24} sm={8}>
-                  <Text type="secondary">Project Type:</Text>
-                  <div><Text strong>{currentProject.type}</Text></div>
+                  <Text type='secondary'>Project Type:</Text>
+                  <div>
+                    <Text strong>{currentProject.type}</Text>
+                  </div>
                 </Col>
                 <Col xs={24} sm={8}>
-                  <Text type="secondary">Status:</Text>
-                  <div><Text strong>{currentProject.status}</Text></div>
+                  <Text type='secondary'>Status:</Text>
+                  <div>
+                    <Text strong>{currentProject.status}</Text>
+                  </div>
                 </Col>
                 <Col xs={24} sm={8}>
-                  <Text type="secondary">Timeline:</Text>
+                  <Text type='secondary'>Timeline:</Text>
                   <div>
                     <Text strong>
-                      {dayjs(currentProject.startDate).format('DD MMM')} - {dayjs(currentProject.endDate).format('DD MMM')}
+                      {dayjs(currentProject.startDate).format('DD MMM')} -{' '}
+                      {dayjs(currentProject.endDate).format('DD MMM')}
                     </Text>
                   </div>
                 </Col>
@@ -470,8 +485,8 @@ export const QuotationCreatePage: React.FC = () => {
 
         {/* Pricing Strategy */}
         <ProgressiveSection
-          title="Pricing Strategy"
-          subtitle="Set project pricing and quotation amounts"
+          title='Pricing Strategy'
+          subtitle='Set project pricing and quotation amounts'
           icon={<DollarOutlined />}
           defaultOpen={true}
           required={true}
@@ -479,25 +494,29 @@ export const QuotationCreatePage: React.FC = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="amountPerProject"
-                label="Project Amount (IDR)"
-                rules={[{ required: true, message: 'Please enter project amount' }]}
+                name='amountPerProject'
+                label='Project Amount (IDR)'
+                rules={[
+                  { required: true, message: 'Please enter project amount' },
+                ]}
               >
                 <IDRCurrencyInput
-                  placeholder="Enter project amount"
+                  placeholder='Enter project amount'
                   showMateraiWarning={false}
                 />
               </Form.Item>
             </Col>
-            
+
             <Col xs={24} sm={12}>
               <Form.Item
-                name="totalAmount"
-                label="Total Quotation Amount (IDR)"
-                rules={[{ required: true, message: 'Please enter total amount' }]}
+                name='totalAmount'
+                label='Total Quotation Amount (IDR)'
+                rules={[
+                  { required: true, message: 'Please enter total amount' },
+                ]}
               >
                 <IDRCurrencyInput
-                  placeholder="Enter total amount"
+                  placeholder='Enter total amount'
                   showMateraiWarning={true}
                 />
               </Form.Item>
@@ -506,28 +525,46 @@ export const QuotationCreatePage: React.FC = () => {
 
           {/* Pricing Calculations */}
           {totalAmount > 0 && (
-            <Card size="small" style={{ marginTop: '16px', backgroundColor: '#f0f5ff' }}>
+            <Card
+              size='small'
+              style={{ marginTop: '16px', backgroundColor: '#f0f5ff' }}
+            >
               <Title level={5} style={{ margin: 0, marginBottom: '8px' }}>
-                <BankOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+                <BankOutlined
+                  style={{ marginRight: '8px', color: '#1890ff' }}
+                />
                 Pricing Breakdown
               </Title>
               <Row gutter={[16, 8]}>
                 <Col xs={12} sm={6}>
-                  <Text type="secondary">Subtotal:</Text>
-                  <div><Text strong>{formatIDR(totalAmount)}</Text></div>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Text type="secondary">PPN (11%):</Text>
-                  <div><Text strong>{formatIDR(totalAmount * 0.11)}</Text></div>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Text type="secondary">Total + Tax:</Text>
-                  <div><Text strong style={{ color: '#52c41a' }}>{formatIDR(totalAmount * 1.11)}</Text></div>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Text type="secondary">Materai:</Text>
+                  <Text type='secondary'>Subtotal:</Text>
                   <div>
-                    <Text strong style={{ color: totalAmount > 5000000 ? '#faad14' : '#52c41a' }}>
+                    <Text strong>{formatIDR(totalAmount)}</Text>
+                  </div>
+                </Col>
+                <Col xs={12} sm={6}>
+                  <Text type='secondary'>PPN (11%):</Text>
+                  <div>
+                    <Text strong>{formatIDR(totalAmount * 0.11)}</Text>
+                  </div>
+                </Col>
+                <Col xs={12} sm={6}>
+                  <Text type='secondary'>Total + Tax:</Text>
+                  <div>
+                    <Text strong style={{ color: '#52c41a' }}>
+                      {formatIDR(totalAmount * 1.11)}
+                    </Text>
+                  </div>
+                </Col>
+                <Col xs={12} sm={6}>
+                  <Text type='secondary'>Materai:</Text>
+                  <div>
+                    <Text
+                      strong
+                      style={{
+                        color: totalAmount > 5000000 ? '#faad14' : '#52c41a',
+                      }}
+                    >
                       {totalAmount > 5000000 ? 'Required' : 'Not Required'}
                     </Text>
                   </div>
@@ -539,8 +576,8 @@ export const QuotationCreatePage: React.FC = () => {
 
         {/* Quotation Details */}
         <ProgressiveSection
-          title="Quotation Details"
-          subtitle="Validity period and terms & conditions"
+          title='Quotation Details'
+          subtitle='Validity period and terms & conditions'
           icon={<CalendarOutlined />}
           defaultOpen={true}
           required={true}
@@ -548,8 +585,8 @@ export const QuotationCreatePage: React.FC = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="validUntil"
-                label="Valid Until"
+                name='validUntil'
+                label='Valid Until'
                 rules={[
                   { required: true, message: 'Please select validity date' },
                   ({ getFieldValue }) => ({
@@ -557,16 +594,20 @@ export const QuotationCreatePage: React.FC = () => {
                       if (!value || value.isAfter(dayjs())) {
                         return Promise.resolve()
                       }
-                      return Promise.reject(new Error('Validity date must be in the future'))
+                      return Promise.reject(
+                        new Error('Validity date must be in the future')
+                      )
                     },
                   }),
                 ]}
               >
                 <DatePicker
-                  size="large"
+                  size='large'
                   style={{ width: '100%' }}
-                  format="DD MMM YYYY"
-                  disabledDate={(current) => current && current < dayjs().startOf('day')}
+                  format='DD MMM YYYY'
+                  disabledDate={current =>
+                    current && current < dayjs().startOf('day')
+                  }
                 />
               </Form.Item>
             </Col>
@@ -574,16 +615,19 @@ export const QuotationCreatePage: React.FC = () => {
 
           <Col xs={24}>
             <Form.Item
-              name="terms"
-              label="Terms & Conditions"
+              name='terms'
+              label='Terms & Conditions'
               rules={[
-                { required: true, message: 'Please enter terms and conditions' },
+                {
+                  required: true,
+                  message: 'Please enter terms and conditions',
+                },
                 { min: 50, message: 'Terms must be at least 50 characters' },
               ]}
             >
-              <TextArea 
+              <TextArea
                 rows={8}
-                placeholder="Enter detailed terms and conditions for this quotation..."
+                placeholder='Enter detailed terms and conditions for this quotation...'
               />
             </Form.Item>
           </Col>
@@ -591,27 +635,24 @@ export const QuotationCreatePage: React.FC = () => {
 
         {/* Action Buttons */}
         <Card style={{ marginTop: '24px', textAlign: 'center' }}>
-          <Space size="large">
-            <Button 
-              size="large"
-              onClick={() => navigate('/quotations')}
-            >
+          <Space size='large'>
+            <Button size='large' onClick={() => navigate('/quotations')}>
               Cancel
             </Button>
-            <Button 
-              type="default" 
-              size="large"
+            <Button
+              type='default'
+              size='large'
               icon={<SaveOutlined />}
               onClick={handleSaveDraft}
               loading={autoSave.isSaving}
             >
               Save as Draft
             </Button>
-            <Button 
-              type="primary" 
-              size="large"
+            <Button
+              type='primary'
+              size='large'
               icon={<SaveOutlined />}
-              htmlType="submit"
+              htmlType='submit'
               loading={createQuotationMutation.isPending}
             >
               Create Quotation

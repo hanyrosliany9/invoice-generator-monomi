@@ -1,17 +1,17 @@
 import React from 'react'
 import {
   Card,
-  Row,
   Col,
-  Statistic,
+  Row,
   Space,
-  Typography,
   Spin,
+  Statistic,
   Tooltip,
+  Typography,
 } from 'antd'
 import {
-  ArrowUpOutlined,
   ArrowDownOutlined,
+  ArrowUpOutlined,
   MinusOutlined,
 } from '@ant-design/icons'
 import { formatIDR } from '../../utils/currency'
@@ -98,15 +98,15 @@ export const FormStatistics: React.FC<FormStatisticsProps> = ({
 }) => {
   const getColSpan = () => {
     const statsCount = stats.length
-    
+
     if (layout === 'horizontal') {
       return { xs: 24, sm: 24 / statsCount, lg: 24 / statsCount }
     }
-    
+
     if (layout === 'vertical') {
       return { xs: 24, sm: 24, lg: 24 }
     }
-    
+
     // Grid layout
     if (statsCount <= 2) {
       return { xs: 24, sm: 12, lg: 12 }
@@ -121,7 +121,7 @@ export const FormStatistics: React.FC<FormStatisticsProps> = ({
 
   const renderStatistic = (stat: FormStatisticItem, index: number) => {
     const content = (
-      <Card 
+      <Card
         size={size === 'large' ? 'default' : 'small'}
         style={{
           height: '100%',
@@ -138,29 +138,33 @@ export const FormStatistics: React.FC<FormStatisticsProps> = ({
               </Space>
             }
             value={stat.value}
-            formatter={(value) => formatValue(value as string | number, stat.format)}
+            formatter={value =>
+              formatValue(value as string | number, stat.format)
+            }
             valueStyle={{
               color: stat.color || '#262626',
-              fontSize: size === 'large' ? '24px' : size === 'small' ? '16px' : '20px',
+              fontSize:
+                size === 'large' ? '24px' : size === 'small' ? '16px' : '20px',
             }}
             prefix={stat.trend && getTrendIcon(stat.trend.type)}
           />
-          
+
           {/* Trend Information */}
           {stat.trend && (
             <div style={{ marginTop: '8px' }}>
-              <Space size="small">
+              <Space size='small'>
                 {getTrendIcon(stat.trend.type)}
-                <Text 
-                  style={{ 
+                <Text
+                  style={{
                     color: getTrendColor(stat.trend.type),
                     fontSize: '12px',
                   }}
                 >
-                  {stat.trend.value > 0 ? '+' : ''}{stat.trend.value}
+                  {stat.trend.value > 0 ? '+' : ''}
+                  {stat.trend.value}
                   {stat.trend.format || '%'}
                 </Text>
-                <Text type="secondary" style={{ fontSize: '12px' }}>
+                <Text type='secondary' style={{ fontSize: '12px' }}>
                   vs last period
                 </Text>
               </Space>
@@ -188,7 +192,7 @@ export const FormStatistics: React.FC<FormStatisticsProps> = ({
           </Text>
         </div>
       )}
-      
+
       <Row gutter={[16, 16]}>
         {stats.map((stat, index) => (
           <Col key={index} {...colSpan}>

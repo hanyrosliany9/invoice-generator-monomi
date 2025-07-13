@@ -1,16 +1,9 @@
-import React, { useState, useEffect } from 'react'
-import {
-  Input,
-  InputNumber,
-  Space,
-  Typography,
-  Tag,
-  Tooltip,
-} from 'antd'
+import React, { useEffect, useState } from 'react'
+import { Input, InputNumber, Space, Tag, Tooltip, Typography } from 'antd'
 import {
   DollarOutlined,
-  WarningOutlined,
   InfoCircleOutlined,
+  WarningOutlined,
 } from '@ant-design/icons'
 import { formatIDR } from '../../utils/currency'
 
@@ -52,7 +45,7 @@ export const IDRCurrencyInput: React.FC<IDRCurrencyInputProps> = ({
   onChange,
   onBlur,
   onFocus,
-  placeholder = "Enter amount in IDR",
+  placeholder = 'Enter amount in IDR',
   disabled = false,
   size = 'middle',
   showMateraiWarning = true,
@@ -121,10 +114,16 @@ export const IDRCurrencyInput: React.FC<IDRCurrencyInputProps> = ({
 
   return (
     <div className={className} style={style} data-testid={dataTestId}>
-      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+      <Space direction='vertical' size='small' style={{ width: '100%' }}>
         {/* Main Input */}
         <InputNumber
-          value={focused ? (displayValue ? parseNumber(displayValue) : undefined) : value}
+          value={
+            focused
+              ? displayValue
+                ? parseNumber(displayValue)
+                : undefined
+              : value
+          }
           onChange={handleChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
@@ -141,12 +140,12 @@ export const IDRCurrencyInput: React.FC<IDRCurrencyInputProps> = ({
               <DollarOutlined style={{ color: '#8c8c8c' }} />
             </Space>
           }
-          formatter={(val) => {
+          formatter={val => {
             if (!val) return ''
             const numVal = Number(val)
             return focused ? numVal.toString() : formatNumber(numVal)
           }}
-          parser={(val) => {
+          parser={val => {
             if (!val) return 0
             return parseNumber(val) || 0
           }}
@@ -155,18 +154,26 @@ export const IDRCurrencyInput: React.FC<IDRCurrencyInputProps> = ({
 
         {/* Value Display and Warnings */}
         {value > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <div>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+              <Text type='secondary' style={{ fontSize: '12px' }}>
                 Formatted: {formatIDR(value)}
               </Text>
             </div>
             <div>
-              <Space size="small">
+              <Space size='small'>
                 {requiresMaterai && (
-                  <Tooltip title={`Materai (stamp duty) required for amounts over ${formatIDR(MATERAI_THRESHOLD)}`}>
-                    <Tag 
-                      color="warning" 
+                  <Tooltip
+                    title={`Materai (stamp duty) required for amounts over ${formatIDR(MATERAI_THRESHOLD)}`}
+                  >
+                    <Tag
+                      color='warning'
                       icon={<WarningOutlined />}
                       style={{ fontSize: '11px' }}
                     >
@@ -174,8 +181,8 @@ export const IDRCurrencyInput: React.FC<IDRCurrencyInputProps> = ({
                     </Tag>
                   </Tooltip>
                 )}
-                <Tooltip title="Indonesian Rupiah">
-                  <Tag color="blue" style={{ fontSize: '11px' }}>
+                <Tooltip title='Indonesian Rupiah'>
+                  <Tag color='blue' style={{ fontSize: '11px' }}>
                     IDR
                   </Tag>
                 </Tooltip>
@@ -186,22 +193,25 @@ export const IDRCurrencyInput: React.FC<IDRCurrencyInputProps> = ({
 
         {/* Materai Warning */}
         {requiresMaterai && (
-          <div 
-            style={{ 
-              padding: '8px 12px', 
-              backgroundColor: '#fff7e6', 
+          <div
+            style={{
+              padding: '8px 12px',
+              backgroundColor: '#fff7e6',
               borderRadius: '4px',
               border: '1px solid #ffd591',
             }}
           >
-            <Space size="small">
+            <Space size='small'>
               <WarningOutlined style={{ color: '#faad14' }} />
               <Text style={{ fontSize: '12px', color: '#ad6800' }}>
-                <strong>Materai Notice:</strong> Documents over {formatIDR(MATERAI_THRESHOLD)} 
+                <strong>Materai Notice:</strong> Documents over{' '}
+                {formatIDR(MATERAI_THRESHOLD)}
                 require 10,000 IDR stamp duty as per Indonesian law.
               </Text>
-              <Tooltip title="Learn more about Indonesian materai requirements">
-                <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />
+              <Tooltip title='Learn more about Indonesian materai requirements'>
+                <InfoCircleOutlined
+                  style={{ color: '#1890ff', cursor: 'pointer' }}
+                />
               </Tooltip>
             </Space>
           </div>
@@ -209,7 +219,7 @@ export const IDRCurrencyInput: React.FC<IDRCurrencyInputProps> = ({
 
         {/* Input Guidance */}
         {focused && (
-          <Text type="secondary" style={{ fontSize: '11px' }}>
+          <Text type='secondary' style={{ fontSize: '11px' }}>
             <InfoCircleOutlined style={{ marginRight: '4px' }} />
             Enter numbers only. Formatting will be applied automatically.
           </Text>

@@ -1,25 +1,25 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
-  Card,
-  Button,
-  Space,
-  Typography,
-  Spin,
   Alert,
-  Row,
+  Button,
+  Card,
   Col,
   Divider,
+  Row,
+  Space,
+  Spin,
   Tag,
   Tooltip,
+  Typography,
 } from 'antd'
 import {
-  EyeOutlined,
   DownloadOutlined,
-  PrinterOutlined,
+  EyeOutlined,
   FullscreenOutlined,
+  PrinterOutlined,
+  ReloadOutlined,
   ZoomInOutlined,
   ZoomOutOutlined,
-  ReloadOutlined,
 } from '@ant-design/icons'
 import { formatIDR } from '../../utils/currency'
 
@@ -68,7 +68,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       // This would call the actual PDF preview service
       // For now, we'll simulate the preview generation
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       // In real implementation, this would be the actual PDF blob URL
       setPdfUrl('/api/preview/sample.pdf')
     } catch (err) {
@@ -99,19 +99,23 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const renderDocumentPreview = () => {
     if (!data) {
       return (
-        <div style={{ 
-          padding: '40px', 
-          textAlign: 'center',
-          backgroundColor: '#f5f5f5',
-          borderRadius: '8px',
-          border: '2px dashed #d9d9d9',
-        }}>
+        <div
+          style={{
+            padding: '40px',
+            textAlign: 'center',
+            backgroundColor: '#f5f5f5',
+            borderRadius: '8px',
+            border: '2px dashed #d9d9d9',
+          }}
+        >
           <EyeOutlined style={{ fontSize: '48px', color: '#d9d9d9' }} />
           <div style={{ marginTop: '16px' }}>
-            <Text type="secondary">
-              {template === 'quotation' ? 'Quotation preview will appear here' :
-               template === 'invoice' ? 'Invoice preview will appear here' :
-               'Project preview will appear here'}
+            <Text type='secondary'>
+              {template === 'quotation'
+                ? 'Quotation preview will appear here'
+                : template === 'invoice'
+                  ? 'Invoice preview will appear here'
+                  : 'Project preview will appear here'}
             </Text>
           </div>
         </div>
@@ -119,7 +123,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     }
 
     return (
-      <div 
+      <div
         style={{
           border: '1px solid #e8e8e8',
           borderRadius: '8px',
@@ -134,13 +138,13 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         {/* Document Header */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <Title level={3} style={{ color: '#1890ff' }}>
-            {template === 'quotation' ? 'QUOTATION' :
-             template === 'invoice' ? 'INVOICE' :
-             'PROJECT OVERVIEW'}
+            {template === 'quotation'
+              ? 'QUOTATION'
+              : template === 'invoice'
+                ? 'INVOICE'
+                : 'PROJECT OVERVIEW'}
           </Title>
-          <Text type="secondary">
-            {data.number || 'DRAFT'}
-          </Text>
+          <Text type='secondary'>{data.number || 'DRAFT'}</Text>
         </div>
 
         {/* Client Information */}
@@ -149,10 +153,22 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
             <div>
               <Text strong>Bill To:</Text>
               <div style={{ marginTop: '8px' }}>
-                <div><Text strong>{data.client?.name || 'Client Name'}</Text></div>
-                <div><Text>{data.client?.company || 'Company Name'}</Text></div>
-                <div><Text type="secondary">{data.client?.email || 'client@email.com'}</Text></div>
-                <div><Text type="secondary">{data.client?.address || 'Client Address'}</Text></div>
+                <div>
+                  <Text strong>{data.client?.name || 'Client Name'}</Text>
+                </div>
+                <div>
+                  <Text>{data.client?.company || 'Company Name'}</Text>
+                </div>
+                <div>
+                  <Text type='secondary'>
+                    {data.client?.email || 'client@email.com'}
+                  </Text>
+                </div>
+                <div>
+                  <Text type='secondary'>
+                    {data.client?.address || 'Client Address'}
+                  </Text>
+                </div>
               </div>
             </div>
           </Col>
@@ -161,18 +177,22 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
               <Text strong>Document Details:</Text>
               <div style={{ marginTop: '8px' }}>
                 <div>
-                  <Text type="secondary">Date: </Text>
+                  <Text type='secondary'>Date: </Text>
                   <Text>{new Date().toLocaleDateString('id-ID')}</Text>
                 </div>
                 {template === 'quotation' && (
                   <div>
-                    <Text type="secondary">Valid Until: </Text>
-                    <Text>{data.validUntil ? new Date(data.validUntil).toLocaleDateString('id-ID') : 'TBD'}</Text>
+                    <Text type='secondary'>Valid Until: </Text>
+                    <Text>
+                      {data.validUntil
+                        ? new Date(data.validUntil).toLocaleDateString('id-ID')
+                        : 'TBD'}
+                    </Text>
                   </div>
                 )}
                 <div>
-                  <Text type="secondary">Status: </Text>
-                  <Tag color="blue">{data.status || 'DRAFT'}</Tag>
+                  <Text type='secondary'>Status: </Text>
+                  <Tag color='blue'>{data.status || 'DRAFT'}</Tag>
                 </div>
               </div>
             </div>
@@ -187,33 +207,94 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#f5f5f5' }}>
-                <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #e8e8e8' }}>Description</th>
-                <th style={{ padding: '12px', textAlign: 'center', border: '1px solid #e8e8e8' }}>Qty</th>
-                <th style={{ padding: '12px', textAlign: 'right', border: '1px solid #e8e8e8' }}>Unit Price</th>
-                <th style={{ padding: '12px', textAlign: 'right', border: '1px solid #e8e8e8' }}>Total</th>
+                <th
+                  style={{
+                    padding: '12px',
+                    textAlign: 'left',
+                    border: '1px solid #e8e8e8',
+                  }}
+                >
+                  Description
+                </th>
+                <th
+                  style={{
+                    padding: '12px',
+                    textAlign: 'center',
+                    border: '1px solid #e8e8e8',
+                  }}
+                >
+                  Qty
+                </th>
+                <th
+                  style={{
+                    padding: '12px',
+                    textAlign: 'right',
+                    border: '1px solid #e8e8e8',
+                  }}
+                >
+                  Unit Price
+                </th>
+                <th
+                  style={{
+                    padding: '12px',
+                    textAlign: 'right',
+                    border: '1px solid #e8e8e8',
+                  }}
+                >
+                  Total
+                </th>
               </tr>
             </thead>
             <tbody>
-              {(data.products || data.items || [{ 
-                name: 'Sample Item', 
-                description: 'Sample description', 
-                quantity: 1, 
-                price: 1000000 
-              }]).map((item: any, index: number) => (
+              {(
+                data.products ||
+                data.items || [
+                  {
+                    name: 'Sample Item',
+                    description: 'Sample description',
+                    quantity: 1,
+                    price: 1000000,
+                  },
+                ]
+              ).map((item: any, index: number) => (
                 <tr key={index}>
                   <td style={{ padding: '12px', border: '1px solid #e8e8e8' }}>
-                    <div><Text strong>{item.name || item.description}</Text></div>
+                    <div>
+                      <Text strong>{item.name || item.description}</Text>
+                    </div>
                     {item.description && item.name && (
-                      <div><Text type="secondary" style={{ fontSize: '12px' }}>{item.description}</Text></div>
+                      <div>
+                        <Text type='secondary' style={{ fontSize: '12px' }}>
+                          {item.description}
+                        </Text>
+                      </div>
                     )}
                   </td>
-                  <td style={{ padding: '12px', textAlign: 'center', border: '1px solid #e8e8e8' }}>
+                  <td
+                    style={{
+                      padding: '12px',
+                      textAlign: 'center',
+                      border: '1px solid #e8e8e8',
+                    }}
+                  >
                     {item.quantity || 1}
                   </td>
-                  <td style={{ padding: '12px', textAlign: 'right', border: '1px solid #e8e8e8' }}>
+                  <td
+                    style={{
+                      padding: '12px',
+                      textAlign: 'right',
+                      border: '1px solid #e8e8e8',
+                    }}
+                  >
                     {formatIDR(item.price || 0)}
                   </td>
-                  <td style={{ padding: '12px', textAlign: 'right', border: '1px solid #e8e8e8' }}>
+                  <td
+                    style={{
+                      padding: '12px',
+                      textAlign: 'right',
+                      border: '1px solid #e8e8e8',
+                    }}
+                  >
                     {formatIDR((item.price || 0) * (item.quantity || 1))}
                   </td>
                 </tr>
@@ -225,18 +306,38 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         {/* Totals */}
         <div style={{ textAlign: 'right', marginBottom: '32px' }}>
           <div style={{ display: 'inline-block', minWidth: '300px' }}>
-            <Row justify="space-between" style={{ marginBottom: '8px' }}>
-              <Col><Text>Subtotal:</Text></Col>
-              <Col><Text>{formatIDR(data.totalAmount || data.basePrice || 0)}</Text></Col>
+            <Row justify='space-between' style={{ marginBottom: '8px' }}>
+              <Col>
+                <Text>Subtotal:</Text>
+              </Col>
+              <Col>
+                <Text>
+                  {formatIDR(data.totalAmount || data.basePrice || 0)}
+                </Text>
+              </Col>
             </Row>
-            <Row justify="space-between" style={{ marginBottom: '8px' }}>
-              <Col><Text>Tax (PPN 11%):</Text></Col>
-              <Col><Text>{formatIDR((data.totalAmount || data.basePrice || 0) * 0.11)}</Text></Col>
+            <Row justify='space-between' style={{ marginBottom: '8px' }}>
+              <Col>
+                <Text>Tax (PPN 11%):</Text>
+              </Col>
+              <Col>
+                <Text>
+                  {formatIDR((data.totalAmount || data.basePrice || 0) * 0.11)}
+                </Text>
+              </Col>
             </Row>
             <Divider style={{ margin: '8px 0' }} />
-            <Row justify="space-between">
-              <Col><Text strong style={{ fontSize: '16px' }}>Total:</Text></Col>
-              <Col><Text strong style={{ fontSize: '16px' }}>{formatIDR((data.totalAmount || data.basePrice || 0) * 1.11)}</Text></Col>
+            <Row justify='space-between'>
+              <Col>
+                <Text strong style={{ fontSize: '16px' }}>
+                  Total:
+                </Text>
+              </Col>
+              <Col>
+                <Text strong style={{ fontSize: '16px' }}>
+                  {formatIDR((data.totalAmount || data.basePrice || 0) * 1.11)}
+                </Text>
+              </Col>
             </Row>
           </div>
         </div>
@@ -245,7 +346,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         <div>
           <Title level={5}>Terms and Conditions</Title>
           <Text style={{ fontSize: '12px', lineHeight: '1.6' }}>
-            {data.terms || `
+            {data.terms ||
+              `
               1. Payment terms: Net 30 days from invoice date
               2. All prices are in Indonesian Rupiah (IDR)
               3. This ${template} is valid for 30 days from the date of issue
@@ -259,9 +361,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         {(data.totalAmount || data.basePrice || 0) > 5000000 && (
           <Alert
             style={{ marginTop: '24px' }}
-            message="Materai Required"
-            description="This document requires a 10,000 IDR stamp duty (materai) as per Indonesian law for amounts over 5 million IDR."
-            type="warning"
+            message='Materai Required'
+            description='This document requires a 10,000 IDR stamp duty (materai) as per Indonesian law for amounts over 5 million IDR.'
+            type='warning'
             showIcon
           />
         )}
@@ -277,50 +379,50 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         <Space>
           <EyeOutlined />
           <span>Live Preview</span>
-          {mode === 'live' && (
-            <Tag color="green">Live</Tag>
-          )}
+          {mode === 'live' && <Tag color='green'>Live</Tag>}
         </Space>
       }
       extra={
         <Space>
-          <Tooltip title="Zoom Out">
-            <Button 
-              type="text" 
-              icon={<ZoomOutOutlined />} 
+          <Tooltip title='Zoom Out'>
+            <Button
+              type='text'
+              icon={<ZoomOutOutlined />}
               onClick={handleZoomOut}
               disabled={zoom <= 50}
             />
           </Tooltip>
-          <Text style={{ fontSize: '12px', minWidth: '40px', textAlign: 'center' }}>
+          <Text
+            style={{ fontSize: '12px', minWidth: '40px', textAlign: 'center' }}
+          >
             {zoom}%
           </Text>
-          <Tooltip title="Zoom In">
-            <Button 
-              type="text" 
-              icon={<ZoomInOutlined />} 
+          <Tooltip title='Zoom In'>
+            <Button
+              type='text'
+              icon={<ZoomInOutlined />}
               onClick={handleZoomIn}
               disabled={zoom >= 200}
             />
           </Tooltip>
-          <Tooltip title="Refresh Preview">
-            <Button 
-              type="text" 
-              icon={<ReloadOutlined />} 
+          <Tooltip title='Refresh Preview'>
+            <Button
+              type='text'
+              icon={<ReloadOutlined />}
               onClick={handleRefresh}
               loading={loading}
             />
           </Tooltip>
-          <Tooltip title="Fullscreen">
-            <Button 
-              type="text" 
-              icon={<FullscreenOutlined />} 
+          <Tooltip title='Fullscreen'>
+            <Button
+              type='text'
+              icon={<FullscreenOutlined />}
               onClick={handleFullscreen}
             />
           </Tooltip>
         </Space>
       }
-      size="small"
+      size='small'
       style={{
         height: isFullscreen ? '100vh' : 'auto',
         ...(isFullscreen && {
@@ -336,18 +438,18 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     >
       {loading && (
         <div style={{ textAlign: 'center', padding: '40px' }}>
-          <Spin size="large" tip="Generating preview..." />
+          <Spin size='large' tip='Generating preview...' />
         </div>
       )}
 
       {error && (
         <Alert
-          message="Preview Error"
+          message='Preview Error'
           description={error}
-          type="error"
+          type='error'
           showIcon
           action={
-            <Button size="small" onClick={handleRefresh}>
+            <Button size='small' onClick={handleRefresh}>
               Retry
             </Button>
           }
@@ -355,7 +457,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       )}
 
       {!loading && !error && (
-        <div style={{ overflow: 'auto', maxHeight: isFullscreen ? '90vh' : '600px' }}>
+        <div
+          style={{
+            overflow: 'auto',
+            maxHeight: isFullscreen ? '90vh' : '600px',
+          }}
+        >
           {renderDocumentPreview()}
         </div>
       )}
@@ -370,7 +477,11 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
               </Button>
             )}
             {onDownload && (
-              <Button type="primary" icon={<DownloadOutlined />} onClick={onDownload}>
+              <Button
+                type='primary'
+                icon={<DownloadOutlined />}
+                onClick={onDownload}
+              >
                 Download PDF
               </Button>
             )}

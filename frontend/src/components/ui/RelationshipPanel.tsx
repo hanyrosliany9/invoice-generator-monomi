@@ -29,27 +29,27 @@ interface RelationshipPanelProps {
 const getEntityIcon = (type: string) => {
   const icons = {
     client: '🏢',
-    project: '📊', 
+    project: '📊',
     quotation: '📋',
-    invoice: '💰'
+    invoice: '💰',
   }
   return icons[type as keyof typeof icons] || '📄'
 }
 
 const getStatusColor = (status?: string) => {
   if (!status) return 'default'
-  
+
   const colors = {
     draft: 'orange',
-    sent: 'blue', 
+    sent: 'blue',
     approved: 'green',
     declined: 'red',
     paid: 'green',
     overdue: 'red',
     active: 'green',
-    completed: 'blue'
+    completed: 'blue',
   }
-  
+
   return colors[status.toLowerCase() as keyof typeof colors] || 'default'
 }
 
@@ -59,7 +59,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   entityType,
   onCreateNew,
   compact = false,
-  className = ''
+  className = '',
 }) => {
   const navigate = useNavigate()
 
@@ -74,41 +74,41 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   }
 
   return (
-    <Card 
+    <Card
       title={
-        <div className="flex justify-between items-center">
+        <div className='flex justify-between items-center'>
           <Space>
             <span>{getEntityIcon(entityType)}</span>
             <span>{title}</span>
-            <Badge count={entities.length} size="small" />
+            <Badge count={entities.length} size='small' />
           </Space>
           {onCreateNew && (
-            <Button 
-              type="link" 
-              size="small" 
+            <Button
+              type='link'
+              size='small'
               icon={<PlusOutlined />}
               onClick={onCreateNew}
-              className="text-blue-600 hover:text-blue-800"
+              className='text-blue-600 hover:text-blue-800'
             >
               Add
             </Button>
           )}
         </div>
       }
-      size={compact ? "small" : "default"}
+      size={compact ? 'small' : 'default'}
       className={`relationship-panel ${className}`}
       bodyStyle={{ maxHeight: compact ? 200 : 300, overflowY: 'auto' }}
     >
-      <div className="space-y-2">
+      <div className='space-y-2'>
         {entities.length === 0 ? (
-          <div className="text-center text-gray-500 py-4">
-            <div className="text-sm">No {title.toLowerCase()} found</div>
+          <div className='text-center text-gray-500 py-4'>
+            <div className='text-sm'>No {title.toLowerCase()} found</div>
             {onCreateNew && (
-              <Button 
-                type="link" 
-                size="small" 
+              <Button
+                type='link'
+                size='small'
                 onClick={onCreateNew}
-                className="text-blue-600"
+                className='text-blue-600'
               >
                 Create first {entityType}
               </Button>
@@ -116,31 +116,33 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
           </div>
         ) : (
           entities.map(entity => (
-            <div 
+            <div
               key={entity.id}
-              className="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors"
+              className='flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors'
               onClick={() => handleEntityClick(entity)}
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2">
-                  <Text strong className="truncate">{entity.name}</Text>
-                  {entity.count && (
-                    <Badge count={entity.count} size="small" />
-                  )}
+              <div className='flex-1 min-w-0'>
+                <div className='flex items-center space-x-2'>
+                  <Text strong className='truncate'>
+                    {entity.name}
+                  </Text>
+                  {entity.count && <Badge count={entity.count} size='small' />}
                 </div>
                 {entity.subtitle && (
-                  <div className="text-xs text-gray-500 truncate">{entity.subtitle}</div>
+                  <div className='text-xs text-gray-500 truncate'>
+                    {entity.subtitle}
+                  </div>
                 )}
                 {entity.date && (
-                  <div className="text-xs text-gray-400">
+                  <div className='text-xs text-gray-400'>
                     {new Date(entity.date).toLocaleDateString('id-ID')}
                   </div>
                 )}
               </div>
-              
-              <div className="flex flex-col items-end space-y-1">
+
+              <div className='flex flex-col items-end space-y-1'>
                 {entity.amount && (
-                  <Text className="text-sm font-medium">
+                  <Text className='text-sm font-medium'>
                     {formatIDR(entity.amount)}
                   </Text>
                 )}

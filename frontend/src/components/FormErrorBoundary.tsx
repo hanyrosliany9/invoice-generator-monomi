@@ -29,7 +29,7 @@ class FormErrorBoundary extends Component<Props, State> {
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('FormErrorBoundary caught an error:', error, errorInfo)
-    
+
     // Call custom error handler if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo)
@@ -41,7 +41,7 @@ class FormErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
     })
-    
+
     // Call custom reset handler if provided
     if (this.props.onReset) {
       this.props.onReset()
@@ -55,23 +55,24 @@ class FormErrorBoundary extends Component<Props, State> {
           <Alert
             message={`Kesalahan pada Form ${this.props.formTitle || ''}`}
             description={
-              <Space direction="vertical" size="small">
+              <Space direction='vertical' size='small'>
                 <div>
-                  Terjadi kesalahan saat memuat form. Data yang sudah dimasukkan mungkin hilang.
+                  Terjadi kesalahan saat memuat form. Data yang sudah dimasukkan
+                  mungkin hilang.
                 </div>
                 <div>
-                  <Button 
-                    type="primary" 
-                    icon={<ReloadOutlined />} 
+                  <Button
+                    type='primary'
+                    icon={<ReloadOutlined />}
                     onClick={this.handleReset}
-                    size="small"
+                    size='small'
                   >
                     Muat Ulang Form
                   </Button>
                 </div>
               </Space>
             }
-            type="error"
+            type='error'
             showIcon
             icon={<ExclamationCircleOutlined />}
           />

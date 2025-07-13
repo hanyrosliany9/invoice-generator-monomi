@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../modules/prisma/prisma.service';
-import { getErrorMessage } from '../common/utils/error-handling.util';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../modules/prisma/prisma.service";
+import { getErrorMessage } from "../common/utils/error-handling.util";
 
 @Injectable()
 export class MetricsService {
@@ -40,10 +40,10 @@ export class MetricsService {
           uptime: process.uptime(),
           memory: process.memoryUsage(),
           version: process.version,
-          environment: process.env.NODE_ENV || 'development',
+          environment: process.env.NODE_ENV || "development",
         },
         database: {
-          status: 'healthy',
+          status: "healthy",
           latency: dbLatency,
         },
         business: {
@@ -63,10 +63,10 @@ export class MetricsService {
           uptime: process.uptime(),
           memory: process.memoryUsage(),
           version: process.version,
-          environment: process.env.NODE_ENV || 'development',
+          environment: process.env.NODE_ENV || "development",
         },
         database: {
-          status: 'unhealthy',
+          status: "unhealthy",
           error: getErrorMessage(error),
         },
         business: {
@@ -87,12 +87,12 @@ export class MetricsService {
   private async getRevenueMetrics() {
     const [totalRevenue, monthlyRevenue, pendingRevenue] = await Promise.all([
       this.prisma.invoice.aggregate({
-        where: { status: 'PAID' },
+        where: { status: "PAID" },
         _sum: { totalAmount: true },
       }),
       this.prisma.invoice.aggregate({
         where: {
-          status: 'PAID',
+          status: "PAID",
           createdAt: {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
           },
@@ -101,7 +101,7 @@ export class MetricsService {
       }),
       this.prisma.invoice.aggregate({
         where: {
-          status: { in: ['SENT', 'DRAFT'] },
+          status: { in: ["SENT", "DRAFT"] },
         },
         _sum: { totalAmount: true },
       }),
@@ -117,7 +117,7 @@ export class MetricsService {
   private async getRecentActivity() {
     const recentAudits = await this.prisma.auditLog.findMany({
       take: 10,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       select: {
         action: true,
         entityType: true,
@@ -132,7 +132,7 @@ export class MetricsService {
       },
     });
 
-    return recentAudits.map(audit => ({
+    return recentAudits.map((audit) => ({
       action: audit.action,
       entityType: audit.entityType,
       entityId: audit.entityId,

@@ -3,23 +3,23 @@
 
 import React, { useCallback, useState } from 'react'
 import {
+  Button,
+  DatePicker,
   Form,
   Input,
-  Select,
-  DatePicker,
   InputNumber,
-  Button,
+  Row,
+  Select,
   Space,
-  Typography,
   Tooltip,
-  Row
+  Typography,
 } from 'antd'
 import {
-  InfoCircleOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons'
 import { useAccessibility } from '../../contexts/AccessibilityContext'
 import { formatIDR } from '../../utils/currency'
@@ -107,7 +107,7 @@ export const AccessibleFormItem: React.FC<AccessibleFormItemProps> = ({
   indonesianContext = false,
   businessType = 'general',
   ariaDescribedBy,
-  children
+  children,
 }) => {
   const { announce, getAccessibleLabel } = useAccessibility()
   const [focused, setFocused] = useState(false)
@@ -117,8 +117,10 @@ export const AccessibleFormItem: React.FC<AccessibleFormItemProps> = ({
   const describedBy = [
     helpText ? helpId : null,
     errorMessage ? errorId : null,
-    ariaDescribedBy
-  ].filter(Boolean).join(' ')
+    ariaDescribedBy,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   const handleFocus = useCallback(() => {
     setFocused(true)
@@ -140,15 +142,20 @@ export const AccessibleFormItem: React.FC<AccessibleFormItemProps> = ({
         <Space>
           <Text strong>
             {accessibleLabel}
-            {required && <span style={{ color: 'red' }} aria-label="wajib diisi"> *</span>}
+            {required && (
+              <span style={{ color: 'red' }} aria-label='wajib diisi'>
+                {' '}
+                *
+              </span>
+            )}
           </Text>
           {businessType === 'materai' && (
-            <Tooltip title="Perhitungan materai otomatis berdasarkan nilai transaksi">
+            <Tooltip title='Perhitungan materai otomatis berdasarkan nilai transaksi'>
               <InfoCircleOutlined style={{ color: '#1890ff' }} />
             </Tooltip>
           )}
           {businessType === 'monetary' && (
-            <Tooltip title="Nilai dalam Rupiah Indonesia (IDR)">
+            <Tooltip title='Nilai dalam Rupiah Indonesia (IDR)'>
               <InfoCircleOutlined style={{ color: '#52c41a' }} />
             </Tooltip>
           )}
@@ -157,21 +164,21 @@ export const AccessibleFormItem: React.FC<AccessibleFormItemProps> = ({
       required={required}
       {...(errorMessage && { validateStatus: 'error' as const })}
       help={
-        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+        <Space direction='vertical' size='small' style={{ width: '100%' }}>
           {helpText && (
-            <Text type="secondary" id={helpId}>
+            <Text type='secondary' id={helpId}>
               {helpText}
             </Text>
           )}
           {errorMessage && (
-            <Text type="danger" id={errorId} role="alert">
+            <Text type='danger' id={errorId} role='alert'>
               <ExclamationCircleOutlined /> {errorMessage}
             </Text>
           )}
         </Space>
       }
       style={{
-        position: 'relative'
+        position: 'relative',
       }}
     >
       <div
@@ -180,13 +187,13 @@ export const AccessibleFormItem: React.FC<AccessibleFormItemProps> = ({
         style={{
           outline: focused ? '2px solid #1890ff' : 'none',
           borderRadius: '4px',
-          transition: 'outline 0.2s ease'
+          transition: 'outline 0.2s ease',
         }}
       >
         {React.cloneElement(children as React.ReactElement, {
           ...(describedBy && { 'aria-describedby': describedBy }),
           ...(required && { 'aria-required': true }),
-          ...(errorMessage && { 'aria-invalid': true })
+          ...(errorMessage && { 'aria-invalid': true }),
         })}
       </div>
     </Form.Item>
@@ -208,7 +215,7 @@ export const AccessibleInput: React.FC<AccessibleInputProps> = ({
   businessContext = 'general',
   value,
   onChange,
-  onBlur
+  onBlur,
 }) => {
   const { announce } = useAccessibility()
   const [showPassword, setShowPassword] = useState(false)
@@ -227,25 +234,37 @@ export const AccessibleInput: React.FC<AccessibleInputProps> = ({
     }
   }, [businessContext])
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value
 
-    // Indonesian-specific validation
-    if (indonesianValidation && businessContext !== 'general') {
-      const pattern = getValidationPattern()
-      if (pattern && newValue && !pattern.test(newValue)) {
-        const contextMessages = {
-          npwp: 'Format NPWP harus: XX.XXX.XXX.X-XXX.XXX',
-          nik: 'NIK harus 16 digit angka',
-          phone: 'Nomor telepon harus format Indonesia (+62/62/0)',
-          address: 'Format alamat tidak valid'
+      // Indonesian-specific validation
+      if (indonesianValidation && businessContext !== 'general') {
+        const pattern = getValidationPattern()
+        if (pattern && newValue && !pattern.test(newValue)) {
+          const contextMessages = {
+            npwp: 'Format NPWP harus: XX.XXX.XXX.X-XXX.XXX',
+            nik: 'NIK harus 16 digit angka',
+            phone: 'Nomor telepon harus format Indonesia (+62/62/0)',
+            address: 'Format alamat tidak valid',
+          }
+          announce(
+            contextMessages[businessContext] || 'Format tidak valid',
+            'assertive'
+          )
         }
-        announce(contextMessages[businessContext] || 'Format tidak valid', 'assertive')
       }
-    }
 
-    onChange?.(newValue)
-  }, [onChange, indonesianValidation, businessContext, getValidationPattern, announce])
+      onChange?.(newValue)
+    },
+    [
+      onChange,
+      indonesianValidation,
+      businessContext,
+      getValidationPattern,
+      announce,
+    ]
+  )
 
   const inputProps = {
     id: id || name,
@@ -255,7 +274,7 @@ export const AccessibleInput: React.FC<AccessibleInputProps> = ({
     onChange: handleChange,
     onBlur,
     autoComplete: getAutoComplete(businessContext),
-    'data-testid': `input-${name}`
+    'data-testid': `input-${name}`,
   }
 
   const renderInput = () => {
@@ -265,13 +284,15 @@ export const AccessibleInput: React.FC<AccessibleInputProps> = ({
           {...inputProps}
           visibilityToggle={{
             visible: showPassword,
-            onVisibleChange: setShowPassword
+            onVisibleChange: setShowPassword,
           }}
-          iconRender={(visible) => (
-            visible ? 
-            <EyeOutlined aria-label="Sembunyikan password" /> : 
-            <EyeInvisibleOutlined aria-label="Tampilkan password" />
-          )}
+          iconRender={visible =>
+            visible ? (
+              <EyeOutlined aria-label='Sembunyikan password' />
+            ) : (
+              <EyeInvisibleOutlined aria-label='Tampilkan password' />
+            )
+          }
         />
       )
     }
@@ -307,26 +328,32 @@ export const AccessibleSelect: React.FC<AccessibleSelectProps> = ({
   searchable = false,
   indonesianLabels = false,
   value,
-  onChange
+  onChange,
 }) => {
   const { announce } = useAccessibility()
 
-  const handleChange = useCallback((newValue: string | number) => {
-    const selectedOption = options.find(opt => opt.value === newValue)
-    if (selectedOption && indonesianLabels) {
-      announce(`Dipilih: ${selectedOption.label}`, 'polite')
-    }
-    onChange?.(newValue)
-  }, [onChange, options, indonesianLabels, announce])
+  const handleChange = useCallback(
+    (newValue: string | number) => {
+      const selectedOption = options.find(opt => opt.value === newValue)
+      if (selectedOption && indonesianLabels) {
+        announce(`Dipilih: ${selectedOption.label}`, 'polite')
+      }
+      onChange?.(newValue)
+    },
+    [onChange, options, indonesianLabels, announce]
+  )
 
-  const handleSearch = useCallback((searchValue: string) => {
-    if (searchValue && indonesianLabels) {
-      const matchingOptions = options.filter(opt => 
-        opt.label.toLowerCase().includes(searchValue.toLowerCase())
-      )
-      announce(`${matchingOptions.length} pilihan ditemukan`, 'polite')
-    }
-  }, [options, indonesianLabels, announce])
+  const handleSearch = useCallback(
+    (searchValue: string) => {
+      if (searchValue && indonesianLabels) {
+        const matchingOptions = options.filter(opt =>
+          opt.label.toLowerCase().includes(searchValue.toLowerCase())
+        )
+        announce(`${matchingOptions.length} pilihan ditemukan`, 'polite')
+      }
+    },
+    [options, indonesianLabels, announce]
+  )
 
   return (
     <AccessibleFormItem
@@ -344,16 +371,22 @@ export const AccessibleSelect: React.FC<AccessibleSelectProps> = ({
         value={value ?? null}
         onChange={handleChange}
         {...(searchable && handleSearch && { onSearch: handleSearch })}
-        filterOption={searchable ? (input, option) => {
-          const children = option?.children as string | undefined
-          return children ? children.toLowerCase().includes(input.toLowerCase()) : false
-        } : false}
+        filterOption={
+          searchable
+            ? (input, option) => {
+                const children = option?.children as string | undefined
+                return children
+                  ? children.toLowerCase().includes(input.toLowerCase())
+                  : false
+              }
+            : false
+        }
         aria-label={label}
         data-testid={`select-${name}`}
       >
-        {options.map((option) => (
-          <Option 
-            key={option.value} 
+        {options.map(option => (
+          <Option
+            key={option.value}
             value={option.value}
             disabled={option.disabled}
             aria-label={option.label}
@@ -384,38 +417,56 @@ export const AccessibleNumberInput: React.FC<AccessibleNumberInputProps> = ({
   currency = false,
   materaiCalculation = false,
   value,
-  onChange
+  onChange,
 }) => {
-  const { announce, announceMonetaryValue, announceMateraiRequirement } = useAccessibility()
+  const { announce, announceMonetaryValue, announceMateraiRequirement } =
+    useAccessibility()
   const [materaiRequired, setMateraiRequired] = useState(false)
 
+  const handleChange = useCallback(
+    (newValue: number | null) => {
+      if (newValue !== null) {
+        // Announce monetary values
+        if (currency) {
+          announceMonetaryValue(newValue)
+        }
 
-  const handleChange = useCallback((newValue: number | null) => {
-    if (newValue !== null) {
-      // Announce monetary values
-      if (currency) {
-        announceMonetaryValue(newValue)
+        // Check materai requirement
+        if (materaiCalculation && newValue >= 5000000) {
+          const isRequired = newValue >= 5000000
+          setMateraiRequired(isRequired)
+          const materaiAmount = newValue >= 1000000000 ? 20000 : 10000
+          announceMateraiRequirement(isRequired, materaiAmount)
+        }
+
+        // Validate range
+        if (min !== undefined && newValue < min) {
+          announce(
+            `Nilai minimum adalah ${currency ? formatIDR(min) : min}`,
+            'assertive'
+          )
+        }
+        if (max !== undefined && newValue > max) {
+          announce(
+            `Nilai maksimum adalah ${currency ? formatIDR(max) : max}`,
+            'assertive'
+          )
+        }
       }
 
-      // Check materai requirement
-      if (materaiCalculation && newValue >= 5000000) {
-        const isRequired = newValue >= 5000000
-        setMateraiRequired(isRequired)
-        const materaiAmount = newValue >= 1000000000 ? 20000 : 10000
-        announceMateraiRequirement(isRequired, materaiAmount)
-      }
-
-      // Validate range
-      if (min !== undefined && newValue < min) {
-        announce(`Nilai minimum adalah ${currency ? formatIDR(min) : min}`, 'assertive')
-      }
-      if (max !== undefined && newValue > max) {
-        announce(`Nilai maksimum adalah ${currency ? formatIDR(max) : max}`, 'assertive')
-      }
-    }
-
-    onChange?.(newValue)
-  }, [onChange, currency, materaiCalculation, min, max, announce, announceMonetaryValue, announceMateraiRequirement])
+      onChange?.(newValue)
+    },
+    [
+      onChange,
+      currency,
+      materaiCalculation,
+      min,
+      max,
+      announce,
+      announceMonetaryValue,
+      announceMateraiRequirement,
+    ]
+  )
 
   const getHelperText = () => {
     const helpers = []
@@ -435,7 +486,9 @@ export const AccessibleNumberInput: React.FC<AccessibleNumberInputProps> = ({
       helpText={getHelperText()}
       {...(errorMessage && { errorMessage })}
       indonesianContext={currency}
-      businessType={materaiCalculation ? 'materai' : currency ? 'monetary' : 'general'}
+      businessType={
+        materaiCalculation ? 'materai' : currency ? 'monetary' : 'general'
+      }
     >
       <InputNumber
         id={id || name}
@@ -487,15 +540,18 @@ export const AccessibleTextArea: React.FC<AccessibleTextAreaProps> = ({
   businessContext = false,
   value,
   onChange,
-  onBlur
+  onBlur,
 }) => {
   const [charCount, setCharCount] = useState(value?.length || 0)
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value
-    setCharCount(newValue.length)
-    onChange?.(newValue)
-  }, [onChange])
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const newValue = e.target.value
+      setCharCount(newValue.length)
+      onChange?.(newValue)
+    },
+    [onChange]
+  )
 
   const getHelperText = () => {
     const helpers = []
@@ -557,16 +613,19 @@ export const AccessibleDatePicker: React.FC<AccessibleDatePickerProps> = ({
   errorMessage,
   indonesianLocale = true,
   value,
-  onChange
+  onChange,
 }) => {
   const { announce } = useAccessibility()
 
-  const handleChange = useCallback((date: Dayjs | null) => {
-    if (date && indonesianLocale) {
-      announce(`Tanggal dipilih: ${date.format('DD MMMM YYYY')}`, 'polite')
-    }
-    onChange?.(date)
-  }, [onChange, indonesianLocale, announce])
+  const handleChange = useCallback(
+    (date: Dayjs | null) => {
+      if (date && indonesianLocale) {
+        announce(`Tanggal dipilih: ${date.format('DD MMMM YYYY')}`, 'polite')
+      }
+      onChange?.(date)
+    },
+    [onChange, indonesianLocale, announce]
+  )
 
   return (
     <AccessibleFormItem
@@ -584,7 +643,11 @@ export const AccessibleDatePicker: React.FC<AccessibleDatePickerProps> = ({
         value={value ?? null}
         onChange={handleChange}
         style={{ width: '100%' }}
-        locale={indonesianLocale ? require('antd/es/date-picker/locale/id_ID') : undefined}
+        locale={
+          indonesianLocale
+            ? require('antd/es/date-picker/locale/id_ID')
+            : undefined
+        }
         aria-label={label}
         data-testid={`date-picker-${name}`}
       />
@@ -630,10 +693,10 @@ export const AccessibleFormActions: React.FC<AccessibleFormActionsProps> = ({
   onSubmit,
   onCancel,
   onReset,
-  primaryAction = 'submit'
+  primaryAction = 'submit',
 }) => {
   return (
-    <Row justify="end" style={{ marginTop: 24 }}>
+    <Row justify='end' style={{ marginTop: 24 }}>
       <Space>
         {onReset && (
           <Button onClick={onReset} disabled={disabled}>
@@ -668,5 +731,5 @@ export default {
   AccessibleNumberInput,
   AccessibleTextArea,
   AccessibleDatePicker,
-  AccessibleFormActions
+  AccessibleFormActions,
 }

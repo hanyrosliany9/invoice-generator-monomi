@@ -1,19 +1,12 @@
 import React, { useState } from 'react'
+import { Button, Card, Collapse, Space, Tag, Typography } from 'antd'
 import {
-  Card,
-  Collapse,
-  Space,
-  Typography,
-  Tag,
-  Button,
-} from 'antd'
-import {
-  DownOutlined,
-  UpOutlined,
   CheckCircleOutlined,
+  CloseCircleOutlined,
+  DownOutlined,
   ExclamationCircleOutlined,
   LoadingOutlined,
-  CloseCircleOutlined,
+  UpOutlined,
 } from '@ant-design/icons'
 
 const { Text } = Typography
@@ -96,10 +89,10 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
   const isMobile = window.innerWidth < 768
 
   return (
-    <Card 
+    <Card
       className={className}
       data-testid={dataTestId}
-      style={{ 
+      style={{
         marginBottom: '16px',
         opacity: disabled ? 0.6 : 1,
       }}
@@ -108,7 +101,7 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
         ghost
         activeKey={isOpen ? ['content'] : []}
         onChange={handleToggle}
-        expandIcon={({ isActive }) => 
+        expandIcon={({ isActive }) =>
           isActive ? <UpOutlined /> : <DownOutlined />
         }
         style={{
@@ -116,41 +109,51 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
         }}
       >
         <Panel
-          key="content"
+          key='content'
           disabled={disabled}
           header={
-            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-              <Space align="center" style={{ flex: 1 }}>
+            <div
+              style={{ display: 'flex', alignItems: 'center', width: '100%' }}
+            >
+              <Space align='center' style={{ flex: 1 }}>
                 {icon && (
                   <div style={{ fontSize: '18px', color: '#1890ff' }}>
                     {icon}
                   </div>
                 )}
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
                     <Text strong style={{ fontSize: '16px' }}>
                       {title}
                     </Text>
-                    {required && (
-                      <Tag color="red">
-                        Required
-                      </Tag>
-                    )}
+                    {required && <Tag color='red'>Required</Tag>}
                     {validation && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
                         {getValidationIcon(validation.status)}
                       </div>
                     )}
                   </div>
                   {subtitle && (
-                    <Text type="secondary" style={{ fontSize: '14px' }}>
+                    <Text type='secondary' style={{ fontSize: '14px' }}>
                       {subtitle}
                     </Text>
                   )}
                   {validation?.message && (
                     <div style={{ marginTop: '4px' }}>
-                      <Text 
-                        style={{ 
+                      <Text
+                        style={{
                           fontSize: '12px',
                           color: getValidationColor(validation.status),
                         }}
@@ -161,25 +164,25 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
                   )}
                 </div>
               </Space>
-              {extra && (
-                <div onClick={(e) => e.stopPropagation()}>
-                  {extra}
-                </div>
-              )}
+              {extra && <div onClick={e => e.stopPropagation()}>{extra}</div>}
             </div>
           }
           style={{
-            border: validation?.status === 'error' ? '1px solid #ff4d4f' : 
-                   validation?.status === 'warning' ? '1px solid #faad14' :
-                   validation?.status === 'success' ? '1px solid #52c41a' : 
-                   '1px solid #f0f0f0',
+            border:
+              validation?.status === 'error'
+                ? '1px solid #ff4d4f'
+                : validation?.status === 'warning'
+                  ? '1px solid #faad14'
+                  : validation?.status === 'success'
+                    ? '1px solid #52c41a'
+                    : '1px solid #f0f0f0',
             borderRadius: '8px',
             marginBottom: '8px',
             transition: 'all 0.3s ease',
           }}
         >
-          <div 
-            style={{ 
+          <div
+            style={{
               padding: isMobile && mobileCollapsed ? '8px' : '16px',
               paddingTop: '16px',
             }}

@@ -11,14 +11,14 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
   root: null,
   rootMargin: '',
-  thresholds: []
+  thresholds: [],
 }))
 
 // Mock ResizeObserver for responsive tests
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
-  disconnect: vi.fn()
+  disconnect: vi.fn(),
 }))
 
 // Mock window.matchMedia for responsive design tests
@@ -48,45 +48,45 @@ global.console = {
   ...console,
   warn: vi.fn(),
   error: vi.fn(),
-  log: vi.fn()
+  log: vi.fn(),
 }
 
 // Mock clipboard API for sharing tests
 Object.assign(navigator, {
   clipboard: {
     writeText: vi.fn(() => Promise.resolve()),
-    readText: vi.fn(() => Promise.resolve(''))
-  }
+    readText: vi.fn(() => Promise.resolve('')),
+  },
 })
 
 // Mock geolocation for Indonesian timezone tests
 Object.defineProperty(navigator, 'geolocation', {
   value: {
-    getCurrentPosition: vi.fn((success) => 
+    getCurrentPosition: vi.fn(success =>
       success({
         coords: {
-          latitude: -6.2088,  // Jakarta coordinates
-          longitude: 106.8456
-        }
+          latitude: -6.2088, // Jakarta coordinates
+          longitude: 106.8456,
+        },
       })
-    )
-  }
+    ),
+  },
 })
 
 // Setup Indonesian locale for testing
 Object.defineProperty(navigator, 'language', {
-  value: 'id-ID'
+  value: 'id-ID',
 })
 
 Object.defineProperty(navigator, 'languages', {
-  value: ['id-ID', 'id', 'en-US']
+  value: ['id-ID', 'id', 'en-US'],
 })
 
 // Mock crypto for UUID generation in tests
 Object.defineProperty(global, 'crypto', {
   value: {
-    randomUUID: () => '12345678-1234-1234-1234-123456789012'
-  }
+    randomUUID: () => '12345678-1234-1234-1234-123456789012',
+  },
 })
 
 // Setup timezone for Indonesian business hours testing
@@ -101,19 +101,20 @@ expect.extend({
   toBeValidIDR(received) {
     const idrPattern = /^Rp\s[\d.,]+$/
     const pass = idrPattern.test(received)
-    
+
     return {
-      message: () => 
+      message: () =>
         pass
           ? `Expected ${received} not to be valid IDR format`
           : `Expected ${received} to be valid IDR format`,
       pass,
     }
   },
-  
+
   toHaveMateraiCompliance(received, amount) {
-    const pass = amount >= 5000000 ? received.materaiRequired : !received.materaiRequired
-    
+    const pass =
+      amount >= 5000000 ? received.materaiRequired : !received.materaiRequired
+
     return {
       message: () =>
         pass
@@ -122,14 +123,15 @@ expect.extend({
       pass,
     }
   },
-  
+
   toBeAccessibleElement(received) {
     const hasAriaLabel = received.hasAttribute('aria-label')
     const hasRole = received.hasAttribute('role')
-    const hasTabIndex = received.hasAttribute('tabindex') || received.tabIndex >= 0
-    
+    const hasTabIndex =
+      received.hasAttribute('tabindex') || received.tabIndex >= 0
+
     const pass = hasAriaLabel || hasRole || hasTabIndex
-    
+
     return {
       message: () =>
         pass
@@ -137,7 +139,7 @@ expect.extend({
           : `Expected element to have accessibility attributes (aria-label, role, or tabindex)`,
       pass,
     }
-  }
+  },
 })
 
 // Add TypeScript declarations for custom matchers

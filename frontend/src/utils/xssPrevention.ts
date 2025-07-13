@@ -6,7 +6,10 @@ import DOMPurify from 'dompurify'
 // Basic DOMPurify type augmentation
 declare module 'dompurify' {
   interface DOMPurifyI {
-    addHook(hookName: string, hookFunction: (node: any, data?: any) => void): void
+    addHook(
+      hookName: string,
+      hookFunction: (node: any, data?: any) => void
+    ): void
   }
 }
 
@@ -33,24 +36,24 @@ interface XSSPreventionResult {
 const INDONESIAN_BUSINESS_PATTERNS = {
   // NPWP format: XX.XXX.XXX.X-XXX.XXX
   npwp: /^\d{2}\.\d{3}\.\d{3}\.\d{1}-\d{3}\.\d{3}$/,
-  
+
   // NIK format: 16 digits
   nik: /^\d{16}$/,
-  
+
   // Indonesian phone numbers
   phoneNumber: /^(\+62|62|0)(\d{9,13})$/,
-  
+
   // Indonesian postal codes
   postalCode: /^\d{5}$/,
-  
+
   // Indonesian bank account patterns
   bankAccount: /^\d{10,16}$/,
-  
+
   // Materai amounts (in IDR)
   materaiAmount: /^(10000|20000)$/,
-  
+
   // Indonesian business registration numbers
-  businessRegistration: /^[A-Z0-9\-\/]{10,20}$/
+  businessRegistration: /^[A-Z0-9\-\/]{10,20}$/,
 }
 
 // Dangerous patterns that should be blocked
@@ -63,16 +66,16 @@ const DANGEROUS_PATTERNS = [
   /onclick\s*=/gi,
   /onerror\s*=/gi,
   /onmouseover\s*=/gi,
-  
+
   // SQL injection patterns
   /(\bUNION\b|\bSELECT\b|\bINSERT\b|\bUPDATE\b|\bDELETE\b|\bDROP\b)/gi,
   /(\bOR\b|\bAND\b)\s+\d+\s*=\s*\d+/gi,
   /(\bOR\b|\bAND\b)\s+[\'"]\w+[\'"]\s*=\s*[\'"]\w+[\'"]/gi,
-  
+
   // Path traversal patterns
   /\.\.\//gi,
   /\.\.\\/gi,
-  
+
   // Indonesian-specific sensitive data patterns
   /\b\d{2}\.\d{3}\.\d{3}\.\d{1}-\d{3}\.\d{3}\b/g, // NPWP in logs
   /\b\d{16}\b/g, // Potential NIK
@@ -81,23 +84,42 @@ const DANGEROUS_PATTERNS = [
 // Default sanitization configuration for Indonesian business
 const DEFAULT_INDONESIAN_CONFIG: SanitizationConfig = {
   allowedTags: [
-    'p', 'br', 'strong', 'em', 'u', 'span', 'div',
-    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-    'ul', 'ol', 'li', 'blockquote',
-    'table', 'thead', 'tbody', 'tr', 'td', 'th'
+    'p',
+    'br',
+    'strong',
+    'em',
+    'u',
+    'span',
+    'div',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'ul',
+    'ol',
+    'li',
+    'blockquote',
+    'table',
+    'thead',
+    'tbody',
+    'tr',
+    'td',
+    'th',
   ],
   allowedAttributes: {
     '*': ['class', 'id'],
-    'span': ['style'],
-    'div': ['style'],
-    'table': ['style', 'cellpadding', 'cellspacing'],
-    'td': ['style', 'colspan', 'rowspan'],
-    'th': ['style', 'colspan', 'rowspan']
+    span: ['style'],
+    div: ['style'],
+    table: ['style', 'cellpadding', 'cellspacing'],
+    td: ['style', 'colspan', 'rowspan'],
+    th: ['style', 'colspan', 'rowspan'],
   },
   indonesianBusinessContext: true,
   preserveIndonesianChars: true,
   materaiDataProtection: true,
-  clientDataProtection: true
+  clientDataProtection: true,
 }
 
 // Configure DOMPurify for Indonesian business use
@@ -107,9 +129,10 @@ const configureDOMPurify = (config: SanitizationConfig) => {
 
   // Add Indonesian character preservation hook
   if (config.preserveIndonesianChars) {
-    purify.addHook('beforeSanitizeElements', (node) => {
+    purify.addHook('beforeSanitizeElements', node => {
       // Preserve Indonesian characters like á, é, í, ó, ú
-      if (node.nodeType === 3) { // Text node
+      if (node.nodeType === 3) {
+        // Text node
         const text = node.textContent || ''
         // Indonesian characters are already UTF-8 safe, but ensure they're not escaped
         node.textContent = text
@@ -119,20 +142,25 @@ const configureDOMPurify = (config: SanitizationConfig) => {
 
   // Add business data protection hook
   if (config.materaiDataProtection || config.clientDataProtection) {
-    purify.addHook('afterSanitizeAttributes', (node) => {
+    purify.addHook('afterSanitizeAttributes', node => {
       // Remove any attributes that might contain sensitive Indonesian business data
-      if (typeof node.hasAttribute === 'function' && typeof node.removeAttribute === 'function') {
+      if (
+        typeof node.hasAttribute === 'function' &&
+        typeof node.removeAttribute === 'function'
+      ) {
         const attributes = node.attributes
         if (attributes) {
           for (let i = attributes.length - 1; i >= 0; i--) {
             const attr = attributes[i]
             if (!attr) continue
-            
+
             const value = attr.value.toLowerCase()
-            
+
             // Check for potential sensitive data in attributes
             if (containsSensitiveIndonesianData(value)) {
-              console.warn(`Removing attribute containing sensitive data: ${attr.name}`)
+              console.warn(
+                `Removing attribute containing sensitive data: ${attr.name}`
+              )
               node.removeAttribute(attr.name)
             }
           }
@@ -152,7 +180,7 @@ const containsSensitiveIndonesianData = (content: string): boolean => {
     /password/i,
     /secret/i,
     /token/i,
-    /key/i
+    /key/i,
   ]
 
   return sensitivePatterns.some(pattern => pattern.test(content))
@@ -160,7 +188,7 @@ const containsSensitiveIndonesianData = (content: string): boolean => {
 
 // Main XSS prevention function
 export const preventXSS = (
-  input: string, 
+  input: string,
   config: SanitizationConfig = DEFAULT_INDONESIAN_CONFIG
 ): XSSPreventionResult => {
   if (!input || typeof input !== 'string') {
@@ -169,7 +197,7 @@ export const preventXSS = (
       wasModified: false,
       removedElements: [],
       securityWarnings: [],
-      indonesianCompliance: true
+      indonesianCompliance: true,
     }
   }
 
@@ -177,7 +205,7 @@ export const preventXSS = (
   const purify = configureDOMPurify(config)
   const removedElements: string[] = []
   const securityWarnings: string[] = []
-  
+
   // Track removed elements
   purify.addHook('uponSanitizeElement', (_node, data) => {
     if (data.allowedTags && !data.allowedTags[data.tagName]) {
@@ -193,17 +221,18 @@ export const preventXSS = (
   })
 
   // Convert allowedAttributes to flat array format for DOMPurify
-  const allowedAttributes = config.allowedAttributes || DEFAULT_INDONESIAN_CONFIG.allowedAttributes
-  const flattenedAttrs = allowedAttributes ? 
-    Object.values(allowedAttributes).flat().concat(['class', 'id']) : 
-    ['class', 'id']
+  const allowedAttributes =
+    config.allowedAttributes || DEFAULT_INDONESIAN_CONFIG.allowedAttributes
+  const flattenedAttrs = allowedAttributes
+    ? Object.values(allowedAttributes).flat().concat(['class', 'id'])
+    : ['class', 'id']
 
   // Sanitize the input
   let sanitized = purify.sanitize(input, {
     ALLOWED_TAGS: config.allowedTags || DEFAULT_INDONESIAN_CONFIG.allowedTags,
     ALLOWED_ATTR: flattenedAttrs,
     KEEP_CONTENT: true,
-    SANITIZE_DOM: true
+    SANITIZE_DOM: true,
   }) as string
 
   // Additional Indonesian business-specific sanitization
@@ -214,7 +243,9 @@ export const preventXSS = (
   // Check Indonesian compliance
   const indonesianCompliance = validateIndonesianCompliance(sanitized)
   if (!indonesianCompliance) {
-    securityWarnings.push('Content may not comply with Indonesian data protection laws')
+    securityWarnings.push(
+      'Content may not comply with Indonesian data protection laws'
+    )
   }
 
   return {
@@ -222,7 +253,7 @@ export const preventXSS = (
     wasModified: originalInput !== sanitized,
     removedElements: [...new Set(removedElements)],
     securityWarnings,
-    indonesianCompliance
+    indonesianCompliance,
   }
 }
 
@@ -239,13 +270,13 @@ const sanitizeIndonesianBusinessData = (input: string): string => {
   // Mask NIK (show only first 4 and last 4 digits)
   sanitized = sanitized.replace(
     INDONESIAN_BUSINESS_PATTERNS.nik,
-    (match) => `${match.slice(0, 4)}${'*'.repeat(8)}${match.slice(-4)}`
+    match => `${match.slice(0, 4)}${'*'.repeat(8)}${match.slice(-4)}`
   )
 
   // Mask bank account numbers
   sanitized = sanitized.replace(
     INDONESIAN_BUSINESS_PATTERNS.bankAccount,
-    (match) => `${'*'.repeat(match.length - 4)}${match.slice(-4)}`
+    match => `${'*'.repeat(match.length - 4)}${match.slice(-4)}`
   )
 
   return sanitized
@@ -256,7 +287,8 @@ const validateIndonesianCompliance = (content: string): boolean => {
   // Check if content exposes sensitive Indonesian data
   const exposesNPWP = INDONESIAN_BUSINESS_PATTERNS.npwp.test(content)
   const exposesNIK = INDONESIAN_BUSINESS_PATTERNS.nik.test(content)
-  const exposesBankAccount = INDONESIAN_BUSINESS_PATTERNS.bankAccount.test(content)
+  const exposesBankAccount =
+    INDONESIAN_BUSINESS_PATTERNS.bankAccount.test(content)
 
   // Indonesian compliance requires that sensitive data is not exposed in plain text
   return !(exposesNPWP || exposesNIK || exposesBankAccount)
@@ -265,43 +297,50 @@ const validateIndonesianCompliance = (content: string): boolean => {
 // Sanitize form input specifically for Indonesian business forms
 export const sanitizeIndonesianFormInput = (
   input: string,
-  fieldType: 'name' | 'address' | 'description' | 'title' | 'phone' | 'email' | 'notes'
+  fieldType:
+    | 'name'
+    | 'address'
+    | 'description'
+    | 'title'
+    | 'phone'
+    | 'email'
+    | 'notes'
 ): string => {
   const fieldConfigs: Record<string, SanitizationConfig> = {
     name: {
       allowedTags: [],
       indonesianBusinessContext: true,
       preserveIndonesianChars: true,
-      clientDataProtection: true
+      clientDataProtection: true,
     },
     address: {
       allowedTags: ['br'],
       indonesianBusinessContext: true,
-      preserveIndonesianChars: true
+      preserveIndonesianChars: true,
     },
     description: {
       allowedTags: ['p', 'br', 'strong', 'em'],
       indonesianBusinessContext: true,
-      preserveIndonesianChars: true
+      preserveIndonesianChars: true,
     },
     title: {
       allowedTags: [],
       indonesianBusinessContext: true,
-      preserveIndonesianChars: true
+      preserveIndonesianChars: true,
     },
     phone: {
       allowedTags: [],
-      indonesianBusinessContext: true
+      indonesianBusinessContext: true,
     },
     email: {
       allowedTags: [],
-      indonesianBusinessContext: false
+      indonesianBusinessContext: false,
     },
     notes: {
       allowedTags: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li'],
       indonesianBusinessContext: true,
-      preserveIndonesianChars: true
-    }
+      preserveIndonesianChars: true,
+    },
   }
 
   const config = fieldConfigs[fieldType] || DEFAULT_INDONESIAN_CONFIG
@@ -309,30 +348,56 @@ export const sanitizeIndonesianFormInput = (
 
   // Log security warnings for audit
   if (result.securityWarnings.length > 0) {
-    console.warn(`XSS Prevention warnings for ${fieldType}:`, result.securityWarnings)
+    console.warn(
+      `XSS Prevention warnings for ${fieldType}:`,
+      result.securityWarnings
+    )
   }
 
   return result.sanitized
 }
 
 // Sanitize Indonesian business document content
-export const sanitizeBusinessDocument = (content: string): XSSPreventionResult => {
+export const sanitizeBusinessDocument = (
+  content: string
+): XSSPreventionResult => {
   return preventXSS(content, {
     ...DEFAULT_INDONESIAN_CONFIG,
     allowedTags: [
-      'p', 'br', 'strong', 'em', 'u', 'span', 'div',
-      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'ul', 'ol', 'li', 'blockquote',
-      'table', 'thead', 'tbody', 'tr', 'td', 'th',
-      'hr'
+      'p',
+      'br',
+      'strong',
+      'em',
+      'u',
+      'span',
+      'div',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'ul',
+      'ol',
+      'li',
+      'blockquote',
+      'table',
+      'thead',
+      'tbody',
+      'tr',
+      'td',
+      'th',
+      'hr',
     ],
     materaiDataProtection: true,
-    clientDataProtection: true
+    clientDataProtection: true,
   })
 }
 
 // Validate and sanitize URL for Indonesian business context
-export const sanitizeBusinessURL = (url: string): { sanitized: string; isSafe: boolean } => {
+export const sanitizeBusinessURL = (
+  url: string
+): { sanitized: string; isSafe: boolean } => {
   if (!url || typeof url !== 'string') {
     return { sanitized: '', isSafe: false }
   }
@@ -341,7 +406,7 @@ export const sanitizeBusinessURL = (url: string): { sanitized: string; isSafe: b
     // Remove dangerous protocols
     const dangerousProtocols = ['javascript:', 'vbscript:', 'data:', 'file:']
     const lowerUrl = url.toLowerCase()
-    
+
     for (const protocol of dangerousProtocols) {
       if (lowerUrl.startsWith(protocol)) {
         return { sanitized: '', isSafe: false }
@@ -350,7 +415,7 @@ export const sanitizeBusinessURL = (url: string): { sanitized: string; isSafe: b
 
     // Parse URL to validate structure
     const urlObj = new URL(url)
-    
+
     // Only allow http, https, and mailto
     if (!['http:', 'https:', 'mailto:'].includes(urlObj.protocol)) {
       return { sanitized: '', isSafe: false }
@@ -358,7 +423,7 @@ export const sanitizeBusinessURL = (url: string): { sanitized: string; isSafe: b
 
     // Additional validation for Indonesian business domains
     const sanitized = encodeURI(url)
-    
+
     return { sanitized, isSafe: true }
   } catch (error) {
     return { sanitized: '', isSafe: false }
@@ -370,27 +435,36 @@ export const generateCSRFToken = (): string => {
   const timestamp = Date.now().toString()
   const random = Math.random().toString(36).substring(2)
   const business = 'MONOMI_ID_BIZ'
-  
+
   const tokenData = `${business}_${timestamp}_${random}`
-  
+
   // Simple encoding (in production, use proper cryptographic signing)
   return btoa(tokenData)
 }
 
 // Validate CSRF token
-export const validateCSRFToken = (token: string, maxAge: number = 3600000): boolean => {
+export const validateCSRFToken = (
+  token: string,
+  maxAge: number = 3600000
+): boolean => {
   try {
     const decoded = atob(token)
     const parts = decoded.split('_')
-    
-    if (parts.length !== 4 || parts[0] !== 'MONOMI' || parts[1] !== 'ID' || parts[2] !== 'BIZ' || !parts[3]) {
+
+    if (
+      parts.length !== 4 ||
+      parts[0] !== 'MONOMI' ||
+      parts[1] !== 'ID' ||
+      parts[2] !== 'BIZ' ||
+      !parts[3]
+    ) {
       return false
     }
 
     const timestamp = parseInt(parts[3], 10)
     const now = Date.now()
-    
-    return (now - timestamp) <= maxAge
+
+    return now - timestamp <= maxAge
   } catch (error) {
     return false
   }
@@ -409,7 +483,9 @@ export const getSecurityHeaders = (): Record<string, string> => {
       frame-ancestors 'none';
       base-uri 'self';
       form-action 'self';
-    `.replace(/\s+/g, ' ').trim(),
+    `
+      .replace(/\s+/g, ' ')
+      .trim(),
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
@@ -418,13 +494,17 @@ export const getSecurityHeaders = (): Record<string, string> => {
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
     // Indonesian privacy compliance
     'X-Indonesian-Privacy-Compliance': 'UU-27-2022',
-    'X-Materai-Calculation-Protected': 'true'
+    'X-Materai-Calculation-Protected': 'true',
   }
 }
 
 // Audit log for security events
 export const logSecurityEvent = (event: {
-  type: 'xss_attempt' | 'csrf_failure' | 'sensitive_data_exposure' | 'materai_miscalculation'
+  type:
+    | 'xss_attempt'
+    | 'csrf_failure'
+    | 'sensitive_data_exposure'
+    | 'materai_miscalculation'
   details: string
   userAgent?: string
   ip?: string
@@ -434,17 +514,19 @@ export const logSecurityEvent = (event: {
     ...event,
     timestamp: event.timestamp || new Date(),
     indonesianCompliance: true,
-    severity: event.type === 'sensitive_data_exposure' ? 'critical' : 'high'
+    severity: event.type === 'sensitive_data_exposure' ? 'critical' : 'high',
   }
 
   // In production, send to security monitoring service
   console.warn('Security Event:', logEntry)
-  
+
   // Store for compliance audit
   try {
-    const securityLogs = JSON.parse(localStorage.getItem('securityLogs') || '[]')
+    const securityLogs = JSON.parse(
+      localStorage.getItem('securityLogs') || '[]'
+    )
     securityLogs.push(logEntry)
-    
+
     // Keep only last 1000 entries
     const recentLogs = securityLogs.slice(-1000)
     localStorage.setItem('securityLogs', JSON.stringify(recentLogs))
@@ -461,5 +543,5 @@ export default {
   generateCSRFToken,
   validateCSRFToken,
   getSecurityHeaders,
-  logSecurityEvent
+  logSecurityEvent,
 }

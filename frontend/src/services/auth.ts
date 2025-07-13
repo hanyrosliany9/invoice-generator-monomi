@@ -45,7 +45,7 @@ export const authService = {
 
   validateToken: async (token: string) => {
     const response = await apiClient.get('/auth/profile', {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     })
     if (!response?.data?.data) {
       throw new Error('Token validation failed')
@@ -53,7 +53,9 @@ export const authService = {
     return response.data.data
   },
 
-  changePassword: async (data: ChangePasswordRequest): Promise<{ message: string }> => {
+  changePassword: async (
+    data: ChangePasswordRequest
+  ): Promise<{ message: string }> => {
     const response = await apiClient.put('/auth/change-password', data)
     if (!response?.data?.data) {
       throw new Error('Password change failed')

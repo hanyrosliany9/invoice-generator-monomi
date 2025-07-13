@@ -1,17 +1,9 @@
 import React from 'react'
+import { Button, Card, Divider, Space, Tag, Tooltip, Typography } from 'antd'
 import {
-  Card,
-  Button,
-  Space,
-  Typography,
-  Tag,
-  Divider,
-  Tooltip,
-} from 'antd'
-import {
-  SaveOutlined,
-  ClockCircleOutlined,
   CheckCircleOutlined,
+  ClockCircleOutlined,
+  SaveOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 
@@ -59,7 +51,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     const now = dayjs()
     const saved = dayjs(date)
     const diffMinutes = now.diff(saved, 'minute')
-    
+
     if (diffMinutes < 1) {
       return 'Just now'
     } else if (diffMinutes < 60) {
@@ -70,7 +62,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   }
 
   const panelContent = (
-    <Card 
+    <Card
       className={className}
       data-testid={dataTestId}
       style={{
@@ -94,19 +86,19 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     >
       {/* Status Information */}
       <div style={{ marginBottom: '16px' }}>
-        <Space size="large" wrap>
+        <Space size='large' wrap>
           {/* Dirty State Indicator */}
           {isDirty ? (
-            <Space size="small">
+            <Space size='small'>
               <ClockCircleOutlined style={{ color: '#faad14' }} />
-              <Text type="warning" style={{ fontSize: '12px' }}>
+              <Text type='warning' style={{ fontSize: '12px' }}>
                 Unsaved changes
               </Text>
             </Space>
           ) : (
-            <Space size="small">
+            <Space size='small'>
               <CheckCircleOutlined style={{ color: '#52c41a' }} />
-              <Text type="success" style={{ fontSize: '12px' }}>
+              <Text type='success' style={{ fontSize: '12px' }}>
                 All changes saved
               </Text>
             </Space>
@@ -114,9 +106,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
           {/* Last Saved Time */}
           {lastSaved && (
-            <Space size="small">
+            <Space size='small'>
               <SaveOutlined style={{ color: '#8c8c8c' }} />
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+              <Text type='secondary' style={{ fontSize: '12px' }}>
                 Last saved: {formatLastSaved(lastSaved)}
               </Text>
             </Space>
@@ -124,14 +116,12 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
           {/* Keyboard Shortcuts */}
           {showShortcuts && primaryActions.some(action => action.shortcut) && (
-            <Space size="small" wrap>
+            <Space size='small' wrap>
               {primaryActions
                 .filter(action => action.shortcut)
                 .map((action, index) => (
                   <Tooltip key={index} title={`Shortcut: ${action.shortcut}`}>
-                    <Tag style={{ fontSize: '11px' }}>
-                      {action.shortcut}
-                    </Tag>
+                    <Tag style={{ fontSize: '11px' }}>{action.shortcut}</Tag>
                   </Tooltip>
                 ))}
             </Space>
@@ -142,12 +132,12 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       <Divider style={{ margin: '12px 0' }} />
 
       {/* Action Buttons */}
-      <Space size="large" wrap>
+      <Space size='large' wrap>
         {/* Secondary Actions */}
         {secondaryActions.map((action, index) => (
           <Button
             key={`secondary-${index}`}
-            type="text"
+            type='text'
             icon={action.icon}
             onClick={action.onClick}
             disabled={action.disabled}
@@ -165,7 +155,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           >
             <Button
               type={action.type || 'primary'}
-              size="large"
+              size='large'
               icon={action.icon}
               loading={action.loading}
               disabled={action.disabled}
@@ -219,11 +209,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
   // Add mobile class when position is fixed
   if (position === 'fixed') {
-    return (
-      <div className="action-panel-mobile">
-        {panelContent}
-      </div>
-    )
+    return <div className='action-panel-mobile'>{panelContent}</div>
   }
 
   return panelContent

@@ -13,11 +13,22 @@ export const dashboardService = {
   // Get quotation statistics
   getQuotationStats: async (): Promise<QuotationStats> => {
     const response = await apiClient.get('/quotations/stats')
-    return response?.data?.data || { total: 0, draft: 0, sent: 0, approved: 0, declined: 0, revised: 0 }
+    return (
+      response?.data?.data || {
+        total: 0,
+        draft: 0,
+        sent: 0,
+        approved: 0,
+        declined: 0,
+        revised: 0,
+      }
+    )
   },
 
   // Get recent quotations
-  getRecentQuotations: async (limit: number = 5): Promise<RecentQuotation[]> => {
+  getRecentQuotations: async (
+    limit: number = 5
+  ): Promise<RecentQuotation[]> => {
     const response = await apiClient.get(`/quotations/recent?limit=${limit}`)
     return response?.data?.data || []
   },
@@ -25,7 +36,16 @@ export const dashboardService = {
   // Get invoice statistics
   getInvoiceStats: async (): Promise<InvoiceStats> => {
     const response = await apiClient.get('/invoices/stats')
-    return response?.data?.data || { total: 0, draft: 0, sent: 0, paid: 0, overdue: 0, totalRevenue: '0' }
+    return (
+      response?.data?.data || {
+        total: 0,
+        draft: 0,
+        sent: 0,
+        paid: 0,
+        overdue: 0,
+        totalRevenue: '0',
+      }
+    )
   },
 
   // Get recent invoices
@@ -43,12 +63,20 @@ export const dashboardService = {
   // Get project statistics
   getProjectStats: async (): Promise<ProjectStats> => {
     const response = await apiClient.get('/projects/stats')
-    return response?.data?.data || { total: 0, active: 0, completed: 0, onHold: 0 }
+    return (
+      response?.data?.data || { total: 0, active: 0, completed: 0, onHold: 0 }
+    )
   },
 
   // Get combined dashboard statistics
   getDashboardStats: async (): Promise<DashboardStats> => {
-    const [quotationStats, invoiceStats, clientStats, projectStats, allInvoices] = await Promise.all([
+    const [
+      quotationStats,
+      invoiceStats,
+      clientStats,
+      projectStats,
+      allInvoices,
+    ] = await Promise.all([
       dashboardService.getQuotationStats(),
       dashboardService.getInvoiceStats(),
       dashboardService.getClientStats(),
@@ -60,7 +88,11 @@ export const dashboardService = {
     const invoices = allInvoices?.data?.data || []
     const pendingPayments = invoices
       .filter((invoice: any) => invoice.status !== 'PAID')
-      .reduce((sum: number, invoice: any) => sum + (parseFloat(invoice.totalAmount) || 0), 0)
+      .reduce(
+        (sum: number, invoice: any) =>
+          sum + (parseFloat(invoice.totalAmount) || 0),
+        0
+      )
 
     return {
       totalQuotations: quotationStats.total,

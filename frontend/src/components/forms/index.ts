@@ -12,4 +12,8 @@ export { PreviewPanel } from './PreviewPanel'
 export { PriceInheritanceFlow } from './PriceInheritanceFlow'
 export { PriceInheritanceFormField } from './PriceInheritanceFormField'
 
-export type { EntityMetadata, EntityAction, EntityStatus } from './EntityHeroCard'
+export type {
+  EntityMetadata,
+  EntityAction,
+  EntityStatus,
+} from './EntityHeroCard'

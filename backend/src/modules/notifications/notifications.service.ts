@@ -1,9 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
-import { NotificationType, SendNotificationDto } from './dto/send-notification.dto';
-import { getErrorMessage, isError } from '../../common/utils/error-handling.util';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { ConfigService } from "@nestjs/config";
+import * as nodemailer from "nodemailer";
+import {
+  NotificationType,
+  SendNotificationDto,
+} from "./dto/send-notification.dto";
+import {
+  getErrorMessage,
+  isError,
+} from "../../common/utils/error-handling.util";
 
 @Injectable()
 export class NotificationsService {
@@ -12,41 +18,44 @@ export class NotificationsService {
 
   constructor(
     private prisma: PrismaService,
-    private configService: ConfigService
+    private configService: ConfigService,
   ) {
     this.initializeTransporter();
   }
 
   private initializeTransporter() {
-    const isDevelopment = this.configService.get('NODE_ENV') === 'development';
-    
+    const isDevelopment = this.configService.get("NODE_ENV") === "development";
+
     if (isDevelopment) {
       // For development, log emails to console instead of sending
       this.transporter = nodemailer.createTransport({
         streamTransport: true,
-        newline: 'unix',
-        buffer: true
+        newline: "unix",
+        buffer: true,
       });
-      this.logger.log('Email transporter initialized for development (console logging)');
+      this.logger.log(
+        "Email transporter initialized for development (console logging)",
+      );
     } else {
       // Production SMTP configuration
       this.transporter = nodemailer.createTransport({
-        host: this.configService.get('SMTP_HOST'),
-        port: parseInt(this.configService.get('SMTP_PORT') || '587'),
+        host: this.configService.get("SMTP_HOST"),
+        port: parseInt(this.configService.get("SMTP_PORT") || "587"),
         secure: false, // true for 465, false for other ports
         auth: {
-          user: this.configService.get('SMTP_USER'),
-          pass: this.configService.get('SMTP_PASSWORD'),
+          user: this.configService.get("SMTP_USER"),
+          pass: this.configService.get("SMTP_PASSWORD"),
         },
       });
-      this.logger.log('Email transporter initialized for production');
+      this.logger.log("Email transporter initialized for production");
     }
   }
 
   async sendNotification(dto: SendNotificationDto): Promise<void> {
     try {
-      const fromEmail = this.configService.get('FROM_EMAIL') || 'noreply@monomi.finance';
-      
+      const fromEmail =
+        this.configService.get("FROM_EMAIL") || "noreply@monomi.finance";
+
       const mailOptions = {
         from: fromEmail,
         to: dto.to,
@@ -54,8 +63,9 @@ export class NotificationsService {
         html: this.generateEmailContent(dto),
       };
 
-      const isDevelopment = this.configService.get('NODE_ENV') === 'development';
-      
+      const isDevelopment =
+        this.configService.get("NODE_ENV") === "development";
+
       if (isDevelopment) {
         // Log email content in development
         this.logger.log(`📧 EMAIL NOTIFICATION (Development Mode)`);
@@ -72,17 +82,20 @@ export class NotificationsService {
       }
 
       // Log notification in database
-      await this.logNotification(dto, 'SENT');
+      await this.logNotification(dto, "SENT");
     } catch (error) {
-      this.logger.error(`Failed to send notification: ${getErrorMessage(error)}`, isError(error) ? error.stack : undefined);
-      await this.logNotification(dto, 'FAILED');
+      this.logger.error(
+        `Failed to send notification: ${getErrorMessage(error)}`,
+        isError(error) ? error.stack : undefined,
+      );
+      await this.logNotification(dto, "FAILED");
       throw error;
     }
   }
 
   private generateEmailContent(dto: SendNotificationDto): string {
     const { type, data } = dto;
-    
+
     switch (type) {
       case NotificationType.QUOTATION_STATUS_CHANGE:
         return this.generateQuotationStatusChangeEmail(data);
@@ -138,7 +151,7 @@ export class NotificationsService {
             <li>Jatuh Tempo: ${data.dueDate}</li>
           </ul>
         </div>
-        ${data.materaiRequired ? '<p style="color: #ffc107; font-weight: bold;">⚠️ Invoice ini memerlukan materai IDR 10.000</p>' : ''}
+        ${data.materaiRequired ? '<p style="color: #ffc107; font-weight: bold;">⚠️ Invoice ini memerlukan materai IDR 10.000</p>' : ""}
         <p>Silakan lakukan pembayaran sesuai dengan tanggal jatuh tempo.</p>
         <p>Terima kasih atas kerjasamanya.</p>
         <p>Salam,<br>Tim Monomi Finance</p>
@@ -212,69 +225,86 @@ export class NotificationsService {
     `;
   }
 
-  private async logNotification(dto: SendNotificationDto, status: 'SENT' | 'FAILED'): Promise<void> {
+  private async logNotification(
+    dto: SendNotificationDto,
+    status: "SENT" | "FAILED",
+  ): Promise<void> {
     try {
       // Note: You'll need to create a notification_logs table in your Prisma schema
       // For now, we'll just log to console
       this.logger.log(`Notification ${status}: ${dto.type} to ${dto.to}`);
     } catch (error) {
-      this.logger.error(`Failed to log notification: ${getErrorMessage(error)}`);
+      this.logger.error(
+        `Failed to log notification: ${getErrorMessage(error)}`,
+      );
     }
   }
 
   // Workflow-specific notification methods
-  async sendQuotationStatusUpdate(quotationId: string, newStatus: string): Promise<void> {
+  async sendQuotationStatusUpdate(
+    quotationId: string,
+    newStatus: string,
+  ): Promise<void> {
     try {
       const quotation = await this.prisma.quotation.findUnique({
         where: { id: quotationId },
-        include: { client: true, project: true }
+        include: { client: true, project: true },
       });
 
       if (!quotation || !quotation.client?.email) {
-        this.logger.warn(`Cannot send notification: quotation ${quotationId} or client email not found`);
+        this.logger.warn(
+          `Cannot send notification: quotation ${quotationId} or client email not found`,
+        );
         return;
       }
 
       const statusMap: Record<string, string> = {
-        'DRAFT': 'Draft',
-        'SENT': 'Terkirim',
-        'APPROVED': 'Disetujui',
-        'DECLINED': 'Ditolak',
-        'REVISED': 'Revisi'
+        DRAFT: "Draft",
+        SENT: "Terkirim",
+        APPROVED: "Disetujui",
+        DECLINED: "Ditolak",
+        REVISED: "Revisi",
       };
 
       await this.sendNotification({
         type: NotificationType.QUOTATION_STATUS_CHANGE,
         to: quotation.client.email,
         subject: `Status Quotation ${quotation.quotationNumber} - ${statusMap[newStatus] || newStatus}`,
-        entityType: 'quotation',
+        entityType: "quotation",
         entityId: quotationId,
         data: {
           quotationNumber: quotation.quotationNumber,
           newStatus: statusMap[newStatus] || newStatus,
           clientName: quotation.client.name,
-          projectName: quotation.project?.description || '',
-          totalAmount: `IDR ${Number(quotation.totalAmount).toLocaleString('id-ID')}`
-        }
+          projectName: quotation.project?.description || "",
+          totalAmount: `IDR ${Number(quotation.totalAmount).toLocaleString("id-ID")}`,
+        },
       });
     } catch (error) {
-      this.logger.error(`Failed to send quotation status update: ${getErrorMessage(error)}`);
+      this.logger.error(
+        `Failed to send quotation status update: ${getErrorMessage(error)}`,
+      );
     }
   }
 
-  async sendInvoiceGenerated(invoiceId: string, quotationId: string): Promise<void> {
+  async sendInvoiceGenerated(
+    invoiceId: string,
+    quotationId: string,
+  ): Promise<void> {
     try {
       const invoice = await this.prisma.invoice.findUnique({
         where: { id: invoiceId },
-        include: { client: true, project: true }
+        include: { client: true, project: true },
       });
 
       const quotation = await this.prisma.quotation.findUnique({
-        where: { id: quotationId }
+        where: { id: quotationId },
       });
 
       if (!invoice || !invoice.client?.email) {
-        this.logger.warn(`Cannot send notification: invoice ${invoiceId} or client email not found`);
+        this.logger.warn(
+          `Cannot send notification: invoice ${invoiceId} or client email not found`,
+        );
         return;
       }
 
@@ -282,28 +312,33 @@ export class NotificationsService {
         type: NotificationType.INVOICE_GENERATED,
         to: invoice.client.email,
         subject: `Invoice ${invoice.invoiceNumber} Telah Dibuat`,
-        entityType: 'invoice',
+        entityType: "invoice",
         entityId: invoiceId,
         data: {
           invoiceNumber: invoice.invoiceNumber,
-          quotationNumber: quotation?.quotationNumber || '',
+          quotationNumber: quotation?.quotationNumber || "",
           clientName: invoice.client.name,
-          projectName: invoice.project?.description || '',
-          totalAmount: `IDR ${Number(invoice.totalAmount).toLocaleString('id-ID')}`,
-          dueDate: new Date(invoice.dueDate).toLocaleDateString('id-ID'),
-          materaiRequired: invoice.materaiRequired
-        }
+          projectName: invoice.project?.description || "",
+          totalAmount: `IDR ${Number(invoice.totalAmount).toLocaleString("id-ID")}`,
+          dueDate: new Date(invoice.dueDate).toLocaleDateString("id-ID"),
+          materaiRequired: invoice.materaiRequired,
+        },
       });
     } catch (error) {
-      this.logger.error(`Failed to send invoice generated notification: ${getErrorMessage(error)}`);
+      this.logger.error(
+        `Failed to send invoice generated notification: ${getErrorMessage(error)}`,
+      );
     }
   }
 
-  async sendQuotationExpiring(quotationId: string, daysRemaining: number): Promise<void> {
+  async sendQuotationExpiring(
+    quotationId: string,
+    daysRemaining: number,
+  ): Promise<void> {
     try {
       const quotation = await this.prisma.quotation.findUnique({
         where: { id: quotationId },
-        include: { client: true }
+        include: { client: true },
       });
 
       if (!quotation || !quotation.client?.email) {
@@ -314,18 +349,22 @@ export class NotificationsService {
         type: NotificationType.QUOTATION_EXPIRING,
         to: quotation.client.email,
         subject: `Quotation ${quotation.quotationNumber} Akan Berakhir`,
-        entityType: 'quotation',
+        entityType: "quotation",
         entityId: quotationId,
         data: {
           quotationNumber: quotation.quotationNumber,
           clientName: quotation.client.name,
           daysRemaining,
-          validUntil: new Date(quotation.validUntil).toLocaleDateString('id-ID'),
-          totalAmount: `IDR ${Number(quotation.totalAmount).toLocaleString('id-ID')}`
-        }
+          validUntil: new Date(quotation.validUntil).toLocaleDateString(
+            "id-ID",
+          ),
+          totalAmount: `IDR ${Number(quotation.totalAmount).toLocaleString("id-ID")}`,
+        },
       });
     } catch (error) {
-      this.logger.error(`Failed to send quotation expiring notification: ${getErrorMessage(error)}`);
+      this.logger.error(
+        `Failed to send quotation expiring notification: ${getErrorMessage(error)}`,
+      );
     }
   }
 
@@ -333,36 +372,62 @@ export class NotificationsService {
     return {
       templates: [
         {
-          type: 'QUOTATION_STATUS_CHANGE',
-          name: 'Perubahan Status Quotation',
-          description: 'Dikirim ketika status quotation berubah',
-          variables: ['quotationNumber', 'newStatus', 'clientName', 'projectName', 'totalAmount']
+          type: "QUOTATION_STATUS_CHANGE",
+          name: "Perubahan Status Quotation",
+          description: "Dikirim ketika status quotation berubah",
+          variables: [
+            "quotationNumber",
+            "newStatus",
+            "clientName",
+            "projectName",
+            "totalAmount",
+          ],
         },
         {
-          type: 'INVOICE_GENERATED',
-          name: 'Invoice Dibuat',
-          description: 'Dikirim ketika invoice dibuat dari quotation',
-          variables: ['invoiceNumber', 'quotationNumber', 'clientName', 'projectName', 'totalAmount', 'dueDate', 'materaiRequired']
+          type: "INVOICE_GENERATED",
+          name: "Invoice Dibuat",
+          description: "Dikirim ketika invoice dibuat dari quotation",
+          variables: [
+            "invoiceNumber",
+            "quotationNumber",
+            "clientName",
+            "projectName",
+            "totalAmount",
+            "dueDate",
+            "materaiRequired",
+          ],
         },
         {
-          type: 'QUOTATION_EXPIRING',
-          name: 'Quotation Akan Berakhir',
-          description: 'Dikirim ketika quotation akan berakhir',
-          variables: ['quotationNumber', 'clientName', 'daysRemaining', 'validUntil', 'totalAmount']
+          type: "QUOTATION_EXPIRING",
+          name: "Quotation Akan Berakhir",
+          description: "Dikirim ketika quotation akan berakhir",
+          variables: [
+            "quotationNumber",
+            "clientName",
+            "daysRemaining",
+            "validUntil",
+            "totalAmount",
+          ],
         },
         {
-          type: 'INVOICE_OVERDUE',
-          name: 'Invoice Jatuh Tempo',
-          description: 'Dikirim ketika invoice melewati tanggal jatuh tempo',
-          variables: ['invoiceNumber', 'clientName', 'dueDate', 'daysOverdue', 'totalAmount']
+          type: "INVOICE_OVERDUE",
+          name: "Invoice Jatuh Tempo",
+          description: "Dikirim ketika invoice melewati tanggal jatuh tempo",
+          variables: [
+            "invoiceNumber",
+            "clientName",
+            "dueDate",
+            "daysOverdue",
+            "totalAmount",
+          ],
         },
         {
-          type: 'MATERAI_REMINDER',
-          name: 'Pengingat Materai',
-          description: 'Dikirim untuk invoice yang memerlukan materai',
-          variables: ['invoiceNumber', 'totalAmount']
-        }
-      ]
+          type: "MATERAI_REMINDER",
+          name: "Pengingat Materai",
+          description: "Dikirim untuk invoice yang memerlukan materai",
+          variables: ["invoiceNumber", "totalAmount"],
+        },
+      ],
     };
   }
 
@@ -373,13 +438,13 @@ export class NotificationsService {
       totalSent: 0,
       totalFailed: 0,
       byType: {
-        'QUOTATION_STATUS_CHANGE': 0,
-        'INVOICE_GENERATED': 0,
-        'QUOTATION_EXPIRING': 0,
-        'INVOICE_OVERDUE': 0,
-        'MATERAI_REMINDER': 0
+        QUOTATION_STATUS_CHANGE: 0,
+        INVOICE_GENERATED: 0,
+        QUOTATION_EXPIRING: 0,
+        INVOICE_OVERDUE: 0,
+        MATERAI_REMINDER: 0,
       },
-      recentNotifications: []
+      recentNotifications: [],
     };
   }
 }

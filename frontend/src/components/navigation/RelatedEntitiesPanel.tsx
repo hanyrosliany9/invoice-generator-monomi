@@ -1,19 +1,12 @@
 import React, { useState } from 'react'
-import { 
-  Badge, 
-  Button, 
-  Dropdown, 
-  Space, 
-  Tag, 
-  Typography
-} from 'antd'
-import { 
-  DollarOutlined, 
+import { Badge, Button, Dropdown, Space, Tag, Typography } from 'antd'
+import {
+  DollarOutlined,
   DownOutlined,
   FileTextOutlined,
   FolderOutlined,
   LinkOutlined,
-  UserOutlined
+  UserOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -40,7 +33,7 @@ interface RelatedEntitiesPanelProps {
 const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
   entityType,
   entityData,
-  className = ''
+  className = '',
 }) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -57,7 +50,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
             id: 'projects',
             type: 'project',
             name: `${data.projects.length} Project${data.projects.length > 1 ? 's' : ''}`,
-            count: data.projects.length
+            count: data.projects.length,
           })
         }
         if (data.quotations) {
@@ -65,7 +58,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
             id: 'quotations',
             type: 'quotation',
             name: `${data.quotations.length} Quotation${data.quotations.length > 1 ? 's' : ''}`,
-            count: data.quotations.length
+            count: data.quotations.length,
           })
         }
         if (data.invoices) {
@@ -73,7 +66,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
             id: 'invoices',
             type: 'invoice',
             name: `${data.invoices.length} Invoice${data.invoices.length > 1 ? 's' : ''}`,
-            count: data.invoices.length
+            count: data.invoices.length,
           })
         }
         break
@@ -85,7 +78,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
             id: data.client.id,
             type: 'client',
             name: data.client.name,
-            number: data.client.company
+            number: data.client.company,
           })
         }
         if (data.quotations) {
@@ -96,7 +89,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
               name: quotation.quotationNumber,
               status: quotation.status,
               amount: quotation.totalAmount,
-              date: quotation.createdAt
+              date: quotation.createdAt,
             })
           })
         }
@@ -108,7 +101,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
               name: invoice.invoiceNumber,
               status: invoice.status,
               amount: invoice.totalAmount,
-              date: invoice.createdAt
+              date: invoice.createdAt,
             })
           })
         }
@@ -122,14 +115,14 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
             type: 'project',
             name: data.project.number,
             number: data.project.description,
-            status: data.project.status
+            status: data.project.status,
           })
           if (data.project.client) {
             entities.push({
               id: data.project.client.id,
               type: 'client',
               name: data.project.client.name,
-              number: data.project.client.company
+              number: data.project.client.company,
             })
           }
         }
@@ -140,7 +133,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
             name: data.invoice.invoiceNumber,
             status: data.invoice.status,
             amount: data.invoice.totalAmount,
-            date: data.invoice.createdAt
+            date: data.invoice.createdAt,
           })
         }
         break
@@ -154,7 +147,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
             name: data.quotation.quotationNumber,
             status: data.quotation.status,
             amount: data.quotation.totalAmount,
-            date: data.quotation.createdAt
+            date: data.quotation.createdAt,
           })
           if (data.quotation.project) {
             entities.push({
@@ -162,14 +155,14 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
               type: 'project',
               name: data.quotation.project.number,
               number: data.quotation.project.description,
-              status: data.quotation.project.status
+              status: data.quotation.project.status,
             })
             if (data.quotation.project.client) {
               entities.push({
                 id: data.quotation.project.client.id,
                 type: 'client',
                 name: data.quotation.project.client.name,
-                number: data.quotation.project.client.company
+                number: data.quotation.project.client.company,
               })
             }
           }
@@ -179,7 +172,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
             id: 'payments',
             type: 'invoice',
             name: `${data.payments.length} Payment${data.payments.length > 1 ? 's' : ''}`,
-            count: data.payments.length
+            count: data.payments.length,
           })
         }
         break
@@ -205,7 +198,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
 
   const getStatusColor = (status?: string) => {
     if (!status) return 'default'
-    
+
     switch (status.toLowerCase()) {
       case 'draft':
         return 'orange'
@@ -249,7 +242,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
     if (!amount) return ''
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
-      currency: 'IDR'
+      currency: 'IDR',
     }).format(amount)
   }
 
@@ -260,31 +253,31 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
 
   const relatedEntities = getRelatedEntities(entityType, entityData)
 
-  const dropdownItems = relatedEntities.map((entity) => ({
+  const dropdownItems = relatedEntities.map(entity => ({
     key: entity.id,
     label: (
-      <div className="flex items-center justify-between p-2 hover:bg-gray-50 cursor-pointer">
+      <div className='flex items-center justify-between p-2 hover:bg-gray-50 cursor-pointer'>
         <Space>
           {getEntityIcon(entity.type)}
           <div>
             <Text strong>{entity.name}</Text>
             {entity.number && (
               <div>
-                <Text type="secondary" className="text-sm">
+                <Text type='secondary' className='text-sm'>
                   {entity.number}
                 </Text>
               </div>
             )}
             {entity.amount && (
               <div>
-                <Text type="secondary" className="text-sm">
+                <Text type='secondary' className='text-sm'>
                   {formatCurrency(entity.amount)}
                 </Text>
               </div>
             )}
             {entity.date && (
               <div>
-                <Text type="secondary" className="text-sm">
+                <Text type='secondary' className='text-sm'>
                   {formatDate(entity.date)}
                 </Text>
               </div>
@@ -292,9 +285,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
           </div>
         </Space>
         <Space>
-          {entity.count && (
-            <Badge count={entity.count} showZero />
-          )}
+          {entity.count && <Badge count={entity.count} showZero />}
           {entity.status && (
             <Tag color={getStatusColor(entity.status)}>
               {t(`status.${entity.status.toLowerCase()}`, entity.status)}
@@ -303,7 +294,7 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
         </Space>
       </div>
     ),
-    onClick: () => handleEntityClick(entity)
+    onClick: () => handleEntityClick(entity),
   }))
 
   if (relatedEntities.length === 0) {
@@ -311,38 +302,42 @@ const RelatedEntitiesPanel: React.FC<RelatedEntitiesPanelProps> = ({
   }
 
   return (
-    <div className={`related-entities-panel responsive-related-panel ${className}`}>
+    <div
+      className={`related-entities-panel responsive-related-panel ${className}`}
+    >
       <Dropdown
         menu={{ items: dropdownItems }}
         trigger={['click']}
-        placement="bottomRight"
+        placement='bottomRight'
         open={dropdownVisible}
         onOpenChange={setDropdownVisible}
-        overlayClassName="related-entities-dropdown"
-        overlayStyle={{ 
+        overlayClassName='related-entities-dropdown'
+        overlayStyle={{
           minWidth: 300,
           maxWidth: '90vw', // Responsive width for mobile
-          marginTop: '8px'
+          marginTop: '8px',
         }}
-        getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+        getPopupContainer={triggerNode =>
+          triggerNode.parentElement || document.body
+        }
       >
-        <Button 
-          type="default" 
+        <Button
+          type='default'
           icon={<LinkOutlined />}
-          className="flex items-center"
-          size="small"
+          className='flex items-center'
+          size='small'
           aria-label={t('breadcrumb.viewRelated', 'View Related Entities')}
           title={t('breadcrumb.viewRelated', 'View Related Entities')}
         >
           <Space>
             {/* Hide text on very small screens */}
-            <span className="hidden sm:inline">
+            <span className='hidden sm:inline'>
               {t('breadcrumb.viewRelated', 'View Related')}
             </span>
-            <span className="inline sm:hidden">
+            <span className='inline sm:hidden'>
               {t('breadcrumb.viewRelated', 'Related')}
             </span>
-            <Badge count={relatedEntities.length} size="small" />
+            <Badge count={relatedEntities.length} size='small' />
             <DownOutlined />
           </Space>
         </Button>

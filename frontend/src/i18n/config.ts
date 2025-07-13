@@ -22,11 +22,11 @@ i18n
     resources,
     fallbackLng: 'id', // Indonesian as default
     lng: 'id',
-    
+
     interpolation: {
       escapeValue: false, // React already does escaping
     },
-    
+
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],

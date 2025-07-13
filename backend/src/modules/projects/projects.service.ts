@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
-import { ProjectStatus, ProjectType } from '@prisma/client';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateProjectDto } from "./dto/create-project.dto";
+import { UpdateProjectDto } from "./dto/update-project.dto";
+import { ProjectStatus, ProjectType } from "@prisma/client";
 
 @Injectable()
 export class ProjectsService {
@@ -10,20 +10,22 @@ export class ProjectsService {
 
   async create(createProjectDto: CreateProjectDto) {
     // Generate unique project number if not provided
-    const projectNumber = createProjectDto.number || await this.generateProjectNumber(createProjectDto.type);
-    
+    const projectNumber =
+      createProjectDto.number ||
+      (await this.generateProjectNumber(createProjectDto.type));
+
     // Calculate base price from products if provided
     let basePrice = null;
     let priceBreakdown = null;
-    
+
     if (createProjectDto.products && createProjectDto.products.length > 0) {
       basePrice = createProjectDto.products.reduce((total, product) => {
         const quantity = product.quantity || 1;
-        return total + (product.price * quantity);
+        return total + product.price * quantity;
       }, 0);
-      
+
       priceBreakdown = {
-        products: createProjectDto.products.map(product => ({
+        products: createProjectDto.products.map((product) => ({
           name: product.name,
           description: product.description,
           price: product.price,
@@ -34,19 +36,19 @@ export class ProjectsService {
         calculatedAt: new Date().toISOString(),
       };
     }
-    
+
     const { products, clientId, ...projectData } = createProjectDto;
-    
+
     return this.prisma.project.create({
       data: {
         ...projectData,
         number: projectNumber,
         basePrice: basePrice,
         priceBreakdown: priceBreakdown || undefined,
-        output: projectData.output || '', // Provide default empty string if not provided
+        output: projectData.output || "", // Provide default empty string if not provided
         client: {
-          connect: { id: clientId }
-        }
+          connect: { id: clientId },
+        },
       },
       include: {
         client: true,
@@ -54,13 +56,18 @@ export class ProjectsService {
     });
   }
 
-  async findAll(page = 1, limit = 10, status?: ProjectStatus, type?: ProjectType) {
+  async findAll(
+    page = 1,
+    limit = 10,
+    status?: ProjectStatus,
+    type?: ProjectType,
+  ) {
     const skip = (page - 1) * limit;
-    
+
     const where: any = {};
     if (status) where.status = status;
     if (type) where.type = type;
-    
+
     const [projects, total] = await Promise.all([
       this.prisma.project.findMany({
         where,
@@ -76,7 +83,7 @@ export class ProjectsService {
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
       }),
       this.prisma.project.count({ where }),
@@ -99,16 +106,16 @@ export class ProjectsService {
       include: {
         client: true,
         quotations: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         },
         invoices: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         },
       },
     });
 
     if (!project) {
-      throw new NotFoundException('Proyek tidak ditemukan');
+      throw new NotFoundException("Proyek tidak ditemukan");
     }
 
     return project;
@@ -142,8 +149,13 @@ export class ProjectsService {
       },
     });
 
-    if (hasRecords && (hasRecords._count.quotations > 0 || hasRecords._count.invoices > 0)) {
-      throw new Error('Tidak dapat menghapus proyek yang memiliki quotation atau invoice');
+    if (
+      hasRecords &&
+      (hasRecords._count.quotations > 0 || hasRecords._count.invoices > 0)
+    ) {
+      throw new Error(
+        "Tidak dapat menghapus proyek yang memiliki quotation atau invoice",
+      );
     }
 
     return this.prisma.project.delete({
@@ -154,21 +166,21 @@ export class ProjectsService {
   async generateProjectNumber(projectType: ProjectType): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    
+    const month = (now.getMonth() + 1).toString().padStart(2, "0");
+
     // Add project type prefix
-    const typePrefix = projectType === ProjectType.SOCIAL_MEDIA ? 'SM' : 'PH';
-    
+    const typePrefix = projectType === ProjectType.SOCIAL_MEDIA ? "SM" : "PH";
+
     // Count existing projects for this type and month
     const existingProjects = await this.prisma.project.count({
       where: {
         number: {
-          startsWith: `PRJ-${typePrefix}-${year}${month}-`
-        }
-      }
+          startsWith: `PRJ-${typePrefix}-${year}${month}-`,
+        },
+      },
     });
-    
-    const sequence = (existingProjects + 1).toString().padStart(3, '0');
+
+    const sequence = (existingProjects + 1).toString().padStart(3, "0");
     return `PRJ-${typePrefix}-${year}${month}-${sequence}`;
   }
 
@@ -176,28 +188,34 @@ export class ProjectsService {
     const [total, byStatus, byType] = await Promise.all([
       this.prisma.project.count(),
       this.prisma.project.groupBy({
-        by: ['status'],
+        by: ["status"],
         _count: {
           status: true,
         },
       }),
       this.prisma.project.groupBy({
-        by: ['type'],
+        by: ["type"],
         _count: {
           type: true,
         },
       }),
     ]);
 
-    const statusCounts = byStatus.reduce((acc, item) => {
-      acc[item.status] = item._count.status;
-      return acc;
-    }, {} as Record<string, number>);
+    const statusCounts = byStatus.reduce(
+      (acc, item) => {
+        acc[item.status] = item._count.status;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
-    const typeCounts = byType.reduce((acc, item) => {
-      acc[item.type] = item._count.type;
-      return acc;
-    }, {} as Record<string, number>);
+    const typeCounts = byType.reduce(
+      (acc, item) => {
+        acc[item.type] = item._count.type;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return {
       total,

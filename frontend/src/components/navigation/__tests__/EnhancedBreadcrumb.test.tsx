@@ -14,7 +14,7 @@ import {
   RelationshipContext,
   BusinessStage,
   NextAction,
-  EntityReference
+  EntityReference,
 } from '../types/navigation.types'
 
 // Extend Jest matchers
@@ -23,8 +23,8 @@ expect.extend(toHaveNoViolations)
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 // Mock react-router-dom
@@ -33,17 +33,13 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
   return {
     ...actual,
-    useNavigate: () => mockNavigate
+    useNavigate: () => mockNavigate,
   }
 })
 
 // Test utilities
 const renderWithRouter = (ui: React.ReactElement) => {
-  return render(
-    <BrowserRouter>
-      {ui}
-    </BrowserRouter>
-  )
+  return render(<BrowserRouter>{ui}</BrowserRouter>)
 }
 
 // Mock data
@@ -53,7 +49,7 @@ const mockBreadcrumbItems: BreadcrumbItem[] = [
     label: 'Home',
     href: '/',
     entityType: 'home',
-    isClickable: true
+    isClickable: true,
   },
   {
     id: 'client-123',
@@ -63,8 +59,8 @@ const mockBreadcrumbItems: BreadcrumbItem[] = [
     isClickable: true,
     metadata: {
       number: 'CL-001',
-      status: 'ACTIVE'
-    }
+      status: 'ACTIVE',
+    },
   },
   {
     id: 'project-456',
@@ -76,8 +72,8 @@ const mockBreadcrumbItems: BreadcrumbItem[] = [
       number: 'PRJ-001',
       status: 'IN_PROGRESS',
       amount: 50000000,
-      businessStage: 'invoicing' as BusinessStage
-    }
+      businessStage: 'invoicing' as BusinessStage,
+    },
   },
   {
     id: 'invoice-789',
@@ -89,9 +85,9 @@ const mockBreadcrumbItems: BreadcrumbItem[] = [
       status: 'SENT',
       amount: 50000000,
       materaiRequired: true,
-      complianceStatus: 'warning' as any
-    }
-  }
+      complianceStatus: 'warning' as any,
+    },
+  },
 ]
 
 const mockRelationshipContext: RelationshipContext = {
@@ -101,7 +97,7 @@ const mockRelationshipContext: RelationshipContext = {
     name: 'Website Development',
     number: 'PRJ-001',
     status: 'IN_PROGRESS',
-    href: '/projects/456'
+    href: '/projects/456',
   },
   childEntities: [
     {
@@ -110,8 +106,8 @@ const mockRelationshipContext: RelationshipContext = {
       name: 'Payment PMNT-001',
       number: 'PMNT-001',
       status: 'PENDING',
-      href: '/payments/001'
-    }
+      href: '/payments/001',
+    },
   ],
   relatedEntities: [
     {
@@ -120,8 +116,8 @@ const mockRelationshipContext: RelationshipContext = {
       name: 'Quotation Q-001',
       number: 'Q-001',
       status: 'APPROVED',
-      href: '/quotations/123'
-    }
+      href: '/quotations/123',
+    },
   ],
   businessFlow: [
     {
@@ -132,7 +128,7 @@ const mockRelationshipContext: RelationshipContext = {
       isCompleted: true,
       isCurrent: false,
       isAvailable: true,
-      expectedDuration: '1 hari'
+      expectedDuration: '1 hari',
     },
     {
       id: 'step-2',
@@ -142,8 +138,8 @@ const mockRelationshipContext: RelationshipContext = {
       isCompleted: false,
       isCurrent: true,
       isAvailable: true,
-      expectedDuration: '1 hari'
-    }
+      expectedDuration: '1 hari',
+    },
   ],
   nextPossibleActions: [
     {
@@ -157,10 +153,10 @@ const mockRelationshipContext: RelationshipContext = {
       indonesianEtiquette: {
         suggestedTiming: 'Setelah konfirmasi transfer',
         communicationStyle: 'formal' as any,
-        preferredChannels: ['whatsapp', 'email']
-      }
-    }
-  ]
+        preferredChannels: ['whatsapp', 'email'],
+      },
+    },
+  ],
 }
 
 describe('EnhancedBreadcrumb Component', () => {
@@ -170,9 +166,7 @@ describe('EnhancedBreadcrumb Component', () => {
 
   describe('Basic Rendering', () => {
     it('should render breadcrumb items correctly', () => {
-      renderWithRouter(
-        <EnhancedBreadcrumb items={mockBreadcrumbItems} />
-      )
+      renderWithRouter(<EnhancedBreadcrumb items={mockBreadcrumbItems} />)
 
       expect(screen.getByText('Home')).toBeInTheDocument()
       expect(screen.getByText('PT Indonesia Maju')).toBeInTheDocument()
@@ -181,9 +175,7 @@ describe('EnhancedBreadcrumb Component', () => {
     })
 
     it('should display entity metadata correctly', () => {
-      renderWithRouter(
-        <EnhancedBreadcrumb items={mockBreadcrumbItems} />
-      )
+      renderWithRouter(<EnhancedBreadcrumb items={mockBreadcrumbItems} />)
 
       expect(screen.getByText('(CL-001)')).toBeInTheDocument()
       expect(screen.getByText('(PRJ-001)')).toBeInTheDocument()
@@ -191,13 +183,11 @@ describe('EnhancedBreadcrumb Component', () => {
     })
 
     it('should format Indonesian currency correctly', () => {
-      renderWithRouter(
-        <EnhancedBreadcrumb items={mockBreadcrumbItems} />
-      )
+      renderWithRouter(<EnhancedBreadcrumb items={mockBreadcrumbItems} />)
 
       const currencyElements = screen.getAllByText(/Rp/)
       expect(currencyElements.length).toBeGreaterThan(0)
-      
+
       // Check Indonesian currency formatting
       currencyElements.forEach(element => {
         expect(element.textContent).toMatch(/Rp\s[\d.,]+/)
@@ -205,16 +195,14 @@ describe('EnhancedBreadcrumb Component', () => {
     })
 
     it('should show materai compliance indicator', () => {
-      renderWithRouter(
-        <EnhancedBreadcrumb items={mockBreadcrumbItems} />
-      )
+      renderWithRouter(<EnhancedBreadcrumb items={mockBreadcrumbItems} />)
 
       expect(screen.getByText('Materai !')).toBeInTheDocument()
     })
 
     it('should display business stage indicator', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           showBusinessFlow={true}
         />
@@ -228,9 +216,9 @@ describe('EnhancedBreadcrumb Component', () => {
     it('should handle item clicks correctly', async () => {
       const onItemClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           onItemClick={onItemClick}
         />
@@ -245,10 +233,7 @@ describe('EnhancedBreadcrumb Component', () => {
 
     it('should truncate breadcrumbs when maxItems is exceeded', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
-          items={mockBreadcrumbItems}
-          maxItems={3}
-        />
+        <EnhancedBreadcrumb items={mockBreadcrumbItems} maxItems={3} />
       )
 
       expect(screen.getByText('...')).toBeInTheDocument()
@@ -256,12 +241,9 @@ describe('EnhancedBreadcrumb Component', () => {
 
     it('should expand full path when ellipsis is clicked', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
-        <EnhancedBreadcrumb 
-          items={mockBreadcrumbItems}
-          maxItems={3}
-        />
+        <EnhancedBreadcrumb items={mockBreadcrumbItems} maxItems={3} />
       )
 
       const ellipsisButton = screen.getByText('...')
@@ -275,7 +257,7 @@ describe('EnhancedBreadcrumb Component', () => {
   describe('Relationship Context', () => {
     it('should display relationship dropdown when context is provided', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           relationshipContext={mockRelationshipContext}
           showRelationships={true}
@@ -287,7 +269,7 @@ describe('EnhancedBreadcrumb Component', () => {
 
     it('should display next actions dropdown', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           relationshipContext={mockRelationshipContext}
         />
@@ -299,9 +281,9 @@ describe('EnhancedBreadcrumb Component', () => {
     it('should handle relationship entity clicks', async () => {
       const onRelationshipClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           relationshipContext={mockRelationshipContext}
           onRelationshipClick={onRelationshipClick}
@@ -321,19 +303,21 @@ describe('EnhancedBreadcrumb Component', () => {
   describe('Indonesian Business Context', () => {
     it('should display Indonesian business flow guidance', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           relationshipContext={mockRelationshipContext}
           indonesianLocale={true}
         />
       )
 
-      expect(screen.getByText('💼 Panduan Alur Bisnis Indonesia')).toBeInTheDocument()
+      expect(
+        screen.getByText('💼 Panduan Alur Bisnis Indonesia')
+      ).toBeInTheDocument()
     })
 
     it('should show business flow steps with Indonesian text', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           relationshipContext={mockRelationshipContext}
           indonesianLocale={true}
@@ -346,7 +330,7 @@ describe('EnhancedBreadcrumb Component', () => {
 
     it('should display expected duration in Indonesian format', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           relationshipContext={mockRelationshipContext}
           indonesianLocale={true}
@@ -358,9 +342,9 @@ describe('EnhancedBreadcrumb Component', () => {
 
     it('should show Indonesian etiquette in next actions', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           relationshipContext={mockRelationshipContext}
         />
@@ -378,7 +362,7 @@ describe('EnhancedBreadcrumb Component', () => {
   describe('Accessibility', () => {
     it('should pass accessibility tests', async () => {
       const { container } = renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           relationshipContext={mockRelationshipContext}
         />
@@ -390,9 +374,9 @@ describe('EnhancedBreadcrumb Component', () => {
 
     it('should support keyboard navigation', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           showRelationships={true}
           relationshipContext={mockRelationshipContext}
@@ -411,7 +395,7 @@ describe('EnhancedBreadcrumb Component', () => {
 
     it('should have proper ARIA labels', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           relationshipContext={mockRelationshipContext}
         />
@@ -421,18 +405,18 @@ describe('EnhancedBreadcrumb Component', () => {
       buttons.forEach(button => {
         // Most buttons should have accessible names
         expect(
-          button.getAttribute('aria-label') || 
-          button.textContent ||
-          button.getAttribute('aria-labelledby')
+          button.getAttribute('aria-label') ||
+            button.textContent ||
+            button.getAttribute('aria-labelledby')
         ).toBeTruthy()
       })
     })
 
     it('should handle focus management correctly', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           showRelationships={true}
           relationshipContext={mockRelationshipContext}
@@ -440,9 +424,10 @@ describe('EnhancedBreadcrumb Component', () => {
       )
 
       const buttons = screen.getAllByRole('button')
-      
+
       // Test focus on each interactive element
-      for (const button of buttons.slice(0, 3)) { // Test first few to avoid timeout
+      for (const button of buttons.slice(0, 3)) {
+        // Test first few to avoid timeout
         button.focus()
         expect(button).toHaveFocus()
       }
@@ -450,7 +435,7 @@ describe('EnhancedBreadcrumb Component', () => {
 
     it('should announce status changes to screen readers', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           relationshipContext={mockRelationshipContext}
         />
@@ -474,7 +459,7 @@ describe('EnhancedBreadcrumb Component', () => {
 
     it('should optimize for mobile display', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           mobileOptimized={true}
         />
@@ -486,18 +471,18 @@ describe('EnhancedBreadcrumb Component', () => {
 
     it('should handle touch interactions', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           mobileOptimized={true}
         />
       )
 
       const breadcrumbElement = screen.getByText('Home')
-      
+
       // Simulate touch events
       fireEvent.touchStart(breadcrumbElement)
       fireEvent.touchEnd(breadcrumbElement)
-      
+
       // Should not throw errors
       expect(breadcrumbElement).toBeInTheDocument()
     })
@@ -505,9 +490,7 @@ describe('EnhancedBreadcrumb Component', () => {
 
   describe('Error Handling', () => {
     it('should handle empty items array gracefully', () => {
-      renderWithRouter(
-        <EnhancedBreadcrumb items={[]} />
-      )
+      renderWithRouter(<EnhancedBreadcrumb items={[]} />)
 
       // Should render without crashing
       expect(document.querySelector('.enhancedBreadcrumb')).toBeInTheDocument()
@@ -518,13 +501,11 @@ describe('EnhancedBreadcrumb Component', () => {
         {
           id: 'simple',
           label: 'Simple Item',
-          entityType: 'home'
-        }
+          entityType: 'home',
+        },
       ]
 
-      renderWithRouter(
-        <EnhancedBreadcrumb items={itemsWithoutMetadata} />
-      )
+      renderWithRouter(<EnhancedBreadcrumb items={itemsWithoutMetadata} />)
 
       expect(screen.getByText('Simple Item')).toBeInTheDocument()
     })
@@ -533,7 +514,7 @@ describe('EnhancedBreadcrumb Component', () => {
       const invalidContext = {} as RelationshipContext
 
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           relationshipContext={invalidContext}
         />
@@ -549,23 +530,20 @@ describe('EnhancedBreadcrumb Component', () => {
         id: `item-${index}`,
         label: `Item ${index + 1}`,
         entityType: 'project' as any,
-        href: `/items/${index}`
+        href: `/items/${index}`,
       }))
 
       const startTime = performance.now()
-      
+
       renderWithRouter(
-        <EnhancedBreadcrumb 
-          items={largeBreadcrumbItems}
-          maxItems={5}
-        />
+        <EnhancedBreadcrumb items={largeBreadcrumbItems} maxItems={5} />
       )
 
       const endTime = performance.now()
-      
+
       // Should render quickly even with many items
       expect(endTime - startTime).toBeLessThan(100)
-      
+
       // Should show ellipsis for large trails
       expect(screen.getByText('...')).toBeInTheDocument()
     })
@@ -579,9 +557,7 @@ describe('EnhancedBreadcrumb Component', () => {
       for (let i = 0; i < 5; i++) {
         rerender(
           <BrowserRouter>
-            <EnhancedBreadcrumb 
-              items={mockBreadcrumbItems.slice(0, i + 1)} 
-            />
+            <EnhancedBreadcrumb items={mockBreadcrumbItems.slice(0, i + 1)} />
           </BrowserRouter>
         )
       }
@@ -594,21 +570,21 @@ describe('EnhancedBreadcrumb Component', () => {
   describe('Indonesian Localization', () => {
     it('should use Indonesian number formatting', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           indonesianLocale={true}
         />
       )
 
       const currencyText = screen.getAllByText(/Rp/)[0]
-      
+
       // Should use Indonesian locale formatting (dots for thousands)
       expect(currencyText.textContent).toMatch(/Rp\s[\d.]+/)
     })
 
     it('should handle Indonesian business terms correctly', () => {
       renderWithRouter(
-        <EnhancedBreadcrumb 
+        <EnhancedBreadcrumb
           items={mockBreadcrumbItems}
           relationshipContext={mockRelationshipContext}
           indonesianLocale={true}
@@ -616,7 +592,9 @@ describe('EnhancedBreadcrumb Component', () => {
       )
 
       // Check for Indonesian business terminology
-      expect(screen.getByText('💼 Panduan Alur Bisnis Indonesia')).toBeInTheDocument()
+      expect(
+        screen.getByText('💼 Panduan Alur Bisnis Indonesia')
+      ).toBeInTheDocument()
     })
   })
 })

@@ -1,85 +1,93 @@
 import { api } from '../config/api'
-import { CreateUserRequest, UpdateUserRequest, User, UserFilters, UserResponse, UserStats } from '../types/user'
+import {
+  CreateUserRequest,
+  UpdateUserRequest,
+  User,
+  UserFilters,
+  UserResponse,
+  UserStats,
+} from '../types/user'
 
 export const usersService = {
   // Get all users with optional filters
   async getUsers(filters?: UserFilters): Promise<User[]> {
     const params = new URLSearchParams()
-    
+
     if (filters?.page) params.append('page', filters.page.toString())
     if (filters?.limit) params.append('limit', filters.limit.toString())
     if (filters?.search) params.append('search', filters.search)
     if (filters?.role) params.append('role', filters.role)
-    if (filters?.isActive !== undefined) params.append('isActive', filters.isActive.toString())
-    
+    if (filters?.isActive !== undefined)
+      params.append('isActive', filters.isActive.toString())
+
     const response = await api.get<UserResponse>(`/users?${params.toString()}`)
-    
+
     if (response.data.status === 'error') {
       throw new Error(response.data.message)
     }
-    
+
     return (response.data.data as User[]) || []
   },
 
   // Get user by ID
   async getUserById(id: string): Promise<User> {
     const response = await api.get<UserResponse>(`/users/${id}`)
-    
+
     if (response.data.status === 'error') {
       throw new Error(response.data.message)
     }
-    
+
     return response.data.data as User
   },
 
   // Create new user
   async createUser(data: CreateUserRequest): Promise<User> {
     const response = await api.post<UserResponse>('/users', data)
-    
+
     if (response.data.status === 'error') {
       throw new Error(response.data.message)
     }
-    
+
     return response.data.data as User
   },
 
   // Update user
   async updateUser(id: string, data: UpdateUserRequest): Promise<User> {
     const response = await api.patch<UserResponse>(`/users/${id}`, data)
-    
+
     if (response.data.status === 'error') {
       throw new Error(response.data.message)
     }
-    
+
     return response.data.data as User
   },
 
   // Activate user
   async activateUser(id: string): Promise<User> {
     const response = await api.patch<UserResponse>(`/users/${id}/activate`)
-    
+
     if (response.data.status === 'error') {
       throw new Error(response.data.message)
     }
-    
+
     return response.data.data as User
   },
 
   // Deactivate user
   async deactivateUser(id: string): Promise<User> {
     const response = await api.patch<UserResponse>(`/users/${id}/deactivate`)
-    
+
     if (response.data.status === 'error') {
       throw new Error(response.data.message)
     }
-    
+
     return response.data.data as User
   },
 
   // Delete user (soft delete)
   async deleteUser(id: string): Promise<void> {
     const response = await api.delete<UserResponse>(`/users/${id}`)
-    
+
     if (response.data.status === 'error') {
       throw new Error(response.data.message)
     }
@@ -88,11 +96,11 @@ export const usersService = {
   // Get user statistics
   async getUserStats(): Promise<UserStats> {
     const response = await api.get<UserResponse>('/users/stats')
-    
+
     if (response.data.status === 'error') {
       throw new Error(response.data.message)
     }
-    
+
     return response.data.data as UserStats
   },
 
@@ -144,23 +152,28 @@ export const usersService = {
   // Search users by name or email
   searchUsers: (users: User[], query: string): User[] => {
     const lowerQuery = query.toLowerCase()
-    return users.filter(user => 
-      user.name.toLowerCase().includes(lowerQuery) ||
-      user.email.toLowerCase().includes(lowerQuery)
+    return users.filter(
+      user =>
+        user.name.toLowerCase().includes(lowerQuery) ||
+        user.email.toLowerCase().includes(lowerQuery)
     )
   },
 
   // Sort users by different criteria
-  sortUsers: (users: User[], criteria: 'name' | 'email' | 'role' | 'createdAt', order: 'asc' | 'desc' = 'asc'): User[] => {
+  sortUsers: (
+    users: User[],
+    criteria: 'name' | 'email' | 'role' | 'createdAt',
+    order: 'asc' | 'desc' = 'asc'
+  ): User[] => {
     return [...users].sort((a, b) => {
       let aValue: any = a[criteria]
       let bValue: any = b[criteria]
-      
+
       if (criteria === 'createdAt') {
         aValue = new Date(aValue).getTime()
         bValue = new Date(bValue).getTime()
       }
-      
+
       if (order === 'desc') {
         return bValue > aValue ? 1 : -1
       }
@@ -172,29 +185,43 @@ export const usersService = {
   getUserActivity: (user: User): string => {
     const count = user._count
     if (!count) return 'No activity'
-    
+
     const total = count.quotations + count.invoices + count.auditLogs
     return `${total} total activities`
   },
 
   // Validate password strength
-  validatePassword: (password: string): { isValid: boolean; message?: string } => {
+  validatePassword: (
+    password: string
+  ): { isValid: boolean; message?: string } => {
     if (password.length < 8) {
-      return { isValid: false, message: 'Password must be at least 8 characters long' }
+      return {
+        isValid: false,
+        message: 'Password must be at least 8 characters long',
+      }
     }
-    
+
     if (!/[A-Z]/.test(password)) {
-      return { isValid: false, message: 'Password must contain at least one uppercase letter' }
+      return {
+        isValid: false,
+        message: 'Password must contain at least one uppercase letter',
+      }
     }
-    
+
     if (!/[a-z]/.test(password)) {
-      return { isValid: false, message: 'Password must contain at least one lowercase letter' }
+      return {
+        isValid: false,
+        message: 'Password must contain at least one lowercase letter',
+      }
     }
-    
+
     if (!/[0-9]/.test(password)) {
-      return { isValid: false, message: 'Password must contain at least one number' }
+      return {
+        isValid: false,
+        message: 'Password must contain at least one number',
+      }
     }
-    
+
     return { isValid: true }
   },
 
@@ -202,5 +229,5 @@ export const usersService = {
   validateEmail: (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     return emailRegex.test(email)
-  }
+  },
 }

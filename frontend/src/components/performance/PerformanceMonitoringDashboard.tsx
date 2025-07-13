@@ -1,47 +1,51 @@
 // Performance Monitoring Dashboard - Indonesian Business Management System
 // Real-time performance tracking and optimization dashboard with Indonesian business context
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
-  Card,
-  Row,
-  Col,
   Alert,
-  Progress,
-  Typography,
+  Badge,
   Button,
-  Space,
+  Card,
+  Col,
+  Divider,
+  Empty,
   List,
-  Tag,
-  Statistic,
   Modal,
-  Tabs,
+  Progress,
+  Row,
+  Select,
+  Space,
+  Statistic,
+  Switch,
   Table,
+  Tabs,
+  Tag,
   Timeline,
   Tooltip,
-  Badge,
-  Switch,
-  Select,
-  Divider,
-  Empty
+  Typography,
 } from 'antd'
 import {
-  DashboardOutlined,
-  ThunderboltOutlined,
   AlertOutlined,
-  TrophyOutlined,
-  SettingOutlined,
-  ReloadOutlined,
+  BugOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  DashboardOutlined,
   DownloadOutlined,
   MonitorOutlined,
+  ReloadOutlined,
   RocketOutlined,
-  BugOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined
+  SettingOutlined,
+  ThunderboltOutlined,
+  TrophyOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { formatIndonesianDate } from '../../utils/currency'
-import { usePerformanceMonitor, PerformanceMetric, PerformanceAlert } from '../../hooks/usePerformanceMonitor'
+import {
+  PerformanceAlert,
+  PerformanceMetric,
+  usePerformanceMonitor,
+} from '../../hooks/usePerformanceMonitor'
 
 const { Title, Text, Paragraph } = Typography
 const { TabPane } = Tabs
@@ -55,15 +59,17 @@ export interface PerformanceMonitoringDashboardProps {
   onAlertAcknowledged?: (alert: PerformanceAlert) => void
 }
 
-const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardProps> = ({
+const PerformanceMonitoringDashboard: React.FC<
+  PerformanceMonitoringDashboardProps
+> = ({
   autoRefresh = true,
   refreshInterval = 30000,
   showIndonesianMetrics = true,
   onOptimizationApplied,
-  onAlertAcknowledged
+  onAlertAcknowledged,
 }) => {
   const { t } = useTranslation()
-  
+
   // Performance monitoring hook
   const {
     vitals,
@@ -76,18 +82,19 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
     clearMetrics,
     exportReport,
     measurePerformance,
-    recordBusinessEvent
+    recordBusinessEvent,
   } = usePerformanceMonitor({
     enabled: true,
     trackBusinessMetrics: true,
     trackIndonesianMetrics: showIndonesianMetrics,
     enableLogging: process.env.NODE_ENV === 'development',
-    enableReporting: process.env.NODE_ENV === 'production'
+    enableReporting: process.env.NODE_ENV === 'production',
   })
 
   // Local state
   const [settingsVisible, setSettingsVisible] = useState(false)
-  const [selectedMetric, setSelectedMetric] = useState<PerformanceMetric | null>(null)
+  const [selectedMetric, setSelectedMetric] =
+    useState<PerformanceMetric | null>(null)
   const [optimizationsApplied, setOptimizationsApplied] = useState<string[]>([])
 
   // Auto-refresh functionality
@@ -113,109 +120,118 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
   // Get severity color for alerts
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return '#f5222d'
-      case 'warning': return '#faad14'
-      default: return '#1890ff'
+      case 'critical':
+        return '#f5222d'
+      case 'warning':
+        return '#faad14'
+      default:
+        return '#1890ff'
     }
   }
 
   // Core Web Vitals metrics cards
-  const coreWebVitalsCards = useMemo(() => [
-    {
-      title: 'Largest Contentful Paint',
-      value: vitals.lcp,
-      unit: 'ms',
-      good: 2500,
-      poor: 4000,
-      icon: <RocketOutlined />,
-      description: 'Time until largest element loads'
-    },
-    {
-      title: 'First Input Delay',
-      value: vitals.fid,
-      unit: 'ms',
-      good: 100,
-      poor: 300,
-      icon: <ThunderboltOutlined />,
-      description: 'Responsiveness to user interaction'
-    },
-    {
-      title: 'Cumulative Layout Shift',
-      value: vitals.cls,
-      unit: '',
-      good: 0.1,
-      poor: 0.25,
-      icon: <MonitorOutlined />,
-      description: 'Visual stability during loading'
-    },
-    {
-      title: 'First Contentful Paint',
-      value: vitals.fcp,
-      unit: 'ms',
-      good: 1800,
-      poor: 3000,
-      icon: <ClockCircleOutlined />,
-      description: 'Time until first content appears'
-    },
-    {
-      title: 'Time to First Byte',
-      value: vitals.ttfb,
-      unit: 'ms',
-      good: 800,
-      poor: 1800,
-      icon: <DashboardOutlined />,
-      description: 'Server response time'
-    }
-  ], [vitals])
+  const coreWebVitalsCards = useMemo(
+    () => [
+      {
+        title: 'Largest Contentful Paint',
+        value: vitals.lcp,
+        unit: 'ms',
+        good: 2500,
+        poor: 4000,
+        icon: <RocketOutlined />,
+        description: 'Time until largest element loads',
+      },
+      {
+        title: 'First Input Delay',
+        value: vitals.fid,
+        unit: 'ms',
+        good: 100,
+        poor: 300,
+        icon: <ThunderboltOutlined />,
+        description: 'Responsiveness to user interaction',
+      },
+      {
+        title: 'Cumulative Layout Shift',
+        value: vitals.cls,
+        unit: '',
+        good: 0.1,
+        poor: 0.25,
+        icon: <MonitorOutlined />,
+        description: 'Visual stability during loading',
+      },
+      {
+        title: 'First Contentful Paint',
+        value: vitals.fcp,
+        unit: 'ms',
+        good: 1800,
+        poor: 3000,
+        icon: <ClockCircleOutlined />,
+        description: 'Time until first content appears',
+      },
+      {
+        title: 'Time to First Byte',
+        value: vitals.ttfb,
+        unit: 'ms',
+        good: 800,
+        poor: 1800,
+        icon: <DashboardOutlined />,
+        description: 'Server response time',
+      },
+    ],
+    [vitals]
+  )
 
   // Indonesian business metrics cards
-  const businessMetricsCards = useMemo(() => [
-    {
-      title: 'Quotation Load Time',
-      value: businessMetrics.quotationLoadTime,
-      unit: 'ms',
-      good: 2000,
-      poor: 5000,
-      icon: <ClockCircleOutlined />,
-      indonesian: true
-    },
-    {
-      title: 'Invoice Render Time',
-      value: businessMetrics.invoiceRenderTime,
-      unit: 'ms',
-      good: 1500,
-      poor: 3000,
-      icon: <MonitorOutlined />,
-      indonesian: true
-    },
-    {
-      title: 'Materai Calculation',
-      value: businessMetrics.materaiCalculationTime,
-      unit: 'ms',
-      good: 500,
-      poor: 1500,
-      icon: <DashboardOutlined />,
-      indonesian: true
-    },
-    {
-      title: 'WhatsApp Integration',
-      value: businessMetrics.whatsappIntegrationTime,
-      unit: 'ms',
-      good: 1000,
-      poor: 3000,
-      icon: <ThunderboltOutlined />,
-      indonesian: true
-    },
-    {
-      title: 'Currency Formatting',
-      value: businessMetrics.currencyFormattingTime,
-      unit: 'ms',
-      good: 50,
-      poor: 200,
-      icon: <RocketOutlined />,
-      indonesian: true
-    }
-  ], [businessMetrics])
+  const businessMetricsCards = useMemo(
+    () => [
+      {
+        title: 'Quotation Load Time',
+        value: businessMetrics.quotationLoadTime,
+        unit: 'ms',
+        good: 2000,
+        poor: 5000,
+        icon: <ClockCircleOutlined />,
+        indonesian: true,
+      },
+      {
+        title: 'Invoice Render Time',
+        value: businessMetrics.invoiceRenderTime,
+        unit: 'ms',
+        good: 1500,
+        poor: 3000,
+        icon: <MonitorOutlined />,
+        indonesian: true,
+      },
+      {
+        title: 'Materai Calculation',
+        value: businessMetrics.materaiCalculationTime,
+        unit: 'ms',
+        good: 500,
+        poor: 1500,
+        icon: <DashboardOutlined />,
+        indonesian: true,
+      },
+      {
+        title: 'WhatsApp Integration',
+        value: businessMetrics.whatsappIntegrationTime,
+        unit: 'ms',
+        good: 1000,
+        poor: 3000,
+        icon: <ThunderboltOutlined />,
+        indonesian: true,
+      },
+      {
+        title: 'Currency Formatting',
+        value: businessMetrics.currencyFormattingTime,
+        unit: 'ms',
+        good: 50,
+        poor: 200,
+        icon: <RocketOutlined />,
+        indonesian: true,
+      },
+    ],
+    [businessMetrics]
+  )
 
   // Performance recommendations
   const recommendations = getRecommendations()
@@ -241,60 +257,80 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
         <Space>
           <Text strong>{name}</Text>
           {record.indonesianContext && (
-            <Tag color="blue" style={{ fontSize: '12px' }}>Indonesian</Tag>
+            <Tag color='blue' style={{ fontSize: '12px' }}>
+              Indonesian
+            </Tag>
           )}
         </Space>
-      )
+      ),
     },
     {
       title: 'Duration',
       dataIndex: 'duration',
       key: 'duration',
       render: (duration: number) => `${duration.toFixed(2)}ms`,
-      sorter: (a: PerformanceMetric, b: PerformanceMetric) => a.duration - b.duration
+      sorter: (a: PerformanceMetric, b: PerformanceMetric) =>
+        a.duration - b.duration,
     },
     {
       title: 'Type',
       dataIndex: 'type',
       key: 'type',
       render: (type: string) => (
-        <Tag color={type === 'web-vital' ? 'green' : type === 'business-metric' ? 'blue' : 'default'}>
+        <Tag
+          color={
+            type === 'web-vital'
+              ? 'green'
+              : type === 'business-metric'
+                ? 'blue'
+                : 'default'
+          }
+        >
           {type.replace('-', ' ')}
         </Tag>
-      )
+      ),
     },
     {
       title: 'Impact',
       dataIndex: 'impact',
       key: 'impact',
       render: (impact: string) => (
-        <Tag color={impact === 'business-critical' ? 'red' : impact === 'user-experience' ? 'orange' : 'default'}>
+        <Tag
+          color={
+            impact === 'business-critical'
+              ? 'red'
+              : impact === 'user-experience'
+                ? 'orange'
+                : 'default'
+          }
+        >
           {impact}
         </Tag>
-      )
+      ),
     },
     {
       title: 'Time',
       dataIndex: 'timestamp',
       key: 'timestamp',
       render: (timestamp: Date) => formatIndonesianDate(timestamp),
-      sorter: (a: PerformanceMetric, b: PerformanceMetric) => a.timestamp.getTime() - b.timestamp.getTime()
+      sorter: (a: PerformanceMetric, b: PerformanceMetric) =>
+        a.timestamp.getTime() - b.timestamp.getTime(),
     },
     {
       title: 'Action',
       key: 'action',
       render: (record: PerformanceMetric) => (
-        <Button size="small" onClick={() => setSelectedMetric(record)}>
+        <Button size='small' onClick={() => setSelectedMetric(record)}>
           Details
         </Button>
-      )
-    }
+      ),
+    },
   ]
 
   return (
     <div>
       {/* Header */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+      <Row justify='space-between' align='middle' style={{ marginBottom: 24 }}>
         <Col>
           <Space>
             <MonitorOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
@@ -302,7 +338,7 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
               Performance Monitoring Dashboard
             </Title>
             {showIndonesianMetrics && (
-              <Tag color="blue">Indonesian Business Metrics</Tag>
+              <Tag color='blue'>Indonesian Business Metrics</Tag>
             )}
           </Space>
         </Col>
@@ -335,7 +371,7 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
               Export
             </Button>
             <Button
-              type="primary"
+              type='primary'
               icon={<ReloadOutlined />}
               onClick={() => window.location.reload()}
               loading={isLoading}
@@ -351,26 +387,29 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
         <Col span={6}>
           <Card>
             <Statistic
-              title="Overall Score"
+              title='Overall Score'
               value={score.overall}
-              suffix="/100"
-              valueStyle={{ color: getScoreColor(score.overall), fontSize: '24px' }}
+              suffix='/100'
+              valueStyle={{
+                color: getScoreColor(score.overall),
+                fontSize: '24px',
+              }}
               prefix={<TrophyOutlined />}
             />
-            <Progress 
-              percent={score.overall} 
+            <Progress
+              percent={score.overall}
               strokeColor={getScoreColor(score.overall)}
               showInfo={false}
-              size="small"
+              size='small'
             />
           </Card>
         </Col>
         <Col span={4.5}>
           <Card>
             <Statistic
-              title="Core Web Vitals"
+              title='Core Web Vitals'
               value={score.coreWebVitals}
-              suffix="/100"
+              suffix='/100'
               valueStyle={{ color: getScoreColor(score.coreWebVitals) }}
               prefix={<RocketOutlined />}
             />
@@ -379,9 +418,9 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
         <Col span={4.5}>
           <Card>
             <Statistic
-              title="Business Metrics"
+              title='Business Metrics'
               value={score.businessMetrics}
-              suffix="/100"
+              suffix='/100'
               valueStyle={{ color: getScoreColor(score.businessMetrics) }}
               prefix={<DashboardOutlined />}
             />
@@ -390,9 +429,9 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
         <Col span={4.5}>
           <Card>
             <Statistic
-              title="Indonesian UX"
+              title='Indonesian UX'
               value={score.indonesianExperience}
-              suffix="/100"
+              suffix='/100'
               valueStyle={{ color: getScoreColor(score.indonesianExperience) }}
               prefix={<MonitorOutlined />}
             />
@@ -401,9 +440,9 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
         <Col span={4.5}>
           <Card>
             <Statistic
-              title="User Interaction"
+              title='User Interaction'
               value={score.userInteraction}
-              suffix="/100"
+              suffix='/100'
               valueStyle={{ color: getScoreColor(score.userInteraction) }}
               prefix={<ThunderboltOutlined />}
             />
@@ -415,11 +454,11 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
       {alerts.length > 0 && (
         <Alert
           message={`${alerts.length} Performance Alert${alerts.length > 1 ? 's' : ''} Detected`}
-          description="Review and address performance issues to improve user experience"
+          description='Review and address performance issues to improve user experience'
           type={alerts.some(a => a.type === 'critical') ? 'error' : 'warning'}
           showIcon
           action={
-            <Button size="small" onClick={() => clearMetrics()}>
+            <Button size='small' onClick={() => clearMetrics()}>
               Clear All
             </Button>
           }
@@ -428,41 +467,52 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
       )}
 
       {/* Main Content Tabs */}
-      <Tabs defaultActiveKey="vitals">
-        <TabPane 
+      <Tabs defaultActiveKey='vitals'>
+        <TabPane
           tab={
             <Space>
               <RocketOutlined />
               Core Web Vitals
             </Space>
-          } 
-          key="vitals"
+          }
+          key='vitals'
         >
           <Row gutter={16}>
             {coreWebVitalsCards.map((card, index) => (
               <Col span={4.8} key={index}>
-                <Card size="small">
+                <Card size='small'>
                   <Statistic
                     title={card.title}
                     value={card.value || 0}
                     suffix={card.unit}
-                    valueStyle={{ 
-                      color: card.value ? (
-                        card.value <= card.good ? '#52c41a' : 
-                        card.value <= card.poor ? '#faad14' : '#f5222d'
-                      ) : '#d9d9d9'
+                    valueStyle={{
+                      color: card.value
+                        ? card.value <= card.good
+                          ? '#52c41a'
+                          : card.value <= card.poor
+                            ? '#faad14'
+                            : '#f5222d'
+                        : '#d9d9d9',
                     }}
                     prefix={card.icon}
                   />
-                  <Text type="secondary" style={{ fontSize: '11px' }}>
+                  <Text type='secondary' style={{ fontSize: '11px' }}>
                     {card.description}
                   </Text>
                   <div style={{ marginTop: 8 }}>
                     <Progress
-                      percent={card.value ? Math.min(100, (card.good / card.value) * 100) : 0}
-                      size="small"
+                      percent={
+                        card.value
+                          ? Math.min(100, (card.good / card.value) * 100)
+                          : 0
+                      }
+                      size='small'
                       showInfo={false}
-                      strokeColor={card.value && card.value <= card.good ? '#52c41a' : '#f5222d'}
+                      strokeColor={
+                        card.value && card.value <= card.good
+                          ? '#52c41a'
+                          : '#f5222d'
+                      }
                     />
                   </div>
                 </Card>
@@ -472,32 +522,38 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
         </TabPane>
 
         {showIndonesianMetrics && (
-          <TabPane 
+          <TabPane
             tab={
               <Space>
                 <DashboardOutlined />
                 Indonesian Business
               </Space>
-            } 
-            key="business"
+            }
+            key='business'
           >
             <Row gutter={16}>
               {businessMetricsCards.map((card, index) => (
                 <Col span={4.8} key={index}>
-                  <Card size="small">
+                  <Card size='small'>
                     <Statistic
                       title={card.title}
                       value={card.value || 0}
                       suffix={card.unit}
-                      valueStyle={{ 
-                        color: card.value ? (
-                          card.value <= card.good ? '#52c41a' : 
-                          card.value <= card.poor ? '#faad14' : '#f5222d'
-                        ) : '#d9d9d9'
+                      valueStyle={{
+                        color: card.value
+                          ? card.value <= card.good
+                            ? '#52c41a'
+                            : card.value <= card.poor
+                              ? '#faad14'
+                              : '#f5222d'
+                          : '#d9d9d9',
                       }}
                       prefix={card.icon}
                     />
-                    <Tag color="blue" style={{ marginTop: 4, fontSize: '12px' }}>
+                    <Tag
+                      color='blue'
+                      style={{ marginTop: 4, fontSize: '12px' }}
+                    >
                       Indonesian Context
                     </Tag>
                   </Card>
@@ -507,29 +563,29 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
           </TabPane>
         )}
 
-        <TabPane 
+        <TabPane
           tab={
             <Space>
               <AlertOutlined />
               Alerts
               {alerts.length > 0 && <Badge count={alerts.length} />}
             </Space>
-          } 
-          key="alerts"
+          }
+          key='alerts'
         >
           {alerts.length > 0 ? (
             <List
               dataSource={alerts}
-              renderItem={(alert) => (
+              renderItem={alert => (
                 <List.Item
                   actions={[
-                    <Button 
-                      size="small" 
-                      type="primary"
+                    <Button
+                      size='small'
+                      type='primary'
                       onClick={() => acknowledgeAlert(alert)}
                     >
                       Acknowledge
-                    </Button>
+                    </Button>,
                   ]}
                 >
                   <List.Item.Meta
@@ -540,15 +596,20 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
                         </Tag>
                         {alert.metric}
                         {alert.indonesianContext && (
-                          <Tag color="blue" style={{ fontSize: '12px' }}>Indonesian</Tag>
+                          <Tag color='blue' style={{ fontSize: '12px' }}>
+                            Indonesian
+                          </Tag>
                         )}
                       </Space>
                     }
                     description={
                       <div>
-                        <Text>Value: {alert.value.toFixed(2)} (Threshold: {alert.threshold})</Text>
+                        <Text>
+                          Value: {alert.value.toFixed(2)} (Threshold:{' '}
+                          {alert.threshold})
+                        </Text>
                         <br />
-                        <Text type="secondary">{alert.recommendation}</Text>
+                        <Text type='secondary'>{alert.recommendation}</Text>
                       </div>
                     }
                   />
@@ -556,42 +617,42 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
               )}
             />
           ) : (
-            <Empty description="No performance alerts" />
+            <Empty description='No performance alerts' />
           )}
         </TabPane>
 
-        <TabPane 
+        <TabPane
           tab={
             <Space>
               <BugOutlined />
               Metrics
             </Space>
-          } 
-          key="metrics"
+          }
+          key='metrics'
         >
           <Card>
             <Table
               columns={metricsColumns}
               dataSource={getMetrics().slice(-100)} // Show last 100 metrics
-              rowKey={(record) => `${record.name}-${record.timestamp.getTime()}`}
-              size="small"
+              rowKey={record => `${record.name}-${record.timestamp.getTime()}`}
+              size='small'
               pagination={{ pageSize: 20 }}
             />
           </Card>
         </TabPane>
 
-        <TabPane 
+        <TabPane
           tab={
             <Space>
               <CheckCircleOutlined />
               Recommendations
             </Space>
-          } 
-          key="recommendations"
+          }
+          key='recommendations'
         >
           <Row gutter={16}>
             <Col span={16}>
-              <Card title="Performance Recommendations">
+              <Card title='Performance Recommendations'>
                 {recommendations.length > 0 ? (
                   <List
                     dataSource={recommendations}
@@ -599,14 +660,14 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
                       <List.Item
                         actions={[
                           !optimizationsApplied.includes(recommendation) && (
-                            <Button 
-                              size="small" 
-                              type="primary"
+                            <Button
+                              size='small'
+                              type='primary'
                               onClick={() => applyOptimization(recommendation)}
                             >
                               Apply
                             </Button>
-                          )
+                          ),
                         ]}
                       >
                         <List.Item.Meta
@@ -614,37 +675,38 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
                           description={recommendation}
                         />
                         {optimizationsApplied.includes(recommendation) && (
-                          <Tag color="green">Applied</Tag>
+                          <Tag color='green'>Applied</Tag>
                         )}
                       </List.Item>
                     )}
                   />
                 ) : (
-                  <Empty description="No recommendations available" />
+                  <Empty description='No recommendations available' />
                 )}
               </Card>
             </Col>
             <Col span={8}>
-              <Card title="Quick Actions">
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <Button 
-                    block 
-                    onClick={() => measurePerformance('cache-clear', () => {
-                      localStorage.clear()
-                      sessionStorage.clear()
-                    })}
+              <Card title='Quick Actions'>
+                <Space direction='vertical' style={{ width: '100%' }}>
+                  <Button
+                    block
+                    onClick={() =>
+                      measurePerformance('cache-clear', () => {
+                        localStorage.clear()
+                        sessionStorage.clear()
+                      })
+                    }
                   >
                     Clear Cache
                   </Button>
-                  <Button 
-                    block 
-                    onClick={() => clearMetrics()}
-                  >
+                  <Button block onClick={() => clearMetrics()}>
                     Reset Metrics
                   </Button>
-                  <Button 
-                    block 
-                    onClick={() => recordBusinessEvent('manual-optimization-check', 0)}
+                  <Button
+                    block
+                    onClick={() =>
+                      recordBusinessEvent('manual-optimization-check', 0)
+                    }
                   >
                     Force Optimization Check
                   </Button>
@@ -657,45 +719,53 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
 
       {/* Metric Details Modal */}
       <Modal
-        title="Metric Details"
+        title='Metric Details'
         open={!!selectedMetric}
         onCancel={() => setSelectedMetric(null)}
         width={600}
         footer={[
-          <Button key="close" onClick={() => setSelectedMetric(null)}>
+          <Button key='close' onClick={() => setSelectedMetric(null)}>
             Close
-          </Button>
+          </Button>,
         ]}
       >
         {selectedMetric && (
-          <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <Card size="small" title="Basic Information">
+          <Space direction='vertical' style={{ width: '100%' }} size='large'>
+            <Card size='small' title='Basic Information'>
               <Row gutter={16}>
                 <Col span={12}>
                   <Text strong>Name:</Text> {selectedMetric.name}
                 </Col>
                 <Col span={12}>
-                  <Text strong>Duration:</Text> {selectedMetric.duration.toFixed(2)}ms
+                  <Text strong>Duration:</Text>{' '}
+                  {selectedMetric.duration.toFixed(2)}ms
                 </Col>
               </Row>
               <Divider />
               <Row gutter={16}>
                 <Col span={12}>
-                  <Text strong>Type:</Text> 
+                  <Text strong>Type:</Text>
                   <Tag style={{ marginLeft: 8 }}>{selectedMetric.type}</Tag>
                 </Col>
                 <Col span={12}>
-                  <Text strong>Impact:</Text> 
+                  <Text strong>Impact:</Text>
                   <Tag style={{ marginLeft: 8 }}>{selectedMetric.impact}</Tag>
                 </Col>
               </Row>
               <Divider />
-              <Text strong>Timestamp:</Text> {formatIndonesianDate(selectedMetric.timestamp)}
+              <Text strong>Timestamp:</Text>{' '}
+              {formatIndonesianDate(selectedMetric.timestamp)}
             </Card>
 
             {selectedMetric.metadata && (
-              <Card size="small" title="Additional Data">
-                <pre style={{ background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+              <Card size='small' title='Additional Data'>
+                <pre
+                  style={{
+                    background: '#f5f5f5',
+                    padding: '8px',
+                    borderRadius: '4px',
+                  }}
+                >
                   {JSON.stringify(selectedMetric.metadata, null, 2)}
                 </pre>
               </Card>

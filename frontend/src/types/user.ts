@@ -6,14 +6,14 @@ export interface User {
   isActive: boolean
   createdAt: string
   updatedAt: string
-  
+
   // Relations - summary counts only
   _count?: {
     quotations: number
     invoices: number
     auditLogs: number
   }
-  
+
   // User preferences
   preferences?: {
     timezone: string

@@ -1,19 +1,19 @@
 // usePriceInheritance Hook - Indonesian Business Management System
 // React hook for price inheritance with Indonesian business compliance and form integration
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { message } from 'antd'
 
 import {
   PriceInheritanceConfig,
-  PriceValidationResult,
-  PriceSource,
   PriceInheritanceMode,
-  UserTestingMetrics
+  PriceSource,
+  PriceValidationResult,
+  UserTestingMetrics,
 } from '../components/forms/types/priceInheritance.types'
 import { priceInheritanceApi } from '../services/priceInheritanceApi'
-import { validateIDRAmount, getAmountMetadata } from '../utils/currency'
+import { getAmountMetadata, validateIDRAmount } from '../utils/currency'
 
 export interface UsePriceInheritanceOptions {
   entityType: 'quotation' | 'invoice'
@@ -31,19 +31,19 @@ export interface PriceInheritanceState {
   selectedSource: PriceSource | null
   currentAmount: number
   customAmount: number
-  
+
   // Validation
   validationResult: PriceValidationResult | null
   isValid: boolean
-  
+
   // Loading states
   isLoadingSources: boolean
   isValidating: boolean
   isSaving: boolean
-  
+
   // Error handling
   error: string | null
-  
+
   // User testing
   userTesting?: UserTestingMetrics
 }
@@ -53,14 +53,14 @@ export interface PriceInheritanceActions {
   setMode: (mode: PriceInheritanceMode) => void
   setSelectedSource: (source: PriceSource | null) => void
   setAmount: (amount: number) => void
-  
+
   // Validation
   validateNow: () => Promise<PriceValidationResult>
-  
+
   // Persistence
   save: () => Promise<void>
   reset: () => void
-  
+
   // Testing
   trackInteraction: (action: string, metadata?: any) => void
 }
@@ -69,7 +69,7 @@ export const usePriceInheritance = (
   options: UsePriceInheritanceOptions
 ): [PriceInheritanceState, PriceInheritanceActions] => {
   const queryClient = useQueryClient()
-  
+
   const {
     entityType,
     entityId,
@@ -77,26 +77,30 @@ export const usePriceInheritance = (
     enableRealTimeValidation = true,
     enableUserTesting = true,
     onValidationChange,
-    onConfigChange
+    onConfigChange,
   } = options
 
   // Local state
   const [mode, setModeInternal] = useState<PriceInheritanceMode>(defaultMode)
-  const [selectedSource, setSelectedSourceInternal] = useState<PriceSource | null>(null)
+  const [selectedSource, setSelectedSourceInternal] =
+    useState<PriceSource | null>(null)
   const [customAmount, setCustomAmount] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
-  const [userTesting, setUserTesting] = useState<UserTestingMetrics | undefined>()
+  const [userTesting, setUserTesting] = useState<
+    UserTestingMetrics | undefined
+  >()
 
   // Query for available price sources
   const {
     data: availableSources = [],
     isLoading: isLoadingSources,
-    error: sourcesError
+    error: sourcesError,
   } = useQuery<PriceSource[]>({
     queryKey: ['priceInheritance', 'sources', entityType, entityId],
-    queryFn: () => priceInheritanceApi.getAvailableSources(entityType, entityId),
+    queryFn: () =>
+      priceInheritanceApi.getAvailableSources(entityType, entityId),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 2
+    retry: 2,
   })
 
   // Handle sources loading error
@@ -130,26 +134,29 @@ export const usePriceInheritance = (
       sourceId?: string
       inheritedAmount?: number
     }) => priceInheritanceApi.validatePriceInheritance(params),
-    onSuccess: (result) => {
+    onSuccess: result => {
       onValidationChange?.(result)
     },
     onError: (error: any) => {
       setError(error.message || 'Validation failed')
-    }
+    },
   })
 
   // Save price inheritance configuration
   const saveMutation = useMutation({
-    mutationFn: () => priceInheritanceApi.createPriceInheritance({
-      entityType,
-      entityId,
-      mode,
-      currentAmount,
-      ...(selectedSource?.id && { sourceId: selectedSource.id }),
-      ...(selectedSource?.originalAmount && { inheritedAmount: selectedSource.originalAmount }),
-      trackUserInteraction: enableUserTesting
-    }),
-    onSuccess: (result) => {
+    mutationFn: () =>
+      priceInheritanceApi.createPriceInheritance({
+        entityType,
+        entityId,
+        mode,
+        currentAmount,
+        ...(selectedSource?.id && { sourceId: selectedSource.id }),
+        ...(selectedSource?.originalAmount && {
+          inheritedAmount: selectedSource.originalAmount,
+        }),
+        trackUserInteraction: enableUserTesting,
+      }),
+    onSuccess: result => {
       message.success('Konfigurasi harga berhasil disimpan')
       queryClient.invalidateQueries({ queryKey: ['priceInheritance'] })
       onConfigChange?.(result.config)
@@ -157,7 +164,7 @@ export const usePriceInheritance = (
     onError: (error: any) => {
       setError(error.message || 'Failed to save configuration')
       message.error('Gagal menyimpan konfigurasi harga')
-    }
+    },
   })
 
   // Real-time validation effect
@@ -169,7 +176,9 @@ export const usePriceInheritance = (
         amount: currentAmount,
         mode,
         ...(selectedSource?.id && { sourceId: selectedSource.id }),
-        ...(selectedSource?.originalAmount && { inheritedAmount: selectedSource.originalAmount })
+        ...(selectedSource?.originalAmount && {
+          inheritedAmount: selectedSource.originalAmount,
+        }),
       })
     }, 500) // Debounce validation
 
@@ -177,88 +186,114 @@ export const usePriceInheritance = (
   }, [currentAmount, mode, selectedSource, enableRealTimeValidation])
 
   // User testing integration
-  const trackInteraction = useCallback((action: string, _metadata?: any) => {
-    if (!enableUserTesting) return
+  const trackInteraction = useCallback(
+    (action: string, _metadata?: any) => {
+      if (!enableUserTesting) return
 
-    setUserTesting(prev => {
-      const updated = {
-        ...prev,
-        componentId: `price-inheritance-${entityType}-${entityId}`,
-        userId: prev?.userId || 'anonymous',
-        sessionId: prev?.sessionId || `session-${Date.now()}`,
-        interactions: {
-          modeChanges: prev?.interactions?.modeChanges || 0,
-          amountEdits: prev?.interactions?.amountEdits || 0,
-          validationTriggered: prev?.interactions?.validationTriggered || 0,
-          helpViewed: prev?.interactions?.helpViewed || 0,
-          ...prev?.interactions,
-          [action]: (prev?.interactions?.[action as keyof typeof prev.interactions] || 0) + 1
-        },
-        timeMetrics: {
-          timeToUnderstand: prev?.timeMetrics?.timeToUnderstand || 0,
-          timeToComplete: prev?.timeMetrics?.timeToComplete || 0,
-          hesitationPoints: prev?.timeMetrics?.hesitationPoints || [],
-          ...prev?.timeMetrics
-        },
-        errorMetrics: {
-          validationErrors: prev?.errorMetrics?.validationErrors || 0,
-          userErrors: prev?.errorMetrics?.userErrors || 0,
-          recoveryTime: prev?.errorMetrics?.recoveryTime || 0,
-          ...prev?.errorMetrics
+      setUserTesting(prev => {
+        const updated = {
+          ...prev,
+          componentId: `price-inheritance-${entityType}-${entityId}`,
+          userId: prev?.userId || 'anonymous',
+          sessionId: prev?.sessionId || `session-${Date.now()}`,
+          interactions: {
+            modeChanges: prev?.interactions?.modeChanges || 0,
+            amountEdits: prev?.interactions?.amountEdits || 0,
+            validationTriggered: prev?.interactions?.validationTriggered || 0,
+            helpViewed: prev?.interactions?.helpViewed || 0,
+            ...prev?.interactions,
+            [action]:
+              (prev?.interactions?.[action as keyof typeof prev.interactions] ||
+                0) + 1,
+          },
+          timeMetrics: {
+            timeToUnderstand: prev?.timeMetrics?.timeToUnderstand || 0,
+            timeToComplete: prev?.timeMetrics?.timeToComplete || 0,
+            hesitationPoints: prev?.timeMetrics?.hesitationPoints || [],
+            ...prev?.timeMetrics,
+          },
+          errorMetrics: {
+            validationErrors: prev?.errorMetrics?.validationErrors || 0,
+            userErrors: prev?.errorMetrics?.userErrors || 0,
+            recoveryTime: prev?.errorMetrics?.recoveryTime || 0,
+            ...prev?.errorMetrics,
+          },
         }
-      }
 
-      // Track specific interaction metrics
-      if (action === 'mode_change') {
-        updated.interactions.modeChanges = (updated.interactions.modeChanges || 0) + 1
-      } else if (action === 'amount_edit') {
-        updated.interactions.amountEdits = (updated.interactions.amountEdits || 0) + 1
-      } else if (action === 'validation_check') {
-        updated.interactions.validationTriggered = (updated.interactions.validationTriggered || 0) + 1
-      } else if (action === 'help_view') {
-        updated.interactions.helpViewed = (updated.interactions.helpViewed || 0) + 1
-      }
+        // Track specific interaction metrics
+        if (action === 'mode_change') {
+          updated.interactions.modeChanges =
+            (updated.interactions.modeChanges || 0) + 1
+        } else if (action === 'amount_edit') {
+          updated.interactions.amountEdits =
+            (updated.interactions.amountEdits || 0) + 1
+        } else if (action === 'validation_check') {
+          updated.interactions.validationTriggered =
+            (updated.interactions.validationTriggered || 0) + 1
+        } else if (action === 'help_view') {
+          updated.interactions.helpViewed =
+            (updated.interactions.helpViewed || 0) + 1
+        }
 
-      return updated
-    })
-  }, [enableUserTesting, entityType, entityId])
+        return updated
+      })
+    },
+    [enableUserTesting, entityType, entityId]
+  )
 
   // Actions
-  const setMode = useCallback((newMode: PriceInheritanceMode) => {
-    trackInteraction('mode_change', { from: mode, to: newMode })
-    setModeInternal(newMode)
-    setError(null)
-  }, [mode, trackInteraction])
+  const setMode = useCallback(
+    (newMode: PriceInheritanceMode) => {
+      trackInteraction('mode_change', { from: mode, to: newMode })
+      setModeInternal(newMode)
+      setError(null)
+    },
+    [mode, trackInteraction]
+  )
 
-  const setSelectedSource = useCallback((source: PriceSource | null) => {
-    trackInteraction('source_change', { sourceId: source?.id, sourceType: source?.type })
-    setSelectedSourceInternal(source)
-    setError(null)
-  }, [trackInteraction])
+  const setSelectedSource = useCallback(
+    (source: PriceSource | null) => {
+      trackInteraction('source_change', {
+        sourceId: source?.id,
+        sourceType: source?.type,
+      })
+      setSelectedSourceInternal(source)
+      setError(null)
+    },
+    [trackInteraction]
+  )
 
-  const setAmount = useCallback((amount: number) => {
-    trackInteraction('amount_edit', { oldAmount: customAmount, newAmount: amount })
-    setCustomAmount(amount)
-    setError(null)
-    
-    // Local validation for immediate feedback
-    const validation = validateIDRAmount(amount)
-    if (!validation.isValid) {
-      setError(validation.errors[0] || null)
-    }
-  }, [customAmount, trackInteraction])
+  const setAmount = useCallback(
+    (amount: number) => {
+      trackInteraction('amount_edit', {
+        oldAmount: customAmount,
+        newAmount: amount,
+      })
+      setCustomAmount(amount)
+      setError(null)
+
+      // Local validation for immediate feedback
+      const validation = validateIDRAmount(amount)
+      if (!validation.isValid) {
+        setError(validation.errors[0] || null)
+      }
+    },
+    [customAmount, trackInteraction]
+  )
 
   const validateNow = useCallback(async () => {
     trackInteraction('validation_check', { amount: currentAmount, mode })
-    
+
     try {
       const result = await validateMutation.mutateAsync({
         amount: currentAmount,
         mode,
         ...(selectedSource?.id && { sourceId: selectedSource.id }),
-        ...(selectedSource?.originalAmount && { inheritedAmount: selectedSource.originalAmount })
+        ...(selectedSource?.originalAmount && {
+          inheritedAmount: selectedSource.originalAmount,
+        }),
       })
-      
+
       setError(null)
       return result
     } catch (error: any) {
@@ -269,7 +304,7 @@ export const usePriceInheritance = (
 
   const save = useCallback(async () => {
     trackInteraction('save_attempt', { amount: currentAmount, mode })
-    
+
     try {
       await saveMutation.mutateAsync()
       setError(null)
@@ -284,7 +319,11 @@ export const usePriceInheritance = (
     setModeInternal(defaultMode)
     setCustomAmount(0)
     setError(null)
-    if (availableSources && Array.isArray(availableSources) && availableSources.length > 0) {
+    if (
+      availableSources &&
+      Array.isArray(availableSources) &&
+      availableSources.length > 0
+    ) {
       setSelectedSourceInternal(availableSources[0] || null)
     }
   }, [defaultMode, availableSources, trackInteraction])
@@ -294,43 +333,43 @@ export const usePriceInheritance = (
     if (validateMutation.data) {
       return validateMutation.data
     }
-    
+
     // Provide basic local validation if no server validation available
     if (currentAmount > 0) {
       const localValidation = validateIDRAmount(currentAmount)
       const metadata = getAmountMetadata(currentAmount)
-      
+
       return {
         isValid: localValidation.isValid,
         warnings: localValidation.warnings.map(w => ({
           id: 'local-warning',
           type: 'pricing',
           severity: 'warning' as const,
-          message: w
+          message: w,
         })),
         errors: localValidation.errors.map(e => ({
           id: 'local-error',
           type: 'pricing',
           severity: 'error' as const,
           message: e,
-          isBlocking: true
+          isBlocking: true,
         })),
         suggestions: metadata.recommendedActions.map((action, index) => ({
           id: `local-suggestion-${index}`,
           type: 'business_logic',
           severity: 'info' as const,
-          message: action
+          message: action,
         })),
         ...(metadata.requiresMaterai && {
           materaiCompliance: {
             required: true,
             amount: metadata.materaiAmount,
-            reason: `Transaksi dengan nilai ${currentAmount.toLocaleString('id-ID')} IDR memerlukan materai`
-          }
-        })
+            reason: `Transaksi dengan nilai ${currentAmount.toLocaleString('id-ID')} IDR memerlukan materai`,
+          },
+        }),
       }
     }
-    
+
     return null
   }, [validateMutation.data, currentAmount])
 
@@ -350,7 +389,7 @@ export const usePriceInheritance = (
     isValidating: validateMutation.isPending,
     isSaving: saveMutation.isPending,
     error: error || (sourcesError as any)?.message || null,
-    ...(userTesting && { userTesting })
+    ...(userTesting && { userTesting }),
   }
 
   const actions: PriceInheritanceActions = {
@@ -360,7 +399,7 @@ export const usePriceInheritance = (
     validateNow,
     save,
     reset,
-    trackInteraction
+    trackInteraction,
   }
 
   return [state, actions]
@@ -374,11 +413,11 @@ export const usePriceInheritanceFormField = (
 ): [PriceInheritanceState, PriceInheritanceActions] => {
   const [state, actions] = usePriceInheritance({
     ...options,
-    onConfigChange: (config) => {
+    onConfigChange: config => {
       // Update form field when price inheritance changes
       form.setFieldValue(fieldName, config.currentAmount)
       options.onConfigChange?.(config)
-    }
+    },
   })
 
   // Sync form field with price inheritance

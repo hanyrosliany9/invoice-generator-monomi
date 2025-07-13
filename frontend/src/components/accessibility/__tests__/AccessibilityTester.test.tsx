@@ -9,8 +9,8 @@ import AccessibilityTester from '../AccessibilityTester'
 // Mock dependencies
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 // Test wrapper with accessibility context (unused until testing library is installed)
@@ -27,21 +27,21 @@ global.getComputedStyle = vi.fn(() => ({
   color: 'rgb(0, 0, 0)',
   fontSize: '16px',
   fontWeight: 'normal',
-  visibility: 'visible'
+  visibility: 'visible',
 }))
 
 // @ts-ignore - Global mock for testing
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
-  disconnect: vi.fn()
+  disconnect: vi.fn(),
 }))
 
 // @ts-ignore - Global mock for testing
 global.MutationObserver = vi.fn().mockImplementation((_callback: any) => ({
   observe: vi.fn(),
   disconnect: vi.fn(),
-  takeRecords: vi.fn()
+  takeRecords: vi.fn(),
 }))
 
 describe('AccessibilityTester Component', () => {
@@ -67,9 +67,9 @@ describe('AccessibilityTester Component', () => {
         testInterval: 300000,
         showIndonesianFeatures: true,
         onTestComplete: vi.fn(),
-        onIssueFound: vi.fn()
+        onIssueFound: vi.fn(),
       }
-      
+
       // This would normally render the component, but we need @testing-library/react
       expect(props.autoTest).toBe(false)
       expect(props.showIndonesianFeatures).toBe(true)

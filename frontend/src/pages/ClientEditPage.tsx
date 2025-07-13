@@ -1,27 +1,31 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
+  Button,
+  Card,
+  Col,
   Form,
   Input,
-  Button,
-  Row,
-  Col,
-  Card,
-  Space,
   message,
-  Select,
-  Spin,
   Result,
+  Row,
+  Select,
+  Space,
+  Spin,
 } from 'antd'
 import {
-  UserOutlined,
-  SaveOutlined,
   ProjectOutlined,
+  SaveOutlined,
   UndoOutlined,
+  UserOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { EntityHeroCard, EntityFormLayout, ProgressiveSection } from '../components/forms'
+import {
+  EntityFormLayout,
+  EntityHeroCard,
+  ProgressiveSection,
+} from '../components/forms'
 import { clientService } from '../services/clients'
 import { formatIDR, safeNumber } from '../utils/currency'
 import dayjs from 'dayjs'
@@ -49,7 +53,9 @@ export const ClientEditPage: React.FC = () => {
   const queryClient = useQueryClient()
   const [autoSaving, setAutoSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
-  const [originalValues, setOriginalValues] = useState<ClientFormData | null>(null)
+  const [originalValues, setOriginalValues] = useState<ClientFormData | null>(
+    null
+  )
 
   // Fetch client data
   const {
@@ -101,7 +107,9 @@ export const ClientEditPage: React.FC = () => {
   // Track form changes
   const handleFormChange = () => {
     const currentValues = form.getFieldsValue()
-    const changed = originalValues && JSON.stringify(currentValues) !== JSON.stringify(originalValues)
+    const changed =
+      originalValues &&
+      JSON.stringify(currentValues) !== JSON.stringify(originalValues)
     setHasChanges(!!changed)
   }
 
@@ -134,7 +142,7 @@ export const ClientEditPage: React.FC = () => {
   if (isLoading) {
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>
-        <Spin size="large" tip="Loading client data..." />
+        <Spin size='large' tip='Loading client data...' />
       </div>
     )
   }
@@ -143,11 +151,11 @@ export const ClientEditPage: React.FC = () => {
     return (
       <div style={{ padding: '24px' }}>
         <Result
-          status="404"
-          title="Client Not Found"
+          status='404'
+          title='Client Not Found'
           subTitle="The client you're trying to edit doesn't exist."
           extra={
-            <Button type="primary" onClick={() => navigate('/clients')}>
+            <Button type='primary' onClick={() => navigate('/clients')}>
               Back to Clients
             </Button>
           }
@@ -164,19 +172,19 @@ export const ClientEditPage: React.FC = () => {
       avatar={client.name.charAt(0).toUpperCase()}
       breadcrumb={['Clients', client.name, 'Edit']}
       metadata={[
-        { 
-          label: 'Created', 
-          value: client.createdAt || new Date().toISOString(), 
-          format: 'date' 
+        {
+          label: 'Created',
+          value: client.createdAt || new Date().toISOString(),
+          format: 'date',
         },
-        { 
-          label: 'Projects', 
-          value: safeNumber(client._count?.projects) 
+        {
+          label: 'Projects',
+          value: safeNumber(client._count?.projects),
         },
-        { 
-          label: 'Total Revenue', 
-          value: client.totalRevenue || 0, 
-          format: 'currency' 
+        {
+          label: 'Total Revenue',
+          value: client.totalRevenue || 0,
+          format: 'currency',
         },
       ]}
       actions={[
@@ -196,13 +204,17 @@ export const ClientEditPage: React.FC = () => {
           disabled: !hasChanges,
         },
       ]}
-      status={hasChanges ? {
-        type: 'warning',
-        message: 'You have unsaved changes'
-      } : {
-        type: 'info',
-        message: 'Auto-saved 2 minutes ago'
-      }}
+      status={
+        hasChanges
+          ? {
+              type: 'warning',
+              message: 'You have unsaved changes',
+            }
+          : {
+              type: 'info',
+              message: 'Auto-saved 2 minutes ago',
+            }
+      }
     />
   )
 
@@ -210,93 +222,82 @@ export const ClientEditPage: React.FC = () => {
     <EntityFormLayout hero={heroCard}>
       <Form
         form={form}
-        layout="vertical"
+        layout='vertical'
         onFinish={handleSubmit}
         onValuesChange={handleFormChange}
-        autoComplete="off"
+        autoComplete='off'
         style={{ width: '100%' }}
       >
         {/* Basic Information Section */}
         <ProgressiveSection
-          title="Basic Information"
-          subtitle="Essential client details and contact information"
+          title='Basic Information'
+          subtitle='Essential client details and contact information'
           icon={<UserOutlined />}
           defaultOpen={true}
           required={true}
-          validation={hasChanges ? {
-            status: 'warning',
-            message: 'Modified fields detected'
-          } : {
-            status: 'success',
-            message: 'All required fields completed'
-          }}
+          validation={
+            hasChanges
+              ? {
+                  status: 'warning',
+                  message: 'Modified fields detected',
+                }
+              : {
+                  status: 'success',
+                  message: 'All required fields completed',
+                }
+          }
         >
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="name"
-                label="Client Name"
+                name='name'
+                label='Client Name'
                 rules={[
                   { required: true, message: 'Please enter client name' },
                   { min: 2, message: 'Name must be at least 2 characters' },
                 ]}
               >
-                <Input 
-                  placeholder="Enter client name"
-                  size="large"
-                />
+                <Input placeholder='Enter client name' size='large' />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="email"
-                label="Email Address"
+                name='email'
+                label='Email Address'
                 rules={[
                   { required: true, message: 'Please enter email address' },
                   { type: 'email', message: 'Please enter a valid email' },
                 ]}
               >
-                <Input 
-                  type="email"
-                  placeholder="client@company.com"
-                  size="large"
+                <Input
+                  type='email'
+                  placeholder='client@company.com'
+                  size='large'
                 />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item
-                name="company"
-                label="Company"
-              >
-                <Input 
-                  placeholder="Company name"
-                  size="large"
-                />
+              <Form.Item name='company' label='Company'>
+                <Input placeholder='Company name' size='large' />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="phone"
-                label="Phone Number"
+                name='phone'
+                label='Phone Number'
                 rules={[
-                  { pattern: /^[+]?[\d\s\-\(\)]+$/, message: 'Please enter a valid phone number' },
+                  {
+                    pattern: /^[+]?[\d\s\-\(\)]+$/,
+                    message: 'Please enter a valid phone number',
+                  },
                 ]}
               >
-                <Input 
-                  placeholder="+62 812 3456 7890"
-                  size="large"
-                />
+                <Input placeholder='+62 812 3456 7890' size='large' />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item
-                name="contactPerson"
-                label="Contact Person"
-              >
-                <Input 
-                  placeholder="Primary contact person"
-                  size="large"
-                />
+              <Form.Item name='contactPerson' label='Contact Person'>
+                <Input placeholder='Primary contact person' size='large' />
               </Form.Item>
             </Col>
           </Row>
@@ -304,45 +305,37 @@ export const ClientEditPage: React.FC = () => {
 
         {/* Business Details Section */}
         <ProgressiveSection
-          title="Business Details"
-          subtitle="Tax information and business address"
+          title='Business Details'
+          subtitle='Tax information and business address'
           icon={<UserOutlined />}
           defaultOpen={false}
         >
           <Row gutter={[16, 16]}>
             <Col xs={24}>
-              <Form.Item
-                name="address"
-                label="Business Address"
-              >
-                <TextArea 
-                  rows={3}
-                  placeholder="Complete business address"
-                />
+              <Form.Item name='address' label='Business Address'>
+                <TextArea rows={3} placeholder='Complete business address' />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="taxNumber"
-                label="Tax Number (NPWP)"
+                name='taxNumber'
+                label='Tax Number (NPWP)'
                 rules={[
-                  { pattern: /^\d{2}\.\d{3}\.\d{3}\.\d{1}-\d{3}\.\d{3}$/, message: 'Please enter valid NPWP format (XX.XXX.XXX.X-XXX.XXX)' },
+                  {
+                    pattern: /^\d{2}\.\d{3}\.\d{3}\.\d{1}-\d{3}\.\d{3}$/,
+                    message:
+                      'Please enter valid NPWP format (XX.XXX.XXX.X-XXX.XXX)',
+                  },
                 ]}
               >
-                <Input 
-                  placeholder="01.234.567.8-901.000"
-                  size="large"
-                />
+                <Input placeholder='01.234.567.8-901.000' size='large' />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item
-                name="paymentTerms"
-                label="Payment Terms"
-              >
+              <Form.Item name='paymentTerms' label='Payment Terms'>
                 <Select
-                  placeholder="Select payment terms"
-                  size="large"
+                  placeholder='Select payment terms'
+                  size='large'
                   options={[
                     { value: 'Net 7', label: 'Net 7 days' },
                     { value: 'Net 14', label: 'Net 14 days' },
@@ -359,31 +352,25 @@ export const ClientEditPage: React.FC = () => {
 
         {/* Banking Information Section */}
         <ProgressiveSection
-          title="Banking Information"
-          subtitle="Payment details and bank account"
+          title='Banking Information'
+          subtitle='Payment details and bank account'
           icon={<UserOutlined />}
           defaultOpen={false}
         >
           <Row gutter={[16, 16]}>
             <Col xs={24}>
-              <Form.Item
-                name="bankAccount"
-                label="Bank Account Details"
-              >
-                <TextArea 
+              <Form.Item name='bankAccount' label='Bank Account Details'>
+                <TextArea
                   rows={3}
-                  placeholder="Bank name, account number, account holder name"
+                  placeholder='Bank name, account number, account holder name'
                 />
               </Form.Item>
             </Col>
             <Col xs={24}>
-              <Form.Item
-                name="notes"
-                label="Additional Notes"
-              >
-                <TextArea 
+              <Form.Item name='notes' label='Additional Notes'>
+                <TextArea
                   rows={4}
-                  placeholder="Any additional information about this client"
+                  placeholder='Any additional information about this client'
                 />
               </Form.Item>
             </Col>
@@ -392,27 +379,24 @@ export const ClientEditPage: React.FC = () => {
 
         {/* Action Buttons */}
         <Card style={{ marginTop: '24px', textAlign: 'center' }}>
-          <Space size="large">
-            <Button 
-              size="large"
-              onClick={() => navigate(`/clients/${id}`)}
-            >
+          <Space size='large'>
+            <Button size='large' onClick={() => navigate(`/clients/${id}`)}>
               Cancel
             </Button>
-            <Button 
-              type="default" 
-              size="large"
+            <Button
+              type='default'
+              size='large'
               icon={<UndoOutlined />}
               onClick={handleRevertChanges}
               disabled={!hasChanges}
             >
               Revert Changes
             </Button>
-            <Button 
-              type="primary" 
-              size="large"
+            <Button
+              type='primary'
+              size='large'
               icon={<SaveOutlined />}
-              htmlType="submit"
+              htmlType='submit'
               loading={updateClientMutation.isPending}
               disabled={!hasChanges}
             >

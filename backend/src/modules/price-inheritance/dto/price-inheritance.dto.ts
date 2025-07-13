@@ -1,499 +1,551 @@
 // Price Inheritance DTOs - Indonesian Business Management System
 // Data Transfer Objects for price inheritance API endpoints
 
-import { 
-  IsString, 
-  IsNumber, 
-  IsEnum, 
-  IsOptional, 
-  IsBoolean, 
-  IsDate, 
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsBoolean,
+  IsDate,
   IsArray,
   ValidateNested,
   Min,
   Max,
-  IsUUID
-} from 'class-validator'
-import { Type } from 'class-transformer'
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+  IsUUID,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 // Enums
 export enum PriceInheritanceMode {
-  INHERIT = 'inherit',
-  CUSTOM = 'custom', 
-  PARTIAL = 'partial'
+  INHERIT = "inherit",
+  CUSTOM = "custom",
+  PARTIAL = "partial",
 }
 
 export enum EntityType {
-  QUOTATION = 'quotation',
-  INVOICE = 'invoice'
+  QUOTATION = "quotation",
+  INVOICE = "invoice",
 }
 
 export enum PriceSourceType {
-  PROJECT = 'project',
-  QUOTATION = 'quotation',
-  TEMPLATE = 'template',
-  MANUAL = 'manual'
+  PROJECT = "project",
+  QUOTATION = "quotation",
+  TEMPLATE = "template",
+  MANUAL = "manual",
 }
 
 export enum ValidationSeverity {
-  INFO = 'info',
-  WARNING = 'warning',
-  ERROR = 'error',
-  SUCCESS = 'success'
+  INFO = "info",
+  WARNING = "warning",
+  ERROR = "error",
+  SUCCESS = "success",
 }
 
 export enum IndonesianBusinessRule {
-  MATERAI = 'materai',
-  TAX_COMPLIANCE = 'tax_compliance',
-  BUSINESS_ETIQUETTE = 'business_etiquette'
+  MATERAI = "materai",
+  TAX_COMPLIANCE = "tax_compliance",
+  BUSINESS_ETIQUETTE = "business_etiquette",
 }
 
 export enum CommunicationStyle {
-  FORMAL = 'formal',
-  SEMI_FORMAL = 'semi-formal',
-  CASUAL = 'casual'
+  FORMAL = "formal",
+  SEMI_FORMAL = "semi-formal",
+  CASUAL = "casual",
 }
 
 // Base DTOs
 
 export class PriceSourceMetadataDto {
-  @ApiPropertyOptional({ description: 'Entity creator' })
+  @ApiPropertyOptional({ description: "Entity creator" })
   @IsOptional()
   @IsString()
-  createdBy?: string
+  createdBy?: string;
 
-  @ApiPropertyOptional({ description: 'Entity approver' })
+  @ApiPropertyOptional({ description: "Entity approver" })
   @IsOptional()
   @IsString()
-  approvedBy?: string
+  approvedBy?: string;
 
-  @ApiPropertyOptional({ description: 'Additional notes' })
+  @ApiPropertyOptional({ description: "Additional notes" })
   @IsOptional()
   @IsString()
-  notes?: string
+  notes?: string;
 }
 
 export class PriceSourceDto {
-  @ApiProperty({ description: 'Unique identifier for the price source' })
+  @ApiProperty({ description: "Unique identifier for the price source" })
   @IsUUID()
-  id: string
+  id: string;
 
-  @ApiProperty({ enum: PriceSourceType, description: 'Type of price source' })
+  @ApiProperty({ enum: PriceSourceType, description: "Type of price source" })
   @IsEnum(PriceSourceType)
-  type: PriceSourceType
+  type: PriceSourceType;
 
-  @ApiProperty({ description: 'Name of the source entity' })
+  @ApiProperty({ description: "Name of the source entity" })
   @IsString()
-  entityName: string
+  entityName: string;
 
-  @ApiPropertyOptional({ description: 'Number or code of the source entity' })
+  @ApiPropertyOptional({ description: "Number or code of the source entity" })
   @IsOptional()
   @IsString()
-  entityNumber?: string
+  entityNumber?: string;
 
-  @ApiProperty({ description: 'Original amount from the source', minimum: 0 })
+  @ApiProperty({ description: "Original amount from the source", minimum: 0 })
   @IsNumber()
   @Min(0)
-  originalAmount: number
+  originalAmount: number;
 
-  @ApiProperty({ description: 'Last updated timestamp' })
+  @ApiProperty({ description: "Last updated timestamp" })
   @IsDate()
   @Type(() => Date)
-  lastUpdated: Date
+  lastUpdated: Date;
 
   @ApiPropertyOptional({ type: PriceSourceMetadataDto })
   @IsOptional()
   @ValidateNested()
   @Type(() => PriceSourceMetadataDto)
-  metadata?: PriceSourceMetadataDto
+  metadata?: PriceSourceMetadataDto;
 }
 
 export class ValidationRuleMetadataDto {
-  @ApiPropertyOptional({ description: 'Threshold value for validation' })
+  @ApiPropertyOptional({ description: "Threshold value for validation" })
   @IsOptional()
   @IsNumber()
-  threshold?: number
+  threshold?: number;
 
-  @ApiPropertyOptional({ description: 'Calculated value during validation' })
+  @ApiPropertyOptional({ description: "Calculated value during validation" })
   @IsOptional()
   @IsNumber()
-  calculatedValue?: number
+  calculatedValue?: number;
 
-  @ApiPropertyOptional({ description: 'Required documents for compliance' })
+  @ApiPropertyOptional({ description: "Required documents for compliance" })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  requiredDocuments?: string[]
+  requiredDocuments?: string[];
 }
 
 export class PriceValidationRuleDto {
-  @ApiProperty({ description: 'Unique identifier for the validation rule' })
+  @ApiProperty({ description: "Unique identifier for the validation rule" })
   @IsString()
-  id: string
+  id: string;
 
-  @ApiProperty({ description: 'Type of validation rule' })
+  @ApiProperty({ description: "Type of validation rule" })
   @IsString()
-  type: string
+  type: string;
 
-  @ApiProperty({ enum: ValidationSeverity, description: 'Severity level' })
+  @ApiProperty({ enum: ValidationSeverity, description: "Severity level" })
   @IsEnum(ValidationSeverity)
-  severity: ValidationSeverity
+  severity: ValidationSeverity;
 
-  @ApiProperty({ description: 'Validation message' })
+  @ApiProperty({ description: "Validation message" })
   @IsString()
-  message: string
+  message: string;
 
-  @ApiPropertyOptional({ description: 'Indonesian business context' })
+  @ApiPropertyOptional({ description: "Indonesian business context" })
   @IsOptional()
   @IsString()
-  indonesianContext?: string
+  indonesianContext?: string;
 
-  @ApiPropertyOptional({ description: 'Suggested action to resolve' })
+  @ApiPropertyOptional({ description: "Suggested action to resolve" })
   @IsOptional()
   @IsString()
-  suggestedAction?: string
+  suggestedAction?: string;
 
-  @ApiPropertyOptional({ description: 'Whether this rule blocks progression' })
+  @ApiPropertyOptional({ description: "Whether this rule blocks progression" })
   @IsOptional()
   @IsBoolean()
-  isBlocking?: boolean
+  isBlocking?: boolean;
 
   @ApiPropertyOptional({ type: ValidationRuleMetadataDto })
   @IsOptional()
   @ValidateNested()
   @Type(() => ValidationRuleMetadataDto)
-  metadata?: ValidationRuleMetadataDto
+  metadata?: ValidationRuleMetadataDto;
 }
 
 export class TaxComplianceDto {
-  @ApiProperty({ description: 'Whether PPN (VAT) is required' })
+  @ApiProperty({ description: "Whether PPN (VAT) is required" })
   @IsBoolean()
-  ppnRequired: boolean
+  ppnRequired: boolean;
 
-  @ApiProperty({ description: 'PPN rate percentage', minimum: 0, maximum: 100 })
+  @ApiProperty({ description: "PPN rate percentage", minimum: 0, maximum: 100 })
   @IsNumber()
   @Min(0)
   @Max(100)
-  ppnRate: number
+  ppnRate: number;
 
-  @ApiProperty({ description: 'Whether PPh (Income Tax) is required' })
+  @ApiProperty({ description: "Whether PPh (Income Tax) is required" })
   @IsBoolean()
-  pphRequired: boolean
+  pphRequired: boolean;
 
-  @ApiProperty({ description: 'PPh rate percentage', minimum: 0, maximum: 100 })
+  @ApiProperty({ description: "PPh rate percentage", minimum: 0, maximum: 100 })
   @IsNumber()
   @Min(0)
   @Max(100)
-  pphRate: number
+  pphRate: number;
 }
 
 export class BusinessEtiquetteDto {
-  @ApiProperty({ description: 'Suggested timing for business communication' })
+  @ApiProperty({ description: "Suggested timing for business communication" })
   @IsString()
-  suggestedTiming: string
+  suggestedTiming: string;
 
-  @ApiProperty({ enum: CommunicationStyle, description: 'Recommended communication style' })
+  @ApiProperty({
+    enum: CommunicationStyle,
+    description: "Recommended communication style",
+  })
   @IsEnum(CommunicationStyle)
-  communicationStyle: CommunicationStyle
+  communicationStyle: CommunicationStyle;
 
-  @ApiProperty({ description: 'Cultural notes for Indonesian business context' })
+  @ApiProperty({
+    description: "Cultural notes for Indonesian business context",
+  })
   @IsArray()
   @IsString({ each: true })
-  culturalNotes: string[]
+  culturalNotes: string[];
 }
 
 export class IndonesianComplianceDto {
-  @ApiProperty({ description: 'Whether materai (stamp duty) is required' })
+  @ApiProperty({ description: "Whether materai (stamp duty) is required" })
   @IsBoolean()
-  materaiRequired: boolean
+  materaiRequired: boolean;
 
-  @ApiProperty({ description: 'Required materai amount in IDR', minimum: 0 })
+  @ApiProperty({ description: "Required materai amount in IDR", minimum: 0 })
   @IsNumber()
   @Min(0)
-  materaiAmount: number
+  materaiAmount: number;
 
   @ApiProperty({ type: TaxComplianceDto })
   @ValidateNested()
   @Type(() => TaxComplianceDto)
-  taxCompliance: TaxComplianceDto
+  taxCompliance: TaxComplianceDto;
 
   @ApiProperty({ type: BusinessEtiquetteDto })
   @ValidateNested()
   @Type(() => BusinessEtiquetteDto)
-  businessEtiquette: BusinessEtiquetteDto
+  businessEtiquette: BusinessEtiquetteDto;
 }
 
 export class PriceValidationResponseDto {
-  @ApiProperty({ description: 'Whether the price configuration is valid' })
+  @ApiProperty({ description: "Whether the price configuration is valid" })
   @IsBoolean()
-  isValid: boolean
+  isValid: boolean;
 
-  @ApiProperty({ type: [PriceValidationRuleDto], description: 'Validation errors' })
+  @ApiProperty({
+    type: [PriceValidationRuleDto],
+    description: "Validation errors",
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PriceValidationRuleDto)
-  errors: PriceValidationRuleDto[]
+  errors: PriceValidationRuleDto[];
 
-  @ApiProperty({ type: [PriceValidationRuleDto], description: 'Validation warnings' })
+  @ApiProperty({
+    type: [PriceValidationRuleDto],
+    description: "Validation warnings",
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PriceValidationRuleDto)
-  warnings: PriceValidationRuleDto[]
+  warnings: PriceValidationRuleDto[];
 
-  @ApiProperty({ type: [PriceValidationRuleDto], description: 'Validation suggestions' })
+  @ApiProperty({
+    type: [PriceValidationRuleDto],
+    description: "Validation suggestions",
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PriceValidationRuleDto)
-  suggestions: PriceValidationRuleDto[]
+  suggestions: PriceValidationRuleDto[];
 
   @ApiProperty({ type: IndonesianComplianceDto })
   @ValidateNested()
   @Type(() => IndonesianComplianceDto)
-  compliance: IndonesianComplianceDto
+  compliance: IndonesianComplianceDto;
 
-  @ApiProperty({ description: 'Total number of rules applied' })
+  @ApiProperty({ description: "Total number of rules applied" })
   @IsNumber()
-  totalRules: number
+  totalRules: number;
 
-  @ApiProperty({ description: 'Timestamp when validation was performed' })
+  @ApiProperty({ description: "Timestamp when validation was performed" })
   @IsDate()
   @Type(() => Date)
-  validationTimestamp: Date
+  validationTimestamp: Date;
 }
 
 // Request DTOs
 
 export class CreatePriceInheritanceDto {
-  @ApiProperty({ enum: EntityType, description: 'Type of entity' })
+  @ApiProperty({ enum: EntityType, description: "Type of entity" })
   @IsEnum(EntityType)
-  entityType: EntityType
+  entityType: EntityType;
 
-  @ApiProperty({ description: 'ID of the entity' })
+  @ApiProperty({ description: "ID of the entity" })
   @IsUUID()
-  entityId: string
+  entityId: string;
 
-  @ApiProperty({ enum: PriceInheritanceMode, description: 'Price inheritance mode' })
+  @ApiProperty({
+    enum: PriceInheritanceMode,
+    description: "Price inheritance mode",
+  })
   @IsEnum(PriceInheritanceMode)
-  mode: PriceInheritanceMode
+  mode: PriceInheritanceMode;
 
-  @ApiProperty({ description: 'Current amount', minimum: 0, maximum: 999999999999 })
+  @ApiProperty({
+    description: "Current amount",
+    minimum: 0,
+    maximum: 999999999999,
+  })
   @IsNumber()
   @Min(0)
   @Max(999999999999)
-  currentAmount: number
+  currentAmount: number;
 
-  @ApiPropertyOptional({ description: 'ID of the price source' })
+  @ApiPropertyOptional({ description: "ID of the price source" })
   @IsOptional()
   @IsUUID()
-  sourceId?: string
+  sourceId?: string;
 
-  @ApiPropertyOptional({ description: 'Inherited amount from source', minimum: 0 })
+  @ApiPropertyOptional({
+    description: "Inherited amount from source",
+    minimum: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
-  inheritedAmount?: number
+  inheritedAmount?: number;
 
-  @ApiPropertyOptional({ description: 'Whether to track user interaction', default: true })
+  @ApiPropertyOptional({
+    description: "Whether to track user interaction",
+    default: true,
+  })
   @IsOptional()
   @IsBoolean()
-  trackUserInteraction?: boolean = true
+  trackUserInteraction?: boolean = true;
 
-  @ApiPropertyOptional({ description: 'Additional configuration options' })
+  @ApiPropertyOptional({ description: "Additional configuration options" })
   @IsOptional()
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>;
 }
 
 export class UpdatePriceInheritanceDto {
-  @ApiProperty({ enum: EntityType, description: 'Type of entity' })
+  @ApiProperty({ enum: EntityType, description: "Type of entity" })
   @IsEnum(EntityType)
-  entityType: EntityType
+  entityType: EntityType;
 
-  @ApiProperty({ description: 'ID of the entity' })
+  @ApiProperty({ description: "ID of the entity" })
   @IsUUID()
-  entityId: string
+  entityId: string;
 
-  @ApiProperty({ enum: PriceInheritanceMode, description: 'Price inheritance mode' })
+  @ApiProperty({
+    enum: PriceInheritanceMode,
+    description: "Price inheritance mode",
+  })
   @IsEnum(PriceInheritanceMode)
-  mode: PriceInheritanceMode
+  mode: PriceInheritanceMode;
 
-  @ApiProperty({ description: 'Current amount', minimum: 0, maximum: 999999999999 })
+  @ApiProperty({
+    description: "Current amount",
+    minimum: 0,
+    maximum: 999999999999,
+  })
   @IsNumber()
   @Min(0)
   @Max(999999999999)
-  currentAmount: number
+  currentAmount: number;
 
-  @ApiPropertyOptional({ description: 'ID of the price source' })
+  @ApiPropertyOptional({ description: "ID of the price source" })
   @IsOptional()
   @IsUUID()
-  sourceId?: string
+  sourceId?: string;
 
-  @ApiPropertyOptional({ description: 'Inherited amount from source', minimum: 0 })
+  @ApiPropertyOptional({
+    description: "Inherited amount from source",
+    minimum: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
-  inheritedAmount?: number
+  inheritedAmount?: number;
 }
 
 export class GetPriceSourcesQueryDto {
-  @ApiProperty({ enum: EntityType, description: 'Type of entity' })
+  @ApiProperty({ enum: EntityType, description: "Type of entity" })
   @IsEnum(EntityType)
-  entityType: EntityType
+  entityType: EntityType;
 
-  @ApiProperty({ description: 'ID of the entity' })
+  @ApiProperty({ description: "ID of the entity" })
   @IsUUID()
-  entityId: string
+  entityId: string;
 }
 
 export class ValidatePriceInheritanceDto {
-  @ApiProperty({ description: 'Amount to validate', minimum: 0, maximum: 999999999999 })
+  @ApiProperty({
+    description: "Amount to validate",
+    minimum: 0,
+    maximum: 999999999999,
+  })
   @IsNumber()
   @Min(0)
   @Max(999999999999)
-  amount: number
+  amount: number;
 
-  @ApiProperty({ enum: PriceInheritanceMode, description: 'Price inheritance mode' })
+  @ApiProperty({
+    enum: PriceInheritanceMode,
+    description: "Price inheritance mode",
+  })
   @IsEnum(PriceInheritanceMode)
-  mode: PriceInheritanceMode
+  mode: PriceInheritanceMode;
 
-  @ApiPropertyOptional({ description: 'ID of the price source' })
+  @ApiPropertyOptional({ description: "ID of the price source" })
   @IsOptional()
   @IsUUID()
-  sourceId?: string
+  sourceId?: string;
 
-  @ApiPropertyOptional({ description: 'Inherited amount from source', minimum: 0 })
+  @ApiPropertyOptional({
+    description: "Inherited amount from source",
+    minimum: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
-  inheritedAmount?: number
+  inheritedAmount?: number;
 }
 
 // Response DTOs
 
 export class PriceInheritanceConfigDto {
   @ApiProperty({ enum: PriceInheritanceMode })
-  mode: PriceInheritanceMode
+  mode: PriceInheritanceMode;
 
   @ApiPropertyOptional()
-  sourceId?: string
+  sourceId?: string;
 
   @ApiProperty({ minimum: 0 })
-  currentAmount: number
+  currentAmount: number;
 
   @ApiPropertyOptional({ minimum: 0 })
-  inheritedAmount?: number
+  inheritedAmount?: number;
 
   @ApiProperty({ minimum: 0, maximum: 1000 })
-  deviationPercentage: number
+  deviationPercentage: number;
 
   @ApiProperty()
-  requiresApproval: boolean
+  requiresApproval: boolean;
 
   @ApiProperty()
-  createdBy?: string
+  createdBy?: string;
 
   @ApiProperty()
-  updatedBy?: string
-
-  @ApiProperty()
-  @Type(() => Date)
-  createdAt?: Date
+  updatedBy?: string;
 
   @ApiProperty()
   @Type(() => Date)
-  updatedAt?: Date
+  createdAt?: Date;
+
+  @ApiProperty()
+  @Type(() => Date)
+  updatedAt?: Date;
 }
 
 export class PriceInheritanceMetadataDto {
   @ApiProperty({ enum: EntityType })
-  entityType: EntityType
+  entityType: EntityType;
 
   @ApiProperty()
-  entityId: string
+  entityId: string;
 
   @ApiProperty()
   @Type(() => Date)
-  calculatedAt: Date
+  calculatedAt: Date;
 
   @ApiProperty()
-  version: string
+  version: string;
 }
 
 export class PriceInheritanceResponseDto {
   @ApiProperty({ type: PriceInheritanceConfigDto })
   @ValidateNested()
   @Type(() => PriceInheritanceConfigDto)
-  config: PriceInheritanceConfigDto
+  config: PriceInheritanceConfigDto;
 
   @ApiProperty({ type: PriceValidationResponseDto })
   @ValidateNested()
   @Type(() => PriceValidationResponseDto)
-  validation: PriceValidationResponseDto
+  validation: PriceValidationResponseDto;
 
   @ApiProperty({ type: PriceInheritanceMetadataDto })
   @ValidateNested()
   @Type(() => PriceInheritanceMetadataDto)
-  metadata: PriceInheritanceMetadataDto
+  metadata: PriceInheritanceMetadataDto;
 }
 
 export class PriceInheritanceAnalyticsDto {
-  @ApiProperty({ description: 'Total configurations created' })
+  @ApiProperty({ description: "Total configurations created" })
   @IsNumber()
-  totalConfigurations: number
+  totalConfigurations: number;
 
-  @ApiProperty({ description: 'Distribution of inheritance modes' })
+  @ApiProperty({ description: "Distribution of inheritance modes" })
   modeDistribution: {
-    inherit: number
-    custom: number
-    partial: number
-  }
+    inherit: number;
+    custom: number;
+    partial: number;
+  };
 
-  @ApiProperty({ description: 'Average price deviation percentage' })
+  @ApiProperty({ description: "Average price deviation percentage" })
   @IsNumber()
-  averageDeviation: number
+  averageDeviation: number;
 
-  @ApiProperty({ description: 'Indonesian compliance rate' })
+  @ApiProperty({ description: "Indonesian compliance rate" })
   @IsNumber()
-  complianceRate: number
+  complianceRate: number;
 
-  @ApiProperty({ description: 'User satisfaction score' })
+  @ApiProperty({ description: "User satisfaction score" })
   @IsNumber()
-  userSatisfaction: number
+  userSatisfaction: number;
 
-  @ApiPropertyOptional({ description: 'Date range for analytics' })
+  @ApiPropertyOptional({ description: "Date range for analytics" })
   @IsOptional()
   dateRange?: {
-    from: Date
-    to: Date
-  }
+    from: Date;
+    to: Date;
+  };
 }
 
 // Error DTOs
 
 export class PriceInheritanceErrorDto {
-  @ApiProperty({ description: 'Error message' })
+  @ApiProperty({ description: "Error message" })
   @IsString()
-  message: string
+  message: string;
 
-  @ApiProperty({ description: 'Error code' })
+  @ApiProperty({ description: "Error code" })
   @IsString()
-  code: string
+  code: string;
 
-  @ApiPropertyOptional({ type: [PriceValidationRuleDto], description: 'Validation errors' })
+  @ApiPropertyOptional({
+    type: [PriceValidationRuleDto],
+    description: "Validation errors",
+  })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PriceValidationRuleDto)
-  errors?: PriceValidationRuleDto[]
+  errors?: PriceValidationRuleDto[];
 
-  @ApiPropertyOptional({ description: 'Suggested actions to resolve the error' })
+  @ApiPropertyOptional({
+    description: "Suggested actions to resolve the error",
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  suggestedActions?: string[]
+  suggestedActions?: string[];
 
-  @ApiPropertyOptional({ description: 'Indonesian context for the error' })
+  @ApiPropertyOptional({ description: "Indonesian context for the error" })
   @IsOptional()
   @IsString()
-  indonesianContext?: string
+  indonesianContext?: string;
 }

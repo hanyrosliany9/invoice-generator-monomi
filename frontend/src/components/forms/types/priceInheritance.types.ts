@@ -4,7 +4,10 @@
 export type PriceInheritanceMode = 'inherit' | 'custom' | 'partial'
 export type PriceDeviationType = 'none' | 'minor' | 'significant' | 'extreme'
 export type ValidationSeverity = 'info' | 'warning' | 'error' | 'success'
-export type IndonesianBusinessRule = 'materai' | 'tax_compliance' | 'business_etiquette'
+export type IndonesianBusinessRule =
+  | 'materai'
+  | 'tax_compliance'
+  | 'business_etiquette'
 
 export interface PriceSource {
   id: string
@@ -73,36 +76,36 @@ export interface PriceInheritanceFlowProps {
   }
   currentAmount: number
   onAmountChange: (amount: number, config: PriceInheritanceConfig) => void
-  
+
   // Inheritance options
   availableSources?: PriceSource[]
   defaultMode?: PriceInheritanceMode
   allowCustomOverride?: boolean
-  
+
   // Validation and rules
   validationRules?: PriceValidationRule[]
   enableMateraiValidation?: boolean
   enableBusinessEtiquette?: boolean
-  
+
   // UI configuration
   showVisualIndicators?: boolean
   showDeviationWarnings?: boolean
   compactMode?: boolean
   className?: string
-  
+
   // Event handlers
   onModeChange?: (mode: PriceInheritanceMode) => void
   onSourceChange?: (source: PriceSource) => void
   onValidationChange?: (result: PriceValidationResult) => void
-  
+
   // Indonesian localization
   indonesianLocale?: boolean
   currencyLocale?: string
-  
+
   // Accessibility
   ariaLabel?: string
   ariaDescribedBy?: string
-  
+
   // Testing and analytics
   testId?: string
   trackUserInteraction?: boolean
@@ -191,7 +194,7 @@ export interface PriceInheritanceAnalytics {
 }
 
 // Export commonly used utility types
-export type PriceInheritanceEvent = 
+export type PriceInheritanceEvent =
   | { type: 'mode_changed'; mode: PriceInheritanceMode }
   | { type: 'amount_changed'; amount: number }
   | { type: 'source_selected'; source: PriceSource }

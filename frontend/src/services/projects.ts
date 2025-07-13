@@ -4,15 +4,15 @@ export interface Project {
   id: string
   number: string
   description: string
-  output?: string           // Optional - legacy field, can be derived from products
+  output?: string // Optional - legacy field, can be derived from products
   type: 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER'
   clientId: string
   startDate: string
   endDate: string
-  basePrice?: number        // Price cascade support - calculated from products
-  priceBreakdown?: any      // Detailed price breakdown
+  basePrice?: number // Price cascade support - calculated from products
+  priceBreakdown?: any // Detailed price breakdown
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
-  totalRevenue?: number     // Total revenue from all related invoices
+  totalRevenue?: number // Total revenue from all related invoices
   createdAt: string
   updatedAt: string
   client?: {
@@ -29,14 +29,15 @@ export interface Project {
 
 export interface CreateProjectRequest {
   description: string
-  output?: string           // Optional - can be derived from product descriptions
+  output?: string // Optional - can be derived from product descriptions
   type: 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER'
   clientId: string
   startDate: string
   endDate: string
-  basePrice?: number        // Optional price cascade support - calculated from products
-  priceBreakdown?: any      // Optional detailed price breakdown
-  products?: Array<{        // Product/service items for automatic calculations
+  basePrice?: number // Optional price cascade support - calculated from products
+  priceBreakdown?: any // Optional detailed price breakdown
+  products?: Array<{
+    // Product/service items for automatic calculations
     name: string
     description: string
     price: number
@@ -74,7 +75,10 @@ export const projectService = {
   },
 
   // Update existing project
-  updateProject: async (id: string, data: UpdateProjectRequest): Promise<Project> => {
+  updateProject: async (
+    id: string,
+    data: UpdateProjectRequest
+  ): Promise<Project> => {
     const response = await apiClient.patch(`/projects/${id}`, data)
     if (!response?.data?.data) {
       throw new Error('Project update failed')

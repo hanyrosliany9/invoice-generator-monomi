@@ -1,8 +1,8 @@
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { AuthService } from '../auth.service';
+import { ExtractJwt, Strategy } from "passport-jwt";
+import { PassportStrategy } from "@nestjs/passport";
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { AuthService } from "../auth.service";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -13,7 +13,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET') || 'your-secret-key',
+      secretOrKey: configService.get<string>("JWT_SECRET") || "your-secret-key",
     });
   }
 
@@ -22,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       const user = await this.authService.validateToken(payload.sub);
       return user;
     } catch (error) {
-      throw new UnauthorizedException('Token tidak valid');
+      throw new UnauthorizedException("Token tidak valid");
     }
   }
 }

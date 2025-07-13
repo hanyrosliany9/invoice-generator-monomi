@@ -1,12 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { UnauthorizedException } from '@nestjs/common';
+import { Test, TestingModule } from "@nestjs/testing";
+import { AuthController } from "./auth.controller";
+import { AuthService } from "./auth.service";
+import { JwtService } from "@nestjs/jwt";
+import { UsersService } from "../users/users.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { UnauthorizedException } from "@nestjs/common";
 
-describe('AuthController', () => {
+describe("AuthController", () => {
   let controller: AuthController;
   let authService: AuthService;
 
@@ -60,24 +60,24 @@ describe('AuthController', () => {
     authService = module.get<AuthService>(AuthService);
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(controller).toBeDefined();
   });
 
-  describe('login', () => {
-    it('should return access token for valid credentials', async () => {
+  describe("login", () => {
+    it("should return access token for valid credentials", async () => {
       const loginDto = {
-        email: 'admin@bisnis.co.id',
-        password: 'password123',
+        email: "admin@bisnis.co.id",
+        password: "password123",
       };
 
       const expectedResult = {
-        access_token: 'jwt-token',
+        access_token: "jwt-token",
         user: {
-          id: 'user-id',
-          email: 'admin@bisnis.co.id',
-          name: 'Admin User',
-          role: 'ADMIN',
+          id: "user-id",
+          email: "admin@bisnis.co.id",
+          name: "Admin User",
+          role: "ADMIN",
         },
       };
 
@@ -89,14 +89,14 @@ describe('AuthController', () => {
       expect(mockAuthService.login).toHaveBeenCalledWith(loginDto);
     });
 
-    it('should throw UnauthorizedException for invalid credentials', async () => {
+    it("should throw UnauthorizedException for invalid credentials", async () => {
       const loginDto = {
-        email: 'admin@bisnis.co.id',
-        password: 'wrongpassword',
+        email: "admin@bisnis.co.id",
+        password: "wrongpassword",
       };
 
       mockAuthService.login.mockRejectedValue(
-        new UnauthorizedException('Email atau password salah'),
+        new UnauthorizedException("Email atau password salah"),
       );
 
       await expect(controller.login(loginDto)).rejects.toThrow(
@@ -105,19 +105,19 @@ describe('AuthController', () => {
     });
   });
 
-  describe('register', () => {
-    it('should register a new user successfully', async () => {
+  describe("register", () => {
+    it("should register a new user successfully", async () => {
       const registerDto = {
-        email: 'newuser@bisnis.co.id',
-        password: 'password123',
-        name: 'New User',
+        email: "newuser@bisnis.co.id",
+        password: "password123",
+        name: "New User",
       };
 
       const expectedResult = {
-        id: 'user-id',
-        email: 'newuser@bisnis.co.id',
-        name: 'New User',
-        role: 'USER',
+        id: "user-id",
+        email: "newuser@bisnis.co.id",
+        name: "New User",
+        role: "USER",
         isActive: true,
       };
 
@@ -129,15 +129,15 @@ describe('AuthController', () => {
       expect(mockAuthService.register).toHaveBeenCalledWith(registerDto);
     });
 
-    it('should throw error for duplicate email', async () => {
+    it("should throw error for duplicate email", async () => {
       const registerDto = {
-        email: 'admin@bisnis.co.id',
-        password: 'password123',
-        name: 'Test User',
+        email: "admin@bisnis.co.id",
+        password: "password123",
+        name: "Test User",
       };
 
       mockAuthService.register.mockRejectedValue(
-        new UnauthorizedException('Email sudah terdaftar'),
+        new UnauthorizedException("Email sudah terdaftar"),
       );
 
       await expect(controller.register(registerDto)).rejects.toThrow(
@@ -146,13 +146,13 @@ describe('AuthController', () => {
     });
   });
 
-  describe('getProfile', () => {
-    it('should return user profile', async () => {
+  describe("getProfile", () => {
+    it("should return user profile", async () => {
       const mockUser = {
-        id: 'user-id',
-        email: 'admin@bisnis.co.id',
-        name: 'Admin User',
-        role: 'ADMIN',
+        id: "user-id",
+        email: "admin@bisnis.co.id",
+        name: "Admin User",
+        role: "ADMIN",
       };
 
       const req = { user: mockUser };

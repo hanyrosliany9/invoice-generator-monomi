@@ -10,7 +10,7 @@ export interface Payment {
   confirmedAt?: string
   createdAt: string
   updatedAt: string
-  
+
   // Relations
   invoice?: {
     id: string
@@ -27,14 +27,14 @@ export interface Payment {
 export enum PaymentMethod {
   BANK_TRANSFER = 'BANK_TRANSFER',
   CASH = 'CASH',
-  OTHER = 'OTHER'
+  OTHER = 'OTHER',
 }
 
 export enum PaymentStatus {
   PENDING = 'PENDING',
   CONFIRMED = 'CONFIRMED',
   FAILED = 'FAILED',
-  REFUNDED = 'REFUNDED'
+  REFUNDED = 'REFUNDED',
 }
 
 export interface CreatePaymentRequest {

@@ -54,7 +54,6 @@ const { Option } = Select
 const { TextArea } = Input
 const { RangePicker } = DatePicker
 
-
 // interface ProjectTeamMember {
 //   id: string
 //   name: string
@@ -67,7 +66,7 @@ export const ProjectsPage: React.FC = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  
+
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [typeFilter, setTypeFilter] = useState<string>('')
@@ -81,20 +80,21 @@ export const ProjectsPage: React.FC = () => {
   // Export functionality
   const handleExport = useCallback(() => {
     message.info({
-      content: 'Fitur export proyek sedang dalam pengembangan. Data proyek akan dapat di-export dalam format CSV/Excel pada update mendatang.',
-      duration: 4
+      content:
+        'Fitur export proyek sedang dalam pengembangan. Data proyek akan dapat di-export dalam format CSV/Excel pada update mendatang.',
+      duration: 4,
     })
   }, [message])
 
   // Queries
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ['projects'],
-    queryFn: projectService.getProjects
+    queryFn: projectService.getProjects,
   })
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: clientService.getClients
+    queryFn: clientService.getClients,
   })
 
   // Mutations
@@ -105,7 +105,7 @@ export const ProjectsPage: React.FC = () => {
       setModalVisible(false)
       form.resetFields()
       message.success(t('messages.success.created', { item: 'Proyek' }))
-    }
+    },
   })
 
   const updateMutation = useMutation({
@@ -117,7 +117,7 @@ export const ProjectsPage: React.FC = () => {
       setEditingProject(null)
       form.resetFields()
       message.success(t('messages.success.updated', { item: 'Proyek' }))
-    }
+    },
   })
 
   const deleteMutation = useMutation({
@@ -125,7 +125,7 @@ export const ProjectsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       message.success(t('messages.success.deleted', { item: 'Proyek' }))
-    }
+    },
   })
 
   const bulkDeleteMutation = useMutation({
@@ -141,36 +141,47 @@ export const ProjectsPage: React.FC = () => {
     onError: () => {
       setBatchLoading(false)
       message.error('Gagal menghapus proyek')
-    }
+    },
   })
 
   const bulkUpdateStatusMutation = useMutation({
-    mutationFn: async ({ ids, status }: { ids: string[], status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD' }) => {
-      await Promise.all(ids.map(id => projectService.updateProject(id, { status })))
+    mutationFn: async ({
+      ids,
+      status,
+    }: {
+      ids: string[]
+      status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
+    }) => {
+      await Promise.all(
+        ids.map(id => projectService.updateProject(id, { status }))
+      )
     },
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       setSelectedRowKeys([])
       setBatchLoading(false)
-      const statusText = {
-        'PLANNING': 'perencanaan',
-        'IN_PROGRESS': 'sedang berjalan',
-        'COMPLETED': 'selesai',
-        'CANCELLED': 'dibatalkan',
-        'ON_HOLD': 'ditahan'
-      }[status] || status
-      message.success(`Berhasil mengubah status ${selectedRowKeys.length} proyek menjadi ${statusText}`)
+      const statusText =
+        {
+          PLANNING: 'perencanaan',
+          IN_PROGRESS: 'sedang berjalan',
+          COMPLETED: 'selesai',
+          CANCELLED: 'dibatalkan',
+          ON_HOLD: 'ditahan',
+        }[status] || status
+      message.success(
+        `Berhasil mengubah status ${selectedRowKeys.length} proyek menjadi ${statusText}`
+      )
     },
     onError: () => {
       setBatchLoading(false)
       message.error('Gagal mengubah status proyek')
-    }
+    },
   })
 
   // Handle URL parameters for direct navigation
   useEffect(() => {
     // Handle viewProject query parameter (navigate to specific project detail page)
-    const viewProjectId = searchParams.get("projectId")
+    const viewProjectId = searchParams.get('projectId')
     if (viewProjectId) {
       // Navigate to dedicated project detail page
       navigate(`/projects/${viewProjectId}`, { replace: true })
@@ -178,7 +189,7 @@ export const ProjectsPage: React.FC = () => {
   }, [searchParams, projects, navigate])
 
   // Handle clientId query parameter for filtering
-  const clientFilter = searchParams.get("clientId")
+  const clientFilter = searchParams.get('clientId')
   const [filteredByClient, setFilteredByClient] = useState<string | null>(null)
 
   useEffect(() => {
@@ -192,13 +203,15 @@ export const ProjectsPage: React.FC = () => {
   // Filtered data
   const filteredProjects = safeArray(projects).filter(project => {
     const searchLower = safeString(searchText).toLowerCase()
-    const matchesSearch = safeString(project?.number).toLowerCase().includes(searchLower) ||
-                         safeString(project?.description).toLowerCase().includes(searchLower) ||
-                         safeString(project?.client?.name).toLowerCase().includes(searchLower) ||
-                         safeString(project?.client?.company).toLowerCase().includes(searchLower)
+    const matchesSearch =
+      safeString(project?.number).toLowerCase().includes(searchLower) ||
+      safeString(project?.description).toLowerCase().includes(searchLower) ||
+      safeString(project?.client?.name).toLowerCase().includes(searchLower) ||
+      safeString(project?.client?.company).toLowerCase().includes(searchLower)
     const matchesStatus = !statusFilter || project?.status === statusFilter
     const matchesType = !typeFilter || project?.type === typeFilter
-    const matchesClient = !filteredByClient || project?.clientId === filteredByClient
+    const matchesClient =
+      !filteredByClient || project?.clientId === filteredByClient
     return matchesSearch && matchesStatus && matchesType && matchesClient
   })
 
@@ -212,10 +225,22 @@ export const ProjectsPage: React.FC = () => {
     cancelled: safeProjects.filter(p => p?.status === 'CANCELLED').length,
     production: safeProjects.filter(p => p?.type === 'PRODUCTION').length,
     socialMedia: safeProjects.filter(p => p?.type === 'SOCIAL_MEDIA').length,
-    totalBudget: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice), 0),
-    totalActual: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice), 0),
-    totalRevenue: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice), 0),
-    totalPending: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice), 0)
+    totalBudget: safeProjects.reduce(
+      (sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice),
+      0
+    ),
+    totalActual: safeProjects.reduce(
+      (sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice),
+      0
+    ),
+    totalRevenue: safeProjects.reduce(
+      (sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice),
+      0
+    ),
+    totalPending: safeProjects.reduce(
+      (sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice),
+      0
+    ),
   }
 
   const getStatusColor = (status: string) => {
@@ -223,7 +248,7 @@ export const ProjectsPage: React.FC = () => {
       planning: 'blue',
       inProgress: 'orange',
       completed: 'green',
-      cancelled: 'red'
+      cancelled: 'red',
     }
     return colors[status as keyof typeof colors] || 'default'
   }
@@ -233,7 +258,7 @@ export const ProjectsPage: React.FC = () => {
       planning: <CalendarOutlined />,
       inProgress: <PlayCircleOutlined />,
       completed: <CheckCircleOutlined />,
-      cancelled: <StopOutlined />
+      cancelled: <StopOutlined />,
     }
     return icons[status as keyof typeof icons] || <ClockCircleOutlined />
   }
@@ -254,8 +279,11 @@ export const ProjectsPage: React.FC = () => {
   }
 
   const isProjectOverdue = (project: Project) => {
-    return project.status !== 'COMPLETED' && project.status !== 'CANCELLED' && 
-           dayjs().isAfter(dayjs(project.endDate))
+    return (
+      project.status !== 'COMPLETED' &&
+      project.status !== 'CANCELLED' &&
+      dayjs().isAfter(dayjs(project.endDate))
+    )
   }
 
   const getDaysRemaining = (endDate: string) => {
@@ -263,9 +291,12 @@ export const ProjectsPage: React.FC = () => {
   }
 
   // Navigation function for clickable table links
-  const navigateToClient = useCallback((clientId: string) => {
-    navigate(`/clients?clientId=${clientId}`)
-  }, [navigate])
+  const navigateToClient = useCallback(
+    (clientId: string) => {
+      navigate(`/clients?clientId=${clientId}`)
+    },
+    [navigate]
+  )
 
   const handleCreate = () => {
     navigate('/projects/new')
@@ -289,7 +320,9 @@ export const ProjectsPage: React.FC = () => {
     bulkDeleteMutation.mutate(selectedRowKeys)
   }
 
-  const handleBulkStatusUpdate = (status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD') => {
+  const handleBulkStatusUpdate = (
+    status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
+  ) => {
     if (selectedRowKeys.length === 0) return
     setBatchLoading(true)
     bulkUpdateStatusMutation.mutate({ ids: selectedRowKeys, status })
@@ -303,7 +336,7 @@ export const ProjectsPage: React.FC = () => {
     const data = {
       ...values,
       startDate: values.dateRange[0].startOf('day').toISOString(),
-      endDate: values.dateRange[1].endOf('day').toISOString()
+      endDate: values.dateRange[1].endOf('day').toISOString(),
     }
     delete data.dateRange
 
@@ -329,21 +362,21 @@ export const ProjectsPage: React.FC = () => {
         key: 'view',
         icon: <EyeOutlined />,
         label: 'Lihat Detail',
-        onClick: () => handleView(project)
+        onClick: () => handleView(project),
       },
       {
         key: 'edit',
         icon: <EditOutlined />,
         label: 'Edit',
-        onClick: () => handleEdit(project)
+        onClick: () => handleEdit(project),
       },
       {
         key: 'delete',
         icon: <DeleteOutlined />,
         label: 'Hapus',
         danger: true,
-        onClick: () => handleDelete(project.id)
-      }
+        onClick: () => handleDelete(project.id),
+      },
     ]
   }
 
@@ -372,31 +405,32 @@ export const ProjectsPage: React.FC = () => {
       key: 'project',
       render: (_: any, project: Project) => (
         <div>
-          <div className="font-semibold">{project.number}</div>
-          <div className="text-sm text-gray-600">{project.description}</div>
-          <div className="mt-1">
+          <div className='font-semibold'>{project.number}</div>
+          <div className='text-sm text-gray-600'>{project.description}</div>
+          <div className='mt-1'>
             <Tag color={getTypeColor(project.type)}>
               {getTypeText(project.type)}
             </Tag>
           </div>
         </div>
       ),
-      sorter: (a: Project, b: Project) => a.number.localeCompare(b.number)
+      sorter: (a: Project, b: Project) => a.number.localeCompare(b.number),
     },
     {
       title: 'Klien',
       key: 'clientName',
       render: (_: any, project: Project) => (
-        <Button 
-          type="link" 
+        <Button
+          type='link'
           onClick={() => navigateToClient(project.client?.id || '')}
-          className="text-blue-600 hover:text-blue-800 p-0"
+          className='text-blue-600 hover:text-blue-800 p-0'
           disabled={!project.client?.id}
         >
           {project.client?.name || 'N/A'}
         </Button>
       ),
-      sorter: (a: Project, b: Project) => (a.client?.name || '').localeCompare(b.client?.name || '')
+      sorter: (a: Project, b: Project) =>
+        (a.client?.name || '').localeCompare(b.client?.name || ''),
     },
     {
       title: 'Progress',
@@ -407,7 +441,7 @@ export const ProjectsPage: React.FC = () => {
           const now = new Date()
           const startDate = new Date(project.startDate)
           const endDate = new Date(project.endDate)
-          
+
           // Base progress on status
           let statusProgress = 0
           switch (project.status) {
@@ -418,7 +452,10 @@ export const ProjectsPage: React.FC = () => {
               // Calculate based on time elapsed
               const totalDuration = endDate.getTime() - startDate.getTime()
               const elapsedDuration = now.getTime() - startDate.getTime()
-              const timeProgress = Math.min(Math.max((elapsedDuration / totalDuration) * 100, 10), 85)
+              const timeProgress = Math.min(
+                Math.max((elapsedDuration / totalDuration) * 100, 10),
+                85
+              )
               statusProgress = Math.round(timeProgress)
               break
             case 'COMPLETED':
@@ -433,38 +470,42 @@ export const ProjectsPage: React.FC = () => {
             default:
               statusProgress = 0
           }
-          
+
           return Math.min(Math.max(statusProgress, 0), 100)
         }
-        
+
         const progress = calculateProgress(project)
-        
+
         return (
           <div>
             <Progress
               percent={progress}
-              size="small"
+              size='small'
               strokeColor={getProgressColor(progress)}
             />
-            <div className="text-sm text-gray-500 mt-1">
-              {progress}%
-            </div>
+            <div className='text-sm text-gray-500 mt-1'>{progress}%</div>
           </div>
         )
       },
       sorter: (a: Project, b: Project) => {
         const getProgress = (project: Project) => {
           switch (project.status) {
-            case 'PLANNING': return 5
-            case 'IN_PROGRESS': return 50
-            case 'COMPLETED': return 100
-            case 'CANCELLED': return 0
-            case 'ON_HOLD': return 25
-            default: return 0
+            case 'PLANNING':
+              return 5
+            case 'IN_PROGRESS':
+              return 50
+            case 'COMPLETED':
+              return 100
+            case 'CANCELLED':
+              return 0
+            case 'ON_HOLD':
+              return 25
+            default:
+              return 0
           }
         }
         return getProgress(a) - getProgress(b)
-      }
+      },
     },
     {
       title: 'Status',
@@ -472,23 +513,29 @@ export const ProjectsPage: React.FC = () => {
       render: (_: any, project: Project) => {
         const getStatusText = (status: string) => {
           const statusMap = {
-            'PLANNING': 'Perencanaan',
-            'IN_PROGRESS': 'Berlangsung',
-            'COMPLETED': 'Selesai',
-            'CANCELLED': 'Dibatalkan',
-            'ON_HOLD': 'Ditahan'
+            PLANNING: 'Perencanaan',
+            IN_PROGRESS: 'Berlangsung',
+            COMPLETED: 'Selesai',
+            CANCELLED: 'Dibatalkan',
+            ON_HOLD: 'Ditahan',
           }
           return statusMap[status as keyof typeof statusMap] || status
         }
-        
+
         return (
           <div>
-            <Tag color={getStatusColor(project.status.toLowerCase())} icon={getStatusIcon(project.status.toLowerCase())}>
+            <Tag
+              color={getStatusColor(project.status.toLowerCase())}
+              icon={getStatusIcon(project.status.toLowerCase())}
+            >
               {getStatusText(project.status)}
             </Tag>
             {isProjectOverdue(project) && (
-              <div className="mt-1">
-                <Badge status="error" text={<span className="text-xs">Terlambat</span>} />
+              <div className='mt-1'>
+                <Badge
+                  status='error'
+                  text={<span className='text-xs'>Terlambat</span>}
+                />
               </div>
             )}
           </div>
@@ -499,9 +546,9 @@ export const ProjectsPage: React.FC = () => {
         { text: 'Berlangsung', value: 'IN_PROGRESS' },
         { text: 'Selesai', value: 'COMPLETED' },
         { text: 'Dibatalkan', value: 'CANCELLED' },
-        { text: 'Ditahan', value: 'ON_HOLD' }
+        { text: 'Ditahan', value: 'ON_HOLD' },
       ],
-      onFilter: (value: any, record: Project) => record.status === value
+      onFilter: (value: any, record: Project) => record.status === value,
     },
     {
       title: 'Timeline',
@@ -509,20 +556,26 @@ export const ProjectsPage: React.FC = () => {
       render: (_: any, project: Project) => {
         const daysRemaining = getDaysRemaining(project.endDate)
         const isOverdue = isProjectOverdue(project)
-        
+
         return (
-          <div className="text-sm">
+          <div className='text-sm'>
             <div>Mulai: {dayjs(project.startDate).format('DD/MM/YYYY')}</div>
             <div>Selesai: {dayjs(project.endDate).format('DD/MM/YYYY')}</div>
-            {project.status !== 'COMPLETED' && project.status !== 'CANCELLED' && (
-              <div className={`mt-1 ${isOverdue ? 'text-red-600' : 'text-gray-500'}`}>
-                {isOverdue ? `Terlambat ${Math.abs(daysRemaining)} hari` : `${daysRemaining} hari lagi`}
-              </div>
-            )}
+            {project.status !== 'COMPLETED' &&
+              project.status !== 'CANCELLED' && (
+                <div
+                  className={`mt-1 ${isOverdue ? 'text-red-600' : 'text-gray-500'}`}
+                >
+                  {isOverdue
+                    ? `Terlambat ${Math.abs(daysRemaining)} hari`
+                    : `${daysRemaining} hari lagi`}
+                </div>
+              )}
           </div>
         )
       },
-      sorter: (a: Project, b: Project) => dayjs(a.endDate).unix() - dayjs(b.endDate).unix()
+      sorter: (a: Project, b: Project) =>
+        dayjs(a.endDate).unix() - dayjs(b.endDate).unix(),
     },
     {
       title: 'Nilai Proyek',
@@ -531,23 +584,28 @@ export const ProjectsPage: React.FC = () => {
         const budget = safeNumber(project.basePrice || project.basePrice || 0)
         const totalRevenue = safeNumber(project.totalRevenue || 0)
         const pendingAmount = Math.max(budget - totalRevenue, 0)
-        
+
         return (
-          <div className="text-sm">
-            <div>Nilai: <Text strong>{formatIDR(budget)}</Text></div>
-            <div>Aktual: <Text strong>{formatIDR(budget)}</Text></div>
-            <div className="mt-1">
-              <Text type="success">Dibayar: {formatIDR(totalRevenue)}</Text>
+          <div className='text-sm'>
+            <div>
+              Nilai: <Text strong>{formatIDR(budget)}</Text>
+            </div>
+            <div>
+              Aktual: <Text strong>{formatIDR(budget)}</Text>
+            </div>
+            <div className='mt-1'>
+              <Text type='success'>Dibayar: {formatIDR(totalRevenue)}</Text>
             </div>
             {pendingAmount > 0 && (
               <div>
-                <Text type="warning">Pending: {formatIDR(pendingAmount)}</Text>
+                <Text type='warning'>Pending: {formatIDR(pendingAmount)}</Text>
               </div>
             )}
           </div>
         )
       },
-      sorter: (a: Project, b: Project) => (a.basePrice || 0) - (b.basePrice || 0)
+      sorter: (a: Project, b: Project) =>
+        (a.basePrice || 0) - (b.basePrice || 0),
     },
     {
       title: 'Aksi',
@@ -557,118 +615,141 @@ export const ProjectsPage: React.FC = () => {
         <Dropdown
           menu={{ items: getActionMenuItems(project) }}
           trigger={['click']}
-          placement="bottomRight"
+          placement='bottomRight'
         >
           <Button icon={<MoreOutlined />} />
         </Dropdown>
-      )
-    }
+      ),
+    },
   ]
 
   return (
     <div>
-      <div className="mb-6">
+      <div className='mb-6'>
         <Title level={2}>{t('projects.title')}</Title>
-        
-        
+
         {/* Statistics */}
-        <Row gutter={[24, 24]} className="mb-6">
+        <Row gutter={[24, 24]} className='mb-6'>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
-            }}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              }}
+            >
               <Statistic
-                title="Total Proyek"
+                title='Total Proyek'
                 value={stats.total}
-                prefix={<ProjectOutlined style={{ 
-                  fontSize: '24px', 
-                  color: '#f59e0b',
-                  background: 'rgba(245, 158, 11, 0.1)',
-                  padding: '8px',
-                  borderRadius: '12px'
-                }} />}
-                valueStyle={{ 
-                  color: '#1e293b', 
-                  fontSize: '28px', 
-                  fontWeight: 700 
+                prefix={
+                  <ProjectOutlined
+                    style={{
+                      fontSize: '24px',
+                      color: '#f59e0b',
+                      background: 'rgba(245, 158, 11, 0.1)',
+                      padding: '8px',
+                      borderRadius: '12px',
+                    }}
+                  />
+                }
+                valueStyle={{
+                  color: '#1e293b',
+                  fontSize: '28px',
+                  fontWeight: 700,
                 }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
-            }}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              }}
+            >
               <Statistic
-                title="Berlangsung"
+                title='Berlangsung'
                 value={stats.inProgress}
-                prefix={<PlayCircleOutlined style={{ 
-                  fontSize: '24px', 
-                  color: '#fa8c16',
-                  background: 'rgba(250, 140, 22, 0.1)',
-                  padding: '8px',
-                  borderRadius: '12px'
-                }} />}
-                valueStyle={{ 
-                  color: '#1e293b', 
-                  fontSize: '28px', 
-                  fontWeight: 700 
+                prefix={
+                  <PlayCircleOutlined
+                    style={{
+                      fontSize: '24px',
+                      color: '#fa8c16',
+                      background: 'rgba(250, 140, 22, 0.1)',
+                      padding: '8px',
+                      borderRadius: '12px',
+                    }}
+                  />
+                }
+                valueStyle={{
+                  color: '#1e293b',
+                  fontSize: '28px',
+                  fontWeight: 700,
                 }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
-            }}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              }}
+            >
               <Statistic
-                title="Selesai"
+                title='Selesai'
                 value={stats.completed}
-                prefix={<CheckCircleOutlined style={{ 
-                  fontSize: '24px', 
-                  color: '#52c41a',
-                  background: 'rgba(82, 196, 26, 0.1)',
-                  padding: '8px',
-                  borderRadius: '12px'
-                }} />}
-                valueStyle={{ 
-                  color: '#1e293b', 
-                  fontSize: '28px', 
-                  fontWeight: 700 
+                prefix={
+                  <CheckCircleOutlined
+                    style={{
+                      fontSize: '24px',
+                      color: '#52c41a',
+                      background: 'rgba(82, 196, 26, 0.1)',
+                      padding: '8px',
+                      borderRadius: '12px',
+                    }}
+                  />
+                }
+                valueStyle={{
+                  color: '#1e293b',
+                  fontSize: '28px',
+                  fontWeight: 700,
                 }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
-            }}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              }}
+            >
               <Statistic
-                title="Perencanaan"
+                title='Perencanaan'
                 value={stats.planning}
-                prefix={<CalendarOutlined style={{ 
-                  fontSize: '24px', 
-                  color: '#1890ff',
-                  background: 'rgba(24, 144, 255, 0.1)',
-                  padding: '8px',
-                  borderRadius: '12px'
-                }} />}
-                valueStyle={{ 
-                  color: '#1e293b', 
-                  fontSize: '28px', 
-                  fontWeight: 700 
+                prefix={
+                  <CalendarOutlined
+                    style={{
+                      fontSize: '24px',
+                      color: '#1890ff',
+                      background: 'rgba(24, 144, 255, 0.1)',
+                      padding: '8px',
+                      borderRadius: '12px',
+                    }}
+                  />
+                }
+                valueStyle={{
+                  color: '#1e293b',
+                  fontSize: '28px',
+                  fontWeight: 700,
                 }}
               />
             </Card>
@@ -676,105 +757,129 @@ export const ProjectsPage: React.FC = () => {
         </Row>
 
         {/* Type Statistics */}
-        <Row gutter={[24, 24]} className="mb-6">
+        <Row gutter={[24, 24]} className='mb-6'>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
-            }}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              }}
+            >
               <Statistic
-                title="Produksi"
+                title='Produksi'
                 value={stats.production}
-                prefix={<TeamOutlined style={{ 
-                  fontSize: '24px', 
-                  color: '#722ed1',
-                  background: 'rgba(114, 46, 209, 0.1)',
-                  padding: '8px',
-                  borderRadius: '12px'
-                }} />}
-                valueStyle={{ 
-                  color: '#1e293b', 
-                  fontSize: '28px', 
-                  fontWeight: 700 
+                prefix={
+                  <TeamOutlined
+                    style={{
+                      fontSize: '24px',
+                      color: '#722ed1',
+                      background: 'rgba(114, 46, 209, 0.1)',
+                      padding: '8px',
+                      borderRadius: '12px',
+                    }}
+                  />
+                }
+                valueStyle={{
+                  color: '#1e293b',
+                  fontSize: '28px',
+                  fontWeight: 700,
                 }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
-            }}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              }}
+            >
               <Statistic
-                title="Media Sosial"
+                title='Media Sosial'
                 value={stats.socialMedia}
-                prefix={<BarChartOutlined style={{ 
-                  fontSize: '24px', 
-                  color: '#13c2c2',
-                  background: 'rgba(19, 194, 194, 0.1)',
-                  padding: '8px',
-                  borderRadius: '12px'
-                }} />}
-                valueStyle={{ 
-                  color: '#1e293b', 
-                  fontSize: '28px', 
-                  fontWeight: 700 
+                prefix={
+                  <BarChartOutlined
+                    style={{
+                      fontSize: '24px',
+                      color: '#13c2c2',
+                      background: 'rgba(19, 194, 194, 0.1)',
+                      padding: '8px',
+                      borderRadius: '12px',
+                    }}
+                  />
+                }
+                valueStyle={{
+                  color: '#1e293b',
+                  fontSize: '28px',
+                  fontWeight: 700,
                 }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{
-              borderRadius: '20px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-              background: 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)',
-              color: '#ffffff'
-            }}>
+            <Card
+              style={{
+                borderRadius: '20px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+                background: 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)',
+                color: '#ffffff',
+              }}
+            >
               <Statistic
-                title="Budget Total"
+                title='Budget Total'
                 value={formatIDR(stats.totalBudget)}
-                prefix={<DollarOutlined style={{ 
-                  fontSize: '32px', 
+                prefix={
+                  <DollarOutlined
+                    style={{
+                      fontSize: '32px',
+                      color: '#ffffff',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      padding: '12px',
+                      borderRadius: '16px',
+                    }}
+                  />
+                }
+                valueStyle={{
                   color: '#ffffff',
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  padding: '12px',
-                  borderRadius: '16px'
-                }} />}
-                valueStyle={{ 
-                  color: '#ffffff', 
-                  fontSize: '32px', 
-                  fontWeight: 800 
+                  fontSize: '32px',
+                  fontWeight: 800,
                 }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{
-              borderRadius: '20px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: '#ffffff'
-            }}>
+            <Card
+              style={{
+                borderRadius: '20px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#ffffff',
+              }}
+            >
               <Statistic
-                title="Pendapatan"
+                title='Pendapatan'
                 value={formatIDR(stats.totalRevenue)}
-                prefix={<DollarOutlined style={{ 
-                  fontSize: '32px', 
+                prefix={
+                  <DollarOutlined
+                    style={{
+                      fontSize: '32px',
+                      color: '#ffffff',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      padding: '12px',
+                      borderRadius: '16px',
+                    }}
+                  />
+                }
+                valueStyle={{
                   color: '#ffffff',
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  padding: '12px',
-                  borderRadius: '16px'
-                }} />}
-                valueStyle={{ 
-                  color: '#ffffff', 
-                  fontSize: '32px', 
-                  fontWeight: 800 
+                  fontSize: '32px',
+                  fontWeight: 800,
                 }}
               />
             </Card>
@@ -783,52 +888,64 @@ export const ProjectsPage: React.FC = () => {
 
         {/* Bulk Actions Toolbar */}
         {selectedRowKeys.length > 0 && (
-          <Card className="mb-4 border-blue-200 bg-blue-50" size="small">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <Text strong className="text-blue-700">
+          <Card className='mb-4 border-blue-200 bg-blue-50' size='small'>
+            <div className='flex justify-between items-center'>
+              <div className='flex items-center space-x-4'>
+                <Text strong className='text-blue-700'>
                   {selectedRowKeys.length} proyek dipilih
                 </Text>
-                <div className="flex items-center space-x-2">
+                <div className='flex items-center space-x-2'>
                   <Button
-                    size="small"
-                    type="primary"
+                    size='small'
+                    type='primary'
                     icon={<PlayCircleOutlined />}
                     loading={batchLoading}
                     onClick={() => handleBulkStatusUpdate('IN_PROGRESS')}
                     disabled={selectedRowKeys.length === 0}
                   >
-                    Mulai ({selectedRowKeys.filter(id => {
-                      const project = filteredProjects.find(p => p.id === id)
-                      return project?.status === 'PLANNING'
-                    }).length})
+                    Mulai (
+                    {
+                      selectedRowKeys.filter(id => {
+                        const project = filteredProjects.find(p => p.id === id)
+                        return project?.status === 'PLANNING'
+                      }).length
+                    }
+                    )
                   </Button>
                   <Button
-                    size="small"
+                    size='small'
                     icon={<CheckCircleOutlined />}
                     loading={batchLoading}
                     onClick={() => handleBulkStatusUpdate('COMPLETED')}
                     disabled={selectedRowKeys.length === 0}
                   >
-                    Selesaikan ({selectedRowKeys.filter(id => {
-                      const project = filteredProjects.find(p => p.id === id)
-                      return project?.status === 'IN_PROGRESS'
-                    }).length})
+                    Selesaikan (
+                    {
+                      selectedRowKeys.filter(id => {
+                        const project = filteredProjects.find(p => p.id === id)
+                        return project?.status === 'IN_PROGRESS'
+                      }).length
+                    }
+                    )
                   </Button>
                   <Button
-                    size="small"
+                    size='small'
                     icon={<StopOutlined />}
                     loading={batchLoading}
                     onClick={() => handleBulkStatusUpdate('ON_HOLD')}
                     disabled={selectedRowKeys.length === 0}
                   >
-                    Tahan ({selectedRowKeys.filter(id => {
-                      const project = filteredProjects.find(p => p.id === id)
-                      return project?.status === 'IN_PROGRESS'
-                    }).length})
+                    Tahan (
+                    {
+                      selectedRowKeys.filter(id => {
+                        const project = filteredProjects.find(p => p.id === id)
+                        return project?.status === 'IN_PROGRESS'
+                      }).length
+                    }
+                    )
                   </Button>
                   <Button
-                    size="small"
+                    size='small'
                     danger
                     icon={<DeleteOutlined />}
                     loading={batchLoading}
@@ -840,10 +957,10 @@ export const ProjectsPage: React.FC = () => {
                 </div>
               </div>
               <Button
-                size="small"
-                type="text"
+                size='small'
+                type='text'
                 onClick={handleClearSelection}
-                className="text-gray-500 hover:text-gray-700"
+                className='text-gray-500 hover:text-gray-700'
               >
                 Batal
               </Button>
@@ -852,52 +969,52 @@ export const ProjectsPage: React.FC = () => {
         )}
 
         {/* Controls */}
-        <div className="flex justify-between items-center mb-4">
+        <div className='flex justify-between items-center mb-4'>
           <Space>
             <Input
-              placeholder="Cari proyek..."
+              placeholder='Cari proyek...'
               prefix={<SearchOutlined />}
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={e => setSearchText(e.target.value)}
               style={{ width: 300 }}
             />
             <Select
-              data-testid="project-filter-button"
-              placeholder="Filter status"
+              data-testid='project-filter-button'
+              placeholder='Filter status'
               value={statusFilter}
               onChange={setStatusFilter}
               style={{ width: 150 }}
               allowClear
             >
-              <Option value="PLANNING">Perencanaan</Option>
-              <Option value="IN_PROGRESS">Berlangsung</Option>
-              <Option value="COMPLETED">Selesai</Option>
-              <Option value="CANCELLED">Dibatalkan</Option>
+              <Option value='PLANNING'>Perencanaan</Option>
+              <Option value='IN_PROGRESS'>Berlangsung</Option>
+              <Option value='COMPLETED'>Selesai</Option>
+              <Option value='CANCELLED'>Dibatalkan</Option>
             </Select>
             <Select
-              data-testid="project-timeline-button"
-              placeholder="Filter tipe"
+              data-testid='project-timeline-button'
+              placeholder='Filter tipe'
               value={typeFilter}
               onChange={setTypeFilter}
               style={{ width: 150 }}
               allowClear
             >
-              <Option value="production">Produksi</Option>
-              <Option value="socialMedia">Media Sosial</Option>
+              <Option value='production'>Produksi</Option>
+              <Option value='socialMedia'>Media Sosial</Option>
             </Select>
           </Space>
-          
+
           <Space>
-            <Button 
-              data-testid="project-export-button" 
+            <Button
+              data-testid='project-export-button'
               icon={<ExportOutlined />}
               onClick={handleExport}
             >
               Export
             </Button>
             <Button
-              data-testid="create-project-button"
-              type="primary"
+              data-testid='create-project-button'
+              type='primary'
               icon={<PlusOutlined />}
               onClick={handleCreate}
             >
@@ -913,7 +1030,7 @@ export const ProjectsPage: React.FC = () => {
           columns={columns}
           dataSource={filteredProjects}
           loading={isLoading}
-          rowKey="id"
+          rowKey='id'
           rowSelection={rowSelection}
           pagination={{
             total: filteredProjects.length,
@@ -939,17 +1056,17 @@ export const ProjectsPage: React.FC = () => {
         width={800}
       >
         <Form
-          data-testid="project-form"
+          data-testid='project-form'
           form={form}
-          layout="vertical"
+          layout='vertical'
           onFinish={handleFormSubmit}
         >
           <Form.Item
-            name="clientId"
-            label="Klien"
+            name='clientId'
+            label='Klien'
             rules={[{ required: true, message: 'Pilih klien' }]}
           >
-            <Select placeholder="Pilih klien">
+            <Select placeholder='Pilih klien'>
               {safeArray(clients).map(client => (
                 <Option key={client.id} value={client.id}>
                   {client.name}
@@ -959,38 +1076,40 @@ export const ProjectsPage: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            name="description"
+            name='description'
             label={t('projects.description')}
-            rules={[{ required: true, message: 'Deskripsi proyek wajib diisi' }]}
+            rules={[
+              { required: true, message: 'Deskripsi proyek wajib diisi' },
+            ]}
           >
-            <Input placeholder="Deskripsi singkat proyek" />
+            <Input placeholder='Deskripsi singkat proyek' />
           </Form.Item>
 
           <Form.Item
-            name="type"
+            name='type'
             label={t('projects.type')}
             rules={[{ required: true, message: 'Pilih tipe proyek' }]}
           >
-            <Select placeholder="Pilih tipe proyek">
-              <Option value="PRODUCTION">Produksi</Option>
-              <Option value="SOCIAL_MEDIA">Media Sosial</Option>
+            <Select placeholder='Pilih tipe proyek'>
+              <Option value='PRODUCTION'>Produksi</Option>
+              <Option value='SOCIAL_MEDIA'>Media Sosial</Option>
             </Select>
           </Form.Item>
 
-          <Form.Item label="Produk & Harga">
-            <Form.List name="products">
+          <Form.Item label='Produk & Harga'>
+            <Form.List name='products'>
               {(fields, { add, remove }) => (
                 <div>
-                  {fields.map((field) => (
-                    <Card 
-                      key={field.key} 
-                      size="small" 
+                  {fields.map(field => (
+                    <Card
+                      key={field.key}
+                      size='small'
                       style={{ marginBottom: 8 }}
                       extra={
-                        <Button 
-                          type="text" 
-                          danger 
-                          size="small" 
+                        <Button
+                          type='text'
+                          danger
+                          size='small'
                           onClick={() => remove(field.name)}
                           icon={<DeleteOutlined />}
                         />
@@ -1001,34 +1120,52 @@ export const ProjectsPage: React.FC = () => {
                           <Form.Item
                             name={[field.name, 'name']}
                             fieldKey={[field.fieldKey ?? field.name, 'name']}
-                            label="Nama Produk"
-                            rules={[{ required: true, message: 'Nama produk wajib diisi' }]}
+                            label='Nama Produk'
+                            rules={[
+                              {
+                                required: true,
+                                message: 'Nama produk wajib diisi',
+                              },
+                            ]}
                           >
-                            <Input placeholder="Nama produk/layanan" />
+                            <Input placeholder='Nama produk/layanan' />
                           </Form.Item>
                         </Col>
                         <Col span={6}>
                           <Form.Item
                             name={[field.name, 'quantity']}
-                            fieldKey={[field.fieldKey ?? field.name, 'quantity']}
-                            label="Qty"
-                            rules={[{ required: true, message: 'Qty wajib diisi' }]}
+                            fieldKey={[
+                              field.fieldKey ?? field.name,
+                              'quantity',
+                            ]}
+                            label='Qty'
+                            rules={[
+                              { required: true, message: 'Qty wajib diisi' },
+                            ]}
                           >
-                            <InputNumber min={1} placeholder="1" style={{ width: '100%' }} />
+                            <InputNumber
+                              min={1}
+                              placeholder='1'
+                              style={{ width: '100%' }}
+                            />
                           </Form.Item>
                         </Col>
                         <Col span={6}>
                           <Form.Item
                             name={[field.name, 'price']}
                             fieldKey={[field.fieldKey ?? field.name, 'price']}
-                            label="Harga"
-                            rules={[{ required: true, message: 'Harga wajib diisi' }]}
+                            label='Harga'
+                            rules={[
+                              { required: true, message: 'Harga wajib diisi' },
+                            ]}
                           >
                             <InputNumber
                               style={{ width: '100%' }}
-                              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                              parser={(value) => value!.replace(/\./g, '')}
-                              placeholder="0"
+                              formatter={value =>
+                                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+                              }
+                              parser={value => value!.replace(/\./g, '')}
+                              placeholder='0'
                             />
                           </Form.Item>
                         </Col>
@@ -1036,15 +1173,23 @@ export const ProjectsPage: React.FC = () => {
                       <Form.Item
                         name={[field.name, 'description']}
                         fieldKey={[field.fieldKey ?? field.name, 'description']}
-                        label="Deskripsi"
-                        rules={[{ required: true, message: 'Deskripsi produk wajib diisi' }]}
+                        label='Deskripsi'
+                        rules={[
+                          {
+                            required: true,
+                            message: 'Deskripsi produk wajib diisi',
+                          },
+                        ]}
                       >
-                        <Input.TextArea rows={2} placeholder="Deskripsi produk/layanan" />
+                        <Input.TextArea
+                          rows={2}
+                          placeholder='Deskripsi produk/layanan'
+                        />
                       </Form.Item>
                     </Card>
                   ))}
                   <Button
-                    type="dashed"
+                    type='dashed'
                     onClick={() => add()}
                     block
                     icon={<PlusOutlined />}
@@ -1057,8 +1202,8 @@ export const ProjectsPage: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            name="dateRange"
-            label="Periode Proyek"
+            name='dateRange'
+            label='Periode Proyek'
             rules={[{ required: true, message: 'Pilih periode proyek' }]}
           >
             <RangePicker style={{ width: '100%' }} />
@@ -1067,42 +1212,36 @@ export const ProjectsPage: React.FC = () => {
           {editingProject && (
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item
-                  name="status"
-                  label="Status"
-                >
+                <Form.Item name='status' label='Status'>
                   <Select>
-                    <Option value="PLANNING">Perencanaan</Option>
-                    <Option value="IN_PROGRESS">Berlangsung</Option>
-                    <Option value="COMPLETED">Selesai</Option>
-                    <Option value="CANCELLED">Dibatalkan</Option>
+                    <Option value='PLANNING'>Perencanaan</Option>
+                    <Option value='IN_PROGRESS'>Berlangsung</Option>
+                    <Option value='COMPLETED'>Selesai</Option>
+                    <Option value='CANCELLED'>Dibatalkan</Option>
                   </Select>
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item
-                  name="progress"
-                  label="Progress (%)"
-                >
+                <Form.Item name='progress' label='Progress (%)'>
                   <InputNumber
                     style={{ width: '100%' }}
                     min={0}
                     max={100}
-                    placeholder="0"
+                    placeholder='0'
                   />
                 </Form.Item>
               </Col>
             </Row>
           )}
 
-          <Form.Item
-            name="notes"
-            label="Catatan"
-          >
-            <TextArea rows={3} placeholder="Catatan tambahan tentang proyek..." />
+          <Form.Item name='notes' label='Catatan'>
+            <TextArea
+              rows={3}
+              placeholder='Catatan tambahan tentang proyek...'
+            />
           </Form.Item>
 
-          <div className="flex justify-end space-x-2">
+          <div className='flex justify-end space-x-2'>
             <Button
               onClick={() => {
                 setModalVisible(false)
@@ -1113,8 +1252,8 @@ export const ProjectsPage: React.FC = () => {
               {t('common.cancel')}
             </Button>
             <Button
-              type="primary"
-              htmlType="submit"
+              type='primary'
+              htmlType='submit'
               loading={createMutation.isPending || updateMutation.isPending}
             >
               {t('common.save')}
@@ -1122,7 +1261,6 @@ export const ProjectsPage: React.FC = () => {
           </div>
         </Form>
       </Modal>
-
     </div>
   )
 }

@@ -25,7 +25,7 @@ const calculateHealthScore = (client: Client): HealthScoreBreakdown => {
     activeProjects: 0,
     recentTransactions: 0,
     paymentEfficiency: 0,
-    growthTrend: 0
+    growthTrend: 0,
   }
 
   // Active projects (0-20 points)
@@ -36,7 +36,8 @@ const calculateHealthScore = (client: Client): HealthScoreBreakdown => {
   }
 
   // Recent transactions (0-30 points)
-  const totalTransactions = (client.totalQuotations || 0) + (client.totalInvoices || 0)
+  const totalTransactions =
+    (client.totalQuotations || 0) + (client.totalInvoices || 0)
   if (totalTransactions > 0) {
     breakdown.recentTransactions = Math.min(30, totalTransactions * 3) // 3 points per transaction, max 30
     score += breakdown.recentTransactions
@@ -54,7 +55,10 @@ const calculateHealthScore = (client: Client): HealthScoreBreakdown => {
   const totalInvoices = client.totalInvoices || 0
   const overdueInvoices = client.overdueInvoices || 0
   if (totalInvoices > 0) {
-    const healthyRate = Math.max(0, (totalInvoices - overdueInvoices) / totalInvoices)
+    const healthyRate = Math.max(
+      0,
+      (totalInvoices - overdueInvoices) / totalInvoices
+    )
     breakdown.growthTrend = Math.round(healthyRate * 25) // Healthy invoice rate * 25 points
     score += breakdown.growthTrend
   } else if (totalTransactions > 0) {
@@ -82,45 +86,47 @@ const getHealthStatus = (score: number): string => {
 const HealthScore: React.FC<HealthScoreProps> = ({
   client,
   size = 'small',
-  className = ''
+  className = '',
 }) => {
   const { score, breakdown } = calculateHealthScore(client)
   const color = getHealthColor(score)
   const status = getHealthStatus(score)
-  
+
   const progressSize = size === 'large' ? 80 : 48
   const strokeWidth = size === 'large' ? 8 : 6
 
   const tooltipContent = (
-    <div className="space-y-1">
-      <div className="font-medium">Business Health Score: {score}/100</div>
-      <div className="text-xs space-y-1">
+    <div className='space-y-1'>
+      <div className='font-medium'>Business Health Score: {score}/100</div>
+      <div className='text-xs space-y-1'>
         <div>• Active Projects: {breakdown.activeProjects}/20</div>
         <div>• Recent Activity: {breakdown.recentTransactions}/30</div>
         <div>• Payment Efficiency: {breakdown.paymentEfficiency}/25</div>
         <div>• Business Health: {breakdown.growthTrend}/25</div>
       </div>
-      <div className="text-xs font-medium mt-2">Status: {status}</div>
+      <div className='text-xs font-medium mt-2'>Status: {status}</div>
     </div>
   )
 
   return (
     <div className={`flex items-center ${className}`}>
       <Tooltip title={tooltipContent}>
-        <div className="relative">
+        <div className='relative'>
           <Progress
-            type="circle"
+            type='circle'
             percent={score}
             size={progressSize}
             strokeColor={color}
             strokeWidth={strokeWidth}
             format={() => (
-              <div className="text-center">
-                <div className={`font-bold ${size === 'large' ? 'text-lg' : 'text-xs'}`}>
+              <div className='text-center'>
+                <div
+                  className={`font-bold ${size === 'large' ? 'text-lg' : 'text-xs'}`}
+                >
                   {score}
                 </div>
                 {size === 'large' && (
-                  <div className="text-xs text-gray-500">Score</div>
+                  <div className='text-xs text-gray-500'>Score</div>
                 )}
               </div>
             )}
@@ -128,13 +134,11 @@ const HealthScore: React.FC<HealthScoreProps> = ({
         </div>
       </Tooltip>
       {size === 'large' && (
-        <div className="ml-3">
-          <div className="text-sm font-medium" style={{ color }}>
+        <div className='ml-3'>
+          <div className='text-sm font-medium' style={{ color }}>
             {status}
           </div>
-          <div className="text-xs text-gray-500">
-            Health Score
-          </div>
+          <div className='text-xs text-gray-500'>Health Score</div>
         </div>
       )}
     </div>

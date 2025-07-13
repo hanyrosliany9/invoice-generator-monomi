@@ -28,7 +28,7 @@ class ChartErrorBoundary extends Component<Props, State> {
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ChartErrorBoundary caught an error:', error, errorInfo)
-    
+
     // Call custom error handler if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo)
@@ -45,23 +45,35 @@ class ChartErrorBoundary extends Component<Props, State> {
   public override render() {
     if (this.state.hasError) {
       return (
-        <div style={{ 
-          padding: '24px', 
-          textAlign: 'center', 
-          height: '300px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          border: '1px dashed #d9d9d9',
-          borderRadius: '8px',
-          backgroundColor: '#fafafa'
-        }}>
+        <div
+          style={{
+            padding: '24px',
+            textAlign: 'center',
+            height: '300px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            border: '1px dashed #d9d9d9',
+            borderRadius: '8px',
+            backgroundColor: '#fafafa',
+          }}
+        >
           <Empty
-            image={<BarChartOutlined style={{ fontSize: '48px', color: '#8c8c8c' }} />}
+            image={
+              <BarChartOutlined
+                style={{ fontSize: '48px', color: '#8c8c8c' }}
+              />
+            }
             description={
               <div>
-                <div style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
+                <div
+                  style={{
+                    marginBottom: '8px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                  }}
+                >
                   Grafik {this.props.chartType || 'Tidak'} Dapat Dimuat
                 </div>
                 <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
@@ -70,11 +82,11 @@ class ChartErrorBoundary extends Component<Props, State> {
               </div>
             }
           >
-            <Button 
-              type="primary" 
-              icon={<ReloadOutlined />} 
+            <Button
+              type='primary'
+              icon={<ReloadOutlined />}
               onClick={this.handleRetry}
-              size="small"
+              size='small'
             >
               Coba Lagi
             </Button>

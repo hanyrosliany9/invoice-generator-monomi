@@ -1,15 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { UpdateUserSettingsDto } from './dto/update-user-settings.dto';
-import { UpdateSystemSettingsDto } from './dto/update-system-settings.dto';
-import { UpdateCompanySettingsDto } from './dto/update-company-settings.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { UpdateUserSettingsDto } from "./dto/update-user-settings.dto";
+import { UpdateSystemSettingsDto } from "./dto/update-system-settings.dto";
+import { UpdateCompanySettingsDto } from "./dto/update-company-settings.dto";
 
 @Injectable()
 export class SettingsService {
   constructor(private prisma: PrismaService) {}
 
   async getUserSettings(userId: string) {
-    console.log('getUserSettings called with userId:', userId);
+    console.log("getUserSettings called with userId:", userId);
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -24,7 +24,7 @@ export class SettingsService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     // Get or create user preferences
@@ -33,11 +33,11 @@ export class SettingsService {
       update: {},
       create: {
         userId,
-        timezone: 'Asia/Jakarta',
-        language: 'id',
+        timezone: "Asia/Jakarta",
+        language: "id",
         emailNotifications: true,
         pushNotifications: true,
-        theme: 'light',
+        theme: "light",
       },
     });
 
@@ -71,11 +71,11 @@ export class SettingsService {
       },
       create: {
         userId,
-        timezone: updateData.timezone || 'Asia/Jakarta',
-        language: updateData.language || 'id',
+        timezone: updateData.timezone || "Asia/Jakarta",
+        language: updateData.language || "id",
         emailNotifications: updateData.emailNotifications ?? true,
         pushNotifications: updateData.pushNotifications ?? true,
-        theme: updateData.theme || 'light',
+        theme: updateData.theme || "light",
       },
     });
 
@@ -88,16 +88,16 @@ export class SettingsService {
     if (!settings) {
       settings = await this.prisma.companySettings.create({
         data: {
-          companyName: 'PT Teknologi Indonesia',
-          address: 'Jl. Sudirman No. 123, Jakarta Pusat',
-          phone: '021-1234567',
-          email: 'info@teknologi.co.id',
-          website: 'https://teknologi.co.id',
-          taxNumber: '01.234.567.8-901.000',
-          currency: 'IDR',
-          bankBCA: '1234567890',
-          bankMandiri: '0987654321',
-          bankBNI: '1122334455',
+          companyName: "PT Teknologi Indonesia",
+          address: "Jl. Sudirman No. 123, Jakarta Pusat",
+          phone: "021-1234567",
+          email: "info@teknologi.co.id",
+          website: "https://teknologi.co.id",
+          taxNumber: "01.234.567.8-901.000",
+          currency: "IDR",
+          bankBCA: "1234567890",
+          bankMandiri: "0987654321",
+          bankBNI: "1122334455",
         },
       });
     }
@@ -107,10 +107,10 @@ export class SettingsService {
 
   async updateCompanySettings(updateData: UpdateCompanySettingsDto) {
     const settings = await this.prisma.companySettings.upsert({
-      where: { id: 'default' },
+      where: { id: "default" },
       update: updateData,
       create: {
-        id: 'default',
+        id: "default",
         ...updateData,
       },
     });
@@ -124,15 +124,15 @@ export class SettingsService {
     if (!settings) {
       settings = await this.prisma.systemSettings.create({
         data: {
-          defaultPaymentTerms: 'NET 30',
+          defaultPaymentTerms: "NET 30",
           materaiThreshold: 5000000,
-          invoicePrefix: 'INV-',
-          quotationPrefix: 'QT-',
+          invoicePrefix: "INV-",
+          quotationPrefix: "QT-",
           autoBackup: true,
-          backupFrequency: 'daily',
-          backupTime: '02:00',
+          backupFrequency: "daily",
+          backupTime: "02:00",
           autoMateraiReminder: true,
-          defaultCurrency: 'IDR',
+          defaultCurrency: "IDR",
         },
       });
     }
@@ -142,10 +142,10 @@ export class SettingsService {
 
   async updateSystemSettings(updateData: UpdateSystemSettingsDto) {
     const settings = await this.prisma.systemSettings.upsert({
-      where: { id: 'default' },
+      where: { id: "default" },
       update: updateData,
       create: {
-        id: 'default',
+        id: "default",
         ...updateData,
       },
     });
@@ -162,10 +162,12 @@ export class SettingsService {
       },
     });
 
-    return preferences || {
-      emailNotifications: true,
-      pushNotifications: true,
-    };
+    return (
+      preferences || {
+        emailNotifications: true,
+        pushNotifications: true,
+      }
+    );
   }
 
   async updateNotificationSettings(userId: string, notificationData: any) {
@@ -179,9 +181,9 @@ export class SettingsService {
         userId,
         emailNotifications: notificationData.emailNotifications ?? true,
         pushNotifications: notificationData.pushNotifications ?? true,
-        timezone: 'Asia/Jakarta',
-        language: 'id',
-        theme: 'light',
+        timezone: "Asia/Jakarta",
+        language: "id",
+        theme: "light",
       },
     });
 
@@ -192,22 +194,22 @@ export class SettingsService {
     await this.prisma.userPreferences.upsert({
       where: { userId },
       update: {
-        timezone: 'Asia/Jakarta',
-        language: 'id',
+        timezone: "Asia/Jakarta",
+        language: "id",
         emailNotifications: true,
         pushNotifications: true,
-        theme: 'light',
+        theme: "light",
       },
       create: {
         userId,
-        timezone: 'Asia/Jakarta',
-        language: 'id',
+        timezone: "Asia/Jakarta",
+        language: "id",
         emailNotifications: true,
         pushNotifications: true,
-        theme: 'light',
+        theme: "light",
       },
     });
 
-    return { message: 'Settings reset to default values' };
+    return { message: "Settings reset to default values" };
   }
 }

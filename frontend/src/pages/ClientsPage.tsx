@@ -16,7 +16,7 @@ import {
   Statistic,
   Table,
   Tag,
-  Typography
+  Typography,
 } from 'antd'
 import {
   BankOutlined,
@@ -36,14 +36,17 @@ import {
   ShopOutlined,
   TeamOutlined,
   UploadOutlined,
-  UserOutlined
+  UserOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { formatIDR, safeArray, safeNumber, safeString } from '../utils/currency'
 import { Client, clientService } from '../services/clients'
-import { EntityBreadcrumb, RelatedEntitiesPanel } from '../components/navigation'
+import {
+  EntityBreadcrumb,
+  RelatedEntitiesPanel,
+} from '../components/navigation'
 import WorkflowIndicator from '../components/ui/WorkflowIndicator'
 import MetricBadge from '../components/ui/MetricBadge'
 import RevenueIndicator from '../components/ui/RevenueIndicator'
@@ -54,13 +57,12 @@ const { Title, Text } = Typography
 const { Option } = Select
 const { TextArea } = Input
 
-
 export const ClientsPage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  
+
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [modalVisible, setModalVisible] = useState(false)
@@ -73,23 +75,25 @@ export const ClientsPage: React.FC = () => {
   // Export functionality
   const handleExport = useCallback(() => {
     message.info({
-      content: 'Fitur export sedang dalam pengembangan. Data klien akan dapat di-export dalam format CSV/Excel pada update mendatang.',
-      duration: 4
+      content:
+        'Fitur export sedang dalam pengembangan. Data klien akan dapat di-export dalam format CSV/Excel pada update mendatang.',
+      duration: 4,
     })
   }, [message])
 
   // Import functionality
   const handleImport = useCallback(() => {
     message.info({
-      content: 'Fitur import sedang dalam pengembangan. Import data klien dari CSV/Excel akan tersedia pada update mendatang.',
-      duration: 4
+      content:
+        'Fitur import sedang dalam pengembangan. Import data klien dari CSV/Excel akan tersedia pada update mendatang.',
+      duration: 4,
     })
   }, [message])
 
   // Queries
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ['clients'],
-    queryFn: clientService.getClients
+    queryFn: clientService.getClients,
   })
 
   // Mutations
@@ -100,7 +104,7 @@ export const ClientsPage: React.FC = () => {
       setModalVisible(false)
       form.resetFields()
       message.success(t('messages.success.created', { item: 'Klien' }))
-    }
+    },
   })
 
   const updateMutation = useMutation({
@@ -112,7 +116,7 @@ export const ClientsPage: React.FC = () => {
       setEditingClient(null)
       form.resetFields()
       message.success(t('messages.success.updated', { item: 'Klien' }))
-    }
+    },
   })
 
   const deleteMutation = useMutation({
@@ -120,7 +124,7 @@ export const ClientsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       message.success(t('messages.success.deleted', { item: 'Klien' }))
-    }
+    },
   })
 
   const bulkDeleteMutation = useMutation({
@@ -136,30 +140,40 @@ export const ClientsPage: React.FC = () => {
     onError: () => {
       setBatchLoading(false)
       message.error('Gagal menghapus klien')
-    }
+    },
   })
 
   const bulkUpdateStatusMutation = useMutation({
-    mutationFn: async ({ ids, status }: { ids: string[], status: 'active' | 'inactive' }) => {
-      await Promise.all(ids.map(id => clientService.updateClient(id, { status })))
+    mutationFn: async ({
+      ids,
+      status,
+    }: {
+      ids: string[]
+      status: 'active' | 'inactive'
+    }) => {
+      await Promise.all(
+        ids.map(id => clientService.updateClient(id, { status }))
+      )
     },
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       setSelectedRowKeys([])
       setBatchLoading(false)
       const statusText = status === 'active' ? 'aktif' : 'tidak aktif'
-      message.success(`Berhasil mengubah status ${selectedRowKeys.length} klien menjadi ${statusText}`)
+      message.success(
+        `Berhasil mengubah status ${selectedRowKeys.length} klien menjadi ${statusText}`
+      )
     },
     onError: () => {
       setBatchLoading(false)
       message.error('Gagal mengubah status klien')
-    }
+    },
   })
 
   // Handle URL parameters for direct navigation
   useEffect(() => {
     // Handle clientId query parameter (navigate to specific client detail page)
-    const viewClientId = searchParams.get("clientId")
+    const viewClientId = searchParams.get('clientId')
     if (viewClientId) {
       // Navigate to dedicated client detail page
       navigate(`/clients/${viewClientId}`, { replace: true })
@@ -169,10 +183,11 @@ export const ClientsPage: React.FC = () => {
   // Filtered data
   const filteredClients = safeArray(clients).filter(client => {
     const searchLower = safeString(searchText).toLowerCase()
-    const matchesSearch = safeString(client?.name).toLowerCase().includes(searchLower) ||
-                         safeString(client?.email).toLowerCase().includes(searchLower) ||
-                         safeString(client?.company).toLowerCase().includes(searchLower) ||
-                         safeString(client?.contactPerson).toLowerCase().includes(searchLower)
+    const matchesSearch =
+      safeString(client?.name).toLowerCase().includes(searchLower) ||
+      safeString(client?.email).toLowerCase().includes(searchLower) ||
+      safeString(client?.company).toLowerCase().includes(searchLower) ||
+      safeString(client?.contactPerson).toLowerCase().includes(searchLower)
     const matchesStatus = !statusFilter || client?.status === statusFilter
     return matchesSearch && matchesStatus
   })
@@ -183,10 +198,22 @@ export const ClientsPage: React.FC = () => {
     total: safeClients.length,
     active: safeClients.filter(c => c?.status === 'active').length,
     inactive: safeClients.filter(c => c?.status === 'inactive').length,
-    totalRevenue: safeClients.reduce((sum, c) => sum + safeNumber(c?.totalPaid), 0),
-    totalPending: safeClients.reduce((sum, c) => sum + safeNumber(c?.totalPending), 0),
-    totalQuotations: safeClients.reduce((sum, c) => sum + safeNumber(c?.totalQuotations), 0),
-    totalInvoices: safeClients.reduce((sum, c) => sum + safeNumber(c?.totalInvoices), 0)
+    totalRevenue: safeClients.reduce(
+      (sum, c) => sum + safeNumber(c?.totalPaid),
+      0
+    ),
+    totalPending: safeClients.reduce(
+      (sum, c) => sum + safeNumber(c?.totalPending),
+      0
+    ),
+    totalQuotations: safeClients.reduce(
+      (sum, c) => sum + safeNumber(c?.totalQuotations),
+      0
+    ),
+    totalInvoices: safeClients.reduce(
+      (sum, c) => sum + safeNumber(c?.totalInvoices),
+      0
+    ),
   }
 
   const getStatusColor = (status: string) => {
@@ -199,20 +226,28 @@ export const ClientsPage: React.FC = () => {
 
   const getCompanyIcon = (company: string | null | undefined) => {
     const safeCompany = safeString(company).toUpperCase()
-    if (safeCompany.startsWith('PT.') || safeCompany.startsWith('PT ')) return <ShopOutlined />
-    if (safeCompany.startsWith('CV.') || safeCompany.startsWith('CV ')) return <TeamOutlined />
+    if (safeCompany.startsWith('PT.') || safeCompany.startsWith('PT '))
+      return <ShopOutlined />
+    if (safeCompany.startsWith('CV.') || safeCompany.startsWith('CV '))
+      return <TeamOutlined />
     return <UserOutlined />
   }
 
   // Navigation functions for clickable table links
 
-  const navigateToQuotations = useCallback((clientId?: string) => {
-    navigate(clientId ? "/quotations?clientId=" + clientId : "/quotations")
-  }, [navigate])
+  const navigateToQuotations = useCallback(
+    (clientId?: string) => {
+      navigate(clientId ? '/quotations?clientId=' + clientId : '/quotations')
+    },
+    [navigate]
+  )
 
-  const navigateToInvoices = useCallback((clientId?: string) => {
-    navigate(clientId ? "/invoices?clientId=" + clientId : "/invoices")
-  }, [navigate])
+  const navigateToInvoices = useCallback(
+    (clientId?: string) => {
+      navigate(clientId ? '/invoices?clientId=' + clientId : '/invoices')
+    },
+    [navigate]
+  )
 
   const handleCreate = () => {
     navigate('/clients/new')
@@ -245,7 +280,10 @@ export const ClientsPage: React.FC = () => {
   const handleBulkDeactivate = () => {
     if (selectedRowKeys.length === 0) return
     setBatchLoading(true)
-    bulkUpdateStatusMutation.mutate({ ids: selectedRowKeys, status: 'inactive' })
+    bulkUpdateStatusMutation.mutate({
+      ids: selectedRowKeys,
+      status: 'inactive',
+    })
   }
 
   const handleClearSelection = () => {
@@ -266,21 +304,21 @@ export const ClientsPage: React.FC = () => {
         key: 'view',
         icon: <EyeOutlined />,
         label: 'Lihat Detail',
-        onClick: () => handleView(client)
+        onClick: () => handleView(client),
       },
       {
         key: 'edit',
         icon: <EditOutlined />,
         label: 'Edit',
-        onClick: () => handleEdit(client)
+        onClick: () => handleEdit(client),
       },
       {
         key: 'delete',
         icon: <DeleteOutlined />,
         label: 'Hapus',
         danger: true,
-        onClick: () => handleDelete(client.id)
-      }
+        onClick: () => handleDelete(client.id),
+      },
     ]
   }
 
@@ -308,111 +346,117 @@ export const ClientsPage: React.FC = () => {
       title: 'Klien',
       key: 'client',
       render: (_: any, client: Client) => (
-        <div className="flex items-center">
-          <Avatar icon={getCompanyIcon(client?.company)} className="mr-3" />
+        <div className='flex items-center'>
+          <Avatar icon={getCompanyIcon(client?.company)} className='mr-3' />
           <div>
-            <div className="font-semibold">{safeString(client?.name)}</div>
-            <div className="text-sm text-gray-500">{safeString(client?.company)}</div>
+            <div className='font-semibold'>{safeString(client?.name)}</div>
+            <div className='text-sm text-gray-500'>
+              {safeString(client?.company)}
+            </div>
           </div>
         </div>
       ),
-      sorter: (a: Client, b: Client) => safeString(a?.name).localeCompare(safeString(b?.name))
+      sorter: (a: Client, b: Client) =>
+        safeString(a?.name).localeCompare(safeString(b?.name)),
     },
     {
       title: 'Kontak',
       key: 'contact',
       render: (_: any, client: Client) => (
         <div>
-          <div className="flex items-center mb-1">
-            <UserOutlined className="mr-2 text-gray-400" />
-            <span className="text-sm">{safeString(client?.contactPerson)}</span>
+          <div className='flex items-center mb-1'>
+            <UserOutlined className='mr-2 text-gray-400' />
+            <span className='text-sm'>{safeString(client?.contactPerson)}</span>
           </div>
-          <div className="flex items-center mb-1">
-            <MailOutlined className="mr-2 text-gray-400" />
-            <span className="text-sm">{safeString(client?.email)}</span>
+          <div className='flex items-center mb-1'>
+            <MailOutlined className='mr-2 text-gray-400' />
+            <span className='text-sm'>{safeString(client?.email)}</span>
           </div>
-          <div className="flex items-center">
-            <PhoneOutlined className="mr-2 text-gray-400" />
-            <span className="text-sm">{safeString(client?.phone)}</span>
+          <div className='flex items-center'>
+            <PhoneOutlined className='mr-2 text-gray-400' />
+            <span className='text-sm'>{safeString(client?.phone)}</span>
           </div>
         </div>
-      )
+      ),
     },
     {
       title: 'Business Overview',
       key: 'business',
       render: (_: any, client: Client) => (
-        <div className="flex items-center space-x-4">
-          <HealthScore 
-            client={client} 
-            size="small" 
-          />
-          <div className="flex items-center space-x-2">
-            <MetricBadge 
-              icon={<ProjectOutlined />} 
-              value={client.totalProjects || 0} 
-              color="purple" 
+        <div className='flex items-center space-x-4'>
+          <HealthScore client={client} size='small' />
+          <div className='flex items-center space-x-2'>
+            <MetricBadge
+              icon={<ProjectOutlined />}
+              value={client.totalProjects || 0}
+              color='purple'
               onClick={() => navigate(`/projects?clientId=${client.id}`)}
-              tooltip="View projects"
+              tooltip='View projects'
             />
-            <MetricBadge 
-              icon={<FileTextOutlined />} 
-              value={client.totalQuotations || 0} 
-              color="blue"
-              badge={(client.pendingQuotations || 0) > 0 ? (client.pendingQuotations || 0) : null}
+            <MetricBadge
+              icon={<FileTextOutlined />}
+              value={client.totalQuotations || 0}
+              color='blue'
+              badge={
+                (client.pendingQuotations || 0) > 0
+                  ? client.pendingQuotations || 0
+                  : null
+              }
               onClick={() => navigateToQuotations(client.id)}
               tooltip={`View quotations${(client.pendingQuotations || 0) > 0 ? ` (${client.pendingQuotations || 0} pending)` : ''}`}
             />
-            <MetricBadge 
-              icon={<FundOutlined />} 
-              value={client.totalInvoices || 0} 
-              color="green"
-              badge={(client.overdueInvoices || 0) > 0 ? (client.overdueInvoices || 0) : null}
+            <MetricBadge
+              icon={<FundOutlined />}
+              value={client.totalInvoices || 0}
+              color='green'
+              badge={
+                (client.overdueInvoices || 0) > 0
+                  ? client.overdueInvoices || 0
+                  : null
+              }
               onClick={() => navigateToInvoices(client.id)}
               tooltip={`View invoices${(client.overdueInvoices || 0) > 0 ? ` (${client.overdueInvoices || 0} overdue)` : ''}`}
             />
           </div>
         </div>
-      )
+      ),
     },
     {
       title: 'Revenue',
       key: 'revenue',
       render: (_: any, client: Client) => (
-        <RevenueIndicator 
-          paid={client.totalPaid || 0} 
-          pending={client.totalPending || 0} 
-          compact 
+        <RevenueIndicator
+          paid={client.totalPaid || 0}
+          pending={client.totalPending || 0}
+          compact
         />
       ),
-      sorter: (a: Client, b: Client) => (a.totalPaid || 0) - (b.totalPaid || 0)
+      sorter: (a: Client, b: Client) => (a.totalPaid || 0) - (b.totalPaid || 0),
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color={getStatusColor(status)}>
-          {getStatusText(status)}
-        </Tag>
+        <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
       ),
       filters: [
         { text: 'Aktif', value: 'active' },
-        { text: 'Tidak Aktif', value: 'inactive' }
+        { text: 'Tidak Aktif', value: 'inactive' },
       ],
-      onFilter: (value: any, record: Client) => record.status === value
+      onFilter: (value: any, record: Client) => record.status === value,
     },
     {
       title: 'Transaksi Terakhir',
       dataIndex: 'lastTransaction',
       key: 'lastTransaction',
-      render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY') : '-',
+      render: (date: string) => (date ? dayjs(date).format('DD/MM/YYYY') : '-'),
       sorter: (a: Client, b: Client) => {
         if (!a.lastTransaction && !b.lastTransaction) return 0
         if (!a.lastTransaction) return 1
         if (!b.lastTransaction) return -1
         return dayjs(a.lastTransaction).unix() - dayjs(b.lastTransaction).unix()
-      }
+      },
     },
     {
       title: 'Aksi',
@@ -422,118 +466,141 @@ export const ClientsPage: React.FC = () => {
         <Dropdown
           menu={{ items: getActionMenuItems(client) }}
           trigger={['click']}
-          placement="bottomRight"
+          placement='bottomRight'
         >
           <Button icon={<MoreOutlined />} />
         </Dropdown>
-      )
-    }
+      ),
+    },
   ]
 
   return (
     <div>
-      <div className="mb-6">
+      <div className='mb-6'>
         <Title level={2}>{t('clients.title')}</Title>
-        
-        
+
         {/* Statistics */}
-        <Row gutter={[24, 24]} className="mb-6">
+        <Row gutter={[24, 24]} className='mb-6'>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
-            }}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              }}
+            >
               <Statistic
-                title="Total Klien"
+                title='Total Klien'
                 value={stats.total}
-                prefix={<UserOutlined style={{ 
-                  fontSize: '24px', 
-                  color: '#8b5cf6',
-                  background: 'rgba(139, 92, 246, 0.1)',
-                  padding: '8px',
-                  borderRadius: '12px'
-                }} />}
-                valueStyle={{ 
-                  color: '#1e293b', 
-                  fontSize: '28px', 
-                  fontWeight: 700 
+                prefix={
+                  <UserOutlined
+                    style={{
+                      fontSize: '24px',
+                      color: '#8b5cf6',
+                      background: 'rgba(139, 92, 246, 0.1)',
+                      padding: '8px',
+                      borderRadius: '12px',
+                    }}
+                  />
+                }
+                valueStyle={{
+                  color: '#1e293b',
+                  fontSize: '28px',
+                  fontWeight: 700,
                 }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
-            }}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              }}
+            >
               <Statistic
-                title="Klien Aktif"
+                title='Klien Aktif'
                 value={stats.active}
-                prefix={<UserOutlined style={{ 
-                  fontSize: '24px', 
-                  color: '#52c41a',
-                  background: 'rgba(82, 196, 26, 0.1)',
-                  padding: '8px',
-                  borderRadius: '12px'
-                }} />}
-                valueStyle={{ 
-                  color: '#1e293b', 
-                  fontSize: '28px', 
-                  fontWeight: 700 
+                prefix={
+                  <UserOutlined
+                    style={{
+                      fontSize: '24px',
+                      color: '#52c41a',
+                      background: 'rgba(82, 196, 26, 0.1)',
+                      padding: '8px',
+                      borderRadius: '12px',
+                    }}
+                  />
+                }
+                valueStyle={{
+                  color: '#1e293b',
+                  fontSize: '28px',
+                  fontWeight: 700,
                 }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
-            }}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              }}
+            >
               <Statistic
-                title="Total Quotations"
+                title='Total Quotations'
                 value={stats.totalQuotations}
-                prefix={<FileTextOutlined style={{ 
-                  fontSize: '24px', 
-                  color: '#1890ff',
-                  background: 'rgba(24, 144, 255, 0.1)',
-                  padding: '8px',
-                  borderRadius: '12px'
-                }} />}
-                valueStyle={{ 
-                  color: '#1e293b', 
-                  fontSize: '28px', 
-                  fontWeight: 700 
+                prefix={
+                  <FileTextOutlined
+                    style={{
+                      fontSize: '24px',
+                      color: '#1890ff',
+                      background: 'rgba(24, 144, 255, 0.1)',
+                      padding: '8px',
+                      borderRadius: '12px',
+                    }}
+                  />
+                }
+                valueStyle={{
+                  color: '#1e293b',
+                  fontSize: '28px',
+                  fontWeight: 700,
                 }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
-            }}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              }}
+            >
               <Statistic
-                title="Total Invoices"
+                title='Total Invoices'
                 value={stats.totalInvoices}
-                prefix={<FileTextOutlined style={{ 
-                  fontSize: '24px', 
-                  color: '#722ed1',
-                  background: 'rgba(114, 46, 209, 0.1)',
-                  padding: '8px',
-                  borderRadius: '12px'
-                }} />}
-                valueStyle={{ 
-                  color: '#1e293b', 
-                  fontSize: '28px', 
-                  fontWeight: 700 
+                prefix={
+                  <FileTextOutlined
+                    style={{
+                      fontSize: '24px',
+                      color: '#722ed1',
+                      background: 'rgba(114, 46, 209, 0.1)',
+                      padding: '8px',
+                      borderRadius: '12px',
+                    }}
+                  />
+                }
+                valueStyle={{
+                  color: '#1e293b',
+                  fontSize: '28px',
+                  fontWeight: 700,
                 }}
               />
             </Card>
@@ -541,55 +608,67 @@ export const ClientsPage: React.FC = () => {
         </Row>
 
         {/* Revenue Statistics */}
-        <Row gutter={[24, 24]} className="mb-6">
+        <Row gutter={[24, 24]} className='mb-6'>
           <Col xs={24} lg={12}>
-            <Card style={{
-              borderRadius: '20px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: '#ffffff'
-            }}>
+            <Card
+              style={{
+                borderRadius: '20px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#ffffff',
+              }}
+            >
               <Statistic
-                title="Total Pendapatan"
+                title='Total Pendapatan'
                 value={formatIDR(stats.totalRevenue)}
-                prefix={<DollarOutlined style={{ 
-                  fontSize: '32px', 
+                prefix={
+                  <DollarOutlined
+                    style={{
+                      fontSize: '32px',
+                      color: '#ffffff',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      padding: '12px',
+                      borderRadius: '16px',
+                    }}
+                  />
+                }
+                valueStyle={{
                   color: '#ffffff',
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  padding: '12px',
-                  borderRadius: '16px'
-                }} />}
-                valueStyle={{ 
-                  color: '#ffffff', 
-                  fontSize: '32px', 
-                  fontWeight: 800 
+                  fontSize: '32px',
+                  fontWeight: 800,
                 }}
               />
             </Card>
           </Col>
           <Col xs={24} lg={12}>
-            <Card style={{
-              borderRadius: '20px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              color: '#ffffff'
-            }}>
+            <Card
+              style={{
+                borderRadius: '20px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                color: '#ffffff',
+              }}
+            >
               <Statistic
-                title="Pembayaran Tertunda"
+                title='Pembayaran Tertunda'
                 value={formatIDR(stats.totalPending)}
-                prefix={<BankOutlined style={{ 
-                  fontSize: '32px', 
+                prefix={
+                  <BankOutlined
+                    style={{
+                      fontSize: '32px',
+                      color: '#ffffff',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      padding: '12px',
+                      borderRadius: '16px',
+                    }}
+                  />
+                }
+                valueStyle={{
                   color: '#ffffff',
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  padding: '12px',
-                  borderRadius: '16px'
-                }} />}
-                valueStyle={{ 
-                  color: '#ffffff', 
-                  fontSize: '32px', 
-                  fontWeight: 800 
+                  fontSize: '32px',
+                  fontWeight: 800,
                 }}
               />
             </Card>
@@ -598,38 +677,46 @@ export const ClientsPage: React.FC = () => {
 
         {/* Bulk Actions Toolbar */}
         {selectedRowKeys.length > 0 && (
-          <Card className="mb-4 border-blue-200 bg-blue-50" size="small">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <Text strong className="text-blue-700">
+          <Card className='mb-4 border-blue-200 bg-blue-50' size='small'>
+            <div className='flex justify-between items-center'>
+              <div className='flex items-center space-x-4'>
+                <Text strong className='text-blue-700'>
                   {selectedRowKeys.length} klien dipilih
                 </Text>
-                <div className="flex items-center space-x-2">
+                <div className='flex items-center space-x-2'>
                   <Button
-                    size="small"
-                    type="primary"
+                    size='small'
+                    type='primary'
                     loading={batchLoading}
                     onClick={handleBulkActivate}
                     disabled={selectedRowKeys.length === 0}
                   >
-                    Aktifkan ({selectedRowKeys.filter(id => {
-                      const client = filteredClients.find(c => c.id === id)
-                      return client?.status === 'inactive'
-                    }).length})
+                    Aktifkan (
+                    {
+                      selectedRowKeys.filter(id => {
+                        const client = filteredClients.find(c => c.id === id)
+                        return client?.status === 'inactive'
+                      }).length
+                    }
+                    )
                   </Button>
                   <Button
-                    size="small"
+                    size='small'
                     loading={batchLoading}
                     onClick={handleBulkDeactivate}
                     disabled={selectedRowKeys.length === 0}
                   >
-                    Nonaktifkan ({selectedRowKeys.filter(id => {
-                      const client = filteredClients.find(c => c.id === id)
-                      return client?.status === 'active'
-                    }).length})
+                    Nonaktifkan (
+                    {
+                      selectedRowKeys.filter(id => {
+                        const client = filteredClients.find(c => c.id === id)
+                        return client?.status === 'active'
+                      }).length
+                    }
+                    )
                   </Button>
                   <Button
-                    size="small"
+                    size='small'
                     danger
                     icon={<DeleteOutlined />}
                     loading={batchLoading}
@@ -641,10 +728,10 @@ export const ClientsPage: React.FC = () => {
                 </div>
               </div>
               <Button
-                size="small"
-                type="text"
+                size='small'
+                type='text'
                 onClick={handleClearSelection}
-                className="text-gray-500 hover:text-gray-700"
+                className='text-gray-500 hover:text-gray-700'
               >
                 Batal
               </Button>
@@ -653,45 +740,45 @@ export const ClientsPage: React.FC = () => {
         )}
 
         {/* Controls */}
-        <div className="flex justify-between items-center mb-4">
+        <div className='flex justify-between items-center mb-4'>
           <Space>
             <Input
-              placeholder="Cari klien..."
+              placeholder='Cari klien...'
               prefix={<SearchOutlined />}
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={e => setSearchText(e.target.value)}
               style={{ width: 300 }}
             />
             <Select
-              placeholder="Filter status"
+              placeholder='Filter status'
               value={statusFilter}
               onChange={setStatusFilter}
               style={{ width: 150 }}
               allowClear
             >
-              <Option value="active">Aktif</Option>
-              <Option value="inactive">Tidak Aktif</Option>
+              <Option value='active'>Aktif</Option>
+              <Option value='inactive'>Tidak Aktif</Option>
             </Select>
           </Space>
-          
+
           <Space>
-            <Button 
-              data-testid="client-import-button" 
+            <Button
+              data-testid='client-import-button'
               icon={<UploadOutlined />}
               onClick={handleImport}
             >
               Import
             </Button>
-            <Button 
-              data-testid="client-export-button" 
+            <Button
+              data-testid='client-export-button'
               icon={<ExportOutlined />}
               onClick={handleExport}
             >
               Export
             </Button>
             <Button
-              data-testid="create-client-button"
-              type="primary"
+              data-testid='create-client-button'
+              type='primary'
               icon={<PlusOutlined />}
               onClick={handleCreate}
             >
@@ -707,7 +794,7 @@ export const ClientsPage: React.FC = () => {
           columns={columns}
           dataSource={filteredClients}
           loading={isLoading}
-          rowKey="id"
+          rowKey='id'
           rowSelection={rowSelection}
           pagination={{
             total: filteredClients.length,
@@ -733,28 +820,30 @@ export const ClientsPage: React.FC = () => {
         width={800}
       >
         <Form
-          data-testid="client-form"
+          data-testid='client-form'
           form={form}
-          layout="vertical"
+          layout='vertical'
           onFinish={handleFormSubmit}
         >
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="name"
+                name='name'
                 label={t('clients.name')}
                 rules={[{ required: true, message: 'Nama klien wajib diisi' }]}
               >
-                <Input placeholder="Masukkan nama klien" />
+                <Input placeholder='Masukkan nama klien' />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
-                name="company"
+                name='company'
                 label={t('clients.company')}
-                rules={[{ required: true, message: 'Nama perusahaan wajib diisi' }]}
+                rules={[
+                  { required: true, message: 'Nama perusahaan wajib diisi' },
+                ]}
               >
-                <Input placeholder="PT. / CV. / Toko..." />
+                <Input placeholder='PT. / CV. / Toko...' />
               </Form.Item>
             </Col>
           </Row>
@@ -762,23 +851,25 @@ export const ClientsPage: React.FC = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="contactPerson"
+                name='contactPerson'
                 label={t('clients.contactPerson')}
-                rules={[{ required: true, message: 'Contact person wajib diisi' }]}
+                rules={[
+                  { required: true, message: 'Contact person wajib diisi' },
+                ]}
               >
-                <Input placeholder="Nama contact person" />
+                <Input placeholder='Nama contact person' />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
-                name="email"
+                name='email'
                 label={t('clients.email')}
                 rules={[
                   { required: true, message: 'Email wajib diisi' },
-                  { type: 'email', message: 'Format email tidak valid' }
+                  { type: 'email', message: 'Format email tidak valid' },
                 ]}
               >
-                <Input placeholder="nama@email.com" />
+                <Input placeholder='nama@email.com' />
               </Form.Item>
             </Col>
           </Row>
@@ -786,78 +877,72 @@ export const ClientsPage: React.FC = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="phone"
+                name='phone'
                 label={t('clients.phone')}
-                rules={[{ required: true, message: 'Nomor telepon wajib diisi' }]}
+                rules={[
+                  { required: true, message: 'Nomor telepon wajib diisi' },
+                ]}
               >
-                <Input placeholder="+62 21 1234567" />
+                <Input placeholder='+62 21 1234567' />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
-                name="paymentTerms"
+                name='paymentTerms'
                 label={t('clients.paymentTerms')}
-                rules={[{ required: true, message: 'Syarat pembayaran wajib diisi' }]}
+                rules={[
+                  { required: true, message: 'Syarat pembayaran wajib diisi' },
+                ]}
               >
-                <Select placeholder="Pilih syarat pembayaran">
-                  <Option value="Cash">Cash</Option>
-                  <Option value="Net 7">Net 7</Option>
-                  <Option value="Net 14">Net 14</Option>
-                  <Option value="Net 21">Net 21</Option>
-                  <Option value="Net 30">Net 30</Option>
-                  <Option value="Net 45">Net 45</Option>
-                  <Option value="Net 60">Net 60</Option>
+                <Select placeholder='Pilih syarat pembayaran'>
+                  <Option value='Cash'>Cash</Option>
+                  <Option value='Net 7'>Net 7</Option>
+                  <Option value='Net 14'>Net 14</Option>
+                  <Option value='Net 21'>Net 21</Option>
+                  <Option value='Net 30'>Net 30</Option>
+                  <Option value='Net 45'>Net 45</Option>
+                  <Option value='Net 60'>Net 60</Option>
                 </Select>
               </Form.Item>
             </Col>
           </Row>
 
           <Form.Item
-            name="address"
+            name='address'
             label={t('clients.address')}
             rules={[{ required: true, message: 'Alamat wajib diisi' }]}
           >
-            <TextArea rows={2} placeholder="Alamat lengkap klien" />
+            <TextArea rows={2} placeholder='Alamat lengkap klien' />
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                name="taxNumber"
-                label="NPWP"
-              >
-                <Input placeholder="XX.XXX.XXX.X-XXX.XXX" />
+              <Form.Item name='taxNumber' label='NPWP'>
+                <Input placeholder='XX.XXX.XXX.X-XXX.XXX' />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                name="status"
-                label="Status"
-                initialValue="active"
-              >
+              <Form.Item name='status' label='Status' initialValue='active'>
                 <Select>
-                  <Option value="active">Aktif</Option>
-                  <Option value="inactive">Tidak Aktif</Option>
+                  <Option value='active'>Aktif</Option>
+                  <Option value='inactive'>Tidak Aktif</Option>
                 </Select>
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item
-            name="bankAccount"
-            label="Rekening Bank"
-          >
-            <Input placeholder="Bank BCA: 123-456-789 a.n. Nama Pemilik" />
+          <Form.Item name='bankAccount' label='Rekening Bank'>
+            <Input placeholder='Bank BCA: 123-456-789 a.n. Nama Pemilik' />
           </Form.Item>
 
-          <Form.Item
-            name="notes"
-            label="Catatan"
-          >
-            <TextArea rows={3} placeholder="Catatan tambahan tentang klien..." />
+          <Form.Item name='notes' label='Catatan'>
+            <TextArea
+              rows={3}
+              placeholder='Catatan tambahan tentang klien...'
+            />
           </Form.Item>
 
-          <div className="flex justify-end space-x-2">
+          <div className='flex justify-end space-x-2'>
             <Button
               onClick={() => {
                 setModalVisible(false)
@@ -868,8 +953,8 @@ export const ClientsPage: React.FC = () => {
               {t('common.cancel')}
             </Button>
             <Button
-              type="primary"
-              htmlType="submit"
+              type='primary'
+              htmlType='submit'
               loading={createMutation.isPending || updateMutation.isPending}
             >
               {t('common.save')}
@@ -877,7 +962,6 @@ export const ClientsPage: React.FC = () => {
           </div>
         </Form>
       </Modal>
-
     </div>
   )
 }

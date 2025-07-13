@@ -8,7 +8,13 @@ export interface BreadcrumbItem {
   icon?: string
   isActive?: boolean
   isClickable?: boolean
-  entityType: 'client' | 'project' | 'quotation' | 'invoice' | 'payment' | 'home'
+  entityType:
+    | 'client'
+    | 'project'
+    | 'quotation'
+    | 'invoice'
+    | 'payment'
+    | 'home'
   entityId?: string
   metadata?: BreadcrumbMetadata
 }
@@ -24,12 +30,12 @@ export interface BreadcrumbMetadata {
   materaiRequired?: boolean
 }
 
-export type BusinessStage = 
-  | 'prospect' 
-  | 'quotation' 
-  | 'approved' 
-  | 'invoicing' 
-  | 'payment' 
+export type BusinessStage =
+  | 'prospect'
+  | 'quotation'
+  | 'approved'
+  | 'invoicing'
+  | 'payment'
   | 'completed'
   | 'cancelled'
 
@@ -211,7 +217,11 @@ export interface RequiredDocument {
 // Navigation Analytics Types
 export interface NavigationMetrics {
   componentName: string
-  action: 'breadcrumb_click' | 'relationship_view' | 'flow_navigation' | 'mobile_swipe'
+  action:
+    | 'breadcrumb_click'
+    | 'relationship_view'
+    | 'flow_navigation'
+    | 'mobile_swipe'
   entityType?: string
   entityId?: string
   fromStage?: BusinessStage
@@ -223,7 +233,10 @@ export interface NavigationMetrics {
 
 export interface NavigationAnalytics {
   trackBreadcrumbUsage: (item: BreadcrumbItem) => void
-  trackRelationshipExploration: (from: EntityReference, to: EntityReference) => void
+  trackRelationshipExploration: (
+    from: EntityReference,
+    to: EntityReference
+  ) => void
   trackBusinessFlowNavigation: (from: BusinessStage, to: BusinessStage) => void
   trackMobileGesture: (gesture: 'swipe' | 'tap' | 'pinch') => void
 }

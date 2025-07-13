@@ -1,32 +1,41 @@
 // Enhanced Breadcrumb Component - Indonesian Business Management System
 // Comprehensive navigation with relationship visualization and business flow guidance
 
-import React, { useState, useCallback, useMemo } from 'react'
-import { Breadcrumb, Button, Dropdown, Tooltip, Badge, Space, Card, Typography } from 'antd'
+import React, { useCallback, useMemo, useState } from 'react'
 import {
-  HomeOutlined,
-  UserOutlined,
-  ProjectOutlined,
-  FileTextOutlined,
-  DollarOutlined,
+  Badge,
+  Breadcrumb,
+  Button,
+  Card,
+  Dropdown,
+  Space,
+  Tooltip,
+  Typography,
+} from 'antd'
+import {
   BankOutlined,
-  RightOutlined,
+  CheckCircleOutlined,
+  DollarOutlined,
   DownOutlined,
-  LinkOutlined,
+  FileTextOutlined,
+  HomeOutlined,
   InfoCircleOutlined,
+  LinkOutlined,
+  ProjectOutlined,
+  RightOutlined,
+  UserOutlined,
   WarningOutlined,
-  CheckCircleOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import {
-  BreadcrumbProps,
   BreadcrumbItem,
-  EntityReference,
-  RelationshipContext,
+  BreadcrumbProps,
   BusinessStage,
-  NextAction
+  EntityReference,
+  NextAction,
+  RelationshipContext,
 } from './types/navigation.types'
 
 import styles from './EnhancedBreadcrumb.module.css'
@@ -41,24 +50,28 @@ const getEntityIcon = (entityType: string, isActive = false) => {
     project: ProjectOutlined,
     quotation: FileTextOutlined,
     invoice: DollarOutlined,
-    payment: BankOutlined
+    payment: BankOutlined,
   }
-  
-  const IconComponent = iconMap[entityType as keyof typeof iconMap] || InfoCircleOutlined
-  return <IconComponent className={isActive ? styles.activeIcon : styles.icon} />
+
+  const IconComponent =
+    iconMap[entityType as keyof typeof iconMap] || InfoCircleOutlined
+  return (
+    <IconComponent className={isActive ? styles.activeIcon : styles.icon} />
+  )
 }
 
 // Status badge component
-const StatusBadge: React.FC<{ status?: string; complianceStatus?: string }> = ({ 
-  status, 
-  complianceStatus 
+const StatusBadge: React.FC<{ status?: string; complianceStatus?: string }> = ({
+  status,
+  complianceStatus,
 }) => {
   if (!status && !complianceStatus) return null
 
   const getStatusColor = () => {
     if (complianceStatus === 'error') return 'error'
     if (complianceStatus === 'warning') return 'warning'
-    if (status === 'COMPLETED' || status === 'PAID' || status === 'APPROVED') return 'success'
+    if (status === 'COMPLETED' || status === 'PAID' || status === 'APPROVED')
+      return 'success'
     if (status === 'IN_PROGRESS' || status === 'SENT') return 'processing'
     if (status === 'CANCELLED' || status === 'DECLINED') return 'error'
     return 'default'
@@ -71,8 +84,8 @@ const StatusBadge: React.FC<{ status?: string; complianceStatus?: string }> = ({
   }
 
   return (
-    <Badge 
-      status={getStatusColor() as any} 
+    <Badge
+      status={getStatusColor() as any}
       text={getStatusText()}
       className={styles.statusBadge}
     />
@@ -80,16 +93,20 @@ const StatusBadge: React.FC<{ status?: string; complianceStatus?: string }> = ({
 }
 
 // Materai compliance indicator
-const MateraiIndicator: React.FC<{ required?: boolean; applied?: boolean }> = ({ 
-  required, 
-  applied 
+const MateraiIndicator: React.FC<{ required?: boolean; applied?: boolean }> = ({
+  required,
+  applied,
 }) => {
   if (!required) return null
 
   return (
     <Tooltip
-      title={applied ? 'Materai telah diterapkan' : 'Materai diperlukan - belum diterapkan'}
-      placement="top"
+      title={
+        applied
+          ? 'Materai telah diterapkan'
+          : 'Materai diperlukan - belum diterapkan'
+      }
+      placement='top'
     >
       <Badge
         color={applied ? 'green' : 'orange'}
@@ -117,18 +134,18 @@ const RelationshipDropdown: React.FC<{
           <Space>
             {getEntityIcon(context.parentEntity.type)}
             <span>{context.parentEntity.name}</span>
-            <Text type="secondary">(Parent)</Text>
+            <Text type='secondary'>(Parent)</Text>
           </Space>
         ),
-        onClick: () => onEntityClick?.(context.parentEntity!)
+        onClick: () => onEntityClick?.(context.parentEntity!),
       })
     }
 
     if (context.childEntities?.length) {
       items.push({
-        type: 'divider'
+        type: 'divider',
       })
-      
+
       context.childEntities.forEach(entity => {
         items.push({
           key: `child-${entity.id}`,
@@ -139,16 +156,16 @@ const RelationshipDropdown: React.FC<{
               <StatusBadge status={entity.status} />
             </Space>
           ),
-          onClick: () => onEntityClick?.(entity)
+          onClick: () => onEntityClick?.(entity),
         })
       })
     }
 
     if (context.relatedEntities?.length) {
       items.push({
-        type: 'divider'
+        type: 'divider',
       })
-      
+
       context.relatedEntities.forEach(entity => {
         items.push({
           key: `related-${entity.id}`,
@@ -156,10 +173,10 @@ const RelationshipDropdown: React.FC<{
             <Space>
               {getEntityIcon(entity.type)}
               <span>{entity.name}</span>
-              <Text type="secondary">(Related)</Text>
+              <Text type='secondary'>(Related)</Text>
             </Space>
           ),
-          onClick: () => onEntityClick?.(entity)
+          onClick: () => onEntityClick?.(entity),
         })
       })
     }
@@ -172,12 +189,12 @@ const RelationshipDropdown: React.FC<{
   return (
     <Dropdown
       menu={{ items: menuItems }}
-      placement="bottomLeft"
+      placement='bottomLeft'
       trigger={['click']}
     >
       <Button
-        type="text"
-        size="small"
+        type='text'
+        size='small'
         icon={<LinkOutlined />}
         className={styles.relationshipButton}
       >
@@ -197,28 +214,37 @@ const NextActionsDropdown: React.FC<{
   const menuItems = actions.map(action => ({
     key: action.id,
     label: (
-      <Space direction="vertical" size="small">
+      <Space direction='vertical' size='small'>
         <Space>
           <span>{action.icon}</span>
           <span>{action.label}</span>
-          <Badge 
-            color={action.priority === 'high' ? 'red' : action.priority === 'medium' ? 'orange' : 'blue'}
+          <Badge
+            color={
+              action.priority === 'high'
+                ? 'red'
+                : action.priority === 'medium'
+                  ? 'orange'
+                  : 'blue'
+            }
             text={action.priority}
           />
         </Space>
         {action.description && (
-          <Text type="secondary" style={{ fontSize: '12px' }}>
+          <Text type='secondary' style={{ fontSize: '12px' }}>
             {action.description}
           </Text>
         )}
         {action.indonesianEtiquette && (
-          <Text type="secondary" style={{ fontSize: '11px', fontStyle: 'italic' }}>
+          <Text
+            type='secondary'
+            style={{ fontSize: '11px', fontStyle: 'italic' }}
+          >
             💡 {action.indonesianEtiquette.suggestedTiming}
           </Text>
         )}
       </Space>
     ),
-    onClick: () => onActionClick?.(action)
+    onClick: () => onActionClick?.(action),
   }))
 
   if (menuItems.length === 0) return null
@@ -226,14 +252,10 @@ const NextActionsDropdown: React.FC<{
   return (
     <Dropdown
       menu={{ items: menuItems }}
-      placement="bottomRight"
+      placement='bottomRight'
       trigger={['click']}
     >
-      <Button
-        type="primary"
-        size="small"
-        className={styles.nextActionsButton}
-      >
+      <Button type='primary' size='small' className={styles.nextActionsButton}>
         {t('navigation.nextActions')} <DownOutlined />
       </Button>
     </Dropdown>
@@ -241,9 +263,11 @@ const NextActionsDropdown: React.FC<{
 }
 
 // Business stage indicator
-const BusinessStageIndicator: React.FC<{ stage: BusinessStage }> = ({ stage }) => {
+const BusinessStageIndicator: React.FC<{ stage: BusinessStage }> = ({
+  stage,
+}) => {
   const { t } = useTranslation()
-  
+
   const stageConfig = {
     prospect: { color: 'blue', icon: '👋', text: 'Prospek' },
     quotation: { color: 'orange', icon: '📋', text: 'Quotation' },
@@ -251,7 +275,7 @@ const BusinessStageIndicator: React.FC<{ stage: BusinessStage }> = ({ stage }) =
     invoicing: { color: 'purple', icon: '📄', text: 'Invoice' },
     payment: { color: 'cyan', icon: '💰', text: 'Pembayaran' },
     completed: { color: 'green', icon: '🎉', text: 'Selesai' },
-    cancelled: { color: 'red', icon: '❌', text: 'Dibatalkan' }
+    cancelled: { color: 'red', icon: '❌', text: 'Dibatalkan' },
   }
 
   const config = stageConfig[stage]
@@ -278,19 +302,22 @@ export const EnhancedBreadcrumb: React.FC<BreadcrumbProps> = ({
   separator = <RightOutlined />,
   className,
   mobileOptimized = true,
-  indonesianLocale = true
+  indonesianLocale = true,
 }) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [showFullPath, setShowFullPath] = useState(false)
 
   // Handle item click
-  const handleItemClick = useCallback((item: BreadcrumbItem) => {
-    if (item.isClickable && item.href) {
-      navigate(item.href)
-    }
-    onItemClick?.(item)
-  }, [navigate, onItemClick])
+  const handleItemClick = useCallback(
+    (item: BreadcrumbItem) => {
+      if (item.isClickable && item.href) {
+        navigate(item.href)
+      }
+      onItemClick?.(item)
+    },
+    [navigate, onItemClick]
+  )
 
   // Process items for display
   const displayItems = useMemo(() => {
@@ -301,12 +328,12 @@ export const EnhancedBreadcrumb: React.FC<BreadcrumbProps> = ({
     // Show first item, ellipsis, and last few items
     const firstItem = items[0]
     const lastItems = items.slice(-Math.max(2, maxItems - 2))
-    
+
     const ellipsisItem: BreadcrumbItem = {
       id: 'ellipsis',
       label: '...',
       entityType: 'home',
-      isClickable: true
+      isClickable: true,
     }
 
     return [firstItem, ellipsisItem, ...lastItems]
@@ -331,65 +358,67 @@ export const EnhancedBreadcrumb: React.FC<BreadcrumbProps> = ({
       return {
         title: (
           <Button
-            type="text"
-            size="small"
+            type='text'
+            size='small'
             onClick={() => setShowFullPath(true)}
             className={styles.ellipsisButton}
           >
             ...
           </Button>
-        )
+        ),
       }
     }
 
     return {
       title: (
-        <Space 
-          size="small" 
+        <Space
+          size='small'
           className={`${styles.breadcrumbItem} ${isLast ? styles.activeBreadcrumb : ''}`}
         >
           {getEntityIcon(item.entityType, isLast)}
-          
-          <Space direction="vertical" size={0}>
-            <Space size="small">
+
+          <Space direction='vertical' size={0}>
+            <Space size='small'>
               <span
-                className={item.isClickable ? styles.clickableLabel : styles.label}
+                className={
+                  item.isClickable ? styles.clickableLabel : styles.label
+                }
                 onClick={() => item.isClickable && handleItemClick(item)}
               >
                 {item.label}
               </span>
-              
+
               {item.metadata?.number && (
-                <Text type="secondary" className={styles.entityNumber}>
+                <Text type='secondary' className={styles.entityNumber}>
                   ({item.metadata.number})
                 </Text>
               )}
             </Space>
-            
-            <Space size="small" wrap>
-              <StatusBadge 
+
+            <Space size='small' wrap>
+              <StatusBadge
                 status={item.metadata?.status}
                 complianceStatus={item.metadata?.complianceStatus}
               />
-              
+
               <MateraiIndicator
                 required={item.metadata?.materaiRequired}
                 applied={item.metadata?.complianceStatus === 'compliant'}
               />
-              
+
               {item.metadata?.amount && (
-                <Text type="secondary" className={styles.amount}>
+                <Text type='secondary' className={styles.amount}>
                   {new Intl.NumberFormat('id-ID', {
                     style: 'currency',
                     currency: 'IDR',
-                    minimumFractionDigits: 0
+                    minimumFractionDigits: 0,
                   }).format(item.metadata.amount)}
                 </Text>
               )}
             </Space>
           </Space>
         </Space>
-      )
+      ),
     }
   })
 
@@ -403,10 +432,10 @@ export const EnhancedBreadcrumb: React.FC<BreadcrumbProps> = ({
       )}
 
       {/* Main Breadcrumb */}
-      <Card className={styles.breadcrumbCard} size="small">
-        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+      <Card className={styles.breadcrumbCard} size='small'>
+        <Space direction='vertical' size='small' style={{ width: '100%' }}>
           <Space split={separator} className={styles.breadcrumbPath}>
-            <Breadcrumb items={breadcrumbItems} separator="" />
+            <Breadcrumb items={breadcrumbItems} separator='' />
           </Space>
 
           {/* Relationship and Actions Bar */}
@@ -418,11 +447,11 @@ export const EnhancedBreadcrumb: React.FC<BreadcrumbProps> = ({
                   onEntityClick={onRelationshipClick}
                 />
               )}
-              
+
               {nextActions.length > 0 && (
                 <NextActionsDropdown
                   actions={nextActions}
-                  onActionClick={(action) => {
+                  onActionClick={action => {
                     if (action.href) {
                       navigate(action.href)
                     }
@@ -437,17 +466,17 @@ export const EnhancedBreadcrumb: React.FC<BreadcrumbProps> = ({
 
       {/* Indonesian Business Context */}
       {indonesianLocale && relationshipContext?.businessFlow && (
-        <Card className={styles.businessContextCard} size="small">
-          <Space direction="vertical" size="small">
+        <Card className={styles.businessContextCard} size='small'>
+          <Space direction='vertical' size='small'>
             <Title level={5} className={styles.contextTitle}>
               💼 Panduan Alur Bisnis Indonesia
             </Title>
-            
+
             {relationshipContext.businessFlow
               .filter(step => step.isCurrent || !step.isCompleted)
               .slice(0, 3)
               .map(step => (
-                <Space key={step.id} size="small">
+                <Space key={step.id} size='small'>
                   {step.isCompleted ? (
                     <CheckCircleOutlined className={styles.completedStep} />
                   ) : step.isCurrent ? (
@@ -455,21 +484,20 @@ export const EnhancedBreadcrumb: React.FC<BreadcrumbProps> = ({
                   ) : (
                     <WarningOutlined className={styles.pendingStep} />
                   )}
-                  
-                  <Text 
+
+                  <Text
                     className={step.isCurrent ? styles.currentStepText : ''}
                   >
                     {step.title}
                   </Text>
-                  
+
                   {step.expectedDuration && (
-                    <Text type="secondary" className={styles.duration}>
+                    <Text type='secondary' className={styles.duration}>
                       (~{step.expectedDuration})
                     </Text>
                   )}
                 </Space>
-              ))
-            }
+              ))}
           </Space>
         </Card>
       )}

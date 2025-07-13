@@ -12,7 +12,7 @@ import { MobileNavigation } from '../MobileNavigation'
 import {
   EntityReference,
   BreadcrumbItem,
-  NextAction
+  NextAction,
 } from '../types/navigation.types'
 
 // Extend Jest matchers
@@ -21,8 +21,8 @@ expect.extend(toHaveNoViolations)
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key
-  })
+    t: (key: string) => key,
+  }),
 }))
 
 // Mock react-router-dom
@@ -31,21 +31,21 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
   return {
     ...actual,
-    useNavigate: () => mockNavigate
+    useNavigate: () => mockNavigate,
   }
 })
 
 // Mock Web APIs
 Object.defineProperty(navigator, 'clipboard', {
   value: {
-    writeText: vi.fn(() => Promise.resolve())
+    writeText: vi.fn(() => Promise.resolve()),
   },
-  writable: true
+  writable: true,
 })
 
 Object.defineProperty(navigator, 'share', {
   value: vi.fn(() => Promise.resolve()),
-  writable: true
+  writable: true,
 })
 
 // Mock window.open
@@ -56,11 +56,7 @@ global.alert = vi.fn()
 
 // Test utilities
 const renderWithRouter = (ui: React.ReactElement) => {
-  return render(
-    <BrowserRouter>
-      {ui}
-    </BrowserRouter>
-  )
+  return render(<BrowserRouter>{ui}</BrowserRouter>)
 }
 
 // Mock mobile viewport
@@ -84,7 +80,7 @@ const mockCurrentEntity: EntityReference = {
   name: 'Invoice INV-001',
   number: 'INV-001',
   status: 'SENT',
-  href: '/invoices/123'
+  href: '/invoices/123',
 }
 
 const mockBreadcrumbs: BreadcrumbItem[] = [
@@ -93,7 +89,7 @@ const mockBreadcrumbs: BreadcrumbItem[] = [
     label: 'Home',
     href: '/',
     entityType: 'home',
-    isClickable: true
+    isClickable: true,
   },
   {
     id: 'client-123',
@@ -103,8 +99,8 @@ const mockBreadcrumbs: BreadcrumbItem[] = [
     isClickable: true,
     metadata: {
       number: 'CL-001',
-      status: 'ACTIVE'
-    }
+      status: 'ACTIVE',
+    },
   },
   {
     id: 'project-456',
@@ -115,8 +111,8 @@ const mockBreadcrumbs: BreadcrumbItem[] = [
     metadata: {
       number: 'PRJ-001',
       status: 'IN_PROGRESS',
-      amount: 75000000
-    }
+      amount: 75000000,
+    },
   },
   {
     id: 'invoice-123',
@@ -126,9 +122,9 @@ const mockBreadcrumbs: BreadcrumbItem[] = [
     metadata: {
       number: 'INV-001',
       status: 'SENT',
-      amount: 50000000
-    }
-  }
+      amount: 50000000,
+    },
+  },
 ]
 
 const mockQuickActions: NextAction[] = [
@@ -143,8 +139,8 @@ const mockQuickActions: NextAction[] = [
     indonesianEtiquette: {
       suggestedTiming: 'Senin-Kamis 09:00-16:00 WIB',
       communicationStyle: 'semi-formal' as any,
-      preferredChannels: ['whatsapp', 'email']
-    }
+      preferredChannels: ['whatsapp', 'email'],
+    },
   },
   {
     id: 'generate-receipt',
@@ -156,8 +152,8 @@ const mockQuickActions: NextAction[] = [
     category: 'create' as any,
     indonesianEtiquette: {
       suggestedTiming: 'Setelah konfirmasi pembayaran',
-      communicationStyle: 'formal' as any
-    }
+      communicationStyle: 'formal' as any,
+    },
   },
   {
     id: 'send-invoice',
@@ -166,8 +162,8 @@ const mockQuickActions: NextAction[] = [
     icon: '📧',
     href: '/invoices/123/send',
     priority: 'low' as any,
-    category: 'edit' as any
-  }
+    category: 'edit' as any,
+  },
 ]
 
 describe('MobileNavigation Component', () => {
@@ -264,10 +260,10 @@ describe('MobileNavigation Component', () => {
       if (swipeableArea) {
         // Simulate swipe left (should not throw errors)
         fireEvent.touchStart(swipeableArea, {
-          touches: [{ clientX: 100, clientY: 100 }]
+          touches: [{ clientX: 100, clientY: 100 }],
         })
         fireEvent.touchMove(swipeableArea, {
-          touches: [{ clientX: 50, clientY: 100 }]
+          touches: [{ clientX: 50, clientY: 100 }],
         })
         fireEvent.touchEnd(swipeableArea)
       }
@@ -290,7 +286,7 @@ describe('MobileNavigation Component', () => {
     it('should handle breadcrumb clicks', async () => {
       const onBreadcrumbClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -300,7 +296,9 @@ describe('MobileNavigation Component', () => {
         />
       )
 
-      const breadcrumbCard = screen.getByText('Invoice INV-001').closest('.breadcrumbCard')
+      const breadcrumbCard = screen
+        .getByText('Invoice INV-001')
+        .closest('.breadcrumbCard')
       if (breadcrumbCard) {
         await user.click(breadcrumbCard)
         expect(onBreadcrumbClick).toHaveBeenCalled()
@@ -318,7 +316,7 @@ describe('MobileNavigation Component', () => {
 
       const currencyElements = screen.getAllByText(/Rp/)
       expect(currencyElements.length).toBeGreaterThan(0)
-      
+
       currencyElements.forEach(element => {
         expect(element.textContent).toMatch(/Rp\s[\d.,]+/)
       })
@@ -364,14 +362,18 @@ describe('MobileNavigation Component', () => {
         />
       )
 
-      expect(screen.getByText('Senin-Kamis 09:00-16:00 WIB')).toBeInTheDocument()
-      expect(screen.getByText('Setelah konfirmasi pembayaran')).toBeInTheDocument()
+      expect(
+        screen.getByText('Senin-Kamis 09:00-16:00 WIB')
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Setelah konfirmasi pembayaran')
+      ).toBeInTheDocument()
     })
 
     it('should handle action clicks', async () => {
       const onActionClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -381,7 +383,9 @@ describe('MobileNavigation Component', () => {
         />
       )
 
-      const followUpAction = screen.getByText('Follow-up Pembayaran').closest('.actionCard')
+      const followUpAction = screen
+        .getByText('Follow-up Pembayaran')
+        .closest('.actionCard')
       if (followUpAction) {
         await user.click(followUpAction)
         expect(onActionClick).toHaveBeenCalledWith(mockQuickActions[0])
@@ -392,7 +396,7 @@ describe('MobileNavigation Component', () => {
       const manyActions = Array.from({ length: 10 }, (_, index) => ({
         ...mockQuickActions[0],
         id: `action-${index}`,
-        label: `Action ${index + 1}`
+        label: `Action ${index + 1}`,
       }))
 
       renderWithRouter(
@@ -427,7 +431,7 @@ describe('MobileNavigation Component', () => {
 
     it('should handle WhatsApp shortcut click', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -447,7 +451,7 @@ describe('MobileNavigation Component', () => {
 
     it('should handle phone shortcut click', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -466,7 +470,7 @@ describe('MobileNavigation Component', () => {
 
     it('should handle share shortcut with native sharing', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -481,7 +485,7 @@ describe('MobileNavigation Component', () => {
       expect(navigator.share).toHaveBeenCalledWith({
         title: expect.stringContaining('Invoice INV-001'),
         text: expect.any(String),
-        url: expect.any(String)
+        url: expect.any(String),
       })
     })
 
@@ -489,11 +493,11 @@ describe('MobileNavigation Component', () => {
       // Mock navigator.share as undefined
       Object.defineProperty(navigator, 'share', {
         value: undefined,
-        writable: true
+        writable: true,
       })
 
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -506,14 +510,16 @@ describe('MobileNavigation Component', () => {
       await user.click(shareButton)
 
       expect(navigator.clipboard.writeText).toHaveBeenCalled()
-      expect(global.alert).toHaveBeenCalledWith('Link telah disalin ke clipboard')
+      expect(global.alert).toHaveBeenCalledWith(
+        'Link telah disalin ke clipboard'
+      )
     })
   })
 
   describe('Navigation Drawer', () => {
     it('should open drawer when menu button is clicked', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -530,7 +536,7 @@ describe('MobileNavigation Component', () => {
 
     it('should display current entity details in drawer', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -550,7 +556,7 @@ describe('MobileNavigation Component', () => {
 
     it('should show full breadcrumb navigation in drawer', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -572,7 +578,7 @@ describe('MobileNavigation Component', () => {
 
     it('should show all actions in drawer', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -586,15 +592,19 @@ describe('MobileNavigation Component', () => {
 
       await waitFor(() => {
         expect(screen.getByText('⚡ Semua Aksi')).toBeInTheDocument()
-        expect(screen.getByText('Kirim reminder pembayaran kepada klien')).toBeInTheDocument()
-        expect(screen.getByText('💡 Senin-Kamis 09:00-16:00 WIB')).toBeInTheDocument()
+        expect(
+          screen.getByText('Kirim reminder pembayaran kepada klien')
+        ).toBeInTheDocument()
+        expect(
+          screen.getByText('💡 Senin-Kamis 09:00-16:00 WIB')
+        ).toBeInTheDocument()
       })
     })
 
     it('should handle drawer breadcrumb clicks', async () => {
       const onBreadcrumbClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -608,7 +618,9 @@ describe('MobileNavigation Component', () => {
       await user.click(menuButton)
 
       await waitFor(() => {
-        const homeItem = screen.getByText('Home').closest('.drawerBreadcrumbItem')
+        const homeItem = screen
+          .getByText('Home')
+          .closest('.drawerBreadcrumbItem')
         if (homeItem) {
           user.click(homeItem)
         }
@@ -621,7 +633,7 @@ describe('MobileNavigation Component', () => {
     it('should handle drawer action clicks', async () => {
       const onActionClick = vi.fn()
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -635,7 +647,9 @@ describe('MobileNavigation Component', () => {
       await user.click(menuButton)
 
       await waitFor(() => {
-        const followUpAction = screen.getByText('Follow-up Pembayaran').closest('.drawerActionItem')
+        const followUpAction = screen
+          .getByText('Follow-up Pembayaran')
+          .closest('.drawerActionItem')
         if (followUpAction) {
           user.click(followUpAction)
         }
@@ -674,7 +688,7 @@ describe('MobileNavigation Component', () => {
 
     it('should support keyboard navigation', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -687,7 +701,7 @@ describe('MobileNavigation Component', () => {
       await user.tab() // Menu button
       expect(screen.getByLabelText('Buka menu navigasi')).toHaveFocus()
 
-      await user.tab() // More button  
+      await user.tab() // More button
       expect(screen.getByLabelText('Aksi lainnya')).toHaveFocus()
     })
 
@@ -701,12 +715,12 @@ describe('MobileNavigation Component', () => {
       )
 
       const touchTargets = screen.getAllByRole('button')
-      
+
       touchTargets.forEach(target => {
         const styles = window.getComputedStyle(target)
         const minWidth = parseInt(styles.minWidth) || target.offsetWidth
         const minHeight = parseInt(styles.minHeight) || target.offsetHeight
-        
+
         // Should meet minimum 44px touch target size
         expect(minWidth).toBeGreaterThanOrEqual(40) // Allow some tolerance
         expect(minHeight).toBeGreaterThanOrEqual(40)
@@ -715,7 +729,7 @@ describe('MobileNavigation Component', () => {
 
     it('should support screen reader announcements', async () => {
       const user = userEvent.setup()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -745,8 +759,10 @@ describe('MobileNavigation Component', () => {
         />
       )
 
-      const actionCard = screen.getByText('Follow-up Pembayaran').closest('.actionCard')
-      
+      const actionCard = screen
+        .getByText('Follow-up Pembayaran')
+        .closest('.actionCard')
+
       if (actionCard) {
         fireEvent.touchStart(actionCard)
         fireEvent.touchEnd(actionCard)
@@ -766,8 +782,10 @@ describe('MobileNavigation Component', () => {
         />
       )
 
-      const actionCard = screen.getByText('Follow-up Pembayaran').closest('.actionCard')
-      
+      const actionCard = screen
+        .getByText('Follow-up Pembayaran')
+        .closest('.actionCard')
+
       if (actionCard) {
         // Actions grid should not be swipeable
         expect(actionCard).not.toHaveAttribute('onTouchStart')
@@ -784,7 +802,7 @@ describe('MobileNavigation Component', () => {
       )
 
       const buttons = screen.getAllByRole('button')
-      
+
       // Rapid taps should not cause issues
       buttons.slice(0, 3).forEach(button => {
         fireEvent.touchStart(button)
@@ -801,17 +819,17 @@ describe('MobileNavigation Component', () => {
         id: `breadcrumb-${index}`,
         label: `Item ${index + 1}`,
         entityType: 'project' as any,
-        href: `/items/${index + 1}`
+        href: `/items/${index + 1}`,
       }))
 
       const manyActions = Array.from({ length: 15 }, (_, index) => ({
         ...mockQuickActions[0],
         id: `action-${index}`,
-        label: `Action ${index + 1}`
+        label: `Action ${index + 1}`,
       }))
 
       const startTime = performance.now()
-      
+
       renderWithRouter(
         <MobileNavigation
           currentEntity={mockCurrentEntity}
@@ -821,7 +839,7 @@ describe('MobileNavigation Component', () => {
       )
 
       const endTime = performance.now()
-      
+
       // Should render quickly even with many items
       expect(endTime - startTime).toBeLessThan(100)
     })
@@ -838,7 +856,7 @@ describe('MobileNavigation Component', () => {
       // Simulate orientation change
       Object.defineProperty(window, 'innerWidth', { value: 667 })
       Object.defineProperty(window, 'innerHeight', { value: 375 })
-      
+
       fireEvent(window, new Event('resize'))
 
       // Component should still work
@@ -877,7 +895,7 @@ describe('MobileNavigation Component', () => {
       const simpleEntity: EntityReference = {
         id: 'simple',
         type: 'client',
-        name: 'Simple Client'
+        name: 'Simple Client',
       }
 
       renderWithRouter(
@@ -897,8 +915,8 @@ describe('MobileNavigation Component', () => {
           id: 'simple-action',
           label: 'Simple Action',
           priority: 'medium' as any,
-          category: 'edit' as any
-        }
+          category: 'edit' as any,
+        },
       ]
 
       renderWithRouter(

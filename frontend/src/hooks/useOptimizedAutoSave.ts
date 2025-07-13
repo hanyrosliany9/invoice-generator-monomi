@@ -47,7 +47,7 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
     maxRetries = 3,
     onSave,
     onError,
-    enabled = true
+    enabled = true,
   } = options
 
   const [state, setState] = useState<AutoSaveState>({
@@ -55,7 +55,7 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
     lastSaved: null,
     isDirty: false,
     saveCount: 0,
-    errorCount: 0
+    errorCount: 0,
   })
 
   const retryCountRef = useRef(0)
@@ -75,11 +75,11 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
 
       try {
         await onSave(data)
-        
+
         // Success - reset retry count and update state
         retryCountRef.current = 0
         lastDataRef.current = data
-        
+
         setState(prev => ({
           ...prev,
           isSaving: false,
@@ -94,7 +94,7 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
         }
       } catch (error) {
         retryCountRef.current++
-        
+
         setState(prev => ({
           ...prev,
           isSaving: false,
@@ -103,7 +103,9 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
 
         // Retry if under max retries
         if (retryCountRef.current < maxRetries) {
-          console.warn(`Auto-save failed, retrying (${retryCountRef.current}/${maxRetries})`)
+          console.warn(
+            `Auto-save failed, retrying (${retryCountRef.current}/${maxRetries})`
+          )
           setTimeout(() => debouncedSave(data), 1000 * retryCountRef.current) // Exponential backoff
         } else {
           console.error('Auto-save failed after max retries:', error)
@@ -116,59 +118,65 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
   )
 
   // Trigger auto-save when data changes
-  const triggerAutoSave = useCallback((data: any) => {
-    if (!enabled) return
-    
-    setState(prev => ({ ...prev, isDirty: true }))
-    debouncedSave(data)
-  }, [debouncedSave, enabled])
+  const triggerAutoSave = useCallback(
+    (data: any) => {
+      if (!enabled) return
+
+      setState(prev => ({ ...prev, isDirty: true }))
+      debouncedSave(data)
+    },
+    [debouncedSave, enabled]
+  )
 
   // Manual save function (bypasses debounce)
-  const forceSave = useCallback(async (data: any) => {
-    if (!enabled || !data) return
+  const forceSave = useCallback(
+    async (data: any) => {
+      if (!enabled || !data) return
 
-    debouncedSave.cancel() // Cancel any pending auto-saves
-    
-    setState(prev => ({ ...prev, isSaving: true }))
+      debouncedSave.cancel() // Cancel any pending auto-saves
 
-    try {
-      await onSave(data)
-      lastDataRef.current = data
-      
-      setState(prev => ({
-        ...prev,
-        isSaving: false,
-        lastSaved: new Date(),
-        isDirty: false,
-        saveCount: prev.saveCount + 1,
-      }))
+      setState(prev => ({ ...prev, isSaving: true }))
 
-      message.success('Saved successfully')
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        isSaving: false,
-        errorCount: prev.errorCount + 1,
-      }))
-      
-      message.error('Save failed')
-      onError?.(error as Error)
-      throw error
-    }
-  }, [enabled, onSave, onError, debouncedSave])
+      try {
+        await onSave(data)
+        lastDataRef.current = data
+
+        setState(prev => ({
+          ...prev,
+          isSaving: false,
+          lastSaved: new Date(),
+          isDirty: false,
+          saveCount: prev.saveCount + 1,
+        }))
+
+        message.success('Saved successfully')
+      } catch (error) {
+        setState(prev => ({
+          ...prev,
+          isSaving: false,
+          errorCount: prev.errorCount + 1,
+        }))
+
+        message.error('Save failed')
+        onError?.(error as Error)
+        throw error
+      }
+    },
+    [enabled, onSave, onError, debouncedSave]
+  )
 
   // Reset state
   const reset = useCallback(() => {
     debouncedSave.cancel()
     retryCountRef.current = 0
     lastDataRef.current = null
-    
+
     setState({
       isSaving: false,
       lastSaved: null,
       isDirty: false,
       saveCount: 0,
-      errorCount: 0
+      errorCount: 0,
     })
   }, [debouncedSave])
 
@@ -182,7 +190,7 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
   // Get human-readable last saved time
   const getLastSavedText = useCallback(() => {
     if (!state.lastSaved) return 'Never saved'
-    
+
     const now = new Date()
     const diffMs = now.getTime() - state.lastSaved.getTime()
     const diffSeconds = Math.floor(diffMs / 1000)
@@ -200,12 +208,12 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
   return {
     // State
     ...state,
-    
+
     // Actions
     triggerAutoSave,
     forceSave,
     reset,
-    
+
     // Utilities
     getLastSavedText,
     canSave: enabled && !state.isSaving,

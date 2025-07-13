@@ -22,7 +22,8 @@ class ApiClient {
   private token: string | null = null
 
   constructor() {
-    this.baseURL = import.meta.env['VITE_API_URL'] || 'http://localhost:5000/api'
+    this.baseURL =
+      import.meta.env['VITE_API_URL'] || 'http://localhost:5000/api'
   }
 
   setToken(token: string) {
@@ -34,7 +35,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`
-    
+
     const headers = {
       'Content-Type': 'application/json',
       ...(this.token && { Authorization: `Bearer ${this.token}` }),

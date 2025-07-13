@@ -52,7 +52,8 @@ if (rootElement) {
             components: {
               Layout: {
                 bodyBg: '#f8fafc',
-                headerBg: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%)',
+                headerBg:
+                  'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%)',
                 siderBg: '#ffffff',
               },
               Menu: {
@@ -84,9 +85,9 @@ if (rootElement) {
         </ConfigProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
-    </React.StrictMode>,
+    </React.StrictMode>
   )
-  
+
   if (import.meta.env.DEV) {
     console.log('✅ React app rendered successfully!')
   }
