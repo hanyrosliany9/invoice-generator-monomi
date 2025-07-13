@@ -51,15 +51,6 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
       activeColor: '#1890ff',
     },
     {
-      key: 'clients',
-      label: 'Clients',
-      icon: <UserOutlined />,
-      path: '/clients',
-      count: counts.clients,
-      color: '#8c8c8c',
-      activeColor: '#1890ff',
-    },
-    {
       key: 'projects',
       label: 'Projects',
       icon: <ProjectOutlined />,
@@ -67,6 +58,15 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
       count: counts.projects,
       color: '#8c8c8c',
       activeColor: '#52c41a',
+    },
+    {
+      key: 'clients',
+      label: 'Clients',
+      icon: <UserOutlined />,
+      path: '/clients',
+      count: counts.clients,
+      color: '#8c8c8c',
+      activeColor: '#1890ff',
     },
     {
       key: 'quotations',

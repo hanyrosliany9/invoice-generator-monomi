@@ -64,6 +64,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       label: t('navigation.dashboard'),
     },
     {
+      key: '/projects',
+      icon: <ProjectOutlined />,
+      label: t('navigation.projects'),
+    },
+    {
       key: '/quotations',
       icon: <FileTextOutlined />,
       label: t('navigation.quotations'),
@@ -77,11 +82,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       key: '/clients',
       icon: <UserOutlined />,
       label: t('navigation.clients'),
-    },
-    {
-      key: '/projects',
-      icon: <ProjectOutlined />,
-      label: t('navigation.projects'),
     },
     {
       key: '/reports',
