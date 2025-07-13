@@ -16,6 +16,7 @@ export interface Client {
   lastTransaction?: string
   totalPaid?: number
   totalPending?: number
+  totalRevenue?: number
   totalQuotations?: number
   totalInvoices?: number
   totalProjects?: number
@@ -33,11 +34,14 @@ export interface Client {
 export interface CreateClientRequest {
   name: string
   email: string
-  phone: string
-  address: string
-  company: string
-  contactPerson: string
-  paymentTerms: string
+  phone?: string
+  address?: string
+  company?: string
+  contactPerson?: string
+  paymentTerms?: string
+  taxNumber?: string
+  bankAccount?: string
+  notes?: string
 }
 
 export interface UpdateClientRequest extends Partial<CreateClientRequest> {

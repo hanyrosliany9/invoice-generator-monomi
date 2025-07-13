@@ -268,18 +268,11 @@ export const ProjectsPage: React.FC = () => {
   }, [navigate])
 
   const handleCreate = () => {
-    setEditingProject(null)
-    setModalVisible(true)
-    form.resetFields()
+    navigate('/projects/new')
   }
 
   const handleEdit = (project: Project) => {
-    setEditingProject(project)
-    setModalVisible(true)
-    form.setFieldsValue({
-      ...project,
-      dateRange: [dayjs(project.startDate), dayjs(project.endDate)]
-    })
+    navigate(`/projects/${project.id}/edit`)
   }
 
   const handleView = (project: Project) => {

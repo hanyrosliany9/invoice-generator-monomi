@@ -124,12 +124,7 @@ export const InvoicesPage: React.FC = () => {
 
   // Helper function for creating new invoice
   const handleCreate = () => {
-    setEditingInvoice(null)
-    setModalVisible(true)
-    setPriceInheritanceMode('inherit')
-    setSelectedQuotation(null)
-    setQuotationId(null)
-    form.resetFields()
+    navigate('/invoices/new')
   }
 
   // Memoized keyboard shortcut actions to prevent infinite re-renders
@@ -459,33 +454,7 @@ export const InvoicesPage: React.FC = () => {
   }
 
   const handleEdit = (invoice: Invoice) => {
-    setEditingInvoice(invoice)
-    setModalVisible(true)
-    
-    // Set selected quotation for price inheritance
-    if (invoice.quotationId) {
-      const quotation = quotations.find(q => q.id === invoice.quotationId)
-      if (quotation) {
-        setSelectedQuotation(quotation)
-        setQuotationId(invoice.quotationId)
-        
-        // Determine price inheritance mode
-        const quotationPrice = parseFloat(String(quotation.totalAmount || quotation.amountPerProject || '0'))
-        const invoicePrice = parseFloat(String(invoice.totalAmount || '0'))
-        
-        // If invoice price matches quotation price, assume inheritance mode
-        if (Math.abs(quotationPrice - invoicePrice) < 0.01) {
-          setPriceInheritanceMode('inherit')
-        } else {
-          setPriceInheritanceMode('custom')
-        }
-      }
-    }
-    
-    form.setFieldsValue({
-      ...invoice,
-      dueDate: dayjs(invoice.dueDate)
-    })
+    navigate(`/invoices/${invoice.id}/edit`)
   }
 
   const handleView = (invoice: Invoice) => {

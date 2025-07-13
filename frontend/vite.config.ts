@@ -8,10 +8,7 @@ export default defineConfig({
   plugins: [
     react({
       // SWC optimization options
-      jsxRuntime: 'automatic',
-      plugins: process.env.NODE_ENV === 'production' ? [
-        ['@swc/plugin-remove-console', {}]
-      ] : []
+      jsxRuntime: 'automatic'
     })
   ],
   
@@ -91,14 +88,7 @@ export default defineConfig({
         unknownGlobalSideEffects: false
       },
       output: {
-        manualChunks: {
-          // Vendor chunks for better caching
-          'react-vendor': ['react', 'react-dom'],
-          'antd-vendor': ['antd', '@ant-design/icons'],
-          'chart-vendor': ['recharts', 'ag-grid-community', 'ag-grid-react'],
-          'utils-vendor': ['axios', 'dayjs', 'i18next', 'react-i18next', 'zod']
-        },
-        // Optimize chunk names for caching
+        // Simplified chunk optimization - let Vite handle automatically
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'

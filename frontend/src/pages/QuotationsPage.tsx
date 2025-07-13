@@ -294,44 +294,11 @@ export const QuotationsPage: React.FC = () => {
   }, [navigate])
 
   const handleCreate = () => {
-    setEditingQuotation(null)
-    setModalVisible(true)
-    setPriceInheritanceMode('inherit')
-    setSelectedProject(null)
-    setSelectedClientId(null)
-    form.resetFields()
+    navigate('/quotations/new')
   }
 
   const handleEdit = (quotation: Quotation) => {
-    setEditingQuotation(quotation)
-    setModalVisible(true)
-    
-    // Set selected client and project for price inheritance
-    if (quotation.clientId) {
-      setSelectedClientId(quotation.clientId)
-    }
-    if (quotation.projectId) {
-      const project = projects.find(p => p.id === quotation.projectId)
-      if (project) {
-        setSelectedProject(project)
-        
-        // Determine price inheritance mode
-        const projectPrice = parseFloat(String(project.basePrice || project.estimatedBudget || '0'))
-        const quotationPrice = parseFloat(String(quotation.totalAmount || '0'))
-        
-        // If quotation price matches project price, assume inheritance mode
-        if (Math.abs(projectPrice - quotationPrice) < 0.01) {
-          setPriceInheritanceMode('inherit')
-        } else {
-          setPriceInheritanceMode('custom')
-        }
-      }
-    }
-    
-    form.setFieldsValue({
-      ...quotation,
-      validUntil: dayjs(quotation.validUntil)
-    })
+    navigate(`/quotations/${quotation.id}/edit`)
   }
 
   const handleView = (quotation: Quotation) => {
