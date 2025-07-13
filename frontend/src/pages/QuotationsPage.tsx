@@ -1404,9 +1404,10 @@ export const QuotationsPage: React.FC = () => {
             Download PDF
           </Button>,
         ]}
-        width='90%'
-        style={{ top: 20 }}
-        styles={{ body: { height: '80vh', padding: 0 } }}
+        width='95vw'
+        style={{ top: '2vh' }}
+        styles={{ body: { height: '85vh', padding: 0 } }}
+        centered
       >
         {pdfPreviewUrl && (
           <iframe

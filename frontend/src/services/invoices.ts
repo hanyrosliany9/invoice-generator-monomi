@@ -177,6 +177,14 @@ export const invoiceService = {
     return response.data
   },
 
+  // Preview PDF
+  previewPDF: async (id: string): Promise<Blob> => {
+    const response = await apiClient.get(`/pdf/invoice/${id}/preview`, {
+      responseType: 'blob',
+    })
+    return response.data
+  },
+
   // Send invoice via email
   sendInvoice: async (id: string, email?: string): Promise<void> => {
     await apiClient.post(`/invoices/${id}/send`, { email })

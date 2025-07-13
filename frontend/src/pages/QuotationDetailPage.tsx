@@ -58,6 +58,8 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [pdfModalVisible, setPdfModalVisible] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   // Fetch quotation data
   const {
@@ -207,8 +209,22 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
     }
   }
 
-  const handlePdfPreview = () => {
+  const handlePdfPreview = async () => {
+    setPdfLoading(true)
     setPdfModalVisible(true)
+    try {
+      const blob = await quotationService.previewQuotationPDF(id!)
+      const url = URL.createObjectURL(blob)
+      setPdfUrl(url)
+    } catch (error) {
+      Modal.error({
+        title: 'Failed to Load PDF',
+        content: 'There was an error loading the PDF preview. Please try again.',
+      })
+      setPdfModalVisible(false)
+    } finally {
+      setPdfLoading(false)
+    }
   }
 
   if (isLoading) {
@@ -713,26 +729,83 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
       <Modal
         title='Quotation PDF Preview'
         open={pdfModalVisible}
-        onCancel={() => setPdfModalVisible(false)}
-        width={800}
+        onCancel={() => {
+          setPdfModalVisible(false)
+          if (pdfUrl) {
+            URL.revokeObjectURL(pdfUrl)
+            setPdfUrl(null)
+          }
+        }}
+        width='95vw'
+        style={{ top: '2vh' }}
+        styles={{ body: { height: '85vh', padding: 0 } }}
+        centered
         footer={[
-          <Button key='close' onClick={() => setPdfModalVisible(false)}>
+          <Button key='close' onClick={() => {
+            setPdfModalVisible(false)
+            if (pdfUrl) {
+              URL.revokeObjectURL(pdfUrl)
+              setPdfUrl(null)
+            }
+          }}>
             Close
           </Button>,
-          <Button key='download' type='primary' icon={<ExportOutlined />}>
+          <Button 
+            key='download' 
+            type='primary' 
+            icon={<ExportOutlined />}
+            onClick={async () => {
+              try {
+                const blob = await quotationService.downloadQuotationPDF(id!)
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `${quotation?.quotationNumber || 'quotation'}.pdf`
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                URL.revokeObjectURL(url)
+              } catch (error) {
+                Modal.error({
+                  title: 'Download Failed',
+                  content: 'There was an error downloading the PDF. Please try again.',
+                })
+              }
+            }}
+          >
             Download PDF
           </Button>,
         ]}
       >
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <FilePdfOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
-          <Title level={4} type='secondary'>
-            PDF Preview
-          </Title>
-          <Text type='secondary'>
-            PDF preview functionality will be implemented here.
-          </Text>
-        </div>
+        {pdfLoading ? (
+          <div style={{ textAlign: 'center', padding: '60px' }}>
+            <SyncOutlined spin style={{ fontSize: '48px', color: '#1890ff' }} />
+            <Title level={4} type='secondary' style={{ marginTop: '16px' }}>
+              Loading PDF...
+            </Title>
+          </div>
+        ) : pdfUrl ? (
+          <iframe
+            src={pdfUrl}
+            style={{
+              width: '100%',
+              height: '100%',
+              border: 'none',
+              borderRadius: '6px',
+            }}
+            title='Quotation PDF Preview'
+          />
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <FilePdfOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
+            <Title level={4} type='secondary'>
+              PDF Preview
+            </Title>
+            <Text type='secondary'>
+              Failed to load PDF preview.
+            </Text>
+          </div>
+        )}
       </Modal>
 
       {/* Floating Action Button */}
