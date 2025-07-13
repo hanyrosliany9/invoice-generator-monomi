@@ -11,6 +11,9 @@ import { InvoicesPage } from './pages/InvoicesPage'
 import { ClientsPage } from './pages/ClientsPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
+import { ClientDetailPage } from './pages/ClientDetailPage'
+import { QuotationDetailPage } from './pages/QuotationDetailPage'
+import { InvoiceDetailPage } from './pages/InvoiceDetailPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import './styles/relationships.css'
@@ -44,9 +47,12 @@ function App() {
                 <ErrorBoundary>
                   <Routes>
                     <Route path="/dashboard" element={<DashboardPage />} />
-                    <Route path="/quotations/*" element={<QuotationsPage />} />
-                    <Route path="/invoices/*" element={<InvoicesPage />} />
-                    <Route path="/clients/*" element={<ClientsPage />} />
+                    <Route path="/quotations" element={<QuotationsPage />} />
+                    <Route path="/quotations/:id" element={<QuotationDetailPage />} />
+                    <Route path="/invoices" element={<InvoicesPage />} />
+                    <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+                    <Route path="/clients" element={<ClientsPage />} />
+                    <Route path="/clients/:id" element={<ClientDetailPage />} />
                     <Route path="/projects" element={<ProjectsPage />} />
                     <Route path="/projects/:id" element={<ProjectDetailPage />} />
                     <Route path="/reports" element={<ReportsPage />} />

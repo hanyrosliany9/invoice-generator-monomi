@@ -102,9 +102,8 @@ export const InvoicesPage: React.FC = () => {
   const [materaiFilter, setMateraiFilter] = useState<string>('')
   const [modalVisible, setModalVisible] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
-  const [viewModalVisible, setViewModalVisible] = useState(false)
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [paymentModalVisible, setPaymentModalVisible] = useState(false)
+  const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null)
   const [statusModalVisible, setStatusModalVisible] = useState(false)
   const [statusInvoice, setStatusInvoice] = useState<Invoice | null>(null)
   const [form] = Form.useForm()
@@ -306,6 +305,7 @@ export const InvoicesPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       setPaymentModalVisible(false)
+      setPaymentInvoice(null)
       paymentForm.resetFields()
       message.success('Invoice berhasil ditandai lunas')
     }
@@ -489,8 +489,7 @@ export const InvoicesPage: React.FC = () => {
   }
 
   const handleView = (invoice: Invoice) => {
-    setSelectedInvoice(invoice)
-    setViewModalVisible(true)
+    navigate(`/invoices/${invoice.id}`)
   }
 
   const handleDelete = (id: string) => {
@@ -586,9 +585,9 @@ export const InvoicesPage: React.FC = () => {
   }
 
   const handlePaymentSubmit = (values: any) => {
-    if (selectedInvoice) {
+    if (paymentInvoice) {
       paymentMutation.mutate({
-        id: selectedInvoice.id,
+        id: paymentInvoice.id,
         paidAt: values.paidAt.format('YYYY-MM-DD')
       })
     }
@@ -1010,12 +1009,6 @@ export const InvoicesPage: React.FC = () => {
           {t('invoices.title')}
         </Title>
         
-        <WorkflowIndicator 
-          currentEntity="invoice" 
-          entityData={selectedInvoice || {}} 
-          compact 
-          className="mb-4"
-        />
         
         {/* Loading state for entire statistics section */}
         {isLoading && (
@@ -1649,9 +1642,12 @@ export const InvoicesPage: React.FC = () => {
 
       {/* Payment Modal */}
       <Modal
-        title={`Tandai Lunas - ${selectedInvoice?.number}`}
+        title={`Tandai Lunas - ${paymentInvoice?.number || paymentInvoice?.invoiceNumber}`}
         open={paymentModalVisible}
-        onCancel={() => setPaymentModalVisible(false)}
+        onCancel={() => {
+          setPaymentModalVisible(false)
+          setPaymentInvoice(null)
+        }}
         footer={null}
         width={500}
       >
@@ -1669,7 +1665,10 @@ export const InvoicesPage: React.FC = () => {
           </Form.Item>
 
           <div className="flex justify-end space-x-2">
-            <Button onClick={() => setPaymentModalVisible(false)}>
+            <Button onClick={() => {
+              setPaymentModalVisible(false)
+              setPaymentInvoice(null)
+            }}>
               {t('common.cancel')}
             </Button>
             <Button
@@ -1683,132 +1682,6 @@ export const InvoicesPage: React.FC = () => {
         </Form>
       </Modal>
 
-      {/* View Modal */}
-      <Modal
-        title={`Detail Invoice - ${selectedInvoice?.number}`}
-        open={viewModalVisible}
-        onCancel={() => setViewModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setViewModalVisible(false)}>
-            Tutup
-          </Button>
-        ]}
-        width={1000}
-      >
-        {selectedInvoice && (
-          <div className="space-y-4">
-            {/* Breadcrumb Navigation */}
-            <div className="mb-4">
-              <EntityBreadcrumb
-                entityType="invoice"
-                entityData={selectedInvoice}
-                className="mb-2"
-              />
-              <RelatedEntitiesPanel
-                entityType="invoice"
-                entityData={selectedInvoice}
-                className="mb-4"
-              />
-            </div>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>Klien:</Text>
-                <div>{selectedInvoice.client?.name || 'N/A'}</div>
-                <div style={{ fontSize: '12px', color: '#666' }}>{selectedInvoice.client?.company}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Proyek:</Text>
-                <div>{selectedInvoice.project?.number} - {selectedInvoice.project?.description || 'N/A'}</div>
-              </Col>
-            </Row>
-            
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>Jumlah:</Text>
-                <div className="idr-amount">{formatIDR(selectedInvoice.totalAmount)}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Status:</Text>
-                <div>
-                  <Tag color={getStatusColor(selectedInvoice.status.toLowerCase())}>
-                    {(() => {
-                      const statusMap = {
-                        'DRAFT': 'Draft',
-                        'SENT': 'Terkirim', 
-                        'PAID': 'Lunas',
-                        'OVERDUE': 'Jatuh Tempo',
-                        'CANCELLED': 'Dibatalkan'
-                      }
-                      return statusMap[selectedInvoice.status as keyof typeof statusMap] || selectedInvoice.status
-                    })()} 
-                  </Tag>
-                </div>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>Tanggal Dibuat:</Text>
-                <div>{dayjs(selectedInvoice.createdAt).format('DD/MM/YYYY')}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Batas Pembayaran:</Text>
-                <div>{dayjs(selectedInvoice.dueDate).format('DD/MM/YYYY')}</div>
-              </Col>
-            </Row>
-
-            {selectedInvoice.paidAt && (
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Text strong>Tanggal Pembayaran:</Text>
-                  <div>{dayjs(selectedInvoice.paidAt).format('DD/MM/YYYY')}</div>
-                </Col>
-              </Row>
-            )}
-
-            {selectedInvoice.quotationId && (
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Text strong>Berdasarkan Quotation:</Text>
-                  <div>{selectedInvoice.quotation?.quotationNumber || selectedInvoice.quotationId || 'Manual Invoice'}</div>
-                </Col>
-              </Row>
-            )}
-
-            <Divider />
-
-            {selectedInvoice.materaiRequired && (
-              <Alert
-                message={t('invoices.materaiWarning')}
-                description={
-                  <div>
-                    <p>Invoice ini memerlukan materai karena nilainya lebih dari IDR 5,000,000</p>
-                    <p>Status materai: <strong>{selectedInvoice.materaiApplied ? 'Sudah ditempel' : 'Belum ditempel'}</strong></p>
-                  </div>
-                }
-                type={selectedInvoice.materaiApplied ? 'success' : 'warning'}
-                showIcon
-                className="mb-4"
-              />
-            )}
-
-            {selectedInvoice.paymentInfo && (
-              <div>
-                <Text strong>Informasi Pembayaran:</Text>
-                <div>{selectedInvoice.paymentInfo}</div>
-              </div>
-            )}
-
-            {selectedInvoice.terms && (
-              <div>
-                <Text strong>Catatan:</Text>
-                <div>{selectedInvoice.terms}</div>
-              </div>
-            )}
-
-          </div>
-        )}
-      </Modal>
 
       {/* Status Change Modal */}
       <Modal

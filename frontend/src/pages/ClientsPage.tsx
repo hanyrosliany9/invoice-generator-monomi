@@ -65,8 +65,6 @@ export const ClientsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [modalVisible, setModalVisible] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
-  const [viewModalVisible, setViewModalVisible] = useState(false)
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [batchLoading, setBatchLoading] = useState(false)
   const [form] = Form.useForm()
@@ -160,18 +158,11 @@ export const ClientsPage: React.FC = () => {
 
   // Handle URL parameters for direct navigation
   useEffect(() => {
-    // Handle clientId query parameter (show specific client detail)
+    // Handle clientId query parameter (navigate to specific client detail page)
     const viewClientId = searchParams.get("clientId")
-    if (viewClientId && clients.length > 0) {
-      const client = clients.find(c => c.id === viewClientId)
-      if (client) {
-        setSelectedClient(client)
-        setViewModalVisible(true)
-        // Clear the URL parameter after opening modal
-        const newSearchParams = new URLSearchParams(searchParams)
-        newSearchParams.delete("clientId")
-        navigate("/clients", { replace: true })
-      }
+    if (viewClientId) {
+      // Navigate to dedicated client detail page
+      navigate(`/clients/${viewClientId}`, { replace: true })
     }
   }, [searchParams, clients, navigate])
 
@@ -236,8 +227,7 @@ export const ClientsPage: React.FC = () => {
   }
 
   const handleView = (client: Client) => {
-    setSelectedClient(client)
-    setViewModalVisible(true)
+    navigate(`/clients/${client.id}`)
   }
 
   const handleDelete = (id: string) => {
@@ -449,12 +439,6 @@ export const ClientsPage: React.FC = () => {
       <div className="mb-6">
         <Title level={2}>{t('clients.title')}</Title>
         
-        <WorkflowIndicator 
-          currentEntity="client" 
-          entityData={selectedClient || {}} 
-          compact 
-          className="mb-4"
-        />
         
         {/* Statistics */}
         <Row gutter={[24, 24]} className="mb-6">
@@ -898,157 +882,6 @@ export const ClientsPage: React.FC = () => {
         </Form>
       </Modal>
 
-      {/* View Modal */}
-      <Modal
-        title={`${t('clients.detail')} - ${selectedClient?.name}`}
-        open={viewModalVisible}
-        onCancel={() => setViewModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setViewModalVisible(false)}>
-            {t('common.close')}
-          </Button>
-        ]}
-        width={800}
-      >
-        {selectedClient && (
-          <div className="space-y-4">
-            {/* Breadcrumb Navigation */}
-            <div className="mb-4">
-              <EntityBreadcrumb
-                entityType="client"
-                entityData={selectedClient}
-                className="mb-2"
-              />
-              <RelatedEntitiesPanel
-                entityType="client"
-                entityData={selectedClient}
-                className="mb-4"
-              />
-            </div>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>{t('clients.name')}:</Text>
-                <div>{selectedClient.name}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>{t('clients.company')}:</Text>
-                <div>{selectedClient.company}</div>
-              </Col>
-            </Row>
-            
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>{t('clients.contactPerson')}:</Text>
-                <div>{selectedClient.contactPerson}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Status:</Text>
-                <div>
-                  <Tag color={getStatusColor(selectedClient.status || 'inactive')}>
-                    {getStatusText(selectedClient.status || 'inactive')}
-                  </Tag>
-                </div>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>{t('clients.email')}:</Text>
-                <div>{selectedClient.email}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>{t('clients.phone')}:</Text>
-                <div>{selectedClient.phone}</div>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col span={24}>
-                <Text strong>{t('clients.address')}:</Text>
-                <div>{selectedClient.address}</div>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>{t('clients.paymentTerms')}:</Text>
-                <div>{selectedClient.paymentTerms}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Transaksi Terakhir:</Text>
-                <div>{selectedClient.lastTransaction ? dayjs(selectedClient.lastTransaction).format('DD/MM/YYYY') : '-'}</div>
-              </Col>
-            </Row>
-
-            {selectedClient.taxNumber && (
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Text strong>NPWP:</Text>
-                  <div>{selectedClient.taxNumber}</div>
-                </Col>
-              </Row>
-            )}
-
-            {selectedClient.bankAccount && (
-              <Row gutter={16}>
-                <Col span={24}>
-                  <Text strong>Rekening Bank:</Text>
-                  <div>{selectedClient.bankAccount}</div>
-                </Col>
-              </Row>
-            )}
-
-            <Divider />
-
-            <Title level={4}>Statistik Transaksi</Title>
-            <Row gutter={16}>
-              <Col span={6}>
-                <Card>
-                  <Statistic
-                    title="Quotations"
-                    value={selectedClient.totalQuotations || 0}
-                    prefix={<FileTextOutlined />}
-                  />
-                </Card>
-              </Col>
-              <Col span={6}>
-                <Card>
-                  <Statistic
-                    title="Invoices"
-                    value={selectedClient.totalInvoices || 0}
-                    prefix={<FileTextOutlined />}
-                  />
-                </Card>
-              </Col>
-              <Col span={6}>
-                <Card>
-                  <Statistic
-                    title="Sudah Dibayar"
-                    value={formatIDR(selectedClient.totalPaid || 0)}
-                    valueStyle={{ color: '#52c41a' }}
-                  />
-                </Card>
-              </Col>
-              <Col span={6}>
-                <Card>
-                  <Statistic
-                    title="Belum Dibayar"
-                    value={formatIDR(selectedClient.totalPending || 0)}
-                    valueStyle={{ color: '#fa8c16' }}
-                  />
-                </Card>
-              </Col>
-            </Row>
-
-            {selectedClient.notes && (
-              <div className="mt-4">
-                <Text strong>Catatan:</Text>
-                <div>{selectedClient.notes}</div>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
     </div>
   )
 }

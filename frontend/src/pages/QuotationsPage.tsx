@@ -72,8 +72,6 @@ export const QuotationsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [modalVisible, setModalVisible] = useState(false)
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null)
-  const [viewModalVisible, setViewModalVisible] = useState(false)
-  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
   const [pdfPreviewVisible, setPdfPreviewVisible] = useState(false)
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('')
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -224,15 +222,9 @@ export const QuotationsPage: React.FC = () => {
   // Handle viewQuotation query parameter
   useEffect(() => {
     const viewQuotationId = searchParams.get("viewQuotation")
-    if (viewQuotationId && quotations.length > 0) {
-      const quotation = quotations.find(q => q.id === viewQuotationId)
-      if (quotation) {
-        setSelectedQuotation(quotation)
-        setViewModalVisible(true)
-        // Clear the URL parameter after opening modal
-        searchParams.delete("viewQuotation")
-        navigate("/quotations", { replace: true })
-      }
+    if (viewQuotationId) {
+      // Navigate to dedicated quotation detail page
+      navigate(`/quotations/${viewQuotationId}`, { replace: true })
     }
   }, [searchParams, quotations, navigate])
 
@@ -343,8 +335,7 @@ export const QuotationsPage: React.FC = () => {
   }
 
   const handleView = (quotation: Quotation) => {
-    setSelectedQuotation(quotation)
-    setViewModalVisible(true)
+    navigate(`/quotations/${quotation.id}`)
   }
 
   const handleDelete = (id: string) => {
@@ -575,7 +566,6 @@ export const QuotationsPage: React.FC = () => {
       const url = window.URL.createObjectURL(blob)
       setPdfPreviewUrl(url)
       setPdfPreviewVisible(true)
-      setSelectedQuotation(quotation)
       
       message.success({ content: 'Preview PDF berhasil dimuat', key: 'preview' })
     } catch (error) {
@@ -590,7 +580,6 @@ export const QuotationsPage: React.FC = () => {
       window.URL.revokeObjectURL(pdfPreviewUrl)
       setPdfPreviewUrl('')
     }
-    setSelectedQuotation(null)
   }
 
   const handleFormSubmit = (values: any) => {
@@ -834,12 +823,6 @@ export const QuotationsPage: React.FC = () => {
       <div className="mb-6">
         <Title level={2}>{t('quotations.title')}</Title>
         
-        <WorkflowIndicator 
-          currentEntity="quotation" 
-          entityData={selectedQuotation || {}} 
-          compact 
-          className="mb-4"
-        />
         
         {/* Statistics */}
         <Row gutter={[24, 24]} className="mb-6">
@@ -1318,114 +1301,17 @@ export const QuotationsPage: React.FC = () => {
         </Form>
       </Modal>
 
-      {/* View Modal */}
-      <Modal
-        title={`Detail Quotation - ${selectedQuotation?.quotationNumber}`}
-        open={viewModalVisible}
-        onCancel={() => setViewModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setViewModalVisible(false)}>
-            Tutup
-          </Button>
-        ]}
-        width={1000}
-      >
-        {selectedQuotation && (
-          <div className="space-y-4">
-            {/* Breadcrumb Navigation */}
-            <div className="mb-4">
-              <EntityBreadcrumb
-                entityType="quotation"
-                entityData={selectedQuotation}
-                className="mb-2"
-              />
-              <RelatedEntitiesPanel
-                entityType="quotation"
-                entityData={selectedQuotation}
-                className="mb-4"
-              />
-            </div>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>Klien:</Text>
-                <div>{selectedQuotation.client?.name || 'N/A'}</div>
-                <div style={{ fontSize: '12px', color: '#666' }}>{selectedQuotation.client?.company}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Proyek:</Text>
-                <div>{selectedQuotation.project?.number} - {selectedQuotation.project?.description || 'N/A'}</div>
-              </Col>
-            </Row>
-            
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>Jumlah:</Text>
-                <div className="idr-amount">{formatIDR(selectedQuotation.totalAmount)}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Status:</Text>
-                <div>
-                  <Tag color={getStatusColor(selectedQuotation.status)}>
-                    {getStatusText(selectedQuotation.status)}
-                  </Tag>
-                </div>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>Berlaku Hingga:</Text>
-                <div>{dayjs(selectedQuotation.validUntil).format('DD/MM/YYYY')}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Dibuat:</Text>
-                <div>{dayjs(selectedQuotation.createdAt).format('DD/MM/YYYY HH:mm')}</div>
-              </Col>
-            </Row>
-
-            {selectedQuotation.terms && (
-              <div>
-                <Text strong>Syarat & Ketentuan:</Text>
-                <div style={{ padding: '8px', backgroundColor: '#f9f9f9', borderRadius: '4px' }}>
-                  {selectedQuotation.terms}
-                </div>
-              </div>
-            )}
-
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text strong>Dibuat Oleh:</Text>
-                <div>{selectedQuotation.user?.name || selectedQuotation.user?.email || 'N/A'}</div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Diperbarui:</Text>
-                <div>{dayjs(selectedQuotation.updatedAt).format('DD/MM/YYYY HH:mm')}</div>
-              </Col>
-            </Row>
-
-
-            {requiresMaterai(selectedQuotation.totalAmount) && (
-              <Alert
-                message="Quotation ini memerlukan materai"
-                description="Jika disetujui, invoice yang dihasilkan akan memerlukan materai IDR 10,000"
-                type="info"
-                showIcon
-              />
-            )}
-          </div>
-        )}
-      </Modal>
 
       {/* PDF Preview Modal */}
       <Modal
-        title={`Preview PDF - ${selectedQuotation?.quotationNumber || ''}`}
+        title="Preview PDF"
         open={pdfPreviewVisible}
         onCancel={handleClosePdfPreview}
         footer={[
           <Button key="close" onClick={handleClosePdfPreview}>
             Tutup
           </Button>,
-          <Button key="download" type="primary" icon={<PrinterOutlined />} onClick={() => selectedQuotation && handlePrintQuotation(selectedQuotation)}>
+          <Button key="download" type="primary" icon={<PrinterOutlined />}>
             Download PDF
           </Button>
         ]}
