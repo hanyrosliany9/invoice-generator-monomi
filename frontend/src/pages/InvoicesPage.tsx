@@ -804,12 +804,6 @@ export const InvoicesPage: React.FC = () => {
   const getActionMenuItems = (invoice: Invoice) => {
     const items = [
       {
-        key: 'view',
-        icon: <EyeOutlined />,
-        label: 'Lihat Detail',
-        onClick: () => handleView(invoice),
-      },
-      {
         key: 'edit',
         icon: <EditOutlined />,
         label: 'Edit',
@@ -885,7 +879,15 @@ export const InvoicesPage: React.FC = () => {
       key: 'invoiceContext',
       render: (_: any, invoice: Invoice) => (
         <div className='space-y-1'>
-          <div className='font-medium'>{getInvoiceNumber(invoice)}</div>
+          <div className='font-medium'>
+            <Button
+              type='link'
+              onClick={() => handleView(invoice)}
+              className='text-blue-600 hover:text-blue-800 p-0 font-medium'
+            >
+              {getInvoiceNumber(invoice)}
+            </Button>
+          </div>
 
           {/* Relationship Context */}
           <div className='text-xs space-y-1'>

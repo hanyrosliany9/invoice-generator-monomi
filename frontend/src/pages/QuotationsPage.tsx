@@ -623,12 +623,6 @@ export const QuotationsPage: React.FC = () => {
   const getActionMenuItems = (quotation: Quotation) => {
     const items: NonNullable<MenuProps['items']> = [
       {
-        key: 'view',
-        icon: <EyeOutlined />,
-        label: 'Lihat Detail',
-        onClick: () => handleView(quotation),
-      },
-      {
         key: 'edit',
         icon: <EditOutlined />,
         label: 'Edit',
@@ -729,7 +723,15 @@ export const QuotationsPage: React.FC = () => {
     {
       title: 'Nomor',
       key: 'quotationNumber',
-      render: (_: any, quotation: Quotation) => quotation.quotationNumber,
+      render: (_: any, quotation: Quotation) => (
+        <Button
+          type='link'
+          onClick={() => handleView(quotation)}
+          className='text-blue-600 hover:text-blue-800 p-0'
+        >
+          {quotation.quotationNumber}
+        </Button>
+      ),
       sorter: (a: Quotation, b: Quotation) =>
         a.quotationNumber.localeCompare(b.quotationNumber),
     },

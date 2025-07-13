@@ -359,12 +359,6 @@ export const ProjectsPage: React.FC = () => {
   const getActionMenuItems = (project: Project) => {
     return [
       {
-        key: 'view',
-        icon: <EyeOutlined />,
-        label: 'Lihat Detail',
-        onClick: () => handleView(project),
-      },
-      {
         key: 'edit',
         icon: <EditOutlined />,
         label: 'Edit',
@@ -405,7 +399,15 @@ export const ProjectsPage: React.FC = () => {
       key: 'project',
       render: (_: any, project: Project) => (
         <div>
-          <div className='font-semibold'>{project.number}</div>
+          <div className='font-semibold'>
+            <Button
+              type='link'
+              onClick={() => handleView(project)}
+              className='text-blue-600 hover:text-blue-800 p-0 font-semibold'
+            >
+              {project.number}
+            </Button>
+          </div>
           <div className='text-sm text-gray-600'>{project.description}</div>
           <div className='mt-1'>
             <Tag color={getTypeColor(project.type)}>
