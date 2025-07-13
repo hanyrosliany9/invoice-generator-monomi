@@ -10,7 +10,6 @@ import {
 } from '@ant-design/icons'
 
 const { Text } = Typography
-const { Panel } = Collapse
 
 interface ValidationStatus {
   status: 'success' | 'warning' | 'error' | 'validating'
@@ -88,6 +87,92 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
 
   const isMobile = window.innerWidth < 768
 
+  const collapseItems = [
+    {
+      key: 'content',
+      label: (
+        <div
+          style={{ display: 'flex', alignItems: 'center', width: '100%' }}
+        >
+          <Space align='center' style={{ flex: 1 }}>
+            {icon && (
+              <div style={{ fontSize: '18px', color: '#1890ff' }}>
+                {icon}
+              </div>
+            )}
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <Text strong style={{ fontSize: '16px' }}>
+                  {title}
+                </Text>
+                {required && <Tag color='red'>Required</Tag>}
+                {validation && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    {getValidationIcon(validation.status)}
+                  </div>
+                )}
+              </div>
+              {subtitle && (
+                <Text type='secondary' style={{ fontSize: '14px' }}>
+                  {subtitle}
+                </Text>
+              )}
+              {validation?.message && (
+                <div style={{ marginTop: '4px' }}>
+                  <Text
+                    style={{
+                      fontSize: '12px',
+                      color: getValidationColor(validation.status),
+                    }}
+                  >
+                    {validation.message}
+                  </Text>
+                </div>
+              )}
+            </div>
+          </Space>
+          {extra && <div onClick={e => e.stopPropagation()}>{extra}</div>}
+        </div>
+      ),
+      children: (
+        <div
+          style={{
+            padding: isMobile && mobileCollapsed ? '8px' : '16px',
+            paddingTop: '16px',
+          }}
+        >
+          {children}
+        </div>
+      ),
+      style: {
+        border:
+          validation?.status === 'error'
+            ? '1px solid #ff4d4f'
+            : validation?.status === 'warning'
+              ? '1px solid #faad14'
+              : validation?.status === 'success'
+                ? '1px solid #52c41a'
+                : '1px solid #f0f0f0',
+        borderRadius: '8px',
+        marginBottom: '8px',
+        transition: 'all 0.3s ease',
+      },
+      disabled,
+    },
+  ]
+
   return (
     <Card
       className={className}
@@ -107,90 +192,8 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
         style={{
           border: 'none',
         }}
-      >
-        <Panel
-          key='content'
-          disabled={disabled}
-          header={
-            <div
-              style={{ display: 'flex', alignItems: 'center', width: '100%' }}
-            >
-              <Space align='center' style={{ flex: 1 }}>
-                {icon && (
-                  <div style={{ fontSize: '18px', color: '#1890ff' }}>
-                    {icon}
-                  </div>
-                )}
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <Text strong style={{ fontSize: '16px' }}>
-                      {title}
-                    </Text>
-                    {required && <Tag color='red'>Required</Tag>}
-                    {validation && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                      >
-                        {getValidationIcon(validation.status)}
-                      </div>
-                    )}
-                  </div>
-                  {subtitle && (
-                    <Text type='secondary' style={{ fontSize: '14px' }}>
-                      {subtitle}
-                    </Text>
-                  )}
-                  {validation?.message && (
-                    <div style={{ marginTop: '4px' }}>
-                      <Text
-                        style={{
-                          fontSize: '12px',
-                          color: getValidationColor(validation.status),
-                        }}
-                      >
-                        {validation.message}
-                      </Text>
-                    </div>
-                  )}
-                </div>
-              </Space>
-              {extra && <div onClick={e => e.stopPropagation()}>{extra}</div>}
-            </div>
-          }
-          style={{
-            border:
-              validation?.status === 'error'
-                ? '1px solid #ff4d4f'
-                : validation?.status === 'warning'
-                  ? '1px solid #faad14'
-                  : validation?.status === 'success'
-                    ? '1px solid #52c41a'
-                    : '1px solid #f0f0f0',
-            borderRadius: '8px',
-            marginBottom: '8px',
-            transition: 'all 0.3s ease',
-          }}
-        >
-          <div
-            style={{
-              padding: isMobile && mobileCollapsed ? '8px' : '16px',
-              paddingTop: '16px',
-            }}
-          >
-            {children}
-          </div>
-        </Panel>
-      </Collapse>
+        items={collapseItems}
+      />
     </Card>
   )
 }

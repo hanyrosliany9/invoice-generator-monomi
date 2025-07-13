@@ -162,14 +162,13 @@ export const ProjectCreatePage: React.FC = () => {
     calculateTotal(products)
   }
 
-  const selectedClient = clients.find(
-    c => c.id === form.getFieldValue('clientId')
-  )
+  // Use form watcher instead of direct getFieldValue calls to avoid useForm warning
+  const [formValues, setFormValues] = useState<Partial<ProjectFormData>>({})
+  
+  const selectedClient = clients.find(c => c.id === formValues.clientId)
   const duration =
-    form.getFieldValue('startDate') && form.getFieldValue('endDate')
-      ? form
-          .getFieldValue('endDate')
-          .diff(form.getFieldValue('startDate'), 'day') + 1
+    formValues.startDate && formValues.endDate
+      ? formValues.endDate.diff(formValues.startDate, 'day') + 1
       : 0
 
   const heroCard = (
@@ -208,7 +207,7 @@ export const ProjectCreatePage: React.FC = () => {
             stats={[
               {
                 label: 'Total Products',
-                value: (form.getFieldValue('products') || []).length,
+                value: (formValues.products || []).length,
                 icon: <ProjectOutlined />,
                 color: '#1890ff',
               },
@@ -245,7 +244,10 @@ export const ProjectCreatePage: React.FC = () => {
         form={form}
         layout='vertical'
         onFinish={handleSubmit}
-        onValuesChange={handleProductsChange}
+        onValuesChange={(_, allValues) => {
+          setFormValues(allValues)
+          handleProductsChange()
+        }}
         autoComplete='off'
         style={{ width: '100%' }}
       >
@@ -389,7 +391,7 @@ export const ProjectCreatePage: React.FC = () => {
                   style={{ width: '100%' }}
                   format='DD MMM YYYY'
                   disabledDate={current => {
-                    const startDate = form.getFieldValue('startDate')
+                    const startDate = formValues.startDate
                     return current && startDate && current < startDate
                   }}
                 />

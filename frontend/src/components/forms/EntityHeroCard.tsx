@@ -101,16 +101,21 @@ export const EntityHeroCard: React.FC<EntityHeroCardProps> = ({
   return (
     <div className={className} data-testid={dataTestId} aria-label={ariaLabel}>
       {/* Breadcrumb Navigation */}
-      <Breadcrumb style={{ marginBottom: '24px' }}>
-        <Breadcrumb.Item>
-          <Button type='text' icon={<ArrowLeftOutlined />} onClick={handleBack}>
-            {breadcrumb[0]}
-          </Button>
-        </Breadcrumb.Item>
-        {breadcrumb.slice(1).map((item, index) => (
-          <Breadcrumb.Item key={index}>{item}</Breadcrumb.Item>
-        ))}
-      </Breadcrumb>
+      <Breadcrumb 
+        style={{ marginBottom: '24px' }}
+        items={[
+          {
+            title: (
+              <Button type='text' icon={<ArrowLeftOutlined />} onClick={handleBack}>
+                {breadcrumb[0]}
+              </Button>
+            ),
+          },
+          ...breadcrumb.slice(1).map((item) => ({
+            title: item,
+          })),
+        ]}
+      />
 
       {/* Hero Card */}
       <Card
