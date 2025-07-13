@@ -144,6 +144,7 @@ model Quotation {
   // Relations
   invoices             Invoice[]
   businessJourneyEvents BusinessJourneyEvent[]
+  documents            Document[]
 
   @@index([quotationNumber])
   @@index([status])
@@ -209,6 +210,7 @@ model Invoice {
   // Relations
   payments             Payment[]
   businessJourneyEvents BusinessJourneyEvent[]
+  documents            Document[]
 
   @@index([invoiceNumber])
   @@index([status])
@@ -566,4 +568,44 @@ model FeatureFlagEvent {
   @@index([userId])
   @@index([eventType])
   @@map("feature_flag_events")
+}
+
+// Document Management
+model Document {
+  id               String       @id @default(cuid())
+  fileName         String
+  originalFileName String
+  filePath         String
+  fileSize         Int          // Size in bytes
+  mimeType         String
+  category         DocumentCategory @default(OTHER)
+  description      String?
+  
+  // Entity relationships - documents can be attached to invoices or quotations
+  invoiceId   String?
+  invoice     Invoice?   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  quotationId String?
+  quotation   Quotation? @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  
+  // User tracking
+  uploadedBy String
+  uploadedAt DateTime @default(now())
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([invoiceId])
+  @@index([quotationId])
+  @@index([category])
+  @@index([mimeType])
+  @@index([uploadedAt])
+  @@map("documents")
+}
+
+enum DocumentCategory {
+  SUPPORTING_DOCUMENT
+  CONTRACT
+  RECEIPT
+  INVOICE_ATTACHMENT
+  OTHER
 }

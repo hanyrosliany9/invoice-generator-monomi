@@ -50,6 +50,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { formatIDR, safeNumber, safeString } from '../utils/currency'
 import { Invoice, invoiceService } from '../services/invoices'
+import { FileUpload } from '../components/documents/FileUpload'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
@@ -78,6 +79,24 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
   } = useQuery({
     queryKey: ['invoice', id],
     queryFn: () => invoiceService.getInvoice(id!),
+    enabled: !!id,
+  })
+
+  // Fetch documents data
+  const {
+    data: documents = [],
+    isLoading: documentsLoading,
+    refetch: refetchDocuments,
+  } = useQuery({
+    queryKey: ['documents', 'invoice', id],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/documents/invoice/${id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch documents');
+      }
+      const result = await response.json();
+      return result.data || []; // Extract data field from backend response
+    },
     enabled: !!id,
   })
 
@@ -810,25 +829,23 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                 </span>
               ),
               children: (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <FilePdfOutlined
-                    style={{ fontSize: '48px', color: '#d9d9d9' }}
-                  />
-                  <Title level={4} type='secondary'>
-                    Document Management
-                  </Title>
-                  <Text type='secondary'>
-                    PDF documents and file attachments coming soon.
-                  </Text>
-                  <div style={{ marginTop: '16px' }}>
-                    <Button
-                      type='primary'
-                      icon={<FilePdfOutlined />}
-                      onClick={handlePdfPreview}
-                    >
-                      Preview PDF
-                    </Button>
+                <div style={{ padding: '20px' }}>
+                  <div style={{ marginBottom: '20px' }}>
+                    <Space>
+                      <Button
+                        type='primary'
+                        icon={<FilePdfOutlined />}
+                        onClick={handlePdfPreview}
+                      >
+                        Preview Invoice PDF
+                      </Button>
+                    </Space>
                   </div>
+                  <FileUpload
+                    invoiceId={id}
+                    documents={documents}
+                    onDocumentsChange={() => refetchDocuments()}
+                  />
                 </div>
               ),
             },
