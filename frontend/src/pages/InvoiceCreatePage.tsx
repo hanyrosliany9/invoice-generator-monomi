@@ -146,14 +146,14 @@ export const InvoiceCreatePage: React.FC = () => {
   useEffect(() => {
     if (selectedQuotation) {
       const defaultDueDate = dayjs().add(30, 'day')
-      const materaiRequired = Number(selectedQuotation.totalAmount) > 5000000
+      const materaiRequired = selectedQuotation.totalAmount > 5000000
       
       const inheritedData = {
         clientId: selectedQuotation.clientId,
         projectId: selectedQuotation.projectId,
         quotationId: selectedQuotation.id,
-        amountPerProject: Number(selectedQuotation.amountPerProject),
-        totalAmount: Number(selectedQuotation.totalAmount),
+        amountPerProject: selectedQuotation.amountPerProject,
+        totalAmount: selectedQuotation.totalAmount,
         dueDate: defaultDueDate,
         materaiRequired,
         paymentInfo: generateDefaultPaymentInfo(selectedQuotation),

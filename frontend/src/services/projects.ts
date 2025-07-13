@@ -9,8 +9,7 @@ export interface Project {
   clientId: string
   startDate: string
   endDate: string
-  estimatedBudget?: string  // Optional - calculated from products
-  basePrice?: string        // Price cascade support
+  basePrice?: number        // Price cascade support - calculated from products
   priceBreakdown?: any      // Detailed price breakdown
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
   totalRevenue?: number     // Total revenue from all related invoices
@@ -35,8 +34,7 @@ export interface CreateProjectRequest {
   clientId: string
   startDate: string
   endDate: string
-  estimatedBudget?: string  // Optional - calculated from products
-  basePrice?: string        // Optional price cascade support
+  basePrice?: number        // Optional price cascade support - calculated from products
   priceBreakdown?: any      // Optional detailed price breakdown
   products?: Array<{        // Product/service items for automatic calculations
     name: string

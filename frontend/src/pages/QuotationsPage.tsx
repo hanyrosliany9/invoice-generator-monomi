@@ -210,8 +210,8 @@ export const QuotationsPage: React.FC = () => {
         if (project) {
           setSelectedProject(project)
           if (priceInheritanceMode === 'inherit') {
-            // Use project basePrice or estimatedBudget
-            const inheritedPrice = project.basePrice || project.estimatedBudget || 0
+            // Use project basePrice or basePrice
+            const inheritedPrice = project.basePrice || project.basePrice || 0
             form.setFieldsValue({ totalAmount: inheritedPrice })
           }
         }
@@ -358,10 +358,8 @@ export const QuotationsPage: React.FC = () => {
     if (project) {
       setSelectedProject(project)
       if (priceInheritanceMode === 'inherit') {
-        // Use project basePrice or estimatedBudget - convert string to number
-        const basePrice = project.basePrice ? parseFloat(project.basePrice) : 0
-        const estimatedBudget = project.estimatedBudget ? parseFloat(project.estimatedBudget) : 0
-        const inheritedPrice = basePrice || estimatedBudget || 0
+        // Use project basePrice - direct number access
+        const inheritedPrice = project.basePrice || 0
         form.setFieldsValue({ totalAmount: inheritedPrice })
       }
     }
@@ -377,10 +375,8 @@ export const QuotationsPage: React.FC = () => {
     setPriceInheritanceMode(mode)
     
     if (mode === 'inherit' && selectedProject) {
-      // Use project basePrice or estimatedBudget - convert string to number
-      const basePrice = selectedProject.basePrice ? parseFloat(selectedProject.basePrice) : 0
-      const estimatedBudget = selectedProject.estimatedBudget ? parseFloat(selectedProject.estimatedBudget) : 0
-      const inheritedPrice = basePrice || estimatedBudget || 0
+      // Use project basePrice - direct number access
+      const inheritedPrice = selectedProject.basePrice || 0
       form.setFieldsValue({ totalAmount: inheritedPrice })
     } else if (mode === 'custom') {
       // Clear the amount field for custom input
@@ -553,9 +549,7 @@ export const QuotationsPage: React.FC = () => {
     let totalAmount = safeNumber(values.totalAmount);
     // Fix for price inheritance mode: when field is disabled, get inherited price
     if (priceInheritanceMode === "inherit" && selectedProject && totalAmount === 0) {
-      const basePrice = selectedProject.basePrice ? parseFloat(selectedProject.basePrice) : 0
-      const estimatedBudget = selectedProject.estimatedBudget ? parseFloat(selectedProject.estimatedBudget) : 0
-      totalAmount = basePrice || estimatedBudget || 0;
+      totalAmount = selectedProject.basePrice || 0;
     }
     
     // Validation: ensure we have a valid amount
@@ -1196,7 +1190,7 @@ export const QuotationsPage: React.FC = () => {
                   Gunakan Harga dari Proyek
                   {selectedProject && (
                     <Text type="secondary" style={{ marginLeft: 8 }}>
-                      ({formatIDR(parseFloat(selectedProject.basePrice || selectedProject.estimatedBudget || '0'))})
+                      ({formatIDR(parseFloat(selectedProject.basePrice || selectedProject.basePrice || '0'))})
                     </Text>
                   )}
                 </Radio>
@@ -1205,7 +1199,7 @@ export const QuotationsPage: React.FC = () => {
               
               {priceInheritanceMode === 'inherit' && selectedProject && (
                 <Alert
-                  message={`Harga akan otomatis diambil dari proyek: ${formatIDR(parseFloat(selectedProject.basePrice || selectedProject.estimatedBudget || '0'))}`}
+                  message={`Harga akan otomatis diambil dari proyek: ${formatIDR(parseFloat(selectedProject.basePrice || selectedProject.basePrice || '0'))}`}
                   type="info"
                   showIcon
                 />

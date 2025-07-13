@@ -294,7 +294,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
           <Card>
             <Statistic
               title="Budget Used"
-              value={project.estimatedBudget ? formatIDR(project.estimatedBudget) : 'N/A'}
+              value={project.basePrice ? formatIDR(project.basePrice) : 'N/A'}
               prefix={<DollarOutlined />}
               valueStyle={{ color: '#faad14' }}
             />

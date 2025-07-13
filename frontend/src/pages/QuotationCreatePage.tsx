@@ -133,8 +133,8 @@ export const QuotationCreatePage: React.FC = () => {
       const inheritedData = {
         clientId: selectedProject.clientId,
         projectId: selectedProject.id,
-        amountPerProject: Number(selectedProject.estimatedBudget) || 0,
-        totalAmount: Number(selectedProject.estimatedBudget) || 0,
+        amountPerProject: selectedProject.basePrice || 0,
+        totalAmount: selectedProject.basePrice || 0,
         validUntil: dayjs().add(30, 'day'),
         terms: generateDefaultTerms(selectedProject),
       }
@@ -245,7 +245,7 @@ export const QuotationCreatePage: React.FC = () => {
     
     return {
       'Project Budget': {
-        value: selectedProject.estimatedBudget,
+        value: selectedProject.basePrice,
         editable: true,
         confidence: 95,
         source: 'project',

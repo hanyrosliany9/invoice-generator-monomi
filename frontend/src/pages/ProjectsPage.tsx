@@ -212,10 +212,10 @@ export const ProjectsPage: React.FC = () => {
     cancelled: safeProjects.filter(p => p?.status === 'CANCELLED').length,
     production: safeProjects.filter(p => p?.type === 'PRODUCTION').length,
     socialMedia: safeProjects.filter(p => p?.type === 'SOCIAL_MEDIA').length,
-    totalBudget: safeProjects.reduce((sum, p) => sum + safeNumber(p?.estimatedBudget || p?.basePrice), 0),
-    totalActual: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.estimatedBudget), 0),
-    totalRevenue: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.estimatedBudget), 0),
-    totalPending: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.estimatedBudget), 0)
+    totalBudget: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice), 0),
+    totalActual: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice), 0),
+    totalRevenue: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice), 0),
+    totalPending: safeProjects.reduce((sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice), 0)
   }
 
   const getStatusColor = (status: string) => {
@@ -528,7 +528,7 @@ export const ProjectsPage: React.FC = () => {
       title: 'Nilai Proyek',
       key: 'budget',
       render: (_: any, project: Project) => {
-        const budget = safeNumber(project.basePrice || project.estimatedBudget || 0)
+        const budget = safeNumber(project.basePrice || project.basePrice || 0)
         const totalRevenue = safeNumber(project.totalRevenue || 0)
         const pendingAmount = Math.max(budget - totalRevenue, 0)
         
@@ -547,7 +547,7 @@ export const ProjectsPage: React.FC = () => {
           </div>
         )
       },
-      sorter: (a: Project, b: Project) => parseFloat(a.estimatedBudget || a.basePrice || '0') - parseFloat(b.estimatedBudget || b.basePrice || '0')
+      sorter: (a: Project, b: Project) => (a.basePrice || 0) - (b.basePrice || 0)
     },
     {
       title: 'Aksi',

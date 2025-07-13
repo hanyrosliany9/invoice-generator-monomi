@@ -10,8 +10,8 @@ export interface Invoice {
   quotationId?: string
   clientId: string
   projectId: string
-  amountPerProject: string | number
-  totalAmount: string | number
+  amountPerProject: number
+  totalAmount: number
   amount?: string | number
   paymentInfo: string
   materaiRequired: boolean
@@ -62,8 +62,8 @@ export interface Invoice {
 export interface CreateInvoiceRequest {
   clientId: string
   projectId: string
-  amountPerProject: string | number
-  totalAmount: string | number
+  amountPerProject: number
+  totalAmount: number
   paymentInfo: string
   terms: string
   dueDate: string

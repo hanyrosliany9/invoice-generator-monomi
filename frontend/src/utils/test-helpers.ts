@@ -41,7 +41,7 @@ export const createMockProject = (overrides: Partial<ValidProject> = {}): ValidP
   clientName: 'Test Client',
   type: 'PRODUCTION',
   status: 'PLANNING',
-  estimatedBudget: 2000000,
+  basePrice: 2000000,
   actualBudget: 1800000,
   totalPaid: 1000000,
   totalPending: 800000,

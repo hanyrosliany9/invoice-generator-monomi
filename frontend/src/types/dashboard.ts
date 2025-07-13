@@ -101,7 +101,7 @@ export interface RecentQuotation {
     clientId: string
     startDate: string
     endDate: string
-    estimatedBudget: string
+    basePrice: string
     status: string
     createdAt: string
     updatedAt: string
@@ -148,7 +148,7 @@ export interface RecentInvoice {
     clientId: string
     startDate: string
     endDate: string
-    estimatedBudget: string
+    basePrice: string
     status: string
     createdAt: string
     updatedAt: string

@@ -7,8 +7,8 @@ export interface Quotation {
   validUntil: string
   clientId: string
   projectId: string
-  amountPerProject: string | number
-  totalAmount: string | number
+  amountPerProject: number
+  totalAmount: number
   terms: string
   status: 'DRAFT' | 'SENT' | 'APPROVED' | 'DECLINED' | 'REVISED'
   createdBy: string
@@ -41,8 +41,8 @@ export interface Quotation {
 export interface CreateQuotationRequest {
   clientId: string
   projectId: string
-  amountPerProject: string | number
-  totalAmount: string | number
+  amountPerProject: number
+  totalAmount: number
   terms: string
   validUntil: string
 }

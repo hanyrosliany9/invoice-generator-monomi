@@ -165,7 +165,7 @@ export const ProjectEditPage: React.FC = () => {
       startDate: values.startDate.toISOString(),
       endDate: values.endDate.toISOString(),
       status: values.status,
-      estimatedBudget: calculatedValue.toString(),
+      basePrice: calculatedValue,
       products: values.products || [],
     }
     

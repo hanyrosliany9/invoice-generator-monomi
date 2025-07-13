@@ -227,16 +227,16 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           <div style={{ display: 'inline-block', minWidth: '300px' }}>
             <Row justify="space-between" style={{ marginBottom: '8px' }}>
               <Col><Text>Subtotal:</Text></Col>
-              <Col><Text>{formatIDR(data.totalAmount || data.estimatedBudget || 0)}</Text></Col>
+              <Col><Text>{formatIDR(data.totalAmount || data.basePrice || 0)}</Text></Col>
             </Row>
             <Row justify="space-between" style={{ marginBottom: '8px' }}>
               <Col><Text>Tax (PPN 11%):</Text></Col>
-              <Col><Text>{formatIDR((data.totalAmount || data.estimatedBudget || 0) * 0.11)}</Text></Col>
+              <Col><Text>{formatIDR((data.totalAmount || data.basePrice || 0) * 0.11)}</Text></Col>
             </Row>
             <Divider style={{ margin: '8px 0' }} />
             <Row justify="space-between">
               <Col><Text strong style={{ fontSize: '16px' }}>Total:</Text></Col>
-              <Col><Text strong style={{ fontSize: '16px' }}>{formatIDR((data.totalAmount || data.estimatedBudget || 0) * 1.11)}</Text></Col>
+              <Col><Text strong style={{ fontSize: '16px' }}>{formatIDR((data.totalAmount || data.basePrice || 0) * 1.11)}</Text></Col>
             </Row>
           </div>
         </div>
@@ -256,7 +256,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         </div>
 
         {/* Materai Notice */}
-        {(data.totalAmount || data.estimatedBudget || 0) > 5000000 && (
+        {(data.totalAmount || data.basePrice || 0) > 5000000 && (
           <Alert
             style={{ marginTop: '24px' }}
             message="Materai Required"

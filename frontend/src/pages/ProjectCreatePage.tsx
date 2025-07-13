@@ -117,7 +117,7 @@ export const ProjectCreatePage: React.FC = () => {
       clientId: values.clientId,
       startDate: values.startDate.toISOString(),
       endDate: values.endDate.toISOString(),
-      estimatedBudget: calculatedValue.toString(),
+      basePrice: calculatedValue,
       products: values.products || [],
     }
     
@@ -134,7 +134,7 @@ export const ProjectCreatePage: React.FC = () => {
         clientId: values.clientId,
         startDate: values.startDate.toISOString(),
         endDate: values.endDate.toISOString(),
-        estimatedBudget: calculatedValue.toString(),
+        basePrice: calculatedValue,
         products: values.products || [],
       }
       

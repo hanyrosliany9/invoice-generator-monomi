@@ -125,7 +125,7 @@ export interface ValidProject {
   clientName: string
   type: 'PRODUCTION' | 'SOCIAL_MEDIA'
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
-  estimatedBudget: number
+  basePrice: number
   actualBudget: number
   totalPaid: number
   totalPending: number
@@ -148,7 +148,7 @@ export const isValidProject = (value: unknown): value is ValidProject => {
          validTypes.includes(value.type as string) &&
          hasProperty(value, 'status') &&
          validStatuses.includes(value.status as string) &&
-         hasNumberProperty(value, 'estimatedBudget') &&
+         hasNumberProperty(value, 'basePrice') &&
          hasNumberProperty(value, 'actualBudget') &&
          hasNumberProperty(value, 'totalPaid') &&
          hasNumberProperty(value, 'totalPending') &&
