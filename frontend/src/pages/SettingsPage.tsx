@@ -187,6 +187,7 @@ export const SettingsPage: React.FC = () => {
         form={profileForm}
         layout='vertical'
         onFinish={handleSaveProfile}
+        id='profile-form'
         initialValues={{
           name: user?.name,
           email: user?.email,
@@ -274,7 +275,7 @@ export const SettingsPage: React.FC = () => {
 
         <Form.Item>
           <Button
-            data-testid='save-settings-button'
+            data-testid='save-profile-button'
             type='primary'
             htmlType='submit'
             loading={updateUserMutation.isPending}
@@ -317,6 +318,7 @@ export const SettingsPage: React.FC = () => {
         form={securityForm}
         layout='vertical'
         onFinish={handleChangePassword}
+        id='security-form'
       >
         <Form.Item
           label={t('settings.currentPassword')}
@@ -362,10 +364,10 @@ export const SettingsPage: React.FC = () => {
 
         <Form.Item>
           <Button
-            data-testid='save-settings-button'
+            data-testid='change-password-button'
             type='primary'
             htmlType='submit'
-            loading={updateUserMutation.isPending}
+            loading={changePasswordMutation.isPending}
             icon={<SaveOutlined />}
             size='large'
             style={{
@@ -395,6 +397,7 @@ export const SettingsPage: React.FC = () => {
         form={companyForm}
         layout='vertical'
         onFinish={handleSaveCompany}
+        id='company-form'
         initialValues={{
           companyName: 'PT Teknologi Indonesia',
           address: 'Jl. Sudirman No. 123, Jakarta Pusat',
@@ -489,7 +492,7 @@ export const SettingsPage: React.FC = () => {
 
         <Form.Item>
           <Button
-            data-testid='save-settings-button'
+            data-testid='save-company-button'
             type='primary'
             htmlType='submit'
             loading={updateCompanyMutation.isPending}
@@ -519,7 +522,19 @@ export const SettingsPage: React.FC = () => {
         }
         style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
       >
-        <Form layout='vertical' onFinish={handleSaveSystem}>
+        <Form 
+          layout='vertical' 
+          onFinish={handleSaveSystem} 
+          id='notifications-form'
+          initialValues={{
+            emailNotifications: true,
+            invoiceReminders: true,
+            paymentNotifications: true,
+            overdueAlerts: true,
+            systemUpdates: false,
+            marketingEmails: false,
+          }}
+        >
           <Row gutter={24}>
             <Col span={12}>
               <Form.Item
@@ -527,21 +542,21 @@ export const SettingsPage: React.FC = () => {
                 name='emailNotifications'
                 valuePropName='checked'
               >
-                <Switch defaultChecked />
+                <Switch />
               </Form.Item>
               <Form.Item
                 label='Invoice Reminders'
                 name='invoiceReminders'
                 valuePropName='checked'
               >
-                <Switch defaultChecked />
+                <Switch />
               </Form.Item>
               <Form.Item
                 label='Payment Notifications'
                 name='paymentNotifications'
                 valuePropName='checked'
               >
-                <Switch defaultChecked />
+                <Switch />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -550,7 +565,7 @@ export const SettingsPage: React.FC = () => {
                 name='overdueAlerts'
                 valuePropName='checked'
               >
-                <Switch defaultChecked />
+                <Switch />
               </Form.Item>
               <Form.Item
                 label='System Updates'
@@ -580,11 +595,20 @@ export const SettingsPage: React.FC = () => {
         }
         style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
       >
-        <Form layout='vertical'>
+        <Form 
+          layout='vertical' 
+          id='invoice-settings-form'
+          initialValues={{
+            paymentTerms: 'NET 30',
+            materaiThreshold: 5000000,
+            invoicePrefix: 'INV-',
+            quotationPrefix: 'QT-',
+          }}
+        >
           <Row gutter={24}>
             <Col span={12}>
               <Form.Item label='Default Payment Terms' name='paymentTerms'>
-                <Select size='large' defaultValue='NET 30'>
+                <Select size='large'>
                   <Option value='NET 7'>NET 7 Days</Option>
                   <Option value='NET 14'>NET 14 Days</Option>
                   <Option value='NET 30'>NET 30 Days</Option>
@@ -603,7 +627,6 @@ export const SettingsPage: React.FC = () => {
                   parser={value =>
                     Number((value || '').replace(/Rp\s?|(,*)/g, '')) as any
                   }
-                  defaultValue={5000000}
                 />
               </Form.Item>
             </Col>
@@ -612,12 +635,12 @@ export const SettingsPage: React.FC = () => {
           <Row gutter={24}>
             <Col span={12}>
               <Form.Item label='Invoice Prefix' name='invoicePrefix'>
-                <Input size='large' defaultValue='INV-' placeholder='INV-' />
+                <Input size='large' placeholder='INV-' />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label='Quotation Prefix' name='quotationPrefix'>
-                <Input size='large' defaultValue='QT-' placeholder='QT-' />
+                <Input size='large' placeholder='QT-' />
               </Form.Item>
             </Col>
           </Row>
@@ -633,7 +656,15 @@ export const SettingsPage: React.FC = () => {
         }
         style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
       >
-        <Form layout='vertical'>
+        <Form 
+          layout='vertical' 
+          id='backup-settings-form'
+          initialValues={{
+            autoBackup: true,
+            backupFrequency: 'daily',
+            backupTime: dayjs('02:00', 'HH:mm'),
+          }}
+        >
           <Row gutter={24}>
             <Col span={8}>
               <Form.Item
@@ -641,7 +672,7 @@ export const SettingsPage: React.FC = () => {
                 name='autoBackup'
                 valuePropName='checked'
               >
-                <Switch defaultChecked />
+                <Switch />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -649,7 +680,7 @@ export const SettingsPage: React.FC = () => {
                 label={t('settings.backupFrequency')}
                 name='backupFrequency'
               >
-                <Select size='large' defaultValue='daily'>
+                <Select size='large'>
                   <Option value='daily'>Daily</Option>
                   <Option value='weekly'>Weekly</Option>
                   <Option value='monthly'>Monthly</Option>
@@ -660,7 +691,6 @@ export const SettingsPage: React.FC = () => {
               <Form.Item label='Backup Time' name='backupTime'>
                 <TimePicker
                   size='large'
-                  defaultValue={dayjs('02:00', 'HH:mm')}
                   format='HH:mm'
                   style={{ width: '100%' }}
                 />
@@ -686,7 +716,7 @@ export const SettingsPage: React.FC = () => {
             Reset to Default
           </Button>
           <Button
-            data-testid='save-settings-button'
+            data-testid='save-system-button'
             type='primary'
             loading={updateSystemMutation.isPending}
             icon={<SaveOutlined />}
