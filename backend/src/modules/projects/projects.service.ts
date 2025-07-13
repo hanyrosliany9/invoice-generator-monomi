@@ -111,6 +111,12 @@ export class ProjectsService {
         invoices: {
           orderBy: { createdAt: "desc" },
         },
+        _count: {
+          select: {
+            quotations: true,
+            invoices: true,
+          },
+        },
       },
     });
 
