@@ -151,14 +151,21 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
       }}
     >
       {/* Breadcrumb Navigation */}
-      <Breadcrumb style={{ marginBottom: '24px' }}>
-        <Breadcrumb.Item>
-          <Button type='text' icon={<ArrowLeftOutlined />} onClick={handleBack}>
-            Projects
-          </Button>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>{project.number}</Breadcrumb.Item>
-      </Breadcrumb>
+      <Breadcrumb 
+        style={{ marginBottom: '24px' }}
+        items={[
+          {
+            title: (
+              <Button type='text' icon={<ArrowLeftOutlined />} onClick={handleBack}>
+                Projects
+              </Button>
+            ),
+          },
+          {
+            title: project.number,
+          },
+        ]}
+      />
 
       {/* Header Section - Hero Card */}
       <Card style={{ marginBottom: '24px' }}>

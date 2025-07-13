@@ -165,14 +165,21 @@ export const ClientDetailPage: React.FC<ClientDetailPageProps> = () => {
       }}
     >
       {/* Breadcrumb Navigation */}
-      <Breadcrumb style={{ marginBottom: '24px' }}>
-        <Breadcrumb.Item>
-          <Button type='text' icon={<ArrowLeftOutlined />} onClick={handleBack}>
-            Clients
-          </Button>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>{client.name}</Breadcrumb.Item>
-      </Breadcrumb>
+      <Breadcrumb 
+        style={{ marginBottom: '24px' }}
+        items={[
+          {
+            title: (
+              <Button type='text' icon={<ArrowLeftOutlined />} onClick={handleBack}>
+                Clients
+              </Button>
+            ),
+          },
+          {
+            title: client.name,
+          },
+        ]}
+      />
 
       {/* Header Section - Hero Card */}
       <Card style={{ marginBottom: '24px' }}>

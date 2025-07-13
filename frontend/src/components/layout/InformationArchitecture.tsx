@@ -576,19 +576,21 @@ const InformationArchitecture: React.FC<InformationArchitectureProps> = ({
         >
           {/* Breadcrumbs */}
           {showBreadcrumbs && (
-            <Breadcrumb>
-              {breadcrumbItems.map((item, index) => (
-                <Breadcrumb.Item
-                  key={index}
-                  onClick={() => item.path && navigate(item.path)}
-                >
-                  <Space size='small'>
+            <Breadcrumb
+              items={breadcrumbItems.map((item, index) => ({
+                key: index,
+                title: (
+                  <Space 
+                    size='small'
+                    onClick={() => item.path && navigate(item.path)}
+                    style={{ cursor: item.path ? 'pointer' : 'default' }}
+                  >
                     {item.icon}
                     {item.title}
                   </Space>
-                </Breadcrumb.Item>
-              ))}
-            </Breadcrumb>
+                ),
+              }))}
+            />
           )}
 
           {/* Quick Actions */}

@@ -320,28 +320,6 @@ export class PdfService {
       font-size: 12px;
     }
     
-    /* Materai Notice (Invoice-specific) */
-    .materai-notice {
-      background-color: #fef3c7;
-      border: 1px solid #f59e0b;
-      border-radius: 2px;
-      padding: 3mm;
-      margin-bottom: 4mm;
-      font-size: 10px;
-    }
-    .materai-notice.applied {
-      background-color: #d1fae5;
-      border-color: #10b981;
-    }
-    .materai-title {
-      font-weight: bold;
-      color: #f59e0b;
-      margin-bottom: 2mm;
-      font-size: 11px;
-    }
-    .materai-notice.applied .materai-title {
-      color: #10b981;
-    }
     
     /* Payment Information (Invoice-specific) */
     .payment-info {
@@ -382,30 +360,6 @@ export class PdfService {
       font-size: 9px;
       line-height: 1.2;
       color: #666;
-    }
-    .signature-section {
-      flex: 1;
-      text-align: center;
-    }
-    .signature-box {
-      border: 1px solid #ddd;
-      padding: 6mm;
-      background-color: #f9f9f9;
-    }
-    .signature-title {
-      font-size: 11px;
-      color: #666;
-      margin-bottom: 8mm;
-    }
-    .signature-name {
-      font-size: 12px;
-      font-weight: bold;
-      color: #dc2626;
-    }
-    .signature-position {
-      font-size: 10px;
-      color: #666;
-      margin-top: 1mm;
     }
     
     /* Contact Bar */
@@ -529,25 +483,6 @@ export class PdfService {
       </tr>
     </table>
 
-    <!-- Materai Notice -->
-    ${
-      materaiRequired
-        ? `
-    <div class="materai-notice ${materaiApplied ? "applied" : ""}">
-      <div class="materai-title">
-        ${materaiApplied ? "✓ Materai Sudah Ditempel" : "⚠️ Memerlukan Materai"}
-      </div>
-      <div>
-        ${
-          materaiApplied
-            ? "Materai senilai Rp 10.000 sudah ditempel sesuai ketentuan hukum."
-            : "Invoice ini memerlukan materai senilai Rp 10.000 karena nilai transaksi lebih dari Rp 5.000.000."
-        }
-      </div>
-    </div>
-    `
-        : ""
-    }
 
     <!-- Payment Information -->
     <div class="payment-info">
@@ -576,14 +511,6 @@ export class PdfService {
         </div>
       </div>
       
-      <div class="signature-section">
-        <div class="signature-box">
-          <div class="signature-title">Authorized Signature</div>
-          <div style="height: 15mm;"></div>
-          <div class="signature-name">${companyData.companyName}</div>
-          <div class="signature-position">Management</div>
-        </div>
-      </div>
     </div>
 
     <!-- Contact Information Bar -->
@@ -961,14 +888,6 @@ export class PdfService {
         </div>
       </div>
       
-      <div class="signature-section">
-        <div class="signature-box">
-          <div class="signature-title">Authorized Signature</div>
-          <div style="height: 15mm;"></div>
-          <div class="signature-name">${companyData.companyName}</div>
-          <div class="signature-position">Management</div>
-        </div>
-      </div>
     </div>
 
     <!-- Contact Information Bar -->

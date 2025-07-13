@@ -267,14 +267,21 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
       }}
     >
       {/* Breadcrumb Navigation */}
-      <Breadcrumb style={{ marginBottom: '24px' }}>
-        <Breadcrumb.Item>
-          <Button type='text' icon={<ArrowLeftOutlined />} onClick={handleBack}>
-            Quotations
-          </Button>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>{quotation.quotationNumber}</Breadcrumb.Item>
-      </Breadcrumb>
+      <Breadcrumb 
+        style={{ marginBottom: '24px' }}
+        items={[
+          {
+            title: (
+              <Button type='text' icon={<ArrowLeftOutlined />} onClick={handleBack}>
+                Quotations
+              </Button>
+            ),
+          },
+          {
+            title: quotation.quotationNumber,
+          },
+        ]}
+      />
 
       {/* Header Section - Hero Card */}
       <Card style={{ marginBottom: '24px' }}>

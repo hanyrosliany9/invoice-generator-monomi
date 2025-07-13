@@ -307,14 +307,21 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
       }}
     >
       {/* Breadcrumb Navigation */}
-      <Breadcrumb style={{ marginBottom: '24px' }}>
-        <Breadcrumb.Item>
-          <Button type='text' icon={<ArrowLeftOutlined />} onClick={handleBack}>
-            Invoices
-          </Button>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>{invoice.invoiceNumber}</Breadcrumb.Item>
-      </Breadcrumb>
+      <Breadcrumb 
+        style={{ marginBottom: '24px' }}
+        items={[
+          {
+            title: (
+              <Button type='text' icon={<ArrowLeftOutlined />} onClick={handleBack}>
+                Invoices
+              </Button>
+            ),
+          },
+          {
+            title: invoice.invoiceNumber,
+          },
+        ]}
+      />
 
       {/* Header Section - Hero Card */}
       <Card style={{ marginBottom: '24px' }}>
