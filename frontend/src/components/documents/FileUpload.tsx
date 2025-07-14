@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, Button, message, List, Typography, Tag, Space, Popconfirm, Modal } from 'antd';
+import { Upload, Button, List, Typography, Tag, Space, Popconfirm, Modal, App } from 'antd';
 import { UploadOutlined, DeleteOutlined, DownloadOutlined, FileOutlined, EyeOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 
@@ -19,6 +19,7 @@ interface Document {
 interface FileUploadProps {
   invoiceId?: string;
   quotationId?: string;
+  projectId?: string;
   documents: Document[];
   onDocumentsChange: () => void;
 }
@@ -26,9 +27,11 @@ interface FileUploadProps {
 export const FileUpload: React.FC<FileUploadProps> = ({
   invoiceId,
   quotationId,
+  projectId,
   documents,
   onDocumentsChange,
 }) => {
+  const { message } = App.useApp();
   const [uploading, setUploading] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
@@ -66,6 +69,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       if (quotationId) {
         formData.append('quotationId', quotationId);
       }
+      if (projectId) {
+        formData.append('projectId', projectId);
+      }
       
       try {
         const response = await fetch('/api/v1/documents/upload', {
@@ -78,7 +84,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         }
 
         const result = await response.json();
-        console.log('Upload success response:', result);
         message.success(`${(file as File).name} file uploaded successfully`);
         onSuccess?.(result);
         onDocumentsChange();
@@ -92,18 +97,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     },
     onChange: (info) => {
       console.log('Upload onChange:', info);
-    },
-    onDrop: (e) => {
-      console.log('Dropped files', e.dataTransfer.files);
-      console.log('Drop event:', e);
-    },
-    onDragOver: (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    },
-    onDragEnter: (e) => {
-      e.preventDefault();
-      e.stopPropagation();
     },
     accept: '.pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx',
     beforeUpload: (file) => {

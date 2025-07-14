@@ -61,6 +61,7 @@ export class DocumentsController {
     @UploadedFile() file: Express.Multer.File,
     @Body('invoiceId') invoiceId?: string,
     @Body('quotationId') quotationId?: string,
+    @Body('projectId') projectId?: string,
     @Body('category') category: DocumentCategory = DocumentCategory.OTHER,
     @Body('description') description?: string,
     @Body('uploadedBy') uploadedBy?: string,
@@ -79,6 +80,7 @@ export class DocumentsController {
         uploadedBy,
         invoiceId,
         quotationId,
+        projectId,
         category,
         description,
       );
@@ -104,6 +106,11 @@ export class DocumentsController {
   @Get('quotation/:quotationId')
   async getQuotationDocuments(@Param('quotationId') quotationId: string) {
     return this.documentsService.getDocumentsByQuotation(quotationId);
+  }
+
+  @Get('project/:projectId')
+  async getProjectDocuments(@Param('projectId') projectId: string) {
+    return this.documentsService.getDocumentsByProject(projectId);
   }
 
   @Get('download/:id')

@@ -11,6 +11,7 @@ export class DocumentsService {
     uploadedBy: string,
     invoiceId?: string,
     quotationId?: string,
+    projectId?: string,
     category: DocumentCategory = DocumentCategory.OTHER,
     description?: string,
   ): Promise<Document> {
@@ -25,6 +26,7 @@ export class DocumentsService {
         description,
         invoiceId,
         quotationId,
+        projectId,
         uploadedBy,
       },
     });
@@ -40,6 +42,13 @@ export class DocumentsService {
   async getDocumentsByQuotation(quotationId: string): Promise<Document[]> {
     return this.prisma.document.findMany({
       where: { quotationId },
+      orderBy: { uploadedAt: 'desc' },
+    });
+  }
+
+  async getDocumentsByProject(projectId: string): Promise<Document[]> {
+    return this.prisma.document.findMany({
+      where: { projectId },
       orderBy: { uploadedAt: 'desc' },
     });
   }

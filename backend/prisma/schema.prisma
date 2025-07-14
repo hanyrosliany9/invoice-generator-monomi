@@ -96,6 +96,7 @@ model Project {
   quotations           Quotation[]
   invoices             Invoice[]
   businessJourneyEvents BusinessJourneyEvent[]
+  documents            Document[]
 
   @@index([number])
   @@index([status])
@@ -581,11 +582,13 @@ model Document {
   category         DocumentCategory @default(OTHER)
   description      String?
   
-  // Entity relationships - documents can be attached to invoices or quotations
+  // Entity relationships - documents can be attached to invoices, quotations, or projects
   invoiceId   String?
   invoice     Invoice?   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   quotationId String?
   quotation   Quotation? @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
   // User tracking
   uploadedBy String
@@ -596,6 +599,7 @@ model Document {
 
   @@index([invoiceId])
   @@index([quotationId])
+  @@index([projectId])
   @@index([category])
   @@index([mimeType])
   @@index([uploadedAt])

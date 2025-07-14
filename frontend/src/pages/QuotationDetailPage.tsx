@@ -43,6 +43,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { formatIDR, safeNumber, safeString } from '../utils/currency'
 import { Quotation, quotationService } from '../services/quotations'
+import { FileUpload } from '../components/documents/FileUpload'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
@@ -59,6 +60,24 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
   const queryClient = useQueryClient()
   const [pdfModalVisible, setPdfModalVisible] = useState(false)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+
+  // Documents query for FileUpload component
+  const {
+    data: documents = [],
+    isLoading: documentsLoading,
+    refetch: refetchDocuments,
+  } = useQuery({
+    queryKey: ['documents', 'quotation', id],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/documents/quotation/${id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch documents');
+      }
+      const result = await response.json();
+      return result.data || [];
+    },
+    enabled: !!id,
+  })
   const [pdfLoading, setPdfLoading] = useState(false)
 
   // Fetch quotation data
@@ -706,17 +725,13 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
                 </span>
               ),
               children: (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <FilePdfOutlined
-                    style={{ fontSize: '48px', color: '#d9d9d9' }}
+                <div style={{ padding: '20px' }}>
+                  <FileUpload
+                    quotationId={id}
+                    documents={documents}
+                    onDocumentsChange={() => refetchDocuments()}
                   />
-                  <Title level={4} type='secondary'>
-                    Document Management
-                  </Title>
-                  <Text type='secondary'>
-                    PDF documents and file attachments coming soon.
-                  </Text>
-                  <div style={{ marginTop: '16px' }}>
+                  <div style={{ marginTop: '16px', textAlign: 'center' }}>
                     <Button
                       type='primary'
                       icon={<FilePdfOutlined />}

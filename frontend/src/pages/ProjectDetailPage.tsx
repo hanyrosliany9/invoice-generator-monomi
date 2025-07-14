@@ -37,6 +37,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { formatIDR, safeNumber, safeString } from '../utils/currency'
 import { Project, projectService } from '../services/projects'
+import { FileUpload } from '../components/documents/FileUpload'
 import dayjs from 'dayjs'
 
 const { Title, Text, Paragraph } = Typography
@@ -56,6 +57,24 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   } = useQuery({
     queryKey: ['project', id],
     queryFn: () => projectService.getProject(id!),
+    enabled: !!id,
+  })
+
+  // Documents query for FileUpload component
+  const {
+    data: documents = [],
+    isLoading: documentsLoading,
+    refetch: refetchDocuments,
+  } = useQuery({
+    queryKey: ['documents', 'project', id],
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/documents/project/${id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch documents');
+      }
+      const result = await response.json();
+      return result.data || [];
+    },
     enabled: !!id,
   })
 
@@ -476,16 +495,12 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 </span>
               ),
               children: (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <FileTextOutlined
-                    style={{ fontSize: '48px', color: '#d9d9d9' }}
+                <div style={{ padding: '20px' }}>
+                  <FileUpload
+                    projectId={id}
+                    documents={documents}
+                    onDocumentsChange={() => refetchDocuments()}
                   />
-                  <Title level={4} type='secondary'>
-                    Related Documents
-                  </Title>
-                  <Text type='secondary'>
-                    Document management is coming soon.
-                  </Text>
                 </div>
               ),
             },
