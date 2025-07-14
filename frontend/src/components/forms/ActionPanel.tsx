@@ -80,8 +80,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         }),
         textAlign: 'center',
       }}
-      bodyStyle={{
-        padding: position === 'fixed' ? '16px 24px' : '24px',
+      styles={{
+        body: {
+          padding: position === 'fixed' ? '16px 24px' : '24px',
+        },
       }}
     >
       {/* Status Information */}

@@ -188,6 +188,7 @@ export const SettingsPage: React.FC = () => {
         layout='vertical'
         onFinish={handleSaveProfile}
         id='profile-form'
+        name='profile'
         initialValues={{
           name: user?.name,
           email: user?.email,
@@ -223,7 +224,7 @@ export const SettingsPage: React.FC = () => {
               name='name'
               rules={[{ required: true, message: 'Please input your name!' }]}
             >
-              <Input size='large' placeholder='Full Name' />
+              <Input size='large' placeholder='Full Name' autoComplete='name' />
             </Form.Item>
           </Col>
           <Col span={12}>
@@ -235,7 +236,7 @@ export const SettingsPage: React.FC = () => {
                 { type: 'email', message: 'Please enter a valid email!' },
               ]}
             >
-              <Input size='large' placeholder='email@company.com' />
+              <Input size='large' placeholder='email@company.com' autoComplete='email' />
             </Form.Item>
           </Col>
         </Row>
@@ -243,12 +244,12 @@ export const SettingsPage: React.FC = () => {
         <Row gutter={24}>
           <Col span={12}>
             <Form.Item label='Phone' name='phone'>
-              <Input size='large' placeholder='+62 812 3456 7890' />
+              <Input size='large' placeholder='+62 812 3456 7890' autoComplete='tel' />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item label='Role' name='role'>
-              <Input size='large' disabled />
+              <Input size='large' disabled autoComplete='organization-title' />
             </Form.Item>
           </Col>
         </Row>
@@ -319,6 +320,7 @@ export const SettingsPage: React.FC = () => {
         layout='vertical'
         onFinish={handleChangePassword}
         id='security-form'
+        name='security'
       >
         <Form.Item
           label={t('settings.currentPassword')}
@@ -327,7 +329,7 @@ export const SettingsPage: React.FC = () => {
             { required: true, message: 'Please input your current password!' },
           ]}
         >
-          <Input.Password size='large' placeholder='Enter current password' />
+          <Input.Password size='large' placeholder='Enter current password' autoComplete='current-password' />
         </Form.Item>
 
         <Form.Item
@@ -338,7 +340,7 @@ export const SettingsPage: React.FC = () => {
             { min: 8, message: 'Password must be at least 8 characters!' },
           ]}
         >
-          <Input.Password size='large' placeholder='Enter new password' />
+          <Input.Password size='large' placeholder='Enter new password' autoComplete='new-password' />
         </Form.Item>
 
         <Form.Item
@@ -359,7 +361,7 @@ export const SettingsPage: React.FC = () => {
             }),
           ]}
         >
-          <Input.Password size='large' placeholder='Confirm new password' />
+          <Input.Password size='large' placeholder='Confirm new password' autoComplete='new-password' />
         </Form.Item>
 
         <Form.Item>
@@ -398,6 +400,7 @@ export const SettingsPage: React.FC = () => {
         layout='vertical'
         onFinish={handleSaveCompany}
         id='company-form'
+        name='company'
         initialValues={{
           companyName: 'PT Teknologi Indonesia',
           address: 'Jl. Sudirman No. 123, Jakarta Pusat',
@@ -417,7 +420,7 @@ export const SettingsPage: React.FC = () => {
                 { required: true, message: 'Please input company name!' },
               ]}
             >
-              <Input size='large' placeholder='PT Technology Indonesia' />
+              <Input size='large' placeholder='PT Technology Indonesia' autoComplete='organization' />
             </Form.Item>
           </Col>
           <Col span={12}>
@@ -426,7 +429,7 @@ export const SettingsPage: React.FC = () => {
               name='taxNumber'
               rules={[{ required: true, message: 'Please input tax number!' }]}
             >
-              <Input size='large' placeholder='01.234.567.8-901.000' />
+              <Input size='large' placeholder='01.234.567.8-901.000' autoComplete='off' />
             </Form.Item>
           </Col>
         </Row>
@@ -436,7 +439,7 @@ export const SettingsPage: React.FC = () => {
           name='address'
           rules={[{ required: true, message: 'Please input company address!' }]}
         >
-          <TextArea rows={3} placeholder='Complete company address' />
+          <TextArea rows={3} placeholder='Complete company address' autoComplete='street-address' />
         </Form.Item>
 
         <Row gutter={24}>
@@ -448,7 +451,7 @@ export const SettingsPage: React.FC = () => {
                 { required: true, message: 'Please input phone number!' },
               ]}
             >
-              <Input size='large' placeholder='021-1234567' />
+              <Input size='large' placeholder='021-1234567' autoComplete='tel' />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -460,12 +463,12 @@ export const SettingsPage: React.FC = () => {
                 { type: 'email', message: 'Please enter a valid email!' },
               ]}
             >
-              <Input size='large' placeholder='info@company.com' />
+              <Input size='large' placeholder='info@company.com' autoComplete='email' />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item label='Website' name='website'>
-              <Input size='large' placeholder='https://company.com' />
+              <Input size='large' placeholder='https://company.com' autoComplete='url' />
             </Form.Item>
           </Col>
         </Row>
@@ -475,17 +478,17 @@ export const SettingsPage: React.FC = () => {
         <Row gutter={24}>
           <Col span={8}>
             <Form.Item label='Bank BCA' name='bankBCA'>
-              <Input size='large' placeholder='1234567890' />
+              <Input size='large' placeholder='1234567890' autoComplete='off' />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item label='Bank Mandiri' name='bankMandiri'>
-              <Input size='large' placeholder='0987654321' />
+              <Input size='large' placeholder='0987654321' autoComplete='off' />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item label='Bank BNI' name='bankBNI'>
-              <Input size='large' placeholder='1122334455' />
+              <Input size='large' placeholder='1122334455' autoComplete='off' />
             </Form.Item>
           </Col>
         </Row>
@@ -526,6 +529,7 @@ export const SettingsPage: React.FC = () => {
           layout='vertical' 
           onFinish={handleSaveSystem} 
           id='notifications-form'
+          name='notifications'
           initialValues={{
             emailNotifications: true,
             invoiceReminders: true,
@@ -598,6 +602,7 @@ export const SettingsPage: React.FC = () => {
         <Form 
           layout='vertical' 
           id='invoice-settings-form'
+          name='invoiceSettings'
           initialValues={{
             paymentTerms: 'NET 30',
             materaiThreshold: 5000000,
@@ -635,12 +640,12 @@ export const SettingsPage: React.FC = () => {
           <Row gutter={24}>
             <Col span={12}>
               <Form.Item label='Invoice Prefix' name='invoicePrefix'>
-                <Input size='large' placeholder='INV-' />
+                <Input size='large' placeholder='INV-' autoComplete='off' />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label='Quotation Prefix' name='quotationPrefix'>
-                <Input size='large' placeholder='QT-' />
+                <Input size='large' placeholder='QT-' autoComplete='off' />
               </Form.Item>
             </Col>
           </Row>
@@ -659,6 +664,7 @@ export const SettingsPage: React.FC = () => {
         <Form 
           layout='vertical' 
           id='backup-settings-form'
+          name='backupSettings'
           initialValues={{
             autoBackup: true,
             backupFrequency: 'daily',

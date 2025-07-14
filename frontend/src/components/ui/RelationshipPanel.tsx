@@ -97,7 +97,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
       }
       size={compact ? 'small' : 'default'}
       className={`relationship-panel ${className}`}
-      bodyStyle={{ maxHeight: compact ? 200 : 300, overflowY: 'auto' }}
+      styles={{ body: { maxHeight: compact ? 200 : 300, overflowY: 'auto' } }}
     >
       <div className='space-y-2'>
         {entities.length === 0 ? (

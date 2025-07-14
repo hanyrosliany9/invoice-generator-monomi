@@ -974,14 +974,19 @@ export const ProjectsPage: React.FC = () => {
         <div className='flex justify-between items-center mb-4'>
           <Space>
             <Input
+              id='project-search'
+              name='search'
               placeholder='Cari proyek...'
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
               style={{ width: 300 }}
+              autoComplete='off'
             />
             <Select
+              id='project-status-filter'
               data-testid='project-filter-button'
+              name='statusFilter'
               placeholder='Filter status'
               value={statusFilter}
               onChange={setStatusFilter}
@@ -994,7 +999,9 @@ export const ProjectsPage: React.FC = () => {
               <Option value='CANCELLED'>Dibatalkan</Option>
             </Select>
             <Select
+              id='project-type-filter'
               data-testid='project-timeline-button'
+              name='typeFilter'
               placeholder='Filter tipe'
               value={typeFilter}
               onChange={setTypeFilter}
@@ -1062,13 +1069,14 @@ export const ProjectsPage: React.FC = () => {
           form={form}
           layout='vertical'
           onFinish={handleFormSubmit}
+          name='projectForm'
         >
           <Form.Item
             name='clientId'
             label='Klien'
             rules={[{ required: true, message: 'Pilih klien' }]}
           >
-            <Select placeholder='Pilih klien'>
+            <Select name='clientId' placeholder='Pilih klien'>
               {safeArray(clients).map(client => (
                 <Option key={client.id} value={client.id}>
                   {client.name}
@@ -1084,7 +1092,7 @@ export const ProjectsPage: React.FC = () => {
               { required: true, message: 'Deskripsi proyek wajib diisi' },
             ]}
           >
-            <Input placeholder='Deskripsi singkat proyek' />
+            <Input name='description' placeholder='Deskripsi singkat proyek' autoComplete='off' />
           </Form.Item>
 
           <Form.Item
@@ -1092,7 +1100,7 @@ export const ProjectsPage: React.FC = () => {
             label={t('projects.type')}
             rules={[{ required: true, message: 'Pilih tipe proyek' }]}
           >
-            <Select placeholder='Pilih tipe proyek'>
+            <Select name='type' placeholder='Pilih tipe proyek'>
               <Option value='PRODUCTION'>Produksi</Option>
               <Option value='SOCIAL_MEDIA'>Media Sosial</Option>
             </Select>
@@ -1130,7 +1138,7 @@ export const ProjectsPage: React.FC = () => {
                               },
                             ]}
                           >
-                            <Input placeholder='Nama produk/layanan' />
+                            <Input name={`product-name-${field.name}`} placeholder='Nama produk/layanan' autoComplete='off' />
                           </Form.Item>
                         </Col>
                         <Col span={6}>
@@ -1146,6 +1154,7 @@ export const ProjectsPage: React.FC = () => {
                             ]}
                           >
                             <InputNumber
+                              name={`product-quantity-${field.name}`}
                               min={1}
                               placeholder='1'
                               style={{ width: '100%' }}
@@ -1162,6 +1171,7 @@ export const ProjectsPage: React.FC = () => {
                             ]}
                           >
                             <InputNumber
+                              name={`product-price-${field.name}`}
                               style={{ width: '100%' }}
                               formatter={value =>
                                 `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
@@ -1184,8 +1194,10 @@ export const ProjectsPage: React.FC = () => {
                         ]}
                       >
                         <Input.TextArea
+                          name={`product-description-${field.name}`}
                           rows={2}
                           placeholder='Deskripsi produk/layanan'
+                          autoComplete='off'
                         />
                       </Form.Item>
                     </Card>
@@ -1208,14 +1220,14 @@ export const ProjectsPage: React.FC = () => {
             label='Periode Proyek'
             rules={[{ required: true, message: 'Pilih periode proyek' }]}
           >
-            <RangePicker style={{ width: '100%' }} />
+            <RangePicker name='dateRange' style={{ width: '100%' }} />
           </Form.Item>
 
           {editingProject && (
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name='status' label='Status'>
-                  <Select>
+                  <Select name='status'>
                     <Option value='PLANNING'>Perencanaan</Option>
                     <Option value='IN_PROGRESS'>Berlangsung</Option>
                     <Option value='COMPLETED'>Selesai</Option>
@@ -1226,6 +1238,7 @@ export const ProjectsPage: React.FC = () => {
               <Col span={12}>
                 <Form.Item name='progress' label='Progress (%)'>
                   <InputNumber
+                    name='progress'
                     style={{ width: '100%' }}
                     min={0}
                     max={100}
@@ -1238,8 +1251,10 @@ export const ProjectsPage: React.FC = () => {
 
           <Form.Item name='notes' label='Catatan'>
             <TextArea
+              name='notes'
               rows={3}
               placeholder='Catatan tambahan tentang proyek...'
+              autoComplete='off'
             />
           </Form.Item>
 

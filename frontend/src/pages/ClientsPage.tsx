@@ -743,11 +743,14 @@ export const ClientsPage: React.FC = () => {
         <div className='flex justify-between items-center mb-4'>
           <Space>
             <Input
+              id='client-search'
+              name='search'
               placeholder='Cari klien...'
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
               style={{ width: 300 }}
+              autoComplete='off'
             />
             <Select
               placeholder='Filter status'

@@ -326,7 +326,7 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
           borderRadius: '8px',
           overflow: 'hidden',
         }}
-        bodyStyle={{ padding: compactMode ? '12px' : '16px' }}
+        styles={{ body: { padding: compactMode ? '12px' : '16px' } }}
       >
         <Row justify='space-between' align='top'>
           <Col span={18}>

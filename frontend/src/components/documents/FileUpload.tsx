@@ -328,10 +328,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           paddingBottom: 0,
           maxWidth: 'none'
         }}
-        bodyStyle={{
-          height: '85vh',
-          padding: 0,
-          overflow: 'hidden'
+        styles={{
+          body: {
+            height: '85vh',
+            padding: 0,
+            overflow: 'hidden'
+          }
         }}
         footer={[
           <Button key="download" icon={<DownloadOutlined />} onClick={() => {

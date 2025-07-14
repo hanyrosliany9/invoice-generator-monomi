@@ -1115,12 +1115,15 @@ export const QuotationsPage: React.FC = () => {
         <div className='flex justify-between items-center mb-4'>
           <Space>
             <Input
+              id='quotation-search'
+              name='search'
               data-testid='quotation-search-button'
               placeholder='Cari quotation...'
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
               style={{ width: 300 }}
+              autoComplete='off'
             />
             <Select
               data-testid='quotation-filter-button'

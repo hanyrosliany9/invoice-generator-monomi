@@ -388,7 +388,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
       onCancel={onClose}
       width={800}
       footer={null}
-      bodyStyle={{ padding: 0 }}
+      styles={{ body: { padding: 0 } }}
     >
       <Tabs
         activeKey={activeTab}

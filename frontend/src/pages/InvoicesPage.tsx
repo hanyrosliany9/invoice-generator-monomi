@@ -1542,6 +1542,8 @@ export const InvoicesPage: React.FC = () => {
               <Option value='CANCELLED'>Dibatalkan</Option>
             </Select>
             <Select
+              id='invoice-materai-filter'
+              name='materaiFilter'
               data-testid='materai-reminder-button'
               placeholder='Filter materai'
               value={materaiFilter}
@@ -1779,6 +1781,7 @@ export const InvoicesPage: React.FC = () => {
             ]}
           >
             <InputNumber
+              name='totalAmount'
               placeholder='0'
               prefix='IDR'
               formatter={value =>
@@ -1797,7 +1800,7 @@ export const InvoicesPage: React.FC = () => {
             label='Batas Pembayaran'
             rules={[{ required: true, message: 'Pilih tanggal' }]}
           >
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker name='dueDate' style={{ width: '100%' }} />
           </Form.Item>
 
           <Form.Item
@@ -1808,8 +1811,10 @@ export const InvoicesPage: React.FC = () => {
             ]}
           >
             <TextArea
+              name='paymentInfo'
               rows={3}
               placeholder='Contoh: Bank BCA: 123-456-789 a.n. Perusahaan'
+              autoComplete='off'
             />
           </Form.Item>
 
@@ -1820,7 +1825,7 @@ export const InvoicesPage: React.FC = () => {
               { required: true, message: 'Masukkan syarat dan ketentuan' },
             ]}
           >
-            <TextArea rows={3} placeholder='Pembayaran dalam 30 hari...' />
+            <TextArea name='terms' rows={3} placeholder='Pembayaran dalam 30 hari...' autoComplete='off' />
           </Form.Item>
 
           <div className='flex justify-end space-x-2'>
@@ -1865,7 +1870,7 @@ export const InvoicesPage: React.FC = () => {
             label='Tanggal Pembayaran'
             rules={[{ required: true, message: 'Pilih tanggal pembayaran' }]}
           >
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker name='paidAt' style={{ width: '100%' }} />
           </Form.Item>
 
           <div className='flex justify-end space-x-2'>
