@@ -132,13 +132,17 @@ async function initDatabase() {
       console.log("📋 Creating sample project...");
 
       const client = await prisma.client.findFirst();
-      if (client) {
+      const projectType = await prisma.projectTypeConfig.findFirst({
+        where: { code: "PRODUCTION" },
+      });
+      
+      if (client && projectType) {
         await prisma.project.create({
           data: {
             number: "PRJ-202501-001",
             description: "Sample Website Development Project",
             output: "Responsive website with admin panel",
-            type: "PRODUCTION",
+            projectTypeId: projectType.id,
             status: "PLANNING",
             startDate: new Date(),
             endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now

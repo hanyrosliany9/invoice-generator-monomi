@@ -9,7 +9,7 @@ import {
   ValidateNested,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-import { ProjectType, ProjectStatus } from "@prisma/client";
+import { ProjectStatus } from "@prisma/client";
 import { Transform, Type } from "class-transformer";
 
 export class ProjectItemDto {
@@ -75,12 +75,11 @@ export class CreateProjectDto {
   output?: string;
 
   @ApiProperty({
-    description: "Tipe proyek",
-    enum: ProjectType,
-    example: ProjectType.PRODUCTION,
+    description: "ID tipe proyek",
+    example: "cuid_project_type_id",
   })
-  @IsEnum(ProjectType, { message: "Tipe proyek tidak valid" })
-  type: ProjectType;
+  @IsString({ message: "ID tipe proyek harus berupa string yang valid" })
+  projectTypeId: string;
 
   @ApiProperty({
     description: "ID klien",

@@ -36,6 +36,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../store/auth'
 import { settingsService } from '../services/settings'
 import { authService } from '../services/auth'
+import { ProjectTypeManagement } from '../components/ProjectTypeManagement'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -705,6 +706,8 @@ export const SettingsPage: React.FC = () => {
           </Row>
         </Form>
       </Card>
+
+      <ProjectTypeManagement />
 
       <div style={{ textAlign: 'center' }}>
         <Space size='middle'>

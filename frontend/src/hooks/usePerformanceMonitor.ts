@@ -378,12 +378,12 @@ export const usePerformanceMonitor = (
       })
 
       // Log successful measurements in development
-      if (enableLogging && process.env['NODE_ENV'] === 'development') {
+      if (enableLogging && import.meta.env.MODE === 'development') {
         console.log(`Performance: ${name} - ${duration.toFixed(2)}ms`, metadata)
       }
 
       // Send to analytics service in production
-      if (enableReporting && process.env['NODE_ENV'] === 'production') {
+      if (enableReporting && import.meta.env.MODE === 'production') {
         // This would integrate with your analytics service
         sendPerformanceData(metric)
       }
@@ -629,8 +629,8 @@ function sendPerformanceData(metric: PerformanceMetric): void {
   }
 
   // Send to custom analytics endpoint
-  if (process.env['REACT_APP_ANALYTICS_ENDPOINT']) {
-    fetch(process.env['REACT_APP_ANALYTICS_ENDPOINT'], {
+  if (import.meta.env.VITE_ANALYTICS_ENDPOINT) {
+    fetch(import.meta.env.VITE_ANALYTICS_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

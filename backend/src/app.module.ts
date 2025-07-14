@@ -16,6 +16,7 @@ import { LocalizationModule } from "./modules/localization/localization.module";
 import { PdfModule } from "./modules/pdf/pdf.module";
 import { ReportsModule } from "./modules/reports/reports.module";
 import { SettingsModule } from "./modules/settings/settings.module";
+import { ProjectTypesModule } from "./modules/project-types/project-types.module";
 import { BusinessJourneyModule } from "./modules/business-journey/business-journey.module";
 import { DocumentsModule } from "./modules/documents/documents.module";
 import { PrismaModule } from "./modules/prisma/prisma.module";
@@ -51,6 +52,7 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     PdfModule,
     ReportsModule,
     SettingsModule,
+    ProjectTypesModule,
     BusinessJourneyModule,
     DocumentsModule,
     HealthModule,

@@ -82,13 +82,24 @@ describe("BusinessJourneyController (e2e)", () => {
       },
     });
 
+    // Create test project type
+    const testProjectType = await prisma.projectTypeConfig.create({
+      data: {
+        code: "PRODUCTION",
+        name: "Production Work",
+        prefix: "PH",
+        color: "#52c41a",
+        isDefault: true,
+      },
+    });
+
     // Create test project
     testProject = await prisma.project.create({
       data: {
         number: "PROJ-TEST-001",
         description: "Test Project for E2E",
         output: "Test deliverables",
-        type: "PRODUCTION",
+        projectTypeId: testProjectType.id,
         clientId: testClient.id,
         basePrice: 25000000,
         status: "IN_PROGRESS",

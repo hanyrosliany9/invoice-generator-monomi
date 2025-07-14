@@ -133,7 +133,12 @@ export class ReportsService {
               id: true,
               number: true,
               description: true,
-              type: true,
+              projectType: {
+                select: {
+                  code: true,
+                  name: true,
+                }
+              },
               status: true,
               client: {
                 select: {
@@ -154,7 +159,7 @@ export class ReportsService {
 
     // Get project type distribution
     const projectTypes = await this.prisma.project.groupBy({
-      by: ["type"],
+      by: ["projectTypeId"],
       _count: {
         id: true,
       },

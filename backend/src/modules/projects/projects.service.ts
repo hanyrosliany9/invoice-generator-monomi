@@ -2,17 +2,26 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
 import { UpdateProjectDto } from "./dto/update-project.dto";
-import { ProjectStatus, ProjectType } from "@prisma/client";
+import { ProjectStatus } from "@prisma/client";
 
 @Injectable()
 export class ProjectsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createProjectDto: CreateProjectDto) {
+    // Get project type to generate number
+    const projectType = await this.prisma.projectTypeConfig.findUnique({
+      where: { id: createProjectDto.projectTypeId },
+    });
+
+    if (!projectType) {
+      throw new NotFoundException("Project type not found");
+    }
+
     // Generate unique project number if not provided
     const projectNumber =
       createProjectDto.number ||
-      (await this.generateProjectNumber(createProjectDto.type));
+      (await this.generateProjectNumber(projectType.prefix));
 
     // Calculate base price from products if provided
     let basePrice = null;
@@ -37,7 +46,7 @@ export class ProjectsService {
       };
     }
 
-    const { products, clientId, ...projectData } = createProjectDto;
+    const { products, clientId, projectTypeId, ...projectData } = createProjectDto;
 
     return this.prisma.project.create({
       data: {
@@ -49,9 +58,13 @@ export class ProjectsService {
         client: {
           connect: { id: clientId },
         },
+        projectType: {
+          connect: { id: projectTypeId },
+        },
       },
       include: {
         client: true,
+        projectType: true,
       },
     });
   }
@@ -60,13 +73,13 @@ export class ProjectsService {
     page = 1,
     limit = 10,
     status?: ProjectStatus,
-    type?: ProjectType,
+    projectTypeId?: string,
   ) {
     const skip = (page - 1) * limit;
 
     const where: any = {};
     if (status) where.status = status;
-    if (type) where.type = type;
+    if (projectTypeId) where.projectTypeId = projectTypeId;
 
     const [projects, total] = await Promise.all([
       this.prisma.project.findMany({
@@ -75,6 +88,7 @@ export class ProjectsService {
         take: limit,
         include: {
           client: true,
+          projectType: true,
           _count: {
             select: {
               quotations: true,
@@ -105,6 +119,7 @@ export class ProjectsService {
       where: { id },
       include: {
         client: true,
+        projectType: true,
         quotations: {
           orderBy: { createdAt: "desc" },
         },
@@ -135,6 +150,7 @@ export class ProjectsService {
       data: updateProjectDto,
       include: {
         client: true,
+        projectType: true,
       },
     });
   }
@@ -169,13 +185,10 @@ export class ProjectsService {
     });
   }
 
-  async generateProjectNumber(projectType: ProjectType): Promise<string> {
+  async generateProjectNumber(typePrefix: string): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
     const month = (now.getMonth() + 1).toString().padStart(2, "0");
-
-    // Add project type prefix
-    const typePrefix = projectType === ProjectType.SOCIAL_MEDIA ? "SM" : "PH";
 
     // Count existing projects for this type and month
     const existingProjects = await this.prisma.project.count({
@@ -200,9 +213,9 @@ export class ProjectsService {
         },
       }),
       this.prisma.project.groupBy({
-        by: ["type"],
+        by: ["projectTypeId"],
         _count: {
-          type: true,
+          projectTypeId: true,
         },
       }),
     ]);
@@ -215,9 +228,17 @@ export class ProjectsService {
       {} as Record<string, number>,
     );
 
+    // Get project type names for better display
+    const projectTypes = await this.prisma.projectTypeConfig.findMany();
+    const typeNameMap = projectTypes.reduce((acc, type) => {
+      acc[type.id] = type.name;
+      return acc;
+    }, {} as Record<string, string>);
+
     const typeCounts = byType.reduce(
       (acc, item) => {
-        acc[item.type] = item._count.type;
+        const typeName = typeNameMap[item.projectTypeId] || item.projectTypeId;
+        acc[typeName] = item._count.projectTypeId;
         return acc;
       },
       {} as Record<string, number>,

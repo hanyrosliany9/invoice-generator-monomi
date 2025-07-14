@@ -267,7 +267,7 @@ export const generateWhatsAppMessage = (
   message += `${window.location.origin}/${documentType}s/${documentNumber}\n\n`
   message += `Terima kasih atas kepercayaan Anda.\n\n`
   message += `Hormat kami,\n`
-  message += `Tim ${process.env['REACT_APP_COMPANY_NAME'] || 'Monomi'}`
+  message += `Tim ${import.meta.env.VITE_COMPANY_NAME || 'Monomi'}`
 
   return encodeURIComponent(message)
 }

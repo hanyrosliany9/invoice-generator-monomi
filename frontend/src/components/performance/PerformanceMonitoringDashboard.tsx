@@ -87,8 +87,8 @@ const PerformanceMonitoringDashboard: React.FC<
     enabled: true,
     trackBusinessMetrics: true,
     trackIndonesianMetrics: showIndonesianMetrics,
-    enableLogging: process.env.NODE_ENV === 'development',
-    enableReporting: process.env.NODE_ENV === 'production',
+    enableLogging: import.meta.env.MODE === 'development',
+    enableReporting: import.meta.env.MODE === 'production',
   })
 
   // Local state

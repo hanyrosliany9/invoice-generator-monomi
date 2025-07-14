@@ -74,7 +74,7 @@ export const OptimizedFormLayout: React.FC<OptimizedFormLayoutProps> = memo(
         <EnhancedFormWrapper
           title='Form'
           onError={error => console.error('Form error:', error)}
-          showErrorDetails={process.env.NODE_ENV === 'development'}
+          showErrorDetails={import.meta.env.MODE === 'development'}
         >
           <div style={containerStyles}>{children}</div>
         </EnhancedFormWrapper>

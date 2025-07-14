@@ -22,7 +22,7 @@ import { ProjectsService } from "./projects.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
 import { UpdateProjectDto } from "./dto/update-project.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { ProjectStatus, ProjectType } from "@prisma/client";
+import { ProjectStatus } from "@prisma/client";
 
 @ApiTags("Projects")
 @Controller("projects")
@@ -66,10 +66,10 @@ export class ProjectsController {
     description: "Filter berdasarkan status proyek",
   })
   @ApiQuery({
-    name: "type",
+    name: "projectTypeId",
     required: false,
-    enum: ProjectType,
-    description: "Filter berdasarkan tipe proyek",
+    type: String,
+    description: "Filter berdasarkan ID tipe proyek",
   })
   @ApiResponse({
     status: 200,
@@ -86,7 +86,16 @@ export class ProjectsController {
               number: { type: "string" },
               description: { type: "string" },
               output: { type: "string" },
-              type: { type: "string", enum: Object.values(ProjectType) },
+              projectType: { 
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  code: { type: "string" },
+                  name: { type: "string" },
+                  prefix: { type: "string" },
+                  color: { type: "string" }
+                }
+              },
               status: { type: "string", enum: Object.values(ProjectStatus) },
               startDate: { type: "string", format: "date-time" },
               endDate: { type: "string", format: "date-time" },
@@ -129,9 +138,9 @@ export class ProjectsController {
     @Query("page") page = 1,
     @Query("limit") limit = 10,
     @Query("status") status?: ProjectStatus,
-    @Query("type") type?: ProjectType,
+    @Query("projectTypeId") projectTypeId?: string,
   ) {
-    return this.projectsService.findAll(+page, +limit, status, type);
+    return this.projectsService.findAll(+page, +limit, status, projectTypeId);
   }
 
   @Get("stats")

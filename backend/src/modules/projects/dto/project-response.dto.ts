@@ -1,11 +1,17 @@
-import { ProjectType, ProjectStatus } from "@prisma/client";
+import { ProjectStatus } from "@prisma/client";
 
 export class ProjectResponseDto {
   id: string;
   number: string;
   description: string;
   output: string;
-  type: ProjectType;
+  projectType: {
+    id: string;
+    code: string;
+    name: string;
+    prefix: string;
+    color: string;
+  };
   status: ProjectStatus;
   startDate?: string;
   endDate?: string;

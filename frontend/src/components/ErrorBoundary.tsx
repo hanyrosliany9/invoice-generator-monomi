@@ -182,7 +182,7 @@ class ErrorBoundary extends Component<Props, State> {
                   )}
                 </Space>
 
-                {process.env['NODE_ENV'] === 'development' &&
+                {import.meta.env.MODE === 'development' &&
                   this.state.error && (
                     <details style={{ width: '100%', textAlign: 'left' }}>
                       <summary

@@ -73,7 +73,9 @@ model Project {
   number      String      @unique // Project number for reference
   description String      // Project description
   output      String      // Expected deliverables/output
-  type        ProjectType // Production or Social Media
+  // Project type reference
+  projectTypeId String
+  projectType   ProjectTypeConfig @relation(fields: [projectTypeId], references: [id])
   
   // Client reference
   clientId String
@@ -100,12 +102,12 @@ model Project {
 
   @@index([number])
   @@index([status])
-  @@index([type])
+  @@index([projectTypeId])
   @@index([clientId])
   @@index([createdAt])
   // Composite indexes for performance optimization
   @@index([clientId, status])
-  @@index([type, status])
+  @@index([projectTypeId, status])
   @@index([status, createdAt])
   @@map("projects")
 }
@@ -395,9 +397,28 @@ enum UserRole {
   VIEWER
 }
 
-enum ProjectType {
-  PRODUCTION
-  SOCIAL_MEDIA
+// Dynamic Project Type Configuration
+model ProjectTypeConfig {
+  id          String  @id @default(cuid())
+  code        String  @unique // Unique code like "PRODUCTION", "SOCIAL_MEDIA"
+  name        String  // Display name like "Production Work"
+  description String? // Optional description
+  prefix      String  // Prefix for project numbers like "PH", "SM"
+  color       String  @default("#1890ff") // UI color for the type
+  isDefault   Boolean @default(false) // Is this the default type
+  isActive    Boolean @default(true) // Is this type active
+  sortOrder   Int     @default(0) // Sort order for display
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  projects Project[]
+  
+  @@index([code])
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("project_type_configs")
 }
 
 enum ProjectStatus {

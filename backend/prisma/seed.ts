@@ -87,6 +87,85 @@ async function main() {
     client3: client3.name 
   });
 
+  // Create project type configurations
+  const projectTypeProduction = await prisma.projectTypeConfig.upsert({
+    where: { code: 'PRODUCTION' },
+    update: {},
+    create: {
+      code: 'PRODUCTION',
+      name: 'Production Work',
+      description: 'Website development, software development, and other production tasks',
+      prefix: 'PH',
+      color: '#52c41a',
+      isDefault: true,
+      sortOrder: 1,
+    },
+  });
+
+  const projectTypeSocialMedia = await prisma.projectTypeConfig.upsert({
+    where: { code: 'SOCIAL_MEDIA' },
+    update: {},
+    create: {
+      code: 'SOCIAL_MEDIA',
+      name: 'Social Media Management',
+      description: 'Content creation, social media management, and digital marketing',
+      prefix: 'SM',
+      color: '#1890ff',
+      isDefault: false,
+      sortOrder: 2,
+    },
+  });
+
+  const projectTypeConsultation = await prisma.projectTypeConfig.upsert({
+    where: { code: 'CONSULTATION' },
+    update: {},
+    create: {
+      code: 'CONSULTATION',
+      name: 'Consultation Services',
+      description: 'Business consultation, technical consultation, and advisory services',
+      prefix: 'CS',
+      color: '#722ed1',
+      isDefault: false,
+      sortOrder: 3,
+    },
+  });
+
+  const projectTypeMaintenance = await prisma.projectTypeConfig.upsert({
+    where: { code: 'MAINTENANCE' },
+    update: {},
+    create: {
+      code: 'MAINTENANCE',
+      name: 'Maintenance & Support',
+      description: 'System maintenance, bug fixes, and technical support',
+      prefix: 'MT',
+      color: '#fa8c16',
+      isDefault: false,
+      sortOrder: 4,
+    },
+  });
+
+  const projectTypeOther = await prisma.projectTypeConfig.upsert({
+    where: { code: 'OTHER' },
+    update: {},
+    create: {
+      code: 'OTHER',
+      name: 'Other Services',
+      description: 'Miscellaneous services and custom projects',
+      prefix: 'OT',
+      color: '#595959',
+      isDefault: false,
+      sortOrder: 5,
+    },
+  });
+
+  console.log('📝 Project types created:', {
+    production: projectTypeProduction.code,
+    socialMedia: projectTypeSocialMedia.code,
+    consultation: projectTypeConsultation.code,
+    maintenance: projectTypeMaintenance.code,
+    other: projectTypeOther.code,
+  });
+
   // Create test projects
   const project1 = await prisma.project.upsert({
     where: { id: 'project-1' },
@@ -96,7 +175,7 @@ async function main() {
       number: 'PRJ-PH-202501-001',
       description: 'Pembuatan Website E-commerce',
       output: 'Website e-commerce lengkap dengan dashboard admin, sistem pembayaran, dan mobile responsive',
-      type: 'PRODUCTION',
+      projectTypeId: projectTypeProduction.id,
       clientId: client1.id,
       startDate: new Date('2025-01-01'),
       endDate: new Date('2025-03-31'),
@@ -120,7 +199,7 @@ async function main() {
       number: 'PRJ-SM-202501-001',
       description: 'Konten Media Sosial Januari-Maret',
       output: 'Konten Instagram, Facebook, dan TikTok untuk 3 bulan (90 post + 30 stories)',
-      type: 'SOCIAL_MEDIA',
+      projectTypeId: projectTypeSocialMedia.id,
       clientId: client2.id,
       startDate: new Date('2025-01-01'),
       endDate: new Date('2025-03-31'),
@@ -143,7 +222,7 @@ async function main() {
       number: 'PRJ-PH-202501-002',
       description: 'Sistem Inventory Management',
       output: 'Aplikasi desktop untuk manajemen stok, laporan penjualan, dan integrasi barcode',
-      type: 'PRODUCTION',
+      projectTypeId: projectTypeProduction.id,
       clientId: client3.id,
       startDate: new Date('2025-02-01'),
       endDate: new Date('2025-05-31'),
