@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import {
+  App,
   Button,
   Card,
   Col,
   Form,
   Input,
-  message,
   Result,
   Row,
   Select,
@@ -51,6 +51,7 @@ export const ClientEditPage: React.FC = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { message } = App.useApp()
   const [autoSaving, setAutoSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [originalValues, setOriginalValues] = useState<ClientFormData | null>(

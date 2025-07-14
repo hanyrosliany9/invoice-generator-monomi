@@ -74,6 +74,7 @@ export const ProjectEditPage: React.FC = () => {
     null
   )
   const [calculatedValue, setCalculatedValue] = useState(0)
+  const [formValues, setFormValues] = useState<Partial<ProjectFormData>>({})
 
   // Fetch project data
   const {
@@ -246,8 +247,6 @@ export const ProjectEditPage: React.FC = () => {
   }
 
   // Use form watcher instead of direct getFieldValue calls to avoid useForm warning
-  const [formValues, setFormValues] = useState<Partial<ProjectFormData>>({})
-  
   const duration =
     formValues.startDate && formValues.endDate
       ? formValues.endDate.diff(formValues.startDate, 'day') + 1

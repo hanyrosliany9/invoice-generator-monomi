@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  App,
   Card,
   Table,
   Button,
@@ -11,7 +12,6 @@ import {
   Space,
   Tag,
   Tooltip,
-  message,
   Popconfirm,
   Badge,
   InputNumber,
@@ -34,6 +34,7 @@ const { TextArea } = Input;
 export const ProjectTypeManagement: React.FC = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingType, setEditingType] = useState<ProjectType | null>(null);

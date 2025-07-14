@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Button, message, Popconfirm, Select, Tag } from 'antd'
+import { App, Button, Popconfirm, Select, Tag } from 'antd'
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons'
 import { InvoiceStatus } from '../types/invoice'
 import { invoiceService } from '../services/invoices'
@@ -20,6 +20,7 @@ export const InvoiceStatusEditor: React.FC<InvoiceStatusEditorProps> = ({
   onStatusChange,
   disabled = false,
 }) => {
+  const { message } = App.useApp()
   const [isEditing, setIsEditing] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState<InvoiceStatus>(
     invoice.status

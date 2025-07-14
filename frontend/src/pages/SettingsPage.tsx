@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import {
   Alert,
+  App,
   Avatar,
   Button,
   Card,
@@ -9,7 +10,6 @@ import {
   Form,
   Input,
   InputNumber,
-  message,
   Row,
   Select,
   Space,
@@ -91,6 +91,7 @@ export const SettingsPage: React.FC = () => {
   const { t } = useTranslation()
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
+  const { message } = App.useApp()
   const [activeTab, setActiveTab] = useState('profile')
 
   const [profileForm] = Form.useForm()

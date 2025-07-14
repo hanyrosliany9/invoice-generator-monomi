@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import {
   Alert,
+  App,
   Button,
   Card,
   Col,
   DatePicker,
   Form,
   Input,
-  message,
   Row,
   Select,
   Space,
@@ -69,6 +69,7 @@ export const InvoiceEditPage: React.FC = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { message } = App.useApp()
   const { id } = useParams<{ id: string }>()
   const [autoSaving, setAutoSaving] = useState(false)
   const [previewData, setPreviewData] = useState<any>(null)

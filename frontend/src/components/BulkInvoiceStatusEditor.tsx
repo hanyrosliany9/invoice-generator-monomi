@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import {
+  App,
   Button,
   List,
-  message,
   Modal,
   Popconfirm,
   Select,
@@ -33,6 +33,7 @@ interface BulkInvoiceStatusEditorProps {
 export const BulkInvoiceStatusEditor: React.FC<
   BulkInvoiceStatusEditorProps
 > = ({ selectedInvoices, onStatusChange, onCancel }) => {
+  const { message } = App.useApp()
   const [isVisible, setIsVisible] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState<
     InvoiceStatus | undefined
