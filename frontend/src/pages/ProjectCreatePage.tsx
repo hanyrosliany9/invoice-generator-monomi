@@ -416,7 +416,7 @@ export const ProjectCreatePage: React.FC = () => {
                   format='DD MMM YYYY'
                   disabledDate={current => {
                     const startDate = formValues.startDate
-                    return current && startDate && current < startDate
+                    return !!(current && startDate && current < startDate)
                   }}
                 />
               </Form.Item>

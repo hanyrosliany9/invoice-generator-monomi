@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import {
+  App,
   Button,
   Card,
   Col,
   DatePicker,
   Form,
   Input,
-  message,
   Result,
   Row,
   Select,
@@ -55,8 +55,8 @@ interface ProjectFormData {
   output?: string
   type: 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER'
   clientId: string
-  startDate: dayjs.Dayjs
-  endDate: dayjs.Dayjs
+  startDate?: dayjs.Dayjs | null
+  endDate?: dayjs.Dayjs | null
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
   products: ProductItem[]
 }
@@ -67,6 +67,7 @@ export const ProjectEditPage: React.FC = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { message } = App.useApp()
   const [autoSaving, setAutoSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [originalValues, setOriginalValues] = useState<ProjectFormData | null>(
@@ -113,7 +114,7 @@ export const ProjectEditPage: React.FC = () => {
       const formData: ProjectFormData = {
         description: project.description,
         output: project.output || '',
-        type: project.type,
+        type: project.projectType?.code || 'PRODUCTION',
         clientId: project.clientId,
         startDate: project.startDate ? dayjs(project.startDate) : null,
         endDate: project.endDate ? dayjs(project.endDate) : null,
@@ -160,18 +161,35 @@ export const ProjectEditPage: React.FC = () => {
     return total
   }
 
+  // Project type mapping for update
+  const PROJECT_TYPE_MAPPING: Record<string, string> = {
+    PRODUCTION: 'cmd2xru9100026asuaclsg3kh',
+    SOCIAL_MEDIA: 'cmd2xru9500036asutntrz5mb',
+    CONSULTATION: 'cmd2xru9700046asuph748tvj',
+    MAINTENANCE: 'cmd2xru9800056asuco1tv1wn',
+    OTHER: 'cmd2xru9a00066asuag21f739'
+  }
+
+  const getProjectTypeId = (type: string): string => {
+    const projectTypeId = PROJECT_TYPE_MAPPING[type]
+    if (!projectTypeId) {
+      throw new Error(`Invalid project type: ${type}`)
+    }
+    return projectTypeId
+  }
+
   const handleSubmit = async (values: ProjectFormData) => {
     if (!id) return
 
     const projectData: UpdateProjectRequest = {
       description: values.description,
       output: values.output,
-      type: values.type,
+      projectTypeId: getProjectTypeId(values.type),
       clientId: values.clientId,
-      startDate: values.startDate.toISOString(),
-      endDate: values.endDate.toISOString(),
+      startDate: values.startDate ? values.startDate.toISOString() : null,
+      endDate: values.endDate ? values.endDate.toISOString() : null,
       status: values.status,
-      basePrice: calculatedValue,
+      estimatedBudget: calculatedValue,
       products: values.products || [],
     }
 
@@ -227,11 +245,12 @@ export const ProjectEditPage: React.FC = () => {
     )
   }
 
+  // Use form watcher instead of direct getFieldValue calls to avoid useForm warning
+  const [formValues, setFormValues] = useState<Partial<ProjectFormData>>({})
+  
   const duration =
-    form.getFieldValue('startDate') && form.getFieldValue('endDate')
-      ? form
-          .getFieldValue('endDate')
-          .diff(form.getFieldValue('startDate'), 'day') + 1
+    formValues.startDate && formValues.endDate
+      ? formValues.endDate.diff(formValues.startDate, 'day') + 1
       : 0
 
   const getStatusColor = (status: string) => {
@@ -315,7 +334,7 @@ export const ProjectEditPage: React.FC = () => {
             stats={[
               {
                 label: 'Total Products',
-                value: (form.getFieldValue('products') || []).length,
+                value: (formValues.products || []).length,
                 icon: <ProjectOutlined />,
                 color: '#1890ff',
               },
@@ -341,10 +360,10 @@ export const ProjectEditPage: React.FC = () => {
           {/* Project Status */}
           <Card size='small' title='Project Status'>
             <Tag
-              color={getStatusColor(form.getFieldValue('status'))}
+              color={getStatusColor(formValues.status || project.status)}
               style={{ marginBottom: '8px' }}
             >
-              {form.getFieldValue('status')}
+              {formValues.status || project.status}
             </Tag>
             <div>
               <Text type='secondary' style={{ fontSize: '12px' }}>
@@ -368,7 +387,10 @@ export const ProjectEditPage: React.FC = () => {
         form={form}
         layout='vertical'
         onFinish={handleSubmit}
-        onValuesChange={handleFormChange}
+        onValuesChange={(_, allValues) => {
+          setFormValues(allValues)
+          handleFormChange()
+        }}
         autoComplete='off'
         style={{ width: '100%' }}
       >
@@ -542,7 +564,7 @@ export const ProjectEditPage: React.FC = () => {
                   style={{ width: '100%' }}
                   format='DD MMM YYYY'
                   disabledDate={current => {
-                    const startDate = form.getFieldValue('startDate')
+                    const startDate = formValues.startDate
                     return current && startDate && current < startDate
                   }}
                 />
