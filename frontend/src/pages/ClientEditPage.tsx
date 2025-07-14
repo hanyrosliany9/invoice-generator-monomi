@@ -259,7 +259,7 @@ export const ClientEditPage: React.FC = () => {
                   { min: 2, message: 'Name must be at least 2 characters' },
                 ]}
               >
-                <Input placeholder='Enter client name' size='large' />
+                <Input id='edit-client-name' placeholder='Enter client name' size='large' />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -272,6 +272,7 @@ export const ClientEditPage: React.FC = () => {
                 ]}
               >
                 <Input
+                  id='edit-client-email'
                   type='email'
                   placeholder='client@company.com'
                   size='large'
@@ -280,7 +281,7 @@ export const ClientEditPage: React.FC = () => {
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item name='company' label='Company'>
-                <Input placeholder='Company name' size='large' />
+                <Input id='edit-client-company' placeholder='Company name' size='large' />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -294,12 +295,12 @@ export const ClientEditPage: React.FC = () => {
                   },
                 ]}
               >
-                <Input placeholder='+62 812 3456 7890' size='large' />
+                <Input id='edit-client-phone' placeholder='+62 812 3456 7890' size='large' />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item name='contactPerson' label='Contact Person'>
-                <Input placeholder='Primary contact person' size='large' />
+                <Input id='edit-client-contact-person' placeholder='Primary contact person' size='large' />
               </Form.Item>
             </Col>
           </Row>
@@ -315,7 +316,7 @@ export const ClientEditPage: React.FC = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24}>
               <Form.Item name='address' label='Business Address'>
-                <TextArea rows={3} placeholder='Complete business address' />
+                <TextArea id='edit-client-address' rows={3} placeholder='Complete business address' />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -330,12 +331,13 @@ export const ClientEditPage: React.FC = () => {
                   },
                 ]}
               >
-                <Input placeholder='01.234.567.8-901.000' size='large' />
+                <Input id='edit-client-tax-number' placeholder='01.234.567.8-901.000' size='large' />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item name='paymentTerms' label='Payment Terms'>
                 <Select
+                  id='edit-client-payment-terms'
                   placeholder='Select payment terms'
                   size='large'
                   options={[
@@ -363,6 +365,7 @@ export const ClientEditPage: React.FC = () => {
             <Col xs={24}>
               <Form.Item name='bankAccount' label='Bank Account Details'>
                 <TextArea
+                  id='edit-client-bank-account'
                   rows={3}
                   placeholder='Bank name, account number, account holder name'
                 />
@@ -371,6 +374,7 @@ export const ClientEditPage: React.FC = () => {
             <Col xs={24}>
               <Form.Item name='notes' label='Additional Notes'>
                 <TextArea
+                  id='edit-client-notes'
                   rows={4}
                   placeholder='Any additional information about this client'
                 />

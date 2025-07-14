@@ -113,8 +113,8 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   // Progress calculation
   const calculateProgress = (project: Project) => {
     const now = dayjs()
-    const start = dayjs(project.startDate)
-    const end = dayjs(project.endDate)
+    const start = project.startDate ? dayjs(project.startDate) : dayjs()
+    const end = project.endDate ? dayjs(project.endDate) : dayjs().add(1, 'month')
 
     if (now.isBefore(start)) return 0
     if (now.isAfter(end)) return 100
@@ -390,7 +390,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
 
                         <div>
                           <Text strong>Type:</Text>
-                          <div>{project.type.replace('_', ' ')}</div>
+                          <div>{project.projectType?.name || project.projectType?.code?.replace('_', ' ') || 'Unknown'}</div>
                         </div>
 
                         <div>

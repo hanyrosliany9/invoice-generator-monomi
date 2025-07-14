@@ -1,15 +1,37 @@
 import { apiClient } from '../config/api'
 
+export interface ProjectType {
+  id: string
+  code: string
+  name: string
+  description: string
+  prefix: string
+  color: string
+  isDefault: boolean
+  isActive: boolean
+  sortOrder: number
+}
+
+// Static mapping based on seeded data
+const PROJECT_TYPE_MAPPING: Record<string, string> = {
+  PRODUCTION: 'cmd2xru9100026asuaclsg3kh',
+  SOCIAL_MEDIA: 'cmd2xru9500036asutntrz5mb',
+  CONSULTATION: 'cmd2xru9700046asuph748tvj',
+  MAINTENANCE: 'cmd2xru9800056asuco1tv1wn',
+  OTHER: 'cmd2xru9a00066asuag21f739'
+}
+
 export interface Project {
   id: string
   number: string
   description: string
   output?: string // Optional - legacy field, can be derived from products
-  type: 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER'
+  projectTypeId: string
   clientId: string
-  startDate: string
-  endDate: string
-  basePrice?: number // Price cascade support - calculated from products
+  startDate: string | null
+  endDate: string | null
+  estimatedBudget?: string // Backend returns as string
+  basePrice?: string // Backend returns as string
   priceBreakdown?: any // Detailed price breakdown
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
   totalRevenue?: number // Total revenue from all related invoices
@@ -20,7 +42,27 @@ export interface Project {
     name: string
     company: string
     email: string
+    phone?: string
+    address?: string
+    contactPerson?: string
+    paymentTerms?: string
+    status: string
   }
+  projectType?: {
+    id: string
+    code: string
+    name: string
+    description: string
+    prefix: string
+    color: string
+    isDefault: boolean
+    isActive: boolean
+    sortOrder: number
+    createdAt: string
+    updatedAt: string
+  }
+  quotations?: any[]
+  invoices?: any[]
   _count?: {
     quotations: number
     invoices: number
@@ -30,12 +72,11 @@ export interface Project {
 export interface CreateProjectRequest {
   description: string
   output?: string // Optional - can be derived from product descriptions
-  type: 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER'
+  projectTypeId: string // Project type ID from database
   clientId: string
-  startDate: string
-  endDate: string
-  basePrice?: number // Optional price cascade support - calculated from products
-  priceBreakdown?: any // Optional detailed price breakdown
+  startDate?: string // Optional in backend
+  endDate?: string // Optional in backend
+  estimatedBudget?: number // Budget field name from backend
   products?: Array<{
     // Product/service items for automatic calculations
     name: string
@@ -47,6 +88,15 @@ export interface CreateProjectRequest {
 
 export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {
   status?: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
+}
+
+// Helper function to map project type enum to ID
+const mapProjectTypeToId = (type: string): string => {
+  const projectTypeId = PROJECT_TYPE_MAPPING[type]
+  if (!projectTypeId) {
+    throw new Error(`Invalid project type: ${type}`)
+  }
+  return projectTypeId
 }
 
 export const projectService = {

@@ -561,8 +561,8 @@ export const ProjectsPage: React.FC = () => {
 
         return (
           <div className='text-sm'>
-            <div>Mulai: {dayjs(project.startDate).format('DD/MM/YYYY')}</div>
-            <div>Selesai: {dayjs(project.endDate).format('DD/MM/YYYY')}</div>
+            <div>Mulai: {project.startDate ? dayjs(project.startDate).format('DD/MM/YYYY') : 'TBD'}</div>
+            <div>Selesai: {project.endDate ? dayjs(project.endDate).format('DD/MM/YYYY') : 'TBD'}</div>
             {project.status !== 'COMPLETED' &&
               project.status !== 'CANCELLED' && (
                 <div
@@ -1092,7 +1092,7 @@ export const ProjectsPage: React.FC = () => {
               { required: true, message: 'Deskripsi proyek wajib diisi' },
             ]}
           >
-            <Input name='description' placeholder='Deskripsi singkat proyek' autoComplete='off' />
+            <Input id='description' name='description' placeholder='Deskripsi singkat proyek' autoComplete='off' />
           </Form.Item>
 
           <Form.Item
@@ -1100,7 +1100,7 @@ export const ProjectsPage: React.FC = () => {
             label={t('projects.type')}
             rules={[{ required: true, message: 'Pilih tipe proyek' }]}
           >
-            <Select name='type' placeholder='Pilih tipe proyek'>
+            <Select id='type' name='type' placeholder='Pilih tipe proyek'>
               <Option value='PRODUCTION'>Produksi</Option>
               <Option value='SOCIAL_MEDIA'>Media Sosial</Option>
             </Select>
@@ -1138,7 +1138,7 @@ export const ProjectsPage: React.FC = () => {
                               },
                             ]}
                           >
-                            <Input name={`product-name-${field.name}`} placeholder='Nama produk/layanan' autoComplete='off' />
+                            <Input id={`product-name-${field.name}`} name={`product-name-${field.name}`} placeholder='Nama produk/layanan' autoComplete='off' />
                           </Form.Item>
                         </Col>
                         <Col span={6}>
@@ -1154,6 +1154,7 @@ export const ProjectsPage: React.FC = () => {
                             ]}
                           >
                             <InputNumber
+                              id={`product-quantity-${field.name}`}
                               name={`product-quantity-${field.name}`}
                               min={1}
                               placeholder='1'

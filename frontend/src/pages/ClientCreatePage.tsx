@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
 import {
+  App,
   Button,
   Card,
   Col,
   Form,
   Input,
-  message,
   Row,
   Select,
   Space,
@@ -43,6 +43,7 @@ export const ClientCreatePage: React.FC = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { message } = App.useApp()
 
   // Mobile optimization and performance
   const mobile = useMobileOptimized()
@@ -157,7 +158,7 @@ export const ClientCreatePage: React.FC = () => {
                   { min: 2, message: 'Name must be at least 2 characters' },
                 ]}
               >
-                <Input placeholder='Enter client name' size='large' />
+                <Input id='name' placeholder='Enter client name' size='large' />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -170,6 +171,7 @@ export const ClientCreatePage: React.FC = () => {
                 ]}
               >
                 <Input
+                  id='email'
                   type='email'
                   placeholder='client@company.com'
                   size='large'

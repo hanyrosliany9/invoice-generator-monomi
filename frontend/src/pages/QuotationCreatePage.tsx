@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import {
   Alert,
+  App,
   Button,
   Card,
   Col,
@@ -8,7 +9,6 @@ import {
   Divider,
   Form,
   Input,
-  message,
   Row,
   Select,
   Space,
@@ -67,6 +67,7 @@ export const QuotationCreatePage: React.FC = () => {
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const [previewData, setPreviewData] = useState<any>(null)
+  const { message } = App.useApp()
 
   // Mobile optimization and performance
   const mobile = useMobileOptimized()
@@ -177,6 +178,7 @@ export const QuotationCreatePage: React.FC = () => {
 
   const handleFormChange = () => {
     const values = form.getFieldsValue()
+    setFormValues(values)
     updatePreviewData(values)
 
     // Trigger auto-save when basic data is present
@@ -231,13 +233,12 @@ export const QuotationCreatePage: React.FC = () => {
     }
   }
 
-  const selectedClient = clients.find(
-    c => c.id === form.getFieldValue('clientId')
-  )
-  const currentProject =
-    projects.find(p => p.id === form.getFieldValue('projectId')) ||
-    selectedProject
-  const totalAmount = form.getFieldValue('totalAmount') || 0
+  // Use form watcher instead of direct getFieldValue calls to avoid useForm warning
+  const [formValues, setFormValues] = useState<Partial<QuotationFormData>>({})
+  
+  const selectedClient = clients.find(c => c.id === formValues.clientId)
+  const currentProject = projects.find(p => p.id === formValues.projectId) || selectedProject
+  const totalAmount = formValues.totalAmount || 0
 
   const getInheritedData = (): Record<string, any> => {
     if (!selectedProject) return {}
@@ -306,7 +307,7 @@ export const QuotationCreatePage: React.FC = () => {
             stats={[
               {
                 label: 'Project Value',
-                value: form.getFieldValue('amountPerProject') || 0,
+                value: formValues.amountPerProject || 0,
                 format: 'currency',
                 icon: <ProjectOutlined />,
                 color: '#1890ff',
@@ -320,8 +321,8 @@ export const QuotationCreatePage: React.FC = () => {
               },
               {
                 label: 'Valid Days',
-                value: form.getFieldValue('validUntil')
-                  ? form.getFieldValue('validUntil').diff(dayjs(), 'day')
+                value: formValues.validUntil
+                  ? formValues.validUntil.diff(dayjs(), 'day')
                   : 30,
                 format: 'duration',
                 icon: <CalendarOutlined />,

@@ -76,6 +76,7 @@ export const LoginPage: React.FC = () => {
           style={{ marginBottom: '24px' }}
         >
           <Input
+            id='email'
             prefix={<UserOutlined style={{ color: '#6b7280' }} />}
             placeholder='nama@email.com'
             style={{
@@ -105,6 +106,7 @@ export const LoginPage: React.FC = () => {
           style={{ marginBottom: '24px' }}
         >
           <Input.Password
+            id='password'
             prefix={<LockOutlined style={{ color: '#6b7280' }} />}
             placeholder='Masukkan password'
             style={{

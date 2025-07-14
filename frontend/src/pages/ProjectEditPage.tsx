@@ -115,8 +115,8 @@ export const ProjectEditPage: React.FC = () => {
         output: project.output || '',
         type: project.type,
         clientId: project.clientId,
-        startDate: dayjs(project.startDate),
-        endDate: dayjs(project.endDate),
+        startDate: project.startDate ? dayjs(project.startDate) : null,
+        endDate: project.endDate ? dayjs(project.endDate) : null,
         status: project.status,
         products: (project as any).products || [
           { name: '', description: '', price: 0, quantity: 1 },

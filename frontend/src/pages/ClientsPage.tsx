@@ -835,7 +835,7 @@ export const ClientsPage: React.FC = () => {
                 label={t('clients.name')}
                 rules={[{ required: true, message: 'Nama klien wajib diisi' }]}
               >
-                <Input placeholder='Masukkan nama klien' />
+                <Input id='client-name' placeholder='Masukkan nama klien' />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -846,7 +846,7 @@ export const ClientsPage: React.FC = () => {
                   { required: true, message: 'Nama perusahaan wajib diisi' },
                 ]}
               >
-                <Input placeholder='PT. / CV. / Toko...' />
+                <Input id='client-company' placeholder='PT. / CV. / Toko...' />
               </Form.Item>
             </Col>
           </Row>
@@ -860,7 +860,7 @@ export const ClientsPage: React.FC = () => {
                   { required: true, message: 'Contact person wajib diisi' },
                 ]}
               >
-                <Input placeholder='Nama contact person' />
+                <Input id='client-contact-person' placeholder='Nama contact person' />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -872,7 +872,7 @@ export const ClientsPage: React.FC = () => {
                   { type: 'email', message: 'Format email tidak valid' },
                 ]}
               >
-                <Input placeholder='nama@email.com' />
+                <Input id='client-email' placeholder='nama@email.com' />
               </Form.Item>
             </Col>
           </Row>
@@ -886,7 +886,7 @@ export const ClientsPage: React.FC = () => {
                   { required: true, message: 'Nomor telepon wajib diisi' },
                 ]}
               >
-                <Input placeholder='+62 21 1234567' />
+                <Input id='client-phone' placeholder='+62 21 1234567' />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -921,7 +921,7 @@ export const ClientsPage: React.FC = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name='taxNumber' label='NPWP'>
-                <Input placeholder='XX.XXX.XXX.X-XXX.XXX' />
+                <Input id='client-tax-number' placeholder='XX.XXX.XXX.X-XXX.XXX' />
               </Form.Item>
             </Col>
             <Col span={12}>

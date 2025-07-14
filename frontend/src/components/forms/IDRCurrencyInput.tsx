@@ -23,6 +23,7 @@ interface IDRCurrencyInputProps {
   max?: number
   className?: string
   style?: React.CSSProperties
+  id?: string
   'data-testid'?: string
   'aria-label'?: string
 }
@@ -54,6 +55,7 @@ export const IDRCurrencyInput: React.FC<IDRCurrencyInputProps> = ({
   max,
   className,
   style,
+  id,
   'data-testid': dataTestId,
   'aria-label': ariaLabel,
 }) => {
@@ -117,6 +119,7 @@ export const IDRCurrencyInput: React.FC<IDRCurrencyInputProps> = ({
       <Space direction='vertical' size='small' style={{ width: '100%' }}>
         {/* Main Input */}
         <InputNumber
+          id={id}
           value={
             focused
               ? displayValue

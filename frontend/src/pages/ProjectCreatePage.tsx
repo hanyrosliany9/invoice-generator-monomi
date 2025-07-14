@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import {
+  App,
   Button,
   Card,
   Col,
@@ -7,7 +8,6 @@ import {
   Divider,
   Form,
   Input,
-  message,
   Row,
   Select,
   Space,
@@ -34,7 +34,7 @@ import {
   MateraiCompliancePanel,
   ProgressiveSection,
 } from '../components/forms'
-import { CreateProjectRequest, projectService } from '../services/projects'
+import { CreateProjectRequest, projectService, ProjectType } from '../services/projects'
 import { clientService } from '../services/clients'
 
 const { TextArea } = Input
@@ -52,8 +52,8 @@ interface ProjectFormData {
   output?: string
   type: 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER'
   clientId: string
-  startDate: dayjs.Dayjs
-  endDate: dayjs.Dayjs
+  startDate?: dayjs.Dayjs
+  endDate?: dayjs.Dayjs
   products: ProductItem[]
 }
 
@@ -65,8 +65,26 @@ export const ProjectCreatePage: React.FC = () => {
   const [searchParams] = useSearchParams()
   const [autoSaving, setAutoSaving] = useState(false)
   const [calculatedValue, setCalculatedValue] = useState(0)
+  const { message } = App.useApp()
 
   const prefilledClientId = searchParams.get('clientId')
+
+  // Project type mapping
+  const PROJECT_TYPE_MAPPING: Record<string, string> = {
+    PRODUCTION: 'cmd2xru9100026asuaclsg3kh',
+    SOCIAL_MEDIA: 'cmd2xru9500036asutntrz5mb',
+    CONSULTATION: 'cmd2xru9700046asuph748tvj',
+    MAINTENANCE: 'cmd2xru9800056asuco1tv1wn',
+    OTHER: 'cmd2xru9a00066asuag21f739'
+  }
+
+  const getProjectTypeId = (type: string): string => {
+    const projectTypeId = PROJECT_TYPE_MAPPING[type]
+    if (!projectTypeId) {
+      throw new Error(`Invalid project type: ${type}`)
+    }
+    return projectTypeId
+  }
 
   // Fetch clients for selection
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
@@ -110,11 +128,11 @@ export const ProjectCreatePage: React.FC = () => {
     const projectData: CreateProjectRequest = {
       description: values.description,
       output: values.output,
-      type: values.type,
+      projectTypeId: getProjectTypeId(values.type),
       clientId: values.clientId,
-      startDate: values.startDate.toISOString(),
-      endDate: values.endDate.toISOString(),
-      basePrice: calculatedValue,
+      startDate: values.startDate?.toISOString(),
+      endDate: values.endDate?.toISOString(),
+      estimatedBudget: calculatedValue,
       products: values.products || [],
     }
 
@@ -127,11 +145,11 @@ export const ProjectCreatePage: React.FC = () => {
       const projectData: CreateProjectRequest = {
         description: values.description,
         output: values.output,
-        type: values.type,
+        projectTypeId: getProjectTypeId(values.type),
         clientId: values.clientId,
-        startDate: values.startDate.toISOString(),
-        endDate: values.endDate.toISOString(),
-        basePrice: calculatedValue,
+        startDate: values.startDate?.toISOString(),
+        endDate: values.endDate?.toISOString(),
+        estimatedBudget: calculatedValue,
         products: values.products || [],
       }
 
@@ -267,6 +285,7 @@ export const ProjectCreatePage: React.FC = () => {
                 rules={[{ required: true, message: 'Please select a client' }]}
               >
                 <Select
+                  id='clientId'
                   placeholder='Select client'
                   size='large'
                   loading={clientsLoading}
@@ -300,6 +319,7 @@ export const ProjectCreatePage: React.FC = () => {
                 ]}
               >
                 <TextArea
+                  id='description'
                   rows={3}
                   placeholder='Describe the project scope and objectives'
                 />
@@ -315,6 +335,7 @@ export const ProjectCreatePage: React.FC = () => {
                 ]}
               >
                 <Select
+                  id='type'
                   placeholder='Select project type'
                   size='large'
                   options={[
@@ -331,6 +352,7 @@ export const ProjectCreatePage: React.FC = () => {
             <Col xs={24} sm={12}>
               <Form.Item name='output' label='Expected Output'>
                 <Input
+                  id='output'
                   placeholder='e.g., Website, Mobile App, Campaign'
                   size='large'
                 />
@@ -357,6 +379,7 @@ export const ProjectCreatePage: React.FC = () => {
                 ]}
               >
                 <DatePicker
+                  id='startDate'
                   size='large'
                   style={{ width: '100%' }}
                   format='DD MMM YYYY'
@@ -387,6 +410,7 @@ export const ProjectCreatePage: React.FC = () => {
                 ]}
               >
                 <DatePicker
+                  id='endDate'
                   size='large'
                   style={{ width: '100%' }}
                   format='DD MMM YYYY'
@@ -463,7 +487,10 @@ export const ProjectCreatePage: React.FC = () => {
                             },
                           ]}
                         >
-                          <Input placeholder='e.g., Website Development' />
+                          <Input 
+                            id={`product-name-${name}`}
+                            placeholder='e.g., Website Development' 
+                          />
                         </Form.Item>
                       </Col>
 
@@ -476,7 +503,12 @@ export const ProjectCreatePage: React.FC = () => {
                             { required: true, message: 'Quantity is required' },
                           ]}
                         >
-                          <Input type='number' min={1} placeholder='1' />
+                          <Input 
+                            id={`product-quantity-${name}`}
+                            type='number' 
+                            min={1} 
+                            placeholder='1' 
+                          />
                         </Form.Item>
                       </Col>
 
@@ -493,6 +525,7 @@ export const ProjectCreatePage: React.FC = () => {
                           ]}
                         >
                           <TextArea
+                            id={`product-description-${name}`}
                             rows={2}
                             placeholder='Detailed description of the product/service'
                           />
@@ -509,6 +542,7 @@ export const ProjectCreatePage: React.FC = () => {
                           ]}
                         >
                           <IDRCurrencyInput
+                            id={`product-price-${name}`}
                             placeholder='Enter price in IDR'
                             showMateraiWarning={false}
                           />
