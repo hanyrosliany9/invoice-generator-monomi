@@ -76,6 +76,7 @@ export const QuotationCreatePage: React.FC = () => {
   // Auto-save functionality
   const autoSave = useOptimizedAutoSave({
     delay: performanceSettings.autoSaveDelay,
+    messageApi: message,
     onSave: async (data: any) => {
       console.log('Auto-saving quotation draft:', data)
       await new Promise(resolve => setTimeout(resolve, 300))

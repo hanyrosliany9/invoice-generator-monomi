@@ -4,6 +4,7 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import {
   Alert,
+  App,
   Avatar,
   Button,
   Card,
@@ -12,7 +13,6 @@ import {
   Form,
   Input,
   List,
-  message,
   Modal,
   Radio,
   Row,
@@ -147,6 +147,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
   onContactUpdate,
 }) => {
   const { t } = useTranslation()
+  const { message } = App.useApp()
 
   // State management
   const [activeTab, setActiveTab] = useState('send')

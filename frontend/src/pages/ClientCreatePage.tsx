@@ -52,6 +52,7 @@ export const ClientCreatePage: React.FC = () => {
   // Auto-save functionality
   const autoSave = useOptimizedAutoSave({
     delay: performanceSettings.autoSaveDelay,
+    messageApi: message,
     onSave: async (data: any) => {
       console.log('Auto-saving client draft:', data)
       await new Promise(resolve => setTimeout(resolve, 200))

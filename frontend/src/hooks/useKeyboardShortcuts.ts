@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { message } from 'antd'
+import { MessageInstance } from 'antd/es/message/interface'
 
 interface KeyboardShortcut {
   key: string
@@ -12,6 +12,7 @@ interface KeyboardShortcut {
 
 interface UseKeyboardShortcutsProps {
   shortcuts: KeyboardShortcut[]
+  messageApi: MessageInstance
   enabled?: boolean
   showTooltips?: boolean
 }
@@ -236,6 +237,7 @@ const shouldIgnoreShortcut = (target: EventTarget | null): boolean => {
 
 export const useKeyboardShortcuts = ({
   shortcuts,
+  messageApi,
   enabled = true,
   showTooltips = true,
 }: UseKeyboardShortcutsProps) => {
@@ -267,7 +269,7 @@ export const useKeyboardShortcuts = ({
 
           if (showTooltips && shortcutKey !== 'f1') {
             // Don't show tooltip for help
-            message.success({
+            messageApi.success({
               content: `⌨️ ${matchedShortcut.description}`,
               duration: 1.5,
               style: { marginTop: '10vh' },
@@ -275,7 +277,7 @@ export const useKeyboardShortcuts = ({
           }
         } catch (error) {
           console.error('Error executing keyboard shortcut:', error)
-          message.error('Shortcut execution failed')
+          messageApi.error('Shortcut execution failed')
         }
       }
 
@@ -285,7 +287,7 @@ export const useKeyboardShortcuts = ({
         pressedKeys: new Set([...prev.pressedKeys, event.key.toLowerCase()]),
       }))
     },
-    [shortcuts, enabled, showTooltips]
+    [shortcuts, messageApi, enabled, showTooltips]
   )
 
   const handleKeyUp = useCallback((event: KeyboardEvent) => {
@@ -356,7 +358,8 @@ export const usePageShortcuts = (
     onExport?: () => void
     onRefresh?: () => void
     onNavigate?: (page: string) => void
-  }
+  },
+  messageApi?: MessageInstance
 ) => {
   // Skip navigation shortcuts entirely to prevent infinite loops
   // Navigation will be handled separately without causing re-renders
@@ -471,6 +474,7 @@ export const usePageShortcuts = (
 
   return useKeyboardShortcuts({
     shortcuts: allShortcuts,
+    messageApi: messageApi!, // Use non-null assertion since we expect it to be passed
     enabled: true,
     showTooltips: true,
   })

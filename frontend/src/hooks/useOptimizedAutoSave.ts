@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { message } from 'antd'
+import { MessageInstance } from 'antd/es/message/interface'
 
 // Simple debounce implementation
 function debounce<T extends (...args: any[]) => any>(
@@ -28,6 +28,7 @@ function debounce<T extends (...args: any[]) => any>(
 interface UseOptimizedAutoSaveOptions {
   delay?: number // Debounce delay in ms
   maxRetries?: number
+  messageApi: MessageInstance
   onSave: (data: any) => Promise<void>
   onError?: (error: Error) => void
   enabled?: boolean
@@ -45,6 +46,7 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
   const {
     delay = 2000, // 2 seconds default
     maxRetries = 3,
+    messageApi,
     onSave,
     onError,
     enabled = true,
@@ -90,7 +92,7 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
 
         // Show subtle success indication (only after first few saves)
         if (state.saveCount < 3) {
-          message.success('Draft saved', 1)
+          messageApi.success('Draft saved', 1)
         }
       } catch (error) {
         retryCountRef.current++
@@ -109,12 +111,12 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
           setTimeout(() => debouncedSave(data), 1000 * retryCountRef.current) // Exponential backoff
         } else {
           console.error('Auto-save failed after max retries:', error)
-          message.error('Auto-save failed. Please save manually.', 3)
+          messageApi.error('Auto-save failed. Please save manually.', 3)
           onError?.(error as Error)
         }
       }
     }, delay),
-    [delay, enabled, maxRetries, onSave, onError, state.saveCount]
+    [delay, enabled, maxRetries, messageApi, onSave, onError, state.saveCount]
   )
 
   // Trigger auto-save when data changes
@@ -149,7 +151,7 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
           saveCount: prev.saveCount + 1,
         }))
 
-        message.success('Saved successfully')
+        messageApi.success('Saved successfully')
       } catch (error) {
         setState(prev => ({
           ...prev,
@@ -157,12 +159,12 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
           errorCount: prev.errorCount + 1,
         }))
 
-        message.error('Save failed')
+        messageApi.error('Save failed')
         onError?.(error as Error)
         throw error
       }
     },
-    [enabled, onSave, onError, debouncedSave]
+    [enabled, messageApi, onSave, onError, debouncedSave]
   )
 
   // Reset state

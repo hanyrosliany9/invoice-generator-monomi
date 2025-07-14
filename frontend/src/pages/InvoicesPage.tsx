@@ -251,7 +251,7 @@ export const InvoicesPage: React.FC = () => {
   )
 
   // Keyboard shortcuts WITHOUT navigation to prevent infinite loops
-  const shortcuts = usePageShortcuts('invoices', shortcutsArray, globalActions)
+  const shortcuts = usePageShortcuts('invoices', shortcutsArray, globalActions, message)
 
   // Queries
   const {

@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import {
   Alert,
+  App,
   Button,
   Card,
   Col,
   DatePicker,
   Form,
   Input,
-  message,
   Row,
   Select,
   Space,
@@ -62,6 +62,7 @@ interface InvoiceFormData {
 }
 
 export const InvoiceCreatePage: React.FC = () => {
+  const { message } = App.useApp()
   const [form] = Form.useForm<InvoiceFormData>()
   const navigate = useNavigate()
   const { t } = useTranslation()
@@ -76,6 +77,7 @@ export const InvoiceCreatePage: React.FC = () => {
   // Auto-save functionality
   const autoSave = useOptimizedAutoSave({
     delay: performanceSettings.autoSaveDelay,
+    messageApi: message,
     onSave: async (data: any) => {
       // In a real app, this would save a draft to the backend
       console.log('Auto-saving invoice draft:', data)

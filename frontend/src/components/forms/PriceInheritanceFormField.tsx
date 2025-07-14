@@ -4,6 +4,7 @@
 import React, { useEffect, useMemo } from 'react'
 import { Form, FormItemProps } from 'antd'
 import { useWatch } from 'antd/es/form/Form'
+import { MessageInstance } from 'antd/es/message/interface'
 
 import { PriceInheritanceFlow } from './PriceInheritanceFlow'
 import {
@@ -22,6 +23,7 @@ export interface PriceInheritanceFormFieldProps
   // Form integration
   name: string | string[]
   form?: any // Ant Design form instance
+  messageApi: MessageInstance
 
   // Entity configuration
   entityType: 'quotation' | 'invoice'
@@ -56,6 +58,7 @@ export const PriceInheritanceFormField: React.FC<
 > = ({
   name,
   form: externalForm,
+  messageApi,
   entityType,
   entityId,
   defaultMode = 'inherit',
@@ -89,6 +92,7 @@ export const PriceInheritanceFormField: React.FC<
     usePriceInheritanceFormField(fieldName, form, {
       entityType,
       entityId,
+      messageApi,
       defaultMode,
       enableRealTimeValidation: true,
       enableUserTesting,

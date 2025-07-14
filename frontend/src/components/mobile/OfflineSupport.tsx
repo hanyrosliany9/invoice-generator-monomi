@@ -10,12 +10,12 @@ import React, {
 } from 'react'
 import {
   Alert,
+  App,
   Badge,
   Button,
   Card,
   Col,
   List,
-  message,
   Modal,
   Progress,
   Row,
@@ -500,6 +500,7 @@ export const OfflineStatus: React.FC<{ showDetails?: boolean }> = ({
   showDetails = false,
 }) => {
   const { t } = useTranslation()
+  const { message } = App.useApp()
   const { state, queue, syncNow } = useOfflineSupport()
   const [detailsVisible, setDetailsVisible] = useState(false)
 
@@ -586,6 +587,7 @@ export const OfflineStatus: React.FC<{ showDetails?: boolean }> = ({
 
 // Offline Details Component
 export const OfflineDetails: React.FC = () => {
+  const { message } = App.useApp()
   const { state, queue, clearQueue, clearOfflineData } = useOfflineSupport()
 
   const storagePercentage = (state.storageUsed / state.storageLimit) * 100

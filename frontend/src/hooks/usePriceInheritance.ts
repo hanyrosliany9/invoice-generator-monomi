@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { message } from 'antd'
+import { MessageInstance } from 'antd/es/message/interface'
 
 import {
   PriceInheritanceConfig,
@@ -18,6 +18,7 @@ import { getAmountMetadata, validateIDRAmount } from '../utils/currency'
 export interface UsePriceInheritanceOptions {
   entityType: 'quotation' | 'invoice'
   entityId: string
+  messageApi: MessageInstance
   defaultMode?: PriceInheritanceMode
   enableRealTimeValidation?: boolean
   enableUserTesting?: boolean
@@ -73,6 +74,7 @@ export const usePriceInheritance = (
   const {
     entityType,
     entityId,
+    messageApi,
     defaultMode = 'inherit',
     enableRealTimeValidation = true,
     enableUserTesting = true,
@@ -107,9 +109,9 @@ export const usePriceInheritance = (
   useEffect(() => {
     if (sourcesError) {
       setError((sourcesError as any)?.message || 'Failed to load price sources')
-      message.error('Gagal memuat sumber harga')
+      messageApi.error('Gagal memuat sumber harga')
     }
-  }, [sourcesError])
+  }, [sourcesError, messageApi])
 
   // Set default source when sources are loaded
   useEffect(() => {
@@ -157,13 +159,13 @@ export const usePriceInheritance = (
         trackUserInteraction: enableUserTesting,
       }),
     onSuccess: result => {
-      message.success('Konfigurasi harga berhasil disimpan')
+      messageApi.success('Konfigurasi harga berhasil disimpan')
       queryClient.invalidateQueries({ queryKey: ['priceInheritance'] })
       onConfigChange?.(result.config)
     },
     onError: (error: any) => {
       setError(error.message || 'Failed to save configuration')
-      message.error('Gagal menyimpan konfigurasi harga')
+      messageApi.error('Gagal menyimpan konfigurasi harga')
     },
   })
 
