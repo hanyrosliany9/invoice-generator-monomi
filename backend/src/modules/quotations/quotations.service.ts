@@ -64,13 +64,38 @@ export class QuotationsService {
     page = 1,
     limit = 10,
     status?: QuotationStatus,
+    month?: number,
+    year?: number,
   ): Promise<{
     data: any[];
     pagination: { page: number; limit: number; total: number; pages: number };
   }> {
     const skip = (page - 1) * limit;
 
-    const where = status ? { status } : {};
+    const where: Prisma.QuotationWhereInput = {};
+    
+    if (status) {
+      where.status = status;
+    }
+
+    // Add month/year filtering
+    if (month && year) {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+      
+      where.date = {
+        gte: startDate,
+        lte: endDate,
+      };
+    } else if (year) {
+      const startDate = new Date(year, 0, 1);
+      const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+      
+      where.date = {
+        gte: startDate,
+        lte: endDate,
+      };
+    }
 
     const [quotations, total] = await Promise.all([
       this.prisma.quotation.findMany({

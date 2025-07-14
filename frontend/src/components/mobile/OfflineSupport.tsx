@@ -23,6 +23,7 @@ import {
   Statistic,
   Tag,
   Typography,
+  message,
 } from 'antd'
 import {
   CheckCircleOutlined,

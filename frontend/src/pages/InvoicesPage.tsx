@@ -25,6 +25,8 @@ import {
   Tooltip,
   Typography,
 } from 'antd'
+
+const { MonthPicker } = DatePicker
 import {
   BankOutlined,
   CheckCircleOutlined,
@@ -110,6 +112,7 @@ export const InvoicesPage: React.FC = () => {
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [materaiFilter, setMateraiFilter] = useState<string>('')
+  const [filters, setFilters] = useState<Record<string, any>>({})
   const [modalVisible, setModalVisible] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
   const [paymentModalVisible, setPaymentModalVisible] = useState(false)
@@ -1543,7 +1546,6 @@ export const InvoicesPage: React.FC = () => {
             </Select>
             <Select
               id='invoice-materai-filter'
-              name='materaiFilter'
               data-testid='materai-reminder-button'
               placeholder='Filter materai'
               value={materaiFilter}
@@ -1555,6 +1557,31 @@ export const InvoicesPage: React.FC = () => {
               <Option value='applied'>Sudah Ditempel</Option>
               <Option value='pending'>Belum Ditempel</Option>
             </Select>
+            <MonthPicker
+              placeholder='Pilih bulan & tahun'
+              value={filters.monthYear}
+              onChange={value => setFilters(prev => ({ ...prev, monthYear: value }))}
+              style={{ width: 180 }}
+              format='MMMM YYYY'
+              allowClear
+            />
+            <InputNumber
+              placeholder='Nilai min'
+              value={filters.amount?.[0]}
+              onChange={value => setFilters(prev => ({ ...prev, amount: [value, prev.amount?.[1]] }))}
+              style={{ width: 120 }}
+              formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+              parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
+            />
+            <InputNumber
+              placeholder='Nilai max'
+              value={filters.amount?.[1]}
+              onChange={value => setFilters(prev => ({ ...prev, amount: [prev.amount?.[0], value] }))}
+              style={{ width: 120 }}
+              formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+              parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
+            />
+            <Button onClick={() => setFilters({})}>Reset</Button>
           </Space>
 
           <Space>

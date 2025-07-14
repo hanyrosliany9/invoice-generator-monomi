@@ -40,7 +40,7 @@ import {
 import styles from './BusinessFlowNavigator.module.css'
 
 const { Title, Text, Paragraph } = Typography
-const { Panel } = Collapse
+// Remove Panel import - using items prop instead
 
 // Indonesian business stage configuration
 const stageConfig: Record<
@@ -455,142 +455,125 @@ export const BusinessFlowNavigator: React.FC<BusinessFlowNavigatorProps> = ({
           activeKey={activePanel}
           onChange={setActivePanel}
           className={styles.flowPanels}
-        >
-          {/* Timeline Panel */}
-          <Panel
-            header={
-              <Space>
-                <ClockCircleOutlined />
-                <Text>Timeline Detail</Text>
-              </Space>
-            }
-            key='timeline'
-          >
-            <Timeline className={styles.detailTimeline}>
-              {steps.map(step => (
-                <Timeline.Item
-                  key={step.id}
-                  dot={<StepStatus step={step} />}
-                  color={
-                    step.isCompleted
-                      ? 'green'
-                      : step.isCurrent
-                        ? 'blue'
-                        : 'gray'
-                  }
-                >
-                  <Space direction='vertical' size='small'>
-                    <Space>
-                      <Text
-                        strong
-                        className={step.isCurrent ? styles.currentStepText : ''}
-                      >
-                        {step.title}
-                      </Text>
-                      <Tag
-                        color={
-                          step.isCompleted
-                            ? 'success'
-                            : step.isCurrent
-                              ? 'processing'
-                              : 'default'
-                        }
-                      >
-                        {step.isCompleted
-                          ? 'Selesai'
+          items={[
+            {
+              key: 'timeline',
+              label: (
+                <Space>
+                  <ClockCircleOutlined />
+                  <Text>Timeline Detail</Text>
+                </Space>
+              ),
+              children: (
+                <Timeline className={styles.detailTimeline}>
+                  {steps.map(step => (
+                    <Timeline.Item
+                      key={step.id}
+                      dot={<StepStatus step={step} />}
+                      color={
+                        step.isCompleted
+                          ? 'green'
                           : step.isCurrent
-                            ? 'Sedang Berlangsung'
-                            : 'Pending'}
+                            ? 'blue'
+                            : 'gray'
+                      }
+                    >
+                      <Space direction='vertical' size='small'>
+                        <Space>
+                          <Text
+                            strong
+                            className={step.isCurrent ? styles.currentStepText : ''}
+                          >
+                            {step.title}
+                          </Text>
+                          <Tag
+                            color={
+                              step.isCompleted
+                                ? 'success'
+                                : step.isCurrent
+                                  ? 'processing'
+                                  : 'default'
+                            }
+                          >
+                            {step.isCompleted
+                              ? 'Selesai'
+                              : step.isCurrent
+                                ? 'Berlangsung'
+                                : 'Menunggu'}
+                          </Tag>
+                        </Space>
+                        <Text type='secondary' className={styles.stepDescription}>
+                          {step.description}
+                        </Text>
+                      </Space>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              ),
+            },
+            {
+              key: 'details',
+              label: (
+                <Space>
+                  <InfoCircleOutlined />
+                  <Text>Detail Tahap: {selectedConfig.title}</Text>
+                </Space>
+              ),
+              children: (
+                <Space direction='vertical' size={16} style={{ width: '100%' }}>
+                  <div className={styles.stageHeader}>
+                    <Space>
+                      <span style={{ fontSize: '24px' }}>
+                        {selectedConfig.icon}
+                      </span>
+                      <div>
+                        <Title level={4} className={styles.stageTitle}>
+                          {selectedConfig.title}
+                        </Title>
+                        <Paragraph type='secondary'>
+                          {selectedConfig.description}
+                        </Paragraph>
+                      </div>
+                    </Space>
+                  </div>
+
+                  <div className={styles.keyActivities}>
+                    <Text strong>Aktivitas Utama:</Text>
+                    <ul className={styles.activitiesList}>
+                      {selectedConfig.keyActivities.map((activity, index) => (
+                        <li key={index} className={styles.activityItem}>
+                          <CheckCircleOutlined className={styles.activityIcon} />
+                          {activity}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className={styles.stageMeta}>
+                    <Space wrap>
+                      <Tag icon={<ClockCircleOutlined />} color='blue'>
+                        Durasi: {selectedConfig.expectedDuration}
+                      </Tag>
+                      <Tag icon={<TeamOutlined />} color='green'>
+                        Stakeholder: Tim & Klien
                       </Tag>
                     </Space>
-
-                    {step.description && (
-                      <Paragraph
-                        type='secondary'
-                        className={styles.stepDescription}
-                      >
-                        {step.description}
-                      </Paragraph>
-                    )}
-
-                    {step.expectedDuration && (
-                      <Text type='secondary' className={styles.stepDuration}>
-                        ⏱️ {step.expectedDuration}
-                      </Text>
-                    )}
-                  </Space>
-                </Timeline.Item>
-              ))}
-            </Timeline>
-          </Panel>
-
-          {/* Current Stage Details */}
-          <Panel
-            header={
-              <Space>
-                <InfoCircleOutlined />
-                <Text>Detail Tahap: {selectedConfig.title}</Text>
-              </Space>
-            }
-            key='details'
-          >
-            <Space direction='vertical' size={16} style={{ width: '100%' }}>
-              <div className={styles.stageHeader}>
-                <Space>
-                  <span style={{ fontSize: '24px' }}>
-                    {selectedConfig.icon}
-                  </span>
-                  <div>
-                    <Title level={4} className={styles.stageTitle}>
-                      {selectedConfig.title}
-                    </Title>
-                    <Paragraph type='secondary'>
-                      {selectedConfig.description}
-                    </Paragraph>
                   </div>
                 </Space>
-              </div>
-
-              <div className={styles.keyActivities}>
-                <Text strong>Aktivitas Utama:</Text>
-                <ul className={styles.activitiesList}>
-                  {selectedConfig.keyActivities.map((activity, index) => (
-                    <li key={index} className={styles.activityItem}>
-                      <CheckCircleOutlined className={styles.activityIcon} />
-                      {activity}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className={styles.stageMeta}>
-                <Space wrap>
-                  <Tag icon={<ClockCircleOutlined />} color='blue'>
-                    Durasi: {selectedConfig.expectedDuration}
-                  </Tag>
-                  <Tag icon={<TeamOutlined />} color='green'>
-                    Stakeholder: Tim & Klien
-                  </Tag>
-                </Space>
-              </div>
-            </Space>
-          </Panel>
-
-          {/* Indonesian Cultural Context */}
-          {indonesianContext && (
-            <Panel
-              header={
+              ),
+            },
+            ...(indonesianContext ? [{
+              key: 'culture',
+              label: (
                 <Space>
                   <span>🇮🇩</span>
                   <Text>Konteks Budaya Indonesia</Text>
                 </Space>
-              }
-              key='culture'
-            >
-              <CulturalNotesPanel stage={selectedStage} />
-            </Panel>
-          )}
-        </Collapse>
+              ),
+              children: <CulturalNotesPanel stage={selectedStage} />,
+            }] : []),
+          ]}
+        />
       </Space>
     </Card>
   )

@@ -45,14 +45,20 @@ export class QuotationsController {
   @ApiQuery({ name: "page", required: false, type: Number })
   @ApiQuery({ name: "limit", required: false, type: Number })
   @ApiQuery({ name: "status", required: false, enum: QuotationStatus })
+  @ApiQuery({ name: "month", required: false, type: Number, description: "Filter by month (1-12)" })
+  @ApiQuery({ name: "year", required: false, type: Number, description: "Filter by year" })
   findAll(
     @Query("page") page?: string,
     @Query("limit") limit?: string,
     @Query("status") status?: QuotationStatus,
+    @Query("month") month?: string,
+    @Query("year") year?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    return this.quotationsService.findAll(pageNum, limitNum, status);
+    const monthNum = month ? parseInt(month, 10) : undefined;
+    const yearNum = year ? parseInt(year, 10) : undefined;
+    return this.quotationsService.findAll(pageNum, limitNum, status, monthNum, yearNum);
   }
 
   @Get("stats")

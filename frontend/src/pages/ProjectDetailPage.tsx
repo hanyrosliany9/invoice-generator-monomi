@@ -125,7 +125,8 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   }
 
   // Days remaining calculation
-  const getDaysRemaining = (endDate: string) => {
+  const getDaysRemaining = (endDate: string | null) => {
+    if (!endDate) return 0
     const days = dayjs(endDate).diff(dayjs(), 'day')
     return days
   }

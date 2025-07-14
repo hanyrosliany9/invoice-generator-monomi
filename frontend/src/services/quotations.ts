@@ -54,8 +54,25 @@ export interface UpdateQuotationRequest
 
 export const quotationService = {
   // Get all quotations
-  getQuotations: async (): Promise<Quotation[]> => {
-    const response = await apiClient.get('/quotations')
+  getQuotations: async (filters?: {
+    page?: number
+    limit?: number
+    status?: string
+    month?: number
+    year?: number
+  }): Promise<Quotation[]> => {
+    const params = new URLSearchParams()
+    
+    if (filters?.page) params.append('page', filters.page.toString())
+    if (filters?.limit) params.append('limit', filters.limit.toString())
+    if (filters?.status) params.append('status', filters.status)
+    if (filters?.month) params.append('month', filters.month.toString())
+    if (filters?.year) params.append('year', filters.year.toString())
+    
+    const queryString = params.toString()
+    const url = queryString ? `/quotations?${queryString}` : '/quotations'
+    
+    const response = await apiClient.get(url)
     return response?.data?.data || []
   },
 

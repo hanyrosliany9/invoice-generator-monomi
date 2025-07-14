@@ -21,6 +21,8 @@ import {
   Tag,
   Typography,
 } from 'antd'
+
+const { MonthPicker } = DatePicker
 import {
   BarChartOutlined,
   CalendarOutlined,
@@ -44,7 +46,7 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { formatIDR, safeArray, safeNumber, safeString } from '../utils/currency'
-import { Project, projectService } from '../services/projects'
+import { Project, UpdateProjectRequest, projectService } from '../services/projects'
 import { clientService } from '../services/clients'
 import WorkflowIndicator from '../components/ui/WorkflowIndicator'
 import dayjs from 'dayjs'
@@ -70,6 +72,7 @@ export const ProjectsPage: React.FC = () => {
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [typeFilter, setTypeFilter] = useState<string>('')
+  const [filters, setFilters] = useState<Record<string, any>>({})
   const [modalVisible, setModalVisible] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -109,7 +112,7 @@ export const ProjectsPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Project> }) =>
+    mutationFn: ({ id, data }: { id: string; data: UpdateProjectRequest }) =>
       projectService.updateProject(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
@@ -209,7 +212,7 @@ export const ProjectsPage: React.FC = () => {
       safeString(project?.client?.name).toLowerCase().includes(searchLower) ||
       safeString(project?.client?.company).toLowerCase().includes(searchLower)
     const matchesStatus = !statusFilter || project?.status === statusFilter
-    const matchesType = !typeFilter || project?.type === typeFilter
+    const matchesType = !typeFilter || project?.projectType?.code === typeFilter
     const matchesClient =
       !filteredByClient || project?.clientId === filteredByClient
     return matchesSearch && matchesStatus && matchesType && matchesClient
@@ -223,8 +226,8 @@ export const ProjectsPage: React.FC = () => {
     inProgress: safeProjects.filter(p => p?.status === 'IN_PROGRESS').length,
     completed: safeProjects.filter(p => p?.status === 'COMPLETED').length,
     cancelled: safeProjects.filter(p => p?.status === 'CANCELLED').length,
-    production: safeProjects.filter(p => p?.type === 'PRODUCTION').length,
-    socialMedia: safeProjects.filter(p => p?.type === 'SOCIAL_MEDIA').length,
+    production: safeProjects.filter(p => p?.projectType?.code === 'PRODUCTION').length,
+    socialMedia: safeProjects.filter(p => p?.projectType?.code === 'SOCIAL_MEDIA').length,
     totalBudget: safeProjects.reduce(
       (sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice),
       0
@@ -286,7 +289,8 @@ export const ProjectsPage: React.FC = () => {
     )
   }
 
-  const getDaysRemaining = (endDate: string) => {
+  const getDaysRemaining = (endDate: string | null) => {
+    if (!endDate) return 0
     return dayjs(endDate).diff(dayjs(), 'days')
   }
 
@@ -410,8 +414,8 @@ export const ProjectsPage: React.FC = () => {
           </div>
           <div className='text-sm text-gray-600'>{project.description}</div>
           <div className='mt-1'>
-            <Tag color={getTypeColor(project.type)}>
-              {getTypeText(project.type)}
+            <Tag color={getTypeColor(project.projectType?.code || 'PRODUCTION')}>
+              {getTypeText(project.projectType?.code || 'PRODUCTION')}
             </Tag>
           </div>
         </div>
@@ -441,8 +445,8 @@ export const ProjectsPage: React.FC = () => {
         const calculateProgress = (project: Project) => {
           // Calculate progress based on status and dates
           const now = new Date()
-          const startDate = new Date(project.startDate)
-          const endDate = new Date(project.endDate)
+          const startDate = project.startDate ? new Date(project.startDate) : null
+          const endDate = project.endDate ? new Date(project.endDate) : null
 
           // Base progress on status
           let statusProgress = 0
@@ -452,13 +456,17 @@ export const ProjectsPage: React.FC = () => {
               break
             case 'IN_PROGRESS':
               // Calculate based on time elapsed
-              const totalDuration = endDate.getTime() - startDate.getTime()
-              const elapsedDuration = now.getTime() - startDate.getTime()
-              const timeProgress = Math.min(
-                Math.max((elapsedDuration / totalDuration) * 100, 10),
-                85
-              )
-              statusProgress = Math.round(timeProgress)
+              if (startDate && endDate) {
+                const totalDuration = endDate.getTime() - startDate.getTime()
+                const elapsedDuration = now.getTime() - startDate.getTime()
+                const timeProgress = Math.min(
+                  Math.max((elapsedDuration / totalDuration) * 100, 10),
+                  85
+                )
+                statusProgress = Math.round(timeProgress)
+              } else {
+                statusProgress = 50 // Default progress if dates are missing
+              }
               break
             case 'COMPLETED':
               statusProgress = 100
@@ -607,7 +615,7 @@ export const ProjectsPage: React.FC = () => {
         )
       },
       sorter: (a: Project, b: Project) =>
-        (a.basePrice || 0) - (b.basePrice || 0),
+        (parseFloat(a.basePrice || '0') || 0) - (parseFloat(b.basePrice || '0') || 0),
     },
     {
       title: 'Aksi',
@@ -986,7 +994,6 @@ export const ProjectsPage: React.FC = () => {
             <Select
               id='project-status-filter'
               data-testid='project-filter-button'
-              name='statusFilter'
               placeholder='Filter status'
               value={statusFilter}
               onChange={setStatusFilter}
@@ -1001,7 +1008,6 @@ export const ProjectsPage: React.FC = () => {
             <Select
               id='project-type-filter'
               data-testid='project-timeline-button'
-              name='typeFilter'
               placeholder='Filter tipe'
               value={typeFilter}
               onChange={setTypeFilter}
@@ -1011,6 +1017,31 @@ export const ProjectsPage: React.FC = () => {
               <Option value='production'>Produksi</Option>
               <Option value='socialMedia'>Media Sosial</Option>
             </Select>
+            <MonthPicker
+              placeholder='Pilih bulan & tahun'
+              value={filters.monthYear}
+              onChange={value => setFilters(prev => ({ ...prev, monthYear: value }))}
+              style={{ width: 180 }}
+              format='MMMM YYYY'
+              allowClear
+            />
+            <InputNumber
+              placeholder='Nilai min'
+              value={filters.amount?.[0]}
+              onChange={value => setFilters(prev => ({ ...prev, amount: [value, prev.amount?.[1]] }))}
+              style={{ width: 120 }}
+              formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+              parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
+            />
+            <InputNumber
+              placeholder='Nilai max'
+              value={filters.amount?.[1]}
+              onChange={value => setFilters(prev => ({ ...prev, amount: [prev.amount?.[0], value] }))}
+              style={{ width: 120 }}
+              formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+              parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
+            />
+            <Button onClick={() => setFilters({})}>Reset</Button>
           </Space>
 
           <Space>
@@ -1076,7 +1107,7 @@ export const ProjectsPage: React.FC = () => {
             label='Klien'
             rules={[{ required: true, message: 'Pilih klien' }]}
           >
-            <Select name='clientId' placeholder='Pilih klien'>
+            <Select placeholder='Pilih klien'>
               {safeArray(clients).map(client => (
                 <Option key={client.id} value={client.id}>
                   {client.name}
@@ -1100,7 +1131,7 @@ export const ProjectsPage: React.FC = () => {
             label={t('projects.type')}
             rules={[{ required: true, message: 'Pilih tipe proyek' }]}
           >
-            <Select id='type' name='type' placeholder='Pilih tipe proyek'>
+            <Select id='type' placeholder='Pilih tipe proyek'>
               <Option value='PRODUCTION'>Produksi</Option>
               <Option value='SOCIAL_MEDIA'>Media Sosial</Option>
             </Select>
@@ -1228,7 +1259,7 @@ export const ProjectsPage: React.FC = () => {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name='status' label='Status'>
-                  <Select name='status'>
+                  <Select>
                     <Option value='PLANNING'>Perencanaan</Option>
                     <Option value='IN_PROGRESS'>Berlangsung</Option>
                     <Option value='COMPLETED'>Selesai</Option>

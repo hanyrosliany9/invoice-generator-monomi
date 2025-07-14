@@ -22,6 +22,8 @@ import {
   Tooltip,
   Typography,
 } from 'antd'
+
+const { MonthPicker } = DatePicker
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -77,8 +79,10 @@ export const QuotationsPage: React.FC = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
+
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [filters, setFilters] = useState<Record<string, any>>({})
   const [modalVisible, setModalVisible] = useState(false)
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(
     null
@@ -112,10 +116,24 @@ export const QuotationsPage: React.FC = () => {
     })
   }, [message])
 
+  // Convert filters for API
+  const apiFilters = React.useMemo(() => {
+    const result: any = {}
+    
+    if (filters.status) result.status = filters.status
+    if (filters.monthYear) {
+      const date = dayjs(filters.monthYear)
+      result.month = date.month() + 1 // dayjs month is 0-indexed, API expects 1-indexed
+      result.year = date.year()
+    }
+    
+    return result
+  }, [filters])
+
   // Queries
   const { data: quotations = [], isLoading } = useQuery({
-    queryKey: ['quotations'],
-    queryFn: quotationService.getQuotations,
+    queryKey: ['quotations', apiFilters],
+    queryFn: () => quotationService.getQuotations(apiFilters),
   })
 
   const { data: clients = [] } = useQuery({
@@ -254,8 +272,10 @@ export const QuotationsPage: React.FC = () => {
 
   // Filtered data
   const filteredQuotations = safeArray(quotations).filter(quotation => {
+    // Search filter (client-side for full-text search)
+    const searchText = filters.search || ''
     const searchLower = safeString(searchText).toLowerCase()
-    const matchesSearch =
+    const matchesSearch = !searchText || 
       safeString(quotation?.quotationNumber)
         .toLowerCase()
         .includes(searchLower) ||
@@ -266,10 +286,20 @@ export const QuotationsPage: React.FC = () => {
       safeString(quotation?.project?.description)
         .toLowerCase()
         .includes(searchLower)
-    const matchesStatus = !statusFilter || quotation?.status === statusFilter
+    
+    // Amount filter (client-side since API doesn't support amount range yet)
+    const amountFilter = filters.amount
+    const quotationAmount = safeNumber(quotation?.totalAmount)
+    const matchesAmount = !amountFilter || 
+      (!amountFilter[0] || quotationAmount >= amountFilter[0]) &&
+      (!amountFilter[1] || quotationAmount <= amountFilter[1])
+    
+    // Client filter (from URL params)
     const matchesClient =
       !filteredByClient || quotation?.clientId === filteredByClient
-    return matchesSearch && matchesStatus && matchesClient
+    
+    // Note: status and monthYear filters are now handled server-side via API
+    return matchesSearch && matchesAmount && matchesClient
   })
 
   // Statistics
@@ -1111,34 +1141,55 @@ export const QuotationsPage: React.FC = () => {
           </Col>
         </Row>
 
-        {/* Controls */}
+        {/* Filters and Actions */}
         <div className='flex justify-between items-center mb-4'>
           <Space>
             <Input
-              id='quotation-search'
-              name='search'
-              data-testid='quotation-search-button'
               placeholder='Cari quotation...'
               prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
+              value={filters.search || ''}
+              onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
               style={{ width: 300 }}
               autoComplete='off'
             />
             <Select
-              data-testid='quotation-filter-button'
               placeholder='Filter status'
-              value={statusFilter}
-              onChange={setStatusFilter}
+              value={filters.status}
+              onChange={value => setFilters(prev => ({ ...prev, status: value }))}
               style={{ width: 150 }}
               allowClear
             >
-              <Option value='DRAFT'>Draft</Option>
-              <Option value='SENT'>Terkirim</Option>
-              <Option value='APPROVED'>Disetujui</Option>
-              <Option value='DECLINED'>Ditolak</Option>
-              <Option value='REVISED'>Revisi</Option>
+              <Select.Option value='DRAFT'>Draft</Select.Option>
+              <Select.Option value='SENT'>Terkirim</Select.Option>
+              <Select.Option value='APPROVED'>Disetujui</Select.Option>
+              <Select.Option value='DECLINED'>Ditolak</Select.Option>
+              <Select.Option value='REVISED'>Revisi</Select.Option>
             </Select>
+            <MonthPicker
+              placeholder='Pilih bulan & tahun'
+              value={filters.monthYear}
+              onChange={value => setFilters(prev => ({ ...prev, monthYear: value }))}
+              style={{ width: 180 }}
+              format='MMMM YYYY'
+              allowClear
+            />
+            <InputNumber
+              placeholder='Nilai min'
+              value={filters.amount?.[0]}
+              onChange={value => setFilters(prev => ({ ...prev, amount: [value, prev.amount?.[1]] }))}
+              style={{ width: 120 }}
+              formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+              parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
+            />
+            <InputNumber
+              placeholder='Nilai max'
+              value={filters.amount?.[1]}
+              onChange={value => setFilters(prev => ({ ...prev, amount: [prev.amount?.[0], value] }))}
+              style={{ width: 120 }}
+              formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+              parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
+            />
+            <Button onClick={() => setFilters({})}>Reset</Button>
           </Space>
 
           <Space>

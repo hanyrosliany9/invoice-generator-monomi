@@ -129,8 +129,8 @@ export const QuotationCreatePage: React.FC = () => {
       const inheritedData = {
         clientId: selectedProject.clientId,
         projectId: selectedProject.id,
-        amountPerProject: selectedProject.basePrice || 0,
-        totalAmount: selectedProject.basePrice || 0,
+        amountPerProject: parseFloat(selectedProject.basePrice || '0') || 0,
+        totalAmount: parseFloat(selectedProject.basePrice || '0') || 0,
         validUntil: dayjs().add(30, 'day'),
         terms: generateDefaultTerms(selectedProject),
       }
@@ -192,8 +192,8 @@ export const QuotationCreatePage: React.FC = () => {
     const quotationData: CreateQuotationRequest = {
       clientId: values.clientId,
       projectId: values.projectId,
-      amountPerProject: values.amountPerProject,
-      totalAmount: values.totalAmount,
+      amountPerProject: typeof values.amountPerProject === 'string' ? parseFloat(values.amountPerProject) : values.amountPerProject,
+      totalAmount: typeof values.totalAmount === 'string' ? parseFloat(values.totalAmount) : values.totalAmount,
       terms: values.terms,
       validUntil: values.validUntil.toISOString(),
     }
@@ -264,7 +264,7 @@ export const QuotationCreatePage: React.FC = () => {
         source: 'project',
       },
       'Project Type': {
-        value: selectedProject.type,
+        value: selectedProject.projectType?.code,
         editable: false,
         confidence: 100,
         source: 'project',
@@ -462,7 +462,7 @@ export const QuotationCreatePage: React.FC = () => {
                 <Col xs={24} sm={8}>
                   <Text type='secondary'>Project Type:</Text>
                   <div>
-                    <Text strong>{currentProject.type}</Text>
+                    <Text strong>{currentProject.projectType?.code}</Text>
                   </div>
                 </Col>
                 <Col xs={24} sm={8}>

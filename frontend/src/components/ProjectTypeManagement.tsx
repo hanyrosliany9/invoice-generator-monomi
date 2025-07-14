@@ -207,7 +207,7 @@ export const ProjectTypeManagement: React.FC = () => {
     {
       title: t('common.actions'),
       key: 'actions',
-      render: (_, record: ProjectType) => (
+      render: (_: any, record: ProjectType) => (
         <Space>
           <Tooltip title={t('common.edit')}>
             <Button
@@ -263,7 +263,7 @@ export const ProjectTypeManagement: React.FC = () => {
     >
       <Table
         columns={columns}
-        dataSource={projectTypes?.data || []}
+        dataSource={projectTypes || []}
         rowKey="id"
         loading={isLoading}
         pagination={false}
@@ -379,7 +379,7 @@ export const ProjectTypeManagement: React.FC = () => {
         width={800}
       >
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-          {Array.isArray(projectTypeStats?.data) && projectTypeStats.data.map((stat) => (
+          {Array.isArray(projectTypeStats) && projectTypeStats.map((stat: any) => (
             <Card key={stat.id} size="small" style={{ borderLeft: `4px solid ${stat.color}` }}>
               <div style={{ textAlign: 'center' }}>
                 <h4>{stat.name}</h4>

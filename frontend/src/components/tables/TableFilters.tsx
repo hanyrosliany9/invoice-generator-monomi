@@ -38,9 +38,8 @@ import dayjs from 'dayjs'
 import { formatIDR } from '../../utils/currency'
 
 const { Option } = Select
-const { RangePicker } = DatePicker
+const { RangePicker, MonthPicker } = DatePicker
 const { Text } = Typography
-const { Panel } = Collapse
 
 export interface FilterOption {
   label: string
@@ -56,6 +55,7 @@ export interface FilterConfig {
     | 'select'
     | 'multiSelect'
     | 'dateRange'
+    | 'monthYear'
     | 'numberRange'
     | 'text'
     | 'amount'
@@ -147,16 +147,6 @@ const TableFilters: React.FC<TableFiltersProps> = ({
         icon: <DollarOutlined />,
         filters: {
           amount: [5000000, null],
-          materaiRequired: true,
-        },
-      },
-      {
-        key: 'overdue',
-        label: 'Jatuh Tempo',
-        icon: <CalendarOutlined />,
-        filters: {
-          status: ['overdue'],
-          dueDate: [null, dayjs().format('YYYY-MM-DD')],
         },
       },
       {
@@ -164,10 +154,23 @@ const TableFilters: React.FC<TableFiltersProps> = ({
         label: 'Bulan Ini',
         icon: <CalendarOutlined />,
         filters: {
-          createdAt: [
-            dayjs().startOf('month').format('YYYY-MM-DD'),
-            dayjs().endOf('month').format('YYYY-MM-DD'),
-          ],
+          monthYear: dayjs(),
+        },
+      },
+      {
+        key: 'last-month',
+        label: 'Bulan Lalu',
+        icon: <CalendarOutlined />,
+        filters: {
+          monthYear: dayjs().subtract(1, 'month'),
+        },
+      },
+      {
+        key: 'this-year',
+        label: 'Tahun Ini',
+        icon: <CalendarOutlined />,
+        filters: {
+          monthYear: dayjs().startOf('year'),
         },
       },
       {
@@ -175,7 +178,7 @@ const TableFilters: React.FC<TableFiltersProps> = ({
         label: 'Menunggu Persetujuan',
         icon: <UserOutlined />,
         filters: {
-          status: ['sent'],
+          status: 'SENT',
         },
       },
     ]
@@ -292,10 +295,20 @@ const TableFilters: React.FC<TableFiltersProps> = ({
             />
           )
 
+        case 'monthYear':
+          return (
+            <MonthPicker
+              {...commonProps}
+              format='MMMM YYYY'
+              onChange={date => onChange(filter.key, date)}
+              placeholder='Pilih bulan & tahun'
+            />
+          )
+
         case 'numberRange':
         case 'amount':
           return (
-            <Input.Group compact>
+            <div style={{ display: 'flex', gap: '4px' }}>
               <InputNumber
                 style={{ width: '47%' }}
                 placeholder='Min'
@@ -341,7 +354,7 @@ const TableFilters: React.FC<TableFiltersProps> = ({
                     : undefined
                 }
               />
-            </Input.Group>
+            </div>
           )
 
         case 'slider':
@@ -538,29 +551,31 @@ const TableFilters: React.FC<TableFiltersProps> = ({
   )
 
   if (collapsible) {
+    const collapseItems = [
+      {
+        key: 'filters',
+        label: (
+          <Space>
+            <FilterOutlined />
+            <Text strong>Filter & Pencarian</Text>
+            {showActiveCount && activeFiltersCount > 0 && (
+              <Badge
+                count={activeFiltersCount}
+                style={{ backgroundColor: '#1890ff' }}
+              />
+            )}
+          </Space>
+        ),
+        children: filterContent,
+      },
+    ]
+
     return (
       <Collapse
         ghost
+        items={collapseItems}
         onChange={keys => setCollapsed(!keys.includes('filters'))}
-      >
-        <Panel
-          header={
-            <Space>
-              <FilterOutlined />
-              <Text strong>Filter & Pencarian</Text>
-              {showActiveCount && activeFiltersCount > 0 && (
-                <Badge
-                  count={activeFiltersCount}
-                  style={{ backgroundColor: '#1890ff' }}
-                />
-              )}
-            </Space>
-          }
-          key='filters'
-        >
-          {filterContent}
-        </Panel>
-      </Collapse>
+      />
     )
   }
 

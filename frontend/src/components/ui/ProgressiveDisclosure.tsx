@@ -20,7 +20,6 @@ import {
 } from '@ant-design/icons'
 
 const { Text, Title } = Typography
-const { Panel } = Collapse
 
 interface ProgressiveDisclosureProps {
   title: string

@@ -115,7 +115,7 @@ export const ProjectEditPage: React.FC = () => {
       const formData: ProjectFormData = {
         description: project.description,
         output: project.output || '',
-        type: project.projectType?.code || 'PRODUCTION',
+        type: (project.projectType?.code as 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER') || 'PRODUCTION',
         clientId: project.clientId,
         startDate: project.startDate ? dayjs(project.startDate) : null,
         endDate: project.endDate ? dayjs(project.endDate) : null,
@@ -187,8 +187,8 @@ export const ProjectEditPage: React.FC = () => {
       output: values.output,
       projectTypeId: getProjectTypeId(values.type),
       clientId: values.clientId,
-      startDate: values.startDate ? values.startDate.toISOString() : null,
-      endDate: values.endDate ? values.endDate.toISOString() : null,
+      startDate: values.startDate ? values.startDate.toISOString() : undefined,
+      endDate: values.endDate ? values.endDate.toISOString() : undefined,
       status: values.status,
       estimatedBudget: calculatedValue,
       products: values.products || [],
@@ -563,8 +563,9 @@ export const ProjectEditPage: React.FC = () => {
                   style={{ width: '100%' }}
                   format='DD MMM YYYY'
                   disabledDate={current => {
+                    if (!current) return false
                     const startDate = formValues.startDate
-                    return current && startDate && current < startDate
+                    return startDate ? current < startDate : false
                   }}
                 />
               </Form.Item>
