@@ -142,7 +142,9 @@ export const ClientEditPage: React.FC = () => {
   if (isLoading) {
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>
-        <Spin size='large' tip='Loading client data...' />
+        <Spin size='large' tip='Loading client data...' spinning={true}>
+          <div style={{ minHeight: '200px' }} />
+        </Spin>
       </div>
     )
   }

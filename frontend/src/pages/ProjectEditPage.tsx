@@ -203,7 +203,9 @@ export const ProjectEditPage: React.FC = () => {
   if (isLoading) {
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>
-        <Spin size='large' tip='Loading project data...' />
+        <Spin size='large' tip='Loading project data...' spinning={true}>
+          <div style={{ minHeight: '200px' }} />
+        </Spin>
       </div>
     )
   }

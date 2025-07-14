@@ -235,6 +235,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 size='large'
                 block
                 aria-label='Edit project details'
+                onClick={() => navigate(`/projects/${id}/edit`)}
               >
                 Edit Project
               </Button>
@@ -514,6 +515,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
           icon={<EditOutlined />}
           tooltip='Edit Project'
           aria-label='Edit project details'
+          onClick={() => navigate(`/projects/${id}/edit`)}
         />
         <FloatButton
           icon={<ExportOutlined />}

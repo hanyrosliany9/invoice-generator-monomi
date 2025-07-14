@@ -438,7 +438,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     >
       {loading && (
         <div style={{ textAlign: 'center', padding: '40px' }}>
-          <Spin size='large' tip='Generating preview...' />
+          <Spin size='large' tip='Generating preview...' spinning={true}>
+            <div style={{ minHeight: '200px' }} />
+          </Spin>
         </div>
       )}
 

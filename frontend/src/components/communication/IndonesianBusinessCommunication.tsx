@@ -975,7 +975,7 @@ const IndonesianBusinessCommunication: React.FC<
             showIcon
           />
 
-          <Form layout='vertical'>
+          <Form form={form} layout='vertical'>
             <Form.Item label='Language Formality'>
               <Select defaultValue={preferences.languageFormality}>
                 <Option value='formal'>

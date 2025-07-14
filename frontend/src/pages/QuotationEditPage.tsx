@@ -224,7 +224,9 @@ export const QuotationEditPage: React.FC = () => {
   if (isLoading) {
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>
-        <Spin size='large' tip='Loading quotation data...' />
+        <Spin size='large' tip='Loading quotation data...' spinning={true}>
+          <div style={{ minHeight: '200px' }} />
+        </Spin>
       </div>
     )
   }
