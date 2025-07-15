@@ -10,6 +10,7 @@ import { Response } from "express";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { ReportsService } from "./reports.service";
 import { ExcelExportService } from "./excel-export.service";
+import { PdfExportService } from "./pdf-export.service";
 
 @ApiTags("reports")
 @ApiBearerAuth()
@@ -19,6 +20,7 @@ export class ReportsController {
   constructor(
     private readonly reportsService: ReportsService,
     private readonly excelExportService: ExcelExportService,
+    private readonly pdfExportService: PdfExportService,
   ) {}
 
   @Get("revenue")
@@ -162,6 +164,107 @@ export class ReportsController {
     } catch (error) {
       res.status(500).json({
         message: 'Error generating Excel report',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  @Get("export/sales-receivables-pdf")
+  @ApiOperation({ summary: "Export sales and receivables report to PDF" })
+  @ApiQuery({ name: "startDate", required: false, type: "string" })
+  @ApiQuery({ name: "endDate", required: false, type: "string" })
+  @ApiQuery({ name: "clientIds", required: false, type: "string", description: "Comma-separated client IDs" })
+  async exportSalesAndReceivablesPdf(
+    @Res() res: Response,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("clientIds") clientIds?: string,
+  ) {
+    try {
+      const filters = {
+        startDate,
+        endDate,
+        clientIds: clientIds ? clientIds.split(",") : undefined,
+      };
+
+      const buffer = await this.pdfExportService.generateSalesAndReceivablesReport(filters);
+      
+      const filename = `laporan-penjualan-piutang-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: 'Error generating PDF report',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  @Post("export/pdf")
+  @ApiOperation({ summary: "Export reports to PDF (generic endpoint for frontend)" })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reportType: { type: 'string', example: 'sales-receivables' },
+        startDate: { type: 'string', format: 'date', example: '2025-01-01' },
+        endDate: { type: 'string', format: 'date', example: '2025-12-31' },
+        clientIds: { type: 'array', items: { type: 'string' } },
+        format: { type: 'string', enum: ['A4', 'A3', 'Letter'], example: 'A4' },
+        orientation: { type: 'string', enum: ['portrait', 'landscape'], example: 'portrait' }
+      }
+    }
+  })
+  async exportPdf(
+    @Res() res: Response,
+    @Body() body: { 
+      reportType: string; 
+      startDate?: string; 
+      endDate?: string; 
+      clientIds?: string[];
+      format?: 'A4' | 'A3' | 'Letter';
+      orientation?: 'portrait' | 'landscape';
+    },
+  ) {
+    try {
+      // Support multiple report types, all generating sales-receivables for now
+      if (body.reportType === 'sales-receivables' || 
+          body.reportType === 'monthly' || 
+          body.reportType === 'business-overview' || 
+          !body.reportType) {
+        const filters = {
+          startDate: body.startDate,
+          endDate: body.endDate,
+          clientIds: body.clientIds,
+        };
+
+        const pdfOptions = {
+          format: body.format || 'A4',
+          orientation: body.orientation || 'portrait',
+        };
+
+        const buffer = await this.pdfExportService.generateSalesAndReceivablesReport(filters, pdfOptions);
+        
+        const filename = `laporan-penjualan-piutang-${new Date().toISOString().split('T')[0]}.pdf`;
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', buffer.length);
+        
+        res.send(buffer);
+      } else {
+        res.status(400).json({
+          message: 'Unsupported report type',
+          supportedTypes: ['sales-receivables', 'monthly', 'business-overview'],
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        message: 'Error generating PDF report',
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }

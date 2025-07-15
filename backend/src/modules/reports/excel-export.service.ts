@@ -628,7 +628,7 @@ export class ExcelExportService {
       const columnTotals = new Array(12).fill(0);
 
       data.forEach((item) => {
-        const row = [item.clientName];
+        const row: any[] = [item.clientName];
         let clientTotal = 0;
         
         monthNames.forEach((month, index) => {
@@ -643,7 +643,7 @@ export class ExcelExportService {
       });
 
       // Add summary row
-      const summaryRow = ['JUMLAH TOTAL'];
+      const summaryRow: any[] = ['JUMLAH TOTAL'];
       let grandTotal = 0;
       columnTotals.forEach(total => {
         summaryRow.push(total);
