@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as ExcelJS from 'exceljs';
 import { Decimal } from '@prisma/client/runtime/library';
+import { ExcelTableHelper } from './excel-table-helper';
+import { 
+  IndonesianExcelFormatter, 
+  IndonesianCompanyInfo, 
+  IndonesianReportHeader 
+} from './indonesian-excel-formatter';
 
 interface SalesReportData {
   clientName: string;
@@ -41,13 +47,40 @@ interface ExportFilters {
 export class ExcelExportService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Get Indonesian company information for SAK EMKM compliance
+   */
+  private getIndonesianCompanyInfo(): IndonesianCompanyInfo {
+    return {
+      name: 'MONOMI',
+      address: 'Jl. Usaha Mandiri No. 123',
+      city: 'Jakarta Selatan',
+      postalCode: '12345',
+      phone: '+62-21-1234-5678',
+      email: 'info@monomi.co.id',
+      website: 'www.monomi.co.id',
+      npwp: '01.234.567.8-901.234', // Example NPWP format
+      siup: 'SIUP/123/2024' // Example SIUP
+    };
+  }
+
   async generateSalesAndReceivablesReport(filters: ExportFilters): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     
-    // Set workbook properties
-    workbook.creator = 'Monomi Invoice Generator';
+    // Get Indonesian company information and validate compliance
+    const companyInfo = this.getIndonesianCompanyInfo();
+    const validationErrors = IndonesianExcelFormatter.validateIndonesianCompliance(companyInfo);
+    
+    if (validationErrors.length > 0) {
+      throw new Error(`Indonesian compliance validation failed: ${validationErrors.join(', ')}`);
+    }
+    
+    // Set workbook properties for Indonesian business standards
+    workbook.creator = `${companyInfo.name} - Sistem Manajemen Bisnis Indonesia`;
     workbook.created = new Date();
     workbook.modified = new Date();
+    workbook.company = companyInfo.name;
+    workbook.keywords = 'Laporan Keuangan, SAK EMKM, Indonesia, UMKM';
 
     // Determine if this is a single-month report
     const isSingleMonth = this.isSingleMonthReport(filters);
@@ -63,13 +96,13 @@ export class ExcelExportService {
       this.getReceivablesClientSummary(filters)
     ]);
 
-    // Create worksheets
-    this.createSalesDetailSheet(workbook, salesDetailData, targetMonth);
-    this.createReceivablesDetailSheet(workbook, receivablesDetailData, targetMonth);
-    this.createSalesMonthlySummarySheet(workbook, salesMonthlySummary, targetMonth);
-    this.createSalesClientSummarySheet(workbook, salesClientSummary, targetMonth);
-    this.createReceivablesMonthlySummarySheet(workbook, receivablesMonthlySummary, targetMonth);
-    this.createReceivablesClientSummarySheet(workbook, receivablesClientSummary, targetMonth);
+    // Create worksheets with Indonesian formatting
+    this.createSalesDetailSheet(workbook, salesDetailData, companyInfo, targetMonth);
+    this.createReceivablesDetailSheet(workbook, receivablesDetailData, companyInfo, targetMonth);
+    this.createSalesMonthlySummarySheet(workbook, salesMonthlySummary, companyInfo, targetMonth);
+    this.createSalesClientSummarySheet(workbook, salesClientSummary, companyInfo, targetMonth);
+    this.createReceivablesMonthlySummarySheet(workbook, receivablesMonthlySummary, companyInfo, targetMonth);
+    this.createReceivablesClientSummarySheet(workbook, receivablesClientSummary, companyInfo, targetMonth);
 
     // Write to buffer
     const buffer = await workbook.xlsx.writeBuffer();
@@ -310,83 +343,115 @@ export class ExcelExportService {
     return this.getReceivablesMonthlySummary(filters);
   }
 
-  private createSalesDetailSheet(workbook: ExcelJS.Workbook, data: SalesReportData[], targetMonth?: number | null): void {
-    const worksheet = workbook.addWorksheet('(SALES) MONTHLY');
+  private createSalesDetailSheet(workbook: ExcelJS.Workbook, data: SalesReportData[], companyInfo: IndonesianCompanyInfo, targetMonth?: number | null): void {
+    const worksheet = workbook.addWorksheet('(SALES) RINCIAN PENJUALAN');
     
-    // Add title header block (rows 1-4) - Indonesian Standards Compliant
-    worksheet.addRow(['MONOMI', '', '', '', '', '', '', '']);
-    worksheet.addRow(['RINCIAN PENJUALAN', '', '', '', '', '', '', '']);
+    // Create Indonesian report header (SAK EMKM compliant)
     const monthName = targetMonth !== null && targetMonth !== undefined 
       ? this.getIndonesianMonthName(targetMonth)
       : 'SEMUA BULAN';
-    worksheet.addRow([monthName + ' 2025', '', '', '', '', '', '', '']);
-    worksheet.addRow(['', '', '', '', '', '', '', '']); // Empty spacer row
-
-    // Add column headers (row 5) - Indonesian terminology
-    const headers = ['No', 'NAMA CLIENT', 'No. Project', 'Tanggal Project', 'Deskripsi Project', 'Jml Penjualan (IDR)', 'No. Invoice', 'Keterangan'];
-    worksheet.addRow(headers);
-
-    // Style title rows
-    const titleRow1 = worksheet.getRow(1);
-    titleRow1.font = { bold: true, size: 14 };
     
-    const titleRow2 = worksheet.getRow(2);
-    titleRow2.font = { bold: true, size: 12 };
-    
-    const titleRow3 = worksheet.getRow(3);
-    titleRow3.font = { bold: true, size: 11 };
-
-    // Style headers (row 5)
-    const headerRow = worksheet.getRow(5);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE6F3FF' }
+    const reportHeader: IndonesianReportHeader = {
+      reportTitle: 'RINCIAN PENJUALAN',
+      reportSubtitle: 'LAPORAN DETAIL TRANSAKSI PENJUALAN',
+      reportPeriod: `${monthName} 2025`,
+      preparationDate: new Date(),
+      reportType: 'RINCIAN_PENJUALAN'
     };
 
-    // Add data starting from row 6 - Indonesian formatting
+    // Apply Indonesian letterhead formatting
+    const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
+      worksheet, 
+      companyInfo, 
+      reportHeader
+    );
+
+    // Add column headers (Indonesian SAK EMKM terminology)
+    const headers = [
+      'No.',
+      'NAMA CLIENT',
+      'No. Project',
+      'Tanggal Project',
+      'Deskripsi Project',
+      'Jumlah Penjualan (IDR)',
+      'No. Invoice',
+      'Keterangan Materai'
+    ];
+    
+    const headerRow = worksheet.addRow(headers);
+    const headerRowIndex = worksheet.rowCount;
+
+    // Add data with Indonesian business logic
     let totalAmount = 0;
+    let materaiCount = 0;
+    
     data.forEach((item, index) => {
-      const requiresMaterai = item.salesAmount > 5000000; // > 5M IDR requires materai
-      const keterangan = requiresMaterai ? 'Perlu Materai' : '';
+      const requiresMaterai = item.salesAmount > 5000000; // SAK EMKM materai requirement
+      const keterangan = requiresMaterai ? 'Wajib Materai Rp 10.000' : '-';
+      if (requiresMaterai) materaiCount++;
       
       worksheet.addRow([
         index + 1,
         item.clientName,
         item.projectNumber,
-        this.formatIndonesianDate(item.projectDate),
+        item.projectDate,
         item.projectDescription,
         item.salesAmount,
-        item.invoiceNumber || this.generateInvoiceNumber(item.projectDate, index + 1),
+        item.invoiceNumber || this.generateIndonesianInvoiceNumber(item.projectDate, index + 1),
         keterangan
       ]);
       totalAmount += item.salesAmount;
     });
 
-    // Add summary row with "Jumlah" (Indonesian standard)
-    const summaryRowIndex = 6 + data.length;
-    const summaryRow = worksheet.addRow(['', '', '', '', 'JUMLAH TOTAL', totalAmount, '', '']);
-    summaryRow.font = { bold: true, color: { argb: 'FF000080' } }; // Navy blue for totals
+    // Add Indonesian summary section
+    const summaryRowIndex = worksheet.rowCount + 1;
+    worksheet.addRow(['', '', '', '', 'JUMLAH KESELURUHAN:', totalAmount, '', '']);
     
-    // Merge cells for summary (Indonesian practice)
+    if (materaiCount > 0) {
+      worksheet.addRow(['', '', '', '', 'Total Invoice dgn Materai:', materaiCount, 'invoice', '']);
+      worksheet.addRow(['', '', '', '', 'Estimasi Biaya Materai:', materaiCount * 10000, '', 'IDR']);
+    }
+
+    // Merge cells for summary section (Indonesian standard)
     worksheet.mergeCells(`A${summaryRowIndex}:E${summaryRowIndex}`);
+    if (materaiCount > 0) {
+      worksheet.mergeCells(`A${summaryRowIndex + 1}:E${summaryRowIndex + 1}`);
+      worksheet.mergeCells(`A${summaryRowIndex + 2}:E${summaryRowIndex + 2}`);
+    }
 
-    // Format currency column (Indonesian IDR format)
-    const salesColumn = worksheet.getColumn(6);
-    salesColumn.numFmt = '"Rp "#,##0';
+    // Apply Indonesian table formatting
+    const tableEndRow = materaiCount > 0 ? summaryRowIndex + 2 : summaryRowIndex;
+    IndonesianExcelFormatter.formatIndonesianTable(
+      worksheet, 
+      headerRowIndex, 
+      tableEndRow, 
+      1, 
+      8, 
+      'RincianPenjualan', 
+      true
+    );
 
-    // Format date column (Indonesian dd/mm/yyyy format)
-    const dateColumn = worksheet.getColumn(4);
-    dateColumn.numFmt = 'dd/mm/yyyy';
+    // Apply Indonesian currency and date formatting
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [6]);
+    IndonesianExcelFormatter.applyIndonesianDateFormat(worksheet, [4]);
+    IndonesianExcelFormatter.formatNegativeNumbers(worksheet, [6]);
 
-    // Auto-fit columns
-    worksheet.columns.forEach((column: any) => {
-      column.width = 15;
-    });
+    // Set Indonesian column widths
+    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 8);
+
+    // Apply Indonesian page setup
+    IndonesianExcelFormatter.applyIndonesianPageSetup(worksheet);
+
+    // Add Indonesian footer
+    IndonesianExcelFormatter.addIndonesianFooter(
+      worksheet,
+      companyInfo,
+      'Sistem Akuntansi Digital',
+      'Manajer Keuangan'
+    );
   }
 
-  private createReceivablesDetailSheet(workbook: ExcelJS.Workbook, data: ReceivablesReportData[], targetMonth?: number | null): void {
+  private createReceivablesDetailSheet(workbook: ExcelJS.Workbook, data: ReceivablesReportData[], companyInfo: IndonesianCompanyInfo, targetMonth?: number | null): void {
     const worksheet = workbook.addWorksheet('(AR) MONTHLY');
     
     // Add title header block (rows 1-4) - Indonesian Standards
@@ -401,25 +466,6 @@ export class ExcelExportService {
     // Add column headers (row 5) - Indonesian SAK terminology
     const headers = ['No', 'NAMA CLIENT', 'Deskripsi Project', 'Tanggal Invoice', 'No. Invoice', 'Saldo Awal (IDR)', 'Penjualan (IDR)', 'Pembayaran (IDR)', 'Saldo Akhir (IDR)'];
     worksheet.addRow(headers);
-
-    // Style title rows
-    const titleRow1 = worksheet.getRow(1);
-    titleRow1.font = { bold: true, size: 14 };
-    
-    const titleRow2 = worksheet.getRow(2);
-    titleRow2.font = { bold: true, size: 12 };
-    
-    const titleRow3 = worksheet.getRow(3);
-    titleRow3.font = { bold: true, size: 11 };
-
-    // Style headers (row 5)
-    const headerRow = worksheet.getRow(5);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE6F3FF' }
-    };
 
     // Add data starting from row 6 - Indonesian balance calculations
     let totalSaldoAwal = 0, totalPenjualan = 0, totalPembayaran = 0, totalSaldoAkhir = 0;
@@ -450,8 +496,7 @@ export class ExcelExportService {
 
     // Add summary row with "JUMLAH" (Indonesian standard)
     const summaryRowIndex = 6 + data.length;
-    const summaryRow = worksheet.addRow(['', '', '', '', 'JUMLAH TOTAL', totalSaldoAwal, totalPenjualan, totalPembayaran, totalSaldoAkhir]);
-    summaryRow.font = { bold: true, color: { argb: 'FF000080' } };
+    worksheet.addRow(['', '', '', '', 'JUMLAH TOTAL', totalSaldoAwal, totalPenjualan, totalPembayaran, totalSaldoAkhir]);
     
     // Merge cells for summary (Indonesian practice)
     worksheet.mergeCells(`A${summaryRowIndex}:E${summaryRowIndex}`);
@@ -462,15 +507,19 @@ export class ExcelExportService {
       console.warn(`Total balance validation failed: Expected ${expectedTotalBalance}, Got ${totalSaldoAkhir}`);
     }
 
-    // Format currency columns (Indonesian IDR format)
-    [6, 7, 8, 9].forEach(colIndex => {
-      const column = worksheet.getColumn(colIndex);
-      column.numFmt = '"Rp "#,##0';
-    });
+    // Apply professional table formatting
+    const startRow = 5; // Header row
+    const endRow = summaryRowIndex; // Summary row
+    const startCol = 1;
+    const endCol = 9;
+    ExcelTableHelper.formatAsTable(worksheet, startRow, endRow, startCol, endCol, 'ReceivablesDetail');
 
-    // Format date column
-    const dateColumn = worksheet.getColumn(4);
-    dateColumn.numFmt = 'dd/mm/yyyy';
+    // Apply title formatting
+    ExcelTableHelper.formatTitle(worksheet, [1, 2, 3]);
+
+    // Apply Indonesian currency and date formatting
+    ExcelTableHelper.applyCurrencyFormat(worksheet, [6, 7, 8, 9]); // Balance columns
+    ExcelTableHelper.applyDateFormat(worksheet, [4]); // Date column
 
     // Auto-fit columns
     worksheet.columns.forEach((column: any) => {
@@ -478,7 +527,7 @@ export class ExcelExportService {
     });
   }
 
-  private createSalesMonthlySummarySheet(workbook: ExcelJS.Workbook, data: ClientMonthlySummary[], targetMonth?: number | null): void {
+  private createSalesMonthlySummarySheet(workbook: ExcelJS.Workbook, data: ClientMonthlySummary[], companyInfo: IndonesianCompanyInfo, targetMonth?: number | null): void {
     const worksheet = workbook.addWorksheet('(SALES) RKP PER BULAN');
     
     // Add title header block
@@ -491,25 +540,6 @@ export class ExcelExportService {
     const headers = ['BULAN', 'JUMLAH'];
     worksheet.addRow(headers);
 
-    // Style title rows
-    const titleRow1 = worksheet.getRow(1);
-    titleRow1.font = { bold: true, size: 14 };
-    
-    const titleRow2 = worksheet.getRow(2);
-    titleRow2.font = { bold: true, size: 12 };
-    
-    const titleRow3 = worksheet.getRow(3);
-    titleRow3.font = { bold: true, size: 11 };
-
-    // Style headers
-    const headerRow = worksheet.getRow(5);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE6F3FF' }
-    };
-
     // Calculate total sales per month across all clients
     const monthNames = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
     const monthTotals = new Array(12).fill(0);
@@ -521,14 +551,37 @@ export class ExcelExportService {
       });
     });
 
-    // Add data rows - one row per month
-    monthNames.forEach((monthName, index) => {
-      worksheet.addRow([monthName, monthTotals[index]]);
-    });
+    // For single-month reports, only show the target month
+    if (targetMonth !== null && targetMonth !== undefined) {
+      const targetMonthName = monthNames[targetMonth];
+      worksheet.addRow([targetMonthName, monthTotals[targetMonth]]);
+      
+      // Add summary row
+      const summaryRowIndex = 7; // Header + 1 data row + 1
+      worksheet.addRow(['JUMLAH TOTAL', monthTotals[targetMonth]]);
+      
+      // Apply table formatting for single month
+      ExcelTableHelper.formatMonthlySummaryTable(worksheet, 5, 1, true);
+    } else {
+      // Add data rows - one row per month
+      monthNames.forEach((monthName, index) => {
+        worksheet.addRow([monthName, monthTotals[index]]);
+      });
+      
+      // Add summary row
+      const totalAmount = monthTotals.reduce((sum, total) => sum + total, 0);
+      const summaryRowIndex = 6 + monthNames.length;
+      worksheet.addRow(['JUMLAH TOTAL', totalAmount]);
+      
+      // Apply table formatting for multi-month
+      ExcelTableHelper.formatMonthlySummaryTable(worksheet, 5, 12, false);
+    }
 
-    // Format currency column
-    const amountColumn = worksheet.getColumn(2);
-    amountColumn.numFmt = 'Rp #,##0';
+    // Apply title formatting
+    ExcelTableHelper.formatTitle(worksheet, [1, 2, 3]);
+
+    // Apply Indonesian currency formatting
+    ExcelTableHelper.applyCurrencyFormat(worksheet, [2]);
 
     // Auto-fit columns
     worksheet.columns.forEach((column: any) => {
@@ -536,7 +589,7 @@ export class ExcelExportService {
     });
   }
 
-  private createSalesClientSummarySheet(workbook: ExcelJS.Workbook, data: ClientMonthlySummary[]): void {
+  private createSalesClientSummarySheet(workbook: ExcelJS.Workbook, data: ClientMonthlySummary[], companyInfo: IndonesianCompanyInfo, targetMonth?: number | null): void {
     const worksheet = workbook.addWorksheet('(SALES) RKP PER CLIENT');
     
     // Add title header block
@@ -545,74 +598,82 @@ export class ExcelExportService {
     worksheet.addRow(['PER CLIENT']);
     worksheet.addRow(['']); // Empty spacer row
 
-    // Add headers (row 5) - horizontal months + TOTAL column
-    const headers = ['NAMA CLIENT', 'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER', 'TOTAL'];
-    worksheet.addRow(headers);
-
-    // Style title rows
-    const titleRow1 = worksheet.getRow(1);
-    titleRow1.font = { bold: true, size: 14 };
-    
-    const titleRow2 = worksheet.getRow(2);
-    titleRow2.font = { bold: true, size: 12 };
-    
-    const titleRow3 = worksheet.getRow(3);
-    titleRow3.font = { bold: true, size: 11 };
-
-    // Style headers
-    const headerRow = worksheet.getRow(5);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE6F3FF' }
-    };
-
-    // Add data for each client
     const monthNames = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
-    const columnTotals = new Array(12).fill(0);
-
-    data.forEach((item) => {
-      const row = [item.clientName];
-      let clientTotal = 0;
-      
-      monthNames.forEach((month, index) => {
-        const value = (item[month] as number) || 0;
-        row.push(value);
-        clientTotal += value;
-        columnTotals[index] += value;
-      });
-      
-      row.push(clientTotal.toString()); // Add TOTAL column
-      worksheet.addRow(row);
-    });
-
-    // Add "Jumlah" summary row
-    const summaryRow = ['Jumlah'];
-    let grandTotal = 0;
-    columnTotals.forEach(total => {
-      summaryRow.push(total.toString());
-      grandTotal += total;
-    });
-    summaryRow.push(grandTotal.toString());
     
-    const summaryRowIndex = 6 + data.length;
-    const row = worksheet.addRow(summaryRow);
-    row.font = { bold: true };
+    // For single-month reports, simplified 2-column structure
+    if (targetMonth !== null && targetMonth !== undefined) {
+      const targetMonthName = monthNames[targetMonth];
+      const headers = ['NAMA CLIENT', targetMonthName];
+      worksheet.addRow(headers);
 
-    // Format currency columns (all except first)
-    for (let i = 2; i <= headers.length; i++) {
-      const column = worksheet.getColumn(i);
-      column.numFmt = 'Rp #,##0';
+      // Add client data
+      data.forEach((item) => {
+        const value = (item[targetMonthName] as number) || 0;
+        worksheet.addRow([item.clientName, value]);
+      });
+
+      // Add summary row
+      const summaryRowIndex = 6 + data.length;
+      const total = data.reduce((sum, item) => sum + ((item[targetMonthName] as number) || 0), 0);
+      worksheet.addRow(['JUMLAH TOTAL', total]);
+
+      // Apply table formatting for single month (2 columns)
+      ExcelTableHelper.formatClientSummaryTable(worksheet, 5, data.length, 2, true);
+    } else {
+      // Multi-month report - horizontal months + TOTAL column
+      const headers = ['NAMA CLIENT', ...monthNames, 'TOTAL'];
+      worksheet.addRow(headers);
+
+      // Add data for each client
+      const columnTotals = new Array(12).fill(0);
+
+      data.forEach((item) => {
+        const row = [item.clientName];
+        let clientTotal = 0;
+        
+        monthNames.forEach((month, index) => {
+          const value = (item[month] as number) || 0;
+          row.push(value);
+          clientTotal += value;
+          columnTotals[index] += value;
+        });
+        
+        row.push(clientTotal); // Add TOTAL column
+        worksheet.addRow(row);
+      });
+
+      // Add summary row
+      const summaryRow = ['JUMLAH TOTAL'];
+      let grandTotal = 0;
+      columnTotals.forEach(total => {
+        summaryRow.push(total);
+        grandTotal += total;
+      });
+      summaryRow.push(grandTotal);
+      
+      const summaryRowIndex = 6 + data.length;
+      worksheet.addRow(summaryRow);
+
+      // Apply table formatting for multi-month (14 columns: client + 12 months + total)
+      ExcelTableHelper.formatClientSummaryTable(worksheet, 5, data.length, 14, false);
     }
+
+    // Apply title formatting
+    ExcelTableHelper.formatTitle(worksheet, [1, 2, 3]);
+
+    // Apply Indonesian currency formatting (all columns except first)
+    const currencyColumns = targetMonth !== null && targetMonth !== undefined 
+      ? [2] // Single month: just the amount column
+      : Array.from({length: 13}, (_, i) => i + 2); // Multi-month: all month + total columns
+    ExcelTableHelper.applyCurrencyFormat(worksheet, currencyColumns);
 
     // Auto-fit columns
     worksheet.columns.forEach((column: any) => {
-      column.width = 12;
+      column.width = targetMonth !== null && targetMonth !== undefined ? 18 : 12;
     });
   }
 
-  private createReceivablesMonthlySummarySheet(workbook: ExcelJS.Workbook, data: ClientMonthlySummary[], targetMonth?: number | null): void {
+  private createReceivablesMonthlySummarySheet(workbook: ExcelJS.Workbook, data: ClientMonthlySummary[], companyInfo: IndonesianCompanyInfo, targetMonth?: number | null): void {
     const worksheet = workbook.addWorksheet('(AR) RKP PER BULAN');
     
     // Add title header block (rows 1-4)
@@ -625,61 +686,68 @@ export class ExcelExportService {
     const headers = ['BULAN', 'SALDO AWAL', 'PENJUALAN', 'PEMBAYARAN', 'SALDO AKHIR'];
     worksheet.addRow(headers);
 
-    // Style title rows
-    const titleRow1 = worksheet.getRow(1);
-    titleRow1.font = { bold: true, size: 14 };
-    
-    const titleRow2 = worksheet.getRow(2);
-    titleRow2.font = { bold: true, size: 12 };
-    
-    const titleRow3 = worksheet.getRow(3);
-    titleRow3.font = { bold: true, size: 11 };
-
-    // Style headers
-    const headerRow = worksheet.getRow(5);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE6F3FF' }
-    };
-
     // Calculate monthly AR progression
     const monthNames = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
     let runningBalance = 0;
     let totalSaldoAwal = 0, totalPenjualan = 0, totalPembayaran = 0, totalSaldoAkhir = 0;
 
-    monthNames.forEach((monthName, index) => {
-      // Calculate totals for this month across all clients
+    // For single-month reports, only show the target month
+    if (targetMonth !== null && targetMonth !== undefined) {
+      const targetMonthName = monthNames[targetMonth];
       let monthSales = 0;
-      let monthPayments = 0; // This would need to be tracked separately - for now using 0
+      let monthPayments = 0; // This would need to be tracked separately
       
       data.forEach((clientData) => {
-        monthSales += (clientData[monthName] as number) || 0;
+        monthSales += (clientData[targetMonthName] as number) || 0;
       });
 
-      const beginningBalance = runningBalance;
+      const beginningBalance = 0; // Starting balance for the month
       const endingBalance = beginningBalance + monthSales - monthPayments;
-      runningBalance = endingBalance;
 
-      worksheet.addRow([monthName, beginningBalance, monthSales, monthPayments, endingBalance]);
+      worksheet.addRow([targetMonthName, beginningBalance, monthSales, monthPayments, endingBalance]);
       
-      totalSaldoAwal += beginningBalance;
-      totalPenjualan += monthSales;
-      totalPembayaran += monthPayments;
-      totalSaldoAkhir += endingBalance;
-    });
+      // Add summary row
+      const summaryRowIndex = 7; // Header + 1 data row + 1
+      worksheet.addRow(['JUMLAH TOTAL', beginningBalance, monthSales, monthPayments, endingBalance]);
+      
+      // Apply table formatting for single month
+      ExcelTableHelper.formatAsTable(worksheet, 5, summaryRowIndex, 1, 5, 'ReceivablesMonthly');
+    } else {
+      // Multi-month report
+      monthNames.forEach((monthName, index) => {
+        // Calculate totals for this month across all clients
+        let monthSales = 0;
+        let monthPayments = 0; // This would need to be tracked separately - for now using 0
+        
+        data.forEach((clientData) => {
+          monthSales += (clientData[monthName] as number) || 0;
+        });
 
-    // Add "Jumlah" summary row
-    const summaryRowIndex = 6 + monthNames.length;
-    const summaryRow = worksheet.addRow(['Jumlah', totalSaldoAwal, totalPenjualan, totalPembayaran, totalSaldoAkhir]);
-    summaryRow.font = { bold: true };
+        const beginningBalance = runningBalance;
+        const endingBalance = beginningBalance + monthSales - monthPayments;
+        runningBalance = endingBalance;
 
-    // Format currency columns (all except first)
-    for (let i = 2; i <= headers.length; i++) {
-      const column = worksheet.getColumn(i);
-      column.numFmt = 'Rp #,##0';
+        worksheet.addRow([monthName, beginningBalance, monthSales, monthPayments, endingBalance]);
+        
+        totalSaldoAwal += beginningBalance;
+        totalPenjualan += monthSales;
+        totalPembayaran += monthPayments;
+        totalSaldoAkhir += endingBalance;
+      });
+
+      // Add summary row
+      const summaryRowIndex = 6 + monthNames.length;
+      worksheet.addRow(['JUMLAH TOTAL', totalSaldoAwal, totalPenjualan, totalPembayaran, totalSaldoAkhir]);
+      
+      // Apply table formatting for multi-month
+      ExcelTableHelper.formatAsTable(worksheet, 5, summaryRowIndex, 1, 5, 'ReceivablesMonthly');
     }
+
+    // Apply title formatting
+    ExcelTableHelper.formatTitle(worksheet, [1, 2, 3]);
+
+    // Apply Indonesian currency formatting (all columns except first)
+    ExcelTableHelper.applyCurrencyFormat(worksheet, [2, 3, 4, 5]);
 
     // Auto-fit columns
     worksheet.columns.forEach((column: any) => {
@@ -687,7 +755,7 @@ export class ExcelExportService {
     });
   }
 
-  private createReceivablesClientSummarySheet(workbook: ExcelJS.Workbook, data: ClientMonthlySummary[]): void {
+  private createReceivablesClientSummarySheet(workbook: ExcelJS.Workbook, data: ClientMonthlySummary[], companyInfo: IndonesianCompanyInfo, targetMonth?: number | null): void {
     const worksheet = workbook.addWorksheet('(AR) RKP PER CLIENT');
     
     // Add title header block (rows 1-4)
@@ -696,57 +764,71 @@ export class ExcelExportService {
     worksheet.addRow(['PER CLIENT', '', '', '', '']);
     worksheet.addRow(['', '', '', '', '']); // Empty spacer row
 
-    // Add headers (row 5) - 5 columns with financial breakdown
-    const headers = ['Nama Client', 'SALDO AWAL', 'PENJUALAN', 'PEMBAYARAN', 'SALDO AKHIR'];
-    worksheet.addRow(headers);
-
-    // Style title rows
-    const titleRow1 = worksheet.getRow(1);
-    titleRow1.font = { bold: true, size: 14 };
-    
-    const titleRow2 = worksheet.getRow(2);
-    titleRow2.font = { bold: true, size: 12 };
-    
-    const titleRow3 = worksheet.getRow(3);
-    titleRow3.font = { bold: true, size: 11 };
-
-    // Style headers
-    const headerRow = worksheet.getRow(5);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE6F3FF' }
-    };
-
-    // Add data for each client
     const monthNames = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
-    let totalSaldoAwal = 0, totalPenjualan = 0, totalPembayaran = 0, totalSaldoAkhir = 0;
+    
+    // For single-month reports, simplified structure
+    if (targetMonth !== null && targetMonth !== undefined) {
+      const targetMonthName = monthNames[targetMonth];
+      const headers = ['NAMA CLIENT', 'SALDO AWAL', 'PENJUALAN', 'PEMBAYARAN', 'SALDO AKHIR'];
+      worksheet.addRow(headers);
 
-    data.forEach((item) => {
-      const clientPenjualan = monthNames.reduce((sum, month) => sum + ((item[month] as number) || 0), 0);
-      const clientSaldoAwal = 0; // Would need to track separately
-      const clientPembayaran = 0; // Would need to track separately
-      const clientSaldoAkhir = clientSaldoAwal + clientPenjualan - clientPembayaran;
-      
-      worksheet.addRow([item.clientName, clientSaldoAwal, clientPenjualan, clientPembayaran, clientSaldoAkhir]);
-      
-      totalSaldoAwal += clientSaldoAwal;
-      totalPenjualan += clientPenjualan;
-      totalPembayaran += clientPembayaran;
-      totalSaldoAkhir += clientSaldoAkhir;
-    });
+      let totalSaldoAwal = 0, totalPenjualan = 0, totalPembayaran = 0, totalSaldoAkhir = 0;
 
-    // Add "Jumlah" summary row
-    const summaryRowIndex = 6 + data.length;
-    const summaryRow = worksheet.addRow(['Jumlah', totalSaldoAwal, totalPenjualan, totalPembayaran, totalSaldoAkhir]);
-    summaryRow.font = { bold: true };
+      // Add client data
+      data.forEach((item) => {
+        const clientPenjualan = (item[targetMonthName] as number) || 0;
+        const clientSaldoAwal = 0; // Would need to track separately
+        const clientPembayaran = 0; // Would need to track separately
+        const clientSaldoAkhir = clientSaldoAwal + clientPenjualan - clientPembayaran;
+        
+        worksheet.addRow([item.clientName, clientSaldoAwal, clientPenjualan, clientPembayaran, clientSaldoAkhir]);
+        
+        totalSaldoAwal += clientSaldoAwal;
+        totalPenjualan += clientPenjualan;
+        totalPembayaran += clientPembayaran;
+        totalSaldoAkhir += clientSaldoAkhir;
+      });
 
-    // Format currency columns (all except first)
-    for (let i = 2; i <= headers.length; i++) {
-      const column = worksheet.getColumn(i);
-      column.numFmt = 'Rp #,##0';
+      // Add summary row
+      const summaryRowIndex = 6 + data.length;
+      worksheet.addRow(['JUMLAH TOTAL', totalSaldoAwal, totalPenjualan, totalPembayaran, totalSaldoAkhir]);
+
+      // Apply table formatting for single month (5 columns)
+      ExcelTableHelper.formatAsTable(worksheet, 5, summaryRowIndex, 1, 5, 'ReceivablesClient');
+    } else {
+      // Multi-month report - 5 columns with financial breakdown
+      const headers = ['NAMA CLIENT', 'SALDO AWAL', 'PENJUALAN', 'PEMBAYARAN', 'SALDO AKHIR'];
+      worksheet.addRow(headers);
+
+      let totalSaldoAwal = 0, totalPenjualan = 0, totalPembayaran = 0, totalSaldoAkhir = 0;
+
+      data.forEach((item) => {
+        const clientPenjualan = monthNames.reduce((sum, month) => sum + ((item[month] as number) || 0), 0);
+        const clientSaldoAwal = 0; // Would need to track separately
+        const clientPembayaran = 0; // Would need to track separately
+        const clientSaldoAkhir = clientSaldoAwal + clientPenjualan - clientPembayaran;
+        
+        worksheet.addRow([item.clientName, clientSaldoAwal, clientPenjualan, clientPembayaran, clientSaldoAkhir]);
+        
+        totalSaldoAwal += clientSaldoAwal;
+        totalPenjualan += clientPenjualan;
+        totalPembayaran += clientPembayaran;
+        totalSaldoAkhir += clientSaldoAkhir;
+      });
+
+      // Add summary row
+      const summaryRowIndex = 6 + data.length;
+      worksheet.addRow(['JUMLAH TOTAL', totalSaldoAwal, totalPenjualan, totalPembayaran, totalSaldoAkhir]);
+
+      // Apply table formatting for multi-month (5 columns)
+      ExcelTableHelper.formatAsTable(worksheet, 5, summaryRowIndex, 1, 5, 'ReceivablesClient');
     }
+
+    // Apply title formatting
+    ExcelTableHelper.formatTitle(worksheet, [1, 2, 3]);
+
+    // Apply Indonesian currency formatting (all columns except first)
+    ExcelTableHelper.applyCurrencyFormat(worksheet, [2, 3, 4, 5]);
 
     // Auto-fit columns
     worksheet.columns.forEach((column: any) => {
@@ -812,6 +894,14 @@ export class ExcelExportService {
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const seq = sequence.toString().padStart(3, '0');
     return `INV-${year}-${month}-${seq}`;
+  }
+  
+  private generateIndonesianInvoiceNumber(date: Date, sequence: number): string {
+    // Enhanced Indonesian invoice number format with regional code
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const seq = sequence.toString().padStart(4, '0');
+    return `INV-JKT-${year}${month}-${seq}`; // JKT = Jakarta regional code
   }
   
   private formatIndonesianCurrency(amount: number): string {

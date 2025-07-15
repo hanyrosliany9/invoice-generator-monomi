@@ -41,15 +41,27 @@ export const ProjectTypeManagement: React.FC = () => {
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   // Queries
-  const { data: projectTypes, isLoading, error: projectTypesError } = useQuery({
+  const { data: projectTypes = [], isLoading, error: projectTypesError } = useQuery({
     queryKey: ['project-types'],
     queryFn: projectTypesApi.getAll,
+    initialData: [],
   });
 
-  const { data: projectTypeStats, error: statsError } = useQuery({
+  const { data: projectTypeStats = [], error: statsError } = useQuery({
     queryKey: ['project-type-stats'],
     queryFn: projectTypesApi.getStats,
+    initialData: [],
   });
+
+  // Error handling for queries
+  React.useEffect(() => {
+    if (projectTypesError) {
+      message.error(t('settings.projectType.loadError'));
+    }
+    if (statsError) {
+      console.warn('Project type stats failed to load:', statsError);
+    }
+  }, [projectTypesError, statsError, message, t]);
 
 
   // Mutations
@@ -263,7 +275,7 @@ export const ProjectTypeManagement: React.FC = () => {
     >
       <Table
         columns={columns}
-        dataSource={projectTypes || []}
+        dataSource={Array.isArray(projectTypes) ? projectTypes : []}
         rowKey="id"
         loading={isLoading}
         pagination={false}
@@ -379,7 +391,7 @@ export const ProjectTypeManagement: React.FC = () => {
         width={800}
       >
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-          {Array.isArray(projectTypeStats) && projectTypeStats.map((stat: any) => (
+          {Array.isArray(projectTypeStats) ? projectTypeStats.map((stat: any) => (
             <Card key={stat.id} size="small" style={{ borderLeft: `4px solid ${stat.color}` }}>
               <div style={{ textAlign: 'center' }}>
                 <h4>{stat.name}</h4>
@@ -389,7 +401,11 @@ export const ProjectTypeManagement: React.FC = () => {
                 <p><strong>IDR {stat.totalRevenue.toLocaleString()}</strong> {t('settings.projectType.totalRevenue')}</p>
               </div>
             </Card>
-          ))}
+          )) : (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              {t('settings.projectType.noStatsAvailable')}
+            </div>
+          )}
         </div>
       </Modal>
     </Card>
