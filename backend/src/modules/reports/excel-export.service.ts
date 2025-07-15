@@ -67,9 +67,9 @@ export class ExcelExportService {
     this.createSalesDetailSheet(workbook, salesDetailData, targetMonth);
     this.createReceivablesDetailSheet(workbook, receivablesDetailData, targetMonth);
     this.createSalesMonthlySummarySheet(workbook, salesMonthlySummary, targetMonth);
-    this.createSalesClientSummarySheet(workbook, salesClientSummary);
+    this.createSalesClientSummarySheet(workbook, salesClientSummary, targetMonth);
     this.createReceivablesMonthlySummarySheet(workbook, receivablesMonthlySummary, targetMonth);
-    this.createReceivablesClientSummarySheet(workbook, receivablesClientSummary);
+    this.createReceivablesClientSummarySheet(workbook, receivablesClientSummary, targetMonth);
 
     // Write to buffer
     const buffer = await workbook.xlsx.writeBuffer();
