@@ -72,19 +72,20 @@ model Project {
   id          String      @id @default(cuid())
   number      String      @unique // Project number for reference
   description String      // Project description
+  scopeOfWork String?     @db.Text // Narrative scope of work description
   output      String      // Expected deliverables/output
   // Project type reference
   projectTypeId String
   projectType   ProjectTypeConfig @relation(fields: [projectTypeId], references: [id])
-  
+
   // Client reference
   clientId String
   client   Client @relation(fields: [clientId], references: [id])
-  
+
   // Project timeline
   startDate DateTime?
   endDate   DateTime?
-  
+
   // Budget information
   estimatedBudget Decimal? @db.Decimal(12, 2)
   basePrice       Decimal? @db.Decimal(12, 2) // Base project price for cascade
@@ -118,19 +119,23 @@ model Quotation {
   quotationNumber String          @unique
   date            DateTime        @default(now())
   validUntil      DateTime
-  
+
   // Client information
   clientId String
   client   Client @relation(fields: [clientId], references: [id])
-  
+
   // Project information
   projectId String
   project   Project @relation(fields: [projectId], references: [id])
-  
+
   // Financial details
   amountPerProject Decimal @db.Decimal(12, 2)
   totalAmount      Decimal @db.Decimal(12, 2)
-  
+
+  // Scope of Work and pricing
+  scopeOfWork     String? @db.Text // Narrative scope of work (inherited or custom)
+  priceBreakdown  Json?            // Detailed price items inherited from project
+
   // Terms and conditions
   terms String?
   
@@ -169,23 +174,27 @@ model Invoice {
   invoiceNumber String        @unique
   creationDate  DateTime      @default(now())
   dueDate       DateTime
-  
+
   // Reference to quotation (optional - invoices can be standalone)
   quotationId String?
   quotation   Quotation? @relation(fields: [quotationId], references: [id])
-  
+
   // Client information (denormalized for invoice independence)
   clientId String
   client   Client @relation(fields: [clientId], references: [id])
-  
+
   // Project information (denormalized)
   projectId String
   project   Project @relation(fields: [projectId], references: [id])
-  
+
   // Financial details
   amountPerProject Decimal @db.Decimal(12, 2)
   totalAmount      Decimal @db.Decimal(12, 2)
-  
+
+  // Scope of Work and pricing
+  scopeOfWork     String? @db.Text // Narrative scope of work (inherited from quotation/project)
+  priceBreakdown  Json?            // Detailed price items inherited from quotation or project
+
   // Payment information
   paymentInfo String // Bank details, payment methods
   

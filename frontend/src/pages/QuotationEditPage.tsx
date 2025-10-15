@@ -59,6 +59,7 @@ interface QuotationFormData {
   terms: string
   validUntil: dayjs.Dayjs
   status: 'DRAFT' | 'SENT' | 'APPROVED' | 'DECLINED' | 'REVISED'
+  scopeOfWork?: string
 }
 
 export const QuotationEditPage: React.FC = () => {
@@ -146,6 +147,7 @@ export const QuotationEditPage: React.FC = () => {
         terms: quotation.terms,
         validUntil: dayjs(quotation.validUntil),
         status: quotation.status,
+        scopeOfWork: quotation.scopeOfWork || '',
       }
       form.setFieldsValue(formData)
       setOriginalValues(formData)
@@ -190,6 +192,7 @@ export const QuotationEditPage: React.FC = () => {
       terms: values.terms,
       validUntil: values.validUntil.toISOString(),
       status: values.status,
+      scopeOfWork: values.scopeOfWork,
     }
 
     updateQuotationMutation.mutate({ id, data: quotationData })
@@ -600,6 +603,30 @@ export const QuotationEditPage: React.FC = () => {
               </Row>
             </Card>
           )}
+        </ProgressiveSection>
+
+        {/* Scope of Work Section */}
+        <ProgressiveSection
+          title='Scope of Work'
+          subtitle='Narrative description of work scope (inherited from project or custom)'
+          icon={<FileTextOutlined />}
+          defaultOpen={false}
+        >
+          <Row gutter={[16, 16]}>
+            <Col xs={24}>
+              <Form.Item
+                name='scopeOfWork'
+                label='Scope of Work Description'
+                help='Describe the complete scope: tasks, timeline, deliverables, revisions, etc. Leave empty to keep inherited value from project.'
+              >
+                <TextArea
+                  rows={6}
+                  placeholder={`Example:\nProyek pengembangan website meliputi:\n1. Design UI/UX\n2. Development frontend dan backend\n3. Testing dan deployment\n\nTimeline: 3 bulan\nDeliverables: Website responsive, dokumentasi, training`}
+                  style={{ fontFamily: 'monospace' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
         </ProgressiveSection>
 
         {/* Quotation Details */}

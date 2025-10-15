@@ -12,6 +12,7 @@ import {
   Select,
   Space,
   Switch,
+  Tag,
   Typography,
 } from 'antd'
 import {
@@ -55,6 +56,7 @@ interface InvoiceFormData {
   quotationId?: string
   amountPerProject: number
   totalAmount: number
+  scopeOfWork?: string
   paymentInfo: string
   terms: string
   dueDate: dayjs.Dayjs
@@ -135,6 +137,14 @@ export const InvoiceCreatePage: React.FC = () => {
   // Pre-fill form when quotation data is loaded
   useEffect(() => {
     if (selectedQuotation) {
+      // Warn if quotation is not APPROVED (UX enhancement)
+      if (selectedQuotation.status !== 'APPROVED') {
+        message.warning({
+          content: `Warning: This quotation is ${selectedQuotation.status}. Only APPROVED quotations can be used to generate invoices. The backend will reject this submission.`,
+          duration: 8,
+        })
+      }
+
       const defaultDueDate = dayjs().add(30, 'day')
       const materaiRequired = selectedQuotation.totalAmount > 5000000
 
@@ -226,6 +236,7 @@ Reference: Quotation ${quotation.quotationNumber}
       quotationId: values.quotationId,
       amountPerProject: values.amountPerProject,
       totalAmount: values.totalAmount,
+      scopeOfWork: values.scopeOfWork,
       paymentInfo: values.paymentInfo,
       terms: values.terms,
       dueDate: values.dueDate.toISOString(),
@@ -244,6 +255,7 @@ Reference: Quotation ${quotation.quotationNumber}
         quotationId: values.quotationId,
         amountPerProject: values.amountPerProject,
         totalAmount: values.totalAmount,
+        scopeOfWork: values.scopeOfWork,
         paymentInfo: values.paymentInfo,
         terms: values.terms,
         dueDate: values.dueDate.toISOString(),
@@ -425,15 +437,49 @@ Reference: Quotation ${quotation.quotationNumber}
             style={{ marginBottom: '24px' }}
             message='Smart Context Detected'
             description={
-              prefilledQuotationId
-                ? `Creating invoice from quotation: ${selectedQuotation?.quotationNumber}`
-                : prefilledProjectId
-                  ? `Creating invoice for project`
-                  : prefilledClientId
-                    ? `Creating invoice for client: ${selectedClient?.name}`
-                    : 'Form pre-filled with context data'
+              prefilledQuotationId && selectedQuotation ? (
+                <Space direction='vertical' size='small'>
+                  <div>
+                    Creating invoice from quotation:{' '}
+                    <strong>{selectedQuotation.quotationNumber}</strong>
+                  </div>
+                  <div>
+                    Status:{' '}
+                    <Tag
+                      color={
+                        selectedQuotation.status === 'APPROVED'
+                          ? 'green'
+                          : selectedQuotation.status === 'SENT'
+                            ? 'blue'
+                            : selectedQuotation.status === 'DRAFT'
+                              ? 'default'
+                              : selectedQuotation.status === 'DECLINED'
+                                ? 'red'
+                                : 'orange'
+                      }
+                    >
+                      {selectedQuotation.status}
+                    </Tag>
+                    {selectedQuotation.status !== 'APPROVED' && (
+                      <span style={{ color: '#faad14', marginLeft: '8px' }}>
+                        ⚠️ Only APPROVED quotations can generate invoices
+                      </span>
+                    )}
+                  </div>
+                </Space>
+              ) : prefilledProjectId ? (
+                `Creating invoice for project`
+              ) : prefilledClientId ? (
+                `Creating invoice for client: ${selectedClient?.name}`
+              ) : (
+                'Form pre-filled with context data'
+              )
             }
-            type='info'
+            type={
+              prefilledQuotationId && selectedQuotation?.status !== 'APPROVED'
+                ? 'warning'
+                : 'info'
+            }
             showIcon
             closable
           />
@@ -581,6 +627,61 @@ Reference: Quotation ${quotation.quotationNumber}
                   5,000,000
                 </Text>
               )}
+            </Col>
+          </Row>
+        </ProgressiveSection>
+
+        {/* Scope of Work Section */}
+        <ProgressiveSection
+          title='Scope of Work'
+          subtitle='Narrative description of work scope (inherited from quotation/project or custom)'
+          icon={<FileTextOutlined />}
+          defaultOpen={true}
+        >
+          <Row gutter={[16, 16]}>
+            <Col xs={24}>
+              {selectedQuotation?.scopeOfWork && (
+                <Alert
+                  style={{ marginBottom: '16px' }}
+                  message='Scope of Work Inherited from Quotation'
+                  description={
+                    <div>
+                      <Text type='secondary'>
+                        This scope of work is inherited from the quotation. You can customize it for this invoice:
+                      </Text>
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '8px',
+                        backgroundColor: '#fafafa',
+                        borderRadius: '4px',
+                        fontFamily: 'monospace',
+                        fontSize: '12px',
+                        maxHeight: '100px',
+                        overflow: 'auto'
+                      }}>
+                        {selectedQuotation.scopeOfWork}
+                      </div>
+                    </div>
+                  }
+                  type='info'
+                  showIcon
+                />
+              )}
+              <Form.Item
+                name='scopeOfWork'
+                label='Scope of Work Description'
+                help='Describe the complete scope: tasks, timeline, deliverables, revisions, etc. Leave empty to inherit from quotation/project.'
+              >
+                <TextArea
+                  rows={6}
+                  placeholder={
+                    selectedQuotation?.scopeOfWork
+                      ? 'Leave empty to use quotation scope, or customize it here...'
+                      : `Example:\nInvoice ini mencakup:\n1. Pengembangan website e-commerce\n2. Integrasi payment gateway\n3. Training tim internal\n\nDeliverables: Website fully functional, dokumentasi lengkap`
+                  }
+                  style={{ fontFamily: 'monospace' }}
+                />
+              </Form.Item>
             </Col>
           </Row>
         </ProgressiveSection>

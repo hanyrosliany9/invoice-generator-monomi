@@ -25,6 +25,7 @@ export interface Project {
   id: string
   number: string
   description: string
+  scopeOfWork?: string // Narrative description of work scope
   output?: string // Optional - legacy field, can be derived from products
   projectTypeId: string
   clientId: string
@@ -71,6 +72,7 @@ export interface Project {
 
 export interface CreateProjectRequest {
   description: string
+  scopeOfWork?: string // Narrative description of work scope
   output?: string // Optional - can be derived from product descriptions
   projectTypeId: string // Project type ID from database
   clientId: string

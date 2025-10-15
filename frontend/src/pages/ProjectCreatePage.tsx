@@ -49,6 +49,7 @@ interface ProductItem {
 
 interface ProjectFormData {
   description: string
+  scopeOfWork?: string
   output?: string
   type: 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER'
   clientId: string
@@ -127,6 +128,7 @@ export const ProjectCreatePage: React.FC = () => {
   const handleSubmit = async (values: ProjectFormData) => {
     const projectData: CreateProjectRequest = {
       description: values.description,
+      scopeOfWork: values.scopeOfWork,
       output: values.output,
       projectTypeId: getProjectTypeId(values.type),
       clientId: values.clientId,
@@ -144,6 +146,7 @@ export const ProjectCreatePage: React.FC = () => {
       const values = await form.validateFields()
       const projectData: CreateProjectRequest = {
         description: values.description,
+        scopeOfWork: values.scopeOfWork,
         output: values.output,
         projectTypeId: getProjectTypeId(values.type),
         clientId: values.clientId,
@@ -566,6 +569,31 @@ export const ProjectCreatePage: React.FC = () => {
               </>
             )}
           </Form.List>
+        </ProgressiveSection>
+
+        {/* Scope of Work Section */}
+        <ProgressiveSection
+          title='Scope of Work'
+          subtitle='Narrative description of work scope, timeline, and deliverables'
+          icon={<FileTextOutlined />}
+          defaultOpen={true}
+        >
+          <Row gutter={[16, 16]}>
+            <Col xs={24}>
+              <Form.Item
+                name='scopeOfWork'
+                label='Scope of Work Description'
+                help='Describe the complete scope: tasks, timeline, deliverables, revisions, etc.'
+              >
+                <TextArea
+                  id='scopeOfWork'
+                  rows={6}
+                  placeholder={`Example:\nProject ini meliputi:\n1. Pembuatan konsep kreatif\n2. Produksi video 30 detik\n3. Editing dan color grading\n4. Revisi hingga 3 kali\n\nTimeline: 2 minggu\nDeliverables: Video final format MP4 1080p`}
+                  style={{ fontFamily: 'monospace' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
         </ProgressiveSection>
 
         {/* Action Buttons */}

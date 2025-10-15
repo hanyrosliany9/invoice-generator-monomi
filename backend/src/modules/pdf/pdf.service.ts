@@ -110,6 +110,7 @@ export class PdfService {
       project,
       amountPerProject,
       totalAmount,
+      scopeOfWork,
       paymentInfo,
       terms,
       materaiRequired = false,
@@ -118,10 +119,14 @@ export class PdfService {
       taxRate = 0.11,
       taxLabel = "PPN",
       taxExemptReason = null,
+      priceBreakdown,
     } = invoiceData;
 
     // Get company settings
     const companyData = await this.getCompanySettings();
+
+    // Parse products from priceBreakdown if available
+    const products = priceBreakdown?.products || [];
 
     // Enhanced tax calculations (optional)
     const subTotal = Number(amountPerProject) || 0;
@@ -321,6 +326,27 @@ export class PdfService {
     }
     
     
+    /* Scope of Work Section */
+    .scope-of-work {
+      margin-bottom: 4mm;
+      padding: 4mm;
+      background-color: #fef3c7;
+      border-left: 3px solid #f59e0b;
+      border-radius: 2px;
+    }
+    .scope-title {
+      font-weight: bold;
+      color: #dc2626;
+      margin-bottom: 3mm;
+      font-size: 12px;
+    }
+    .scope-content {
+      white-space: pre-line;
+      line-height: 1.4;
+      font-size: 9px;
+      color: #333;
+    }
+
     /* Payment Information (Invoice-specific) */
     .payment-info {
       margin-bottom: 4mm;
@@ -440,6 +466,20 @@ export class PdfService {
         </tr>
       </thead>
       <tbody>
+        ${products.length > 0
+          ? products.map((product: any, index: number) => `
+        <tr>
+          <td>${String(index + 1).padStart(2, '0')}</td>
+          <td>
+            <strong>${product.name}</strong><br>
+            <small style="color: #666;">${product.description || ''}</small>
+          </td>
+          <td>${formatIDR(product.price || 0)}</td>
+          <td>${product.quantity || 1}</td>
+          <td>${formatIDR(product.subtotal || (product.price * (product.quantity || 1)))}</td>
+        </tr>
+          `).join('')
+          : `
         <tr>
           <td>01</td>
           <td>${project.description}</td>
@@ -447,6 +487,8 @@ export class PdfService {
           <td>1</td>
           <td>${formatIDR(amountPerProject)}</td>
         </tr>
+          `
+        }
       </tbody>
     </table>
 
@@ -483,6 +525,17 @@ export class PdfService {
       </tr>
     </table>
 
+    <!-- Scope of Work Section -->
+    ${
+      scopeOfWork
+        ? `
+    <div class="scope-of-work">
+      <div class="scope-title">Ruang Lingkup Pekerjaan (Scope of Work):</div>
+      <div class="scope-content">${scopeOfWork}</div>
+    </div>
+    `
+        : ""
+    }
 
     <!-- Payment Information -->
     <div class="payment-info">
@@ -531,11 +584,16 @@ export class PdfService {
       project,
       amountPerProject,
       totalAmount,
+      scopeOfWork,
       terms,
+      priceBreakdown,
     } = quotationData;
 
     // Get company settings
     const companyData = await this.getCompanySettings();
+
+    // Parse products from priceBreakdown if available
+    const products = priceBreakdown?.products || [];
 
     // Format currency in Indonesian Rupiah
     const formatIDR = (amount: number) => {
@@ -728,7 +786,28 @@ export class PdfService {
       font-weight: bold;
       font-size: 12px;
     }
-    
+
+    /* Scope of Work Section */
+    .scope-of-work {
+      margin-bottom: 4mm;
+      padding: 4mm;
+      background-color: #fef3c7;
+      border-left: 3px solid #f59e0b;
+      border-radius: 2px;
+    }
+    .scope-title {
+      font-weight: bold;
+      color: #1e40af;
+      margin-bottom: 3mm;
+      font-size: 12px;
+    }
+    .scope-content {
+      white-space: pre-line;
+      line-height: 1.4;
+      font-size: 9px;
+      color: #333;
+    }
+
     /* Footer Layout */
     .footer-section {
       display: flex;
@@ -853,6 +932,20 @@ export class PdfService {
         </tr>
       </thead>
       <tbody>
+        ${products.length > 0
+          ? products.map((product: any, index: number) => `
+        <tr>
+          <td>${String(index + 1).padStart(2, '0')}</td>
+          <td>
+            <strong>${product.name}</strong><br>
+            <small style="color: #666;">${product.description || ''}</small>
+          </td>
+          <td>${formatIDR(product.price || 0)}</td>
+          <td>${product.quantity || 1}</td>
+          <td>${formatIDR(product.subtotal || (product.price * (product.quantity || 1)))}</td>
+        </tr>
+          `).join('')
+          : `
         <tr>
           <td>01</td>
           <td>${project.description}</td>
@@ -860,6 +953,8 @@ export class PdfService {
           <td>1</td>
           <td>${formatIDR(amountPerProject)}</td>
         </tr>
+          `
+        }
       </tbody>
     </table>
 
@@ -878,6 +973,18 @@ export class PdfService {
         <td>${formatIDR(totalAmount)}</td>
       </tr>
     </table>
+
+    <!-- Scope of Work Section -->
+    ${
+      scopeOfWork
+        ? `
+    <div class="scope-of-work">
+      <div class="scope-title">Ruang Lingkup Pekerjaan (Scope of Work):</div>
+      <div class="scope-content">${scopeOfWork}</div>
+    </div>
+    `
+        : ""
+    }
 
     <!-- Footer Section -->
     <div class="footer-section">

@@ -6,6 +6,7 @@ import {
   IsPositive,
   IsBoolean,
   IsNumber,
+  IsObject,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { InvoiceStatus } from "@prisma/client";
@@ -83,6 +84,36 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsBoolean({ message: "Materai required harus berupa boolean" })
   materaiRequired?: boolean;
+
+  @ApiProperty({
+    description: "Scope of Work - Deskripsi naratif ruang lingkup pekerjaan (diturunkan dari quotation/proyek atau custom)",
+    required: false,
+    example: "Invoice ini mencakup:\n1. Pengembangan website e-commerce\n2. Integrasi payment gateway\n3. Training tim internal\n\nDeliverables: Website fully functional, dokumentasi lengkap",
+  })
+  @IsOptional()
+  @IsString({ message: "Scope of Work harus berupa string" })
+  scopeOfWork?: string;
+
+  @ApiProperty({
+    description: "Detail breakdown harga (opsional, diturunkan dari quotation atau proyek)",
+    required: false,
+    example: {
+      products: [
+        {
+          name: "Website Development",
+          description: "Responsive website with 5 pages",
+          price: 15000000,
+          quantity: 1,
+          subtotal: 15000000,
+        },
+      ],
+      total: 15000000,
+      calculatedAt: "2025-10-15T11:45:55.000Z",
+    },
+  })
+  @IsOptional()
+  @IsObject({ message: "Price breakdown harus berupa object" })
+  priceBreakdown?: any;
 
   @ApiProperty({
     description: "Syarat dan ketentuan",

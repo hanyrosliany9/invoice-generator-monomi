@@ -9,11 +9,23 @@ export interface Quotation {
   projectId: string
   amountPerProject: number
   totalAmount: number
+  scopeOfWork?: string // Narrative description of work scope (inherited from project or custom)
   terms: string
   status: 'DRAFT' | 'SENT' | 'APPROVED' | 'DECLINED' | 'REVISED'
   createdBy: string
   createdAt: string
   updatedAt: string
+  priceBreakdown?: {
+    products: Array<{
+      name: string
+      description?: string
+      price: number
+      quantity: number
+      subtotal: number
+    }>
+    total: number
+    calculatedAt: string
+  }
   client?: {
     id: string
     name: string
@@ -43,8 +55,20 @@ export interface CreateQuotationRequest {
   projectId: string
   amountPerProject: number
   totalAmount: number
+  scopeOfWork?: string // Narrative description of work scope (inherited from project or custom)
   terms: string
   validUntil: string
+  priceBreakdown?: {
+    products: Array<{
+      name: string
+      description?: string
+      price: number
+      quantity: number
+      subtotal: number
+    }>
+    total: number
+    calculatedAt: string
+  }
 }
 
 export interface UpdateQuotationRequest

@@ -41,14 +41,24 @@ export class InvoicesService {
       );
     }
 
-    // Validate project exists
+    // Validate project exists and get scopeOfWork & priceBreakdown
     const project = await this.prisma.project.findUnique({
       where: { id: createInvoiceDto.projectId },
+      select: { id: true, priceBreakdown: true, scopeOfWork: true },
     });
     if (!project) {
       throw new NotFoundException(
         `Project dengan ID ${createInvoiceDto.projectId} tidak ditemukan`,
       );
+    }
+
+    // Get quotation scopeOfWork & priceBreakdown if quotationId is provided
+    let quotation = null;
+    if (createInvoiceDto.quotationId) {
+      quotation = await this.prisma.quotation.findUnique({
+        where: { id: createInvoiceDto.quotationId },
+        select: { priceBreakdown: true, scopeOfWork: true },
+      });
     }
 
     // Validate business rules
@@ -59,6 +69,20 @@ export class InvoicesService {
 
     // Auto-calculate materai
     const materaiRequired = createInvoiceDto.totalAmount > 5000000;
+
+    // Cascade scopeOfWork: DTO > Quotation > Project
+    const scopeOfWork =
+      createInvoiceDto.scopeOfWork ||
+      quotation?.scopeOfWork ||
+      project.scopeOfWork ||
+      null;
+
+    // Cascade priceBreakdown: DTO > Quotation > Project
+    const priceBreakdown =
+      createInvoiceDto.priceBreakdown ||
+      quotation?.priceBreakdown ||
+      project.priceBreakdown ||
+      undefined;
 
     // Sanitize input data
     const sanitizedData = {
@@ -76,6 +100,7 @@ export class InvoicesService {
           invoiceNumber,
           materaiRequired,
           materaiApplied: createInvoiceDto.materaiApplied || false,
+          priceBreakdown: priceBreakdown,
           createdBy: userId,
         },
         include: {

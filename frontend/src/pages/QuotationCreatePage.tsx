@@ -56,6 +56,7 @@ interface QuotationFormData {
   projectId: string
   amountPerProject: number
   totalAmount: number
+  scopeOfWork?: string
   terms: string
   validUntil: dayjs.Dayjs
 }
@@ -194,6 +195,7 @@ export const QuotationCreatePage: React.FC = () => {
       projectId: values.projectId,
       amountPerProject: typeof values.amountPerProject === 'string' ? parseFloat(values.amountPerProject) : values.amountPerProject,
       totalAmount: typeof values.totalAmount === 'string' ? parseFloat(values.totalAmount) : values.totalAmount,
+      scopeOfWork: values.scopeOfWork,
       terms: values.terms,
       validUntil: values.validUntil.toISOString(),
     }
@@ -209,6 +211,7 @@ export const QuotationCreatePage: React.FC = () => {
         projectId: values.projectId,
         amountPerProject: values.amountPerProject,
         totalAmount: values.totalAmount,
+        scopeOfWork: values.scopeOfWork,
         terms: values.terms,
         validUntil: values.validUntil.toISOString(),
       }
@@ -574,6 +577,61 @@ export const QuotationCreatePage: React.FC = () => {
               </Row>
             </Card>
           )}
+        </ProgressiveSection>
+
+        {/* Scope of Work Section */}
+        <ProgressiveSection
+          title='Scope of Work'
+          subtitle='Narrative description of work scope (inherited from project or custom)'
+          icon={<FileTextOutlined />}
+          defaultOpen={true}
+        >
+          <Row gutter={[16, 16]}>
+            <Col xs={24}>
+              {selectedProject?.scopeOfWork && (
+                <Alert
+                  style={{ marginBottom: '16px' }}
+                  message='Scope of Work Inherited from Project'
+                  description={
+                    <div>
+                      <Text type='secondary'>
+                        This scope of work is inherited from the project. You can customize it for this quotation:
+                      </Text>
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '8px',
+                        backgroundColor: '#fafafa',
+                        borderRadius: '4px',
+                        fontFamily: 'monospace',
+                        fontSize: '12px',
+                        maxHeight: '100px',
+                        overflow: 'auto'
+                      }}>
+                        {selectedProject.scopeOfWork}
+                      </div>
+                    </div>
+                  }
+                  type='info'
+                  showIcon
+                />
+              )}
+              <Form.Item
+                name='scopeOfWork'
+                label='Scope of Work Description'
+                help='Describe the complete scope: tasks, timeline, deliverables, revisions, etc. Leave empty to inherit from project.'
+              >
+                <TextArea
+                  rows={6}
+                  placeholder={
+                    selectedProject?.scopeOfWork
+                      ? 'Leave empty to use project scope, or customize it here...'
+                      : `Example:\nProyek pengembangan website meliputi:\n1. Design UI/UX\n2. Development frontend dan backend\n3. Testing dan deployment\n\nTimeline: 3 bulan\nDeliverables: Website responsive, dokumentasi, training`
+                  }
+                  style={{ fontFamily: 'monospace' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
         </ProgressiveSection>
 
         {/* Quotation Details */}

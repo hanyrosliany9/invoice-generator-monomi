@@ -58,6 +58,7 @@ interface InvoiceFormData {
   totalAmount: number
   paymentInfo: string
   terms: string
+  scopeOfWork?: string
   dueDate: dayjs.Dayjs
   materaiRequired: boolean
   materaiApplied: boolean
@@ -155,6 +156,7 @@ export const InvoiceEditPage: React.FC = () => {
         totalAmount: Number(invoice.totalAmount),
         paymentInfo: invoice.paymentInfo,
         terms: invoice.terms,
+        scopeOfWork: invoice.scopeOfWork || '',
         dueDate: dayjs(invoice.dueDate),
         materaiRequired: invoice.materaiRequired,
         materaiApplied: invoice.materaiApplied,
@@ -198,6 +200,7 @@ export const InvoiceEditPage: React.FC = () => {
       totalAmount: values.totalAmount,
       paymentInfo: values.paymentInfo,
       terms: values.terms,
+      scopeOfWork: values.scopeOfWork,
       dueDate: values.dueDate.toISOString(),
       materaiRequired: values.materaiRequired,
       materaiApplied: values.materaiApplied,
@@ -217,6 +220,7 @@ export const InvoiceEditPage: React.FC = () => {
         totalAmount: values.totalAmount,
         paymentInfo: values.paymentInfo,
         terms: values.terms,
+        scopeOfWork: values.scopeOfWork,
         dueDate: values.dueDate.toISOString(),
         materaiRequired: values.materaiRequired,
         materaiApplied: values.materaiApplied,
@@ -655,6 +659,30 @@ export const InvoiceEditPage: React.FC = () => {
                   checkedChildren='Applied'
                   unCheckedChildren='Not Applied'
                   disabled={!canEdit || !form.getFieldValue('materaiRequired')}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </ProgressiveSection>
+
+        {/* Scope of Work Section */}
+        <ProgressiveSection
+          title='Scope of Work'
+          subtitle='Narrative description of work scope (inherited from quotation/project or custom)'
+          icon={<FileTextOutlined />}
+          defaultOpen={false}
+        >
+          <Row gutter={[16, 16]}>
+            <Col xs={24}>
+              <Form.Item
+                name='scopeOfWork'
+                label='Scope of Work Description'
+                help='Describe the complete scope: tasks, timeline, deliverables, revisions, etc. Leave empty to keep inherited value from quotation/project.'
+              >
+                <TextArea
+                  rows={6}
+                  placeholder={`Example:\nInvoice ini mencakup:\n1. Pengembangan website e-commerce\n2. Integrasi payment gateway\n3. Training tim internal\n\nDeliverables: Website fully functional, dokumentasi lengkap`}
+                  style={{ fontFamily: 'monospace' }}
                 />
               </Form.Item>
             </Col>

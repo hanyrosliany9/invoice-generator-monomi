@@ -13,6 +13,7 @@ export interface Invoice {
   amountPerProject: number
   totalAmount: number
   amount?: string | number
+  scopeOfWork?: string // Narrative description of work scope (inherited from quotation/project or custom)
   paymentInfo: string
   materaiRequired: boolean
   materaiApplied: boolean
@@ -23,6 +24,17 @@ export interface Invoice {
   createdAt: string
   updatedAt: string
   paidAt?: string
+  priceBreakdown?: {
+    products: Array<{
+      name: string
+      description?: string
+      price: number
+      quantity: number
+      subtotal: number
+    }>
+    total: number
+    calculatedAt: string
+  }
 
   // Payment tracking
   paymentSummary?: {
@@ -64,11 +76,23 @@ export interface CreateInvoiceRequest {
   projectId: string
   amountPerProject: number
   totalAmount: number
+  scopeOfWork?: string // Narrative description of work scope (inherited from quotation/project or custom)
   paymentInfo: string
   terms: string
   dueDate: string
   materaiRequired?: boolean
   quotationId?: string
+  priceBreakdown?: {
+    products: Array<{
+      name: string
+      description?: string
+      price: number
+      quantity: number
+      subtotal: number
+    }>
+    total: number
+    calculatedAt: string
+  }
 }
 
 export interface UpdateInvoiceRequest extends Partial<CreateInvoiceRequest> {

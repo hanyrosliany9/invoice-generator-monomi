@@ -4,6 +4,7 @@ import {
   IsDateString,
   IsOptional,
   Min,
+  IsObject,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
@@ -32,6 +33,36 @@ export class CreateQuotationDto {
   @ApiProperty({ description: "Tanggal berlaku hingga" })
   @IsDateString({}, { message: "Valid until harus berupa tanggal yang valid" })
   validUntil: string;
+
+  @ApiProperty({
+    description: "Scope of Work - Deskripsi naratif ruang lingkup pekerjaan (diturunkan dari proyek atau custom)",
+    required: false,
+    example: "Proyek pengembangan website meliputi:\n1. Design UI/UX\n2. Development frontend dan backend\n3. Testing dan deployment\n\nTimeline: 3 bulan\nDeliverables: Website responsive, dokumentasi, training",
+  })
+  @IsOptional()
+  @IsString({ message: "Scope of Work harus berupa string" })
+  scopeOfWork?: string;
+
+  @ApiProperty({
+    description: "Detail breakdown harga (opsional, diturunkan dari proyek)",
+    required: false,
+    example: {
+      products: [
+        {
+          name: "Website Development",
+          description: "Responsive website with 5 pages",
+          price: 15000000,
+          quantity: 1,
+          subtotal: 15000000,
+        },
+      ],
+      total: 15000000,
+      calculatedAt: "2025-10-15T11:45:55.000Z",
+    },
+  })
+  @IsOptional()
+  @IsObject({ message: "Price breakdown harus berupa object" })
+  priceBreakdown?: any;
 
   @ApiProperty({ description: "Syarat dan ketentuan", required: false })
   @IsOptional()

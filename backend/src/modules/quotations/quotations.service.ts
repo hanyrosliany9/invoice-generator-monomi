@@ -24,7 +24,7 @@ export class QuotationsService {
     // Validate that the project belongs to the selected client
     const project = await this.prisma.project.findUnique({
       where: { id: createQuotationDto.projectId },
-      select: { clientId: true, id: true },
+      select: { clientId: true, id: true, priceBreakdown: true, scopeOfWork: true },
     });
 
     if (!project) {
@@ -40,11 +40,19 @@ export class QuotationsService {
     // Generate unique quotation number
     const quotationNumber = await this.generateQuotationNumber();
 
+    // Cascade scopeOfWork from project if not provided in DTO
+    const scopeOfWork = createQuotationDto.scopeOfWork || project.scopeOfWork || null;
+
+    // Cascade priceBreakdown from project if not provided in DTO
+    const priceBreakdown = createQuotationDto.priceBreakdown || project.priceBreakdown || undefined;
+
     return this.prisma.quotation.create({
       data: {
         ...createQuotationDto,
         quotationNumber,
         createdBy: userId,
+        scopeOfWork: scopeOfWork,
+        priceBreakdown: priceBreakdown,
       },
       include: {
         client: true,
@@ -349,7 +357,7 @@ export class QuotationsService {
     // Check if materai is required (> 5M IDR)
     const materaiRequired = Number(quotation.totalAmount) > 5000000;
 
-    // Create invoice from quotation data
+    // Create invoice from quotation data (with scopeOfWork and priceBreakdown cascade)
     const invoice = await this.prisma.invoice.create({
       data: {
         invoiceNumber,
@@ -359,6 +367,8 @@ export class QuotationsService {
         projectId: quotation.projectId,
         amountPerProject: quotation.amountPerProject,
         totalAmount: quotation.totalAmount,
+        scopeOfWork: quotation.scopeOfWork || null,  // Cascade from quotation
+        priceBreakdown: quotation.priceBreakdown || undefined,  // Cascade from quotation
         paymentInfo: "Bank Transfer - Lihat detail di company settings",
         materaiRequired,
         materaiApplied: false,
