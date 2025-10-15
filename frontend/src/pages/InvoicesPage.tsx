@@ -1293,10 +1293,10 @@ export const InvoicesPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '20px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: '#ffffff',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                boxShadow: '0 8px 32px rgba(16, 185, 129, 0.2)',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%)',
+                backdropFilter: 'blur(10px)',
                 transition: 'all 0.3s ease',
               }}
               className='hover:shadow-2xl hover:scale-[1.02]'
@@ -1319,15 +1319,15 @@ export const InvoicesPage: React.FC = () => {
                     <DollarOutlined
                       style={{
                         fontSize: '32px',
-                        color: '#ffffff',
-                        background: 'rgba(255, 255, 255, 0.2)',
+                        color: '#10b981',
+                        background: 'rgba(16, 185, 129, 0.2)',
                         padding: '12px',
                         borderRadius: '16px',
                       }}
                     />
                   }
                   valueStyle={{
-                    color: '#ffffff',
+                    color: '#e2e8f0',
                     fontSize: '32px',
                     fontWeight: 800,
                   }}
@@ -1339,10 +1339,10 @@ export const InvoicesPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '20px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                color: '#ffffff',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                boxShadow: '0 8px 32px rgba(99, 102, 241, 0.2)',
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(79, 70, 229, 0.1) 100%)',
+                backdropFilter: 'blur(10px)',
                 transition: 'all 0.3s ease',
               }}
               className='hover:shadow-2xl hover:scale-[1.02]'
@@ -1366,15 +1366,15 @@ export const InvoicesPage: React.FC = () => {
                       <BankOutlined
                         style={{
                           fontSize: '32px',
-                          color: '#ffffff',
-                          background: 'rgba(255, 255, 255, 0.2)',
+                          color: '#6366f1',
+                          background: 'rgba(99, 102, 241, 0.2)',
                           padding: '12px',
                           borderRadius: '16px',
                         }}
                       />
                     }
                     valueStyle={{
-                      color: '#ffffff',
+                      color: '#e2e8f0',
                       fontSize: '32px',
                       fontWeight: 800,
                     }}
@@ -1382,7 +1382,7 @@ export const InvoicesPage: React.FC = () => {
                   <Progress
                     percent={Math.round(paymentRate)}
                     size='small'
-                    strokeColor='rgba(255, 255, 255, 0.8)'
+                    strokeColor='#6366f1'
                     className='mt-2'
                   />
                 </>
@@ -1393,10 +1393,10 @@ export const InvoicesPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '20px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                color: '#ffffff',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                boxShadow: '0 8px 32px rgba(245, 158, 11, 0.2)',
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%)',
+                backdropFilter: 'blur(10px)',
                 transition: 'all 0.3s ease',
               }}
               className='hover:shadow-2xl hover:scale-[1.02]'
@@ -1419,15 +1419,15 @@ export const InvoicesPage: React.FC = () => {
                     <ClockCircleOutlined
                       style={{
                         fontSize: '32px',
-                        color: '#ffffff',
-                        background: 'rgba(255, 255, 255, 0.2)',
+                        color: '#f59e0b',
+                        background: 'rgba(245, 158, 11, 0.2)',
                         padding: '12px',
                         borderRadius: '16px',
                       }}
                     />
                   }
                   valueStyle={{
-                    color: '#ffffff',
+                    color: '#e2e8f0',
                     fontSize: '32px',
                     fontWeight: 800,
                   }}
