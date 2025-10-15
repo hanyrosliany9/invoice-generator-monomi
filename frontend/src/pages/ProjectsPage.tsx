@@ -644,9 +644,10 @@ export const ProjectsPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                border: '1px solid rgba(45, 53, 72, 0.6)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                background: 'rgba(26, 31, 46, 0.6)',
+                backdropFilter: 'blur(10px)',
               }}
             >
               <Statistic
@@ -664,7 +665,7 @@ export const ProjectsPage: React.FC = () => {
                   />
                 }
                 valueStyle={{
-                  color: '#1e293b',
+                  color: '#e2e8f0',
                   fontSize: '28px',
                   fontWeight: 700,
                 }}
@@ -675,9 +676,10 @@ export const ProjectsPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                border: '1px solid rgba(45, 53, 72, 0.6)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                background: 'rgba(26, 31, 46, 0.6)',
+                backdropFilter: 'blur(10px)',
               }}
             >
               <Statistic
@@ -695,7 +697,7 @@ export const ProjectsPage: React.FC = () => {
                   />
                 }
                 valueStyle={{
-                  color: '#1e293b',
+                  color: '#e2e8f0',
                   fontSize: '28px',
                   fontWeight: 700,
                 }}
@@ -706,9 +708,10 @@ export const ProjectsPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                border: '1px solid rgba(45, 53, 72, 0.6)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                background: 'rgba(26, 31, 46, 0.6)',
+                backdropFilter: 'blur(10px)',
               }}
             >
               <Statistic
@@ -726,7 +729,7 @@ export const ProjectsPage: React.FC = () => {
                   />
                 }
                 valueStyle={{
-                  color: '#1e293b',
+                  color: '#e2e8f0',
                   fontSize: '28px',
                   fontWeight: 700,
                 }}
@@ -737,9 +740,10 @@ export const ProjectsPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                border: '1px solid rgba(45, 53, 72, 0.6)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                background: 'rgba(26, 31, 46, 0.6)',
+                backdropFilter: 'blur(10px)',
               }}
             >
               <Statistic
@@ -757,7 +761,7 @@ export const ProjectsPage: React.FC = () => {
                   />
                 }
                 valueStyle={{
-                  color: '#1e293b',
+                  color: '#e2e8f0',
                   fontSize: '28px',
                   fontWeight: 700,
                 }}
@@ -772,9 +776,10 @@ export const ProjectsPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                border: '1px solid rgba(45, 53, 72, 0.6)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                background: 'rgba(26, 31, 46, 0.6)',
+                backdropFilter: 'blur(10px)',
               }}
             >
               <Statistic
@@ -792,7 +797,7 @@ export const ProjectsPage: React.FC = () => {
                   />
                 }
                 valueStyle={{
-                  color: '#1e293b',
+                  color: '#e2e8f0',
                   fontSize: '28px',
                   fontWeight: 700,
                 }}
@@ -803,9 +808,10 @@ export const ProjectsPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                border: '1px solid rgba(45, 53, 72, 0.6)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                background: 'rgba(26, 31, 46, 0.6)',
+                backdropFilter: 'blur(10px)',
               }}
             >
               <Statistic
@@ -823,7 +829,7 @@ export const ProjectsPage: React.FC = () => {
                   />
                 }
                 valueStyle={{
-                  color: '#1e293b',
+                  color: '#e2e8f0',
                   fontSize: '28px',
                   fontWeight: 700,
                 }}
@@ -834,9 +840,10 @@ export const ProjectsPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '20px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-                background: 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)',
+                border: '1px solid rgba(30, 64, 175, 0.3)',
+                boxShadow: '0 8px 32px rgba(30, 64, 175, 0.2)',
+                background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.15) 0%, rgba(30, 58, 138, 0.1) 100%)',
+                backdropFilter: 'blur(10px)',
                 color: '#ffffff',
               }}
             >
@@ -847,15 +854,15 @@ export const ProjectsPage: React.FC = () => {
                   <DollarOutlined
                     style={{
                       fontSize: '32px',
-                      color: '#ffffff',
-                      background: 'rgba(255, 255, 255, 0.2)',
+                      color: '#3b82f6',
+                      background: 'rgba(59, 130, 246, 0.2)',
                       padding: '12px',
                       borderRadius: '16px',
                     }}
                   />
                 }
                 valueStyle={{
-                  color: '#ffffff',
+                  color: '#e2e8f0',
                   fontSize: '32px',
                   fontWeight: 800,
                 }}
@@ -866,9 +873,10 @@ export const ProjectsPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '20px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                boxShadow: '0 8px 32px rgba(16, 185, 129, 0.2)',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%)',
+                backdropFilter: 'blur(10px)',
                 color: '#ffffff',
               }}
             >
@@ -879,15 +887,15 @@ export const ProjectsPage: React.FC = () => {
                   <DollarOutlined
                     style={{
                       fontSize: '32px',
-                      color: '#ffffff',
-                      background: 'rgba(255, 255, 255, 0.2)',
+                      color: '#10b981',
+                      background: 'rgba(16, 185, 129, 0.2)',
                       padding: '12px',
                       borderRadius: '16px',
                     }}
                   />
                 }
                 valueStyle={{
-                  color: '#ffffff',
+                  color: '#e2e8f0',
                   fontSize: '32px',
                   fontWeight: 800,
                 }}

@@ -1096,7 +1096,7 @@ export const InvoicesPage: React.FC = () => {
   return (
     <div>
       <div className='mb-6'>
-        <Title level={2} style={{ color: '#1e293b', marginBottom: '24px' }}>
+        <Title level={2} style={{ color: '#e2e8f0', marginBottom: '24px' }}>
           {t('invoices.title')}
         </Title>
 
@@ -1117,9 +1117,10 @@ export const InvoicesPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                border: '1px solid rgba(45, 53, 72, 0.6)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                background: 'rgba(26, 31, 46, 0.6)',
+                backdropFilter: 'blur(10px)',
                 transition: 'all 0.3s ease',
               }}
               className='hover:shadow-lg'
@@ -1150,7 +1151,7 @@ export const InvoicesPage: React.FC = () => {
                     />
                   }
                   valueStyle={{
-                    color: '#1e293b',
+                    color: '#e2e8f0',
                     fontSize: '28px',
                     fontWeight: 700,
                   }}
@@ -1162,9 +1163,10 @@ export const InvoicesPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                border: '1px solid rgba(45, 53, 72, 0.6)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                background: 'rgba(26, 31, 46, 0.6)',
+                backdropFilter: 'blur(10px)',
                 transition: 'all 0.3s ease',
               }}
               className='hover:shadow-lg'
@@ -1191,7 +1193,7 @@ export const InvoicesPage: React.FC = () => {
                     />
                   }
                   valueStyle={{
-                    color: '#1e293b',
+                    color: '#e2e8f0',
                     fontSize: '28px',
                     fontWeight: 700,
                   }}
@@ -1203,9 +1205,10 @@ export const InvoicesPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                border: '1px solid rgba(45, 53, 72, 0.6)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                background: 'rgba(26, 31, 46, 0.6)',
+                backdropFilter: 'blur(10px)',
                 transition: 'all 0.3s ease',
               }}
               className='hover:shadow-lg'
@@ -1232,7 +1235,7 @@ export const InvoicesPage: React.FC = () => {
                     />
                   }
                   valueStyle={{
-                    color: '#1e293b',
+                    color: '#e2e8f0',
                     fontSize: '28px',
                     fontWeight: 700,
                   }}
@@ -1244,9 +1247,10 @@ export const InvoicesPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                border: '1px solid rgba(45, 53, 72, 0.6)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                background: 'rgba(26, 31, 46, 0.6)',
+                backdropFilter: 'blur(10px)',
                 transition: 'all 0.3s ease',
               }}
               className='hover:shadow-lg'
@@ -1273,7 +1277,7 @@ export const InvoicesPage: React.FC = () => {
                     />
                   }
                   valueStyle={{
-                    color: '#1e293b',
+                    color: '#e2e8f0',
                     fontSize: '28px',
                     fontWeight: 700,
                   }}
@@ -1439,9 +1443,10 @@ export const InvoicesPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                border: '1px solid rgba(45, 53, 72, 0.6)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                background: 'rgba(26, 31, 46, 0.6)',
+                backdropFilter: 'blur(10px)',
                 transition: 'all 0.3s ease',
               }}
               className='hover:shadow-lg hover:scale-[1.01]'
@@ -1468,7 +1473,7 @@ export const InvoicesPage: React.FC = () => {
                     />
                   }
                   valueStyle={{
-                    color: '#1e293b',
+                    color: '#e2e8f0',
                     fontSize: '28px',
                     fontWeight: 700,
                   }}
@@ -1480,9 +1485,10 @@ export const InvoicesPage: React.FC = () => {
             <Card
               style={{
                 borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                border: '1px solid rgba(45, 53, 72, 0.6)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                background: 'rgba(26, 31, 46, 0.6)',
+                backdropFilter: 'blur(10px)',
                 transition: 'all 0.3s ease',
               }}
               className='hover:shadow-lg hover:scale-[1.01]'
@@ -1509,7 +1515,7 @@ export const InvoicesPage: React.FC = () => {
                     />
                   }
                   valueStyle={{
-                    color: '#1e293b',
+                    color: '#e2e8f0',
                     fontSize: '28px',
                     fontWeight: 700,
                   }}
@@ -1605,9 +1611,19 @@ export const InvoicesPage: React.FC = () => {
 
         {/* Batch Operations */}
         {selectedRowKeys.length > 0 && (
-          <Card className='mb-4' size='small'>
+          <Card
+            className='mb-4'
+            size='small'
+            style={{
+              borderRadius: '12px',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
             <div className='flex justify-between items-center'>
-              <Typography.Text strong>
+              <Typography.Text strong style={{ color: '#e2e8f0' }}>
                 {selectedRowKeys.length} invoice dipilih
               </Typography.Text>
               <Space>
@@ -1658,7 +1674,15 @@ export const InvoicesPage: React.FC = () => {
       </div>
 
       {/* Main Table */}
-      <Card>
+      <Card
+        style={{
+          borderRadius: '16px',
+          border: '1px solid rgba(45, 53, 72, 0.6)',
+          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+          background: 'rgba(26, 31, 46, 0.6)',
+          backdropFilter: 'blur(10px)',
+        }}
+      >
         <Table
           columns={columns}
           dataSource={filteredInvoices}
