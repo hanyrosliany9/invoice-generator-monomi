@@ -103,12 +103,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           style={{
             padding: '40px',
             textAlign: 'center',
-            backgroundColor: '#f5f5f5',
+            background: 'rgba(26, 31, 46, 0.6)',
             borderRadius: '8px',
-            border: '2px dashed #d9d9d9',
+            border: '2px dashed rgba(100, 116, 139, 0.3)',
           }}
         >
-          <EyeOutlined style={{ fontSize: '48px', color: '#d9d9d9' }} />
+          <EyeOutlined style={{ fontSize: '48px', color: '#94a3b8' }} />
           <div style={{ marginTop: '16px' }}>
             <Text type='secondary'>
               {template === 'quotation'
@@ -125,9 +125,10 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     return (
       <div
         style={{
-          border: '1px solid #e8e8e8',
+          border: '1px solid rgba(100, 116, 139, 0.3)',
           borderRadius: '8px',
-          backgroundColor: '#fff',
+          background: 'rgba(26, 31, 46, 0.6)',
+          backdropFilter: 'blur(10px)',
           padding: '24px',
           minHeight: '600px',
           transform: `scale(${zoom / 100})`,
@@ -206,12 +207,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           <Title level={4}>Items</Title>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ backgroundColor: '#f5f5f5' }}>
+              <tr style={{ background: 'rgba(45, 53, 72, 0.6)' }}>
                 <th
                   style={{
                     padding: '12px',
                     textAlign: 'left',
-                    border: '1px solid #e8e8e8',
+                    border: '1px solid rgba(100, 116, 139, 0.3)',
                   }}
                 >
                   Description
@@ -220,7 +221,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                   style={{
                     padding: '12px',
                     textAlign: 'center',
-                    border: '1px solid #e8e8e8',
+                    border: '1px solid rgba(100, 116, 139, 0.3)',
                   }}
                 >
                   Qty
@@ -229,7 +230,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                   style={{
                     padding: '12px',
                     textAlign: 'right',
-                    border: '1px solid #e8e8e8',
+                    border: '1px solid rgba(100, 116, 139, 0.3)',
                   }}
                 >
                   Unit Price
@@ -238,7 +239,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                   style={{
                     padding: '12px',
                     textAlign: 'right',
-                    border: '1px solid #e8e8e8',
+                    border: '1px solid rgba(100, 116, 139, 0.3)',
                   }}
                 >
                   Total
@@ -258,7 +259,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                 ]
               ).map((item: any, index: number) => (
                 <tr key={index}>
-                  <td style={{ padding: '12px', border: '1px solid #e8e8e8' }}>
+                  <td style={{ padding: '12px', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                     <div>
                       <Text strong>{item.name || item.description}</Text>
                     </div>
@@ -274,7 +275,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                     style={{
                       padding: '12px',
                       textAlign: 'center',
-                      border: '1px solid #e8e8e8',
+                      border: '1px solid rgba(100, 116, 139, 0.3)',
                     }}
                   >
                     {item.quantity || 1}
@@ -283,7 +284,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                     style={{
                       padding: '12px',
                       textAlign: 'right',
-                      border: '1px solid #e8e8e8',
+                      border: '1px solid rgba(100, 116, 139, 0.3)',
                     }}
                   >
                     {formatIDR(item.price || 0)}
@@ -292,7 +293,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                     style={{
                       padding: '12px',
                       textAlign: 'right',
-                      border: '1px solid #e8e8e8',
+                      border: '1px solid rgba(100, 116, 139, 0.3)',
                     }}
                   >
                     {formatIDR((item.price || 0) * (item.quantity || 1))}
