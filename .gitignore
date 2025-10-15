@@ -83,6 +83,9 @@ temp/
 
 # Docker
 .dockerignore
+.buildx-cache/
+**/.buildx-cache/
+**/.buildx-cache-dev/
 
 # Prisma
 prisma/dev.db*
