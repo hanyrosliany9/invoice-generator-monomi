@@ -2,7 +2,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { App as AntdApp, ConfigProvider } from 'antd'
+import { App as AntdApp, ConfigProvider, theme } from 'antd'
 import idID from 'antd/locale/id_ID'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
@@ -40,10 +40,16 @@ if (rootElement) {
         <ConfigProvider
           locale={idID}
           theme={{
+            algorithm: theme.darkAlgorithm, // Enable dark mode
             token: {
-              colorPrimary: '#1e40af', // Finance blue primary
-              colorBgBase: '#f8fafc', // Light background
-              colorBgContainer: '#ffffff', // White containers
+              colorPrimary: '#dc2626', // Red primary for dark theme
+              colorBgBase: '#0f172a', // Dark slate background
+              colorBgContainer: '#1e293b', // Darker slate containers
+              colorBgElevated: '#334155', // Elevated surfaces
+              colorBorder: '#475569', // Border color
+              colorText: '#f1f5f9', // Light text
+              colorTextSecondary: '#cbd5e1', // Secondary text
+              colorTextTertiary: '#94a3b8', // Tertiary text
               borderRadius: 12,
               fontFamily: 'Inter, system-ui, sans-serif',
               fontSize: 14,
@@ -51,19 +57,45 @@ if (rootElement) {
             },
             components: {
               Layout: {
-                bodyBg: '#f8fafc',
-                headerBg:
-                  'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%)',
-                siderBg: '#ffffff',
+                bodyBg: '#0f172a', // Dark slate body
+                headerBg: '#1e293b', // Darker slate header
+                siderBg: '#1e293b', // Darker slate sidebar
+                triggerBg: '#334155', // Trigger background
               },
               Menu: {
                 itemBg: 'transparent',
-                itemSelectedBg: '#f1f5f9',
-                itemHoverBg: '#f8fafc',
+                itemSelectedBg: '#dc262620', // Red selected with transparency
+                itemSelectedColor: '#dc2626', // Red selected text
+                itemHoverBg: '#334155', // Hover background
+                itemActiveBg: '#dc262630', // Active background
+                darkItemBg: 'transparent',
+                darkItemSelectedBg: '#dc262620',
+                darkItemHoverBg: '#334155',
               },
               Card: {
                 borderRadiusLG: 16,
-                boxShadowTertiary: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                boxShadowTertiary: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                colorBgContainer: '#1e293b',
+              },
+              Table: {
+                headerBg: '#334155',
+                rowHoverBg: '#334155',
+              },
+              Button: {
+                colorPrimaryHover: '#b91c1c',
+                colorPrimaryActive: '#991b1b',
+              },
+              Input: {
+                colorBgContainer: '#334155',
+                colorBorder: '#475569',
+              },
+              Select: {
+                colorBgContainer: '#334155',
+                colorBorder: '#475569',
+              },
+              DatePicker: {
+                colorBgContainer: '#334155',
+                colorBorder: '#475569',
               },
             },
           }}
