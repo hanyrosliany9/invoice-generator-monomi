@@ -206,7 +206,7 @@ export const DashboardPage: React.FC = () => {
         <Title
           level={2}
           style={{
-            color: '#1e293b',
+            color: '#e2e8f0',
             fontSize: '32px',
             fontWeight: 700,
             marginBottom: '8px',
@@ -214,7 +214,7 @@ export const DashboardPage: React.FC = () => {
         >
           {t('dashboard.title')}
         </Title>
-        <Text style={{ color: '#64748b', fontSize: '16px' }}>
+        <Text style={{ color: '#94a3b8', fontSize: '16px' }}>
           Welcome back! Here's what's happening with your business today.
         </Text>
       </div>
@@ -225,9 +225,10 @@ export const DashboardPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <Statistic
@@ -237,15 +238,15 @@ export const DashboardPage: React.FC = () => {
                 <FileTextOutlined
                   style={{
                     fontSize: '24px',
-                    color: '#dc2626',
-                    background: 'rgba(220, 38, 38, 0.1)',
+                    color: '#ef4444',
+                    background: 'rgba(239, 68, 68, 0.15)',
                     padding: '8px',
                     borderRadius: '12px',
                   }}
                 />
               }
               valueStyle={{
-                color: '#1e293b',
+                color: '#e2e8f0',
                 fontSize: '28px',
                 fontWeight: 700,
               }}
@@ -257,9 +258,10 @@ export const DashboardPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <Statistic
@@ -270,14 +272,14 @@ export const DashboardPage: React.FC = () => {
                   style={{
                     fontSize: '24px',
                     color: '#10b981',
-                    background: 'rgba(16, 185, 129, 0.1)',
+                    background: 'rgba(16, 185, 129, 0.15)',
                     padding: '8px',
                     borderRadius: '12px',
                   }}
                 />
               }
               valueStyle={{
-                color: '#1e293b',
+                color: '#e2e8f0',
                 fontSize: '28px',
                 fontWeight: 700,
               }}
@@ -289,9 +291,10 @@ export const DashboardPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <Statistic
@@ -301,15 +304,15 @@ export const DashboardPage: React.FC = () => {
                 <UserOutlined
                   style={{
                     fontSize: '24px',
-                    color: '#dc2626',
-                    background: 'rgba(220, 38, 38, 0.1)',
+                    color: '#ef4444',
+                    background: 'rgba(239, 68, 68, 0.15)',
                     padding: '8px',
                     borderRadius: '12px',
                   }}
                 />
               }
               valueStyle={{
-                color: '#1e293b',
+                color: '#e2e8f0',
                 fontSize: '28px',
                 fontWeight: 700,
               }}
@@ -321,9 +324,10 @@ export const DashboardPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <Statistic
@@ -334,14 +338,14 @@ export const DashboardPage: React.FC = () => {
                   style={{
                     fontSize: '24px',
                     color: '#f59e0b',
-                    background: 'rgba(245, 158, 11, 0.1)',
+                    background: 'rgba(245, 158, 11, 0.15)',
                     padding: '8px',
                     borderRadius: '12px',
                   }}
                 />
               }
               valueStyle={{
-                color: '#1e293b',
+                color: '#e2e8f0',
                 fontSize: '28px',
                 fontWeight: 700,
               }}
@@ -356,9 +360,10 @@ export const DashboardPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '20px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              boxShadow: '0 8px 32px rgba(16, 185, 129, 0.2)',
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%)',
+              backdropFilter: 'blur(10px)',
               color: '#ffffff',
             }}
           >
@@ -369,15 +374,15 @@ export const DashboardPage: React.FC = () => {
                 <RiseOutlined
                   style={{
                     fontSize: '32px',
-                    color: '#ffffff',
-                    background: 'rgba(255, 255, 255, 0.2)',
+                    color: '#10b981',
+                    background: 'rgba(16, 185, 129, 0.2)',
                     padding: '12px',
                     borderRadius: '16px',
                   }}
                 />
               }
               valueStyle={{
-                color: '#ffffff',
+                color: '#e2e8f0',
                 fontSize: '32px',
                 fontWeight: 800,
               }}
@@ -389,9 +394,10 @@ export const DashboardPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '20px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              boxShadow: '0 8px 32px rgba(245, 158, 11, 0.2)',
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%)',
+              backdropFilter: 'blur(10px)',
               color: '#ffffff',
             }}
           >
@@ -402,15 +408,15 @@ export const DashboardPage: React.FC = () => {
                 <ClockCircleOutlined
                   style={{
                     fontSize: '32px',
-                    color: '#ffffff',
-                    background: 'rgba(255, 255, 255, 0.2)',
+                    color: '#f59e0b',
+                    background: 'rgba(245, 158, 11, 0.2)',
                     padding: '12px',
                     borderRadius: '16px',
                   }}
                 />
               }
               valueStyle={{
-                color: '#ffffff',
+                color: '#e2e8f0',
                 fontSize: '32px',
                 fontWeight: 800,
               }}
@@ -427,15 +433,17 @@ export const DashboardPage: React.FC = () => {
             extra={
               <a
                 href='/quotations'
-                style={{ color: '#1e40af', fontWeight: 600 }}
+                style={{ color: '#3b82f6', fontWeight: 600 }}
               >
                 Lihat Semua
               </a>
             }
             style={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <Table
@@ -453,14 +461,16 @@ export const DashboardPage: React.FC = () => {
           <Card
             title={t('dashboard.recentInvoices')}
             extra={
-              <a href='/invoices' style={{ color: '#1e40af', fontWeight: 600 }}>
+              <a href='/invoices' style={{ color: '#3b82f6', fontWeight: 600 }}>
                 Lihat Semua
               </a>
             }
             style={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <Table
