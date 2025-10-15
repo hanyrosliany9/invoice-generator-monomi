@@ -1,5 +1,6 @@
 import React from 'react'
 import { Card, Layout, Typography } from 'antd'
+import { useTheme } from '../../theme'
 
 const { Content } = Layout
 const { Title, Text } = Typography
@@ -9,12 +10,14 @@ interface AuthLayoutProps {
 }
 
 export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
+  const { theme } = useTheme()
   return (
     <Layout
       style={{
         minHeight: '100vh',
-        background:
-          'linear-gradient(135deg, #0a0e1a 0%, #121621 50%, #1a1f2e 100%)',
+        background: theme.mode === 'dark'
+          ? 'linear-gradient(135deg, #0a0e1a 0%, #121621 50%, #1a1f2e 100%)'
+          : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -50,9 +53,11 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
             width: '100%',
             maxWidth: '460px',
             borderRadius: '24px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6)',
-            border: '1px solid #2d3548',
-            background: '#1a1f2e',
+            boxShadow: theme.mode === 'dark'
+              ? '0 20px 60px rgba(0, 0, 0, 0.6)'
+              : '0 20px 60px rgba(0, 0, 0, 0.15)',
+            border: `1px solid ${theme.colors.border.default}`,
+            background: theme.colors.card.background,
             backdropFilter: 'blur(20px)',
           }}
           styles={{
@@ -108,7 +113,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
               level={3}
               style={{
                 marginBottom: '8px',
-                color: '#e2e8f0',
+                color: theme.colors.text.primary,
                 fontSize: '24px',
                 fontWeight: 700,
               }}
@@ -117,7 +122,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
             </Title>
             <Text
               style={{
-                color: '#94a3b8',
+                color: theme.colors.text.secondary,
                 fontSize: '16px',
                 display: 'block',
                 marginBottom: '8px',
@@ -128,7 +133,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
             </Text>
             <Text
               style={{
-                color: '#64748b',
+                color: theme.colors.text.tertiary,
                 fontSize: '14px',
               }}
             >

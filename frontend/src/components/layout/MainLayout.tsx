@@ -16,6 +16,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../../store/auth'
 import { ThemeToggle } from '../ThemeToggle'
+import { useTheme } from '../../theme'
 // import { BreadcrumbProvider } from '../navigation'
 import MobileQuickActions from '../ui/MobileQuickActions'
 import MobileEntityNav from '../ui/MobileEntityNav'
@@ -43,6 +44,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const location = useLocation()
   const { t } = useTranslation()
   const { user, logout } = useAuthStore()
+  const { theme } = useTheme()
 
   // Mobile detection
   useEffect(() => {
@@ -159,16 +161,16 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#0a0e1a' }}>
+    <Layout style={{ minHeight: '100vh', background: theme.colors.background.primary }}>
       {!isMobile && (
         <Sider
           trigger={null}
           collapsible
           collapsed={collapsed}
           style={{
-            background: '#121621',
-            borderRight: '1px solid #2d3548',
-            boxShadow: '2px 0 16px rgba(0, 0, 0, 0.4)',
+            background: theme.colors.background.secondary,
+            borderRight: `1px solid ${theme.colors.border.default}`,
+            boxShadow: theme.mode === 'dark' ? '2px 0 16px rgba(0, 0, 0, 0.4)' : '2px 0 16px rgba(0, 0, 0, 0.08)',
           }}
         >
           <div
@@ -228,12 +230,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <Header
           style={{
             padding: '0 32px',
-            background: '#121621',
+            background: theme.colors.background.secondary,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid #2d3548',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
+            borderBottom: `1px solid ${theme.colors.border.default}`,
+            boxShadow: theme.mode === 'dark' ? '0 4px 16px rgba(0, 0, 0, 0.4)' : '0 4px 16px rgba(0, 0, 0, 0.08)',
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -282,7 +284,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           >
             <Text
               style={{
-                color: '#e2e8f0',
+                color: theme.colors.text.primary,
                 fontSize: '14px',
                 fontWeight: 500,
                 display: collapsed ? 'none' : 'block',
@@ -314,11 +316,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           style={{
             margin: isMobile ? '16px 8px 80px 8px' : '32px 24px 24px 24px',
             padding: isMobile ? '16px' : '32px',
-            background: '#1a1f2e',
+            background: theme.colors.background.secondary,
             borderRadius: isMobile ? '12px' : '20px',
             overflow: 'auto',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-            border: '1px solid #2d3548',
+            boxShadow: theme.mode === 'dark' ? '0 8px 32px rgba(0, 0, 0, 0.4)' : '0 8px 32px rgba(0, 0, 0, 0.08)',
+            border: `1px solid ${theme.colors.border.default}`,
             marginTop: isMobile ? '0px' : '-16px', // Overlap with header for modern effect
             position: 'relative',
             zIndex: 2,

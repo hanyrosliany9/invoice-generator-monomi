@@ -23,11 +23,13 @@ import { useTranslation } from 'react-i18next'
 import { formatIDR, safeString } from '../utils/currency'
 import { useDashboardData } from '../hooks/useDashboard'
 import { RecentInvoice, RecentQuotation } from '../types/dashboard'
+import { useTheme } from '../theme'
 
 const { Title, Text } = Typography
 
 export const DashboardPage: React.FC = () => {
   const { t } = useTranslation()
+  const { theme } = useTheme()
   const { data: dashboardData, isLoading, error, refetch } = useDashboardData()
 
   if (isLoading) {
@@ -206,7 +208,7 @@ export const DashboardPage: React.FC = () => {
         <Title
           level={2}
           style={{
-            color: '#e2e8f0',
+            color: theme.colors.text.primary,
             fontSize: '32px',
             fontWeight: 700,
             marginBottom: '8px',
@@ -214,7 +216,7 @@ export const DashboardPage: React.FC = () => {
         >
           {t('dashboard.title')}
         </Title>
-        <Text style={{ color: '#94a3b8', fontSize: '16px' }}>
+        <Text style={{ color: theme.colors.text.secondary, fontSize: '16px' }}>
           Welcome back! Here's what's happening with your business today.
         </Text>
       </div>
@@ -225,10 +227,10 @@ export const DashboardPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             <Statistic
@@ -246,7 +248,7 @@ export const DashboardPage: React.FC = () => {
                 />
               }
               valueStyle={{
-                color: '#e2e8f0',
+                color: theme.colors.text.primary,
                 fontSize: '28px',
                 fontWeight: 700,
               }}
@@ -258,10 +260,10 @@ export const DashboardPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             <Statistic
@@ -279,7 +281,7 @@ export const DashboardPage: React.FC = () => {
                 />
               }
               valueStyle={{
-                color: '#e2e8f0',
+                color: theme.colors.text.primary,
                 fontSize: '28px',
                 fontWeight: 700,
               }}
@@ -291,10 +293,10 @@ export const DashboardPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             <Statistic
@@ -312,7 +314,7 @@ export const DashboardPage: React.FC = () => {
                 />
               }
               valueStyle={{
-                color: '#e2e8f0',
+                color: theme.colors.text.primary,
                 fontSize: '28px',
                 fontWeight: 700,
               }}
@@ -324,10 +326,10 @@ export const DashboardPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             <Statistic
@@ -345,7 +347,7 @@ export const DashboardPage: React.FC = () => {
                 />
               }
               valueStyle={{
-                color: '#e2e8f0',
+                color: theme.colors.text.primary,
                 fontSize: '28px',
                 fontWeight: 700,
               }}
@@ -382,7 +384,7 @@ export const DashboardPage: React.FC = () => {
                 />
               }
               valueStyle={{
-                color: '#e2e8f0',
+                color: theme.colors.text.primary,
                 fontSize: '32px',
                 fontWeight: 800,
               }}
@@ -416,7 +418,7 @@ export const DashboardPage: React.FC = () => {
                 />
               }
               valueStyle={{
-                color: '#e2e8f0',
+                color: theme.colors.text.primary,
                 fontSize: '32px',
                 fontWeight: 800,
               }}
@@ -440,10 +442,10 @@ export const DashboardPage: React.FC = () => {
             }
             style={{
               borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             <Table
@@ -467,10 +469,10 @@ export const DashboardPage: React.FC = () => {
             }
             style={{
               borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             <Table

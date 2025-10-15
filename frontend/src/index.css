@@ -12,22 +12,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar - Modern Dark Theme */
+/* Custom scrollbar - Theme-aware */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #121621;
+  background: var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2d3548;
+  background: var(--bg-tertiary);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3d4658;
+  background: var(--border-strong);
 }
 
 /* Ant Design customizations - Modern Dark Theme */
@@ -40,10 +40,10 @@ body {
   color: #ef4444 !important;
 }
 
-/* Dark theme body background */
+/* Theme-aware body background */
 body {
-  background-color: #0a0e1a;
-  color: #e2e8f0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 /* Indonesian currency formatting */

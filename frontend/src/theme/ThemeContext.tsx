@@ -45,11 +45,43 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     const root = document.documentElement
     const colors = themes[mode].colors
 
+    // Background colors
     root.style.setProperty('--bg-primary', colors.background.primary)
     root.style.setProperty('--bg-secondary', colors.background.secondary)
+    root.style.setProperty('--bg-tertiary', colors.background.tertiary)
+
+    // Glass/Glassmorphism colors
+    root.style.setProperty('--glass-background', colors.glass.background)
+    root.style.setProperty('--glass-backdrop-filter', colors.glass.backdropFilter)
+    root.style.setProperty('--glass-border', colors.glass.border)
+    root.style.setProperty('--glass-shadow', colors.glass.shadow)
+
+    // Card colors
+    root.style.setProperty('--card-background', colors.card.background)
+    root.style.setProperty('--card-border', colors.card.border)
+    root.style.setProperty('--card-shadow', colors.card.shadow)
+
+    // Text colors
     root.style.setProperty('--text-primary', colors.text.primary)
     root.style.setProperty('--text-secondary', colors.text.secondary)
+    root.style.setProperty('--text-tertiary', colors.text.tertiary)
+    root.style.setProperty('--text-inverse', colors.text.inverse)
+
+    // Border colors
     root.style.setProperty('--border-default', colors.border.default)
+    root.style.setProperty('--border-light', colors.border.light)
+    root.style.setProperty('--border-strong', colors.border.strong)
+
+    // Status colors
+    root.style.setProperty('--status-success', colors.status.success)
+    root.style.setProperty('--status-warning', colors.status.warning)
+    root.style.setProperty('--status-error', colors.status.error)
+    root.style.setProperty('--status-info', colors.status.info)
+
+    // Accent colors
+    root.style.setProperty('--accent-primary', colors.accent.primary)
+    root.style.setProperty('--accent-secondary', colors.accent.secondary)
+    root.style.setProperty('--accent-tertiary', colors.accent.tertiary)
   }, [mode])
 
   const toggleTheme = () => {
