@@ -183,7 +183,13 @@ export const SettingsPage: React.FC = () => {
           {t('settings.profile')}
         </div>
       }
-      style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
+      style={{
+        borderRadius: '16px',
+        border: '1px solid rgba(45, 53, 72, 0.6)',
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+        background: 'rgba(26, 31, 46, 0.6)',
+        backdropFilter: 'blur(10px)',
+      }}
     >
       <Form
         form={profileForm}
@@ -307,7 +313,13 @@ export const SettingsPage: React.FC = () => {
           {t('settings.security')}
         </div>
       }
-      style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
+      style={{
+        borderRadius: '16px',
+        border: '1px solid rgba(45, 53, 72, 0.6)',
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+        background: 'rgba(26, 31, 46, 0.6)',
+        backdropFilter: 'blur(10px)',
+      }}
     >
       <Alert
         message='Security Tip'
@@ -395,7 +407,13 @@ export const SettingsPage: React.FC = () => {
           {t('settings.companyInfo')}
         </div>
       }
-      style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
+      style={{
+        borderRadius: '16px',
+        border: '1px solid rgba(45, 53, 72, 0.6)',
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+        background: 'rgba(26, 31, 46, 0.6)',
+        backdropFilter: 'blur(10px)',
+      }}
     >
       <Form
         form={companyForm}
@@ -525,7 +543,13 @@ export const SettingsPage: React.FC = () => {
             {t('settings.notifications')}
           </div>
         }
-        style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
+        style={{
+        borderRadius: '16px',
+        border: '1px solid rgba(45, 53, 72, 0.6)',
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+        background: 'rgba(26, 31, 46, 0.6)',
+        backdropFilter: 'blur(10px)',
+      }}
       >
         <Form 
           layout='vertical' 
@@ -599,7 +623,13 @@ export const SettingsPage: React.FC = () => {
             {t('settings.invoiceSettings')}
           </div>
         }
-        style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
+        style={{
+        borderRadius: '16px',
+        border: '1px solid rgba(45, 53, 72, 0.6)',
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+        background: 'rgba(26, 31, 46, 0.6)',
+        backdropFilter: 'blur(10px)',
+      }}
       >
         <Form 
           layout='vertical' 
@@ -661,7 +691,13 @@ export const SettingsPage: React.FC = () => {
             {t('settings.autoBackup')}
           </div>
         }
-        style={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
+        style={{
+        borderRadius: '16px',
+        border: '1px solid rgba(45, 53, 72, 0.6)',
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+        background: 'rgba(26, 31, 46, 0.6)',
+        backdropFilter: 'blur(10px)',
+      }}
       >
         <Form 
           layout='vertical' 
@@ -749,7 +785,7 @@ export const SettingsPage: React.FC = () => {
   return (
     <div style={{ padding: '24px' }}>
       <div style={{ marginBottom: '32px' }}>
-        <Title level={2} style={{ margin: 0, color: '#1e293b' }}>
+        <Title level={2} style={{ margin: 0, color: '#e2e8f0' }}>
           <SettingOutlined style={{ marginRight: '12px', color: '#dc2626' }} />
           {t('settings.title')}
         </Title>
@@ -763,10 +799,12 @@ export const SettingsPage: React.FC = () => {
         onChange={setActiveTab}
         size='large'
         style={{
-          background: 'white',
+          background: 'rgba(26, 31, 46, 0.6)',
+          backdropFilter: 'blur(10px)',
           borderRadius: '16px',
           padding: '24px',
-          border: '1px solid #e2e8f0',
+          border: '1px solid rgba(45, 53, 72, 0.6)',
+          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
         }}
         items={[
           {

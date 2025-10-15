@@ -293,7 +293,7 @@ export const ReportsPage: React.FC = () => {
         }}
       >
         <div>
-          <Title level={2} style={{ margin: 0, color: '#1e293b' }}>
+          <Title level={2} style={{ margin: 0, color: '#e2e8f0' }}>
             <BarChartOutlined
               style={{ marginRight: '12px', color: '#1e40af' }}
             />
@@ -468,7 +468,7 @@ export const ReportsPage: React.FC = () => {
                 <LineChartOutlined
                   style={{ marginRight: '8px', color: '#1e40af' }}
                 />
-                <span style={{ color: '#1e293b', fontWeight: 600 }}>
+                <span style={{ color: '#e2e8f0', fontWeight: 600 }}>
                   Analisis Pendapatan
                 </span>
               </div>
@@ -486,8 +486,10 @@ export const ReportsPage: React.FC = () => {
             }
             style={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             {reportType === 'quarterly' ? (
@@ -517,15 +519,17 @@ export const ReportsPage: React.FC = () => {
                 <PieChartOutlined
                   style={{ marginRight: '8px', color: '#1e40af' }}
                 />
-                <span style={{ color: '#1e293b', fontWeight: 600 }}>
+                <span style={{ color: '#e2e8f0', fontWeight: 600 }}>
                   Analisis Pembayaran
                 </span>
               </div>
             }
             style={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <ChartErrorBoundary chartType='Pembayaran'>
@@ -548,15 +552,17 @@ export const ReportsPage: React.FC = () => {
                 <BarChartOutlined
                   style={{ marginRight: '8px', color: '#1e40af' }}
                 />
-                <span style={{ color: '#1e293b', fontWeight: 600 }}>
+                <span style={{ color: '#e2e8f0', fontWeight: 600 }}>
                   Tren Pembayaran Bulanan
                 </span>
               </div>
             }
             style={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <ChartErrorBoundary chartType='Tren Pembayaran'>
@@ -579,15 +585,17 @@ export const ReportsPage: React.FC = () => {
                 <UserOutlined
                   style={{ marginRight: '8px', color: '#1e40af' }}
                 />
-                <span style={{ color: '#1e293b', fontWeight: 600 }}>
+                <span style={{ color: '#e2e8f0', fontWeight: 600 }}>
                   Analisis Klien Teratas
                 </span>
               </div>
             }
             style={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <Table
@@ -609,15 +617,17 @@ export const ReportsPage: React.FC = () => {
                 <ProjectOutlined
                   style={{ marginRight: '8px', color: '#1e40af' }}
                 />
-                <span style={{ color: '#1e293b', fontWeight: 600 }}>
+                <span style={{ color: '#e2e8f0', fontWeight: 600 }}>
                   Analisis Proyek Teratas
                 </span>
               </div>
             }
             style={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <Table
