@@ -158,25 +158,25 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <Layout style={{ minHeight: '100vh', background: '#0f172a' }}>
       {!isMobile && (
         <Sider
           trigger={null}
           collapsible
           collapsed={collapsed}
           style={{
-            background: '#ffffff',
-            borderRight: '1px solid #e2e8f0',
-            boxShadow: '2px 0 8px rgba(0, 0, 0, 0.06)',
+            background: '#1e293b',
+            borderRight: '1px solid #334155',
+            boxShadow: '2px 0 8px rgba(0, 0, 0, 0.5)',
           }}
         >
           <div
             style={{
               padding: '20px 16px',
               textAlign: 'center',
-              borderBottom: '1px solid #e2e8f0',
+              borderBottom: '1px solid #334155',
               background:
-                'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%)',
+                'linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%)',
               color: '#ffffff',
               position: 'relative',
               overflow: 'hidden',
@@ -228,12 +228,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           style={{
             padding: '0 32px',
             background:
-              'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%)',
+              'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: 'none',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            borderBottom: '1px solid #475569',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -297,10 +297,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             >
               <Avatar
                 style={{
-                  backgroundColor: '#1e40af',
+                  backgroundColor: '#dc2626',
                   cursor: 'pointer',
                   border: '2px solid rgba(255, 255, 255, 0.2)',
-                  boxShadow: '0 2px 8px rgba(30, 64, 175, 0.3)',
+                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.5)',
                 }}
                 icon={<UserOutlined />}
                 data-testid='user-menu'
@@ -313,11 +313,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           style={{
             margin: isMobile ? '16px 8px 80px 8px' : '32px 24px 24px 24px',
             padding: isMobile ? '16px' : '32px',
-            background: '#ffffff',
+            background: '#1e293b',
             borderRadius: isMobile ? '12px' : '20px',
             overflow: 'auto',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
-            border: '1px solid #e2e8f0',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+            border: '1px solid #334155',
             marginTop: isMobile ? '0px' : '-16px', // Overlap with header for modern effect
             position: 'relative',
             zIndex: 2,
