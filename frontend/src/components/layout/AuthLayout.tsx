@@ -14,7 +14,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
       style={{
         minHeight: '100vh',
         background:
-          'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+          'linear-gradient(135deg, #0a0e1a 0%, #121621 50%, #1a1f2e 100%)',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -50,9 +50,9 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
             width: '100%',
             maxWidth: '460px',
             borderRadius: '24px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-            border: '1px solid #475569',
-            background: '#1e293b',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6)',
+            border: '1px solid #2d3548',
+            background: '#1a1f2e',
             backdropFilter: 'blur(20px)',
           }}
           styles={{
@@ -65,14 +65,14 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
                 width: '80px',
                 height: '80px',
                 background:
-                  'linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%)',
+                  'linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%)',
                 borderRadius: '20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 24px auto',
-                boxShadow: '0 8px 24px rgba(220, 38, 38, 0.5)',
-                border: '1px solid rgba(220, 38, 38, 0.3)',
+                boxShadow: '0 8px 24px rgba(239, 68, 68, 0.4)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -108,7 +108,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
               level={3}
               style={{
                 marginBottom: '8px',
-                color: '#f1f5f9',
+                color: '#e2e8f0',
                 fontSize: '24px',
                 fontWeight: 700,
               }}
@@ -117,7 +117,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
             </Title>
             <Text
               style={{
-                color: '#cbd5e1',
+                color: '#94a3b8',
                 fontSize: '16px',
                 display: 'block',
                 marginBottom: '8px',
@@ -128,7 +128,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
             </Text>
             <Text
               style={{
-                color: '#94a3b8',
+                color: '#64748b',
                 fontSize: '14px',
               }}
             >
