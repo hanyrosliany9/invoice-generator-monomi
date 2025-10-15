@@ -75,10 +75,10 @@ const PaymentChart: React.FC<PaymentChartProps> = ({
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: '#fafafa',
-          border: '1px dashed #d9d9d9',
+          background: 'transparent',
+          border: '1px dashed rgba(100, 116, 139, 0.3)',
           borderRadius: '8px',
-          color: '#8c8c8c',
+          color: '#94a3b8',
         }}
       >
         <div style={{ fontSize: '24px', marginBottom: '8px' }}>💳</div>
