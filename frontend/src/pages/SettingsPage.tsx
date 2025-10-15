@@ -783,7 +783,7 @@ export const SettingsPage: React.FC = () => {
   )
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: '24px', background: 'transparent' }}>
       <div style={{ marginBottom: '32px' }}>
         <Title level={2} style={{ margin: 0, color: '#e2e8f0' }}>
           <SettingOutlined style={{ marginRight: '12px', color: '#dc2626' }} />
@@ -794,19 +794,20 @@ export const SettingsPage: React.FC = () => {
         </Text>
       </div>
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        size='large'
+      <Card
         style={{
-          background: 'rgba(26, 31, 46, 0.6)',
-          backdropFilter: 'blur(10px)',
-          borderRadius: '16px',
-          padding: '24px',
+          borderRadius: '20px',
           border: '1px solid rgba(45, 53, 72, 0.6)',
           boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+          background: 'rgba(26, 31, 46, 0.6)',
+          backdropFilter: 'blur(10px)',
         }}
-        items={[
+      >
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          size='large'
+          items={[
           {
             key: 'profile',
             label: (
@@ -849,6 +850,7 @@ export const SettingsPage: React.FC = () => {
           },
         ]}
       />
+      </Card>
     </div>
   )
 }
