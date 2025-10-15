@@ -918,7 +918,7 @@ export const InvoicesPage: React.FC = () => {
                   onClick={() =>
                     navigate(`/projects?projectId=${invoice.project?.id}`)
                   }
-                  className='text-xs text-purple-600 hover:text-purple-800 p-0'
+                  className='text-xs text-red-600 hover:text-red-800 p-0'
                 >
                   <ProjectOutlined /> {invoice.project?.number}
                 </Button>

@@ -267,7 +267,7 @@ export const QuotationEditPage: React.FC = () => {
       case 'DECLINED':
         return 'red'
       case 'REVISED':
-        return 'purple'
+        return 'orange'
       default:
         return 'default'
     }
@@ -380,7 +380,7 @@ export const QuotationEditPage: React.FC = () => {
                 icon: <CalendarOutlined />,
                 color:
                   dayjs(quotation.validUntil).diff(dayjs(), 'day') > 7
-                    ? '#722ed1'
+                    ? '#1890ff'
                     : '#ff4d4f',
               },
             ]}

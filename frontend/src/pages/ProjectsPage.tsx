@@ -267,7 +267,7 @@ export const ProjectsPage: React.FC = () => {
   }
 
   const getTypeColor = (type: string) => {
-    return type === 'production' ? 'purple' : 'cyan'
+    return type === 'production' ? 'red' : 'cyan'
   }
 
   const getTypeText = (type: string) => {
@@ -784,8 +784,8 @@ export const ProjectsPage: React.FC = () => {
                   <TeamOutlined
                     style={{
                       fontSize: '24px',
-                      color: '#722ed1',
-                      background: 'rgba(114, 46, 209, 0.1)',
+                      color: '#dc2626',
+                      background: 'rgba(220, 38, 38, 0.1)',
                       padding: '8px',
                       borderRadius: '12px',
                     }}

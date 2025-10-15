@@ -266,7 +266,7 @@ export const ProjectEditPage: React.FC = () => {
       case 'CANCELLED':
         return 'red'
       case 'ON_HOLD':
-        return 'purple'
+        return 'orange'
       default:
         return 'default'
     }
@@ -352,7 +352,7 @@ export const ProjectEditPage: React.FC = () => {
                 value: duration || 0,
                 format: 'duration',
                 icon: <CalendarOutlined />,
-                color: '#722ed1',
+                color: '#1890ff',
               },
             ]}
             layout='vertical'
