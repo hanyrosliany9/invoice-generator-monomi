@@ -580,7 +580,8 @@ export const ProjectEditPage: React.FC = () => {
               style={{
                 marginTop: '16px',
                 padding: '12px',
-                backgroundColor: '#f6ffed',
+                background: 'rgba(26, 31, 46, 0.6)',
+                border: '1px solid rgba(100, 116, 139, 0.3)',
                 borderRadius: '6px',
               }}
             >

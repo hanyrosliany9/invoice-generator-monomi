@@ -561,7 +561,11 @@ export const QuotationEditPage: React.FC = () => {
           {totalAmount > 0 && (
             <Card
               size='small'
-              style={{ marginTop: '16px', backgroundColor: '#f0f5ff' }}
+              style={{
+                marginTop: '16px',
+                background: 'rgba(26, 31, 46, 0.6)',
+                border: '1px solid rgba(100, 116, 139, 0.3)'
+              }}
             >
               <Title level={5} style={{ margin: 0, marginBottom: '8px' }}>
                 Pricing Breakdown

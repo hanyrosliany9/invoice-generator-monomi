@@ -459,7 +459,11 @@ export const QuotationCreatePage: React.FC = () => {
           {currentProject && (
             <Card
               size='small'
-              style={{ marginTop: '16px', backgroundColor: '#f6ffed' }}
+              style={{
+                marginTop: '16px',
+                background: 'rgba(26, 31, 46, 0.6)',
+                border: '1px solid rgba(100, 116, 139, 0.3)'
+              }}
             >
               <Row gutter={[16, 8]}>
                 <Col xs={24} sm={8}>
@@ -532,7 +536,11 @@ export const QuotationCreatePage: React.FC = () => {
           {totalAmount > 0 && (
             <Card
               size='small'
-              style={{ marginTop: '16px', backgroundColor: '#f0f5ff' }}
+              style={{
+                marginTop: '16px',
+                background: 'rgba(26, 31, 46, 0.6)',
+                border: '1px solid rgba(100, 116, 139, 0.3)'
+              }}
             >
               <Title level={5} style={{ margin: 0, marginBottom: '8px' }}>
                 <BankOutlined
@@ -600,12 +608,14 @@ export const QuotationCreatePage: React.FC = () => {
                       <div style={{
                         marginTop: '8px',
                         padding: '8px',
-                        backgroundColor: '#fafafa',
+                        background: 'rgba(26, 31, 46, 0.6)',
+                        border: '1px solid rgba(100, 116, 139, 0.3)',
                         borderRadius: '4px',
                         fontFamily: 'monospace',
                         fontSize: '12px',
                         maxHeight: '100px',
-                        overflow: 'auto'
+                        overflow: 'auto',
+                        color: '#e2e8f0'
                       }}>
                         {selectedProject.scopeOfWork}
                       </div>
