@@ -14,6 +14,7 @@ import {
   Tag,
   Typography,
 } from 'antd'
+import { useTheme } from '../theme'
 import {
   BarChartOutlined,
   ClockCircleOutlined,
@@ -41,6 +42,7 @@ import {
   RevenueChart,
 } from '../components/charts'
 import ChartErrorBoundary from '../components/ChartErrorBoundary'
+import { CompactMetricCard } from '../components/ui/CompactMetricCard'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -49,6 +51,7 @@ const { Option } = Select
 
 export const ReportsPage: React.FC = () => {
   const { t } = useTranslation()
+  const { theme } = useTheme()
   const { message } = App.useApp()
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(
     null
@@ -293,7 +296,7 @@ export const ReportsPage: React.FC = () => {
         }}
       >
         <div>
-          <Title level={2} style={{ margin: 0, color: '#e2e8f0' }}>
+          <Title level={2} style={{ margin: 0, color: theme.colors.text.primary }}>
             <BarChartOutlined
               style={{ marginRight: '12px', color: '#1e40af' }}
             />
@@ -333,10 +336,13 @@ export const ReportsPage: React.FC = () => {
             icon={<DownloadOutlined />}
             onClick={handleExportPdf}
             style={{
-              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+              background: theme.colors.accent.primary,
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '20px',
               height: '40px',
+              padding: '0 20px',
+              fontSize: '14px',
+              fontWeight: 500,
             }}
           >
             {t('reports.exportPdf')}
@@ -347,8 +353,10 @@ export const ReportsPage: React.FC = () => {
             icon={<DownloadOutlined />}
             onClick={handleExportExcel}
             style={{
-              borderRadius: '8px',
+              borderRadius: '18px',
               height: '40px',
+              padding: '0 20px',
+              fontSize: '14px',
             }}
           >
             {t('reports.exportExcel')}
@@ -358,8 +366,10 @@ export const ReportsPage: React.FC = () => {
             data-testid='schedule-report-button'
             icon={<ClockCircleOutlined />}
             style={{
-              borderRadius: '8px',
+              borderRadius: '18px',
               height: '40px',
+              padding: '0 20px',
+              fontSize: '14px',
             }}
           >
             Schedule Report
@@ -367,139 +377,49 @@ export const ReportsPage: React.FC = () => {
         </Space>
       </div>
 
-      {/* Key Metrics Overview */}
-      <Row gutter={[24, 24]} style={{ marginBottom: '32px' }}>
+      {/* Key Metrics Overview - Compact Design */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card
-            style={{
-              borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
-            }}
-          >
-            <Statistic
-              title={t('reports.totalRevenue')}
-              value={revenueData?.totalRevenue || 0}
-              formatter={value => formatCurrency(safeNumber(value))}
-              prefix={
-                <DollarOutlined
-                  style={{
-                    fontSize: '24px',
-                    color: '#3b82f6',
-                    background: 'rgba(59, 130, 246, 0.15)',
-                    padding: '8px',
-                    borderRadius: '12px',
-                  }}
-                />
-              }
-              valueStyle={{
-                color: '#e2e8f0',
-                fontSize: '28px',
-                fontWeight: 700,
-              }}
-            />
-          </Card>
+          <CompactMetricCard
+            icon={<DollarOutlined />}
+            iconColor='#3b82f6'
+            iconBg='rgba(59, 130, 246, 0.15)'
+            label={t('reports.totalRevenue')}
+            value={formatCurrency(revenueData?.totalRevenue || 0)}
+          />
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card
-            style={{
-              borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
-            }}
-          >
-            <Statistic
-              title={t('reports.paidInvoices')}
-              value={revenueData?.invoiceCount || 0}
-              prefix={
-                <FileTextOutlined
-                  style={{
-                    fontSize: '24px',
-                    color: '#10b981',
-                    background: 'rgba(16, 185, 129, 0.15)',
-                    padding: '8px',
-                    borderRadius: '12px',
-                  }}
-                />
-              }
-              valueStyle={{
-                color: '#e2e8f0',
-                fontSize: '28px',
-                fontWeight: 700,
-              }}
-            />
-          </Card>
+          <CompactMetricCard
+            icon={<FileTextOutlined />}
+            iconColor='#10b981'
+            iconBg='rgba(16, 185, 129, 0.15)'
+            label={t('reports.paidInvoices')}
+            value={revenueData?.invoiceCount || 0}
+          />
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card
-            style={{
-              borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
-            }}
-          >
-            <Statistic
-              title={t('dashboard.totalClients')}
-              value={clientData?.totalClients || 0}
-              prefix={
-                <UserOutlined
-                  style={{
-                    fontSize: '24px',
-                    color: '#f59e0b',
-                    background: 'rgba(245, 158, 11, 0.15)',
-                    padding: '8px',
-                    borderRadius: '12px',
-                  }}
-                />
-              }
-              valueStyle={{
-                color: '#e2e8f0',
-                fontSize: '28px',
-                fontWeight: 700,
-              }}
-            />
-          </Card>
+          <CompactMetricCard
+            icon={<UserOutlined />}
+            iconColor='#f59e0b'
+            iconBg='rgba(245, 158, 11, 0.15)'
+            label={t('dashboard.totalClients')}
+            value={clientData?.totalClients || 0}
+          />
         </Col>
+      </Row>
 
+      {/* Second Row - Compact Design */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card
-            style={{
-              borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
-            }}
-          >
-            <Statistic
-              title={t('dashboard.totalProjects')}
-              value={projectData?.totalProjects || 0}
-              prefix={
-                <ProjectOutlined
-                  style={{
-                    fontSize: '24px',
-                    color: '#ef4444',
-                    background: 'rgba(239, 68, 68, 0.15)',
-                    padding: '8px',
-                    borderRadius: '12px',
-                  }}
-                />
-              }
-              valueStyle={{
-                color: '#e2e8f0',
-                fontSize: '28px',
-                fontWeight: 700,
-              }}
-            />
-          </Card>
+          <CompactMetricCard
+            icon={<ProjectOutlined />}
+            iconColor='#ef4444'
+            iconBg='rgba(239, 68, 68, 0.15)'
+            label={t('dashboard.totalProjects')}
+            value={projectData?.totalProjects || 0}
+          />
         </Col>
       </Row>
 
@@ -512,7 +432,7 @@ export const ReportsPage: React.FC = () => {
                 <LineChartOutlined
                   style={{ marginRight: '8px', color: '#1e40af' }}
                 />
-                <span style={{ color: '#e2e8f0', fontWeight: 600 }}>
+                <span style={{ color: theme.colors.text.primary, fontWeight: 600 }}>
                   Analisis Pendapatan
                 </span>
               </div>
@@ -529,11 +449,11 @@ export const ReportsPage: React.FC = () => {
               </Select>
             }
             style={{
-              borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              borderRadius: '12px',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             {reportType === 'quarterly' ? (
@@ -563,17 +483,17 @@ export const ReportsPage: React.FC = () => {
                 <PieChartOutlined
                   style={{ marginRight: '8px', color: '#1e40af' }}
                 />
-                <span style={{ color: '#e2e8f0', fontWeight: 600 }}>
+                <span style={{ color: theme.colors.text.primary, fontWeight: 600 }}>
                   Analisis Pembayaran
                 </span>
               </div>
             }
             style={{
-              borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              borderRadius: '12px',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             <ChartErrorBoundary chartType='Pembayaran'>
@@ -596,17 +516,17 @@ export const ReportsPage: React.FC = () => {
                 <BarChartOutlined
                   style={{ marginRight: '8px', color: '#1e40af' }}
                 />
-                <span style={{ color: '#e2e8f0', fontWeight: 600 }}>
+                <span style={{ color: theme.colors.text.primary, fontWeight: 600 }}>
                   Tren Pembayaran Bulanan
                 </span>
               </div>
             }
             style={{
-              borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              borderRadius: '12px',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             <ChartErrorBoundary chartType='Tren Pembayaran'>
@@ -629,17 +549,17 @@ export const ReportsPage: React.FC = () => {
                 <UserOutlined
                   style={{ marginRight: '8px', color: '#1e40af' }}
                 />
-                <span style={{ color: '#e2e8f0', fontWeight: 600 }}>
+                <span style={{ color: theme.colors.text.primary, fontWeight: 600 }}>
                   Analisis Klien Teratas
                 </span>
               </div>
             }
             style={{
-              borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              borderRadius: '12px',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             <Table
@@ -661,17 +581,17 @@ export const ReportsPage: React.FC = () => {
                 <ProjectOutlined
                   style={{ marginRight: '8px', color: '#1e40af' }}
                 />
-                <span style={{ color: '#e2e8f0', fontWeight: 600 }}>
+                <span style={{ color: theme.colors.text.primary, fontWeight: 600 }}>
                   Analisis Proyek Teratas
                 </span>
               </div>
             }
             style={{
-              borderRadius: '16px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              borderRadius: '12px',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             <Table

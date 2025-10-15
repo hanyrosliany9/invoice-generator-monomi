@@ -59,6 +59,8 @@ import {
   RelatedEntitiesPanel,
 } from '../components/navigation'
 import WorkflowIndicator from '../components/ui/WorkflowIndicator'
+import { useTheme } from '../theme'
+import { CompactMetricCard } from '../components/ui/CompactMetricCard'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -75,6 +77,7 @@ const { TextArea } = Input
 
 export const QuotationsPage: React.FC = () => {
   const { t } = useTranslation()
+  const { theme } = useTheme()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -814,7 +817,7 @@ export const QuotationsPage: React.FC = () => {
               <Tooltip title='Memerlukan materai'>
                 <Text
                   type='secondary'
-                  style={{ fontSize: '12px', marginLeft: '4px' }}
+                  style={{ fontSize: '12px', marginLeft: '8px' }}
                 >
                   📋
                 </Text>
@@ -839,9 +842,40 @@ export const QuotationsPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => (
-        <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
-      ),
+      render: (status: string) => {
+        const getStatusBadgeColor = (status: string) => {
+          switch (status.toUpperCase()) {
+            case 'DRAFT':
+              return { bg: 'rgba(156, 163, 175, 0.15)', color: '#6b7280' }
+            case 'SENT':
+              return { bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }
+            case 'APPROVED':
+              return { bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }
+            case 'DECLINED':
+              return { bg: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }
+            case 'REVISED':
+              return { bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }
+            default:
+              return { bg: 'rgba(156, 163, 175, 0.15)', color: '#6b7280' }
+          }
+        }
+
+        const badgeColors = getStatusBadgeColor(status)
+
+        return (
+          <span style={{
+            background: badgeColors.bg,
+            color: badgeColors.color,
+            padding: '4px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            display: 'inline-block',
+          }}>
+            {getStatusText(status)}
+          </span>
+        )
+      },
       filters: [
         { text: 'Draft', value: 'DRAFT' },
         { text: 'Terkirim', value: 'SENT' },
@@ -863,289 +897,107 @@ export const QuotationsPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
+      className: 'actions-column',
       render: (_: any, quotation: Quotation) => (
-        <Dropdown
-          menu={{ items: getActionMenuItems(quotation) }}
-          trigger={['click']}
-          placement='bottomRight'
-        >
-          <Button icon={<MoreOutlined />} />
-        </Dropdown>
+        <div className='row-actions'>
+          <Dropdown
+            menu={{ items: getActionMenuItems(quotation) }}
+            trigger={['click']}
+            placement='bottomRight'
+          >
+            <Button icon={<MoreOutlined />} />
+          </Dropdown>
+        </div>
       ),
     },
   ]
 
   return (
     <div>
+      {/* Hover-revealed row actions CSS */}
+      <style>{`
+        .row-actions {
+          opacity: 0.2;
+          transition: opacity 0.2s ease-in-out;
+        }
+
+        .ant-table-row:hover .row-actions {
+          opacity: 1;
+        }
+
+        .row-actions:hover {
+          opacity: 1;
+        }
+      `}</style>
       <div className='mb-6'>
         <Title level={2}>{t('quotations.title')}</Title>
 
-        {/* Statistics */}
-        <Row gutter={[24, 24]} className='mb-6'>
-          <Col xs={24} sm={12} lg={4}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <Statistic
-                title='Total Quotation'
-                value={stats.total}
-                prefix={
-                  <FileTextOutlined
-                    style={{
-                      fontSize: '24px',
-                      color: '#dc2626',
-                      background: 'rgba(220, 38, 38, 0.1)',
-                      padding: '8px',
-                      borderRadius: '12px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '28px',
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
+        {/* Statistics - Compact Design */}
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+          <Col xs={24} sm={12} lg={6}>
+            <CompactMetricCard
+              icon={<FileTextOutlined />}
+              iconColor='#dc2626'
+              iconBg='rgba(220, 38, 38, 0.15)'
+              label='Total Quotation'
+              value={stats.total}
+            />
           </Col>
-          <Col xs={24} sm={12} lg={4}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <Statistic
-                title='Draft'
-                value={stats.draft}
-                prefix={
-                  <EditOutlined
-                    style={{
-                      fontSize: '24px',
-                      color: '#8c8c8c',
-                      background: 'rgba(140, 140, 140, 0.1)',
-                      padding: '8px',
-                      borderRadius: '12px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '28px',
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
+          <Col xs={24} sm={12} lg={6}>
+            <CompactMetricCard
+              icon={<EditOutlined />}
+              iconColor='#8c8c8c'
+              iconBg='rgba(140, 140, 140, 0.15)'
+              label='Draft'
+              value={stats.draft}
+            />
           </Col>
-          <Col xs={24} sm={12} lg={4}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <Statistic
-                title='Terkirim'
-                value={stats.sent}
-                prefix={
-                  <SendOutlined
-                    style={{
-                      fontSize: '24px',
-                      color: '#1890ff',
-                      background: 'rgba(24, 144, 255, 0.1)',
-                      padding: '8px',
-                      borderRadius: '12px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '28px',
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
+          <Col xs={24} sm={12} lg={6}>
+            <CompactMetricCard
+              icon={<SendOutlined />}
+              iconColor='#1890ff'
+              iconBg='rgba(24, 144, 255, 0.15)'
+              label='Terkirim'
+              value={stats.sent}
+            />
           </Col>
-          <Col xs={24} sm={12} lg={4}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <Statistic
-                title='Disetujui'
-                value={stats.approved}
-                prefix={
-                  <CheckCircleOutlined
-                    style={{
-                      fontSize: '24px',
-                      color: '#52c41a',
-                      background: 'rgba(82, 196, 26, 0.1)',
-                      padding: '8px',
-                      borderRadius: '12px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '28px',
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={4}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <Statistic
-                title='Ditolak'
-                value={stats.declined}
-                prefix={
-                  <CloseCircleOutlined
-                    style={{
-                      fontSize: '24px',
-                      color: '#f5222d',
-                      background: 'rgba(245, 34, 45, 0.1)',
-                      padding: '8px',
-                      borderRadius: '12px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '28px',
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={4}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <Statistic
-                title='Nilai Total'
-                value={formatIDR(stats.totalValue)}
-                prefix={
-                  <FileTextOutlined
-                    style={{
-                      fontSize: '24px',
-                      color: '#1890ff',
-                      background: 'rgba(24, 144, 255, 0.1)',
-                      padding: '8px',
-                      borderRadius: '12px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  wordBreak: 'break-word',
-                  lineHeight: '1.2',
-                }}
-              />
-            </Card>
+          <Col xs={24} sm={12} lg={6}>
+            <CompactMetricCard
+              icon={<CheckCircleOutlined />}
+              iconColor='#52c41a'
+              iconBg='rgba(82, 196, 26, 0.15)'
+              label='Disetujui'
+              value={stats.approved}
+            />
           </Col>
         </Row>
-
-        {/* Value Cards */}
-        <Row gutter={[24, 24]} className='mb-6'>
-          <Col xs={24} lg={12}>
-            <Card
-              style={{
-                borderRadius: '20px',
-                border: '1px solid rgba(30, 64, 175, 0.3)',
-                boxShadow: '0 8px 32px rgba(30, 64, 175, 0.2)',
-                background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.15) 0%, rgba(30, 58, 138, 0.1) 100%)',
-                backdropFilter: 'blur(10px)',
-                color: '#ffffff',
-              }}
-            >
-              <Statistic
-                title='Total Nilai Quotation'
-                value={formatIDR(stats.totalValue)}
-                prefix={
-                  <FileTextOutlined
-                    style={{
-                      fontSize: '32px',
-                      color: '#3b82f6',
-                      background: 'rgba(59, 130, 246, 0.2)',
-                      padding: '12px',
-                      borderRadius: '16px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '32px',
-                  fontWeight: 800,
-                }}
-              />
-            </Card>
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+          <Col xs={24} sm={12} lg={6}>
+            <CompactMetricCard
+              icon={<CloseCircleOutlined />}
+              iconColor='#f5222d'
+              iconBg='rgba(245, 34, 45, 0.15)'
+              label='Ditolak'
+              value={stats.declined}
+            />
           </Col>
-
-          <Col xs={24} lg={12}>
-            <Card
-              style={{
-                borderRadius: '20px',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                boxShadow: '0 8px 32px rgba(16, 185, 129, 0.2)',
-                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%)',
-                backdropFilter: 'blur(10px)',
-                color: '#ffffff',
-              }}
-            >
-              <Statistic
-                title='Nilai Disetujui'
-                value={formatIDR(stats.approvedValue)}
-                prefix={
-                  <CheckCircleOutlined
-                    style={{
-                      fontSize: '32px',
-                      color: '#10b981',
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      padding: '12px',
-                      borderRadius: '16px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '32px',
-                  fontWeight: 800,
-                }}
-              />
-            </Card>
+          <Col xs={24} sm={12} lg={6}>
+            <CompactMetricCard
+              icon={<FileTextOutlined />}
+              iconColor='#3b82f6'
+              iconBg='rgba(59, 130, 246, 0.15)'
+              label='Total Nilai Quotation'
+              value={formatIDR(stats.totalValue)}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <CompactMetricCard
+              icon={<CheckCircleOutlined />}
+              iconColor='#10b981'
+              iconBg='rgba(16, 185, 129, 0.15)'
+              label='Nilai Disetujui'
+              value={formatIDR(stats.approvedValue)}
+            />
           </Col>
         </Row>
 
@@ -1205,6 +1057,14 @@ export const QuotationsPage: React.FC = () => {
               data-testid='quotation-export-button'
               icon={<ExportOutlined />}
               onClick={handleExport}
+              size='large'
+              style={{
+                height: '44px',
+                borderRadius: '22px',
+                padding: '0 24px',
+                fontSize: '16px',
+                fontWeight: 500,
+              }}
             >
               Export
             </Button>
@@ -1213,11 +1073,103 @@ export const QuotationsPage: React.FC = () => {
               type='primary'
               icon={<PlusOutlined />}
               onClick={handleCreate}
+              size='large'
+              style={{
+                height: '48px',
+                borderRadius: '24px',
+                padding: '0 32px',
+                fontSize: '16px',
+                fontWeight: 600,
+              }}
             >
               {t('quotations.create')}
             </Button>
           </Space>
         </div>
+
+        {/* Active Filters Pills (Notion-style) */}
+        {(filters.search || filters.status || filters.monthYear || filters.amount?.[0] || filters.amount?.[1]) && (
+          <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <Text type='secondary' style={{ fontSize: '13px' }}>Active filters:</Text>
+            {filters.search && (
+              <Tag
+                closable
+                onClose={() => setFilters(prev => ({ ...prev, search: '' }))}
+                style={{
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '6px',
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                Search: "{filters.search.length > 20 ? filters.search.substring(0, 20) + '...' : filters.search}"
+              </Tag>
+            )}
+            {filters.status && (
+              <Tag
+                closable
+                onClose={() => setFilters(prev => ({ ...prev, status: undefined }))}
+                style={{
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: '6px',
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                Status: {getStatusText(filters.status)}
+              </Tag>
+            )}
+            {filters.monthYear && (
+              <Tag
+                closable
+                onClose={() => setFilters(prev => ({ ...prev, monthYear: undefined }))}
+                style={{
+                  background: 'rgba(245, 158, 11, 0.1)',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  borderRadius: '6px',
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                Month: {dayjs(filters.monthYear).format('MMMM YYYY')}
+              </Tag>
+            )}
+            {(filters.amount?.[0] || filters.amount?.[1]) && (
+              <Tag
+                closable
+                onClose={() => setFilters(prev => ({ ...prev, amount: undefined }))}
+                style={{
+                  background: 'rgba(34, 197, 94, 0.1)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  borderRadius: '6px',
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                Amount: {filters.amount?.[0] ? formatIDR(filters.amount[0]) : '0'} - {filters.amount?.[1] ? formatIDR(filters.amount[1]) : '∞'}
+              </Tag>
+            )}
+            <Button
+              size='small'
+              type='text'
+              onClick={() => setFilters({})}
+              style={{
+                color: '#ef4444',
+                fontSize: '12px',
+                height: '24px',
+                padding: '0 8px',
+              }}
+            >
+              Clear all
+            </Button>
+          </div>
+        )}
 
         {/* Batch Operations */}
         {selectedRowKeys.length > 0 && (
@@ -1226,14 +1178,14 @@ export const QuotationsPage: React.FC = () => {
             size='small'
             style={{
               borderRadius: '12px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             <div className='flex justify-between items-center'>
-              <Text strong style={{ color: '#e2e8f0' }}>{selectedRowKeys.length} quotation dipilih</Text>
+              <Text strong style={{ color: theme.colors.text.primary }}>{selectedRowKeys.length} quotation dipilih</Text>
               <Space>
                 <Button
                   size='small'
@@ -1286,11 +1238,11 @@ export const QuotationsPage: React.FC = () => {
       {/* Main Table */}
       <Card
         style={{
-          borderRadius: '16px',
-          border: '1px solid rgba(45, 53, 72, 0.6)',
-          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-          background: 'rgba(26, 31, 46, 0.6)',
-          backdropFilter: 'blur(10px)',
+          borderRadius: '12px',
+          border: theme.colors.glass.border,
+          boxShadow: theme.colors.glass.shadow,
+          background: theme.colors.glass.background,
+          backdropFilter: theme.colors.glass.backdropFilter,
         }}
       >
         <Table
@@ -1530,7 +1482,7 @@ export const QuotationsPage: React.FC = () => {
               style={{
                 padding: '12px',
                 backgroundColor: '#f5f5f5',
-                borderRadius: '4px',
+                borderRadius: '8px',
                 marginTop: '12px',
               }}
             >

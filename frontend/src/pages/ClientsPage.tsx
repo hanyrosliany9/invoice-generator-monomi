@@ -43,6 +43,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { formatIDR, safeArray, safeNumber, safeString } from '../utils/currency'
 import { Client, clientService } from '../services/clients'
+import { useTheme } from '../theme'
 import {
   EntityBreadcrumb,
   RelatedEntitiesPanel,
@@ -51,6 +52,7 @@ import WorkflowIndicator from '../components/ui/WorkflowIndicator'
 import MetricBadge from '../components/ui/MetricBadge'
 import RevenueIndicator from '../components/ui/RevenueIndicator'
 import HealthScore from '../components/ui/HealthScore'
+import { CompactMetricCard } from '../components/ui/CompactMetricCard'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -59,6 +61,7 @@ const { TextArea } = Input
 
 export const ClientsPage: React.FC = () => {
   const { t } = useTranslation()
+  const { theme } = useTheme()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -437,9 +440,34 @@ export const ClientsPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => (
-        <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
-      ),
+      render: (status: string) => {
+        const getStatusBadgeColor = (status: string) => {
+          switch (status) {
+            case 'active':
+              return { bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }
+            case 'inactive':
+              return { bg: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }
+            default:
+              return { bg: 'rgba(156, 163, 175, 0.15)', color: '#6b7280' }
+          }
+        }
+
+        const badgeColors = getStatusBadgeColor(status)
+
+        return (
+          <span style={{
+            background: badgeColors.bg,
+            color: badgeColors.color,
+            padding: '4px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            display: 'inline-block',
+          }}>
+            {getStatusText(status)}
+          </span>
+        )
+      },
       filters: [
         { text: 'Aktif', value: 'active' },
         { text: 'Tidak Aktif', value: 'inactive' },
@@ -462,222 +490,100 @@ export const ClientsPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
+      className: 'actions-column',
       render: (_: any, client: Client) => (
-        <Dropdown
-          menu={{ items: getActionMenuItems(client) }}
-          trigger={['click']}
-          placement='bottomRight'
-        >
-          <Button icon={<MoreOutlined />} />
-        </Dropdown>
+        <div className='row-actions'>
+          <Dropdown
+            menu={{ items: getActionMenuItems(client) }}
+            trigger={['click']}
+            placement='bottomRight'
+          >
+            <Button icon={<MoreOutlined />} />
+          </Dropdown>
+        </div>
       ),
     },
   ]
 
   return (
     <div>
+      {/* Hover-revealed row actions CSS */}
+      <style>{`
+        .row-actions {
+          opacity: 0.2;
+          transition: opacity 0.2s ease-in-out;
+        }
+
+        .ant-table-row:hover .row-actions {
+          opacity: 1;
+        }
+
+        .row-actions:hover {
+          opacity: 1;
+        }
+      `}</style>
       <div className='mb-6'>
         <Title level={2}>{t('clients.title')}</Title>
 
-        {/* Statistics */}
-        <Row gutter={[24, 24]} className='mb-6'>
+        {/* Statistics - Compact Design */}
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
           <Col xs={24} sm={12} lg={6}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <Statistic
-                title='Total Klien'
-                value={stats.total}
-                prefix={
-                  <UserOutlined
-                    style={{
-                      fontSize: '24px',
-                      color: '#8b5cf6',
-                      background: 'rgba(139, 92, 246, 0.1)',
-                      padding: '8px',
-                      borderRadius: '12px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '28px',
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
+            <CompactMetricCard
+              icon={<UserOutlined />}
+              iconColor='#8b5cf6'
+              iconBg='rgba(139, 92, 246, 0.15)'
+              label='Total Klien'
+              value={stats.total}
+            />
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <Statistic
-                title='Klien Aktif'
-                value={stats.active}
-                prefix={
-                  <UserOutlined
-                    style={{
-                      fontSize: '24px',
-                      color: '#52c41a',
-                      background: 'rgba(82, 196, 26, 0.1)',
-                      padding: '8px',
-                      borderRadius: '12px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '28px',
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
+            <CompactMetricCard
+              icon={<UserOutlined />}
+              iconColor='#52c41a'
+              iconBg='rgba(82, 196, 26, 0.15)'
+              label='Klien Aktif'
+              value={stats.active}
+            />
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <Statistic
-                title='Total Quotations'
-                value={stats.totalQuotations}
-                prefix={
-                  <FileTextOutlined
-                    style={{
-                      fontSize: '24px',
-                      color: '#1890ff',
-                      background: 'rgba(24, 144, 255, 0.1)',
-                      padding: '8px',
-                      borderRadius: '12px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '28px',
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <Statistic
-                title='Total Invoices'
-                value={stats.totalInvoices}
-                prefix={
-                  <FileTextOutlined
-                    style={{
-                      fontSize: '24px',
-                      color: '#dc2626',
-                      background: 'rgba(220, 38, 38, 0.1)',
-                      padding: '8px',
-                      borderRadius: '12px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '28px',
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
+            <CompactMetricCard
+              icon={<FileTextOutlined />}
+              iconColor='#1890ff'
+              iconBg='rgba(24, 144, 255, 0.15)'
+              label='Total Quotations'
+              value={stats.totalQuotations}
+            />
           </Col>
         </Row>
 
-        {/* Revenue Statistics */}
-        <Row gutter={[24, 24]} className='mb-6'>
-          <Col xs={24} lg={12}>
-            <Card
-              style={{
-                borderRadius: '20px',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                boxShadow: '0 8px 32px rgba(16, 185, 129, 0.2)',
-                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%)',
-                backdropFilter: 'blur(10px)',
-                color: '#ffffff',
-              }}
-            >
-              <Statistic
-                title='Total Pendapatan'
-                value={formatIDR(stats.totalRevenue)}
-                prefix={
-                  <DollarOutlined
-                    style={{
-                      fontSize: '32px',
-                      color: '#10b981',
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      padding: '12px',
-                      borderRadius: '16px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '32px',
-                  fontWeight: 800,
-                }}
-              />
-            </Card>
+        {/* Secondary Statistics Row */}
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+          <Col xs={24} sm={12} lg={6}>
+            <CompactMetricCard
+              icon={<FileTextOutlined />}
+              iconColor='#dc2626'
+              iconBg='rgba(220, 38, 38, 0.15)'
+              label='Total Invoices'
+              value={stats.totalInvoices}
+            />
           </Col>
-          <Col xs={24} lg={12}>
-            <Card
-              style={{
-                borderRadius: '20px',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                boxShadow: '0 8px 32px rgba(245, 158, 11, 0.2)',
-                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%)',
-                backdropFilter: 'blur(10px)',
-                color: '#ffffff',
-              }}
-            >
-              <Statistic
-                title='Pembayaran Tertunda'
-                value={formatIDR(stats.totalPending)}
-                prefix={
-                  <BankOutlined
-                    style={{
-                      fontSize: '32px',
-                      color: '#f59e0b',
-                      background: 'rgba(245, 158, 11, 0.2)',
-                      padding: '12px',
-                      borderRadius: '16px',
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: '#e2e8f0',
-                  fontSize: '32px',
-                  fontWeight: 800,
-                }}
-              />
-            </Card>
+          <Col xs={24} sm={12} lg={6}>
+            <CompactMetricCard
+              icon={<DollarOutlined />}
+              iconColor='#10b981'
+              iconBg='rgba(16, 185, 129, 0.15)'
+              label='Total Pendapatan'
+              value={formatIDR(stats.totalRevenue)}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <CompactMetricCard
+              icon={<BankOutlined />}
+              iconColor='#f59e0b'
+              iconBg='rgba(245, 158, 11, 0.15)'
+              label='Pembayaran Tertunda'
+              value={formatIDR(stats.totalPending)}
+            />
           </Col>
         </Row>
 
@@ -795,6 +701,61 @@ export const ClientsPage: React.FC = () => {
             </Button>
           </Space>
         </div>
+
+        {/* Active Filters Pills (Notion-style) */}
+        {(searchText || statusFilter) && (
+          <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <Text type='secondary' style={{ fontSize: '13px' }}>Active filters:</Text>
+            {searchText && (
+              <Tag
+                closable
+                onClose={() => setSearchText('')}
+                style={{
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '6px',
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                Search: "{searchText.length > 20 ? searchText.substring(0, 20) + '...' : searchText}"
+              </Tag>
+            )}
+            {statusFilter && (
+              <Tag
+                closable
+                onClose={() => setStatusFilter('')}
+                style={{
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: '6px',
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                Status: {getStatusText(statusFilter)}
+              </Tag>
+            )}
+            <Button
+              size='small'
+              type='text'
+              onClick={() => {
+                setSearchText('')
+                setStatusFilter('')
+              }}
+              style={{
+                color: '#ef4444',
+                fontSize: '12px',
+                height: '24px',
+                padding: '0 8px',
+              }}
+            >
+              Clear all
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Main Table */}

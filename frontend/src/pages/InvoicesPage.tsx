@@ -90,6 +90,8 @@ import {
 import { usePageShortcuts } from '../hooks/useKeyboardShortcuts'
 import KeyboardShortcutsHelp from '../components/ui/KeyboardShortcutsHelp'
 import dayjs from 'dayjs'
+import { useTheme } from '../theme'
+import { CompactMetricCard } from '../components/ui/CompactMetricCard'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -106,6 +108,7 @@ const { TextArea } = Input
 
 export const InvoicesPage: React.FC = () => {
   const { t } = useTranslation()
+  const { theme } = useTheme()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
@@ -1023,18 +1026,59 @@ export const InvoicesPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string, record: Invoice) => (
-        <div>
-          <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
-          {isOverdue(record) && status !== 'PAID' && (
-            <div className='mt-1'>
-              <Tag color='red'>
-                <ExclamationCircleOutlined /> Jatuh Tempo
-              </Tag>
-            </div>
-          )}
-        </div>
-      ),
+      render: (status: string, record: Invoice) => {
+        const getStatusBadgeColor = (status: string) => {
+          switch (status) {
+            case 'DRAFT':
+              return { bg: 'rgba(156, 163, 175, 0.15)', color: '#6b7280' }
+            case 'SENT':
+              return { bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }
+            case 'PAID':
+              return { bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }
+            case 'OVERDUE':
+              return { bg: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }
+            case 'CANCELLED':
+              return { bg: 'rgba(107, 114, 128, 0.15)', color: '#6b7280' }
+            default:
+              return { bg: 'rgba(156, 163, 175, 0.15)', color: '#6b7280' }
+          }
+        }
+
+        const badgeColors = getStatusBadgeColor(status)
+
+        return (
+          <div>
+            <span style={{
+              background: badgeColors.bg,
+              color: badgeColors.color,
+              padding: '4px 12px',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: 600,
+              display: 'inline-block',
+            }}>
+              {getStatusText(status)}
+            </span>
+            {isOverdue(record) && status !== 'PAID' && (
+              <div className='mt-1'>
+                <span style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  color: '#ef4444',
+                  padding: '4px 12px',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}>
+                  <ExclamationCircleOutlined style={{ fontSize: '11px' }} /> Jatuh Tempo
+                </span>
+              </div>
+            )}
+          </div>
+        )
+      },
       filters: [
         { text: 'Draft', value: 'DRAFT' },
         { text: 'Terkirim', value: 'SENT' },
@@ -1081,22 +1125,40 @@ export const InvoicesPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
+      className: 'actions-column',
       render: (_: any, invoice: Invoice) => (
-        <Dropdown
-          menu={{ items: getActionMenuItems(invoice) }}
-          trigger={['click']}
-          placement='bottomRight'
-        >
-          <Button icon={<MoreOutlined />} />
-        </Dropdown>
+        <div className='row-actions'>
+          <Dropdown
+            menu={{ items: getActionMenuItems(invoice) }}
+            trigger={['click']}
+            placement='bottomRight'
+          >
+            <Button icon={<MoreOutlined />} />
+          </Dropdown>
+        </div>
       ),
     },
   ]
 
   return (
     <div>
+      {/* Hover-revealed row actions CSS */}
+      <style>{`
+        .row-actions {
+          opacity: 0.2;
+          transition: opacity 0.2s ease-in-out;
+        }
+
+        .ant-table-row:hover .row-actions {
+          opacity: 1;
+        }
+
+        .row-actions:hover {
+          opacity: 1;
+        }
+      `}</style>
       <div className='mb-6'>
-        <Title level={2} style={{ color: '#e2e8f0', marginBottom: '24px' }}>
+        <Title level={2} style={{ color: theme.colors.text.primary, marginBottom: '24px' }}>
           {t('invoices.title')}
         </Title>
 
@@ -1111,417 +1173,252 @@ export const InvoicesPage: React.FC = () => {
           </div>
         )}
 
-        {/* Statistics */}
-        <Row gutter={[24, 24]} className='mb-6'>
+        {/* Statistics - Compact Design */}
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
           <Col xs={24} sm={12} lg={6}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.3s ease',
-              }}
-              className='hover:shadow-lg'
-            >
-              {isLoading ? (
-                <Skeleton.Input
-                  active
-                  size='small'
-                  style={{ width: '100%', height: '80px' }}
-                />
-              ) : invoicesError ? (
+            {isLoading ? (
+              <Skeleton.Input
+                active
+                size='small'
+                style={{ width: '100%', height: '80px' }}
+              />
+            ) : invoicesError ? (
+              <Card
+                style={{
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                  background: theme.colors.glass.background,
+                  backdropFilter: theme.colors.glass.backdropFilter,
+                  padding: '16px',
+                }}
+              >
                 <div className='text-center py-4' role='alert'>
                   <Text type='danger'>-</Text>
                 </div>
-              ) : (
-                <Statistic
-                  title='Total Invoice'
-                  value={stats.total}
-                  prefix={
-                    <FileTextOutlined
-                      style={{
-                        fontSize: '24px',
-                        color: '#1e40af',
-                        background: 'rgba(30, 64, 175, 0.15)',
-                        padding: '8px',
-                        borderRadius: '12px',
-                      }}
-                    />
-                  }
-                  valueStyle={{
-                    color: '#e2e8f0',
-                    fontSize: '28px',
-                    fontWeight: 700,
-                  }}
-                />
-              )}
-            </Card>
+              </Card>
+            ) : (
+              <CompactMetricCard
+                icon={<FileTextOutlined />}
+                iconColor='#1e40af'
+                iconBg='rgba(30, 64, 175, 0.15)'
+                label='Total Invoice'
+                value={stats.total}
+              />
+            )}
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.3s ease',
-              }}
-              className='hover:shadow-lg'
-            >
-              {isLoading ? (
-                <Skeleton.Input
-                  active
-                  size='small'
-                  style={{ width: '100%', height: '80px' }}
-                />
-              ) : (
-                <Statistic
-                  title='Lunas'
-                  value={stats.paid}
-                  prefix={
-                    <CheckCircleOutlined
-                      style={{
-                        fontSize: '24px',
-                        color: '#52c41a',
-                        background: 'rgba(82, 196, 26, 0.1)',
-                        padding: '8px',
-                        borderRadius: '12px',
-                      }}
-                    />
-                  }
-                  valueStyle={{
-                    color: '#e2e8f0',
-                    fontSize: '28px',
-                    fontWeight: 700,
-                  }}
-                />
-              )}
-            </Card>
+            {isLoading ? (
+              <Skeleton.Input
+                active
+                size='small'
+                style={{ width: '100%', height: '80px' }}
+              />
+            ) : (
+              <CompactMetricCard
+                icon={<CheckCircleOutlined />}
+                iconColor='#52c41a'
+                iconBg='rgba(82, 196, 26, 0.15)'
+                label='Lunas'
+                value={stats.paid}
+              />
+            )}
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.3s ease',
-              }}
-              className='hover:shadow-lg'
-            >
-              {isLoading ? (
-                <Skeleton.Input
-                  active
-                  size='small'
-                  style={{ width: '100%', height: '80px' }}
-                />
-              ) : (
-                <Statistic
-                  title='Tertunda'
-                  value={stats.sent}
-                  prefix={
-                    <ClockCircleOutlined
-                      style={{
-                        fontSize: '24px',
-                        color: '#1890ff',
-                        background: 'rgba(24, 144, 255, 0.1)',
-                        padding: '8px',
-                        borderRadius: '12px',
-                      }}
-                    />
-                  }
-                  valueStyle={{
-                    color: '#e2e8f0',
-                    fontSize: '28px',
-                    fontWeight: 700,
-                  }}
-                />
-              )}
-            </Card>
+            {isLoading ? (
+              <Skeleton.Input
+                active
+                size='small'
+                style={{ width: '100%', height: '80px' }}
+              />
+            ) : (
+              <CompactMetricCard
+                icon={<ExclamationCircleOutlined />}
+                iconColor='#f5222d'
+                iconBg='rgba(245, 34, 45, 0.15)'
+                label='Jatuh Tempo'
+                value={stats.overdue}
+              />
+            )}
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.3s ease',
-              }}
-              className='hover:shadow-lg'
-            >
-              {isLoading ? (
-                <Skeleton.Input
-                  active
-                  size='small'
-                  style={{ width: '100%', height: '80px' }}
-                />
-              ) : (
-                <Statistic
-                  title='Jatuh Tempo'
-                  value={stats.overdue}
-                  prefix={
-                    <ExclamationCircleOutlined
-                      style={{
-                        fontSize: '24px',
-                        color: '#f5222d',
-                        background: 'rgba(245, 34, 45, 0.1)',
-                        padding: '8px',
-                        borderRadius: '12px',
-                      }}
-                    />
-                  }
-                  valueStyle={{
-                    color: '#e2e8f0',
-                    fontSize: '28px',
-                    fontWeight: 700,
-                  }}
-                />
-              )}
-            </Card>
+            {isLoading ? (
+              <Skeleton.Input
+                active
+                size='small'
+                style={{ width: '100%', height: '80px' }}
+              />
+            ) : (
+              <CompactMetricCard
+                icon={<SendOutlined />}
+                iconColor='#3b82f6'
+                iconBg='rgba(59, 130, 246, 0.15)'
+                label='Terkirim'
+                value={stats.sent}
+              />
+            )}
           </Col>
         </Row>
 
-        {/* Revenue Statistics */}
-        <Row gutter={[24, 24]} className='mb-6'>
-          <Col xs={24} lg={8}>
-            <Card
-              style={{
-                borderRadius: '20px',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                boxShadow: '0 8px 32px rgba(16, 185, 129, 0.2)',
-                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%)',
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.3s ease',
-              }}
-              className='hover:shadow-2xl hover:scale-[1.02]'
-            >
-              {isLoading ? (
-                <Skeleton.Input
-                  active
-                  size='large'
-                  style={{
-                    width: '100%',
-                    height: '120px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  }}
-                />
-              ) : (
-                <Statistic
-                  title='Total Pendapatan'
-                  value={formatIDR(stats.totalValue)}
-                  prefix={
-                    <DollarOutlined
-                      style={{
-                        fontSize: '32px',
-                        color: '#10b981',
-                        background: 'rgba(16, 185, 129, 0.2)',
-                        padding: '12px',
-                        borderRadius: '16px',
-                      }}
-                    />
-                  }
-                  valueStyle={{
-                    color: '#e2e8f0',
-                    fontSize: '32px',
-                    fontWeight: 800,
-                  }}
-                />
-              )}
-            </Card>
+        {/* Revenue Statistics - Compact Design */}
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+          <Col xs={24} sm={12} lg={12}>
+            {isLoading ? (
+              <Skeleton.Input
+                active
+                size='large'
+                style={{ width: '100%', height: '80px' }}
+              />
+            ) : (
+              <CompactMetricCard
+                icon={<DollarOutlined />}
+                iconColor='#10b981'
+                iconBg='rgba(16, 185, 129, 0.15)'
+                label='Total Pendapatan'
+                value={formatIDR(stats.totalValue)}
+              />
+            )}
           </Col>
-          <Col xs={24} lg={8}>
-            <Card
-              style={{
-                borderRadius: '20px',
-                border: '1px solid rgba(99, 102, 241, 0.3)',
-                boxShadow: '0 8px 32px rgba(99, 102, 241, 0.2)',
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(79, 70, 229, 0.1) 100%)',
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.3s ease',
-              }}
-              className='hover:shadow-2xl hover:scale-[1.02]'
-            >
-              {isLoading ? (
-                <Skeleton.Input
-                  active
-                  size='large'
-                  style={{
-                    width: '100%',
-                    height: '120px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  }}
-                />
-              ) : (
-                <>
-                  <Statistic
-                    title='Sudah Dibayar'
-                    value={formatIDR(stats.paidValue)}
-                    prefix={
-                      <BankOutlined
-                        style={{
-                          fontSize: '32px',
-                          color: '#6366f1',
-                          background: 'rgba(99, 102, 241, 0.2)',
-                          padding: '12px',
-                          borderRadius: '16px',
-                        }}
-                      />
-                    }
-                    valueStyle={{
-                      color: '#e2e8f0',
-                      fontSize: '32px',
-                      fontWeight: 800,
+          <Col xs={24} sm={12} lg={12}>
+            {isLoading ? (
+              <Skeleton.Input
+                active
+                size='large'
+                style={{ width: '100%', height: '80px' }}
+              />
+            ) : (
+              <Card
+                style={{
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                  background: theme.colors.glass.background,
+                  backdropFilter: theme.colors.glass.backdropFilter,
+                  padding: '12px 16px',
+                }}
+                bodyStyle={{ padding: 0 }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                  <div
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '8px',
+                      background: 'rgba(99, 102, 241, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: '8px',
+                      flexShrink: 0,
                     }}
-                  />
-                  <Progress
-                    percent={Math.round(paymentRate)}
-                    size='small'
-                    strokeColor='#6366f1'
-                    className='mt-2'
-                  />
-                </>
-              )}
-            </Card>
-          </Col>
-          <Col xs={24} lg={8}>
-            <Card
-              style={{
-                borderRadius: '20px',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                boxShadow: '0 8px 32px rgba(245, 158, 11, 0.2)',
-                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%)',
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.3s ease',
-              }}
-              className='hover:shadow-2xl hover:scale-[1.02]'
-            >
-              {isLoading ? (
-                <Skeleton.Input
-                  active
-                  size='large'
+                  >
+                    <BankOutlined style={{ fontSize: '16px', color: '#6366f1' }} />
+                  </div>
+                  <Text
+                    type='secondary'
+                    style={{
+                      fontSize: '12px',
+                      lineHeight: '1.4',
+                      margin: 0,
+                    }}
+                  >
+                    Sudah Dibayar
+                  </Text>
+                </div>
+                <Text
+                  strong
                   style={{
-                    width: '100%',
-                    height: '120px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                    fontSize: '24px',
+                    fontWeight: 600,
+                    display: 'block',
+                    color: theme.colors.text.primary,
+                    lineHeight: '1',
+                    marginBottom: '8px',
                   }}
+                >
+                  {formatIDR(stats.paidValue)}
+                </Text>
+                <Progress
+                  percent={Math.round(paymentRate)}
+                  size='small'
+                  strokeColor='#6366f1'
                 />
-              ) : (
-                <Statistic
-                  title='Belum Dibayar'
-                  value={formatIDR(stats.pendingValue + stats.overdueValue)}
-                  prefix={
-                    <ClockCircleOutlined
-                      style={{
-                        fontSize: '32px',
-                        color: '#f59e0b',
-                        background: 'rgba(245, 158, 11, 0.2)',
-                        padding: '12px',
-                        borderRadius: '16px',
-                      }}
-                    />
-                  }
-                  valueStyle={{
-                    color: '#e2e8f0',
-                    fontSize: '32px',
-                    fontWeight: 800,
-                  }}
-                />
-              )}
-            </Card>
+              </Card>
+            )}
+          </Col>
+        </Row>
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+          <Col xs={24} sm={12} lg={12}>
+            {isLoading ? (
+              <Skeleton.Input
+                active
+                size='large'
+                style={{ width: '100%', height: '80px' }}
+              />
+            ) : (
+              <CompactMetricCard
+                icon={<ClockCircleOutlined />}
+                iconColor='#f59e0b'
+                iconBg='rgba(245, 158, 11, 0.15)'
+                label='Belum Dibayar'
+                value={formatIDR(stats.pendingValue + stats.overdueValue)}
+              />
+            )}
+          </Col>
+          <Col xs={24} sm={12} lg={12}>
+            {isLoading ? (
+              <Skeleton.Input
+                active
+                size='large'
+                style={{ width: '100%', height: '80px' }}
+              />
+            ) : (
+              <CompactMetricCard
+                icon={<ExclamationCircleOutlined />}
+                iconColor='#ef4444'
+                iconBg='rgba(239, 68, 68, 0.15)'
+                label='Nilai Jatuh Tempo'
+                value={formatIDR(stats.overdueValue)}
+              />
+            )}
           </Col>
         </Row>
 
-        {/* Materai Statistics */}
-        <Row gutter={[24, 24]} className='mb-6'>
+        {/* Materai Statistics - Compact Design */}
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
           <Col xs={24} lg={12}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.3s ease',
-              }}
-              className='hover:shadow-lg hover:scale-[1.01]'
-            >
-              {isLoading ? (
-                <Skeleton.Input
-                  active
-                  size='small'
-                  style={{ width: '100%', height: '80px' }}
-                />
-              ) : (
-                <Statistic
-                  title='Invoice Memerlukan Materai'
-                  value={stats.materaiRequired}
-                  prefix={
-                    <FileTextOutlined
-                      style={{
-                        fontSize: '24px',
-                        color: '#7c3aed',
-                        background: 'rgba(124, 58, 237, 0.15)',
-                        padding: '8px',
-                        borderRadius: '12px',
-                      }}
-                    />
-                  }
-                  valueStyle={{
-                    color: '#e2e8f0',
-                    fontSize: '28px',
-                    fontWeight: 700,
-                  }}
-                />
-              )}
-            </Card>
+            {isLoading ? (
+              <Skeleton.Input
+                active
+                size='small'
+                style={{ width: '100%', height: '80px' }}
+              />
+            ) : (
+              <CompactMetricCard
+                icon={<FileTextOutlined />}
+                iconColor='#7c3aed'
+                iconBg='rgba(124, 58, 237, 0.15)'
+                label='Invoice Memerlukan Materai'
+                value={stats.materaiRequired}
+              />
+            )}
           </Col>
           <Col xs={24} lg={12}>
-            <Card
-              style={{
-                borderRadius: '16px',
-                border: '1px solid rgba(45, 53, 72, 0.6)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-                background: 'rgba(26, 31, 46, 0.6)',
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.3s ease',
-              }}
-              className='hover:shadow-lg hover:scale-[1.01]'
-            >
-              {isLoading ? (
-                <Skeleton.Input
-                  active
-                  size='small'
-                  style={{ width: '100%', height: '80px' }}
-                />
-              ) : (
-                <Statistic
-                  title='Materai Belum Ditempel'
-                  value={stats.materaiPending}
-                  prefix={
-                    <WarningOutlined
-                      style={{
-                        fontSize: '24px',
-                        color: '#ea580c',
-                        background: 'rgba(234, 88, 12, 0.15)',
-                        padding: '8px',
-                        borderRadius: '12px',
-                      }}
-                    />
-                  }
-                  valueStyle={{
-                    color: '#e2e8f0',
-                    fontSize: '28px',
-                    fontWeight: 700,
-                  }}
-                />
-              )}
-            </Card>
+            {isLoading ? (
+              <Skeleton.Input
+                active
+                size='small'
+                style={{ width: '100%', height: '80px' }}
+              />
+            ) : (
+              <CompactMetricCard
+                icon={<WarningOutlined />}
+                iconColor='#ea580c'
+                iconBg='rgba(234, 88, 12, 0.15)'
+                label='Materai Belum Ditempel'
+                value={stats.materaiPending}
+              />
+            )}
           </Col>
         </Row>
 
@@ -1595,6 +1492,14 @@ export const InvoicesPage: React.FC = () => {
               data-testid='invoice-export-button'
               icon={<ExportOutlined />}
               onClick={handleExport}
+              size='large'
+              style={{
+                height: '44px',
+                borderRadius: '22px',
+                padding: '0 24px',
+                fontSize: '16px',
+                fontWeight: 500,
+              }}
             >
               Export
             </Button>
@@ -1603,11 +1508,124 @@ export const InvoicesPage: React.FC = () => {
               type='primary'
               icon={<PlusOutlined />}
               onClick={handleCreate}
+              size='large'
+              style={{
+                height: '48px',
+                borderRadius: '24px',
+                padding: '0 32px',
+                fontSize: '16px',
+                fontWeight: 600,
+              }}
             >
               {t('invoices.create')}
             </Button>
           </Space>
         </div>
+
+        {/* Active Filters Pills (Notion-style) */}
+        {(statusFilter || materaiFilter || filters.monthYear || filters.amount?.[0] || filters.amount?.[1] || searchText) && (
+          <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <Text type='secondary' style={{ fontSize: '13px' }}>Active filters:</Text>
+            {searchText && (
+              <Tag
+                closable
+                onClose={() => setSearchText('')}
+                style={{
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '6px',
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                Search: "{searchText.length > 20 ? searchText.substring(0, 20) + '...' : searchText}"
+              </Tag>
+            )}
+            {statusFilter && (
+              <Tag
+                closable
+                onClose={() => setStatusFilter('')}
+                style={{
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: '6px',
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                Status: {getStatusText(statusFilter)}
+              </Tag>
+            )}
+            {materaiFilter && (
+              <Tag
+                closable
+                onClose={() => setMateraiFilter('')}
+                style={{
+                  background: 'rgba(124, 58, 237, 0.1)',
+                  border: '1px solid rgba(124, 58, 237, 0.3)',
+                  borderRadius: '6px',
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                Materai: {materaiFilter === 'required' ? 'Perlu Materai' : materaiFilter === 'applied' ? 'Sudah Ditempel' : 'Belum Ditempel'}
+              </Tag>
+            )}
+            {filters.monthYear && (
+              <Tag
+                closable
+                onClose={() => setFilters(prev => ({ ...prev, monthYear: undefined }))}
+                style={{
+                  background: 'rgba(245, 158, 11, 0.1)',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  borderRadius: '6px',
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                Month: {dayjs(filters.monthYear).format('MMMM YYYY')}
+              </Tag>
+            )}
+            {(filters.amount?.[0] || filters.amount?.[1]) && (
+              <Tag
+                closable
+                onClose={() => setFilters(prev => ({ ...prev, amount: undefined }))}
+                style={{
+                  background: 'rgba(34, 197, 94, 0.1)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  borderRadius: '6px',
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                Amount: {filters.amount?.[0] ? formatIDR(filters.amount[0]) : '0'} - {filters.amount?.[1] ? formatIDR(filters.amount[1]) : '∞'}
+              </Tag>
+            )}
+            <Button
+              size='small'
+              type='text'
+              onClick={() => {
+                setSearchText('')
+                setStatusFilter('')
+                setMateraiFilter('')
+                setFilters({})
+              }}
+              style={{
+                color: '#ef4444',
+                fontSize: '12px',
+                height: '24px',
+                padding: '0 8px',
+              }}
+            >
+              Clear all
+            </Button>
+          </div>
+        )}
 
         {/* Batch Operations */}
         {selectedRowKeys.length > 0 && (
@@ -1616,14 +1634,14 @@ export const InvoicesPage: React.FC = () => {
             size='small'
             style={{
               borderRadius: '12px',
-              border: '1px solid rgba(45, 53, 72, 0.6)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-              background: 'rgba(26, 31, 46, 0.6)',
-              backdropFilter: 'blur(10px)',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
             <div className='flex justify-between items-center'>
-              <Typography.Text strong style={{ color: '#e2e8f0' }}>
+              <Typography.Text strong style={{ color: theme.colors.text.primary }}>
                 {selectedRowKeys.length} invoice dipilih
               </Typography.Text>
               <Space>
@@ -1676,11 +1694,11 @@ export const InvoicesPage: React.FC = () => {
       {/* Main Table */}
       <Card
         style={{
-          borderRadius: '16px',
-          border: '1px solid rgba(45, 53, 72, 0.6)',
-          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-          background: 'rgba(26, 31, 46, 0.6)',
-          backdropFilter: 'blur(10px)',
+          borderRadius: '12px',
+          border: theme.colors.glass.border,
+          boxShadow: theme.colors.glass.shadow,
+          background: theme.colors.glass.background,
+          backdropFilter: theme.colors.glass.backdropFilter,
         }}
       >
         <Table

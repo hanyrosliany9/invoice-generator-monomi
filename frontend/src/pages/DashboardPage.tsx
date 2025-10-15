@@ -24,6 +24,7 @@ import { formatIDR, safeString } from '../utils/currency'
 import { useDashboardData } from '../hooks/useDashboard'
 import { RecentInvoice, RecentQuotation } from '../types/dashboard'
 import { useTheme } from '../theme'
+import { CompactMetricCard } from '../components/ui/CompactMetricCard'
 
 const { Title, Text } = Typography
 
@@ -221,229 +222,89 @@ export const DashboardPage: React.FC = () => {
         </Text>
       </div>
 
-      {/* Statistics Cards */}
-      <Row gutter={[24, 24]} style={{ marginBottom: '40px' }}>
+      {/* Statistics Cards - Compact Design */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card
-            style={{
-              borderRadius: '16px',
-              border: theme.colors.glass.border,
-              boxShadow: theme.colors.glass.shadow,
-              background: theme.colors.glass.background,
-              backdropFilter: theme.colors.glass.backdropFilter,
-            }}
-          >
-            <Statistic
-              title={t('dashboard.totalQuotations')}
-              value={stats.totalQuotations}
-              prefix={
-                <FileTextOutlined
-                  style={{
-                    fontSize: '24px',
-                    color: '#ef4444',
-                    background: 'rgba(239, 68, 68, 0.15)',
-                    padding: '8px',
-                    borderRadius: '12px',
-                  }}
-                />
-              }
-              valueStyle={{
-                color: theme.colors.text.primary,
-                fontSize: '28px',
-                fontWeight: 700,
-              }}
-            />
-          </Card>
+          <CompactMetricCard
+            icon={<FileTextOutlined />}
+            iconColor='#ef4444'
+            iconBg='rgba(239, 68, 68, 0.15)'
+            label={t('dashboard.totalQuotations')}
+            value={stats.totalQuotations}
+          />
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card
-            style={{
-              borderRadius: '16px',
-              border: theme.colors.glass.border,
-              boxShadow: theme.colors.glass.shadow,
-              background: theme.colors.glass.background,
-              backdropFilter: theme.colors.glass.backdropFilter,
-            }}
-          >
-            <Statistic
-              title={t('dashboard.totalInvoices')}
-              value={stats.totalInvoices}
-              prefix={
-                <FileDoneOutlined
-                  style={{
-                    fontSize: '24px',
-                    color: '#10b981',
-                    background: 'rgba(16, 185, 129, 0.15)',
-                    padding: '8px',
-                    borderRadius: '12px',
-                  }}
-                />
-              }
-              valueStyle={{
-                color: theme.colors.text.primary,
-                fontSize: '28px',
-                fontWeight: 700,
-              }}
-            />
-          </Card>
+          <CompactMetricCard
+            icon={<FileDoneOutlined />}
+            iconColor='#10b981'
+            iconBg='rgba(16, 185, 129, 0.15)'
+            label={t('dashboard.totalInvoices')}
+            value={stats.totalInvoices}
+          />
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card
-            style={{
-              borderRadius: '16px',
-              border: theme.colors.glass.border,
-              boxShadow: theme.colors.glass.shadow,
-              background: theme.colors.glass.background,
-              backdropFilter: theme.colors.glass.backdropFilter,
-            }}
-          >
-            <Statistic
-              title={t('dashboard.totalClients')}
-              value={stats.totalClients}
-              prefix={
-                <UserOutlined
-                  style={{
-                    fontSize: '24px',
-                    color: '#ef4444',
-                    background: 'rgba(239, 68, 68, 0.15)',
-                    padding: '8px',
-                    borderRadius: '12px',
-                  }}
-                />
-              }
-              valueStyle={{
-                color: theme.colors.text.primary,
-                fontSize: '28px',
-                fontWeight: 700,
-              }}
-            />
-          </Card>
+          <CompactMetricCard
+            icon={<UserOutlined />}
+            iconColor='#6366f1'
+            iconBg='rgba(99, 102, 241, 0.15)'
+            label={t('dashboard.totalClients')}
+            value={stats.totalClients}
+          />
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card
-            style={{
-              borderRadius: '16px',
-              border: theme.colors.glass.border,
-              boxShadow: theme.colors.glass.shadow,
-              background: theme.colors.glass.background,
-              backdropFilter: theme.colors.glass.backdropFilter,
-            }}
-          >
-            <Statistic
-              title={t('dashboard.totalProjects')}
-              value={stats.totalProjects}
-              prefix={
-                <ProjectOutlined
-                  style={{
-                    fontSize: '24px',
-                    color: '#f59e0b',
-                    background: 'rgba(245, 158, 11, 0.15)',
-                    padding: '8px',
-                    borderRadius: '12px',
-                  }}
-                />
-              }
-              valueStyle={{
-                color: theme.colors.text.primary,
-                fontSize: '28px',
-                fontWeight: 700,
-              }}
-            />
-          </Card>
+          <CompactMetricCard
+            icon={<ProjectOutlined />}
+            iconColor='#f59e0b'
+            iconBg='rgba(245, 158, 11, 0.15)'
+            label={t('dashboard.totalProjects')}
+            value={stats.totalProjects}
+          />
         </Col>
       </Row>
 
-      {/* Revenue Cards */}
-      <Row gutter={[24, 24]} style={{ marginBottom: '40px' }}>
-        <Col xs={24} lg={12}>
-          <Card
-            style={{
-              borderRadius: '20px',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              boxShadow: '0 8px 32px rgba(16, 185, 129, 0.2)',
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%)',
-              backdropFilter: 'blur(10px)',
-              color: '#ffffff',
-            }}
-          >
-            <Statistic
-              title='Total Pendapatan'
-              value={formatIDR(stats.totalRevenue)}
-              prefix={
-                <RiseOutlined
-                  style={{
-                    fontSize: '32px',
-                    color: '#10b981',
-                    background: 'rgba(16, 185, 129, 0.2)',
-                    padding: '12px',
-                    borderRadius: '16px',
-                  }}
-                />
-              }
-              valueStyle={{
-                color: theme.colors.text.primary,
-                fontSize: '32px',
-                fontWeight: 800,
-              }}
-            />
-          </Card>
+      {/* Revenue Statistics - Compact Design */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Col xs={24} sm={12} lg={12}>
+          <CompactMetricCard
+            icon={<RiseOutlined />}
+            iconColor='#10b981'
+            iconBg='rgba(16, 185, 129, 0.15)'
+            label='Total Pendapatan'
+            value={formatIDR(stats.totalRevenue)}
+          />
         </Col>
 
-        <Col xs={24} lg={12}>
-          <Card
-            style={{
-              borderRadius: '20px',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
-              boxShadow: '0 8px 32px rgba(245, 158, 11, 0.2)',
-              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%)',
-              backdropFilter: 'blur(10px)',
-              color: '#ffffff',
-            }}
-          >
-            <Statistic
-              title='Pembayaran Tertunda'
-              value={formatIDR(stats.pendingPayments)}
-              prefix={
-                <ClockCircleOutlined
-                  style={{
-                    fontSize: '32px',
-                    color: '#f59e0b',
-                    background: 'rgba(245, 158, 11, 0.2)',
-                    padding: '12px',
-                    borderRadius: '16px',
-                  }}
-                />
-              }
-              valueStyle={{
-                color: theme.colors.text.primary,
-                fontSize: '32px',
-                fontWeight: 800,
-              }}
-            />
-          </Card>
+        <Col xs={24} sm={12} lg={12}>
+          <CompactMetricCard
+            icon={<ClockCircleOutlined />}
+            iconColor='#f59e0b'
+            iconBg='rgba(245, 158, 11, 0.15)'
+            label='Pembayaran Tertunda'
+            value={formatIDR(stats.pendingPayments)}
+          />
         </Col>
       </Row>
 
-      {/* Recent Data Tables */}
-      <Row gutter={[24, 24]}>
+      {/* Recent Data Tables - iOS Minimal Style */}
+      <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
           <Card
             title={t('dashboard.recentQuotations')}
             extra={
               <a
                 href='/quotations'
-                style={{ color: '#3b82f6', fontWeight: 600 }}
+                style={{ color: '#3b82f6', fontWeight: 500, fontSize: '14px' }}
               >
                 Lihat Semua
               </a>
             }
             style={{
-              borderRadius: '16px',
-              border: theme.colors.glass.border,
-              boxShadow: theme.colors.glass.shadow,
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
               background: theme.colors.glass.background,
               backdropFilter: theme.colors.glass.backdropFilter,
             }}
@@ -452,9 +313,8 @@ export const DashboardPage: React.FC = () => {
               dataSource={recentQuotations}
               columns={quotationColumns}
               pagination={false}
-              size='middle'
+              size='small'
               rowKey='id'
-              style={{ marginTop: '16px' }}
             />
           </Card>
         </Col>
@@ -463,14 +323,14 @@ export const DashboardPage: React.FC = () => {
           <Card
             title={t('dashboard.recentInvoices')}
             extra={
-              <a href='/invoices' style={{ color: '#3b82f6', fontWeight: 600 }}>
+              <a href='/invoices' style={{ color: '#3b82f6', fontWeight: 500, fontSize: '14px' }}>
                 Lihat Semua
               </a>
             }
             style={{
-              borderRadius: '16px',
-              border: theme.colors.glass.border,
-              boxShadow: theme.colors.glass.shadow,
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
               background: theme.colors.glass.background,
               backdropFilter: theme.colors.glass.backdropFilter,
             }}
@@ -479,9 +339,8 @@ export const DashboardPage: React.FC = () => {
               dataSource={recentInvoices}
               columns={invoiceColumns}
               pagination={false}
-              size='middle'
+              size='small'
               rowKey='id'
-              style={{ marginTop: '16px' }}
             />
           </Card>
         </Col>
