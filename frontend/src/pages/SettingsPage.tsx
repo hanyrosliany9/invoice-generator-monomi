@@ -179,7 +179,7 @@ export const SettingsPage: React.FC = () => {
     <Card
       title={
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <UserOutlined style={{ marginRight: '8px', color: '#6366f1' }} />
+          <UserOutlined style={{ marginRight: '8px', color: '#dc2626' }} />
           {t('settings.profile')}
         </div>
       }
@@ -206,7 +206,7 @@ export const SettingsPage: React.FC = () => {
               size={100}
               icon={<UserOutlined />}
               style={{
-                backgroundColor: '#6366f1',
+                backgroundColor: '#dc2626',
                 marginBottom: '16px',
               }}
             />
@@ -285,7 +285,7 @@ export const SettingsPage: React.FC = () => {
             icon={<SaveOutlined />}
             size='large'
             style={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
               border: 'none',
               borderRadius: '8px',
             }}
@@ -302,7 +302,7 @@ export const SettingsPage: React.FC = () => {
       title={
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <SecurityScanOutlined
-            style={{ marginRight: '8px', color: '#6366f1' }}
+            style={{ marginRight: '8px', color: '#dc2626' }}
           />
           {t('settings.security')}
         </div>
@@ -391,7 +391,7 @@ export const SettingsPage: React.FC = () => {
     <Card
       title={
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <ShopOutlined style={{ marginRight: '8px', color: '#6366f1' }} />
+          <ShopOutlined style={{ marginRight: '8px', color: '#dc2626' }} />
           {t('settings.companyInfo')}
         </div>
       }
@@ -504,7 +504,7 @@ export const SettingsPage: React.FC = () => {
             icon={<SaveOutlined />}
             size='large'
             style={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
               border: 'none',
               borderRadius: '8px',
             }}
@@ -521,7 +521,7 @@ export const SettingsPage: React.FC = () => {
       <Card
         title={
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <BellOutlined style={{ marginRight: '8px', color: '#6366f1' }} />
+            <BellOutlined style={{ marginRight: '8px', color: '#dc2626' }} />
             {t('settings.notifications')}
           </div>
         }
@@ -595,7 +595,7 @@ export const SettingsPage: React.FC = () => {
       <Card
         title={
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <DollarOutlined style={{ marginRight: '8px', color: '#6366f1' }} />
+            <DollarOutlined style={{ marginRight: '8px', color: '#dc2626' }} />
             {t('settings.invoiceSettings')}
           </div>
         }
@@ -657,7 +657,7 @@ export const SettingsPage: React.FC = () => {
       <Card
         title={
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <GlobalOutlined style={{ marginRight: '8px', color: '#6366f1' }} />
+            <GlobalOutlined style={{ marginRight: '8px', color: '#dc2626' }} />
             {t('settings.autoBackup')}
           </div>
         }
@@ -732,7 +732,7 @@ export const SettingsPage: React.FC = () => {
             icon={<SaveOutlined />}
             size='large'
             style={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
               border: 'none',
               borderRadius: '8px',
               minWidth: '200px',
@@ -750,7 +750,7 @@ export const SettingsPage: React.FC = () => {
     <div style={{ padding: '24px' }}>
       <div style={{ marginBottom: '32px' }}>
         <Title level={2} style={{ margin: 0, color: '#1e293b' }}>
-          <SettingOutlined style={{ marginRight: '12px', color: '#6366f1' }} />
+          <SettingOutlined style={{ marginRight: '12px', color: '#dc2626' }} />
           {t('settings.title')}
         </Title>
         <Text type='secondary' style={{ fontSize: '16px' }}>

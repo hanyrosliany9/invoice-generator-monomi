@@ -330,7 +330,7 @@ export const QuotationCreatePage: React.FC = () => {
                   : 30,
                 format: 'duration',
                 icon: <CalendarOutlined />,
-                color: '#722ed1',
+                color: '#1890ff',
               },
             ]}
             layout='vertical'

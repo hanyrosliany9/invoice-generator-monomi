@@ -237,8 +237,8 @@ export const DashboardPage: React.FC = () => {
                 <FileTextOutlined
                   style={{
                     fontSize: '24px',
-                    color: '#6366f1',
-                    background: 'rgba(99, 102, 241, 0.1)',
+                    color: '#dc2626',
+                    background: 'rgba(220, 38, 38, 0.1)',
                     padding: '8px',
                     borderRadius: '12px',
                   }}
@@ -301,8 +301,8 @@ export const DashboardPage: React.FC = () => {
                 <UserOutlined
                   style={{
                     fontSize: '24px',
-                    color: '#8b5cf6',
-                    background: 'rgba(139, 92, 246, 0.1)',
+                    color: '#dc2626',
+                    background: 'rgba(220, 38, 38, 0.1)',
                     padding: '8px',
                     borderRadius: '12px',
                   }}
@@ -427,7 +427,7 @@ export const DashboardPage: React.FC = () => {
             extra={
               <a
                 href='/quotations'
-                style={{ color: '#6366f1', fontWeight: 600 }}
+                style={{ color: '#1e40af', fontWeight: 600 }}
               >
                 Lihat Semua
               </a>
@@ -453,7 +453,7 @@ export const DashboardPage: React.FC = () => {
           <Card
             title={t('dashboard.recentInvoices')}
             extra={
-              <a href='/invoices' style={{ color: '#6366f1', fontWeight: 600 }}>
+              <a href='/invoices' style={{ color: '#1e40af', fontWeight: 600 }}>
                 Lihat Semua
               </a>
             }

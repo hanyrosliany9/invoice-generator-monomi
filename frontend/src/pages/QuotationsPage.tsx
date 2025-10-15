@@ -898,8 +898,8 @@ export const QuotationsPage: React.FC = () => {
                   <FileTextOutlined
                     style={{
                       fontSize: '24px',
-                      color: '#6366f1',
-                      background: 'rgba(99, 102, 241, 0.1)',
+                      color: '#dc2626',
+                      background: 'rgba(220, 38, 38, 0.1)',
                       padding: '8px',
                       borderRadius: '12px',
                     }}
@@ -1053,8 +1053,8 @@ export const QuotationsPage: React.FC = () => {
                   <FileTextOutlined
                     style={{
                       fontSize: '24px',
-                      color: '#722ed1',
-                      background: 'rgba(114, 46, 209, 0.1)',
+                      color: '#1890ff',
+                      background: 'rgba(24, 144, 255, 0.1)',
                       padding: '8px',
                       borderRadius: '12px',
                     }}
@@ -1080,7 +1080,7 @@ export const QuotationsPage: React.FC = () => {
                 borderRadius: '20px',
                 border: '1px solid #e2e8f0',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                background: 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)',
                 color: '#ffffff',
               }}
             >

@@ -371,7 +371,7 @@ export const ClientDetailPage: React.FC<ClientDetailPageProps> = () => {
                   : 'N/A'
               }
               prefix={<DollarOutlined />}
-              valueStyle={{ color: '#722ed1' }}
+              valueStyle={{ color: '#1890ff' }}
             />
           </Card>
         </Col>

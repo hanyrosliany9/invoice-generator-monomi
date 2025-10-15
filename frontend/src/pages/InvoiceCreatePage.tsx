@@ -379,7 +379,7 @@ Reference: Quotation ${quotation.quotationNumber}
                 value: totalAmount * 0.11,
                 format: 'currency',
                 icon: <BankOutlined />,
-                color: '#722ed1',
+                color: '#1890ff',
               },
             ]}
             layout='vertical'

@@ -333,7 +333,7 @@ export const ReportsPage: React.FC = () => {
             icon={<DownloadOutlined />}
             onClick={handleExportPdf}
             style={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
               border: 'none',
               borderRadius: '8px',
               height: '40px',
@@ -440,7 +440,7 @@ export const ReportsPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
               border: 'none',
               color: 'white',
             }}

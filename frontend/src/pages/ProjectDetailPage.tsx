@@ -356,7 +356,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 project.totalRevenue ? formatIDR(project.totalRevenue) : 'N/A'
               }
               prefix={<DollarOutlined />}
-              valueStyle={{ color: '#722ed1' }}
+              valueStyle={{ color: '#1890ff' }}
             />
           </Card>
         </Col>

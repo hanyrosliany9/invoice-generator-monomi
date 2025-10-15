@@ -545,7 +545,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
               title='Related Invoices'
               value={quotation.invoices?.length || 0}
               prefix={<FileTextOutlined />}
-              valueStyle={{ color: '#722ed1' }}
+              valueStyle={{ color: '#1890ff' }}
             />
           </Card>
         </Col>
