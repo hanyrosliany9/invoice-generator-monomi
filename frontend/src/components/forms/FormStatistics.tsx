@@ -126,6 +126,10 @@ export const FormStatistics: React.FC<FormStatisticsProps> = ({
         style={{
           height: '100%',
           borderColor: stat.color ? stat.color : undefined,
+          background: 'rgba(26, 31, 46, 0.6)',
+          backdropFilter: 'blur(10px)',
+          border: stat.color ? `1px solid ${stat.color}` : '1px solid rgba(45, 53, 72, 0.6)',
+          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
         }}
         hoverable
       >

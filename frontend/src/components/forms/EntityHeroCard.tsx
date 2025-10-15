@@ -120,10 +120,12 @@ export const EntityHeroCard: React.FC<EntityHeroCardProps> = ({
       {/* Hero Card */}
       <Card
         style={{
-          background: 'linear-gradient(135deg, #f6f9fc 0%, #ffffff 100%)',
+          background: 'rgba(26, 31, 46, 0.6)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(45, 53, 72, 0.6)',
           borderRadius: '16px',
           marginBottom: '24px',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
         }}
       >
         <Row gutter={[16, 16]} align='middle'>

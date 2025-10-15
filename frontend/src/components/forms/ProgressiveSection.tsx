@@ -164,7 +164,7 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
               ? '1px solid #faad14'
               : validation?.status === 'success'
                 ? '1px solid #52c41a'
-                : '1px solid #f0f0f0',
+                : '1px solid rgba(100, 116, 139, 0.3)',
         borderRadius: '8px',
         marginBottom: '8px',
         transition: 'all 0.3s ease',
@@ -180,6 +180,10 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
       style={{
         marginBottom: '16px',
         opacity: disabled ? 0.6 : 1,
+        background: 'rgba(26, 31, 46, 0.6)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(45, 53, 72, 0.6)',
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
       }}
     >
       <Collapse
