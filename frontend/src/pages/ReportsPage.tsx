@@ -373,21 +373,32 @@ export const ReportsPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-              border: 'none',
-              color: 'white',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <Statistic
-              title={
-                <span style={{ color: 'rgba(255,255,255,0.8)' }}>
-                  {t('reports.totalRevenue')}
-                </span>
-              }
+              title={t('reports.totalRevenue')}
               value={revenueData?.totalRevenue || 0}
               formatter={value => formatCurrency(safeNumber(value))}
-              prefix={<DollarOutlined style={{ color: 'white' }} />}
-              valueStyle={{ color: 'white', fontWeight: 'bold' }}
+              prefix={
+                <DollarOutlined
+                  style={{
+                    fontSize: '24px',
+                    color: '#3b82f6',
+                    background: 'rgba(59, 130, 246, 0.15)',
+                    padding: '8px',
+                    borderRadius: '12px',
+                  }}
+                />
+              }
+              valueStyle={{
+                color: '#e2e8f0',
+                fontSize: '28px',
+                fontWeight: 700,
+              }}
             />
           </Card>
         </Col>
@@ -396,20 +407,31 @@ export const ReportsPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              border: 'none',
-              color: 'white',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <Statistic
-              title={
-                <span style={{ color: 'rgba(255,255,255,0.8)' }}>
-                  {t('reports.paidInvoices')}
-                </span>
-              }
+              title={t('reports.paidInvoices')}
               value={revenueData?.invoiceCount || 0}
-              prefix={<FileTextOutlined style={{ color: 'white' }} />}
-              valueStyle={{ color: 'white', fontWeight: 'bold' }}
+              prefix={
+                <FileTextOutlined
+                  style={{
+                    fontSize: '24px',
+                    color: '#10b981',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    padding: '8px',
+                    borderRadius: '12px',
+                  }}
+                />
+              }
+              valueStyle={{
+                color: '#e2e8f0',
+                fontSize: '28px',
+                fontWeight: 700,
+              }}
             />
           </Card>
         </Col>
@@ -418,20 +440,31 @@ export const ReportsPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              border: 'none',
-              color: 'white',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <Statistic
-              title={
-                <span style={{ color: 'rgba(255,255,255,0.8)' }}>
-                  {t('dashboard.totalClients')}
-                </span>
-              }
+              title={t('dashboard.totalClients')}
               value={clientData?.totalClients || 0}
-              prefix={<UserOutlined style={{ color: 'white' }} />}
-              valueStyle={{ color: 'white', fontWeight: 'bold' }}
+              prefix={
+                <UserOutlined
+                  style={{
+                    fontSize: '24px',
+                    color: '#f59e0b',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    padding: '8px',
+                    borderRadius: '12px',
+                  }}
+                />
+              }
+              valueStyle={{
+                color: '#e2e8f0',
+                fontSize: '28px',
+                fontWeight: 700,
+              }}
             />
           </Card>
         </Col>
@@ -440,20 +473,31 @@ export const ReportsPage: React.FC = () => {
           <Card
             style={{
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
-              border: 'none',
-              color: 'white',
+              border: '1px solid rgba(45, 53, 72, 0.6)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(26, 31, 46, 0.6)',
+              backdropFilter: 'blur(10px)',
             }}
           >
             <Statistic
-              title={
-                <span style={{ color: 'rgba(255,255,255,0.8)' }}>
-                  {t('dashboard.totalProjects')}
-                </span>
-              }
+              title={t('dashboard.totalProjects')}
               value={projectData?.totalProjects || 0}
-              prefix={<ProjectOutlined style={{ color: 'white' }} />}
-              valueStyle={{ color: 'white', fontWeight: 'bold' }}
+              prefix={
+                <ProjectOutlined
+                  style={{
+                    fontSize: '24px',
+                    color: '#ef4444',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    padding: '8px',
+                    borderRadius: '12px',
+                  }}
+                />
+              }
+              valueStyle={{
+                color: '#e2e8f0',
+                fontSize: '28px',
+                fontWeight: 700,
+              }}
             />
           </Card>
         </Col>
