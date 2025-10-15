@@ -15,6 +15,7 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../../store/auth'
+import { ThemeToggle } from '../ThemeToggle'
 // import { BreadcrumbProvider } from '../navigation'
 import MobileQuickActions from '../ui/MobileQuickActions'
 import MobileEntityNav from '../ui/MobileEntityNav'
@@ -289,6 +290,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             >
               Selamat datang, {user?.name}
             </Text>
+            <ThemeToggle size='large' />
             <Dropdown
               menu={{ items: userMenuItems }}
               placement='bottomRight'
