@@ -36,6 +36,7 @@ import {
 } from '../components/forms'
 import { CreateProjectRequest, projectService, ProjectType } from '../services/projects'
 import { clientService } from '../services/clients'
+import { projectTypesApi } from '../services/project-types'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -51,7 +52,7 @@ interface ProjectFormData {
   description: string
   scopeOfWork?: string
   output?: string
-  type: 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER'
+  projectTypeId: string  // Changed from 'type' to use actual database ID
   clientId: string
   startDate?: dayjs.Dayjs
   endDate?: dayjs.Dayjs
@@ -70,28 +71,21 @@ export const ProjectCreatePage: React.FC = () => {
 
   const prefilledClientId = searchParams.get('clientId')
 
-  // Project type mapping
-  const PROJECT_TYPE_MAPPING: Record<string, string> = {
-    PRODUCTION: 'cmd2xru9100026asuaclsg3kh',
-    SOCIAL_MEDIA: 'cmd2xru9500036asutntrz5mb',
-    CONSULTATION: 'cmd2xru9700046asuph748tvj',
-    MAINTENANCE: 'cmd2xru9800056asuco1tv1wn',
-    OTHER: 'cmd2xru9a00066asuag21f739'
-  }
-
-  const getProjectTypeId = (type: string): string => {
-    const projectTypeId = PROJECT_TYPE_MAPPING[type]
-    if (!projectTypeId) {
-      throw new Error(`Invalid project type: ${type}`)
-    }
-    return projectTypeId
-  }
-
   // Fetch clients for selection
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ['clients'],
     queryFn: clientService.getClients,
   })
+
+  // Fetch project types for selection
+  const { data: projectTypesResponse, isLoading: projectTypesLoading } = useQuery({
+    queryKey: ['project-types'],
+    queryFn: projectTypesApi.getAll,
+  })
+
+  const projectTypes = Array.isArray(projectTypesResponse)
+    ? projectTypesResponse
+    : (projectTypesResponse?.data || [])
 
   // Create project mutation
   const createProjectMutation = useMutation({
@@ -130,7 +124,7 @@ export const ProjectCreatePage: React.FC = () => {
       description: values.description,
       scopeOfWork: values.scopeOfWork,
       output: values.output,
-      projectTypeId: getProjectTypeId(values.type),
+      projectTypeId: values.projectTypeId,  // Use ID directly from form
       clientId: values.clientId,
       startDate: values.startDate?.toISOString(),
       endDate: values.endDate?.toISOString(),
@@ -148,7 +142,7 @@ export const ProjectCreatePage: React.FC = () => {
         description: values.description,
         scopeOfWork: values.scopeOfWork,
         output: values.output,
-        projectTypeId: getProjectTypeId(values.type),
+        projectTypeId: values.projectTypeId,  // Use ID directly from form
         clientId: values.clientId,
         startDate: values.startDate?.toISOString(),
         endDate: values.endDate?.toISOString(),
@@ -331,23 +325,30 @@ export const ProjectCreatePage: React.FC = () => {
 
             <Col xs={24} sm={12}>
               <Form.Item
-                name='type'
+                name='projectTypeId'
                 label='Project Type'
                 rules={[
                   { required: true, message: 'Please select project type' },
                 ]}
               >
                 <Select
-                  id='type'
+                  id='projectTypeId'
                   placeholder='Select project type'
                   size='large'
-                  options={[
-                    { value: 'PRODUCTION', label: 'Production Work' },
-                    { value: 'SOCIAL_MEDIA', label: 'Social Media Management' },
-                    { value: 'CONSULTATION', label: 'Consultation Services' },
-                    { value: 'MAINTENANCE', label: 'Maintenance & Support' },
-                    { value: 'OTHER', label: 'Other Services' },
-                  ]}
+                  loading={projectTypesLoading}
+                  showSearch
+                  filterOption={(input, option) =>
+                    ((option?.label as string) ?? '')
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  options={projectTypes
+                    .filter(pt => pt.isActive)
+                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                    .map(pt => ({
+                      value: pt.id,
+                      label: pt.name,
+                    }))}
                 />
               </Form.Item>
             </Col>

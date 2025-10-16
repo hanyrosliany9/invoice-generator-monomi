@@ -37,13 +37,12 @@ export const CompactMetricCard: React.FC<CompactMetricCardProps> = ({
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
         background: theme.colors.glass.background,
         backdropFilter: theme.colors.glass.backdropFilter,
-        padding: '12px 16px',
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.2s ease',
         height: '100%',
         ...style,
       }}
-      bodyStyle={{ padding: 0 }}
+      styles={{ body: { padding: '12px 16px' } }}
       hoverable={!!onClick}
     >
       {/* Icon + Label horizontal layout */}

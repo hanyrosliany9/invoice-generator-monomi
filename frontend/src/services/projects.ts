@@ -12,15 +12,6 @@ export interface ProjectType {
   sortOrder: number
 }
 
-// Static mapping based on seeded data
-const PROJECT_TYPE_MAPPING: Record<string, string> = {
-  PRODUCTION: 'cmd2xru9100026asuaclsg3kh',
-  SOCIAL_MEDIA: 'cmd2xru9500036asutntrz5mb',
-  CONSULTATION: 'cmd2xru9700046asuph748tvj',
-  MAINTENANCE: 'cmd2xru9800056asuco1tv1wn',
-  OTHER: 'cmd2xru9a00066asuag21f739'
-}
-
 export interface Project {
   id: string
   number: string
@@ -90,15 +81,6 @@ export interface CreateProjectRequest {
 
 export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {
   status?: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
-}
-
-// Helper function to map project type enum to ID
-const mapProjectTypeToId = (type: string): string => {
-  const projectTypeId = PROJECT_TYPE_MAPPING[type]
-  if (!projectTypeId) {
-    throw new Error(`Invalid project type: ${type}`)
-  }
-  return projectTypeId
 }
 
 export const projectService = {
