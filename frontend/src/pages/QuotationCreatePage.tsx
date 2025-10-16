@@ -47,6 +47,7 @@ import {
 import { projectService } from '../services/projects'
 import { clientService } from '../services/clients'
 import { formatIDR } from '../utils/currency'
+import { useTheme } from '../theme'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -69,6 +70,7 @@ export const QuotationCreatePage: React.FC = () => {
   const [searchParams] = useSearchParams()
   const [previewData, setPreviewData] = useState<any>(null)
   const { message } = App.useApp()
+  const { theme } = useTheme()
 
   // Mobile optimization and performance
   const mobile = useMobileOptimized()
@@ -461,8 +463,10 @@ export const QuotationCreatePage: React.FC = () => {
               size='small'
               style={{
                 marginTop: '16px',
-                background: 'rgba(26, 31, 46, 0.6)',
-                border: '1px solid rgba(100, 116, 139, 0.3)'
+                background: theme.colors.glass.background,
+                backdropFilter: theme.colors.glass.backdropFilter,
+                border: theme.colors.glass.border,
+                boxShadow: theme.colors.glass.shadow,
               }}
             >
               <Row gutter={[16, 8]}>
@@ -538,8 +542,10 @@ export const QuotationCreatePage: React.FC = () => {
               size='small'
               style={{
                 marginTop: '16px',
-                background: 'rgba(26, 31, 46, 0.6)',
-                border: '1px solid rgba(100, 116, 139, 0.3)'
+                background: theme.colors.glass.background,
+                backdropFilter: theme.colors.glass.backdropFilter,
+                border: theme.colors.glass.border,
+                boxShadow: theme.colors.glass.shadow,
               }}
             >
               <Title level={5} style={{ margin: 0, marginBottom: '8px' }}>
@@ -608,14 +614,16 @@ export const QuotationCreatePage: React.FC = () => {
                       <div style={{
                         marginTop: '8px',
                         padding: '8px',
-                        background: 'rgba(26, 31, 46, 0.6)',
-                        border: '1px solid rgba(100, 116, 139, 0.3)',
-                        borderRadius: '4px',
+                        background: theme.colors.glass.background,
+                        backdropFilter: theme.colors.glass.backdropFilter,
+                        border: theme.colors.glass.border,
+                        boxShadow: theme.colors.glass.shadow,
+                        borderRadius: '8px',
                         fontFamily: 'monospace',
                         fontSize: '12px',
                         maxHeight: '100px',
                         overflow: 'auto',
-                        color: '#e2e8f0'
+                        color: theme.colors.text.secondary
                       }}>
                         {selectedProject.scopeOfWork}
                       </div>
@@ -704,7 +712,16 @@ export const QuotationCreatePage: React.FC = () => {
         </ProgressiveSection>
 
         {/* Action Buttons */}
-        <Card style={{ marginTop: '24px', textAlign: 'center' }}>
+        <Card
+          style={{
+            marginTop: '24px',
+            textAlign: 'center',
+            background: theme.colors.glass.background,
+            backdropFilter: theme.colors.glass.backdropFilter,
+            border: theme.colors.glass.border,
+            boxShadow: theme.colors.glass.shadow,
+          }}
+        >
           <Space size='large'>
             <Button size='large' onClick={() => navigate('/quotations')}>
               Cancel

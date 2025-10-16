@@ -46,6 +46,7 @@ import { quotationService } from '../services/quotations'
 import { projectService } from '../services/projects'
 import { clientService } from '../services/clients'
 import { formatIDR } from '../utils/currency'
+import { useTheme } from '../theme'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -71,6 +72,7 @@ export const InvoiceEditPage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { message } = App.useApp()
+  const { theme } = useTheme()
   const { id } = useParams<{ id: string }>()
   const [autoSaving, setAutoSaving] = useState(false)
   const [previewData, setPreviewData] = useState<any>(null)
@@ -385,7 +387,14 @@ export const InvoiceEditPage: React.FC = () => {
         <Space direction='vertical' size='large' style={{ width: '100%' }}>
           {/* Invoice Status Management */}
           {availableActions.length > 0 && (
-            <Card title='Status Actions' size='small'>
+            <Card
+              title='Status Actions'
+              size='small'
+              style={{
+                background: theme.colors.card.background,
+                border: theme.colors.card.border,
+              }}
+            >
               <Space direction='vertical' style={{ width: '100%' }}>
                 {availableActions.map(action => (
                   <Button
@@ -781,7 +790,16 @@ export const InvoiceEditPage: React.FC = () => {
 
         {/* Action Buttons */}
         {canEdit && (
-          <Card style={{ marginTop: '24px', textAlign: 'center' }}>
+          <Card
+            style={{
+              marginTop: '24px',
+              textAlign: 'center',
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+            }}
+          >
             <Space size='large'>
               <Button size='large' onClick={() => navigate(`/invoices/${id}`)}>
                 Cancel

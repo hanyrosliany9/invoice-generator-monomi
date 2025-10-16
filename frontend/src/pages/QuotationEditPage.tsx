@@ -47,6 +47,7 @@ import {
 import { projectService } from '../services/projects'
 import { clientService } from '../services/clients'
 import { formatIDR } from '../utils/currency'
+import { useTheme } from '../theme'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -69,6 +70,7 @@ export const QuotationEditPage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { message } = App.useApp()
+  const { theme } = useTheme()
   const [autoSaving, setAutoSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [originalValues, setOriginalValues] =
@@ -389,7 +391,14 @@ export const QuotationEditPage: React.FC = () => {
           />
 
           {/* Status Information */}
-          <Card size='small' title='Quotation Status'>
+          <Card
+            size='small'
+            title='Quotation Status'
+            style={{
+              background: theme.colors.card.background,
+              border: theme.colors.card.border,
+            }}
+          >
             <Tag
               color={getStatusColor(quotation.status)}
               style={{ marginBottom: '8px' }}
@@ -563,8 +572,10 @@ export const QuotationEditPage: React.FC = () => {
               size='small'
               style={{
                 marginTop: '16px',
-                background: 'rgba(26, 31, 46, 0.6)',
-                border: '1px solid rgba(100, 116, 139, 0.3)'
+                background: theme.colors.glass.background,
+                backdropFilter: theme.colors.glass.backdropFilter,
+                border: theme.colors.glass.border,
+                boxShadow: theme.colors.glass.shadow,
               }}
             >
               <Title level={5} style={{ margin: 0, marginBottom: '8px' }}>
@@ -700,7 +711,16 @@ export const QuotationEditPage: React.FC = () => {
         </ProgressiveSection>
 
         {/* Action Buttons */}
-        <Card style={{ marginTop: '24px', textAlign: 'center' }}>
+        <Card
+          style={{
+            marginTop: '24px',
+            textAlign: 'center',
+            background: theme.colors.glass.background,
+            backdropFilter: theme.colors.glass.backdropFilter,
+            border: theme.colors.glass.border,
+            boxShadow: theme.colors.glass.shadow,
+          }}
+        >
           <Space size='large'>
             <Button size='large' onClick={() => navigate(`/quotations/${id}`)}>
               Cancel

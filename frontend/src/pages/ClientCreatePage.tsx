@@ -22,6 +22,7 @@ import {
 import { useOptimizedAutoSave } from '../hooks/useOptimizedAutoSave'
 import { useMobileOptimized } from '../hooks/useMobileOptimized'
 import { clientService } from '../services/clients'
+import { useTheme } from '../theme'
 
 const { TextArea } = Input
 
@@ -44,6 +45,7 @@ export const ClientCreatePage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { message } = App.useApp()
+  const { theme } = useTheme()
 
   // Mobile optimization and performance
   const mobile = useMobileOptimized()
@@ -281,7 +283,16 @@ export const ClientCreatePage: React.FC = () => {
         </ProgressiveSection>
 
         {/* Action Buttons */}
-        <Card style={{ marginTop: '24px', textAlign: 'center' }}>
+        <Card
+          style={{
+            marginTop: '24px',
+            textAlign: 'center',
+            background: theme.colors.glass.background,
+            backdropFilter: theme.colors.glass.backdropFilter,
+            border: theme.colors.glass.border,
+            boxShadow: theme.colors.glass.shadow,
+          }}
+        >
           <Space size='large'>
             <Button size='large' onClick={() => navigate('/clients')}>
               Cancel

@@ -39,6 +39,7 @@ import {
 } from '../components/forms'
 import { projectService, UpdateProjectRequest } from '../services/projects'
 import { clientService } from '../services/clients'
+import { useTheme } from '../theme'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -69,6 +70,7 @@ export const ProjectEditPage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { message } = App.useApp()
+  const { theme } = useTheme()
   const [autoSaving, setAutoSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [originalValues, setOriginalValues] = useState<ProjectFormData | null>(
@@ -360,7 +362,14 @@ export const ProjectEditPage: React.FC = () => {
           />
 
           {/* Project Status */}
-          <Card size='small' title='Project Status'>
+          <Card
+            size='small'
+            title='Project Status'
+            style={{
+              background: theme.colors.card.background,
+              border: theme.colors.card.border,
+            }}
+          >
             <Tag
               color={getStatusColor(formValues.status || project.status)}
               style={{ marginBottom: '8px' }}
@@ -580,9 +589,11 @@ export const ProjectEditPage: React.FC = () => {
               style={{
                 marginTop: '16px',
                 padding: '12px',
-                background: 'rgba(26, 31, 46, 0.6)',
-                border: '1px solid rgba(100, 116, 139, 0.3)',
+                background: theme.colors.glass.background,
+                backdropFilter: theme.colors.glass.backdropFilter,
+                border: theme.colors.glass.border,
                 borderRadius: '6px',
+                boxShadow: theme.colors.glass.shadow,
               }}
             >
               <Text type='secondary'>
@@ -609,7 +620,11 @@ export const ProjectEditPage: React.FC = () => {
                   <Card
                     key={key}
                     size='small'
-                    style={{ marginBottom: '16px' }}
+                    style={{
+                      marginBottom: '16px',
+                      background: theme.colors.card.background,
+                      border: theme.colors.card.border,
+                    }}
                     title={`Product/Service ${name + 1}`}
                     extra={
                       fields.length > 1 && (
@@ -731,7 +746,16 @@ export const ProjectEditPage: React.FC = () => {
         </ProgressiveSection>
 
         {/* Action Buttons */}
-        <Card style={{ marginTop: '24px', textAlign: 'center' }}>
+        <Card
+          style={{
+            marginTop: '24px',
+            textAlign: 'center',
+            background: theme.colors.glass.background,
+            backdropFilter: theme.colors.glass.backdropFilter,
+            border: theme.colors.glass.border,
+            boxShadow: theme.colors.glass.shadow,
+          }}
+        >
           <Space size='large'>
             <Button size='large' onClick={() => navigate(`/projects/${id}`)}>
               Cancel
