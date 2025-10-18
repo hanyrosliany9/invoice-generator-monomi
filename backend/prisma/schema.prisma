@@ -17,17 +17,28 @@ model User {
   email     String   @unique
   password  String
   name      String
-  role      UserRole @default(USER)
+  role      UserRole @default(STAFF)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  quotations           Quotation[]
-  invoices             Invoice[]
-  auditLogs            AuditLog[]
-  preferences          UserPreferences?
+  quotations            Quotation[]
+  invoices              Invoice[]
+  auditLogs             AuditLog[]
+  preferences           UserPreferences?
   businessJourneyEvents BusinessJourneyEvent[]
+
+  // Asset Management Relations
+  assets            Asset[]            @relation("CreatedAssets")
+  assetReservations AssetReservation[]
+
+  // Expense Management Relations
+  expenses         Expense[]                @relation("ExpenseSubmitter")
+  approvedExpenses Expense[]                @relation("ExpenseApprover")
+  expenseApprovals ExpenseApprovalHistory[] @relation("ExpenseApprovalUser")
+  expenseComments  ExpenseComment[]         @relation("ExpenseCommentUser")
+  expenseBudgets   ExpenseBudget[]          @relation("UserExpenseBudget")
 
   @@map("users")
 }
@@ -40,22 +51,23 @@ model Client {
   phone   String
   address String?
   company String?
-  
+
   // Contact details
   contactPerson String?
-  
+
   // Business details
   paymentTerms String? // Default payment terms
   status       String  @default("active") // Client status: active, inactive
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  quotations           Quotation[]
-  invoices             Invoice[]
-  projects             Project[]
+  quotations            Quotation[]
+  invoices              Invoice[]
+  projects              Project[]
   businessJourneyEvents BusinessJourneyEvent[]
+  expenses              Expense[] // Client-related expenses
 
   @@index([name])
   @@index([email])
@@ -69,11 +81,11 @@ model Client {
 
 // Project Management
 model Project {
-  id          String      @id @default(cuid())
-  number      String      @unique // Project number for reference
-  description String      // Project description
-  scopeOfWork String?     @db.Text // Narrative scope of work description
-  output      String      // Expected deliverables/output
+  id            String            @id @default(cuid())
+  number        String            @unique // Project number for reference
+  description   String // Project description
+  scopeOfWork   String?           @db.Text // Narrative scope of work description
+  output        String // Expected deliverables/output
   // Project type reference
   projectTypeId String
   projectType   ProjectTypeConfig @relation(fields: [projectTypeId], references: [id])
@@ -89,17 +101,33 @@ model Project {
   // Budget information
   estimatedBudget Decimal? @db.Decimal(12, 2)
   basePrice       Decimal? @db.Decimal(12, 2) // Base project price for cascade
-  priceBreakdown  Json?                       // Detailed price items (optional)
-  
+  priceBreakdown  Json? // Detailed price items (optional)
+
   status    ProjectStatus @default(PLANNING)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
   // Relations
-  quotations           Quotation[]
-  invoices             Invoice[]
+  quotations            Quotation[]
+  invoices              Invoice[]
   businessJourneyEvents BusinessJourneyEvent[]
-  documents            Document[]
+  documents             Document[]
+  expenses              Expense[] // Project-related expenses
+  expenseBudgets        ExpenseBudget[] // Project budgets
+
+  // Asset Management Relations
+  equipmentUsage    ProjectEquipmentUsage[]
+  assetReservations AssetReservation[]
+
+  // PSAK 72: Revenue Recognition
+  milestones ProjectMilestone[]
+
+  // PSAK 57: Work in Progress & Cost Allocation
+  workInProgress  WorkInProgress[]
+  costAllocations ProjectCostAllocation[]
+
+  // ===== PURCHASE-TO-PAY INTEGRATION =====
+  purchaseOrders PurchaseOrder[] // Purchase Orders (for budget tracking)
 
   @@index([number])
   @@index([status])
@@ -115,9 +143,9 @@ model Project {
 
 // Quotation Management
 model Quotation {
-  id              String          @id @default(cuid())
-  quotationNumber String          @unique
-  date            DateTime        @default(now())
+  id              String   @id @default(cuid())
+  quotationNumber String   @unique
+  date            DateTime @default(now())
   validUntil      DateTime
 
   // Client information
@@ -133,26 +161,32 @@ model Quotation {
   totalAmount      Decimal @db.Decimal(12, 2)
 
   // Scope of Work and pricing
-  scopeOfWork     String? @db.Text // Narrative scope of work (inherited or custom)
-  priceBreakdown  Json?            // Detailed price items inherited from project
+  scopeOfWork    String? @db.Text // Narrative scope of work (inherited or custom)
+  priceBreakdown Json? // Detailed price items inherited from project
 
   // Terms and conditions
   terms String?
-  
+
   // Status management
   status QuotationStatus @default(DRAFT)
-  
+
   // User tracking
   createdBy String
   user      User   @relation(fields: [createdBy], references: [id])
-  
+
+  // Approval audit fields (RBAC)
+  approvedBy String?
+  approvedAt DateTime?
+  rejectedBy String?
+  rejectedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  invoices             Invoice[]
+  invoices              Invoice[]
   businessJourneyEvents BusinessJourneyEvent[]
-  documents            Document[]
+  documents             Document[]
 
   @@index([quotationNumber])
   @@index([status])
@@ -170,9 +204,9 @@ model Quotation {
 
 // Invoice Management
 model Invoice {
-  id            String        @id @default(cuid())
-  invoiceNumber String        @unique
-  creationDate  DateTime      @default(now())
+  id            String   @id @default(cuid())
+  invoiceNumber String   @unique
+  creationDate  DateTime @default(now())
   dueDate       DateTime
 
   // Reference to quotation (optional - invoices can be standalone)
@@ -192,37 +226,48 @@ model Invoice {
   totalAmount      Decimal @db.Decimal(12, 2)
 
   // Scope of Work and pricing
-  scopeOfWork     String? @db.Text // Narrative scope of work (inherited from quotation/project)
-  priceBreakdown  Json?            // Detailed price items inherited from quotation or project
+  scopeOfWork    String? @db.Text // Narrative scope of work (inherited from quotation/project)
+  priceBreakdown Json? // Detailed price items inherited from quotation or project
 
   // Payment information
   paymentInfo String // Bank details, payment methods
-  
+
   // Indonesian compliance
-  materaiRequired Boolean @default(false) // Auto-calculated if > 5M IDR
-  materaiApplied  Boolean @default(false) // User confirms materai applied
+  materaiRequired  Boolean   @default(false) // Auto-calculated if > 5M IDR
+  materaiApplied   Boolean   @default(false) // User confirms materai applied
   materaiAppliedAt DateTime? // When materai was applied
   materaiAppliedBy String? // User who applied materai
-  materaiAmount   Decimal? @db.Decimal(12, 2) // Amount of stamp duty
-  
+  materaiAmount    Decimal?  @db.Decimal(12, 2) // Amount of stamp duty
+
   // Terms and signature
   terms     String?
   signature String? // Digital signature or file path
-  
+
   // Status management
   status InvoiceStatus @default(DRAFT)
-  
+
   // User tracking
   createdBy String
   user      User   @relation(fields: [createdBy], references: [id])
-  
+
+  // Payment audit fields (RBAC)
+  markedPaidBy String?
+  markedPaidAt DateTime?
+
+  // Accounting Integration
+  journalEntryId   String? // Journal entry when invoice sent (AR/Revenue)
+  paymentJournalId String? // Journal entry when invoice paid (Cash/AR)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  payments             Payment[]
+  payments              Payment[]
   businessJourneyEvents BusinessJourneyEvent[]
-  documents            Document[]
+  documents             Document[]
+  expenses              Expense[] // Billable expenses linked to invoice
+  allowances            AllowanceForDoubtfulAccounts[]
+  deferredRevenues      DeferredRevenue[] // PSAK 72: Deferred revenue entries
 
   @@index([invoiceNumber])
   @@index([status])
@@ -244,22 +289,26 @@ model Invoice {
 
 // Payment Tracking
 model Payment {
-  id                String        @id @default(cuid())
-  invoiceId         String
-  invoice           Invoice       @relation(fields: [invoiceId], references: [id])
-  amount            Decimal       @db.Decimal(12, 2)
-  paymentDate       DateTime
-  paymentMethod     PaymentMethod
-  transactionRef    String?       // Reference from payment gateway
-  bankDetails       String?       // Bank transfer details
-  status            PaymentStatus @default(PENDING)
-  confirmedAt       DateTime?
-  
+  id             String        @id @default(cuid())
+  invoiceId      String
+  invoice        Invoice       @relation(fields: [invoiceId], references: [id])
+  amount         Decimal       @db.Decimal(12, 2)
+  paymentDate    DateTime
+  paymentMethod  PaymentMethod
+  transactionRef String? // Reference from payment gateway
+  bankDetails    String? // Bank transfer details
+  status         PaymentStatus @default(PENDING)
+  confirmedAt    DateTime?
+
+  // Accounting Integration
+  journalEntryId String? // Journal entry for this payment
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
   businessJourneyEvents BusinessJourneyEvent[]
+  expenses              Expense[] // Expense reimbursement payments
 
   // Indexes for performance optimization
   @@index([invoiceId])
@@ -274,32 +323,32 @@ model Payment {
 
 // Business Journey Tracking
 model BusinessJourneyEvent {
-  id          String                       @id @default(cuid())
+  id          String                     @id @default(cuid())
   type        BusinessJourneyEventType
   title       String
   description String
-  status      BusinessJourneyEventStatus   @default(PENDING)
-  amount      Decimal?                     @db.Decimal(12, 2)
-  
+  status      BusinessJourneyEventStatus @default(PENDING)
+  amount      Decimal?                   @db.Decimal(12, 2)
+
   // Entity relationships
-  clientId     String?
-  client       Client?    @relation(fields: [clientId], references: [id])
-  projectId    String?
-  project      Project?   @relation(fields: [projectId], references: [id])
-  quotationId  String?
-  quotation    Quotation? @relation(fields: [quotationId], references: [id])
-  invoiceId    String?
-  invoice      Invoice?   @relation(fields: [invoiceId], references: [id])
-  paymentId    String?
-  payment      Payment?   @relation(fields: [paymentId], references: [id])
-  
+  clientId    String?
+  client      Client?    @relation(fields: [clientId], references: [id])
+  projectId   String?
+  project     Project?   @relation(fields: [projectId], references: [id])
+  quotationId String?
+  quotation   Quotation? @relation(fields: [quotationId], references: [id])
+  invoiceId   String?
+  invoice     Invoice?   @relation(fields: [invoiceId], references: [id])
+  paymentId   String?
+  payment     Payment?   @relation(fields: [paymentId], references: [id])
+
   // Metadata
   metadata BusinessJourneyEventMetadata?
-  
+
   // User tracking
   createdBy String
   user      User   @relation(fields: [createdBy], references: [id])
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -321,30 +370,30 @@ model BusinessJourneyEvent {
 
 // Business Journey Event Metadata
 model BusinessJourneyEventMetadata {
-  id       String @id @default(cuid())
-  eventId  String @unique
-  event    BusinessJourneyEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  
+  id      String               @id @default(cuid())
+  eventId String               @unique
+  event   BusinessJourneyEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
   // User information
-  userCreated   String
-  userModified  String?
-  
+  userCreated  String
+  userModified String?
+
   // System information
-  source       BusinessJourneyEventSource @default(SYSTEM)
-  priority     BusinessJourneyPriority    @default(MEDIUM)
-  
+  source   BusinessJourneyEventSource @default(SYSTEM)
+  priority BusinessJourneyPriority    @default(MEDIUM)
+
   // Additional data
-  tags              String[] // Array of tags
-  relatedDocuments  String[] // Array of document IDs
-  notes             String?
-  ipAddress         String?
-  userAgent         String?
-  
+  tags             String[] // Array of tags
+  relatedDocuments String[] // Array of document IDs
+  notes            String?
+  ipAddress        String?
+  userAgent        String?
+
   // Indonesian business context
-  materaiRequired   Boolean @default(false)
-  materaiAmount     Decimal? @db.Decimal(12, 2)
-  complianceStatus  String? // Compliance status with Indonesian regulations
-  
+  materaiRequired  Boolean  @default(false)
+  materaiAmount    Decimal? @db.Decimal(12, 2)
+  complianceStatus String? // Compliance status with Indonesian regulations
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -356,22 +405,22 @@ model BusinessJourneyEventMetadata {
 
 // UX Analytics for Performance Monitoring
 model UXMetrics {
-  id            String   @id @default(cuid())
+  id            String @id @default(cuid())
   componentName String
-  eventType     String   // 'render', 'interaction', 'error'
-  metricName    String   // 'load_time', 'interaction_delay', etc.
+  eventType     String // 'render', 'interaction', 'error'
+  metricName    String // 'load_time', 'interaction_delay', etc.
   value         Float
-  
+
   // Context
-  userId        String?
-  sessionId     String?
-  clientId      String?
-  url           String?
-  userAgent     String?
-  
+  userId    String?
+  sessionId String?
+  clientId  String?
+  url       String?
+  userAgent String?
+
   // Performance data
   performanceData Json? // Core Web Vitals and other metrics
-  
+
   createdAt DateTime @default(now())
 
   @@index([componentName])
@@ -385,11 +434,11 @@ model UXMetrics {
 // Audit Trail
 model AuditLog {
   id         String   @id @default(cuid())
-  action     String   // CREATE, UPDATE, DELETE
-  entityType String   // quotation, invoice, etc.
-  entityId   String   // ID of the affected entity
-  oldValues  Json?    // Previous state
-  newValues  Json?    // New state
+  action     String // CREATE, UPDATE, DELETE
+  entityType String // quotation, invoice, etc.
+  entityId   String // ID of the affected entity
+  oldValues  Json? // Previous state
+  newValues  Json? // New state
   userId     String
   user       User     @relation(fields: [userId], references: [id])
   ipAddress  String?
@@ -401,29 +450,37 @@ model AuditLog {
 
 // Enums
 enum UserRole {
-  ADMIN
-  USER
-  VIEWER
+  // New roles (production-ready RBAC)
+  SUPER_ADMIN // Owner/IT Admin - Full system access
+  FINANCE_MANAGER // Financial Controller - Approve transactions
+  ACCOUNTANT // Bookkeeper - Accounting ops, no approvals
+  PROJECT_MANAGER // Operations - CRUD ops, submit for approval
+  STAFF // Basic User - Create drafts, own data only
+  VIEWER // Read-Only - View data only
+
+  // Legacy roles (backward compatibility)
+  ADMIN // Maps to SUPER_ADMIN
+  USER // Maps to STAFF
 }
 
 // Dynamic Project Type Configuration
 model ProjectTypeConfig {
   id          String  @id @default(cuid())
   code        String  @unique // Unique code like "PRODUCTION", "SOCIAL_MEDIA"
-  name        String  // Display name like "Production Work"
+  name        String // Display name like "Production Work"
   description String? // Optional description
-  prefix      String  // Prefix for project numbers like "PH", "SM"
+  prefix      String // Prefix for project numbers like "PH", "SM"
   color       String  @default("#1890ff") // UI color for the type
   isDefault   Boolean @default(false) // Is this the default type
   isActive    Boolean @default(true) // Is this type active
   sortOrder   Int     @default(0) // Sort order for display
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   projects Project[]
-  
+
   @@index([code])
   @@index([isActive])
   @@index([sortOrder])
@@ -507,16 +564,16 @@ enum BusinessJourneyPriority {
 
 // Settings Models
 model UserPreferences {
-  id                  String  @id @default(cuid())
-  userId              String  @unique
-  user                User    @relation(fields: [userId], references: [id])
-  timezone            String  @default("Asia/Jakarta")
-  language            String  @default("id-ID")
-  currency            String  @default("IDR")
-  emailNotifications  Boolean @default(true)
-  pushNotifications   Boolean @default(true)
-  theme               String  @default("light")
-  
+  id                 String  @id @default(cuid())
+  userId             String  @unique
+  user               User    @relation(fields: [userId], references: [id])
+  timezone           String  @default("Asia/Jakarta")
+  language           String  @default("id-ID")
+  currency           String  @default("IDR")
+  emailNotifications Boolean @default(true)
+  pushNotifications  Boolean @default(true)
+  theme              String  @default("light")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -532,12 +589,12 @@ model CompanySettings {
   website     String?
   taxNumber   String? // NPWP
   currency    String  @default("IDR")
-  
+
   // Bank accounts
   bankBCA     String?
   bankMandiri String?
   bankBNI     String?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -545,17 +602,17 @@ model CompanySettings {
 }
 
 model SystemSettings {
-  id                    String  @id @default("default")
-  defaultPaymentTerms   String  @default("NET 30")
-  materaiThreshold      Int     @default(5000000)
-  invoicePrefix         String  @default("INV-")
-  quotationPrefix       String  @default("QT-")
-  autoBackup            Boolean @default(true)
-  backupFrequency       String  @default("daily")
-  backupTime            String  @default("02:00")
-  autoMateraiReminder   Boolean @default(true)
-  defaultCurrency       String  @default("IDR")
-  
+  id                  String  @id @default("default")
+  defaultPaymentTerms String  @default("NET 30")
+  materaiThreshold    Int     @default(5000000)
+  invoicePrefix       String  @default("INV-")
+  quotationPrefix     String  @default("QT-")
+  autoBackup          Boolean @default(true)
+  backupFrequency     String  @default("daily")
+  backupTime          String  @default("02:00")
+  autoMateraiReminder Boolean @default(true)
+  defaultCurrency     String  @default("IDR")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -564,37 +621,37 @@ model SystemSettings {
 
 // Feature Flags System
 model FeatureFlag {
-  id            String   @id @default(cuid())
-  name          String   @unique
-  description   String?
-  enabled       Boolean  @default(false)
-  globalEnabled Boolean  @default(false)
-  targetUsers   String[] // Array of user IDs
-  targetGroups  String[] // Array of group names
-  rules         Json?    // Additional targeting rules
-  expiresAt     DateTime?
+  id             String    @id @default(cuid())
+  name           String    @unique
+  description    String?
+  enabled        Boolean   @default(false)
+  globalEnabled  Boolean   @default(false)
+  targetUsers    String[] // Array of user IDs
+  targetGroups   String[] // Array of group names
+  rules          Json? // Additional targeting rules
+  expiresAt      DateTime?
   disabledReason String?
-  disabledAt    DateTime?
-  
+  disabledAt     DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   events FeatureFlagEvent[]
-  
+
   @@map("feature_flags")
 }
 
 model FeatureFlagEvent {
-  id           String    @id @default(cuid())
-  flagId       String
-  flag         FeatureFlag @relation(fields: [flagId], references: [id])
-  userId       String?
-  eventType    String    // 'enabled', 'disabled', 'viewed', 'clicked'
-  metadata     Json?
-  
+  id        String      @id @default(cuid())
+  flagId    String
+  flag      FeatureFlag @relation(fields: [flagId], references: [id])
+  userId    String?
+  eventType String // 'enabled', 'disabled', 'viewed', 'clicked'
+  metadata  Json?
+
   createdAt DateTime @default(now())
-  
+
   @@index([flagId])
   @@index([userId])
   @@index([eventType])
@@ -603,15 +660,15 @@ model FeatureFlagEvent {
 
 // Document Management
 model Document {
-  id               String       @id @default(cuid())
+  id               String           @id @default(cuid())
   fileName         String
   originalFileName String
   filePath         String
-  fileSize         Int          // Size in bytes
+  fileSize         Int // Size in bytes
   mimeType         String
   category         DocumentCategory @default(OTHER)
   description      String?
-  
+
   // Entity relationships - documents can be attached to invoices, quotations, or projects
   invoiceId   String?
   invoice     Invoice?   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -619,11 +676,11 @@ model Document {
   quotation   Quotation? @relation(fields: [quotationId], references: [id], onDelete: Cascade)
   projectId   String?
   project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+
   // User tracking
   uploadedBy String
   uploadedAt DateTime @default(now())
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -642,4 +699,2566 @@ enum DocumentCategory {
   RECEIPT
   INVOICE_ATTACHMENT
   OTHER
+}
+
+// ============================================
+// PROPERTY MANAGEMENT SYSTEM
+// ============================================
+
+// Asset Management
+model Asset {
+  id             String  @id @default(cuid())
+  assetCode      String  @unique
+  name           String
+  category       String // Camera, Lens, Lighting, Audio, Drone, Computer, etc.
+  subcategory    String?
+  manufacturer   String?
+  model          String?
+  serialNumber   String?
+  specifications Json?
+
+  // Purchase information
+  purchaseDate       DateTime
+  purchasePrice      Decimal   @db.Decimal(15, 2)
+  supplier           String?
+  invoiceNumber      String?
+  warrantyExpiration DateTime?
+
+  // Future depreciation fields (kept for compatibility)
+  currentValue   Decimal? @db.Decimal(15, 2)
+  notesFinancial String?  @db.Text
+
+  // Status and condition
+  status    AssetStatus    @default(AVAILABLE)
+  condition AssetCondition @default(GOOD)
+  location  String?
+
+  // Media and tracking
+  photos    String[] // Array of file paths
+  documents String[] // Array of file paths
+  qrCode    String?  @db.Text // Base64 QR code or file path
+  rfidTag   String?
+  tags      String[] // Array of tags for search
+  notes     String?  @db.Text
+
+  // Audit fields
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+
+  // Relations
+  createdBy             User?                   @relation("CreatedAssets", fields: [createdById], references: [id])
+  reservations          AssetReservation[]
+  maintenanceRecords    MaintenanceRecord[]
+  maintenanceSchedules  MaintenanceSchedule[]
+  kitItems              AssetKitItem[]
+  projectUsage          ProjectEquipmentUsage[]
+  depreciationSchedules DepreciationSchedule[]
+  depreciationEntries   DepreciationEntry[]
+
+  // ===== PURCHASE-TO-PAY INTEGRATION =====
+
+  // Vendor Integration
+  vendorId String?
+  vendor   Vendor? @relation(fields: [vendorId], references: [id])
+
+  // Purchase Workflow Links
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+
+  goodsReceiptId String?
+  goodsReceipt   GoodsReceipt? @relation(fields: [goodsReceiptId], references: [id])
+
+  vendorInvoiceId String?
+  vendorInvoice   VendorInvoice? @relation(fields: [vendorInvoiceId], references: [id])
+
+  // Relations
+  poItems PurchaseOrderItem[]
+
+  @@index([assetCode])
+  @@index([category])
+  @@index([status])
+  @@index([condition])
+  @@index([createdById])
+  @@index([createdAt])
+  // Composite indexes for common queries
+  @@index([category, status])
+  @@index([status, condition])
+  @@map("assets")
+}
+
+// Asset Reservation System
+model AssetReservation {
+  id        String            @id @default(cuid())
+  assetId   String
+  userId    String
+  projectId String?
+  startDate DateTime
+  endDate   DateTime
+  purpose   String            @db.Text
+  status    ReservationStatus @default(PENDING)
+  notes     String?           @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  asset   Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
+
+  @@index([assetId])
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  // Composite indexes for conflict detection
+  @@index([assetId, startDate, endDate])
+  @@index([assetId, status])
+  @@map("asset_reservations")
+}
+
+// Maintenance Schedule (Preventive Maintenance)
+model MaintenanceSchedule {
+  id                  String               @id @default(cuid())
+  assetId             String
+  maintenanceType     String // "Cleaning", "Calibration", "Inspection", etc.
+  frequency           MaintenanceFrequency
+  lastMaintenanceDate DateTime?
+  nextMaintenanceDate DateTime
+  isActive            Boolean              @default(true)
+  notes               String?              @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@index([nextMaintenanceDate])
+  @@index([isActive])
+  // Composite indexes for maintenance alerts
+  @@index([isActive, nextMaintenanceDate])
+  @@map("maintenance_schedules")
+}
+
+// Maintenance Record (Actual Maintenance Performed)
+model MaintenanceRecord {
+  id                  String    @id @default(cuid())
+  assetId             String
+  maintenanceType     String
+  performedDate       DateTime
+  performedBy         String? // Technician name or company
+  cost                Decimal?  @db.Decimal(15, 2)
+  description         String    @db.Text
+  partsReplaced       Json? // Array of parts replaced
+  nextMaintenanceDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@index([performedDate])
+  @@index([maintenanceType])
+  @@map("maintenance_records")
+}
+
+// Asset Kit (Equipment Bundles)
+model AssetKit {
+  id          String  @id @default(cuid())
+  name        String
+  description String? @db.Text
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  items AssetKitItem[]
+
+  @@index([isActive])
+  @@map("asset_kits")
+}
+
+// Asset Kit Items (Many-to-Many through table)
+model AssetKitItem {
+  id       String @id @default(cuid())
+  kitId    String
+  assetId  String
+  quantity Int    @default(1)
+
+  // Relations
+  kit   AssetKit @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  asset Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([kitId, assetId])
+  @@index([kitId])
+  @@index([assetId])
+  @@map("asset_kit_items")
+}
+
+// Project Equipment Usage Tracking
+model ProjectEquipmentUsage {
+  id         String    @id @default(cuid())
+  projectId  String?
+  assetId    String
+  startDate  DateTime // When asset was checked out
+  endDate    DateTime? // Expected return date
+  returnDate DateTime? // Actual return date
+  condition  String? // Condition on return
+  notes      String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  asset   Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([assetId])
+  @@index([startDate])
+  @@index([returnDate])
+  // Composite indexes for usage analytics
+  @@index([assetId, startDate])
+  @@index([projectId, assetId])
+  @@map("project_equipment_usage")
+}
+
+// Property Management Enums
+enum AssetStatus {
+  AVAILABLE
+  RESERVED
+  CHECKED_OUT
+  IN_MAINTENANCE
+  BROKEN
+  RETIRED
+}
+
+enum AssetCondition {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+  BROKEN
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum MaintenanceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+  AS_NEEDED
+}
+
+// ============================================
+// EXPENSE MANAGEMENT SYSTEM
+// ============================================
+
+// Main Expense Model - Indonesian Compliant
+model Expense {
+  id            String @id @default(cuid())
+  expenseNumber String @unique // EXP-2025-0001
+
+  // ===== INDONESIAN COMPLIANCE FIELDS =====
+
+  // Bukti Pengeluaran Number
+  buktiPengeluaranNumber String @unique // BKK-2025-0001
+
+  // PSAK Chart of Accounts
+  accountCode   String // 6-1010, 6-2050, 8-1010
+  accountName   String // Indonesian account name
+  accountNameEn String? // English account name
+
+  // Expense Classification (for Income Statement)
+  expenseClass ExpenseClass // SELLING, GENERAL_ADMIN, OTHER
+
+  // Bilingual Descriptions
+  description   String // Primary description
+  descriptionId String? // Indonesian description (Uraian)
+  descriptionEn String? // English description
+
+  // ===== TAX COMPLIANCE FIELDS =====
+
+  // PPN (VAT) - Indonesian 2025 Rates
+  ppnRate       Decimal     @default(0.1200) @db.Decimal(5, 4) // 12% or 11%
+  ppnAmount     Decimal     @db.Decimal(12, 2)
+  ppnCategory   PPNCategory @default(CREDITABLE)
+  isLuxuryGoods Boolean     @default(false) // For 12% vs 11% rate
+
+  // E-Faktur Integration
+  eFakturNSFP         String? // Nomor Seri Faktur Pajak: 010.123-25.12345678
+  eFakturQRCode       String?       @db.Text // QR Code data
+  eFakturApprovalCode String? // DGT approval code
+  eFakturStatus       EFakturStatus @default(NOT_REQUIRED)
+  eFakturValidatedAt  DateTime?
+
+  // Withholding Tax (PPh)
+  withholdingTaxType   WithholdingTaxType? // PPH23, PPH4_2, PPH15
+  withholdingTaxRate   Decimal?            @db.Decimal(5, 4) // 0.02, 0.15, etc.
+  withholdingTaxAmount Decimal?            @db.Decimal(12, 2)
+  buktiPotongNumber    String? // Withholding tax evidence number
+  buktiPotongDate      DateTime?
+
+  // ===== VENDOR INFORMATION (Indonesian Format) =====
+
+  vendorName        String // Nama Vendor
+  vendorNPWP        String? // NPWP (Tax ID): 01.234.567.8-901.000
+  vendorAddress     String? // Alamat
+  vendorPhone       String?
+  vendorBank        String? // Bank name
+  vendorAccountNo   String? // Bank account number
+  vendorAccountName String? // Account holder name
+
+  // ===== AMOUNT BREAKDOWN (Indonesian Tax Format) =====
+
+  grossAmount       Decimal  @db.Decimal(12, 2) // Jumlah Bruto (before PPN)
+  withholdingAmount Decimal? @db.Decimal(12, 2) // PPh withheld
+  netAmount         Decimal  @db.Decimal(12, 2) // Net payment (Jumlah Bersih)
+  totalAmount       Decimal  @db.Decimal(12, 2) // Gross + PPN (for display)
+
+  // ===== STANDARD FIELDS =====
+
+  expenseDate DateTime // Tanggal Pengeluaran
+  currency    String   @default("IDR")
+
+  // Categorization
+  categoryId      String
+  category        ExpenseCategory @relation(fields: [categoryId], references: [id])
+  tags            String[] // Custom tags
+  isTaxDeductible Boolean         @default(true) // Most business expenses are
+
+  // Relationships
+  userId String // Expense submitter
+  user   User   @relation("ExpenseSubmitter", fields: [userId], references: [id])
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  // Billable Tracking
+  isBillable     Boolean  @default(false)
+  billableAmount Decimal? @db.Decimal(12, 2)
+  invoiceId      String? // If converted to invoice item
+  invoice        Invoice? @relation(fields: [invoiceId], references: [id])
+
+  // Approval Workflow
+  status          ExpenseStatus @default(DRAFT)
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  approvedBy      String?
+  approver        User?         @relation("ExpenseApprover", fields: [approvedBy], references: [id])
+  rejectedAt      DateTime?
+  rejectionReason String?       @db.Text
+
+  // Payment Tracking
+  paymentStatus    ExpensePaymentStatus @default(UNPAID)
+  paidAt           DateTime?
+  paymentMethod    String? // BANK_TRANSFER, CASH, etc.
+  paymentReference String? // Bank transfer reference
+  paymentId        String?
+  payment          Payment?             @relation(fields: [paymentId], references: [id])
+
+  // Accounting Integration
+  journalEntryId   String? // Journal entry when expense submitted (Expense/AP)
+  paymentJournalId String? // Journal entry when expense paid (AP/Cash)
+
+  // Notes
+  notes         String? @db.Text
+  notesId       String? @db.Text // Indonesian notes
+  notesEn       String? @db.Text // English notes
+  receiptNumber String? // Merchant receipt number
+  merchantName  String? // Merchant name (if different from vendor)
+  location      String? // Location of expense
+
+  // Documents (Receipts, E-Faktur, Supporting Docs)
+  documents ExpenseDocument[]
+
+  // Audit Trail
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+
+  // Relations
+  approvalHistory ExpenseApprovalHistory[]
+  comments        ExpenseComment[]
+  costAllocations ProjectCostAllocation[] // PSAK 57: Project cost allocation
+
+  // ===== PURCHASE-TO-PAY INTEGRATION =====
+
+  // Purchase Type & Source
+  purchaseType   PurchaseType   @default(DIRECT)
+  purchaseSource PurchaseSource @default(MANUAL)
+
+  // Vendor Integration (FK to Vendor master)
+  vendorId String?
+  vendor   Vendor? @relation(fields: [vendorId], references: [id])
+
+  // Purchase Workflow Links
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+
+  vendorInvoiceId String?
+  vendorInvoice   VendorInvoice? @relation(fields: [vendorInvoiceId], references: [id])
+
+  accountsPayableId String?          @unique
+  accountsPayable   AccountsPayable?
+
+  // Payment Terms
+  dueDate DateTime? // Actual due date (not calculated)
+
+  // Keep existing vendorName and vendorNPWP for legacy data
+  // vendorName       String    (existing - line 997)
+  // vendorNPWP       String?   (existing - line 998)
+
+  // Indexes for Performance
+  @@index([expenseNumber])
+  @@index([buktiPengeluaranNumber])
+  @@index([accountCode])
+  @@index([expenseClass])
+  @@index([status])
+  @@index([userId])
+  @@index([projectId])
+  @@index([clientId])
+  @@index([categoryId])
+  @@index([expenseDate])
+  @@index([eFakturNSFP])
+  @@index([ppnCategory])
+  @@index([status, userId])
+  @@index([projectId, status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  // Purchase-to-Pay indexes
+  @@index([vendorId])
+  @@index([purchaseOrderId])
+  @@index([vendorInvoiceId])
+  @@index([purchaseType])
+  @@index([purchaseSource])
+  @@index([dueDate])
+  @@map("expenses")
+}
+
+// Expense Category (PSAK-Aligned)
+model ExpenseCategory {
+  id   String @id @default(cuid())
+  code String @unique // OFFICE_RENT, ADVERTISING, etc.
+
+  // PSAK Account Code
+  accountCode  String // 6-1010, 6-2050, 8-1010
+  expenseClass ExpenseClass // SELLING, GENERAL_ADMIN, OTHER
+
+  // Bilingual Names
+  name          String // English name
+  nameId        String // Indonesian name (e.g., "Sewa Kantor")
+  description   String? // English description
+  descriptionId String? // Indonesian description
+
+  // Hierarchy Support
+  parentId String?
+  parent   ExpenseCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children ExpenseCategory[] @relation("CategoryHierarchy")
+
+  // Tax Configuration
+  defaultPPNRate     Decimal             @default(0.1200) @db.Decimal(5, 4) // 12%
+  isLuxuryGoods      Boolean             @default(false)
+  withholdingTaxType WithholdingTaxType? @default(NONE)
+  withholdingTaxRate Decimal?            @db.Decimal(5, 4)
+
+  // UI Settings
+  icon  String? // Icon name for UI
+  color String  @default("#1890ff") // Display color
+
+  // Business Rules
+  isActive         Boolean @default(true)
+  isBillable       Boolean @default(false) // Default billable setting
+  requiresReceipt  Boolean @default(true)
+  requiresEFaktur  Boolean @default(true) // Require e-Faktur validation
+  approvalRequired Boolean @default(true)
+  sortOrder        Int     @default(0)
+
+  // Relations
+  expenses Expense[]
+  budgets  ExpenseBudget[]
+
+  // Purchase-to-Pay Integration
+  purchaseOrderItems PurchaseOrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@index([accountCode])
+  @@index([expenseClass])
+  @@index([parentId])
+  @@index([isActive])
+  @@map("expense_categories")
+}
+
+// Expense Approval History
+model ExpenseApprovalHistory {
+  id        String  @id @default(cuid())
+  expenseId String
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  action   ExpenseApprovalAction // SUBMITTED, APPROVED, REJECTED, RECALLED
+  actionBy String
+  user     User                  @relation("ExpenseApprovalUser", fields: [actionBy], references: [id])
+
+  previousStatus ExpenseStatus
+  newStatus      ExpenseStatus
+
+  comments   String? @db.Text
+  commentsId String? @db.Text // Indonesian comments
+  commentsEn String? @db.Text // English comments
+
+  actionDate DateTime @default(now())
+
+  @@index([expenseId])
+  @@index([actionBy])
+  @@index([actionDate])
+  @@map("expense_approval_history")
+}
+
+// Expense Comments
+model ExpenseComment {
+  id        String  @id @default(cuid())
+  expenseId String
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("ExpenseCommentUser", fields: [userId], references: [id])
+
+  comment   String  @db.Text
+  commentId String? @db.Text // Indonesian comment
+  commentEn String? @db.Text // English comment
+
+  isInternal Boolean @default(false) // Internal notes vs public comments
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expenseId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("expense_comments")
+}
+
+// Expense Budget Tracking
+model ExpenseBudget {
+  id            String  @id @default(cuid())
+  name          String
+  nameId        String? // Indonesian name
+  description   String?
+  descriptionId String? // Indonesian description
+
+  // Budget Scope
+  categoryId String?
+  category   ExpenseCategory? @relation(fields: [categoryId], references: [id])
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  userId String? // User-specific budget
+  user   User?   @relation("UserExpenseBudget", fields: [userId], references: [id])
+
+  // Budget Amounts
+  amount    Decimal      @db.Decimal(12, 2)
+  period    BudgetPeriod // MONTHLY, QUARTERLY, YEARLY, CUSTOM
+  startDate DateTime
+  endDate   DateTime
+
+  // Tracking
+  spent     Decimal @default(0) @db.Decimal(12, 2)
+  remaining Decimal @db.Decimal(12, 2)
+
+  // Alerts
+  alertThreshold Int     @default(80) // Alert at 80% spent
+  alertSent      Boolean @default(false)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([projectId])
+  @@index([userId])
+  @@index([startDate, endDate])
+  @@index([isActive])
+  @@map("expense_budgets")
+}
+
+// Expense Documents (separate from general Document to avoid circular dependencies)
+model ExpenseDocument {
+  id               String                  @id @default(cuid())
+  fileName         String
+  originalFileName String
+  filePath         String
+  fileSize         Int // Size in bytes
+  mimeType         String
+  category         ExpenseDocumentCategory @default(OTHER)
+  description      String?
+
+  // Expense relationship
+  expenseId String
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  // User tracking
+  uploadedBy String
+  uploadedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expenseId])
+  @@index([category])
+  @@index([mimeType])
+  @@index([uploadedAt])
+  @@map("expense_documents")
+}
+
+// ============================================
+// EXPENSE ENUMS
+// ============================================
+
+enum ExpenseStatus {
+  DRAFT // Being created
+  SUBMITTED // Submitted for approval
+  APPROVED // Approved by manager
+  REJECTED // Rejected
+  PAID // Reimbursement paid
+  CANCELLED // Cancelled by submitter
+}
+
+enum ExpensePaymentStatus {
+  UNPAID // Not yet paid
+  PENDING // Payment in progress
+  PAID // Payment completed
+  PARTIAL // Partially paid
+}
+
+enum ExpenseApprovalAction {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  RECALLED // Submitter withdrew submission
+  PAYMENT_REQUESTED
+  PAYMENT_COMPLETED
+}
+
+enum BudgetPeriod {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+// ===== INDONESIAN COMPLIANCE ENUMS =====
+
+enum ExpenseClass {
+  SELLING // Beban Penjualan (6-1xxx)
+  GENERAL_ADMIN // Beban Administrasi & Umum (6-2xxx)
+  OTHER // Beban Lain-Lain (8-xxxx)
+}
+
+enum PPNCategory {
+  CREDITABLE // PPN Masukan (can credit against output VAT)
+  NON_CREDITABLE // Cannot be credited
+  EXEMPT // VAT-exempt
+  ZERO_RATED // 0% VAT (exports)
+}
+
+enum EFakturStatus {
+  NOT_REQUIRED // Not required for this expense
+  PENDING // Awaiting e-Faktur upload
+  UPLOADED // Uploaded, awaiting validation
+  VALID // Validated by DGT
+  INVALID // Invalid e-Faktur
+  EXPIRED // e-Faktur expired
+}
+
+enum WithholdingTaxType {
+  PPH23 // PPh Pasal 23 (services)
+  PPH4_2 // PPh Pasal 4(2) (final)
+  PPH15 // PPh Pasal 15 (specific activities)
+  NONE // No withholding tax
+}
+
+enum ExpenseDocumentCategory {
+  RECEIPT // E-Faktur or receipt
+  SUPPORTING_DOC // Supporting document
+  CONTRACT // Contract
+  BUKTI_POTONG // Withholding tax evidence
+  OTHER // Other documents
+}
+
+// ============================================
+// ACCOUNTING SYSTEM (PSAK COMPLIANT)
+// ============================================
+
+// Chart of Accounts (Bagan Akun)
+model ChartOfAccounts {
+  id             String      @id @default(cuid())
+  code           String      @unique // 1-1010, 4-1010, 6-1010
+  name           String // English name
+  nameId         String // Indonesian name
+  accountType    AccountType // ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE
+  accountSubType String // CURRENT_ASSET, FIXED_ASSET, etc.
+  normalBalance  BalanceType // DEBIT or CREDIT
+
+  // Hierarchy
+  parentId String?
+  parent   ChartOfAccounts?  @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children ChartOfAccounts[] @relation("AccountHierarchy")
+
+  // Tax Configuration
+  isControlAccount Boolean @default(false) // AR, AP, Cash
+  isTaxAccount     Boolean @default(false) // PPN, PPh
+  taxType          String? // PPN_IN, PPN_OUT, PPH23, PPH4_2
+
+  // Status
+  isActive        Boolean @default(true)
+  isSystemAccount Boolean @default(false) // Cannot be deleted
+  description     String?
+  descriptionId   String?
+
+  // Relations
+  journalLineItems JournalLineItem[]
+  ledgerEntries    GeneralLedger[]
+  accountBalances  AccountBalance[]
+
+  // Cash Transaction Relations
+  cashTransactionsCash   CashTransaction[] @relation("CashTransactionCashAccount")
+  cashTransactionsOffset CashTransaction[] @relation("CashTransactionOffsetAccount")
+
+  // Bank Transfer Relations
+  bankTransfersFrom BankTransfer[] @relation("BankTransferFromAccount")
+  bankTransfersTo   BankTransfer[] @relation("BankTransferToAccount")
+
+  // Bank Reconciliation Relations
+  bankReconciliations BankReconciliation[] @relation("BankReconciliationAccount")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@index([accountType])
+  @@index([isActive])
+  @@index([parentId])
+  @@map("chart_of_accounts")
+}
+
+// Journal Entries (Jurnal Umum)
+model JournalEntry {
+  id          String    @id @default(cuid())
+  entryNumber String    @unique // JE-2025-10-0001
+  entryDate   DateTime
+  postingDate DateTime? // When posted to ledger
+
+  // Description
+  description   String
+  descriptionId String?
+  descriptionEn String?
+
+  // Transaction Reference
+  transactionType TransactionType // INVOICE, PAYMENT, EXPENSE, etc.
+  transactionId   String // ID of invoice, payment, expense, etc.
+
+  // Source Document
+  documentNumber String? // Invoice number, expense number
+  documentDate   DateTime?
+
+  // Status
+  status   JournalStatus @default(DRAFT)
+  isPosted Boolean       @default(false)
+  postedAt DateTime?
+  postedBy String?
+
+  // Fiscal Period
+  fiscalPeriodId String?
+  fiscalPeriod   FiscalPeriod? @relation(fields: [fiscalPeriodId], references: [id])
+
+  // Reversal
+  isReversing      Boolean        @default(false)
+  reversedEntryId  String?
+  reversedEntry    JournalEntry?  @relation("JournalReversal", fields: [reversedEntryId], references: [id])
+  reversingEntries JournalEntry[] @relation("JournalReversal")
+
+  // User Tracking
+  createdBy String
+  updatedBy String?
+
+  // Relations
+  lineItems           JournalLineItem[]
+  ledgerEntries       GeneralLedger[]
+  depreciationEntries DepreciationEntry[]
+  eclProvisions       AllowanceForDoubtfulAccounts[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([entryNumber])
+  @@index([entryDate])
+  @@index([status])
+  @@index([transactionType])
+  @@index([transactionId])
+  @@index([fiscalPeriodId])
+  @@index([isPosted])
+  @@map("journal_entries")
+}
+
+// Journal Line Items (Detail Jurnal)
+model JournalLineItem {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  lineNumber Int // 1, 2, 3...
+
+  // Account
+  accountId String
+  account   ChartOfAccounts @relation(fields: [accountId], references: [id])
+
+  // Amount
+  debit  Decimal @default(0) @db.Decimal(15, 2)
+  credit Decimal @default(0) @db.Decimal(15, 2)
+
+  // Description
+  description   String?
+  descriptionId String?
+
+  // Dimensions (for reporting)
+  projectId    String?
+  clientId     String?
+  departmentId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([journalEntryId])
+  @@index([accountId])
+  @@index([projectId])
+  @@index([clientId])
+  @@map("journal_line_items")
+}
+
+// General Ledger (Buku Besar)
+model GeneralLedger {
+  id String @id @default(cuid())
+
+  // Account
+  accountId String
+  account   ChartOfAccounts @relation(fields: [accountId], references: [id])
+
+  // Transaction Details
+  entryDate   DateTime
+  postingDate DateTime
+
+  // Journal Reference
+  journalEntryId     String
+  journalEntry       JournalEntry @relation(fields: [journalEntryId], references: [id])
+  journalEntryNumber String
+  lineNumber         Int
+
+  // Amount
+  debit   Decimal @default(0) @db.Decimal(15, 2)
+  credit  Decimal @default(0) @db.Decimal(15, 2)
+  balance Decimal @db.Decimal(15, 2) // Running balance
+
+  // Description
+  description   String
+  descriptionId String?
+
+  // Transaction Reference
+  transactionType TransactionType
+  transactionId   String
+  documentNumber  String?
+
+  // Dimensions
+  projectId      String?
+  clientId       String?
+  fiscalPeriodId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([accountId])
+  @@index([entryDate])
+  @@index([postingDate])
+  @@index([journalEntryId])
+  @@index([transactionType])
+  @@index([fiscalPeriodId])
+  @@index([projectId])
+  @@index([clientId])
+  @@map("general_ledger")
+}
+
+// Account Balances (Saldo Akun)
+model AccountBalance {
+  id String @id @default(cuid())
+
+  // Account
+  accountId String
+  account   ChartOfAccounts @relation(fields: [accountId], references: [id])
+
+  // Period
+  fiscalPeriodId String
+  fiscalPeriod   FiscalPeriod @relation(fields: [fiscalPeriodId], references: [id])
+
+  // Balances
+  beginningBalance Decimal @default(0) @db.Decimal(15, 2)
+  debitTotal       Decimal @default(0) @db.Decimal(15, 2)
+  creditTotal      Decimal @default(0) @db.Decimal(15, 2)
+  endingBalance    Decimal @default(0) @db.Decimal(15, 2)
+
+  // Status
+  isClosed Boolean   @default(false)
+  closedAt DateTime?
+
+  lastUpdated DateTime @updatedAt
+
+  @@unique([accountId, fiscalPeriodId])
+  @@index([accountId])
+  @@index([fiscalPeriodId])
+  @@index([isClosed])
+  @@map("account_balances")
+}
+
+// Fiscal Periods (Periode Fiskal)
+model FiscalPeriod {
+  id         String     @id @default(cuid())
+  name       String // "January 2025", "Q1 2025"
+  code       String     @unique // "2025-01", "2025-Q1"
+  periodType PeriodType // MONTHLY, QUARTERLY, YEARLY
+
+  startDate DateTime
+  endDate   DateTime
+
+  // Status
+  status   PeriodStatus @default(OPEN)
+  isActive Boolean      @default(true)
+
+  // Closing
+  closedAt     DateTime?
+  closedBy     String?
+  closingNotes String?
+
+  // Relations
+  journalEntries      JournalEntry[]
+  accountBalances     AccountBalance[]
+  depreciationEntries DepreciationEntry[]
+  eclProvisions       AllowanceForDoubtfulAccounts[]
+  deferredRevenues    DeferredRevenue[] // PSAK 72: Deferred revenue entries
+  workInProgress      WorkInProgress[] // PSAK 57: WIP tracking
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("fiscal_periods")
+}
+
+// Financial Statements (Cache for Reports)
+model FinancialStatement {
+  id            String        @id @default(cuid())
+  statementType StatementType
+
+  // Period
+  fiscalPeriodId String
+  startDate      DateTime
+  endDate        DateTime
+
+  // Data (JSON for flexibility)
+  data Json
+
+  // Metadata
+  generatedAt DateTime @default(now())
+  generatedBy String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([statementType])
+  @@index([fiscalPeriodId])
+  @@index([startDate, endDate])
+  @@map("financial_statements")
+}
+
+// ============================================
+// ACCOUNTING ENUMS
+// ============================================
+
+enum AccountType {
+  ASSET // 1-xxxx
+  LIABILITY // 2-xxxx
+  EQUITY // 3-xxxx
+  REVENUE // 4-xxxx
+  EXPENSE // 6-xxxx, 8-xxxx
+}
+
+enum BalanceType {
+  DEBIT
+  CREDIT
+}
+
+enum TransactionType {
+  INVOICE_SENT // Debit AR, Credit Revenue
+  INVOICE_PAID // Debit Cash, Credit AR
+  EXPENSE_SUBMITTED // Debit Expense, Credit AP
+  EXPENSE_PAID // Debit AP, Credit Cash
+  PAYMENT_RECEIVED // Debit Cash, Credit AR
+  PAYMENT_MADE // Debit AP, Credit Cash
+  DEPRECIATION // Debit Depreciation Expense, Credit Accumulated Depreciation
+  ADJUSTMENT // Manual adjustment
+  CLOSING // Period closing entry
+  OPENING // Period opening entry
+
+  // Cash Management
+  CASH_RECEIPT // Manual cash receipt (other income) - Debit Cash, Credit Other Income
+  CASH_DISBURSEMENT // Manual cash payment (other payments) - Debit Expense/Other, Credit Cash
+  BANK_TRANSFER // Inter-account transfer - Debit Cash Account A, Credit Cash Account B
+
+  // Equity Management
+  CAPITAL_CONTRIBUTION // Owner investment - Debit Cash, Credit Owner's Equity
+  OWNER_DRAWING // Owner withdrawal - Debit Owner's Drawing, Credit Cash
+
+  // ===== PURCHASE-TO-PAY TYPES =====
+  PO_APPROVED // PO commitment - DR Expense/Asset, CR PO Commitments
+  PO_CANCELLED // Reverse PO commitment
+  GOODS_RECEIVED // GR accrual - DR Inventory/Asset, CR GR Accruals
+  VENDOR_INVOICE_APPROVED // Final AP recognition - DR Expense/Asset, CR AP
+  VENDOR_PAYMENT_MADE // Payment to vendor - DR AP, CR Cash
+  PURCHASE_RETURN // Return to vendor - DR AP, CR Expense
+
+  // Bank Reconciliation
+  BANK_RECONCILIATION // Bank rec adjustment - Various adjustments
+}
+
+enum JournalStatus {
+  DRAFT
+  POSTED
+  VOID
+  REVERSED
+}
+
+enum PeriodType {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum PeriodStatus {
+  OPEN
+  CLOSED
+  LOCKED
+}
+
+enum StatementType {
+  INCOME_STATEMENT // Laporan Laba Rugi
+  BALANCE_SHEET // Neraca
+  CASH_FLOW // Laporan Arus Kas
+  TRIAL_BALANCE // Neraca Saldo
+  ACCOUNTS_RECEIVABLE // Laporan Piutang
+  ACCOUNTS_PAYABLE // Laporan Hutang
+}
+
+// ============================================
+// CASH MANAGEMENT SYSTEM
+// ============================================
+
+// Cash Transactions (Transaksi Kas)
+model CashTransaction {
+  id                String @id @default(cuid())
+  transactionNumber String @unique // CSH-R-2025-0001, CSH-D-2025-0001
+
+  // Type: Receipt or Disbursement
+  transactionType CashTransactionType // RECEIPT, DISBURSEMENT
+  category        CashCategory // SALES, INCOME, EXPENSE, OTHER
+
+  // Transaction Details
+  transactionDate DateTime
+  amount          Decimal  @db.Decimal(12, 2)
+
+  // Account Information
+  cashAccountId String // Which cash/bank account
+  cashAccount   ChartOfAccounts @relation("CashTransactionCashAccount", fields: [cashAccountId], references: [id])
+
+  offsetAccountId String // Offsetting account (income/expense)
+  offsetAccount   ChartOfAccounts @relation("CashTransactionOffsetAccount", fields: [offsetAccountId], references: [id])
+
+  // Description (Bilingual)
+  description   String
+  descriptionId String? // Indonesian description
+  descriptionEn String? // English description
+  reference     String? // External reference number
+
+  // Payment Details
+  paymentMethod PaymentMethod @default(CASH)
+  checkNumber   String? // For check payments
+  bankReference String? // Bank transfer reference
+
+  // Relations
+  projectId String?
+  clientId  String?
+
+  // Accounting Integration
+  journalEntryId String? // Auto-generated journal entry
+
+  // Status
+  status CashTransactionStatus @default(DRAFT)
+
+  // Approval (RBAC)
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?   @db.Text
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
+
+  // Notes
+  notes   String? @db.Text
+  notesId String? @db.Text // Indonesian notes
+
+  @@index([transactionNumber])
+  @@index([transactionType])
+  @@index([category])
+  @@index([transactionDate])
+  @@index([status])
+  @@index([cashAccountId])
+  @@index([offsetAccountId])
+  @@index([projectId])
+  @@index([clientId])
+  @@index([createdBy])
+  @@index([createdAt])
+  @@map("cash_transactions")
+}
+
+// ============================================
+// CASH MANAGEMENT ENUMS
+// ============================================
+
+enum CashTransactionType {
+  RECEIPT // Cash in (penerimaan kas)
+  DISBURSEMENT // Cash out (pengeluaran kas)
+}
+
+enum CashCategory {
+  SALES_REVENUE // Sales revenue (pendapatan penjualan)
+  SERVICE_REVENUE // Service revenue (pendapatan jasa)
+  OTHER_INCOME // Other income (pendapatan lain-lain)
+  OPERATING_EXPENSE // Operating expenses (beban operasional)
+  ASSET_PURCHASE // Asset purchases (pembelian aset)
+  LOAN_REPAYMENT // Loan payments (pembayaran pinjaman)
+  OTHER_EXPENSE // Other expenses (beban lain-lain)
+}
+
+enum CashTransactionStatus {
+  DRAFT // Being created
+  SUBMITTED // Submitted for approval
+  APPROVED // Approved
+  POSTED // Posted to GL
+  REJECTED // Rejected
+  VOID // Voided
+}
+
+// ============================================
+// BANK MANAGEMENT & RECONCILIATION
+// ============================================
+
+// Bank Transfers (Inter-Account Transfers)
+model BankTransfer {
+  id             String @id @default(cuid())
+  transferNumber String @unique // BTR-2025-01-0001
+
+  // Transfer Details
+  transferDate DateTime
+  amount       Decimal  @db.Decimal(12, 2)
+
+  // Account Information
+  fromAccountId String // Source cash/bank account
+  fromAccount   ChartOfAccounts @relation("BankTransferFromAccount", fields: [fromAccountId], references: [id])
+
+  toAccountId String // Destination cash/bank account
+  toAccount   ChartOfAccounts @relation("BankTransferToAccount", fields: [toAccountId], references: [id])
+
+  // Description (Bilingual)
+  description   String
+  descriptionId String? // Indonesian description
+  descriptionEn String? // English description
+  reference     String? // External reference number
+
+  // Transfer Fee (if applicable)
+  transferFee      Decimal? @db.Decimal(12, 2)
+  feeAccountId     String? // Account to charge fee
+  feePaymentMethod String? // How fee is paid
+
+  // Transfer Method
+  transferMethod   TransferMethod @default(INTERNAL)
+  bankReference    String? // Bank confirmation number
+  confirmationCode String? // Bank confirmation code
+
+  // Relations
+  projectId String?
+  clientId  String?
+
+  // Accounting Integration
+  journalEntryId String? // Auto-generated journal entry
+
+  // Status
+  status BankTransferStatus @default(PENDING)
+
+  // Approval (RBAC)
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?   @db.Text
+
+  // Completion
+  completedAt DateTime?
+  completedBy String?
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
+
+  // Notes
+  notes   String? @db.Text
+  notesId String? @db.Text // Indonesian notes
+
+  @@index([transferNumber])
+  @@index([transferDate])
+  @@index([status])
+  @@index([fromAccountId])
+  @@index([toAccountId])
+  @@index([projectId])
+  @@index([clientId])
+  @@index([createdBy])
+  @@index([createdAt])
+  @@map("bank_transfers")
+}
+
+// Bank Reconciliation (Bank Statement Matching)
+model BankReconciliation {
+  id                   String @id @default(cuid())
+  reconciliationNumber String @unique // BRC-2025-01-0001
+
+  // Bank Account
+  bankAccountId String // Bank account being reconciled
+  bankAccount   ChartOfAccounts @relation("BankReconciliationAccount", fields: [bankAccountId], references: [id])
+
+  // Period
+  statementDate   DateTime // Bank statement date
+  periodStartDate DateTime // Reconciliation period start
+  periodEndDate   DateTime // Reconciliation period end
+
+  // Balances
+  bookBalanceStart Decimal @db.Decimal(15, 2) // Book balance at start
+  bookBalanceEnd   Decimal @db.Decimal(15, 2) // Book balance at end
+  statementBalance Decimal @db.Decimal(15, 2) // Bank statement ending balance
+
+  // Reconciliation Items
+  depositsInTransit Decimal @default(0) @db.Decimal(15, 2) // Deposits not yet on statement
+  outstandingChecks Decimal @default(0) @db.Decimal(15, 2) // Checks not yet cleared
+  bankCharges       Decimal @default(0) @db.Decimal(15, 2) // Bank charges not yet recorded
+  bankInterest      Decimal @default(0) @db.Decimal(15, 2) // Bank interest not yet recorded
+  otherAdjustments  Decimal @default(0) @db.Decimal(15, 2) // Other adjustments
+
+  // Calculated Values
+  adjustedBookBalance Decimal @db.Decimal(15, 2) // Book balance after adjustments
+  adjustedBankBalance Decimal @db.Decimal(15, 2) // Bank balance after adjustments
+  difference          Decimal @default(0) @db.Decimal(15, 2) // Remaining difference
+  isBalanced          Boolean @default(false) // True if difference is 0
+
+  // Statement Details
+  statementReference String? // Bank statement reference number
+  statementFilePath  String? // Uploaded statement file
+
+  // Status
+  status BankRecStatus @default(DRAFT)
+
+  // Reconciliation Details
+  reconciliationItems BankReconciliationItem[]
+
+  // Approval (RBAC)
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?   @db.Text
+
+  // Accounting Integration
+  adjustmentJournalId String? // Journal entry for adjustments
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
+
+  // Notes
+  notes   String? @db.Text
+  notesId String? @db.Text // Indonesian notes
+
+  @@index([reconciliationNumber])
+  @@index([bankAccountId])
+  @@index([statementDate])
+  @@index([status])
+  @@index([isBalanced])
+  @@index([periodStartDate, periodEndDate])
+  @@index([createdBy])
+  @@index([createdAt])
+  @@map("bank_reconciliations")
+}
+
+// Bank Reconciliation Items (Individual matching items)
+model BankReconciliationItem {
+  id               String             @id @default(cuid())
+  reconciliationId String
+  reconciliation   BankReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+
+  // Item Details
+  itemDate      DateTime
+  itemType      BankRecItemType // DEPOSIT_IN_TRANSIT, OUTSTANDING_CHECK, BANK_CHARGE, etc.
+  description   String
+  descriptionId String? // Indonesian description
+
+  // Amounts
+  amount Decimal @db.Decimal(15, 2)
+
+  // Matching
+  isMatched            Boolean   @default(false)
+  matchedTransactionId String? // ID of matched transaction (cash transaction, payment, etc.)
+  matchedAt            DateTime?
+  matchedBy            String?
+
+  // Status
+  status BankRecItemStatus @default(PENDING)
+
+  // Adjustment
+  requiresAdjustment  Boolean   @default(false)
+  adjustmentJournalId String? // Journal entry if adjustment needed
+  adjustedAt          DateTime?
+
+  // Reference
+  checkNumber String? // For checks
+  reference   String? // External reference
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  // Notes
+  notes String? @db.Text
+
+  @@index([reconciliationId])
+  @@index([itemType])
+  @@index([isMatched])
+  @@index([status])
+  @@index([itemDate])
+  @@map("bank_reconciliation_items")
+}
+
+// ============================================
+// BANK MANAGEMENT ENUMS
+// ============================================
+
+enum TransferMethod {
+  INTERNAL // Internal transfer (same bank)
+  INTERBANK // Inter-bank transfer
+  RTGS // Real-Time Gross Settlement
+  CLEARING // Bank clearing
+  SKN // Sistem Kliring Nasional (Indonesia)
+  BIFAST // BI-FAST (Indonesia)
+  OTHER // Other methods
+}
+
+enum BankTransferStatus {
+  PENDING // Created, awaiting approval
+  APPROVED // Approved, ready to transfer
+  IN_PROGRESS // Transfer in progress
+  COMPLETED // Transfer completed
+  FAILED // Transfer failed
+  REJECTED // Rejected by approver
+  CANCELLED // Cancelled by user
+}
+
+enum BankRecStatus {
+  DRAFT // Being created
+  IN_PROGRESS // Reconciliation in progress
+  REVIEWED // Reviewed by user
+  APPROVED // Approved and balanced
+  REJECTED // Rejected, needs rework
+  COMPLETED // Fully reconciled and posted
+}
+
+enum BankRecItemType {
+  DEPOSIT_IN_TRANSIT // Deposit recorded but not on statement
+  OUTSTANDING_CHECK // Check issued but not cleared
+  BANK_CHARGE // Bank fee/charge
+  BANK_INTEREST // Interest earned
+  NSF_CHECK // Non-sufficient funds check
+  AUTOMATIC_PAYMENT // Automatic payment
+  DIRECT_DEPOSIT // Direct deposit
+  BANK_ERROR // Bank error
+  BOOK_ERROR // Book error
+  OTHER_ADJUSTMENT // Other adjustment
+}
+
+enum BankRecItemStatus {
+  PENDING // Not yet processed
+  MATCHED // Matched with transaction
+  ADJUSTED // Adjustment made
+  CLEARED // Cleared and resolved
+  UNRESOLVED // Cannot be resolved
+}
+
+// ============================================
+// PSAK 16: ASSET DEPRECIATION SYSTEM
+// ============================================
+
+// Depreciation Schedule (PSAK 16 Compliant)
+model DepreciationSchedule {
+  id      String @id @default(cuid())
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  // Depreciation Method
+  method DepreciationMethod // STRAIGHT_LINE, DECLINING_BALANCE, etc.
+
+  // Asset Values
+  depreciableAmount Decimal @db.Decimal(15, 2) // Purchase price - residual value
+  residualValue     Decimal @default(0) @db.Decimal(15, 2)
+
+  // Useful Life
+  usefulLifeMonths Int // Total useful life in months
+  usefulLifeYears  Decimal @db.Decimal(5, 2) // For display purposes
+
+  // Depreciation Rates
+  depreciationPerMonth Decimal @db.Decimal(15, 2)
+  depreciationPerYear  Decimal @db.Decimal(15, 2)
+  annualRate           Decimal @db.Decimal(5, 4) // For declining balance
+
+  // Period
+  startDate DateTime // When to start depreciating
+  endDate   DateTime // When fully depreciated
+
+  // Status
+  isActive    Boolean @default(true)
+  isFulfilled Boolean @default(false) // Fully depreciated
+
+  // Notes
+  notes   String? @db.Text
+  notesId String? @db.Text // Indonesian notes
+
+  // Relations
+  depreciationEntries DepreciationEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([assetId])
+  @@index([isActive])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([isFulfilled])
+  @@map("depreciation_schedules")
+}
+
+// Depreciation Entry (Monthly/Periodic)
+model DepreciationEntry {
+  id String @id @default(cuid())
+
+  // Asset Reference
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  // Schedule Reference
+  scheduleId String
+  schedule   DepreciationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  // Period
+  periodDate     DateTime // Month/period this depreciation is for
+  fiscalPeriodId String?
+  fiscalPeriod   FiscalPeriod? @relation(fields: [fiscalPeriodId], references: [id])
+
+  // Amounts
+  depreciationAmount      Decimal @db.Decimal(15, 2)
+  accumulatedDepreciation Decimal @db.Decimal(15, 2) // Total up to this point
+  bookValue               Decimal @db.Decimal(15, 2) // Remaining value
+
+  // Accounting Integration
+  journalEntryId String?
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
+
+  // Status
+  status DepreciationStatus @default(CALCULATED)
+
+  // Audit
+  calculatedAt DateTime  @default(now())
+  postedAt     DateTime?
+  postedBy     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([assetId, periodDate]) // One entry per asset per period
+  @@index([assetId])
+  @@index([scheduleId])
+  @@index([periodDate])
+  @@index([fiscalPeriodId])
+  @@index([journalEntryId])
+  @@index([status])
+  @@map("depreciation_entries")
+}
+
+// ============================================
+// PSAK 71: EXPECTED CREDIT LOSS PROVISION
+// ============================================
+
+// Allowance for Doubtful Accounts (PSAK 71 ECL)
+model AllowanceForDoubtfulAccounts {
+  id String @id @default(cuid())
+
+  // Invoice Reference
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  // Period
+  calculationDate DateTime // When ECL was calculated
+  fiscalPeriodId  String?
+  fiscalPeriod    FiscalPeriod? @relation(fields: [fiscalPeriodId], references: [id])
+
+  // Aging Classification
+  agingBucket String // Current, 1-30, 31-60, 61-90, >90
+  daysPastDue Int    @default(0)
+
+  // Amounts
+  outstandingAmount Decimal  @db.Decimal(15, 2) // Invoice amount outstanding
+  eclRate           Decimal  @db.Decimal(5, 4) // ECL rate based on historical data
+  eclAmount         Decimal  @db.Decimal(15, 2) // Calculated ECL provision
+  previousEclAmount Decimal? @db.Decimal(15, 2) // Previous provision
+  adjustmentAmount  Decimal? @db.Decimal(15, 2) // Incremental adjustment
+
+  // ECL Model
+  eclModel       String  @default("12_MONTH") // 12_MONTH or LIFETIME
+  lossRateSource String? // Historical, Industry, Other
+
+  // Status
+  provisionStatus ECLProvisionStatus @default(ACTIVE)
+
+  // Accounting Integration
+  journalEntryId String?
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
+
+  // Write-off Tracking
+  writtenOffAt   DateTime?
+  writtenOffBy   String?
+  writeOffReason String?   @db.Text
+  writeOffAmount Decimal?  @db.Decimal(15, 2)
+
+  // Recovery Tracking (if written off invoice is later collected)
+  recoveredAt       DateTime?
+  recoveredAmount   Decimal?  @db.Decimal(15, 2)
+  recoveryJournalId String?
+
+  // Notes
+  notes   String? @db.Text
+  notesId String? @db.Text // Indonesian notes
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  @@index([invoiceId])
+  @@index([calculationDate])
+  @@index([fiscalPeriodId])
+  @@index([agingBucket])
+  @@index([provisionStatus])
+  @@index([journalEntryId])
+  @@index([daysPastDue])
+  @@map("allowance_for_doubtful_accounts")
+}
+
+// ============================================
+// PSAK 16 & 71 ENUMS
+// ============================================
+
+enum DepreciationMethod {
+  STRAIGHT_LINE // Garis Lurus (most common in Indonesia)
+  DECLINING_BALANCE // Saldo Menurun
+  DOUBLE_DECLINING // Saldo Menurun Ganda
+  SUM_OF_YEARS_DIGITS // Jumlah Angka Tahun
+  UNITS_OF_PRODUCTION // Unit Produksi (for equipment)
+}
+
+enum DepreciationStatus {
+  CALCULATED // Calculated but not posted
+  POSTED // Posted to GL
+  REVERSED // Reversed entry
+  ADJUSTED // Adjustment made
+}
+
+enum ECLProvisionStatus {
+  ACTIVE // Currently provisioned
+  WRITTEN_OFF // Invoice written off as bad debt
+  RECOVERED // Written off but later recovered
+  REVERSED // Provision reversed (invoice paid)
+}
+
+// ============================================
+// PSAK 72: REVENUE FROM CONTRACTS
+// ============================================
+
+// Deferred Revenue (Pendapatan Diterima Dimuka)
+model DeferredRevenue {
+  id String @id @default(cuid())
+
+  // Invoice Reference (for advance payments)
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  // Original Transaction
+  paymentDate DateTime // When advance payment received
+  totalAmount Decimal  @db.Decimal(15, 2) // Total deferred amount
+
+  // Recognition Schedule
+  recognitionDate  DateTime // When revenue should be recognized
+  recognizedAmount Decimal  @default(0) @db.Decimal(15, 2) // Amount already recognized
+  remainingAmount  Decimal  @db.Decimal(15, 2) // Amount still deferred
+
+  // Status
+  status DeferredRevenueStatus @default(DEFERRED)
+
+  // Performance Obligation
+  performanceObligation String?  @db.Text // What service/product is owed
+  completionPercentage  Decimal? @db.Decimal(5, 2) // % complete
+
+  // Accounting Integration
+  initialJournalId     String? // Journal entry when payment received (Cash/Deferred Revenue)
+  recognitionJournalId String? // Journal entry when revenue recognized (Deferred Revenue/Revenue)
+
+  // Period
+  fiscalPeriodId String?
+  fiscalPeriod   FiscalPeriod? @relation(fields: [fiscalPeriodId], references: [id])
+
+  // Notes
+  notes   String? @db.Text
+  notesId String? @db.Text // Indonesian notes
+
+  // Audit
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  createdBy    String?
+  recognizedAt DateTime?
+  recognizedBy String?
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([recognitionDate])
+  @@index([fiscalPeriodId])
+  @@index([paymentDate])
+  @@map("deferred_revenue")
+}
+
+// Project Milestones (for percentage-of-completion revenue recognition)
+model ProjectMilestone {
+  id String @id @default(cuid())
+
+  // Project Reference
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Milestone Details
+  milestoneNumber Int // 1, 2, 3...
+  name            String // "Design Phase", "Development", "Testing"
+  nameId          String? // Indonesian name
+  description     String? @db.Text
+  descriptionId   String? @db.Text // Indonesian description
+
+  // Completion
+  plannedStartDate     DateTime?
+  plannedEndDate       DateTime?
+  actualStartDate      DateTime?
+  actualEndDate        DateTime?
+  completionPercentage Decimal   @default(0) @db.Decimal(5, 2) // 0-100%
+
+  // Revenue Recognition
+  plannedRevenue    Decimal @db.Decimal(15, 2) // Revenue allocated to this milestone
+  recognizedRevenue Decimal @default(0) @db.Decimal(15, 2) // Revenue already recognized
+  remainingRevenue  Decimal @db.Decimal(15, 2) // Revenue not yet recognized
+
+  // Cost Tracking
+  estimatedCost Decimal? @db.Decimal(15, 2)
+  actualCost    Decimal? @default(0) @db.Decimal(15, 2)
+
+  // Status
+  status MilestoneStatus @default(PENDING)
+
+  // Deliverables
+  deliverables Json? // Array of deliverables for this milestone
+  acceptedBy   String? // Client acceptance
+  acceptedAt   DateTime?
+
+  // Accounting Integration
+  journalEntryId String? // Revenue recognition journal entry
+
+  // Notes
+  notes   String? @db.Text
+  notesId String? @db.Text // Indonesian notes
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  @@unique([projectId, milestoneNumber]) // Unique milestone numbers per project
+  @@index([projectId])
+  @@index([status])
+  @@index([completionPercentage])
+  @@index([milestoneNumber])
+  @@map("project_milestones")
+}
+
+// ============================================
+// PSAK 72 ENUMS
+// ============================================
+
+enum DeferredRevenueStatus {
+  DEFERRED // Revenue deferred, not yet earned
+  PARTIALLY_RECOGNIZED // Some revenue recognized
+  FULLY_RECOGNIZED // All revenue recognized
+  REFUNDED // Payment refunded (service cancelled)
+}
+
+enum MilestoneStatus {
+  PENDING // Not started
+  IN_PROGRESS // Work in progress
+  COMPLETED // Completed, awaiting client acceptance
+  ACCEPTED // Client accepted
+  BILLED // Invoice created for this milestone
+  CANCELLED // Milestone cancelled
+}
+
+// ============================================
+// PSAK 57: PROJECT CONTRACTS & COSTING
+// ============================================
+
+// Work in Progress (Pekerjaan Dalam Proses)
+model WorkInProgress {
+  id String @id @default(cuid())
+
+  // Project Reference
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Period
+  periodDate     DateTime // Month/period for this WIP calculation
+  fiscalPeriodId String?
+  fiscalPeriod   FiscalPeriod? @relation(fields: [fiscalPeriodId], references: [id])
+
+  // Cost Accumulation
+  directMaterialCost Decimal @default(0) @db.Decimal(15, 2) // Direct material costs
+  directLaborCost    Decimal @default(0) @db.Decimal(15, 2) // Direct labor costs
+  directExpenses     Decimal @default(0) @db.Decimal(15, 2) // Direct expenses
+  allocatedOverhead  Decimal @default(0) @db.Decimal(15, 2) // Allocated overhead
+  totalCost          Decimal @default(0) @db.Decimal(15, 2) // Total accumulated cost
+
+  // Revenue Recognition
+  billedToDate      Decimal @default(0) @db.Decimal(15, 2) // Amount billed to customer
+  recognizedRevenue Decimal @default(0) @db.Decimal(15, 2) // Revenue recognized
+  unbilledRevenue   Decimal @default(0) @db.Decimal(15, 2) // Earned but not billed
+
+  // Project Status
+  completionPercentage Decimal @default(0) @db.Decimal(5, 2) // 0-100%
+  isCompleted          Boolean @default(false)
+
+  // Accounting Integration
+  costJournalId    String? // Journal entry for cost accumulation
+  revenueJournalId String? // Journal entry for revenue recognition
+
+  // Notes
+  notes   String? @db.Text
+  notesId String? @db.Text // Indonesian notes
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  @@unique([projectId, periodDate]) // One WIP entry per project per period
+  @@index([projectId])
+  @@index([periodDate])
+  @@index([fiscalPeriodId])
+  @@index([isCompleted])
+  @@map("work_in_progress")
+}
+
+// Project Cost Allocation (for overhead distribution)
+model ProjectCostAllocation {
+  id String @id @default(cuid())
+
+  // Project Reference
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Expense Reference
+  expenseId String
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  // Allocation Details
+  allocationDate       DateTime         @default(now())
+  allocationMethod     AllocationMethod // PERCENTAGE, HOURS, DIRECT
+  allocationPercentage Decimal?         @db.Decimal(5, 2) // For percentage-based allocation
+  allocatedAmount      Decimal          @db.Decimal(15, 2) // Amount allocated to this project
+
+  // Accounting Integration
+  journalEntryId String? // Journal entry for cost allocation
+
+  // Cost Classification
+  costType CostType // MATERIAL, LABOR, OVERHEAD
+  isDirect Boolean  @default(true) // Direct vs Indirect cost
+
+  // Notes
+  notes   String? @db.Text
+  notesId String? @db.Text
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  @@index([projectId])
+  @@index([expenseId])
+  @@index([allocationDate])
+  @@index([costType])
+  @@map("project_cost_allocations")
+}
+
+// ============================================
+// PSAK 57 ENUMS
+// ============================================
+
+enum AllocationMethod {
+  PERCENTAGE // Allocate by percentage
+  HOURS // Allocate by hours worked
+  DIRECT // Direct cost assignment
+  SQUARE_METER // Allocate by area (for facilities)
+  HEADCOUNT // Allocate by number of people
+}
+
+enum CostType {
+  MATERIAL // Direct material costs
+  LABOR // Direct labor costs
+  OVERHEAD // Overhead/indirect costs
+  SUBCONTRACTOR // Subcontractor costs
+  EQUIPMENT // Equipment/asset usage costs
+}
+
+// ============================================
+// PURCHASE-TO-PAY SYSTEM
+// ============================================
+// This section adds comprehensive vendor management and purchase-to-pay functionality
+// Integrated with existing Expense, Asset, and Project modules for Indonesian compliance
+
+// ==========================================================
+// VENDOR MASTER DATA
+// ==========================================================
+
+model Vendor {
+  id         String  @id @default(cuid())
+  vendorCode String  @unique // VEN-2025-0001
+  name       String
+  nameId     String? // Indonesian name
+
+  // Vendor Classification
+  vendorType   VendorType
+  industryType String?
+
+  // Contact Information
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  province      String?
+  postalCode    String?
+  country       String  @default("Indonesia")
+
+  // Tax Information (Indonesian Compliance)
+  npwp       String?   @unique // Nomor Pokok Wajib Pajak (Tax ID)
+  pkpStatus  PKPStatus @default(NON_PKP)
+  taxAddress String? // Tax invoice address
+
+  // Banking Information
+  bankName          String?
+  bankAccountNumber String?
+  bankAccountName   String?
+  bankBranch        String?
+  swiftCode         String?
+
+  // Payment Terms
+  paymentTerms String   @default("NET 30") // NET 30, NET 60, COD, etc.
+  creditLimit  Decimal? @db.Decimal(15, 2)
+  currency     String   @default("IDR")
+
+  // Status
+  isActive Boolean @default(true)
+  isPKP    Boolean @default(false) // Pengusaha Kena Pajak (VAT registered)
+
+  // Audit Fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
+
+  // Relations
+  purchaseOrders  PurchaseOrder[]
+  goodsReceipts   GoodsReceipt[]
+  vendorInvoices  VendorInvoice[]
+  accountsPayable AccountsPayable[]
+  vendorPayments  VendorPayment[]
+  expenses        Expense[] // Link existing expenses to vendor
+  assets          Asset[] // Link assets purchased from vendor
+
+  @@index([vendorCode])
+  @@index([npwp])
+  @@index([isActive])
+  @@index([vendorType])
+  @@index([name])
+  @@map("vendors")
+}
+
+// ==========================================================
+// PURCHASE ORDER SYSTEM
+// ==========================================================
+
+model PurchaseOrder {
+  id       String   @id @default(cuid())
+  poNumber String   @unique // PO-2025-01-0001
+  poDate   DateTime @default(now())
+
+  // Vendor
+  vendorId String
+  vendor   Vendor @relation(fields: [vendorId], references: [id])
+
+  // Project (Optional)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  // Line Items
+  items PurchaseOrderItem[]
+
+  // Financial Summary
+  subtotal       Decimal @db.Decimal(15, 2)
+  discountAmount Decimal @default(0) @db.Decimal(15, 2)
+  ppnAmount      Decimal @db.Decimal(15, 2)
+  pphAmount      Decimal @default(0) @db.Decimal(15, 2)
+  totalAmount    Decimal @db.Decimal(15, 2)
+
+  // Indonesian Tax
+  isPPNIncluded      Boolean            @default(true)
+  ppnRate            Decimal            @default(12) @db.Decimal(5, 2) // 12%
+  withholdingTaxType WithholdingTaxType @default(NONE)
+  withholdingTaxRate Decimal?           @db.Decimal(5, 2)
+
+  // Delivery & Payment
+  deliveryAddress String?
+  deliveryDate    DateTime?
+  paymentTerms    String    @default("NET 30")
+  dueDate         DateTime?
+
+  // Status & Workflow
+  status         POStatus       @default(DRAFT)
+  approvalStatus ApprovalStatus @default(PENDING)
+
+  // Approval Trail
+  requestedBy     String
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  // Fulfillment Tracking
+  totalReceived Decimal   @default(0) @db.Decimal(15, 2)
+  totalInvoiced Decimal   @default(0) @db.Decimal(15, 2)
+  isClosed      Boolean   @default(false)
+  closedAt      DateTime?
+  closedBy      String?
+  closureReason String?
+
+  // Notes
+  description     String?
+  descriptionId   String? // Indonesian description
+  notes           String?
+  termsConditions String?
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
+
+  // Relations
+  goodsReceipts  GoodsReceipt[]
+  vendorInvoices VendorInvoice[]
+  expenses       Expense[]
+  assets         Asset[]
+  journalEntryId String? // PO commitment entry
+
+  @@index([poNumber])
+  @@index([vendorId])
+  @@index([projectId])
+  @@index([status])
+  @@index([poDate])
+  @@index([approvalStatus])
+  @@index([requestedBy])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id   String        @id @default(cuid())
+  poId String
+  po   PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+
+  lineNumber Int // 1, 2, 3...
+
+  // Item Details
+  itemType      POItemType
+  itemCode      String? // SKU or service code
+  description   String
+  descriptionId String? // Indonesian description
+
+  // Quantity & Pricing
+  quantity        Decimal @db.Decimal(15, 3)
+  unit            String // pcs, kg, hour, m2, etc.
+  unitPrice       Decimal @db.Decimal(15, 2)
+  discountPercent Decimal @default(0) @db.Decimal(5, 2)
+  discountAmount  Decimal @default(0) @db.Decimal(15, 2)
+  lineTotal       Decimal @db.Decimal(15, 2)
+
+  // PPN per line item
+  ppnAmount Decimal @db.Decimal(15, 2)
+
+  // Fulfillment Tracking
+  quantityReceived    Decimal @default(0) @db.Decimal(15, 3)
+  quantityInvoiced    Decimal @default(0) @db.Decimal(15, 3)
+  quantityOutstanding Decimal @db.Decimal(15, 3)
+
+  // Asset/Project Linking
+  assetId           String?
+  asset             Asset?           @relation(fields: [assetId], references: [id])
+  expenseCategoryId String?
+  expenseCategory   ExpenseCategory? @relation(fields: [expenseCategoryId], references: [id])
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  goodsReceiptItems  GoodsReceiptItem[]
+  vendorInvoiceItems VendorInvoiceItem[]
+
+  @@index([poId])
+  @@index([assetId])
+  @@index([expenseCategoryId])
+  @@map("purchase_order_items")
+}
+
+// ==========================================================
+// GOODS RECEIPT SYSTEM
+// ==========================================================
+
+model GoodsReceipt {
+  id       String   @id @default(cuid())
+  grNumber String   @unique // GR-2025-01-0001
+  grDate   DateTime @default(now())
+
+  // Reference
+  poId     String
+  po       PurchaseOrder @relation(fields: [poId], references: [id])
+  vendorId String
+  vendor   Vendor        @relation(fields: [vendorId], references: [id])
+
+  // Delivery Details
+  deliveryNoteNumber String? // Vendor's delivery note
+  receivedBy         String
+  receivedAt         DateTime @default(now())
+  warehouseLocation  String?
+
+  // Quality Check
+  inspectionStatus InspectionStatus @default(PENDING)
+  inspectedBy      String?
+  inspectedAt      DateTime?
+  inspectionNotes  String?
+
+  // Line Items
+  items GoodsReceiptItem[]
+
+  // Status
+  status   GRStatus  @default(DRAFT)
+  isPosted Boolean   @default(false)
+  postedAt DateTime?
+
+  // Notes
+  notes   String?
+  notesId String?
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
+
+  // Relations
+  vendorInvoices VendorInvoice[]
+  journalEntryId String? // GR accrual entry
+  assets         Asset[]
+
+  @@index([grNumber])
+  @@index([poId])
+  @@index([vendorId])
+  @@index([grDate])
+  @@index([status])
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptItem {
+  id   String       @id @default(cuid())
+  grId String
+  gr   GoodsReceipt @relation(fields: [grId], references: [id], onDelete: Cascade)
+
+  poItemId String
+  poItem   PurchaseOrderItem @relation(fields: [poItemId], references: [id])
+
+  lineNumber Int
+
+  // Quantity Details
+  orderedQuantity  Decimal @db.Decimal(15, 3)
+  receivedQuantity Decimal @db.Decimal(15, 3)
+  acceptedQuantity Decimal @db.Decimal(15, 3)
+  rejectedQuantity Decimal @default(0) @db.Decimal(15, 3)
+
+  // Quality
+  qualityStatus   QualityStatus @default(PENDING)
+  rejectionReason String?
+
+  // Pricing (from PO)
+  unitPrice Decimal @db.Decimal(15, 2)
+  lineTotal Decimal @db.Decimal(15, 2)
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([grId])
+  @@index([poItemId])
+  @@map("goods_receipt_items")
+}
+
+// ==========================================================
+// VENDOR INVOICE SYSTEM (Three-Way Matching)
+// ==========================================================
+
+model VendorInvoice {
+  id String @id @default(cuid())
+
+  // Numbers
+  vendorInvoiceNumber String // Vendor's invoice number
+  internalNumber      String   @unique // VI-2025-01-0001
+  invoiceDate         DateTime
+
+  // Vendor
+  vendorId String
+  vendor   Vendor @relation(fields: [vendorId], references: [id])
+
+  // References for Three-Way Matching
+  poId String?
+  po   PurchaseOrder? @relation(fields: [poId], references: [id])
+  grId String?
+  gr   GoodsReceipt?  @relation(fields: [grId], references: [id])
+
+  // Line Items
+  items VendorInvoiceItem[]
+
+  // Financial
+  subtotal       Decimal @db.Decimal(15, 2)
+  discountAmount Decimal @default(0) @db.Decimal(15, 2)
+  ppnAmount      Decimal @db.Decimal(15, 2)
+  pphAmount      Decimal @default(0) @db.Decimal(15, 2)
+  totalAmount    Decimal @db.Decimal(15, 2)
+
+  // Indonesian E-Faktur
+  eFakturNSFP       String?       @unique // Nomor Seri Faktur Pajak
+  eFakturQRCode     String?
+  eFakturStatus     EFakturStatus @default(NOT_REQUIRED)
+  eFakturUploadDate DateTime?
+
+  // Payment Terms
+  paymentTerms String
+  dueDate      DateTime
+
+  // Three-Way Matching
+  matchingStatus MatchingStatus @default(UNMATCHED)
+  matchedBy      String?
+  matchedAt      DateTime?
+  matchingNotes  String?
+
+  // Tolerance Check Results
+  priceVariance    Decimal? @db.Decimal(15, 2)
+  quantityVariance Decimal? @db.Decimal(15, 3)
+  withinTolerance  Boolean  @default(false)
+
+  // Status
+  status         VIStatus       @default(DRAFT)
+  approvalStatus ApprovalStatus @default(PENDING)
+
+  // Approval
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  // Accounting
+  accountsPayableId String?          @unique
+  accountsPayable   AccountsPayable? @relation(fields: [accountsPayableId], references: [id])
+  journalEntryId    String?
+
+  // Notes
+  description   String?
+  descriptionId String?
+  notes         String?
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
+
+  // Relations
+  expenses Expense[]
+  Asset    Asset[]
+
+  @@index([vendorId])
+  @@index([poId])
+  @@index([grId])
+  @@index([internalNumber])
+  @@index([eFakturNSFP])
+  @@index([status])
+  @@index([matchingStatus])
+  @@index([invoiceDate])
+  @@index([dueDate])
+  @@map("vendor_invoices")
+}
+
+model VendorInvoiceItem {
+  id   String        @id @default(cuid())
+  viId String
+  vi   VendorInvoice @relation(fields: [viId], references: [id], onDelete: Cascade)
+
+  poItemId String?
+  poItem   PurchaseOrderItem? @relation(fields: [poItemId], references: [id])
+
+  lineNumber Int
+
+  // Item Details
+  description   String
+  descriptionId String?
+
+  // Quantity & Pricing
+  quantity       Decimal @db.Decimal(15, 3)
+  unit           String
+  unitPrice      Decimal @db.Decimal(15, 2)
+  discountAmount Decimal @default(0) @db.Decimal(15, 2)
+  lineTotal      Decimal @db.Decimal(15, 2)
+  ppnAmount      Decimal @db.Decimal(15, 2)
+
+  // Matching Flags
+  isMatched      Boolean @default(false)
+  varianceReason String?
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([viId])
+  @@index([poItemId])
+  @@map("vendor_invoice_items")
+}
+
+// ==========================================================
+// ACCOUNTS PAYABLE SYSTEM
+// ==========================================================
+
+model AccountsPayable {
+  id       String @id @default(cuid())
+  apNumber String @unique // AP-2025-01-0001
+
+  // Vendor
+  vendorId String
+  vendor   Vendor @relation(fields: [vendorId], references: [id])
+
+  // Source Document
+  sourceType      APSourceType
+  vendorInvoiceId String?        @unique
+  vendorInvoice   VendorInvoice?
+  expenseId       String?        @unique
+  expense         Expense?       @relation(fields: [expenseId], references: [id])
+
+  // Financial
+  originalAmount    Decimal @db.Decimal(15, 2)
+  paidAmount        Decimal @default(0) @db.Decimal(15, 2)
+  outstandingAmount Decimal @db.Decimal(15, 2)
+
+  // Dates
+  invoiceDate DateTime
+  dueDate     DateTime
+
+  // Status
+  paymentStatus APPaymentStatus @default(UNPAID)
+
+  // Aging
+  daysOutstanding Int? // Calculated
+  agingBucket     String? // Current, 1-30, 31-60, etc.
+
+  // Accounting
+  journalEntryId String?
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
+
+  // Relations
+  paymentAllocations VendorPaymentAllocation[]
+
+  @@index([vendorId])
+  @@index([paymentStatus])
+  @@index([dueDate])
+  @@index([agingBucket])
+  @@index([apNumber])
+  @@index([invoiceDate])
+  @@map("accounts_payable")
+}
+
+// ==========================================================
+// VENDOR PAYMENT SYSTEM
+// ==========================================================
+
+model VendorPayment {
+  id            String   @id @default(cuid())
+  paymentNumber String   @unique // VP-2025-01-0001
+  paymentDate   DateTime @default(now())
+
+  // Vendor
+  vendorId String
+  vendor   Vendor @relation(fields: [vendorId], references: [id])
+
+  // Payment Details
+  paymentMethod   PaymentMethod
+  referenceNumber String? // Check number, transfer ref, etc.
+  bankAccountId   String? // Paying bank account
+
+  // Amount
+  totalAmount Decimal @db.Decimal(15, 2)
+
+  // Allocation
+  allocations VendorPaymentAllocation[]
+
+  // Status
+  status    VendorPaymentStatus @default(DRAFT)
+  clearedAt DateTime? // When bank cleared
+
+  // Accounting
+  journalEntryId String?
+
+  // Notes
+  notes   String?
+  notesId String?
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
+
+  @@index([vendorId])
+  @@index([paymentDate])
+  @@index([status])
+  @@index([paymentNumber])
+  @@map("vendor_payments")
+}
+
+model VendorPaymentAllocation {
+  id String @id @default(cuid())
+
+  paymentId String
+  payment   VendorPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  apId String
+  ap   AccountsPayable @relation(fields: [apId], references: [id])
+
+  allocatedAmount Decimal @db.Decimal(15, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([paymentId])
+  @@index([apId])
+  @@map("vendor_payment_allocations")
+}
+
+// ==========================================================
+// PURCHASE-TO-PAY ENUMS
+// ==========================================================
+
+enum VendorType {
+  SUPPLIER // Material/goods supplier
+  SERVICE_PROVIDER // Service vendor
+  CONTRACTOR // Construction contractor
+  CONSULTANT // Professional services
+  UTILITY // Utilities (electric, water)
+  GOVERNMENT // Government agencies
+  OTHER
+}
+
+enum PKPStatus {
+  PKP // Pengusaha Kena Pajak (VAT registered)
+  NON_PKP // Not VAT registered
+  GOVERNMENT // Government entity
+}
+
+enum POStatus {
+  DRAFT // Being created
+  PENDING // Awaiting approval
+  APPROVED // Approved, ready to send
+  SENT // Sent to vendor
+  PARTIAL // Partially received
+  COMPLETED // Fully received
+  CANCELLED // Cancelled
+  CLOSED // Manually closed
+}
+
+enum POItemType {
+  GOODS // Physical goods
+  SERVICE // Services
+  ASSET // Capital asset purchase
+  EXPENSE // Operating expense
+}
+
+enum ApprovalStatus {
+  PENDING // Awaiting approval
+  APPROVED // Approved
+  REJECTED // Rejected
+}
+
+enum GRStatus {
+  DRAFT
+  RECEIVED
+  INSPECTED
+  POSTED
+  CANCELLED
+}
+
+enum InspectionStatus {
+  PENDING
+  IN_PROGRESS
+  PASSED
+  FAILED
+  PARTIAL
+}
+
+enum QualityStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CONDITIONAL
+}
+
+enum VIStatus {
+  DRAFT
+  PENDING_MATCH
+  MATCHED
+  APPROVED
+  POSTED
+  PAID
+  CANCELLED
+}
+
+enum MatchingStatus {
+  UNMATCHED // Not yet matched
+  MATCHED // All items matched within tolerance
+  PARTIAL_MATCH // Some items matched
+  VARIANCE // Matched but has variances
+  FAILED // Matching failed
+}
+
+enum APSourceType {
+  VENDOR_INVOICE
+  EXPENSE
+  MANUAL_ENTRY
+}
+
+enum APPaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  WRITTEN_OFF
+}
+
+enum VendorPaymentStatus {
+  DRAFT
+  PENDING
+  POSTED
+  CLEARED
+  CANCELLED
+  REVERSED
+}
+
+// ==========================================================
+// PURCHASE SOURCE ENUMS (for Expense model)
+// ==========================================================
+
+enum PurchaseType {
+  DIRECT // Paid immediately
+  CREDIT // Buy now, pay later
+  FROM_PO // Sourced from purchase order
+}
+
+enum PurchaseSource {
+  MANUAL // User creates expense directly
+  FROM_PO // Generated from PO
+  FROM_VENDOR_INVOICE // Generated from vendor invoice
 }

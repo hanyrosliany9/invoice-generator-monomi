@@ -167,3 +167,40 @@ backend.log
 sbom-output/
 monitoring/
 k8s/
+
+# TypeScript compiled output (exclude from source control)
+# Keep only .ts files, ignore compiled .js and .js.map
+backend/src/**/*.js
+backend/src/**/*.js.map
+frontend/src/**/*.js
+frontend/src/**/*.js.map
+# But keep test files and config files
+!backend/src/**/*.spec.js
+!backend/src/**/*.test.js
+!backend/*.config.js
+!frontend/*.config.js
+
+# Test and analysis artifacts
+temp_analysis/
+tests/excel_temp/
+shared/*.xlsx
+shared/*.js
+tests/*.xlsx
+backend/*.js
+!backend/*.config.js
+!backend/jest.config.js
+
+# Prisma temporary schemas
+backend/prisma/*.prisma
+!backend/prisma/schema.prisma
+
+# Analysis and validation scripts (temporary)
+backend/check-*.js
+backend/compare-*.js
+backend/comprehensive-*.js
+backend/end-to-end-*.js
+backend/fix-*.js
+backend/validate-*.js
+backend/verify-*.js
+backend/test-*.js
+backend/update-*.js
