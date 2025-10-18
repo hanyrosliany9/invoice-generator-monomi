@@ -643,7 +643,7 @@ const InformationArchitecture: React.FC<InformationArchitectureProps> = ({
         placement='right'
         width={400}
         onClose={() => setContextDrawerVisible(false)}
-        visible={contextDrawerVisible}
+        open={contextDrawerVisible}
       >
         {businessContextPanel}
       </Drawer>

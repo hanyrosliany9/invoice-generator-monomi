@@ -86,16 +86,19 @@ export class CreateInvoiceDto {
   materaiRequired?: boolean;
 
   @ApiProperty({
-    description: "Scope of Work - Deskripsi naratif ruang lingkup pekerjaan (diturunkan dari quotation/proyek atau custom)",
+    description:
+      "Scope of Work - Deskripsi naratif ruang lingkup pekerjaan (diturunkan dari quotation/proyek atau custom)",
     required: false,
-    example: "Invoice ini mencakup:\n1. Pengembangan website e-commerce\n2. Integrasi payment gateway\n3. Training tim internal\n\nDeliverables: Website fully functional, dokumentasi lengkap",
+    example:
+      "Invoice ini mencakup:\n1. Pengembangan website e-commerce\n2. Integrasi payment gateway\n3. Training tim internal\n\nDeliverables: Website fully functional, dokumentasi lengkap",
   })
   @IsOptional()
   @IsString({ message: "Scope of Work harus berupa string" })
   scopeOfWork?: string;
 
   @ApiProperty({
-    description: "Detail breakdown harga (opsional, diturunkan dari quotation atau proyek)",
+    description:
+      "Detail breakdown harga (opsional, diturunkan dari quotation atau proyek)",
     required: false,
     example: {
       products: [

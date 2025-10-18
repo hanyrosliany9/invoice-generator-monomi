@@ -1,0 +1,8 @@
+-- AlterEnum: Add new UserRole values for RBAC system
+-- These values are added to support production-ready role-based access control
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'SUPER_ADMIN';
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'FINANCE_MANAGER';
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'ACCOUNTANT';
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'PROJECT_MANAGER';
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'STAFF';
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'VIEWER';

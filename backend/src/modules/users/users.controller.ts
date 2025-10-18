@@ -23,13 +23,14 @@ import {
 import { UsersService } from "./users.service";
 import { CreateUserDto, UpdateUserDto, UserResponseDto } from "./dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RequireSuperAdmin } from "../auth/decorators/auth.decorators";
 import { ApiResponse as ApiResponseDto } from "../../common/dto/api-response.dto";
 import { getErrorMessage } from "../../common/utils/error-handling.util";
 import * as bcrypt from "bcrypt";
 
 @ApiTags("Users")
 @Controller("users")
-@UseGuards(JwtAuthGuard)
+@RequireSuperAdmin() // CRITICAL SECURITY: Only SUPER_ADMIN can manage users
 @ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

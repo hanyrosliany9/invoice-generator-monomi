@@ -51,6 +51,7 @@ import {
   safeNumber,
   safeString,
 } from '../utils/currency'
+import { formatDate } from '../utils/dateFormatters'
 import { Quotation, quotationService } from '../services/quotations'
 import { clientService } from '../services/clients'
 import { projectService } from '../services/projects'
@@ -61,6 +62,7 @@ import {
 import WorkflowIndicator from '../components/ui/WorkflowIndicator'
 import { useTheme } from '../theme'
 import { CompactMetricCard } from '../components/ui/CompactMetricCard'
+import { usePermissions } from '../hooks/usePermissions'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -82,9 +84,6 @@ export const QuotationsPage: React.FC = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-
-  const [searchText, setSearchText] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('')
   const [filters, setFilters] = useState<Record<string, any>>({})
   const [modalVisible, setModalVisible] = useState(false)
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(
@@ -109,6 +108,7 @@ export const QuotationsPage: React.FC = () => {
   const [form] = Form.useForm()
   const [statusForm] = Form.useForm()
   const { message } = App.useApp()
+  const { canApproveFinancial } = usePermissions()
 
   // Export functionality
   const handleExport = useCallback(() => {
@@ -139,12 +139,12 @@ export const QuotationsPage: React.FC = () => {
     queryFn: () => quotationService.getQuotations(apiFilters),
   })
 
-  const { data: clients = [] } = useQuery({
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ['clients'],
     queryFn: clientService.getClients,
   })
 
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [], isLoading: projectsLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: projectService.getProjects,
   })
@@ -154,8 +154,12 @@ export const QuotationsPage: React.FC = () => {
     mutationFn: quotationService.createQuotation,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
-      setModalVisible(false)
       form.resetFields()
+      setEditingQuotation(null)
+      setSelectedClientId(null)
+      setSelectedProject(null)
+      setPriceInheritanceMode('inherit')
+      setModalVisible(false)
       message.success(t('messages.success.created', { item: 'Quotation' }))
     },
   })
@@ -165,9 +169,12 @@ export const QuotationsPage: React.FC = () => {
       quotationService.updateQuotation(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
-      setModalVisible(false)
-      setEditingQuotation(null)
       form.resetFields()
+      setEditingQuotation(null)
+      setSelectedClientId(null)
+      setSelectedProject(null)
+      setPriceInheritanceMode('inherit')
+      setModalVisible(false)
       message.success(t('messages.success.updated', { item: 'Quotation' }))
     },
   })
@@ -397,7 +404,9 @@ export const QuotationsPage: React.FC = () => {
         }
       })
       .catch(errorInfo => {
-        console.log('Validation failed:', errorInfo)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Validation failed:', errorInfo)
+        }
       })
   }
 
@@ -698,7 +707,7 @@ export const QuotationsPage: React.FC = () => {
       })
     }
 
-    if (quotation.status === 'SENT') {
+    if (quotation.status === 'SENT' && canApproveFinancial()) {
       items.push(
         {
           key: 'approve',
@@ -889,7 +898,7 @@ export const QuotationsPage: React.FC = () => {
       title: 'Berlaku Hingga',
       dataIndex: 'validUntil',
       key: 'validUntil',
-      render: (date: string) => dayjs(date).format('DD/MM/YYYY'),
+      render: (date: string) => formatDate(date),
       sorter: (a: Quotation, b: Quotation) =>
         dayjs(a.validUntil).unix() - dayjs(b.validUntil).unix(),
     },
@@ -1194,20 +1203,24 @@ export const QuotationsPage: React.FC = () => {
                 >
                   Kirim
                 </Button>
-                <Button
-                  size='small'
-                  loading={batchLoading}
-                  onClick={() => handleBatchStatusChange('APPROVED')}
-                >
-                  Setujui
-                </Button>
-                <Button
-                  size='small'
-                  loading={batchLoading}
-                  onClick={() => handleBatchStatusChange('DECLINED')}
-                >
-                  Tolak
-                </Button>
+                {canApproveFinancial() && (
+                  <>
+                    <Button
+                      size='small'
+                      loading={batchLoading}
+                      onClick={() => handleBatchStatusChange('APPROVED')}
+                    >
+                      Setujui
+                    </Button>
+                    <Button
+                      size='small'
+                      loading={batchLoading}
+                      onClick={() => handleBatchStatusChange('DECLINED')}
+                    >
+                      Tolak
+                    </Button>
+                  </>
+                )}
                 <Button
                   size='small'
                   type='primary'
@@ -1267,11 +1280,12 @@ export const QuotationsPage: React.FC = () => {
         title={editingQuotation ? 'Edit Quotation' : t('quotations.create')}
         open={modalVisible}
         onCancel={() => {
-          setModalVisible(false)
+          form.resetFields()
           setEditingQuotation(null)
           setSelectedClientId(null)
           setSelectedProject(null)
-          form.resetFields()
+          setPriceInheritanceMode('inherit')
+          setModalVisible(false)
         }}
         footer={null}
         width={800}
@@ -1289,7 +1303,12 @@ export const QuotationsPage: React.FC = () => {
                 label='Klien'
                 rules={[{ required: true, message: 'Pilih klien' }]}
               >
-                <Select placeholder='Pilih klien' onChange={handleClientChange}>
+                <Select
+                  placeholder='Pilih klien'
+                  onChange={handleClientChange}
+                  loading={clientsLoading}
+                  disabled={clientsLoading}
+                >
                   {safeArray(clients).map(client => (
                     <Option key={client.id} value={client.id}>
                       {client.name}
@@ -1307,11 +1326,14 @@ export const QuotationsPage: React.FC = () => {
                 <Select
                   placeholder='Pilih proyek'
                   onChange={handleProjectChange}
-                  disabled={!selectedClientId}
+                  loading={projectsLoading}
+                  disabled={clientsLoading || projectsLoading || !selectedClientId}
                   notFoundContent={
                     !selectedClientId
                       ? 'Pilih klien terlebih dahulu'
-                      : 'Tidak ada proyek'
+                      : projectsLoading
+                        ? 'Loading projects...'
+                        : 'Tidak ada proyek'
                   }
                 >
                   {safeArray(filteredProjects).map(project => (
@@ -1376,9 +1398,9 @@ export const QuotationsPage: React.FC = () => {
               placeholder='0'
               prefix='IDR'
               formatter={value =>
-                value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
+                value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''
               }
-              parser={value => (value ? value.replace(/\$\s?|(,*)/g, '') : '')}
+              parser={value => (value ? value.replace(/\$\s?|(\.*)/g, '') : '')}
               readOnly={priceInheritanceMode === 'inherit'}
               style={{ width: '100%' }}
             />
@@ -1405,9 +1427,12 @@ export const QuotationsPage: React.FC = () => {
           <div className='flex justify-end space-x-2'>
             <Button
               onClick={() => {
-                setModalVisible(false)
-                setEditingQuotation(null)
                 form.resetFields()
+                setEditingQuotation(null)
+                setSelectedClientId(null)
+                setSelectedProject(null)
+                setPriceInheritanceMode('inherit')
+                setModalVisible(false)
               }}
             >
               {t('common.cancel')}

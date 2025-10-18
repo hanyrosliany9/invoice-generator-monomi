@@ -86,7 +86,9 @@ export const ReportsPage: React.FC = () => {
 
   // Use paymentData for payment analytics display
   const paymentStats = paymentData || {}
-  console.log('Payment analytics:', paymentStats)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Payment analytics:', paymentStats)
+  }
 
   const isLoading =
     revenueLoading || clientLoading || projectLoading || paymentLoading

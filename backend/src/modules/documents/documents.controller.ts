@@ -11,45 +11,46 @@ import {
   Body,
   Res,
   Query,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
-import { DocumentsService } from './documents.service';
-import { DocumentCategory } from '@prisma/client';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import * as fs from 'fs';
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { Response } from "express";
+import { DocumentsService } from "./documents.service";
+import { DocumentCategory } from "@prisma/client";
+import { diskStorage } from "multer";
+import { extname } from "path";
+import * as fs from "fs";
 
-@Controller('documents')
+@Controller("documents")
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
-  @Post('upload')
+  @Post("upload")
   @UseInterceptors(
-    FileInterceptor('file', {
+    FileInterceptor("file", {
       storage: diskStorage({
-        destination: '/app/uploads',
+        destination: "/app/uploads",
         filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + "-" + Math.round(Math.random() * 1e9);
           cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
         },
       }),
       fileFilter: (req, file, cb) => {
         const allowedMimes = [
-          'application/pdf',
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          "application/pdf",
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "application/vnd.ms-excel",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         ];
-        
+
         if (allowedMimes.includes(file.mimetype)) {
           cb(null, true);
         } else {
-          cb(new BadRequestException('File type not allowed'), false);
+          cb(new BadRequestException("File type not allowed"), false);
         }
       },
       limits: {
@@ -59,19 +60,19 @@ export class DocumentsController {
   )
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
-    @Body('invoiceId') invoiceId?: string,
-    @Body('quotationId') quotationId?: string,
-    @Body('projectId') projectId?: string,
-    @Body('category') category: DocumentCategory = DocumentCategory.OTHER,
-    @Body('description') description?: string,
-    @Body('uploadedBy') uploadedBy?: string,
+    @Body("invoiceId") invoiceId?: string,
+    @Body("quotationId") quotationId?: string,
+    @Body("projectId") projectId?: string,
+    @Body("category") category: DocumentCategory = DocumentCategory.OTHER,
+    @Body("description") description?: string,
+    @Body("uploadedBy") uploadedBy?: string,
   ) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException("No file uploaded");
     }
 
     if (!uploadedBy) {
-      throw new BadRequestException('uploadedBy is required');
+      throw new BadRequestException("uploadedBy is required");
     }
 
     try {
@@ -86,7 +87,7 @@ export class DocumentsController {
       );
 
       return {
-        message: 'File uploaded successfully',
+        message: "File uploaded successfully",
         document,
       };
     } catch (error) {
@@ -98,69 +99,69 @@ export class DocumentsController {
     }
   }
 
-  @Get('invoice/:invoiceId')
-  async getInvoiceDocuments(@Param('invoiceId') invoiceId: string) {
+  @Get("invoice/:invoiceId")
+  async getInvoiceDocuments(@Param("invoiceId") invoiceId: string) {
     return this.documentsService.getDocumentsByInvoice(invoiceId);
   }
 
-  @Get('quotation/:quotationId')
-  async getQuotationDocuments(@Param('quotationId') quotationId: string) {
+  @Get("quotation/:quotationId")
+  async getQuotationDocuments(@Param("quotationId") quotationId: string) {
     return this.documentsService.getDocumentsByQuotation(quotationId);
   }
 
-  @Get('project/:projectId')
-  async getProjectDocuments(@Param('projectId') projectId: string) {
+  @Get("project/:projectId")
+  async getProjectDocuments(@Param("projectId") projectId: string) {
     return this.documentsService.getDocumentsByProject(projectId);
   }
 
-  @Get('download/:id')
-  async downloadDocument(@Param('id') id: string, @Res() res: Response) {
+  @Get("download/:id")
+  async downloadDocument(@Param("id") id: string, @Res() res: Response) {
     const document = await this.documentsService.getDocumentById(id);
-    
+
     if (!document) {
-      throw new NotFoundException('Document not found');
+      throw new NotFoundException("Document not found");
     }
 
     if (!fs.existsSync(document.filePath)) {
-      throw new NotFoundException('File not found on disk');
+      throw new NotFoundException("File not found on disk");
     }
 
-    res.setHeader('Content-Type', document.mimeType);
+    res.setHeader("Content-Type", document.mimeType);
     res.setHeader(
-      'Content-Disposition',
+      "Content-Disposition",
       `attachment; filename="${document.originalFileName}"`,
     );
-    
+
     return res.sendFile(document.filePath);
   }
 
-  @Get('preview/:id')
-  async previewDocument(@Param('id') id: string, @Res() res: Response) {
+  @Get("preview/:id")
+  async previewDocument(@Param("id") id: string, @Res() res: Response) {
     const document = await this.documentsService.getDocumentById(id);
-    
+
     if (!document) {
-      throw new NotFoundException('Document not found');
+      throw new NotFoundException("Document not found");
     }
 
     if (!fs.existsSync(document.filePath)) {
-      throw new NotFoundException('File not found on disk');
+      throw new NotFoundException("File not found on disk");
     }
 
-    res.setHeader('Content-Type', document.mimeType);
+    res.setHeader("Content-Type", document.mimeType);
     res.setHeader(
-      'Content-Disposition',
+      "Content-Disposition",
       `inline; filename="${document.originalFileName}"`,
     );
-    
+
     return res.sendFile(document.filePath);
   }
 
-  @Delete(':id')
-  async deleteDocument(@Param('id') id: string) {
+  @Delete(":id")
+  async deleteDocument(@Param("id") id: string) {
     const document = await this.documentsService.getDocumentById(id);
-    
+
     if (!document) {
-      throw new NotFoundException('Document not found');
+      throw new NotFoundException("Document not found");
     }
 
     // Delete file from disk
@@ -172,7 +173,7 @@ export class DocumentsController {
     await this.documentsService.deleteDocument(id);
 
     return {
-      message: 'Document deleted successfully',
+      message: "Document deleted successfully",
     };
   }
 }

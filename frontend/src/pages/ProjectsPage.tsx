@@ -46,11 +46,15 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { formatIDR, safeArray, safeNumber, safeString } from '../utils/currency'
+import { formatDate } from '../utils/dateFormatters'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { Project, UpdateProjectRequest, projectService } from '../services/projects'
 import { clientService } from '../services/clients'
+import { projectTypesApi } from '../services/project-types'
 import { useTheme } from '../theme'
 import WorkflowIndicator from '../components/ui/WorkflowIndicator'
 import { CompactMetricCard } from '../components/ui/CompactMetricCard'
+import FormErrorBoundary from '../components/FormErrorBoundary'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -72,7 +76,8 @@ export const ProjectsPage: React.FC = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  const [searchText, setSearchText] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const searchText = useDebouncedValue(searchInput, 300)
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [typeFilter, setTypeFilter] = useState<string>('')
   const [filters, setFilters] = useState<Record<string, any>>({})
@@ -98,9 +103,14 @@ export const ProjectsPage: React.FC = () => {
     queryFn: projectService.getProjects,
   })
 
-  const { data: clients = [] } = useQuery({
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ['clients'],
     queryFn: clientService.getClients,
+  })
+
+  const { data: projectTypes = [], isLoading: projectTypesLoading } = useQuery({
+    queryKey: ['project-types'],
+    queryFn: projectTypesApi.getAll,
   })
 
   // Mutations
@@ -108,8 +118,8 @@ export const ProjectsPage: React.FC = () => {
     mutationFn: projectService.createProject,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
-      setModalVisible(false)
       form.resetFields()
+      setModalVisible(false)
       message.success(t('messages.success.created', { item: 'Proyek' }))
     },
   })
@@ -119,9 +129,9 @@ export const ProjectsPage: React.FC = () => {
       projectService.updateProject(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
-      setModalVisible(false)
-      setEditingProject(null)
       form.resetFields()
+      setEditingProject(null)
+      setModalVisible(false)
       message.success(t('messages.success.updated', { item: 'Proyek' }))
     },
   })
@@ -136,13 +146,24 @@ export const ProjectsPage: React.FC = () => {
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map(id => projectService.deleteProject(id)))
+      const results = await Promise.allSettled(
+        ids.map(id => projectService.deleteProject(id))
+      )
+      const succeeded = results.filter(r => r.status === 'fulfilled').length
+      const failed = results.filter(r => r.status === 'rejected').length
+      return { succeeded, failed, total: ids.length }
     },
-    onSuccess: () => {
+    onSuccess: ({ succeeded, failed, total }) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       setSelectedRowKeys([])
       setBatchLoading(false)
-      message.success(`Berhasil menghapus ${selectedRowKeys.length} proyek`)
+      if (failed > 0) {
+        message.warning(
+          `${succeeded} dari ${total} proyek berhasil dihapus. ${failed} gagal.`
+        )
+      } else {
+        message.success(`Berhasil menghapus ${succeeded} proyek`)
+      }
     },
     onError: () => {
       setBatchLoading(false)
@@ -158,11 +179,14 @@ export const ProjectsPage: React.FC = () => {
       ids: string[]
       status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
     }) => {
-      await Promise.all(
+      const results = await Promise.allSettled(
         ids.map(id => projectService.updateProject(id, { status }))
       )
+      const succeeded = results.filter(r => r.status === 'fulfilled').length
+      const failed = results.filter(r => r.status === 'rejected').length
+      return { succeeded, failed, total: ids.length, status }
     },
-    onSuccess: (_, { status }) => {
+    onSuccess: ({ succeeded, failed, total, status }) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       setSelectedRowKeys([])
       setBatchLoading(false)
@@ -174,9 +198,15 @@ export const ProjectsPage: React.FC = () => {
           CANCELLED: 'dibatalkan',
           ON_HOLD: 'ditahan',
         }[status] || status
-      message.success(
-        `Berhasil mengubah status ${selectedRowKeys.length} proyek menjadi ${statusText}`
-      )
+      if (failed > 0) {
+        message.warning(
+          `${succeeded} dari ${total} proyek berhasil diubah ke ${statusText}. ${failed} gagal.`
+        )
+      } else {
+        message.success(
+          `Berhasil mengubah status ${succeeded} proyek menjadi ${statusText}`
+        )
+      }
     },
     onError: () => {
       setBatchLoading(false)
@@ -232,19 +262,22 @@ export const ProjectsPage: React.FC = () => {
     production: safeProjects.filter(p => p?.projectType?.code === 'PRODUCTION').length,
     socialMedia: safeProjects.filter(p => p?.projectType?.code === 'SOCIAL_MEDIA').length,
     totalBudget: safeProjects.reduce(
-      (sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice),
+      (sum, p) => sum + safeNumber(p?.estimatedBudget || p?.basePrice || 0),
       0
     ),
     totalActual: safeProjects.reduce(
-      (sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice),
+      (sum, p) => sum + safeNumber(p?.basePrice || 0),
       0
     ),
     totalRevenue: safeProjects.reduce(
-      (sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice),
+      (sum, p) => sum + safeNumber(p?.totalRevenue || 0),
       0
     ),
     totalPending: safeProjects.reduce(
-      (sum, p) => sum + safeNumber(p?.basePrice || p?.basePrice),
+      (sum, p) => sum + Math.max(
+        safeNumber(p?.basePrice || 0) - safeNumber(p?.totalRevenue || 0),
+        0
+      ),
       0
     ),
   }
@@ -274,7 +307,9 @@ export const ProjectsPage: React.FC = () => {
   }
 
   const getTypeText = (type: string) => {
-    return type === 'production' ? 'Produksi' : 'Media Sosial'
+    if (type === 'PRODUCTION' || type === 'production') return 'Produksi'
+    if (type === 'SOCIAL_MEDIA' || type === 'socialMedia') return 'Media Sosial'
+    return type || 'Unknown'
   }
 
   const getProgressColor = (progress: number) => {
@@ -354,7 +389,9 @@ export const ProjectsPage: React.FC = () => {
       }
     })
 
-    console.log('Submitting project data:', JSON.stringify(data, null, 2))
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Submitting project data:', JSON.stringify(data, null, 2))
+    }
 
     if (editingProject) {
       updateMutation.mutate({ id: editingProject.id, data })
@@ -417,21 +454,35 @@ export const ProjectsPage: React.FC = () => {
           </div>
           <div className='text-sm text-gray-600'>{project.description}</div>
           <div className='mt-1'>
-            <span style={{
-              background: (project.projectType?.code || 'PRODUCTION') === 'PRODUCTION'
-                ? 'rgba(239, 68, 68, 0.15)'
-                : 'rgba(6, 182, 212, 0.15)',
-              color: (project.projectType?.code || 'PRODUCTION') === 'PRODUCTION'
-                ? '#ef4444'
-                : '#06b6d4',
-              padding: '4px 12px',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontWeight: 600,
-              display: 'inline-block',
-            }}>
-              {getTypeText(project.projectType?.code || 'PRODUCTION')}
-            </span>
+            {project.projectType ? (
+              <span style={{
+                background: project.projectType.code === 'PRODUCTION'
+                  ? 'rgba(239, 68, 68, 0.15)'
+                  : 'rgba(6, 182, 212, 0.15)',
+                color: project.projectType.code === 'PRODUCTION'
+                  ? '#ef4444'
+                  : '#06b6d4',
+                padding: '4px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+                display: 'inline-block',
+              }}>
+                {getTypeText(project.projectType.code)}
+              </span>
+            ) : (
+              <span style={{
+                background: 'rgba(156, 163, 175, 0.15)',
+                color: '#6b7280',
+                padding: '4px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+                display: 'inline-block',
+              }}>
+                No Type
+              </span>
+            )}
           </div>
         </div>
       ),
@@ -474,13 +525,10 @@ export const ProjectsPage: React.FC = () => {
               if (startDate && endDate) {
                 const totalDuration = endDate.getTime() - startDate.getTime()
                 const elapsedDuration = now.getTime() - startDate.getTime()
-                const timeProgress = Math.min(
-                  Math.max((elapsedDuration / totalDuration) * 100, 10),
-                  85
-                )
+                const timeProgress = Math.max(0, Math.min(95, (elapsedDuration / totalDuration) * 100))
                 statusProgress = Math.round(timeProgress)
               } else {
-                statusProgress = 50 // Default progress if dates are missing
+                statusProgress = 30 // More conservative estimate when dates are missing
               }
               break
             case 'COMPLETED':
@@ -608,8 +656,8 @@ export const ProjectsPage: React.FC = () => {
 
         return (
           <div className='text-sm'>
-            <div>Mulai: {project.startDate ? dayjs(project.startDate).format('DD/MM/YYYY') : 'TBD'}</div>
-            <div>Selesai: {project.endDate ? dayjs(project.endDate).format('DD/MM/YYYY') : 'TBD'}</div>
+            <div>Mulai: {formatDate(project.startDate)}</div>
+            <div>Selesai: {formatDate(project.endDate)}</div>
             {project.status !== 'COMPLETED' &&
               project.status !== 'CANCELLED' && (
                 <div
@@ -630,9 +678,10 @@ export const ProjectsPage: React.FC = () => {
       title: 'Nilai Proyek',
       key: 'budget',
       render: (_: any, project: Project) => {
-        const budget = safeNumber(project.basePrice || project.basePrice || 0)
+        const budget = safeNumber(project.estimatedBudget || project.basePrice || 0)
+        const actualPrice = safeNumber(project.basePrice || 0)
         const totalRevenue = safeNumber(project.totalRevenue || 0)
-        const pendingAmount = Math.max(budget - totalRevenue, 0)
+        const pendingAmount = Math.max(actualPrice - totalRevenue, 0)
 
         return (
           <div className='text-sm'>
@@ -640,7 +689,7 @@ export const ProjectsPage: React.FC = () => {
               Nilai: <Text strong>{formatIDR(budget)}</Text>
             </div>
             <div>
-              Aktual: <Text strong>{formatIDR(budget)}</Text>
+              Aktual: <Text strong>{formatIDR(actualPrice)}</Text>
             </div>
             <div className='mt-1'>
               <Text type='success'>Dibayar: {formatIDR(totalRevenue)}</Text>
@@ -653,8 +702,15 @@ export const ProjectsPage: React.FC = () => {
           </div>
         )
       },
-      sorter: (a: Project, b: Project) =>
-        (parseFloat(a.basePrice || '0') || 0) - (parseFloat(b.basePrice || '0') || 0),
+      sorter: (a: Project, b: Project) => {
+        const aPrice = typeof a.basePrice === 'string'
+          ? parseFloat(a.basePrice) || 0
+          : safeNumber(a.basePrice)
+        const bPrice = typeof b.basePrice === 'string'
+          ? parseFloat(b.basePrice) || 0
+          : safeNumber(b.basePrice)
+        return aPrice - bPrice
+      },
     },
     {
       title: 'Aksi',
@@ -869,8 +925,8 @@ export const ProjectsPage: React.FC = () => {
               name='search'
               placeholder='Cari proyek...'
               prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
               style={{ width: 300 }}
               autoComplete='off'
             />
@@ -897,8 +953,8 @@ export const ProjectsPage: React.FC = () => {
               style={{ width: 150 }}
               allowClear
             >
-              <Option value='production'>Produksi</Option>
-              <Option value='socialMedia'>Media Sosial</Option>
+              <Option value='PRODUCTION'>Produksi</Option>
+              <Option value='SOCIAL_MEDIA'>Media Sosial</Option>
             </Select>
             <MonthPicker
               placeholder='Pilih bulan & tahun'
@@ -953,7 +1009,7 @@ export const ProjectsPage: React.FC = () => {
             {searchText && (
               <Tag
                 closable
-                onClose={() => setSearchText('')}
+                onClose={() => setSearchInput('')}
                 style={{
                   background: 'rgba(59, 130, 246, 0.1)',
                   border: '1px solid rgba(59, 130, 246, 0.3)',
@@ -1034,7 +1090,7 @@ export const ProjectsPage: React.FC = () => {
               size='small'
               type='text'
               onClick={() => {
-                setSearchText('')
+                setSearchInput('')
                 setStatusFilter('')
                 setTypeFilter('')
                 setFilters({})
@@ -1076,26 +1132,38 @@ export const ProjectsPage: React.FC = () => {
         title={editingProject ? 'Edit Proyek' : t('projects.create')}
         open={modalVisible}
         onCancel={() => {
-          setModalVisible(false)
-          setEditingProject(null)
           form.resetFields()
+          setEditingProject(null)
+          setModalVisible(false)
         }}
         footer={null}
         width={800}
       >
-        <Form
-          data-testid='project-form'
-          form={form}
-          layout='vertical'
-          onFinish={handleFormSubmit}
-          name='projectForm'
+        <FormErrorBoundary
+          formTitle={editingProject ? 'Edit Proyek' : 'Proyek Baru'}
+          onReset={() => {
+            form.resetFields()
+            setEditingProject(null)
+            setModalVisible(false)
+          }}
         >
+          <Form
+            data-testid='project-form'
+            form={form}
+            layout='vertical'
+            onFinish={handleFormSubmit}
+            name='projectForm'
+          >
           <Form.Item
             name='clientId'
             label='Klien'
             rules={[{ required: true, message: 'Pilih klien' }]}
           >
-            <Select placeholder='Pilih klien'>
+            <Select
+              placeholder='Pilih klien'
+              loading={clientsLoading}
+              disabled={clientsLoading}
+            >
               {safeArray(clients).map(client => (
                 <Option key={client.id} value={client.id}>
                   {client.name}
@@ -1115,13 +1183,21 @@ export const ProjectsPage: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            name='type'
+            name='projectTypeId'
             label={t('projects.type')}
             rules={[{ required: true, message: 'Pilih tipe proyek' }]}
           >
-            <Select id='type' placeholder='Pilih tipe proyek'>
-              <Option value='PRODUCTION'>Produksi</Option>
-              <Option value='SOCIAL_MEDIA'>Media Sosial</Option>
+            <Select
+              id='projectTypeId'
+              placeholder='Pilih tipe proyek'
+              loading={projectTypesLoading}
+              disabled={projectTypesLoading}
+            >
+              {safeArray(projectTypes).map(type => (
+                <Option key={type.id} value={type.id}>
+                  {type.name}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 
@@ -1281,9 +1357,9 @@ export const ProjectsPage: React.FC = () => {
           <div className='flex justify-end space-x-2'>
             <Button
               onClick={() => {
-                setModalVisible(false)
-                setEditingProject(null)
                 form.resetFields()
+                setEditingProject(null)
+                setModalVisible(false)
               }}
             >
               {t('common.cancel')}
@@ -1296,7 +1372,8 @@ export const ProjectsPage: React.FC = () => {
               {t('common.save')}
             </Button>
           </div>
-        </Form>
+          </Form>
+        </FormErrorBoundary>
       </Modal>
     </div>
   )

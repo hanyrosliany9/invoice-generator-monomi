@@ -25,16 +25,24 @@ import { CreateInvoiceDto } from "./dto/create-invoice.dto";
 import { UpdateInvoiceDto } from "./dto/update-invoice.dto";
 import { BulkUpdateStatusDto } from "./dto/bulk-update-status.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import {
+  RequireAuth,
+  RequireFinancialApprover,
+  RequireSuperAdmin,
+  RequireEditorRole,
+  RequireOperationsRole,
+  RequireAccountingRole,
+} from "../auth/decorators/auth.decorators";
 import { InvoiceStatus } from "@prisma/client";
 
 @ApiTags("Invoices")
 @Controller("invoices")
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
   @Post()
+  @RequireEditorRole() // All users except VIEWER can create invoices
   @ApiOperation({ summary: "Membuat invoice baru" })
   @ApiResponse({
     status: 201,
@@ -52,6 +60,7 @@ export class InvoicesController {
   }
 
   @Post("from-quotation/:quotationId")
+  @RequireOperationsRole() // Operations roles can create invoices from quotations
   @ApiOperation({ summary: "Membuat invoice dari quotation" })
   @ApiResponse({
     status: 201,
@@ -73,6 +82,7 @@ export class InvoicesController {
   }
 
   @Get()
+  @RequireAuth() // All authenticated users can view invoices
   @ApiOperation({ summary: "Mendapatkan daftar invoice dengan pagination" })
   @ApiQuery({
     name: "page",
@@ -163,6 +173,7 @@ export class InvoicesController {
   }
 
   @Get("stats")
+  @RequireAuth() // All authenticated users can view stats
   @ApiOperation({ summary: "Mendapatkan statistik invoice" })
   @ApiResponse({
     status: 200,
@@ -185,6 +196,7 @@ export class InvoicesController {
   }
 
   @Get("overdue")
+  @RequireAccountingRole() // Only accounting roles can view overdue invoices
   @ApiOperation({ summary: "Mendapatkan invoice yang jatuh tempo" })
   @ApiResponse({
     status: 200,
@@ -195,6 +207,7 @@ export class InvoicesController {
   }
 
   @Get("recent")
+  @RequireAuth() // All authenticated users can view recent invoices
   @ApiOperation({ summary: "Mendapatkan invoice terbaru" })
   @ApiQuery({
     name: "limit",
@@ -211,6 +224,7 @@ export class InvoicesController {
   }
 
   @Get(":id")
+  @RequireAuth() // All authenticated users can view invoice details
   @ApiOperation({ summary: "Mendapatkan invoice berdasarkan ID" })
   @ApiResponse({
     status: 200,
@@ -225,6 +239,7 @@ export class InvoicesController {
   }
 
   @Patch(":id")
+  @RequireEditorRole() // Only editors can update invoices
   @ApiOperation({ summary: "Memperbarui invoice" })
   @ApiResponse({
     status: 200,
@@ -242,6 +257,7 @@ export class InvoicesController {
   }
 
   @Patch(":id/status")
+  @RequireFinancialApprover() // CRITICAL: Only financial approvers can change invoice status
   @ApiOperation({ summary: "Memperbarui status invoice" })
   @ApiResponse({
     status: 200,
@@ -258,6 +274,7 @@ export class InvoicesController {
   }
 
   @Patch(":id/mark-paid")
+  @RequireFinancialApprover() // CRITICAL: Only financial approvers can mark invoices as paid
   @ApiOperation({ summary: "Tandai invoice sebagai lunas" })
   @ApiResponse({
     status: 200,
@@ -280,6 +297,7 @@ export class InvoicesController {
   }
 
   @Post("bulk-status-update")
+  @RequireFinancialApprover() // CRITICAL: Only financial approvers can bulk update invoice status
   @ApiOperation({
     summary: "Memperbarui status beberapa invoice sekaligus - 70% lebih cepat",
   })
@@ -324,6 +342,7 @@ export class InvoicesController {
   }
 
   @Patch(":id/materai")
+  @RequireAccountingRole() // Accounting roles can update materai status
   @ApiOperation({ summary: "Memperbarui status materai invoice" })
   @ApiResponse({
     status: 200,
@@ -345,6 +364,7 @@ export class InvoicesController {
   }
 
   @Delete(":id")
+  @RequireSuperAdmin() // CRITICAL: Only SUPER_ADMIN can delete invoices
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Menghapus invoice" })
   @ApiResponse({

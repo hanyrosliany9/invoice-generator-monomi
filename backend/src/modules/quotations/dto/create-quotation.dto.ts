@@ -35,9 +35,11 @@ export class CreateQuotationDto {
   validUntil: string;
 
   @ApiProperty({
-    description: "Scope of Work - Deskripsi naratif ruang lingkup pekerjaan (diturunkan dari proyek atau custom)",
+    description:
+      "Scope of Work - Deskripsi naratif ruang lingkup pekerjaan (diturunkan dari proyek atau custom)",
     required: false,
-    example: "Proyek pengembangan website meliputi:\n1. Design UI/UX\n2. Development frontend dan backend\n3. Testing dan deployment\n\nTimeline: 3 bulan\nDeliverables: Website responsive, dokumentasi, training",
+    example:
+      "Proyek pengembangan website meliputi:\n1. Design UI/UX\n2. Development frontend dan backend\n3. Testing dan deployment\n\nTimeline: 3 bulan\nDeliverables: Website responsive, dokumentasi, training",
   })
   @IsOptional()
   @IsString({ message: "Scope of Work harus berupa string" })

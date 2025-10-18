@@ -64,8 +64,10 @@ export class CreateProjectDto {
   description: string;
 
   @ApiProperty({
-    description: "Scope of Work - Deskripsi naratif lengkap dari ruang lingkup pekerjaan",
-    example: "Proyek ini meliputi:\n1. Pembuatan konsep kreatif\n2. Produksi video 30 detik\n3. Editing dan color grading\n4. Revisi hingga 3 kali\n\nTimeline: 2 minggu\nDeliverables: Video final format MP4 1080p",
+    description:
+      "Scope of Work - Deskripsi naratif lengkap dari ruang lingkup pekerjaan",
+    example:
+      "Proyek ini meliputi:\n1. Pembuatan konsep kreatif\n2. Produksi video 30 detik\n3. Editing dan color grading\n4. Revisi hingga 3 kali\n\nTimeline: 2 minggu\nDeliverables: Video final format MP4 1080p",
     required: false,
   })
   @IsOptional()

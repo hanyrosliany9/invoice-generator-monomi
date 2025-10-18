@@ -718,7 +718,7 @@ const PerformanceBenchmark: React.FC<PerformanceBenchmarkProps> = ({
       {/* Optimization Modal */}
       <Modal
         title='Pengaturan Optimasi'
-        visible={optimizationModalVisible}
+        open={optimizationModalVisible}
         onCancel={() => setOptimizationModalVisible(false)}
         footer={null}
         width={600}

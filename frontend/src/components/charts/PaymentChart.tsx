@@ -9,6 +9,7 @@ import {
 } from 'recharts'
 import { Skeleton } from 'antd'
 import { formatIDR, safeArray, safeNumber } from '../../utils/currency'
+import { useTheme } from '../../theme'
 
 interface PaymentChartProps {
   data: Array<{
@@ -25,6 +26,7 @@ const PaymentChart: React.FC<PaymentChartProps> = ({
   loading = false,
   height = 300,
 }) => {
+  const { theme } = useTheme()
   // State for tracking hover/active segment
   const [activeIndex, setActiveIndex] = useState<number>(-1)
 
@@ -99,7 +101,7 @@ const PaymentChart: React.FC<PaymentChartProps> = ({
       return (
         <div
           className='bg-white p-4 border border-gray-200 rounded-lg shadow-lg'
-          style={{ border: '1px solid #e2e8f0' }}
+          style={{ border: theme.colors.border.default }}
         >
           <p className='text-gray-800 font-medium'>{`Status: ${data.name || 'Unknown'}`}</p>
           <p className='text-blue-600 font-semibold'>

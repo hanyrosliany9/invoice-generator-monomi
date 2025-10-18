@@ -113,6 +113,9 @@ export const InvoiceEditPage: React.FC = () => {
     onSuccess: updatedInvoice => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       queryClient.invalidateQueries({ queryKey: ['invoice', id] })
+      queryClient.invalidateQueries({ queryKey: ['invoice-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['recent-invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['overdue-invoices'] })
       message.success('Invoice updated successfully')
       navigate(`/invoices/${updatedInvoice.id}`)
     },
@@ -127,6 +130,9 @@ export const InvoiceEditPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       queryClient.invalidateQueries({ queryKey: ['invoice', id] })
+      queryClient.invalidateQueries({ queryKey: ['invoice-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['recent-invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['overdue-invoices'] })
       message.success('Invoice marked as paid')
     },
     onError: () => {
@@ -140,6 +146,9 @@ export const InvoiceEditPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       queryClient.invalidateQueries({ queryKey: ['invoice', id] })
+      queryClient.invalidateQueries({ queryKey: ['invoice-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['recent-invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['overdue-invoices'] })
       message.success('Invoice status updated')
     },
     onError: () => {
@@ -240,11 +249,30 @@ export const InvoiceEditPage: React.FC = () => {
   }
 
   const handleSaveDraft = async () => {
+    if (!id) return
+
     setAutoSaving(true)
     try {
       const values = form.getFieldsValue()
-      // Auto-save logic would go here
-      message.success('Draft saved')
+
+      const updateData: UpdateInvoiceRequest = {
+        clientId: values.clientId,
+        projectId: values.projectId,
+        quotationId: values.quotationId,
+        amountPerProject: values.amountPerProject,
+        totalAmount: values.totalAmount,
+        paymentInfo: values.paymentInfo,
+        terms: values.terms,
+        scopeOfWork: values.scopeOfWork,
+        dueDate: values.dueDate.toISOString(),
+        materaiRequired: values.materaiRequired,
+        materaiApplied: values.materaiApplied,
+      }
+
+      await invoiceService.updateInvoice(id, updateData)
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] })
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      message.success('Draft saved successfully')
     } catch (error) {
       message.error('Failed to save draft')
     } finally {
@@ -326,10 +354,10 @@ export const InvoiceEditPage: React.FC = () => {
 
   const heroCard = (
     <EntityHeroCard
-      title={`Edit Invoice ${invoice.invoiceNumber || invoice.number || 'Draft'}`}
+      title={`Edit Invoice ${invoice.invoiceNumber || 'DRAFT-' + invoice.id.slice(0, 8)}`}
       subtitle='Modify invoice details, payment information, and status'
       icon={<FileTextOutlined />}
-      breadcrumb={['Invoices', invoice.invoiceNumber || 'Draft', 'Edit']}
+      breadcrumb={['Invoices', invoice.invoiceNumber || 'DRAFT-' + invoice.id.slice(0, 8), 'Edit']}
       metadata={[
         { label: 'Invoice ID', value: invoice.id },
         {

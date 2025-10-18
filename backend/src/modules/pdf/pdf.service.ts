@@ -466,20 +466,25 @@ export class PdfService {
         </tr>
       </thead>
       <tbody>
-        ${products.length > 0
-          ? products.map((product: any, index: number) => `
+        ${
+          products.length > 0
+            ? products
+                .map(
+                  (product: any, index: number) => `
         <tr>
-          <td>${String(index + 1).padStart(2, '0')}</td>
+          <td>${String(index + 1).padStart(2, "0")}</td>
           <td>
             <strong>${product.name}</strong><br>
-            <small style="color: #666;">${product.description || ''}</small>
+            <small style="color: #666;">${product.description || ""}</small>
           </td>
           <td>${formatIDR(product.price || 0)}</td>
           <td>${product.quantity || 1}</td>
-          <td>${formatIDR(product.subtotal || (product.price * (product.quantity || 1)))}</td>
+          <td>${formatIDR(product.subtotal || product.price * (product.quantity || 1))}</td>
         </tr>
-          `).join('')
-          : `
+          `,
+                )
+                .join("")
+            : `
         <tr>
           <td>01</td>
           <td>${project.description}</td>
@@ -932,20 +937,25 @@ export class PdfService {
         </tr>
       </thead>
       <tbody>
-        ${products.length > 0
-          ? products.map((product: any, index: number) => `
+        ${
+          products.length > 0
+            ? products
+                .map(
+                  (product: any, index: number) => `
         <tr>
-          <td>${String(index + 1).padStart(2, '0')}</td>
+          <td>${String(index + 1).padStart(2, "0")}</td>
           <td>
             <strong>${product.name}</strong><br>
-            <small style="color: #666;">${product.description || ''}</small>
+            <small style="color: #666;">${product.description || ""}</small>
           </td>
           <td>${formatIDR(product.price || 0)}</td>
           <td>${product.quantity || 1}</td>
-          <td>${formatIDR(product.subtotal || (product.price * (product.quantity || 1)))}</td>
+          <td>${formatIDR(product.subtotal || product.price * (product.quantity || 1))}</td>
         </tr>
-          `).join('')
-          : `
+          `,
+                )
+                .join("")
+            : `
         <tr>
           <td>01</td>
           <td>${project.description}</td>

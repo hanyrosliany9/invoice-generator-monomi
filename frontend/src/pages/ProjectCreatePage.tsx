@@ -226,21 +226,21 @@ export const ProjectCreatePage: React.FC = () => {
                 label: 'Total Products',
                 value: (formValues.products || []).length,
                 icon: <ProjectOutlined />,
-                color: '#1890ff',
+                color: theme.colors.accent.primary,
               },
               {
                 label: 'Estimated Value',
                 value: calculatedValue,
                 format: 'currency',
                 icon: <DollarOutlined />,
-                color: '#52c41a',
+                color: theme.colors.status.success,
               },
               {
                 label: 'Duration',
                 value: duration || 0,
                 format: 'duration',
                 icon: <CalendarOutlined />,
-                color: '#1890ff',
+                color: theme.colors.accent.primary,
               },
             ]}
             layout='vertical'
@@ -443,7 +443,7 @@ export const ProjectCreatePage: React.FC = () => {
             >
               <Text type='secondary'>
                 <CalendarOutlined
-                  style={{ marginRight: '8px', color: '#52c41a' }}
+                  style={{ marginRight: '8px', color: theme.colors.status.success }}
                 />
                 Project duration: <Text strong>{duration} days</Text>
               </Text>

@@ -12,6 +12,7 @@ import {
 } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
+import { useTheme } from '../../theme'
 
 const { Title, Text } = Typography
 
@@ -89,6 +90,7 @@ export const EntityHeroCard: React.FC<EntityHeroCardProps> = ({
   'aria-label': ariaLabel,
 }) => {
   const navigate = useNavigate()
+  const { theme } = useTheme()
 
   const handleBack = () => {
     if (onBack) {
@@ -120,12 +122,12 @@ export const EntityHeroCard: React.FC<EntityHeroCardProps> = ({
       {/* Hero Card */}
       <Card
         style={{
-          background: 'rgba(26, 31, 46, 0.6)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(45, 53, 72, 0.6)',
+          background: theme.colors.glass.background,
+          backdropFilter: theme.colors.glass.backdropFilter,
+          border: theme.colors.glass.border,
           borderRadius: '16px',
           marginBottom: '24px',
-          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+          boxShadow: theme.colors.glass.shadow,
         }}
       >
         <Row gutter={[16, 16]} align='middle'>
@@ -151,7 +153,7 @@ export const EntityHeroCard: React.FC<EntityHeroCardProps> = ({
                       size={64}
                       icon={icon}
                       style={{
-                        backgroundColor: '#1890ff',
+                        backgroundColor: theme.colors.accent.primary,
                         borderRadius: '16px',
                       }}
                     />

@@ -24,7 +24,12 @@ export class QuotationsService {
     // Validate that the project belongs to the selected client
     const project = await this.prisma.project.findUnique({
       where: { id: createQuotationDto.projectId },
-      select: { clientId: true, id: true, priceBreakdown: true, scopeOfWork: true },
+      select: {
+        clientId: true,
+        id: true,
+        priceBreakdown: true,
+        scopeOfWork: true,
+      },
     });
 
     if (!project) {
@@ -41,10 +46,12 @@ export class QuotationsService {
     const quotationNumber = await this.generateQuotationNumber();
 
     // Cascade scopeOfWork from project if not provided in DTO
-    const scopeOfWork = createQuotationDto.scopeOfWork || project.scopeOfWork || null;
+    const scopeOfWork =
+      createQuotationDto.scopeOfWork || project.scopeOfWork || null;
 
     // Cascade priceBreakdown from project if not provided in DTO
-    const priceBreakdown = createQuotationDto.priceBreakdown || project.priceBreakdown || undefined;
+    const priceBreakdown =
+      createQuotationDto.priceBreakdown || project.priceBreakdown || undefined;
 
     return this.prisma.quotation.create({
       data: {
@@ -81,7 +88,7 @@ export class QuotationsService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.QuotationWhereInput = {};
-    
+
     if (status) {
       where.status = status;
     }
@@ -90,7 +97,7 @@ export class QuotationsService {
     if (month && year) {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0, 23, 59, 59, 999);
-      
+
       where.date = {
         gte: startDate,
         lte: endDate,
@@ -98,7 +105,7 @@ export class QuotationsService {
     } else if (year) {
       const startDate = new Date(year, 0, 1);
       const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
-      
+
       where.date = {
         gte: startDate,
         lte: endDate,
@@ -367,8 +374,8 @@ export class QuotationsService {
         projectId: quotation.projectId,
         amountPerProject: quotation.amountPerProject,
         totalAmount: quotation.totalAmount,
-        scopeOfWork: quotation.scopeOfWork || null,  // Cascade from quotation
-        priceBreakdown: quotation.priceBreakdown || undefined,  // Cascade from quotation
+        scopeOfWork: quotation.scopeOfWork || null, // Cascade from quotation
+        priceBreakdown: quotation.priceBreakdown || undefined, // Cascade from quotation
         paymentInfo: "Bank Transfer - Lihat detail di company settings",
         materaiRequired,
         materaiApplied: false,

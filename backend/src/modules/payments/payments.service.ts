@@ -2,14 +2,21 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { InvoicesService } from "../invoices/invoices.service";
 import { CreatePaymentDto, UpdatePaymentDto, PaymentResponseDto } from "./dto";
 import { PaymentStatus } from "@prisma/client";
 
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => InvoicesService))
+    private invoicesService: InvoicesService,
+  ) {}
 
   async create(
     createPaymentDto: CreatePaymentDto,
@@ -153,6 +160,19 @@ export class PaymentsService {
     // Update invoice status if payment is confirmed
     if (payment.status === PaymentStatus.CONFIRMED) {
       await this.updateInvoiceStatus(payment.invoiceId);
+
+      // Detect and handle advance payment (PSAK 72)
+      try {
+        await this.invoicesService.processAdvancePaymentForInvoice(
+          payment.invoiceId,
+          payment.paymentDate,
+          Number(payment.amount),
+          'system', // TODO: Get actual user ID from context
+        );
+      } catch (error) {
+        console.error('Failed to process advance payment detection:', error);
+        // Don't fail payment confirmation if advance payment detection fails
+      }
     }
 
     return this.transformToResponse(payment);

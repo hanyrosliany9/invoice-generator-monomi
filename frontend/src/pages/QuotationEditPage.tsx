@@ -107,6 +107,8 @@ export const QuotationEditPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotation', id] })
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      queryClient.invalidateQueries({ queryKey: ['quotation-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['recent-quotations'] })
       message.success('Quotation updated successfully')
       setHasChanges(false)
       navigate(`/quotations/${id}`)
@@ -121,7 +123,10 @@ export const QuotationEditPage: React.FC = () => {
     mutationFn: quotationService.generateInvoice,
     onSuccess: result => {
       queryClient.invalidateQueries({ queryKey: ['quotation', id] })
+      queryClient.invalidateQueries({ queryKey: ['quotations'] })
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['invoice-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['recent-invoices'] })
       if (result.isExisting) {
         message.info(
           `Invoice ${result.invoice.invoiceNumber} already exists for this quotation`
@@ -176,9 +181,22 @@ export const QuotationEditPage: React.FC = () => {
   // Track form changes
   const handleFormChange = () => {
     const currentValues = form.getFieldsValue()
-    const changed =
-      originalValues &&
-      JSON.stringify(currentValues) !== JSON.stringify(originalValues)
+
+    // Proper deep comparison that handles dayjs objects
+    const changed = originalValues &&
+      Object.keys(originalValues).some(key => {
+        const current = currentValues[key]
+        const original = originalValues[key]
+
+        // Handle dayjs comparison
+        if (dayjs.isDayjs(current) && dayjs.isDayjs(original)) {
+          return !current.isSame(original)
+        }
+
+        // Handle other types
+        return current !== original
+      })
+
     setHasChanges(!!changed)
     updatePreviewData(currentValues)
   }
@@ -215,11 +233,29 @@ export const QuotationEditPage: React.FC = () => {
   }
 
   const handleSaveDraft = async () => {
+    if (!id) return
+
     setAutoSaving(true)
     try {
       const values = form.getFieldsValue()
-      // Auto-save logic would go here
-      message.success('Draft saved')
+
+      const quotationData: UpdateQuotationRequest = {
+        clientId: values.clientId,
+        projectId: values.projectId,
+        amountPerProject: values.amountPerProject,
+        totalAmount: values.totalAmount,
+        terms: values.terms,
+        validUntil: values.validUntil.toISOString(),
+        status: values.status,
+        scopeOfWork: values.scopeOfWork,
+      }
+
+      await quotationService.updateQuotation(id, quotationData)
+      queryClient.invalidateQueries({ queryKey: ['quotation', id] })
+      queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      setHasChanges(false)
+      setOriginalValues(values)
+      message.success('Draft saved successfully')
     } catch (error) {
       message.error('Failed to save draft')
     } finally {
@@ -342,8 +378,8 @@ export const QuotationEditPage: React.FC = () => {
                 message: 'You have unsaved changes',
               }
             : {
-                type: 'info',
-                message: 'Auto-saved 2 minutes ago',
+                type: 'success',
+                message: 'All changes saved',
               }
       }
     />
@@ -556,6 +592,17 @@ export const QuotationEditPage: React.FC = () => {
                 label='Total Quotation Amount (IDR)'
                 rules={[
                   { required: true, message: 'Please enter total amount' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const amountPerProject = getFieldValue('amountPerProject')
+                      if (value && amountPerProject && value < amountPerProject) {
+                        return Promise.reject(
+                          new Error('Total amount must be greater than or equal to project amount')
+                        )
+                      }
+                      return Promise.resolve()
+                    },
+                  }),
                 ]}
               >
                 <IDRCurrencyInput
@@ -679,12 +726,23 @@ export const QuotationEditPage: React.FC = () => {
                 label='Valid Until'
                 rules={[
                   { required: true, message: 'Please select validity date' },
+                  {
+                    validator(_, value) {
+                      if (!value || value.isAfter(dayjs())) {
+                        return Promise.resolve()
+                      }
+                      return Promise.reject(
+                        new Error('Valid until date must be in the future')
+                      )
+                    },
+                  },
                 ]}
               >
                 <DatePicker
                   size='large'
                   style={{ width: '100%' }}
                   format='DD MMM YYYY'
+                  disabledDate={current => current && current < dayjs().startOf('day')}
                 />
               </Form.Item>
             </Col>

@@ -16,8 +16,9 @@ import {
   safeArray,
   safeNumber,
 } from '../../utils/currency'
+import { useTheme } from '../../theme'
 
-interface RevenueChartProps {
+interface RevenueChartProps{
   data: Array<{ period: string; amount: number }> | null
   loading?: boolean
   height?: number
@@ -28,6 +29,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({
   loading = false,
   height = 300,
 }) => {
+  const { theme } = useTheme()
   if (loading) {
     return (
       <Skeleton.Input active style={{ width: '100%', height: `${height}px` }} />
@@ -75,7 +77,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({
       return (
         <div
           className='bg-white p-4 border border-gray-200 rounded-lg shadow-lg'
-          style={{ border: '1px solid #e2e8f0' }}
+          style={{ border: theme.colors.border.default }}
         >
           <p className='text-gray-800 font-medium'>{`Bulan: ${label || 'Unknown'}`}</p>
           <p className='text-blue-600 font-semibold'>
@@ -99,15 +101,15 @@ const RevenueChart: React.FC<RevenueChartProps> = ({
             bottom: 20,
           }}
         >
-          <CartesianGrid strokeDasharray='3 3' stroke='#e2e8f0' />
+          <CartesianGrid strokeDasharray='3 3' stroke={theme.colors.border.light} />
           <XAxis
             dataKey='month'
-            tick={{ fontSize: 12, fill: '#6b7280' }}
-            axisLine={{ stroke: '#e2e8f0' }}
+            tick={{ fontSize: 12, fill: theme.colors.text.secondary }}
+            axisLine={{ stroke: theme.colors.border.light }}
           />
           <YAxis
-            tick={{ fontSize: 12, fill: '#6b7280' }}
-            axisLine={{ stroke: '#e2e8f0' }}
+            tick={{ fontSize: 12, fill: theme.colors.text.secondary }}
+            axisLine={{ stroke: theme.colors.border.light }}
             tickFormatter={value => formatCompactCurrency(value)}
           />
           <Tooltip content={<CustomTooltip />} />

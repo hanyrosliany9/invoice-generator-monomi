@@ -8,6 +8,7 @@ import {
   LoadingOutlined,
   UpOutlined,
 } from '@ant-design/icons'
+import { useTheme } from '../../theme'
 
 const { Text } = Typography
 
@@ -32,31 +33,31 @@ interface ProgressiveSectionProps {
   'data-testid'?: string
 }
 
-const getValidationIcon = (status: ValidationStatus['status']) => {
+const getValidationIcon = (status: ValidationStatus['status'], theme: any) => {
   switch (status) {
     case 'success':
-      return <CheckCircleOutlined style={{ color: '#52c41a' }} />
+      return <CheckCircleOutlined style={{ color: theme.colors.status.success }} />
     case 'warning':
-      return <ExclamationCircleOutlined style={{ color: '#faad14' }} />
+      return <ExclamationCircleOutlined style={{ color: theme.colors.status.warning }} />
     case 'error':
-      return <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+      return <CloseCircleOutlined style={{ color: theme.colors.status.error }} />
     case 'validating':
-      return <LoadingOutlined style={{ color: '#1890ff' }} />
+      return <LoadingOutlined style={{ color: theme.colors.status.info }} />
     default:
       return null
   }
 }
 
-const getValidationColor = (status: ValidationStatus['status']) => {
+const getValidationColor = (status: ValidationStatus['status'], theme: any) => {
   switch (status) {
     case 'success':
-      return '#52c41a'
+      return theme.colors.status.success
     case 'warning':
-      return '#faad14'
+      return theme.colors.status.warning
     case 'error':
-      return '#ff4d4f'
+      return theme.colors.status.error
     case 'validating':
-      return '#1890ff'
+      return theme.colors.status.info
     default:
       return undefined
   }
@@ -78,6 +79,7 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
   'data-testid': dataTestId,
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen)
+  const { theme } = useTheme()
 
   const handleToggle = (keys: string | string[]) => {
     const open = Array.isArray(keys) ? keys.length > 0 : keys !== ''
@@ -96,7 +98,7 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
         >
           <Space align='center' style={{ flex: 1 }}>
             {icon && (
-              <div style={{ fontSize: '18px', color: '#1890ff' }}>
+              <div style={{ fontSize: '18px', color: theme.colors.accent.primary }}>
                 {icon}
               </div>
             )}
@@ -111,7 +113,7 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
                 <Text strong style={{ fontSize: '16px' }}>
                   {title}
                 </Text>
-                {required && <Tag color='red'>Required</Tag>}
+                {required && <Tag style={{ backgroundColor: theme.colors.status.error, borderColor: theme.colors.status.error, color: theme.colors.text.inverse }}>Required</Tag>}
                 {validation && (
                   <div
                     style={{
@@ -120,7 +122,7 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
                       gap: '4px',
                     }}
                   >
-                    {getValidationIcon(validation.status)}
+                    {getValidationIcon(validation.status, theme)}
                   </div>
                 )}
               </div>
@@ -134,7 +136,7 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
                   <Text
                     style={{
                       fontSize: '12px',
-                      color: getValidationColor(validation.status),
+                      color: getValidationColor(validation.status, theme),
                     }}
                   >
                     {validation.message}
@@ -159,12 +161,12 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
       style: {
         border:
           validation?.status === 'error'
-            ? '1px solid #ff4d4f'
+            ? `1px solid ${theme.colors.status.error}`
             : validation?.status === 'warning'
-              ? '1px solid #faad14'
+              ? `1px solid ${theme.colors.status.warning}`
               : validation?.status === 'success'
-                ? '1px solid #52c41a'
-                : '1px solid rgba(100, 116, 139, 0.3)',
+                ? `1px solid ${theme.colors.status.success}`
+                : theme.colors.border.default,
         borderRadius: '8px',
         marginBottom: '8px',
         transition: 'all 0.3s ease',
@@ -180,10 +182,9 @@ export const ProgressiveSection: React.FC<ProgressiveSectionProps> = ({
       style={{
         marginBottom: '16px',
         opacity: disabled ? 0.6 : 1,
-        background: 'rgba(26, 31, 46, 0.6)',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(45, 53, 72, 0.6)',
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+        background: theme.colors.card.background,
+        border: theme.colors.card.border,
+        boxShadow: theme.colors.card.shadow,
       }}
     >
       <Collapse

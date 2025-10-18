@@ -1,20 +1,34 @@
 import React, { useEffect, useState } from 'react'
 import { Avatar, Button, Dropdown, Layout, Menu, Typography } from 'antd'
 import {
+  BankOutlined,
   BarChartOutlined,
+  BookOutlined,
+  CalculatorOutlined,
+  CameraOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
   DashboardOutlined,
+  DollarCircleOutlined,
+  DollarOutlined,
+  EditOutlined,
   FileDoneOutlined,
   FileTextOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ProjectOutlined,
+  RiseOutlined,
   SettingOutlined,
+  ShopOutlined,
+  TeamOutlined,
   UserOutlined,
+  WarningOutlined,
 } from '@ant-design/icons'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../../store/auth'
+import { usePermissions } from '../../hooks/usePermissions'
 import { ThemeToggle } from '../ThemeToggle'
 import { useTheme } from '../../theme'
 // import { BreadcrumbProvider } from '../navigation'
@@ -44,6 +58,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const location = useLocation()
   const { t } = useTranslation()
   const { user, logout } = useAuthStore()
+  const { canManageUsers } = usePermissions()
   const { theme } = useTheme()
 
   // Mobile detection
@@ -60,7 +75,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     }
   }, [])
 
-  const menuItems = [
+  // Build menu items dynamically based on permissions
+  const baseMenuItems = [
     {
       key: '/dashboard',
       icon: <DashboardOutlined />,
@@ -82,15 +98,116 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       label: t('navigation.invoices'),
     },
     {
+      key: '/expenses',
+      icon: <DollarOutlined />,
+      label: 'Biaya',
+    },
+    {
       key: '/clients',
       icon: <UserOutlined />,
       label: t('navigation.clients'),
+    },
+    {
+      key: '/assets',
+      icon: <CameraOutlined />,
+      label: 'Aset',
+    },
+    {
+      key: 'accounting',
+      icon: <CalculatorOutlined />,
+      label: 'Akuntansi',
+      children: [
+        {
+          key: '/accounting/chart-of-accounts',
+          icon: <BankOutlined />,
+          label: 'Bagan Akun',
+        },
+        {
+          key: '/accounting/journal-entries',
+          icon: <FileTextOutlined />,
+          label: 'Jurnal Umum',
+        },
+        {
+          key: '/accounting/adjusting-entries',
+          icon: <EditOutlined />,
+          label: 'Jurnal Penyesuaian',
+        },
+        {
+          key: '/accounting/trial-balance',
+          icon: <CheckCircleOutlined />,
+          label: 'Neraca Saldo',
+        },
+        {
+          key: '/accounting/general-ledger',
+          icon: <BookOutlined />,
+          label: 'Buku Besar',
+        },
+        {
+          key: '/accounting/income-statement',
+          icon: <RiseOutlined />,
+          label: 'Laporan Laba Rugi',
+        },
+        {
+          key: '/accounting/balance-sheet',
+          icon: <DollarOutlined />,
+          label: 'Neraca',
+        },
+        {
+          key: '/accounting/cash-flow',
+          icon: <DollarCircleOutlined />,
+          label: 'Laporan Arus Kas',
+        },
+        {
+          key: '/accounting/accounts-receivable',
+          icon: <TeamOutlined />,
+          label: 'Laporan Piutang',
+        },
+        {
+          key: '/accounting/accounts-payable',
+          icon: <ShopOutlined />,
+          label: 'Laporan Hutang',
+        },
+        {
+          key: '/accounting/ar-aging',
+          icon: <ClockCircleOutlined />,
+          label: 'Aging Piutang',
+        },
+        {
+          key: '/accounting/ap-aging',
+          icon: <ClockCircleOutlined />,
+          label: 'Aging Hutang',
+        },
+        {
+          key: '/accounting/depreciation',
+          icon: <DollarCircleOutlined />,
+          label: 'Depresiasi (PSAK 16)',
+        },
+        {
+          key: '/accounting/ecl-provisions',
+          icon: <WarningOutlined />,
+          label: 'Provisi ECL (PSAK 71)',
+        },
+      ],
     },
     {
       key: '/reports',
       icon: <BarChartOutlined />,
       label: t('navigation.reports'),
     },
+  ]
+
+  // Add User Management menu item (admin only)
+  const menuItems = [
+    ...baseMenuItems,
+    ...(canManageUsers()
+      ? [
+          {
+            key: '/users',
+            icon: <TeamOutlined />,
+            label: 'User Management',
+          },
+        ]
+      : []),
     {
       key: '/settings',
       icon: <SettingOutlined />,
@@ -131,11 +248,25 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   const getSelectedKey = () => {
     const path = location.pathname
+
+    // First check if any child items match (for submenus)
+    for (const item of menuItems) {
+      if (item.children) {
+        for (const child of item.children) {
+          if (path.startsWith(child.key)) {
+            return child.key
+          }
+        }
+      }
+    }
+
+    // Then check top-level items
     for (const item of menuItems) {
       if (path.startsWith(item.key)) {
         return item.key
       }
     }
+
     return '/dashboard'
   }
 
@@ -153,6 +284,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       }
     if (path.startsWith('/invoices'))
       return { type: 'invoice' as const, id: '', name: 'Invoice Management' }
+    if (path.startsWith('/expenses'))
+      return { type: 'expense' as const, id: '', name: 'Expense Management' }
+    if (path.startsWith('/users'))
+      return { type: 'client' as const, id: '', name: 'User Management' }
     return undefined
   }
 

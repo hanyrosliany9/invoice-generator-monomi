@@ -42,8 +42,11 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { formatIDR, safeArray, safeNumber, safeString } from '../utils/currency'
+import { formatDate } from '../utils/dateFormatters'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { Client, clientService } from '../services/clients'
 import { useTheme } from '../theme'
+import FormErrorBoundary from '../components/FormErrorBoundary'
 import {
   EntityBreadcrumb,
   RelatedEntitiesPanel,
@@ -66,7 +69,8 @@ export const ClientsPage: React.FC = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  const [searchText, setSearchText] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const searchText = useDebouncedValue(searchInput, 300)
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [modalVisible, setModalVisible] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
@@ -104,8 +108,8 @@ export const ClientsPage: React.FC = () => {
     mutationFn: clientService.createClient,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
-      setModalVisible(false)
       form.resetFields()
+      setModalVisible(false)
       message.success(t('messages.success.created', { item: 'Klien' }))
     },
   })
@@ -115,9 +119,9 @@ export const ClientsPage: React.FC = () => {
       clientService.updateClient(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
-      setModalVisible(false)
-      setEditingClient(null)
       form.resetFields()
+      setEditingClient(null)
+      setModalVisible(false)
       message.success(t('messages.success.updated', { item: 'Klien' }))
     },
   })
@@ -132,13 +136,29 @@ export const ClientsPage: React.FC = () => {
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map(id => clientService.deleteClient(id)))
+      const results = await Promise.allSettled(
+        ids.map(id => clientService.deleteClient(id))
+      )
+      return {
+        succeeded: results.filter(r => r.status === 'fulfilled').length,
+        failed: results.filter(r => r.status === 'rejected').length,
+        total: results.length,
+      }
     },
-    onSuccess: () => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       setSelectedRowKeys([])
       setBatchLoading(false)
-      message.success(`Berhasil menghapus ${selectedRowKeys.length} klien`)
+
+      if (data.failed === 0) {
+        message.success(`Berhasil menghapus ${data.succeeded} klien`)
+      } else if (data.succeeded === 0) {
+        message.error(`Gagal menghapus semua klien (${data.failed} gagal)`)
+      } else {
+        message.warning(
+          `Berhasil menghapus ${data.succeeded} klien, ${data.failed} gagal`
+        )
+      }
     },
     onError: () => {
       setBatchLoading(false)
@@ -154,18 +174,35 @@ export const ClientsPage: React.FC = () => {
       ids: string[]
       status: 'active' | 'inactive'
     }) => {
-      await Promise.all(
+      const results = await Promise.allSettled(
         ids.map(id => clientService.updateClient(id, { status }))
       )
+      return {
+        succeeded: results.filter(r => r.status === 'fulfilled').length,
+        failed: results.filter(r => r.status === 'rejected').length,
+        total: results.length,
+        status,
+      }
     },
-    onSuccess: (_, { status }) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       setSelectedRowKeys([])
       setBatchLoading(false)
-      const statusText = status === 'active' ? 'aktif' : 'tidak aktif'
-      message.success(
-        `Berhasil mengubah status ${selectedRowKeys.length} klien menjadi ${statusText}`
-      )
+      const statusText = data.status === 'active' ? 'aktif' : 'tidak aktif'
+
+      if (data.failed === 0) {
+        message.success(
+          `Berhasil mengubah status ${data.succeeded} klien menjadi ${statusText}`
+        )
+      } else if (data.succeeded === 0) {
+        message.error(
+          `Gagal mengubah status semua klien (${data.failed} gagal)`
+        )
+      } else {
+        message.warning(
+          `Berhasil mengubah status ${data.succeeded} klien menjadi ${statusText}, ${data.failed} gagal`
+        )
+      }
     },
     onError: () => {
       setBatchLoading(false)
@@ -478,7 +515,7 @@ export const ClientsPage: React.FC = () => {
       title: 'Transaksi Terakhir',
       dataIndex: 'lastTransaction',
       key: 'lastTransaction',
-      render: (date: string) => (date ? dayjs(date).format('DD/MM/YYYY') : '-'),
+      render: (date: string) => formatDate(date),
       sorter: (a: Client, b: Client) => {
         if (!a.lastTransaction && !b.lastTransaction) return 0
         if (!a.lastTransaction) return 1
@@ -659,8 +696,8 @@ export const ClientsPage: React.FC = () => {
               name='search'
               placeholder='Cari klien...'
               prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
               style={{ width: 300 }}
               autoComplete='off'
             />
@@ -709,7 +746,7 @@ export const ClientsPage: React.FC = () => {
             {searchText && (
               <Tag
                 closable
-                onClose={() => setSearchText('')}
+                onClose={() => setSearchInput('')}
                 style={{
                   background: 'rgba(59, 130, 246, 0.1)',
                   border: '1px solid rgba(59, 130, 246, 0.3)',
@@ -742,7 +779,7 @@ export const ClientsPage: React.FC = () => {
               size='small'
               type='text'
               onClick={() => {
-                setSearchText('')
+                setSearchInput('')
                 setStatusFilter('')
               }}
               style={{
@@ -782,19 +819,27 @@ export const ClientsPage: React.FC = () => {
         title={editingClient ? 'Edit Klien' : t('clients.create')}
         open={modalVisible}
         onCancel={() => {
-          setModalVisible(false)
-          setEditingClient(null)
           form.resetFields()
+          setEditingClient(null)
+          setModalVisible(false)
         }}
         footer={null}
         width={800}
       >
-        <Form
-          data-testid='client-form'
-          form={form}
-          layout='vertical'
-          onFinish={handleFormSubmit}
+        <FormErrorBoundary
+          formTitle={editingClient ? 'Edit Klien' : 'Klien Baru'}
+          onReset={() => {
+            form.resetFields()
+            setEditingClient(null)
+            setModalVisible(false)
+          }}
         >
+          <Form
+            data-testid='client-form'
+            form={form}
+            layout='vertical'
+            onFinish={handleFormSubmit}
+          >
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -915,9 +960,9 @@ export const ClientsPage: React.FC = () => {
           <div className='flex justify-end space-x-2'>
             <Button
               onClick={() => {
-                setModalVisible(false)
-                setEditingClient(null)
                 form.resetFields()
+                setEditingClient(null)
+                setModalVisible(false)
               }}
             >
               {t('common.cancel')}
@@ -930,7 +975,8 @@ export const ClientsPage: React.FC = () => {
               {t('common.save')}
             </Button>
           </div>
-        </Form>
+          </Form>
+        </FormErrorBoundary>
       </Modal>
     </div>
   )

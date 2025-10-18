@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { Document, DocumentCategory } from '@prisma/client';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { Document, DocumentCategory } from "@prisma/client";
 
 @Injectable()
 export class DocumentsService {
@@ -35,21 +35,21 @@ export class DocumentsService {
   async getDocumentsByInvoice(invoiceId: string): Promise<Document[]> {
     return this.prisma.document.findMany({
       where: { invoiceId },
-      orderBy: { uploadedAt: 'desc' },
+      orderBy: { uploadedAt: "desc" },
     });
   }
 
   async getDocumentsByQuotation(quotationId: string): Promise<Document[]> {
     return this.prisma.document.findMany({
       where: { quotationId },
-      orderBy: { uploadedAt: 'desc' },
+      orderBy: { uploadedAt: "desc" },
     });
   }
 
   async getDocumentsByProject(projectId: string): Promise<Document[]> {
     return this.prisma.document.findMany({
       where: { projectId },
-      orderBy: { uploadedAt: 'desc' },
+      orderBy: { uploadedAt: "desc" },
     });
   }
 

@@ -86,15 +86,15 @@ export class ProjectsController {
               number: { type: "string" },
               description: { type: "string" },
               output: { type: "string" },
-              projectType: { 
+              projectType: {
                 type: "object",
                 properties: {
                   id: { type: "string" },
                   code: { type: "string" },
                   name: { type: "string" },
                   prefix: { type: "string" },
-                  color: { type: "string" }
-                }
+                  color: { type: "string" },
+                },
               },
               status: { type: "string", enum: Object.values(ProjectStatus) },
               startDate: { type: "string", format: "date-time" },

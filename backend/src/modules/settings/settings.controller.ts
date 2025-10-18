@@ -9,6 +9,7 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags, ApiOperation } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RequireSuperAdmin } from "../auth/decorators/auth.decorators";
 import { SettingsService } from "./settings.service";
 import { UpdateUserSettingsDto } from "./dto/update-user-settings.dto";
 import { UpdateSystemSettingsDto } from "./dto/update-system-settings.dto";
@@ -42,12 +43,14 @@ export class SettingsController {
   }
 
   @Get("company")
+  @RequireSuperAdmin() // CRITICAL SECURITY: Company settings contain sensitive data (NPWP, bank accounts)
   @ApiOperation({ summary: "Get company settings" })
   async getCompanySettings() {
     return this.settingsService.getCompanySettings();
   }
 
   @Put("company")
+  @RequireSuperAdmin() // CRITICAL SECURITY: Only admins can modify company information
   @ApiOperation({ summary: "Update company settings" })
   async updateCompanySettings(
     @Body() updateCompanySettingsDto: UpdateCompanySettingsDto,
@@ -56,12 +59,14 @@ export class SettingsController {
   }
 
   @Get("system")
+  @RequireSuperAdmin() // CRITICAL SECURITY: System settings control application behavior
   @ApiOperation({ summary: "Get system settings" })
   async getSystemSettings() {
     return this.settingsService.getSystemSettings();
   }
 
   @Put("system")
+  @RequireSuperAdmin() // CRITICAL SECURITY: System configuration changes require admin privileges
   @ApiOperation({ summary: "Update system settings" })
   async updateSystemSettings(
     @Body() updateSystemSettingsDto: UpdateSystemSettingsDto,

@@ -15,6 +15,7 @@ import {
   MinusOutlined,
 } from '@ant-design/icons'
 import { formatIDR } from '../../utils/currency'
+import { useTheme } from '../../theme'
 
 const { Text } = Typography
 
@@ -96,6 +97,7 @@ export const FormStatistics: React.FC<FormStatisticsProps> = ({
   className,
   'data-testid': dataTestId,
 }) => {
+  const { theme } = useTheme()
   const getColSpan = () => {
     const statsCount = stats.length
 
@@ -126,10 +128,10 @@ export const FormStatistics: React.FC<FormStatisticsProps> = ({
         style={{
           height: '100%',
           borderColor: stat.color ? stat.color : undefined,
-          background: 'rgba(26, 31, 46, 0.6)',
-          backdropFilter: 'blur(10px)',
-          border: stat.color ? `1px solid ${stat.color}` : '1px solid rgba(45, 53, 72, 0.6)',
-          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+          background: theme.colors.glass.background,
+          backdropFilter: theme.colors.glass.backdropFilter,
+          border: stat.color ? `1px solid ${stat.color}` : theme.colors.glass.border,
+          boxShadow: theme.colors.glass.shadow,
         }}
         hoverable
       >

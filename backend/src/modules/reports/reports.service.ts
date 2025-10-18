@@ -137,7 +137,7 @@ export class ReportsService {
                 select: {
                   code: true,
                   name: true,
-                }
+                },
               },
               status: true,
               client: {

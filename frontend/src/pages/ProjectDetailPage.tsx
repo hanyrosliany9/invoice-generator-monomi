@@ -497,7 +497,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 </span>
               ),
               children: (
-                <div style={{ padding: '20px' }}>
+                <div style={{ padding: '24px' }}>
                   <FileUpload
                     projectId={id}
                     documents={documents}

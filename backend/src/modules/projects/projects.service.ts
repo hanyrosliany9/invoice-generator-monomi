@@ -46,7 +46,8 @@ export class ProjectsService {
       };
     }
 
-    const { products, clientId, projectTypeId, ...projectData } = createProjectDto;
+    const { products, clientId, projectTypeId, ...projectData } =
+      createProjectDto;
 
     return this.prisma.project.create({
       data: {
@@ -230,10 +231,13 @@ export class ProjectsService {
 
     // Get project type names for better display
     const projectTypes = await this.prisma.projectTypeConfig.findMany();
-    const typeNameMap = projectTypes.reduce((acc, type) => {
-      acc[type.id] = type.name;
-      return acc;
-    }, {} as Record<string, string>);
+    const typeNameMap = projectTypes.reduce(
+      (acc, type) => {
+        acc[type.id] = type.name;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
 
     const typeCounts = byType.reduce(
       (acc, item) => {

@@ -154,13 +154,14 @@ export const LoginPage: React.FC = () => {
             loading={loginMutation.isPending}
             block
             style={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: '#6366f1',
               border: 'none',
-              borderRadius: '12px',
-              height: '52px',
-              fontSize: '16px',
-              fontWeight: 600,
-              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
+              borderRadius: '22px',
+              height: '44px',
+              fontSize: '15px',
+              fontWeight: 500,
+              padding: '0 24px',
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
               transition: 'all 0.2s ease',
             }}
             data-testid='login-button'

@@ -11,22 +11,41 @@ import {
 export const usersService = {
   // Get all users with optional filters
   async getUsers(filters?: UserFilters): Promise<User[]> {
-    const params = new URLSearchParams()
+    try {
+      const params = new URLSearchParams()
 
-    if (filters?.page) params.append('page', filters.page.toString())
-    if (filters?.limit) params.append('limit', filters.limit.toString())
-    if (filters?.search) params.append('search', filters.search)
-    if (filters?.role) params.append('role', filters.role)
-    if (filters?.isActive !== undefined)
-      params.append('isActive', filters.isActive.toString())
+      if (filters?.page) params.append('page', filters.page.toString())
+      if (filters?.limit) params.append('limit', filters.limit.toString())
+      if (filters?.search) params.append('search', filters.search)
+      if (filters?.role) params.append('role', filters.role)
+      if (filters?.isActive !== undefined)
+        params.append('isActive', filters.isActive.toString())
 
-    const response = await api.get<UserResponse>(`/users?${params.toString()}`)
+      const response = await api.get<UserResponse>(`/users?${params.toString()}`)
 
-    if (response.data.status === 'error') {
-      throw new Error(response.data.message)
+      if (response.data.status === 'error') {
+        throw new Error(response.data.message)
+      }
+
+      // Handle nested response structure
+      let data = response.data.data
+
+      // Check if data is wrapped in another response object
+      if (data && typeof data === 'object' && 'data' in data && 'status' in data) {
+        data = (data as any).data
+      }
+
+      // Ensure we always return an array
+      if (Array.isArray(data)) {
+        return data as User[]
+      }
+
+      console.error('API returned non-array data:', data)
+      return []
+    } catch (error) {
+      console.error('Failed to fetch users:', error)
+      throw error
     }
-
-    return (response.data.data as User[]) || []
   },
 
   // Get user by ID
@@ -231,3 +250,6 @@ export const usersService = {
     return emailRegex.test(email)
   },
 }
+
+// Export alias for consistency
+export const userService = usersService

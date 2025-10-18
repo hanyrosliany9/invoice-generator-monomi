@@ -26,7 +26,8 @@
     "db:reset": "prisma migrate reset --force",
     "db:init": "prisma migrate deploy && prisma generate && prisma db seed",
     "dev:setup": "npm run db:init && npm run start:dev",
-    "dev:validate": "../scripts/validate-dev-environment.sh"
+    "dev:validate": "../scripts/validate-dev-environment.sh",
+    "migrate:journal-entries": "ts-node scripts/create-retroactive-journal-entries.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -43,6 +44,7 @@
     "@nestjs/throttler": "^5.2.0",
     "@prisma/client": "^5.20.0",
     "@types/exceljs": "^0.5.3",
+    "@types/qrcode": "^1.5.5",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "class-transformer": "^0.5.1",
@@ -57,6 +59,7 @@
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
     "puppeteer": "^23.5.0",
+    "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1"

@@ -62,6 +62,7 @@ import {
   safeNumber,
   safeString,
 } from '../utils/currency'
+import { formatDate } from '../utils/dateFormatters'
 import { Invoice, invoiceService } from '../services/invoices'
 import { clientService } from '../services/clients'
 import { projectService } from '../services/projects'
@@ -92,6 +93,7 @@ import KeyboardShortcutsHelp from '../components/ui/KeyboardShortcutsHelp'
 import dayjs from 'dayjs'
 import { useTheme } from '../theme'
 import { CompactMetricCard } from '../components/ui/CompactMetricCard'
+import { usePermissions } from '../hooks/usePermissions'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -111,6 +113,7 @@ export const InvoicesPage: React.FC = () => {
   const { theme } = useTheme()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const { canApproveFinancial } = usePermissions()
 
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -287,8 +290,10 @@ export const InvoicesPage: React.FC = () => {
 
   // Debug: Log available data
   React.useEffect(() => {
-    console.log('Available clients:', clients)
-    console.log('Available projects:', projects)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Available clients:', clients)
+      console.log('Available projects:', projects)
+    }
   }, [clients, projects])
 
   // Price inheritance effect
@@ -312,8 +317,12 @@ export const InvoicesPage: React.FC = () => {
     mutationFn: invoiceService.createInvoice,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
-      setModalVisible(false)
       form.resetFields()
+      setEditingInvoice(null)
+      setQuotationId(null)
+      setSelectedQuotation(null)
+      setPriceInheritanceMode('inherit')
+      setModalVisible(false)
       message.success(t('messages.success.created', { item: 'Invoice' }))
     },
   })
@@ -323,9 +332,12 @@ export const InvoicesPage: React.FC = () => {
       invoiceService.updateInvoice(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
-      setModalVisible(false)
-      setEditingInvoice(null)
       form.resetFields()
+      setEditingInvoice(null)
+      setQuotationId(null)
+      setSelectedQuotation(null)
+      setPriceInheritanceMode('inherit')
+      setModalVisible(false)
       message.success(t('messages.success.updated', { item: 'Invoice' }))
     },
   })
@@ -568,7 +580,9 @@ export const InvoicesPage: React.FC = () => {
         }
       })
       .catch(errorInfo => {
-        console.log('Validation failed:', errorInfo)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Validation failed:', errorInfo)
+        }
       })
   }
 
@@ -844,7 +858,7 @@ export const InvoicesPage: React.FC = () => {
       })
     }
 
-    if (invoice.status === 'SENT') {
+    if (invoice.status === 'SENT' && canApproveFinancial()) {
       items.push({
         key: 'mark-paid',
         icon: <CheckCircleOutlined />,
@@ -853,7 +867,7 @@ export const InvoicesPage: React.FC = () => {
       })
     }
 
-    if (invoice.status === 'OVERDUE') {
+    if (invoice.status === 'OVERDUE' && canApproveFinancial()) {
       items.push({
         key: 'mark-paid',
         icon: <CheckCircleOutlined />,
@@ -1098,7 +1112,7 @@ export const InvoicesPage: React.FC = () => {
 
         return (
           <div>
-            <div>{dayjs(date).format('DD/MM/YYYY')}</div>
+            <div>{formatDate(date)}</div>
             {record.status !== 'PAID' && (
               <Text
                 type={
@@ -1296,7 +1310,7 @@ export const InvoicesPage: React.FC = () => {
                   backdropFilter: theme.colors.glass.backdropFilter,
                   padding: '12px 16px',
                 }}
-                bodyStyle={{ padding: 0 }}
+                styles={{ body: { padding: 0 } }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
                   <div
@@ -1653,14 +1667,16 @@ export const InvoicesPage: React.FC = () => {
                 >
                   Kirim
                 </Button>
-                <Button
-                  size='small'
-                  icon={<CheckCircleOutlined />}
-                  loading={batchLoading}
-                  onClick={handleBatchMarkPaid}
-                >
-                  Tandai Lunas
-                </Button>
+                {canApproveFinancial() && (
+                  <Button
+                    size='small'
+                    icon={<CheckCircleOutlined />}
+                    loading={batchLoading}
+                    onClick={handleBatchMarkPaid}
+                  >
+                    Tandai Lunas
+                  </Button>
+                )}
                 <Button
                   size='small'
                   icon={<PrinterOutlined />}
@@ -1723,9 +1739,12 @@ export const InvoicesPage: React.FC = () => {
         title={editingInvoice ? 'Edit Invoice' : t('invoices.create')}
         open={modalVisible}
         onCancel={() => {
-          setModalVisible(false)
-          setEditingInvoice(null)
           form.resetFields()
+          setEditingInvoice(null)
+          setQuotationId(null)
+          setSelectedQuotation(null)
+          setPriceInheritanceMode('inherit')
+          setModalVisible(false)
         }}
         footer={null}
         width={800}
@@ -1854,9 +1873,9 @@ export const InvoicesPage: React.FC = () => {
               placeholder='0'
               prefix='IDR'
               formatter={value =>
-                value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
+                value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''
               }
-              parser={value => (value ? value.replace(/\$\s?|(,*)/g, '') : '')}
+              parser={value => (value ? value.replace(/\$\s?|(\.*)/g, '') : '')}
               disabled={Boolean(
                 quotationId && priceInheritanceMode === 'inherit'
               )}
@@ -1900,9 +1919,12 @@ export const InvoicesPage: React.FC = () => {
           <div className='flex justify-end space-x-2'>
             <Button
               onClick={() => {
-                setModalVisible(false)
-                setEditingInvoice(null)
                 form.resetFields()
+                setEditingInvoice(null)
+                setQuotationId(null)
+                setSelectedQuotation(null)
+                setPriceInheritanceMode('inherit')
+                setModalVisible(false)
               }}
             >
               {t('common.cancel')}

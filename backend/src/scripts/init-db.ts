@@ -135,7 +135,7 @@ async function initDatabase() {
       const projectType = await prisma.projectTypeConfig.findFirst({
         where: { code: "PRODUCTION" },
       });
-      
+
       if (client && projectType) {
         await prisma.project.create({
           data: {

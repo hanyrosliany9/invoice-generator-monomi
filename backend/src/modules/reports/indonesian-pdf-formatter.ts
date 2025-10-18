@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import * as puppeteer from 'puppeteer';
+import { Injectable } from "@nestjs/common";
+import * as puppeteer from "puppeteer";
 
 export interface IndonesianCompanyInfo {
   name: string;
@@ -22,14 +22,14 @@ export interface IndonesianReportHeader {
 }
 
 export interface PdfFormattingOptions {
-  format?: 'A4' | 'A3' | 'Letter';
+  format?: "A4" | "A3" | "Letter";
   margin?: {
     top: string;
     right: string;
     bottom: string;
     left: string;
   };
-  orientation?: 'portrait' | 'landscape';
+  orientation?: "portrait" | "landscape";
   displayHeaderFooter?: boolean;
   headerTemplate?: string;
   footerTemplate?: string;
@@ -39,32 +39,33 @@ export interface PdfFormattingOptions {
 
 @Injectable()
 export class IndonesianPdfFormatter {
-  
   /**
    * Validate Indonesian business compliance requirements
    */
-  static validateIndonesianCompliance(companyInfo: IndonesianCompanyInfo): string[] {
+  static validateIndonesianCompliance(
+    companyInfo: IndonesianCompanyInfo,
+  ): string[] {
     const errors: string[] = [];
-    
+
     if (!companyInfo.npwp || !this.isValidNPWP(companyInfo.npwp)) {
-      errors.push('NPWP tidak valid atau tidak ada');
+      errors.push("NPWP tidak valid atau tidak ada");
     }
-    
+
     if (!companyInfo.siup || companyInfo.siup.trim().length === 0) {
-      errors.push('SIUP tidak boleh kosong');
+      errors.push("SIUP tidak boleh kosong");
     }
-    
+
     if (!companyInfo.name || companyInfo.name.trim().length === 0) {
-      errors.push('Nama perusahaan tidak boleh kosong');
+      errors.push("Nama perusahaan tidak boleh kosong");
     }
-    
+
     if (!companyInfo.address || companyInfo.address.trim().length === 0) {
-      errors.push('Alamat perusahaan tidak boleh kosong');
+      errors.push("Alamat perusahaan tidak boleh kosong");
     }
-    
+
     return errors;
   }
-  
+
   /**
    * Validate Indonesian NPWP format
    */
@@ -73,20 +74,20 @@ export class IndonesianPdfFormatter {
     const npwpPattern = /^\d{2}\.\d{3}\.\d{3}\.\d-\d{3}\.\d{3}$/;
     return npwpPattern.test(npwp);
   }
-  
+
   /**
    * Generate Indonesian business letterhead HTML
    */
   static generateIndonesianLetterhead(
     companyInfo: IndonesianCompanyInfo,
-    reportHeader: IndonesianReportHeader
+    reportHeader: IndonesianReportHeader,
   ): string {
-    const currentDate = new Date().toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
+    const currentDate = new Date().toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
     });
-    
+
     return `
       <div class="letterhead" style="margin-bottom: 30px; border-bottom: 3px solid #1F4E79; padding-bottom: 20px;">
         <div class="company-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
@@ -122,7 +123,7 @@ export class IndonesianPdfFormatter {
       </div>
     `;
   }
-  
+
   /**
    * Generate professional table HTML with SAK EMKM compliance
    */
@@ -135,7 +136,7 @@ export class IndonesianPdfFormatter {
       summaryRow?: any[];
       materaiInfo?: { count: number; totalCost: number };
       balanceValidation?: boolean;
-    } = {}
+    } = {},
   ): string {
     const tableStyle = `
       <style>
@@ -199,48 +200,50 @@ export class IndonesianPdfFormatter {
         }
       </style>
     `;
-    
+
     let tableHtml = tableStyle;
     tableHtml += `<table class="indonesian-table" id="${tableId}">`;
-    
+
     // Headers
-    tableHtml += '<thead><tr>';
-    headers.forEach(header => {
+    tableHtml += "<thead><tr>";
+    headers.forEach((header) => {
       tableHtml += `<th>${header}</th>`;
     });
-    tableHtml += '</tr></thead>';
-    
+    tableHtml += "</tr></thead>";
+
     // Data rows
-    tableHtml += '<tbody>';
+    tableHtml += "<tbody>";
     data.forEach((row, index) => {
-      tableHtml += '<tr>';
+      tableHtml += "<tr>";
       row.forEach((cell, cellIndex) => {
         const isNumberColumn = this.isNumberColumn(headers[cellIndex]);
-        const cellClass = isNumberColumn ? 'number-cell' : '';
-        const formattedCell = isNumberColumn && typeof cell === 'number' 
-          ? this.formatIndonesianCurrency(cell)
-          : cell;
+        const cellClass = isNumberColumn ? "number-cell" : "";
+        const formattedCell =
+          isNumberColumn && typeof cell === "number"
+            ? this.formatIndonesianCurrency(cell)
+            : cell;
         tableHtml += `<td class="${cellClass}">${formattedCell}</td>`;
       });
-      tableHtml += '</tr>';
+      tableHtml += "</tr>";
     });
-    
+
     // Summary row
     if (options.showSummary && options.summaryRow) {
       tableHtml += '<tr class="summary-row">';
       options.summaryRow.forEach((cell, cellIndex) => {
         const isNumberColumn = this.isNumberColumn(headers[cellIndex]);
-        const cellClass = isNumberColumn ? 'number-cell' : '';
-        const formattedCell = isNumberColumn && typeof cell === 'number' 
-          ? this.formatIndonesianCurrency(cell)
-          : cell;
+        const cellClass = isNumberColumn ? "number-cell" : "";
+        const formattedCell =
+          isNumberColumn && typeof cell === "number"
+            ? this.formatIndonesianCurrency(cell)
+            : cell;
         tableHtml += `<td class="${cellClass}">${formattedCell}</td>`;
       });
-      tableHtml += '</tr>';
+      tableHtml += "</tr>";
     }
-    
-    tableHtml += '</tbody></table>';
-    
+
+    tableHtml += "</tbody></table>";
+
     // Materai information for SAK EMKM compliance
     if (options.materaiInfo && options.materaiInfo.count > 0) {
       tableHtml += `
@@ -252,7 +255,7 @@ export class IndonesianPdfFormatter {
         </div>
       `;
     }
-    
+
     // Compliance note
     tableHtml += `
       <div class="compliance-note">
@@ -260,49 +263,59 @@ export class IndonesianPdfFormatter {
         yang berlaku di Indonesia. Semua nominal dalam Rupiah (IDR).
       </div>
     `;
-    
+
     return tableHtml;
   }
-  
+
   /**
    * Check if column contains numeric data
    */
   private static isNumberColumn(headerName: string): boolean {
     const numberHeaders = [
-      'jumlah', 'amount', 'total', 'saldo', 'penjualan', 'pembayaran', 
-      'idr', 'rupiah', 'nilai', 'harga', 'biaya', 'piutang'
+      "jumlah",
+      "amount",
+      "total",
+      "saldo",
+      "penjualan",
+      "pembayaran",
+      "idr",
+      "rupiah",
+      "nilai",
+      "harga",
+      "biaya",
+      "piutang",
     ];
-    return numberHeaders.some(keyword => 
-      headerName.toLowerCase().includes(keyword)
+    return numberHeaders.some((keyword) =>
+      headerName.toLowerCase().includes(keyword),
     );
   }
-  
+
   /**
    * Format currency in Indonesian format
    */
   private static formatIndonesianCurrency(amount: number): string {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(amount);
   }
-  
+
   /**
    * Generate Indonesian footer with signature blocks
    */
   static generateIndonesianFooter(
     companyInfo: IndonesianCompanyInfo,
-    preparedBy: string = 'Sistem Akuntansi Digital',
-    approvedBy: string = 'Manajer Keuangan'
+    preparedBy: string = "Sistem Akuntansi Digital",
+    approvedBy: string = "Manajer Keuangan",
   ): string {
-    const currentDate = new Date().toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: 'long', 
-      year: 'numeric'
+    const currentDate = new Date().toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
     });
-    
+
     return `
       <div class="indonesian-footer" style="margin-top: 40px; page-break-inside: avoid;">
         <div class="signature-section" style="display: flex; justify-content: space-between; margin-top: 30px;">
@@ -328,7 +341,7 @@ export class IndonesianPdfFormatter {
       </div>
     `;
   }
-  
+
   /**
    * Generate complete HTML document for Indonesian business report
    */
@@ -336,11 +349,14 @@ export class IndonesianPdfFormatter {
     companyInfo: IndonesianCompanyInfo,
     reportHeader: IndonesianReportHeader,
     tablesHtml: string,
-    options: PdfFormattingOptions = {}
+    options: PdfFormattingOptions = {},
   ): string {
-    const letterheadHtml = this.generateIndonesianLetterhead(companyInfo, reportHeader);
+    const letterheadHtml = this.generateIndonesianLetterhead(
+      companyInfo,
+      reportHeader,
+    );
     const footerHtml = this.generateIndonesianFooter(companyInfo);
-    
+
     return `
       <!DOCTYPE html>
       <html lang="id">
@@ -350,8 +366,8 @@ export class IndonesianPdfFormatter {
         <title>${reportHeader.reportTitle} - ${companyInfo.name}</title>
         <style>
           @page {
-            size: ${options.format || 'A4'};
-            margin: ${options.margin?.top || '20mm'} ${options.margin?.right || '15mm'} ${options.margin?.bottom || '20mm'} ${options.margin?.left || '15mm'};
+            size: ${options.format || "A4"};
+            margin: ${options.margin?.top || "20mm"} ${options.margin?.right || "15mm"} ${options.margin?.bottom || "20mm"} ${options.margin?.left || "15mm"};
           }
           
           body {
@@ -413,96 +429,106 @@ export class IndonesianPdfFormatter {
       </html>
     `;
   }
-  
+
   /**
    * Default PDF formatting options for Indonesian business documents
    */
   static getDefaultPdfOptions(): PdfFormattingOptions {
     return {
-      format: 'A4',
+      format: "A4",
       margin: {
-        top: '20mm',
-        right: '15mm', 
-        bottom: '20mm',
-        left: '15mm'
+        top: "20mm",
+        right: "15mm",
+        bottom: "20mm",
+        left: "15mm",
       },
-      orientation: 'portrait',
+      orientation: "portrait",
       displayHeaderFooter: false,
       printBackground: true,
-      scale: 0.95
+      scale: 0.95,
     };
   }
-  
+
   /**
    * Generate PDF buffer from HTML content
    */
   static async generatePdfBuffer(
     htmlContent: string,
-    options: PdfFormattingOptions = {}
+    options: PdfFormattingOptions = {},
   ): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
-    
+
     try {
       const page = await browser.newPage();
-      
+
       // Set content and wait for network idle
       await page.setContent(htmlContent, {
-        waitUntil: 'networkidle0'
+        waitUntil: "networkidle0",
       });
-      
+
       // Merge options with defaults
       const pdfOptions = { ...this.getDefaultPdfOptions(), ...options };
-      
+
       // Generate PDF
       const pdfBuffer = await page.pdf({
         format: pdfOptions.format as any,
         margin: pdfOptions.margin,
-        landscape: pdfOptions.orientation === 'landscape',
+        landscape: pdfOptions.orientation === "landscape",
         displayHeaderFooter: pdfOptions.displayHeaderFooter,
-        headerTemplate: pdfOptions.headerTemplate || '',
-        footerTemplate: pdfOptions.footerTemplate || '',
+        headerTemplate: pdfOptions.headerTemplate || "",
+        footerTemplate: pdfOptions.footerTemplate || "",
         printBackground: pdfOptions.printBackground,
-        scale: pdfOptions.scale
+        scale: pdfOptions.scale,
       });
-      
+
       return Buffer.from(pdfBuffer);
     } finally {
       await browser.close();
     }
   }
-  
+
   /**
    * Format Indonesian date for display
    */
   static formatIndonesianDate(date: Date): string {
-    return date.toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
+    return date.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
     });
   }
-  
+
   /**
    * Format Indonesian short date (dd/mm/yyyy)
    */
   static formatIndonesianShortDate(date: Date): string {
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   }
-  
+
   /**
    * Get Indonesian month name
    */
   static getIndonesianMonthName(monthIndex: number): string {
     const indonesianMonths = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
     ];
-    return indonesianMonths[monthIndex] || 'Januari';
+    return indonesianMonths[monthIndex] || "Januari";
   }
 }

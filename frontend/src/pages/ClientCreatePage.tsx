@@ -56,7 +56,9 @@ export const ClientCreatePage: React.FC = () => {
     delay: performanceSettings.autoSaveDelay,
     messageApi: message,
     onSave: async (data: any) => {
-      console.log('Auto-saving client draft:', data)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Auto-saving client draft:', data)
+      }
       await new Promise(resolve => setTimeout(resolve, 200))
     },
     onError: error => {
@@ -79,12 +81,22 @@ export const ClientCreatePage: React.FC = () => {
   })
 
   const handleSubmit = async (values: ClientFormData) => {
+    // Wait for pending auto-save before submitting
+    if (autoSave.isSaving) {
+      await autoSave.forceSave(values)
+    }
     createClientMutation.mutate(values)
   }
 
   const handleSaveAndCreateProject = async () => {
     try {
       const values = await form.validateFields()
+
+      // Wait for pending auto-save before creating client
+      if (autoSave.isSaving) {
+        await autoSave.forceSave(values)
+      }
+
       const client = await clientService.createClient(values)
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       message.success('Client created successfully')

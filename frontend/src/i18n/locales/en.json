@@ -101,6 +101,30 @@
       "approved": "Approved",
       "declined": "Declined",
       "revised": "Revised"
+    },
+    "messages": {
+      "statusUpdated": "Status updated successfully",
+      "selectToChangeStatus": "Select quotations to change status",
+      "selectApprovedForInvoice": "Select approved quotations to generate invoices",
+      "selectToDelete": "Select quotations to delete",
+      "quotationsSelected": "{{count}} quotations selected",
+      "statusChangedSuccess": "{{count}} quotations status changed successfully",
+      "invoicesCreatedSuccess": "{{count}} invoices created successfully",
+      "quotationsDeletedSuccess": "{{count}} quotations deleted successfully",
+      "pdfDownloadSuccess": "Quotation PDF downloaded successfully",
+      "pdfPreviewSuccess": "PDF preview loaded successfully"
+    },
+    "placeholders": {
+      "selectClient": "Select client",
+      "selectProject": "Select project",
+      "selectDate": "Select date",
+      "selectMonthYear": "Select month & year",
+      "selectStatus": "Select status",
+      "selectClientFirst": "Select client first",
+      "selectNewStatus": "Select new status"
+    },
+    "changeStatusModal": {
+      "title": "Change Quotation Status"
     }
   },
   "invoices": {
@@ -295,7 +319,10 @@
     "print": "Print",
     "export": "Export",
     "import": "Import",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "viewInvoice": "View Invoice",
+    "changeStatus": "Change Status",
+    "deselect": "Deselect"
   },
   "labels": {
     "totalValue": "Total Value",

@@ -81,7 +81,9 @@ export const QuotationCreatePage: React.FC = () => {
     delay: performanceSettings.autoSaveDelay,
     messageApi: message,
     onSave: async (data: any) => {
-      console.log('Auto-saving quotation draft:', data)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Auto-saving quotation draft:', data)
+      }
       await new Promise(resolve => setTimeout(resolve, 300))
     },
     onError: error => {
@@ -192,6 +194,11 @@ export const QuotationCreatePage: React.FC = () => {
   }
 
   const handleSubmit = async (values: QuotationFormData) => {
+    // Wait for pending auto-save before submitting
+    if (autoSave.isSaving) {
+      await autoSave.forceSave(values)
+    }
+
     const quotationData: CreateQuotationRequest = {
       clientId: values.clientId,
       projectId: values.projectId,
@@ -208,6 +215,12 @@ export const QuotationCreatePage: React.FC = () => {
   const handleSaveAndSend = async () => {
     try {
       const values = await form.validateFields()
+
+      // Wait for pending auto-save before creating and sending
+      if (autoSave.isSaving) {
+        await autoSave.forceSave(values)
+      }
+
       const quotationData: CreateQuotationRequest = {
         clientId: values.clientId,
         projectId: values.projectId,
@@ -316,14 +329,14 @@ export const QuotationCreatePage: React.FC = () => {
                 value: formValues.amountPerProject || 0,
                 format: 'currency',
                 icon: <ProjectOutlined />,
-                color: '#1890ff',
+                color: theme.colors.accent.primary,
               },
               {
                 label: 'Total Amount',
                 value: totalAmount,
                 format: 'currency',
                 icon: <DollarOutlined />,
-                color: '#52c41a',
+                color: theme.colors.status.success,
               },
               {
                 label: 'Valid Days',
@@ -332,7 +345,7 @@ export const QuotationCreatePage: React.FC = () => {
                   : 30,
                 format: 'duration',
                 icon: <CalendarOutlined />,
-                color: '#1890ff',
+                color: theme.colors.accent.primary,
               },
             ]}
             layout='vertical'
@@ -526,6 +539,17 @@ export const QuotationCreatePage: React.FC = () => {
                 label='Total Quotation Amount (IDR)'
                 rules={[
                   { required: true, message: 'Please enter total amount' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const amountPerProject = getFieldValue('amountPerProject')
+                      if (value && amountPerProject && value < amountPerProject) {
+                        return Promise.reject(
+                          new Error('Total amount must be greater than or equal to project amount')
+                        )
+                      }
+                      return Promise.resolve()
+                    },
+                  }),
                 ]}
               >
                 <IDRCurrencyInput
@@ -550,7 +574,7 @@ export const QuotationCreatePage: React.FC = () => {
             >
               <Title level={5} style={{ margin: 0, marginBottom: '8px' }}>
                 <BankOutlined
-                  style={{ marginRight: '8px', color: '#1890ff' }}
+                  style={{ marginRight: '8px', color: theme.colors.accent.primary }}
                 />
                 Pricing Breakdown
               </Title>
@@ -570,7 +594,7 @@ export const QuotationCreatePage: React.FC = () => {
                 <Col xs={12} sm={6}>
                   <Text type='secondary'>Total + Tax:</Text>
                   <div>
-                    <Text strong style={{ color: '#52c41a' }}>
+                    <Text strong style={{ color: theme.colors.status.success }}>
                       {formatIDR(totalAmount * 1.11)}
                     </Text>
                   </div>
@@ -581,7 +605,7 @@ export const QuotationCreatePage: React.FC = () => {
                     <Text
                       strong
                       style={{
-                        color: totalAmount > 5000000 ? '#faad14' : '#52c41a',
+                        color: totalAmount > 5000000 ? theme.colors.status.warning : theme.colors.status.success,
                       }}
                     >
                       {totalAmount > 5000000 ? 'Required' : 'Not Required'}

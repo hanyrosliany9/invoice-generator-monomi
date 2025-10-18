@@ -1,7 +1,11 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateProjectTypeDto } from './dto/create-project-type.dto';
-import { UpdateProjectTypeDto } from './dto/update-project-type.dto';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateProjectTypeDto } from "./dto/create-project-type.dto";
+import { UpdateProjectTypeDto } from "./dto/update-project-type.dto";
 
 @Injectable()
 export class ProjectTypesService {
@@ -14,7 +18,9 @@ export class ProjectTypesService {
     });
 
     if (existingType) {
-      throw new ConflictException(`Project type with code '${createProjectTypeDto.code}' already exists`);
+      throw new ConflictException(
+        `Project type with code '${createProjectTypeDto.code}' already exists`,
+      );
     }
 
     // If this is set as default, remove default from other types
@@ -28,7 +34,7 @@ export class ProjectTypesService {
     return this.prisma.projectTypeConfig.create({
       data: {
         ...createProjectTypeDto,
-        color: createProjectTypeDto.color || '#1890ff',
+        color: createProjectTypeDto.color || "#1890ff",
       },
     });
   }
@@ -36,7 +42,7 @@ export class ProjectTypesService {
   async findAll() {
     return this.prisma.projectTypeConfig.findMany({
       where: { isActive: true },
-      orderBy: { sortOrder: 'asc' },
+      orderBy: { sortOrder: "asc" },
     });
   }
 
@@ -72,20 +78,25 @@ export class ProjectTypesService {
     }
 
     // Check if code already exists (excluding current type)
-    if (updateProjectTypeDto.code && updateProjectTypeDto.code !== existingType.code) {
+    if (
+      updateProjectTypeDto.code &&
+      updateProjectTypeDto.code !== existingType.code
+    ) {
       const codeExists = await this.prisma.projectTypeConfig.findUnique({
         where: { code: updateProjectTypeDto.code },
       });
 
       if (codeExists) {
-        throw new ConflictException(`Project type with code '${updateProjectTypeDto.code}' already exists`);
+        throw new ConflictException(
+          `Project type with code '${updateProjectTypeDto.code}' already exists`,
+        );
       }
     }
 
     // If this is set as default, remove default from other types
     if (updateProjectTypeDto.isDefault) {
       await this.prisma.projectTypeConfig.updateMany({
-        where: { 
+        where: {
           isDefault: true,
           NOT: { id: id },
         },
@@ -113,7 +124,9 @@ export class ProjectTypesService {
 
     // Check if there are projects using this type
     if (existingType.projects.length > 0) {
-      throw new ConflictException(`Cannot delete project type '${existingType.name}' because it is used by ${existingType.projects.length} project(s)`);
+      throw new ConflictException(
+        `Cannot delete project type '${existingType.name}' because it is used by ${existingType.projects.length} project(s)`,
+      );
     }
 
     return this.prisma.projectTypeConfig.delete({
@@ -137,11 +150,11 @@ export class ProjectTypesService {
   }
 
   async updateSortOrder(updates: { id: string; sortOrder: number }[]) {
-    const operations = updates.map(update =>
+    const operations = updates.map((update) =>
       this.prisma.projectTypeConfig.update({
         where: { id: update.id },
         data: { sortOrder: update.sortOrder },
-      })
+      }),
     );
 
     await this.prisma.$transaction(operations);
@@ -161,18 +174,23 @@ export class ProjectTypesService {
           },
         },
       },
-      orderBy: { sortOrder: 'asc' },
+      orderBy: { sortOrder: "asc" },
     });
 
-    return projectTypes.map(type => ({
+    return projectTypes.map((type) => ({
       id: type.id,
       code: type.code,
       name: type.name,
       color: type.color,
       totalProjects: type.projects.length,
-      activeProjects: type.projects.filter(p => p.status === 'IN_PROGRESS').length,
-      completedProjects: type.projects.filter(p => p.status === 'COMPLETED').length,
-      totalRevenue: type.projects.reduce((sum, p) => sum + (p.basePrice?.toNumber() || 0), 0),
+      activeProjects: type.projects.filter((p) => p.status === "IN_PROGRESS")
+        .length,
+      completedProjects: type.projects.filter((p) => p.status === "COMPLETED")
+        .length,
+      totalRevenue: type.projects.reduce(
+        (sum, p) => sum + (p.basePrice?.toNumber() || 0),
+        0,
+      ),
       recentProjects: type.projects
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, 3),

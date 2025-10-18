@@ -471,7 +471,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                 format={percent => (
                   <span>
                     {statusConfig.icon}
-                    <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                    <div style={{ fontSize: '12px', marginTop: '8px' }}>
                       {statusConfig.text}
                     </div>
                   </span>
@@ -829,8 +829,8 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                 </span>
               ),
               children: (
-                <div style={{ padding: '20px' }}>
-                  <div style={{ marginBottom: '20px' }}>
+                <div style={{ padding: '24px' }}>
+                  <div style={{ marginBottom: '24px' }}>
                     <Space>
                       <Button
                         type='primary'
@@ -950,7 +950,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
         ]}
       >
         {pdfLoading ? (
-          <div style={{ textAlign: 'center', padding: '60px' }}>
+          <div style={{ textAlign: 'center', padding: '64px' }}>
             <SyncOutlined spin style={{ fontSize: '48px', color: '#1890ff' }} />
             <Title level={4} type='secondary' style={{ marginTop: '16px' }}>
               Loading PDF...

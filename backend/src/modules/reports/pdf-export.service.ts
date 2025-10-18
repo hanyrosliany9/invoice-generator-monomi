@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { 
-  IndonesianPdfFormatter, 
-  IndonesianCompanyInfo, 
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import {
+  IndonesianPdfFormatter,
+  IndonesianCompanyInfo,
   IndonesianReportHeader,
-  PdfFormattingOptions 
-} from './indonesian-pdf-formatter';
+  PdfFormattingOptions,
+} from "./indonesian-pdf-formatter";
 
 interface SalesReportData {
   clientName: string;
@@ -50,15 +50,15 @@ export class PdfExportService {
    */
   private getIndonesianCompanyInfo(): IndonesianCompanyInfo {
     return {
-      name: 'MONOMI',
-      address: 'Jl. Usaha Mandiri No. 123',
-      city: 'Jakarta Selatan',
-      postalCode: '12345',
-      phone: '+62-21-1234-5678',
-      email: 'info@monomi.co.id',
-      website: 'www.monomi.co.id',
-      npwp: '01.234.567.8-901.234',
-      siup: 'SIUP/123/2024'
+      name: "MONOMI",
+      address: "Jl. Usaha Mandiri No. 123",
+      city: "Jakarta Selatan",
+      postalCode: "12345",
+      phone: "+62-21-1234-5678",
+      email: "info@monomi.co.id",
+      website: "www.monomi.co.id",
+      npwp: "01.234.567.8-901.234",
+      siup: "SIUP/123/2024",
     };
   }
 
@@ -67,31 +67,35 @@ export class PdfExportService {
    */
   async generateSalesAndReceivablesReport(
     filters: ExportFilters,
-    options: PdfFormattingOptions = {}
+    options: PdfFormattingOptions = {},
   ): Promise<Buffer> {
     // Get company information and validate compliance
     const companyInfo = this.getIndonesianCompanyInfo();
-    const validationErrors = IndonesianPdfFormatter.validateIndonesianCompliance(companyInfo);
-    
+    const validationErrors =
+      IndonesianPdfFormatter.validateIndonesianCompliance(companyInfo);
+
     if (validationErrors.length > 0) {
-      throw new Error(`Indonesian compliance validation failed: ${validationErrors.join(', ')}`);
+      throw new Error(
+        `Indonesian compliance validation failed: ${validationErrors.join(", ")}`,
+      );
     }
 
     // Determine report period and type
     const isSingleMonth = this.isSingleMonthReport(filters);
     const targetMonth = isSingleMonth ? this.getTargetMonth(filters) : null;
-    
-    const monthName = targetMonth !== null && targetMonth !== undefined 
-      ? this.getIndonesianMonthName(targetMonth)
-      : 'SEMUA BULAN';
+
+    const monthName =
+      targetMonth !== null && targetMonth !== undefined
+        ? this.getIndonesianMonthName(targetMonth)
+        : "SEMUA BULAN";
 
     // Create report header
     const reportHeader: IndonesianReportHeader = {
-      reportTitle: 'LAPORAN PENJUALAN DAN PIUTANG',
-      reportSubtitle: 'LAPORAN KEUANGAN SAK EMKM',
+      reportTitle: "LAPORAN PENJUALAN DAN PIUTANG",
+      reportSubtitle: "LAPORAN KEUANGAN SAK EMKM",
       reportPeriod: `${monthName} 2025`,
       preparationDate: new Date(),
-      reportType: 'COMPREHENSIVE_SALES_RECEIVABLES'
+      reportType: "COMPREHENSIVE_SALES_RECEIVABLES",
     };
 
     // Fetch all report data
@@ -99,12 +103,12 @@ export class PdfExportService {
       salesDetailData,
       receivablesDetailData,
       salesMonthlySummary,
-      receivablesMonthlySummary
+      receivablesMonthlySummary,
     ] = await Promise.all([
       this.getSalesDetailData(filters),
       this.getReceivablesDetailData(filters),
       this.getSalesMonthlySummary(filters, targetMonth),
-      this.getReceivablesMonthlySummary(filters, targetMonth)
+      this.getReceivablesMonthlySummary(filters, targetMonth),
     ]);
 
     // Generate HTML content for each section
@@ -113,7 +117,7 @@ export class PdfExportService {
       receivablesDetailData,
       salesMonthlySummary,
       receivablesMonthlySummary,
-      targetMonth
+      targetMonth,
     );
 
     // Generate complete HTML document
@@ -121,11 +125,14 @@ export class PdfExportService {
       companyInfo,
       reportHeader,
       tablesHtml,
-      options
+      options,
     );
 
     // Generate PDF buffer
-    return await IndonesianPdfFormatter.generatePdfBuffer(completeHtml, options);
+    return await IndonesianPdfFormatter.generatePdfBuffer(
+      completeHtml,
+      options,
+    );
   }
 
   /**
@@ -136,9 +143,9 @@ export class PdfExportService {
     receivablesDetailData: ReceivablesReportData[],
     salesMonthlySummary: ClientMonthlySummary[],
     receivablesMonthlySummary: ClientMonthlySummary[],
-    targetMonth?: number | null
+    targetMonth?: number | null,
   ): string {
-    let html = '';
+    let html = "";
 
     // 1. Sales Detail Report
     html += this.generateSalesDetailTableHtml(salesDetailData);
@@ -149,11 +156,17 @@ export class PdfExportService {
     html += '<div class="page-break"></div>';
 
     // 3. Sales Monthly Summary
-    html += this.generateSalesMonthlySummaryTableHtml(salesMonthlySummary, targetMonth);
+    html += this.generateSalesMonthlySummaryTableHtml(
+      salesMonthlySummary,
+      targetMonth,
+    );
     html += '<div class="page-break"></div>';
 
     // 4. Receivables Monthly Summary
-    html += this.generateReceivablesMonthlySummaryTableHtml(receivablesMonthlySummary, targetMonth);
+    html += this.generateReceivablesMonthlySummaryTableHtml(
+      receivablesMonthlySummary,
+      targetMonth,
+    );
 
     return html;
   }
@@ -163,14 +176,14 @@ export class PdfExportService {
    */
   private generateSalesDetailTableHtml(data: SalesReportData[]): string {
     const headers = [
-      'No.',
-      'NAMA CLIENT',
-      'No. Project',
-      'Tanggal Project',
-      'Deskripsi Project',
-      'Jumlah Penjualan (IDR)',
-      'No. Invoice',
-      'Keterangan Materai'
+      "No.",
+      "NAMA CLIENT",
+      "No. Project",
+      "Tanggal Project",
+      "Deskripsi Project",
+      "Jumlah Penjualan (IDR)",
+      "No. Invoice",
+      "Keterangan Materai",
     ];
 
     const tableData: any[][] = [];
@@ -179,7 +192,7 @@ export class PdfExportService {
 
     data.forEach((item, index) => {
       const requiresMaterai = item.salesAmount > 5000000;
-      const keterangan = requiresMaterai ? 'Wajib Materai Rp 10.000' : '-';
+      const keterangan = requiresMaterai ? "Wajib Materai Rp 10.000" : "-";
       if (requiresMaterai) materaiCount++;
 
       tableData.push([
@@ -189,28 +202,41 @@ export class PdfExportService {
         IndonesianPdfFormatter.formatIndonesianShortDate(item.projectDate),
         item.projectDescription,
         item.salesAmount,
-        item.invoiceNumber || this.generateIndonesianInvoiceNumber(item.projectDate, index + 1),
-        keterangan
+        item.invoiceNumber ||
+          this.generateIndonesianInvoiceNumber(item.projectDate, index + 1),
+        keterangan,
       ]);
 
       totalAmount += item.salesAmount;
     });
 
     // Add summary row
-    const summaryRow = ['', '', '', '', 'JUMLAH KESELURUHAN:', totalAmount, '', ''];
+    const summaryRow = [
+      "",
+      "",
+      "",
+      "",
+      "JUMLAH KESELURUHAN:",
+      totalAmount,
+      "",
+      "",
+    ];
 
     const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
       headers,
       tableData,
-      'salesDetail',
+      "salesDetail",
       {
         showSummary: true,
         summaryRow: summaryRow,
-        materaiInfo: materaiCount > 0 ? {
-          count: materaiCount,
-          totalCost: materaiCount * 10000
-        } : undefined
-      }
+        materaiInfo:
+          materaiCount > 0
+            ? {
+                count: materaiCount,
+                totalCost: materaiCount * 10000,
+              }
+            : undefined,
+      },
     );
 
     return `
@@ -226,27 +252,35 @@ export class PdfExportService {
   /**
    * Generate Receivables Detail Table HTML
    */
-  private generateReceivablesDetailTableHtml(data: ReceivablesReportData[]): string {
+  private generateReceivablesDetailTableHtml(
+    data: ReceivablesReportData[],
+  ): string {
     const headers = [
-      'No',
-      'NAMA CLIENT',
-      'Deskripsi Project',
-      'Tanggal Invoice',
-      'No. Invoice',
-      'Saldo Awal (IDR)',
-      'Penjualan (IDR)',
-      'Pembayaran (IDR)',
-      'Saldo Akhir (IDR)'
+      "No",
+      "NAMA CLIENT",
+      "Deskripsi Project",
+      "Tanggal Invoice",
+      "No. Invoice",
+      "Saldo Awal (IDR)",
+      "Penjualan (IDR)",
+      "Pembayaran (IDR)",
+      "Saldo Akhir (IDR)",
     ];
 
     const tableData: any[][] = [];
-    let totalSaldoAwal = 0, totalPenjualan = 0, totalPembayaran = 0, totalSaldoAkhir = 0;
+    let totalSaldoAwal = 0,
+      totalPenjualan = 0,
+      totalPembayaran = 0,
+      totalSaldoAkhir = 0;
 
     data.forEach((item, index) => {
       // Validate Indonesian balance formula
-      const calculatedBalance = item.beginningBalance + item.salesAmount - item.paymentsReceived;
+      const calculatedBalance =
+        item.beginningBalance + item.salesAmount - item.paymentsReceived;
       if (Math.abs(calculatedBalance - item.endingBalance) > 0.01) {
-        console.warn(`Balance mismatch for ${item.clientName}: Expected ${calculatedBalance}, Got ${item.endingBalance}`);
+        console.warn(
+          `Balance mismatch for ${item.clientName}: Expected ${calculatedBalance}, Got ${item.endingBalance}`,
+        );
       }
 
       tableData.push([
@@ -258,7 +292,7 @@ export class PdfExportService {
         item.beginningBalance,
         item.salesAmount,
         item.paymentsReceived,
-        item.endingBalance
+        item.endingBalance,
       ]);
 
       totalSaldoAwal += item.beginningBalance;
@@ -268,23 +302,36 @@ export class PdfExportService {
     });
 
     // Add summary row
-    const summaryRow = ['', '', '', '', 'JUMLAH TOTAL', totalSaldoAwal, totalPenjualan, totalPembayaran, totalSaldoAkhir];
+    const summaryRow = [
+      "",
+      "",
+      "",
+      "",
+      "JUMLAH TOTAL",
+      totalSaldoAwal,
+      totalPenjualan,
+      totalPembayaran,
+      totalSaldoAkhir,
+    ];
 
     // Validate total balance calculation
-    const expectedTotalBalance = totalSaldoAwal + totalPenjualan - totalPembayaran;
+    const expectedTotalBalance =
+      totalSaldoAwal + totalPenjualan - totalPembayaran;
     if (Math.abs(expectedTotalBalance - totalSaldoAkhir) > 0.01) {
-      console.warn(`Total balance validation failed: Expected ${expectedTotalBalance}, Got ${totalSaldoAkhir}`);
+      console.warn(
+        `Total balance validation failed: Expected ${expectedTotalBalance}, Got ${totalSaldoAkhir}`,
+      );
     }
 
     const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
       headers,
       tableData,
-      'receivablesDetail',
+      "receivablesDetail",
       {
         showSummary: true,
         summaryRow: summaryRow,
-        balanceValidation: true
-      }
+        balanceValidation: true,
+      },
     );
 
     return `
@@ -302,11 +349,21 @@ export class PdfExportService {
    */
   private generateSalesMonthlySummaryTableHtml(
     data: ClientMonthlySummary[],
-    targetMonth?: number | null
+    targetMonth?: number | null,
   ): string {
     const monthNames = [
-      'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
-      'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
+      "JANUARI",
+      "FEBRUARI",
+      "MARET",
+      "APRIL",
+      "MEI",
+      "JUNI",
+      "JULI",
+      "AGUSTUS",
+      "SEPTEMBER",
+      "OKTOBER",
+      "NOVEMBER",
+      "DESEMBER",
     ];
 
     // Calculate total sales per month across all clients
@@ -324,25 +381,28 @@ export class PdfExportService {
     if (targetMonth !== null && targetMonth !== undefined) {
       // Single month report
       const targetMonthName = monthNames[targetMonth];
-      headers = ['BULAN', 'JUMLAH'];
+      headers = ["BULAN", "JUMLAH"];
       tableData = [[targetMonthName, monthTotals[targetMonth]]];
-      summaryRow = ['JUMLAH TOTAL', monthTotals[targetMonth]];
+      summaryRow = ["JUMLAH TOTAL", monthTotals[targetMonth]];
     } else {
       // Multi-month report
-      headers = ['BULAN', 'JUMLAH'];
-      tableData = monthNames.map((monthName, index) => [monthName, monthTotals[index]]);
+      headers = ["BULAN", "JUMLAH"];
+      tableData = monthNames.map((monthName, index) => [
+        monthName,
+        monthTotals[index],
+      ]);
       const totalAmount = monthTotals.reduce((sum, total) => sum + total, 0);
-      summaryRow = ['JUMLAH TOTAL', totalAmount];
+      summaryRow = ["JUMLAH TOTAL", totalAmount];
     }
 
     const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
       headers,
       tableData,
-      'salesMonthlySummary',
+      "salesMonthlySummary",
       {
         showSummary: true,
-        summaryRow: summaryRow
-      }
+        summaryRow: summaryRow,
+      },
     );
 
     return `
@@ -360,14 +420,30 @@ export class PdfExportService {
    */
   private generateReceivablesMonthlySummaryTableHtml(
     data: ClientMonthlySummary[],
-    targetMonth?: number | null
+    targetMonth?: number | null,
   ): string {
     const monthNames = [
-      'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
-      'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
+      "JANUARI",
+      "FEBRUARI",
+      "MARET",
+      "APRIL",
+      "MEI",
+      "JUNI",
+      "JULI",
+      "AGUSTUS",
+      "SEPTEMBER",
+      "OKTOBER",
+      "NOVEMBER",
+      "DESEMBER",
     ];
 
-    const headers = ['BULAN', 'SALDO AWAL', 'PENJUALAN', 'PEMBAYARAN', 'SALDO AKHIR'];
+    const headers = [
+      "BULAN",
+      "SALDO AWAL",
+      "PENJUALAN",
+      "PEMBAYARAN",
+      "SALDO AKHIR",
+    ];
     let tableData: any[][];
     let summaryRow: any[];
 
@@ -384,12 +460,29 @@ export class PdfExportService {
       const beginningBalance = 0;
       const endingBalance = beginningBalance + monthSales - monthPayments;
 
-      tableData = [[targetMonthName, beginningBalance, monthSales, monthPayments, endingBalance]];
-      summaryRow = ['JUMLAH TOTAL', beginningBalance, monthSales, monthPayments, endingBalance];
+      tableData = [
+        [
+          targetMonthName,
+          beginningBalance,
+          monthSales,
+          monthPayments,
+          endingBalance,
+        ],
+      ];
+      summaryRow = [
+        "JUMLAH TOTAL",
+        beginningBalance,
+        monthSales,
+        monthPayments,
+        endingBalance,
+      ];
     } else {
       // Multi-month report
       let runningBalance = 0;
-      let totalSaldoAwal = 0, totalPenjualan = 0, totalPembayaran = 0, totalSaldoAkhir = 0;
+      let totalSaldoAwal = 0,
+        totalPenjualan = 0,
+        totalPembayaran = 0,
+        totalSaldoAkhir = 0;
 
       tableData = monthNames.map((monthName, index) => {
         let monthSales = 0;
@@ -408,21 +501,33 @@ export class PdfExportService {
         totalPembayaran += monthPayments;
         totalSaldoAkhir += endingBalance;
 
-        return [monthName, beginningBalance, monthSales, monthPayments, endingBalance];
+        return [
+          monthName,
+          beginningBalance,
+          monthSales,
+          monthPayments,
+          endingBalance,
+        ];
       });
 
-      summaryRow = ['JUMLAH TOTAL', totalSaldoAwal, totalPenjualan, totalPembayaran, totalSaldoAkhir];
+      summaryRow = [
+        "JUMLAH TOTAL",
+        totalSaldoAwal,
+        totalPenjualan,
+        totalPembayaran,
+        totalSaldoAkhir,
+      ];
     }
 
     const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
       headers,
       tableData,
-      'receivablesMonthlySummary',
+      "receivablesMonthlySummary",
       {
         showSummary: true,
         summaryRow: summaryRow,
-        balanceValidation: true
-      }
+        balanceValidation: true,
+      },
     );
 
     return `
@@ -436,29 +541,34 @@ export class PdfExportService {
   }
 
   // Data fetching methods (similar to Excel export service)
-  private async getSalesDetailData(filters: ExportFilters): Promise<SalesReportData[]> {
-    const dateFilter = this.buildDateFilter(filters.startDate, filters.endDate, 'creationDate');
-    const clientFilter = filters.clientIds?.length ? { id: { in: filters.clientIds } } : {};
+  private async getSalesDetailData(
+    filters: ExportFilters,
+  ): Promise<SalesReportData[]> {
+    const dateFilter = this.buildDateFilter(
+      filters.startDate,
+      filters.endDate,
+      "creationDate",
+    );
+    const clientFilter = filters.clientIds?.length
+      ? { id: { in: filters.clientIds } }
+      : {};
 
     const invoices = await this.prisma.invoice.findMany({
       where: {
-        status: { in: ['SENT', 'PAID'] },
+        status: { in: ["SENT", "PAID"] },
         ...dateFilter,
         client: clientFilter,
       },
       include: {
         client: { select: { name: true } },
-        project: { 
-          select: { 
-            number: true, 
+        project: {
+          select: {
+            number: true,
             description: true,
-          } 
+          },
         },
       },
-      orderBy: [
-        { client: { name: 'asc' } },
-        { creationDate: 'asc' },
-      ],
+      orderBy: [{ client: { name: "asc" } }, { creationDate: "asc" }],
     });
 
     return invoices.map((invoice) => ({
@@ -471,9 +581,17 @@ export class PdfExportService {
     }));
   }
 
-  private async getReceivablesDetailData(filters: ExportFilters): Promise<ReceivablesReportData[]> {
-    const dateFilter = this.buildDateFilter(filters.startDate, filters.endDate, 'creationDate');
-    const clientFilter = filters.clientIds?.length ? { id: { in: filters.clientIds } } : {};
+  private async getReceivablesDetailData(
+    filters: ExportFilters,
+  ): Promise<ReceivablesReportData[]> {
+    const dateFilter = this.buildDateFilter(
+      filters.startDate,
+      filters.endDate,
+      "creationDate",
+    );
+    const clientFilter = filters.clientIds?.length
+      ? { id: { in: filters.clientIds } }
+      : {};
 
     const invoices = await this.prisma.invoice.findMany({
       where: {
@@ -484,14 +602,11 @@ export class PdfExportService {
         client: { select: { name: true } },
         project: { select: { description: true } },
         payments: {
-          where: { status: 'CONFIRMED' },
+          where: { status: "CONFIRMED" },
           select: { amount: true, paymentDate: true },
         },
       },
-      orderBy: [
-        { client: { name: 'asc' } },
-        { creationDate: 'asc' },
-      ],
+      orderBy: [{ client: { name: "asc" } }, { creationDate: "asc" }],
     });
 
     const clientBalances = new Map<string, number>();
@@ -503,7 +618,7 @@ export class PdfExportService {
       const salesAmount = Number(invoice.totalAmount);
       const paymentsReceived = invoice.payments.reduce(
         (sum, payment) => sum + Number(payment.amount),
-        0
+        0,
       );
       const endingBalance = beginningBalance + salesAmount - paymentsReceived;
 
@@ -525,13 +640,22 @@ export class PdfExportService {
     return receivablesData;
   }
 
-  private async getSalesMonthlySummary(filters: ExportFilters, targetMonth?: number | null): Promise<ClientMonthlySummary[]> {
-    const dateFilter = this.buildDateFilter(filters.startDate, filters.endDate, 'creationDate');
-    const clientFilter = filters.clientIds?.length ? { id: { in: filters.clientIds } } : {};
+  private async getSalesMonthlySummary(
+    filters: ExportFilters,
+    targetMonth?: number | null,
+  ): Promise<ClientMonthlySummary[]> {
+    const dateFilter = this.buildDateFilter(
+      filters.startDate,
+      filters.endDate,
+      "creationDate",
+    );
+    const clientFilter = filters.clientIds?.length
+      ? { id: { in: filters.clientIds } }
+      : {};
 
     const invoices = await this.prisma.invoice.findMany({
       where: {
-        status: { in: ['SENT', 'PAID'] },
+        status: { in: ["SENT", "PAID"] },
         ...dateFilter,
         client: clientFilter,
       },
@@ -541,16 +665,26 @@ export class PdfExportService {
     });
 
     const monthNames = [
-      'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
-      'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
+      "JANUARI",
+      "FEBRUARI",
+      "MARET",
+      "APRIL",
+      "MEI",
+      "JUNI",
+      "JULI",
+      "AGUSTUS",
+      "SEPTEMBER",
+      "OKTOBER",
+      "NOVEMBER",
+      "DESEMBER",
     ];
 
     const summaryMap = new Map<string, ClientMonthlySummary>();
 
-    const allClients = new Set(invoices.map(i => i.client.name));
-    allClients.forEach(clientName => {
+    const allClients = new Set(invoices.map((i) => i.client.name));
+    allClients.forEach((clientName) => {
       const summary: ClientMonthlySummary = { clientName };
-      monthNames.forEach(m => summary[m] = 0);
+      monthNames.forEach((m) => (summary[m] = 0));
       summaryMap.set(clientName, summary);
     });
 
@@ -559,11 +693,12 @@ export class PdfExportService {
       invoices.forEach((invoice) => {
         const clientName = invoice.client.name;
         const invoiceMonth = invoice.creationDate.getMonth();
-        
+
         if (invoiceMonth === targetMonth) {
           const amount = Number(invoice.totalAmount);
           const clientSummary = summaryMap.get(clientName)!;
-          clientSummary[targetMonthName] = (clientSummary[targetMonthName] as number) + amount;
+          clientSummary[targetMonthName] =
+            (clientSummary[targetMonthName] as number) + amount;
         }
       });
     } else {
@@ -580,9 +715,18 @@ export class PdfExportService {
     return Array.from(summaryMap.values());
   }
 
-  private async getReceivablesMonthlySummary(filters: ExportFilters, targetMonth?: number | null): Promise<ClientMonthlySummary[]> {
-    const dateFilter = this.buildDateFilter(filters.startDate, filters.endDate, 'creationDate');
-    const clientFilter = filters.clientIds?.length ? { id: { in: filters.clientIds } } : {};
+  private async getReceivablesMonthlySummary(
+    filters: ExportFilters,
+    targetMonth?: number | null,
+  ): Promise<ClientMonthlySummary[]> {
+    const dateFilter = this.buildDateFilter(
+      filters.startDate,
+      filters.endDate,
+      "creationDate",
+    );
+    const clientFilter = filters.clientIds?.length
+      ? { id: { in: filters.clientIds } }
+      : {};
 
     const invoices = await this.prisma.invoice.findMany({
       where: {
@@ -592,23 +736,33 @@ export class PdfExportService {
       include: {
         client: { select: { name: true } },
         payments: {
-          where: { status: 'CONFIRMED' },
+          where: { status: "CONFIRMED" },
           select: { amount: true, paymentDate: true },
         },
       },
     });
 
     const monthNames = [
-      'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
-      'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
+      "JANUARI",
+      "FEBRUARI",
+      "MARET",
+      "APRIL",
+      "MEI",
+      "JUNI",
+      "JULI",
+      "AGUSTUS",
+      "SEPTEMBER",
+      "OKTOBER",
+      "NOVEMBER",
+      "DESEMBER",
     ];
 
     const summaryMap = new Map<string, ClientMonthlySummary>();
 
-    const allClients = new Set(invoices.map(i => i.client.name));
-    allClients.forEach(clientName => {
+    const allClients = new Set(invoices.map((i) => i.client.name));
+    allClients.forEach((clientName) => {
       const summary: ClientMonthlySummary = { clientName };
-      monthNames.forEach(m => summary[m] = 0);
+      monthNames.forEach((m) => (summary[m] = 0));
       summaryMap.set(clientName, summary);
     });
 
@@ -617,17 +771,18 @@ export class PdfExportService {
       invoices.forEach((invoice) => {
         const clientName = invoice.client.name;
         const invoiceMonth = invoice.creationDate.getMonth();
-        
+
         if (invoiceMonth === targetMonth) {
           const invoiceAmount = Number(invoice.totalAmount);
           const paymentsAmount = invoice.payments.reduce(
             (sum, payment) => sum + Number(payment.amount),
-            0
+            0,
           );
           const outstandingAmount = invoiceAmount - paymentsAmount;
 
           const clientSummary = summaryMap.get(clientName)!;
-          clientSummary[targetMonthName] = (clientSummary[targetMonthName] as number) + outstandingAmount;
+          clientSummary[targetMonthName] =
+            (clientSummary[targetMonthName] as number) + outstandingAmount;
         }
       });
     } else {
@@ -637,12 +792,13 @@ export class PdfExportService {
         const invoiceAmount = Number(invoice.totalAmount);
         const paymentsAmount = invoice.payments.reduce(
           (sum, payment) => sum + Number(payment.amount),
-          0
+          0,
         );
         const outstandingAmount = invoiceAmount - paymentsAmount;
 
         const clientSummary = summaryMap.get(clientName)!;
-        clientSummary[month] = (clientSummary[month] as number) + outstandingAmount;
+        clientSummary[month] =
+          (clientSummary[month] as number) + outstandingAmount;
       });
     }
 
@@ -652,12 +808,14 @@ export class PdfExportService {
   // Helper methods
   private isSingleMonthReport(filters: ExportFilters): boolean {
     if (!filters.startDate || !filters.endDate) return false;
-    
+
     const start = new Date(filters.startDate);
     const end = new Date(filters.endDate);
-    
-    return start.getFullYear() === end.getFullYear() && 
-           start.getMonth() === end.getMonth();
+
+    return (
+      start.getFullYear() === end.getFullYear() &&
+      start.getMonth() === end.getMonth()
+    );
   }
 
   private getTargetMonth(filters: ExportFilters): number {
@@ -667,7 +825,11 @@ export class PdfExportService {
     return new Date().getMonth();
   }
 
-  private buildDateFilter(startDate?: string, endDate?: string, dateField: string = 'createdAt') {
+  private buildDateFilter(
+    startDate?: string,
+    endDate?: string,
+    dateField: string = "createdAt",
+  ) {
     const filter: any = {};
 
     if (startDate || endDate) {
@@ -685,16 +847,29 @@ export class PdfExportService {
 
   private getIndonesianMonthName(monthIndex: number): string {
     const indonesianMonths = [
-      'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
-      'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
+      "JANUARI",
+      "FEBRUARI",
+      "MARET",
+      "APRIL",
+      "MEI",
+      "JUNI",
+      "JULI",
+      "AGUSTUS",
+      "SEPTEMBER",
+      "OKTOBER",
+      "NOVEMBER",
+      "DESEMBER",
     ];
-    return indonesianMonths[monthIndex] || 'JANUARI';
+    return indonesianMonths[monthIndex] || "JANUARI";
   }
 
-  private generateIndonesianInvoiceNumber(date: Date, sequence: number): string {
+  private generateIndonesianInvoiceNumber(
+    date: Date,
+    sequence: number,
+  ): string {
     const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const seq = sequence.toString().padStart(4, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const seq = sequence.toString().padStart(4, "0");
     return `INV-JKT-${year}${month}-${seq}`;
   }
 }

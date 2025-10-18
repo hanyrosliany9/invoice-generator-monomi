@@ -28,15 +28,18 @@ import {
   SecurityScanOutlined,
   SettingOutlined,
   ShopOutlined,
+  TagsOutlined,
   UndoOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
 import { settingsService } from '../services/settings'
 import { authService } from '../services/auth'
 import { ProjectTypeManagement } from '../components/ProjectTypeManagement'
+import { useTheme } from '../theme'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -89,9 +92,11 @@ interface SystemFormValues {
 
 export const SettingsPage: React.FC = () => {
   const { t } = useTranslation()
+  const { theme } = useTheme()
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const { message } = App.useApp()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('profile')
 
   const [profileForm] = Form.useForm()
@@ -184,11 +189,11 @@ export const SettingsPage: React.FC = () => {
         </div>
       }
       style={{
-        borderRadius: '16px',
-        border: '1px solid rgba(45, 53, 72, 0.6)',
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-        background: 'rgba(26, 31, 46, 0.6)',
-        backdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: theme.colors.glass.border,
+        boxShadow: theme.colors.glass.shadow,
+        background: theme.colors.glass.background,
+        backdropFilter: theme.colors.glass.backdropFilter,
       }}
     >
       <Form
@@ -291,9 +296,13 @@ export const SettingsPage: React.FC = () => {
             icon={<SaveOutlined />}
             size='large'
             style={{
-              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+              background: theme.colors.accent.primary,
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '20px',
+              height: '44px',
+              padding: '0 24px',
+              fontSize: '15px',
+              fontWeight: 500,
             }}
           >
             {t('settings.saveSettings')}
@@ -314,11 +323,11 @@ export const SettingsPage: React.FC = () => {
         </div>
       }
       style={{
-        borderRadius: '16px',
-        border: '1px solid rgba(45, 53, 72, 0.6)',
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-        background: 'rgba(26, 31, 46, 0.6)',
-        backdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: theme.colors.glass.border,
+        boxShadow: theme.colors.glass.shadow,
+        background: theme.colors.glass.background,
+        backdropFilter: theme.colors.glass.backdropFilter,
       }}
     >
       <Alert
@@ -387,9 +396,13 @@ export const SettingsPage: React.FC = () => {
             icon={<SaveOutlined />}
             size='large'
             style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              background: theme.colors.accent.primary,
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '20px',
+              height: '44px',
+              padding: '0 24px',
+              fontSize: '15px',
+              fontWeight: 500,
             }}
           >
             {t('settings.changePassword')}
@@ -408,11 +421,11 @@ export const SettingsPage: React.FC = () => {
         </div>
       }
       style={{
-        borderRadius: '16px',
-        border: '1px solid rgba(45, 53, 72, 0.6)',
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-        background: 'rgba(26, 31, 46, 0.6)',
-        backdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: theme.colors.glass.border,
+        boxShadow: theme.colors.glass.shadow,
+        background: theme.colors.glass.background,
+        backdropFilter: theme.colors.glass.backdropFilter,
       }}
     >
       <Form
@@ -522,9 +535,13 @@ export const SettingsPage: React.FC = () => {
             icon={<SaveOutlined />}
             size='large'
             style={{
-              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+              background: theme.colors.accent.primary,
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '20px',
+              height: '44px',
+              padding: '0 24px',
+              fontSize: '15px',
+              fontWeight: 500,
             }}
           >
             {t('settings.saveSettings')}
@@ -544,11 +561,11 @@ export const SettingsPage: React.FC = () => {
           </div>
         }
         style={{
-        borderRadius: '16px',
-        border: '1px solid rgba(45, 53, 72, 0.6)',
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-        background: 'rgba(26, 31, 46, 0.6)',
-        backdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: theme.colors.glass.border,
+        boxShadow: theme.colors.glass.shadow,
+        background: theme.colors.glass.background,
+        backdropFilter: theme.colors.glass.backdropFilter,
       }}
       >
         <Form 
@@ -624,11 +641,11 @@ export const SettingsPage: React.FC = () => {
           </div>
         }
         style={{
-        borderRadius: '16px',
-        border: '1px solid rgba(45, 53, 72, 0.6)',
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-        background: 'rgba(26, 31, 46, 0.6)',
-        backdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: theme.colors.glass.border,
+        boxShadow: theme.colors.glass.shadow,
+        background: theme.colors.glass.background,
+        backdropFilter: theme.colors.glass.backdropFilter,
       }}
       >
         <Form 
@@ -692,11 +709,11 @@ export const SettingsPage: React.FC = () => {
           </div>
         }
         style={{
-        borderRadius: '16px',
-        border: '1px solid rgba(45, 53, 72, 0.6)',
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-        background: 'rgba(26, 31, 46, 0.6)',
-        backdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: theme.colors.glass.border,
+        boxShadow: theme.colors.glass.shadow,
+        background: theme.colors.glass.background,
+        backdropFilter: theme.colors.glass.backdropFilter,
       }}
       >
         <Form 
@@ -746,6 +763,45 @@ export const SettingsPage: React.FC = () => {
 
       <ProjectTypeManagement />
 
+      <Card
+        title={
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <TagsOutlined style={{ marginRight: '8px', color: '#dc2626' }} />
+            Expense Categories & PSAK Codes
+          </div>
+        }
+        style={{
+          borderRadius: '12px',
+          border: theme.colors.glass.border,
+          boxShadow: theme.colors.glass.shadow,
+          background: theme.colors.glass.background,
+          backdropFilter: theme.colors.glass.backdropFilter,
+        }}
+      >
+        <div style={{ marginBottom: '16px' }}>
+          <Text type='secondary'>
+            Manage expense categories with Indonesian PSAK (Pernyataan Standar Akuntansi Keuangan) accounting codes and withholding tax (PPh) configuration.
+          </Text>
+        </div>
+        <Button
+          type='primary'
+          icon={<SettingOutlined />}
+          size='large'
+          style={{
+            background: theme.colors.accent.primary,
+            border: 'none',
+            borderRadius: '20px',
+            height: '44px',
+            padding: '0 24px',
+            fontSize: '15px',
+            fontWeight: 500,
+          }}
+          onClick={() => navigate('/expense-categories')}
+        >
+          Manage Expense Categories
+        </Button>
+      </Card>
+
       <div style={{ textAlign: 'center' }}>
         <Space size='middle'>
           <Button
@@ -754,8 +810,11 @@ export const SettingsPage: React.FC = () => {
             icon={<UndoOutlined />}
             size='large'
             style={{
-              borderRadius: '8px',
+              borderRadius: '18px',
+              height: '40px',
               minWidth: '150px',
+              padding: '0 20px',
+              fontSize: '14px',
             }}
             onClick={() => resetMutation.mutate()}
           >
@@ -768,10 +827,14 @@ export const SettingsPage: React.FC = () => {
             icon={<SaveOutlined />}
             size='large'
             style={{
-              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+              background: theme.colors.accent.primary,
               border: 'none',
-              borderRadius: '8px',
-              minWidth: '200px',
+              borderRadius: '20px',
+              height: '44px',
+              minWidth: '180px',
+              padding: '0 24px',
+              fontSize: '15px',
+              fontWeight: 500,
             }}
             onClick={() => handleSaveSystem({})}
           >
@@ -785,7 +848,7 @@ export const SettingsPage: React.FC = () => {
   return (
     <div style={{ padding: '24px', background: 'transparent' }}>
       <div style={{ marginBottom: '32px' }}>
-        <Title level={2} style={{ margin: 0, color: '#e2e8f0' }}>
+        <Title level={2} style={{ margin: 0, color: theme.colors.text.primary }}>
           <SettingOutlined style={{ marginRight: '12px', color: '#dc2626' }} />
           {t('settings.title')}
         </Title>
@@ -796,11 +859,11 @@ export const SettingsPage: React.FC = () => {
 
       <Card
         style={{
-          borderRadius: '20px',
-          border: '1px solid rgba(45, 53, 72, 0.6)',
-          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-          background: 'rgba(26, 31, 46, 0.6)',
-          backdropFilter: 'blur(10px)',
+          borderRadius: '12px',
+          border: theme.colors.glass.border,
+          boxShadow: theme.colors.glass.shadow,
+          background: theme.colors.glass.background,
+          backdropFilter: theme.colors.glass.backdropFilter,
         }}
       >
         <Tabs

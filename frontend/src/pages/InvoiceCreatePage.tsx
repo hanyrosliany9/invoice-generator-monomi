@@ -84,7 +84,9 @@ export const InvoiceCreatePage: React.FC = () => {
     messageApi: message,
     onSave: async (data: any) => {
       // In a real app, this would save a draft to the backend
-      console.log('Auto-saving invoice draft:', data)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Auto-saving invoice draft:', data)
+      }
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500))
     },
@@ -110,10 +112,10 @@ export const InvoiceCreatePage: React.FC = () => {
     queryFn: projectService.getProjects,
   })
 
-  // Fetch quotations for selection
+  // Fetch quotations for selection (only APPROVED ones)
   const { data: quotations = [], isLoading: quotationsLoading } = useQuery({
-    queryKey: ['quotations'],
-    queryFn: quotationService.getQuotations,
+    queryKey: ['quotations', 'approved'],
+    queryFn: () => quotationService.getQuotations({ status: 'APPROVED' }),
   })
 
   // Fetch specific quotation if prefilled
@@ -139,12 +141,14 @@ export const InvoiceCreatePage: React.FC = () => {
   // Pre-fill form when quotation data is loaded
   useEffect(() => {
     if (selectedQuotation) {
-      // Warn if quotation is not APPROVED (UX enhancement)
+      // Block if quotation is not APPROVED
       if (selectedQuotation.status !== 'APPROVED') {
-        message.warning({
-          content: `Warning: This quotation is ${selectedQuotation.status}. Only APPROVED quotations can be used to generate invoices. The backend will reject this submission.`,
+        message.error({
+          content: `Cannot create invoice. This quotation is ${selectedQuotation.status}. Only APPROVED quotations can generate invoices.`,
           duration: 8,
         })
+        // Don't pre-fill form for non-approved quotations
+        return
       }
 
       const defaultDueDate = dayjs().add(30, 'day')
@@ -232,6 +236,22 @@ Reference: Quotation ${quotation.quotationNumber}
   }
 
   const handleSubmit = async (values: InvoiceFormData) => {
+    // Wait for pending auto-save before submitting
+    if (autoSave.isSaving) {
+      await autoSave.forceSave(values)
+    }
+
+    // Validate quotation status if quotation is selected
+    if (values.quotationId && selectedQuotation) {
+      if (selectedQuotation.status !== 'APPROVED') {
+        message.error({
+          content: 'Cannot create invoice. Only APPROVED quotations can generate invoices.',
+          duration: 5,
+        })
+        return
+      }
+    }
+
     const invoiceData: CreateInvoiceRequest = {
       clientId: values.clientId,
       projectId: values.projectId,
@@ -251,6 +271,23 @@ Reference: Quotation ${quotation.quotationNumber}
   const handleSaveAndSend = async () => {
     try {
       const values = await form.validateFields()
+
+      // Wait for pending auto-save before creating and sending
+      if (autoSave.isSaving) {
+        await autoSave.forceSave(values)
+      }
+
+      // Validate quotation status if quotation is selected
+      if (values.quotationId && selectedQuotation) {
+        if (selectedQuotation.status !== 'APPROVED') {
+          message.error({
+            content: 'Cannot create invoice. Only APPROVED quotations can generate invoices.',
+            duration: 5,
+          })
+          return
+        }
+      }
+
       const invoiceData: CreateInvoiceRequest = {
         clientId: values.clientId,
         projectId: values.projectId,
@@ -264,13 +301,19 @@ Reference: Quotation ${quotation.quotationNumber}
         materaiRequired: values.materaiRequired,
       }
 
+      // Create and send in single operation to avoid race condition
       const invoice = await invoiceService.createInvoice(invoiceData)
-      // Update status to SENT
-      await invoiceService.updateInvoice(invoice.id, { status: 'SENT' })
-
-      queryClient.invalidateQueries({ queryKey: ['invoices'] })
-      message.success('Invoice created and sent successfully')
-      navigate(`/invoices/${invoice.id}`)
+      try {
+        await invoiceService.updateStatus(invoice.id, 'SENT')
+        queryClient.invalidateQueries({ queryKey: ['invoices'] })
+        message.success('Invoice created and sent successfully')
+        navigate(`/invoices/${invoice.id}`)
+      } catch (statusError) {
+        // Invoice created but status update failed
+        queryClient.invalidateQueries({ queryKey: ['invoices'] })
+        message.warning('Invoice created but failed to send. It was saved as draft.')
+        navigate(`/invoices/${invoice.id}`)
+      }
     } catch (error) {
       message.error('Please complete required fields')
     }
@@ -285,12 +328,21 @@ Reference: Quotation ${quotation.quotationNumber}
     }
   }
 
-  const selectedClient = clients.find(
-    c => c.id === form.getFieldValue('clientId')
-  )
-  const totalAmount = form.getFieldValue('totalAmount') || 0
-  const dueDate = form.getFieldValue('dueDate')
+  // Use Form.useWatch for reactive values instead of direct getFieldValue calls
+  const clientId = Form.useWatch('clientId', form)
+  const totalAmount = Form.useWatch('totalAmount', form) || 0
+  const dueDate = Form.useWatch('dueDate', form)
+  const materaiRequired = Form.useWatch('materaiRequired', form)
+
+  const selectedClient = clients.find(c => c.id === clientId)
   const daysToDue = dueDate ? dueDate.diff(dayjs(), 'day') : 30
+
+  // Auto-update materaiRequired when totalAmount crosses 5M threshold
+  useEffect(() => {
+    if (totalAmount > 5000000 && !materaiRequired) {
+      form.setFieldValue('materaiRequired', true)
+    }
+  }, [totalAmount, materaiRequired, form])
 
   const getInheritedData = (): Record<string, any> => {
     if (!selectedQuotation) return {}
@@ -406,7 +458,7 @@ Reference: Quotation ${quotation.quotationNumber}
             <MateraiCompliancePanel
               totalAmount={totalAmount}
               currentStatus={
-                form.getFieldValue('materaiRequired')
+                materaiRequired
                   ? 'REQUIRED'
                   : 'NOT_REQUIRED'
               }
@@ -509,12 +561,10 @@ Reference: Quotation ${quotation.quotationNumber}
                       .toLowerCase()
                       .includes(input.toLowerCase())
                   }
-                  options={quotations
-                    .filter(q => q.status === 'APPROVED')
-                    .map(quotation => ({
-                      value: quotation.id,
-                      label: `${quotation.quotationNumber} - ${quotation.client?.name}`,
-                    }))}
+                  options={quotations.map(quotation => ({
+                    value: quotation.id,
+                    label: `${quotation.quotationNumber} - ${quotation.client?.name}`,
+                  }))}
                 />
               </Form.Item>
             </Col>

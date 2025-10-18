@@ -39,6 +39,7 @@
     "invoices": "Invoice",
     "clients": "Klien",
     "projects": "Proyek",
+    "assets": "Aset",
     "reports": "Laporan",
     "settings": "Pengaturan"
   },
@@ -193,6 +194,30 @@
       "approved": "Disetujui",
       "declined": "Ditolak",
       "revised": "Revisi"
+    },
+    "messages": {
+      "statusUpdated": "Status berhasil diperbarui",
+      "selectToChangeStatus": "Pilih quotation yang akan diubah statusnya",
+      "selectApprovedForInvoice": "Pilih quotation yang sudah disetujui untuk dibuat invoice",
+      "selectToDelete": "Pilih quotation yang akan dihapus",
+      "quotationsSelected": "{{count}} quotation dipilih",
+      "statusChangedSuccess": "{{count}} quotation berhasil diubah statusnya",
+      "invoicesCreatedSuccess": "{{count}} invoice berhasil dibuat",
+      "quotationsDeletedSuccess": "{{count}} quotation berhasil dihapus",
+      "pdfDownloadSuccess": "PDF quotation berhasil diunduh",
+      "pdfPreviewSuccess": "Preview PDF berhasil dimuat"
+    },
+    "placeholders": {
+      "selectClient": "Pilih klien",
+      "selectProject": "Pilih proyek",
+      "selectDate": "Pilih tanggal",
+      "selectMonthYear": "Pilih bulan & tahun",
+      "selectStatus": "Pilih status",
+      "selectClientFirst": "Pilih klien terlebih dahulu",
+      "selectNewStatus": "Pilih status baru"
+    },
+    "changeStatusModal": {
+      "title": "Ubah Status Quotation"
     }
   },
   "invoices": {
@@ -245,6 +270,99 @@
       "inProgress": "Berlangsung",
       "completed": "Selesai",
       "cancelled": "Dibatalkan"
+    }
+  },
+  "assets": {
+    "title": "Manajemen Aset",
+    "create": "Tambah Aset",
+    "detail": "Detail Aset",
+    "assetCode": "Kode Aset",
+    "name": "Nama Aset",
+    "category": "Kategori",
+    "subcategory": "Subkategori",
+    "manufacturer": "Manufaktur",
+    "model": "Model",
+    "serialNumber": "Serial Number",
+    "purchaseDate": "Tanggal Pembelian",
+    "purchasePrice": "Harga Pembelian",
+    "supplier": "Supplier",
+    "location": "Lokasi",
+    "condition": "Kondisi",
+    "warranty": "Garansi",
+    "qrCode": "QR Code",
+    "categories": {
+      "camera": "Camera",
+      "lens": "Lensa",
+      "lighting": "Lighting",
+      "audio": "Audio",
+      "drone": "Drone",
+      "computer": "Komputer",
+      "accessories": "Aksesoris"
+    },
+    "statuses": {
+      "available": "Tersedia",
+      "reserved": "Direservasi",
+      "checkedOut": "Dipinjam",
+      "inMaintenance": "Maintenance",
+      "broken": "Rusak",
+      "retired": "Tidak Aktif"
+    },
+    "conditions": {
+      "excellent": "Sangat Baik",
+      "good": "Baik",
+      "fair": "Cukup",
+      "poor": "Buruk",
+      "broken": "Rusak"
+    },
+    "actions": {
+      "checkOut": "Pinjam",
+      "checkIn": "Kembalikan",
+      "reserve": "Reservasi",
+      "maintenance": "Jadwalkan Maintenance",
+      "viewQR": "Lihat QR Code",
+      "printQR": "Print QR Code"
+    },
+    "reservation": {
+      "title": "Reservasi Aset",
+      "history": "Riwayat Reservasi",
+      "startDate": "Tanggal Mulai",
+      "endDate": "Tanggal Selesai",
+      "purpose": "Tujuan",
+      "user": "User",
+      "status": "Status",
+      "statuses": {
+        "pending": "Menunggu",
+        "confirmed": "Dikonfirmasi",
+        "cancelled": "Dibatalkan",
+        "completed": "Selesai"
+      }
+    },
+    "maintenance": {
+      "title": "Maintenance",
+      "history": "Riwayat Maintenance",
+      "schedule": "Jadwal Maintenance",
+      "type": "Tipe Maintenance",
+      "performedDate": "Tanggal Pelaksanaan",
+      "performedBy": "Dilakukan Oleh",
+      "cost": "Biaya",
+      "description": "Deskripsi",
+      "nextDate": "Maintenance Berikutnya"
+    },
+    "messages": {
+      "checkOutSuccess": "Aset berhasil di-checkout",
+      "checkInSuccess": "Aset berhasil di-checkin",
+      "reserveSuccess": "Aset berhasil direservasi",
+      "deleteSuccess": "Aset berhasil dihapus",
+      "conflictError": "Aset sudah direservasi untuk periode ini",
+      "notAvailable": "Aset tidak tersedia"
+    },
+    "statistics": {
+      "totalAssets": "Total Aset",
+      "available": "Tersedia",
+      "checkedOut": "Dipinjam",
+      "inMaintenance": "Maintenance",
+      "reserved": "Direservasi",
+      "totalValue": "Nilai Total Aset"
     }
   },
   "currency": {
@@ -388,7 +506,10 @@
     "print": "Print",
     "export": "Export",
     "import": "Import",
-    "viewAll": "Lihat Semua"
+    "viewAll": "Lihat Semua",
+    "viewInvoice": "Lihat Invoice",
+    "changeStatus": "Ubah Status",
+    "deselect": "Batal Pilih"
   },
   "labels": {
     "totalValue": "Total Nilai",
