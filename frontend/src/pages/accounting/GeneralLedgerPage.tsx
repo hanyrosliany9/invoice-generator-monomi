@@ -20,8 +20,9 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { getGeneralLedger, getChartOfAccounts, exportGeneralLedgerPDF } from '../../services/accounting';
+import { getGeneralLedger, getChartOfAccounts, exportGeneralLedgerPDF, exportGeneralLedgerExcel } from '../../services/accounting';
 import { useTheme } from '../../theme';
+import { ExportButton } from '../../components/accounting/ExportButton';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -38,7 +39,6 @@ const GeneralLedgerPage: React.FC = () => {
   const [selectedAccountType, setSelectedAccountType] = useState<string | undefined>(
     undefined
   );
-  const [isExporting, setIsExporting] = useState(false);
 
   // Fetch accounts for filter
   const { data: accountsData } = useQuery({
@@ -60,22 +60,23 @@ const GeneralLedgerPage: React.FC = () => {
   });
 
   const handleExportPDF = async () => {
-    setIsExporting(true);
-    try {
-      await exportGeneralLedgerPDF({
-        startDate: dateRange[0].format('YYYY-MM-DD'),
-        endDate: dateRange[1].format('YYYY-MM-DD'),
-        accountCode: selectedAccountCode,
-        accountType: selectedAccountType as any,
-        includeInactive: false,
-      });
-      message.success('PDF exported successfully!');
-    } catch (error) {
-      console.error('Export error:', error);
-      message.error('Failed to export PDF. Please try again.');
-    } finally {
-      setIsExporting(false);
-    }
+    await exportGeneralLedgerPDF({
+      startDate: dateRange[0].format('YYYY-MM-DD'),
+      endDate: dateRange[1].format('YYYY-MM-DD'),
+      accountCode: selectedAccountCode,
+      accountType: selectedAccountType as any,
+      includeInactive: false,
+    });
+  };
+
+  const handleExportExcel = async () => {
+    await exportGeneralLedgerExcel({
+      startDate: dateRange[0].format('YYYY-MM-DD'),
+      endDate: dateRange[1].format('YYYY-MM-DD'),
+      accountCode: selectedAccountCode,
+      accountType: selectedAccountType as any,
+      includeInactive: false,
+    });
   };
 
   const formatCurrency = (amount: number) => {
@@ -196,7 +197,10 @@ const GeneralLedgerPage: React.FC = () => {
             Catatan transaksi per akun secara detail
           </Text>
         </div>
-        <Button icon={<DownloadOutlined />} onClick={handleExportPDF} loading={isExporting}>Export PDF</Button>
+        <ExportButton
+          onExportPDF={handleExportPDF}
+          onExportExcel={handleExportExcel}
+        />
       </div>
 
       {/* Filters */}

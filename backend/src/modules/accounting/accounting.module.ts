@@ -10,6 +10,7 @@ import { RevenueRecognitionService } from './services/revenue-recognition.servic
 import { ProjectCostingService } from './services/project-costing.service';
 import { TaxReconciliationService } from './services/tax-reconciliation.service';
 import { AccountingExportService } from './services/accounting-export.service';
+import { AccountingExcelExportService } from './services/accounting-excel-export.service';
 import { CashTransactionService } from './services/cash-transaction.service';
 import { BankTransferService } from './services/bank-transfer.service';
 import { BankReconciliationService } from './services/bank-reconciliation.service';
@@ -27,6 +28,7 @@ import { BankReconciliationService } from './services/bank-reconciliation.servic
     ProjectCostingService,
     TaxReconciliationService,
     AccountingExportService,
+    AccountingExcelExportService,
     CashTransactionService,
     BankTransferService,
     BankReconciliationService,

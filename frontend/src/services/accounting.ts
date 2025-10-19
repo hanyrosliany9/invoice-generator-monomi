@@ -743,6 +743,102 @@ export const exportGeneralLedgerPDF = async (params: {
   downloadBlob(response.data, `buku-besar-${params.startDate || 'all'}-${params.endDate || 'all'}.pdf`);
 };
 
+// ============ EXCEL EXPORT FUNCTIONS (NEW) ============
+export const exportTrialBalanceExcel = async (params: {
+  asOfDate: string;
+  fiscalPeriodId?: string;
+  includeInactive?: boolean;
+  includeZeroBalances?: boolean;
+}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/trial-balance/excel', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `neraca-saldo-${params.asOfDate}.xlsx`);
+};
+
+export const exportIncomeStatementExcel = async (params: {
+  startDate: string;
+  endDate: string;
+  fiscalPeriodId?: string;
+}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/income-statement/excel', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `laporan-laba-rugi-${params.startDate}-${params.endDate}.xlsx`);
+};
+
+export const exportBalanceSheetExcel = async (params: {
+  endDate: string;
+  fiscalPeriodId?: string;
+}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/balance-sheet/excel', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `neraca-${params.endDate}.xlsx`);
+};
+
+export const exportCashFlowStatementExcel = async (params: {
+  startDate: string;
+  endDate: string;
+  fiscalPeriodId?: string;
+}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/cash-flow/excel', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `laporan-arus-kas-${params.startDate}-${params.endDate}.xlsx`);
+};
+
+export const exportARAgingExcel = async (params: { asOfDate?: string }): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/ar-aging/excel', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `aging-piutang-${params.asOfDate || 'current'}.xlsx`);
+};
+
+export const exportAPAgingExcel = async (params: { asOfDate?: string }): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/ap-aging/excel', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `aging-hutang-${params.asOfDate || 'current'}.xlsx`);
+};
+
+export const exportAccountsReceivableExcel = async (params: { endDate: string }): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/accounts-receivable/excel', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `laporan-piutang-${params.endDate}.xlsx`);
+};
+
+export const exportAccountsPayableExcel = async (params: { endDate: string }): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/accounts-payable/excel', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `laporan-hutang-${params.endDate}.xlsx`);
+};
+
+export const exportGeneralLedgerExcel = async (params: {
+  accountCode?: string;
+  accountType?: string;
+  startDate?: string;
+  endDate?: string;
+  fiscalPeriodId?: string;
+  includeInactive?: boolean;
+}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/general-ledger/excel', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `buku-besar-${params.startDate || 'all'}-${params.endDate || 'all'}.xlsx`);
+};
+
 // ============ CASH TRANSACTIONS ============
 export interface CashTransaction {
   id: string;

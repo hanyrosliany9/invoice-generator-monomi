@@ -21,15 +21,15 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { getAccountsReceivableReport, exportAccountsReceivablePDF } from '../../services/accounting';
+import { getAccountsReceivableReport, exportAccountsReceivablePDF, exportAccountsReceivableExcel } from '../../services/accounting';
 import { useTheme } from '../../theme';
+import { ExportButton } from '../../components/accounting/ExportButton';
 
 const { Title, Text } = Typography;
 
 const AccountsReceivablePage: React.FC = () => {
   const { theme } = useTheme();
   const [endDate, setEndDate] = useState<dayjs.Dayjs>(dayjs());
-  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['accounts-receivable', endDate.format('YYYY-MM-DD')],
@@ -40,18 +40,15 @@ const AccountsReceivablePage: React.FC = () => {
   });
 
   const handleExportPDF = async () => {
-    setIsExporting(true);
-    try {
-      await exportAccountsReceivablePDF({
-        endDate: endDate.format('YYYY-MM-DD'),
-      });
-      message.success('PDF exported successfully!');
-    } catch (error) {
-      console.error('Export error:', error);
-      message.error('Failed to export PDF. Please try again.');
-    } finally {
-      setIsExporting(false);
-    }
+    await exportAccountsReceivablePDF({
+      endDate: endDate.format('YYYY-MM-DD'),
+    });
+  };
+
+  const handleExportExcel = async () => {
+    await exportAccountsReceivableExcel({
+      endDate: endDate.format('YYYY-MM-DD'),
+    });
   };
 
   const formatCurrency = (amount: number) => {
@@ -208,7 +205,10 @@ const AccountsReceivablePage: React.FC = () => {
             format="DD/MM/YYYY"
             placeholder="Tanggal Akhir"
           />
-          <Button icon={<DownloadOutlined />} onClick={handleExportPDF} loading={isExporting}>Export PDF</Button>
+          <ExportButton
+            onExportPDF={handleExportPDF}
+            onExportExcel={handleExportExcel}
+          />
         </Space>
       </div>
 

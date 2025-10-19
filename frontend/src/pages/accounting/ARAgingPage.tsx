@@ -22,15 +22,15 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { getAccountsReceivableAging, exportARAgingPDF } from '../../services/accounting';
+import { getAccountsReceivableAging, exportARAgingPDF, exportARAgingExcel } from '../../services/accounting';
 import { useTheme } from '../../theme';
+import { ExportButton } from '../../components/accounting/ExportButton';
 
 const { Title, Text } = Typography;
 
 const ARAgingPage: React.FC = () => {
   const { theme } = useTheme();
   const [asOfDate, setAsOfDate] = useState<dayjs.Dayjs>(dayjs());
-  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['ar-aging', asOfDate],
@@ -42,18 +42,15 @@ const ARAgingPage: React.FC = () => {
   });
 
   const handleExportPDF = async () => {
-    setIsExporting(true);
-    try {
-      await exportARAgingPDF({
-        asOfDate: asOfDate.format('YYYY-MM-DD'),
-      });
-      message.success('PDF exported successfully!');
-    } catch (error) {
-      console.error('Export error:', error);
-      message.error('Failed to export PDF. Please try again.');
-    } finally {
-      setIsExporting(false);
-    }
+    await exportARAgingPDF({
+      asOfDate: asOfDate.format('YYYY-MM-DD'),
+    });
+  };
+
+  const handleExportExcel = async () => {
+    await exportARAgingExcel({
+      asOfDate: asOfDate.format('YYYY-MM-DD'),
+    });
   };
 
   const formatCurrency = (amount: number) => {
@@ -171,7 +168,10 @@ const ARAgingPage: React.FC = () => {
             format="DD/MM/YYYY"
             placeholder="Per Tanggal"
           />
-          <Button icon={<DownloadOutlined />} onClick={handleExportPDF} loading={isExporting}>Export PDF</Button>
+          <ExportButton
+            onExportPDF={handleExportPDF}
+            onExportExcel={handleExportExcel}
+          />
         </Space>
       </div>
 

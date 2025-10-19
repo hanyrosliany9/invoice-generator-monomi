@@ -21,8 +21,9 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { getCashFlowStatement, exportCashFlowStatementPDF } from '../../services/accounting';
+import { getCashFlowStatement, exportCashFlowStatementPDF, exportCashFlowStatementExcel } from '../../services/accounting';
 import { useTheme } from '../../theme';
+import { ExportButton } from '../../components/accounting/ExportButton';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -33,7 +34,6 @@ const CashFlowStatementPage: React.FC = () => {
     dayjs().startOf('month'),
     dayjs().endOf('month'),
   ]);
-  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['cash-flow-statement', dateRange],
@@ -46,19 +46,17 @@ const CashFlowStatementPage: React.FC = () => {
   });
 
   const handleExportPDF = async () => {
-    setIsExporting(true);
-    try {
-      await exportCashFlowStatementPDF({
-        startDate: dateRange[0].format('YYYY-MM-DD'),
-        endDate: dateRange[1].format('YYYY-MM-DD'),
-      });
-      message.success('PDF exported successfully!');
-    } catch (error) {
-      console.error('Export error:', error);
-      message.error('Failed to export PDF. Please try again.');
-    } finally {
-      setIsExporting(false);
-    }
+    await exportCashFlowStatementPDF({
+      startDate: dateRange[0].format('YYYY-MM-DD'),
+      endDate: dateRange[1].format('YYYY-MM-DD'),
+    });
+  };
+
+  const handleExportExcel = async () => {
+    await exportCashFlowStatementExcel({
+      startDate: dateRange[0].format('YYYY-MM-DD'),
+      endDate: dateRange[1].format('YYYY-MM-DD'),
+    });
   };
 
   const formatCurrency = (amount: number) => {
@@ -166,7 +164,10 @@ const CashFlowStatementPage: React.FC = () => {
             format="DD/MM/YYYY"
             placeholder={['Tanggal Mulai', 'Tanggal Akhir']}
           />
-          <Button icon={<DownloadOutlined />} onClick={handleExportPDF} loading={isExporting}>Export PDF</Button>
+          <ExportButton
+            onExportPDF={handleExportPDF}
+            onExportExcel={handleExportExcel}
+          />
         </Space>
       </div>
 

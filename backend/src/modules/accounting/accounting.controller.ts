@@ -21,6 +21,7 @@ import { FinancialStatementsService } from './services/financial-statements.serv
 import { DepreciationService } from './services/depreciation.service';
 import { ECLService } from './services/ecl.service';
 import { AccountingExportService } from './services/accounting-export.service';
+import { AccountingExcelExportService } from './services/accounting-excel-export.service';
 import { CashTransactionService } from './services/cash-transaction.service';
 import { BankTransferService } from './services/bank-transfer.service';
 import { BankReconciliationService } from './services/bank-reconciliation.service';
@@ -52,6 +53,7 @@ export class AccountingController {
     private readonly depreciationService: DepreciationService,
     private readonly eclService: ECLService,
     private readonly exportService: AccountingExportService,
+    private readonly excelExportService: AccountingExcelExportService,
     private readonly cashTransactionService: CashTransactionService,
     private readonly bankTransferService: BankTransferService,
     private readonly bankReconciliationService: BankReconciliationService,
@@ -815,6 +817,223 @@ export class AccountingController {
     } catch (error) {
       res.status(500).json({
         message: 'Error generating PDF',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  // ============ EXPORT TO EXCEL (NEW) ============
+  @Get('export/trial-balance/excel')
+  async exportTrialBalanceExcel(
+    @Query() query: TrialBalanceQueryDto,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportTrialBalanceExcel({
+        asOfDate: query.asOfDate.toISOString().split('T')[0],
+        fiscalPeriodId: query.fiscalPeriodId,
+        includeInactive: query.includeInactive,
+        includeZeroBalances: query.includeZeroBalances,
+      });
+      const filename = `neraca-saldo-${query.asOfDate.toISOString().split('T')[0]}.xlsx`;
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: 'Error generating Excel',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  @Get('export/income-statement/excel')
+  async exportIncomeStatementExcel(
+    @Query() query: FinancialStatementQueryDto,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportIncomeStatementExcel({
+        startDate: query.startDate?.toISOString().split('T')[0] || '',
+        endDate: query.endDate.toISOString().split('T')[0],
+        fiscalPeriodId: query.fiscalPeriodId,
+      });
+      const filename = `laporan-laba-rugi-${query.startDate?.toISOString().split('T')[0]}-${query.endDate.toISOString().split('T')[0]}.xlsx`;
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: 'Error generating Excel',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  @Get('export/balance-sheet/excel')
+  async exportBalanceSheetExcel(
+    @Query() query: FinancialStatementQueryDto,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportBalanceSheetExcel({
+        endDate: query.endDate.toISOString().split('T')[0],
+        fiscalPeriodId: query.fiscalPeriodId,
+      });
+      const filename = `neraca-${query.endDate.toISOString().split('T')[0]}.xlsx`;
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: 'Error generating Excel',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  @Get('export/cash-flow/excel')
+  async exportCashFlowExcel(
+    @Query() query: FinancialStatementQueryDto,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportCashFlowStatementExcel({
+        startDate: query.startDate?.toISOString().split('T')[0] || '',
+        endDate: query.endDate.toISOString().split('T')[0],
+        fiscalPeriodId: query.fiscalPeriodId,
+      });
+      const filename = `laporan-arus-kas-${query.startDate?.toISOString().split('T')[0]}-${query.endDate.toISOString().split('T')[0]}.xlsx`;
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: 'Error generating Excel',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  @Get('export/ar-aging/excel')
+  async exportARAgingExcel(
+    @Query('asOfDate') asOfDate: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportARAgingExcel({ asOfDate });
+      const filename = `aging-piutang-${asOfDate || 'current'}.xlsx`;
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: 'Error generating Excel',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  @Get('export/ap-aging/excel')
+  async exportAPAgingExcel(
+    @Query('asOfDate') asOfDate: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportAPAgingExcel({ asOfDate });
+      const filename = `aging-hutang-${asOfDate || 'current'}.xlsx`;
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: 'Error generating Excel',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  @Get('export/accounts-receivable/excel')
+  async exportAccountsReceivableExcel(
+    @Query() query: FinancialStatementQueryDto,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportAccountsReceivableExcel({
+        endDate: query.endDate.toISOString().split('T')[0],
+      });
+      const filename = `laporan-piutang-${query.endDate.toISOString().split('T')[0]}.xlsx`;
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: 'Error generating Excel',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  @Get('export/accounts-payable/excel')
+  async exportAccountsPayableExcel(
+    @Query() query: FinancialStatementQueryDto,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportAccountsPayableExcel({
+        endDate: query.endDate.toISOString().split('T')[0],
+      });
+      const filename = `laporan-hutang-${query.endDate.toISOString().split('T')[0]}.xlsx`;
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: 'Error generating Excel',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  @Get('export/general-ledger/excel')
+  async exportGeneralLedgerExcel(
+    @Query() query: LedgerQueryDto,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportGeneralLedgerExcel({
+        accountCode: query.accountCode,
+        accountType: query.accountType?.toString(),
+        startDate: query.startDate?.toISOString().split('T')[0],
+        endDate: query.endDate?.toISOString().split('T')[0],
+        fiscalPeriodId: query.fiscalPeriodId,
+        includeInactive: query.includeInactive,
+      });
+      const filename = `buku-besar-${query.startDate?.toISOString().split('T')[0] || 'all'}-${query.endDate?.toISOString().split('T')[0] || 'all'}.xlsx`;
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: 'Error generating Excel',
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
