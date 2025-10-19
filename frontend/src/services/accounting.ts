@@ -242,7 +242,7 @@ export const getJournalEntries = async (params?: {
   };
 }> => {
   const response = await apiClient.get('/accounting/journal-entries', { params });
-  return response.data.data;
+  return response.data;
 };
 
 export const getJournalEntry = async (id: string): Promise<JournalEntry> => {
