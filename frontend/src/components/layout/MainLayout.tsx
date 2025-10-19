@@ -119,7 +119,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       children: [
         {
           key: '/accounting/chart-of-accounts',
-          icon: <BankOutlined />,
+          icon: <ProjectOutlined />,
           label: 'Bagan Akun',
         },
         {
@@ -149,7 +149,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         },
         {
           key: '/accounting/balance-sheet',
-          icon: <DollarOutlined />,
+          icon: <BankOutlined />,
           label: 'Neraca',
         },
         {
