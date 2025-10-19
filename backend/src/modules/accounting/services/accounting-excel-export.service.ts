@@ -61,6 +61,10 @@ export class AccountingExcelExportService {
 
   // ============ TRIAL BALANCE EXCEL EXPORT ============
   async exportTrialBalanceExcel(params: ExportParams): Promise<Buffer> {
+    if (!params.asOfDate) {
+      throw new Error('asOfDate is required for Trial Balance export');
+    }
+
     const workbook = new ExcelJS.Workbook();
     const companyInfo = this.getIndonesianCompanyInfo();
 
@@ -173,13 +177,17 @@ export class AccountingExcelExportService {
 
   // ============ GENERAL LEDGER EXCEL EXPORT ============
   async exportGeneralLedgerExcel(params: ExportParams): Promise<Buffer> {
+    if (!params.startDate || !params.endDate) {
+      throw new Error('startDate and endDate are required for General Ledger export');
+    }
+
     const workbook = new ExcelJS.Workbook();
     const companyInfo = this.getIndonesianCompanyInfo();
 
     // Fetch general ledger data
     const data = await this.ledgerService.getGeneralLedger({
-      startDate: params.startDate ? new Date(params.startDate) : undefined,
-      endDate: params.endDate ? new Date(params.endDate) : undefined,
+      startDate: new Date(params.startDate),
+      endDate: new Date(params.endDate),
       accountCode: params.accountCode,
       accountType: params.accountType as any,
       fiscalPeriodId: params.fiscalPeriodId,
@@ -284,12 +292,16 @@ export class AccountingExcelExportService {
 
   // ============ INCOME STATEMENT EXCEL EXPORT ============
   async exportIncomeStatementExcel(params: ExportParams): Promise<Buffer> {
+    if (!params.startDate || !params.endDate) {
+      throw new Error('startDate and endDate are required for Income Statement export');
+    }
+
     const workbook = new ExcelJS.Workbook();
     const companyInfo = this.getIndonesianCompanyInfo();
 
     // Fetch income statement data
     const data = await this.financialStatementsService.getIncomeStatement({
-      startDate: params.startDate ? new Date(params.startDate) : undefined,
+      startDate: new Date(params.startDate),
       endDate: new Date(params.endDate),
       fiscalPeriodId: params.fiscalPeriodId,
     });
@@ -302,7 +314,7 @@ export class AccountingExcelExportService {
       reportSubtitle: 'INCOME STATEMENT',
       reportPeriod: `Periode: ${this.formatIndonesianDate(params.startDate)} - ${this.formatIndonesianDate(params.endDate)}`,
       preparationDate: new Date(),
-      reportType: 'LABA_RUGI',
+      reportType: 'LAPORAN_LABA_RUGI',
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -340,7 +352,10 @@ export class AccountingExcelExportService {
       if (!expensesBySubtype.has(subtype)) {
         expensesBySubtype.set(subtype, []);
       }
-      expensesBySubtype.get(subtype).push(account);
+      const subtypeArray = expensesBySubtype.get(subtype);
+      if (subtypeArray) {
+        subtypeArray.push(account);
+      }
     });
 
     expensesBySubtype.forEach((accounts, subtype) => {
@@ -405,6 +420,10 @@ export class AccountingExcelExportService {
 
   // ============ BALANCE SHEET EXCEL EXPORT ============
   async exportBalanceSheetExcel(params: ExportParams): Promise<Buffer> {
+    if (!params.endDate) {
+      throw new Error('endDate is required for Balance Sheet export');
+    }
+
     const workbook = new ExcelJS.Workbook();
     const companyInfo = this.getIndonesianCompanyInfo();
 
@@ -422,7 +441,7 @@ export class AccountingExcelExportService {
       reportSubtitle: 'BALANCE SHEET',
       reportPeriod: `Per Tanggal: ${this.formatIndonesianDate(params.endDate)}`,
       preparationDate: new Date(),
-      reportType: 'NERACA',
+      reportType: 'LAPORAN_POSISI_KEUANGAN',
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -546,12 +565,16 @@ export class AccountingExcelExportService {
 
   // ============ CASH FLOW STATEMENT EXCEL EXPORT ============
   async exportCashFlowStatementExcel(params: ExportParams): Promise<Buffer> {
+    if (!params.startDate || !params.endDate) {
+      throw new Error('startDate and endDate are required for Cash Flow Statement export');
+    }
+
     const workbook = new ExcelJS.Workbook();
     const companyInfo = this.getIndonesianCompanyInfo();
 
     // Fetch cash flow data
     const data = await this.financialStatementsService.getCashFlowStatement({
-      startDate: params.startDate ? new Date(params.startDate) : undefined,
+      startDate: new Date(params.startDate),
       endDate: new Date(params.endDate),
       fiscalPeriodId: params.fiscalPeriodId,
     });
@@ -564,7 +587,7 @@ export class AccountingExcelExportService {
       reportSubtitle: 'CASH FLOW STATEMENT',
       reportPeriod: `Periode: ${this.formatIndonesianDate(params.startDate)} - ${this.formatIndonesianDate(params.endDate)}`,
       preparationDate: new Date(),
-      reportType: 'ARUS_KAS',
+      reportType: 'LAPORAN_ARUS_KAS',
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -580,38 +603,38 @@ export class AccountingExcelExportService {
 
     // Operating activities
     worksheet.addRow(['AKTIVITAS OPERASI', '']);
-    data.operating.items.forEach((item: any) => {
-      worksheet.addRow([`  ${item.description}`, item.amount]);
+    data.operatingActivities.transactions.forEach((item: any) => {
+      worksheet.addRow([`  ${item.description}`, item.cashIn - item.cashOut]);
     });
-    worksheet.addRow(['Kas Bersih dari Aktivitas Operasi', data.operating.total]);
+    worksheet.addRow(['Kas Bersih dari Aktivitas Operasi', data.operatingActivities.netCashFlow]);
 
     // Empty row
     worksheet.addRow(['', '']);
 
     // Investing activities
     worksheet.addRow(['AKTIVITAS INVESTASI', '']);
-    data.investing.items.forEach((item: any) => {
-      worksheet.addRow([`  ${item.description}`, item.amount]);
+    data.investingActivities.transactions.forEach((item: any) => {
+      worksheet.addRow([`  ${item.description}`, item.cashIn - item.cashOut]);
     });
-    worksheet.addRow(['Kas Bersih dari Aktivitas Investasi', data.investing.total]);
+    worksheet.addRow(['Kas Bersih dari Aktivitas Investasi', data.investingActivities.netCashFlow]);
 
     // Empty row
     worksheet.addRow(['', '']);
 
     // Financing activities
     worksheet.addRow(['AKTIVITAS PENDANAAN', '']);
-    data.financing.items.forEach((item: any) => {
-      worksheet.addRow([`  ${item.description}`, item.amount]);
+    data.financingActivities.transactions.forEach((item: any) => {
+      worksheet.addRow([`  ${item.description}`, item.cashIn - item.cashOut]);
     });
-    worksheet.addRow(['Kas Bersih dari Aktivitas Pendanaan', data.financing.total]);
+    worksheet.addRow(['Kas Bersih dari Aktivitas Pendanaan', data.financingActivities.netCashFlow]);
 
     // Empty row
     worksheet.addRow(['', '']);
 
     // Summary
-    worksheet.addRow(['Kenaikan (Penurunan) Kas Bersih', data.summary.netCashChange]);
-    worksheet.addRow(['Saldo Kas Awal Periode', data.summary.beginningCash]);
-    worksheet.addRow(['Saldo Kas Akhir Periode', data.summary.endingCash]);
+    worksheet.addRow(['Kenaikan (Penurunan) Kas Bersih', data.summary.netCashFlow]);
+    worksheet.addRow(['Saldo Kas Awal Periode', data.summary.openingBalance]);
+    worksheet.addRow(['Saldo Kas Akhir Periode', data.summary.closingBalance]);
 
     const summaryRowIndex = worksheet.rowCount;
 
@@ -650,6 +673,10 @@ export class AccountingExcelExportService {
 
   // ============ ACCOUNTS RECEIVABLE EXCEL EXPORT ============
   async exportAccountsReceivableExcel(params: ExportParams): Promise<Buffer> {
+    if (!params.endDate) {
+      throw new Error('endDate is required for Accounts Receivable export');
+    }
+
     const workbook = new ExcelJS.Workbook();
     const companyInfo = this.getIndonesianCompanyInfo();
 
@@ -666,7 +693,7 @@ export class AccountingExcelExportService {
       reportSubtitle: 'ACCOUNTS RECEIVABLE REPORT',
       reportPeriod: `Per Tanggal: ${this.formatIndonesianDate(params.endDate)}`,
       preparationDate: new Date(),
-      reportType: 'PIUTANG',
+      reportType: 'PIUTANG_USAHA',
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -694,22 +721,23 @@ export class AccountingExcelExportService {
     let totalPaidAmount = 0;
     let totalOutstanding = 0;
 
-    data.receivables.forEach((item: any, index: number) => {
-      worksheet.addRow([
-        index + 1,
-        item.clientName,
-        item.invoiceNumber,
-        this.formatIndonesianDate(item.invoiceDate),
-        item.totalAmount,
-        item.paidAmount,
-        item.outstandingAmount,
-        item.status === 'PAID' ? 'Lunas' : 'Belum Lunas',
-      ]);
+    if (data.aging && data.aging.aging) {
+      data.aging.aging.forEach((item: any, index: number) => {
+        worksheet.addRow([
+          index + 1,
+          item.clientName,
+          item.invoiceNumber,
+          this.formatIndonesianDate(item.invoiceDate),
+          item.amount,
+          0, // paid amount not available in aging
+          item.amount,
+          item.agingBucket,
+        ]);
 
-      totalInvoiceAmount += item.totalAmount;
-      totalPaidAmount += item.paidAmount;
-      totalOutstanding += item.outstandingAmount;
-    });
+        totalInvoiceAmount += item.amount;
+        totalOutstanding += item.amount;
+      });
+    }
 
     // Add summary row
     const summaryRowIndex = worksheet.rowCount + 1;
@@ -761,6 +789,10 @@ export class AccountingExcelExportService {
 
   // ============ ACCOUNTS PAYABLE EXCEL EXPORT ============
   async exportAccountsPayableExcel(params: ExportParams): Promise<Buffer> {
+    if (!params.endDate) {
+      throw new Error('endDate is required for Accounts Payable export');
+    }
+
     const workbook = new ExcelJS.Workbook();
     const companyInfo = this.getIndonesianCompanyInfo();
 
@@ -777,7 +809,7 @@ export class AccountingExcelExportService {
       reportSubtitle: 'ACCOUNTS PAYABLE REPORT',
       reportPeriod: `Per Tanggal: ${this.formatIndonesianDate(params.endDate)}`,
       preparationDate: new Date(),
-      reportType: 'HUTANG',
+      reportType: 'HUTANG_USAHA',
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -805,22 +837,23 @@ export class AccountingExcelExportService {
     let totalPaidAmount = 0;
     let totalOutstanding = 0;
 
-    data.payables.forEach((item: any, index: number) => {
-      worksheet.addRow([
-        index + 1,
-        item.vendorName,
-        item.invoiceNumber,
-        this.formatIndonesianDate(item.invoiceDate),
-        item.totalAmount,
-        item.paidAmount,
-        item.outstandingAmount,
-        item.status === 'PAID' ? 'Lunas' : 'Belum Lunas',
-      ]);
+    if (data.aging && data.aging.aging) {
+      data.aging.aging.forEach((item: any, index: number) => {
+        worksheet.addRow([
+          index + 1,
+          item.categoryName,
+          item.expenseNumber,
+          this.formatIndonesianDate(item.expenseDate),
+          item.amount,
+          0, // paid amount not available in aging
+          item.amount,
+          item.agingBucket,
+        ]);
 
-      totalInvoiceAmount += item.totalAmount;
-      totalPaidAmount += item.paidAmount;
-      totalOutstanding += item.outstandingAmount;
-    });
+        totalInvoiceAmount += item.amount;
+        totalOutstanding += item.amount;
+      });
+    }
 
     // Add summary row
     const summaryRowIndex = worksheet.rowCount + 1;

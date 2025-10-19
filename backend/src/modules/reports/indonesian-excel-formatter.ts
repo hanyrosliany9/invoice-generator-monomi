@@ -24,7 +24,13 @@ export interface IndonesianReportHeader {
     | "LAPORAN_LABA_RUGI"
     | "LAPORAN_ARUS_KAS"
     | "RINCIAN_PENJUALAN"
-    | "RINCIAN_PIUTANG";
+    | "RINCIAN_PIUTANG"
+    | "NERACA_SALDO"
+    | "BUKU_BESAR"
+    | "PIUTANG_USAHA"
+    | "HUTANG_USAHA"
+    | "AGING_PIUTANG"
+    | "AGING_HUTANG";
 }
 
 export class IndonesianExcelFormatter {
