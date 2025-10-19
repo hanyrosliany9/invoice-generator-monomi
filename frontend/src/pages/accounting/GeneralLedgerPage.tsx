@@ -29,8 +29,8 @@ const { RangePicker } = DatePicker;
 const GeneralLedgerPage: React.FC = () => {
   const { theme } = useTheme();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
-    dayjs().startOf('month'),
-    dayjs().endOf('month'),
+    dayjs('2025-01-01'),
+    dayjs('2025-01-31'),
   ]);
   const [selectedAccountCode, setSelectedAccountCode] = useState<string | undefined>(
     undefined
