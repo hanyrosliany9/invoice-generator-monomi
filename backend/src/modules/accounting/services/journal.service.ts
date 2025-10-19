@@ -40,6 +40,154 @@ export class JournalService {
   }
 
   /**
+   * Create new chart of account
+   */
+  async createChartOfAccount(data: any) {
+    // Check if account code already exists
+    const existing = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: data.code },
+    });
+
+    if (existing) {
+      throw new ConflictException(`Account with code ${data.code} already exists`);
+    }
+
+    // Create account
+    return this.prisma.chartOfAccounts.create({
+      data: {
+        code: data.code,
+        name: data.name,
+        nameId: data.nameId,
+        accountType: data.accountType,
+        accountSubType: data.accountSubType,
+        normalBalance: data.normalBalance,
+        parentId: data.parentId || null,
+        isControlAccount: data.isControlAccount || false,
+        isTaxAccount: data.isTaxAccount || false,
+        taxType: data.taxType || null,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+        isSystemAccount: false, // User-created accounts are never system accounts
+        description: data.description || null,
+        descriptionId: data.descriptionId || null,
+      },
+    });
+  }
+
+  /**
+   * Update chart of account
+   */
+  async updateChartOfAccount(code: string, data: any) {
+    // Check if account exists
+    const account = await this.prisma.chartOfAccounts.findUnique({
+      where: { code },
+    });
+
+    if (!account) {
+      throw new NotFoundException(`Account with code ${code} not found`);
+    }
+
+    // Prevent updating system accounts
+    if (account.isSystemAccount) {
+      throw new BadRequestException('Cannot modify system accounts');
+    }
+
+    // If code is being changed, check if new code exists
+    if (data.code && data.code !== code) {
+      const existing = await this.prisma.chartOfAccounts.findUnique({
+        where: { code: data.code },
+      });
+
+      if (existing) {
+        throw new ConflictException(`Account with code ${data.code} already exists`);
+      }
+    }
+
+    // Update account
+    return this.prisma.chartOfAccounts.update({
+      where: { code },
+      data: {
+        code: data.code,
+        name: data.name,
+        nameId: data.nameId,
+        accountType: data.accountType,
+        accountSubType: data.accountSubType,
+        normalBalance: data.normalBalance,
+        parentId: data.parentId,
+        isControlAccount: data.isControlAccount,
+        isTaxAccount: data.isTaxAccount,
+        taxType: data.taxType,
+        isActive: data.isActive,
+        description: data.description,
+        descriptionId: data.descriptionId,
+      },
+    });
+  }
+
+  /**
+   * Delete chart of account
+   */
+  async deleteChartOfAccount(code: string) {
+    // Check if account exists
+    const account = await this.prisma.chartOfAccounts.findUnique({
+      where: { code },
+    });
+
+    if (!account) {
+      throw new NotFoundException(`Account with code ${code} not found`);
+    }
+
+    // Prevent deleting system accounts
+    if (account.isSystemAccount) {
+      throw new BadRequestException('Cannot delete system accounts');
+    }
+
+    // Check if account has been used in journal entries
+    const hasJournalEntries = await this.prisma.journalEntryLineItem.findFirst({
+      where: { accountCode: code },
+    });
+
+    if (hasJournalEntries) {
+      throw new BadRequestException(
+        'Cannot delete account that has been used in journal entries. Consider deactivating it instead.',
+      );
+    }
+
+    // Check if account has been used in general ledger
+    const hasLedgerEntries = await this.prisma.generalLedger.findFirst({
+      where: { accountId: account.id },
+    });
+
+    if (hasLedgerEntries) {
+      throw new BadRequestException(
+        'Cannot delete account that has been used in general ledger. Consider deactivating it instead.',
+      );
+    }
+
+    // Delete account
+    return this.prisma.chartOfAccounts.delete({
+      where: { code },
+    });
+  }
+
+  /**
+   * Toggle account active status
+   */
+  async toggleAccountStatus(code: string) {
+    const account = await this.prisma.chartOfAccounts.findUnique({
+      where: { code },
+    });
+
+    if (!account) {
+      throw new NotFoundException(`Account with code ${code} not found`);
+    }
+
+    return this.prisma.chartOfAccounts.update({
+      where: { code },
+      data: { isActive: !account.isActive },
+    });
+  }
+
+  /**
    * Generate next journal entry number
    */
   private async generateEntryNumber(): Promise<string> {

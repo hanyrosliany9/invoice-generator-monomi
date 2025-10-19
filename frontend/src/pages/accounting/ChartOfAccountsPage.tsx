@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
   Table,
@@ -9,9 +9,14 @@ import {
   Space,
   Typography,
   Badge,
-  Tooltip,
   Empty,
   Spin,
+  Button,
+  Modal,
+  Form,
+  Switch,
+  message,
+  Popconfirm,
 } from 'antd';
 import {
   SearchOutlined,
@@ -20,22 +25,107 @@ import {
   ShoppingOutlined,
   RiseOutlined,
   FallOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  PoweroffOutlined,
 } from '@ant-design/icons';
-import { getChartOfAccounts, ChartOfAccount } from '../../services/accounting';
+import {
+  getChartOfAccounts,
+  createChartOfAccount,
+  updateChartOfAccount,
+  deleteChartOfAccount,
+  toggleAccountStatus,
+  ChartOfAccount,
+} from '../../services/accounting';
 import { useTheme } from '../../theme';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
+interface AccountFormValues {
+  code: string;
+  name: string;
+  nameId: string;
+  accountType: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
+  accountSubType: string;
+  normalBalance: 'DEBIT' | 'CREDIT';
+  parentId?: string;
+  isControlAccount: boolean;
+  isTaxAccount: boolean;
+  taxType?: string;
+  isActive: boolean;
+  description?: string;
+  descriptionId?: string;
+}
+
 const ChartOfAccountsPage: React.FC = () => {
   const { theme } = useTheme();
+  const queryClient = useQueryClient();
   const [searchText, setSearchText] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [filterSubType, setFilterSubType] = useState<string>('ALL');
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<ChartOfAccount | null>(null);
+  const [form] = Form.useForm();
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ['chart-of-accounts'],
     queryFn: getChartOfAccounts,
+  });
+
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: createChartOfAccount,
+    onSuccess: () => {
+      message.success('Account created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
+      setIsModalVisible(false);
+      form.resetFields();
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Failed to create account');
+    },
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ code, data }: { code: string; data: Partial<ChartOfAccount> }) =>
+      updateChartOfAccount(code, data),
+    onSuccess: () => {
+      message.success('Account updated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
+      setIsModalVisible(false);
+      setEditingAccount(null);
+      form.resetFields();
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Failed to update account');
+    },
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteChartOfAccount,
+    onSuccess: () => {
+      message.success('Account deleted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Failed to delete account');
+    },
+  });
+
+  // Toggle status mutation
+  const toggleStatusMutation = useMutation({
+    mutationFn: toggleAccountStatus,
+    onSuccess: () => {
+      message.success('Account status updated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Failed to toggle account status');
+    },
   });
 
   // Filter accounts
@@ -109,6 +199,59 @@ const ChartOfAccountsPage: React.FC = () => {
     return names[type] || type;
   };
 
+  // Handle create button click
+  const handleCreate = () => {
+    setEditingAccount(null);
+    form.resetFields();
+    form.setFieldsValue({
+      isActive: true,
+      isControlAccount: false,
+      isTaxAccount: false,
+      normalBalance: 'DEBIT',
+    });
+    setIsModalVisible(true);
+  };
+
+  // Handle edit button click
+  const handleEdit = (account: ChartOfAccount) => {
+    setEditingAccount(account);
+    form.setFieldsValue({
+      code: account.code,
+      name: account.name,
+      nameId: account.nameId,
+      accountType: account.accountType,
+      accountSubType: account.accountSubType,
+      normalBalance: account.normalBalance,
+      parentId: account.parentId,
+      isControlAccount: account.isControlAccount,
+      isTaxAccount: account.isTaxAccount,
+      taxType: account.taxType,
+      isActive: account.isActive,
+      description: account.description,
+      descriptionId: account.descriptionId,
+    });
+    setIsModalVisible(true);
+  };
+
+  // Handle form submit
+  const handleSubmit = async (values: AccountFormValues) => {
+    if (editingAccount) {
+      updateMutation.mutate({ code: editingAccount.code, data: values });
+    } else {
+      createMutation.mutate(values);
+    }
+  };
+
+  // Handle delete
+  const handleDelete = (code: string) => {
+    deleteMutation.mutate(code);
+  };
+
+  // Handle toggle status
+  const handleToggleStatus = (code: string) => {
+    toggleStatusMutation.mutate(code);
+  };
+
   const columns = [
     {
       title: 'Kode Akun',
@@ -128,7 +271,7 @@ const ChartOfAccountsPage: React.FC = () => {
       key: 'nameId',
       render: (nameId: string, record: ChartOfAccount) => (
         <div>
-          <div style={{ fontWeight: 500, color: theme.colors.text.primary}}>
+          <div style={{ fontWeight: 500, color: theme.colors.text.primary }}>
             {nameId}
           </div>
           <Text type="secondary" style={{ fontSize: '12px' }}>
@@ -190,18 +333,79 @@ const ChartOfAccountsPage: React.FC = () => {
         </Space>
       ),
     },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 150,
+      align: 'center' as const,
+      render: (record: ChartOfAccount) => (
+        <Space>
+          <Button
+            type="text"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            disabled={record.isSystemAccount}
+            title="Edit Account"
+          />
+          <Popconfirm
+            title="Toggle Status"
+            description={`Are you sure you want to ${record.isActive ? 'deactivate' : 'activate'} this account?`}
+            onConfirm={() => handleToggleStatus(record.code)}
+            disabled={record.isSystemAccount}
+          >
+            <Button
+              type="text"
+              size="small"
+              icon={<PoweroffOutlined />}
+              disabled={record.isSystemAccount}
+              danger={record.isActive}
+              title={record.isActive ? 'Deactivate' : 'Activate'}
+            />
+          </Popconfirm>
+          <Popconfirm
+            title="Delete Account"
+            description="Are you sure you want to delete this account? This action cannot be undone."
+            onConfirm={() => handleDelete(record.code)}
+            okText="Yes, Delete"
+            cancelText="No"
+            okButtonProps={{ danger: true }}
+            disabled={record.isSystemAccount}
+          >
+            <Button
+              type="text"
+              size="small"
+              icon={<DeleteOutlined />}
+              danger
+              disabled={record.isSystemAccount}
+              title="Delete Account"
+            />
+          </Popconfirm>
+        </Space>
+      ),
+    },
   ];
 
   return (
     <div style={{ padding: '24px' }}>
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <Title level={2} style={{ margin: 0, color: theme.colors.text.primary}}>
-          Bagan Akun (Chart of Accounts)
-        </Title>
-        <Text type="secondary">
-          Daftar akun berdasarkan standar akuntansi PSAK Indonesia
-        </Text>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <Title level={2} style={{ margin: 0, color: theme.colors.text.primary }}>
+            Bagan Akun (Chart of Accounts)
+          </Title>
+          <Text type="secondary">
+            Daftar akun berdasarkan standar akuntansi PSAK Indonesia
+          </Text>
+        </div>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleCreate}
+          size="large"
+        >
+          Tambah Akun Baru
+        </Button>
       </div>
 
       {/* Filters */}
@@ -215,7 +419,7 @@ const ChartOfAccountsPage: React.FC = () => {
         <Space wrap size="middle" style={{ width: '100%' }}>
           <Input
             placeholder="Cari kode atau nama akun..."
-            prefix={<SearchOutlined style={{ color: theme.colors.text.primaryecondary }} />}
+            prefix={<SearchOutlined style={{ color: theme.colors.text.secondary }} />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             style={{ width: 300 }}
@@ -272,7 +476,7 @@ const ChartOfAccountsPage: React.FC = () => {
             <Space>
               {getAccountTypeIcon(type)}
               <div>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.colors.text.primary}}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.colors.text.primary }}>
                   {accts.length}
                 </div>
                 <Text type="secondary" style={{ fontSize: '12px' }}>
@@ -323,6 +527,156 @@ const ChartOfAccountsPage: React.FC = () => {
           </Card>
         ))
       )}
+
+      {/* Create/Edit Modal */}
+      <Modal
+        title={editingAccount ? 'Edit Akun' : 'Tambah Akun Baru'}
+        open={isModalVisible}
+        onCancel={() => {
+          setIsModalVisible(false);
+          setEditingAccount(null);
+          form.resetFields();
+        }}
+        footer={null}
+        width={700}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          autoComplete="off"
+        >
+          <Form.Item
+            label="Kode Akun"
+            name="code"
+            rules={[{ required: true, message: 'Kode akun wajib diisi!' }]}
+          >
+            <Input placeholder="contoh: 1-1101" disabled={!!editingAccount} />
+          </Form.Item>
+
+          <Form.Item
+            label="Nama Akun (Bahasa Indonesia)"
+            name="nameId"
+            rules={[{ required: true, message: 'Nama akun dalam Bahasa Indonesia wajib diisi!' }]}
+          >
+            <Input placeholder="contoh: Kas di Bank BCA" />
+          </Form.Item>
+
+          <Form.Item
+            label="Nama Akun (English)"
+            name="name"
+            rules={[{ required: true, message: 'Nama akun dalam English wajib diisi!' }]}
+          >
+            <Input placeholder="example: Cash in Bank BCA" />
+          </Form.Item>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Form.Item
+              label="Tipe Akun"
+              name="accountType"
+              rules={[{ required: true, message: 'Tipe akun wajib dipilih!' }]}
+            >
+              <Select placeholder="Pilih tipe akun">
+                <Option value="ASSET">Aset (Asset)</Option>
+                <Option value="LIABILITY">Kewajiban (Liability)</Option>
+                <Option value="EQUITY">Ekuitas (Equity)</Option>
+                <Option value="REVENUE">Pendapatan (Revenue)</Option>
+                <Option value="EXPENSE">Beban (Expense)</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="Sub Tipe"
+              name="accountSubType"
+              rules={[{ required: true, message: 'Sub tipe wajib diisi!' }]}
+            >
+              <Input placeholder="contoh: CURRENT_ASSET" />
+            </Form.Item>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Form.Item
+              label="Normal Balance"
+              name="normalBalance"
+              rules={[{ required: true, message: 'Normal balance wajib dipilih!' }]}
+            >
+              <Select placeholder="Pilih normal balance">
+                <Option value="DEBIT">Debit</Option>
+                <Option value="CREDIT">Credit</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="Parent Account ID"
+              name="parentId"
+            >
+              <Input placeholder="Optional" />
+            </Form.Item>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Form.Item
+              label="Control Account"
+              name="isControlAccount"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+
+            <Form.Item
+              label="Tax Account"
+              name="isTaxAccount"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </div>
+
+          <Form.Item
+            label="Tax Type"
+            name="taxType"
+          >
+            <Input placeholder="contoh: PPN, PPh" />
+          </Form.Item>
+
+          <Form.Item
+            label="Deskripsi (Indonesia)"
+            name="descriptionId"
+          >
+            <Input.TextArea placeholder="Deskripsi akun (opsional)" rows={2} />
+          </Form.Item>
+
+          <Form.Item
+            label="Description (English)"
+            name="description"
+          >
+            <Input.TextArea placeholder="Account description (optional)" rows={2} />
+          </Form.Item>
+
+          <Form.Item
+            label="Active"
+            name="isActive"
+            valuePropName="checked"
+          >
+            <Switch />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" loading={createMutation.isPending || updateMutation.isPending}>
+                {editingAccount ? 'Update' : 'Create'}
+              </Button>
+              <Button onClick={() => {
+                setIsModalVisible(false);
+                setEditingAccount(null);
+                form.resetFields();
+              }}>
+                Cancel
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

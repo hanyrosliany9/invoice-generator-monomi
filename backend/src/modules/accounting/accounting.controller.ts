@@ -68,6 +68,30 @@ export class AccountingController {
     return this.journalService.getAccountByCode(code);
   }
 
+  @Post('chart-of-accounts')
+  @Roles('SUPER_ADMIN', 'FINANCE_MANAGER', 'ACCOUNTANT')
+  async createChartOfAccount(@Body() data: any) {
+    return this.journalService.createChartOfAccount(data);
+  }
+
+  @Patch('chart-of-accounts/:code')
+  @Roles('SUPER_ADMIN', 'FINANCE_MANAGER', 'ACCOUNTANT')
+  async updateChartOfAccount(@Param('code') code: string, @Body() data: any) {
+    return this.journalService.updateChartOfAccount(code, data);
+  }
+
+  @Delete('chart-of-accounts/:code')
+  @Roles('SUPER_ADMIN', 'FINANCE_MANAGER')
+  async deleteChartOfAccount(@Param('code') code: string) {
+    return this.journalService.deleteChartOfAccount(code);
+  }
+
+  @Patch('chart-of-accounts/:code/toggle-status')
+  @Roles('SUPER_ADMIN', 'FINANCE_MANAGER', 'ACCOUNTANT')
+  async toggleAccountStatus(@Param('code') code: string) {
+    return this.journalService.toggleAccountStatus(code);
+  }
+
   // ============ JOURNAL ENTRIES ============
   @Post('journal-entries')
   @Roles('ADMIN', 'USER')

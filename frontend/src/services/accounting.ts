@@ -191,6 +191,28 @@ export const getAccountByCode = async (code: string): Promise<ChartOfAccount> =>
   return response.data.data;
 };
 
+export const createChartOfAccount = async (data: Partial<ChartOfAccount>): Promise<ChartOfAccount> => {
+  const response = await apiClient.post('/accounting/chart-of-accounts', data);
+  return response.data.data;
+};
+
+export const updateChartOfAccount = async (
+  code: string,
+  data: Partial<ChartOfAccount>
+): Promise<ChartOfAccount> => {
+  const response = await apiClient.patch(`/accounting/chart-of-accounts/${code}`, data);
+  return response.data.data;
+};
+
+export const deleteChartOfAccount = async (code: string): Promise<void> => {
+  await apiClient.delete(`/accounting/chart-of-accounts/${code}`);
+};
+
+export const toggleAccountStatus = async (code: string): Promise<ChartOfAccount> => {
+  const response = await apiClient.patch(`/accounting/chart-of-accounts/${code}/toggle-status`);
+  return response.data.data;
+};
+
 // Journal Entries
 export const createJournalEntry = async (data: Partial<JournalEntry>): Promise<JournalEntry> => {
   const response = await apiClient.post('/accounting/journal-entries', data);
