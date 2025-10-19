@@ -142,8 +142,8 @@ export class JournalService {
     }
 
     // Check if account has been used in journal entries
-    const hasJournalEntries = await this.prisma.journalEntryLineItem.findFirst({
-      where: { accountCode: code },
+    const hasJournalEntries = await this.prisma.journalLineItem.findFirst({
+      where: { accountId: account.id },
     });
 
     if (hasJournalEntries) {
