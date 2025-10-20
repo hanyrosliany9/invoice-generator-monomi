@@ -39,4 +39,35 @@ export class ProjectResponseDto {
     invoicesPaid: number;
     totalRevenue: string;
   };
+
+  // Profit Margin Tracking (auto-calculated)
+  totalDirectCosts?: string; // Convert Decimal to string
+  totalIndirectCosts?: string;
+  totalAllocatedCosts?: string;
+  totalInvoicedAmount?: string;
+  totalPaidAmount?: string;
+  grossProfit?: string;
+  netProfit?: string;
+  grossMarginPercent?: string;
+  netMarginPercent?: string;
+  budgetVariance?: string;
+  budgetVariancePercent?: string;
+  profitCalculatedAt?: string;
+  profitCalculatedBy?: string;
+
+  // Cost Breakdown (optional, fetch separately via /cost-breakdown endpoint)
+  costBreakdown?: {
+    direct: {
+      materials: string;
+      labor: string;
+      expenses: string;
+      total: string;
+    };
+    indirect: {
+      overhead: string;
+      allocated: string;
+      total: string;
+    };
+    total: string;
+  };
 }

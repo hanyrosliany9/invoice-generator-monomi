@@ -216,4 +216,48 @@ export class ProjectsController {
   async remove(@Param("id") id: string) {
     return this.projectsService.remove(id);
   }
+
+  @Post(":id/calculate-profit")
+  @ApiOperation({ summary: "Recalculate profit margins for project" })
+  @ApiResponse({
+    status: 200,
+    description: "Profit margins successfully recalculated",
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Project not found",
+  })
+  async recalculateProfit(@Param("id") id: string, @Body() body?: { userId?: string }) {
+    return this.projectsService.recalculateProfit(id, body?.userId);
+  }
+
+  @Get(":id/cost-breakdown")
+  @ApiOperation({ summary: "Get detailed cost breakdown for project" })
+  @ApiResponse({
+    status: 200,
+    description: "Cost breakdown successfully retrieved",
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Project not found",
+  })
+  async getCostBreakdown(@Param("id") id: string) {
+    return this.projectsService.getCostBreakdown(id);
+  }
+
+  @Get("reports/profitability")
+  @ApiOperation({ summary: "Get profitability report for all projects" })
+  @ApiResponse({
+    status: 200,
+    description: "Profitability report successfully generated",
+  })
+  async getProfitabilityReport(
+    @Query("status") status?: string,
+    @Query("minMargin") minMargin?: string,
+  ) {
+    return this.projectsService.getProfitabilityReport({
+      status,
+      minMargin: minMargin ? parseFloat(minMargin) : undefined,
+    });
+  }
 }

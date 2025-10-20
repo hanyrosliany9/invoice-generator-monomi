@@ -67,6 +67,39 @@ export interface Project {
   _count?: {
     quotations: number
     invoices: number
+    expenses?: number
+    costAllocations?: number
+  }
+
+  // Profit Margin Tracking (auto-calculated)
+  totalDirectCosts?: string
+  totalIndirectCosts?: string
+  totalAllocatedCosts?: string
+  totalInvoicedAmount?: string
+  totalPaidAmount?: string
+  grossProfit?: string
+  netProfit?: string
+  grossMarginPercent?: string
+  netMarginPercent?: string
+  budgetVariance?: string
+  budgetVariancePercent?: string
+  profitCalculatedAt?: string
+  profitCalculatedBy?: string
+
+  // Cost Breakdown (optional, fetched separately)
+  costBreakdown?: {
+    direct: {
+      materials: string
+      labor: string
+      expenses: string
+      total: string
+    }
+    indirect: {
+      overhead: string
+      allocated: string
+      total: string
+    }
+    total: string
   }
 }
 

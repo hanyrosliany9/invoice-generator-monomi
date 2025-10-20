@@ -38,9 +38,11 @@ import { useTranslation } from 'react-i18next'
 import { formatIDR, safeNumber, safeString } from '../utils/currency'
 import { Project, projectService } from '../services/projects'
 import { FileUpload } from '../components/documents/FileUpload'
+import { ProfitMarginCard } from '../components/projects/ProfitMarginCard'
 import { getProjectStatusConfig } from '../utils/projectStatus'
 import { getDaysRemaining } from '../utils/projectProgress'
 import dayjs from 'dayjs'
+import { useTheme } from '../theme'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -50,12 +52,14 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { theme } = useTheme()
 
   // Fetch project data
   const {
     data: project,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['project', id],
     queryFn: () => projectService.getProject(id!),
@@ -332,8 +336,24 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
         </Col>
       </Row>
 
+      {/* Profit Margin Analysis */}
+      <ProfitMarginCard
+        project={project}
+        onRecalculate={async () => {
+          try {
+            await fetch(`/api/v1/projects/${id}/calculate-profit`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+            });
+            refetch(); // Re-fetch project data with updated metrics
+          } catch (error) {
+            console.error('Failed to recalculate profit:', error);
+          }
+        }}
+      />
+
       {/* Detailed Sections - Tabbed Interface */}
-      <Card>
+      <Card style={{ marginTop: '24px' }}>
         <Tabs
           defaultActiveKey='details'
           items={[

@@ -3,10 +3,14 @@ import { PrismaService } from "../prisma/prisma.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
 import { UpdateProjectDto } from "./dto/update-project.dto";
 import { ProjectStatus } from "@prisma/client";
+import { ProfitCalculationService } from "./profit-calculation.service";
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private profitCalc: ProfitCalculationService,
+  ) {}
 
   async create(createProjectDto: CreateProjectDto) {
     // Get project type to generate number
@@ -131,6 +135,8 @@ export class ProjectsService {
           select: {
             quotations: true,
             invoices: true,
+            expenses: true,
+            costAllocations: true,
           },
         },
       },
@@ -138,6 +144,34 @@ export class ProjectsService {
 
     if (!project) {
       throw new NotFoundException("Proyek tidak ditemukan");
+    }
+
+    // Auto-calculate profit if needed (not calculated recently)
+    const needsRecalc = await this.profitCalc.needsRecalculation(id);
+    if (needsRecalc) {
+      await this.profitCalc.calculateProjectProfitMargin(id);
+      // Re-fetch with updated metrics
+      return this.prisma.project.findUnique({
+        where: { id },
+        include: {
+          client: true,
+          projectType: true,
+          quotations: {
+            orderBy: { createdAt: "desc" },
+          },
+          invoices: {
+            orderBy: { createdAt: "desc" },
+          },
+          _count: {
+            select: {
+              quotations: true,
+              invoices: true,
+              expenses: true,
+              costAllocations: true,
+            },
+          },
+        },
+      });
     }
 
     return project;
@@ -248,10 +282,111 @@ export class ProjectsService {
       {} as Record<string, number>,
     );
 
+    // Profitability statistics
+    const profitableProjects = await this.prisma.project.count({
+      where: { netMarginPercent: { gte: 0 } },
+    });
+
+    const avgMargins = await this.prisma.project.aggregate({
+      _avg: {
+        grossMarginPercent: true,
+        netMarginPercent: true,
+      },
+      where: {
+        status: { in: ["IN_PROGRESS", "COMPLETED"] },
+        profitCalculatedAt: { not: null },
+      },
+    });
+
     return {
       total,
       byStatus: statusCounts,
       byType: typeCounts,
+      profitability: {
+        profitable: profitableProjects,
+        avgGrossMargin: avgMargins._avg.grossMarginPercent || 0,
+        avgNetMargin: avgMargins._avg.netMarginPercent || 0,
+      },
+    };
+  }
+
+  /**
+   * Manually recalculate profit margins for a specific project
+   */
+  async recalculateProfit(id: string, userId?: string) {
+    const project = await this.findOne(id);
+    return this.profitCalc.calculateProjectProfitMargin(id, userId);
+  }
+
+  /**
+   * Get cost breakdown for a project
+   */
+  async getCostBreakdown(id: string) {
+    const project = await this.findOne(id);
+    return this.profitCalc.getCostBreakdown(id);
+  }
+
+  /**
+   * Get profitability report with filtering
+   */
+  async getProfitabilityReport(filters?: {
+    status?: string;
+    minMargin?: number;
+  }) {
+    const where: any = {};
+
+    if (filters?.status) {
+      where.status = filters.status;
+    }
+
+    if (filters?.minMargin !== undefined) {
+      where.netMarginPercent = { gte: filters.minMargin };
+    }
+
+    // Only include projects with calculated profit
+    where.profitCalculatedAt = { not: null };
+
+    const projects = await this.prisma.project.findMany({
+      where,
+      select: {
+        id: true,
+        number: true,
+        description: true,
+        status: true,
+        grossMarginPercent: true,
+        netMarginPercent: true,
+        totalPaidAmount: true,
+        totalAllocatedCosts: true,
+        netProfit: true,
+        profitCalculatedAt: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+            company: true,
+          },
+        },
+      },
+      orderBy: {
+        netMarginPercent: "desc",
+      },
+    });
+
+    return {
+      projects,
+      summary: {
+        count: projects.length,
+        avgGrossMargin:
+          projects.reduce(
+            (sum, p) => sum + (parseFloat(p.grossMarginPercent?.toString() || "0")),
+            0,
+          ) / (projects.length || 1),
+        avgNetMargin:
+          projects.reduce(
+            (sum, p) => sum + (parseFloat(p.netMarginPercent?.toString() || "0")),
+            0,
+          ) / (projects.length || 1),
+      },
     };
   }
 }
