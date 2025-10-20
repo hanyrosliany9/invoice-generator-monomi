@@ -34,9 +34,9 @@ import {
   MateraiCompliancePanel,
   ProgressiveSection,
 } from '../components/forms'
-import { CreateProjectRequest, projectService, ProjectType } from '../services/projects'
+import { CreateProjectRequest, projectService, ProjectType as ProjectTypeFromService } from '../services/projects'
 import { clientService } from '../services/clients'
-import { projectTypesApi } from '../services/project-types'
+import { projectTypesApi, ProjectType } from '../services/project-types'
 import { useTheme } from '../theme'
 
 const { TextArea } = Input
@@ -80,14 +80,10 @@ export const ProjectCreatePage: React.FC = () => {
   })
 
   // Fetch project types for selection
-  const { data: projectTypesResponse, isLoading: projectTypesLoading } = useQuery({
+  const { data: projectTypes = [], isLoading: projectTypesLoading } = useQuery({
     queryKey: ['project-types'],
     queryFn: projectTypesApi.getAll,
   })
-
-  const projectTypes = Array.isArray(projectTypesResponse)
-    ? projectTypesResponse
-    : (projectTypesResponse?.data || [])
 
   // Create project mutation
   const createProjectMutation = useMutation({
@@ -174,19 +170,24 @@ export const ProjectCreatePage: React.FC = () => {
     }
   }
 
-  const handleProductsChange = () => {
-    const products = form.getFieldValue('products') || []
-    calculateTotal(products)
-  }
+  // Use Form.useWatch for reactive form values (better pattern than onValuesChange)
+  const clientId = Form.useWatch('clientId', form)
+  const startDate = Form.useWatch('startDate', form)
+  const endDate = Form.useWatch('endDate', form)
+  const products = Form.useWatch('products', form)
 
-  // Use form watcher instead of direct getFieldValue calls to avoid useForm warning
-  const [formValues, setFormValues] = useState<Partial<ProjectFormData>>({})
-  
-  const selectedClient = clients.find(c => c.id === formValues.clientId)
+  const selectedClient = clients.find(c => c.id === clientId)
   const duration =
-    formValues.startDate && formValues.endDate
-      ? formValues.endDate.diff(formValues.startDate, 'day') + 1
+    startDate && endDate
+      ? endDate.diff(startDate, 'day') + 1
       : 0
+
+  // Recalculate total when products change
+  useEffect(() => {
+    if (products) {
+      calculateTotal(products)
+    }
+  }, [products])
 
   const heroCard = (
     <EntityHeroCard
@@ -224,7 +225,7 @@ export const ProjectCreatePage: React.FC = () => {
             stats={[
               {
                 label: 'Total Products',
-                value: (formValues.products || []).length,
+                value: (products || []).length,
                 icon: <ProjectOutlined />,
                 color: theme.colors.accent.primary,
               },
@@ -261,10 +262,6 @@ export const ProjectCreatePage: React.FC = () => {
         form={form}
         layout='vertical'
         onFinish={handleSubmit}
-        onValuesChange={(_, allValues) => {
-          setFormValues(allValues)
-          handleProductsChange()
-        }}
         autoComplete='off'
         style={{ width: '100%' }}
       >
@@ -345,9 +342,9 @@ export const ProjectCreatePage: React.FC = () => {
                       .includes(input.toLowerCase())
                   }
                   options={projectTypes
-                    .filter(pt => pt.isActive)
-                    .sort((a, b) => a.sortOrder - b.sortOrder)
-                    .map(pt => ({
+                    .filter((pt: ProjectType) => pt.isActive)
+                    .sort((a: ProjectType, b: ProjectType) => a.sortOrder - b.sortOrder)
+                    .map((pt: ProjectType) => ({
                       value: pt.id,
                       label: pt.name,
                     }))}
@@ -421,7 +418,6 @@ export const ProjectCreatePage: React.FC = () => {
                   style={{ width: '100%' }}
                   format='DD MMM YYYY'
                   disabledDate={current => {
-                    const startDate = formValues.startDate
                     return !!(current && startDate && current < startDate)
                   }}
                 />

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   App,
   Badge,
@@ -212,9 +212,9 @@ export const ProjectsPage: React.FC = () => {
     return matchesSearch && matchesStatus && matchesType && matchesClient
   })
 
-  // Statistics
+  // Statistics - memoized for performance
   const safeProjects = safeArray(projects)
-  const stats = {
+  const stats = useMemo(() => ({
     total: safeProjects.length,
     planning: safeProjects.filter(p => p?.status === 'PLANNING').length,
     inProgress: safeProjects.filter(p => p?.status === 'IN_PROGRESS').length,
@@ -241,7 +241,7 @@ export const ProjectsPage: React.FC = () => {
       ),
       0
     ),
-  }
+  }), [safeProjects])
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -288,19 +288,19 @@ export const ProjectsPage: React.FC = () => {
     [navigate]
   )
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     navigate('/projects/new')
-  }
+  }, [navigate])
 
-  const handleEdit = (project: Project) => {
+  const handleEdit = useCallback((project: Project) => {
     navigate(`/projects/${project.id}/edit`)
-  }
+  }, [navigate])
 
-  const handleView = (project: Project) => {
+  const handleView = useCallback((project: Project) => {
     navigate(`/projects/${project.id}`)
-  }
+  }, [navigate])
 
-  const handleDelete = (id: string) => {
+  const handleDelete = useCallback((id: string) => {
     const project = projects.find(p => p.id === id)
     Modal.confirm({
       title: 'Delete Project?',
@@ -312,7 +312,7 @@ export const ProjectsPage: React.FC = () => {
         deleteMutation.mutate(id)
       },
     })
-  }
+  }, [projects, deleteMutation])
 
   const handleBulkDelete = () => {
     if (selectedRowKeys.length === 0) return
@@ -342,7 +342,7 @@ export const ProjectsPage: React.FC = () => {
     setSelectedRowKeys([])
   }
 
-  const getActionMenuItems = (project: Project) => {
+  const getActionMenuItems = useCallback((project: Project) => {
     return [
       {
         key: 'edit',
@@ -358,7 +358,7 @@ export const ProjectsPage: React.FC = () => {
         onClick: () => handleDelete(project.id),
       },
     ]
-  }
+  }, [handleEdit, handleDelete])
 
   const rowSelection = {
     selectedRowKeys,
@@ -379,7 +379,7 @@ export const ProjectsPage: React.FC = () => {
     }),
   }
 
-  const columns = [
+  const columns = useMemo(() => [
     {
       title: 'Proyek',
       key: 'project',
@@ -605,7 +605,7 @@ export const ProjectsPage: React.FC = () => {
         </div>
       ),
     },
-  ]
+  ], [handleView, navigateToClient, getActionMenuItems])
 
   return (
     <div>

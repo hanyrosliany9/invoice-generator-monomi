@@ -39,7 +39,7 @@ import {
 } from '../components/forms'
 import { projectService, UpdateProjectRequest, ProductItem } from '../services/projects'
 import { clientService } from '../services/clients'
-import { projectTypesApi } from '../services/project-types'
+import { projectTypesApi, ProjectType } from '../services/project-types'
 import { useTheme } from '../theme'
 
 const { TextArea } = Input
@@ -71,7 +71,12 @@ export const ProjectEditPage: React.FC = () => {
     null
   )
   const [calculatedValue, setCalculatedValue] = useState(0)
-  const [formValues, setFormValues] = useState<Partial<ProjectFormData>>({})
+
+  // Use Form.useWatch for reactive form values (better pattern than onValuesChange)
+  const startDate = Form.useWatch('startDate', form)
+  const endDate = Form.useWatch('endDate', form)
+  const products = Form.useWatch('products', form)
+  const status = Form.useWatch('status', form)
 
   // Fetch project data
   const {
@@ -91,14 +96,10 @@ export const ProjectEditPage: React.FC = () => {
   })
 
   // Fetch project types for selection
-  const { data: projectTypesResponse, isLoading: projectTypesLoading } = useQuery({
+  const { data: projectTypes = [], isLoading: projectTypesLoading } = useQuery({
     queryKey: ['project-types'],
     queryFn: projectTypesApi.getAll,
   })
-
-  const projectTypes = Array.isArray(projectTypesResponse)
-    ? projectTypesResponse
-    : (projectTypesResponse?.data || [])
 
   // Update project mutation
   const updateProjectMutation = useMutation({
@@ -148,18 +149,21 @@ export const ProjectEditPage: React.FC = () => {
     }
   }, [project, form])
 
-  // Track form changes
-  const handleFormChange = () => {
-    const currentValues = form.getFieldsValue()
-    const changed =
-      originalValues &&
-      JSON.stringify(currentValues) !== JSON.stringify(originalValues)
-    setHasChanges(!!changed)
+  // Track form changes using useEffect with watched values
+  useEffect(() => {
+    if (originalValues) {
+      const currentValues = form.getFieldsValue()
+      const changed = JSON.stringify(currentValues) !== JSON.stringify(originalValues)
+      setHasChanges(changed)
+    }
+  }, [startDate, endDate, products, status, form, originalValues])
 
-    // Recalculate total
-    const products = currentValues.products || []
-    calculateTotal(products)
-  }
+  // Recalculate total when products change
+  useEffect(() => {
+    if (products) {
+      calculateTotal(products)
+    }
+  }, [products])
 
   // Calculate total value when products change
   const calculateTotal = (products: ProductItem[]) => {
@@ -265,10 +269,10 @@ export const ProjectEditPage: React.FC = () => {
     )
   }
 
-  // Use form watcher instead of direct getFieldValue calls to avoid useForm warning
+  // Calculate duration from watched form values
   const duration =
-    formValues.startDate && formValues.endDate
-      ? formValues.endDate.diff(formValues.startDate, 'day') + 1
+    startDate && endDate
+      ? endDate.diff(startDate, 'day') + 1
       : 0
 
   const getStatusColor = (status: string) => {
@@ -352,7 +356,7 @@ export const ProjectEditPage: React.FC = () => {
             stats={[
               {
                 label: 'Total Products',
-                value: (formValues.products || []).length,
+                value: (products || []).length,
                 icon: <ProjectOutlined />,
                 color: '#1890ff',
               },
@@ -385,10 +389,10 @@ export const ProjectEditPage: React.FC = () => {
             }}
           >
             <Tag
-              color={getStatusColor(formValues.status || project.status)}
+              color={getStatusColor(status || project.status)}
               style={{ marginBottom: '8px' }}
             >
-              {formValues.status || project.status}
+              {status || project.status}
             </Tag>
             <div>
               <Text type='secondary' style={{ fontSize: '12px' }}>
@@ -412,10 +416,6 @@ export const ProjectEditPage: React.FC = () => {
         form={form}
         layout='vertical'
         onFinish={handleSubmit}
-        onValuesChange={(_, allValues) => {
-          setFormValues(allValues)
-          handleFormChange()
-        }}
         autoComplete='off'
         style={{ width: '100%' }}
       >
@@ -504,9 +504,9 @@ export const ProjectEditPage: React.FC = () => {
                       .includes(input.toLowerCase())
                   }
                   options={projectTypes
-                    .filter(pt => pt.isActive)
-                    .sort((a, b) => a.sortOrder - b.sortOrder)
-                    .map(pt => ({
+                    .filter((pt: ProjectType) => pt.isActive)
+                    .sort((a: ProjectType, b: ProjectType) => a.sortOrder - b.sortOrder)
+                    .map((pt: ProjectType) => ({
                       value: pt.id,
                       label: pt.name,
                     }))}
@@ -597,7 +597,6 @@ export const ProjectEditPage: React.FC = () => {
                   format='DD MMM YYYY'
                   disabledDate={current => {
                     if (!current) return false
-                    const startDate = formValues.startDate
                     return startDate ? current < startDate : false
                   }}
                 />
