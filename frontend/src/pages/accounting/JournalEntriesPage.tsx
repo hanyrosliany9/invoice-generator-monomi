@@ -324,7 +324,7 @@ const JournalEntriesPage: React.FC = () => {
       <Card
         style={{
           marginBottom: '24px',
-          background: theme.colors.background,
+          background: theme.colors.background.primary,
           borderColor: theme.colors.border.default,
         }}
       >
@@ -466,7 +466,7 @@ const JournalEntriesPage: React.FC = () => {
               },
             }}
             style={{
-              background: theme.colors.background,
+              background: theme.colors.background.primary,
             }}
           />
         )}

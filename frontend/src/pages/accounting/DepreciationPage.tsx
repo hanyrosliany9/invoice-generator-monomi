@@ -218,7 +218,7 @@ const DepreciationPage: React.FC = () => {
       <Card
         style={{
           marginBottom: '24px',
-          background: theme.colors.background,
+          background: theme.colors.background.primary,
           borderColor: theme.colors.border.default,
         }}
       >
@@ -335,7 +335,7 @@ const DepreciationPage: React.FC = () => {
             rowKey="assetId"
             pagination={false}
             style={{
-              background: theme.colors.background,
+              background: theme.colors.background.primary,
             }}
             summary={(data) => {
               const totalDep = data.reduce((sum, item) => sum + item.depreciationAmount, 0);
@@ -403,7 +403,7 @@ const DepreciationPage: React.FC = () => {
           <div
             style={{
               padding: '12px',
-              background: theme.colors.background,
+              background: theme.colors.background.primary,
               borderRadius: '4px',
               borderLeft: `4px solid ${theme.colors.status.info}`,
             }}

@@ -412,7 +412,7 @@ const ChartOfAccountsPage: React.FC = () => {
       <Card
         style={{
           marginBottom: '24px',
-          background: theme.colors.background,
+          background: theme.colors.background.primary,
           borderColor: theme.colors.border.default,
         }}
       >
@@ -521,7 +521,7 @@ const ChartOfAccountsPage: React.FC = () => {
               pagination={false}
               size="small"
               style={{
-                background: theme.colors.background,
+                background: theme.colors.background.primary,
               }}
             />
           </Card>
