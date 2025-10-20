@@ -71,7 +71,7 @@ const ChartOfAccountsPage: React.FC = () => {
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ['chart-of-accounts'],
-    queryFn: getChartOfAccounts,
+    queryFn: () => getChartOfAccounts(),
   });
 
   // Create mutation

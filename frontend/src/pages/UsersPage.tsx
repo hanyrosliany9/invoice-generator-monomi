@@ -78,7 +78,7 @@ export const UsersPage: React.FC = () => {
   // Queries
   const { data: usersData = [], isLoading } = useQuery<User[]>({
     queryKey: ['users'],
-    queryFn: userService.getUsers,
+    queryFn: () => userService.getUsers(),
   })
 
   // Ensure users is always an array

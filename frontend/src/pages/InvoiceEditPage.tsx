@@ -103,7 +103,7 @@ export const InvoiceEditPage: React.FC = () => {
   // Fetch quotations for selection
   const { data: quotations = [], isLoading: quotationsLoading } = useQuery({
     queryKey: ['quotations'],
-    queryFn: quotationService.getQuotations,
+    queryFn: () => quotationService.getQuotations(),
   })
 
   // Update invoice mutation

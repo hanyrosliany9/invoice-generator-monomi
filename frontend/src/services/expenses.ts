@@ -63,7 +63,7 @@ export const expenseService = {
     const response = await apiClient.get(url);
 
     return (
-      response?.data || {
+      response?.data?.data || {
         data: [],
         meta: { total: 0, page: 1, limit: 20, totalPages: 0 },
       }

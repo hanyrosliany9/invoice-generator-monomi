@@ -285,7 +285,7 @@ export const InvoicesPage: React.FC = () => {
 
   const { data: quotations = [] } = useQuery({
     queryKey: ['quotations'],
-    queryFn: quotationService.getQuotations,
+    queryFn: () => quotationService.getQuotations(),
   })
 
   // Debug: Log available data

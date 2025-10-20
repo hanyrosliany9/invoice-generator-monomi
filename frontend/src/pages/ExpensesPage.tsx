@@ -104,11 +104,11 @@ export const ExpensesPage: React.FC = () => {
 
   const { data: categories = [] } = useQuery({
     queryKey: ['expense-categories'],
-    queryFn: expenseService.getExpenseCategories,
+    queryFn: () => expenseService.getExpenseCategories(),
   });
 
-  const expenses = expensesData?.data?.data || [];
-  const meta = expensesData?.data?.meta || { total: 0, page: 1, limit: 20, totalPages: 0 };
+  const expenses = expensesData?.data || [];
+  const meta = expensesData?.meta || { total: 0, page: 1, limit: 20, totalPages: 0 };
 
   // Navigation
   const handleCreate = useCallback(() => {
