@@ -166,7 +166,7 @@ const AccountsReceivablePage: React.FC = () => {
             <Progress
               percent={percentage}
               showInfo={false}
-              strokeColor={theme.colors.primary}
+              strokeColor={theme.colors.accent.primary}
               size="small"
             />
           </Space>

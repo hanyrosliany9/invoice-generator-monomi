@@ -331,7 +331,7 @@ const JournalEntriesPage: React.FC = () => {
         <Space wrap size="middle" style={{ width: '100%' }}>
           <Input
             placeholder="Cari no. jurnal atau deskripsi..."
-            prefix={<SearchOutlined style={{ color: theme.colors.text.primaryecondary }} />}
+            prefix={<SearchOutlined style={{ color: theme.colors.text.secondary }} />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             style={{ width: 300 }}

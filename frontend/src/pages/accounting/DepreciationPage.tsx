@@ -149,7 +149,7 @@ const DepreciationPage: React.FC = () => {
       align: 'right' as const,
       width: 200,
       render: (amount: number) => (
-        <Text style={{ color: theme.colors.text.primaryecondary }}>
+        <Text style={{ color: theme.colors.text.secondary }}>
           {formatCurrency(amount)}
         </Text>
       ),
@@ -172,7 +172,7 @@ const DepreciationPage: React.FC = () => {
       key: 'entryCount',
       align: 'center' as const,
       width: 80,
-      render: (count: number) => <Badge count={count} showZero color={theme.colors.primary} />,
+      render: (count: number) => <Badge count={count} showZero color={theme.colors.accent.primary} />,
     },
     {
       title: 'Aksi',

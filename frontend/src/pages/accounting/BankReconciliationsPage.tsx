@@ -376,7 +376,7 @@ const BankReconciliationsPage: React.FC = () => {
                   type="text"
                   size="small"
                   icon={<FileTextOutlined />}
-                  style={{ color: theme.colors.primary.default }}
+                  style={{ color: theme.colors.accent.primary }}
                   onClick={() => reviewMutation.mutate(record.id)}
                 />
               </Tooltip>
@@ -718,12 +718,12 @@ const BankReconciliationsPage: React.FC = () => {
           <Card style={{ marginBottom: '16px', background: '#f5f5f5' }}>
             <Descriptions column={2} size="small">
               <Descriptions.Item label="Saldo Buku (Adjusted)">
-                <Text strong style={{ color: theme.colors.primary.default }}>
+                <Text strong style={{ color: theme.colors.accent.primary }}>
                   {formatCurrency(calculatedBalances.adjustedBook)}
                 </Text>
               </Descriptions.Item>
               <Descriptions.Item label="Saldo Bank (Adjusted)">
-                <Text strong style={{ color: theme.colors.primary.default }}>
+                <Text strong style={{ color: theme.colors.accent.primary }}>
                   {formatCurrency(calculatedBalances.adjustedBank)}
                 </Text>
               </Descriptions.Item>
@@ -845,12 +845,12 @@ const BankReconciliationsPage: React.FC = () => {
             <Card style={{ background: '#f5f5f5' }}>
               <Descriptions bordered column={2}>
                 <Descriptions.Item label="Saldo Buku (Adjusted)">
-                  <Text strong style={{ color: theme.colors.primary.default, fontSize: '16px' }}>
+                  <Text strong style={{ color: theme.colors.accent.primary, fontSize: '16px' }}>
                     {formatCurrency(selectedReconciliation.adjustedBookBalance)}
                   </Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Saldo Bank (Adjusted)">
-                  <Text strong style={{ color: theme.colors.primary.default, fontSize: '16px' }}>
+                  <Text strong style={{ color: theme.colors.accent.primary, fontSize: '16px' }}>
                     {formatCurrency(selectedReconciliation.adjustedBankBalance)}
                   </Text>
                 </Descriptions.Item>

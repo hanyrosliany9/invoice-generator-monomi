@@ -169,7 +169,7 @@ const GeneralLedgerPage: React.FC = () => {
           strong
           style={{
             color:
-              balance >= 0 ? theme.colors.primary : theme.colors.status.error,
+              balance >= 0 ? theme.colors.accent.primary : theme.colors.status.error,
           }}
         >
           {formatCurrency(Math.abs(balance))}

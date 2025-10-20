@@ -529,7 +529,7 @@ const BankTransfersPage: React.FC = () => {
           </Form.Item>
 
           <div style={{ textAlign: 'center', margin: '16px 0' }}>
-            <SwapOutlined style={{ fontSize: '24px', color: theme.colors.primary.default }} />
+            <SwapOutlined style={{ fontSize: '24px', color: theme.colors.accent.primary }} />
           </div>
 
           <Form.Item
@@ -698,7 +698,7 @@ const BankTransfersPage: React.FC = () => {
             </div>
             <div style={{ marginBottom: '16px' }}>
               <Text strong>Jumlah Transfer:</Text>{' '}
-              <Text style={{ color: theme.colors.primary.default, fontSize: '18px', fontWeight: 'bold' }}>
+              <Text style={{ color: theme.colors.accent.primary, fontSize: '18px', fontWeight: 'bold' }}>
                 {new Intl.NumberFormat('id-ID', {
                   style: 'currency',
                   currency: 'IDR',
