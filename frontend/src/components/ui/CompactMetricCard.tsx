@@ -67,7 +67,7 @@ export const CompactMetricCard: React.FC<CompactMetricCardProps> = ({
           }}
         >
           {React.isValidElement(icon)
-            ? React.cloneElement(icon as React.ReactElement, {
+            ? React.cloneElement(icon as React.ReactElement<any>, {
                 style: { fontSize: '16px', color: iconColor },
               })
             : icon}

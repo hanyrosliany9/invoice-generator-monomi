@@ -540,7 +540,7 @@ const BankReconciliationsPage: React.FC = () => {
                   placeholder="Pilih akun bank"
                   optionFilterProp="children"
                   filterOption={(input, option) =>
-                    (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                    String(option?.children || '').toLowerCase().includes(input.toLowerCase())
                   }
                 >
                   {bankAccounts.map((account) => (

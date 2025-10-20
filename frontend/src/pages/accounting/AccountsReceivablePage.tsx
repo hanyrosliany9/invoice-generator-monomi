@@ -323,7 +323,7 @@ const AccountsReceivablePage: React.FC = () => {
               <Table
                 columns={clientColumns}
                 dataSource={data.topCustomers}
-                rowKey={(record) => record.client?.id || 'unknown'}
+                rowKey={(record: any) => record.client?.id || 'unknown'}
                 pagination={false}
                 size="small"
               />
@@ -350,7 +350,7 @@ const AccountsReceivablePage: React.FC = () => {
               <Table
                 columns={invoiceColumns}
                 dataSource={data.aging.aging}
-                rowKey={(record) => record.invoiceNumber || record.id || Math.random().toString()}
+                rowKey={(record: any) => record.invoiceNumber || record.id || Math.random().toString()}
                 pagination={{
                   pageSize: 10,
                   showSizeChanger: true,

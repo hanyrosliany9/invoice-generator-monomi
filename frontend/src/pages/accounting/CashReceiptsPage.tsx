@@ -519,7 +519,7 @@ const CashReceiptsPage: React.FC = () => {
               placeholder="Pilih akun kas/bank"
               optionFilterProp="children"
               filterOption={(input, option) =>
-                (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
               }
             >
               {cashAccounts.map((account) => (
@@ -540,7 +540,7 @@ const CashReceiptsPage: React.FC = () => {
               placeholder="Pilih akun pendapatan"
               optionFilterProp="children"
               filterOption={(input, option) =>
-                (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
               }
             >
               {revenueAccounts.map((account) => (

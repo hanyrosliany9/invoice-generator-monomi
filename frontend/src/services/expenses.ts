@@ -14,8 +14,8 @@ import type {
   ExpensePaymentStatus,
   PPNCalculationResult,
   WithholdingTaxCalculationResult,
-  WithholdingTaxType,
 } from '../types/expense';
+import { WithholdingTaxType } from '../types/expense';
 
 /**
  * Expense Service
@@ -464,7 +464,7 @@ export const expenseService = {
   calculateExpenseAmounts: (
     grossAmount: number,
     isLuxuryGoods: boolean = false,
-    withholdingType: WithholdingTaxType = 'NONE',
+    withholdingType: WithholdingTaxType = WithholdingTaxType.NONE,
     customWithholdingRate?: number
   ) => {
     const ppn = expenseService.calculatePPN(grossAmount, isLuxuryGoods);

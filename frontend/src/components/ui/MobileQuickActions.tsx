@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom'
 const { Title, Text } = Typography
 
 interface QuickAction {
-  type: 'client' | 'project' | 'quotation' | 'invoice'
+  type: 'client' | 'project' | 'quotation' | 'invoice' | 'expense'
   label: string
   icon: React.ReactNode
   path: string
@@ -27,7 +27,7 @@ interface MobileQuickActionsProps {
   visible: boolean
   onClose: () => void
   currentEntity?: {
-    type: 'client' | 'project' | 'quotation' | 'invoice'
+    type: 'client' | 'project' | 'quotation' | 'invoice' | 'expense'
     id: string
     name: string
   }

@@ -396,7 +396,7 @@ const ARAgingPage: React.FC = () => {
               <Table
                 columns={columns}
                 dataSource={data.aging}
-                rowKey={(record) => record.invoiceNumber || record.id || Math.random().toString()}
+                rowKey={(record: any) => record.invoiceNumber || record.id || Math.random().toString()}
                 pagination={{
                   pageSize: 20,
                   showSizeChanger: true,

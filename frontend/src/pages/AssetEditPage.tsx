@@ -90,7 +90,7 @@ export const AssetEditPage: React.FC = () => {
         model: asset.model || '',
         serialNumber: asset.serialNumber || '',
         purchaseDate: asset.purchaseDate ? dayjs(asset.purchaseDate) : null,
-        purchasePrice: asset.purchasePrice || 0,
+        purchasePrice: Number(asset.purchasePrice) || 0,
         supplier: asset.supplier || '',
         invoiceNumber: asset.invoiceNumber || '',
         warrantyExpiration: asset.warrantyExpiration ? dayjs(asset.warrantyExpiration) : null,
@@ -309,7 +309,7 @@ export const AssetEditPage: React.FC = () => {
                   formatter={value =>
                     `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
                   }
-                  parser={value => value!.replace(/Rp\s?|(,*)/g, '')}
+                  parser={value => value!.replace(/Rp\s?|(,*)/g, '') as any}
                   min={0}
                 />
               </Form.Item>

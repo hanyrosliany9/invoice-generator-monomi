@@ -370,7 +370,7 @@ const BalanceSheetPage: React.FC = () => {
                 pagination={false}
                 size="small"
                 summary={() => (
-                  <Table.Summary.Row style={{ background: theme.colors.status.infoLight || '#e6f7ff' }}>
+                  <Table.Summary.Row style={{ background: '#e6f7ff' }}>
                     <Table.Summary.Cell index={0} colSpan={2}>
                       <Text strong style={{ fontSize: '16px' }}>
                         Total Ekuitas

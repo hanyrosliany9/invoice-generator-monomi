@@ -232,7 +232,7 @@ export const AssetCreatePage: React.FC = () => {
                   formatter={value =>
                     `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
                   }
-                  parser={value => value!.replace(/Rp\s?|(,*)/g, '')}
+                  parser={value => value!.replace(/Rp\s?|(,*)/g, '') as any}
                   min={0}
                 />
               </Form.Item>

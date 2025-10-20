@@ -396,7 +396,7 @@ const APAgingPage: React.FC = () => {
               <Table
                 columns={columns}
                 dataSource={data.aging}
-                rowKey={(record) => record.expenseNumber || record.id || Math.random().toString()}
+                rowKey={(record: any) => record.expenseNumber || record.id || Math.random().toString()}
                 pagination={{
                   pageSize: 20,
                   showSizeChanger: true,

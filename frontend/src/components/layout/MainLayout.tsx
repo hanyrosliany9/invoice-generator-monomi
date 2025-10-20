@@ -251,7 +251,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
     // First check if any child items match (for submenus)
     for (const item of menuItems) {
-      if (item.children) {
+      if ('children' in item && item.children) {
         for (const child of item.children) {
           if (path.startsWith(child.key)) {
             return child.key

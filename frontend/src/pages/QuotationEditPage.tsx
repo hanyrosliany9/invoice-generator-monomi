@@ -185,8 +185,8 @@ export const QuotationEditPage: React.FC = () => {
     // Proper deep comparison that handles dayjs objects
     const changed = originalValues &&
       Object.keys(originalValues).some(key => {
-        const current = currentValues[key]
-        const original = originalValues[key]
+        const current = (currentValues as any)[key]
+        const original = (originalValues as any)[key]
 
         // Handle dayjs comparison
         if (dayjs.isDayjs(current) && dayjs.isDayjs(original)) {

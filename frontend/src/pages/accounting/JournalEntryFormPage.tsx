@@ -192,8 +192,8 @@ const JournalEntryFormPage: React.FC = () => {
           accountCode: item.accountCode,
           description: item.descriptionId || values.descriptionId || values.description,
           descriptionId: item.descriptionId,
-          debit: item.debit,
-          credit: item.credit,
+          debitAmount: item.debit,
+          creditAmount: item.credit,
         })),
       };
 

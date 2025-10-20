@@ -359,7 +359,7 @@ const AccountsPayablePage: React.FC = () => {
               <Table
                 columns={expenseColumns}
                 dataSource={data.aging.aging}
-                rowKey={(record) => record.expenseNumber || record.id || Math.random().toString()}
+                rowKey={(record: any) => record.expenseNumber || record.id || Math.random().toString()}
                 pagination={{
                   pageSize: 10,
                   showSizeChanger: true,

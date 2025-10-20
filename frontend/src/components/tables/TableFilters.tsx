@@ -178,7 +178,7 @@ const TableFilters: React.FC<TableFiltersProps> = ({
         label: 'Menunggu Persetujuan',
         icon: <UserOutlined />,
         filters: {
-          status: 'SENT',
+          status: ['SENT'],
         },
       },
     ]

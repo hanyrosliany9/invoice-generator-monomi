@@ -517,7 +517,7 @@ const BankTransfersPage: React.FC = () => {
               placeholder="Pilih akun sumber"
               optionFilterProp="children"
               filterOption={(input, option) =>
-                (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
               }
             >
               {bankAccounts.map((account) => (
@@ -542,7 +542,7 @@ const BankTransfersPage: React.FC = () => {
               placeholder="Pilih akun tujuan"
               optionFilterProp="children"
               filterOption={(input, option) =>
-                (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
               }
             >
               {bankAccounts.map((account) => (
@@ -606,7 +606,7 @@ const BankTransfersPage: React.FC = () => {
               placeholder="Pilih akun biaya (opsional)"
               optionFilterProp="children"
               filterOption={(input, option) =>
-                (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
               }
               allowClear
             >

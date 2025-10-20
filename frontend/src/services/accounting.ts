@@ -349,7 +349,7 @@ export const getAccountsReceivableReport = async (params: {
   return response.data.data;
 };
 
-export const getAccountsPayableReport = async (params: { endDate: string }): Promise<any> => {
+export const getAccountsPayableReport = async (params: { startDate?: string; endDate: string }): Promise<any> => {
   const response = await apiClient.get('/accounting/financial-statements/accounts-payable', {
     params,
   });
@@ -720,7 +720,7 @@ export const exportAccountsReceivablePDF = async (params: { endDate: string }): 
   downloadBlob(response.data, `laporan-piutang-${params.endDate}.pdf`);
 };
 
-export const exportAccountsPayablePDF = async (params: { endDate: string }): Promise<void> => {
+export const exportAccountsPayablePDF = async (params: { startDate?: string; endDate: string }): Promise<void> => {
   const response = await apiClient.get('/accounting/export/accounts-payable/pdf', {
     params,
     responseType: 'blob',
@@ -816,7 +816,7 @@ export const exportAccountsReceivableExcel = async (params: { endDate: string })
   downloadBlob(response.data, `laporan-piutang-${params.endDate}.xlsx`);
 };
 
-export const exportAccountsPayableExcel = async (params: { endDate: string }): Promise<void> => {
+export const exportAccountsPayableExcel = async (params: { startDate?: string; endDate: string }): Promise<void> => {
   const response = await apiClient.get('/accounting/export/accounts-payable/excel', {
     params,
     responseType: 'blob',
