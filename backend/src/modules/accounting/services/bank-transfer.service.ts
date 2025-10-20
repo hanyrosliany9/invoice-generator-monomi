@@ -2,13 +2,13 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateBankTransferDto } from '../dto/create-bank-transfer.dto';
-import { UpdateBankTransferDto } from '../dto/update-bank-transfer.dto';
-import { BankTransferQueryDto } from '../dto/bank-transfer-query.dto';
-import { BankTransferStatus, TransactionType } from '@prisma/client';
-import { JournalService } from './journal.service';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreateBankTransferDto } from "../dto/create-bank-transfer.dto";
+import { UpdateBankTransferDto } from "../dto/update-bank-transfer.dto";
+import { BankTransferQueryDto } from "../dto/bank-transfer-query.dto";
+import { BankTransferStatus, TransactionType } from "@prisma/client";
+import { JournalService } from "./journal.service";
 
 @Injectable()
 export class BankTransferService {
@@ -23,7 +23,7 @@ export class BankTransferService {
   private async generateTransferNumber(): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
     const prefix = `BTR-${year}-${month}`;
 
     const latestTransfer = await this.prisma.bankTransfer.findFirst({
@@ -33,14 +33,16 @@ export class BankTransferService {
         },
       },
       orderBy: {
-        transferNumber: 'desc',
+        transferNumber: "desc",
       },
     });
 
     if (latestTransfer) {
-      const lastNumber = parseInt(latestTransfer.transferNumber.split('-').pop() || '0');
+      const lastNumber = parseInt(
+        latestTransfer.transferNumber.split("-").pop() || "0",
+      );
       const nextNumber = lastNumber + 1;
-      return `${prefix}-${String(nextNumber).padStart(4, '0')}`;
+      return `${prefix}-${String(nextNumber).padStart(4, "0")}`;
     }
 
     return `${prefix}-0001`;
@@ -55,11 +57,11 @@ export class BankTransferService {
     });
 
     if (!account) {
-      throw new BadRequestException('Bank account not found');
+      throw new BadRequestException("Bank account not found");
     }
 
     // Bank accounts should be in the 1-1xxx range (Cash & Bank accounts)
-    if (!account.code.startsWith('1-1')) {
+    if (!account.code.startsWith("1-1")) {
       throw new BadRequestException(
         `Account ${account.code} is not a valid cash/bank account. Must use 1-1xxx accounts.`,
       );
@@ -73,9 +75,14 @@ export class BankTransferService {
   /**
    * Validate that from and to accounts are different
    */
-  private validateDifferentAccounts(fromAccountId: string, toAccountId: string): void {
+  private validateDifferentAccounts(
+    fromAccountId: string,
+    toAccountId: string,
+  ): void {
     if (fromAccountId === toAccountId) {
-      throw new BadRequestException('Source and destination accounts must be different');
+      throw new BadRequestException(
+        "Source and destination accounts must be different",
+      );
     }
   }
 
@@ -86,18 +93,27 @@ export class BankTransferService {
     // Validate accounts
     await this.validateBankAccount(createDto.fromAccountId);
     await this.validateBankAccount(createDto.toAccountId);
-    this.validateDifferentAccounts(createDto.fromAccountId, createDto.toAccountId);
+    this.validateDifferentAccounts(
+      createDto.fromAccountId,
+      createDto.toAccountId,
+    );
 
     // Validate fee account if fee is provided
-    if (createDto.transferFee && createDto.transferFee > 0 && createDto.feeAccountId) {
+    if (
+      createDto.transferFee &&
+      createDto.transferFee > 0 &&
+      createDto.feeAccountId
+    ) {
       const feeAccount = await this.prisma.chartOfAccounts.findUnique({
         where: { id: createDto.feeAccountId },
       });
       if (!feeAccount) {
-        throw new BadRequestException('Fee account not found');
+        throw new BadRequestException("Fee account not found");
       }
       if (!feeAccount.isActive) {
-        throw new BadRequestException(`Fee account ${feeAccount.code} is not active`);
+        throw new BadRequestException(
+          `Fee account ${feeAccount.code} is not active`,
+        );
       }
     }
 
@@ -166,8 +182,8 @@ export class BankTransferService {
       search,
       page = 1,
       limit = 50,
-      sortBy = 'transferDate',
-      sortOrder = 'desc',
+      sortBy = "transferDate",
+      sortOrder = "desc",
     } = query;
 
     const where: any = {};
@@ -187,10 +203,10 @@ export class BankTransferService {
 
     if (search) {
       where.OR = [
-        { transferNumber: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { descriptionId: { contains: search, mode: 'insensitive' } },
-        { reference: { contains: search, mode: 'insensitive' } },
+        { transferNumber: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { descriptionId: { contains: search, mode: "insensitive" } },
+        { reference: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -271,11 +287,13 @@ export class BankTransferService {
     const existing = await this.getBankTransfer(id);
 
     if (existing.status === BankTransferStatus.COMPLETED) {
-      throw new BadRequestException('Cannot update completed bank transfer');
+      throw new BadRequestException("Cannot update completed bank transfer");
     }
 
     if (existing.status === BankTransferStatus.IN_PROGRESS) {
-      throw new BadRequestException('Cannot update transfer that is in progress');
+      throw new BadRequestException(
+        "Cannot update transfer that is in progress",
+      );
     }
 
     // Validate accounts if they are being updated
@@ -286,7 +304,10 @@ export class BankTransferService {
       await this.validateBankAccount(updateDto.toAccountId);
     }
     if (updateDto.fromAccountId && updateDto.toAccountId) {
-      this.validateDifferentAccounts(updateDto.fromAccountId, updateDto.toAccountId);
+      this.validateDifferentAccounts(
+        updateDto.fromAccountId,
+        updateDto.toAccountId,
+      );
     }
 
     const updatedTransfer = await this.prisma.bankTransfer.update({
@@ -371,7 +392,11 @@ export class BankTransferService {
     ];
 
     // Add transfer fee if applicable
-    if (transfer.transferFee && Number(transfer.transferFee) > 0 && transfer.feeAccountId) {
+    if (
+      transfer.transferFee &&
+      Number(transfer.transferFee) > 0 &&
+      transfer.feeAccountId
+    ) {
       const feeAccount = await this.prisma.chartOfAccounts.findUnique({
         where: { id: transfer.feeAccountId },
       });
@@ -452,7 +477,7 @@ export class BankTransferService {
     const transfer = await this.getBankTransfer(id);
 
     if (transfer.status !== BankTransferStatus.PENDING) {
-      throw new BadRequestException('Can only reject pending bank transfers');
+      throw new BadRequestException("Can only reject pending bank transfers");
     }
 
     const updatedTransfer = await this.prisma.bankTransfer.update({
@@ -491,11 +516,13 @@ export class BankTransferService {
     const transfer = await this.getBankTransfer(id);
 
     if (transfer.status === BankTransferStatus.COMPLETED) {
-      throw new BadRequestException('Cannot cancel completed bank transfer');
+      throw new BadRequestException("Cannot cancel completed bank transfer");
     }
 
     if (transfer.status === BankTransferStatus.IN_PROGRESS) {
-      throw new BadRequestException('Cannot cancel transfer that is in progress');
+      throw new BadRequestException(
+        "Cannot cancel transfer that is in progress",
+      );
     }
 
     const updatedTransfer = await this.prisma.bankTransfer.update({
@@ -532,14 +559,12 @@ export class BankTransferService {
     const transfer = await this.getBankTransfer(id);
 
     if (transfer.status === BankTransferStatus.COMPLETED) {
-      throw new BadRequestException(
-        'Cannot delete completed bank transfer.',
-      );
+      throw new BadRequestException("Cannot delete completed bank transfer.");
     }
 
     if (transfer.status === BankTransferStatus.IN_PROGRESS) {
       throw new BadRequestException(
-        'Cannot delete transfer that is in progress.',
+        "Cannot delete transfer that is in progress.",
       );
     }
 
@@ -547,6 +572,6 @@ export class BankTransferService {
       where: { id },
     });
 
-    return { message: 'Bank transfer deleted successfully' };
+    return { message: "Bank transfer deleted successfully" };
   }
 }

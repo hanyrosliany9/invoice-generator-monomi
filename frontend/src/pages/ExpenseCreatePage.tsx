@@ -30,10 +30,10 @@ import { clientService } from '../services/clients';
 import { projectService } from '../services/projects';
 import type {
   CreateExpenseFormData,
+  EFakturStatus,
   ExpenseClass,
   PPNCategory,
   WithholdingTaxType,
-  EFakturStatus,
 } from '../types/expense';
 import { useTheme } from '../theme';
 

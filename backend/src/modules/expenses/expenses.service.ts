@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { PPNCalculatorService } from './services/ppn-calculator.service';
-import { WithholdingTaxCalculatorService } from './services/withholding-tax-calculator.service';
-import { EFakturValidatorService } from './services/efaktur-validator.service';
-import { JournalService } from '../accounting/services/journal.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { PPNCalculatorService } from "./services/ppn-calculator.service";
+import { WithholdingTaxCalculatorService } from "./services/withholding-tax-calculator.service";
+import { EFakturValidatorService } from "./services/efaktur-validator.service";
+import { JournalService } from "../accounting/services/journal.service";
 import {
   CreateExpenseDto,
   UpdateExpenseDto,
@@ -11,8 +16,12 @@ import {
   ApproveExpenseDto,
   RejectExpenseDto,
   MarkPaidDto,
-} from './dto';
-import { ExpenseStatus, ExpensePaymentStatus, ExpenseApprovalAction } from '@prisma/client';
+} from "./dto";
+import {
+  ExpenseStatus,
+  ExpensePaymentStatus,
+  ExpenseApprovalAction,
+} from "@prisma/client";
 
 @Injectable()
 export class ExpensesService {
@@ -34,7 +43,9 @@ export class ExpensesService {
     });
 
     if (!category) {
-      throw new NotFoundException(`Expense category not found: ${createExpenseDto.categoryId}`);
+      throw new NotFoundException(
+        `Expense category not found: ${createExpenseDto.categoryId}`,
+      );
     }
 
     // Validate project if provided
@@ -43,7 +54,9 @@ export class ExpensesService {
         where: { id: createExpenseDto.projectId },
       });
       if (!project) {
-        throw new NotFoundException(`Project not found: ${createExpenseDto.projectId}`);
+        throw new NotFoundException(
+          `Project not found: ${createExpenseDto.projectId}`,
+        );
       }
     }
 
@@ -53,7 +66,9 @@ export class ExpensesService {
         where: { id: createExpenseDto.clientId },
       });
       if (!client) {
-        throw new NotFoundException(`Client not found: ${createExpenseDto.clientId}`);
+        throw new NotFoundException(
+          `Client not found: ${createExpenseDto.clientId}`,
+        );
       }
     }
 
@@ -64,8 +79,8 @@ export class ExpensesService {
     if (createExpenseDto.eFakturNSFP) {
       const eFakturValidation = this.eFakturValidator.validateEFakturData({
         nsfp: createExpenseDto.eFakturNSFP,
-        qrCode: createExpenseDto.eFakturQRCode || '',
-        vendorNPWP: createExpenseDto.vendorNPWP || '',
+        qrCode: createExpenseDto.eFakturQRCode || "",
+        vendorNPWP: createExpenseDto.vendorNPWP || "",
         grossAmount: createExpenseDto.grossAmount,
         ppnAmount: createExpenseDto.ppnAmount,
         totalAmount: createExpenseDto.totalAmount,
@@ -73,7 +88,9 @@ export class ExpensesService {
       });
 
       if (!eFakturValidation.valid) {
-        throw new BadRequestException(`e-Faktur validation failed: ${eFakturValidation.errors.join(', ')}`);
+        throw new BadRequestException(
+          `e-Faktur validation failed: ${eFakturValidation.errors.join(", ")}`,
+        );
       }
     }
 
@@ -109,7 +126,13 @@ export class ExpensesService {
    * Find all expenses with filtering and pagination
    */
   async findAll(userId: string, query: ExpenseQueryDto, userRole: string) {
-    const { page = 1, limit = 20, sortBy = 'expenseDate', sortOrder = 'desc', ...filters } = query;
+    const {
+      page = 1,
+      limit = 20,
+      sortBy = "expenseDate",
+      sortOrder = "desc",
+      ...filters
+    } = query;
 
     const skip = (page - 1) * limit;
 
@@ -117,19 +140,19 @@ export class ExpensesService {
     const where: any = {};
 
     // Role-based filtering: regular users see only their expenses
-    if (userRole !== 'ADMIN') {
+    if (userRole !== "ADMIN") {
       where.userId = userId;
     }
 
     // Apply filters
     if (filters.search) {
       where.OR = [
-        { description: { contains: filters.search, mode: 'insensitive' } },
-        { descriptionId: { contains: filters.search, mode: 'insensitive' } },
-        { vendorName: { contains: filters.search, mode: 'insensitive' } },
-        { eFakturNSFP: { contains: filters.search, mode: 'insensitive' } },
-        { accountCode: { contains: filters.search, mode: 'insensitive' } },
-        { expenseNumber: { contains: filters.search, mode: 'insensitive' } },
+        { description: { contains: filters.search, mode: "insensitive" } },
+        { descriptionId: { contains: filters.search, mode: "insensitive" } },
+        { vendorName: { contains: filters.search, mode: "insensitive" } },
+        { eFakturNSFP: { contains: filters.search, mode: "insensitive" } },
+        { accountCode: { contains: filters.search, mode: "insensitive" } },
+        { expenseNumber: { contains: filters.search, mode: "insensitive" } },
       ];
     }
 
@@ -140,7 +163,7 @@ export class ExpensesService {
     if (filters.categoryId) where.categoryId = filters.categoryId;
     if (filters.projectId) where.projectId = filters.projectId;
     if (filters.clientId) where.clientId = filters.clientId;
-    if (filters.userId && userRole === 'ADMIN') where.userId = filters.userId;
+    if (filters.userId && userRole === "ADMIN") where.userId = filters.userId;
     if (filters.approvedBy) where.approvedBy = filters.approvedBy;
     if (filters.isBillable !== undefined) where.isBillable = filters.isBillable;
     if (filters.accountCode) where.accountCode = filters.accountCode;
@@ -198,16 +221,18 @@ export class ExpensesService {
         category: true,
         user: { select: { id: true, name: true, email: true } },
         approver: { select: { id: true, name: true, email: true } },
-        project: { select: { id: true, number: true, description: true, client: true } },
+        project: {
+          select: { id: true, number: true, description: true, client: true },
+        },
         client: { select: { id: true, name: true, email: true, phone: true } },
         documents: true,
         approvalHistory: {
           include: { user: { select: { id: true, name: true, email: true } } },
-          orderBy: { actionDate: 'desc' },
+          orderBy: { actionDate: "desc" },
         },
         comments: {
           include: { user: { select: { id: true, name: true } } },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         },
       },
     });
@@ -217,8 +242,10 @@ export class ExpensesService {
     }
 
     // Check access: users can only see their own expenses unless admin
-    if (userRole !== 'ADMIN' && expense.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to view this expense');
+    if (userRole !== "ADMIN" && expense.userId !== userId) {
+      throw new ForbiddenException(
+        "You do not have permission to view this expense",
+      );
     }
 
     return expense;
@@ -227,17 +254,26 @@ export class ExpensesService {
   /**
    * Update an expense (only in DRAFT status)
    */
-  async update(id: string, userId: string, userRole: string, updateExpenseDto: UpdateExpenseDto) {
+  async update(
+    id: string,
+    userId: string,
+    userRole: string,
+    updateExpenseDto: UpdateExpenseDto,
+  ) {
     const expense = await this.findOne(id, userId, userRole);
 
     // Only allow updates for DRAFT expenses
     if (expense.status !== ExpenseStatus.DRAFT) {
-      throw new BadRequestException('Only expenses in DRAFT status can be updated');
+      throw new BadRequestException(
+        "Only expenses in DRAFT status can be updated",
+      );
     }
 
     // Check ownership
-    if (userRole !== 'ADMIN' && expense.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to update this expense');
+    if (userRole !== "ADMIN" && expense.userId !== userId) {
+      throw new ForbiddenException(
+        "You do not have permission to update this expense",
+      );
     }
 
     // Validate Indonesian tax calculations if amounts changed
@@ -276,17 +312,21 @@ export class ExpensesService {
 
     // Only allow deletion for DRAFT expenses
     if (expense.status !== ExpenseStatus.DRAFT) {
-      throw new BadRequestException('Only expenses in DRAFT status can be deleted');
+      throw new BadRequestException(
+        "Only expenses in DRAFT status can be deleted",
+      );
     }
 
     // Check ownership
-    if (userRole !== 'ADMIN' && expense.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to delete this expense');
+    if (userRole !== "ADMIN" && expense.userId !== userId) {
+      throw new ForbiddenException(
+        "You do not have permission to delete this expense",
+      );
     }
 
     await this.prisma.expense.delete({ where: { id } });
 
-    return { message: 'Expense deleted successfully' };
+    return { message: "Expense deleted successfully" };
   }
 
   /**
@@ -296,11 +336,15 @@ export class ExpensesService {
     const expense = await this.findOne(id, userId, userRole);
 
     if (expense.status !== ExpenseStatus.DRAFT) {
-      throw new BadRequestException('Only DRAFT expenses can be submitted for approval');
+      throw new BadRequestException(
+        "Only DRAFT expenses can be submitted for approval",
+      );
     }
 
-    if (userRole !== 'ADMIN' && expense.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to submit this expense');
+    if (userRole !== "ADMIN" && expense.userId !== userId) {
+      throw new ForbiddenException(
+        "You do not have permission to submit this expense",
+      );
     }
 
     // Update status
@@ -342,7 +386,7 @@ export class ExpensesService {
     }
 
     if (expense.status !== ExpenseStatus.SUBMITTED) {
-      throw new BadRequestException('Only SUBMITTED expenses can be approved');
+      throw new BadRequestException("Only SUBMITTED expenses can be approved");
     }
 
     // Update expense
@@ -362,7 +406,7 @@ export class ExpensesService {
         expense.expenseNumber,
         expense.category.accountCode,
         Number(expense.totalAmount),
-        'APPROVED',
+        "APPROVED",
         userId,
       );
 
@@ -375,7 +419,7 @@ export class ExpensesService {
         data: { journalEntryId: journalEntry.id },
       });
     } catch (error) {
-      console.error('Failed to create journal entry for expense:', error);
+      console.error("Failed to create journal entry for expense:", error);
       // Continue with approval even if journal entry fails
     }
 
@@ -407,7 +451,7 @@ export class ExpensesService {
     }
 
     if (expense.status !== ExpenseStatus.SUBMITTED) {
-      throw new BadRequestException('Only SUBMITTED expenses can be rejected');
+      throw new BadRequestException("Only SUBMITTED expenses can be rejected");
     }
 
     // Update expense
@@ -452,7 +496,9 @@ export class ExpensesService {
     }
 
     if (expense.status !== ExpenseStatus.APPROVED) {
-      throw new BadRequestException('Only APPROVED expenses can be marked as paid');
+      throw new BadRequestException(
+        "Only APPROVED expenses can be marked as paid",
+      );
     }
 
     // Create journal entry for payment (Debit AP, Credit Cash/Bank)
@@ -462,7 +508,7 @@ export class ExpensesService {
         expense.expenseNumber,
         expense.category.accountCode,
         Number(expense.totalAmount),
-        'PAID',
+        "PAID",
         userId,
       );
 
@@ -475,7 +521,10 @@ export class ExpensesService {
         data: { paymentJournalId: journalEntry.id },
       });
     } catch (error) {
-      console.error('Failed to create payment journal entry for expense:', error);
+      console.error(
+        "Failed to create payment journal entry for expense:",
+        error,
+      );
       // Continue with status update even if journal entry fails
     }
 
@@ -511,10 +560,7 @@ export class ExpensesService {
    */
   async getCategories() {
     return this.prisma.expenseCategory.findMany({
-      orderBy: [
-        { expenseClass: 'asc' },
-        { accountCode: 'asc' },
-      ],
+      orderBy: [{ expenseClass: "asc" }, { accountCode: "asc" }],
     });
   }
 
@@ -543,7 +589,9 @@ export class ExpensesService {
     });
 
     if (existing) {
-      throw new BadRequestException(`Category with code ${data.code} already exists`);
+      throw new BadRequestException(
+        `Category with code ${data.code} already exists`,
+      );
     }
 
     return this.prisma.expenseCategory.create({
@@ -581,7 +629,7 @@ export class ExpensesService {
 
     if (expenseCount > 0) {
       throw new BadRequestException(
-        `Cannot delete category: ${expenseCount} expense(s) are using this category`
+        `Cannot delete category: ${expenseCount} expense(s) are using this category`,
       );
     }
 
@@ -589,22 +637,26 @@ export class ExpensesService {
       where: { id },
     });
 
-    return { message: 'Category deleted successfully' };
+    return { message: "Category deleted successfully" };
   }
 
   /**
    * Get expense statistics
    */
-  async getStatistics(userId: string, userRole: string, filters?: {
-    startDate?: Date;
-    endDate?: Date;
-    projectId?: string;
-    clientId?: string;
-  }) {
+  async getStatistics(
+    userId: string,
+    userRole: string,
+    filters?: {
+      startDate?: Date;
+      endDate?: Date;
+      projectId?: string;
+      clientId?: string;
+    },
+  ) {
     const where: any = {};
 
     // Role-based filtering
-    if (userRole !== 'ADMIN') {
+    if (userRole !== "ADMIN") {
       where.userId = userId;
     }
 
@@ -640,28 +692,34 @@ export class ExpensesService {
         _sum: { withholdingAmount: true },
       }),
       this.prisma.expense.groupBy({
-        by: ['status'],
+        by: ["status"],
         where,
         _count: true,
         _sum: { totalAmount: true },
       }),
       this.prisma.expense.groupBy({
-        by: ['expenseClass'],
+        by: ["expenseClass"],
         where,
         _count: true,
         _sum: { totalAmount: true },
       }),
       this.prisma.expense.groupBy({
-        by: ['paymentStatus'],
+        by: ["paymentStatus"],
         where,
         _count: true,
         _sum: { totalAmount: true },
       }),
     ]);
 
-    const totalAmountValue = totalAmount._sum.totalAmount ? Number(totalAmount._sum.totalAmount) : 0;
-    const totalPPNValue = totalPPN._sum.ppnAmount ? Number(totalPPN._sum.ppnAmount) : 0;
-    const totalWithholdingValue = totalWithholding._sum.withholdingAmount ? Number(totalWithholding._sum.withholdingAmount) : 0;
+    const totalAmountValue = totalAmount._sum.totalAmount
+      ? Number(totalAmount._sum.totalAmount)
+      : 0;
+    const totalPPNValue = totalPPN._sum.ppnAmount
+      ? Number(totalPPN._sum.ppnAmount)
+      : 0;
+    const totalWithholdingValue = totalWithholding._sum.withholdingAmount
+      ? Number(totalWithholding._sum.withholdingAmount)
+      : 0;
 
     return {
       totalExpenses,
@@ -685,16 +743,16 @@ export class ExpensesService {
 
     const lastExpense = await this.prisma.expense.findFirst({
       where: { expenseNumber: { startsWith: prefix } },
-      orderBy: { expenseNumber: 'desc' },
+      orderBy: { expenseNumber: "desc" },
     });
 
     let nextNumber = 1;
     if (lastExpense) {
-      const lastNumber = parseInt(lastExpense.expenseNumber.split('-')[2]);
+      const lastNumber = parseInt(lastExpense.expenseNumber.split("-")[2]);
       nextNumber = lastNumber + 1;
     }
 
-    return `${prefix}${nextNumber.toString().padStart(5, '0')}`;
+    return `${prefix}${nextNumber.toString().padStart(5, "0")}`;
   }
 
   /**
@@ -707,16 +765,18 @@ export class ExpensesService {
 
     const lastExpense = await this.prisma.expense.findFirst({
       where: { buktiPengeluaranNumber: { startsWith: prefix } },
-      orderBy: { buktiPengeluaranNumber: 'desc' },
+      orderBy: { buktiPengeluaranNumber: "desc" },
     });
 
     let nextNumber = 1;
     if (lastExpense) {
-      const lastNumber = parseInt(lastExpense.buktiPengeluaranNumber.split('-')[2]);
+      const lastNumber = parseInt(
+        lastExpense.buktiPengeluaranNumber.split("-")[2],
+      );
       nextNumber = lastNumber + 1;
     }
 
-    return `${prefix}${nextNumber.toString().padStart(5, '0')}`;
+    return `${prefix}${nextNumber.toString().padStart(5, "0")}`;
   }
 
   /**
@@ -731,33 +791,37 @@ export class ExpensesService {
     );
 
     if (!isPPNValid) {
-      throw new BadRequestException('Invalid PPN calculation');
+      throw new BadRequestException("Invalid PPN calculation");
     }
 
     // Validate withholding tax if applicable
-    if (data.withholdingTaxType && data.withholdingTaxType !== 'NONE') {
-      const isWithholdingValid = this.withholdingTaxCalculator.validateWithholdingCalculation(
-        data.grossAmount,
-        data.withholdingAmount || 0,
-        data.withholdingTaxType,
-        data.withholdingTaxRate,
-      );
+    if (data.withholdingTaxType && data.withholdingTaxType !== "NONE") {
+      const isWithholdingValid =
+        this.withholdingTaxCalculator.validateWithholdingCalculation(
+          data.grossAmount,
+          data.withholdingAmount || 0,
+          data.withholdingTaxType,
+          data.withholdingTaxRate,
+        );
 
       if (!isWithholdingValid) {
-        throw new BadRequestException('Invalid withholding tax calculation');
+        throw new BadRequestException("Invalid withholding tax calculation");
       }
     }
 
     // Validate total amount
     const expectedTotal = data.grossAmount + data.ppnAmount;
     if (Math.abs(expectedTotal - data.totalAmount) > 0.01) {
-      throw new BadRequestException('Invalid total amount (gross + PPN ≠ total)');
+      throw new BadRequestException(
+        "Invalid total amount (gross + PPN ≠ total)",
+      );
     }
 
     // Validate net amount
-    const expectedNet = data.grossAmount + data.ppnAmount - (data.withholdingAmount || 0);
+    const expectedNet =
+      data.grossAmount + data.ppnAmount - (data.withholdingAmount || 0);
     if (Math.abs(expectedNet - data.netAmount) > 0.01) {
-      throw new BadRequestException('Invalid net amount calculation');
+      throw new BadRequestException("Invalid net amount calculation");
     }
   }
 }

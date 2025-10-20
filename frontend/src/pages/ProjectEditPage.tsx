@@ -37,9 +37,9 @@ import {
   MateraiCompliancePanel,
   ProgressiveSection,
 } from '../components/forms'
-import { projectService, UpdateProjectRequest, ProductItem } from '../services/projects'
+import { ProductItem, projectService, UpdateProjectRequest } from '../services/projects'
 import { clientService } from '../services/clients'
-import { projectTypesApi, ProjectType } from '../services/project-types'
+import { ProjectType, projectTypesApi } from '../services/project-types'
 import { useTheme } from '../theme'
 
 const { TextArea } = Input

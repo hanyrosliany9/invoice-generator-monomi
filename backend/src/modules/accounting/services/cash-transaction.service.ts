@@ -2,13 +2,17 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateCashTransactionDto } from '../dto/create-cash-transaction.dto';
-import { UpdateCashTransactionDto } from '../dto/update-cash-transaction.dto';
-import { CashTransactionQueryDto } from '../dto/cash-transaction-query.dto';
-import { CashTransactionType, CashTransactionStatus, TransactionType } from '@prisma/client';
-import { JournalService } from './journal.service';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreateCashTransactionDto } from "../dto/create-cash-transaction.dto";
+import { UpdateCashTransactionDto } from "../dto/update-cash-transaction.dto";
+import { CashTransactionQueryDto } from "../dto/cash-transaction-query.dto";
+import {
+  CashTransactionType,
+  CashTransactionStatus,
+  TransactionType,
+} from "@prisma/client";
+import { JournalService } from "./journal.service";
 
 @Injectable()
 export class CashTransactionService {
@@ -20,15 +24,18 @@ export class CashTransactionService {
   /**
    * Generate next cash transaction number
    */
-  private async generateTransactionNumber(type: CashTransactionType): Promise<string> {
+  private async generateTransactionNumber(
+    type: CashTransactionType,
+  ): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
 
     // CSH-R for receipts, CSH-D for disbursements
-    const prefix = type === CashTransactionType.RECEIPT
-      ? `CSH-R-${year}-${month}`
-      : `CSH-D-${year}-${month}`;
+    const prefix =
+      type === CashTransactionType.RECEIPT
+        ? `CSH-R-${year}-${month}`
+        : `CSH-D-${year}-${month}`;
 
     const latestTransaction = await this.prisma.cashTransaction.findFirst({
       where: {
@@ -37,14 +44,16 @@ export class CashTransactionService {
         },
       },
       orderBy: {
-        transactionNumber: 'desc',
+        transactionNumber: "desc",
       },
     });
 
     if (latestTransaction) {
-      const lastNumber = parseInt(latestTransaction.transactionNumber.split('-').pop() || '0');
+      const lastNumber = parseInt(
+        latestTransaction.transactionNumber.split("-").pop() || "0",
+      );
       const nextNumber = lastNumber + 1;
-      return `${prefix}-${String(nextNumber).padStart(4, '0')}`;
+      return `${prefix}-${String(nextNumber).padStart(4, "0")}`;
     }
 
     return `${prefix}-0001`;
@@ -59,11 +68,11 @@ export class CashTransactionService {
     });
 
     if (!account) {
-      throw new BadRequestException('Cash account not found');
+      throw new BadRequestException("Cash account not found");
     }
 
     // Cash accounts should be in the 1-1xxx range (Cash & Bank accounts)
-    if (!account.code.startsWith('1-1')) {
+    if (!account.code.startsWith("1-1")) {
       throw new BadRequestException(
         `Account ${account.code} is not a valid cash/bank account. Must use 1-1xxx accounts.`,
       );
@@ -83,7 +92,7 @@ export class CashTransactionService {
     });
 
     if (!account) {
-      throw new BadRequestException('Offset account not found');
+      throw new BadRequestException("Offset account not found");
     }
 
     if (!account.isActive) {
@@ -100,7 +109,9 @@ export class CashTransactionService {
     await this.validateOffsetAccount(createDto.offsetAccountId);
 
     // Generate transaction number
-    const transactionNumber = await this.generateTransactionNumber(createDto.transactionType);
+    const transactionNumber = await this.generateTransactionNumber(
+      createDto.transactionType,
+    );
 
     // Create cash transaction
     const transaction = await this.prisma.cashTransaction.create({
@@ -164,8 +175,8 @@ export class CashTransactionService {
       search,
       page = 1,
       limit = 50,
-      sortBy = 'transactionDate',
-      sortOrder = 'desc',
+      sortBy = "transactionDate",
+      sortOrder = "desc",
     } = query;
 
     const where: any = {};
@@ -186,10 +197,10 @@ export class CashTransactionService {
 
     if (search) {
       where.OR = [
-        { transactionNumber: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { descriptionId: { contains: search, mode: 'insensitive' } },
-        { reference: { contains: search, mode: 'insensitive' } },
+        { transactionNumber: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { descriptionId: { contains: search, mode: "insensitive" } },
+        { reference: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -270,11 +281,11 @@ export class CashTransactionService {
     const existing = await this.getCashTransaction(id);
 
     if (existing.status === CashTransactionStatus.POSTED) {
-      throw new BadRequestException('Cannot update posted cash transaction');
+      throw new BadRequestException("Cannot update posted cash transaction");
     }
 
     if (existing.status === CashTransactionStatus.APPROVED) {
-      throw new BadRequestException('Cannot update approved cash transaction');
+      throw new BadRequestException("Cannot update approved cash transaction");
     }
 
     // Validate accounts if they are being updated
@@ -333,61 +344,65 @@ export class CashTransactionService {
   async approveCashTransaction(id: string, userId: string) {
     const transaction = await this.getCashTransaction(id);
 
-    if (transaction.status !== CashTransactionStatus.SUBMITTED &&
-        transaction.status !== CashTransactionStatus.DRAFT) {
+    if (
+      transaction.status !== CashTransactionStatus.SUBMITTED &&
+      transaction.status !== CashTransactionStatus.DRAFT
+    ) {
       throw new BadRequestException(
         `Cannot approve transaction with status: ${transaction.status}`,
       );
     }
 
     // Create journal entry for this cash transaction
-    const journalTransactionType = transaction.transactionType === CashTransactionType.RECEIPT
-      ? TransactionType.CASH_RECEIPT
-      : TransactionType.CASH_DISBURSEMENT;
+    const journalTransactionType =
+      transaction.transactionType === CashTransactionType.RECEIPT
+        ? TransactionType.CASH_RECEIPT
+        : TransactionType.CASH_DISBURSEMENT;
 
-    const lineItems = transaction.transactionType === CashTransactionType.RECEIPT
-      ? [
-          // Cash Receipt: Debit Cash, Credit Income/Revenue
-          {
-            accountCode: transaction.cashAccount.code,
-            description: transaction.description,
-            descriptionId: transaction.descriptionId || undefined,
-            debit: Number(transaction.amount),
-            credit: 0,
-            projectId: transaction.projectId || undefined,
-            clientId: transaction.clientId || undefined,
-          },
-          {
-            accountCode: transaction.offsetAccount.code,
-            description: transaction.description,
-            descriptionId: transaction.descriptionId || undefined,
-            debit: 0,
-            credit: Number(transaction.amount),
-            projectId: transaction.projectId || undefined,
-            clientId: transaction.clientId || undefined,
-          },
-        ]
-      : [
-          // Cash Disbursement: Debit Expense, Credit Cash
-          {
-            accountCode: transaction.offsetAccount.code,
-            description: transaction.description,
-            descriptionId: transaction.descriptionId || undefined,
-            debit: Number(transaction.amount),
-            credit: 0,
-            projectId: transaction.projectId || undefined,
-            clientId: transaction.clientId || undefined,
-          },
-          {
-            accountCode: transaction.cashAccount.code,
-            description: transaction.description,
-            descriptionId: transaction.descriptionId || undefined,
-            debit: 0,
-            credit: Number(transaction.amount),
-            projectId: transaction.projectId || undefined,
-            clientId: transaction.clientId || undefined,
-          },
-        ];
+    const lineItems =
+      transaction.transactionType === CashTransactionType.RECEIPT
+        ? [
+            // Cash Receipt: Debit Cash, Credit Income/Revenue
+            {
+              accountCode: transaction.cashAccount.code,
+              description: transaction.description,
+              descriptionId: transaction.descriptionId || undefined,
+              debit: Number(transaction.amount),
+              credit: 0,
+              projectId: transaction.projectId || undefined,
+              clientId: transaction.clientId || undefined,
+            },
+            {
+              accountCode: transaction.offsetAccount.code,
+              description: transaction.description,
+              descriptionId: transaction.descriptionId || undefined,
+              debit: 0,
+              credit: Number(transaction.amount),
+              projectId: transaction.projectId || undefined,
+              clientId: transaction.clientId || undefined,
+            },
+          ]
+        : [
+            // Cash Disbursement: Debit Expense, Credit Cash
+            {
+              accountCode: transaction.offsetAccount.code,
+              description: transaction.description,
+              descriptionId: transaction.descriptionId || undefined,
+              debit: Number(transaction.amount),
+              credit: 0,
+              projectId: transaction.projectId || undefined,
+              clientId: transaction.clientId || undefined,
+            },
+            {
+              accountCode: transaction.cashAccount.code,
+              description: transaction.description,
+              descriptionId: transaction.descriptionId || undefined,
+              debit: 0,
+              credit: Number(transaction.amount),
+              projectId: transaction.projectId || undefined,
+              clientId: transaction.clientId || undefined,
+            },
+          ];
 
     const journalEntry = await this.journalService.createJournalEntry({
       entryDate: transaction.transactionDate,
@@ -442,7 +457,9 @@ export class CashTransactionService {
     const transaction = await this.getCashTransaction(id);
 
     if (transaction.status !== CashTransactionStatus.SUBMITTED) {
-      throw new BadRequestException('Can only reject submitted cash transactions');
+      throw new BadRequestException(
+        "Can only reject submitted cash transactions",
+      );
     }
 
     const updatedTransaction = await this.prisma.cashTransaction.update({
@@ -481,7 +498,7 @@ export class CashTransactionService {
     const transaction = await this.getCashTransaction(id);
 
     if (transaction.status !== CashTransactionStatus.DRAFT) {
-      throw new BadRequestException('Can only submit draft cash transactions');
+      throw new BadRequestException("Can only submit draft cash transactions");
     }
 
     const updatedTransaction = await this.prisma.cashTransaction.update({
@@ -519,7 +536,7 @@ export class CashTransactionService {
 
     if (transaction.status === CashTransactionStatus.POSTED) {
       throw new BadRequestException(
-        'Cannot delete posted cash transaction. Contact admin for reversal.',
+        "Cannot delete posted cash transaction. Contact admin for reversal.",
       );
     }
 
@@ -527,7 +544,7 @@ export class CashTransactionService {
       where: { id },
     });
 
-    return { message: 'Cash transaction deleted successfully' };
+    return { message: "Cash transaction deleted successfully" };
   }
 
   /**
@@ -537,12 +554,15 @@ export class CashTransactionService {
     const transaction = await this.getCashTransaction(id);
 
     if (transaction.status !== CashTransactionStatus.POSTED) {
-      throw new BadRequestException('Can only void posted cash transactions');
+      throw new BadRequestException("Can only void posted cash transactions");
     }
 
     // Reverse the journal entry if exists
     if (transaction.journalEntryId) {
-      await this.journalService.reverseJournalEntry(transaction.journalEntryId, userId);
+      await this.journalService.reverseJournalEntry(
+        transaction.journalEntryId,
+        userId,
+      );
     }
 
     const updatedTransaction = await this.prisma.cashTransaction.update({

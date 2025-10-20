@@ -1,6 +1,18 @@
-import { IsString, IsDate, IsEnum, IsOptional, IsNumber, Min } from 'class-validator';
-import { Type } from 'class-transformer';
-import { CashTransactionType, CashCategory, PaymentMethod, CashTransactionStatus } from '@prisma/client';
+import {
+  IsString,
+  IsDate,
+  IsEnum,
+  IsOptional,
+  IsNumber,
+  Min,
+} from "class-validator";
+import { Type } from "class-transformer";
+import {
+  CashTransactionType,
+  CashCategory,
+  PaymentMethod,
+  CashTransactionStatus,
+} from "@prisma/client";
 
 export class CreateCashTransactionDto {
   @IsEnum(CashTransactionType)

@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   Col,
-  Divider,
   FloatButton,
   Progress,
   Result,
@@ -20,15 +19,11 @@ import {
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
   DollarOutlined,
   EditOutlined,
   ExportOutlined,
   FileTextOutlined,
-  PlayCircleOutlined,
   ProjectOutlined,
-  StopOutlined,
   TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons'

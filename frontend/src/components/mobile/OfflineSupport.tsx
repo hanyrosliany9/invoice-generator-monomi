@@ -16,6 +16,7 @@ import {
   Card,
   Col,
   List,
+  message,
   Modal,
   Progress,
   Row,
@@ -23,7 +24,6 @@ import {
   Statistic,
   Tag,
   Typography,
-  message,
 } from 'antd'
 import {
   CheckCircleOutlined,

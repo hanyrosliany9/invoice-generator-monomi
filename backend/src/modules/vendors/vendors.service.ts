@@ -2,10 +2,10 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateVendorDto, UpdateVendorDto, VendorQueryDto } from './dto';
-import { PKPStatus } from '@prisma/client';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateVendorDto, UpdateVendorDto, VendorQueryDto } from "./dto";
+import { PKPStatus } from "@prisma/client";
 
 @Injectable()
 export class VendorsService {
@@ -18,13 +18,14 @@ export class VendorsService {
     // Validate NPWP if vendor is PKP
     if (createVendorDto.pkpStatus === PKPStatus.PKP) {
       if (!createVendorDto.npwp) {
-        throw new BadRequestException('NPWP is required for PKP vendors');
+        throw new BadRequestException("NPWP is required for PKP vendors");
       }
       this.validateNPWP(createVendorDto.npwp);
     }
 
     // Generate vendor code if not provided
-    const vendorCode = createVendorDto.vendorCode || (await this.generateVendorCode());
+    const vendorCode =
+      createVendorDto.vendorCode || (await this.generateVendorCode());
 
     // Check if vendor code already exists
     const existingVendor = await this.prisma.vendor.findUnique({
@@ -32,7 +33,9 @@ export class VendorsService {
     });
 
     if (existingVendor) {
-      throw new BadRequestException(`Vendor with code ${vendorCode} already exists`);
+      throw new BadRequestException(
+        `Vendor with code ${vendorCode} already exists`,
+      );
     }
 
     // Create vendor
@@ -55,8 +58,8 @@ export class VendorsService {
     const {
       page = 1,
       limit = 20,
-      sortBy = 'name',
-      sortOrder = 'asc',
+      sortBy = "name",
+      sortOrder = "asc",
       ...filters
     } = query;
 
@@ -68,11 +71,11 @@ export class VendorsService {
     // Search filter
     if (filters.search) {
       where.OR = [
-        { name: { contains: filters.search, mode: 'insensitive' } },
-        { vendorCode: { contains: filters.search, mode: 'insensitive' } },
-        { email: { contains: filters.search, mode: 'insensitive' } },
-        { phone: { contains: filters.search, mode: 'insensitive' } },
-        { npwp: { contains: filters.search, mode: 'insensitive' } },
+        { name: { contains: filters.search, mode: "insensitive" } },
+        { vendorCode: { contains: filters.search, mode: "insensitive" } },
+        { email: { contains: filters.search, mode: "insensitive" } },
+        { phone: { contains: filters.search, mode: "insensitive" } },
+        { npwp: { contains: filters.search, mode: "insensitive" } },
       ];
     }
 
@@ -143,7 +146,7 @@ export class VendorsService {
             status: true,
             totalAmount: true,
           },
-          orderBy: { poDate: 'desc' },
+          orderBy: { poDate: "desc" },
           take: 10,
         },
         vendorInvoices: {
@@ -155,7 +158,7 @@ export class VendorsService {
             matchingStatus: true,
             totalAmount: true,
           },
-          orderBy: { invoiceDate: 'desc' },
+          orderBy: { invoiceDate: "desc" },
           take: 10,
         },
         expenses: {
@@ -166,7 +169,7 @@ export class VendorsService {
             status: true,
             totalAmount: true,
           },
-          orderBy: { expenseDate: 'desc' },
+          orderBy: { expenseDate: "desc" },
           take: 10,
         },
         assets: {
@@ -177,7 +180,7 @@ export class VendorsService {
             category: true,
             purchaseDate: true,
           },
-          orderBy: { purchaseDate: 'desc' },
+          orderBy: { purchaseDate: "desc" },
           take: 10,
         },
       },
@@ -200,7 +203,7 @@ export class VendorsService {
     // Validate NPWP if changing to PKP status
     if (updateVendorDto.pkpStatus === PKPStatus.PKP) {
       if (!updateVendorDto.npwp) {
-        throw new BadRequestException('NPWP is required for PKP vendors');
+        throw new BadRequestException("NPWP is required for PKP vendors");
       }
       this.validateNPWP(updateVendorDto.npwp);
     }
@@ -240,7 +243,7 @@ export class VendorsService {
     // If no relations, perform hard delete
     await this.prisma.vendor.delete({ where: { id } });
 
-    return { message: 'Vendor deleted successfully' };
+    return { message: "Vendor deleted successfully" };
   }
 
   /**
@@ -267,12 +270,12 @@ export class VendorsService {
     ] = await Promise.all([
       this.prisma.vendor.count({ where }),
       this.prisma.vendor.groupBy({
-        by: ['vendorType'],
+        by: ["vendorType"],
         where,
         _count: true,
       }),
       this.prisma.vendor.groupBy({
-        by: ['pkpStatus'],
+        by: ["pkpStatus"],
         where,
         _count: true,
       }),
@@ -314,16 +317,16 @@ export class VendorsService {
 
     const lastVendor = await this.prisma.vendor.findFirst({
       where: { vendorCode: { startsWith: prefix } },
-      orderBy: { vendorCode: 'desc' },
+      orderBy: { vendorCode: "desc" },
     });
 
     let nextNumber = 1;
     if (lastVendor) {
-      const lastNumber = parseInt(lastVendor.vendorCode.split('-')[2]);
+      const lastNumber = parseInt(lastVendor.vendorCode.split("-")[2]);
       nextNumber = lastNumber + 1;
     }
 
-    return `${prefix}${nextNumber.toString().padStart(5, '0')}`;
+    return `${prefix}${nextNumber.toString().padStart(5, "0")}`;
   }
 
   /**
@@ -332,9 +335,8 @@ export class VendorsService {
   private validateNPWP(npwp: string): void {
     if (!/^\d{15}$/.test(npwp)) {
       throw new BadRequestException(
-        'Invalid NPWP format. NPWP must be exactly 15 digits.',
+        "Invalid NPWP format. NPWP must be exactly 15 digits.",
       );
     }
   }
-
 }

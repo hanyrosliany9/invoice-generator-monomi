@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { ConfigProvider, theme as antdTheme } from 'antd'
+import { theme as antdTheme, ConfigProvider } from 'antd'
 import { Theme, ThemeContextType, ThemeMode } from './types'
 import { themes } from './themes'
 

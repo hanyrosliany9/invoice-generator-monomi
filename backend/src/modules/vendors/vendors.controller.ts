@@ -11,7 +11,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
@@ -19,15 +19,15 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
-} from '@nestjs/swagger';
-import { VendorsService } from './vendors.service';
-import { CreateVendorDto, UpdateVendorDto, VendorQueryDto } from './dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
+} from "@nestjs/swagger";
+import { VendorsService } from "./vendors.service";
+import { CreateVendorDto, UpdateVendorDto, VendorQueryDto } from "./dto";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
 import {
   RequireSuperAdmin,
   RequireFinancialApprover,
-} from '../auth/decorators/auth.decorators';
+} from "../auth/decorators/auth.decorators";
 
 /**
  * Vendors Controller
@@ -41,10 +41,10 @@ import {
  * All endpoints require JWT authentication.
  * Creation and deletion require SUPER_ADMIN role.
  */
-@ApiTags('vendors')
+@ApiTags("vendors")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('vendors')
+@Controller("vendors")
 export class VendorsController {
   constructor(private readonly vendorsService: VendorsService) {}
 
@@ -66,25 +66,23 @@ export class VendorsController {
   @Post()
   @RequireSuperAdmin() // Only SUPER_ADMIN can create vendors
   @ApiOperation({
-    summary: 'Create a new vendor',
-    description: 'Create vendor with Indonesian tax compliance validation (requires SUPER_ADMIN role)',
+    summary: "Create a new vendor",
+    description:
+      "Create vendor with Indonesian tax compliance validation (requires SUPER_ADMIN role)",
   })
   @ApiResponse({
     status: 201,
-    description: 'Vendor created successfully',
+    description: "Vendor created successfully",
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid vendor data or NPWP format',
+    description: "Invalid vendor data or NPWP format",
   })
   @ApiResponse({
     status: 403,
-    description: 'Access forbidden (requires SUPER_ADMIN role)',
+    description: "Access forbidden (requires SUPER_ADMIN role)",
   })
-  async create(
-    @Request() req: any,
-    @Body() createVendorDto: CreateVendorDto,
-  ) {
+  async create(@Request() req: any, @Body() createVendorDto: CreateVendorDto) {
     const userId = req.user.id;
     return this.vendorsService.create(userId, createVendorDto);
   }
@@ -106,12 +104,12 @@ export class VendorsController {
    */
   @Get()
   @ApiOperation({
-    summary: 'Get all vendors',
-    description: 'Get paginated list of vendors with filtering',
+    summary: "Get all vendors",
+    description: "Get paginated list of vendors with filtering",
   })
   @ApiResponse({
     status: 200,
-    description: 'Vendors retrieved successfully',
+    description: "Vendors retrieved successfully",
   })
   async findAll(@Query() query: VendorQueryDto) {
     return this.vendorsService.findAll(query);
@@ -132,27 +130,39 @@ export class VendorsController {
    * @param isActive - Optional active status filter
    * @returns Vendor statistics
    */
-  @Get('statistics')
+  @Get("statistics")
   @ApiOperation({
-    summary: 'Get vendor statistics',
-    description: 'Get aggregated vendor statistics with optional filters',
+    summary: "Get vendor statistics",
+    description: "Get aggregated vendor statistics with optional filters",
   })
-  @ApiQuery({ name: 'type', required: false, description: 'Filter by vendor type' })
-  @ApiQuery({ name: 'pkpStatus', required: false, description: 'Filter by PKP status' })
-  @ApiQuery({ name: 'isActive', required: false, description: 'Filter by active status' })
+  @ApiQuery({
+    name: "type",
+    required: false,
+    description: "Filter by vendor type",
+  })
+  @ApiQuery({
+    name: "pkpStatus",
+    required: false,
+    description: "Filter by PKP status",
+  })
+  @ApiQuery({
+    name: "isActive",
+    required: false,
+    description: "Filter by active status",
+  })
   @ApiResponse({
     status: 200,
-    description: 'Statistics retrieved successfully',
+    description: "Statistics retrieved successfully",
   })
   async getStatistics(
-    @Query('type') type?: string,
-    @Query('pkpStatus') pkpStatus?: string,
-    @Query('isActive') isActive?: string,
+    @Query("type") type?: string,
+    @Query("pkpStatus") pkpStatus?: string,
+    @Query("isActive") isActive?: string,
   ) {
     const filters: any = {};
     if (type) filters.type = type;
     if (pkpStatus) filters.pkpStatus = pkpStatus;
-    if (isActive !== undefined) filters.isActive = isActive === 'true';
+    if (isActive !== undefined) filters.isActive = isActive === "true";
 
     return this.vendorsService.getStatistics(filters);
   }
@@ -170,21 +180,21 @@ export class VendorsController {
    * @param id - Vendor ID
    * @returns Vendor with all relations
    */
-  @Get(':id')
+  @Get(":id")
   @ApiOperation({
-    summary: 'Get vendor by ID',
-    description: 'Get detailed vendor information with relations',
+    summary: "Get vendor by ID",
+    description: "Get detailed vendor information with relations",
   })
-  @ApiParam({ name: 'id', description: 'Vendor ID' })
+  @ApiParam({ name: "id", description: "Vendor ID" })
   @ApiResponse({
     status: 200,
-    description: 'Vendor retrieved successfully',
+    description: "Vendor retrieved successfully",
   })
   @ApiResponse({
     status: 404,
-    description: 'Vendor not found',
+    description: "Vendor not found",
   })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param("id") id: string) {
     return this.vendorsService.findOne(id);
   }
 
@@ -203,32 +213,34 @@ export class VendorsController {
    * @param updateVendorDto - Partial vendor update data
    * @returns Updated vendor
    */
-  @Patch(':id')
+  @Patch(":id")
   @RequireFinancialApprover() // SUPER_ADMIN or FINANCE_MANAGER can update vendors
   @ApiOperation({
-    summary: 'Update vendor',
-    description: 'Update vendor information (requires SUPER_ADMIN or FINANCE_MANAGER role)',
+    summary: "Update vendor",
+    description:
+      "Update vendor information (requires SUPER_ADMIN or FINANCE_MANAGER role)",
   })
-  @ApiParam({ name: 'id', description: 'Vendor ID' })
+  @ApiParam({ name: "id", description: "Vendor ID" })
   @ApiResponse({
     status: 200,
-    description: 'Vendor updated successfully',
+    description: "Vendor updated successfully",
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid vendor data or NPWP format',
+    description: "Invalid vendor data or NPWP format",
   })
   @ApiResponse({
     status: 404,
-    description: 'Vendor not found',
+    description: "Vendor not found",
   })
   @ApiResponse({
     status: 403,
-    description: 'Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)',
+    description:
+      "Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)",
   })
   async update(
     @Request() req: any,
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body() updateVendorDto: UpdateVendorDto,
   ) {
     const userId = req.user.id;
@@ -247,31 +259,32 @@ export class VendorsController {
    * @param id - Vendor ID
    * @returns Success message
    */
-  @Delete(':id')
+  @Delete(":id")
   @RequireSuperAdmin() // Only SUPER_ADMIN can delete vendors
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Delete vendor',
-    description: 'Delete vendor (requires SUPER_ADMIN role, only if not used in transactions)',
+    summary: "Delete vendor",
+    description:
+      "Delete vendor (requires SUPER_ADMIN role, only if not used in transactions)",
   })
-  @ApiParam({ name: 'id', description: 'Vendor ID' })
+  @ApiParam({ name: "id", description: "Vendor ID" })
   @ApiResponse({
     status: 204,
-    description: 'Vendor deleted successfully',
+    description: "Vendor deleted successfully",
   })
   @ApiResponse({
     status: 400,
-    description: 'Cannot delete vendor that has related transactions',
+    description: "Cannot delete vendor that has related transactions",
   })
   @ApiResponse({
     status: 404,
-    description: 'Vendor not found',
+    description: "Vendor not found",
   })
   @ApiResponse({
     status: 403,
-    description: 'Access forbidden (requires SUPER_ADMIN role)',
+    description: "Access forbidden (requires SUPER_ADMIN role)",
   })
-  async remove(@Param('id') id: string) {
+  async remove(@Param("id") id: string) {
     return this.vendorsService.remove(id);
   }
 }

@@ -3,9 +3,9 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { JournalService } from '../accounting/services/journal.service';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { JournalService } from "../accounting/services/journal.service";
 import {
   CreatePurchaseOrderDto,
   UpdatePurchaseOrderDto,
@@ -13,8 +13,8 @@ import {
   ApprovePurchaseOrderDto,
   RejectPurchaseOrderDto,
   CancelPurchaseOrderDto,
-} from './dto';
-import { POStatus, POItemType, TransactionType } from '@prisma/client';
+} from "./dto";
+import { POStatus, POItemType, TransactionType } from "@prisma/client";
 
 @Injectable()
 export class PurchaseOrdersService {
@@ -37,7 +37,7 @@ export class PurchaseOrdersService {
     }
 
     if (!vendor.isActive) {
-      throw new BadRequestException('Cannot create PO for inactive vendor');
+      throw new BadRequestException("Cannot create PO for inactive vendor");
     }
 
     // Validate project if provided
@@ -47,7 +47,9 @@ export class PurchaseOrdersService {
       });
 
       if (!project) {
-        throw new NotFoundException(`Project not found: ${createPODto.projectId}`);
+        throw new NotFoundException(
+          `Project not found: ${createPODto.projectId}`,
+        );
       }
     }
 
@@ -90,7 +92,7 @@ export class PurchaseOrdersService {
         createdBy: userId,
         updatedBy: userId,
         items: {
-          create: createPODto.items.map(item => ({
+          create: createPODto.items.map((item) => ({
             lineNumber: item.lineNumber,
             itemType: item.itemType,
             itemCode: item.itemCode,
@@ -133,8 +135,8 @@ export class PurchaseOrdersService {
     const {
       page = 1,
       limit = 20,
-      sortBy = 'poDate',
-      sortOrder = 'desc',
+      sortBy = "poDate",
+      sortOrder = "desc",
       ...filters
     } = query;
 
@@ -146,9 +148,9 @@ export class PurchaseOrdersService {
     // Search filter
     if (filters.search) {
       where.OR = [
-        { poNumber: { contains: filters.search, mode: 'insensitive' } },
-        { notes: { contains: filters.search, mode: 'insensitive' } },
-        { vendor: { name: { contains: filters.search, mode: 'insensitive' } } },
+        { poNumber: { contains: filters.search, mode: "insensitive" } },
+        { notes: { contains: filters.search, mode: "insensitive" } },
+        { vendor: { name: { contains: filters.search, mode: "insensitive" } } },
       ];
     }
 
@@ -221,7 +223,7 @@ export class PurchaseOrdersService {
             expenseCategory: true,
             asset: true,
           },
-          orderBy: { lineNumber: 'asc' },
+          orderBy: { lineNumber: "asc" },
         },
         goodsReceipts: {
           select: {
@@ -230,7 +232,7 @@ export class PurchaseOrdersService {
             grDate: true,
             status: true,
           },
-          orderBy: { grDate: 'desc' },
+          orderBy: { grDate: "desc" },
         },
         vendorInvoices: {
           select: {
@@ -241,7 +243,7 @@ export class PurchaseOrdersService {
             matchingStatus: true,
             totalAmount: true,
           },
-          orderBy: { invoiceDate: 'desc' },
+          orderBy: { invoiceDate: "desc" },
         },
       },
     });
@@ -256,11 +258,17 @@ export class PurchaseOrdersService {
   /**
    * Update a purchase order (only in DRAFT status)
    */
-  async update(id: string, userId: string, updatePODto: UpdatePurchaseOrderDto) {
+  async update(
+    id: string,
+    userId: string,
+    updatePODto: UpdatePurchaseOrderDto,
+  ) {
     const po = await this.findOne(id);
 
     if (po.status !== POStatus.DRAFT) {
-      throw new BadRequestException('Only DRAFT purchase orders can be updated');
+      throw new BadRequestException(
+        "Only DRAFT purchase orders can be updated",
+      );
     }
 
     // Validate amounts if changed
@@ -281,7 +289,7 @@ export class PurchaseOrdersService {
         ...(items && {
           items: {
             deleteMany: {},
-            create: items.map(item => ({
+            create: items.map((item) => ({
               lineNumber: item.lineNumber,
               itemType: item.itemType,
               itemCode: item.itemCode,
@@ -320,7 +328,9 @@ export class PurchaseOrdersService {
     const po = await this.findOne(id);
 
     if (po.status !== POStatus.DRAFT) {
-      throw new BadRequestException('Only DRAFT purchase orders can be deleted');
+      throw new BadRequestException(
+        "Only DRAFT purchase orders can be deleted",
+      );
     }
 
     // Delete items first
@@ -331,17 +341,23 @@ export class PurchaseOrdersService {
     // Delete PO
     await this.prisma.purchaseOrder.delete({ where: { id } });
 
-    return { message: 'Purchase order deleted successfully' };
+    return { message: "Purchase order deleted successfully" };
   }
 
   /**
    * Approve purchase order
    */
-  async approve(id: string, userId: string, approveDto: ApprovePurchaseOrderDto) {
+  async approve(
+    id: string,
+    userId: string,
+    approveDto: ApprovePurchaseOrderDto,
+  ) {
     const po = await this.findOne(id);
 
     if (po.status !== POStatus.DRAFT) {
-      throw new BadRequestException('Only DRAFT purchase orders can be approved');
+      throw new BadRequestException(
+        "Only DRAFT purchase orders can be approved",
+      );
     }
 
     // Update PO status
@@ -371,7 +387,9 @@ export class PurchaseOrdersService {
     const po = await this.findOne(id);
 
     if (po.status !== POStatus.DRAFT) {
-      throw new BadRequestException('Only DRAFT purchase orders can be rejected');
+      throw new BadRequestException(
+        "Only DRAFT purchase orders can be rejected",
+      );
     }
 
     // Update PO status (use CANCELLED since REJECTED doesn't exist)
@@ -382,7 +400,7 @@ export class PurchaseOrdersService {
         rejectedBy: userId,
         rejectedAt: new Date(),
         rejectionReason: rejectDto.rejectionReason,
-        closureReason: `Rejected: ${rejectDto.rejectionReason || 'No reason provided'}`,
+        closureReason: `Rejected: ${rejectDto.rejectionReason || "No reason provided"}`,
       },
     });
 
@@ -397,18 +415,18 @@ export class PurchaseOrdersService {
 
     if (po.status !== POStatus.APPROVED && po.status !== POStatus.PARTIAL) {
       throw new BadRequestException(
-        'Only APPROVED or PARTIAL purchase orders can be cancelled',
+        "Only APPROVED or PARTIAL purchase orders can be cancelled",
       );
     }
 
     // Check if any items have been received
     const hasReceipts = await this.prisma.goodsReceipt.count({
-      where: { poId: id, status: 'POSTED' },
+      where: { poId: id, status: "POSTED" },
     });
 
     if (hasReceipts > 0) {
       throw new BadRequestException(
-        'Cannot cancel PO with posted goods receipts. Close the PO instead.',
+        "Cannot cancel PO with posted goods receipts. Close the PO instead.",
       );
     }
 
@@ -420,7 +438,7 @@ export class PurchaseOrdersService {
         isClosed: true,
         closedBy: userId,
         closedAt: new Date(),
-        closureReason: cancelDto.cancellationReason || 'Cancelled',
+        closureReason: cancelDto.cancellationReason || "Cancelled",
       },
     });
 
@@ -435,7 +453,7 @@ export class PurchaseOrdersService {
 
     if (po.status !== POStatus.APPROVED && po.status !== POStatus.PARTIAL) {
       throw new BadRequestException(
-        'Only APPROVED or PARTIAL purchase orders can be closed',
+        "Only APPROVED or PARTIAL purchase orders can be closed",
       );
     }
 
@@ -467,36 +485,35 @@ export class PurchaseOrdersService {
     if (filters?.projectId) where.projectId = filters.projectId;
     if (filters?.status) where.status = filters.status;
 
-    const [
-      totalPOs,
-      totalAmount,
-      byStatus,
-      byType,
-      avgPOValue,
-    ] = await Promise.all([
-      this.prisma.purchaseOrder.count({ where }),
-      this.prisma.purchaseOrder.aggregate({
-        where,
-        _sum: { totalAmount: true },
-      }),
-      this.prisma.purchaseOrder.groupBy({
-        by: ['status'],
-        where,
-        _count: true,
-        _sum: { totalAmount: true },
-      }),
-      // Skip groupBy type since poType doesn't exist
-      Promise.resolve([]),
-      this.prisma.purchaseOrder.aggregate({
-        where,
-        _avg: { totalAmount: true },
-      }),
-    ]);
+    const [totalPOs, totalAmount, byStatus, byType, avgPOValue] =
+      await Promise.all([
+        this.prisma.purchaseOrder.count({ where }),
+        this.prisma.purchaseOrder.aggregate({
+          where,
+          _sum: { totalAmount: true },
+        }),
+        this.prisma.purchaseOrder.groupBy({
+          by: ["status"],
+          where,
+          _count: true,
+          _sum: { totalAmount: true },
+        }),
+        // Skip groupBy type since poType doesn't exist
+        Promise.resolve([]),
+        this.prisma.purchaseOrder.aggregate({
+          where,
+          _avg: { totalAmount: true },
+        }),
+      ]);
 
     return {
       totalPOs,
-      totalAmount: totalAmount._sum.totalAmount ? Number(totalAmount._sum.totalAmount) : 0,
-      avgPOValue: avgPOValue._avg.totalAmount ? Number(avgPOValue._avg.totalAmount) : 0,
+      totalAmount: totalAmount._sum.totalAmount
+        ? Number(totalAmount._sum.totalAmount)
+        : 0,
+      avgPOValue: avgPOValue._avg.totalAmount
+        ? Number(avgPOValue._avg.totalAmount)
+        : 0,
       byStatus,
       byType,
     };
@@ -512,16 +529,16 @@ export class PurchaseOrdersService {
 
     const lastPO = await this.prisma.purchaseOrder.findFirst({
       where: { poNumber: { startsWith: prefix } },
-      orderBy: { poNumber: 'desc' },
+      orderBy: { poNumber: "desc" },
     });
 
     let nextNumber = 1;
     if (lastPO) {
-      const lastNumber = parseInt(lastPO.poNumber.split('-')[2]);
+      const lastNumber = parseInt(lastPO.poNumber.split("-")[2]);
       nextNumber = lastNumber + 1;
     }
 
-    return `${prefix}${nextNumber.toString().padStart(5, '0')}`;
+    return `${prefix}${nextNumber.toString().padStart(5, "0")}`;
   }
 
   /**
@@ -529,14 +546,16 @@ export class PurchaseOrdersService {
    */
   private validateLineItems(items: any[]): void {
     if (!items || items.length === 0) {
-      throw new BadRequestException('Purchase order must have at least one item');
+      throw new BadRequestException(
+        "Purchase order must have at least one item",
+      );
     }
 
     // Check for duplicate line numbers
-    const lineNumbers = items.map(item => item.lineNumber);
+    const lineNumbers = items.map((item) => item.lineNumber);
     const uniqueLineNumbers = new Set(lineNumbers);
     if (lineNumbers.length !== uniqueLineNumbers.size) {
-      throw new BadRequestException('Duplicate line numbers found');
+      throw new BadRequestException("Duplicate line numbers found");
     }
   }
 
@@ -547,17 +566,22 @@ export class PurchaseOrdersService {
     if (!data.items || !data.subtotal) return;
 
     // Validate subtotal matches sum of line totals
-    const calculatedSubtotal = data.items.reduce((sum: number, item: any) => sum + Number(item.lineTotal), 0);
+    const calculatedSubtotal = data.items.reduce(
+      (sum: number, item: any) => sum + Number(item.lineTotal),
+      0,
+    );
     if (Math.abs(calculatedSubtotal - Number(data.subtotal)) > 0.01) {
-      throw new BadRequestException('Subtotal does not match sum of line totals');
+      throw new BadRequestException(
+        "Subtotal does not match sum of line totals",
+      );
     }
 
     // Validate total calculation
     const netAmount = Number(data.subtotal) - Number(data.discountAmount || 0);
-    const expectedTotal = netAmount + Number(data.ppnAmount) - Number(data.pphAmount || 0);
+    const expectedTotal =
+      netAmount + Number(data.ppnAmount) - Number(data.pphAmount || 0);
     if (Math.abs(expectedTotal - Number(data.totalAmount)) > 0.01) {
-      throw new BadRequestException('Total amount calculation is incorrect');
+      throw new BadRequestException("Total amount calculation is incorrect");
     }
   }
-
 }

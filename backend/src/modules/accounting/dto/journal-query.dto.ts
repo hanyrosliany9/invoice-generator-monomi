@@ -1,6 +1,14 @@
-import { IsString, IsDate, IsEnum, IsOptional, IsBoolean, IsNumber, Min } from 'class-validator';
-import { Type } from 'class-transformer';
-import { TransactionType, JournalStatus } from '@prisma/client';
+import {
+  IsString,
+  IsDate,
+  IsEnum,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  Min,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { TransactionType, JournalStatus } from "@prisma/client";
 
 export class JournalQueryDto {
   @IsDate()
@@ -56,9 +64,9 @@ export class JournalQueryDto {
 
   @IsString()
   @IsOptional()
-  sortBy?: string = 'entryDate';
+  sortBy?: string = "entryDate";
 
   @IsString()
   @IsOptional()
-  sortOrder?: 'asc' | 'desc' = 'desc';
+  sortOrder?: "asc" | "desc" = "desc";
 }

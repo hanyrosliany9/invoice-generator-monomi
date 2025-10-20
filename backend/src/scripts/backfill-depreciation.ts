@@ -13,8 +13,8 @@
  * 4. Create journal entries for each historical period
  */
 
-import { PrismaClient, DepreciationMethod } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { PrismaClient, DepreciationMethod } from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
 
 const prisma = new PrismaClient();
 
@@ -23,7 +23,7 @@ const USEFUL_LIFE_BY_CATEGORY: Record<string, number> = {
   // Camera equipment (Group 1: Electronic equipment)
   Camera: 4,
   Lens: 4,
-  'Camera Body': 4,
+  "Camera Body": 4,
 
   // Lighting equipment (Group 2: Electronic/Electrical equipment)
   Lighting: 4,
@@ -41,7 +41,7 @@ const USEFUL_LIFE_BY_CATEGORY: Record<string, number> = {
   Computer: 4,
   Laptop: 4,
   Desktop: 4,
-  'Computer Hardware': 4,
+  "Computer Hardware": 4,
 
   // Default for unlisted categories
   DEFAULT: 4,
@@ -60,7 +60,9 @@ interface BackfillOptions {
  * Get useful life in years based on asset category
  */
 function getUsefulLife(category: string): number {
-  return USEFUL_LIFE_BY_CATEGORY[category] || USEFUL_LIFE_BY_CATEGORY['DEFAULT'];
+  return (
+    USEFUL_LIFE_BY_CATEGORY[category] || USEFUL_LIFE_BY_CATEGORY["DEFAULT"]
+  );
 }
 
 /**
@@ -70,7 +72,7 @@ function calculateSchedule(
   purchasePrice: Decimal,
   purchaseDate: Date,
   usefulLifeYears: number,
-  method: DepreciationMethod = DepreciationMethod.STRAIGHT_LINE
+  method: DepreciationMethod = DepreciationMethod.STRAIGHT_LINE,
 ) {
   const purchasePriceNum = Number(purchasePrice);
   const residualValue = purchasePriceNum * RESIDUAL_VALUE_PERCENTAGE;
@@ -112,7 +114,7 @@ function calculateSchedule(
  */
 function generateHistoricalEntries(
   schedule: ReturnType<typeof calculateSchedule>,
-  upToDate: Date = new Date()
+  upToDate: Date = new Date(),
 ) {
   const entries: Array<{
     periodDate: Date;
@@ -138,7 +140,9 @@ function generateHistoricalEntries(
       accumulated = schedule.depreciableAmount;
     }
 
-    const bookValue = new Decimal((totalAssetValue - Number(accumulated)).toFixed(2));
+    const bookValue = new Decimal(
+      (totalAssetValue - Number(accumulated)).toFixed(2),
+    );
 
     entries.push({
       periodDate: new Date(currentDate),
@@ -160,8 +164,8 @@ function generateHistoricalEntries(
 async function getOrCreateFiscalPeriod(date: Date) {
   const year = date.getFullYear();
   const month = date.getMonth() + 1; // 0-indexed
-  const code = `${year}-${month.toString().padStart(2, '0')}`;
-  const monthName = date.toLocaleString('id-ID', { month: 'long' });
+  const code = `${year}-${month.toString().padStart(2, "0")}`;
+  const monthName = date.toLocaleString("id-ID", { month: "long" });
   const name = `${monthName} ${year}`;
 
   // Check if exists
@@ -178,10 +182,10 @@ async function getOrCreateFiscalPeriod(date: Date) {
       data: {
         code,
         name,
-        periodType: 'MONTHLY',
+        periodType: "MONTHLY",
         startDate,
         endDate,
-        status: date < new Date() ? 'CLOSED' : 'OPEN',
+        status: date < new Date() ? "CLOSED" : "OPEN",
         isActive: true,
       },
     });
@@ -202,11 +206,11 @@ async function createDepreciationJournalEntry(
   depreciationAmount: Decimal,
   periodDate: Date,
   fiscalPeriodId: string,
-  userId: string
+  userId: string,
 ) {
   // Generate entry number
   const year = periodDate.getFullYear();
-  const month = (periodDate.getMonth() + 1).toString().padStart(2, '0');
+  const month = (periodDate.getMonth() + 1).toString().padStart(2, "0");
   const count = await prisma.journalEntry.count({
     where: {
       entryNumber: {
@@ -214,7 +218,7 @@ async function createDepreciationJournalEntry(
       },
     },
   });
-  const entryNumber = `JE-${year}-${month}-${(count + 1).toString().padStart(4, '0')}`;
+  const entryNumber = `JE-${year}-${month}-${(count + 1).toString().padStart(4, "0")}`;
 
   // Create journal entry
   const journalEntry = await prisma.journalEntry.create({
@@ -224,11 +228,11 @@ async function createDepreciationJournalEntry(
       postingDate: periodDate,
       description: `Depreciation for ${assetName} (${assetCode})`,
       descriptionId: `Depresiasi untuk ${assetName} (${assetCode})`,
-      transactionType: 'DEPRECIATION',
+      transactionType: "DEPRECIATION",
       transactionId: assetId,
       documentNumber: assetCode,
       documentDate: periodDate,
-      status: 'POSTED',
+      status: "POSTED",
       isPosted: true,
       postedAt: new Date(),
       postedBy: userId,
@@ -239,15 +243,16 @@ async function createDepreciationJournalEntry(
 
   // Get accounts
   const depreciationExpenseAccount = await prisma.chartOfAccounts.findUnique({
-    where: { code: '6-3010' }, // Depreciation Expense
+    where: { code: "6-3010" }, // Depreciation Expense
   });
 
-  const accumulatedDepreciationAccount = await prisma.chartOfAccounts.findUnique({
-    where: { code: '1-1510' }, // Accumulated Depreciation
-  });
+  const accumulatedDepreciationAccount =
+    await prisma.chartOfAccounts.findUnique({
+      where: { code: "1-1510" }, // Accumulated Depreciation
+    });
 
   if (!depreciationExpenseAccount || !accumulatedDepreciationAccount) {
-    throw new Error('Depreciation accounts not found in chart of accounts');
+    throw new Error("Depreciation accounts not found in chart of accounts");
   }
 
   // Create line items
@@ -289,7 +294,7 @@ async function createDepreciationJournalEntry(
         balance: depreciationAmount,
         description: `Depreciation expense - ${assetName}`,
         descriptionId: `Beban depresiasi - ${assetName}`,
-        transactionType: 'DEPRECIATION',
+        transactionType: "DEPRECIATION",
         transactionId: assetId,
         documentNumber: assetCode,
         fiscalPeriodId,
@@ -306,7 +311,7 @@ async function createDepreciationJournalEntry(
         balance: depreciationAmount,
         description: `Accumulated depreciation - ${assetName}`,
         descriptionId: `Akumulasi depresiasi - ${assetName}`,
-        transactionType: 'DEPRECIATION',
+        transactionType: "DEPRECIATION",
         transactionId: assetId,
         documentNumber: assetCode,
         fiscalPeriodId,
@@ -320,28 +325,40 @@ async function createDepreciationJournalEntry(
 /**
  * Backfill depreciation for a single asset
  */
-async function backfillAsset(asset: any, options: BackfillOptions, userId: string) {
+async function backfillAsset(
+  asset: any,
+  options: BackfillOptions,
+  userId: string,
+) {
   console.log(`\n📦 Processing asset: ${asset.name} (${asset.assetCode})`);
   console.log(`   Category: ${asset.category}`);
-  console.log(`   Purchase Date: ${asset.purchaseDate.toISOString().split('T')[0]}`);
-  console.log(`   Purchase Price: Rp ${Number(asset.purchasePrice).toLocaleString('id-ID')}`);
+  console.log(
+    `   Purchase Date: ${asset.purchaseDate.toISOString().split("T")[0]}`,
+  );
+  console.log(
+    `   Purchase Price: Rp ${Number(asset.purchasePrice).toLocaleString("id-ID")}`,
+  );
 
   // Calculate schedule
   const usefulLife = getUsefulLife(asset.category);
   const schedule = calculateSchedule(
     asset.purchasePrice,
     asset.purchaseDate,
-    usefulLife
+    usefulLife,
   );
 
-  console.log(`   Useful Life: ${usefulLife} years (${schedule.usefulLifeMonths} months)`);
   console.log(
-    `   Monthly Depreciation: Rp ${Number(schedule.depreciationPerMonth).toLocaleString('id-ID')}`
+    `   Useful Life: ${usefulLife} years (${schedule.usefulLifeMonths} months)`,
   );
-  console.log(`   Depreciation Period: ${schedule.startDate.toISOString().split('T')[0]} to ${schedule.endDate.toISOString().split('T')[0]}`);
+  console.log(
+    `   Monthly Depreciation: Rp ${Number(schedule.depreciationPerMonth).toLocaleString("id-ID")}`,
+  );
+  console.log(
+    `   Depreciation Period: ${schedule.startDate.toISOString().split("T")[0]} to ${schedule.endDate.toISOString().split("T")[0]}`,
+  );
 
   if (options.dryRun) {
-    console.log('   ⏭️  DRY RUN - Skipping creation');
+    console.log("   ⏭️  DRY RUN - Skipping creation");
     return;
   }
 
@@ -371,7 +388,9 @@ async function backfillAsset(asset: any, options: BackfillOptions, userId: strin
   // Generate historical entries (unless startFromToday is true)
   if (!options.startFromToday) {
     const historicalEntries = generateHistoricalEntries(schedule);
-    console.log(`   📅 Creating ${historicalEntries.length} historical depreciation entries...`);
+    console.log(
+      `   📅 Creating ${historicalEntries.length} historical depreciation entries...`,
+    );
 
     for (const entry of historicalEntries) {
       // Get or create fiscal period
@@ -385,7 +404,7 @@ async function backfillAsset(asset: any, options: BackfillOptions, userId: strin
         entry.depreciationAmount,
         entry.periodDate,
         fiscalPeriod.id,
-        userId
+        userId,
       );
 
       // Create depreciation entry
@@ -399,20 +418,25 @@ async function backfillAsset(asset: any, options: BackfillOptions, userId: strin
           accumulatedDepreciation: entry.accumulatedDepreciation,
           bookValue: entry.bookValue,
           journalEntryId: journalEntry.id,
-          status: 'POSTED',
+          status: "POSTED",
           postedAt: new Date(),
           postedBy: userId,
         },
       });
 
-      const monthName = entry.periodDate.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+      const monthName = entry.periodDate.toLocaleString("id-ID", {
+        month: "long",
+        year: "numeric",
+      });
       console.log(
-        `     ✓ ${monthName}: Rp ${Number(entry.depreciationAmount).toLocaleString('id-ID')} ` +
-        `(Accumulated: Rp ${Number(entry.accumulatedDepreciation).toLocaleString('id-ID')})`
+        `     ✓ ${monthName}: Rp ${Number(entry.depreciationAmount).toLocaleString("id-ID")} ` +
+          `(Accumulated: Rp ${Number(entry.accumulatedDepreciation).toLocaleString("id-ID")})`,
       );
     }
 
-    console.log(`   ✅ Created ${historicalEntries.length} depreciation entries`);
+    console.log(
+      `   ✅ Created ${historicalEntries.length} depreciation entries`,
+    );
   } else {
     console.log(`   ⏭️  Skipping historical entries (startFromToday=true)`);
   }
@@ -424,25 +448,25 @@ async function backfillAsset(asset: any, options: BackfillOptions, userId: strin
 async function main() {
   const args = process.argv.slice(2);
   const options: BackfillOptions = {
-    dryRun: args.includes('--dry-run'),
-    assetId: args.find((arg) => arg.startsWith('--asset-id='))?.split('=')[1],
-    startFromToday: args.includes('--start-from-today'),
+    dryRun: args.includes("--dry-run"),
+    assetId: args.find((arg) => arg.startsWith("--asset-id="))?.split("=")[1],
+    startFromToday: args.includes("--start-from-today"),
   };
 
-  console.log('\n🔧 DEPRECIATION BACKFILL SCRIPT (PSAK 16)');
-  console.log('==========================================\n');
+  console.log("\n🔧 DEPRECIATION BACKFILL SCRIPT (PSAK 16)");
+  console.log("==========================================\n");
 
   if (options.dryRun) {
-    console.log('🔍 DRY RUN MODE - No changes will be made\n');
+    console.log("🔍 DRY RUN MODE - No changes will be made\n");
   }
 
   // Get default user for journal entries
   const defaultUser = await prisma.user.findFirst({
-    where: { role: 'ADMIN' },
+    where: { role: "ADMIN" },
   });
 
   if (!defaultUser) {
-    throw new Error('No admin user found. Please create an admin user first.');
+    throw new Error("No admin user found. Please create an admin user first.");
   }
 
   console.log(`👤 Using user: ${defaultUser.name} (${defaultUser.email})`);
@@ -453,7 +477,7 @@ async function main() {
       ? { id: options.assetId }
       : {
           status: {
-            in: ['AVAILABLE', 'RESERVED', 'CHECKED_OUT', 'IN_MAINTENANCE'],
+            in: ["AVAILABLE", "RESERVED", "CHECKED_OUT", "IN_MAINTENANCE"],
           },
         },
     include: {
@@ -465,13 +489,16 @@ async function main() {
 
   // Filter out assets that already have schedules
   const assetsWithoutSchedules = assets.filter(
-    (asset) => asset.depreciationSchedules && asset.depreciationSchedules.length === 0
+    (asset) =>
+      asset.depreciationSchedules && asset.depreciationSchedules.length === 0,
   );
 
-  console.log(`   ${assetsWithoutSchedules.length} asset(s) without depreciation schedules`);
+  console.log(
+    `   ${assetsWithoutSchedules.length} asset(s) without depreciation schedules`,
+  );
 
   if (assetsWithoutSchedules.length === 0) {
-    console.log('\n✅ No assets need backfilling. All done!');
+    console.log("\n✅ No assets need backfilling. All done!");
     return;
   }
 
@@ -489,25 +516,27 @@ async function main() {
     }
   }
 
-  console.log('\n==========================================');
-  console.log('📊 BACKFILL SUMMARY');
-  console.log('==========================================');
+  console.log("\n==========================================");
+  console.log("📊 BACKFILL SUMMARY");
+  console.log("==========================================");
   console.log(`✅ Successfully processed: ${successCount} asset(s)`);
   console.log(`❌ Errors: ${errorCount} asset(s)`);
   console.log(`📦 Total processed: ${assets.length} asset(s)`);
-  console.log('==========================================\n');
+  console.log("==========================================\n");
 
   if (options.dryRun) {
-    console.log('🔍 This was a DRY RUN - run without --dry-run to apply changes\n');
+    console.log(
+      "🔍 This was a DRY RUN - run without --dry-run to apply changes\n",
+    );
   } else {
-    console.log('✅ Backfill complete!\n');
+    console.log("✅ Backfill complete!\n");
   }
 }
 
 // Run the script
 main()
   .catch((error) => {
-    console.error('💥 Fatal error:', error);
+    console.error("💥 Fatal error:", error);
     process.exit(1);
   })
   .finally(async () => {

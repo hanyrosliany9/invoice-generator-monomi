@@ -1,6 +1,14 @@
-import { IsDate, IsEnum, IsNumber, IsOptional, IsString, IsBoolean, Min } from 'class-validator';
-import { Type } from 'class-transformer';
-import { BankRecStatus } from './create-bank-reconciliation.dto';
+import {
+  IsDate,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsBoolean,
+  Min,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { BankRecStatus } from "./create-bank-reconciliation.dto";
 
 export class BankReconciliationQueryDto {
   @IsDate()
@@ -44,9 +52,9 @@ export class BankReconciliationQueryDto {
 
   @IsString()
   @IsOptional()
-  sortBy?: string = 'statementDate';
+  sortBy?: string = "statementDate";
 
   @IsString()
   @IsOptional()
-  sortOrder?: 'asc' | 'desc' = 'desc';
+  sortOrder?: "asc" | "desc" = "desc";
 }

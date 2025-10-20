@@ -167,10 +167,10 @@ export class PaymentsService {
           payment.invoiceId,
           payment.paymentDate,
           Number(payment.amount),
-          'system', // TODO: Get actual user ID from context
+          "system", // TODO: Get actual user ID from context
         );
       } catch (error) {
-        console.error('Failed to process advance payment detection:', error);
+        console.error("Failed to process advance payment detection:", error);
         // Don't fail payment confirmation if advance payment detection fails
       }
     }

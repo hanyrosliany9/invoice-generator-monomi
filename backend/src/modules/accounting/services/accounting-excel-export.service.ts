@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import * as ExcelJS from 'exceljs';
-import { LedgerService } from './ledger.service';
-import { FinancialStatementsService } from './financial-statements.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import * as ExcelJS from "exceljs";
+import { LedgerService } from "./ledger.service";
+import { FinancialStatementsService } from "./financial-statements.service";
 import {
   IndonesianExcelFormatter,
   IndonesianCompanyInfo,
   IndonesianReportHeader,
-} from '../../reports/indonesian-excel-formatter';
+} from "../../reports/indonesian-excel-formatter";
 
 interface ExportParams {
   startDate?: string;
@@ -30,31 +30,41 @@ export class AccountingExcelExportService {
 
   private getIndonesianCompanyInfo(): IndonesianCompanyInfo {
     return {
-      name: 'MONOMI',
-      address: 'Jl. Usaha Mandiri No. 123',
-      city: 'Jakarta Selatan',
-      postalCode: '12345',
-      phone: '+62-21-1234-5678',
-      email: 'info@monomi.co.id',
-      website: 'www.monomi.co.id',
-      npwp: '01.234.567.8-901.234',
-      siup: 'SIUP/123/2024',
+      name: "MONOMI",
+      address: "Jl. Usaha Mandiri No. 123",
+      city: "Jakarta Selatan",
+      postalCode: "12345",
+      phone: "+62-21-1234-5678",
+      email: "info@monomi.co.id",
+      website: "www.monomi.co.id",
+      npwp: "01.234.567.8-901.234",
+      siup: "SIUP/123/2024",
     };
   }
 
   private formatIndonesianDate(date: Date | string): string {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    const day = d.getDate().toString().padStart(2, '0');
-    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const d = typeof date === "string" ? new Date(date) : date;
+    const day = d.getDate().toString().padStart(2, "0");
+    const month = (d.getMonth() + 1).toString().padStart(2, "0");
     const year = d.getFullYear();
     return `${day}/${month}/${year}`;
   }
 
   private getIndonesianMonthName(date: Date | string): string {
-    const d = typeof date === 'string' ? new Date(date) : date;
+    const d = typeof date === "string" ? new Date(date) : date;
     const monthNames = [
-      'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
-      'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
+      "JANUARI",
+      "FEBRUARI",
+      "MARET",
+      "APRIL",
+      "MEI",
+      "JUNI",
+      "JULI",
+      "AGUSTUS",
+      "SEPTEMBER",
+      "OKTOBER",
+      "NOVEMBER",
+      "DESEMBER",
     ];
     return monthNames[d.getMonth()];
   }
@@ -62,7 +72,7 @@ export class AccountingExcelExportService {
   // ============ TRIAL BALANCE EXCEL EXPORT ============
   async exportTrialBalanceExcel(params: ExportParams): Promise<Buffer> {
     if (!params.asOfDate) {
-      throw new Error('asOfDate is required for Trial Balance export');
+      throw new Error("asOfDate is required for Trial Balance export");
     }
 
     const workbook = new ExcelJS.Workbook();
@@ -76,15 +86,15 @@ export class AccountingExcelExportService {
       includeZeroBalances: params.includeZeroBalances || false,
     });
 
-    const worksheet = workbook.addWorksheet('Neraca Saldo');
+    const worksheet = workbook.addWorksheet("Neraca Saldo");
 
     // Create report header
     const reportHeader: IndonesianReportHeader = {
-      reportTitle: 'NERACA SALDO',
-      reportSubtitle: 'TRIAL BALANCE',
+      reportTitle: "NERACA SALDO",
+      reportSubtitle: "TRIAL BALANCE",
       reportPeriod: `Per Tanggal: ${this.formatIndonesianDate(params.asOfDate)}`,
       preparationDate: new Date(),
-      reportType: 'NERACA_SALDO',
+      reportType: "NERACA_SALDO",
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -95,12 +105,12 @@ export class AccountingExcelExportService {
 
     // Add column headers
     const headers = [
-      'Kode Akun',
-      'Nama Akun',
-      'Tipe',
-      'Debit',
-      'Kredit',
-      'Status',
+      "Kode Akun",
+      "Nama Akun",
+      "Tipe",
+      "Debit",
+      "Kredit",
+      "Status",
     ];
     worksheet.addRow(headers);
     const headerRowIndex = worksheet.rowCount;
@@ -108,8 +118,10 @@ export class AccountingExcelExportService {
     // Add data rows
     data.balances.forEach((balance: any) => {
       const isAbnormal =
-        (balance.normalBalance === 'DEBIT' && balance.creditBalance > balance.debitBalance) ||
-        (balance.normalBalance === 'CREDIT' && balance.debitBalance > balance.creditBalance);
+        (balance.normalBalance === "DEBIT" &&
+          balance.creditBalance > balance.debitBalance) ||
+        (balance.normalBalance === "CREDIT" &&
+          balance.debitBalance > balance.creditBalance);
 
       worksheet.addRow([
         balance.accountCode,
@@ -117,30 +129,25 @@ export class AccountingExcelExportService {
         balance.accountType,
         balance.debitBalance,
         balance.creditBalance,
-        isAbnormal ? 'Abnormal' : 'Normal',
+        isAbnormal ? "Abnormal" : "Normal",
       ]);
     });
 
     // Add summary row
     const summaryRowIndex = worksheet.rowCount + 1;
     worksheet.addRow([
-      '',
-      '',
-      'TOTAL',
+      "",
+      "",
+      "TOTAL",
       data.summary.totalDebit,
       data.summary.totalCredit,
-      data.summary.isBalanced ? 'Seimbang ✓' : 'Tidak Seimbang ✗',
+      data.summary.isBalanced ? "Seimbang ✓" : "Tidak Seimbang ✗",
     ]);
 
     // Add balance status
     worksheet.addRow([]);
     if (!data.summary.isBalanced) {
-      worksheet.addRow([
-        '',
-        '',
-        'Selisih:',
-        Math.abs(data.summary.difference),
-      ]);
+      worksheet.addRow(["", "", "Selisih:", Math.abs(data.summary.difference)]);
     }
 
     // Apply table formatting
@@ -150,7 +157,7 @@ export class AccountingExcelExportService {
       summaryRowIndex,
       1,
       6,
-      'NeracaSaldo',
+      "NeracaSaldo",
       true,
     );
 
@@ -167,8 +174,8 @@ export class AccountingExcelExportService {
     IndonesianExcelFormatter.addIndonesianFooter(
       worksheet,
       companyInfo,
-      'Sistem Akuntansi Digital',
-      'Manajer Keuangan',
+      "Sistem Akuntansi Digital",
+      "Manajer Keuangan",
     );
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -178,7 +185,9 @@ export class AccountingExcelExportService {
   // ============ GENERAL LEDGER EXCEL EXPORT ============
   async exportGeneralLedgerExcel(params: ExportParams): Promise<Buffer> {
     if (!params.startDate || !params.endDate) {
-      throw new Error('startDate and endDate are required for General Ledger export');
+      throw new Error(
+        "startDate and endDate are required for General Ledger export",
+      );
     }
 
     const workbook = new ExcelJS.Workbook();
@@ -194,21 +203,21 @@ export class AccountingExcelExportService {
       includeInactive: params.includeInactive || false,
     });
 
-    const worksheet = workbook.addWorksheet('Buku Besar');
+    const worksheet = workbook.addWorksheet("Buku Besar");
 
     // Create report header
     const filterText = params.accountCode
       ? `Akun: ${params.accountCode}`
       : params.accountType
-      ? `Tipe: ${params.accountType}`
-      : 'Semua Akun';
+        ? `Tipe: ${params.accountType}`
+        : "Semua Akun";
 
     const reportHeader: IndonesianReportHeader = {
-      reportTitle: 'BUKU BESAR',
-      reportSubtitle: 'GENERAL LEDGER',
+      reportTitle: "BUKU BESAR",
+      reportSubtitle: "GENERAL LEDGER",
       reportPeriod: `${filterText} | ${this.formatIndonesianDate(params.startDate)} - ${this.formatIndonesianDate(params.endDate)}`,
       preparationDate: new Date(),
-      reportType: 'BUKU_BESAR',
+      reportType: "BUKU_BESAR",
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -219,13 +228,13 @@ export class AccountingExcelExportService {
 
     // Add column headers
     const headers = [
-      'Tanggal',
-      'No. Jurnal',
-      'Akun',
-      'Deskripsi',
-      'Debit',
-      'Kredit',
-      'Saldo Berjalan',
+      "Tanggal",
+      "No. Jurnal",
+      "Akun",
+      "Deskripsi",
+      "Debit",
+      "Kredit",
+      "Saldo Berjalan",
     ];
     worksheet.addRow(headers);
     const headerRowIndex = worksheet.rowCount;
@@ -246,13 +255,13 @@ export class AccountingExcelExportService {
     // Add summary row
     const summaryRowIndex = worksheet.rowCount + 1;
     worksheet.addRow([
-      '',
-      '',
-      '',
-      'TOTAL',
+      "",
+      "",
+      "",
+      "TOTAL",
       data.summary.totalDebit,
       data.summary.totalCredit,
-      '',
+      "",
     ]);
 
     // Apply table formatting
@@ -262,12 +271,15 @@ export class AccountingExcelExportService {
       summaryRowIndex,
       1,
       7,
-      'BukuBesar',
+      "BukuBesar",
       true,
     );
 
     // Apply currency formatting
-    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [5, 6, 7]);
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(
+      worksheet,
+      [5, 6, 7],
+    );
 
     // Apply date formatting
     IndonesianExcelFormatter.applyIndonesianDateFormat(worksheet, [1]);
@@ -282,8 +294,8 @@ export class AccountingExcelExportService {
     IndonesianExcelFormatter.addIndonesianFooter(
       worksheet,
       companyInfo,
-      'Sistem Akuntansi Digital',
-      'Manajer Keuangan',
+      "Sistem Akuntansi Digital",
+      "Manajer Keuangan",
     );
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -293,7 +305,9 @@ export class AccountingExcelExportService {
   // ============ INCOME STATEMENT EXCEL EXPORT ============
   async exportIncomeStatementExcel(params: ExportParams): Promise<Buffer> {
     if (!params.startDate || !params.endDate) {
-      throw new Error('startDate and endDate are required for Income Statement export');
+      throw new Error(
+        "startDate and endDate are required for Income Statement export",
+      );
     }
 
     const workbook = new ExcelJS.Workbook();
@@ -306,15 +320,15 @@ export class AccountingExcelExportService {
       fiscalPeriodId: params.fiscalPeriodId,
     });
 
-    const worksheet = workbook.addWorksheet('Laporan Laba Rugi');
+    const worksheet = workbook.addWorksheet("Laporan Laba Rugi");
 
     // Create report header
     const reportHeader: IndonesianReportHeader = {
-      reportTitle: 'LAPORAN LABA RUGI',
-      reportSubtitle: 'INCOME STATEMENT',
+      reportTitle: "LAPORAN LABA RUGI",
+      reportSubtitle: "INCOME STATEMENT",
       reportPeriod: `Periode: ${this.formatIndonesianDate(params.startDate)} - ${this.formatIndonesianDate(params.endDate)}`,
       preparationDate: new Date(),
-      reportType: 'LAPORAN_LABA_RUGI',
+      reportType: "LAPORAN_LABA_RUGI",
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -324,12 +338,12 @@ export class AccountingExcelExportService {
     );
 
     // Add column headers
-    const headers = ['Keterangan', 'Jumlah (IDR)'];
+    const headers = ["Keterangan", "Jumlah (IDR)"];
     worksheet.addRow(headers);
     const headerRowIndex = worksheet.rowCount;
 
     // Revenue section
-    worksheet.addRow(['PENDAPATAN (REVENUE)', '']);
+    worksheet.addRow(["PENDAPATAN (REVENUE)", ""]);
     data.revenue.accounts.forEach((account: any) => {
       worksheet.addRow([
         `  ${account.accountCode} - ${account.accountNameId}`,
@@ -337,18 +351,18 @@ export class AccountingExcelExportService {
       ]);
     });
     const revenueTotalRow = worksheet.rowCount + 1;
-    worksheet.addRow(['Total Pendapatan', data.revenue.total]);
+    worksheet.addRow(["Total Pendapatan", data.revenue.total]);
 
     // Empty row
-    worksheet.addRow(['', '']);
+    worksheet.addRow(["", ""]);
 
     // Expenses section
-    worksheet.addRow(['BEBAN (EXPENSES)', '']);
+    worksheet.addRow(["BEBAN (EXPENSES)", ""]);
 
     // Group expenses by subtype
     const expensesBySubtype = new Map<string, any[]>();
     data.expenses.accounts.forEach((account: any) => {
-      const subtype = account.accountSubType || 'OTHER';
+      const subtype = account.accountSubType || "OTHER";
       if (!expensesBySubtype.has(subtype)) {
         expensesBySubtype.set(subtype, []);
       }
@@ -359,7 +373,7 @@ export class AccountingExcelExportService {
     });
 
     expensesBySubtype.forEach((accounts, subtype) => {
-      worksheet.addRow([`  ${subtype.replace(/_/g, ' ')}:`, '']);
+      worksheet.addRow([`  ${subtype.replace(/_/g, " ")}:`, ""]);
       accounts.forEach((account: any) => {
         worksheet.addRow([
           `    ${account.accountCode} - ${account.accountNameId}`,
@@ -369,18 +383,19 @@ export class AccountingExcelExportService {
     });
 
     const expenseTotalRow = worksheet.rowCount + 1;
-    worksheet.addRow(['Total Beban', data.expenses.total]);
+    worksheet.addRow(["Total Beban", data.expenses.total]);
 
     // Empty row
-    worksheet.addRow(['', '']);
+    worksheet.addRow(["", ""]);
 
     // Net income
     const netIncomeRow = worksheet.rowCount + 1;
-    const netIncomeLabel = data.summary.netIncome >= 0 ? 'LABA BERSIH' : 'RUGI BERSIH';
+    const netIncomeLabel =
+      data.summary.netIncome >= 0 ? "LABA BERSIH" : "RUGI BERSIH";
     worksheet.addRow([netIncomeLabel, Math.abs(data.summary.netIncome)]);
     worksheet.addRow([
       `Margin Laba: ${data.summary.profitMargin.toFixed(2)}%`,
-      '',
+      "",
     ]);
 
     const summaryRowIndex = netIncomeRow;
@@ -392,7 +407,7 @@ export class AccountingExcelExportService {
       summaryRowIndex,
       1,
       2,
-      'LaporanLabaRugi',
+      "LaporanLabaRugi",
       true,
     );
 
@@ -410,8 +425,8 @@ export class AccountingExcelExportService {
     IndonesianExcelFormatter.addIndonesianFooter(
       worksheet,
       companyInfo,
-      'Sistem Akuntansi Digital',
-      'Manajer Keuangan',
+      "Sistem Akuntansi Digital",
+      "Manajer Keuangan",
     );
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -421,7 +436,7 @@ export class AccountingExcelExportService {
   // ============ BALANCE SHEET EXCEL EXPORT ============
   async exportBalanceSheetExcel(params: ExportParams): Promise<Buffer> {
     if (!params.endDate) {
-      throw new Error('endDate is required for Balance Sheet export');
+      throw new Error("endDate is required for Balance Sheet export");
     }
 
     const workbook = new ExcelJS.Workbook();
@@ -433,15 +448,15 @@ export class AccountingExcelExportService {
       fiscalPeriodId: params.fiscalPeriodId,
     });
 
-    const worksheet = workbook.addWorksheet('Neraca');
+    const worksheet = workbook.addWorksheet("Neraca");
 
     // Create report header
     const reportHeader: IndonesianReportHeader = {
-      reportTitle: 'NERACA',
-      reportSubtitle: 'BALANCE SHEET',
+      reportTitle: "NERACA",
+      reportSubtitle: "BALANCE SHEET",
       reportPeriod: `Per Tanggal: ${this.formatIndonesianDate(params.endDate)}`,
       preparationDate: new Date(),
-      reportType: 'LAPORAN_POSISI_KEUANGAN',
+      reportType: "LAPORAN_POSISI_KEUANGAN",
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -451,7 +466,13 @@ export class AccountingExcelExportService {
     );
 
     // Add column headers (side by side layout)
-    const headers = ['ASET (ASSETS)', 'Jumlah', '', 'KEWAJIBAN & EKUITAS', 'Jumlah'];
+    const headers = [
+      "ASET (ASSETS)",
+      "Jumlah",
+      "",
+      "KEWAJIBAN & EKUITAS",
+      "Jumlah",
+    ];
     worksheet.addRow(headers);
     const headerRowIndex = worksheet.rowCount;
 
@@ -468,7 +489,7 @@ export class AccountingExcelExportService {
     let inEquitySection = false;
 
     for (let i = 0; i < maxRows + 5; i++) {
-      const row: any[] = ['', '', '', '', ''];
+      const row: any[] = ["", "", "", "", ""];
 
       // Left side: Assets
       if (assetIndex < data.assets.accounts.length) {
@@ -477,7 +498,7 @@ export class AccountingExcelExportService {
         row[1] = account.balance;
         assetIndex++;
       } else if (assetIndex === data.assets.accounts.length) {
-        row[0] = 'TOTAL ASET';
+        row[0] = "TOTAL ASET";
         row[1] = data.assets.total;
         assetIndex++;
       }
@@ -488,13 +509,19 @@ export class AccountingExcelExportService {
         row[3] = `${account.accountCode} - ${account.accountNameId}`;
         row[4] = account.balance;
         liabilityIndex++;
-      } else if (liabilityIndex === data.liabilities.accounts.length && !inEquitySection) {
-        row[3] = 'Total Kewajiban';
+      } else if (
+        liabilityIndex === data.liabilities.accounts.length &&
+        !inEquitySection
+      ) {
+        row[3] = "Total Kewajiban";
         row[4] = data.liabilities.total;
         liabilityIndex++;
-      } else if (liabilityIndex === data.liabilities.accounts.length + 1 && !inEquitySection) {
-        row[3] = ''; // Empty row
-        row[4] = '';
+      } else if (
+        liabilityIndex === data.liabilities.accounts.length + 1 &&
+        !inEquitySection
+      ) {
+        row[3] = ""; // Empty row
+        row[4] = "";
         inEquitySection = true;
         liabilityIndex++;
       } else if (inEquitySection && equityIndex < data.equity.accounts.length) {
@@ -502,16 +529,25 @@ export class AccountingExcelExportService {
         row[3] = `${account.accountCode} - ${account.accountNameId}`;
         row[4] = account.balance;
         equityIndex++;
-      } else if (inEquitySection && equityIndex === data.equity.accounts.length) {
-        row[3] = 'Total Ekuitas';
+      } else if (
+        inEquitySection &&
+        equityIndex === data.equity.accounts.length
+      ) {
+        row[3] = "Total Ekuitas";
         row[4] = data.equity.total;
         equityIndex++;
-      } else if (inEquitySection && equityIndex === data.equity.accounts.length + 1) {
-        row[3] = ''; // Empty row
-        row[4] = '';
+      } else if (
+        inEquitySection &&
+        equityIndex === data.equity.accounts.length + 1
+      ) {
+        row[3] = ""; // Empty row
+        row[4] = "";
         equityIndex++;
-      } else if (inEquitySection && equityIndex === data.equity.accounts.length + 2) {
-        row[3] = 'TOTAL KEWAJIBAN + EKUITAS';
+      } else if (
+        inEquitySection &&
+        equityIndex === data.equity.accounts.length + 2
+      ) {
+        row[3] = "TOTAL KEWAJIBAN + EKUITAS";
         row[4] = data.summary.liabilitiesAndEquity;
         equityIndex++;
         break; // Last row
@@ -523,9 +559,11 @@ export class AccountingExcelExportService {
     const summaryRowIndex = worksheet.rowCount;
 
     // Add balance status
-    worksheet.addRow(['', '', '', '', '']);
-    const statusText = data.summary.isBalanced ? 'Status: ✓ SEIMBANG' : 'Status: ✗ TIDAK SEIMBANG';
-    worksheet.addRow([statusText, '', '', '', '']);
+    worksheet.addRow(["", "", "", "", ""]);
+    const statusText = data.summary.isBalanced
+      ? "Status: ✓ SEIMBANG"
+      : "Status: ✗ TIDAK SEIMBANG";
+    worksheet.addRow([statusText, "", "", "", ""]);
 
     // Apply table formatting
     IndonesianExcelFormatter.formatIndonesianTable(
@@ -534,7 +572,7 @@ export class AccountingExcelExportService {
       summaryRowIndex,
       1,
       5,
-      'Neraca',
+      "Neraca",
       true,
     );
 
@@ -555,8 +593,8 @@ export class AccountingExcelExportService {
     IndonesianExcelFormatter.addIndonesianFooter(
       worksheet,
       companyInfo,
-      'Sistem Akuntansi Digital',
-      'Manajer Keuangan',
+      "Sistem Akuntansi Digital",
+      "Manajer Keuangan",
     );
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -566,7 +604,9 @@ export class AccountingExcelExportService {
   // ============ CASH FLOW STATEMENT EXCEL EXPORT ============
   async exportCashFlowStatementExcel(params: ExportParams): Promise<Buffer> {
     if (!params.startDate || !params.endDate) {
-      throw new Error('startDate and endDate are required for Cash Flow Statement export');
+      throw new Error(
+        "startDate and endDate are required for Cash Flow Statement export",
+      );
     }
 
     const workbook = new ExcelJS.Workbook();
@@ -579,15 +619,15 @@ export class AccountingExcelExportService {
       fiscalPeriodId: params.fiscalPeriodId,
     });
 
-    const worksheet = workbook.addWorksheet('Laporan Arus Kas');
+    const worksheet = workbook.addWorksheet("Laporan Arus Kas");
 
     // Create report header
     const reportHeader: IndonesianReportHeader = {
-      reportTitle: 'LAPORAN ARUS KAS',
-      reportSubtitle: 'CASH FLOW STATEMENT',
+      reportTitle: "LAPORAN ARUS KAS",
+      reportSubtitle: "CASH FLOW STATEMENT",
       reportPeriod: `Periode: ${this.formatIndonesianDate(params.startDate)} - ${this.formatIndonesianDate(params.endDate)}`,
       preparationDate: new Date(),
-      reportType: 'LAPORAN_ARUS_KAS',
+      reportType: "LAPORAN_ARUS_KAS",
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -597,44 +637,56 @@ export class AccountingExcelExportService {
     );
 
     // Add column headers
-    const headers = ['Keterangan', 'Jumlah (IDR)'];
+    const headers = ["Keterangan", "Jumlah (IDR)"];
     worksheet.addRow(headers);
     const headerRowIndex = worksheet.rowCount;
 
     // Operating activities
-    worksheet.addRow(['AKTIVITAS OPERASI', '']);
+    worksheet.addRow(["AKTIVITAS OPERASI", ""]);
     data.operatingActivities.transactions.forEach((item: any) => {
       worksheet.addRow([`  ${item.description}`, item.cashIn - item.cashOut]);
     });
-    worksheet.addRow(['Kas Bersih dari Aktivitas Operasi', data.operatingActivities.netCashFlow]);
+    worksheet.addRow([
+      "Kas Bersih dari Aktivitas Operasi",
+      data.operatingActivities.netCashFlow,
+    ]);
 
     // Empty row
-    worksheet.addRow(['', '']);
+    worksheet.addRow(["", ""]);
 
     // Investing activities
-    worksheet.addRow(['AKTIVITAS INVESTASI', '']);
+    worksheet.addRow(["AKTIVITAS INVESTASI", ""]);
     data.investingActivities.transactions.forEach((item: any) => {
       worksheet.addRow([`  ${item.description}`, item.cashIn - item.cashOut]);
     });
-    worksheet.addRow(['Kas Bersih dari Aktivitas Investasi', data.investingActivities.netCashFlow]);
+    worksheet.addRow([
+      "Kas Bersih dari Aktivitas Investasi",
+      data.investingActivities.netCashFlow,
+    ]);
 
     // Empty row
-    worksheet.addRow(['', '']);
+    worksheet.addRow(["", ""]);
 
     // Financing activities
-    worksheet.addRow(['AKTIVITAS PENDANAAN', '']);
+    worksheet.addRow(["AKTIVITAS PENDANAAN", ""]);
     data.financingActivities.transactions.forEach((item: any) => {
       worksheet.addRow([`  ${item.description}`, item.cashIn - item.cashOut]);
     });
-    worksheet.addRow(['Kas Bersih dari Aktivitas Pendanaan', data.financingActivities.netCashFlow]);
+    worksheet.addRow([
+      "Kas Bersih dari Aktivitas Pendanaan",
+      data.financingActivities.netCashFlow,
+    ]);
 
     // Empty row
-    worksheet.addRow(['', '']);
+    worksheet.addRow(["", ""]);
 
     // Summary
-    worksheet.addRow(['Kenaikan (Penurunan) Kas Bersih', data.summary.netCashFlow]);
-    worksheet.addRow(['Saldo Kas Awal Periode', data.summary.openingBalance]);
-    worksheet.addRow(['Saldo Kas Akhir Periode', data.summary.closingBalance]);
+    worksheet.addRow([
+      "Kenaikan (Penurunan) Kas Bersih",
+      data.summary.netCashFlow,
+    ]);
+    worksheet.addRow(["Saldo Kas Awal Periode", data.summary.openingBalance]);
+    worksheet.addRow(["Saldo Kas Akhir Periode", data.summary.closingBalance]);
 
     const summaryRowIndex = worksheet.rowCount;
 
@@ -645,7 +697,7 @@ export class AccountingExcelExportService {
       summaryRowIndex,
       1,
       2,
-      'LaporanArusKas',
+      "LaporanArusKas",
       true,
     );
 
@@ -663,8 +715,8 @@ export class AccountingExcelExportService {
     IndonesianExcelFormatter.addIndonesianFooter(
       worksheet,
       companyInfo,
-      'Sistem Akuntansi Digital',
-      'Manajer Keuangan',
+      "Sistem Akuntansi Digital",
+      "Manajer Keuangan",
     );
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -674,26 +726,27 @@ export class AccountingExcelExportService {
   // ============ ACCOUNTS RECEIVABLE EXCEL EXPORT ============
   async exportAccountsReceivableExcel(params: ExportParams): Promise<Buffer> {
     if (!params.endDate) {
-      throw new Error('endDate is required for Accounts Receivable export');
+      throw new Error("endDate is required for Accounts Receivable export");
     }
 
     const workbook = new ExcelJS.Workbook();
     const companyInfo = this.getIndonesianCompanyInfo();
 
     // Fetch AR data
-    const data = await this.financialStatementsService.getAccountsReceivableReport({
-      endDate: new Date(params.endDate),
-    });
+    const data =
+      await this.financialStatementsService.getAccountsReceivableReport({
+        endDate: new Date(params.endDate),
+      });
 
-    const worksheet = workbook.addWorksheet('Laporan Piutang');
+    const worksheet = workbook.addWorksheet("Laporan Piutang");
 
     // Create report header
     const reportHeader: IndonesianReportHeader = {
-      reportTitle: 'LAPORAN PIUTANG USAHA',
-      reportSubtitle: 'ACCOUNTS RECEIVABLE REPORT',
+      reportTitle: "LAPORAN PIUTANG USAHA",
+      reportSubtitle: "ACCOUNTS RECEIVABLE REPORT",
       reportPeriod: `Per Tanggal: ${this.formatIndonesianDate(params.endDate)}`,
       preparationDate: new Date(),
-      reportType: 'PIUTANG_USAHA',
+      reportType: "PIUTANG_USAHA",
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -704,14 +757,14 @@ export class AccountingExcelExportService {
 
     // Add column headers
     const headers = [
-      'No.',
-      'Nama Client',
-      'No. Invoice',
-      'Tanggal Invoice',
-      'Total Invoice',
-      'Terbayar',
-      'Saldo Piutang',
-      'Status',
+      "No.",
+      "Nama Client",
+      "No. Invoice",
+      "Tanggal Invoice",
+      "Total Invoice",
+      "Terbayar",
+      "Saldo Piutang",
+      "Status",
     ];
     worksheet.addRow(headers);
     const headerRowIndex = worksheet.rowCount;
@@ -742,14 +795,14 @@ export class AccountingExcelExportService {
     // Add summary row
     const summaryRowIndex = worksheet.rowCount + 1;
     worksheet.addRow([
-      '',
-      '',
-      '',
-      'TOTAL',
+      "",
+      "",
+      "",
+      "TOTAL",
       totalInvoiceAmount,
       totalPaidAmount,
       totalOutstanding,
-      '',
+      "",
     ]);
 
     // Apply table formatting
@@ -759,12 +812,15 @@ export class AccountingExcelExportService {
       summaryRowIndex,
       1,
       8,
-      'LaporanPiutang',
+      "LaporanPiutang",
       true,
     );
 
     // Apply currency formatting
-    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [5, 6, 7]);
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(
+      worksheet,
+      [5, 6, 7],
+    );
 
     // Apply date formatting
     IndonesianExcelFormatter.applyIndonesianDateFormat(worksheet, [4]);
@@ -779,8 +835,8 @@ export class AccountingExcelExportService {
     IndonesianExcelFormatter.addIndonesianFooter(
       worksheet,
       companyInfo,
-      'Sistem Akuntansi Digital',
-      'Manajer Keuangan',
+      "Sistem Akuntansi Digital",
+      "Manajer Keuangan",
     );
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -790,26 +846,28 @@ export class AccountingExcelExportService {
   // ============ ACCOUNTS PAYABLE EXCEL EXPORT ============
   async exportAccountsPayableExcel(params: ExportParams): Promise<Buffer> {
     if (!params.endDate) {
-      throw new Error('endDate is required for Accounts Payable export');
+      throw new Error("endDate is required for Accounts Payable export");
     }
 
     const workbook = new ExcelJS.Workbook();
     const companyInfo = this.getIndonesianCompanyInfo();
 
     // Fetch AP data
-    const data = await this.financialStatementsService.getAccountsPayableReport({
-      endDate: new Date(params.endDate),
-    });
+    const data = await this.financialStatementsService.getAccountsPayableReport(
+      {
+        endDate: new Date(params.endDate),
+      },
+    );
 
-    const worksheet = workbook.addWorksheet('Laporan Hutang');
+    const worksheet = workbook.addWorksheet("Laporan Hutang");
 
     // Create report header
     const reportHeader: IndonesianReportHeader = {
-      reportTitle: 'LAPORAN HUTANG USAHA',
-      reportSubtitle: 'ACCOUNTS PAYABLE REPORT',
+      reportTitle: "LAPORAN HUTANG USAHA",
+      reportSubtitle: "ACCOUNTS PAYABLE REPORT",
       reportPeriod: `Per Tanggal: ${this.formatIndonesianDate(params.endDate)}`,
       preparationDate: new Date(),
-      reportType: 'HUTANG_USAHA',
+      reportType: "HUTANG_USAHA",
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -820,14 +878,14 @@ export class AccountingExcelExportService {
 
     // Add column headers
     const headers = [
-      'No.',
-      'Nama Vendor',
-      'No. Invoice',
-      'Tanggal Invoice',
-      'Total Invoice',
-      'Terbayar',
-      'Saldo Hutang',
-      'Status',
+      "No.",
+      "Nama Vendor",
+      "No. Invoice",
+      "Tanggal Invoice",
+      "Total Invoice",
+      "Terbayar",
+      "Saldo Hutang",
+      "Status",
     ];
     worksheet.addRow(headers);
     const headerRowIndex = worksheet.rowCount;
@@ -858,14 +916,14 @@ export class AccountingExcelExportService {
     // Add summary row
     const summaryRowIndex = worksheet.rowCount + 1;
     worksheet.addRow([
-      '',
-      '',
-      '',
-      'TOTAL',
+      "",
+      "",
+      "",
+      "TOTAL",
       totalInvoiceAmount,
       totalPaidAmount,
       totalOutstanding,
-      '',
+      "",
     ]);
 
     // Apply table formatting
@@ -875,12 +933,15 @@ export class AccountingExcelExportService {
       summaryRowIndex,
       1,
       8,
-      'LaporanHutang',
+      "LaporanHutang",
       true,
     );
 
     // Apply currency formatting
-    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [5, 6, 7]);
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(
+      worksheet,
+      [5, 6, 7],
+    );
 
     // Apply date formatting
     IndonesianExcelFormatter.applyIndonesianDateFormat(worksheet, [4]);
@@ -895,8 +956,8 @@ export class AccountingExcelExportService {
     IndonesianExcelFormatter.addIndonesianFooter(
       worksheet,
       companyInfo,
-      'Sistem Akuntansi Digital',
-      'Manajer Keuangan',
+      "Sistem Akuntansi Digital",
+      "Manajer Keuangan",
     );
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -912,15 +973,15 @@ export class AccountingExcelExportService {
     const asOfDate = params.asOfDate ? new Date(params.asOfDate) : new Date();
     const data = await this.ledgerService.getAccountsReceivableAging(asOfDate);
 
-    const worksheet = workbook.addWorksheet('Aging Piutang');
+    const worksheet = workbook.addWorksheet("Aging Piutang");
 
     // Create report header
     const reportHeader: IndonesianReportHeader = {
-      reportTitle: 'AGING PIUTANG USAHA',
-      reportSubtitle: 'ACCOUNTS RECEIVABLE AGING',
+      reportTitle: "AGING PIUTANG USAHA",
+      reportSubtitle: "ACCOUNTS RECEIVABLE AGING",
       reportPeriod: `Per Tanggal: ${this.formatIndonesianDate(asOfDate)}`,
       preparationDate: new Date(),
-      reportType: 'AGING_PIUTANG',
+      reportType: "AGING_PIUTANG",
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -931,14 +992,14 @@ export class AccountingExcelExportService {
 
     // Add column headers
     const headers = [
-      'No.',
-      'Nama Client',
-      'Current',
-      '1-30 Hari',
-      '31-60 Hari',
-      '61-90 Hari',
-      '>90 Hari',
-      'Total',
+      "No.",
+      "Nama Client",
+      "Current",
+      "1-30 Hari",
+      "31-60 Hari",
+      "61-90 Hari",
+      ">90 Hari",
+      "Total",
     ];
     worksheet.addRow(headers);
     const headerRowIndex = worksheet.rowCount;
@@ -974,8 +1035,8 @@ export class AccountingExcelExportService {
     // Add summary row
     const summaryRowIndex = worksheet.rowCount + 1;
     worksheet.addRow([
-      '',
-      'TOTAL',
+      "",
+      "TOTAL",
       totalCurrent,
       total1_30,
       total31_60,
@@ -991,12 +1052,15 @@ export class AccountingExcelExportService {
       summaryRowIndex,
       1,
       8,
-      'AgingPiutang',
+      "AgingPiutang",
       true,
     );
 
     // Apply currency formatting
-    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [3, 4, 5, 6, 7, 8]);
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(
+      worksheet,
+      [3, 4, 5, 6, 7, 8],
+    );
 
     // Set column widths
     IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 8);
@@ -1008,8 +1072,8 @@ export class AccountingExcelExportService {
     IndonesianExcelFormatter.addIndonesianFooter(
       worksheet,
       companyInfo,
-      'Sistem Akuntansi Digital',
-      'Manajer Keuangan',
+      "Sistem Akuntansi Digital",
+      "Manajer Keuangan",
     );
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -1025,15 +1089,15 @@ export class AccountingExcelExportService {
     const asOfDate = params.asOfDate ? new Date(params.asOfDate) : new Date();
     const data = await this.ledgerService.getAccountsPayableAging(asOfDate);
 
-    const worksheet = workbook.addWorksheet('Aging Hutang');
+    const worksheet = workbook.addWorksheet("Aging Hutang");
 
     // Create report header
     const reportHeader: IndonesianReportHeader = {
-      reportTitle: 'AGING HUTANG USAHA',
-      reportSubtitle: 'ACCOUNTS PAYABLE AGING',
+      reportTitle: "AGING HUTANG USAHA",
+      reportSubtitle: "ACCOUNTS PAYABLE AGING",
       reportPeriod: `Per Tanggal: ${this.formatIndonesianDate(asOfDate)}`,
       preparationDate: new Date(),
-      reportType: 'AGING_HUTANG',
+      reportType: "AGING_HUTANG",
     };
 
     const dataStartRow = IndonesianExcelFormatter.formatIndonesianLetterhead(
@@ -1044,14 +1108,14 @@ export class AccountingExcelExportService {
 
     // Add column headers
     const headers = [
-      'No.',
-      'Nama Vendor',
-      'Current',
-      '1-30 Hari',
-      '31-60 Hari',
-      '61-90 Hari',
-      '>90 Hari',
-      'Total',
+      "No.",
+      "Nama Vendor",
+      "Current",
+      "1-30 Hari",
+      "31-60 Hari",
+      "61-90 Hari",
+      ">90 Hari",
+      "Total",
     ];
     worksheet.addRow(headers);
     const headerRowIndex = worksheet.rowCount;
@@ -1087,8 +1151,8 @@ export class AccountingExcelExportService {
     // Add summary row
     const summaryRowIndex = worksheet.rowCount + 1;
     worksheet.addRow([
-      '',
-      'TOTAL',
+      "",
+      "TOTAL",
       totalCurrent,
       total1_30,
       total31_60,
@@ -1104,12 +1168,15 @@ export class AccountingExcelExportService {
       summaryRowIndex,
       1,
       8,
-      'AgingHutang',
+      "AgingHutang",
       true,
     );
 
     // Apply currency formatting
-    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [3, 4, 5, 6, 7, 8]);
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(
+      worksheet,
+      [3, 4, 5, 6, 7, 8],
+    );
 
     // Set column widths
     IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 8);
@@ -1121,8 +1188,8 @@ export class AccountingExcelExportService {
     IndonesianExcelFormatter.addIndonesianFooter(
       worksheet,
       companyInfo,
-      'Sistem Akuntansi Digital',
-      'Manajer Keuangan',
+      "Sistem Akuntansi Digital",
+      "Manajer Keuangan",
     );
 
     const buffer = await workbook.xlsx.writeBuffer();

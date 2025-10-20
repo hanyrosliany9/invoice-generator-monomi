@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 import {
   LedgerQueryDto,
   TrialBalanceQueryDto,
-} from '../dto/financial-statement-query.dto';
-import { AccountType, BalanceType } from '@prisma/client';
+} from "../dto/financial-statement-query.dto";
+import { AccountType, BalanceType } from "@prisma/client";
 
 @Injectable()
 export class LedgerService {
@@ -40,7 +40,7 @@ export class LedgerService {
         },
         select: { id: true },
       });
-      where.accountId = { in: accounts.map(a => a.id) };
+      where.accountId = { in: accounts.map((a) => a.id) };
     }
 
     if (startDate || endDate) {
@@ -56,9 +56,9 @@ export class LedgerService {
     const entries = await this.prisma.generalLedger.findMany({
       where,
       orderBy: [
-        { accountId: 'asc' },
-        { entryDate: 'asc' },
-        { postingDate: 'asc' },
+        { accountId: "asc" },
+        { entryDate: "asc" },
+        { postingDate: "asc" },
       ],
       include: {
         account: {
@@ -88,7 +88,7 @@ export class LedgerService {
       let currentBalance = accountBalances.get(entry.accountId) || 0;
 
       // Update balance based on normal balance type
-      if (account.normalBalance === 'DEBIT') {
+      if (account.normalBalance === "DEBIT") {
         currentBalance += Number(entry.debit) - Number(entry.credit);
       } else {
         currentBalance += Number(entry.credit) - Number(entry.debit);
@@ -171,7 +171,7 @@ export class LedgerService {
     const totalCredit = entries.reduce((sum, e) => sum + Number(e.credit), 0);
 
     // Calculate balance based on normal balance type
-    if (account.normalBalance === 'DEBIT') {
+    if (account.normalBalance === "DEBIT") {
       return totalDebit - totalCredit;
     } else {
       return totalCredit - totalDebit;
@@ -194,27 +194,30 @@ export class LedgerService {
       where: {
         isActive: includeInactive ? undefined : true,
       },
-      orderBy: [{ accountType: 'asc' }, { code: 'asc' }],
+      orderBy: [{ accountType: "asc" }, { code: "asc" }],
     });
 
     // Calculate balance for each account
     const balances = await Promise.all(
       accounts.map(async (account) => {
-        const balance = await this.calculateAccountBalance(account.code, asOfDate);
+        const balance = await this.calculateAccountBalance(
+          account.code,
+          asOfDate,
+        );
 
         // Separate into debit and credit columns for trial balance
         let debitBalance = 0;
         let creditBalance = 0;
 
         if (balance > 0) {
-          if (account.normalBalance === 'DEBIT') {
+          if (account.normalBalance === "DEBIT") {
             debitBalance = balance;
           } else {
             creditBalance = balance;
           }
         } else if (balance < 0) {
           // Abnormal balance
-          if (account.normalBalance === 'DEBIT') {
+          if (account.normalBalance === "DEBIT") {
             creditBalance = Math.abs(balance);
           } else {
             debitBalance = Math.abs(balance);
@@ -231,8 +234,9 @@ export class LedgerService {
           balance,
           debitBalance,
           creditBalance,
-          isAbnormal: (balance > 0 && account.normalBalance === 'CREDIT') ||
-                      (balance < 0 && account.normalBalance === 'DEBIT'),
+          isAbnormal:
+            (balance > 0 && account.normalBalance === "CREDIT") ||
+            (balance < 0 && account.normalBalance === "DEBIT"),
         };
       }),
     );
@@ -240,20 +244,29 @@ export class LedgerService {
     // Filter out zero balances if requested
     const filteredBalances = includeZeroBalances
       ? balances
-      : balances.filter(b => b.balance !== 0);
+      : balances.filter((b) => b.balance !== 0);
 
     // Calculate totals
-    const totalDebit = filteredBalances.reduce((sum, b) => sum + b.debitBalance, 0);
-    const totalCredit = filteredBalances.reduce((sum, b) => sum + b.creditBalance, 0);
+    const totalDebit = filteredBalances.reduce(
+      (sum, b) => sum + b.debitBalance,
+      0,
+    );
+    const totalCredit = filteredBalances.reduce(
+      (sum, b) => sum + b.creditBalance,
+      0,
+    );
 
     // Group by account type for better presentation
-    const balancesByType = filteredBalances.reduce((acc, balance) => {
-      if (!acc[balance.accountType]) {
-        acc[balance.accountType] = [];
-      }
-      acc[balance.accountType].push(balance);
-      return acc;
-    }, {} as Record<string, typeof filteredBalances>);
+    const balancesByType = filteredBalances.reduce(
+      (acc, balance) => {
+        if (!acc[balance.accountType]) {
+          acc[balance.accountType] = [];
+        }
+        acc[balance.accountType].push(balance);
+        return acc;
+      },
+      {} as Record<string, typeof filteredBalances>,
+    );
 
     return {
       asOfDate,
@@ -285,7 +298,10 @@ export class LedgerService {
       ([accountType, balances]) => {
         const totalBalance = balances.reduce((sum, b) => sum + b.balance, 0);
         const totalDebit = balances.reduce((sum, b) => sum + b.debitBalance, 0);
-        const totalCredit = balances.reduce((sum, b) => sum + b.creditBalance, 0);
+        const totalCredit = balances.reduce(
+          (sum, b) => sum + b.creditBalance,
+          0,
+        );
 
         return {
           accountType: accountType as AccountType,
@@ -330,13 +346,15 @@ export class LedgerService {
 
     // Get unique account IDs from line items
     const accountIds = [
-      ...new Set(journalEntry.lineItems.map(item => item.accountId)),
+      ...new Set(journalEntry.lineItems.map((item) => item.accountId)),
     ];
 
     // Update balance for each account
     for (const accountId of accountIds) {
       // Find the account code for this ID
-      const lineItem = journalEntry.lineItems.find(item => item.accountId === accountId);
+      const lineItem = journalEntry.lineItems.find(
+        (item) => item.accountId === accountId,
+      );
       if (!lineItem) continue;
 
       const accountCode = lineItem.account.code;
@@ -374,7 +392,7 @@ export class LedgerService {
     // Get all unpaid invoices with ECL provisions
     const invoices = await this.prisma.invoice.findMany({
       where: {
-        status: { in: ['SENT', 'OVERDUE'] },
+        status: { in: ["SENT", "OVERDUE"] },
         creationDate: { lte: asOfDate },
       },
       include: {
@@ -388,10 +406,10 @@ export class LedgerService {
         allowances: {
           where: {
             calculationDate: { lte: asOfDate },
-            provisionStatus: { in: ['ACTIVE', 'WRITTEN_OFF'] },
+            provisionStatus: { in: ["ACTIVE", "WRITTEN_OFF"] },
           },
           orderBy: {
-            calculationDate: 'desc',
+            calculationDate: "desc",
           },
           take: 1, // Get latest ECL provision
         },
@@ -399,17 +417,19 @@ export class LedgerService {
     });
 
     // Calculate aging buckets with ECL data
-    const aging = invoices.map(invoice => {
+    const aging = invoices.map((invoice) => {
       const daysOverdue = Math.floor(
         (asOfDate.getTime() - new Date(invoice.dueDate).getTime()) /
           (1000 * 60 * 60 * 24),
       );
 
-      let agingBucket = 'Current';
-      if (daysOverdue > 0 && daysOverdue <= 30) agingBucket = '1-30 days';
-      else if (daysOverdue > 30 && daysOverdue <= 60) agingBucket = '31-60 days';
-      else if (daysOverdue > 60 && daysOverdue <= 90) agingBucket = '61-90 days';
-      else if (daysOverdue > 90) agingBucket = 'Over 90 days';
+      let agingBucket = "Current";
+      if (daysOverdue > 0 && daysOverdue <= 30) agingBucket = "1-30 days";
+      else if (daysOverdue > 30 && daysOverdue <= 60)
+        agingBucket = "31-60 days";
+      else if (daysOverdue > 60 && daysOverdue <= 90)
+        agingBucket = "61-90 days";
+      else if (daysOverdue > 90) agingBucket = "Over 90 days";
 
       // Get ECL provision data
       const latestECL = invoice.allowances[0];
@@ -436,11 +456,11 @@ export class LedgerService {
 
     // Group by aging bucket
     const agingBuckets = {
-      current: aging.filter(a => a.agingBucket === 'Current'),
-      days1to30: aging.filter(a => a.agingBucket === '1-30 days'),
-      days31to60: aging.filter(a => a.agingBucket === '31-60 days'),
-      days61to90: aging.filter(a => a.agingBucket === '61-90 days'),
-      over90: aging.filter(a => a.agingBucket === 'Over 90 days'),
+      current: aging.filter((a) => a.agingBucket === "Current"),
+      days1to30: aging.filter((a) => a.agingBucket === "1-30 days"),
+      days31to60: aging.filter((a) => a.agingBucket === "31-60 days"),
+      days61to90: aging.filter((a) => a.agingBucket === "61-90 days"),
+      over90: aging.filter((a) => a.agingBucket === "Over 90 days"),
     };
 
     // Calculate ECL totals
@@ -455,20 +475,50 @@ export class LedgerService {
       agingBuckets,
       summary: {
         totalAR,
-        current: agingBuckets.current.reduce((sum, a) => sum + Number(a.amount), 0),
-        days1to30: agingBuckets.days1to30.reduce((sum, a) => sum + Number(a.amount), 0),
-        days31to60: agingBuckets.days31to60.reduce((sum, a) => sum + Number(a.amount), 0),
-        days61to90: agingBuckets.days61to90.reduce((sum, a) => sum + Number(a.amount), 0),
-        over90: agingBuckets.over90.reduce((sum, a) => sum + Number(a.amount), 0),
+        current: agingBuckets.current.reduce(
+          (sum, a) => sum + Number(a.amount),
+          0,
+        ),
+        days1to30: agingBuckets.days1to30.reduce(
+          (sum, a) => sum + Number(a.amount),
+          0,
+        ),
+        days31to60: agingBuckets.days31to60.reduce(
+          (sum, a) => sum + Number(a.amount),
+          0,
+        ),
+        days61to90: agingBuckets.days61to90.reduce(
+          (sum, a) => sum + Number(a.amount),
+          0,
+        ),
+        over90: agingBuckets.over90.reduce(
+          (sum, a) => sum + Number(a.amount),
+          0,
+        ),
         // ECL (PSAK 71) summary
         totalECL,
         netAR,
         coverageRatio,
-        eclByCurrent: agingBuckets.current.reduce((sum, a) => sum + a.eclAmount, 0),
-        eclBy1to30: agingBuckets.days1to30.reduce((sum, a) => sum + a.eclAmount, 0),
-        eclBy31to60: agingBuckets.days31to60.reduce((sum, a) => sum + a.eclAmount, 0),
-        eclBy61to90: agingBuckets.days61to90.reduce((sum, a) => sum + a.eclAmount, 0),
-        eclByOver90: agingBuckets.over90.reduce((sum, a) => sum + a.eclAmount, 0),
+        eclByCurrent: agingBuckets.current.reduce(
+          (sum, a) => sum + a.eclAmount,
+          0,
+        ),
+        eclBy1to30: agingBuckets.days1to30.reduce(
+          (sum, a) => sum + a.eclAmount,
+          0,
+        ),
+        eclBy31to60: agingBuckets.days31to60.reduce(
+          (sum, a) => sum + a.eclAmount,
+          0,
+        ),
+        eclBy61to90: agingBuckets.days61to90.reduce(
+          (sum, a) => sum + a.eclAmount,
+          0,
+        ),
+        eclByOver90: agingBuckets.over90.reduce(
+          (sum, a) => sum + a.eclAmount,
+          0,
+        ),
       },
     };
   }
@@ -480,7 +530,7 @@ export class LedgerService {
     // Get all unpaid expenses
     const expenses = await this.prisma.expense.findMany({
       where: {
-        status: { in: ['SUBMITTED', 'APPROVED'] },
+        status: { in: ["SUBMITTED", "APPROVED"] },
         expenseDate: { lte: asOfDate },
       },
       include: {
@@ -495,7 +545,7 @@ export class LedgerService {
     });
 
     // Calculate aging buckets (similar to AR aging)
-    const aging = expenses.map(expense => {
+    const aging = expenses.map((expense) => {
       // Assuming 30 days payment term for expenses
       const dueDate = new Date(expense.expenseDate);
       dueDate.setDate(dueDate.getDate() + 30);
@@ -504,11 +554,13 @@ export class LedgerService {
         (asOfDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
       );
 
-      let agingBucket = 'Current';
-      if (daysOverdue > 0 && daysOverdue <= 30) agingBucket = '1-30 days';
-      else if (daysOverdue > 30 && daysOverdue <= 60) agingBucket = '31-60 days';
-      else if (daysOverdue > 60 && daysOverdue <= 90) agingBucket = '61-90 days';
-      else if (daysOverdue > 90) agingBucket = 'Over 90 days';
+      let agingBucket = "Current";
+      if (daysOverdue > 0 && daysOverdue <= 30) agingBucket = "1-30 days";
+      else if (daysOverdue > 30 && daysOverdue <= 60)
+        agingBucket = "31-60 days";
+      else if (daysOverdue > 60 && daysOverdue <= 90)
+        agingBucket = "61-90 days";
+      else if (daysOverdue > 90) agingBucket = "Over 90 days";
 
       return {
         expenseId: expense.id,
@@ -524,11 +576,11 @@ export class LedgerService {
 
     // Group by aging bucket
     const agingBuckets = {
-      current: aging.filter(a => a.agingBucket === 'Current'),
-      days1to30: aging.filter(a => a.agingBucket === '1-30 days'),
-      days31to60: aging.filter(a => a.agingBucket === '31-60 days'),
-      days61to90: aging.filter(a => a.agingBucket === '61-90 days'),
-      over90: aging.filter(a => a.agingBucket === 'Over 90 days'),
+      current: aging.filter((a) => a.agingBucket === "Current"),
+      days1to30: aging.filter((a) => a.agingBucket === "1-30 days"),
+      days31to60: aging.filter((a) => a.agingBucket === "31-60 days"),
+      days61to90: aging.filter((a) => a.agingBucket === "61-90 days"),
+      over90: aging.filter((a) => a.agingBucket === "Over 90 days"),
     };
 
     return {
@@ -537,11 +589,26 @@ export class LedgerService {
       agingBuckets,
       summary: {
         totalAP: aging.reduce((sum, a) => sum + Number(a.amount), 0),
-        current: agingBuckets.current.reduce((sum, a) => sum + Number(a.amount), 0),
-        days1to30: agingBuckets.days1to30.reduce((sum, a) => sum + Number(a.amount), 0),
-        days31to60: agingBuckets.days31to60.reduce((sum, a) => sum + Number(a.amount), 0),
-        days61to90: agingBuckets.days61to90.reduce((sum, a) => sum + Number(a.amount), 0),
-        over90: agingBuckets.over90.reduce((sum, a) => sum + Number(a.amount), 0),
+        current: agingBuckets.current.reduce(
+          (sum, a) => sum + Number(a.amount),
+          0,
+        ),
+        days1to30: agingBuckets.days1to30.reduce(
+          (sum, a) => sum + Number(a.amount),
+          0,
+        ),
+        days31to60: agingBuckets.days31to60.reduce(
+          (sum, a) => sum + Number(a.amount),
+          0,
+        ),
+        days61to90: agingBuckets.days61to90.reduce(
+          (sum, a) => sum + Number(a.amount),
+          0,
+        ),
+        over90: agingBuckets.over90.reduce(
+          (sum, a) => sum + Number(a.amount),
+          0,
+        ),
       },
     };
   }

@@ -1,24 +1,31 @@
-import { IsString, IsNumber, IsDate, IsOptional, IsEnum, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsNumber,
+  IsDate,
+  IsOptional,
+  IsEnum,
+  Min,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export enum TransferMethod {
-  INTERNAL = 'INTERNAL',
-  INTERBANK = 'INTERBANK',
-  RTGS = 'RTGS',
-  CLEARING = 'CLEARING',
-  SKN = 'SKN',
-  BIFAST = 'BIFAST',
-  OTHER = 'OTHER',
+  INTERNAL = "INTERNAL",
+  INTERBANK = "INTERBANK",
+  RTGS = "RTGS",
+  CLEARING = "CLEARING",
+  SKN = "SKN",
+  BIFAST = "BIFAST",
+  OTHER = "OTHER",
 }
 
 export enum BankTransferStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
-  REJECTED = 'REJECTED',
-  CANCELLED = 'CANCELLED',
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+  REJECTED = "REJECTED",
+  CANCELLED = "CANCELLED",
 }
 
 export class CreateBankTransferDto {

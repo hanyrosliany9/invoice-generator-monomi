@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { Decimal } from '@prisma/client/runtime/library';
-import { PPNCategory } from '@prisma/client';
+import { Injectable } from "@nestjs/common";
+import { Decimal } from "@prisma/client/runtime/library";
+import { PPNCategory } from "@prisma/client";
 
 /**
  * PPN (Pajak Pertambahan Nilai) Calculator Service
@@ -12,10 +12,10 @@ import { PPNCategory } from '@prisma/client';
 export class PPNCalculatorService {
   // PPN Rates as of January 2025
   private readonly PPN_RATES = {
-    STANDARD: 0.12,    // 12% statutory rate
-    EFFECTIVE: 0.11,   // 11% effective rate for non-luxury goods
-    LUXURY: 0.12,      // 12% for luxury goods (no reduction)
-    EXPORT: 0.00,      // 0% for exports
+    STANDARD: 0.12, // 12% statutory rate
+    EFFECTIVE: 0.11, // 11% effective rate for non-luxury goods
+    LUXURY: 0.12, // 12% for luxury goods (no reduction)
+    EXPORT: 0.0, // 0% for exports
   };
 
   /**
@@ -25,8 +25,12 @@ export class PPNCalculatorService {
    * @param isLuxuryGoods - Whether the item is classified as luxury goods
    * @returns PPN amount to be added
    */
-  calculatePPN(grossAmount: number | Decimal, isLuxuryGoods: boolean = false): number {
-    const amount = typeof grossAmount === 'number' ? grossAmount : grossAmount.toNumber();
+  calculatePPN(
+    grossAmount: number | Decimal,
+    isLuxuryGoods: boolean = false,
+  ): number {
+    const amount =
+      typeof grossAmount === "number" ? grossAmount : grossAmount.toNumber();
 
     if (isLuxuryGoods) {
       // Luxury goods: Full 12%
@@ -44,8 +48,12 @@ export class PPNCalculatorService {
    * @param isLuxuryGoods - Whether the item is classified as luxury goods
    * @returns Total amount (gross + PPN)
    */
-  calculateTotalWithPPN(grossAmount: number | Decimal, isLuxuryGoods: boolean = false): number {
-    const amount = typeof grossAmount === 'number' ? grossAmount : grossAmount.toNumber();
+  calculateTotalWithPPN(
+    grossAmount: number | Decimal,
+    isLuxuryGoods: boolean = false,
+  ): number {
+    const amount =
+      typeof grossAmount === "number" ? grossAmount : grossAmount.toNumber();
     const ppn = this.calculatePPN(amount, isLuxuryGoods);
     return this.roundToTwoDecimals(amount + ppn);
   }
@@ -58,9 +66,15 @@ export class PPNCalculatorService {
    * @param isLuxuryGoods - Whether the item is classified as luxury goods
    * @returns Base amount (DPP) before PPN
    */
-  extractGrossFromTotal(totalAmount: number | Decimal, isLuxuryGoods: boolean = false): number {
-    const total = typeof totalAmount === 'number' ? totalAmount : totalAmount.toNumber();
-    const rate = isLuxuryGoods ? this.PPN_RATES.LUXURY : this.PPN_RATES.EFFECTIVE;
+  extractGrossFromTotal(
+    totalAmount: number | Decimal,
+    isLuxuryGoods: boolean = false,
+  ): number {
+    const total =
+      typeof totalAmount === "number" ? totalAmount : totalAmount.toNumber();
+    const rate = isLuxuryGoods
+      ? this.PPN_RATES.LUXURY
+      : this.PPN_RATES.EFFECTIVE;
 
     // Formula: DPP = Total / (1 + rate)
     return this.roundToTwoDecimals(total / (1 + rate));
@@ -100,7 +114,8 @@ export class PPNCalculatorService {
     isLuxuryGoods: boolean = false,
   ): boolean {
     const expectedPPN = this.calculatePPN(grossAmount, isLuxuryGoods);
-    const actualPPN = typeof ppnAmount === 'number' ? ppnAmount : ppnAmount.toNumber();
+    const actualPPN =
+      typeof ppnAmount === "number" ? ppnAmount : ppnAmount.toNumber();
 
     // Allow small rounding differences (< 1 cent)
     return Math.abs(expectedPPN - actualPPN) < 0.01;
@@ -113,8 +128,12 @@ export class PPNCalculatorService {
    * @param isLuxuryGoods - Luxury goods flag
    * @returns Object with all calculated amounts
    */
-  calculateBreakdown(grossAmount: number | Decimal, isLuxuryGoods: boolean = false) {
-    const amount = typeof grossAmount === 'number' ? grossAmount : grossAmount.toNumber();
+  calculateBreakdown(
+    grossAmount: number | Decimal,
+    isLuxuryGoods: boolean = false,
+  ) {
+    const amount =
+      typeof grossAmount === "number" ? grossAmount : grossAmount.toNumber();
     const ppnRate = this.getPPNRate(isLuxuryGoods);
     const ppnAmount = this.calculatePPN(amount, isLuxuryGoods);
     const totalAmount = amount + ppnAmount;
@@ -156,19 +175,26 @@ export class PPNCalculatorService {
    * @param isTaxDeductible - Whether expense is tax deductible
    * @returns Suggested PPN category
    */
-  suggestPPNCategory(accountCode: string, isTaxDeductible: boolean): PPNCategory {
+  suggestPPNCategory(
+    accountCode: string,
+    isTaxDeductible: boolean,
+  ): PPNCategory {
     // Non-deductible expenses typically have non-creditable PPN
     if (!isTaxDeductible) {
       return PPNCategory.NON_CREDITABLE;
     }
 
     // Entertainment and personal expenses (6-2170, 6-2180) - non-creditable
-    if (accountCode === '6-2170' || accountCode === '6-2180') {
+    if (accountCode === "6-2170" || accountCode === "6-2180") {
       return PPNCategory.NON_CREDITABLE;
     }
 
     // Salaries and non-cash expenses - exempt
-    if (accountCode === '6-1010' || accountCode === '6-2010' || accountCode === '6-2100') {
+    if (
+      accountCode === "6-1010" ||
+      accountCode === "6-2010" ||
+      accountCode === "6-2100"
+    ) {
       return PPNCategory.EXEMPT;
     }
 

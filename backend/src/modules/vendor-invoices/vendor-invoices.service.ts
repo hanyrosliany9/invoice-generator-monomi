@@ -2,9 +2,9 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { JournalService } from '../accounting/services/journal.service';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { JournalService } from "../accounting/services/journal.service";
 import {
   CreateVendorInvoiceDto,
   UpdateVendorInvoiceDto,
@@ -14,8 +14,8 @@ import {
   RejectVendorInvoiceDto,
   PostVendorInvoiceDto,
   CancelVendorInvoiceDto,
-} from './dto';
-import { VIStatus, MatchingStatus } from '@prisma/client';
+} from "./dto";
+import { VIStatus, MatchingStatus } from "@prisma/client";
 
 @Injectable()
 export class VendorInvoicesService {
@@ -38,7 +38,9 @@ export class VendorInvoicesService {
     }
 
     if (!vendor.isActive) {
-      throw new BadRequestException('Cannot create invoice for inactive vendor');
+      throw new BadRequestException(
+        "Cannot create invoice for inactive vendor",
+      );
     }
 
     // Validate PO if provided
@@ -48,11 +50,15 @@ export class VendorInvoicesService {
       });
 
       if (!po) {
-        throw new NotFoundException(`Purchase order not found: ${createVIDto.poId}`);
+        throw new NotFoundException(
+          `Purchase order not found: ${createVIDto.poId}`,
+        );
       }
 
       if (po.vendorId !== createVIDto.vendorId) {
-        throw new BadRequestException('PO vendor does not match invoice vendor');
+        throw new BadRequestException(
+          "PO vendor does not match invoice vendor",
+        );
       }
     }
 
@@ -63,11 +69,15 @@ export class VendorInvoicesService {
       });
 
       if (!gr) {
-        throw new NotFoundException(`Goods receipt not found: ${createVIDto.grId}`);
+        throw new NotFoundException(
+          `Goods receipt not found: ${createVIDto.grId}`,
+        );
       }
 
       if (gr.vendorId !== createVIDto.vendorId) {
-        throw new BadRequestException('GR vendor does not match invoice vendor');
+        throw new BadRequestException(
+          "GR vendor does not match invoice vendor",
+        );
       }
     }
 
@@ -104,7 +114,7 @@ export class VendorInvoicesService {
         matchingStatus: MatchingStatus.UNMATCHED,
         createdBy: userId,
         items: {
-          create: createVIDto.items.map(item => ({
+          create: createVIDto.items.map((item) => ({
             poItemId: item.poItemId,
             lineNumber: item.lineNumber,
             description: item.description,
@@ -141,8 +151,8 @@ export class VendorInvoicesService {
     const {
       page = 1,
       limit = 20,
-      sortBy = 'invoiceDate',
-      sortOrder = 'desc',
+      sortBy = "invoiceDate",
+      sortOrder = "desc",
       ...filters
     } = query;
 
@@ -154,9 +164,14 @@ export class VendorInvoicesService {
     // Search filter
     if (filters.search) {
       where.OR = [
-        { vendorInvoiceNumber: { contains: filters.search, mode: 'insensitive' } },
-        { internalNumber: { contains: filters.search, mode: 'insensitive' } },
-        { notes: { contains: filters.search, mode: 'insensitive' } },
+        {
+          vendorInvoiceNumber: {
+            contains: filters.search,
+            mode: "insensitive",
+          },
+        },
+        { internalNumber: { contains: filters.search, mode: "insensitive" } },
+        { notes: { contains: filters.search, mode: "insensitive" } },
       ];
     }
 
@@ -189,7 +204,8 @@ export class VendorInvoicesService {
     // Date range filter
     if (filters.startDate || filters.endDate) {
       where.invoiceDate = {};
-      if (filters.startDate) where.invoiceDate.gte = new Date(filters.startDate);
+      if (filters.startDate)
+        where.invoiceDate.gte = new Date(filters.startDate);
       if (filters.endDate) where.invoiceDate.lte = new Date(filters.endDate);
     }
 
@@ -251,7 +267,7 @@ export class VendorInvoicesService {
           include: {
             poItem: true,
           },
-          orderBy: { lineNumber: 'asc' },
+          orderBy: { lineNumber: "asc" },
         },
         accountsPayable: true,
       },
@@ -267,11 +283,17 @@ export class VendorInvoicesService {
   /**
    * Update a vendor invoice (only in DRAFT status)
    */
-  async update(id: string, userId: string, updateVIDto: UpdateVendorInvoiceDto) {
+  async update(
+    id: string,
+    userId: string,
+    updateVIDto: UpdateVendorInvoiceDto,
+  ) {
     const vi = await this.findOne(id);
 
     if (vi.status !== VIStatus.DRAFT) {
-      throw new BadRequestException('Only DRAFT vendor invoices can be updated');
+      throw new BadRequestException(
+        "Only DRAFT vendor invoices can be updated",
+      );
     }
 
     // Validate amounts if changed
@@ -292,7 +314,7 @@ export class VendorInvoicesService {
         ...(items && {
           items: {
             deleteMany: {},
-            create: items.map(item => ({
+            create: items.map((item) => ({
               poItemId: item.poItemId,
               lineNumber: item.lineNumber,
               description: item.description,
@@ -326,7 +348,9 @@ export class VendorInvoicesService {
     const vi = await this.findOne(id);
 
     if (vi.status !== VIStatus.DRAFT) {
-      throw new BadRequestException('Only DRAFT vendor invoices can be deleted');
+      throw new BadRequestException(
+        "Only DRAFT vendor invoices can be deleted",
+      );
     }
 
     // Delete items first
@@ -337,7 +361,7 @@ export class VendorInvoicesService {
     // Delete VI
     await this.prisma.vendorInvoice.delete({ where: { id } });
 
-    return { message: 'Vendor invoice deleted successfully' };
+    return { message: "Vendor invoice deleted successfully" };
   }
 
   /**
@@ -348,7 +372,9 @@ export class VendorInvoicesService {
     const vi = await this.findOne(id);
 
     if (!vi.poId && !vi.grId) {
-      throw new BadRequestException('Cannot match invoice without PO or GR reference');
+      throw new BadRequestException(
+        "Cannot match invoice without PO or GR reference",
+      );
     }
 
     const priceTolerance = matchDto.priceTolerance || 5; // 5%
@@ -367,7 +393,7 @@ export class VendorInvoicesService {
         continue;
       }
 
-      const poItem = vi.po?.items.find(pi => pi.id === viItem.poItemId);
+      const poItem = vi.po?.items.find((pi) => pi.id === viItem.poItemId);
       if (!poItem) {
         matchingStatus = MatchingStatus.FAILED;
         continue;
@@ -387,7 +413,9 @@ export class VendorInvoicesService {
 
       // Quantity variance check (if GR exists)
       if (vi.grId) {
-        const grItem = vi.gr?.items.find(gi => gi.poItemId === viItem.poItemId);
+        const grItem = vi.gr?.items.find(
+          (gi) => gi.poItemId === viItem.poItemId,
+        );
         if (grItem) {
           const grQty = Number(grItem.acceptedQuantity);
           const viQty = Number(viItem.quantity);
@@ -437,15 +465,21 @@ export class VendorInvoicesService {
   /**
    * Approve vendor invoice
    */
-  async approve(id: string, userId: string, approveDto: ApproveVendorInvoiceDto) {
+  async approve(
+    id: string,
+    userId: string,
+    approveDto: ApproveVendorInvoiceDto,
+  ) {
     const vi = await this.findOne(id);
 
     if (vi.status === VIStatus.APPROVED || vi.status === VIStatus.POSTED) {
-      throw new BadRequestException('Vendor invoice is already approved/posted');
+      throw new BadRequestException(
+        "Vendor invoice is already approved/posted",
+      );
     }
 
     if (vi.status === VIStatus.CANCELLED) {
-      throw new BadRequestException('Cannot approve cancelled vendor invoice');
+      throw new BadRequestException("Cannot approve cancelled vendor invoice");
     }
 
     const updated = await this.prisma.vendorInvoice.update({
@@ -475,7 +509,7 @@ export class VendorInvoicesService {
     const vi = await this.findOne(id);
 
     if (vi.status === VIStatus.POSTED || vi.status === VIStatus.PAID) {
-      throw new BadRequestException('Cannot reject posted/paid vendor invoice');
+      throw new BadRequestException("Cannot reject posted/paid vendor invoice");
     }
 
     const updated = await this.prisma.vendorInvoice.update({
@@ -500,11 +534,13 @@ export class VendorInvoicesService {
     const vi = await this.findOne(id);
 
     if (vi.status === VIStatus.POSTED) {
-      throw new BadRequestException('Vendor invoice is already posted');
+      throw new BadRequestException("Vendor invoice is already posted");
     }
 
     if (vi.status !== VIStatus.APPROVED) {
-      throw new BadRequestException('Only APPROVED vendor invoices can be posted');
+      throw new BadRequestException(
+        "Only APPROVED vendor invoices can be posted",
+      );
     }
 
     // Start transaction
@@ -513,13 +549,13 @@ export class VendorInvoicesService {
       const ap = await tx.accountsPayable.create({
         data: {
           apNumber: await this.generateAPNumber(),
-          sourceType: 'VENDOR_INVOICE',
+          sourceType: "VENDOR_INVOICE",
           vendorId: vi.vendorId,
           originalAmount: vi.totalAmount,
           outstandingAmount: vi.totalAmount,
           invoiceDate: vi.invoiceDate,
           dueDate: vi.dueDate,
-          paymentStatus: 'UNPAID',
+          paymentStatus: "UNPAID",
           createdBy: userId,
         },
       });
@@ -556,7 +592,7 @@ export class VendorInvoicesService {
     const vi = await this.findOne(id);
 
     if (vi.status === VIStatus.POSTED || vi.status === VIStatus.PAID) {
-      throw new BadRequestException('Cannot cancel posted/paid vendor invoice');
+      throw new BadRequestException("Cannot cancel posted/paid vendor invoice");
     }
 
     const updated = await this.prisma.vendorInvoice.update({
@@ -587,28 +623,31 @@ export class VendorInvoicesService {
     if (filters?.grId) where.grId = filters.grId;
     if (filters?.status) where.status = filters.status;
 
-    const [totalVIs, totalAmount, byStatus, byMatchingStatus] = await Promise.all([
-      this.prisma.vendorInvoice.count({ where }),
-      this.prisma.vendorInvoice.aggregate({
-        where,
-        _sum: { totalAmount: true },
-      }),
-      this.prisma.vendorInvoice.groupBy({
-        by: ['status'],
-        where,
-        _count: true,
-        _sum: { totalAmount: true },
-      }),
-      this.prisma.vendorInvoice.groupBy({
-        by: ['matchingStatus'],
-        where,
-        _count: true,
-      }),
-    ]);
+    const [totalVIs, totalAmount, byStatus, byMatchingStatus] =
+      await Promise.all([
+        this.prisma.vendorInvoice.count({ where }),
+        this.prisma.vendorInvoice.aggregate({
+          where,
+          _sum: { totalAmount: true },
+        }),
+        this.prisma.vendorInvoice.groupBy({
+          by: ["status"],
+          where,
+          _count: true,
+          _sum: { totalAmount: true },
+        }),
+        this.prisma.vendorInvoice.groupBy({
+          by: ["matchingStatus"],
+          where,
+          _count: true,
+        }),
+      ]);
 
     return {
       totalVIs,
-      totalAmount: totalAmount._sum.totalAmount ? Number(totalAmount._sum.totalAmount) : 0,
+      totalAmount: totalAmount._sum.totalAmount
+        ? Number(totalAmount._sum.totalAmount)
+        : 0,
       byStatus,
       byMatchingStatus,
     };
@@ -621,21 +660,21 @@ export class VendorInvoicesService {
   private async generateInternalNumber(): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
     const prefix = `VI-${year}-${month}-`;
 
     const lastVI = await this.prisma.vendorInvoice.findFirst({
       where: { internalNumber: { startsWith: prefix } },
-      orderBy: { internalNumber: 'desc' },
+      orderBy: { internalNumber: "desc" },
     });
 
     let nextNumber = 1;
     if (lastVI) {
-      const lastNumber = parseInt(lastVI.internalNumber.split('-')[3]);
+      const lastNumber = parseInt(lastVI.internalNumber.split("-")[3]);
       nextNumber = lastNumber + 1;
     }
 
-    return `${prefix}${nextNumber.toString().padStart(5, '0')}`;
+    return `${prefix}${nextNumber.toString().padStart(5, "0")}`;
   }
 
   /**
@@ -645,21 +684,21 @@ export class VendorInvoicesService {
   private async generateAPNumber(): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
     const prefix = `AP-${year}-${month}-`;
 
     const lastAP = await this.prisma.accountsPayable.findFirst({
       where: { apNumber: { startsWith: prefix } },
-      orderBy: { apNumber: 'desc' },
+      orderBy: { apNumber: "desc" },
     });
 
     let nextNumber = 1;
     if (lastAP) {
-      const lastNumber = parseInt(lastAP.apNumber.split('-')[3]);
+      const lastNumber = parseInt(lastAP.apNumber.split("-")[3]);
       nextNumber = lastNumber + 1;
     }
 
-    return `${prefix}${nextNumber.toString().padStart(5, '0')}`;
+    return `${prefix}${nextNumber.toString().padStart(5, "0")}`;
   }
 
   /**
@@ -669,16 +708,22 @@ export class VendorInvoicesService {
     if (!data.items || !data.subtotal) return;
 
     // Validate subtotal matches sum of line totals
-    const calculatedSubtotal = data.items.reduce((sum: number, item: any) => sum + Number(item.lineTotal), 0);
+    const calculatedSubtotal = data.items.reduce(
+      (sum: number, item: any) => sum + Number(item.lineTotal),
+      0,
+    );
     if (Math.abs(calculatedSubtotal - Number(data.subtotal)) > 0.01) {
-      throw new BadRequestException('Subtotal does not match sum of line totals');
+      throw new BadRequestException(
+        "Subtotal does not match sum of line totals",
+      );
     }
 
     // Validate total calculation
     const netAmount = Number(data.subtotal) - Number(data.discountAmount || 0);
-    const expectedTotal = netAmount + Number(data.ppnAmount) - Number(data.pphAmount || 0);
+    const expectedTotal =
+      netAmount + Number(data.ppnAmount) - Number(data.pphAmount || 0);
     if (Math.abs(expectedTotal - Number(data.totalAmount)) > 0.01) {
-      throw new BadRequestException('Total amount calculation is incorrect');
+      throw new BadRequestException("Total amount calculation is incorrect");
     }
   }
 }

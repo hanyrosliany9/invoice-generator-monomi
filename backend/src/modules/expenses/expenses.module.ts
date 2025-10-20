@@ -1,11 +1,11 @@
-import { Module } from '@nestjs/common';
-import { ExpensesService } from './expenses.service';
-import { ExpensesController } from './expenses.controller';
-import { PPNCalculatorService } from './services/ppn-calculator.service';
-import { WithholdingTaxCalculatorService } from './services/withholding-tax-calculator.service';
-import { EFakturValidatorService } from './services/efaktur-validator.service';
-import { PrismaModule } from '../prisma/prisma.module';
-import { AccountingModule } from '../accounting/accounting.module';
+import { Module } from "@nestjs/common";
+import { ExpensesService } from "./expenses.service";
+import { ExpensesController } from "./expenses.controller";
+import { PPNCalculatorService } from "./services/ppn-calculator.service";
+import { WithholdingTaxCalculatorService } from "./services/withholding-tax-calculator.service";
+import { EFakturValidatorService } from "./services/efaktur-validator.service";
+import { PrismaModule } from "../prisma/prisma.module";
+import { AccountingModule } from "../accounting/accounting.module";
 
 /**
  * Expenses Module

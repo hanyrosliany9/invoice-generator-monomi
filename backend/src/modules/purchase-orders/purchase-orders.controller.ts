@@ -11,15 +11,15 @@ import {
   Request,
   HttpCode,
   HttpStatus,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
-} from '@nestjs/swagger';
-import { PurchaseOrdersService } from './purchase-orders.service';
+} from "@nestjs/swagger";
+import { PurchaseOrdersService } from "./purchase-orders.service";
 import {
   CreatePurchaseOrderDto,
   UpdatePurchaseOrderDto,
@@ -27,13 +27,13 @@ import {
   ApprovePurchaseOrderDto,
   RejectPurchaseOrderDto,
   CancelPurchaseOrderDto,
-} from './dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
+} from "./dto";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
 import {
   RequireSuperAdmin,
   RequireFinancialApprover,
-} from '../auth/decorators/auth.decorators';
+} from "../auth/decorators/auth.decorators";
 
 /**
  * Purchase Orders Controller
@@ -48,10 +48,10 @@ import {
  * All endpoints require JWT authentication.
  * Approval operations require SUPER_ADMIN or FINANCE_MANAGER role.
  */
-@ApiTags('purchase-orders')
+@ApiTags("purchase-orders")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('purchase-orders')
+@Controller("purchase-orders")
 export class PurchaseOrdersController {
   constructor(private readonly purchaseOrdersService: PurchaseOrdersService) {}
 
@@ -70,20 +70,21 @@ export class PurchaseOrdersController {
    */
   @Post()
   @ApiOperation({
-    summary: 'Create a new purchase order',
-    description: 'Create PO in DRAFT status with budget validation and line items',
+    summary: "Create a new purchase order",
+    description:
+      "Create PO in DRAFT status with budget validation and line items",
   })
   @ApiResponse({
     status: 201,
-    description: 'Purchase order created successfully',
+    description: "Purchase order created successfully",
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid PO data, budget exceeded, or calculation errors',
+    description: "Invalid PO data, budget exceeded, or calculation errors",
   })
   @ApiResponse({
     status: 404,
-    description: 'Vendor or project not found',
+    description: "Vendor or project not found",
   })
   async create(
     @Request() req: any,
@@ -111,17 +112,14 @@ export class PurchaseOrdersController {
    */
   @Get()
   @ApiOperation({
-    summary: 'Get all purchase orders',
-    description: 'Get paginated list of purchase orders with filtering',
+    summary: "Get all purchase orders",
+    description: "Get paginated list of purchase orders with filtering",
   })
   @ApiResponse({
     status: 200,
-    description: 'Purchase orders retrieved successfully',
+    description: "Purchase orders retrieved successfully",
   })
-  async findAll(
-    @Request() req: any,
-    @Query() query: PurchaseOrderQueryDto,
-  ) {
+  async findAll(@Request() req: any, @Query() query: PurchaseOrderQueryDto) {
     const userRole = req.user.role;
     return this.purchaseOrdersService.findAll(query, userRole);
   }
@@ -140,19 +138,19 @@ export class PurchaseOrdersController {
    * @param status - Optional status filter
    * @returns Purchase order statistics
    */
-  @Get('statistics')
+  @Get("statistics")
   @ApiOperation({
-    summary: 'Get purchase order statistics',
-    description: 'Get aggregated PO statistics with optional filters',
+    summary: "Get purchase order statistics",
+    description: "Get aggregated PO statistics with optional filters",
   })
   @ApiResponse({
     status: 200,
-    description: 'Statistics retrieved successfully',
+    description: "Statistics retrieved successfully",
   })
   async getStatistics(
-    @Query('vendorId') vendorId?: string,
-    @Query('projectId') projectId?: string,
-    @Query('status') status?: string,
+    @Query("vendorId") vendorId?: string,
+    @Query("projectId") projectId?: string,
+    @Query("status") status?: string,
   ) {
     const filters: any = {};
     if (vendorId) filters.vendorId = vendorId;
@@ -177,21 +175,22 @@ export class PurchaseOrdersController {
    * @param id - Purchase order ID
    * @returns Purchase order with all relations
    */
-  @Get(':id')
+  @Get(":id")
   @ApiOperation({
-    summary: 'Get purchase order by ID',
-    description: 'Get detailed PO information with items, GRs, VIs, and accounting',
+    summary: "Get purchase order by ID",
+    description:
+      "Get detailed PO information with items, GRs, VIs, and accounting",
   })
-  @ApiParam({ name: 'id', description: 'Purchase order ID' })
+  @ApiParam({ name: "id", description: "Purchase order ID" })
   @ApiResponse({
     status: 200,
-    description: 'Purchase order retrieved successfully',
+    description: "Purchase order retrieved successfully",
   })
   @ApiResponse({
     status: 404,
-    description: 'Purchase order not found',
+    description: "Purchase order not found",
   })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param("id") id: string) {
     return this.purchaseOrdersService.findOne(id);
   }
 
@@ -211,27 +210,27 @@ export class PurchaseOrdersController {
    * @param updatePODto - Partial PO update data
    * @returns Updated purchase order
    */
-  @Patch(':id')
+  @Patch(":id")
   @ApiOperation({
-    summary: 'Update purchase order',
-    description: 'Update PO (DRAFT status only, re-validates calculations)',
+    summary: "Update purchase order",
+    description: "Update PO (DRAFT status only, re-validates calculations)",
   })
-  @ApiParam({ name: 'id', description: 'Purchase order ID' })
+  @ApiParam({ name: "id", description: "Purchase order ID" })
   @ApiResponse({
     status: 200,
-    description: 'Purchase order updated successfully',
+    description: "Purchase order updated successfully",
   })
   @ApiResponse({
     status: 400,
-    description: 'Cannot update non-DRAFT PO or invalid calculations',
+    description: "Cannot update non-DRAFT PO or invalid calculations",
   })
   @ApiResponse({
     status: 404,
-    description: 'Purchase order not found',
+    description: "Purchase order not found",
   })
   async update(
     @Request() req: any,
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body() updatePODto: UpdatePurchaseOrderDto,
   ) {
     const userId = req.user.id;
@@ -247,26 +246,26 @@ export class PurchaseOrdersController {
    * @param id - Purchase order ID
    * @returns Success message
    */
-  @Delete(':id')
+  @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Delete purchase order',
-    description: 'Delete PO (DRAFT status only)',
+    summary: "Delete purchase order",
+    description: "Delete PO (DRAFT status only)",
   })
-  @ApiParam({ name: 'id', description: 'Purchase order ID' })
+  @ApiParam({ name: "id", description: "Purchase order ID" })
   @ApiResponse({
     status: 204,
-    description: 'Purchase order deleted successfully',
+    description: "Purchase order deleted successfully",
   })
   @ApiResponse({
     status: 400,
-    description: 'Cannot delete non-DRAFT PO',
+    description: "Cannot delete non-DRAFT PO",
   })
   @ApiResponse({
     status: 404,
-    description: 'Purchase order not found',
+    description: "Purchase order not found",
   })
-  async remove(@Param('id') id: string) {
+  async remove(@Param("id") id: string) {
     return this.purchaseOrdersService.remove(id);
   }
 
@@ -284,32 +283,34 @@ export class PurchaseOrdersController {
    * @param approveDto - Optional approval comments
    * @returns Updated purchase order
    */
-  @Post(':id/approve')
+  @Post(":id/approve")
   @RequireFinancialApprover() // SUPER_ADMIN or FINANCE_MANAGER
   @ApiOperation({
-    summary: 'Approve purchase order',
-    description: 'Change status from DRAFT to APPROVED (creates commitment journal entry if enabled)',
+    summary: "Approve purchase order",
+    description:
+      "Change status from DRAFT to APPROVED (creates commitment journal entry if enabled)",
   })
-  @ApiParam({ name: 'id', description: 'Purchase order ID' })
+  @ApiParam({ name: "id", description: "Purchase order ID" })
   @ApiResponse({
     status: 200,
-    description: 'Purchase order approved successfully',
+    description: "Purchase order approved successfully",
   })
   @ApiResponse({
     status: 400,
-    description: 'Cannot approve non-DRAFT PO',
+    description: "Cannot approve non-DRAFT PO",
   })
   @ApiResponse({
     status: 404,
-    description: 'Purchase order not found',
+    description: "Purchase order not found",
   })
   @ApiResponse({
     status: 403,
-    description: 'Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)',
+    description:
+      "Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)",
   })
   async approve(
     @Request() req: any,
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body() approveDto: ApprovePurchaseOrderDto,
   ) {
     const userId = req.user.id;
@@ -329,32 +330,33 @@ export class PurchaseOrdersController {
    * @param rejectDto - Rejection reason and comments
    * @returns Updated purchase order
    */
-  @Post(':id/reject')
+  @Post(":id/reject")
   @RequireFinancialApprover() // SUPER_ADMIN or FINANCE_MANAGER
   @ApiOperation({
-    summary: 'Reject purchase order',
-    description: 'Change status from DRAFT to REJECTED',
+    summary: "Reject purchase order",
+    description: "Change status from DRAFT to REJECTED",
   })
-  @ApiParam({ name: 'id', description: 'Purchase order ID' })
+  @ApiParam({ name: "id", description: "Purchase order ID" })
   @ApiResponse({
     status: 200,
-    description: 'Purchase order rejected successfully',
+    description: "Purchase order rejected successfully",
   })
   @ApiResponse({
     status: 400,
-    description: 'Cannot reject non-DRAFT PO',
+    description: "Cannot reject non-DRAFT PO",
   })
   @ApiResponse({
     status: 404,
-    description: 'Purchase order not found',
+    description: "Purchase order not found",
   })
   @ApiResponse({
     status: 403,
-    description: 'Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)',
+    description:
+      "Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)",
   })
   async reject(
     @Request() req: any,
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body() rejectDto: RejectPurchaseOrderDto,
   ) {
     const userId = req.user.id;
@@ -376,32 +378,34 @@ export class PurchaseOrdersController {
    * @param cancelDto - Cancellation reason and comments
    * @returns Updated purchase order
    */
-  @Post(':id/cancel')
+  @Post(":id/cancel")
   @RequireFinancialApprover() // SUPER_ADMIN or FINANCE_MANAGER
   @ApiOperation({
-    summary: 'Cancel purchase order',
-    description: 'Change status to CANCELLED (reverses commitment, cannot cancel if GRs posted)',
+    summary: "Cancel purchase order",
+    description:
+      "Change status to CANCELLED (reverses commitment, cannot cancel if GRs posted)",
   })
-  @ApiParam({ name: 'id', description: 'Purchase order ID' })
+  @ApiParam({ name: "id", description: "Purchase order ID" })
   @ApiResponse({
     status: 200,
-    description: 'Purchase order cancelled successfully',
+    description: "Purchase order cancelled successfully",
   })
   @ApiResponse({
     status: 400,
-    description: 'Cannot cancel PO with posted GRs or invalid status',
+    description: "Cannot cancel PO with posted GRs or invalid status",
   })
   @ApiResponse({
     status: 404,
-    description: 'Purchase order not found',
+    description: "Purchase order not found",
   })
   @ApiResponse({
     status: 403,
-    description: 'Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)',
+    description:
+      "Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)",
   })
   async cancel(
     @Request() req: any,
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body() cancelDto: CancelPurchaseOrderDto,
   ) {
     const userId = req.user.id;
@@ -421,33 +425,31 @@ export class PurchaseOrdersController {
    * @param id - Purchase order ID
    * @returns Updated purchase order
    */
-  @Post(':id/close')
+  @Post(":id/close")
   @RequireFinancialApprover() // SUPER_ADMIN or FINANCE_MANAGER
   @ApiOperation({
-    summary: 'Close purchase order',
-    description: 'Force close partially received PO (changes status to CLOSED)',
+    summary: "Close purchase order",
+    description: "Force close partially received PO (changes status to CLOSED)",
   })
-  @ApiParam({ name: 'id', description: 'Purchase order ID' })
+  @ApiParam({ name: "id", description: "Purchase order ID" })
   @ApiResponse({
     status: 200,
-    description: 'Purchase order closed successfully',
+    description: "Purchase order closed successfully",
   })
   @ApiResponse({
     status: 400,
-    description: 'Cannot close PO with invalid status',
+    description: "Cannot close PO with invalid status",
   })
   @ApiResponse({
     status: 404,
-    description: 'Purchase order not found',
+    description: "Purchase order not found",
   })
   @ApiResponse({
     status: 403,
-    description: 'Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)',
+    description:
+      "Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)",
   })
-  async close(
-    @Request() req: any,
-    @Param('id') id: string,
-  ) {
+  async close(@Request() req: any, @Param("id") id: string) {
     const userId = req.user.id;
     return this.purchaseOrdersService.close(id, userId);
   }

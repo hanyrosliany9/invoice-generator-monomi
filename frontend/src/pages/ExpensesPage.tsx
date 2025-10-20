@@ -40,9 +40,9 @@ import { useNavigate } from 'react-router-dom';
 import { expenseService } from '../services/expenses';
 import type {
   Expense,
-  ExpenseStatus,
   ExpensePaymentStatus,
   ExpenseQueryParams,
+  ExpenseStatus,
 } from '../types/expense';
 import { useTheme } from '../theme';
 import { CompactMetricCard } from '../components/ui/CompactMetricCard';

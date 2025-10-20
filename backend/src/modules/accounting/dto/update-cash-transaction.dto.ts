@@ -1,9 +1,11 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateCashTransactionDto } from './create-cash-transaction.dto';
-import { IsString, IsOptional, IsDate } from 'class-validator';
-import { Type } from 'class-transformer';
+import { PartialType } from "@nestjs/mapped-types";
+import { CreateCashTransactionDto } from "./create-cash-transaction.dto";
+import { IsString, IsOptional, IsDate } from "class-validator";
+import { Type } from "class-transformer";
 
-export class UpdateCashTransactionDto extends PartialType(CreateCashTransactionDto) {
+export class UpdateCashTransactionDto extends PartialType(
+  CreateCashTransactionDto,
+) {
   @IsString()
   @IsOptional()
   updatedBy?: string;

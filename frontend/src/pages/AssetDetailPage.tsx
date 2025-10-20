@@ -1,15 +1,15 @@
 import React from 'react'
-import { Card, Col, Row, Table, Tag, Typography, Button, Space, App } from 'antd'
+import { App, Button, Card, Col, Row, Space, Table, Tag, Typography } from 'antd'
 import {
+  ArrowLeftOutlined,
   CameraOutlined,
   EditOutlined,
-  QrcodeOutlined,
   HistoryOutlined,
+  QrcodeOutlined,
   ToolOutlined,
-  ArrowLeftOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { assetService } from '../services/assets'
 import { formatIDR } from '../utils/currency'
 import { formatDate } from '../utils/dateFormatters'

@@ -2,9 +2,9 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { JournalService } from '../accounting/services/journal.service';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { JournalService } from "../accounting/services/journal.service";
 import {
   CreateGoodsReceiptDto,
   UpdateGoodsReceiptDto,
@@ -12,8 +12,8 @@ import {
   InspectGoodsReceiptDto,
   PostGoodsReceiptDto,
   CancelGoodsReceiptDto,
-} from './dto';
-import { GRStatus, POStatus } from '@prisma/client';
+} from "./dto";
+import { GRStatus, POStatus } from "@prisma/client";
 
 @Injectable()
 export class GoodsReceiptsService {
@@ -36,23 +36,33 @@ export class GoodsReceiptsService {
     });
 
     if (!po) {
-      throw new NotFoundException(`Purchase order not found: ${createGRDto.poId}`);
+      throw new NotFoundException(
+        `Purchase order not found: ${createGRDto.poId}`,
+      );
     }
 
-    if (po.status !== POStatus.APPROVED && po.status !== POStatus.PARTIAL && po.status !== POStatus.SENT) {
-      throw new BadRequestException('Can only create GR for APPROVED, SENT, or PARTIAL purchase orders');
+    if (
+      po.status !== POStatus.APPROVED &&
+      po.status !== POStatus.PARTIAL &&
+      po.status !== POStatus.SENT
+    ) {
+      throw new BadRequestException(
+        "Can only create GR for APPROVED, SENT, or PARTIAL purchase orders",
+      );
     }
 
     // Validate all PO items exist and have outstanding quantities
     for (const item of createGRDto.items) {
-      const poItem = po.items.find(pi => pi.id === item.poItemId);
+      const poItem = po.items.find((pi) => pi.id === item.poItemId);
       if (!poItem) {
         throw new NotFoundException(`PO item not found: ${item.poItemId}`);
       }
 
       const outstanding = Number(poItem.quantityOutstanding);
       if (outstanding <= 0) {
-        throw new BadRequestException(`PO item ${item.poItemId} has no outstanding quantity to receive`);
+        throw new BadRequestException(
+          `PO item ${item.poItemId} has no outstanding quantity to receive`,
+        );
       }
 
       if (item.receivedQuantity > outstanding) {
@@ -62,7 +72,8 @@ export class GoodsReceiptsService {
       }
 
       // Validate accepted + rejected = received
-      const totalAcceptedRejected = item.acceptedQuantity + (item.rejectedQuantity || 0);
+      const totalAcceptedRejected =
+        item.acceptedQuantity + (item.rejectedQuantity || 0);
       if (Math.abs(totalAcceptedRejected - item.receivedQuantity) > 0.001) {
         throw new BadRequestException(
           `Accepted (${item.acceptedQuantity}) + Rejected (${item.rejectedQuantity || 0}) must equal Received (${item.receivedQuantity})`,
@@ -92,7 +103,7 @@ export class GoodsReceiptsService {
         status: GRStatus.DRAFT,
         createdBy: userId,
         items: {
-          create: createGRDto.items.map(item => ({
+          create: createGRDto.items.map((item) => ({
             poItemId: item.poItemId,
             lineNumber: item.lineNumber,
             orderedQuantity: item.orderedQuantity,
@@ -127,8 +138,8 @@ export class GoodsReceiptsService {
     const {
       page = 1,
       limit = 20,
-      sortBy = 'grDate',
-      sortOrder = 'desc',
+      sortBy = "grDate",
+      sortOrder = "desc",
       ...filters
     } = query;
 
@@ -140,9 +151,11 @@ export class GoodsReceiptsService {
     // Search filter
     if (filters.search) {
       where.OR = [
-        { grNumber: { contains: filters.search, mode: 'insensitive' } },
-        { notes: { contains: filters.search, mode: 'insensitive' } },
-        { deliveryNoteNumber: { contains: filters.search, mode: 'insensitive' } },
+        { grNumber: { contains: filters.search, mode: "insensitive" } },
+        { notes: { contains: filters.search, mode: "insensitive" } },
+        {
+          deliveryNoteNumber: { contains: filters.search, mode: "insensitive" },
+        },
       ];
     }
 
@@ -222,7 +235,7 @@ export class GoodsReceiptsService {
               },
             },
           },
-          orderBy: { lineNumber: 'asc' },
+          orderBy: { lineNumber: "asc" },
         },
         vendorInvoices: {
           select: {
@@ -233,7 +246,7 @@ export class GoodsReceiptsService {
             matchingStatus: true,
             totalAmount: true,
           },
-          orderBy: { invoiceDate: 'desc' },
+          orderBy: { invoiceDate: "desc" },
         },
       },
     });
@@ -252,7 +265,7 @@ export class GoodsReceiptsService {
     const gr = await this.findOne(id);
 
     if (gr.status !== GRStatus.DRAFT) {
-      throw new BadRequestException('Only DRAFT goods receipts can be updated');
+      throw new BadRequestException("Only DRAFT goods receipts can be updated");
     }
 
     // Destructure items from updateGRDto to handle separately
@@ -268,7 +281,7 @@ export class GoodsReceiptsService {
         ...(items && {
           items: {
             deleteMany: {},
-            create: items.map(item => ({
+            create: items.map((item) => ({
               poItemId: item.poItemId,
               lineNumber: item.lineNumber,
               orderedQuantity: item.orderedQuantity,
@@ -300,7 +313,7 @@ export class GoodsReceiptsService {
     const gr = await this.findOne(id);
 
     if (gr.status !== GRStatus.DRAFT) {
-      throw new BadRequestException('Only DRAFT goods receipts can be deleted');
+      throw new BadRequestException("Only DRAFT goods receipts can be deleted");
     }
 
     // Delete items first
@@ -311,17 +324,23 @@ export class GoodsReceiptsService {
     // Delete GR
     await this.prisma.goodsReceipt.delete({ where: { id } });
 
-    return { message: 'Goods receipt deleted successfully' };
+    return { message: "Goods receipt deleted successfully" };
   }
 
   /**
    * Record inspection results
    */
-  async inspect(id: string, userId: string, inspectDto: InspectGoodsReceiptDto) {
+  async inspect(
+    id: string,
+    userId: string,
+    inspectDto: InspectGoodsReceiptDto,
+  ) {
     const gr = await this.findOne(id);
 
     if (gr.status === GRStatus.POSTED || gr.status === GRStatus.CANCELLED) {
-      throw new BadRequestException('Cannot inspect POSTED or CANCELLED goods receipts');
+      throw new BadRequestException(
+        "Cannot inspect POSTED or CANCELLED goods receipts",
+      );
     }
 
     const updated = await this.prisma.goodsReceipt.update({
@@ -351,11 +370,11 @@ export class GoodsReceiptsService {
     const gr = await this.findOne(id);
 
     if (gr.status === GRStatus.POSTED) {
-      throw new BadRequestException('Goods receipt is already posted');
+      throw new BadRequestException("Goods receipt is already posted");
     }
 
     if (gr.status === GRStatus.CANCELLED) {
-      throw new BadRequestException('Cannot post cancelled goods receipt');
+      throw new BadRequestException("Cannot post cancelled goods receipt");
     }
 
     // Start transaction
@@ -370,7 +389,8 @@ export class GoodsReceiptsService {
           throw new NotFoundException(`PO item not found: ${grItem.poItemId}`);
         }
 
-        const newQtyReceived = Number(poItem.quantityReceived) + Number(grItem.acceptedQuantity);
+        const newQtyReceived =
+          Number(poItem.quantityReceived) + Number(grItem.acceptedQuantity);
         const newQtyOutstanding = Number(poItem.quantity) - newQtyReceived;
 
         await tx.purchaseOrderItem.update({
@@ -387,9 +407,13 @@ export class GoodsReceiptsService {
         where: { poId: gr.poId },
       });
 
-      const allFullyReceived = poItems.every(item => Number(item.quantityOutstanding) <= 0);
+      const allFullyReceived = poItems.every(
+        (item) => Number(item.quantityOutstanding) <= 0,
+      );
       const anyPartiallyReceived = poItems.some(
-        item => Number(item.quantityReceived) > 0 && Number(item.quantityOutstanding) > 0,
+        (item) =>
+          Number(item.quantityReceived) > 0 &&
+          Number(item.quantityOutstanding) > 0,
       );
 
       let newPOStatus = gr.po.status;
@@ -442,11 +466,13 @@ export class GoodsReceiptsService {
     const gr = await this.findOne(id);
 
     if (gr.status === GRStatus.POSTED) {
-      throw new BadRequestException('Cannot cancel posted goods receipt. Create a return instead.');
+      throw new BadRequestException(
+        "Cannot cancel posted goods receipt. Create a return instead.",
+      );
     }
 
     if (gr.status === GRStatus.CANCELLED) {
-      throw new BadRequestException('Goods receipt is already cancelled');
+      throw new BadRequestException("Goods receipt is already cancelled");
     }
 
     const updated = await this.prisma.goodsReceipt.update({
@@ -478,12 +504,12 @@ export class GoodsReceiptsService {
     const [totalGRs, byStatus, byInspectionStatus] = await Promise.all([
       this.prisma.goodsReceipt.count({ where }),
       this.prisma.goodsReceipt.groupBy({
-        by: ['status'],
+        by: ["status"],
         where,
         _count: true,
       }),
       this.prisma.goodsReceipt.groupBy({
-        by: ['inspectionStatus'],
+        by: ["inspectionStatus"],
         where,
         _count: true,
       }),
@@ -503,20 +529,20 @@ export class GoodsReceiptsService {
   private async generateGRNumber(): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
     const prefix = `GR-${year}-${month}-`;
 
     const lastGR = await this.prisma.goodsReceipt.findFirst({
       where: { grNumber: { startsWith: prefix } },
-      orderBy: { grNumber: 'desc' },
+      orderBy: { grNumber: "desc" },
     });
 
     let nextNumber = 1;
     if (lastGR) {
-      const lastNumber = parseInt(lastGR.grNumber.split('-')[3]);
+      const lastNumber = parseInt(lastGR.grNumber.split("-")[3]);
       nextNumber = lastNumber + 1;
     }
 
-    return `${prefix}${nextNumber.toString().padStart(5, '0')}`;
+    return `${prefix}${nextNumber.toString().padStart(5, "0")}`;
   }
 }

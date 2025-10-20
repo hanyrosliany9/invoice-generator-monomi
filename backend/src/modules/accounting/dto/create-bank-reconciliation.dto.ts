@@ -1,34 +1,42 @@
-import { IsString, IsNumber, IsDate, IsOptional, IsEnum, IsBoolean, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsNumber,
+  IsDate,
+  IsOptional,
+  IsEnum,
+  IsBoolean,
+  Min,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export enum BankRecStatus {
-  DRAFT = 'DRAFT',
-  IN_PROGRESS = 'IN_PROGRESS',
-  REVIEWED = 'REVIEWED',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  COMPLETED = 'COMPLETED',
+  DRAFT = "DRAFT",
+  IN_PROGRESS = "IN_PROGRESS",
+  REVIEWED = "REVIEWED",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  COMPLETED = "COMPLETED",
 }
 
 export enum BankRecItemType {
-  DEPOSIT_IN_TRANSIT = 'DEPOSIT_IN_TRANSIT',
-  OUTSTANDING_CHECK = 'OUTSTANDING_CHECK',
-  BANK_CHARGE = 'BANK_CHARGE',
-  BANK_INTEREST = 'BANK_INTEREST',
-  NSF_CHECK = 'NSF_CHECK',
-  AUTOMATIC_PAYMENT = 'AUTOMATIC_PAYMENT',
-  DIRECT_DEPOSIT = 'DIRECT_DEPOSIT',
-  BANK_ERROR = 'BANK_ERROR',
-  BOOK_ERROR = 'BOOK_ERROR',
-  OTHER_ADJUSTMENT = 'OTHER_ADJUSTMENT',
+  DEPOSIT_IN_TRANSIT = "DEPOSIT_IN_TRANSIT",
+  OUTSTANDING_CHECK = "OUTSTANDING_CHECK",
+  BANK_CHARGE = "BANK_CHARGE",
+  BANK_INTEREST = "BANK_INTEREST",
+  NSF_CHECK = "NSF_CHECK",
+  AUTOMATIC_PAYMENT = "AUTOMATIC_PAYMENT",
+  DIRECT_DEPOSIT = "DIRECT_DEPOSIT",
+  BANK_ERROR = "BANK_ERROR",
+  BOOK_ERROR = "BOOK_ERROR",
+  OTHER_ADJUSTMENT = "OTHER_ADJUSTMENT",
 }
 
 export enum BankRecItemStatus {
-  PENDING = 'PENDING',
-  MATCHED = 'MATCHED',
-  ADJUSTED = 'ADJUSTED',
-  CLEARED = 'CLEARED',
-  UNRESOLVED = 'UNRESOLVED',
+  PENDING = "PENDING",
+  MATCHED = "MATCHED",
+  ADJUSTED = "ADJUSTED",
+  CLEARED = "CLEARED",
+  UNRESOLVED = "UNRESOLVED",
 }
 
 export class CreateBankReconciliationItemDto {

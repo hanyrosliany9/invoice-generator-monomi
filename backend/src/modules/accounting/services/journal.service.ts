@@ -3,12 +3,12 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateJournalEntryDto } from '../dto/create-journal-entry.dto';
-import { UpdateJournalEntryDto } from '../dto/update-journal-entry.dto';
-import { JournalQueryDto } from '../dto/journal-query.dto';
-import { JournalStatus, TransactionType } from '@prisma/client';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreateJournalEntryDto } from "../dto/create-journal-entry.dto";
+import { UpdateJournalEntryDto } from "../dto/update-journal-entry.dto";
+import { JournalQueryDto } from "../dto/journal-query.dto";
+import { JournalStatus, TransactionType } from "@prisma/client";
 
 @Injectable()
 export class JournalService {
@@ -20,7 +20,7 @@ export class JournalService {
   async getChartOfAccounts() {
     return this.prisma.chartOfAccounts.findMany({
       where: { isActive: true },
-      orderBy: [{ accountType: 'asc' }, { code: 'asc' }],
+      orderBy: [{ accountType: "asc" }, { code: "asc" }],
     });
   }
 
@@ -49,7 +49,9 @@ export class JournalService {
     });
 
     if (existing) {
-      throw new ConflictException(`Account with code ${data.code} already exists`);
+      throw new ConflictException(
+        `Account with code ${data.code} already exists`,
+      );
     }
 
     // Create account
@@ -88,7 +90,7 @@ export class JournalService {
 
     // Prevent updating system accounts
     if (account.isSystemAccount) {
-      throw new BadRequestException('Cannot modify system accounts');
+      throw new BadRequestException("Cannot modify system accounts");
     }
 
     // If code is being changed, check if new code exists
@@ -98,7 +100,9 @@ export class JournalService {
       });
 
       if (existing) {
-        throw new ConflictException(`Account with code ${data.code} already exists`);
+        throw new ConflictException(
+          `Account with code ${data.code} already exists`,
+        );
       }
     }
 
@@ -138,7 +142,7 @@ export class JournalService {
 
     // Prevent deleting system accounts
     if (account.isSystemAccount) {
-      throw new BadRequestException('Cannot delete system accounts');
+      throw new BadRequestException("Cannot delete system accounts");
     }
 
     // Check if account has been used in journal entries
@@ -148,7 +152,7 @@ export class JournalService {
 
     if (hasJournalEntries) {
       throw new BadRequestException(
-        'Cannot delete account that has been used in journal entries. Consider deactivating it instead.',
+        "Cannot delete account that has been used in journal entries. Consider deactivating it instead.",
       );
     }
 
@@ -159,7 +163,7 @@ export class JournalService {
 
     if (hasLedgerEntries) {
       throw new BadRequestException(
-        'Cannot delete account that has been used in general ledger. Consider deactivating it instead.',
+        "Cannot delete account that has been used in general ledger. Consider deactivating it instead.",
       );
     }
 
@@ -193,7 +197,7 @@ export class JournalService {
   private async generateEntryNumber(): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
 
     // Get the latest entry number for this month
     const prefix = `JE-${year}-${month}`;
@@ -204,14 +208,16 @@ export class JournalService {
         },
       },
       orderBy: {
-        entryNumber: 'desc',
+        entryNumber: "desc",
       },
     });
 
     if (latestEntry) {
-      const lastNumber = parseInt(latestEntry.entryNumber.split('-').pop() || '0');
+      const lastNumber = parseInt(
+        latestEntry.entryNumber.split("-").pop() || "0",
+      );
       const nextNumber = lastNumber + 1;
-      return `${prefix}-${String(nextNumber).padStart(4, '0')}`;
+      return `${prefix}-${String(nextNumber).padStart(4, "0")}`;
     }
 
     return `${prefix}-0001`;
@@ -231,7 +237,9 @@ export class JournalService {
     }
 
     if (totalDebit === 0 || totalCredit === 0) {
-      throw new BadRequestException('Journal entry must have both debit and credit amounts');
+      throw new BadRequestException(
+        "Journal entry must have both debit and credit amounts",
+      );
     }
   }
 
@@ -239,7 +247,9 @@ export class JournalService {
    * Validate account codes exist
    */
   private async validateAccountCodes(lineItems: any[]): Promise<void> {
-    const accountCodes = [...new Set(lineItems.map(item => item.accountCode))];
+    const accountCodes = [
+      ...new Set(lineItems.map((item) => item.accountCode)),
+    ];
 
     const accounts = await this.prisma.chartOfAccounts.findMany({
       where: {
@@ -248,12 +258,12 @@ export class JournalService {
       },
     });
 
-    const foundCodes = new Set(accounts.map(a => a.code));
-    const missingCodes = accountCodes.filter(code => !foundCodes.has(code));
+    const foundCodes = new Set(accounts.map((a) => a.code));
+    const missingCodes = accountCodes.filter((code) => !foundCodes.has(code));
 
     if (missingCodes.length > 0) {
       throw new BadRequestException(
-        `Invalid or inactive account codes: ${missingCodes.join(', ')}`,
+        `Invalid or inactive account codes: ${missingCodes.join(", ")}`,
       );
     }
   }
@@ -267,12 +277,14 @@ export class JournalService {
       where: {
         startDate: { lte: now },
         endDate: { gte: now },
-        status: 'OPEN',
+        status: "OPEN",
       },
     });
 
     if (!period) {
-      throw new NotFoundException('No open fiscal period found for current date');
+      throw new NotFoundException(
+        "No open fiscal period found for current date",
+      );
     }
 
     return period;
@@ -283,7 +295,7 @@ export class JournalService {
    */
   async getFiscalPeriods() {
     return this.prisma.fiscalPeriod.findMany({
-      orderBy: { startDate: 'desc' },
+      orderBy: { startDate: "desc" },
     });
   }
 
@@ -308,12 +320,14 @@ export class JournalService {
     const entryNumber = await this.generateEntryNumber();
 
     // Get account IDs for all account codes
-    const accountCodes = [...new Set(createDto.lineItems.map(item => item.accountCode))];
+    const accountCodes = [
+      ...new Set(createDto.lineItems.map((item) => item.accountCode)),
+    ];
     const accounts = await this.prisma.chartOfAccounts.findMany({
       where: { code: { in: accountCodes } },
       select: { id: true, code: true },
     });
-    const accountMap = new Map(accounts.map(a => [a.code, a.id]));
+    const accountMap = new Map(accounts.map((a) => [a.code, a.id]));
 
     // Create journal entry with line items
     const journalEntry = await this.prisma.journalEntry.create({
@@ -349,7 +363,7 @@ export class JournalService {
       },
       include: {
         lineItems: {
-          orderBy: { lineNumber: 'asc' },
+          orderBy: { lineNumber: "asc" },
           include: {
             account: {
               select: {
@@ -382,8 +396,8 @@ export class JournalService {
       search,
       page = 1,
       limit = 50,
-      sortBy = 'entryDate',
-      sortOrder = 'desc',
+      sortBy = "entryDate",
+      sortOrder = "desc",
     } = query;
 
     const where: any = {};
@@ -412,10 +426,10 @@ export class JournalService {
 
     if (search) {
       where.OR = [
-        { entryNumber: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { descriptionId: { contains: search, mode: 'insensitive' } },
-        { documentNumber: { contains: search, mode: 'insensitive' } },
+        { entryNumber: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { descriptionId: { contains: search, mode: "insensitive" } },
+        { documentNumber: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -429,7 +443,7 @@ export class JournalService {
         orderBy: { [sortBy]: sortOrder },
         include: {
           lineItems: {
-            orderBy: { lineNumber: 'asc' },
+            orderBy: { lineNumber: "asc" },
             include: {
               account: {
                 select: {
@@ -447,9 +461,9 @@ export class JournalService {
     ]);
 
     // Transform the data to match frontend expectations
-    const transformedEntries = entries.map(entry => ({
+    const transformedEntries = entries.map((entry) => ({
       ...entry,
-      lineItems: entry.lineItems.map(item => ({
+      lineItems: entry.lineItems.map((item) => ({
         ...item,
         accountCode: item.account.code,
         debitAmount: Number(item.debit),
@@ -476,7 +490,7 @@ export class JournalService {
       where: { id },
       include: {
         lineItems: {
-          orderBy: { lineNumber: 'asc' },
+          orderBy: { lineNumber: "asc" },
           include: {
             account: {
               select: {
@@ -504,7 +518,7 @@ export class JournalService {
     const existing = await this.getJournalEntry(id);
 
     if (existing.isPosted) {
-      throw new BadRequestException('Cannot update posted journal entry');
+      throw new BadRequestException("Cannot update posted journal entry");
     }
 
     if (updateDto.lineItems) {
@@ -522,12 +536,14 @@ export class JournalService {
     // Get account IDs for all account codes if line items are provided
     let accountMap: Map<string, string> | undefined;
     if (updateDto.lineItems) {
-      const accountCodes = [...new Set(updateDto.lineItems.map(item => item.accountCode))];
+      const accountCodes = [
+        ...new Set(updateDto.lineItems.map((item) => item.accountCode)),
+      ];
       const accounts = await this.prisma.chartOfAccounts.findMany({
         where: { code: { in: accountCodes } },
         select: { id: true, code: true },
       });
-      accountMap = new Map(accounts.map(a => [a.code, a.id]));
+      accountMap = new Map(accounts.map((a) => [a.code, a.id]));
     }
 
     const updatedEntry = await this.prisma.journalEntry.update({
@@ -541,25 +557,26 @@ export class JournalService {
         documentDate: updateDto.documentDate,
         status: updateDto.status,
         updatedBy: updateDto.updatedBy,
-        lineItems: updateDto.lineItems && accountMap
-          ? {
-              create: updateDto.lineItems.map((item, index) => ({
-                lineNumber: index + 1,
-                accountId: accountMap.get(item.accountCode)!,
-                description: item.description,
-                descriptionId: item.descriptionId,
-                debit: item.debit,
-                credit: item.credit,
-                projectId: item.projectId,
-                clientId: item.clientId,
-                departmentId: item.departmentId,
-              })),
-            }
-          : undefined,
+        lineItems:
+          updateDto.lineItems && accountMap
+            ? {
+                create: updateDto.lineItems.map((item, index) => ({
+                  lineNumber: index + 1,
+                  accountId: accountMap.get(item.accountCode)!,
+                  description: item.description,
+                  descriptionId: item.descriptionId,
+                  debit: item.debit,
+                  credit: item.credit,
+                  projectId: item.projectId,
+                  clientId: item.clientId,
+                  departmentId: item.departmentId,
+                })),
+              }
+            : undefined,
       },
       include: {
         lineItems: {
-          orderBy: { lineNumber: 'asc' },
+          orderBy: { lineNumber: "asc" },
           include: {
             account: {
               select: {
@@ -583,13 +600,13 @@ export class JournalService {
     const entry = await this.getJournalEntry(id);
 
     if (entry.isPosted) {
-      throw new BadRequestException('Journal entry is already posted');
+      throw new BadRequestException("Journal entry is already posted");
     }
 
     const now = new Date();
 
     // Create general ledger entries for each line item
-    const ledgerEntries = entry.lineItems.map(line => ({
+    const ledgerEntries = entry.lineItems.map((line) => ({
       journalEntryId: entry.id,
       journalEntryNumber: entry.entryNumber,
       lineNumber: line.lineNumber,
@@ -638,11 +655,11 @@ export class JournalService {
     const originalEntry = await this.getJournalEntry(id);
 
     if (!originalEntry.isPosted) {
-      throw new BadRequestException('Can only reverse posted journal entries');
+      throw new BadRequestException("Can only reverse posted journal entries");
     }
 
     if (originalEntry.isReversing) {
-      throw new BadRequestException('This entry is already a reversing entry');
+      throw new BadRequestException("This entry is already a reversing entry");
     }
 
     // Check if already reversed
@@ -651,16 +668,16 @@ export class JournalService {
     });
 
     if (existingReversal) {
-      throw new ConflictException('This entry has already been reversed');
+      throw new ConflictException("This entry has already been reversed");
     }
 
     // Create reversing entry with swapped debits/credits
-    const reversingLineItems = originalEntry.lineItems.map(line => ({
+    const reversingLineItems = originalEntry.lineItems.map((line) => ({
       accountCode: line.account.code, // Get code from account relation
       description: `REVERSAL: ${line.description || originalEntry.description}`,
       descriptionId: line.descriptionId || undefined,
       debit: Number(line.credit), // Swap credit to debit
-      credit: Number(line.debit),  // Swap debit to credit
+      credit: Number(line.debit), // Swap debit to credit
       projectId: line.projectId || undefined,
       clientId: line.clientId || undefined,
       departmentId: line.departmentId || undefined,
@@ -697,7 +714,7 @@ export class JournalService {
 
     if (entry.isPosted) {
       throw new BadRequestException(
-        'Cannot delete posted journal entry. Use reversal instead.',
+        "Cannot delete posted journal entry. Use reversal instead.",
       );
     }
 
@@ -705,7 +722,7 @@ export class JournalService {
       where: { id },
     });
 
-    return { message: 'Journal entry deleted successfully' };
+    return { message: "Journal entry deleted successfully" };
   }
 
   /**
@@ -717,11 +734,11 @@ export class JournalService {
     });
 
     if (!period) {
-      throw new NotFoundException('Fiscal period not found');
+      throw new NotFoundException("Fiscal period not found");
     }
 
-    if (period.status === 'CLOSED') {
-      throw new BadRequestException('Fiscal period is already closed');
+    if (period.status === "CLOSED") {
+      throw new BadRequestException("Fiscal period is already closed");
     }
 
     // Check for unposted entries in this period
@@ -741,7 +758,7 @@ export class JournalService {
     const updatedPeriod = await this.prisma.fiscalPeriod.update({
       where: { id },
       data: {
-        status: 'CLOSED',
+        status: "CLOSED",
         closedAt: new Date(),
         closedBy: userId,
       },
@@ -761,17 +778,18 @@ export class JournalService {
     status: string,
     userId: string,
   ) {
-    const transactionType = status === 'PAID'
-      ? TransactionType.PAYMENT_RECEIVED
-      : TransactionType.INVOICE_SENT;
+    const transactionType =
+      status === "PAID"
+        ? TransactionType.PAYMENT_RECEIVED
+        : TransactionType.INVOICE_SENT;
 
     let lineItems: any[];
 
-    if (status === 'SENT') {
+    if (status === "SENT") {
       // Invoice SENT: Debit AR, Credit Revenue
       lineItems = [
         {
-          accountCode: '1-2010', // Accounts Receivable
+          accountCode: "1-2010", // Accounts Receivable
           description: `Invoice ${invoiceNumber}`,
           descriptionId: `Faktur ${invoiceNumber}`,
           debit: totalAmount,
@@ -779,7 +797,7 @@ export class JournalService {
           clientId: clientId,
         },
         {
-          accountCode: '4-1010', // Service Revenue
+          accountCode: "4-1010", // Service Revenue
           description: `Revenue from Invoice ${invoiceNumber}`,
           descriptionId: `Pendapatan dari Faktur ${invoiceNumber}`,
           debit: 0,
@@ -791,7 +809,7 @@ export class JournalService {
       // Invoice PAID: Debit Cash, Credit AR
       lineItems = [
         {
-          accountCode: '1-1020', // Bank Account
+          accountCode: "1-1020", // Bank Account
           description: `Payment for Invoice ${invoiceNumber}`,
           descriptionId: `Pembayaran Faktur ${invoiceNumber}`,
           debit: totalAmount,
@@ -799,7 +817,7 @@ export class JournalService {
           clientId: clientId,
         },
         {
-          accountCode: '1-2010', // Accounts Receivable
+          accountCode: "1-2010", // Accounts Receivable
           description: `Payment for Invoice ${invoiceNumber}`,
           descriptionId: `Pembayaran Faktur ${invoiceNumber}`,
           debit: 0,
@@ -833,13 +851,14 @@ export class JournalService {
     status: string,
     userId: string,
   ) {
-    const transactionType = status === 'PAID'
-      ? TransactionType.PAYMENT_MADE
-      : TransactionType.EXPENSE_SUBMITTED;
+    const transactionType =
+      status === "PAID"
+        ? TransactionType.PAYMENT_MADE
+        : TransactionType.EXPENSE_SUBMITTED;
 
     let lineItems: any[];
 
-    if (status === 'SUBMITTED' || status === 'APPROVED') {
+    if (status === "SUBMITTED" || status === "APPROVED") {
       // Expense SUBMITTED: Debit Expense, Credit AP
       lineItems = [
         {
@@ -850,7 +869,7 @@ export class JournalService {
           credit: 0,
         },
         {
-          accountCode: '2-1010', // Accounts Payable
+          accountCode: "2-1010", // Accounts Payable
           description: `Payable for Expense ${expenseNumber}`,
           descriptionId: `Hutang Beban ${expenseNumber}`,
           debit: 0,
@@ -861,14 +880,14 @@ export class JournalService {
       // Expense PAID: Debit AP, Credit Cash
       lineItems = [
         {
-          accountCode: '2-1010', // Accounts Payable
+          accountCode: "2-1010", // Accounts Payable
           description: `Payment for Expense ${expenseNumber}`,
           descriptionId: `Pembayaran Beban ${expenseNumber}`,
           debit: amount,
           credit: 0,
         },
         {
-          accountCode: '1-1020', // Bank Account
+          accountCode: "1-1020", // Bank Account
           description: `Payment for Expense ${expenseNumber}`,
           descriptionId: `Pembayaran Beban ${expenseNumber}`,
           debit: 0,
@@ -906,7 +925,7 @@ export class JournalService {
     // Credit: 8-1010 (Bad Debt Expense) - reverse expense (recovery)
     const lineItems = [
       {
-        accountCode: '1-2015', // Allowance for Doubtful Accounts
+        accountCode: "1-2015", // Allowance for Doubtful Accounts
         description: `ECL reversal for paid Invoice ${invoiceNumber}`,
         descriptionId: `Pembalikan penyisihan piutang untuk Faktur ${invoiceNumber} (lunas)`,
         debit: eclAmount,
@@ -914,7 +933,7 @@ export class JournalService {
         clientId: clientId,
       },
       {
-        accountCode: '8-1010', // Bad Debt Expense
+        accountCode: "8-1010", // Bad Debt Expense
         description: `ECL recovery for paid Invoice ${invoiceNumber}`,
         descriptionId: `Pemulihan penyisihan piutang untuk Faktur ${invoiceNumber} (lunas)`,
         debit: 0,
@@ -955,25 +974,26 @@ export class JournalService {
     status: string,
     userId: string,
   ) {
-    const transactionType = status === 'APPROVED'
-      ? TransactionType.PO_APPROVED
-      : TransactionType.PO_CANCELLED;
+    const transactionType =
+      status === "APPROVED"
+        ? TransactionType.PO_APPROVED
+        : TransactionType.PO_CANCELLED;
 
     let lineItems: any[];
 
-    if (status === 'APPROVED') {
+    if (status === "APPROVED") {
       // PO APPROVED: Record commitment
       // Debit Expense/Asset, Credit PO Commitments
       lineItems = [
         {
-          accountCode: '6-1010', // General Expenses (default, will be overridden by line item categories)
+          accountCode: "6-1010", // General Expenses (default, will be overridden by line item categories)
           description: `PO Commitment ${poNumber}`,
           descriptionId: `Komitmen PO ${poNumber}`,
           debit: totalAmount,
           credit: 0,
         },
         {
-          accountCode: '2-1020', // PO Commitments
+          accountCode: "2-1020", // PO Commitments
           description: `PO Commitment ${poNumber}`,
           descriptionId: `Komitmen PO ${poNumber}`,
           debit: 0,
@@ -985,14 +1005,14 @@ export class JournalService {
       // Debit PO Commitments, Credit Expense/Asset
       lineItems = [
         {
-          accountCode: '2-1020', // PO Commitments
+          accountCode: "2-1020", // PO Commitments
           description: `Cancel PO Commitment ${poNumber}`,
           descriptionId: `Batalkan Komitmen PO ${poNumber}`,
           debit: totalAmount,
           credit: 0,
         },
         {
-          accountCode: '6-1010', // General Expenses
+          accountCode: "6-1010", // General Expenses
           description: `Cancel PO Commitment ${poNumber}`,
           descriptionId: `Batalkan Komitmen PO ${poNumber}`,
           debit: 0,

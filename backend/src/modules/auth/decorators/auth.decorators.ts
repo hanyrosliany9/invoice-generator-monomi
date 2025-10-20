@@ -45,9 +45,7 @@ export function Public() {
  * Require authentication but allow any authenticated user
  */
 export function RequireAuth() {
-  return applyDecorators(
-    UseGuards(JwtAuthGuard),
-  );
+  return applyDecorators(UseGuards(JwtAuthGuard));
 }
 
 /**
@@ -245,8 +243,5 @@ export function RequireAccountingManager() {
  * async customOperation() { ... }
  */
 export function RequireRoles(roles: UserRole[]) {
-  return applyDecorators(
-    UseGuards(JwtAuthGuard, RolesGuard),
-    Roles(...roles),
-  );
+  return applyDecorators(UseGuards(JwtAuthGuard, RolesGuard), Roles(...roles));
 }

@@ -1,6 +1,12 @@
-import { IsString, IsDate, IsEnum, IsOptional, IsBoolean } from 'class-validator';
-import { Type } from 'class-transformer';
-import { StatementType, AccountType } from '@prisma/client';
+import {
+  IsString,
+  IsDate,
+  IsEnum,
+  IsOptional,
+  IsBoolean,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { StatementType, AccountType } from "@prisma/client";
 
 export class FinancialStatementQueryDto {
   @IsDate()

@@ -3,15 +3,15 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { JournalService } from './journal.service';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { JournalService } from "./journal.service";
 import {
   DepreciationMethod,
   DepreciationStatus,
-  TransactionType
-} from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+  TransactionType,
+} from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
 
 /**
  * PSAK 16: Fixed Assets Depreciation Service
@@ -65,17 +65,19 @@ export class DepreciationService {
 
     // Validate inputs
     if (data.purchasePrice <= 0) {
-      throw new BadRequestException('Purchase price must be greater than 0');
+      throw new BadRequestException("Purchase price must be greater than 0");
     }
 
     if (data.residualValue < 0 || data.residualValue >= data.purchasePrice) {
       throw new BadRequestException(
-        'Residual value must be between 0 and purchase price',
+        "Residual value must be between 0 and purchase price",
       );
     }
 
     if (data.usefulLifeMonths <= 0) {
-      throw new BadRequestException('Useful life must be greater than 0 months');
+      throw new BadRequestException(
+        "Useful life must be greater than 0 months",
+      );
     }
 
     // Calculate depreciation amounts
@@ -119,11 +121,13 @@ export class DepreciationService {
       case DepreciationMethod.UNITS_OF_PRODUCTION:
         // Unit Produksi: Requires usage tracking (not auto-calculated)
         throw new BadRequestException(
-          'Units of production method requires manual calculation based on asset usage',
+          "Units of production method requires manual calculation based on asset usage",
         );
 
       default:
-        throw new BadRequestException(`Unsupported depreciation method: ${data.method}`);
+        throw new BadRequestException(
+          `Unsupported depreciation method: ${data.method}`,
+        );
     }
 
     // Calculate end date
@@ -208,7 +212,7 @@ export class DepreciationService {
           in: [DepreciationStatus.POSTED, DepreciationStatus.CALCULATED],
         },
       },
-      orderBy: { periodDate: 'desc' },
+      orderBy: { periodDate: "desc" },
     });
 
     const previousAccumulated = previousEntries.reduce(
@@ -225,18 +229,27 @@ export class DepreciationService {
       // Simple straight-line calculation
       depreciationAmount = Number(schedule.depreciationPerMonth);
       newAccumulatedDepreciation = previousAccumulated + depreciationAmount;
-      bookValue = Number(schedule.depreciableAmount) + Number(schedule.residualValue) - newAccumulatedDepreciation;
+      bookValue =
+        Number(schedule.depreciableAmount) +
+        Number(schedule.residualValue) -
+        newAccumulatedDepreciation;
     } else if (
       schedule.method === DepreciationMethod.DECLINING_BALANCE ||
       schedule.method === DepreciationMethod.DOUBLE_DECLINING
     ) {
       // Declining balance: Rate * Book Value (at start of period)
-      const currentBookValue = Number(schedule.depreciableAmount) + Number(schedule.residualValue) - previousAccumulated;
+      const currentBookValue =
+        Number(schedule.depreciableAmount) +
+        Number(schedule.residualValue) -
+        previousAccumulated;
       const monthlyRate = Number(schedule.annualRate) / 12;
       depreciationAmount = currentBookValue * monthlyRate;
 
       // Ensure we don't depreciate below residual value
-      if (currentBookValue - depreciationAmount < Number(schedule.residualValue)) {
+      if (
+        currentBookValue - depreciationAmount <
+        Number(schedule.residualValue)
+      ) {
         depreciationAmount = currentBookValue - Number(schedule.residualValue);
       }
 
@@ -246,14 +259,24 @@ export class DepreciationService {
       // Sum of years digits and other methods
       depreciationAmount = Number(schedule.depreciationPerMonth);
       newAccumulatedDepreciation = previousAccumulated + depreciationAmount;
-      bookValue = Number(schedule.depreciableAmount) + Number(schedule.residualValue) - newAccumulatedDepreciation;
+      bookValue =
+        Number(schedule.depreciableAmount) +
+        Number(schedule.residualValue) -
+        newAccumulatedDepreciation;
     }
 
     // Ensure book value doesn't go below residual value
     if (bookValue < Number(schedule.residualValue)) {
       bookValue = Number(schedule.residualValue);
-      depreciationAmount = Number(schedule.depreciableAmount) + Number(schedule.residualValue) - previousAccumulated - bookValue;
-      newAccumulatedDepreciation = Number(schedule.depreciableAmount) + Number(schedule.residualValue) - bookValue;
+      depreciationAmount =
+        Number(schedule.depreciableAmount) +
+        Number(schedule.residualValue) -
+        previousAccumulated -
+        bookValue;
+      newAccumulatedDepreciation =
+        Number(schedule.depreciableAmount) +
+        Number(schedule.residualValue) -
+        bookValue;
     }
 
     // Create depreciation entry
@@ -300,15 +323,19 @@ export class DepreciationService {
     });
 
     if (!entry) {
-      throw new NotFoundException(`Depreciation entry with ID ${entryId} not found`);
+      throw new NotFoundException(
+        `Depreciation entry with ID ${entryId} not found`,
+      );
     }
 
     if (entry.status === DepreciationStatus.POSTED) {
-      throw new BadRequestException('Depreciation entry is already posted');
+      throw new BadRequestException("Depreciation entry is already posted");
     }
 
     if (entry.journalEntryId) {
-      throw new ConflictException('Depreciation entry already has a journal entry');
+      throw new ConflictException(
+        "Depreciation entry already has a journal entry",
+      );
     }
 
     // Create journal entry: Debit Depreciation Expense, Credit Accumulated Depreciation
@@ -325,14 +352,14 @@ export class DepreciationService {
       createdBy: userId,
       lineItems: [
         {
-          accountCode: '6-3010', // Depreciation Expense
+          accountCode: "6-3010", // Depreciation Expense
           description: `Depreciation for ${entry.asset.name}`,
           descriptionId: `Beban penyusutan ${entry.asset.name}`,
           debit: Number(entry.depreciationAmount),
           credit: 0,
         },
         {
-          accountCode: '1-4020', // Accumulated Depreciation
+          accountCode: "1-4020", // Accumulated Depreciation
           description: `Accumulated depreciation for ${entry.asset.name}`,
           descriptionId: `Akumulasi penyusutan ${entry.asset.name}`,
           debit: 0,
@@ -437,10 +464,10 @@ export class DepreciationService {
       include: {
         asset: true,
         depreciationEntries: {
-          orderBy: { periodDate: 'asc' },
+          orderBy: { periodDate: "asc" },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -464,7 +491,7 @@ export class DepreciationService {
           },
         },
       },
-      orderBy: { periodDate: 'asc' },
+      orderBy: { periodDate: "asc" },
     });
   }
 
@@ -500,26 +527,32 @@ export class DepreciationService {
       0,
     );
 
-    const byAsset = entries.reduce((acc, entry) => {
-      const assetCode = entry.asset.assetCode;
-      if (!acc[assetCode]) {
-        acc[assetCode] = {
-          assetCode,
-          assetName: entry.asset.name,
-          totalDepreciation: 0,
-          entries: 0,
-        };
-      }
-      acc[assetCode].totalDepreciation += Number(entry.depreciationAmount);
-      acc[assetCode].entries++;
-      return acc;
-    }, {} as Record<string, any>);
+    const byAsset = entries.reduce(
+      (acc, entry) => {
+        const assetCode = entry.asset.assetCode;
+        if (!acc[assetCode]) {
+          acc[assetCode] = {
+            assetCode,
+            assetName: entry.asset.name,
+            totalDepreciation: 0,
+            entries: 0,
+          };
+        }
+        acc[assetCode].totalDepreciation += Number(entry.depreciationAmount);
+        acc[assetCode].entries++;
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
 
     return {
       totalDepreciation,
       totalEntries: entries.length,
-      posted: entries.filter(e => e.status === DepreciationStatus.POSTED).length,
-      calculated: entries.filter(e => e.status === DepreciationStatus.CALCULATED).length,
+      posted: entries.filter((e) => e.status === DepreciationStatus.POSTED)
+        .length,
+      calculated: entries.filter(
+        (e) => e.status === DepreciationStatus.CALCULATED,
+      ).length,
       byAsset: Object.values(byAsset),
     };
   }
@@ -533,7 +566,9 @@ export class DepreciationService {
     });
 
     if (!schedule) {
-      throw new NotFoundException(`Depreciation schedule with ID ${scheduleId} not found`);
+      throw new NotFoundException(
+        `Depreciation schedule with ID ${scheduleId} not found`,
+      );
     }
 
     // Check for posted entries

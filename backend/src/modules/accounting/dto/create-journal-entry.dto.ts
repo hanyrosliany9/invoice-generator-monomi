@@ -1,6 +1,16 @@
-import { IsString, IsDate, IsEnum, IsOptional, IsArray, ValidateNested, IsNumber, Min, IsBoolean } from 'class-validator';
-import { Type } from 'class-transformer';
-import { TransactionType, JournalStatus } from '@prisma/client';
+import {
+  IsString,
+  IsDate,
+  IsEnum,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  IsNumber,
+  Min,
+  IsBoolean,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { TransactionType, JournalStatus } from "@prisma/client";
 
 export class CreateJournalLineItemDto {
   @IsString()

@@ -1,6 +1,13 @@
-import { IsDate, IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
-import { Type } from 'class-transformer';
-import { BankTransferStatus, TransferMethod } from './create-bank-transfer.dto';
+import {
+  IsDate,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { BankTransferStatus, TransferMethod } from "./create-bank-transfer.dto";
 
 export class BankTransferQueryDto {
   @IsDate()
@@ -55,9 +62,9 @@ export class BankTransferQueryDto {
 
   @IsString()
   @IsOptional()
-  sortBy?: string = 'transferDate';
+  sortBy?: string = "transferDate";
 
   @IsString()
   @IsOptional()
-  sortOrder?: 'asc' | 'desc' = 'desc';
+  sortOrder?: "asc" | "desc" = "desc";
 }

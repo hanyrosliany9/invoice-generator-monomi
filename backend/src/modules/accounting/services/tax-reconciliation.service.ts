@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { PPNCategory, WithholdingTaxType, EFakturStatus } from '@prisma/client';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { PPNCategory, WithholdingTaxType, EFakturStatus } from "@prisma/client";
 
 /**
  * Tax Reconciliation Service - Indonesian Tax Compliance
@@ -30,7 +30,7 @@ export class TaxReconciliationService {
     const expensesWithPPN = await this.prisma.expense.findMany({
       where: {
         expenseDate: { gte: startDate, lte: endDate },
-        status: { in: ['SUBMITTED', 'APPROVED', 'PAID'] },
+        status: { in: ["SUBMITTED", "APPROVED", "PAID"] },
         ppnAmount: { gt: 0 },
       },
       select: {
@@ -53,40 +53,43 @@ export class TaxReconciliationService {
           },
         },
       },
-      orderBy: { expenseDate: 'asc' },
+      orderBy: { expenseDate: "asc" },
     });
 
     // Group PPN Input by category
-    const ppnInputByCategory = expensesWithPPN.reduce((acc, expense) => {
-      const category = expense.ppnCategory || PPNCategory.CREDITABLE;
-      if (!acc[category]) {
-        acc[category] = {
-          category,
-          count: 0,
-          totalGrossAmount: 0,
-          totalPPNAmount: 0,
-          expenses: [],
-        };
-      }
+    const ppnInputByCategory = expensesWithPPN.reduce(
+      (acc, expense) => {
+        const category = expense.ppnCategory || PPNCategory.CREDITABLE;
+        if (!acc[category]) {
+          acc[category] = {
+            category,
+            count: 0,
+            totalGrossAmount: 0,
+            totalPPNAmount: 0,
+            expenses: [],
+          };
+        }
 
-      acc[category].count++;
-      acc[category].totalGrossAmount += Number(expense.grossAmount);
-      acc[category].totalPPNAmount += Number(expense.ppnAmount);
-      acc[category].expenses.push({
-        expenseNumber: expense.expenseNumber,
-        vendorName: expense.vendorName,
-        vendorNPWP: expense.vendorNPWP,
-        grossAmount: Number(expense.grossAmount),
-        ppnRate: Number(expense.ppnRate),
-        ppnAmount: Number(expense.ppnAmount),
-        eFakturNSFP: expense.eFakturNSFP,
-        eFakturStatus: expense.eFakturStatus,
-        expenseDate: expense.expenseDate,
-        categoryName: expense.category.nameId || expense.category.name,
-      });
+        acc[category].count++;
+        acc[category].totalGrossAmount += Number(expense.grossAmount);
+        acc[category].totalPPNAmount += Number(expense.ppnAmount);
+        acc[category].expenses.push({
+          expenseNumber: expense.expenseNumber,
+          vendorName: expense.vendorName,
+          vendorNPWP: expense.vendorNPWP,
+          grossAmount: Number(expense.grossAmount),
+          ppnRate: Number(expense.ppnRate),
+          ppnAmount: Number(expense.ppnAmount),
+          eFakturNSFP: expense.eFakturNSFP,
+          eFakturStatus: expense.eFakturStatus,
+          expenseDate: expense.expenseDate,
+          categoryName: expense.category.nameId || expense.category.name,
+        });
 
-      return acc;
-    }, {} as Record<string, any>);
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
 
     // Calculate total PPN Input (only creditable)
     const totalPPNInput = expensesWithPPN
@@ -99,7 +102,7 @@ export class TaxReconciliationService {
     const invoicesWithPPN = await this.prisma.invoice.findMany({
       where: {
         creationDate: { gte: startDate, lte: endDate },
-        status: { in: ['SENT', 'PAID'] },
+        status: { in: ["SENT", "PAID"] },
       },
       select: {
         id: true,
@@ -114,7 +117,7 @@ export class TaxReconciliationService {
           },
         },
       },
-      orderBy: { creationDate: 'asc' },
+      orderBy: { creationDate: "asc" },
     });
 
     // Calculate PPN Output (assuming 11% PPN on all invoices)
@@ -145,8 +148,16 @@ export class TaxReconciliationService {
     const isPPNPayable = ppnPayable > 0;
 
     // Group by month
-    const ppnInputByMonth = this.groupByMonth(expensesWithPPN, 'expenseDate', 'ppnAmount');
-    const ppnOutputByMonth = this.groupByMonth(invoicesWithPPN, 'creationDate', 'totalAmount');
+    const ppnInputByMonth = this.groupByMonth(
+      expensesWithPPN,
+      "expenseDate",
+      "ppnAmount",
+    );
+    const ppnOutputByMonth = this.groupByMonth(
+      invoicesWithPPN,
+      "creationDate",
+      "totalAmount",
+    );
 
     return {
       period: {
@@ -182,7 +193,7 @@ export class TaxReconciliationService {
         ppnPayable: isPPNPayable ? ppnPayable : 0,
         ppnCreditable: !isPPNPayable ? Math.abs(ppnPayable) : 0,
         netPosition: ppnPayable,
-        status: isPPNPayable ? 'PAYABLE' : 'CREDITABLE',
+        status: isPPNPayable ? "PAYABLE" : "CREDITABLE",
       },
       summary: {
         totalPPNInput,
@@ -205,7 +216,7 @@ export class TaxReconciliationService {
     const expensesWithPPh = await this.prisma.expense.findMany({
       where: {
         expenseDate: { gte: startDate, lte: endDate },
-        status: { in: ['SUBMITTED', 'APPROVED', 'PAID'] },
+        status: { in: ["SUBMITTED", "APPROVED", "PAID"] },
         withholdingTaxAmount: { gt: 0 },
       },
       select: {
@@ -228,46 +239,55 @@ export class TaxReconciliationService {
           },
         },
       },
-      orderBy: { expenseDate: 'asc' },
+      orderBy: { expenseDate: "asc" },
     });
 
     // Group by withholding tax type
-    const byType = expensesWithPPh.reduce((acc, expense) => {
-      const type = expense.withholdingTaxType || WithholdingTaxType.NONE;
-      if (type === WithholdingTaxType.NONE) return acc;
+    const byType = expensesWithPPh.reduce(
+      (acc, expense) => {
+        const type = expense.withholdingTaxType || WithholdingTaxType.NONE;
+        if (type === WithholdingTaxType.NONE) return acc;
 
-      if (!acc[type]) {
-        acc[type] = {
-          type,
-          typeName: this.getPPhTypeName(type),
-          count: 0,
-          totalGrossAmount: 0,
-          totalWithholdingAmount: 0,
-          expenses: [],
-        };
-      }
+        if (!acc[type]) {
+          acc[type] = {
+            type,
+            typeName: this.getPPhTypeName(type),
+            count: 0,
+            totalGrossAmount: 0,
+            totalWithholdingAmount: 0,
+            expenses: [],
+          };
+        }
 
-      acc[type].count++;
-      acc[type].totalGrossAmount += Number(expense.grossAmount);
-      acc[type].totalWithholdingAmount += Number(expense.withholdingTaxAmount);
-      acc[type].expenses.push({
-        expenseNumber: expense.expenseNumber,
-        vendorName: expense.vendorName,
-        vendorNPWP: expense.vendorNPWP,
-        grossAmount: Number(expense.grossAmount),
-        withholdingRate: Number(expense.withholdingTaxRate),
-        withholdingAmount: Number(expense.withholdingTaxAmount),
-        buktiPotongNumber: expense.buktiPotongNumber,
-        buktiPotongDate: expense.buktiPotongDate,
-        expenseDate: expense.expenseDate,
-        categoryName: expense.category.nameId || expense.category.name,
-      });
+        acc[type].count++;
+        acc[type].totalGrossAmount += Number(expense.grossAmount);
+        acc[type].totalWithholdingAmount += Number(
+          expense.withholdingTaxAmount,
+        );
+        acc[type].expenses.push({
+          expenseNumber: expense.expenseNumber,
+          vendorName: expense.vendorName,
+          vendorNPWP: expense.vendorNPWP,
+          grossAmount: Number(expense.grossAmount),
+          withholdingRate: Number(expense.withholdingTaxRate),
+          withholdingAmount: Number(expense.withholdingTaxAmount),
+          buktiPotongNumber: expense.buktiPotongNumber,
+          buktiPotongDate: expense.buktiPotongDate,
+          expenseDate: expense.expenseDate,
+          categoryName: expense.category.nameId || expense.category.name,
+        });
 
-      return acc;
-    }, {} as Record<string, any>);
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
 
     // Group by month
-    const byMonth = this.groupByMonth(expensesWithPPh, 'expenseDate', 'withholdingTaxAmount');
+    const byMonth = this.groupByMonth(
+      expensesWithPPh,
+      "expenseDate",
+      "withholdingTaxAmount",
+    );
 
     // Calculate totals
     const totalWithholdingTax = expensesWithPPh.reduce(
@@ -276,7 +296,9 @@ export class TaxReconciliationService {
     );
 
     // Get Bukti Potong status
-    const withBuktiPotong = expensesWithPPh.filter((e) => e.buktiPotongNumber).length;
+    const withBuktiPotong = expensesWithPPh.filter(
+      (e) => e.buktiPotongNumber,
+    ).length;
     const withoutBuktiPotong = expensesWithPPh.length - withBuktiPotong;
 
     return {
@@ -318,14 +340,17 @@ export class TaxReconciliationService {
     const pphReport = await this.getPPhSummary(startDate, endDate);
 
     // Get e-Faktur validation status
-    const eFakturStatus = await this.getEFakturValidationStatus(startDate, endDate);
+    const eFakturStatus = await this.getEFakturValidationStatus(
+      startDate,
+      endDate,
+    );
 
     return {
       reportPeriod: {
         year,
         month,
-        monthName: new Date(year, month - 1).toLocaleString('id-ID', {
-          month: 'long',
+        monthName: new Date(year, month - 1).toLocaleString("id-ID", {
+          month: "long",
         }),
         startDate,
         endDate,
@@ -337,7 +362,8 @@ export class TaxReconciliationService {
         ppnPayable: ppnReport.reconciliation.ppnPayable,
         pphWithheld: pphReport.summary.totalWithholdingTax,
         totalTaxLiability:
-          ppnReport.reconciliation.ppnPayable + pphReport.summary.totalWithholdingTax,
+          ppnReport.reconciliation.ppnPayable +
+          pphReport.summary.totalWithholdingTax,
         eFakturCompletionRate: eFakturStatus.summary.validationRate,
       },
     };
@@ -352,7 +378,7 @@ export class TaxReconciliationService {
     const expensesRequiringEFaktur = await this.prisma.expense.findMany({
       where: {
         expenseDate: { gte: startDate, lte: endDate },
-        status: { in: ['APPROVED', 'PAID'] },
+        status: { in: ["APPROVED", "PAID"] },
         ppnAmount: { gt: 0 },
         ppnCategory: PPNCategory.CREDITABLE,
       },
@@ -375,38 +401,41 @@ export class TaxReconciliationService {
           },
         },
       },
-      orderBy: { expenseDate: 'asc' },
+      orderBy: { expenseDate: "asc" },
     });
 
     // Group by e-Faktur status
-    const byStatus = expensesRequiringEFaktur.reduce((acc, expense) => {
-      const status = expense.eFakturStatus;
-      if (!acc[status]) {
-        acc[status] = {
-          status,
-          statusName: this.getEFakturStatusName(status),
-          count: 0,
-          totalPPNAmount: 0,
-          expenses: [],
-        };
-      }
+    const byStatus = expensesRequiringEFaktur.reduce(
+      (acc, expense) => {
+        const status = expense.eFakturStatus;
+        if (!acc[status]) {
+          acc[status] = {
+            status,
+            statusName: this.getEFakturStatusName(status),
+            count: 0,
+            totalPPNAmount: 0,
+            expenses: [],
+          };
+        }
 
-      acc[status].count++;
-      acc[status].totalPPNAmount += Number(expense.ppnAmount);
-      acc[status].expenses.push({
-        expenseNumber: expense.expenseNumber,
-        vendorName: expense.vendorName,
-        vendorNPWP: expense.vendorNPWP,
-        grossAmount: Number(expense.grossAmount),
-        ppnAmount: Number(expense.ppnAmount),
-        eFakturNSFP: expense.eFakturNSFP,
-        eFakturStatus: expense.eFakturStatus,
-        eFakturValidatedAt: expense.eFakturValidatedAt,
-        expenseDate: expense.expenseDate,
-      });
+        acc[status].count++;
+        acc[status].totalPPNAmount += Number(expense.ppnAmount);
+        acc[status].expenses.push({
+          expenseNumber: expense.expenseNumber,
+          vendorName: expense.vendorName,
+          vendorNPWP: expense.vendorNPWP,
+          grossAmount: Number(expense.grossAmount),
+          ppnAmount: Number(expense.ppnAmount),
+          eFakturNSFP: expense.eFakturNSFP,
+          eFakturStatus: expense.eFakturStatus,
+          eFakturValidatedAt: expense.eFakturValidatedAt,
+          expenseDate: expense.expenseDate,
+        });
 
-      return acc;
-    }, {} as Record<string, any>);
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
 
     // Calculate compliance metrics
     const totalExpenses = expensesRequiringEFaktur.length;
@@ -425,7 +454,8 @@ export class TaxReconciliationService {
       (e) => e.eFakturStatus === EFakturStatus.NOT_REQUIRED,
     ).length;
 
-    const validationRate = totalExpenses > 0 ? (validCount / totalExpenses) * 100 : 0;
+    const validationRate =
+      totalExpenses > 0 ? (validCount / totalExpenses) * 100 : 0;
 
     // Find expenses with issues
     const expensesWithIssues = expensesRequiringEFaktur.filter(
@@ -449,7 +479,11 @@ export class TaxReconciliationService {
         notRequiredCount,
         validationRate,
         complianceLevel:
-          validationRate >= 95 ? 'EXCELLENT' : validationRate >= 80 ? 'GOOD' : 'NEEDS_ATTENTION',
+          validationRate >= 95
+            ? "EXCELLENT"
+            : validationRate >= 80
+              ? "GOOD"
+              : "NEEDS_ATTENTION",
       },
       issues: {
         count: expensesWithIssues.length,
@@ -461,10 +495,10 @@ export class TaxReconciliationService {
           eFakturNSFP: e.eFakturNSFP,
           eFakturStatus: e.eFakturStatus,
           issue: !e.eFakturNSFP
-            ? 'MISSING_NSFP'
+            ? "MISSING_NSFP"
             : e.eFakturStatus === EFakturStatus.INVALID
-            ? 'INVALID_EFAKTUR'
-            : 'PENDING_VALIDATION',
+              ? "INVALID_EFAKTUR"
+              : "PENDING_VALIDATION",
           expenseDate: e.expenseDate,
         })),
       },
@@ -520,11 +554,11 @@ export class TaxReconciliationService {
     // PPN reminder
     if (ppnReport.reconciliation.ppnPayable > 0 && daysUntilPPNDeadline <= 10) {
       reminders.push({
-        type: 'PPN',
+        type: "PPN",
         deadline: ppnDeadline,
         daysUntil: daysUntilPPNDeadline,
         amount: ppnReport.reconciliation.ppnPayable,
-        status: daysUntilPPNDeadline <= 3 ? 'URGENT' : 'UPCOMING',
+        status: daysUntilPPNDeadline <= 3 ? "URGENT" : "UPCOMING",
         period: {
           month: previousMonth + 1,
           year: previousYear,
@@ -533,13 +567,16 @@ export class TaxReconciliationService {
     }
 
     // PPh reminder
-    if (pphReport.summary.totalWithholdingTax > 0 && daysUntilPPhDeadline <= 10) {
+    if (
+      pphReport.summary.totalWithholdingTax > 0 &&
+      daysUntilPPhDeadline <= 10
+    ) {
       reminders.push({
-        type: 'PPh',
+        type: "PPh",
         deadline: pphDeadline,
         daysUntil: daysUntilPPhDeadline,
         amount: pphReport.summary.totalWithholdingTax,
-        status: daysUntilPPhDeadline <= 3 ? 'URGENT' : 'UPCOMING',
+        status: daysUntilPPhDeadline <= 3 ? "URGENT" : "UPCOMING",
         period: {
           month: previousMonth + 1,
           year: previousYear,
@@ -552,7 +589,7 @@ export class TaxReconciliationService {
       reminders,
       summary: {
         totalReminders: reminders.length,
-        urgentCount: reminders.filter((r) => r.status === 'URGENT').length,
+        urgentCount: reminders.filter((r) => r.status === "URGENT").length,
         totalAmountDue: reminders.reduce((sum, r) => sum + r.amount, 0),
       },
     };
@@ -566,24 +603,30 @@ export class TaxReconciliationService {
     dateField: string,
     amountField: string,
   ): Record<string, any> {
-    return transactions.reduce((acc, transaction) => {
-      const date = new Date(transaction[dateField]);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    return transactions.reduce(
+      (acc, transaction) => {
+        const date = new Date(transaction[dateField]);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
-      if (!acc[monthKey]) {
-        acc[monthKey] = {
-          month: monthKey,
-          monthName: date.toLocaleString('id-ID', { month: 'long', year: 'numeric' }),
-          count: 0,
-          totalAmount: 0,
-        };
-      }
+        if (!acc[monthKey]) {
+          acc[monthKey] = {
+            month: monthKey,
+            monthName: date.toLocaleString("id-ID", {
+              month: "long",
+              year: "numeric",
+            }),
+            count: 0,
+            totalAmount: 0,
+          };
+        }
 
-      acc[monthKey].count++;
-      acc[monthKey].totalAmount += Number(transaction[amountField] || 0);
+        acc[monthKey].count++;
+        acc[monthKey].totalAmount += Number(transaction[amountField] || 0);
 
-      return acc;
-    }, {} as Record<string, any>);
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
   }
 
   /**
@@ -591,10 +634,10 @@ export class TaxReconciliationService {
    */
   private getPPhTypeName(type: WithholdingTaxType): string {
     const names: Record<WithholdingTaxType, string> = {
-      [WithholdingTaxType.PPH23]: 'PPh Pasal 23 - Jasa',
-      [WithholdingTaxType.PPH4_2]: 'PPh Pasal 4(2) - Final',
-      [WithholdingTaxType.PPH15]: 'PPh Pasal 15 - Kegiatan Tertentu',
-      [WithholdingTaxType.NONE]: 'Tidak Ada',
+      [WithholdingTaxType.PPH23]: "PPh Pasal 23 - Jasa",
+      [WithholdingTaxType.PPH4_2]: "PPh Pasal 4(2) - Final",
+      [WithholdingTaxType.PPH15]: "PPh Pasal 15 - Kegiatan Tertentu",
+      [WithholdingTaxType.NONE]: "Tidak Ada",
     };
     return names[type] || type;
   }
@@ -604,12 +647,12 @@ export class TaxReconciliationService {
    */
   private getEFakturStatusName(status: EFakturStatus): string {
     const names: Record<EFakturStatus, string> = {
-      [EFakturStatus.NOT_REQUIRED]: 'Tidak Diperlukan',
-      [EFakturStatus.PENDING]: 'Menunggu Upload',
-      [EFakturStatus.UPLOADED]: 'Sudah Upload, Menunggu Validasi',
-      [EFakturStatus.VALID]: 'Valid',
-      [EFakturStatus.INVALID]: 'Tidak Valid',
-      [EFakturStatus.EXPIRED]: 'Kadaluarsa',
+      [EFakturStatus.NOT_REQUIRED]: "Tidak Diperlukan",
+      [EFakturStatus.PENDING]: "Menunggu Upload",
+      [EFakturStatus.UPLOADED]: "Sudah Upload, Menunggu Validasi",
+      [EFakturStatus.VALID]: "Valid",
+      [EFakturStatus.INVALID]: "Tidak Valid",
+      [EFakturStatus.EXPIRED]: "Kadaluarsa",
     };
     return names[status] || status;
   }

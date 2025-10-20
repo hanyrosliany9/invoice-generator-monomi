@@ -21,16 +21,16 @@
  */
 export enum UserRole {
   // Production roles
-  SUPER_ADMIN = 'SUPER_ADMIN',
-  FINANCE_MANAGER = 'FINANCE_MANAGER',
-  ACCOUNTANT = 'ACCOUNTANT',
-  PROJECT_MANAGER = 'PROJECT_MANAGER',
-  STAFF = 'STAFF',
-  VIEWER = 'VIEWER',
+  SUPER_ADMIN = "SUPER_ADMIN",
+  FINANCE_MANAGER = "FINANCE_MANAGER",
+  ACCOUNTANT = "ACCOUNTANT",
+  PROJECT_MANAGER = "PROJECT_MANAGER",
+  STAFF = "STAFF",
+  VIEWER = "VIEWER",
 
   // Legacy roles (backward compatibility)
-  ADMIN = 'ADMIN',
-  USER = 'USER',
+  ADMIN = "ADMIN",
+  USER = "USER",
 }
 
 /**
@@ -111,9 +111,7 @@ export const ALL_ROLES = Object.values(UserRole);
 /**
  * Roles with read-only access
  */
-export const VIEWER_ROLES = [
-  UserRole.VIEWER,
-] as const;
+export const VIEWER_ROLES = [UserRole.VIEWER] as const;
 
 // ============================================
 // FEATURE-SPECIFIC PERMISSIONS
@@ -123,12 +121,31 @@ export const VIEWER_ROLES = [
  * Quotation Permissions
  */
 export const QUOTATION_PERMISSIONS = {
-  CREATE: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.PROJECT_MANAGER, UserRole.STAFF, UserRole.ADMIN, UserRole.USER],
+  CREATE: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.PROJECT_MANAGER,
+    UserRole.STAFF,
+    UserRole.ADMIN,
+    UserRole.USER,
+  ],
   READ: ALL_ROLES,
-  UPDATE: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.PROJECT_MANAGER, UserRole.STAFF, UserRole.ADMIN, UserRole.USER],
+  UPDATE: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.PROJECT_MANAGER,
+    UserRole.STAFF,
+    UserRole.ADMIN,
+    UserRole.USER,
+  ],
   DELETE: [UserRole.SUPER_ADMIN, UserRole.ADMIN],
   APPROVE: FINANCIAL_APPROVER_ROLES,
-  SEND: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.PROJECT_MANAGER, UserRole.ADMIN],
+  SEND: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.PROJECT_MANAGER,
+    UserRole.ADMIN,
+  ],
   DECLINE: FINANCIAL_APPROVER_ROLES,
 } as const;
 
@@ -136,11 +153,30 @@ export const QUOTATION_PERMISSIONS = {
  * Invoice Permissions
  */
 export const INVOICE_PERMISSIONS = {
-  CREATE: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.PROJECT_MANAGER, UserRole.STAFF, UserRole.ADMIN, UserRole.USER],
+  CREATE: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.PROJECT_MANAGER,
+    UserRole.STAFF,
+    UserRole.ADMIN,
+    UserRole.USER,
+  ],
   READ: ALL_ROLES,
-  UPDATE: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.PROJECT_MANAGER, UserRole.STAFF, UserRole.ADMIN, UserRole.USER],
+  UPDATE: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.PROJECT_MANAGER,
+    UserRole.STAFF,
+    UserRole.ADMIN,
+    UserRole.USER,
+  ],
   DELETE: [UserRole.SUPER_ADMIN, UserRole.ADMIN],
-  SEND: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.PROJECT_MANAGER, UserRole.ADMIN],
+  SEND: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.PROJECT_MANAGER,
+    UserRole.ADMIN,
+  ],
   MARK_PAID: FINANCIAL_APPROVER_ROLES,
   MARK_OVERDUE: ACCOUNTING_ROLES,
   CANCEL: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.ADMIN],
@@ -151,8 +187,21 @@ export const INVOICE_PERMISSIONS = {
  */
 export const EXPENSE_PERMISSIONS = {
   CREATE: EDITOR_ROLES,
-  READ: [...ACCOUNTING_ROLES, ...OPERATIONS_ROLES, UserRole.STAFF, UserRole.USER, UserRole.VIEWER],
-  UPDATE: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.PROJECT_MANAGER, UserRole.STAFF, UserRole.ADMIN, UserRole.USER],
+  READ: [
+    ...ACCOUNTING_ROLES,
+    ...OPERATIONS_ROLES,
+    UserRole.STAFF,
+    UserRole.USER,
+    UserRole.VIEWER,
+  ],
+  UPDATE: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.PROJECT_MANAGER,
+    UserRole.STAFF,
+    UserRole.ADMIN,
+    UserRole.USER,
+  ],
   DELETE: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.ADMIN],
   APPROVE: FINANCIAL_APPROVER_ROLES,
   REJECT: FINANCIAL_APPROVER_ROLES,
@@ -168,7 +217,12 @@ export const PROJECT_PERMISSIONS = {
   READ: ALL_ROLES,
   UPDATE: OPERATIONS_ROLES,
   DELETE: [UserRole.SUPER_ADMIN, UserRole.ADMIN],
-  CLOSE: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.PROJECT_MANAGER, UserRole.ADMIN],
+  CLOSE: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.PROJECT_MANAGER,
+    UserRole.ADMIN,
+  ],
 } as const;
 
 /**
@@ -199,12 +253,29 @@ export const ASSET_PERMISSIONS = {
  */
 export const ACCOUNTING_PERMISSIONS = {
   VIEW_JOURNAL_ENTRIES: ACCOUNTING_ROLES,
-  CREATE_JOURNAL_ENTRIES: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.ACCOUNTANT, UserRole.ADMIN],
-  POST_JOURNAL_ENTRIES: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.ADMIN],
+  CREATE_JOURNAL_ENTRIES: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.ACCOUNTANT,
+    UserRole.ADMIN,
+  ],
+  POST_JOURNAL_ENTRIES: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.ADMIN,
+  ],
   VIEW_REPORTS: ACCOUNTING_ROLES,
-  CLOSE_PERIOD: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.ADMIN],
+  CLOSE_PERIOD: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.ADMIN,
+  ],
   VIEW_CHART_OF_ACCOUNTS: ACCOUNTING_ROLES,
-  EDIT_CHART_OF_ACCOUNTS: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.ADMIN],
+  EDIT_CHART_OF_ACCOUNTS: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.ADMIN,
+  ],
 } as const;
 
 /**
@@ -223,7 +294,11 @@ export const USER_PERMISSIONS = {
  * Settings Permissions
  */
 export const SETTINGS_PERMISSIONS = {
-  VIEW_COMPANY_SETTINGS: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.ADMIN],
+  VIEW_COMPANY_SETTINGS: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.ADMIN,
+  ],
   EDIT_COMPANY_SETTINGS: [UserRole.SUPER_ADMIN, UserRole.ADMIN],
   VIEW_SYSTEM_SETTINGS: [UserRole.SUPER_ADMIN, UserRole.ADMIN],
   EDIT_SYSTEM_SETTINGS: [UserRole.SUPER_ADMIN, UserRole.ADMIN],
@@ -237,7 +312,11 @@ export const SETTINGS_PERMISSIONS = {
 export const REPORT_PERMISSIONS = {
   VIEW_FINANCIAL_REPORTS: ACCOUNTING_ROLES,
   VIEW_OPERATIONAL_REPORTS: [...ACCOUNTING_ROLES, ...OPERATIONS_ROLES],
-  VIEW_USER_REPORTS: [UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER, UserRole.ADMIN],
+  VIEW_USER_REPORTS: [
+    UserRole.SUPER_ADMIN,
+    UserRole.FINANCE_MANAGER,
+    UserRole.ADMIN,
+  ],
   EXPORT_REPORTS: ACCOUNTING_ROLES,
 } as const;
 
@@ -248,11 +327,14 @@ export const REPORT_PERMISSIONS = {
 /**
  * Check if a role has permission to perform an action
  */
-export function hasPermission(userRole: UserRole, allowedRoles: readonly UserRole[]): boolean {
+export function hasPermission(
+  userRole: UserRole,
+  allowedRoles: readonly UserRole[],
+): boolean {
   // Map legacy roles to new roles
   const mappedRole = LEGACY_ROLE_MAPPING[userRole] || userRole;
 
-  return allowedRoles.some(role => {
+  return allowedRoles.some((role) => {
     const mappedAllowedRole = LEGACY_ROLE_MAPPING[role] || role;
     return mappedRole === mappedAllowedRole;
   });
@@ -263,14 +345,14 @@ export function hasPermission(userRole: UserRole, allowedRoles: readonly UserRol
  */
 export function getRoleDisplayName(role: UserRole): string {
   const displayNames: Record<UserRole, string> = {
-    [UserRole.SUPER_ADMIN]: 'Super Admin',
-    [UserRole.FINANCE_MANAGER]: 'Finance Manager',
-    [UserRole.ACCOUNTANT]: 'Accountant',
-    [UserRole.PROJECT_MANAGER]: 'Project Manager',
-    [UserRole.STAFF]: 'Staff',
-    [UserRole.VIEWER]: 'Viewer',
-    [UserRole.ADMIN]: 'Admin (Legacy)',
-    [UserRole.USER]: 'User (Legacy)',
+    [UserRole.SUPER_ADMIN]: "Super Admin",
+    [UserRole.FINANCE_MANAGER]: "Finance Manager",
+    [UserRole.ACCOUNTANT]: "Accountant",
+    [UserRole.PROJECT_MANAGER]: "Project Manager",
+    [UserRole.STAFF]: "Staff",
+    [UserRole.VIEWER]: "Viewer",
+    [UserRole.ADMIN]: "Admin (Legacy)",
+    [UserRole.USER]: "User (Legacy)",
   };
 
   return displayNames[role] || role;
@@ -281,14 +363,14 @@ export function getRoleDisplayName(role: UserRole): string {
  */
 export function getRoleDisplayNameId(role: UserRole): string {
   const displayNamesId: Record<UserRole, string> = {
-    [UserRole.SUPER_ADMIN]: 'Super Admin',
-    [UserRole.FINANCE_MANAGER]: 'Manajer Keuangan',
-    [UserRole.ACCOUNTANT]: 'Akuntan',
-    [UserRole.PROJECT_MANAGER]: 'Manajer Proyek',
-    [UserRole.STAFF]: 'Staff',
-    [UserRole.VIEWER]: 'Peninjau',
-    [UserRole.ADMIN]: 'Admin (Lama)',
-    [UserRole.USER]: 'Pengguna (Lama)',
+    [UserRole.SUPER_ADMIN]: "Super Admin",
+    [UserRole.FINANCE_MANAGER]: "Manajer Keuangan",
+    [UserRole.ACCOUNTANT]: "Akuntan",
+    [UserRole.PROJECT_MANAGER]: "Manajer Proyek",
+    [UserRole.STAFF]: "Staff",
+    [UserRole.VIEWER]: "Peninjau",
+    [UserRole.ADMIN]: "Admin (Lama)",
+    [UserRole.USER]: "Pengguna (Lama)",
   };
 
   return displayNamesId[role] || role;
@@ -299,14 +381,17 @@ export function getRoleDisplayNameId(role: UserRole): string {
  */
 export function getRoleDescription(role: UserRole): string {
   const descriptions: Record<UserRole, string> = {
-    [UserRole.SUPER_ADMIN]: 'Full system access - Owner/IT Admin',
-    [UserRole.FINANCE_MANAGER]: 'Approve financial transactions and manage accounting',
-    [UserRole.ACCOUNTANT]: 'Accounting operations and reports (no approval authority)',
-    [UserRole.PROJECT_MANAGER]: 'Manage projects and operations (submit for approval)',
-    [UserRole.STAFF]: 'Create drafts and manage own data',
-    [UserRole.VIEWER]: 'Read-only access to data',
-    [UserRole.ADMIN]: 'Legacy admin role (maps to Super Admin)',
-    [UserRole.USER]: 'Legacy user role (maps to Staff)',
+    [UserRole.SUPER_ADMIN]: "Full system access - Owner/IT Admin",
+    [UserRole.FINANCE_MANAGER]:
+      "Approve financial transactions and manage accounting",
+    [UserRole.ACCOUNTANT]:
+      "Accounting operations and reports (no approval authority)",
+    [UserRole.PROJECT_MANAGER]:
+      "Manage projects and operations (submit for approval)",
+    [UserRole.STAFF]: "Create drafts and manage own data",
+    [UserRole.VIEWER]: "Read-only access to data",
+    [UserRole.ADMIN]: "Legacy admin role (maps to Super Admin)",
+    [UserRole.USER]: "Legacy user role (maps to Staff)",
   };
 
   return descriptions[role] || role;
@@ -328,25 +413,25 @@ export function getRolePermissions(role: UserRole): string[] {
 
   // Check each permission group
   if (hasPermission(role, QUOTATION_PERMISSIONS.APPROVE)) {
-    permissions.push('Approve Quotations');
+    permissions.push("Approve Quotations");
   }
   if (hasPermission(role, INVOICE_PERMISSIONS.MARK_PAID)) {
-    permissions.push('Mark Invoices as Paid');
+    permissions.push("Mark Invoices as Paid");
   }
   if (hasPermission(role, EXPENSE_PERMISSIONS.APPROVE)) {
-    permissions.push('Approve Expenses');
+    permissions.push("Approve Expenses");
   }
   if (hasPermission(role, ACCOUNTING_PERMISSIONS.POST_JOURNAL_ENTRIES)) {
-    permissions.push('Post Journal Entries');
+    permissions.push("Post Journal Entries");
   }
   if (hasPermission(role, ACCOUNTING_PERMISSIONS.CLOSE_PERIOD)) {
-    permissions.push('Close Accounting Periods');
+    permissions.push("Close Accounting Periods");
   }
   if (hasPermission(role, USER_PERMISSIONS.CREATE)) {
-    permissions.push('Manage Users');
+    permissions.push("Manage Users");
   }
   if (hasPermission(role, SETTINGS_PERMISSIONS.EDIT_COMPANY_SETTINGS)) {
-    permissions.push('Edit Company Settings');
+    permissions.push("Edit Company Settings");
   }
 
   return permissions;

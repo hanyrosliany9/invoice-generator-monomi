@@ -2,11 +2,11 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { JournalService } from './journal.service';
-import { ECLProvisionStatus, TransactionType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { JournalService } from "./journal.service";
+import { ECLProvisionStatus, TransactionType } from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
 
 /**
  * PSAK 71: Expected Credit Loss (ECL) Provision Service
@@ -28,12 +28,12 @@ export class ECLService {
    * Default ECL rates by aging bucket (can be customized based on historical data)
    */
   private readonly DEFAULT_ECL_RATES = {
-    'Current': 0.005,      // 0.5% - Very low risk
-    '1-30': 0.02,          // 2% - Low risk
-    '31-60': 0.05,         // 5% - Moderate risk
-    '61-90': 0.15,         // 15% - High risk
-    '91-120': 0.30,        // 30% - Very high risk
-    'Over 120': 0.50,      // 50% - Severe risk
+    Current: 0.005, // 0.5% - Very low risk
+    "1-30": 0.02, // 2% - Low risk
+    "31-60": 0.05, // 5% - Moderate risk
+    "61-90": 0.15, // 15% - High risk
+    "91-120": 0.3, // 30% - Very high risk
+    "Over 120": 0.5, // 50% - Severe risk
   };
 
   /**
@@ -44,12 +44,12 @@ export class ECLService {
       (asOfDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
     );
 
-    if (daysPastDue <= 0) return 'Current';
-    if (daysPastDue <= 30) return '1-30';
-    if (daysPastDue <= 60) return '31-60';
-    if (daysPastDue <= 90) return '61-90';
-    if (daysPastDue <= 120) return '91-120';
-    return 'Over 120';
+    if (daysPastDue <= 0) return "Current";
+    if (daysPastDue <= 30) return "1-30";
+    if (daysPastDue <= 60) return "31-60";
+    if (daysPastDue <= 90) return "61-90";
+    if (daysPastDue <= 120) return "91-120";
+    return "Over 120";
   }
 
   /**
@@ -63,8 +63,13 @@ export class ECLService {
       return customRates[agingBucket];
     }
 
-    const defaultRate = this.DEFAULT_ECL_RATES[agingBucket as keyof typeof this.DEFAULT_ECL_RATES];
-    return defaultRate !== undefined ? defaultRate : this.DEFAULT_ECL_RATES['Over 120'];
+    const defaultRate =
+      this.DEFAULT_ECL_RATES[
+        agingBucket as keyof typeof this.DEFAULT_ECL_RATES
+      ];
+    return defaultRate !== undefined
+      ? defaultRate
+      : this.DEFAULT_ECL_RATES["Over 120"];
   }
 
   /**
@@ -75,7 +80,7 @@ export class ECLService {
     calculationDate: Date;
     fiscalPeriodId?: string;
     customECLRates?: Record<string, number>;
-    eclModel?: '12_MONTH' | 'LIFETIME';
+    eclModel?: "12_MONTH" | "LIFETIME";
   }) {
     // Get invoice details
     const invoice = await this.prisma.invoice.findUnique({
@@ -83,17 +88,19 @@ export class ECLService {
       include: {
         client: true,
         payments: {
-          where: { status: 'CONFIRMED' },
+          where: { status: "CONFIRMED" },
         },
       },
     });
 
     if (!invoice) {
-      throw new NotFoundException(`Invoice with ID ${data.invoiceId} not found`);
+      throw new NotFoundException(
+        `Invoice with ID ${data.invoiceId} not found`,
+      );
     }
 
     // Only calculate ECL for unpaid invoices
-    if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') {
+    if (invoice.status === "PAID" || invoice.status === "CANCELLED") {
       throw new BadRequestException(
         `Cannot calculate ECL for ${invoice.status} invoices`,
       );
@@ -107,7 +114,7 @@ export class ECLService {
     const outstandingAmount = Number(invoice.totalAmount) - totalPaid;
 
     if (outstandingAmount <= 0) {
-      throw new BadRequestException('Invoice has no outstanding balance');
+      throw new BadRequestException("Invoice has no outstanding balance");
     }
 
     // Calculate aging
@@ -133,7 +140,7 @@ export class ECLService {
           invoiceId: data.invoiceId,
           provisionStatus: ECLProvisionStatus.ACTIVE,
         },
-        orderBy: { calculationDate: 'desc' },
+        orderBy: { calculationDate: "desc" },
       });
 
     const previousEclAmount = previousProvision
@@ -164,8 +171,8 @@ export class ECLService {
           ? new Decimal(previousEclAmount)
           : null,
         adjustmentAmount: new Decimal(adjustmentAmount),
-        eclModel: data.eclModel || '12_MONTH',
-        lossRateSource: data.customECLRates ? 'Custom' : 'Default',
+        eclModel: data.eclModel || "12_MONTH",
+        lossRateSource: data.customECLRates ? "Custom" : "Default",
         provisionStatus: ECLProvisionStatus.ACTIVE,
         notes: `PSAK 71 ECL provision - ${agingBucket} aging bucket`,
         notesId: `Penyisihan PSAK 71 - kategori umur ${agingBucket}`,
@@ -207,7 +214,7 @@ export class ECLService {
 
     if (provision.journalEntryId) {
       throw new BadRequestException(
-        'ECL provision already has a journal entry',
+        "ECL provision already has a journal entry",
       );
     }
 
@@ -228,7 +235,7 @@ export class ECLService {
       // Increase provision: Debit Bad Debt Expense, Credit Allowance
       lineItems = [
         {
-          accountCode: '8-1010', // Bad Debt Expense
+          accountCode: "8-1010", // Bad Debt Expense
           description: `ECL provision increase for Invoice ${provision.invoice.invoiceNumber}`,
           descriptionId: `Peningkatan penyisihan piutang untuk Faktur ${provision.invoice.invoiceNumber}`,
           debit: amount,
@@ -236,7 +243,7 @@ export class ECLService {
           clientId: provision.invoice.clientId,
         },
         {
-          accountCode: '1-2015', // Allowance for Doubtful Accounts
+          accountCode: "1-2015", // Allowance for Doubtful Accounts
           description: `ECL allowance for Invoice ${provision.invoice.invoiceNumber}`,
           descriptionId: `Penyisihan piutang untuk Faktur ${provision.invoice.invoiceNumber}`,
           debit: 0,
@@ -248,7 +255,7 @@ export class ECLService {
       // Decrease provision (reversal): Debit Allowance, Credit Bad Debt Expense
       lineItems = [
         {
-          accountCode: '1-2015', // Allowance for Doubtful Accounts
+          accountCode: "1-2015", // Allowance for Doubtful Accounts
           description: `ECL provision decrease for Invoice ${provision.invoice.invoiceNumber}`,
           descriptionId: `Pengurangan penyisihan piutang untuk Faktur ${provision.invoice.invoiceNumber}`,
           debit: amount,
@@ -256,7 +263,7 @@ export class ECLService {
           clientId: provision.invoice.clientId,
         },
         {
-          accountCode: '8-1010', // Bad Debt Expense
+          accountCode: "8-1010", // Bad Debt Expense
           description: `ECL reversal for Invoice ${provision.invoice.invoiceNumber}`,
           descriptionId: `Pembalikan penyisihan piutang untuk Faktur ${provision.invoice.invoiceNumber}`,
           debit: 0,
@@ -323,13 +330,13 @@ export class ECLService {
     // Get all outstanding invoices
     const outstandingInvoices = await this.prisma.invoice.findMany({
       where: {
-        status: { in: ['SENT', 'OVERDUE'] },
+        status: { in: ["SENT", "OVERDUE"] },
         creationDate: { lte: data.calculationDate },
       },
       include: {
         client: true,
         payments: {
-          where: { status: 'CONFIRMED' },
+          where: { status: "CONFIRMED" },
         },
       },
     });
@@ -413,12 +420,12 @@ export class ECLService {
     }
 
     if (provision.provisionStatus === ECLProvisionStatus.WRITTEN_OFF) {
-      throw new BadRequestException('Provision has already been written off');
+      throw new BadRequestException("Provision has already been written off");
     }
 
     if (data.writeOffAmount > Number(provision.outstandingAmount)) {
       throw new BadRequestException(
-        'Write-off amount cannot exceed outstanding amount',
+        "Write-off amount cannot exceed outstanding amount",
       );
     }
 
@@ -438,7 +445,7 @@ export class ECLService {
       createdBy: data.userId,
       lineItems: [
         {
-          accountCode: '1-2015', // Allowance for Doubtful Accounts
+          accountCode: "1-2015", // Allowance for Doubtful Accounts
           description: `Write-off for Invoice ${provision.invoice.invoiceNumber}`,
           descriptionId: `Penghapusan Faktur ${provision.invoice.invoiceNumber}`,
           debit: data.writeOffAmount,
@@ -446,7 +453,7 @@ export class ECLService {
           clientId: provision.invoice.clientId,
         },
         {
-          accountCode: '1-2010', // Accounts Receivable
+          accountCode: "1-2010", // Accounts Receivable
           description: `AR write-off for Invoice ${provision.invoice.invoiceNumber}`,
           descriptionId: `Penghapusan piutang Faktur ${provision.invoice.invoiceNumber}`,
           debit: 0,
@@ -510,14 +517,12 @@ export class ECLService {
     }
 
     if (provision.provisionStatus !== ECLProvisionStatus.WRITTEN_OFF) {
-      throw new BadRequestException('Can only recover written-off debt');
+      throw new BadRequestException("Can only recover written-off debt");
     }
 
-    if (
-      data.recoveredAmount > Number(provision.writeOffAmount || 0)
-    ) {
+    if (data.recoveredAmount > Number(provision.writeOffAmount || 0)) {
       throw new BadRequestException(
-        'Recovery amount cannot exceed write-off amount',
+        "Recovery amount cannot exceed write-off amount",
       );
     }
 
@@ -537,7 +542,7 @@ export class ECLService {
       createdBy: data.userId,
       lineItems: [
         {
-          accountCode: '1-1020', // Bank Account
+          accountCode: "1-1020", // Bank Account
           description: `Recovery of Invoice ${provision.invoice.invoiceNumber}`,
           descriptionId: `Pemulihan Faktur ${provision.invoice.invoiceNumber}`,
           debit: data.recoveredAmount,
@@ -545,7 +550,7 @@ export class ECLService {
           clientId: provision.invoice.clientId,
         },
         {
-          accountCode: '8-1010', // Bad Debt Expense (negative = income)
+          accountCode: "8-1010", // Bad Debt Expense (negative = income)
           description: `Bad debt recovery for Invoice ${provision.invoice.invoiceNumber}`,
           descriptionId: `Pemulihan piutang tak tertagih untuk Faktur ${provision.invoice.invoiceNumber}`,
           debit: 0,
@@ -603,7 +608,7 @@ export class ECLService {
           },
         },
       },
-      orderBy: { calculationDate: 'desc' },
+      orderBy: { calculationDate: "desc" },
     });
   }
 
@@ -640,29 +645,30 @@ export class ECLService {
     });
 
     // Group by aging bucket
-    const byAgingBucket = provisions.reduce((acc, provision) => {
-      const bucket = provision.agingBucket;
-      if (!acc[bucket]) {
-        acc[bucket] = {
-          count: 0,
-          totalOutstanding: 0,
-          totalECL: 0,
-          averageECLRate: 0,
-        };
-      }
-      acc[bucket].count++;
-      acc[bucket].totalOutstanding += Number(provision.outstandingAmount);
-      acc[bucket].totalECL += Number(provision.eclAmount);
-      return acc;
-    }, {} as Record<string, any>);
+    const byAgingBucket = provisions.reduce(
+      (acc, provision) => {
+        const bucket = provision.agingBucket;
+        if (!acc[bucket]) {
+          acc[bucket] = {
+            count: 0,
+            totalOutstanding: 0,
+            totalECL: 0,
+            averageECLRate: 0,
+          };
+        }
+        acc[bucket].count++;
+        acc[bucket].totalOutstanding += Number(provision.outstandingAmount);
+        acc[bucket].totalECL += Number(provision.eclAmount);
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
 
     // Calculate average ECL rates
     Object.keys(byAgingBucket).forEach((bucket) => {
       const data = byAgingBucket[bucket];
       data.averageECLRate =
-        data.totalOutstanding > 0
-          ? data.totalECL / data.totalOutstanding
-          : 0;
+        data.totalOutstanding > 0 ? data.totalECL / data.totalOutstanding : 0;
     });
 
     const totalECL = provisions.reduce(
@@ -724,7 +730,9 @@ export class ECLService {
     startDate.setMonth(startDate.getMonth() - analysisMonths);
 
     console.log(`\n📊 Historical Loss Rate Analysis (PSAK 71)`);
-    console.log(`   Period: ${startDate.toISOString().split('T')[0]} to ${asOfDate.toISOString().split('T')[0]}`);
+    console.log(
+      `   Period: ${startDate.toISOString().split("T")[0]} to ${asOfDate.toISOString().split("T")[0]}`,
+    );
     console.log(`   Analysis Window: ${analysisMonths} months\n`);
 
     // Get all invoices from the analysis period
@@ -738,12 +746,15 @@ export class ECLService {
       include: {
         client: true,
         payments: {
-          where: { status: 'CONFIRMED' },
+          where: { status: "CONFIRMED" },
         },
         allowances: {
           where: {
             provisionStatus: {
-              in: [ECLProvisionStatus.WRITTEN_OFF, ECLProvisionStatus.RECOVERED],
+              in: [
+                ECLProvisionStatus.WRITTEN_OFF,
+                ECLProvisionStatus.RECOVERED,
+              ],
             },
           },
         },
@@ -753,22 +764,32 @@ export class ECLService {
     console.log(`   Total Historical Invoices: ${historicalInvoices.length}`);
 
     // Initialize buckets for analysis
-    const agingBuckets = ['Current', '1-30', '31-60', '61-90', '91-120', 'Over 120'];
-    const bucketStats: Record<string, {
-      totalInvoices: number;
-      totalAmount: number;
-      paidOnTime: number;
-      paidLate: number;
-      writtenOff: number;
-      writtenOffAmount: number;
-      recovered: number;
-      recoveredAmount: number;
-      lossAmount: number;
-      lossRate: number;
-    }> = {};
+    const agingBuckets = [
+      "Current",
+      "1-30",
+      "31-60",
+      "61-90",
+      "91-120",
+      "Over 120",
+    ];
+    const bucketStats: Record<
+      string,
+      {
+        totalInvoices: number;
+        totalAmount: number;
+        paidOnTime: number;
+        paidLate: number;
+        writtenOff: number;
+        writtenOffAmount: number;
+        recovered: number;
+        recoveredAmount: number;
+        lossAmount: number;
+        lossRate: number;
+      }
+    > = {};
 
     // Initialize bucket statistics
-    agingBuckets.forEach(bucket => {
+    agingBuckets.forEach((bucket) => {
       bucketStats[bucket] = {
         totalInvoices: 0,
         totalAmount: 0,
@@ -789,49 +810,52 @@ export class ECLService {
       const dueDate = invoice.dueDate;
 
       // Determine outcome
-      let outcome: 'PAID_ON_TIME' | 'PAID_LATE' | 'WRITTEN_OFF' | 'OUTSTANDING';
-      let agingBucket = 'Current';
+      let outcome: "PAID_ON_TIME" | "PAID_LATE" | "WRITTEN_OFF" | "OUTSTANDING";
+      let agingBucket = "Current";
       let lossAmount = 0;
 
-      if (invoice.status === 'PAID') {
+      if (invoice.status === "PAID") {
         // Check if paid on time
-        const latestPayment = invoice.payments.sort((a, b) =>
-          b.paymentDate.getTime() - a.paymentDate.getTime()
+        const latestPayment = invoice.payments.sort(
+          (a, b) => b.paymentDate.getTime() - a.paymentDate.getTime(),
         )[0];
 
         if (latestPayment && latestPayment.paymentDate <= dueDate) {
-          outcome = 'PAID_ON_TIME';
-          agingBucket = 'Current';
+          outcome = "PAID_ON_TIME";
+          agingBucket = "Current";
         } else {
-          outcome = 'PAID_LATE';
+          outcome = "PAID_LATE";
           // Calculate aging bucket at payment time
           if (latestPayment) {
-            agingBucket = this.calculateAgingBucket(dueDate, latestPayment.paymentDate);
+            agingBucket = this.calculateAgingBucket(
+              dueDate,
+              latestPayment.paymentDate,
+            );
           }
         }
       } else {
         // Check for write-offs
         const writeOffProvision = invoice.allowances.find(
-          a => a.provisionStatus === ECLProvisionStatus.WRITTEN_OFF
+          (a) => a.provisionStatus === ECLProvisionStatus.WRITTEN_OFF,
         );
 
         if (writeOffProvision) {
-          outcome = 'WRITTEN_OFF';
+          outcome = "WRITTEN_OFF";
           agingBucket = writeOffProvision.agingBucket;
           lossAmount = Number(writeOffProvision.writeOffAmount || 0);
 
           // Subtract any recoveries
           const recoveries = invoice.allowances.filter(
-            a => a.provisionStatus === ECLProvisionStatus.RECOVERED
+            (a) => a.provisionStatus === ECLProvisionStatus.RECOVERED,
           );
           const totalRecovered = recoveries.reduce(
             (sum, r) => sum + Number(r.recoveredAmount || 0),
-            0
+            0,
           );
           lossAmount -= totalRecovered;
         } else {
           // Still outstanding - calculate current aging
-          outcome = 'OUTSTANDING';
+          outcome = "OUTSTANDING";
           agingBucket = this.calculateAgingBucket(dueDate, asOfDate);
         }
       }
@@ -855,11 +879,11 @@ export class ECLService {
       bucketStats[agingBucket].totalInvoices++;
       bucketStats[agingBucket].totalAmount += invoiceAmount;
 
-      if (outcome === 'PAID_ON_TIME') {
+      if (outcome === "PAID_ON_TIME") {
         bucketStats[agingBucket].paidOnTime++;
-      } else if (outcome === 'PAID_LATE') {
+      } else if (outcome === "PAID_LATE") {
         bucketStats[agingBucket].paidLate++;
-      } else if (outcome === 'WRITTEN_OFF') {
+      } else if (outcome === "WRITTEN_OFF") {
         bucketStats[agingBucket].writtenOff++;
         bucketStats[agingBucket].writtenOffAmount += lossAmount;
         bucketStats[agingBucket].lossAmount += lossAmount;
@@ -867,7 +891,7 @@ export class ECLService {
     }
 
     // Calculate loss rates for each bucket
-    Object.keys(bucketStats).forEach(bucket => {
+    Object.keys(bucketStats).forEach((bucket) => {
       const stats = bucketStats[bucket];
       if (stats.totalAmount > 0) {
         stats.lossRate = stats.lossAmount / stats.totalAmount;
@@ -878,10 +902,11 @@ export class ECLService {
     const recommendedRates: Record<string, number> = {};
     const defaultRates = this.DEFAULT_ECL_RATES;
 
-    agingBuckets.forEach(bucket => {
+    agingBuckets.forEach((bucket) => {
       const stats = bucketStats[bucket];
       const historicalRate = stats.lossRate;
-      const defaultRate = defaultRates[bucket as keyof typeof defaultRates] || 0;
+      const defaultRate =
+        defaultRates[bucket as keyof typeof defaultRates] || 0;
 
       // Use historical rate if we have sufficient data (at least 5 invoices in bucket)
       // Otherwise, use default rate or blend of historical and default
@@ -891,7 +916,8 @@ export class ECLService {
       } else if (stats.totalInvoices > 0) {
         // Blend historical and default rates (weighted average)
         const weight = stats.totalInvoices / 5; // Weight increases with sample size
-        recommendedRates[bucket] = (historicalRate * weight) + (defaultRate * (1 - weight));
+        recommendedRates[bucket] =
+          historicalRate * weight + defaultRate * (1 - weight);
       } else {
         // No historical data - use default
         recommendedRates[bucket] = defaultRate;
@@ -900,36 +926,60 @@ export class ECLService {
 
     // Generate analysis report
     console.log(`\n📈 LOSS RATE ANALYSIS BY AGING BUCKET:`);
-    console.log(`${''.padEnd(80, '=')}`);
+    console.log(`${"".padEnd(80, "=")}`);
 
-    agingBuckets.forEach(bucket => {
+    agingBuckets.forEach((bucket) => {
       const stats = bucketStats[bucket];
       if (stats.totalInvoices > 0) {
         console.log(`\n${bucket}:`);
         console.log(`   Invoices: ${stats.totalInvoices}`);
-        console.log(`   Total Amount: Rp ${stats.totalAmount.toLocaleString('id-ID')}`);
-        console.log(`   Paid On Time: ${stats.paidOnTime} (${((stats.paidOnTime / stats.totalInvoices) * 100).toFixed(1)}%)`);
-        console.log(`   Paid Late: ${stats.paidLate} (${((stats.paidLate / stats.totalInvoices) * 100).toFixed(1)}%)`);
-        console.log(`   Written Off: ${stats.writtenOff} (${((stats.writtenOff / stats.totalInvoices) * 100).toFixed(1)}%)`);
-        console.log(`   Loss Amount: Rp ${stats.lossAmount.toLocaleString('id-ID')}`);
-        console.log(`   Historical Loss Rate: ${(stats.lossRate * 100).toFixed(2)}%`);
-        console.log(`   Default ECL Rate: ${((defaultRates[bucket as keyof typeof defaultRates] || 0) * 100).toFixed(2)}%`);
-        console.log(`   RECOMMENDED ECL Rate: ${(recommendedRates[bucket] * 100).toFixed(2)}%`);
+        console.log(
+          `   Total Amount: Rp ${stats.totalAmount.toLocaleString("id-ID")}`,
+        );
+        console.log(
+          `   Paid On Time: ${stats.paidOnTime} (${((stats.paidOnTime / stats.totalInvoices) * 100).toFixed(1)}%)`,
+        );
+        console.log(
+          `   Paid Late: ${stats.paidLate} (${((stats.paidLate / stats.totalInvoices) * 100).toFixed(1)}%)`,
+        );
+        console.log(
+          `   Written Off: ${stats.writtenOff} (${((stats.writtenOff / stats.totalInvoices) * 100).toFixed(1)}%)`,
+        );
+        console.log(
+          `   Loss Amount: Rp ${stats.lossAmount.toLocaleString("id-ID")}`,
+        );
+        console.log(
+          `   Historical Loss Rate: ${(stats.lossRate * 100).toFixed(2)}%`,
+        );
+        console.log(
+          `   Default ECL Rate: ${((defaultRates[bucket as keyof typeof defaultRates] || 0) * 100).toFixed(2)}%`,
+        );
+        console.log(
+          `   RECOMMENDED ECL Rate: ${(recommendedRates[bucket] * 100).toFixed(2)}%`,
+        );
       }
     });
 
-    console.log(`\n${''.padEnd(80, '=')}`);
+    console.log(`\n${"".padEnd(80, "=")}`);
 
     // Calculate overall statistics
     const totalInvoices = historicalInvoices.length;
-    const totalAmount = historicalInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
-    const totalLoss = Object.values(bucketStats).reduce((sum, stats) => sum + stats.lossAmount, 0);
+    const totalAmount = historicalInvoices.reduce(
+      (sum, inv) => sum + Number(inv.totalAmount),
+      0,
+    );
+    const totalLoss = Object.values(bucketStats).reduce(
+      (sum, stats) => sum + stats.lossAmount,
+      0,
+    );
     const overallLossRate = totalAmount > 0 ? totalLoss / totalAmount : 0;
 
     console.log(`\n📊 OVERALL STATISTICS:`);
     console.log(`   Total Invoices Analyzed: ${totalInvoices}`);
-    console.log(`   Total Invoice Amount: Rp ${totalAmount.toLocaleString('id-ID')}`);
-    console.log(`   Total Losses: Rp ${totalLoss.toLocaleString('id-ID')}`);
+    console.log(
+      `   Total Invoice Amount: Rp ${totalAmount.toLocaleString("id-ID")}`,
+    );
+    console.log(`   Total Losses: Rp ${totalLoss.toLocaleString("id-ID")}`);
     console.log(`   Overall Loss Rate: ${(overallLossRate * 100).toFixed(2)}%`);
 
     return {
@@ -948,7 +998,11 @@ export class ECLService {
       defaultECLRates: defaultRates,
       summary: {
         dataQuality: this.assessDataQuality(bucketStats),
-        recommendation: this.generateRecommendation(bucketStats, recommendedRates, defaultRates),
+        recommendation: this.generateRecommendation(
+          bucketStats,
+          recommendedRates,
+          defaultRates,
+        ),
       },
     };
   }
@@ -958,15 +1012,15 @@ export class ECLService {
    */
   private assessDataQuality(bucketStats: Record<string, any>): string {
     const bucketsWithSufficientData = Object.values(bucketStats).filter(
-      stats => stats.totalInvoices >= 5
+      (stats) => stats.totalInvoices >= 5,
     ).length;
 
     if (bucketsWithSufficientData >= 4) {
-      return 'HIGH - Sufficient historical data for reliable ECL rates';
+      return "HIGH - Sufficient historical data for reliable ECL rates";
     } else if (bucketsWithSufficientData >= 2) {
-      return 'MEDIUM - Some historical data available, blend with defaults recommended';
+      return "MEDIUM - Some historical data available, blend with defaults recommended";
     } else {
-      return 'LOW - Limited historical data, use default rates with caution';
+      return "LOW - Limited historical data, use default rates with caution";
     }
   }
 
@@ -976,12 +1030,12 @@ export class ECLService {
   private generateRecommendation(
     bucketStats: Record<string, any>,
     recommended: Record<string, number>,
-    defaults: Record<string, number>
+    defaults: Record<string, number>,
   ): string {
-    let recommendation = '';
+    let recommendation = "";
 
     // Compare recommended vs default rates
-    const significantDifferences = Object.keys(recommended).filter(bucket => {
+    const significantDifferences = Object.keys(recommended).filter((bucket) => {
       const rec = recommended[bucket];
       const def = defaults[bucket as keyof typeof defaults] || 0;
       return Math.abs(rec - def) > 0.05; // 5% difference threshold
@@ -989,7 +1043,7 @@ export class ECLService {
 
     if (significantDifferences.length > 0) {
       recommendation = `RECOMMENDED: Use company-specific ECL rates. `;
-      recommendation += `Significant differences found in ${significantDifferences.join(', ')} buckets. `;
+      recommendation += `Significant differences found in ${significantDifferences.join(", ")} buckets. `;
       recommendation += `Historical data suggests ${significantDifferences.length} aging buckets have different risk profiles than default assumptions.`;
     } else {
       recommendation = `OPTIONAL: Default ECL rates are reasonable for this company. `;

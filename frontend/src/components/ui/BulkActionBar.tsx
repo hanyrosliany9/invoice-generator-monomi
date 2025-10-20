@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button, Card, Space, Typography } from 'antd'
-import { colors, borderRadius, spacing } from '../../styles/designTokens'
+import { borderRadius, colors, spacing } from '../../styles/designTokens'
 
 const { Text } = Typography
 

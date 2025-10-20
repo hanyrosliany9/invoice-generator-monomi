@@ -2,16 +2,20 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 import {
   CreateBankReconciliationDto,
   CreateBankReconciliationItemDto,
-} from '../dto/create-bank-reconciliation.dto';
-import { UpdateBankReconciliationDto } from '../dto/update-bank-reconciliation.dto';
-import { BankReconciliationQueryDto } from '../dto/bank-reconciliation-query.dto';
-import { BankRecStatus, BankRecItemType, TransactionType } from '@prisma/client';
-import { JournalService } from './journal.service';
+} from "../dto/create-bank-reconciliation.dto";
+import { UpdateBankReconciliationDto } from "../dto/update-bank-reconciliation.dto";
+import { BankReconciliationQueryDto } from "../dto/bank-reconciliation-query.dto";
+import {
+  BankRecStatus,
+  BankRecItemType,
+  TransactionType,
+} from "@prisma/client";
+import { JournalService } from "./journal.service";
 
 @Injectable()
 export class BankReconciliationService {
@@ -26,24 +30,28 @@ export class BankReconciliationService {
   private async generateReconciliationNumber(): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
     const prefix = `BRC-${year}-${month}`;
 
-    const latestReconciliation = await this.prisma.bankReconciliation.findFirst({
-      where: {
-        reconciliationNumber: {
-          startsWith: prefix,
+    const latestReconciliation = await this.prisma.bankReconciliation.findFirst(
+      {
+        where: {
+          reconciliationNumber: {
+            startsWith: prefix,
+          },
+        },
+        orderBy: {
+          reconciliationNumber: "desc",
         },
       },
-      orderBy: {
-        reconciliationNumber: 'desc',
-      },
-    });
+    );
 
     if (latestReconciliation) {
-      const lastNumber = parseInt(latestReconciliation.reconciliationNumber.split('-').pop() || '0');
+      const lastNumber = parseInt(
+        latestReconciliation.reconciliationNumber.split("-").pop() || "0",
+      );
       const nextNumber = lastNumber + 1;
-      return `${prefix}-${String(nextNumber).padStart(4, '0')}`;
+      return `${prefix}-${String(nextNumber).padStart(4, "0")}`;
     }
 
     return `${prefix}-0001`;
@@ -58,11 +66,11 @@ export class BankReconciliationService {
     });
 
     if (!account) {
-      throw new BadRequestException('Bank account not found');
+      throw new BadRequestException("Bank account not found");
     }
 
     // Bank accounts should be in the 1-1xxx range (Cash & Bank accounts)
-    if (!account.code.startsWith('1-1')) {
+    if (!account.code.startsWith("1-1")) {
       throw new BadRequestException(
         `Account ${account.code} is not a valid cash/bank account. Must use 1-1xxx accounts.`,
       );
@@ -209,8 +217,8 @@ export class BankReconciliationService {
       search,
       page = 1,
       limit = 50,
-      sortBy = 'statementDate',
-      sortOrder = 'desc',
+      sortBy = "statementDate",
+      sortOrder = "desc",
     } = query;
 
     const where: any = {};
@@ -227,8 +235,8 @@ export class BankReconciliationService {
 
     if (search) {
       where.OR = [
-        { reconciliationNumber: { contains: search, mode: 'insensitive' } },
-        { statementReference: { contains: search, mode: 'insensitive' } },
+        { reconciliationNumber: { contains: search, mode: "insensitive" } },
+        { statementReference: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -284,7 +292,9 @@ export class BankReconciliationService {
     });
 
     if (!reconciliation) {
-      throw new NotFoundException(`Bank reconciliation with ID ${id} not found`);
+      throw new NotFoundException(
+        `Bank reconciliation with ID ${id} not found`,
+      );
     }
 
     return reconciliation;
@@ -293,11 +303,16 @@ export class BankReconciliationService {
   /**
    * Update bank reconciliation (only if not completed)
    */
-  async updateBankReconciliation(id: string, updateDto: UpdateBankReconciliationDto) {
+  async updateBankReconciliation(
+    id: string,
+    updateDto: UpdateBankReconciliationDto,
+  ) {
     const existing = await this.getBankReconciliation(id);
 
     if (existing.status === BankRecStatus.COMPLETED) {
-      throw new BadRequestException('Cannot update completed bank reconciliation');
+      throw new BadRequestException(
+        "Cannot update completed bank reconciliation",
+      );
     }
 
     // Recalculate balances if relevant fields are updated
@@ -312,13 +327,18 @@ export class BankReconciliationService {
       updateDto.otherAdjustments !== undefined
     ) {
       calculations = this.calculateReconciliation({
-        bookBalanceEnd: updateDto.bookBalanceEnd ?? Number(existing.bookBalanceEnd),
-        statementBalance: updateDto.statementBalance ?? Number(existing.statementBalance),
-        depositsInTransit: updateDto.depositsInTransit ?? Number(existing.depositsInTransit),
-        outstandingChecks: updateDto.outstandingChecks ?? Number(existing.outstandingChecks),
+        bookBalanceEnd:
+          updateDto.bookBalanceEnd ?? Number(existing.bookBalanceEnd),
+        statementBalance:
+          updateDto.statementBalance ?? Number(existing.statementBalance),
+        depositsInTransit:
+          updateDto.depositsInTransit ?? Number(existing.depositsInTransit),
+        outstandingChecks:
+          updateDto.outstandingChecks ?? Number(existing.outstandingChecks),
         bankCharges: updateDto.bankCharges ?? Number(existing.bankCharges),
         bankInterest: updateDto.bankInterest ?? Number(existing.bankInterest),
-        otherAdjustments: updateDto.otherAdjustments ?? Number(existing.otherAdjustments),
+        otherAdjustments:
+          updateDto.otherAdjustments ?? Number(existing.otherAdjustments),
       });
     }
 
@@ -373,7 +393,9 @@ export class BankReconciliationService {
     const reconciliation = await this.getBankReconciliation(reconciliationId);
 
     if (reconciliation.status === BankRecStatus.COMPLETED) {
-      throw new BadRequestException('Cannot add items to completed reconciliation');
+      throw new BadRequestException(
+        "Cannot add items to completed reconciliation",
+      );
     }
 
     const item = await this.prisma.bankReconciliationItem.create({
@@ -411,7 +433,9 @@ export class BankReconciliationService {
     });
 
     if (!item) {
-      throw new NotFoundException(`Reconciliation item with ID ${itemId} not found`);
+      throw new NotFoundException(
+        `Reconciliation item with ID ${itemId} not found`,
+      );
     }
 
     const updatedItem = await this.prisma.bankReconciliationItem.update({
@@ -421,7 +445,7 @@ export class BankReconciliationService {
         matchedTransactionId: transactionId,
         matchedAt: new Date(),
         matchedBy: userId,
-        status: 'MATCHED',
+        status: "MATCHED",
       },
     });
 
@@ -434,8 +458,10 @@ export class BankReconciliationService {
   async reviewBankReconciliation(id: string, userId: string) {
     const reconciliation = await this.getBankReconciliation(id);
 
-    if (reconciliation.status !== BankRecStatus.DRAFT &&
-        reconciliation.status !== BankRecStatus.IN_PROGRESS) {
+    if (
+      reconciliation.status !== BankRecStatus.DRAFT &&
+      reconciliation.status !== BankRecStatus.IN_PROGRESS
+    ) {
       throw new BadRequestException(
         `Cannot review reconciliation with status: ${reconciliation.status}`,
       );
@@ -478,7 +504,7 @@ export class BankReconciliationService {
 
     if (!reconciliation.isBalanced) {
       throw new BadRequestException(
-        'Cannot approve unbalanced reconciliation. Please resolve all differences first.',
+        "Cannot approve unbalanced reconciliation. Please resolve all differences first.",
       );
     }
 
@@ -489,20 +515,20 @@ export class BankReconciliationService {
     // Add bank charges (if any)
     if (Number(reconciliation.bankCharges) > 0) {
       const bankChargesAccount = await this.prisma.chartOfAccounts.findFirst({
-        where: { code: { startsWith: '6-3' } }, // Bank charges expense account
+        where: { code: { startsWith: "6-3" } }, // Bank charges expense account
       });
       if (bankChargesAccount) {
         lineItems.push({
           accountCode: bankChargesAccount.code,
-          description: 'Bank charges',
-          descriptionId: 'Biaya bank',
+          description: "Bank charges",
+          descriptionId: "Biaya bank",
           debit: Number(reconciliation.bankCharges),
           credit: 0,
         });
         lineItems.push({
           accountCode: reconciliation.bankAccount.code,
-          description: 'Bank charges',
-          descriptionId: 'Biaya bank',
+          description: "Bank charges",
+          descriptionId: "Biaya bank",
           debit: 0,
           credit: Number(reconciliation.bankCharges),
         });
@@ -512,20 +538,20 @@ export class BankReconciliationService {
     // Add bank interest (if any)
     if (Number(reconciliation.bankInterest) > 0) {
       const bankInterestAccount = await this.prisma.chartOfAccounts.findFirst({
-        where: { code: { startsWith: '4-9' } }, // Other income account
+        where: { code: { startsWith: "4-9" } }, // Other income account
       });
       if (bankInterestAccount) {
         lineItems.push({
           accountCode: reconciliation.bankAccount.code,
-          description: 'Bank interest',
-          descriptionId: 'Bunga bank',
+          description: "Bank interest",
+          descriptionId: "Bunga bank",
           debit: Number(reconciliation.bankInterest),
           credit: 0,
         });
         lineItems.push({
           accountCode: bankInterestAccount.code,
-          description: 'Bank interest',
-          descriptionId: 'Bunga bank',
+          description: "Bank interest",
+          descriptionId: "Bunga bank",
           debit: 0,
           credit: Number(reconciliation.bankInterest),
         });
@@ -581,7 +607,9 @@ export class BankReconciliationService {
     const reconciliation = await this.getBankReconciliation(id);
 
     if (reconciliation.status !== BankRecStatus.REVIEWED) {
-      throw new BadRequestException('Can only reject reviewed bank reconciliations');
+      throw new BadRequestException(
+        "Can only reject reviewed bank reconciliations",
+      );
     }
 
     const updatedReconciliation = await this.prisma.bankReconciliation.update({
@@ -615,7 +643,7 @@ export class BankReconciliationService {
 
     if (reconciliation.status === BankRecStatus.COMPLETED) {
       throw new BadRequestException(
-        'Cannot delete completed bank reconciliation.',
+        "Cannot delete completed bank reconciliation.",
       );
     }
 
@@ -623,6 +651,6 @@ export class BankReconciliationService {
       where: { id },
     });
 
-    return { message: 'Bank reconciliation deleted successfully' };
+    return { message: "Bank reconciliation deleted successfully" };
   }
 }

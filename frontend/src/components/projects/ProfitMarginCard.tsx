@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Button,
   Card,
   Col,
   Divider,
@@ -7,9 +8,8 @@ import {
   Row,
   Space,
   Statistic,
-  Button,
-  Typography,
   Tag,
+  Typography,
 } from 'antd';
 import {
   ArrowDownOutlined,
@@ -39,29 +39,29 @@ export const ProfitMarginCard: React.FC<ProfitMarginCardProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const grossMargin = parseFloat(project.grossMarginPercent || '0');
-  const netMargin = parseFloat(project.netMarginPercent || '0');
+  const grossMargin = parseFloat(project.grossMarginPercent ?? '0');
+  const netMargin = parseFloat(project.netMarginPercent ?? '0');
 
   // Color coding based on margin thresholds (Indonesian industry standards)
-  const getMarginColor = (margin: number) => {
+  const getMarginColor = (margin: number): string => {
     if (margin >= 20) return theme.colors.status.success; // Excellent: > 20%
     if (margin >= 10) return theme.colors.status.info;    // Good: 10-20%
     if (margin >= 0) return theme.colors.status.warning;  // Break-even: 0-10%
     return theme.colors.status.error;                     // Loss: < 0%
   };
 
-  const getMarginStatus = (margin: number) => {
+  const getMarginStatus = (margin: number): string => {
     if (margin >= 20) return 'Sangat Baik';
     if (margin >= 10) return 'Baik';
     if (margin >= 0) return 'Impas';
     return 'Rugi';
   };
 
-  const totalRevenue = parseFloat(project.totalPaidAmount || '0');
-  const totalCosts = parseFloat(project.totalAllocatedCosts || '0');
-  const netProfit = parseFloat(project.netProfit || '0');
-  const budgetVariance = parseFloat(project.budgetVariance || '0');
-  const budgetVariancePercent = parseFloat(project.budgetVariancePercent || '0');
+  const totalRevenue = parseFloat(project.totalPaidAmount ?? '0');
+  const totalCosts = parseFloat(project.totalAllocatedCosts ?? '0');
+  const netProfit = parseFloat(project.netProfit ?? '0');
+  const budgetVariance = parseFloat(project.budgetVariance ?? '0');
+  const budgetVariancePercent = parseFloat(project.budgetVariancePercent ?? '0');
 
   return (
     <Card

@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { EFakturStatus } from '@prisma/client';
+import { Injectable } from "@nestjs/common";
+import { EFakturStatus } from "@prisma/client";
 
 /**
  * e-Faktur Validator Service
@@ -19,10 +19,10 @@ export class EFakturValidatorService {
 
   // Valid invoice codes (first 3 digits)
   private readonly VALID_INVOICE_CODES = [
-    '010', // Normal invoice
-    '020', // Replacement invoice
-    '030', // Credit note
-    '040', // Debit note
+    "010", // Normal invoice
+    "020", // Replacement invoice
+    "030", // Credit note
+    "040", // Debit note
   ];
 
   /**
@@ -32,7 +32,7 @@ export class EFakturValidatorService {
    * @returns Whether NSFP format is valid
    */
   validateNSFPFormat(nsfp: string): boolean {
-    if (!nsfp || nsfp.trim() === '') {
+    if (!nsfp || nsfp.trim() === "") {
       return false;
     }
 
@@ -78,10 +78,10 @@ export class EFakturValidatorService {
     }
 
     return {
-      invoiceCode: nsfp.substring(0, 3),     // 010
-      taxBranch: nsfp.substring(4, 7),       // 123
-      year: nsfp.substring(8, 10),           // 25
-      serialNumber: nsfp.substring(11, 19),  // 12345678
+      invoiceCode: nsfp.substring(0, 3), // 010
+      taxBranch: nsfp.substring(4, 7), // 123
+      year: nsfp.substring(8, 10), // 25
+      serialNumber: nsfp.substring(11, 19), // 12345678
       full: nsfp,
     };
   }
@@ -95,20 +95,20 @@ export class EFakturValidatorService {
   getInvoiceType(nsfp: string): string {
     const parsed = this.parseNSFP(nsfp);
     if (!parsed) {
-      return 'Unknown';
+      return "Unknown";
     }
 
     switch (parsed.invoiceCode) {
-      case '010':
-        return 'Normal Invoice';
-      case '020':
-        return 'Replacement Invoice';
-      case '030':
-        return 'Credit Note';
-      case '040':
-        return 'Debit Note';
+      case "010":
+        return "Normal Invoice";
+      case "020":
+        return "Replacement Invoice";
+      case "030":
+        return "Credit Note";
+      case "040":
+        return "Debit Note";
       default:
-        return 'Unknown';
+        return "Unknown";
     }
   }
 
@@ -149,13 +149,13 @@ export class EFakturValidatorService {
    * @returns Whether QR code appears valid
    */
   validateQRCodeFormat(qrCode: string): boolean {
-    if (!qrCode || qrCode.trim() === '') {
+    if (!qrCode || qrCode.trim() === "") {
       return false;
     }
 
     // Check if it's a base64 string or URL
     const isBase64 = /^[A-Za-z0-9+/]+={0,2}$/.test(qrCode);
-    const isURL = qrCode.startsWith('http://') || qrCode.startsWith('https://');
+    const isURL = qrCode.startsWith("http://") || qrCode.startsWith("https://");
 
     return isBase64 || isURL;
   }
@@ -168,7 +168,11 @@ export class EFakturValidatorService {
    * @param issueDate - Issue date
    * @returns Suggested e-Faktur status
    */
-  determineStatus(nsfp: string | null, qrCode: string | null, issueDate: Date | null): EFakturStatus {
+  determineStatus(
+    nsfp: string | null,
+    qrCode: string | null,
+    issueDate: Date | null,
+  ): EFakturStatus {
     // No e-Faktur provided
     if (!nsfp && !qrCode) {
       return EFakturStatus.NOT_REQUIRED;
@@ -216,28 +220,28 @@ export class EFakturValidatorService {
 
     // Validate NSFP format
     if (!this.validateNSFPFormat(data.nsfp)) {
-      errors.push('Invalid NSFP format. Expected: XXX.XXX-YY.ZZZZZZZZ');
+      errors.push("Invalid NSFP format. Expected: XXX.XXX-YY.ZZZZZZZZ");
     }
 
     // Validate QR code
     if (!this.validateQRCodeFormat(data.qrCode)) {
-      errors.push('Invalid QR code format');
+      errors.push("Invalid QR code format");
     }
 
     // Validate vendor NPWP (15 digits with dots and hyphen)
     if (!this.validateNPWP(data.vendorNPWP)) {
-      errors.push('Invalid vendor NPWP format');
+      errors.push("Invalid vendor NPWP format");
     }
 
     // Validate amounts
     const calculatedTotal = data.grossAmount + data.ppnAmount;
     if (!this.validateAmounts(calculatedTotal, data.totalAmount)) {
-      errors.push('Total amount mismatch (gross + PPN ≠ total)');
+      errors.push("Total amount mismatch (gross + PPN ≠ total)");
     }
 
     // Check expiration
     if (this.isExpired(data.issueDate)) {
-      errors.push('e-Faktur is expired (older than 3 months)');
+      errors.push("e-Faktur is expired (older than 3 months)");
     }
 
     return {
@@ -254,7 +258,7 @@ export class EFakturValidatorService {
    * @returns Whether NPWP format is valid
    */
   validateNPWP(npwp: string): boolean {
-    if (!npwp || npwp.trim() === '') {
+    if (!npwp || npwp.trim() === "") {
       return false;
     }
 
@@ -271,7 +275,7 @@ export class EFakturValidatorService {
    */
   formatNPWP(npwp: string): string {
     // Remove all non-digits
-    const digits = npwp.replace(/\D/g, '');
+    const digits = npwp.replace(/\D/g, "");
 
     if (digits.length !== 15) {
       return npwp; // Return as-is if invalid
@@ -291,7 +295,7 @@ export class EFakturValidatorService {
    */
   isEFakturRequired(grossAmount: number, accountCode: string): boolean {
     // Salaries and non-cash expenses don't require e-Faktur
-    const nonEFakturAccounts = ['6-1010', '6-2010', '6-2100', '6-2090'];
+    const nonEFakturAccounts = ["6-1010", "6-2010", "6-2100", "6-2090"];
     if (nonEFakturAccounts.includes(accountCode)) {
       return false;
     }
@@ -314,19 +318,19 @@ export class EFakturValidatorService {
   getStatusDisplayName(status: EFakturStatus): string {
     switch (status) {
       case EFakturStatus.NOT_REQUIRED:
-        return 'Tidak Diperlukan';
+        return "Tidak Diperlukan";
       case EFakturStatus.PENDING:
-        return 'Menunggu Upload';
+        return "Menunggu Upload";
       case EFakturStatus.UPLOADED:
-        return 'Telah Diupload';
+        return "Telah Diupload";
       case EFakturStatus.VALID:
-        return 'Valid';
+        return "Valid";
       case EFakturStatus.INVALID:
-        return 'Tidak Valid';
+        return "Tidak Valid";
       case EFakturStatus.EXPIRED:
-        return 'Kadaluarsa';
+        return "Kadaluarsa";
       default:
-        return 'Unknown';
+        return "Unknown";
     }
   }
 }

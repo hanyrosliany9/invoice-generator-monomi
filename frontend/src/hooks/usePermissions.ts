@@ -43,7 +43,7 @@ export const usePermissions = () => {
    * Check if user has a specific role
    */
   const hasRole = (role: UserRole): boolean => {
-    if (!user || !user.role) return false;
+    if (!user?.role) return false;
 
     const userRole = getMappedRole(user.role as UserRole);
     const requiredRole = getMappedRole(role);

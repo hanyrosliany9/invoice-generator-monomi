@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { Layout, Spin, App as AntApp } from 'antd'
+import { App as AntApp, Layout, Spin } from 'antd'
 import { lazy, Suspense } from 'react'
 import { useAuthStore } from './store/auth'
 import { AuthLayout } from './components/layout/AuthLayout'

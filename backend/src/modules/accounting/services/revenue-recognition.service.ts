@@ -2,16 +2,16 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { JournalService } from './journal.service';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { JournalService } from "./journal.service";
 import {
   DeferredRevenueStatus,
   MilestoneStatus,
   TransactionType,
   InvoiceStatus,
-} from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+} from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
 
 /**
  * PSAK 72: Revenue from Contracts with Customers Service
@@ -41,7 +41,7 @@ export class RevenueRecognitionService {
       include: {
         project: true,
         payments: {
-          where: { status: 'CONFIRMED' },
+          where: { status: "CONFIRMED" },
         },
       },
     });
@@ -58,8 +58,8 @@ export class RevenueRecognitionService {
 
     // Check if project is not completed
     const isProjectIncomplete =
-      invoice.project.status === 'PLANNING' ||
-      invoice.project.status === 'IN_PROGRESS';
+      invoice.project.status === "PLANNING" ||
+      invoice.project.status === "IN_PROGRESS";
 
     return isProjectIncomplete;
   }
@@ -92,13 +92,13 @@ export class RevenueRecognitionService {
     const existingDeferred = await this.prisma.deferredRevenue.findFirst({
       where: {
         invoiceId: data.invoiceId,
-        status: { in: ['DEFERRED', 'PARTIALLY_RECOGNIZED'] },
+        status: { in: ["DEFERRED", "PARTIALLY_RECOGNIZED"] },
       },
     });
 
     if (existingDeferred) {
       throw new BadRequestException(
-        'Deferred revenue entry already exists for this invoice'
+        "Deferred revenue entry already exists for this invoice",
       );
     }
 
@@ -116,7 +116,7 @@ export class RevenueRecognitionService {
       createdBy: data.userId,
       lineItems: [
         {
-          accountCode: '1-1020', // Bank Account
+          accountCode: "1-1020", // Bank Account
           description: `Advance payment from ${invoice.client.name}`,
           descriptionId: `Pembayaran dimuka dari ${invoice.client.name}`,
           debit: data.totalAmount,
@@ -125,7 +125,7 @@ export class RevenueRecognitionService {
           projectId: invoice.projectId,
         },
         {
-          accountCode: '2-1020', // Deferred Revenue (Liability)
+          accountCode: "2-1020", // Deferred Revenue (Liability)
           description: `Deferred revenue for ${invoice.project.description}`,
           descriptionId: `Pendapatan diterima dimuka untuk ${invoice.project.description}`,
           debit: 0,
@@ -149,7 +149,8 @@ export class RevenueRecognitionService {
         recognizedAmount: new Decimal(0),
         remainingAmount: new Decimal(data.totalAmount),
         status: DeferredRevenueStatus.DEFERRED,
-        performanceObligation: data.performanceObligation ||
+        performanceObligation:
+          data.performanceObligation ||
           `Service delivery for ${invoice.project.description}`,
         completionPercentage: new Decimal(0),
         initialJournalId: initialJournal.id,
@@ -196,19 +197,21 @@ export class RevenueRecognitionService {
 
     if (!deferred) {
       throw new NotFoundException(
-        `Deferred revenue entry ${data.deferredRevenueId} not found`
+        `Deferred revenue entry ${data.deferredRevenueId} not found`,
       );
     }
 
     if (deferred.status === DeferredRevenueStatus.FULLY_RECOGNIZED) {
-      throw new BadRequestException('Revenue has already been fully recognized');
+      throw new BadRequestException(
+        "Revenue has already been fully recognized",
+      );
     }
 
     const remainingAmount = Number(deferred.remainingAmount);
 
     if (data.recognitionAmount > remainingAmount) {
       throw new BadRequestException(
-        `Recognition amount (${data.recognitionAmount}) exceeds remaining amount (${remainingAmount})`
+        `Recognition amount (${data.recognitionAmount}) exceeds remaining amount (${remainingAmount})`,
       );
     }
 
@@ -226,7 +229,7 @@ export class RevenueRecognitionService {
       createdBy: data.userId,
       lineItems: [
         {
-          accountCode: '2-1020', // Deferred Revenue (Liability)
+          accountCode: "2-1020", // Deferred Revenue (Liability)
           description: `Revenue recognition for ${deferred.invoice.project.description}`,
           descriptionId: `Pengakuan pendapatan untuk ${deferred.invoice.project.description}`,
           debit: data.recognitionAmount,
@@ -235,7 +238,7 @@ export class RevenueRecognitionService {
           projectId: deferred.invoice.projectId,
         },
         {
-          accountCode: '4-1010', // Revenue
+          accountCode: "4-1010", // Revenue
           description: `Earned revenue from ${deferred.invoice.client.name}`,
           descriptionId: `Pendapatan yang diperoleh dari ${deferred.invoice.client.name}`,
           debit: 0,
@@ -247,12 +250,18 @@ export class RevenueRecognitionService {
     });
 
     // Auto-post the journal entry
-    await this.journalService.postJournalEntry(recognitionJournal.id, data.userId);
+    await this.journalService.postJournalEntry(
+      recognitionJournal.id,
+      data.userId,
+    );
 
     // Update deferred revenue record
-    const newRecognizedAmount = Number(deferred.recognizedAmount) + data.recognitionAmount;
-    const newRemainingAmount = Number(deferred.totalAmount) - newRecognizedAmount;
-    const completionPct = data.completionPercentage ||
+    const newRecognizedAmount =
+      Number(deferred.recognizedAmount) + data.recognitionAmount;
+    const newRemainingAmount =
+      Number(deferred.totalAmount) - newRecognizedAmount;
+    const completionPct =
+      data.completionPercentage ||
       (newRecognizedAmount / Number(deferred.totalAmount)) * 100;
 
     const newStatus =
@@ -325,7 +334,7 @@ export class RevenueRecognitionService {
 
     if (existingMilestone) {
       throw new BadRequestException(
-        `Milestone ${data.milestoneNumber} already exists for this project`
+        `Milestone ${data.milestoneNumber} already exists for this project`,
       );
     }
 
@@ -342,7 +351,9 @@ export class RevenueRecognitionService {
         plannedRevenue: new Decimal(data.plannedRevenue),
         recognizedRevenue: new Decimal(0),
         remainingRevenue: new Decimal(data.plannedRevenue),
-        estimatedCost: data.estimatedCost ? new Decimal(data.estimatedCost) : null,
+        estimatedCost: data.estimatedCost
+          ? new Decimal(data.estimatedCost)
+          : null,
         actualCost: new Decimal(0),
         completionPercentage: new Decimal(0),
         status: MilestoneStatus.PENDING,
@@ -368,11 +379,11 @@ export class RevenueRecognitionService {
    */
   calculateMilestoneRevenue(
     plannedRevenue: number,
-    completionPercentage: number
+    completionPercentage: number,
   ): number {
     if (completionPercentage < 0 || completionPercentage > 100) {
       throw new BadRequestException(
-        'Completion percentage must be between 0 and 100'
+        "Completion percentage must be between 0 and 100",
       );
     }
 
@@ -405,20 +416,24 @@ export class RevenueRecognitionService {
     }
 
     if (milestone.status === MilestoneStatus.CANCELLED) {
-      throw new BadRequestException('Cannot recognize revenue for cancelled milestone');
+      throw new BadRequestException(
+        "Cannot recognize revenue for cancelled milestone",
+      );
     }
 
     // Calculate revenue to recognize
     const totalEarnedRevenue = this.calculateMilestoneRevenue(
       Number(milestone.plannedRevenue),
-      data.completionPercentage
+      data.completionPercentage,
     );
 
     const previouslyRecognized = Number(milestone.recognizedRevenue);
     const revenueToRecognize = totalEarnedRevenue - previouslyRecognized;
 
     if (revenueToRecognize < 0.01) {
-      throw new BadRequestException('No revenue to recognize at this completion level');
+      throw new BadRequestException(
+        "No revenue to recognize at this completion level",
+      );
     }
 
     // Create revenue recognition journal entry
@@ -434,7 +449,7 @@ export class RevenueRecognitionService {
       createdBy: data.userId,
       lineItems: [
         {
-          accountCode: '1-2020', // Work in Progress / Unbilled Revenue
+          accountCode: "1-2020", // Work in Progress / Unbilled Revenue
           description: `Unbilled revenue - ${milestone.name}`,
           descriptionId: `Pendapatan belum ditagih - ${milestone.nameId || milestone.name}`,
           debit: revenueToRecognize,
@@ -443,7 +458,7 @@ export class RevenueRecognitionService {
           projectId: milestone.projectId,
         },
         {
-          accountCode: '4-1010', // Revenue
+          accountCode: "4-1010", // Revenue
           description: `Earned revenue - ${milestone.name} (${data.completionPercentage}% complete)`,
           descriptionId: `Pendapatan yang diperoleh - ${milestone.nameId || milestone.name} (${data.completionPercentage}% selesai)`,
           debit: 0,
@@ -459,7 +474,8 @@ export class RevenueRecognitionService {
 
     // Update milestone
     const newRecognizedRevenue = previouslyRecognized + revenueToRecognize;
-    const newRemainingRevenue = Number(milestone.plannedRevenue) - newRecognizedRevenue;
+    const newRemainingRevenue =
+      Number(milestone.plannedRevenue) - newRecognizedRevenue;
 
     let newStatus = milestone.status;
     if (data.completionPercentage >= 100) {
@@ -474,7 +490,9 @@ export class RevenueRecognitionService {
         completionPercentage: new Decimal(data.completionPercentage),
         recognizedRevenue: new Decimal(newRecognizedRevenue),
         remainingRevenue: new Decimal(newRemainingRevenue),
-        actualCost: data.actualCost ? new Decimal(data.actualCost) : milestone.actualCost,
+        actualCost: data.actualCost
+          ? new Decimal(data.actualCost)
+          : milestone.actualCost,
         status: newStatus,
         journalEntryId: journalEntry.id,
       },
@@ -508,7 +526,7 @@ export class RevenueRecognitionService {
     }
 
     if (milestone.status !== MilestoneStatus.COMPLETED) {
-      throw new BadRequestException('Can only accept completed milestones');
+      throw new BadRequestException("Can only accept completed milestones");
     }
 
     const updatedMilestone = await this.prisma.projectMilestone.update({
@@ -561,7 +579,7 @@ export class RevenueRecognitionService {
         },
         fiscalPeriod: true,
       },
-      orderBy: { recognitionDate: 'asc' },
+      orderBy: { recognitionDate: "asc" },
     });
 
     const summary = {
@@ -612,7 +630,7 @@ export class RevenueRecognitionService {
       include: {
         client: true,
         milestones: {
-          orderBy: { milestoneNumber: 'asc' },
+          orderBy: { milestoneNumber: "asc" },
         },
       },
     });
@@ -646,7 +664,7 @@ export class RevenueRecognitionService {
       summary.averageCompletion =
         project.milestones.reduce(
           (sum, m) => sum + Number(m.completionPercentage),
-          0
+          0,
         ) / project.milestones.length;
     }
 
@@ -693,7 +711,7 @@ export class RevenueRecognitionService {
           gte: data.startDate,
           lte: data.endDate,
         },
-        status: { in: ['DEFERRED', 'PARTIALLY_RECOGNIZED'] },
+        status: { in: ["DEFERRED", "PARTIALLY_RECOGNIZED"] },
       },
       include: {
         invoice: {
@@ -703,12 +721,12 @@ export class RevenueRecognitionService {
           },
         },
       },
-      orderBy: { recognitionDate: 'asc' },
+      orderBy: { recognitionDate: "asc" },
     });
 
     const totalScheduledRevenue = deferredRevenues.reduce(
       (sum, dr) => sum + Number(dr.remainingAmount),
-      0
+      0,
     );
 
     return {

@@ -227,7 +227,10 @@ export class ProjectsController {
     status: 404,
     description: "Project not found",
   })
-  async recalculateProfit(@Param("id") id: string, @Body() body?: { userId?: string }) {
+  async recalculateProfit(
+    @Param("id") id: string,
+    @Body() body?: { userId?: string },
+  ) {
     return this.projectsService.recalculateProfit(id, body?.userId);
   }
 

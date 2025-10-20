@@ -36,7 +36,7 @@ import {
 } from '../components/forms'
 import { CreateProjectRequest, projectService, ProjectType as ProjectTypeFromService } from '../services/projects'
 import { clientService } from '../services/clients'
-import { projectTypesApi, ProjectType } from '../services/project-types'
+import { ProjectType, projectTypesApi } from '../services/project-types'
 import { useTheme } from '../theme'
 
 const { TextArea } = Input

@@ -50,8 +50,12 @@ export class ProjectsService {
       };
     }
 
-    const { products, clientId, projectTypeId, ...projectData } =
-      createProjectDto;
+    const {
+      products: _products,
+      clientId,
+      projectTypeId,
+      ...projectData
+    } = createProjectDto;
 
     return this.prisma.project.create({
       data: {
@@ -178,7 +182,7 @@ export class ProjectsService {
   }
 
   async update(id: string, updateProjectDto: UpdateProjectDto) {
-    const project = await this.findOne(id);
+    const _project = await this.findOne(id);
 
     return this.prisma.project.update({
       where: { id },
@@ -191,7 +195,7 @@ export class ProjectsService {
   }
 
   async remove(id: string) {
-    const project = await this.findOne(id);
+    const _project = await this.findOne(id);
 
     // Check if project has associated records
     const hasRecords = await this.prisma.project.findUnique({
@@ -314,7 +318,7 @@ export class ProjectsService {
    * Manually recalculate profit margins for a specific project
    */
   async recalculateProfit(id: string, userId?: string) {
-    const project = await this.findOne(id);
+    const _project = await this.findOne(id);
     return this.profitCalc.calculateProjectProfitMargin(id, userId);
   }
 
@@ -322,7 +326,7 @@ export class ProjectsService {
    * Get cost breakdown for a project
    */
   async getCostBreakdown(id: string) {
-    const project = await this.findOne(id);
+    const _project = await this.findOne(id);
     return this.profitCalc.getCostBreakdown(id);
   }
 
@@ -378,12 +382,13 @@ export class ProjectsService {
         count: projects.length,
         avgGrossMargin:
           projects.reduce(
-            (sum, p) => sum + (parseFloat(p.grossMarginPercent?.toString() || "0")),
+            (sum, p) =>
+              sum + parseFloat(p.grossMarginPercent?.toString() || "0"),
             0,
           ) / (projects.length || 1),
         avgNetMargin:
           projects.reduce(
-            (sum, p) => sum + (parseFloat(p.netMarginPercent?.toString() || "0")),
+            (sum, p) => sum + parseFloat(p.netMarginPercent?.toString() || "0"),
             0,
           ) / (projects.length || 1),
       },

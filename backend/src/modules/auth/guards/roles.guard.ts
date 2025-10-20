@@ -50,7 +50,7 @@ export class RolesGuard implements CanActivate {
     // Check if user is authenticated
     if (!user || !user.role) {
       throw new UnauthorizedException(
-        "You must be authenticated to access this resource"
+        "You must be authenticated to access this resource",
       );
     }
 
@@ -59,7 +59,9 @@ export class RolesGuard implements CanActivate {
     const userRoleStr = userRole as string as PermissionUserRole;
 
     // Convert Prisma UserRole[] to PermissionUserRole[] for permission check
-    const requiredRoleStrs = requiredRoles.map(r => r as string as PermissionUserRole);
+    const requiredRoleStrs = requiredRoles.map(
+      (r) => r as string as PermissionUserRole,
+    );
 
     // Check if user has permission (with legacy role mapping)
     const hasAccess = hasPermission(userRoleStr, requiredRoleStrs);
@@ -72,7 +74,7 @@ export class RolesGuard implements CanActivate {
 
       throw new ForbiddenException(
         `Access denied. This action requires one of the following roles: ${requiredRoleNames}. ` +
-          `Your current role: ${getRoleDisplayName(userRoleStr)}`
+          `Your current role: ${getRoleDisplayName(userRoleStr)}`,
       );
     }
 

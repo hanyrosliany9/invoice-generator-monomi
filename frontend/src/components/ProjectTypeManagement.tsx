@@ -1,32 +1,32 @@
 import React, { useState } from 'react';
 import {
   App,
-  Card,
-  Table,
+  Badge,
   Button,
-  Modal,
+  Card,
+  ColorPicker,
   Form,
   Input,
-  ColorPicker,
-  Switch,
+  InputNumber,
+  Modal,
+  Popconfirm,
+  Select,
   Space,
+  Switch,
+  Table,
   Tag,
   Tooltip,
-  Popconfirm,
-  Badge,
-  InputNumber,
-  Select,
 } from 'antd';
 import {
-  PlusOutlined,
-  EditOutlined,
   DeleteOutlined,
   DragOutlined,
+  EditOutlined,
   EyeOutlined,
+  PlusOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { projectTypesApi, ProjectType, CreateProjectTypeDto, UpdateProjectTypeDto } from '../services/project-types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CreateProjectTypeDto, ProjectType, projectTypesApi, UpdateProjectTypeDto } from '../services/project-types';
 import { useTranslation } from 'react-i18next';
 
 const { TextArea } = Input;

@@ -1,6 +1,17 @@
-import { IsString, IsDate, IsEnum, IsOptional, IsNumber, Min } from 'class-validator';
-import { Type } from 'class-transformer';
-import { CashTransactionType, CashCategory, CashTransactionStatus } from '@prisma/client';
+import {
+  IsString,
+  IsDate,
+  IsEnum,
+  IsOptional,
+  IsNumber,
+  Min,
+} from "class-validator";
+import { Type } from "class-transformer";
+import {
+  CashTransactionType,
+  CashCategory,
+  CashTransactionStatus,
+} from "@prisma/client";
 
 export class CashTransactionQueryDto {
   @IsDate()
@@ -59,9 +70,9 @@ export class CashTransactionQueryDto {
 
   @IsString()
   @IsOptional()
-  sortBy?: string = 'transactionDate';
+  sortBy?: string = "transactionDate";
 
   @IsString()
   @IsOptional()
-  sortOrder?: 'asc' | 'desc' = 'desc';
+  sortOrder?: "asc" | "desc" = "desc";
 }

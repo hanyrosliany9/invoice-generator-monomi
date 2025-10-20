@@ -1,7 +1,7 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateBankTransferDto } from './create-bank-transfer.dto';
-import { IsString, IsOptional, IsDate } from 'class-validator';
-import { Type } from 'class-transformer';
+import { PartialType } from "@nestjs/mapped-types";
+import { CreateBankTransferDto } from "./create-bank-transfer.dto";
+import { IsString, IsOptional, IsDate } from "class-validator";
+import { Type } from "class-transformer";
 
 export class UpdateBankTransferDto extends PartialType(CreateBankTransferDto) {
   @IsString()

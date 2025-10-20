@@ -357,26 +357,37 @@ export class InvoicesService {
     });
   }
 
-  async updateStatus(id: string, status: InvoiceStatus, userId?: string): Promise<any> {
+  async updateStatus(
+    id: string,
+    status: InvoiceStatus,
+    userId?: string,
+  ): Promise<any> {
     const invoice = await this.findOne(id);
 
     // Validate status transition
     this.validateStatusTransition(invoice.status, status);
 
     // Create journal entry if status changes to SENT (revenue recognition)
-    if (status === InvoiceStatus.SENT && invoice.status !== InvoiceStatus.SENT) {
+    if (
+      status === InvoiceStatus.SENT &&
+      invoice.status !== InvoiceStatus.SENT
+    ) {
       try {
-        const journalEntry = await this.journalService.createInvoiceJournalEntry(
-          invoice.id,
-          invoice.invoiceNumber,
-          invoice.clientId,
-          Number(invoice.totalAmount),
-          'SENT',
-          userId || 'system',
-        );
+        const journalEntry =
+          await this.journalService.createInvoiceJournalEntry(
+            invoice.id,
+            invoice.invoiceNumber,
+            invoice.clientId,
+            Number(invoice.totalAmount),
+            "SENT",
+            userId || "system",
+          );
 
         // Post journal entry immediately
-        await this.journalService.postJournalEntry(journalEntry.id, userId || 'system');
+        await this.journalService.postJournalEntry(
+          journalEntry.id,
+          userId || "system",
+        );
 
         // Update invoice with journal entry ID
         await this.prisma.invoice.update({
@@ -384,7 +395,7 @@ export class InvoicesService {
           data: { journalEntryId: journalEntry.id },
         });
       } catch (error) {
-        console.error('Failed to create journal entry for invoice:', error);
+        console.error("Failed to create journal entry for invoice:", error);
         // Continue with status update even if journal entry fails
       }
     }
@@ -427,12 +438,15 @@ export class InvoicesService {
         invoice.invoiceNumber,
         invoice.clientId,
         Number(invoice.totalAmount),
-        'PAID',
-        userId || 'system',
+        "PAID",
+        userId || "system",
       );
 
       // Post journal entry immediately
-      await this.journalService.postJournalEntry(journalEntry.id, userId || 'system');
+      await this.journalService.postJournalEntry(
+        journalEntry.id,
+        userId || "system",
+      );
 
       // Update invoice with payment journal entry ID
       await this.prisma.invoice.update({
@@ -440,25 +454,29 @@ export class InvoicesService {
         data: { paymentJournalId: journalEntry.id },
       });
     } catch (error) {
-      console.error('Failed to create payment journal entry for invoice:', error);
+      console.error(
+        "Failed to create payment journal entry for invoice:",
+        error,
+      );
       // Continue with status update even if journal entry fails
     }
 
     // Reverse ECL provision if exists (PSAK 71)
     try {
-      const activeProvisions = await this.prisma.allowanceForDoubtfulAccounts.findMany({
-        where: {
-          invoiceId: id,
-          provisionStatus: 'ACTIVE',
-        },
-      });
+      const activeProvisions =
+        await this.prisma.allowanceForDoubtfulAccounts.findMany({
+          where: {
+            invoiceId: id,
+            provisionStatus: "ACTIVE",
+          },
+        });
 
       for (const provision of activeProvisions) {
         // Update provision status to REVERSED
         await this.prisma.allowanceForDoubtfulAccounts.update({
           where: { id: provision.id },
           data: {
-            provisionStatus: 'REVERSED',
+            provisionStatus: "REVERSED",
           },
         });
 
@@ -468,17 +486,20 @@ export class InvoicesService {
           invoice.invoiceNumber,
           invoice.clientId,
           Number(provision.eclAmount),
-          userId || 'system',
+          userId || "system",
         );
 
-        await this.journalService.postJournalEntry(reversalEntry.id, userId || 'system');
+        await this.journalService.postJournalEntry(
+          reversalEntry.id,
+          userId || "system",
+        );
 
         console.log(
           `ECL provision reversed for invoice ${invoice.invoiceNumber}: ${Number(provision.eclAmount)} IDR`,
         );
       }
     } catch (error) {
-      console.error('Failed to reverse ECL provision for invoice:', error);
+      console.error("Failed to reverse ECL provision for invoice:", error);
       // Continue even if ECL reversal fails
     }
 
@@ -514,7 +535,7 @@ export class InvoicesService {
         id,
         payment.paymentDate,
         Number(payment.amount),
-        userId || 'system',
+        userId || "system",
       );
     }
 
@@ -531,7 +552,12 @@ export class InvoicesService {
     paymentAmount: number,
     userId: string,
   ): Promise<void> {
-    await this.handleAdvancePaymentDetection(invoiceId, paymentDate, paymentAmount, userId);
+    await this.handleAdvancePaymentDetection(
+      invoiceId,
+      paymentDate,
+      paymentAmount,
+      userId,
+    );
   }
 
   /**
@@ -545,10 +571,13 @@ export class InvoicesService {
   ): Promise<void> {
     try {
       // Check if this is an advance payment
-      const isAdvancePayment = await this.revenueRecognitionService.detectAdvancePayment(invoiceId);
+      const isAdvancePayment =
+        await this.revenueRecognitionService.detectAdvancePayment(invoiceId);
 
       if (!isAdvancePayment) {
-        console.log(`Invoice ${invoiceId}: Not an advance payment - project completed or in final stages`);
+        console.log(
+          `Invoice ${invoiceId}: Not an advance payment - project completed or in final stages`,
+        );
         return;
       }
 
@@ -556,7 +585,7 @@ export class InvoicesService {
       const existingDeferred = await this.prisma.deferredRevenue.findFirst({
         where: {
           invoiceId,
-          status: { in: ['DEFERRED', 'PARTIALLY_RECOGNIZED'] },
+          status: { in: ["DEFERRED", "PARTIALLY_RECOGNIZED"] },
         },
       });
 
@@ -588,25 +617,28 @@ export class InvoicesService {
       }
 
       // Create deferred revenue entry with automatic journal entries
-      const deferredRevenue = await this.revenueRecognitionService.createDeferredRevenue({
-        invoiceId,
-        paymentDate,
-        totalAmount: paymentAmount,
-        recognitionDate,
-        performanceObligation: invoice.scopeOfWork || `Service delivery for ${invoice.project.description}`,
-        userId,
-      });
+      const deferredRevenue =
+        await this.revenueRecognitionService.createDeferredRevenue({
+          invoiceId,
+          paymentDate,
+          totalAmount: paymentAmount,
+          recognitionDate,
+          performanceObligation:
+            invoice.scopeOfWork ||
+            `Service delivery for ${invoice.project.description}`,
+          userId,
+        });
 
       console.log(
         `✅ PSAK 72: Deferred revenue created for Invoice ${invoice.invoiceNumber}`,
-        `\n   Amount: Rp ${paymentAmount.toLocaleString('id-ID')}`,
-        `\n   Recognition Date: ${recognitionDate.toISOString().split('T')[0]}`,
+        `\n   Amount: Rp ${paymentAmount.toLocaleString("id-ID")}`,
+        `\n   Recognition Date: ${recognitionDate.toISOString().split("T")[0]}`,
         `\n   Performance Obligation: ${deferredRevenue.performanceObligation}`,
       );
 
       // Track business journey event
       await this.trackBusinessJourneyEvent(
-        'PAYMENT_RECEIVED',
+        "PAYMENT_RECEIVED",
         {
           invoiceId,
           paymentAmount,
@@ -617,7 +649,10 @@ export class InvoicesService {
         userId,
       );
     } catch (error) {
-      console.error(`Failed to handle advance payment detection for invoice ${invoiceId}:`, error);
+      console.error(
+        `Failed to handle advance payment detection for invoice ${invoiceId}:`,
+        error,
+      );
       // Don't fail the payment process if advance payment detection fails
     }
   }

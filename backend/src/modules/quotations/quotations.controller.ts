@@ -144,7 +144,7 @@ export class QuotationsController {
         if (!canApproveOwnSubmission(req.user.role)) {
           throw new ForbiddenException(
             "You cannot approve or decline your own quotation. This violates segregation of duties. " +
-              "Another financial approver must review this quotation."
+              "Another financial approver must review this quotation.",
           );
         }
       }

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Card, Statistic } from 'antd'
-import { colors, borderRadius, shadows, spacing } from '../../styles/designTokens'
+import { borderRadius, colors, shadows, spacing } from '../../styles/designTokens'
 
 export interface StatCardProps {
   /**

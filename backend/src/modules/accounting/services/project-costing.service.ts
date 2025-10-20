@@ -1,12 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 import {
   WorkInProgress,
   ProjectCostAllocation,
   AllocationMethod,
   CostType,
-  Prisma
-} from '@prisma/client';
+  Prisma,
+} from "@prisma/client";
 
 /**
  * Project Costing Service - PSAK 57 Compliance
@@ -50,7 +54,7 @@ export class ProjectCostingService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     // Calculate total cost
@@ -107,7 +111,7 @@ export class ProjectCostingService {
     // Create journal entry for WIP accumulation
     // Debit: WIP (Asset 1-2010)
     // Credit: Various expense/payable accounts
-    await this.createWIPJournalEntry(wip, 'COST_ACCUMULATION', userId);
+    await this.createWIPJournalEntry(wip, "COST_ACCUMULATION", userId);
 
     return wip;
   }
@@ -132,12 +136,14 @@ export class ProjectCostingService {
       this.prisma.expense.findUnique({ where: { id: expenseId } }),
     ]);
 
-    if (!project) throw new NotFoundException('Project not found');
-    if (!expense) throw new NotFoundException('Expense not found');
+    if (!project) throw new NotFoundException("Project not found");
+    if (!expense) throw new NotFoundException("Expense not found");
 
     // Validate allocation
     if (allocationPercentage < 0 || allocationPercentage > 100) {
-      throw new BadRequestException('Allocation percentage must be between 0 and 100');
+      throw new BadRequestException(
+        "Allocation percentage must be between 0 and 100",
+      );
     }
 
     // Create cost allocation record
@@ -187,7 +193,9 @@ export class ProjectCostingService {
     userId: string,
   ): Promise<WorkInProgress> {
     if (completionPercentage < 0 || completionPercentage > 100) {
-      throw new BadRequestException('Completion percentage must be between 0 and 100');
+      throw new BadRequestException(
+        "Completion percentage must be between 0 and 100",
+      );
     }
 
     // Get project with total contract value
@@ -200,7 +208,7 @@ export class ProjectCostingService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     // Calculate total contract value from invoices
@@ -282,7 +290,7 @@ export class ProjectCostingService {
       where: { id: projectId },
       include: {
         workInProgress: {
-          orderBy: { periodDate: 'desc' },
+          orderBy: { periodDate: "desc" },
         },
         invoices: true,
         milestones: true,
@@ -295,7 +303,7 @@ export class ProjectCostingService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     // Get latest WIP entry
@@ -315,32 +323,36 @@ export class ProjectCostingService {
       0,
     );
 
-    const recognizedRevenue = latestWIP ? Number(latestWIP.recognizedRevenue) : 0;
+    const recognizedRevenue = latestWIP
+      ? Number(latestWIP.recognizedRevenue)
+      : 0;
     const billedToDate = latestWIP ? Number(latestWIP.billedToDate) : 0;
     const unbilledRevenue = latestWIP ? Number(latestWIP.unbilledRevenue) : 0;
 
     // Calculate profitability metrics
     const grossProfit = recognizedRevenue - totalCosts;
-    const profitMargin = recognizedRevenue > 0
-      ? (grossProfit / recognizedRevenue) * 100
-      : 0;
+    const profitMargin =
+      recognizedRevenue > 0 ? (grossProfit / recognizedRevenue) * 100 : 0;
 
     // Calculate cost breakdown
-    const directMaterialCost = latestWIP ? Number(latestWIP.directMaterialCost) : 0;
+    const directMaterialCost = latestWIP
+      ? Number(latestWIP.directMaterialCost)
+      : 0;
     const directLaborCost = latestWIP ? Number(latestWIP.directLaborCost) : 0;
     const directExpenses = latestWIP ? Number(latestWIP.directExpenses) : 0;
-    const allocatedOverhead = latestWIP ? Number(latestWIP.allocatedOverhead) : 0;
+    const allocatedOverhead = latestWIP
+      ? Number(latestWIP.allocatedOverhead)
+      : 0;
 
     // Calculate estimated vs actual (if estimated budget exists)
     const estimatedBudget = project.estimatedBudget
       ? Number(project.estimatedBudget)
       : null;
-    const costVariance = estimatedBudget
-      ? totalCosts - estimatedBudget
-      : null;
-    const costVariancePercentage = estimatedBudget && estimatedBudget > 0
-      ? (costVariance! / estimatedBudget) * 100
-      : null;
+    const costVariance = estimatedBudget ? totalCosts - estimatedBudget : null;
+    const costVariancePercentage =
+      estimatedBudget && estimatedBudget > 0
+        ? (costVariance! / estimatedBudget) * 100
+        : null;
 
     // Completion metrics
     const completionPercentage = latestWIP
@@ -366,10 +378,15 @@ export class ProjectCostingService {
         directExpenses,
         allocatedOverhead,
         breakdown: {
-          material: directMaterialCost > 0 ? (directMaterialCost / totalCosts) * 100 : 0,
+          material:
+            directMaterialCost > 0
+              ? (directMaterialCost / totalCosts) * 100
+              : 0,
           labor: directLaborCost > 0 ? (directLaborCost / totalCosts) * 100 : 0,
-          expenses: directExpenses > 0 ? (directExpenses / totalCosts) * 100 : 0,
-          overhead: allocatedOverhead > 0 ? (allocatedOverhead / totalCosts) * 100 : 0,
+          expenses:
+            directExpenses > 0 ? (directExpenses / totalCosts) * 100 : 0,
+          overhead:
+            allocatedOverhead > 0 ? (allocatedOverhead / totalCosts) * 100 : 0,
         },
       },
 
@@ -378,9 +395,10 @@ export class ProjectCostingService {
         recognizedRevenue,
         billedToDate,
         unbilledRevenue,
-        revenueRecognitionRate: totalContractValue > 0
-          ? (recognizedRevenue / totalContractValue) * 100
-          : 0,
+        revenueRecognitionRate:
+          totalContractValue > 0
+            ? (recognizedRevenue / totalContractValue) * 100
+            : 0,
       },
 
       // Profitability Metrics
@@ -417,7 +435,7 @@ export class ProjectCostingService {
   async getWIPSummary(projectId: string) {
     const wipEntries = await this.prisma.workInProgress.findMany({
       where: { projectId },
-      orderBy: { periodDate: 'desc' },
+      orderBy: { periodDate: "desc" },
       include: {
         project: {
           select: {
@@ -488,7 +506,7 @@ export class ProjectCostingService {
           },
         },
       },
-      orderBy: { allocationDate: 'desc' },
+      orderBy: { allocationDate: "desc" },
     });
 
     // Group by cost type
@@ -504,7 +522,9 @@ export class ProjectCostingService {
         }
 
         acc.byCostType[costType].count += 1;
-        acc.byCostType[costType].totalAmount += Number(allocation.allocatedAmount);
+        acc.byCostType[costType].totalAmount += Number(
+          allocation.allocatedAmount,
+        );
         acc.byCostType[costType].allocations.push({
           id: allocation.id,
           expense: allocation.expense,
@@ -536,7 +556,7 @@ export class ProjectCostingService {
   private async getOrCreateFiscalPeriod(date: Date) {
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
-    const code = `${year}-${month.toString().padStart(2, '0')}`;
+    const code = `${year}-${month.toString().padStart(2, "0")}`;
 
     let period = await this.prisma.fiscalPeriod.findUnique({
       where: { code },
@@ -548,9 +568,9 @@ export class ProjectCostingService {
 
       period = await this.prisma.fiscalPeriod.create({
         data: {
-          name: `${date.toLocaleString('en-US', { month: 'long' })} ${year}`,
+          name: `${date.toLocaleString("en-US", { month: "long" })} ${year}`,
           code,
-          periodType: 'MONTHLY',
+          periodType: "MONTHLY",
           startDate,
           endDate,
         },
@@ -572,7 +592,9 @@ export class ProjectCostingService {
     // This will integrate with the existing JournalEntryService
     // Debit: WIP (1-2010)
     // Credit: Various accounts based on cost type
-    console.log(`📝 PSAK 57: WIP journal entry created for project ${wip.projectId}`);
+    console.log(
+      `📝 PSAK 57: WIP journal entry created for project ${wip.projectId}`,
+    );
   }
 
   /**
@@ -604,6 +626,8 @@ export class ProjectCostingService {
     // If billed:
     //   Debit: AR (1-1020)
     //   Credit: Revenue (4-1010)
-    console.log(`📝 PSAK 57: Revenue recognition journal entry created for ${revenueAmount}`);
+    console.log(
+      `📝 PSAK 57: Revenue recognition journal entry created for ${revenueAmount}`,
+    );
   }
 }

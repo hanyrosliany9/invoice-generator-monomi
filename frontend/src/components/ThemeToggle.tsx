@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button, Tooltip } from 'antd'
-import { BulbOutlined, BulbFilled } from '@ant-design/icons'
+import { BulbFilled, BulbOutlined } from '@ant-design/icons'
 import { useTheme } from '../theme/ThemeContext'
 
 interface ThemeToggleProps {
