@@ -38,6 +38,8 @@ import { useTranslation } from 'react-i18next'
 import { formatIDR, safeNumber, safeString } from '../utils/currency'
 import { Project, projectService } from '../services/projects'
 import { FileUpload } from '../components/documents/FileUpload'
+import { getProjectStatusConfig } from '../utils/projectStatus'
+import { getDaysRemaining } from '../utils/projectProgress'
 import dayjs from 'dayjs'
 
 const { Title, Text, Paragraph } = Typography
@@ -82,33 +84,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
     navigate('/projects')
   }
 
-  // Status configuration
-  const getStatusConfig = (status: Project['status']) => {
-    const configs = {
-      PLANNING: {
-        color: 'blue',
-        icon: <ProjectOutlined />,
-        text: 'Perencanaan',
-      },
-      IN_PROGRESS: {
-        color: 'orange',
-        icon: <PlayCircleOutlined />,
-        text: 'Berlangsung',
-      },
-      COMPLETED: {
-        color: 'green',
-        icon: <CheckCircleOutlined />,
-        text: 'Selesai',
-      },
-      CANCELLED: { color: 'red', icon: <StopOutlined />, text: 'Dibatalkan' },
-      ON_HOLD: {
-        color: 'gray',
-        icon: <ClockCircleOutlined />,
-        text: 'Ditunda',
-      },
-    }
-    return configs[status] || configs.PLANNING
-  }
+  // Using shared status configuration utility
 
   // Progress calculation
   const calculateProgress = (project: Project) => {
@@ -124,12 +100,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
     return Math.round((elapsed / total) * 100)
   }
 
-  // Days remaining calculation
-  const getDaysRemaining = (endDate: string | null) => {
-    if (!endDate) return 0
-    const days = dayjs(endDate).diff(dayjs(), 'day')
-    return days
-  }
+  // Using shared days remaining utility
 
   if (isLoading) {
     return (
@@ -158,7 +129,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
     )
   }
 
-  const statusConfig = getStatusConfig(project.status)
+  const statusConfig = getProjectStatusConfig(project.status)
   const progress = calculateProgress(project)
   const daysRemaining = getDaysRemaining(project.endDate)
 
@@ -205,7 +176,6 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                     </Title>
                     <Tag
                       color={statusConfig.color}
-                      icon={statusConfig.icon}
                       style={{ marginTop: '8px' }}
                     >
                       {statusConfig.text}
@@ -399,7 +369,6 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                           <div>
                             <Tag
                               color={statusConfig.color}
-                              icon={statusConfig.icon}
                             >
                               {statusConfig.text}
                             </Tag>

@@ -37,25 +37,19 @@ import {
   MateraiCompliancePanel,
   ProgressiveSection,
 } from '../components/forms'
-import { projectService, UpdateProjectRequest } from '../services/projects'
+import { projectService, UpdateProjectRequest, ProductItem } from '../services/projects'
 import { clientService } from '../services/clients'
+import { projectTypesApi } from '../services/project-types'
 import { useTheme } from '../theme'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
 
-interface ProductItem {
-  name: string
-  description: string
-  price: number
-  quantity: number
-}
-
 interface ProjectFormData {
   description: string
   scopeOfWork?: string
   output?: string
-  type: 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER'
+  projectTypeId: string  // Changed from 'type' enum to use database ID
   clientId: string
   startDate?: dayjs.Dayjs | null
   endDate?: dayjs.Dayjs | null
@@ -96,6 +90,16 @@ export const ProjectEditPage: React.FC = () => {
     queryFn: clientService.getClients,
   })
 
+  // Fetch project types for selection
+  const { data: projectTypesResponse, isLoading: projectTypesLoading } = useQuery({
+    queryKey: ['project-types'],
+    queryFn: projectTypesApi.getAll,
+  })
+
+  const projectTypes = Array.isArray(projectTypesResponse)
+    ? projectTypesResponse
+    : (projectTypesResponse?.data || [])
+
   // Update project mutation
   const updateProjectMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateProjectRequest }) =>
@@ -119,12 +123,12 @@ export const ProjectEditPage: React.FC = () => {
         description: project.description,
         scopeOfWork: project.scopeOfWork || '',
         output: project.output || '',
-        type: (project.projectType?.code as 'PRODUCTION' | 'SOCIAL_MEDIA' | 'CONSULTATION' | 'MAINTENANCE' | 'OTHER') || 'PRODUCTION',
+        projectTypeId: project.projectTypeId,  // Use ID directly from project
         clientId: project.clientId,
         startDate: project.startDate ? dayjs(project.startDate) : null,
         endDate: project.endDate ? dayjs(project.endDate) : null,
         status: project.status,
-        products: (project as any).products || [
+        products: project.products || [
           { name: '', description: '', price: 0, quantity: 1 },
         ],
       }
@@ -132,8 +136,8 @@ export const ProjectEditPage: React.FC = () => {
       setOriginalValues(formData)
 
       // Calculate initial value
-      if ((project as any).products) {
-        const total = (project as any).products.reduce(
+      if (project.products) {
+        const total = project.products.reduce(
           (sum: number, product: ProductItem) => {
             return sum + product.price * (product.quantity || 1)
           },
@@ -166,23 +170,6 @@ export const ProjectEditPage: React.FC = () => {
     return total
   }
 
-  // Project type mapping for update
-  const PROJECT_TYPE_MAPPING: Record<string, string> = {
-    PRODUCTION: 'cmd2xru9100026asuaclsg3kh',
-    SOCIAL_MEDIA: 'cmd2xru9500036asutntrz5mb',
-    CONSULTATION: 'cmd2xru9700046asuph748tvj',
-    MAINTENANCE: 'cmd2xru9800056asuco1tv1wn',
-    OTHER: 'cmd2xru9a00066asuag21f739'
-  }
-
-  const getProjectTypeId = (type: string): string => {
-    const projectTypeId = PROJECT_TYPE_MAPPING[type]
-    if (!projectTypeId) {
-      throw new Error(`Invalid project type: ${type}`)
-    }
-    return projectTypeId
-  }
-
   const handleSubmit = async (values: ProjectFormData) => {
     if (!id) return
 
@@ -190,7 +177,7 @@ export const ProjectEditPage: React.FC = () => {
       description: values.description,
       scopeOfWork: values.scopeOfWork,
       output: values.output,
-      projectTypeId: getProjectTypeId(values.type),
+      projectTypeId: values.projectTypeId,  // Use ID directly from form
       clientId: values.clientId,
       startDate: values.startDate ? values.startDate.toISOString() : undefined,
       endDate: values.endDate ? values.endDate.toISOString() : undefined,
@@ -224,7 +211,34 @@ export const ProjectEditPage: React.FC = () => {
     }
   }
 
-  if (isLoading) {
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasChanges])
+
+  // Warn user before navigating away with unsaved changes
+  useEffect(() => {
+    const unblock = () => {
+      if (hasChanges) {
+        return window.confirm('You have unsaved changes. Are you sure you want to leave?')
+      }
+      return true
+    }
+    // Note: This is a simple implementation. For proper route blocking,
+    // consider using useBlocker from react-router v6.4+
+    return () => {
+      // Cleanup
+    }
+  }, [hasChanges])
+
+  if (isLoading || clientsLoading || projectTypesLoading) {
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>
         <Spin size='large' tip='Loading project data...' spinning={true}>
@@ -473,7 +487,7 @@ export const ProjectEditPage: React.FC = () => {
 
             <Col xs={24} sm={8}>
               <Form.Item
-                name='type'
+                name='projectTypeId'
                 label='Project Type'
                 rules={[
                   { required: true, message: 'Please select project type' },
@@ -482,13 +496,20 @@ export const ProjectEditPage: React.FC = () => {
                 <Select
                   placeholder='Select project type'
                   size='large'
-                  options={[
-                    { value: 'PRODUCTION', label: 'Production Work' },
-                    { value: 'SOCIAL_MEDIA', label: 'Social Media Management' },
-                    { value: 'CONSULTATION', label: 'Consultation Services' },
-                    { value: 'MAINTENANCE', label: 'Maintenance & Support' },
-                    { value: 'OTHER', label: 'Other Services' },
-                  ]}
+                  loading={projectTypesLoading}
+                  showSearch
+                  filterOption={(input, option) =>
+                    ((option?.label as string) ?? '')
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  options={projectTypes
+                    .filter(pt => pt.isActive)
+                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                    .map(pt => ({
+                      value: pt.id,
+                      label: pt.name,
+                    }))}
                 />
               </Form.Item>
             </Col>

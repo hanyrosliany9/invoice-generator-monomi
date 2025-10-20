@@ -12,6 +12,14 @@ export interface ProjectType {
   sortOrder: number
 }
 
+export interface ProductItem {
+  id?: string
+  name: string
+  description: string
+  quantity: number
+  price: number
+}
+
 export interface Project {
   id: string
   number: string
@@ -27,6 +35,7 @@ export interface Project {
   priceBreakdown?: any // Detailed price breakdown
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
   totalRevenue?: number // Total revenue from all related invoices
+  products?: ProductItem[] // Product/service items
   createdAt: string
   updatedAt: string
   client?: {

@@ -48,19 +48,15 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { formatIDR, safeArray, safeNumber, safeString } from '../utils/currency'
 import { formatDate } from '../utils/dateFormatters'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
-import { Project, UpdateProjectRequest, projectService } from '../services/projects'
-import { clientService } from '../services/clients'
-import { projectTypesApi } from '../services/project-types'
+import { Project, projectService } from '../services/projects'
 import { useTheme } from '../theme'
-import WorkflowIndicator from '../components/ui/WorkflowIndicator'
 import { CompactMetricCard } from '../components/ui/CompactMetricCard'
-import FormErrorBoundary from '../components/FormErrorBoundary'
+import { getProjectStatusConfig } from '../utils/projectStatus'
+import { calculateProjectProgress, getDaysRemaining, isProjectOverdue } from '../utils/projectProgress'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
 const { Option } = Select
-const { TextArea } = Input
-const { RangePicker } = DatePicker
 
 // interface ProjectTeamMember {
 //   id: string
@@ -81,11 +77,8 @@ export const ProjectsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [typeFilter, setTypeFilter] = useState<string>('')
   const [filters, setFilters] = useState<Record<string, any>>({})
-  const [modalVisible, setModalVisible] = useState(false)
-  const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [batchLoading, setBatchLoading] = useState(false)
-  const [form] = Form.useForm()
   const { message } = App.useApp()
 
   // Export functionality
@@ -103,39 +96,7 @@ export const ProjectsPage: React.FC = () => {
     queryFn: projectService.getProjects,
   })
 
-  const { data: clients = [], isLoading: clientsLoading } = useQuery({
-    queryKey: ['clients'],
-    queryFn: clientService.getClients,
-  })
-
-  const { data: projectTypes = [], isLoading: projectTypesLoading } = useQuery({
-    queryKey: ['project-types'],
-    queryFn: projectTypesApi.getAll,
-  })
-
   // Mutations
-  const createMutation = useMutation({
-    mutationFn: projectService.createProject,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
-      form.resetFields()
-      setModalVisible(false)
-      message.success(t('messages.success.created', { item: 'Proyek' }))
-    },
-  })
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateProjectRequest }) =>
-      projectService.updateProject(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
-      form.resetFields()
-      setEditingProject(null)
-      setModalVisible(false)
-      message.success(t('messages.success.updated', { item: 'Proyek' }))
-    },
-  })
-
   const deleteMutation = useMutation({
     mutationFn: projectService.deleteProject,
     onSuccess: () => {
@@ -319,19 +280,6 @@ export const ProjectsPage: React.FC = () => {
     return '#f5222d'
   }
 
-  const isProjectOverdue = (project: Project) => {
-    return (
-      project.status !== 'COMPLETED' &&
-      project.status !== 'CANCELLED' &&
-      dayjs().isAfter(dayjs(project.endDate))
-    )
-  }
-
-  const getDaysRemaining = (endDate: string | null) => {
-    if (!endDate) return 0
-    return dayjs(endDate).diff(dayjs(), 'days')
-  }
-
   // Navigation function for clickable table links
   const navigateToClient = useCallback(
     (clientId: string) => {
@@ -353,13 +301,33 @@ export const ProjectsPage: React.FC = () => {
   }
 
   const handleDelete = (id: string) => {
-    deleteMutation.mutate(id)
+    const project = projects.find(p => p.id === id)
+    Modal.confirm({
+      title: 'Delete Project?',
+      content: `Are you sure you want to delete project "${project?.number || 'this project'}"? This action cannot be undone.`,
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: () => {
+        deleteMutation.mutate(id)
+      },
+    })
   }
 
   const handleBulkDelete = () => {
     if (selectedRowKeys.length === 0) return
-    setBatchLoading(true)
-    bulkDeleteMutation.mutate(selectedRowKeys)
+
+    Modal.confirm({
+      title: `Delete ${selectedRowKeys.length} Project${selectedRowKeys.length > 1 ? 's' : ''}?`,
+      content: `Are you sure you want to delete ${selectedRowKeys.length} selected project${selectedRowKeys.length > 1 ? 's' : ''}? This action cannot be undone.`,
+      okText: 'Delete All',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: () => {
+        setBatchLoading(true)
+        bulkDeleteMutation.mutate(selectedRowKeys)
+      },
+    })
   }
 
   const handleBulkStatusUpdate = (
@@ -372,32 +340,6 @@ export const ProjectsPage: React.FC = () => {
 
   const handleClearSelection = () => {
     setSelectedRowKeys([])
-  }
-
-  const handleFormSubmit = (values: any) => {
-    const data = {
-      ...values,
-      startDate: values.dateRange[0].startOf('day').toISOString(),
-      endDate: values.dateRange[1].endOf('day').toISOString(),
-    }
-    delete data.dateRange
-
-    // Clean undefined values and empty strings to prevent validation errors
-    Object.keys(data).forEach(key => {
-      if (data[key] === undefined || data[key] === null || data[key] === '') {
-        delete data[key]
-      }
-    })
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Submitting project data:', JSON.stringify(data, null, 2))
-    }
-
-    if (editingProject) {
-      updateMutation.mutate({ id: editingProject.id, data })
-    } else {
-      createMutation.mutate({ ...data, status: 'PLANNING' })
-    }
   }
 
   const getActionMenuItems = (project: Project) => {
@@ -508,46 +450,7 @@ export const ProjectsPage: React.FC = () => {
       title: 'Progress',
       key: 'progress',
       render: (_: any, project: Project) => {
-        const calculateProgress = (project: Project) => {
-          // Calculate progress based on status and dates
-          const now = new Date()
-          const startDate = project.startDate ? new Date(project.startDate) : null
-          const endDate = project.endDate ? new Date(project.endDate) : null
-
-          // Base progress on status
-          let statusProgress = 0
-          switch (project.status) {
-            case 'PLANNING':
-              statusProgress = 5
-              break
-            case 'IN_PROGRESS':
-              // Calculate based on time elapsed
-              if (startDate && endDate) {
-                const totalDuration = endDate.getTime() - startDate.getTime()
-                const elapsedDuration = now.getTime() - startDate.getTime()
-                const timeProgress = Math.max(0, Math.min(95, (elapsedDuration / totalDuration) * 100))
-                statusProgress = Math.round(timeProgress)
-              } else {
-                statusProgress = 30 // More conservative estimate when dates are missing
-              }
-              break
-            case 'COMPLETED':
-              statusProgress = 100
-              break
-            case 'CANCELLED':
-              statusProgress = 0
-              break
-            case 'ON_HOLD':
-              statusProgress = 25
-              break
-            default:
-              statusProgress = 0
-          }
-
-          return Math.min(Math.max(statusProgress, 0), 100)
-        }
-
-        const progress = calculateProgress(project)
+        const progress = calculateProjectProgress(project)
 
         return (
           <div>
@@ -584,35 +487,8 @@ export const ProjectsPage: React.FC = () => {
       title: 'Status',
       key: 'status',
       render: (_: any, project: Project) => {
-        const getStatusText = (status: string) => {
-          const statusMap = {
-            PLANNING: 'Perencanaan',
-            IN_PROGRESS: 'Berlangsung',
-            COMPLETED: 'Selesai',
-            CANCELLED: 'Dibatalkan',
-            ON_HOLD: 'Ditahan',
-          }
-          return statusMap[status as keyof typeof statusMap] || status
-        }
-
-        const getStatusBadgeColor = (status: string) => {
-          switch (status) {
-            case 'PLANNING':
-              return { bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }
-            case 'IN_PROGRESS':
-              return { bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }
-            case 'COMPLETED':
-              return { bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }
-            case 'CANCELLED':
-              return { bg: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }
-            case 'ON_HOLD':
-              return { bg: 'rgba(156, 163, 175, 0.15)', color: '#6b7280' }
-            default:
-              return { bg: 'rgba(156, 163, 175, 0.15)', color: '#6b7280' }
-          }
-        }
-
-        const badgeColors = getStatusBadgeColor(project.status)
+        const statusConfig = getProjectStatusConfig(project.status)
+        const badgeColors = statusConfig.badgeColor
 
         return (
           <div>
@@ -625,7 +501,7 @@ export const ProjectsPage: React.FC = () => {
               fontWeight: 600,
               display: 'inline-block',
             }}>
-              {getStatusText(project.status)}
+              {statusConfig.text}
             </span>
             {isProjectOverdue(project) && (
               <div className='mt-1'>
@@ -1126,255 +1002,6 @@ export const ProjectsPage: React.FC = () => {
           }}
         />
       </Card>
-
-      {/* Create/Edit Modal */}
-      <Modal
-        title={editingProject ? 'Edit Proyek' : t('projects.create')}
-        open={modalVisible}
-        onCancel={() => {
-          form.resetFields()
-          setEditingProject(null)
-          setModalVisible(false)
-        }}
-        footer={null}
-        width={800}
-      >
-        <FormErrorBoundary
-          formTitle={editingProject ? 'Edit Proyek' : 'Proyek Baru'}
-          onReset={() => {
-            form.resetFields()
-            setEditingProject(null)
-            setModalVisible(false)
-          }}
-        >
-          <Form
-            data-testid='project-form'
-            form={form}
-            layout='vertical'
-            onFinish={handleFormSubmit}
-            name='projectForm'
-          >
-          <Form.Item
-            name='clientId'
-            label='Klien'
-            rules={[{ required: true, message: 'Pilih klien' }]}
-          >
-            <Select
-              placeholder='Pilih klien'
-              loading={clientsLoading}
-              disabled={clientsLoading}
-            >
-              {safeArray(clients).map(client => (
-                <Option key={client.id} value={client.id}>
-                  {client.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name='description'
-            label={t('projects.description')}
-            rules={[
-              { required: true, message: 'Deskripsi proyek wajib diisi' },
-            ]}
-          >
-            <Input id='description' name='description' placeholder='Deskripsi singkat proyek' autoComplete='off' />
-          </Form.Item>
-
-          <Form.Item
-            name='projectTypeId'
-            label={t('projects.type')}
-            rules={[{ required: true, message: 'Pilih tipe proyek' }]}
-          >
-            <Select
-              id='projectTypeId'
-              placeholder='Pilih tipe proyek'
-              loading={projectTypesLoading}
-              disabled={projectTypesLoading}
-            >
-              {safeArray(projectTypes).map(type => (
-                <Option key={type.id} value={type.id}>
-                  {type.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item label='Produk & Harga'>
-            <Form.List name='products'>
-              {(fields, { add, remove }) => (
-                <div>
-                  {fields.map(field => (
-                    <Card
-                      key={field.key}
-                      size='small'
-                      style={{ marginBottom: 8 }}
-                      extra={
-                        <Button
-                          type='text'
-                          danger
-                          size='small'
-                          onClick={() => remove(field.name)}
-                          icon={<DeleteOutlined />}
-                        />
-                      }
-                    >
-                      <Row gutter={8}>
-                        <Col span={12}>
-                          <Form.Item
-                            name={[field.name, 'name']}
-                            fieldKey={[field.fieldKey ?? field.name, 'name']}
-                            label='Nama Produk'
-                            rules={[
-                              {
-                                required: true,
-                                message: 'Nama produk wajib diisi',
-                              },
-                            ]}
-                          >
-                            <Input id={`product-name-${field.name}`} name={`product-name-${field.name}`} placeholder='Nama produk/layanan' autoComplete='off' />
-                          </Form.Item>
-                        </Col>
-                        <Col span={6}>
-                          <Form.Item
-                            name={[field.name, 'quantity']}
-                            fieldKey={[
-                              field.fieldKey ?? field.name,
-                              'quantity',
-                            ]}
-                            label='Qty'
-                            rules={[
-                              { required: true, message: 'Qty wajib diisi' },
-                            ]}
-                          >
-                            <InputNumber
-                              id={`product-quantity-${field.name}`}
-                              name={`product-quantity-${field.name}`}
-                              min={1}
-                              placeholder='1'
-                              style={{ width: '100%' }}
-                            />
-                          </Form.Item>
-                        </Col>
-                        <Col span={6}>
-                          <Form.Item
-                            name={[field.name, 'price']}
-                            fieldKey={[field.fieldKey ?? field.name, 'price']}
-                            label='Harga'
-                            rules={[
-                              { required: true, message: 'Harga wajib diisi' },
-                            ]}
-                          >
-                            <InputNumber
-                              name={`product-price-${field.name}`}
-                              style={{ width: '100%' }}
-                              formatter={value =>
-                                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-                              }
-                              parser={value => value!.replace(/\./g, '')}
-                              placeholder='0'
-                            />
-                          </Form.Item>
-                        </Col>
-                      </Row>
-                      <Form.Item
-                        name={[field.name, 'description']}
-                        fieldKey={[field.fieldKey ?? field.name, 'description']}
-                        label='Deskripsi'
-                        rules={[
-                          {
-                            required: true,
-                            message: 'Deskripsi produk wajib diisi',
-                          },
-                        ]}
-                      >
-                        <Input.TextArea
-                          name={`product-description-${field.name}`}
-                          rows={2}
-                          placeholder='Deskripsi produk/layanan'
-                          autoComplete='off'
-                        />
-                      </Form.Item>
-                    </Card>
-                  ))}
-                  <Button
-                    type='dashed'
-                    onClick={() => add()}
-                    block
-                    icon={<PlusOutlined />}
-                  >
-                    Tambah Produk
-                  </Button>
-                </div>
-              )}
-            </Form.List>
-          </Form.Item>
-
-          <Form.Item
-            name='dateRange'
-            label='Periode Proyek'
-            rules={[{ required: true, message: 'Pilih periode proyek' }]}
-          >
-            <RangePicker name='dateRange' style={{ width: '100%' }} />
-          </Form.Item>
-
-          {editingProject && (
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item name='status' label='Status'>
-                  <Select>
-                    <Option value='PLANNING'>Perencanaan</Option>
-                    <Option value='IN_PROGRESS'>Berlangsung</Option>
-                    <Option value='COMPLETED'>Selesai</Option>
-                    <Option value='CANCELLED'>Dibatalkan</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name='progress' label='Progress (%)'>
-                  <InputNumber
-                    name='progress'
-                    style={{ width: '100%' }}
-                    min={0}
-                    max={100}
-                    placeholder='0'
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-          )}
-
-          <Form.Item name='notes' label='Catatan'>
-            <TextArea
-              name='notes'
-              rows={3}
-              placeholder='Catatan tambahan tentang proyek...'
-              autoComplete='off'
-            />
-          </Form.Item>
-
-          <div className='flex justify-end space-x-2'>
-            <Button
-              onClick={() => {
-                form.resetFields()
-                setEditingProject(null)
-                setModalVisible(false)
-              }}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type='primary'
-              htmlType='submit'
-              loading={createMutation.isPending || updateMutation.isPending}
-            >
-              {t('common.save')}
-            </Button>
-          </div>
-          </Form>
-        </FormErrorBoundary>
-      </Modal>
     </div>
   )
 }
