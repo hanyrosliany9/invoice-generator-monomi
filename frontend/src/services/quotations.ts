@@ -165,7 +165,7 @@ export const quotationService = {
     if (!response?.data) {
       throw new Error('Failed to generate invoice')
     }
-    return response.data
+    return response.data.data || response.data
   },
 
   // Get quotation statistics
