@@ -7,6 +7,7 @@ import {
   IsPositive,
   IsArray,
   ValidateNested,
+  IsIn,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { ProjectStatus } from "@prisma/client";
@@ -44,6 +45,60 @@ export class ProjectItemDto {
   @Transform(({ value }) => parseInt(value))
   @IsPositive({ message: "Kuantitas harus lebih dari 0" })
   quantity?: number;
+}
+
+export class EstimatedExpenseDto {
+  @ApiProperty({
+    description: "ID kategori biaya",
+    example: "cuid_expense_category_id",
+  })
+  @IsString({ message: "ID kategori harus berupa string" })
+  categoryId: string;
+
+  @ApiProperty({
+    description: "Nama kategori (auto-filled dari ExpenseCategory)",
+    example: "Labor Costs",
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  categoryName?: string;
+
+  @ApiProperty({
+    description: "Nama kategori Indonesia",
+    example: "Biaya Tenaga Kerja",
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  categoryNameId?: string;
+
+  @ApiProperty({
+    description: "Estimasi biaya",
+    example: 50000000,
+  })
+  @Transform(({ value }) => parseFloat(value))
+  @IsPositive({ message: "Estimasi biaya harus lebih dari 0" })
+  amount: number;
+
+  @ApiProperty({
+    description: "Catatan estimasi",
+    example: "2 developers × 1 month",
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @ApiProperty({
+    description: "Tipe biaya (direct/indirect)",
+    enum: ["direct", "indirect"],
+    example: "direct",
+  })
+  @IsIn(["direct", "indirect"], {
+    message: "Tipe biaya harus 'direct' atau 'indirect'",
+  })
+  costType: "direct" | "indirect";
 }
 
 export class CreateProjectDto {
@@ -138,6 +193,17 @@ export class CreateProjectDto {
   @ValidateNested({ each: true })
   @Type(() => ProjectItemDto)
   products?: ProjectItemDto[];
+
+  @ApiProperty({
+    description: "Daftar estimasi biaya proyek",
+    type: [EstimatedExpenseDto],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray({ message: "Estimated expenses harus berupa array" })
+  @ValidateNested({ each: true })
+  @Type(() => EstimatedExpenseDto)
+  estimatedExpenses?: EstimatedExpenseDto[];
 
   @ApiProperty({
     description: "Status proyek",

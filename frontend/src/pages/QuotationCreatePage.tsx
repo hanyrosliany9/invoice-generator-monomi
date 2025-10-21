@@ -108,11 +108,15 @@ export const QuotationCreatePage: React.FC = () => {
     queryFn: projectService.getProjects,
   })
 
-  // Fetch specific project if prefilled
+  // Track manually selected project ID from dropdown
+  const [manuallySelectedProjectId, setManuallySelectedProjectId] = useState<string | null>(null)
+
+  // Fetch specific project if prefilled OR manually selected
+  const activeProjectId = prefilledProjectId || manuallySelectedProjectId
   const { data: selectedProject, isLoading: projectLoading } = useQuery({
-    queryKey: ['project', prefilledProjectId],
-    queryFn: () => projectService.getProject(prefilledProjectId!),
-    enabled: !!prefilledProjectId,
+    queryKey: ['project', activeProjectId],
+    queryFn: () => projectService.getProject(activeProjectId!),
+    enabled: !!activeProjectId,
   })
 
   // Create quotation mutation
@@ -131,16 +135,49 @@ export const QuotationCreatePage: React.FC = () => {
   // Pre-fill form when project/client data is loaded
   useEffect(() => {
     if (selectedProject) {
-      const inheritedData = {
+      // Calculate total from products if available
+      let calculatedTotal = parseFloat(selectedProject.basePrice || '0') || 0
+
+      if (selectedProject.products && selectedProject.products.length > 0) {
+        calculatedTotal = selectedProject.products.reduce(
+          (sum, product) => sum + (product.price * product.quantity),
+          0
+        )
+      }
+
+      const inheritedData: any = {
         clientId: selectedProject.clientId,
         projectId: selectedProject.id,
-        amountPerProject: parseFloat(selectedProject.basePrice || '0') || 0,
-        totalAmount: parseFloat(selectedProject.basePrice || '0') || 0,
+        amountPerProject: calculatedTotal,
+        totalAmount: calculatedTotal,
         validUntil: dayjs().add(30, 'day'),
         terms: generateDefaultTerms(selectedProject),
       }
+
+      // Inherit scope of work if available
+      if (selectedProject.scopeOfWork) {
+        inheritedData.scopeOfWork = selectedProject.scopeOfWork
+      }
+
       form.setFieldsValue(inheritedData)
-      updatePreviewData(inheritedData)
+
+      // Update preview with products
+      const previewDataWithProducts = {
+        ...inheritedData,
+        priceBreakdown: selectedProject.products && selectedProject.products.length > 0 ? {
+          products: selectedProject.products.map(p => ({
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            quantity: p.quantity,
+            subtotal: p.price * p.quantity,
+          })),
+          total: calculatedTotal,
+          calculatedAt: new Date().toISOString(),
+        } : undefined,
+      }
+
+      updatePreviewData(previewDataWithProducts)
     } else if (prefilledClientId) {
       form.setFieldsValue({
         clientId: prefilledClientId,
@@ -193,6 +230,13 @@ export const QuotationCreatePage: React.FC = () => {
     }
   }
 
+  // Handle project selection from dropdown
+  const handleProjectSelect = (projectId: string) => {
+    setManuallySelectedProjectId(projectId)
+    // The useQuery will automatically fetch the project details
+    // and the useEffect will auto-populate the form
+  }
+
   const handleSubmit = async (values: QuotationFormData) => {
     // Wait for pending auto-save before submitting
     if (autoSave.isSaving) {
@@ -207,6 +251,21 @@ export const QuotationCreatePage: React.FC = () => {
       scopeOfWork: values.scopeOfWork,
       terms: values.terms,
       validUntil: values.validUntil.toISOString(),
+    }
+
+    // Include price breakdown from project products
+    if (selectedProject?.products && selectedProject.products.length > 0) {
+      quotationData.priceBreakdown = {
+        products: selectedProject.products.map(p => ({
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          quantity: p.quantity,
+          subtotal: p.price * p.quantity,
+        })),
+        total: selectedProject.products.reduce((sum, p) => sum + (p.price * p.quantity), 0),
+        calculatedAt: new Date().toISOString(),
+      }
     }
 
     createQuotationMutation.mutate(quotationData)
@@ -229,6 +288,21 @@ export const QuotationCreatePage: React.FC = () => {
         scopeOfWork: values.scopeOfWork,
         terms: values.terms,
         validUntil: values.validUntil.toISOString(),
+      }
+
+      // Include price breakdown from project products
+      if (selectedProject?.products && selectedProject.products.length > 0) {
+        quotationData.priceBreakdown = {
+          products: selectedProject.products.map(p => ({
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            quantity: p.quantity,
+            subtotal: p.price * p.quantity,
+          })),
+          total: selectedProject.products.reduce((sum, p) => sum + (p.price * p.quantity), 0),
+          calculatedAt: new Date().toISOString(),
+        }
       }
 
       const quotation = await quotationService.createQuotation(quotationData)
@@ -430,13 +504,14 @@ export const QuotationCreatePage: React.FC = () => {
                 <Select
                   placeholder='Select project'
                   size='large'
-                  loading={projectsLoading}
+                  loading={projectsLoading || projectLoading}
                   showSearch
                   filterOption={(input, option) =>
                     ((option?.label as string) ?? '')
                       .toLowerCase()
                       .includes(input.toLowerCase())
                   }
+                  onChange={handleProjectSelect}
                   options={projects.map(project => ({
                     value: project.id,
                     label: `${project.number || 'No Number'} - ${project.description}`,
@@ -506,6 +581,61 @@ export const QuotationCreatePage: React.FC = () => {
                 </Col>
               </Row>
             </Card>
+          )}
+
+          {/* Inherited Products Display */}
+          {selectedProject?.products && selectedProject.products.length > 0 && (
+            <Alert
+              style={{ marginTop: '16px' }}
+              message='Products/Services Inherited from Project'
+              description={
+                <div style={{ marginTop: '8px' }}>
+                  {selectedProject.products.map((product, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: '8px',
+                        marginBottom: '4px',
+                        background: theme.colors.glass.background,
+                        backdropFilter: theme.colors.glass.backdropFilter,
+                        border: theme.colors.glass.border,
+                        borderRadius: '4px',
+                      }}
+                    >
+                      <div>
+                        <Text strong>{product.name}</Text>
+                        <br />
+                        <Text type='secondary' style={{ fontSize: '12px' }}>
+                          {product.description}
+                        </Text>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <Text strong>{formatIDR(product.price * product.quantity)}</Text>
+                        <br />
+                        <Text type='secondary' style={{ fontSize: '12px' }}>
+                          {product.quantity} × {formatIDR(product.price)}
+                        </Text>
+                      </div>
+                    </div>
+                  ))}
+                  <Divider style={{ margin: '8px 0' }} />
+                  <div style={{ textAlign: 'right' }}>
+                    <Text strong style={{ fontSize: '16px', color: theme.colors.status.success }}>
+                      Total: {formatIDR(
+                        selectedProject.products.reduce(
+                          (sum, p) => sum + (p.price * p.quantity),
+                          0
+                        )
+                      )}
+                    </Text>
+                  </div>
+                </div>
+              }
+              type='success'
+              showIcon
+            />
           )}
         </ProgressiveSection>
 

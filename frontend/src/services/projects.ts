@@ -101,6 +101,65 @@ export interface Project {
     }
     total: string
   }
+
+  // Projected Profit Metrics (calculated during planning)
+  estimatedExpenses?: any // JSON storage for estimated costs by category
+  projectedGrossMargin?: string | number // Estimated gross margin %
+  projectedNetMargin?: string | number // Estimated net margin %
+  projectedProfit?: string | number // Estimated profit amount
+}
+
+export interface EstimatedExpense {
+  categoryId: string
+  categoryName?: string
+  categoryNameId?: string
+  amount: number
+  notes?: string
+  costType: 'direct' | 'indirect'
+}
+
+export interface ProjectionResult {
+  // Revenue
+  estimatedRevenue: number
+  revenueBreakdown: Array<{
+    name: string
+    description: string
+    price: number
+    quantity: number
+    subtotal: number
+  }>
+
+  // Costs
+  estimatedDirectCosts: number
+  estimatedIndirectCosts: number
+  estimatedTotalCosts: number
+  costBreakdown: {
+    direct: Array<{
+      categoryId: string
+      categoryName: string
+      categoryNameId: string
+      amount: number
+      notes?: string
+    }>
+    indirect: Array<{
+      categoryId: string
+      categoryName: string
+      categoryNameId: string
+      amount: number
+      notes?: string
+    }>
+  }
+
+  // Profit Projections
+  projectedGrossProfit: number
+  projectedNetProfit: number
+  projectedGrossMargin: number // Percentage
+  projectedNetMargin: number // Percentage
+
+  // Metadata
+  calculatedAt: Date
+  isProfitable: boolean
+  profitabilityRating: 'excellent' | 'good' | 'breakeven' | 'loss'
 }
 
 export interface CreateProjectRequest {
@@ -119,6 +178,7 @@ export interface CreateProjectRequest {
     price: number
     quantity?: number
   }>
+  estimatedExpenses?: EstimatedExpense[] // ⭐ NEW: Estimated expenses for projection
 }
 
 export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {
@@ -198,5 +258,22 @@ export const projectService = {
   getProjectTimeline: async (id: string) => {
     const response = await apiClient.get(`/projects/${id}/timeline`)
     return response?.data?.data || {}
+  },
+
+  // ⭐ NEW: Calculate project profit projections before creation
+  calculateProjection: async (data: {
+    products?: Array<{
+      name: string
+      description: string
+      price: number
+      quantity?: number
+    }>
+    estimatedExpenses?: EstimatedExpense[]
+  }): Promise<ProjectionResult> => {
+    const response = await apiClient.post('/projects/calculate-projection', data)
+    if (!response?.data) {
+      throw new Error('Projection calculation failed')
+    }
+    return response.data
   },
 }

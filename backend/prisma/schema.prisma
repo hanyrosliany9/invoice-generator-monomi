@@ -40,6 +40,10 @@ model User {
   expenseComments  ExpenseComment[]         @relation("ExpenseCommentUser")
   expenseBudgets   ExpenseBudget[]          @relation("UserExpenseBudget")
 
+  // Team & Resources Relations
+  projectAssignments ProjectTeamMember[] @relation("UserProjectAssignments")
+  laborEntries       LaborEntry[]        @relation("UserLaborEntries")
+
   @@map("users")
 }
 
@@ -103,6 +107,16 @@ model Project {
   basePrice       Decimal? @db.Decimal(12, 2) // Base project price for cascade
   priceBreakdown  Json? // Detailed price items (optional)
 
+  // ===== PROJECT PROJECTION (Planning Phase) =====
+
+  // Estimated expense breakdown (before project starts)
+  estimatedExpenses Json? // JSON storage for estimated costs by category
+
+  // Projected profit metrics (calculated during planning)
+  projectedGrossMargin Decimal? @db.Decimal(5, 2)  // Estimated gross margin %
+  projectedNetMargin   Decimal? @db.Decimal(5, 2)  // Estimated net margin %
+  projectedProfit      Decimal? @db.Decimal(15, 2) // Estimated profit amount
+
   // ===== PROFIT MARGIN TRACKING =====
 
   // Cost Tracking (auto-calculated from expenses & allocations)
@@ -151,6 +165,10 @@ model Project {
   workInProgress  WorkInProgress[]
   costAllocations ProjectCostAllocation[]
 
+  // Team & Resources Relations
+  teamMembers ProjectTeamMember[] @relation("ProjectTeam")
+  laborEntries LaborEntry[]       @relation("ProjectLabor")
+
   // ===== PURCHASE-TO-PAY INTEGRATION =====
   purchaseOrders PurchaseOrder[] // Purchase Orders (for budget tracking)
 
@@ -168,6 +186,8 @@ model Project {
   @@index([netMarginPercent])
   @@index([totalAllocatedCosts])
   @@index([profitCalculatedAt])
+  // Projection indexes for planning queries
+  @@index([projectedNetMargin])
   @@map("projects")
 }
 
@@ -1131,6 +1151,9 @@ model Expense {
   comments        ExpenseComment[]
   costAllocations ProjectCostAllocation[] // PSAK 57: Project cost allocation
 
+  // Labor Entry Integration (expenses created from labor entries)
+  laborEntries LaborEntry[] @relation("ExpenseLaborEntries")
+
   // ===== PURCHASE-TO-PAY INTEGRATION =====
 
   // Purchase Type & Source
@@ -1406,6 +1429,7 @@ enum ExpenseClass {
   SELLING // Beban Penjualan (6-1xxx)
   GENERAL_ADMIN // Beban Administrasi & Umum (6-2xxx)
   OTHER // Beban Lain-Lain (8-xxxx)
+  LABOR_COST // Biaya Tenaga Kerja (6-2010) - Generated from labor entries
 }
 
 enum PPNCategory {
@@ -2587,6 +2611,9 @@ model ProjectCostAllocation {
   updatedAt DateTime @updatedAt
   createdBy String?
 
+  // Labor Entry Relation
+  laborEntries LaborEntry[] @relation("CostAllocationLabor")
+
   @@index([projectId])
   @@index([expenseId])
   @@index([allocationDate])
@@ -3291,4 +3318,137 @@ enum PurchaseSource {
   MANUAL // User creates expense directly
   FROM_PO // Generated from PO
   FROM_VENDOR_INVOICE // Generated from vendor invoice
+}
+
+// ==========================================================
+// TEAM & RESOURCES MANAGEMENT
+// ==========================================================
+
+model ProjectTeamMember {
+  id String @id @default(cuid())
+
+  // Project Reference
+  projectId String
+  project   Project @relation("ProjectTeam", fields: [projectId], references: [id], onDelete: Cascade)
+
+  // User Reference
+  userId String
+  user   User   @relation("UserProjectAssignments", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Assignment Details
+  role                String // "Lead Designer", "Developer", "Project Manager"
+  roleId              String? // Indonesian role name
+  allocationPercent   Decimal @default(100) @db.Decimal(5, 2) // % of time on this project
+  hourlyRate          Decimal @db.Decimal(12, 2) // Hourly rate for this assignment
+  hourlyRateCurrency  String  @default("IDR")
+
+  // Assignment Period
+  assignedDate DateTime @default(now())
+  startDate    DateTime // When assignment starts
+  endDate      DateTime? // When assignment ends (null = ongoing)
+
+  // Status
+  isActive Boolean @default(true)
+
+  // Notes
+  notes   String? @db.Text
+  notesId String? @db.Text // Indonesian notes
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+
+  // Relations
+  laborEntries LaborEntry[]
+
+  @@unique([projectId, userId, assignedDate]) // Unique assignment per project/user/date
+  @@index([projectId])
+  @@index([userId])
+  @@index([isActive])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("project_team_members")
+}
+
+model LaborEntry {
+  id String @id @default(cuid())
+
+  // Project & Team Member Reference
+  projectId    String
+  project      Project           @relation("ProjectLabor", fields: [projectId], references: [id], onDelete: Cascade)
+  teamMemberId String
+  teamMember   ProjectTeamMember @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User              @relation("UserLaborEntries", fields: [userId], references: [id])
+
+  // Labor Details
+  workDate      DateTime  @db.Date // Date of work
+  hoursWorked   Decimal   @db.Decimal(5, 2) // Hours worked (e.g., 8.5)
+  laborType     LaborType @default(REGULAR) // REGULAR, OVERTIME, HOLIDAY
+  laborTypeRate Decimal   @db.Decimal(3, 2) // Multiplier (1.0, 1.5, 2.0)
+
+  // Cost Calculation
+  hourlyRate Decimal @db.Decimal(12, 2) // Rate at time of entry
+  laborCost  Decimal @db.Decimal(15, 2) // hours × rate × typeRate
+
+  // Indonesian Compliance
+  costType CostType @default(LABOR) // For PSAK 57 integration
+  isDirect Boolean  @default(true) // Direct labor cost
+
+  // Description
+  description   String? @db.Text
+  descriptionId String? @db.Text // Indonesian description
+  taskPerformed String? @db.Text // What task was worked on
+
+  // Approval Status
+  status         LaborEntryStatus @default(DRAFT)
+  submittedAt    DateTime?
+  approvedBy     String? // User ID
+  approvedAt     DateTime?
+  rejectedReason String?          @db.Text
+
+  // ⭐ EXPENSE SYSTEM INTEGRATION
+  expenseId String? // Link to created Expense record (set on approval)
+  expense   Expense? @relation("ExpenseLaborEntries", fields: [expenseId], references: [id])
+
+  // Accounting Integration
+  journalEntryId   String?                 // Link to journal entry when approved
+  costAllocationId String? // Link to ProjectCostAllocation (created with Expense)
+  costAllocation   ProjectCostAllocation? @relation("CostAllocationLabor", fields: [costAllocationId], references: [id])
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+
+  @@unique([teamMemberId, workDate]) // One entry per day per team member
+  @@index([projectId])
+  @@index([userId])
+  @@index([workDate])
+  @@index([status])
+  @@index([teamMemberId])
+  @@index([expenseId]) // ⭐ NEW: Index for expense lookup
+  @@map("labor_entries")
+}
+
+// ==========================================================
+// TEAM & RESOURCES ENUMS
+// ==========================================================
+
+enum LaborType {
+  REGULAR // Normal working hours (1.0x rate)
+  OVERTIME // Overtime hours (1.5x rate)
+  HOLIDAY // Holiday hours (2.0x rate)
+  WEEKEND // Weekend hours (1.5x rate)
+}
+
+enum LaborEntryStatus {
+  DRAFT // Created but not submitted
+  SUBMITTED // Submitted for approval
+  APPROVED // Approved by manager (creates Expense)
+  REJECTED // Rejected by manager
+  BILLED // Included in invoice (via Expense)
 }

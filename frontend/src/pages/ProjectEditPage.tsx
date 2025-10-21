@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   App,
   Button,
@@ -17,6 +17,7 @@ import {
 } from 'antd'
 import {
   CalendarOutlined,
+  CalculatorOutlined,
   DeleteOutlined,
   DollarOutlined,
   FileTextOutlined,
@@ -29,6 +30,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
+import { debounce } from 'lodash'
 import {
   EntityFormLayout,
   EntityHeroCard,
@@ -37,10 +39,12 @@ import {
   MateraiCompliancePanel,
   ProgressiveSection,
 } from '../components/forms'
-import { ProductItem, projectService, UpdateProjectRequest } from '../services/projects'
+import { EstimatedExpense, ProductItem, projectService, ProjectionResult, UpdateProjectRequest } from '../services/projects'
 import { clientService } from '../services/clients'
 import { ProjectType, projectTypesApi } from '../services/project-types'
 import { useTheme } from '../theme'
+import { ExpenseEstimator } from '../components/projects/ExpenseEstimator'
+import { ProfitProjection } from '../components/projects/ProfitProjection'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -55,6 +59,7 @@ interface ProjectFormData {
   endDate?: dayjs.Dayjs | null
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ON_HOLD'
   products: ProductItem[]
+  estimatedExpenses?: EstimatedExpense[]
 }
 
 export const ProjectEditPage: React.FC = () => {
@@ -71,11 +76,14 @@ export const ProjectEditPage: React.FC = () => {
     null
   )
   const [calculatedValue, setCalculatedValue] = useState(0)
+  const [projection, setProjection] = useState<ProjectionResult | null>(null)
+  const [calculatingProjection, setCalculatingProjection] = useState(false)
 
   // Use Form.useWatch for reactive form values (better pattern than onValuesChange)
   const startDate = Form.useWatch('startDate', form)
   const endDate = Form.useWatch('endDate', form)
   const products = Form.useWatch('products', form)
+  const estimatedExpenses = Form.useWatch('estimatedExpenses', form)
   const status = Form.useWatch('status', form)
 
   // Fetch project data
@@ -120,6 +128,66 @@ export const ProjectEditPage: React.FC = () => {
   // Initialize form when project data is loaded
   useEffect(() => {
     if (project) {
+      // Parse estimatedExpenses from JSON if it exists
+      let parsedExpenses: EstimatedExpense[] = []
+      if (project.estimatedExpenses) {
+        try {
+          const expensesData = typeof project.estimatedExpenses === 'string'
+            ? JSON.parse(project.estimatedExpenses)
+            : project.estimatedExpenses
+
+          // Extract expenses from the nested structure
+          if (expensesData.direct && expensesData.indirect) {
+            // Convert from stored format to form format
+            parsedExpenses = [
+              ...expensesData.direct.map((exp: any) => ({
+                categoryId: exp.categoryId,
+                categoryName: exp.categoryName,
+                categoryNameId: exp.categoryNameId,
+                amount: exp.amount,
+                notes: exp.notes,
+                costType: 'direct' as const,
+              })),
+              ...expensesData.indirect.map((exp: any) => ({
+                categoryId: exp.categoryId,
+                categoryName: exp.categoryName,
+                categoryNameId: exp.categoryNameId,
+                amount: exp.amount,
+                notes: exp.notes,
+                costType: 'indirect' as const,
+              })),
+            ]
+          }
+        } catch (error) {
+          console.error('Failed to parse estimatedExpenses:', error)
+        }
+      }
+
+      // Parse products from priceBreakdown JSON field
+      let parsedProducts: ProductItem[] = [
+        { name: '', description: '', price: 0, quantity: 1 },
+      ]
+
+      if (project.priceBreakdown) {
+        try {
+          const priceBreakdownData = typeof project.priceBreakdown === 'string'
+            ? JSON.parse(project.priceBreakdown)
+            : project.priceBreakdown
+
+          // Extract products from priceBreakdown.products
+          if (priceBreakdownData.products && Array.isArray(priceBreakdownData.products)) {
+            parsedProducts = priceBreakdownData.products.map((p: any) => ({
+              name: p.name || '',
+              description: p.description || '',
+              price: p.price || 0,
+              quantity: p.quantity || 1,
+            }))
+          }
+        } catch (error) {
+          console.error('Failed to parse priceBreakdown:', error)
+        }
+      }
+
       const formData: ProjectFormData = {
         description: project.description,
         scopeOfWork: project.scopeOfWork || '',
@@ -129,16 +197,15 @@ export const ProjectEditPage: React.FC = () => {
         startDate: project.startDate ? dayjs(project.startDate) : null,
         endDate: project.endDate ? dayjs(project.endDate) : null,
         status: project.status,
-        products: project.products || [
-          { name: '', description: '', price: 0, quantity: 1 },
-        ],
+        products: parsedProducts,
+        estimatedExpenses: parsedExpenses,
       }
       form.setFieldsValue(formData)
       setOriginalValues(formData)
 
-      // Calculate initial value
-      if (project.products) {
-        const total = project.products.reduce(
+      // Calculate initial value from parsed products
+      if (parsedProducts.length > 0 && parsedProducts[0].name) {
+        const total = parsedProducts.reduce(
           (sum: number, product: ProductItem) => {
             return sum + product.price * (product.quantity || 1)
           },
@@ -156,14 +223,7 @@ export const ProjectEditPage: React.FC = () => {
       const changed = JSON.stringify(currentValues) !== JSON.stringify(originalValues)
       setHasChanges(changed)
     }
-  }, [startDate, endDate, products, status, form, originalValues])
-
-  // Recalculate total when products change
-  useEffect(() => {
-    if (products) {
-      calculateTotal(products)
-    }
-  }, [products])
+  }, [startDate, endDate, products, estimatedExpenses, status, form, originalValues])
 
   // Calculate total value when products change
   const calculateTotal = (products: ProductItem[]) => {
@@ -174,8 +234,68 @@ export const ProjectEditPage: React.FC = () => {
     return total
   }
 
+  // Debounced projection calculation
+  const calculateProjectionDebounced = useCallback(
+    debounce(async (products: ProductItem[], expenses: EstimatedExpense[]) => {
+      // Filter out incomplete/invalid products
+      const validProducts = (products || []).filter(
+        (p) => p.name && p.description && p.price > 0 && p.quantity > 0
+      )
+
+      // Filter out incomplete/invalid expenses
+      const validExpenses = (expenses || []).filter(
+        (e) => e.categoryId && e.amount > 0 && e.costType && (e.costType === 'direct' || e.costType === 'indirect')
+      )
+
+      // Need at least one valid product to calculate
+      if (validProducts.length === 0) {
+        setProjection(null)
+        return
+      }
+
+      setCalculatingProjection(true)
+      try {
+        const result = await projectService.calculateProjection({
+          products: validProducts,
+          estimatedExpenses: validExpenses,
+        })
+        setProjection(result)
+      } catch (error) {
+        console.error('Failed to calculate projection:', error)
+        setProjection(null)
+      } finally {
+        setCalculatingProjection(false)
+      }
+    }, 500),
+    []
+  )
+
+  // Recalculate total when products change
+  useEffect(() => {
+    if (products) {
+      calculateTotal(products)
+    }
+  }, [products])
+
+  // Calculate projection when products or expenses change
+  useEffect(() => {
+    if (products && products.length > 0) {
+      calculateProjectionDebounced(products, estimatedExpenses || [])
+    } else {
+      setProjection(null)
+    }
+  }, [products, estimatedExpenses, calculateProjectionDebounced])
+
   const handleSubmit = async (values: ProjectFormData) => {
     if (!id) return
+
+    // Filter out incomplete products and expenses
+    const validProducts = (values.products || []).filter(
+      (p) => p.name && p.description && p.price > 0 && p.quantity > 0
+    )
+    const validExpenses = (values.estimatedExpenses || []).filter(
+      (e) => e.categoryId && e.amount > 0 && e.costType && (e.costType === 'direct' || e.costType === 'indirect')
+    )
 
     const projectData: UpdateProjectRequest = {
       description: values.description,
@@ -187,7 +307,8 @@ export const ProjectEditPage: React.FC = () => {
       endDate: values.endDate ? values.endDate.toISOString() : undefined,
       status: values.status,
       estimatedBudget: calculatedValue,
-      products: values.products || [],
+      products: validProducts,
+      estimatedExpenses: validExpenses,
     }
 
     updateProjectMutation.mutate({ id, data: projectData })
@@ -377,6 +498,12 @@ export const ProjectEditPage: React.FC = () => {
             ]}
             layout='vertical'
             size='small'
+          />
+
+          {/* Profit Projection Calculator */}
+          <ProfitProjection
+            projection={projection}
+            loading={calculatingProjection}
           />
 
           {/* Project Status */}
@@ -739,6 +866,18 @@ export const ProjectEditPage: React.FC = () => {
               </>
             )}
           </Form.List>
+        </ProgressiveSection>
+
+        {/* Expense Estimator Section */}
+        <ProgressiveSection
+          title='Expense Calculator'
+          subtitle='Estimate project expenses and calculate profit margins'
+          icon={<CalculatorOutlined />}
+          defaultOpen={false}
+        >
+          <Form.Item name='estimatedExpenses'>
+            <ExpenseEstimator />
+          </Form.Item>
         </ProgressiveSection>
 
         {/* Scope of Work Section */}

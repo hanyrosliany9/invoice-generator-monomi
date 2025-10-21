@@ -21,6 +21,8 @@ import {
 import { ProjectsService } from "./projects.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
 import { UpdateProjectDto } from "./dto/update-project.dto";
+import { CalculateProjectionDto } from "./dto/calculate-projection.dto";
+import { ProjectProjectionService } from "./project-projection.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { ProjectStatus } from "@prisma/client";
 
@@ -29,7 +31,10 @@ import { ProjectStatus } from "@prisma/client";
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly projectionService: ProjectProjectionService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: "Membuat proyek baru" })
@@ -262,5 +267,21 @@ export class ProjectsController {
       status,
       minMargin: minMargin ? parseFloat(minMargin) : undefined,
     });
+  }
+
+  @Post("calculate-projection")
+  @ApiOperation({
+    summary: "Calculate project profit projections before creating project",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Projection calculated successfully",
+  })
+  @HttpCode(HttpStatus.OK)
+  async calculateProjection(@Body() dto: CalculateProjectionDto) {
+    return this.projectionService.calculateProjection(
+      dto.products || [],
+      dto.estimatedExpenses || [],
+    );
   }
 }

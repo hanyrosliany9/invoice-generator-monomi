@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
 import { UpdateProjectDto } from "./dto/update-project.dto";
-import { ProjectStatus } from "@prisma/client";
+import { ProjectStatus, Prisma } from "@prisma/client";
 import { ProfitCalculationService } from "./profit-calculation.service";
 
 @Injectable()
@@ -50,8 +50,81 @@ export class ProjectsService {
       };
     }
 
+    // ⭐ NEW: Process estimated expenses and calculate projections
+    let estimatedBudget = createProjectDto.estimatedBudget || null;
+    let estimatedExpenses: Prisma.InputJsonValue | undefined = undefined;
+    let projectedGrossMargin = null;
+    let projectedNetMargin = null;
+    let projectedProfit = null;
+
+    if (
+      createProjectDto.estimatedExpenses &&
+      createProjectDto.estimatedExpenses.length > 0
+    ) {
+      // Get category details
+      const categoryIds = createProjectDto.estimatedExpenses.map(
+        (e) => e.categoryId,
+      );
+      const categories = await this.prisma.expenseCategory.findMany({
+        where: { id: { in: categoryIds } },
+        select: { id: true, name: true, nameId: true },
+      });
+
+      const categoryMap = new Map(
+        categories.map((c) => [c.id, { name: c.name, nameId: c.nameId }]),
+      );
+
+      // Build expense breakdown
+      const direct = [];
+      const indirect = [];
+      let totalDirect = 0;
+      let totalIndirect = 0;
+
+      for (const expense of createProjectDto.estimatedExpenses) {
+        const category = categoryMap.get(expense.categoryId);
+        const item = {
+          categoryId: expense.categoryId,
+          categoryName: category?.name || "Unknown",
+          categoryNameId: category?.nameId || "Tidak Diketahui",
+          amount: expense.amount,
+          notes: expense.notes,
+        };
+
+        if (expense.costType === "direct") {
+          direct.push(item);
+          totalDirect += expense.amount;
+        } else {
+          indirect.push(item);
+          totalIndirect += expense.amount;
+        }
+      }
+
+      const totalEstimated = totalDirect + totalIndirect;
+      estimatedBudget = totalEstimated;
+
+      estimatedExpenses = {
+        direct,
+        indirect,
+        totalDirect,
+        totalIndirect,
+        totalEstimated,
+        calculatedAt: new Date().toISOString(),
+      };
+
+      // Calculate projected margins if we have revenue
+      if (basePrice && basePrice > 0) {
+        const grossProfit = basePrice - totalDirect;
+        const netProfit = basePrice - totalEstimated;
+
+        projectedGrossMargin = (grossProfit / basePrice) * 100;
+        projectedNetMargin = (netProfit / basePrice) * 100;
+        projectedProfit = netProfit;
+      }
+    }
+
     const {
       products: _products,
+      estimatedExpenses: _expenses,
       clientId,
       projectTypeId,
       ...projectData
@@ -63,6 +136,11 @@ export class ProjectsService {
         number: projectNumber,
         basePrice: basePrice,
         priceBreakdown: priceBreakdown || undefined,
+        estimatedBudget,
+        estimatedExpenses, // ⭐ NEW: Store estimated expenses
+        projectedGrossMargin, // ⭐ NEW: Store projected margins
+        projectedNetMargin,
+        projectedProfit,
         output: projectData.output || "", // Provide default empty string if not provided
         client: {
           connect: { id: clientId },
@@ -182,11 +260,129 @@ export class ProjectsService {
   }
 
   async update(id: string, updateProjectDto: UpdateProjectDto) {
-    const _project = await this.findOne(id);
+    // Verify project exists (throws NotFoundException if not found)
+    const existingProject = await this.findOne(id);
+
+    // Extract relation IDs and special fields that need transformation
+    const {
+      projectTypeId,
+      clientId,
+      products,
+      estimatedExpenses,
+      ...otherFields
+    } = updateProjectDto;
+
+    // Build the update data object
+    const updateData: Prisma.ProjectUpdateInput = {
+      ...otherFields,
+    };
+
+    // Handle projectType relation if provided
+    if (projectTypeId) {
+      updateData.projectType = {
+        connect: { id: projectTypeId },
+      };
+    }
+
+    // Handle client relation if provided
+    if (clientId) {
+      updateData.client = {
+        connect: { id: clientId },
+      };
+    }
+
+    // Handle products if provided (recalculate basePrice and priceBreakdown)
+    if (products && products.length > 0) {
+      const basePrice = products.reduce((total, product) => {
+        const quantity = product.quantity || 1;
+        return total + product.price * quantity;
+      }, 0);
+
+      const priceBreakdown = {
+        products: products.map((product) => ({
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          quantity: product.quantity || 1,
+          subtotal: product.price * (product.quantity || 1),
+        })),
+        total: basePrice,
+        calculatedAt: new Date().toISOString(),
+      };
+
+      updateData.basePrice = basePrice;
+      updateData.priceBreakdown = priceBreakdown;
+    }
+
+    // Handle estimatedExpenses if provided (recalculate budget and projections)
+    if (estimatedExpenses && estimatedExpenses.length > 0) {
+      const categoryIds = estimatedExpenses.map((e) => e.categoryId);
+      const categories = await this.prisma.expenseCategory.findMany({
+        where: { id: { in: categoryIds } },
+        select: { id: true, name: true, nameId: true },
+      });
+
+      const categoryMap = new Map(
+        categories.map((c) => [c.id, { name: c.name, nameId: c.nameId }]),
+      );
+
+      const direct = [];
+      const indirect = [];
+      let totalDirect = 0;
+      let totalIndirect = 0;
+
+      for (const expense of estimatedExpenses) {
+        const category = categoryMap.get(expense.categoryId);
+        const item = {
+          categoryId: expense.categoryId,
+          categoryName: category?.name || "Unknown",
+          categoryNameId: category?.nameId || "Tidak Diketahui",
+          amount: expense.amount,
+          notes: expense.notes,
+        };
+
+        if (expense.costType === "direct") {
+          direct.push(item);
+          totalDirect += expense.amount;
+        } else {
+          indirect.push(item);
+          totalIndirect += expense.amount;
+        }
+      }
+
+      const totalEstimated = totalDirect + totalIndirect;
+
+      updateData.estimatedBudget = totalEstimated;
+      updateData.estimatedExpenses = {
+        direct,
+        indirect,
+        totalDirect,
+        totalIndirect,
+        totalEstimated,
+        calculatedAt: new Date().toISOString(),
+      };
+
+      // Recalculate projected margins if we have revenue
+      const currentBasePrice =
+        (updateData.basePrice as number) ||
+        (existingProject?.basePrice
+          ? typeof existingProject.basePrice === "number"
+            ? existingProject.basePrice
+            : parseFloat(existingProject.basePrice.toString())
+          : 0);
+      if (currentBasePrice && currentBasePrice > 0) {
+        const grossProfit = currentBasePrice - totalDirect;
+        const netProfit = currentBasePrice - totalEstimated;
+
+        updateData.projectedGrossMargin = (grossProfit / currentBasePrice) * 100;
+        updateData.projectedNetMargin = (netProfit / currentBasePrice) * 100;
+        updateData.projectedProfit = netProfit;
+      }
+    }
 
     return this.prisma.project.update({
       where: { id },
-      data: updateProjectDto,
+      data: updateData,
       include: {
         client: true,
         projectType: true,

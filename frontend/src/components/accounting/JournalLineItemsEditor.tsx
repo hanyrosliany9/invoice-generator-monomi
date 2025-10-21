@@ -31,6 +31,7 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
 
   const handleAddLine = () => {
     const newLine: JournalLineItemFormData = {
+      id: `line-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       accountCode: '',
       description: '',
       descriptionId: '',
@@ -251,7 +252,7 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
       <Table
         columns={columns}
         dataSource={value}
-        rowKey={(record, index) => index?.toString() || '0'}
+        rowKey={(record) => record.id || `fallback-${record.accountCode}-${record.debit}-${record.credit}`}
         pagination={false}
         size="small"
         style={{

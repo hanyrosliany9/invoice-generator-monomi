@@ -1,0 +1,50 @@
+╔════════════════════════════════════════════════════════════════╗
+║         Invoice Generator - Public Access Information         ║
+║                    ngrok Deployment Active                     ║
+╚════════════════════════════════════════════════════════════════╝
+
+🌐 PUBLIC URL (Share this!)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+https://nonmature-unveined-emilee.ngrok-free.dev
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📱 Access from anywhere: Desktop, Mobile, Tablet
+🔒 Secure HTTPS connection
+🌍 Works globally
+⚡ Permanent URL (won't change)
+
+🔐 DEFAULT LOGIN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Email:    admin@monomi.id
+Password: password123
+
+⚠️  CHANGE THIS PASSWORD IMMEDIATELY AFTER FIRST LOGIN!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🛠️  QUICK COMMANDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Check status:       sudo systemctl status ngrok-invoice
+View logs:          sudo journalctl -u ngrok-invoice -f
+Restart service:    sudo systemctl restart ngrok-invoice
+Traffic inspector:  http://localhost:4040
+ngrok dashboard:    https://dashboard.ngrok.com/
+
+📊 TEST COMMANDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl https://nonmature-unveined-emilee.ngrok-free.dev/api/v1/health
+curl -I https://nonmature-unveined-emilee.ngrok-free.dev
+
+ℹ️  FREE TIER NOTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Browser users will see a ngrok warning page first.
+Just click "Visit Site" to proceed.
+API calls are NOT affected.
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Full guide:     NGROK_DEPLOYMENT_SUCCESS.md
+Quick ref:      PUBLIC_ACCESS_SUMMARY.md
+All options:    ROBUST_PUBLIC_ACCESS_OPTIONS.md
+
+✅ Status: LIVE AND ACCESSIBLE
+Generated: October 21, 2025 04:43 WIB

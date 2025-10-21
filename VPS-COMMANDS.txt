@@ -1,0 +1,140 @@
+# ============================================
+# BIZNET GIO VPS DEPLOYMENT COMMANDS
+# IP: 103.150.226.171
+# ============================================
+
+# ========== STEP 1: TEST SSH CONNECTION ==========
+ssh root@103.150.226.171
+
+# If successful, you'll be logged into VPS
+# Type 'exit' to return to your local machine
+
+
+# ========== STEP 2: ONE-TIME VPS SETUP ==========
+# Run these commands ON THE VPS (after SSH)
+
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Install Docker Compose
+sudo apt install -y docker-compose-plugin
+
+# Verify installation
+docker --version
+docker compose version
+
+# Configure firewall
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw --force enable
+
+# Create app directory
+sudo mkdir -p /opt/invoice-generator
+sudo chmod 755 /opt/invoice-generator
+
+# Test Docker
+docker run hello-world
+
+# Exit VPS (back to local machine)
+exit
+
+
+# ========== STEP 3: DEPLOY FROM LOCAL MACHINE ==========
+# Run this ON YOUR LOCAL MACHINE (not VPS)
+
+cd /home/jeff/projects/monomi/internal/invoice-generator
+./deploy-now.sh
+
+
+# ========== STEP 4: CONFIGURE ENVIRONMENT ==========
+# SSH back to VPS
+
+ssh root@103.150.226.171
+cd /opt/invoice-generator
+
+# Generate secure passwords
+echo "DB_PASSWORD=$(openssl rand -base64 32)"
+echo "REDIS_PASSWORD=$(openssl rand -base64 32)"
+echo "JWT_SECRET=$(openssl rand -hex 32)"
+
+# SAVE THESE PASSWORDS SOMEWHERE SAFE!
+
+# Create environment file
+cp .env.production.template .env.production
+nano .env.production
+
+# Update these values:
+# - DB_PASSWORD=<paste generated password>
+# - REDIS_PASSWORD=<paste generated password>
+# - JWT_SECRET=<paste generated secret>
+# - FRONTEND_URL=http://103.150.226.171
+# - CORS_ORIGIN=http://103.150.226.171
+# - SMTP settings (optional, can configure later)
+
+# Save: Ctrl+X, then Y, then Enter
+
+# Set permissions
+chmod 600 .env.production
+
+
+# ========== STEP 5: DEPLOY APPLICATION ==========
+./scripts/deploy.sh
+
+# When asked "seed database?", type: y
+
+
+# ========== STEP 6: VERIFY ==========
+# Check containers
+docker compose -f docker-compose.prod.yml ps
+
+# All should show "Up"
+
+# Check health
+curl http://localhost/health
+
+# Should return: {"status":"ok",...}
+
+
+# ========== STEP 7: ACCESS APPLICATION ==========
+# Open browser: http://103.150.226.171
+# Login: admin@monomi.id / password123
+# CHANGE PASSWORD IMMEDIATELY!
+
+
+# ========== USEFUL COMMANDS ==========
+# View logs
+docker compose -f docker-compose.prod.yml logs -f
+
+# Restart app
+docker compose -f docker-compose.prod.yml restart app
+
+# Stop all
+docker compose -f docker-compose.prod.yml down
+
+# Start all
+docker compose -f docker-compose.prod.yml up -d
+
+# Database backup
+docker compose -f docker-compose.prod.yml exec db \
+  pg_dump -U invoiceuser invoices > backup_$(date +%Y%m%d).sql
+
+
+# ========== TROUBLESHOOTING ==========
+# Can't access http://103.150.226.171?
+
+# Check firewall
+sudo ufw status
+
+# Check containers
+docker compose -f docker-compose.prod.yml ps
+
+# Check app logs
+docker compose -f docker-compose.prod.yml logs app
+
+# Restart nginx
+docker compose -f docker-compose.prod.yml restart nginx

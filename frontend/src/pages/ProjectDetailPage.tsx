@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo, useState } from 'react'
 import {
   Avatar,
   Badge,
@@ -6,18 +6,22 @@ import {
   Button,
   Card,
   Col,
+  Descriptions,
+  Divider,
   FloatButton,
   Progress,
   Result,
   Row,
   Space,
   Statistic,
+  Table,
   Tabs,
   Tag,
   Typography,
 } from 'antd'
 import {
   ArrowLeftOutlined,
+  CalculatorOutlined,
   CalendarOutlined,
   DollarOutlined,
   EditOutlined,
@@ -31,13 +35,17 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { formatIDR, safeNumber, safeString } from '../utils/currency'
-import { Project, projectService } from '../services/projects'
+import { EstimatedExpense, Project, projectService } from '../services/projects'
 import { FileUpload } from '../components/documents/FileUpload'
 import { ProfitMarginCard } from '../components/projects/ProfitMarginCard'
+import { ProjectExpenseList } from '../components/projects/ProjectExpenseList'
+import { AddExpenseModal } from '../components/projects/AddExpenseModal'
+import { ExpenseBudgetSummary } from '../components/projects/ExpenseBudgetSummary'
 import { getProjectStatusConfig } from '../utils/projectStatus'
 import { getDaysRemaining } from '../utils/projectProgress'
 import dayjs from 'dayjs'
 import { useTheme } from '../theme'
+import { jsPDF } from 'jspdf'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -48,6 +56,9 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { theme } = useTheme()
+
+  // State for expense modal
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false)
 
   // Fetch project data
   const {
@@ -101,6 +112,63 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
 
   // Using shared days remaining utility
 
+  // Parse estimated expenses and projected margins (must be before early returns)
+  const { estimatedExpenses, projectedMargins } = useMemo(() => {
+    let expenses: EstimatedExpense[] = []
+    let directTotal = 0
+    let indirectTotal = 0
+
+    if (project?.estimatedExpenses) {
+      try {
+        const expensesData = typeof project.estimatedExpenses === 'string'
+          ? JSON.parse(project.estimatedExpenses)
+          : project.estimatedExpenses
+
+        // Extract expenses from the nested structure
+        if (expensesData.direct && expensesData.indirect) {
+          expenses = [
+            ...expensesData.direct.map((exp: any, idx: number) => ({
+              ...exp,
+              costType: 'direct' as const,
+              _uniqueKey: `direct-${exp.categoryId}-${exp.amount}-${idx}`,
+            })),
+            ...expensesData.indirect.map((exp: any, idx: number) => ({
+              ...exp,
+              costType: 'indirect' as const,
+              _uniqueKey: `indirect-${exp.categoryId}-${exp.amount}-${idx}`,
+            })),
+          ]
+          directTotal = expensesData.totalDirect || 0
+          indirectTotal = expensesData.totalIndirect || 0
+        }
+      } catch (error) {
+        console.error('Failed to parse estimatedExpenses:', error)
+      }
+    }
+
+    const projectedGrossMargin = project?.projectedGrossMargin
+      ? parseFloat(project.projectedGrossMargin.toString())
+      : null
+    const projectedNetMargin = project?.projectedNetMargin
+      ? parseFloat(project.projectedNetMargin.toString())
+      : null
+    const projectedProfit = project?.projectedProfit
+      ? parseFloat(project.projectedProfit.toString())
+      : null
+
+    return {
+      estimatedExpenses: expenses,
+      projectedMargins: {
+        grossMargin: projectedGrossMargin,
+        netMargin: projectedNetMargin,
+        profit: projectedProfit,
+        directCosts: directTotal,
+        indirectCosts: indirectTotal,
+        totalCosts: directTotal + indirectTotal,
+      },
+    }
+  }, [project])
+
   if (isLoading) {
     return (
       <div style={{ padding: '24px' }}>
@@ -131,6 +199,343 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   const statusConfig = getProjectStatusConfig(project.status)
   const progress = calculateProgress(project)
   const daysRemaining = getDaysRemaining(project.endDate)
+
+  // Export project data as PDF
+  const handleExportData = () => {
+    if (!project) return
+
+    // Parse priceBreakdown to get products
+    let products: any[] = []
+    if (project.priceBreakdown) {
+      try {
+        const priceBreakdownData = typeof project.priceBreakdown === 'string'
+          ? JSON.parse(project.priceBreakdown)
+          : project.priceBreakdown
+        products = priceBreakdownData.products || []
+      } catch (error) {
+        console.error('Failed to parse priceBreakdown:', error)
+      }
+    }
+
+    // Create PDF document
+    const pdf = new jsPDF()
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const pageHeight = pdf.internal.pageSize.getHeight()
+    let yPosition = 20
+
+    // Helper function to add new page if needed
+    const checkAddPage = (requiredSpace: number) => {
+      if (yPosition + requiredSpace > pageHeight - 20) {
+        pdf.addPage()
+        yPosition = 20
+        return true
+      }
+      return false
+    }
+
+    // Helper function to format currency
+    const formatCurrency = (amount: number | null | undefined) => {
+      if (!amount) return 'Rp 0'
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+      }).format(amount)
+    }
+
+    // ===== HEADER =====
+    pdf.setFillColor(33, 150, 243) // Blue header
+    pdf.rect(0, 0, pageWidth, 40, 'F')
+
+    pdf.setTextColor(255, 255, 255)
+    pdf.setFontSize(24)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('LAPORAN PROYEK', pageWidth / 2, 20, { align: 'center' })
+
+    pdf.setFontSize(12)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(project.number || 'N/A', pageWidth / 2, 30, { align: 'center' })
+
+    yPosition = 50
+
+    // ===== PROJECT INFORMATION =====
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Informasi Proyek', 14, yPosition)
+    yPosition += 8
+
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+
+    const projectInfo = [
+      ['Nomor Proyek', project.number],
+      ['Status', project.status],
+      ['Tipe Proyek', project.projectType?.name || 'N/A'],
+      ['Deskripsi', project.description],
+      ['Output', project.output || 'N/A'],
+    ]
+
+    projectInfo.forEach(([label, value]) => {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(label + ':', 14, yPosition)
+      pdf.setFont('helvetica', 'normal')
+
+      // Handle long text with text wrapping
+      const maxWidth = pageWidth - 28
+      const lines = pdf.splitTextToSize(String(value || 'N/A'), maxWidth - 60)
+      pdf.text(lines, 70, yPosition)
+      yPosition += Math.max(6, lines.length * 5)
+    })
+
+    yPosition += 5
+    checkAddPage(30)
+
+    // ===== CLIENT INFORMATION =====
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Informasi Klien', 14, yPosition)
+    yPosition += 8
+
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+
+    const clientInfo = [
+      ['Nama Klien', project.client?.name],
+      ['Perusahaan', project.client?.company],
+      ['Email', project.client?.email],
+      ['Telepon', project.client?.phone],
+    ]
+
+    clientInfo.forEach(([label, value]) => {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(label + ':', 14, yPosition)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(String(value || 'N/A'), 70, yPosition)
+      yPosition += 6
+    })
+
+    yPosition += 5
+    checkAddPage(40)
+
+    // ===== TIMELINE & PROGRESS =====
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Timeline & Progress', 14, yPosition)
+    yPosition += 8
+
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+
+    const timelineInfo = [
+      ['Tanggal Mulai', project.startDate ? dayjs(project.startDate).format('DD MMMM YYYY') : 'N/A'],
+      ['Tanggal Selesai', project.endDate ? dayjs(project.endDate).format('DD MMMM YYYY') : 'N/A'],
+      ['Progress', `${progress}%`],
+      ['Hari Tersisa', daysRemaining > 0 ? `${daysRemaining} hari` : 'Terlambat'],
+    ]
+
+    timelineInfo.forEach(([label, value]) => {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(label + ':', 14, yPosition)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(String(value), 70, yPosition)
+      yPosition += 6
+    })
+
+    yPosition += 5
+    checkAddPage(60)
+
+    // ===== PRODUCTS & SERVICES =====
+    if (products.length > 0) {
+      pdf.setFontSize(14)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Produk & Layanan', 14, yPosition)
+      yPosition += 8
+
+      // Table header
+      pdf.setFillColor(240, 240, 240)
+      pdf.rect(14, yPosition - 5, pageWidth - 28, 7, 'F')
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Nama', 16, yPosition)
+      pdf.text('Qty', pageWidth - 60, yPosition)
+      pdf.text('Harga', pageWidth - 40, yPosition)
+      yPosition += 8
+
+      pdf.setFont('helvetica', 'normal')
+      let totalProducts = 0
+
+      products.forEach((product) => {
+        checkAddPage(15)
+
+        const productName = pdf.splitTextToSize(product.name || 'N/A', 100)
+        pdf.text(productName, 16, yPosition)
+        pdf.text(String(product.quantity || 1), pageWidth - 60, yPosition)
+        pdf.text(formatCurrency(product.price), pageWidth - 40, yPosition, { align: 'right' })
+
+        const subtotal = (product.price || 0) * (product.quantity || 1)
+        totalProducts += subtotal
+
+        yPosition += Math.max(6, productName.length * 5)
+      })
+
+      yPosition += 2
+      pdf.setDrawColor(200, 200, 200)
+      pdf.line(14, yPosition, pageWidth - 14, yPosition)
+      yPosition += 6
+
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Total', pageWidth - 80, yPosition)
+      pdf.text(formatCurrency(totalProducts), pageWidth - 40, yPosition, { align: 'right' })
+      yPosition += 10
+    }
+
+    checkAddPage(60)
+
+    // ===== FINANCIAL SUMMARY =====
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Ringkasan Keuangan', 14, yPosition)
+    yPosition += 8
+
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+
+    const financialInfo = [
+      ['Estimasi Budget', formatCurrency(safeNumber(project.estimatedBudget))],
+      ['Harga Dasar', formatCurrency(safeNumber(project.basePrice))],
+      ['Total Pendapatan', formatCurrency(safeNumber(project.totalRevenue))],
+      ['Total Estimasi Biaya', formatCurrency(projectedMargins.totalCosts)],
+    ]
+
+    financialInfo.forEach(([label, value]) => {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(label + ':', 14, yPosition)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(String(value), 110, yPosition, { align: 'right' })
+      yPosition += 6
+    })
+
+    yPosition += 5
+    checkAddPage(60)
+
+    // ===== ESTIMATED EXPENSES =====
+    if (estimatedExpenses.length > 0) {
+      pdf.setFontSize(14)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Estimasi Biaya', 14, yPosition)
+      yPosition += 8
+
+      // Direct costs
+      const directExpenses = estimatedExpenses.filter(e => e.costType === 'direct')
+      if (directExpenses.length > 0) {
+        pdf.setFontSize(12)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text('Biaya Langsung:', 14, yPosition)
+        yPosition += 6
+
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'normal')
+        directExpenses.forEach((expense) => {
+          checkAddPage(10)
+          pdf.text('• ' + (expense.categoryNameId || expense.categoryName), 20, yPosition)
+          pdf.text(formatCurrency(expense.amount), pageWidth - 20, yPosition, { align: 'right' })
+          yPosition += 5
+        })
+
+        yPosition += 2
+        pdf.setFont('helvetica', 'bold')
+        pdf.text('Subtotal Biaya Langsung:', 20, yPosition)
+        pdf.text(formatCurrency(projectedMargins.directCosts), pageWidth - 20, yPosition, { align: 'right' })
+        yPosition += 8
+      }
+
+      checkAddPage(40)
+
+      // Indirect costs
+      const indirectExpenses = estimatedExpenses.filter(e => e.costType === 'indirect')
+      if (indirectExpenses.length > 0) {
+        pdf.setFontSize(12)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text('Biaya Tidak Langsung:', 14, yPosition)
+        yPosition += 6
+
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'normal')
+        indirectExpenses.forEach((expense) => {
+          checkAddPage(10)
+          pdf.text('• ' + (expense.categoryNameId || expense.categoryName), 20, yPosition)
+          pdf.text(formatCurrency(expense.amount), pageWidth - 20, yPosition, { align: 'right' })
+          yPosition += 5
+        })
+
+        yPosition += 2
+        pdf.setFont('helvetica', 'bold')
+        pdf.text('Subtotal Biaya Tidak Langsung:', 20, yPosition)
+        pdf.text(formatCurrency(projectedMargins.indirectCosts), pageWidth - 20, yPosition, { align: 'right' })
+        yPosition += 8
+      }
+
+      // Total costs
+      pdf.setFontSize(11)
+      pdf.setFillColor(245, 245, 245)
+      pdf.rect(14, yPosition - 5, pageWidth - 28, 8, 'F')
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('TOTAL ESTIMASI BIAYA:', 20, yPosition)
+      pdf.text(formatCurrency(projectedMargins.totalCosts), pageWidth - 20, yPosition, { align: 'right' })
+      yPosition += 12
+    }
+
+    checkAddPage(40)
+
+    // ===== PROFIT PROJECTIONS =====
+    if (projectedMargins.grossMargin !== null) {
+      pdf.setFontSize(14)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Proyeksi Profit', 14, yPosition)
+      yPosition += 8
+
+      pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'normal')
+
+      const marginInfo = [
+        ['Margin Bruto (Proyeksi)', `${projectedMargins.grossMargin?.toFixed(2) || 0}%`],
+        ['Margin Netto (Proyeksi)', `${projectedMargins.netMargin?.toFixed(2) || 0}%`],
+        ['Proyeksi Profit', formatCurrency(projectedMargins.profit)],
+      ]
+
+      marginInfo.forEach(([label, value]) => {
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(label + ':', 14, yPosition)
+        pdf.setFont('helvetica', 'normal')
+        pdf.text(String(value), 110, yPosition, { align: 'right' })
+        yPosition += 6
+      })
+
+      yPosition += 5
+    }
+
+    // ===== FOOTER =====
+    const footerY = pageHeight - 15
+    pdf.setFontSize(8)
+    pdf.setTextColor(128, 128, 128)
+    pdf.setFont('helvetica', 'italic')
+    pdf.text(
+      `Dicetak pada: ${dayjs().format('DD MMMM YYYY HH:mm')}`,
+      14,
+      footerY
+    )
+    pdf.text(
+      'Monomi Project Management System',
+      pageWidth - 14,
+      footerY,
+      { align: 'right' }
+    )
+
+    // Save PDF
+    const fileName = `Laporan-Proyek-${project.number}-${dayjs().format('YYYY-MM-DD')}.pdf`
+    pdf.save(fileName)
+  }
 
   return (
     <div
@@ -213,9 +618,10 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 icon={<ExportOutlined />}
                 size='large'
                 block
-                aria-label='Export project data'
+                aria-label='Export project report as PDF'
+                onClick={handleExportData}
               >
-                Export Data
+                Export PDF
               </Button>
             </Space>
           </Col>
@@ -347,6 +753,187 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
         }}
       />
 
+      {/* Estimated Expenses & Projected Margins */}
+      {(estimatedExpenses.length > 0 || projectedMargins.grossMargin !== null) && (
+        <Card
+          style={{ marginTop: '24px' }}
+          title={
+            <Space>
+              <CalculatorOutlined />
+              <span>Estimasi Biaya & Proyeksi Profit</span>
+            </Space>
+          }
+        >
+          {/* Projected Margins Summary */}
+          {projectedMargins.netMargin !== null && (
+            <>
+              <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+                <Col xs={12} sm={6}>
+                  <Statistic
+                    title="Margin Bruto (Proyeksi)"
+                    value={projectedMargins.grossMargin || 0}
+                    precision={2}
+                    suffix="%"
+                    valueStyle={{
+                      color:
+                        (projectedMargins.grossMargin || 0) >= 20
+                          ? '#52c41a'
+                          : (projectedMargins.grossMargin || 0) >= 10
+                            ? '#1890ff'
+                            : '#faad14',
+                    }}
+                  />
+                </Col>
+                <Col xs={12} sm={6}>
+                  <Statistic
+                    title="Margin Netto (Proyeksi)"
+                    value={projectedMargins.netMargin || 0}
+                    precision={2}
+                    suffix="%"
+                    valueStyle={{
+                      color:
+                        (projectedMargins.netMargin || 0) >= 20
+                          ? '#52c41a'
+                          : (projectedMargins.netMargin || 0) >= 10
+                            ? '#1890ff'
+                            : (projectedMargins.netMargin || 0) >= 0
+                              ? '#faad14'
+                              : '#ff4d4f',
+                    }}
+                  />
+                </Col>
+                <Col xs={12} sm={6}>
+                  <Statistic
+                    title="Proyeksi Profit"
+                    value={projectedMargins.profit || 0}
+                    precision={0}
+                    prefix="Rp"
+                    valueStyle={{
+                      color:
+                        (projectedMargins.profit || 0) >= 0
+                          ? '#52c41a'
+                          : '#ff4d4f',
+                    }}
+                    formatter={(value) =>
+                      new Intl.NumberFormat('id-ID').format(Number(value))
+                    }
+                  />
+                </Col>
+                <Col xs={12} sm={6}>
+                  <Statistic
+                    title="Total Estimasi Biaya"
+                    value={projectedMargins.totalCosts}
+                    precision={0}
+                    prefix="Rp"
+                    valueStyle={{ color: '#ff4d4f' }}
+                    formatter={(value) =>
+                      new Intl.NumberFormat('id-ID').format(Number(value))
+                    }
+                  />
+                </Col>
+              </Row>
+              <Divider />
+            </>
+          )}
+
+          {/* Estimated Expenses Table */}
+          {estimatedExpenses.length > 0 && (
+            <>
+              <Title level={5}>Rincian Estimasi Biaya</Title>
+              <Table
+                dataSource={estimatedExpenses}
+                rowKey={(record: any) => record._uniqueKey || record.categoryId}
+                pagination={false}
+                size="small"
+                bordered
+                columns={[
+                  {
+                    title: 'Kategori',
+                    dataIndex: 'categoryNameId',
+                    key: 'categoryNameId',
+                    render: (text, record) => (
+                      <Space>
+                        <Tag color={record.costType === 'direct' ? 'blue' : 'orange'}>
+                          {record.costType === 'direct' ? 'Langsung' : 'Tidak Langsung'}
+                        </Tag>
+                        <span>{text || record.categoryName}</span>
+                      </Space>
+                    ),
+                  },
+                  {
+                    title: 'Estimasi',
+                    dataIndex: 'amount',
+                    key: 'amount',
+                    align: 'right' as const,
+                    render: (amount) =>
+                      new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(amount),
+                  },
+                  {
+                    title: 'Catatan',
+                    dataIndex: 'notes',
+                    key: 'notes',
+                    render: (notes) => notes || '-',
+                  },
+                ]}
+                summary={() => (
+                  <Table.Summary fixed>
+                    <Table.Summary.Row>
+                      <Table.Summary.Cell index={0}>
+                        <strong>Total Biaya Langsung</strong>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={1} align="right">
+                        <strong style={{ color: '#1890ff' }}>
+                          {new Intl.NumberFormat('id-ID', {
+                            style: 'currency',
+                            currency: 'IDR',
+                            minimumFractionDigits: 0,
+                          }).format(projectedMargins.directCosts)}
+                        </strong>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={2} />
+                    </Table.Summary.Row>
+                    <Table.Summary.Row>
+                      <Table.Summary.Cell index={0}>
+                        <strong>Total Biaya Tidak Langsung</strong>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={1} align="right">
+                        <strong style={{ color: '#fa8c16' }}>
+                          {new Intl.NumberFormat('id-ID', {
+                            style: 'currency',
+                            currency: 'IDR',
+                            minimumFractionDigits: 0,
+                          }).format(projectedMargins.indirectCosts)}
+                        </strong>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={2} />
+                    </Table.Summary.Row>
+                    <Table.Summary.Row>
+                      <Table.Summary.Cell index={0}>
+                        <strong>Total Estimasi</strong>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={1} align="right">
+                        <strong style={{ color: '#52c41a', fontSize: 16 }}>
+                          {new Intl.NumberFormat('id-ID', {
+                            style: 'currency',
+                            currency: 'IDR',
+                            minimumFractionDigits: 0,
+                          }).format(projectedMargins.totalCosts)}
+                        </strong>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={2} />
+                    </Table.Summary.Row>
+                  </Table.Summary>
+                )}
+              />
+            </>
+          )}
+        </Card>
+      )}
+
       {/* Detailed Sections - Tabbed Interface */}
       <Card style={{ marginTop: '24px' }}>
         <Tabs
@@ -459,16 +1046,23 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 </span>
               ),
               children: (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <DollarOutlined
-                    style={{ fontSize: '48px', color: '#d9d9d9' }}
+                <div style={{ padding: '24px' }}>
+                  {/* Budget Summary */}
+                  <ExpenseBudgetSummary project={project} />
+
+                  {/* Expense List with Add button */}
+                  <ProjectExpenseList
+                    projectId={project.id}
+                    onAddExpense={() => setExpenseModalOpen(true)}
                   />
-                  <Title level={4} type='secondary'>
-                    Financial History
-                  </Title>
-                  <Text type='secondary'>
-                    Detailed financial tracking is coming soon.
-                  </Text>
+
+                  {/* Add Expense Modal */}
+                  <AddExpenseModal
+                    projectId={project.id}
+                    clientId={project.client?.id}
+                    open={expenseModalOpen}
+                    onClose={() => setExpenseModalOpen(false)}
+                  />
                 </div>
               ),
             },
@@ -504,8 +1098,9 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
         />
         <FloatButton
           icon={<ExportOutlined />}
-          tooltip='Export Data'
-          aria-label='Export project data'
+          tooltip='Export PDF'
+          aria-label='Export project report as PDF'
+          onClick={handleExportData}
         />
       </FloatButton.Group>
     </div>

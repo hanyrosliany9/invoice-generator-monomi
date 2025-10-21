@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   App,
   Button,
@@ -15,6 +15,7 @@ import {
 } from 'antd'
 import {
   CalendarOutlined,
+  CalculatorOutlined,
   DeleteOutlined,
   DollarOutlined,
   FileTextOutlined,
@@ -26,6 +27,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
+import { debounce } from 'lodash'
 import {
   EntityFormLayout,
   EntityHeroCard,
@@ -34,10 +36,12 @@ import {
   MateraiCompliancePanel,
   ProgressiveSection,
 } from '../components/forms'
-import { CreateProjectRequest, projectService, ProjectType as ProjectTypeFromService } from '../services/projects'
+import { CreateProjectRequest, EstimatedExpense, projectService, ProjectionResult, ProjectType as ProjectTypeFromService } from '../services/projects'
 import { clientService } from '../services/clients'
 import { ProjectType, projectTypesApi } from '../services/project-types'
 import { useTheme } from '../theme'
+import { ExpenseEstimator } from '../components/projects/ExpenseEstimator'
+import { ProfitProjection } from '../components/projects/ProfitProjection'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -58,6 +62,7 @@ interface ProjectFormData {
   startDate?: dayjs.Dayjs
   endDate?: dayjs.Dayjs
   products: ProductItem[]
+  estimatedExpenses?: EstimatedExpense[]
 }
 
 export const ProjectCreatePage: React.FC = () => {
@@ -68,6 +73,8 @@ export const ProjectCreatePage: React.FC = () => {
   const [searchParams] = useSearchParams()
   const [autoSaving, setAutoSaving] = useState(false)
   const [calculatedValue, setCalculatedValue] = useState(0)
+  const [projection, setProjection] = useState<ProjectionResult | null>(null)
+  const [calculatingProjection, setCalculatingProjection] = useState(false)
   const { message } = App.useApp()
   const { theme } = useTheme()
 
@@ -117,7 +124,51 @@ export const ProjectCreatePage: React.FC = () => {
     return total
   }
 
+  // Debounced projection calculation
+  const calculateProjectionDebounced = useCallback(
+    debounce(async (products: ProductItem[], expenses: EstimatedExpense[]) => {
+      // Filter out incomplete/invalid products
+      const validProducts = (products || []).filter(
+        (p) => p.name && p.description && p.price > 0 && p.quantity > 0
+      )
+
+      // Filter out incomplete/invalid expenses
+      const validExpenses = (expenses || []).filter(
+        (e) => e.categoryId && e.amount > 0 && e.costType && (e.costType === 'direct' || e.costType === 'indirect')
+      )
+
+      // Need at least one valid product to calculate
+      if (validProducts.length === 0) {
+        setProjection(null)
+        return
+      }
+
+      setCalculatingProjection(true)
+      try {
+        const result = await projectService.calculateProjection({
+          products: validProducts,
+          estimatedExpenses: validExpenses,
+        })
+        setProjection(result)
+      } catch (error) {
+        console.error('Failed to calculate projection:', error)
+        setProjection(null)
+      } finally {
+        setCalculatingProjection(false)
+      }
+    }, 500),
+    []
+  )
+
   const handleSubmit = async (values: ProjectFormData) => {
+    // Filter out incomplete products and expenses
+    const validProducts = (values.products || []).filter(
+      (p) => p.name && p.description && p.price > 0 && p.quantity > 0
+    )
+    const validExpenses = (values.estimatedExpenses || []).filter(
+      (e) => e.categoryId && e.amount > 0 && e.costType && (e.costType === 'direct' || e.costType === 'indirect')
+    )
+
     const projectData: CreateProjectRequest = {
       description: values.description,
       scopeOfWork: values.scopeOfWork,
@@ -127,7 +178,8 @@ export const ProjectCreatePage: React.FC = () => {
       startDate: values.startDate?.toISOString(),
       endDate: values.endDate?.toISOString(),
       estimatedBudget: calculatedValue,
-      products: values.products || [],
+      products: validProducts,
+      estimatedExpenses: validExpenses,
     }
 
     createProjectMutation.mutate(projectData)
@@ -136,6 +188,15 @@ export const ProjectCreatePage: React.FC = () => {
   const handleSaveAndCreateQuotation = async () => {
     try {
       const values = await form.validateFields()
+
+      // Filter out incomplete products and expenses
+      const validProducts = (values.products || []).filter(
+        (p) => p.name && p.description && p.price > 0 && p.quantity > 0
+      )
+      const validExpenses = (values.estimatedExpenses || []).filter(
+        (e) => e.categoryId && e.amount > 0 && e.costType && (e.costType === 'direct' || e.costType === 'indirect')
+      )
+
       const projectData: CreateProjectRequest = {
         description: values.description,
         scopeOfWork: values.scopeOfWork,
@@ -145,7 +206,8 @@ export const ProjectCreatePage: React.FC = () => {
         startDate: values.startDate?.toISOString(),
         endDate: values.endDate?.toISOString(),
         estimatedBudget: calculatedValue,
-        products: values.products || [],
+        products: validProducts,
+        estimatedExpenses: validExpenses,
       }
 
       const project = await projectService.createProject(projectData)
@@ -175,6 +237,7 @@ export const ProjectCreatePage: React.FC = () => {
   const startDate = Form.useWatch('startDate', form)
   const endDate = Form.useWatch('endDate', form)
   const products = Form.useWatch('products', form)
+  const estimatedExpenses = Form.useWatch('estimatedExpenses', form)
 
   const selectedClient = clients.find(c => c.id === clientId)
   const duration =
@@ -188,6 +251,15 @@ export const ProjectCreatePage: React.FC = () => {
       calculateTotal(products)
     }
   }, [products])
+
+  // Calculate projection when products or expenses change
+  useEffect(() => {
+    if (products && products.length > 0) {
+      calculateProjectionDebounced(products, estimatedExpenses || [])
+    } else {
+      setProjection(null)
+    }
+  }, [products, estimatedExpenses, calculateProjectionDebounced])
 
   const heroCard = (
     <EntityHeroCard
@@ -246,6 +318,12 @@ export const ProjectCreatePage: React.FC = () => {
             ]}
             layout='vertical'
             size='small'
+          />
+
+          {/* Profit Projection Calculator */}
+          <ProfitProjection
+            projection={projection}
+            loading={calculatingProjection}
           />
 
           {/* Materai Compliance */}
@@ -575,6 +653,18 @@ export const ProjectCreatePage: React.FC = () => {
               </>
             )}
           </Form.List>
+        </ProgressiveSection>
+
+        {/* Expense Estimator Section */}
+        <ProgressiveSection
+          title='Expense Calculator'
+          subtitle='Estimate project expenses and calculate profit margins'
+          icon={<CalculatorOutlined />}
+          defaultOpen={true}
+        >
+          <Form.Item name='estimatedExpenses'>
+            <ExpenseEstimator />
+          </Form.Item>
         </ProgressiveSection>
 
         {/* Scope of Work Section */}

@@ -428,6 +428,27 @@ async function main() {
     },
   });
 
+  // Labor Costs (for Team & Resources Management)
+  const expenseCategoryLaborCosts = await prisma.expenseCategory.upsert({
+    where: { code: 'LABOR' },
+    update: {},
+    create: {
+      code: 'LABOR',
+      accountCode: '6-2010',
+      expenseClass: 'LABOR_COST',
+      name: 'Labor Costs',
+      nameId: 'Biaya Tenaga Kerja',
+      description: 'Labor and personnel costs generated from time tracking',
+      descriptionId: 'Biaya tenaga kerja dan personel dari pelacakan waktu',
+      icon: 'team',
+      color: '#722ed1',
+      defaultPPNRate: 0.00, // Labor costs are not subject to VAT
+      withholdingTaxType: 'NONE',
+      requiresEFaktur: false,
+      sortOrder: 10,
+    },
+  });
+
   // Beban Lain-Lain (Other Expenses) - 8-xxxx
   const expenseCategoryMiscellaneous = await prisma.expenseCategory.upsert({
     where: { code: 'MISCELLANEOUS' },
@@ -456,6 +477,7 @@ async function main() {
     professionalServices: expenseCategoryProfessionalServices.code,
     software: expenseCategorySoftware.code,
     bankCharges: expenseCategoryBankCharges.code,
+    laborCosts: expenseCategoryLaborCosts.code,
     miscellaneous: expenseCategoryMiscellaneous.code,
   });
 
