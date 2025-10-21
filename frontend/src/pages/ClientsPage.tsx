@@ -290,11 +290,15 @@ export const ClientsPage: React.FC = () => {
   )
 
   const handleCreate = () => {
-    navigate('/clients/new')
+    setEditingClient(null)
+    form.resetFields()
+    setModalVisible(true)
   }
 
   const handleEdit = (client: Client) => {
-    navigate(`/clients/${client.id}/edit`)
+    setEditingClient(client)
+    form.setFieldsValue(client)
+    setModalVisible(true)
   }
 
   const handleView = (client: Client) => {
