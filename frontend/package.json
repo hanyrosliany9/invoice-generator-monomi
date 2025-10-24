@@ -4,7 +4,7 @@
   "description": "Monomi Finance - Financial Management Platform - React Frontend",
   "type": "module",
   "scripts": {
-    "dev": "vite --force --host 0.0.0.0 --port 3000 --clearScreen false",
+    "dev": "vite --host 0.0.0.0 --port 3000 --clearScreen false",
     "build": "tsc --project tsconfig.production.json && NODE_ENV=production vite build",
     "build:analyze": "npm run build && npx vite-bundle-analyzer dist/",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
