@@ -14,7 +14,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=dev-jwt-secret-key
       - FRONTEND_URL=http://localhost:3000
-      - SKIP_DB_INIT=false
+      - SKIP_DB_INIT=true
       - SMTP_HOST=localhost
       - SMTP_PORT=587
       - SMTP_USER=dev@monomi.finance
@@ -52,7 +52,7 @@ services:
       sh -c "
         echo '🧹 Cleaning caches...' &&
         rm -rf /tmp/.vite/* /tmp/.npm/* &&
-        cd /app/backend && 
+        cd /app/backend &&
         echo '🔧 Checking database initialization...' &&
         npx prisma migrate deploy &&
         npx prisma generate &&

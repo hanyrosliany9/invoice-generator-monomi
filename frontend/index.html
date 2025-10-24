@@ -13,6 +13,43 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Initialize theme CSS variables before React mounts to prevent flash of unstyled content
+      (function() {
+        const darkThemeColors = {
+          '--bg-primary': '#191919',
+          '--bg-secondary': '#2F3438',
+          '--bg-tertiary': '#3F4448',
+          '--glass-background': 'rgba(47, 52, 56, 0.7)',
+          '--glass-backdrop-filter': 'blur(16px)',
+          '--glass-border': '1px solid rgba(63, 68, 72, 0.5)',
+          '--glass-shadow': '0 8px 32px rgba(0, 0, 0, 0.4)',
+          '--card-background': 'rgba(47, 52, 56, 0.8)',
+          '--card-border': '1px solid rgba(63, 68, 72, 0.4)',
+          '--card-shadow': '0 4px 16px rgba(0, 0, 0, 0.3)',
+          '--text-primary': '#E3E3E3',
+          '--text-secondary': '#979A9B',
+          '--text-tertiary': '#6B7280',
+          '--text-inverse': '#191919',
+          '--border-default': 'rgba(151, 154, 155, 0.2)',
+          '--border-light': 'rgba(151, 154, 155, 0.1)',
+          '--border-strong': 'rgba(151, 154, 155, 0.3)',
+          '--status-success': '#4DAB9A',
+          '--status-warning': '#FFA344',
+          '--status-error': '#FF7369',
+          '--status-info': '#529CCA',
+          '--accent-primary': '#529CCA',
+          '--accent-secondary': '#9A6DD7',
+          '--accent-tertiary': '#E255A1',
+        }
+
+        const root = document.documentElement
+        Object.entries(darkThemeColors).forEach(([key, value]) => {
+          root.style.setProperty(key, value)
+        })
+        document.body.className = 'theme-dark'
+      })()
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
