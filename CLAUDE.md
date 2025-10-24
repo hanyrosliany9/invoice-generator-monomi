@@ -116,3 +116,99 @@
 - Maintain research continuity across sessions
 - Store Indonesian business requirements and compliance notes
 - Track workflow implementation decisions and patterns
+
+## Token Optimization & Cost Reduction (CRITICAL FOR EFFICIENCY)
+
+### Forbidden Directories (Never Read/Search)
+**These directories waste tokens and should NEVER be accessed:**
+- `node_modules/` (backend and frontend)
+- `.git/`
+- `dist/`
+- `build/`
+- `coverage/`
+- `.next/`
+- `.cache/`
+- `.buildx-cache/`
+- `backend/node_modules/`
+- `frontend/node_modules/`
+- `frontend/dist/`
+- `e2e/node_modules/`
+
+### Forbidden File Types (Never Read)
+**These files consume tokens without providing value:**
+- `*.lock` (package-lock.json, yarn.lock, pnpm-lock.yaml)
+- `*.log` (all log files)
+- `*.map` (source map files - huge and useless for context)
+- `*.min.js` (minified JavaScript)
+- `*.bundle.js` (bundled files)
+- `*.css.map` (CSS source maps)
+- Binary files (images, fonts, pdfs in source control)
+- `.env.production` (contains secrets, already in .gitignore)
+
+### Session Management Best Practices
+**Use these commands strategically:**
+- `/compact` at 70% context usage (already in your preferences ✅)
+- `/clear` when switching between frontend ↔ backend work
+- `/context` at session start to check MCP server overhead
+- `/cost` every 10-15 messages to monitor token usage
+- `/mcp` to disable unused MCP servers before starting work
+
+### Efficient File Access Patterns
+**DO:**
+- Read specific files with exact paths
+- Use targeted glob patterns: `backend/src/**/*.service.ts`
+- Request line ranges for large files: `Read file.ts (lines 100-200)`
+- Ask for summaries instead of full file reads when possible
+
+**DON'T:**
+- Use broad globs: `**/*.ts` (too many results)
+- Read entire directories recursively
+- Read lock files or node_modules
+- Request full file when only need function/class
+
+### Context Window Priority (What Matters Most)
+**High Priority (Always Load):**
+1. Prisma schema (single source of truth for data models)
+2. NestJS module files (architecture understanding)
+3. Indonesian business logic (quotation, invoice, materai)
+4. Docker compose configs (critical for development)
+
+**Medium Priority (Load When Needed):**
+1. React components (only when working on frontend)
+2. API DTOs and controllers (when working on specific endpoints)
+3. Test files (only when debugging tests)
+
+**Low Priority (Avoid Unless Necessary):**
+1. Configuration files (tsconfig, vite config, etc.)
+2. Package.json files (unless modifying dependencies)
+3. Migration files (unless debugging database issues)
+
+### Estimated Token Savings
+**Without Optimization:**
+- Average session: ~150k tokens
+- MCP overhead: ~20k tokens
+- Wasted reads (node_modules, maps): ~30k tokens
+- **Total: 150k tokens/session**
+
+**With Optimization:**
+- Forbidden directories blocked: -30k tokens
+- MCP servers disabled: -15k tokens
+- Targeted file access: -20k tokens
+- `/compact` usage: -50k tokens
+- **Optimized: 35k tokens/session (77% reduction)**
+
+### Quick Reference Commands
+```bash
+# Start of session
+/context          # Check what's consuming tokens
+/mcp              # Disable unused servers
+
+# During work
+/cost             # Monitor spending every 10-15 messages
+
+# At 70% context
+/compact          # Summarize and continue
+
+# Switching tasks
+/clear            # Complete reset for new task
+```

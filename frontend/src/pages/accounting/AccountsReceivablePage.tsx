@@ -11,17 +11,27 @@ import {
   Spin,
   Statistic,
   Table,
+  Tabs,
   Tag,
   Typography,
 } from 'antd';
 import {
   CalendarOutlined,
+  ClockCircleOutlined,
   DownloadOutlined,
   FileTextOutlined,
   UserOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { exportAccountsReceivableExcel, exportAccountsReceivablePDF, getAccountsReceivableReport } from '../../services/accounting';
+import {
+  exportAccountsReceivableExcel,
+  exportAccountsReceivablePDF,
+  exportARAgingExcel,
+  exportARAgingPDF,
+  getAccountsReceivableAging,
+  getAccountsReceivableReport,
+} from '../../services/accounting';
 import { useTheme } from '../../theme';
 import { ExportButton } from '../../components/accounting/ExportButton';
 
@@ -30,6 +40,7 @@ const { Title, Text } = Typography;
 const AccountsReceivablePage: React.FC = () => {
   const { theme } = useTheme();
   const [endDate, setEndDate] = useState<dayjs.Dayjs>(dayjs());
+  const [asOfDate, setAsOfDate] = useState<dayjs.Dayjs>(dayjs());
 
   const { data, isLoading } = useQuery({
     queryKey: ['accounts-receivable', endDate.format('YYYY-MM-DD')],
@@ -37,6 +48,15 @@ const AccountsReceivablePage: React.FC = () => {
       getAccountsReceivableReport({
         endDate: endDate.format('YYYY-MM-DD'),
       }),
+  });
+
+  const { data: agingData, isLoading: agingLoading } = useQuery({
+    queryKey: ['ar-aging', asOfDate.format('YYYY-MM-DD')],
+    queryFn: () =>
+      getAccountsReceivableAging({
+        asOfDate: asOfDate.format('YYYY-MM-DD'),
+      }),
+    enabled: !!asOfDate,
   });
 
   const handleExportPDF = async () => {
@@ -48,6 +68,18 @@ const AccountsReceivablePage: React.FC = () => {
   const handleExportExcel = async () => {
     await exportAccountsReceivableExcel({
       endDate: endDate.format('YYYY-MM-DD'),
+    });
+  };
+
+  const handleAgingExportPDF = async () => {
+    await exportARAgingPDF({
+      asOfDate: asOfDate.format('YYYY-MM-DD'),
+    });
+  };
+
+  const handleAgingExportExcel = async () => {
+    await exportARAgingExcel({
+      asOfDate: asOfDate.format('YYYY-MM-DD'),
     });
   };
 
@@ -105,6 +137,83 @@ const AccountsReceivablePage: React.FC = () => {
           'Over 90 days': 'purple',
         };
         return <Tag color={colors[bucket] || 'default'}>{bucket}</Tag>;
+      },
+    },
+    {
+      title: 'Jumlah',
+      dataIndex: 'amount',
+      key: 'amount',
+      align: 'right' as const,
+      width: 150,
+      render: (amount: number) => (
+        <Text strong style={{ color: theme.colors.accent.primary }}>
+          {formatCurrency(amount)}
+        </Text>
+      ),
+    },
+  ];
+
+  const agingColumns = [
+    {
+      title: 'Nomor Invoice',
+      dataIndex: 'invoiceNumber',
+      key: 'invoiceNumber',
+      width: 150,
+    },
+    {
+      title: 'Klien',
+      dataIndex: 'clientName',
+      key: 'clientName',
+      render: (name: string) => (
+        <Space>
+          <UserOutlined />
+          <span>{name}</span>
+        </Space>
+      ),
+    },
+    {
+      title: 'Tanggal Invoice',
+      dataIndex: 'invoiceDate',
+      key: 'invoiceDate',
+      width: 130,
+      render: (date: string) => dayjs(date).format('DD/MM/YYYY'),
+    },
+    {
+      title: 'Tanggal Jatuh Tempo',
+      dataIndex: 'dueDate',
+      key: 'dueDate',
+      width: 150,
+      render: (date: string) => dayjs(date).format('DD/MM/YYYY'),
+    },
+    {
+      title: 'Hari Terlambat',
+      dataIndex: 'daysOverdue',
+      key: 'daysOverdue',
+      width: 130,
+      align: 'center' as const,
+      render: (days: number) =>
+        days > 0 ? (
+          <Tag color="red" icon={<WarningOutlined />}>
+            {days} hari
+          </Tag>
+        ) : (
+          <Tag color="green">Belum jatuh tempo</Tag>
+        ),
+    },
+    {
+      title: 'Kategori Umur',
+      dataIndex: 'agingBucket',
+      key: 'agingBucket',
+      width: 150,
+      render: (bucket: string) => {
+        const bucketColors: Record<string, string> = {
+          Current: 'green',
+          '1-30 days': 'blue',
+          '31-60 days': 'orange',
+          '61-90 days': 'volcano',
+          'Over 90 days': 'red',
+        };
+        return <Tag color={bucketColors[bucket] || 'default'}>{bucket}</Tag>;
       },
     },
     {
@@ -180,55 +289,74 @@ const AccountsReceivablePage: React.FC = () => {
       {/* Header */}
       <div
         style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
           marginBottom: '24px',
         }}
       >
-        <div>
-          <Title level={2} style={{ margin: 0, color: theme.colors.text.primary}}>
-            Laporan Piutang (Accounts Receivable)
-          </Title>
-          <Text type="secondary">
-            Ringkasan piutang usaha dan invoice belum terbayar
-          </Text>
-        </div>
-        <Space>
-          <DatePicker
-            value={endDate}
-            onChange={(date) => {
-              if (date) {
-                setEndDate(date);
-              }
-            }}
-            format="DD/MM/YYYY"
-            placeholder="Tanggal Akhir"
-          />
-          <ExportButton
-            onExportPDF={handleExportPDF}
-            onExportExcel={handleExportExcel}
-          />
-        </Space>
+        <Title level={2} style={{ margin: 0, color: theme.colors.text.primary}}>
+          Laporan Piutang (Accounts Receivable)
+        </Title>
+        <Text type="secondary">
+          Ringkasan piutang usaha dan analisis umur piutang
+        </Text>
       </div>
 
-      {/* Period Info */}
-      <Card
-        style={{
-          marginBottom: '24px',
-          background: theme.colors.accent.primary,
-          borderColor: theme.colors.accent.primary,
-        }}
-      >
-        <Space align="center">
-          <CalendarOutlined style={{ fontSize: '24px', color: '#fff' }} />
-          <div>
-            <Text style={{ color: '#fff', fontSize: '16px', fontWeight: 500 }}>
-              Per Tanggal: {endDate.format('DD MMMM YYYY')}
-            </Text>
-          </div>
-        </Space>
-      </Card>
+      <Tabs
+        defaultActiveKey="1"
+        items={[
+          {
+            key: '1',
+            label: (
+              <span>
+                <FileTextOutlined />
+                {' '}Ringkasan Piutang
+              </span>
+            ),
+            children: (
+              <div>
+                {/* Controls */}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '24px',
+                  }}
+                >
+                  <Space>
+                    <DatePicker
+                      value={endDate}
+                      onChange={(date) => {
+                        if (date) {
+                          setEndDate(date);
+                        }
+                      }}
+                      format="DD/MM/YYYY"
+                      placeholder="Tanggal Akhir"
+                    />
+                  </Space>
+                  <ExportButton
+                    onExportPDF={handleExportPDF}
+                    onExportExcel={handleExportExcel}
+                  />
+                </div>
+
+                {/* Period Info */}
+                <Card
+                  style={{
+                    marginBottom: '24px',
+                    background: theme.colors.accent.primary,
+                    borderColor: theme.colors.accent.primary,
+                  }}
+                >
+                  <Space align="center">
+                    <CalendarOutlined style={{ fontSize: '24px', color: '#fff' }} />
+                    <div>
+                      <Text style={{ color: '#fff', fontSize: '16px', fontWeight: 500 }}>
+                        Per Tanggal: {endDate.format('DD MMMM YYYY')}
+                      </Text>
+                    </div>
+                  </Space>
+                </Card>
 
       {isLoading ? (
         <Card style={{ textAlign: 'center', padding: '48px' }}>
@@ -383,6 +511,305 @@ const AccountsReceivablePage: React.FC = () => {
           </Card>
         </>
       )}
+              </div>
+            ),
+          },
+          {
+            key: '2',
+            label: (
+              <span>
+                <ClockCircleOutlined />
+                {' '}Analisis Umur Piutang
+              </span>
+            ),
+            children: (
+              <div>
+                {/* Controls */}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '24px',
+                  }}
+                >
+                  <Space>
+                    <DatePicker
+                      value={asOfDate}
+                      onChange={(date) => {
+                        if (date) {
+                          setAsOfDate(date);
+                        }
+                      }}
+                      format="DD/MM/YYYY"
+                      placeholder="Per Tanggal"
+                    />
+                  </Space>
+                  <ExportButton
+                    onExportPDF={handleAgingExportPDF}
+                    onExportExcel={handleAgingExportExcel}
+                  />
+                </div>
+
+                {/* Date Info */}
+                <Card
+                  style={{
+                    marginBottom: '24px',
+                    background: theme.colors.accent.primary,
+                    borderColor: theme.colors.accent.primary,
+                  }}
+                >
+                  <Space align="center">
+                    <CalendarOutlined style={{ fontSize: '24px', color: '#fff' }} />
+                    <div>
+                      <Text style={{ color: '#fff', fontSize: '16px', fontWeight: 500 }}>
+                        Per Tanggal: {asOfDate.format('DD MMMM YYYY')}
+                      </Text>
+                    </div>
+                  </Space>
+                </Card>
+
+                {agingLoading ? (
+                  <Card style={{ textAlign: 'center', padding: '48px' }}>
+                    <Spin size="large" />
+                  </Card>
+                ) : !agingData ? (
+                  <Card>
+                    <Empty description="Tidak ada data untuk tanggal ini" />
+                  </Card>
+                ) : (
+                  <>
+                    {/* Summary Cards */}
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '16px',
+                        marginBottom: '24px',
+                      }}
+                    >
+                      <Card
+                        style={{
+                          background: theme.colors.background.tertiary,
+                          borderColor: theme.colors.status.success,
+                        }}
+                      >
+                        <Statistic
+                          title="Belum Jatuh Tempo"
+                          value={agingData.summary.current}
+                          precision={0}
+                          valueStyle={{ color: theme.colors.status.success, fontSize: '24px' }}
+                          prefix="Rp"
+                        />
+                        <Progress
+                          percent={
+                            agingData.summary.totalAR > 0
+                              ? (agingData.summary.current / agingData.summary.totalAR) * 100
+                              : 0
+                          }
+                          strokeColor={theme.colors.status.success}
+                          showInfo={false}
+                          size="small"
+                          style={{ marginTop: '8px' }}
+                        />
+                      </Card>
+                      <Card
+                        style={{
+                          background: theme.colors.card.background,
+                          borderColor: theme.colors.border.default,
+                        }}
+                      >
+                        <Statistic
+                          title="1-30 Hari"
+                          value={agingData.summary.days1to30}
+                          precision={0}
+                          valueStyle={{ color: theme.colors.status.info, fontSize: '24px' }}
+                          prefix="Rp"
+                        />
+                        <Progress
+                          percent={
+                            agingData.summary.totalAR > 0
+                              ? (agingData.summary.days1to30 / agingData.summary.totalAR) * 100
+                              : 0
+                          }
+                          strokeColor={theme.colors.status.info}
+                          showInfo={false}
+                          size="small"
+                          style={{ marginTop: '8px' }}
+                        />
+                      </Card>
+                      <Card
+                        style={{
+                          background: theme.colors.card.background,
+                          borderColor: theme.colors.border.default,
+                        }}
+                      >
+                        <Statistic
+                          title="31-60 Hari"
+                          value={agingData.summary.days31to60}
+                          precision={0}
+                          valueStyle={{ color: theme.colors.status.warning, fontSize: '24px' }}
+                          prefix="Rp"
+                        />
+                        <Progress
+                          percent={
+                            agingData.summary.totalAR > 0
+                              ? (agingData.summary.days31to60 / agingData.summary.totalAR) * 100
+                              : 0
+                          }
+                          strokeColor={theme.colors.status.warning}
+                          showInfo={false}
+                          size="small"
+                          style={{ marginTop: '8px' }}
+                        />
+                      </Card>
+                      <Card
+                        style={{
+                          background: theme.colors.card.background,
+                          borderColor: theme.colors.border.default,
+                        }}
+                      >
+                        <Statistic
+                          title="61-90 Hari"
+                          value={agingData.summary.days61to90}
+                          precision={0}
+                          valueStyle={{ color: '#ff7875', fontSize: '24px' }}
+                          prefix="Rp"
+                        />
+                        <Progress
+                          percent={
+                            agingData.summary.totalAR > 0
+                              ? (agingData.summary.days61to90 / agingData.summary.totalAR) * 100
+                              : 0
+                          }
+                          strokeColor="#ff7875"
+                          showInfo={false}
+                          size="small"
+                          style={{ marginTop: '8px' }}
+                        />
+                      </Card>
+                      <Card
+                        style={{
+                          background: theme.colors.background.tertiary,
+                          borderColor: theme.colors.status.error,
+                        }}
+                      >
+                        <Statistic
+                          title={
+                            <Space>
+                              <WarningOutlined />
+                              <span>Lebih dari 90 Hari</span>
+                            </Space>
+                          }
+                          value={agingData.summary.over90}
+                          precision={0}
+                          valueStyle={{ color: theme.colors.status.error, fontSize: '24px' }}
+                          prefix="Rp"
+                        />
+                        <Progress
+                          percent={
+                            agingData.summary.totalAR > 0
+                              ? (agingData.summary.over90 / agingData.summary.totalAR) * 100
+                              : 0
+                          }
+                          strokeColor={theme.colors.status.error}
+                          showInfo={false}
+                          size="small"
+                          style={{ marginTop: '8px' }}
+                        />
+                      </Card>
+                    </div>
+
+                    {/* Total AR Card */}
+                    <Card
+                      style={{
+                        marginBottom: '24px',
+                        background: theme.colors.accent.primary,
+                        borderColor: theme.colors.accent.primary,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <div>
+                          <Text style={{ color: '#fff', fontSize: '18px' }}>
+                            Total Piutang Usaha
+                          </Text>
+                        </div>
+                        <div>
+                          <Text
+                            style={{
+                              color: '#fff',
+                              fontSize: '36px',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            {formatCurrency(agingData.summary.totalAR)}
+                          </Text>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Aging Details Table */}
+                    <Card
+                      title={
+                        <Space>
+                          <ClockCircleOutlined />
+                          <span>Detail Piutang Per Umur</span>
+                          <Tag color="blue">{agingData.aging.length} Invoice</Tag>
+                        </Space>
+                      }
+                      style={{
+                        background: theme.colors.card.background,
+                        borderColor: theme.colors.border.default,
+                      }}
+                    >
+                      {agingData.aging.length > 0 ? (
+                        <Table
+                          columns={agingColumns}
+                          dataSource={agingData.aging}
+                          rowKey={(record: any) => record.invoiceNumber || record.id || Math.random().toString()}
+                          pagination={{
+                            pageSize: 20,
+                            showSizeChanger: true,
+                            showTotal: (total) => `Total ${total} invoice`,
+                          }}
+                          size="small"
+                          summary={() => (
+                            <Table.Summary.Row
+                              style={{ background: theme.colors.background.tertiary }}
+                            >
+                              <Table.Summary.Cell index={0} colSpan={6}>
+                                <Text strong style={{ fontSize: '16px' }}>
+                                  TOTAL PIUTANG
+                                </Text>
+                              </Table.Summary.Cell>
+                              <Table.Summary.Cell index={6} align="right">
+                                <Text
+                                  strong
+                                  style={{ fontSize: '18px', color: theme.colors.accent.primary }}
+                                >
+                                  {formatCurrency(agingData.summary.totalAR)}
+                                </Text>
+                              </Table.Summary.Cell>
+                            </Table.Summary.Row>
+                          )}
+                        />
+                      ) : (
+                        <Empty description="Tidak ada piutang pada tanggal ini" />
+                      )}
+                    </Card>
+                  </>
+                )}
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 };

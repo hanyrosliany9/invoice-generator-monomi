@@ -50,7 +50,8 @@ FROM base AS frontend-build
 COPY frontend/package*.json ./frontend/
 
 # Install frontend dependencies
-RUN cd frontend && npm ci --only=production
+# Remove husky prepare script to avoid error in production
+RUN cd frontend && npm pkg delete scripts.prepare && npm ci --only=production
 
 # Copy frontend source
 COPY frontend/ ./frontend/

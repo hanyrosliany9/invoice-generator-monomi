@@ -4,6 +4,7 @@ import {
   App,
   Button,
   Card,
+  Checkbox,
   Col,
   DatePicker,
   Form,
@@ -76,6 +77,7 @@ export const InvoiceEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const [autoSaving, setAutoSaving] = useState(false)
   const [previewData, setPreviewData] = useState<any>(null)
+  const [includePPN, setIncludePPN] = useState(true)
 
   // Fetch invoice data
   const {
@@ -446,6 +448,16 @@ export const InvoiceEditPage: React.FC = () => {
             </Card>
           )}
 
+          {/* PPN Toggle */}
+          <Card size='small'>
+            <Checkbox
+              checked={includePPN}
+              onChange={(e) => setIncludePPN(e.target.checked)}
+            >
+              Include PPN (11%)
+            </Checkbox>
+          </Card>
+
           {/* Real-time Statistics */}
           <FormStatistics
             title='Invoice Overview'
@@ -469,13 +481,13 @@ export const InvoiceEditPage: React.FC = () => {
                       ? '#faad14'
                       : '#ff4d4f',
               },
-              {
+              ...(includePPN ? [{
                 label: 'Tax (PPN 11%)',
                 value: totalAmount * 0.11,
-                format: 'currency',
+                format: 'currency' as const,
                 icon: <BankOutlined />,
                 color: '#1890ff',
-              },
+              }] : []),
             ]}
             layout='vertical'
             size='small'

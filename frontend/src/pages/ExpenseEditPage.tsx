@@ -4,6 +4,7 @@ import {
   App,
   Button,
   Card,
+  Checkbox,
   Col,
   DatePicker,
   Form,
@@ -49,6 +50,7 @@ export const ExpenseEditPage: React.FC = () => {
   const [grossAmount, setGrossAmount] = useState<number>(0);
   const [isLuxuryGoods, setIsLuxuryGoods] = useState(false);
   const [withholdingType, setWithholdingType] = useState<WithholdingTaxType>('NONE' as WithholdingTaxType);
+  const [includePPN, setIncludePPN] = useState(true);
 
   // Fetch expense
   const {
@@ -111,31 +113,35 @@ export const ExpenseEditPage: React.FC = () => {
     if (grossAmount > 0) {
       const amounts = expenseService.calculateExpenseAmounts(
         grossAmount,
-        isLuxuryGoods,
+        includePPN ? isLuxuryGoods : false,
         withholdingType
       );
 
+      // If PPN is disabled, force ppnAmount to 0 and recalculate total
+      const ppnAmount = includePPN ? amounts.ppnAmount : 0;
+      const totalAmount = grossAmount + ppnAmount;
+
       form.setFieldsValue({
-        ppnAmount: amounts.ppnAmount,
+        ppnAmount: ppnAmount,
         withholdingAmount: amounts.withholdingAmount,
         netAmount: amounts.netAmount,
-        totalAmount: amounts.totalAmount,
+        totalAmount: totalAmount,
       });
     }
-  }, [grossAmount, isLuxuryGoods, withholdingType, form]);
+  }, [grossAmount, isLuxuryGoods, withholdingType, includePPN, form]);
 
   const handleSubmit = (values: any) => {
     const expenseData: UpdateExpenseFormData = {
       ...values,
       expenseDate: values.expenseDate.toISOString(),
       grossAmount: Number(values.grossAmount),
-      ppnAmount: Number(values.ppnAmount),
+      ppnAmount: includePPN ? Number(values.ppnAmount) : 0,
       withholdingAmount: values.withholdingAmount ? Number(values.withholdingAmount) : 0,
       netAmount: Number(values.netAmount),
       totalAmount: Number(values.totalAmount),
-      ppnRate: isLuxuryGoods ? 0.12 : 0.11,
+      ppnRate: includePPN ? (isLuxuryGoods ? 0.12 : 0.11) : 0,
       withholdingTaxRate: values.withholdingTaxRate || 0,
-      isLuxuryGoods,
+      isLuxuryGoods: includePPN ? isLuxuryGoods : false,
     };
 
     updateMutation.mutate(expenseData);
@@ -274,17 +280,30 @@ export const ExpenseEditPage: React.FC = () => {
                     <DatePicker size='large' style={{ width: '100%' }} format='DD MMM YYYY' />
                   </Form.Item>
                 </Col>
+              </Row>
 
-                <Col xs={24} sm={8}>
-                  <Form.Item name='ppnAmount' label='PPN (Auto)'>
-                    <InputNumber
-                      size='large'
-                      style={{ width: '100%' }}
-                      disabled
-                      formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                    />
-                  </Form.Item>
-                </Col>
+              <Card size='small' style={{ marginBottom: '16px' }}>
+                <Checkbox
+                  checked={includePPN}
+                  onChange={(e) => setIncludePPN(e.target.checked)}
+                >
+                  Include PPN (11%)
+                </Checkbox>
+              </Card>
+
+              <Row gutter={[16, 16]}>
+                {includePPN && (
+                  <Col xs={24} sm={8}>
+                    <Form.Item name='ppnAmount' label='PPN (Auto)'>
+                      <InputNumber
+                        size='large'
+                        style={{ width: '100%' }}
+                        disabled
+                        formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                      />
+                    </Form.Item>
+                  </Col>
+                )}
 
                 <Col xs={24} sm={8}>
                   <Form.Item name='withholdingAmount' label='PPh (Auto)'>
@@ -308,7 +327,7 @@ export const ExpenseEditPage: React.FC = () => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={12}>
+                <Col xs={24} sm={includePPN ? 12 : 24}>
                   <Form.Item name='withholdingTaxType' label='Jenis PPh'>
                     <Select
                       size='large'
@@ -322,15 +341,18 @@ export const ExpenseEditPage: React.FC = () => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={12}>
-                  <Form.Item name='isLuxuryGoods' label='Barang Mewah?' valuePropName='checked'>
-                    <Switch
-                      onChange={setIsLuxuryGoods}
-                      checkedChildren='Ya (PPN 12%)'
-                      unCheckedChildren='Tidak (PPN 11%)'
-                    />
-                  </Form.Item>
-                </Col>
+                {includePPN && (
+                  <Col xs={24} sm={12}>
+                    <Form.Item name='isLuxuryGoods' label='Barang Mewah?' valuePropName='checked'>
+                      <Switch
+                        onChange={setIsLuxuryGoods}
+                        disabled={!includePPN}
+                        checkedChildren='Ya (PPN 12%)'
+                        unCheckedChildren='Tidak (PPN 11%)'
+                      />
+                    </Form.Item>
+                  </Col>
+                )}
               </Row>
             </Card>
           </Col>

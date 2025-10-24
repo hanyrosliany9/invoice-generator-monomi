@@ -65,6 +65,43 @@ export const ClientDetailPage: React.FC<ClientDetailPageProps> = () => {
     navigate('/clients')
   }
 
+  const handleEdit = () => {
+    navigate(`/clients/${id}/edit`)
+  }
+
+  const handleExportData = () => {
+    // Export client data functionality
+    if (!client) return
+
+    const exportData = {
+      client: {
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        company: client.company,
+        address: client.address,
+      },
+      statistics: {
+        totalRevenue: client.totalRevenue,
+        activeProjects: client.activeProjects,
+        pendingInvoices: client.pendingInvoices,
+        overdueInvoices: client.overdueInvoices,
+      },
+      exportDate: new Date().toISOString(),
+    }
+
+    const dataStr = JSON.stringify(exportData, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `client-${client.name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   // Business health score calculation
   const calculateHealthScore = (client: Client) => {
     let score = 100
@@ -237,6 +274,7 @@ export const ClientDetailPage: React.FC<ClientDetailPageProps> = () => {
                 icon={<EditOutlined />}
                 size='large'
                 block
+                onClick={handleEdit}
                 aria-label='Edit client details'
               >
                 Edit Client
@@ -245,6 +283,7 @@ export const ClientDetailPage: React.FC<ClientDetailPageProps> = () => {
                 icon={<ExportOutlined />}
                 size='large'
                 block
+                onClick={handleExportData}
                 aria-label='Export client data'
               >
                 Export Data
@@ -540,11 +579,13 @@ export const ClientDetailPage: React.FC<ClientDetailPageProps> = () => {
         <FloatButton
           icon={<EditOutlined />}
           tooltip='Edit Client'
+          onClick={handleEdit}
           aria-label='Edit client details'
         />
         <FloatButton
           icon={<ExportOutlined />}
           tooltip='Export Data'
+          onClick={handleExportData}
           aria-label='Export client data'
         />
       </FloatButton.Group>

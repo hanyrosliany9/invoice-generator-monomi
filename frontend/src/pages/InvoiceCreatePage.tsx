@@ -4,6 +4,7 @@ import {
   App,
   Button,
   Card,
+  Checkbox,
   Col,
   DatePicker,
   Form,
@@ -73,6 +74,7 @@ export const InvoiceCreatePage: React.FC = () => {
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const [previewData, setPreviewData] = useState<any>(null)
+  const [includePPN, setIncludePPN] = useState(true)
 
   // Mobile optimization
   const mobile = useMobileOptimized()
@@ -405,6 +407,16 @@ Reference: Quotation ${quotation.quotationNumber}
       hero={heroCard}
       sidebar={
         <Space direction='vertical' size='large' style={{ width: '100%' }}>
+          {/* PPN Toggle */}
+          <Card size='small'>
+            <Checkbox
+              checked={includePPN}
+              onChange={(e) => setIncludePPN(e.target.checked)}
+            >
+              Include PPN (11%)
+            </Checkbox>
+          </Card>
+
           {/* Real-time Statistics */}
           <FormStatistics
             title='Invoice Overview'
@@ -428,13 +440,13 @@ Reference: Quotation ${quotation.quotationNumber}
                       ? '#faad14'
                       : '#ff4d4f',
               },
-              {
+              ...(includePPN ? [{
                 label: 'Tax (PPN 11%)',
                 value: totalAmount * 0.11,
-                format: 'currency',
+                format: 'currency' as const,
                 icon: <BankOutlined />,
                 color: '#1890ff',
-              },
+              }] : []),
             ]}
             layout='vertical'
             size='small'

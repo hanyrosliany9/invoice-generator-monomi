@@ -26,6 +26,7 @@ import { VendorsModule } from "./modules/vendors/vendors.module";
 import { PurchaseOrdersModule } from "./modules/purchase-orders/purchase-orders.module";
 import { GoodsReceiptsModule } from "./modules/goods-receipts/goods-receipts.module";
 import { VendorInvoicesModule } from "./modules/vendor-invoices/vendor-invoices.module";
+import { MilestonesModule } from "./modules/milestones/milestones.module";
 import { PrismaModule } from "./modules/prisma/prisma.module";
 import { HealthModule } from "./health/health.module";
 import { MetricsModule } from "./metrics/metrics.module";
@@ -69,6 +70,7 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     PurchaseOrdersModule,
     GoodsReceiptsModule,
     VendorInvoicesModule,
+    MilestonesModule,
     HealthModule,
     MetricsModule,
   ],

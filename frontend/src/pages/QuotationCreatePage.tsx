@@ -4,6 +4,7 @@ import {
   App,
   Button,
   Card,
+  Checkbox,
   Col,
   DatePicker,
   Divider,
@@ -69,6 +70,7 @@ export const QuotationCreatePage: React.FC = () => {
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const [previewData, setPreviewData] = useState<any>(null)
+  const [includePPN, setIncludePPN] = useState(true)
   const { message } = App.useApp()
   const { theme } = useTheme()
 
@@ -702,12 +704,20 @@ export const QuotationCreatePage: React.FC = () => {
                 boxShadow: theme.colors.glass.shadow,
               }}
             >
-              <Title level={5} style={{ margin: 0, marginBottom: '8px' }}>
-                <BankOutlined
-                  style={{ marginRight: '8px', color: theme.colors.accent.primary }}
-                />
-                Pricing Breakdown
-              </Title>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <Title level={5} style={{ margin: 0 }}>
+                  <BankOutlined
+                    style={{ marginRight: '8px', color: theme.colors.accent.primary }}
+                  />
+                  Pricing Breakdown
+                </Title>
+                <Checkbox
+                  checked={includePPN}
+                  onChange={(e) => setIncludePPN(e.target.checked)}
+                >
+                  Include PPN (11%)
+                </Checkbox>
+              </div>
               <Row gutter={[16, 8]}>
                 <Col xs={12} sm={6}>
                   <Text type='secondary'>Subtotal:</Text>
@@ -715,17 +725,19 @@ export const QuotationCreatePage: React.FC = () => {
                     <Text strong>{formatIDR(totalAmount)}</Text>
                   </div>
                 </Col>
+                {includePPN && (
+                  <Col xs={12} sm={6}>
+                    <Text type='secondary'>PPN (11%):</Text>
+                    <div>
+                      <Text strong>{formatIDR(totalAmount * 0.11)}</Text>
+                    </div>
+                  </Col>
+                )}
                 <Col xs={12} sm={6}>
-                  <Text type='secondary'>PPN (11%):</Text>
-                  <div>
-                    <Text strong>{formatIDR(totalAmount * 0.11)}</Text>
-                  </div>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Text type='secondary'>Total + Tax:</Text>
+                  <Text type='secondary'>{includePPN ? 'Total + Tax:' : 'Total:'}</Text>
                   <div>
                     <Text strong style={{ color: theme.colors.status.success }}>
-                      {formatIDR(totalAmount * 1.11)}
+                      {formatIDR(includePPN ? totalAmount * 1.11 : totalAmount)}
                     </Text>
                   </div>
                 </Col>

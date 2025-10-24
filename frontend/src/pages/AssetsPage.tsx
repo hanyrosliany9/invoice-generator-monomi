@@ -1,15 +1,23 @@
 import React, { useState } from 'react'
 import {
   App,
+  Badge,
   Button,
   Card,
   Col,
+  DatePicker,
+  Descriptions,
   Dropdown,
+  Empty,
   Input,
+  Modal,
   Row,
   Select,
   Space,
+  Spin,
+  Statistic,
   Table,
+  Tabs,
   Tag,
   Typography,
 } from 'antd'
@@ -20,10 +28,13 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   DeleteOutlined,
+  DollarOutlined,
   EditOutlined,
   EyeOutlined,
+  FileTextOutlined,
   LaptopOutlined,
   MoreOutlined,
+  PlayCircleOutlined,
   PlusOutlined,
   SearchOutlined,
   ToolOutlined,
@@ -36,9 +47,15 @@ import { formatIDR, safeArray, safeString } from '../utils/currency'
 import { formatDate } from '../utils/dateFormatters'
 import { useTheme } from '../theme'
 import { CompactMetricCard } from '../components/ui/CompactMetricCard'
+import {
+  getDepreciationSummary,
+  processMonthlyDepreciation,
+} from '../services/accounting'
+import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
 const { Option } = Select
+const { RangePicker } = DatePicker
 
 export const AssetsPage: React.FC = () => {
   const { theme } = useTheme()
@@ -52,6 +69,17 @@ export const AssetsPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('')
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
 
+  // Depreciation tab state
+  const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([
+    dayjs().startOf('month'),
+    dayjs().endOf('month'),
+  ])
+  const [selectedAsset, setSelectedAsset] = useState<any>(null)
+  const [detailsVisible, setDetailsVisible] = useState(false)
+  const [processModalVisible, setProcessModalVisible] = useState(false)
+  const [processDate, setProcessDate] = useState<dayjs.Dayjs>(dayjs())
+  const [autoPost, setAutoPost] = useState(false)
+
   // Queries
   const { data: assetsData = [], isLoading } = useQuery({
     queryKey: ['assets'],
@@ -61,12 +89,37 @@ export const AssetsPage: React.FC = () => {
   // Ensure assets is always an array
   const assets = Array.isArray(assetsData) ? assetsData : []
 
+  // Depreciation query
+  const { data: depreciationSummary, isLoading: depreciationLoading } = useQuery({
+    queryKey: ['depreciation-summary', dateRange],
+    queryFn: () =>
+      getDepreciationSummary({
+        startDate: dateRange[0]?.format('YYYY-MM-DD') || '',
+        endDate: dateRange[1]?.format('YYYY-MM-DD') || '',
+      }),
+    enabled: Boolean(dateRange[0] && dateRange[1]),
+  })
+
   // Mutations
   const deleteMutation = useMutation({
     mutationFn: assetService.deleteAsset,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] })
       message.success('Asset berhasil dihapus')
+    },
+  })
+
+  const processMutation = useMutation({
+    mutationFn: processMonthlyDepreciation,
+    onSuccess: (data) => {
+      message.success(
+        `Berhasil memproses ${data.processed} entri depresiasi. ${data.posted} telah di-posting ke jurnal.`,
+      )
+      queryClient.invalidateQueries({ queryKey: ['depreciation-summary'] })
+      setProcessModalVisible(false)
+    },
+    onError: (error: any) => {
+      message.error(`Gagal memproses depresiasi: ${error.message}`)
     },
   })
 
@@ -338,6 +391,105 @@ export const AssetsPage: React.FC = () => {
     },
   }
 
+  // Depreciation helper functions
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  const handleProcessMonthly = () => {
+    processMutation.mutate({
+      periodDate: processDate.format('YYYY-MM-DD'),
+      autoPost: autoPost,
+    })
+  }
+
+  const showAssetDetails = (asset: any) => {
+    setSelectedAsset(asset)
+    setDetailsVisible(true)
+  }
+
+  // Depreciation table columns
+  const depreciationColumns = [
+    {
+      title: 'Aset',
+      dataIndex: 'assetName',
+      key: 'assetName',
+      render: (name: string, record: any) => (
+        <div>
+          <div>
+            <Text strong style={{ color: theme.colors.accent.primary }}>
+              {name}
+            </Text>
+          </div>
+          <div>
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              {record.assetCode}
+            </Text>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Depresiasi Periode',
+      dataIndex: 'depreciationAmount',
+      key: 'depreciationAmount',
+      align: 'right' as const,
+      width: 180,
+      render: (amount: number) => (
+        <Text strong style={{ color: theme.colors.status.error }}>
+          {formatCurrency(amount)}
+        </Text>
+      ),
+    },
+    {
+      title: 'Akumulasi Depresiasi',
+      dataIndex: 'accumulatedDepreciation',
+      key: 'accumulatedDepreciation',
+      align: 'right' as const,
+      width: 200,
+      render: (amount: number) => (
+        <Text style={{ color: theme.colors.text.secondary }}>
+          {formatCurrency(amount)}
+        </Text>
+      ),
+    },
+    {
+      title: 'Nilai Buku Bersih',
+      dataIndex: 'netBookValue',
+      key: 'netBookValue',
+      align: 'right' as const,
+      width: 180,
+      render: (amount: number) => (
+        <Text strong style={{ color: theme.colors.status.success }}>
+          {formatCurrency(amount)}
+        </Text>
+      ),
+    },
+    {
+      title: 'Entri',
+      dataIndex: 'entryCount',
+      key: 'entryCount',
+      align: 'center' as const,
+      width: 80,
+      render: (count: number) => <Badge count={count} showZero color={theme.colors.accent.primary} />,
+    },
+    {
+      title: 'Aksi',
+      key: 'actions',
+      width: 100,
+      align: 'center' as const,
+      render: (record: any) => (
+        <Button type="link" icon={<EyeOutlined />} onClick={() => showAssetDetails(record)}>
+          Detail
+        </Button>
+      ),
+    },
+  ]
+
   return (
     <div>
       {/* Hover-revealed row actions CSS */}
@@ -355,7 +507,25 @@ export const AssetsPage: React.FC = () => {
       `}</style>
 
       <div className='mb-6'>
-        <Title level={2}>Manajemen Aset</Title>
+        <Title level={2}>Aset & Depresiasi</Title>
+        <Text type='secondary'>
+          Manajemen aset dan depresiasi sesuai standar PSAK 16
+        </Text>
+      </div>
+
+      <Tabs
+        defaultActiveKey="1"
+        items={[
+          {
+            key: '1',
+            label: (
+              <span>
+                <ToolOutlined />
+                {' '}Daftar Aset
+              </span>
+            ),
+            children: (
+              <div>
 
         {/* Statistics - Compact Design */}
         <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
@@ -472,26 +642,261 @@ export const AssetsPage: React.FC = () => {
             Tambah Aset
           </Button>
         </div>
-      </div>
 
-      {/* Main Table */}
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={filteredAssets}
-          loading={isLoading}
-          rowKey='id'
-          rowSelection={rowSelection}
-          pagination={{
-            total: filteredAssets.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} dari ${total} aset`,
-          }}
-        />
-      </Card>
+        {/* Main Table */}
+        <Card>
+          <Table
+            columns={columns}
+            dataSource={filteredAssets}
+            loading={isLoading}
+            rowKey='id'
+            rowSelection={rowSelection}
+            pagination={{
+              total: filteredAssets.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} dari ${total} aset`,
+            }}
+          />
+        </Card>
+              </div>
+            ),
+          },
+          {
+            key: '2',
+            label: (
+              <span>
+                <DollarOutlined />
+                {' '}Depresiasi Aset
+              </span>
+            ),
+            children: (
+              <div>
+                {/* Depreciation Controls */}
+                <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between' }}>
+                  <Space wrap size="middle">
+                    <RangePicker
+                      value={dateRange}
+                      onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
+                      format="DD/MM/YYYY"
+                      placeholder={['Tanggal Mulai', 'Tanggal Akhir']}
+                    />
+                  </Space>
+                  <Button
+                    type="primary"
+                    icon={<PlayCircleOutlined />}
+                    onClick={() => setProcessModalVisible(true)}
+                    size="large"
+                  >
+                    Proses Depresiasi Bulanan
+                  </Button>
+                </div>
+
+                {/* Depreciation Summary Cards */}
+                <Row gutter={16} style={{ marginBottom: '24px' }}>
+                  <Col xs={24} sm={12} lg={6}>
+                    <Card size="small">
+                      <Statistic
+                        title="Total Depresiasi"
+                        value={depreciationSummary?.totalDepreciation || 0}
+                        formatter={(value) => formatCurrency(Number(value))}
+                        prefix={<DollarOutlined />}
+                        valueStyle={{ color: theme.colors.status.error }}
+                      />
+                    </Card>
+                  </Col>
+                  <Col xs={24} sm={12} lg={6}>
+                    <Card size="small">
+                      <Statistic
+                        title="Jumlah Aset"
+                        value={depreciationSummary?.assetCount || 0}
+                        prefix={<FileTextOutlined />}
+                        valueStyle={{ color: theme.colors.accent.primary }}
+                      />
+                    </Card>
+                  </Col>
+                  {depreciationSummary?.byMethod && Object.keys(depreciationSummary.byMethod).length > 0 && (
+                    <>
+                      <Col xs={24} sm={12} lg={6}>
+                        <Card size="small">
+                          <Statistic
+                            title="Garis Lurus"
+                            value={depreciationSummary?.byMethod['STRAIGHT_LINE']?.totalDepreciation || 0}
+                            formatter={(value) => formatCurrency(Number(value))}
+                            valueStyle={{ color: theme.colors.status.info, fontSize: '18px' }}
+                            suffix={
+                              <Text type="secondary" style={{ fontSize: '12px' }}>
+                                ({depreciationSummary?.byMethod['STRAIGHT_LINE']?.assetCount || 0} aset)
+                              </Text>
+                            }
+                          />
+                        </Card>
+                      </Col>
+                      <Col xs={24} sm={12} lg={6}>
+                        <Card size="small">
+                          <Statistic
+                            title="Saldo Menurun"
+                            value={depreciationSummary?.byMethod['DECLINING_BALANCE']?.totalDepreciation || 0}
+                            formatter={(value) => formatCurrency(Number(value))}
+                            valueStyle={{ color: theme.colors.status.warning, fontSize: '18px' }}
+                            suffix={
+                              <Text type="secondary" style={{ fontSize: '12px' }}>
+                                ({depreciationSummary?.byMethod['DECLINING_BALANCE']?.assetCount || 0} aset)
+                              </Text>
+                            }
+                          />
+                        </Card>
+                      </Col>
+                    </>
+                  )}
+                </Row>
+
+                {/* Depreciation Table */}
+                <Card>
+                  {depreciationLoading ? (
+                    <div style={{ textAlign: 'center', padding: '48px' }}>
+                      <Spin size="large" />
+                    </div>
+                  ) : !depreciationSummary || depreciationSummary.byAsset.length === 0 ? (
+                    <Empty description="Tidak ada data depresiasi untuk periode ini" />
+                  ) : (
+                    <Table
+                      columns={depreciationColumns}
+                      dataSource={depreciationSummary.byAsset}
+                      rowKey="assetId"
+                      pagination={false}
+                      summary={(data) => {
+                        const totalDep = data.reduce((sum, item) => sum + item.depreciationAmount, 0)
+                        const totalAcc = data.reduce((sum, item) => sum + item.accumulatedDepreciation, 0)
+                        const totalNBV = data.reduce((sum, item) => sum + item.netBookValue, 0)
+                        return (
+                          <Table.Summary.Row>
+                            <Table.Summary.Cell index={0}>
+                              <Text strong>Total</Text>
+                            </Table.Summary.Cell>
+                            <Table.Summary.Cell index={1} align="right">
+                              <Text strong>{formatCurrency(totalDep)}</Text>
+                            </Table.Summary.Cell>
+                            <Table.Summary.Cell index={2} align="right">
+                              <Text strong>{formatCurrency(totalAcc)}</Text>
+                            </Table.Summary.Cell>
+                            <Table.Summary.Cell index={3} align="right">
+                              <Text strong>{formatCurrency(totalNBV)}</Text>
+                            </Table.Summary.Cell>
+                            <Table.Summary.Cell index={4} />
+                            <Table.Summary.Cell index={5} />
+                          </Table.Summary.Row>
+                        )
+                      }}
+                    />
+                  )}
+                </Card>
+              </div>
+            ),
+          },
+        ]}
+      />
+
+      {/* Process Monthly Modal */}
+      <Modal
+        title={
+          <Space>
+            <PlayCircleOutlined />
+            <span>Proses Depresiasi Bulanan</span>
+          </Space>
+        }
+        open={processModalVisible}
+        onCancel={() => setProcessModalVisible(false)}
+        onOk={handleProcessMonthly}
+        confirmLoading={processMutation.isPending}
+        okText="Proses"
+        cancelText="Batal"
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <div>
+            <Text>Tanggal Periode:</Text>
+            <DatePicker
+              value={processDate}
+              onChange={(date) => setProcessDate(date || dayjs())}
+              format="DD/MM/YYYY"
+              style={{ width: '100%', marginTop: '8px' }}
+            />
+          </div>
+          <div>
+            <Text>Opsi:</Text>
+            <Select
+              value={autoPost ? 'auto' : 'manual'}
+              onChange={(value) => setAutoPost(value === 'auto')}
+              style={{ width: '100%', marginTop: '8px' }}
+            >
+              <Option value="manual">Simpan sebagai draft (posting manual)</Option>
+              <Option value="auto">Posting otomatis ke jurnal</Option>
+            </Select>
+          </div>
+          <div
+            style={{
+              padding: '12px',
+              background: theme.colors.background.primary,
+              borderRadius: '4px',
+              borderLeft: `4px solid ${theme.colors.status.info}`,
+            }}
+          >
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              Proses ini akan menghitung depresiasi untuk semua aset aktif pada periode yang
+              dipilih. Pastikan tanggal periode sudah benar.
+            </Text>
+          </div>
+        </Space>
+      </Modal>
+
+      {/* Asset Details Modal */}
+      <Modal
+        title={
+          <Space>
+            <FileTextOutlined />
+            <span>Detail Depresiasi Aset</span>
+          </Space>
+        }
+        open={detailsVisible}
+        onCancel={() => setDetailsVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setDetailsVisible(false)}>
+            Tutup
+          </Button>,
+        ]}
+        width={700}
+      >
+        {selectedAsset && (
+          <div>
+            <Descriptions bordered size="small" column={2}>
+              <Descriptions.Item label="Nama Aset" span={2}>
+                <Text strong>{selectedAsset.assetName}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Kode Aset">
+                {selectedAsset.assetCode}
+              </Descriptions.Item>
+              <Descriptions.Item label="Jumlah Entri">
+                <Badge count={selectedAsset.entryCount} showZero />
+              </Descriptions.Item>
+              <Descriptions.Item label="Depresiasi Periode">
+                <Text strong style={{ color: theme.colors.status.error }}>
+                  {formatCurrency(selectedAsset.depreciationAmount)}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Akumulasi Depresiasi">
+                <Text>{formatCurrency(selectedAsset.accumulatedDepreciation)}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Nilai Buku Bersih" span={2}>
+                <Text strong style={{ color: theme.colors.status.success }}>
+                  {formatCurrency(selectedAsset.netBookValue)}
+                </Text>
+              </Descriptions.Item>
+            </Descriptions>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

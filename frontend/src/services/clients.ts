@@ -20,7 +20,9 @@ export interface Client {
   totalQuotations?: number
   totalInvoices?: number
   totalProjects?: number
+  activeProjects?: number
   pendingQuotations?: number
+  pendingInvoices?: number
   overdueInvoices?: number
   createdAt: string
   updatedAt: string

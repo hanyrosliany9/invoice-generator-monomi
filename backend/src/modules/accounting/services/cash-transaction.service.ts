@@ -11,14 +11,17 @@ import {
   CashTransactionType,
   CashTransactionStatus,
   TransactionType,
+  Currency,
 } from "@prisma/client";
 import { JournalService } from "./journal.service";
+import { ExchangeRateService } from "./exchange-rate.service";
 
 @Injectable()
 export class CashTransactionService {
   constructor(
     private prisma: PrismaService,
     private journalService: JournalService,
+    private exchangeRateService: ExchangeRateService,
   ) {}
 
   /**
@@ -113,6 +116,36 @@ export class CashTransactionService {
       createDto.transactionType,
     );
 
+    // Handle multi-currency conversion
+    const currency = createDto.currency || Currency.IDR;
+    let exchangeRate = createDto.exchangeRate;
+    let idrAmount = createDto.idrAmount;
+    let originalAmount = createDto.originalAmount;
+
+    if (currency === Currency.IDR) {
+      // IDR transaction - no conversion needed
+      idrAmount = createDto.amount;
+      exchangeRate = 1;
+      originalAmount = createDto.amount;
+    } else {
+      // Foreign currency transaction - need conversion
+      originalAmount = createDto.originalAmount || createDto.amount;
+
+      // Get exchange rate if not provided
+      if (!exchangeRate) {
+        const rate = await this.exchangeRateService.getCurrentRate(
+          currency,
+          Currency.IDR,
+        );
+        exchangeRate = Number(rate.rate);
+      }
+
+      // Calculate IDR amount if not provided
+      if (!idrAmount) {
+        idrAmount = originalAmount * exchangeRate;
+      }
+    }
+
     // Create cash transaction
     const transaction = await this.prisma.cashTransaction.create({
       data: {
@@ -121,6 +154,10 @@ export class CashTransactionService {
         category: createDto.category,
         transactionDate: createDto.transactionDate,
         amount: createDto.amount,
+        currency,
+        originalAmount,
+        exchangeRate,
+        idrAmount,
         cashAccountId: createDto.cashAccountId,
         offsetAccountId: createDto.offsetAccountId,
         description: createDto.description,
@@ -359,25 +396,33 @@ export class CashTransactionService {
         ? TransactionType.CASH_RECEIPT
         : TransactionType.CASH_DISBURSEMENT;
 
+    // CRITICAL: Use idrAmount for journal entries (accounting must be in IDR)
+    const amountForJournal = Number(transaction.idrAmount);
+
+    // Add currency information to description if foreign currency
+    const currencyNote = transaction.currency !== 'IDR'
+      ? ` (${transaction.currency} ${Number(transaction.originalAmount).toLocaleString()} @ ${Number(transaction.exchangeRate).toLocaleString()})`
+      : '';
+
     const lineItems =
       transaction.transactionType === CashTransactionType.RECEIPT
         ? [
             // Cash Receipt: Debit Cash, Credit Income/Revenue
             {
               accountCode: transaction.cashAccount.code,
-              description: transaction.description,
+              description: transaction.description + currencyNote,
               descriptionId: transaction.descriptionId || undefined,
-              debit: Number(transaction.amount),
+              debit: amountForJournal,
               credit: 0,
               projectId: transaction.projectId || undefined,
               clientId: transaction.clientId || undefined,
             },
             {
               accountCode: transaction.offsetAccount.code,
-              description: transaction.description,
+              description: transaction.description + currencyNote,
               descriptionId: transaction.descriptionId || undefined,
               debit: 0,
-              credit: Number(transaction.amount),
+              credit: amountForJournal,
               projectId: transaction.projectId || undefined,
               clientId: transaction.clientId || undefined,
             },
@@ -386,19 +431,19 @@ export class CashTransactionService {
             // Cash Disbursement: Debit Expense, Credit Cash
             {
               accountCode: transaction.offsetAccount.code,
-              description: transaction.description,
+              description: transaction.description + currencyNote,
               descriptionId: transaction.descriptionId || undefined,
-              debit: Number(transaction.amount),
+              debit: amountForJournal,
               credit: 0,
               projectId: transaction.projectId || undefined,
               clientId: transaction.clientId || undefined,
             },
             {
               accountCode: transaction.cashAccount.code,
-              description: transaction.description,
+              description: transaction.description + currencyNote,
               descriptionId: transaction.descriptionId || undefined,
               debit: 0,
-              credit: Number(transaction.amount),
+              credit: amountForJournal,
               projectId: transaction.projectId || undefined,
               clientId: transaction.clientId || undefined,
             },

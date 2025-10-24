@@ -4,6 +4,7 @@ import {
   App,
   Button,
   Card,
+  Checkbox,
   Col,
   DatePicker,
   Form,
@@ -76,6 +77,7 @@ export const QuotationEditPage: React.FC = () => {
   const [originalValues, setOriginalValues] =
     useState<QuotationFormData | null>(null)
   const [previewData, setPreviewData] = useState<any>(null)
+  const [includePPN, setIncludePPN] = useState(true)
 
   // Fetch quotation data
   const {
@@ -290,7 +292,7 @@ export const QuotationEditPage: React.FC = () => {
     )
   }
 
-  const totalAmount = form.getFieldValue('totalAmount') || 0
+  const totalAmount = Form.useWatch('totalAmount', form) || 0
   const canEdit = quotation.status === 'DRAFT' || quotation.status === 'REVISED'
   const canGenerateInvoice = quotation.status === 'APPROVED'
 
@@ -625,9 +627,17 @@ export const QuotationEditPage: React.FC = () => {
                 boxShadow: theme.colors.glass.shadow,
               }}
             >
-              <Title level={5} style={{ margin: 0, marginBottom: '8px' }}>
-                Pricing Breakdown
-              </Title>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <Title level={5} style={{ margin: 0 }}>
+                  Pricing Breakdown
+                </Title>
+                <Checkbox
+                  checked={includePPN}
+                  onChange={(e) => setIncludePPN(e.target.checked)}
+                >
+                  Include PPN (11%)
+                </Checkbox>
+              </div>
               <Row gutter={[16, 8]}>
                 <Col xs={12} sm={6}>
                   <Text type='secondary'>Subtotal:</Text>
@@ -635,17 +645,19 @@ export const QuotationEditPage: React.FC = () => {
                     <Text strong>{formatIDR(totalAmount)}</Text>
                   </div>
                 </Col>
+                {includePPN && (
+                  <Col xs={12} sm={6}>
+                    <Text type='secondary'>PPN (11%):</Text>
+                    <div>
+                      <Text strong>{formatIDR(totalAmount * 0.11)}</Text>
+                    </div>
+                  </Col>
+                )}
                 <Col xs={12} sm={6}>
-                  <Text type='secondary'>PPN (11%):</Text>
-                  <div>
-                    <Text strong>{formatIDR(totalAmount * 0.11)}</Text>
-                  </div>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Text type='secondary'>Total + Tax:</Text>
+                  <Text type='secondary'>{includePPN ? 'Total + Tax:' : 'Total:'}</Text>
                   <div>
                     <Text strong style={{ color: '#52c41a' }}>
-                      {formatIDR(totalAmount * 1.11)}
+                      {formatIDR(includePPN ? totalAmount * 1.11 : totalAmount)}
                     </Text>
                   </div>
                 </Col>
@@ -748,24 +760,26 @@ export const QuotationEditPage: React.FC = () => {
             </Col>
           </Row>
 
-          <Col xs={24}>
-            <Form.Item
-              name='terms'
-              label='Terms & Conditions'
-              rules={[
-                {
-                  required: true,
-                  message: 'Please enter terms and conditions',
-                },
-                { min: 50, message: 'Terms must be at least 50 characters' },
-              ]}
-            >
-              <TextArea
-                rows={8}
-                placeholder='Enter detailed terms and conditions for this quotation...'
-              />
-            </Form.Item>
-          </Col>
+          <Row gutter={[16, 16]}>
+            <Col xs={24}>
+              <Form.Item
+                name='terms'
+                label='Terms & Conditions'
+                rules={[
+                  {
+                    required: true,
+                    message: 'Please enter terms and conditions',
+                  },
+                  { min: 50, message: 'Terms must be at least 50 characters' },
+                ]}
+              >
+                <TextArea
+                  rows={8}
+                  placeholder='Enter detailed terms and conditions for this quotation...'
+                />
+              </Form.Item>
+            </Col>
+          </Row>
         </ProgressiveSection>
 
         {/* Action Buttons */}

@@ -7,14 +7,16 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { CreateBankTransferDto } from "../dto/create-bank-transfer.dto";
 import { UpdateBankTransferDto } from "../dto/update-bank-transfer.dto";
 import { BankTransferQueryDto } from "../dto/bank-transfer-query.dto";
-import { BankTransferStatus, TransactionType } from "@prisma/client";
+import { BankTransferStatus, TransactionType, Currency } from "@prisma/client";
 import { JournalService } from "./journal.service";
+import { ExchangeRateService } from "./exchange-rate.service";
 
 @Injectable()
 export class BankTransferService {
   constructor(
     private prisma: PrismaService,
     private journalService: JournalService,
+    private exchangeRateService: ExchangeRateService,
   ) {}
 
   /**
@@ -120,12 +122,46 @@ export class BankTransferService {
     // Generate transfer number
     const transferNumber = await this.generateTransferNumber();
 
+    // Handle multi-currency conversion
+    const currency = createDto.currency || Currency.IDR;
+    let exchangeRate = createDto.exchangeRate;
+    let idrAmount = createDto.idrAmount;
+    let originalAmount = createDto.originalAmount;
+
+    if (currency === Currency.IDR) {
+      // IDR transfer - no conversion needed
+      idrAmount = createDto.amount;
+      exchangeRate = 1;
+      originalAmount = createDto.amount;
+    } else {
+      // Foreign currency transfer - need conversion
+      originalAmount = createDto.originalAmount || createDto.amount;
+
+      // Get exchange rate if not provided
+      if (!exchangeRate) {
+        const rate = await this.exchangeRateService.getCurrentRate(
+          currency,
+          Currency.IDR,
+        );
+        exchangeRate = Number(rate.rate);
+      }
+
+      // Calculate IDR amount if not provided
+      if (!idrAmount) {
+        idrAmount = originalAmount * exchangeRate;
+      }
+    }
+
     // Create bank transfer
     const transfer = await this.prisma.bankTransfer.create({
       data: {
         transferNumber,
         transferDate: createDto.transferDate,
         amount: createDto.amount,
+        currency,
+        originalAmount,
+        exchangeRate,
+        idrAmount,
         fromAccountId: createDto.fromAccountId,
         toAccountId: createDto.toAccountId,
         description: createDto.description,

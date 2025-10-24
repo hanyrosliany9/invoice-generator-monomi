@@ -128,6 +128,28 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
     navigate('/invoices')
   }
 
+  const handleEdit = () => {
+    navigate(`/invoices/${id}/edit`)
+  }
+
+  const handleSendEmail = () => {
+    if (!invoice) return
+
+    const subject = encodeURIComponent(`Invoice ${invoice.invoiceNumber}`)
+    const body = encodeURIComponent(
+      `Dear ${invoice.client?.name || 'Customer'},\n\n` +
+      `Please find the details of invoice ${invoice.invoiceNumber}:\n\n` +
+      `Invoice Number: ${invoice.invoiceNumber}\n` +
+      `Amount: ${formatIDR(invoice.totalAmount)}\n` +
+      `Due Date: ${dayjs(invoice.dueDate).format('DD MMM YYYY')}\n` +
+      `Status: ${invoice.status}\n\n` +
+      `Please process the payment at your earliest convenience.\n\n` +
+      `Best regards`
+    )
+
+    window.location.href = `mailto:${invoice.client?.email || ''}?subject=${subject}&body=${body}`
+  }
+
   // Status configuration
   const getStatusConfig = (status: Invoice['status']) => {
     const configs = {
@@ -416,6 +438,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                 icon={<EditOutlined />}
                 size='large'
                 block
+                onClick={handleEdit}
                 aria-label='Edit invoice'
               >
                 Edit Invoice
@@ -985,6 +1008,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
         <FloatButton
           icon={<EditOutlined />}
           tooltip='Edit Invoice'
+          onClick={handleEdit}
           aria-label='Edit invoice'
         />
         <FloatButton
@@ -996,6 +1020,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
         <FloatButton
           icon={<MailOutlined />}
           tooltip='Send via Email'
+          onClick={handleSendEmail}
           aria-label='Send via email'
         />
         {invoice.status !== 'PAID' && invoice.status !== 'CANCELLED' && (

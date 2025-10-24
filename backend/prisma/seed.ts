@@ -498,6 +498,8 @@ async function main() {
       normalBalance: 'DEBIT',
       isControlAccount: true,
       isSystemAccount: true,
+      currency: 'IDR',
+      isCurrencyAccount: true,
       description: 'Cash on hand',
       descriptionId: 'Kas ditangan',
     },
@@ -515,8 +517,50 @@ async function main() {
       normalBalance: 'DEBIT',
       isControlAccount: true,
       isSystemAccount: true,
+      currency: 'IDR',
+      isCurrencyAccount: true,
       description: 'Bank accounts (BCA, Mandiri, BNI)',
       descriptionId: 'Rekening bank (BCA, Mandiri, BNI)',
+    },
+  });
+
+  // USD Bank Account (Multi-Currency 2025)
+  const accountBankUSD = await prisma.chartOfAccounts.upsert({
+    where: { code: '1-1021' },
+    update: {},
+    create: {
+      code: '1-1021',
+      name: 'USD Bank Account',
+      nameId: 'Rekening Bank USD',
+      accountType: 'ASSET',
+      accountSubType: 'CURRENT_ASSET',
+      normalBalance: 'DEBIT',
+      isControlAccount: false,
+      isSystemAccount: false,
+      currency: 'USD',
+      isCurrencyAccount: true,
+      description: 'USD denominated bank accounts',
+      descriptionId: 'Rekening bank dalam mata uang USD',
+    },
+  });
+
+  // USDT Crypto Wallet (Multi-Currency 2025)
+  const accountCryptoUSDT = await prisma.chartOfAccounts.upsert({
+    where: { code: '1-1022' },
+    update: {},
+    create: {
+      code: '1-1022',
+      name: 'USDT Crypto Wallet',
+      nameId: 'Dompet Kripto USDT',
+      accountType: 'ASSET',
+      accountSubType: 'CURRENT_ASSET',
+      normalBalance: 'DEBIT',
+      isControlAccount: false,
+      isSystemAccount: false,
+      currency: 'USDT',
+      isCurrencyAccount: true,
+      description: 'USDT (Tether) cryptocurrency wallet - FASB ASU 2023-08 compliant',
+      descriptionId: 'Dompet cryptocurrency USDT (Tether) - Sesuai FASB ASU 2023-08',
     },
   });
 

@@ -115,6 +115,24 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
     navigate('/quotations')
   }
 
+  const handleEdit = () => {
+    navigate(`/quotations/${id}/edit`)
+  }
+
+  const handleShareWhatsApp = () => {
+    if (!quotation) return
+
+    const message = encodeURIComponent(
+      `Quotation ${quotation.quotationNumber}\n` +
+      `Client: ${quotation.client?.name || 'N/A'}\n` +
+      `Amount: ${formatIDR(quotation.totalAmount)}\n` +
+      `Valid Until: ${dayjs(quotation.validUntil).format('DD MMM YYYY')}\n` +
+      `Status: ${quotation.status}`
+    )
+
+    window.open(`https://wa.me/?text=${message}`, '_blank')
+  }
+
   // Status configuration
   const getStatusConfig = (status: Quotation['status']) => {
     const configs = {
@@ -368,6 +386,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
                 icon={<EditOutlined />}
                 size='large'
                 block
+                onClick={handleEdit}
                 aria-label='Edit quotation'
               >
                 Edit Quotation
@@ -835,6 +854,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
         <FloatButton
           icon={<EditOutlined />}
           tooltip='Edit Quotation'
+          onClick={handleEdit}
           aria-label='Edit quotation'
         />
         <FloatButton
@@ -846,6 +866,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
         <FloatButton
           icon={<WhatsAppOutlined />}
           tooltip='Share via WhatsApp'
+          onClick={handleShareWhatsApp}
           aria-label='Share via WhatsApp'
         />
       </FloatButton.Group>

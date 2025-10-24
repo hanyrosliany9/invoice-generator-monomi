@@ -14,6 +14,7 @@ import { AccountingExcelExportService } from "./services/accounting-excel-export
 import { CashTransactionService } from "./services/cash-transaction.service";
 import { BankTransferService } from "./services/bank-transfer.service";
 import { BankReconciliationService } from "./services/bank-reconciliation.service";
+import { ExchangeRateService } from "./services/exchange-rate.service";
 
 @Module({
   imports: [PrismaModule],
@@ -32,6 +33,7 @@ import { BankReconciliationService } from "./services/bank-reconciliation.servic
     CashTransactionService,
     BankTransferService,
     BankReconciliationService,
+    ExchangeRateService,
   ],
   exports: [
     JournalService,
@@ -46,6 +48,7 @@ import { BankReconciliationService } from "./services/bank-reconciliation.servic
     CashTransactionService,
     BankTransferService,
     BankReconciliationService,
+    ExchangeRateService,
   ],
 })
 export class AccountingModule {}

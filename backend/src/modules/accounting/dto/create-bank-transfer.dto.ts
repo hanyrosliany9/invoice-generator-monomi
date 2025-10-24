@@ -7,6 +7,7 @@ import {
   Min,
 } from "class-validator";
 import { Type } from "class-transformer";
+import { Currency } from "@prisma/client";
 
 export enum TransferMethod {
   INTERNAL = "INTERNAL",
@@ -36,6 +37,26 @@ export class CreateBankTransferDto {
   @IsNumber()
   @Min(0)
   amount: number;
+
+  // Multi-Currency Support (2025)
+  @IsEnum(Currency)
+  @IsOptional()
+  currency?: Currency = Currency.IDR;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  originalAmount?: number; // Amount in original currency
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  exchangeRate?: number; // Exchange rate if currency conversion
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  idrAmount?: number; // Amount in IDR (auto-calculated)
 
   @IsString()
   fromAccountId: string; // Chart of Accounts ID for source bank account

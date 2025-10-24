@@ -88,6 +88,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       label: t('navigation.projects'),
     },
     {
+      key: '/calendar',
+      icon: <ClockCircleOutlined />,
+      label: 'Calendar',
+    },
+    {
       key: '/quotations',
       icon: <FileTextOutlined />,
       label: t('navigation.quotations'),
@@ -98,19 +103,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       label: t('navigation.invoices'),
     },
     {
-      key: '/expenses',
-      icon: <DollarOutlined />,
-      label: 'Biaya',
-    },
-    {
       key: '/clients',
       icon: <UserOutlined />,
       label: t('navigation.clients'),
-    },
-    {
-      key: '/assets',
-      icon: <CameraOutlined />,
-      label: 'Aset',
     },
     {
       key: 'accounting',
@@ -119,43 +114,23 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       children: [
         {
           key: '/accounting/chart-of-accounts',
-          icon: <ProjectOutlined />,
+          icon: <BookOutlined />,
           label: 'Bagan Akun',
+        },
+        {
+          key: '/accounting/cash-bank-balance',
+          icon: <BankOutlined />,
+          label: 'Saldo Kas/Bank',
+        },
+        {
+          key: '/expenses',
+          icon: <DollarOutlined />,
+          label: 'Biaya',
         },
         {
           key: '/accounting/journal-entries',
           icon: <FileTextOutlined />,
           label: 'Jurnal Umum',
-        },
-        {
-          key: '/accounting/adjusting-entries',
-          icon: <EditOutlined />,
-          label: 'Jurnal Penyesuaian',
-        },
-        {
-          key: '/accounting/trial-balance',
-          icon: <CheckCircleOutlined />,
-          label: 'Neraca Saldo',
-        },
-        {
-          key: '/accounting/general-ledger',
-          icon: <BookOutlined />,
-          label: 'Buku Besar',
-        },
-        {
-          key: '/accounting/income-statement',
-          icon: <RiseOutlined />,
-          label: 'Laporan Laba Rugi',
-        },
-        {
-          key: '/accounting/balance-sheet',
-          icon: <BankOutlined />,
-          label: 'Neraca',
-        },
-        {
-          key: '/accounting/cash-flow',
-          icon: <DollarCircleOutlined />,
-          label: 'Laporan Arus Kas',
         },
         {
           key: '/accounting/accounts-receivable',
@@ -168,24 +143,34 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           label: 'Laporan Hutang',
         },
         {
-          key: '/accounting/ar-aging',
-          icon: <ClockCircleOutlined />,
-          label: 'Aging Piutang',
+          key: '/accounting/general-ledger',
+          icon: <BookOutlined />,
+          label: 'Buku Besar',
         },
         {
-          key: '/accounting/ap-aging',
-          icon: <ClockCircleOutlined />,
-          label: 'Aging Hutang',
-        },
-        {
-          key: '/accounting/depreciation',
+          key: '/accounting/cash-flow',
           icon: <DollarCircleOutlined />,
-          label: 'Depresiasi (PSAK 16)',
+          label: 'Laporan Arus Kas',
         },
         {
-          key: '/accounting/ecl-provisions',
-          icon: <WarningOutlined />,
-          label: 'Provisi ECL (PSAK 71)',
+          key: '/accounting/income-statement',
+          icon: <RiseOutlined />,
+          label: 'Laporan Laba Rugi',
+        },
+        {
+          key: '/accounting/trial-balance',
+          icon: <CheckCircleOutlined />,
+          label: 'Neraca Saldo',
+        },
+        {
+          key: '/accounting/balance-sheet',
+          icon: <BankOutlined />,
+          label: 'Neraca',
+        },
+        {
+          key: '/assets',
+          icon: <CameraOutlined />,
+          label: 'Aset & Depresiasi',
         },
       ],
     },
