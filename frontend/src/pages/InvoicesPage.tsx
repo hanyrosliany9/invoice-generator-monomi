@@ -898,6 +898,7 @@ export const InvoicesPage: React.FC = () => {
     {
       title: 'Invoice & Context',
       key: 'invoiceContext',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (_: any, invoice: Invoice) => (
         <div className='space-y-1'>
           <div className='font-medium'>
@@ -974,6 +975,7 @@ export const InvoicesPage: React.FC = () => {
     {
       title: 'Klien',
       key: 'clientName',
+      responsive: ['sm', 'md', 'lg'],
       render: (_: any, invoice: Invoice) => (
         <Button
           type='link'
@@ -990,6 +992,7 @@ export const InvoicesPage: React.FC = () => {
     {
       title: 'Proyek',
       key: 'projectName',
+      responsive: ['md', 'lg'],
       render: (_: any, invoice: Invoice) => (
         <Button
           type='link'
@@ -1006,6 +1009,7 @@ export const InvoicesPage: React.FC = () => {
     {
       title: 'Jumlah',
       key: 'amount',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (_: any, invoice: Invoice) => {
         const amount = getAmount(invoice)
         return (
@@ -1040,6 +1044,7 @@ export const InvoicesPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (status: string, record: Invoice) => {
         const getStatusBadgeColor = (status: string) => {
           switch (status) {
@@ -1106,6 +1111,7 @@ export const InvoicesPage: React.FC = () => {
       title: 'Batas Pembayaran',
       dataIndex: 'dueDate',
       key: 'dueDate',
+      responsive: ['sm', 'md', 'lg'],
       render: (date: string, record: Invoice) => {
         const daysUntilDue = getDaysUntilDue(date)
         const isLate = isOverdue(record)
@@ -1139,6 +1145,7 @@ export const InvoicesPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
+      responsive: ['xs', 'sm', 'md', 'lg'],
       className: 'actions-column',
       render: (_: any, invoice: Invoice) => (
         <div className='row-actions'>
@@ -1156,7 +1163,7 @@ export const InvoicesPage: React.FC = () => {
 
   return (
     <div>
-      {/* Hover-revealed row actions CSS */}
+      {/* Hover-revealed row actions CSS + Responsive table */}
       <style>{`
         .row-actions {
           opacity: 0.2;
@@ -1169,6 +1176,21 @@ export const InvoicesPage: React.FC = () => {
 
         .row-actions:hover {
           opacity: 1;
+        }
+
+        /* Responsive table for mobile */
+        @media (max-width: 768px) {
+          .ant-table {
+            font-size: 12px;
+          }
+
+          .ant-table-cell {
+            padding: 8px 4px !important;
+          }
+
+          .ant-table-column-title {
+            font-size: 11px;
+          }
         }
       `}</style>
       <div className='mb-6'>
@@ -1437,103 +1459,117 @@ export const InvoicesPage: React.FC = () => {
         </Row>
 
         {/* Controls */}
-        <div className='flex justify-between items-center mb-4'>
-          <Space>
-            <Input
-              data-testid='invoice-search-input'
-              placeholder='Cari invoice...'
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
-              style={{ width: 300 }}
-            />
-            <Select
-              data-testid='invoice-filter-button'
-              placeholder='Filter status'
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: 150 }}
-              allowClear
-            >
-              <Option value='DRAFT'>Draft</Option>
-              <Option value='SENT'>Terkirim</Option>
-              <Option value='PAID'>Lunas</Option>
-              <Option value='OVERDUE'>Jatuh Tempo</Option>
-              <Option value='CANCELLED'>Dibatalkan</Option>
-            </Select>
-            <Select
-              id='invoice-materai-filter'
-              data-testid='materai-reminder-button'
-              placeholder='Filter materai'
-              value={materaiFilter}
-              onChange={setMateraiFilter}
-              style={{ width: 150 }}
-              allowClear
-            >
-              <Option value='required'>Perlu Materai</Option>
-              <Option value='applied'>Sudah Ditempel</Option>
-              <Option value='pending'>Belum Ditempel</Option>
-            </Select>
-            <MonthPicker
-              placeholder='Pilih bulan & tahun'
-              value={filters.monthYear}
-              onChange={value => setFilters(prev => ({ ...prev, monthYear: value }))}
-              style={{ width: 180 }}
-              format='MMMM YYYY'
-              allowClear
-            />
-            <InputNumber
-              placeholder='Nilai min'
-              value={filters.amount?.[0]}
-              onChange={value => setFilters(prev => ({ ...prev, amount: [value, prev.amount?.[1]] }))}
-              style={{ width: 120 }}
-              formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-              parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
-            />
-            <InputNumber
-              placeholder='Nilai max'
-              value={filters.amount?.[1]}
-              onChange={value => setFilters(prev => ({ ...prev, amount: [prev.amount?.[0], value] }))}
-              style={{ width: 120 }}
-              formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-              parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
-            />
-            <Button onClick={() => setFilters({})}>Reset</Button>
-          </Space>
+        <div style={{ marginBottom: '16px' }}>
+          <Row gutter={[8, 12]} style={{ marginBottom: '12px' }}>
+            <Col xs={24} sm={12} md={6}>
+              <Input
+                data-testid='invoice-search-input'
+                placeholder='Cari invoice...'
+                prefix={<SearchOutlined />}
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                style={{ width: '100%' }}
+                size='large'
+              />
+            </Col>
+            <Col xs={24} sm={12} md={5}>
+              <Select
+                data-testid='invoice-filter-button'
+                placeholder='Filter status'
+                value={statusFilter}
+                onChange={setStatusFilter}
+                style={{ width: '100%' }}
+                allowClear
+                size='large'
+              >
+                <Option value='DRAFT'>Draft</Option>
+                <Option value='SENT'>Terkirim</Option>
+                <Option value='PAID'>Lunas</Option>
+                <Option value='OVERDUE'>Jatuh Tempo</Option>
+                <Option value='CANCELLED'>Dibatalkan</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={5}>
+              <Select
+                id='invoice-materai-filter'
+                data-testid='materai-reminder-button'
+                placeholder='Filter materai'
+                value={materaiFilter}
+                onChange={setMateraiFilter}
+                style={{ width: '100%' }}
+                allowClear
+                size='large'
+              >
+                <Option value='required'>Perlu Materai</Option>
+                <Option value='applied'>Sudah Ditempel</Option>
+                <Option value='pending'>Belum Ditempel</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={5}>
+              <MonthPicker
+                placeholder='Pilih bulan & tahun'
+                value={filters.monthYear}
+                onChange={value => setFilters(prev => ({ ...prev, monthYear: value }))}
+                style={{ width: '100%' }}
+                format='MMMM YYYY'
+                allowClear
+                size='large'
+              />
+            </Col>
+            <Col xs={12} sm={12} md={3}>
+              <InputNumber
+                placeholder='Min'
+                value={filters.amount?.[0]}
+                onChange={value => setFilters(prev => ({ ...prev, amount: [value, prev.amount?.[1]] }))}
+                style={{ width: '100%' }}
+                formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
+                size='large'
+              />
+            </Col>
+            <Col xs={12} sm={12} md={3}>
+              <InputNumber
+                placeholder='Max'
+                value={filters.amount?.[1]}
+                onChange={value => setFilters(prev => ({ ...prev, amount: [prev.amount?.[0], value] }))}
+                style={{ width: '100%' }}
+                formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
+                size='large'
+              />
+            </Col>
+          </Row>
 
-          <Space>
-            <Button
-              data-testid='invoice-export-button'
-              icon={<ExportOutlined />}
-              onClick={handleExport}
-              size='large'
-              style={{
-                height: '44px',
-                borderRadius: '22px',
-                padding: '0 24px',
-                fontSize: '16px',
-                fontWeight: 500,
-              }}
-            >
-              Export
-            </Button>
-            <Button
-              data-testid='create-invoice-button'
-              type='primary'
-              icon={<PlusOutlined />}
-              onClick={handleCreate}
-              size='large'
-              style={{
-                height: '48px',
-                borderRadius: '24px',
-                padding: '0 32px',
-                fontSize: '16px',
-                fontWeight: 600,
-              }}
-            >
-              {t('invoices.create')}
-            </Button>
-          </Space>
+          <Row gutter={[8, 12]} justify='space-between' align='middle'>
+            <Col xs={24} sm={6}>
+              <Button onClick={() => setFilters({})} style={{ width: '100%' }} size='large'>
+                Reset
+              </Button>
+            </Col>
+            <Col xs={12} sm={6}>
+              <Button
+                data-testid='invoice-export-button'
+                icon={<ExportOutlined />}
+                onClick={handleExport}
+                size='large'
+                style={{ width: '100%' }}
+              >
+                Export
+              </Button>
+            </Col>
+            <Col xs={12} sm={6}>
+              <Button
+                data-testid='create-invoice-button'
+                type='primary'
+                icon={<PlusOutlined />}
+                onClick={handleCreate}
+                size='large'
+                style={{ width: '100%' }}
+              >
+                Invoice
+              </Button>
+            </Col>
+          </Row>
         </div>
 
         {/* Active Filters Pills (Notion-style) */}
@@ -1717,21 +1753,24 @@ export const InvoicesPage: React.FC = () => {
           backdropFilter: theme.colors.glass.backdropFilter,
         }}
       >
-        <Table
-          columns={columns}
-          dataSource={filteredInvoices}
-          loading={isLoading}
-          rowKey='id'
-          rowSelection={rowSelection}
-          pagination={{
-            total: filteredInvoices.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} dari ${total} invoice`,
-          }}
-        />
+        <div style={{ overflowX: 'auto' }}>
+          <Table
+            columns={columns}
+            dataSource={filteredInvoices}
+            loading={isLoading}
+            rowKey='id'
+            rowSelection={rowSelection}
+            pagination={{
+              total: filteredInvoices.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} dari ${total} invoice`,
+            }}
+            scroll={{ x: 1200 }}
+          />
+        </div>
       </Card>
 
       {/* Create/Edit Modal */}

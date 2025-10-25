@@ -161,309 +161,513 @@ export class PdfService {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invoice ${invoiceNumber}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Arial', sans-serif;
+    * {
       margin: 0;
-      padding: 15mm;
-      background-color: #ffffff;
-      color: #333;
-      line-height: 1.4;
-      font-size: 12px;
+      padding: 0;
+      box-sizing: border-box;
     }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 10mm;
+      background-color: #ffffff;
+      color: #1f2937;
+      line-height: 1.5;
+      font-size: 10px;
+    }
+
     .invoice-container {
       max-width: 190mm;
       margin: 0 auto;
       background-color: white;
     }
-    
-    /* Header - Clean and Professional */
+
+    /* ===== HEADER SECTION ===== */
     .header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 12mm;
-      padding-bottom: 3mm;
+      margin-bottom: 10mm;
+      padding-bottom: 6mm;
       border-bottom: 2px solid #dc2626;
+      position: relative;
     }
+
     .company-info {
-      flex: 1;
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1mm;
     }
+
+    .company-logo {
+      width: 40mm;
+      height: auto;
+      margin-bottom: 1mm;
+    }
+
     .company-name {
-      font-size: 20px;
-      font-weight: bold;
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
       color: #dc2626;
-      margin-bottom: 2mm;
+      letter-spacing: -0.3px;
     }
+
     .company-tagline {
-      font-size: 11px;
-      color: #666;
-      margin-bottom: 3mm;
+      font-size: 8px;
+      color: #6b7280;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-    .invoice-title {
+
+    .invoice-title-section {
       text-align: right;
       flex: 1;
     }
-    .invoice-title h1 {
-      font-size: 24px;
+
+    .invoice-title-section h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
       color: #dc2626;
-      margin: 0;
-      font-weight: bold;
+      margin: 0 0 2mm 0;
+      letter-spacing: -0.5px;
     }
-    .invoice-number {
-      font-size: 14px;
-      color: #666;
-      margin-top: 2mm;
+
+    .invoice-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 1mm;
+      font-size: 9px;
+      color: #6b7280;
     }
-    .invoice-date {
-      font-size: 12px;
-      color: #666;
-      margin-top: 1mm;
+
+    .invoice-meta-item {
+      display: flex;
+      justify-content: flex-end;
+      gap: 3mm;
     }
-    
-    /* Two Column Layout */
+
+    .invoice-meta-label {
+      font-weight: 600;
+      color: #374151;
+      min-width: 32mm;
+      text-align: right;
+    }
+
+    .invoice-meta-value {
+      color: #1f2937;
+    }
+
+    /* ===== DETAILS SECTION ===== */
     .invoice-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8mm;
+      margin-bottom: 8mm;
+    }
+
+    .detail-card {
+      background-color: #f9fafb;
+      padding: 4mm 5mm;
+      border-radius: 3px;
+      border-left: 3px solid #dc2626;
+    }
+
+    .detail-card.secondary {
+      border-left-color: #e5e7eb;
+    }
+
+    .section-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 2mm;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .detail-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 6mm;
+      margin-bottom: 1mm;
+      font-size: 9px;
+      line-height: 1.3;
     }
-    .client-info, .invoice-info {
+
+    .detail-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-label {
+      font-weight: 600;
+      color: #6b7280;
+      min-width: 35mm;
+    }
+
+    .detail-value {
+      color: #1f2937;
+      text-align: right;
       flex: 1;
     }
-    .client-info {
-      margin-right: 15mm;
-    }
-    .section-title {
-      font-size: 14px;
-      font-weight: bold;
-      color: #dc2626;
-      margin-bottom: 3mm;
-      text-transform: uppercase;
-    }
-    .info-item {
-      margin-bottom: 1mm;
-      font-size: 10px;
-    }
-    .info-label {
-      font-weight: bold;
-      color: #555;
-      display: inline-block;
-      width: 35mm;
-    }
-    
-    /* Professional Service Table */
+
+    /* ===== SERVICE TABLE ===== */
     .service-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 5mm;
-      border: 1px solid #ddd;
+      margin-bottom: 6mm;
+      border: 1px solid #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
     }
-    .service-table th {
-      background-color: #dc2626;
+
+    .service-table thead {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
       color: white;
-      padding: 3mm;
+    }
+
+    .service-table th {
+      padding: 3mm 4mm;
       text-align: center;
-      font-size: 11px;
-      font-weight: bold;
+      font-size: 9px;
+      font-weight: 600;
       text-transform: uppercase;
+      letter-spacing: 0.3px;
+      border: none;
     }
-    .service-table th:first-child {
-      width: 8%;
-      text-align: center;
-    }
+
     .service-table th:nth-child(2) {
-      width: 52%;
       text-align: left;
     }
+
     .service-table th:nth-child(3),
     .service-table th:nth-child(4),
     .service-table th:nth-child(5) {
-      width: 13.33%;
       text-align: right;
     }
+
     .service-table td {
-      padding: 2mm;
-      border-bottom: 1px solid #eee;
-      font-size: 10px;
+      padding: 3mm 4mm;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 9px;
+      color: #1f2937;
     }
+
     .service-table td:first-child {
       text-align: center;
-      font-weight: bold;
+      font-weight: 600;
+      background-color: #fafbfc;
+      width: 8%;
     }
+
+    .service-table td:nth-child(2) {
+      width: 52%;
+    }
+
     .service-table td:nth-child(3),
     .service-table td:nth-child(4),
     .service-table td:nth-child(5) {
       text-align: right;
-    }
-    .service-table tbody tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-    
-    /* Summary Section */
-    .summary-table {
-      width: 50%;
-      margin-left: auto;
-      border-collapse: collapse;
-      margin-bottom: 6mm;
-    }
-    .summary-table td {
-      padding: 1.5mm 4mm;
-      font-size: 10px;
-      border-bottom: 1px solid #eee;
-    }
-    .summary-table td:first-child {
-      text-align: right;
-      font-weight: bold;
-      color: #555;
-    }
-    .summary-table td:last-child {
-      text-align: right;
-      width: 40mm;
-    }
-    .summary-total {
-      background-color: #dc2626;
-      color: white;
-      font-weight: bold;
-      font-size: 12px;
-    }
-    
-    
-    /* Scope of Work Section */
-    .scope-of-work {
-      margin-bottom: 4mm;
-      padding: 4mm;
-      background-color: #fef3c7;
-      border-left: 3px solid #f59e0b;
-      border-radius: 2px;
-    }
-    .scope-title {
-      font-weight: bold;
-      color: #dc2626;
-      margin-bottom: 3mm;
-      font-size: 12px;
-    }
-    .scope-content {
-      white-space: pre-line;
-      line-height: 1.4;
-      font-size: 9px;
-      color: #333;
+      width: 13.33%;
     }
 
-    /* Payment Information (Invoice-specific) */
-    .payment-info {
-      margin-bottom: 4mm;
-      padding: 4mm;
+    .service-table tbody tr:nth-child(even) td {
+      background-color: #f9fafb;
+    }
+
+    .service-table tbody tr:nth-child(even) td:first-child {
       background-color: #f3f4f6;
-      border-radius: 2px;
     }
-    .payment-title {
-      font-weight: bold;
-      color: #dc2626;
-      margin-bottom: 3mm;
-      font-size: 12px;
+
+    .service-desc-main {
+      font-weight: 600;
+      color: #1f2937;
+      display: block;
+      margin-bottom: 0.5mm;
     }
-    .payment-details {
-      white-space: pre-line;
-      line-height: 1.2;
+
+    .service-desc-detail {
+      font-size: 8px;
+      color: #6b7280;
+      display: block;
+    }
+
+    /* ===== SUMMARY SECTION ===== */
+    .summary-section {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 6mm;
+    }
+
+    .summary-table {
+      width: 55%;
+      border-collapse: collapse;
+    }
+
+    .summary-table tr {
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .summary-table td {
+      padding: 2mm 4mm;
       font-size: 9px;
     }
-    
-    /* Footer Layout */
+
+    .summary-table td:first-child {
+      text-align: right;
+      font-weight: 600;
+      color: #6b7280;
+    }
+
+    .summary-table td:last-child {
+      text-align: right;
+      font-weight: 600;
+      color: #1f2937;
+      width: 38mm;
+    }
+
+    .summary-table tr.summary-total {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      color: white;
+      font-weight: 700;
+      font-size: 10px;
+    }
+
+    .summary-table tr.summary-total td {
+      padding: 3mm 4mm;
+      color: white;
+    }
+
+    .summary-table tr.summary-total td:first-child {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* ===== SUPPORTING SECTIONS ===== */
+    .section-box {
+      margin-bottom: 4mm;
+      padding: 4mm 5mm;
+      border-radius: 3px;
+      border-left: 3px solid #f59e0b;
+    }
+
+    .section-box.scope {
+      background-color: #fffbeb;
+      border-left-color: #f59e0b;
+    }
+
+    .section-box.payment {
+      background-color: #f3f4f6;
+      border-left-color: #9ca3af;
+    }
+
+    .section-box.terms {
+      background-color: #f9fafb;
+      border-left-color: #d1d5db;
+    }
+
+    .section-box-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 2mm;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .section-box-content {
+      font-size: 8px;
+      color: #374151;
+      line-height: 1.4;
+      white-space: pre-line;
+    }
+
+    .bank-details {
+      margin-top: 3mm;
+      padding-top: 3mm;
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+      font-size: 8px;
+    }
+
+    .bank-details-title {
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 1mm;
+      display: block;
+    }
+
+    .bank-item {
+      color: #374151;
+      margin-bottom: 0.5mm;
+      line-height: 1.3;
+    }
+
+    /* ===== FOOTER ===== */
     .footer-section {
       display: flex;
       justify-content: space-between;
-      margin-top: 8mm;
+      gap: 8mm;
+      margin-top: 6mm;
+      padding-top: 6mm;
+      border-top: 1px solid #e5e7eb;
     }
-    .terms-section {
+
+    .footer-content {
       flex: 1;
-      margin-right: 10mm;
     }
-    .terms-title {
-      font-size: 12px;
-      font-weight: bold;
-      color: #dc2626;
-      margin-bottom: 3mm;
-    }
-    .terms-content {
+
+    .footer-title {
+      font-family: 'Poppins', sans-serif;
       font-size: 9px;
-      line-height: 1.2;
-      color: #666;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 2mm;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
-    
-    /* Contact Bar */
+
+    .footer-text {
+      font-size: 8px;
+      line-height: 1.4;
+      color: #6b7280;
+      white-space: pre-line;
+    }
+
+    /* ===== CONTACT BAR ===== */
     .contact-bar {
-      margin-top: 10mm;
+      margin-top: 6mm;
+      padding: 3mm 5mm;
+      background: linear-gradient(90deg, #f9fafb 0%, #f3f4f6 100%);
+      border-radius: 3px;
+      border: 1px solid #e5e7eb;
       text-align: center;
-      padding: 3mm;
-      background-color: #f3f4f6;
-      border-radius: 2px;
-      font-size: 10px;
-      color: #666;
+      font-size: 8px;
+      color: #6b7280;
+      font-weight: 500;
     }
-    
+
+    .contact-bar-item {
+      display: inline-block;
+      margin: 0 4mm;
+    }
+
+    .contact-bar-item:not(:last-child)::after {
+      content: '•';
+      margin-left: 4mm;
+      color: #d1d5db;
+    }
+
+    /* ===== PRINT STYLES ===== */
     @media print {
-      body { 
-        margin: 0; 
+      body {
+        margin: 0;
         padding: 10mm;
       }
-      .invoice-container { 
-        margin: 0; 
+      .invoice-container {
+        margin: 0;
         padding: 0;
       }
+    }
+
+    /* ===== UTILITY CLASSES ===== */
+    .text-right {
+      text-align: right;
+    }
+
+    .mt-sm {
+      margin-top: 2mm;
+    }
+
+    .mt-md {
+      margin-top: 4mm;
     }
   </style>
 </head>
 <body>
   <div class="invoice-container">
-    <!-- Professional Header -->
+    <!-- Header with Company Info and Invoice Title -->
     <div class="header">
       <div class="company-info">
         <div class="company-name">${companyData.companyName}</div>
-        <div class="company-tagline">Professional Business Solutions</div>
+        <div class="company-tagline">Digital Creative Agency</div>
       </div>
-      <div class="invoice-title">
+      <div class="invoice-title-section">
         <h1>INVOICE</h1>
-        <div class="invoice-number">No: ${invoiceNumber}</div>
-        <div class="invoice-date">Date: ${formatDate(creationDate)}</div>
+        <div class="invoice-meta">
+          <div class="invoice-meta-item">
+            <span class="invoice-meta-label">Invoice No:</span>
+            <span class="invoice-meta-value">${invoiceNumber}</span>
+          </div>
+          <div class="invoice-meta-item">
+            <span class="invoice-meta-label">Date:</span>
+            <span class="invoice-meta-value">${formatDate(creationDate)}</span>
+          </div>
+          <div class="invoice-meta-item">
+            <span class="invoice-meta-label">Due Date:</span>
+            <span class="invoice-meta-value">${formatDate(dueDate)}</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Clean Two-Column Layout -->
+    <!-- Client & Invoice Details Cards -->
     <div class="invoice-details">
-      <div class="client-info">
-        <div class="section-title">Invoice To</div>
-        <div class="info-item">${client.name}</div>
-        ${client.company ? `<div class="info-item">${client.company}</div>` : ""}
-        <div class="info-item">Phone: ${client.phone || "N/A"}</div>
-        ${client.email ? `<div class="info-item">Email: ${client.email}</div>` : ""}
-        ${client.address ? `<div class="info-item">${client.address}</div>` : ""}
+      <div class="detail-card">
+        <div class="section-title">Bill To</div>
+        <div class="detail-row">
+          <span class="detail-value" style="flex: 1; text-align: left;">${client.name}</span>
+        </div>
+        ${client.company ? `
+        <div class="detail-row">
+          <span class="detail-value" style="flex: 1; text-align: left; color: #6b7280; font-size: 9px;">${client.company}</span>
+        </div>
+        ` : ""}
+        ${client.address ? `
+        <div class="detail-row">
+          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.address}</span>
+        </div>
+        ` : ""}
+        ${client.phone ? `
+        <div class="detail-row">
+          <span class="detail-label" style="min-width: auto;">Phone:</span>
+          <span class="detail-value">${client.phone}</span>
+        </div>
+        ` : ""}
+        ${client.email ? `
+        <div class="detail-row">
+          <span class="detail-label" style="min-width: auto;">Email:</span>
+          <span class="detail-value">${client.email}</span>
+        </div>
+        ` : ""}
       </div>
-      
-      <div class="invoice-info">
-        <div class="section-title">Invoice Details</div>
-        <div class="info-item">
-          <span class="info-label">Invoice No:</span> ${invoiceNumber}
+
+      <div class="detail-card secondary">
+        <div class="section-title">Invoice Info</div>
+        <div class="detail-row">
+          <span class="detail-label">Project:</span>
+          <span class="detail-value">${project.description || project.name || "N/A"}</span>
         </div>
-        <div class="info-item">
-          <span class="info-label">Invoice Date:</span> ${formatDate(creationDate)}
-        </div>
-        <div class="info-item">
-          <span class="info-label">Due Date:</span> ${formatDate(dueDate)}
-        </div>
-        <div class="info-item">
-          <span class="info-label">Payment Method:</span> Transfer Bank
+        <div class="detail-row">
+          <span class="detail-label">Status:</span>
+          <span class="detail-value" style="color: #059669; font-weight: 600;">Pending</span>
         </div>
       </div>
     </div>
 
-    <!-- Professional Service Table -->
+    <!-- Services Table -->
     <table class="service-table">
       <thead>
         <tr>
           <th>#</th>
-          <th>Description</th>
+          <th>Service / Product</th>
           <th>Price</th>
-          <th>Quantity</th>
+          <th>Qty</th>
           <th>Amount</th>
         </tr>
       </thead>
@@ -476,8 +680,8 @@ export class PdfService {
         <tr>
           <td>${String(index + 1).padStart(2, "0")}</td>
           <td>
-            <strong>${product.name}</strong><br>
-            <small style="color: #666;">${product.description || ""}</small>
+            <span class="service-desc-main">${product.name}</span>
+            ${product.description ? `<span class="service-desc-detail">${product.description}</span>` : ""}
           </td>
           <td>${formatIDR(product.price || 0)}</td>
           <td>${product.quantity || 1}</td>
@@ -489,7 +693,9 @@ export class PdfService {
             : `
         <tr>
           <td>01</td>
-          <td>${project.description}</td>
+          <td>
+            <span class="service-desc-main">${project.description || project.name || "Service"}</span>
+          </td>
           <td>${formatIDR(amountPerProject)}</td>
           <td>1</td>
           <td>${formatIDR(amountPerProject)}</td>
@@ -499,63 +705,65 @@ export class PdfService {
       </tbody>
     </table>
 
-    <!-- Summary Table with Optional Tax -->
-    <table class="summary-table">
-      <tr>
-        <td>Sub Total</td>
-        <td>${formatIDR(subTotal)}</td>
-      </tr>
-      ${
-        includeTax
-          ? `
-      <tr>
-        <td>Tax (${taxLabel} ${Math.round(taxRate * 100)}%)</td>
-        <td>${formatIDR(taxAmount)}</td>
-      </tr>
-      `
-          : ""
-      }
-      ${
-        taxExemptReason
-          ? `
-      <tr>
-        <td colspan="2" style="font-size: 10px; color: #666; text-align: center; padding: 5px;">
-          ${taxExemptReason}
-        </td>
-      </tr>
-      `
-          : ""
-      }
-      <tr class="summary-total">
-        <td>TOTAL</td>
-        <td>${formatIDR(finalTotal)}</td>
-      </tr>
-    </table>
+    <!-- Summary Section -->
+    <div class="summary-section">
+      <table class="summary-table">
+        <tr>
+          <td>Subtotal</td>
+          <td>${formatIDR(subTotal)}</td>
+        </tr>
+        ${
+          includeTax
+            ? `
+        <tr>
+          <td>Tax (${taxLabel} ${Math.round(taxRate * 100)}%)</td>
+          <td>${formatIDR(taxAmount)}</td>
+        </tr>
+        `
+            : ""
+        }
+        ${
+          taxExemptReason
+            ? `
+        <tr>
+          <td colspan="2" style="font-size: 9px; color: #6b7280; text-align: center; padding: 3mm;">
+            ${taxExemptReason}
+          </td>
+        </tr>
+        `
+            : ""
+        }
+        <tr class="summary-total">
+          <td>TOTAL</td>
+          <td>${formatIDR(finalTotal)}</td>
+        </tr>
+      </table>
+    </div>
 
     <!-- Scope of Work Section -->
     ${
       scopeOfWork
         ? `
-    <div class="scope-of-work">
-      <div class="scope-title">Ruang Lingkup Pekerjaan (Scope of Work):</div>
-      <div class="scope-content">${scopeOfWork}</div>
+    <div class="section-box scope">
+      <div class="section-box-title">Scope of Work</div>
+      <div class="section-box-content">${scopeOfWork}</div>
     </div>
     `
         : ""
     }
 
     <!-- Payment Information -->
-    <div class="payment-info">
-      <div class="payment-title">Informasi Pembayaran:</div>
-      <div class="payment-details">${paymentInfo}</div>
+    <div class="section-box payment">
+      <div class="section-box-title">Payment Information</div>
+      <div class="section-box-content">${paymentInfo}</div>
       ${
         companyData.bankBCA || companyData.bankMandiri || companyData.bankBNI
           ? `
-      <div style="margin-top: 10px;">
-        <strong>Rekening Bank:</strong><br>
-        ${companyData.bankBCA ? `BCA: ${companyData.bankBCA} a.n. ${companyData.companyName}<br>` : ""}
-        ${companyData.bankMandiri ? `Mandiri: ${companyData.bankMandiri} a.n. ${companyData.companyName}<br>` : ""}
-        ${companyData.bankBNI ? `BNI: ${companyData.bankBNI} a.n. ${companyData.companyName}<br>` : ""}
+      <div class="bank-details">
+        <span class="bank-details-title">Bank Accounts:</span>
+        ${companyData.bankBCA ? `<div class="bank-item">BCA: ${companyData.bankBCA} a.n. ${companyData.companyName}</div>` : ""}
+        ${companyData.bankMandiri ? `<div class="bank-item">Mandiri: ${companyData.bankMandiri} a.n. ${companyData.companyName}</div>` : ""}
+        ${companyData.bankBNI ? `<div class="bank-item">BNI: ${companyData.bankBNI} a.n. ${companyData.companyName}</div>` : ""}
       </div>
       `
           : ""
@@ -564,18 +772,17 @@ export class PdfService {
 
     <!-- Footer Section -->
     <div class="footer-section">
-      <div class="terms-section">
-        <div class="terms-title">Terms & Conditions</div>
-        <div class="terms-content">
-          ${terms || "Payment due within 30 days. All prices in Indonesian Rupiah (IDR). This invoice is valid until the due date."}
-        </div>
+      <div class="footer-content">
+        <div class="footer-title">Terms & Conditions</div>
+        <div class="footer-text">${terms || "Payment due within 30 days of invoice date. All prices are in Indonesian Rupiah (IDR). This invoice is valid until the due date specified above."}</div>
       </div>
-      
     </div>
 
     <!-- Contact Information Bar -->
     <div class="contact-bar">
-      Contact: ${companyData.phone || "N/A"} | ${companyData.address || "N/A"} | ${companyData.email || "N/A"}
+      <span class="contact-bar-item">${companyData.phone || "N/A"}</span>
+      <span class="contact-bar-item">${companyData.address || "N/A"}</span>
+      <span class="contact-bar-item">${companyData.email || "N/A"}</span>
     </div>
   </div>
 </body>
@@ -628,313 +835,526 @@ export class PdfService {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quotation ${quotationNumber}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Arial', sans-serif;
+    * {
       margin: 0;
-      padding: 15mm;
-      background-color: #ffffff;
-      color: #333;
-      line-height: 1.4;
-      font-size: 12px;
+      padding: 0;
+      box-sizing: border-box;
     }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 10mm;
+      background-color: #ffffff;
+      color: #1f2937;
+      line-height: 1.5;
+      font-size: 10px;
+    }
+
     .quotation-container {
       max-width: 190mm;
       margin: 0 auto;
       background-color: white;
     }
-    
-    /* Header - Clean and Professional */
+
+    /* ===== HEADER SECTION ===== */
     .header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 20mm;
-      padding-bottom: 5mm;
-      border-bottom: 2px solid #1e40af;
+      margin-bottom: 10mm;
+      padding-bottom: 6mm;
+      border-bottom: 2px solid #0369a1;
+      position: relative;
     }
+
     .company-info {
-      flex: 1;
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1mm;
     }
+
+    .company-logo {
+      width: 40mm;
+      height: auto;
+      margin-bottom: 1mm;
+    }
+
     .company-name {
-      font-size: 20px;
-      font-weight: bold;
-      color: #1e40af;
-      margin-bottom: 2mm;
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0369a1;
+      letter-spacing: -0.3px;
     }
+
     .company-tagline {
-      font-size: 11px;
-      color: #666;
-      margin-bottom: 3mm;
+      font-size: 8px;
+      color: #6b7280;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-    .quotation-title {
+
+    .quotation-title-section {
       text-align: right;
       flex: 1;
     }
-    .quotation-title h1 {
-      font-size: 28px;
-      color: #1e40af;
-      margin: 0;
-      font-weight: bold;
+
+    .quotation-title-section h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #0369a1;
+      margin: 0 0 2mm 0;
+      letter-spacing: -0.5px;
     }
-    .quotation-number {
-      font-size: 14px;
-      color: #666;
-      margin-top: 2mm;
+
+    .quotation-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 1mm;
+      font-size: 9px;
+      color: #6b7280;
     }
-    .quotation-date {
-      font-size: 12px;
-      color: #666;
-      margin-top: 1mm;
+
+    .quotation-meta-item {
+      display: flex;
+      justify-content: flex-end;
+      gap: 3mm;
     }
-    
-    /* Two Column Layout */
+
+    .quotation-meta-label {
+      font-weight: 600;
+      color: #374151;
+      min-width: 32mm;
+      text-align: right;
+    }
+
+    .quotation-meta-value {
+      color: #1f2937;
+    }
+
+    /* ===== DETAILS SECTION ===== */
     .quotation-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8mm;
+      margin-bottom: 8mm;
+    }
+
+    .detail-card {
+      background-color: #f0f9ff;
+      padding: 4mm 5mm;
+      border-radius: 3px;
+      border-left: 3px solid #0369a1;
+    }
+
+    .detail-card.secondary {
+      background-color: #f9fafb;
+      border-left-color: #e5e7eb;
+    }
+
+    .section-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 2mm;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .detail-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 10mm;
+      margin-bottom: 1mm;
+      font-size: 9px;
+      line-height: 1.3;
     }
-    .client-info, .quotation-info {
+
+    .detail-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-label {
+      font-weight: 600;
+      color: #6b7280;
+      min-width: 35mm;
+    }
+
+    .detail-value {
+      color: #1f2937;
+      text-align: right;
       flex: 1;
     }
-    .client-info {
-      margin-right: 15mm;
-    }
-    .section-title {
-      font-size: 14px;
-      font-weight: bold;
-      color: #1e40af;
-      margin-bottom: 3mm;
-      text-transform: uppercase;
-    }
-    .info-item {
-      margin-bottom: 1mm;
-      font-size: 10px;
-    }
-    .info-label {
-      font-weight: bold;
-      color: #555;
-      display: inline-block;
-      width: 35mm;
-    }
-    
-    /* Professional Service Table */
+
+    /* ===== SERVICE TABLE ===== */
     .service-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 5mm;
-      border: 1px solid #ddd;
+      margin-bottom: 6mm;
+      border: 1px solid #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
     }
-    .service-table th {
-      background-color: #1e40af;
+
+    .service-table thead {
+      background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
       color: white;
-      padding: 3mm;
+    }
+
+    .service-table th {
+      padding: 3mm 4mm;
       text-align: center;
-      font-size: 11px;
-      font-weight: bold;
+      font-size: 9px;
+      font-weight: 600;
       text-transform: uppercase;
+      letter-spacing: 0.3px;
+      border: none;
     }
-    .service-table th:first-child {
-      width: 8%;
-      text-align: center;
-    }
+
     .service-table th:nth-child(2) {
-      width: 52%;
       text-align: left;
     }
+
     .service-table th:nth-child(3),
     .service-table th:nth-child(4),
     .service-table th:nth-child(5) {
-      width: 13.33%;
       text-align: right;
     }
+
     .service-table td {
-      padding: 2mm;
-      border-bottom: 1px solid #eee;
-      font-size: 10px;
+      padding: 3mm 4mm;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 9px;
+      color: #1f2937;
     }
+
     .service-table td:first-child {
       text-align: center;
-      font-weight: bold;
+      font-weight: 600;
+      background-color: #f0f9ff;
+      width: 8%;
     }
+
+    .service-table td:nth-child(2) {
+      width: 52%;
+    }
+
     .service-table td:nth-child(3),
     .service-table td:nth-child(4),
     .service-table td:nth-child(5) {
       text-align: right;
+      width: 13.33%;
     }
-    .service-table tbody tr:nth-child(even) {
-      background-color: #f9f9f9;
+
+    .service-table tbody tr:nth-child(even) td {
+      background-color: #f9fafb;
     }
-    
-    /* Summary Section */
-    .summary-table {
-      width: 50%;
-      margin-left: auto;
-      border-collapse: collapse;
+
+    .service-table tbody tr:nth-child(even) td:first-child {
+      background-color: #f0f9ff;
+    }
+
+    .service-desc-main {
+      font-weight: 600;
+      color: #1f2937;
+      display: block;
+      margin-bottom: 0.5mm;
+    }
+
+    .service-desc-detail {
+      font-size: 8px;
+      color: #6b7280;
+      display: block;
+    }
+
+    /* ===== SUMMARY SECTION ===== */
+    .summary-section {
+      display: flex;
+      justify-content: flex-end;
       margin-bottom: 6mm;
     }
-    .summary-table td {
-      padding: 1.5mm 4mm;
-      font-size: 10px;
-      border-bottom: 1px solid #eee;
+
+    .summary-table {
+      width: 55%;
+      border-collapse: collapse;
     }
+
+    .summary-table tr {
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .summary-table td {
+      padding: 2mm 4mm;
+      font-size: 9px;
+    }
+
     .summary-table td:first-child {
       text-align: right;
-      font-weight: bold;
-      color: #555;
+      font-weight: 600;
+      color: #6b7280;
     }
+
     .summary-table td:last-child {
       text-align: right;
-      width: 40mm;
+      font-weight: 600;
+      color: #1f2937;
+      width: 38mm;
     }
-    .summary-total {
-      background-color: #1e40af;
+
+    .summary-table tr.summary-total {
+      background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
       color: white;
-      font-weight: bold;
-      font-size: 12px;
+      font-weight: 700;
+      font-size: 10px;
     }
 
-    /* Scope of Work Section */
-    .scope-of-work {
+    .summary-table tr.summary-total td {
+      padding: 3mm 4mm;
+      color: white;
+    }
+
+    .summary-table tr.summary-total td:first-child {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* ===== SUPPORTING SECTIONS ===== */
+    .section-box {
       margin-bottom: 4mm;
-      padding: 4mm;
-      background-color: #fef3c7;
+      padding: 4mm 5mm;
+      border-radius: 3px;
       border-left: 3px solid #f59e0b;
-      border-radius: 2px;
-    }
-    .scope-title {
-      font-weight: bold;
-      color: #1e40af;
-      margin-bottom: 3mm;
-      font-size: 12px;
-    }
-    .scope-content {
-      white-space: pre-line;
-      line-height: 1.4;
-      font-size: 9px;
-      color: #333;
     }
 
-    /* Footer Layout */
+    .section-box.scope {
+      background-color: #fffbeb;
+      border-left-color: #f59e0b;
+    }
+
+    .section-box.terms {
+      background-color: #f9fafb;
+      border-left-color: #d1d5db;
+    }
+
+    .section-box-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 2mm;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .section-box-content {
+      font-size: 8px;
+      color: #374151;
+      line-height: 1.4;
+      white-space: pre-line;
+    }
+
+    /* ===== FOOTER ===== */
     .footer-section {
       display: flex;
       justify-content: space-between;
-      margin-top: 8mm;
+      gap: 8mm;
+      margin-top: 6mm;
+      padding-top: 6mm;
+      border-top: 1px solid #e5e7eb;
     }
-    .terms-section {
+
+    .footer-content {
       flex: 1;
-      margin-right: 10mm;
     }
-    .terms-title {
-      font-size: 12px;
-      font-weight: bold;
-      color: #1e40af;
-      margin-bottom: 3mm;
-    }
-    .terms-content {
+
+    .footer-title {
+      font-family: 'Poppins', sans-serif;
       font-size: 9px;
-      line-height: 1.2;
-      color: #666;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 2mm;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
+
+    .footer-text {
+      font-size: 8px;
+      line-height: 1.4;
+      color: #6b7280;
+      white-space: pre-line;
+    }
+
     .signature-section {
       flex: 1;
       text-align: center;
     }
+
     .signature-box {
-      border: 1px solid #ddd;
-      padding: 6mm;
-      background-color: #f9f9f9;
+      border: 1px solid #e5e7eb;
+      padding: 4mm 5mm;
+      background-color: #f9fafb;
+      border-radius: 3px;
     }
+
     .signature-title {
-      font-size: 11px;
-      color: #666;
-      margin-bottom: 8mm;
+      font-size: 8px;
+      color: #6b7280;
+      margin-bottom: 6mm;
+      font-weight: 500;
     }
+
+    .signature-line {
+      border-top: 1px solid #d1d5db;
+      margin-bottom: 1mm;
+      height: 15mm;
+    }
+
     .signature-name {
-      font-size: 12px;
-      font-weight: bold;
-      color: #1e40af;
+      font-size: 9px;
+      font-weight: 600;
+      color: #0369a1;
     }
+
     .signature-position {
-      font-size: 10px;
-      color: #666;
+      font-size: 8px;
+      color: #6b7280;
       margin-top: 1mm;
     }
-    
-    /* Contact Bar */
+
+    /* ===== CONTACT BAR ===== */
     .contact-bar {
-      margin-top: 10mm;
+      margin-top: 6mm;
+      padding: 3mm 5mm;
+      background: linear-gradient(90deg, #f9fafb 0%, #f3f4f6 100%);
+      border-radius: 3px;
+      border: 1px solid #e5e7eb;
       text-align: center;
-      padding: 3mm;
-      background-color: #f3f4f6;
-      border-radius: 2px;
-      font-size: 10px;
-      color: #666;
+      font-size: 8px;
+      color: #6b7280;
+      font-weight: 500;
     }
-    
+
+    .contact-bar-item {
+      display: inline-block;
+      margin: 0 4mm;
+    }
+
+    .contact-bar-item:not(:last-child)::after {
+      content: '•';
+      margin-left: 4mm;
+      color: #d1d5db;
+    }
+
+    /* ===== PRINT STYLES ===== */
     @media print {
-      body { 
-        margin: 0; 
+      body {
+        margin: 0;
         padding: 10mm;
       }
-      .quotation-container { 
-        margin: 0; 
+      .quotation-container {
+        margin: 0;
         padding: 0;
       }
+    }
+
+    /* ===== UTILITY CLASSES ===== */
+    .text-right {
+      text-align: right;
+    }
+
+    .mt-sm {
+      margin-top: 2mm;
+    }
+
+    .mt-md {
+      margin-top: 4mm;
     }
   </style>
 </head>
 <body>
   <div class="quotation-container">
-    <!-- Professional Header -->
+    <!-- Header with Company Info and Quotation Title -->
     <div class="header">
       <div class="company-info">
         <div class="company-name">${companyData.companyName}</div>
-        <div class="company-tagline">Professional Business Solutions</div>
+        <div class="company-tagline">Digital Creative Agency</div>
       </div>
-      <div class="quotation-title">
+      <div class="quotation-title-section">
         <h1>QUOTATION</h1>
-        <div class="quotation-number">No: ${quotationNumber}</div>
-        <div class="quotation-date">Date: ${formatDate(date)}</div>
+        <div class="quotation-meta">
+          <div class="quotation-meta-item">
+            <span class="quotation-meta-label">Quotation No:</span>
+            <span class="quotation-meta-value">${quotationNumber}</span>
+          </div>
+          <div class="quotation-meta-item">
+            <span class="quotation-meta-label">Date:</span>
+            <span class="quotation-meta-value">${formatDate(date)}</span>
+          </div>
+          <div class="quotation-meta-item">
+            <span class="quotation-meta-label">Valid Until:</span>
+            <span class="quotation-meta-value">${formatDate(validUntil)}</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Clean Two-Column Layout -->
+    <!-- Client & Quotation Details Cards -->
     <div class="quotation-details">
-      <div class="client-info">
+      <div class="detail-card">
         <div class="section-title">Quotation To</div>
-        <div class="info-item">${client.name}</div>
-        ${client.company ? `<div class="info-item">${client.company}</div>` : ""}
-        <div class="info-item">Phone: ${client.phone || "N/A"}</div>
-        ${client.email ? `<div class="info-item">Email: ${client.email}</div>` : ""}
-        ${client.address ? `<div class="info-item">${client.address}</div>` : ""}
+        <div class="detail-row">
+          <span class="detail-value" style="flex: 1; text-align: left;">${client.name}</span>
+        </div>
+        ${client.company ? `
+        <div class="detail-row">
+          <span class="detail-value" style="flex: 1; text-align: left; color: #6b7280; font-size: 9px;">${client.company}</span>
+        </div>
+        ` : ""}
+        ${client.address ? `
+        <div class="detail-row">
+          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.address}</span>
+        </div>
+        ` : ""}
+        ${client.phone ? `
+        <div class="detail-row">
+          <span class="detail-label" style="min-width: auto;">Phone:</span>
+          <span class="detail-value">${client.phone}</span>
+        </div>
+        ` : ""}
+        ${client.email ? `
+        <div class="detail-row">
+          <span class="detail-label" style="min-width: auto;">Email:</span>
+          <span class="detail-value">${client.email}</span>
+        </div>
+        ` : ""}
       </div>
-      
-      <div class="quotation-info">
-        <div class="section-title">Quotation Details</div>
-        <div class="info-item">
-          <span class="info-label">Quotation No:</span> ${quotationNumber}
+
+      <div class="detail-card secondary">
+        <div class="section-title">Quotation Info</div>
+        <div class="detail-row">
+          <span class="detail-label">Project:</span>
+          <span class="detail-value">${project.description || project.name || "N/A"}</span>
         </div>
-        <div class="info-item">
-          <span class="info-label">Quotation Date:</span> ${formatDate(date)}
-        </div>
-        <div class="info-item">
-          <span class="info-label">Valid Until:</span> ${formatDate(validUntil)}
-        </div>
-        <div class="info-item">
-          <span class="info-label">Payment Method:</span> Transfer Bank
+        <div class="detail-row">
+          <span class="detail-label">Status:</span>
+          <span class="detail-value" style="color: #0369a1; font-weight: 600;">Available</span>
         </div>
       </div>
     </div>
 
-    <!-- Professional Service Table -->
+    <!-- Services Table -->
     <table class="service-table">
       <thead>
         <tr>
           <th>#</th>
-          <th>Description</th>
+          <th>Service / Product</th>
           <th>Price</th>
-          <th>Quantity</th>
+          <th>Qty</th>
           <th>Amount</th>
         </tr>
       </thead>
@@ -947,8 +1367,8 @@ export class PdfService {
         <tr>
           <td>${String(index + 1).padStart(2, "0")}</td>
           <td>
-            <strong>${product.name}</strong><br>
-            <small style="color: #666;">${product.description || ""}</small>
+            <span class="service-desc-main">${product.name}</span>
+            ${product.description ? `<span class="service-desc-detail">${product.description}</span>` : ""}
           </td>
           <td>${formatIDR(product.price || 0)}</td>
           <td>${product.quantity || 1}</td>
@@ -960,7 +1380,9 @@ export class PdfService {
             : `
         <tr>
           <td>01</td>
-          <td>${project.description}</td>
+          <td>
+            <span class="service-desc-main">${project.description || project.name || "Service"}</span>
+          </td>
           <td>${formatIDR(amountPerProject)}</td>
           <td>1</td>
           <td>${formatIDR(amountPerProject)}</td>
@@ -970,29 +1392,31 @@ export class PdfService {
       </tbody>
     </table>
 
-    <!-- Summary Table -->
-    <table class="summary-table">
-      <tr>
-        <td>Sub Total</td>
-        <td>${formatIDR(amountPerProject)}</td>
-      </tr>
-      <tr>
-        <td>Tax (PPN 11%)</td>
-        <td>${formatIDR(Number(amountPerProject) * 0.11)}</td>
-      </tr>
-      <tr class="summary-total">
-        <td>TOTAL</td>
-        <td>${formatIDR(totalAmount)}</td>
-      </tr>
-    </table>
+    <!-- Summary Section -->
+    <div class="summary-section">
+      <table class="summary-table">
+        <tr>
+          <td>Subtotal</td>
+          <td>${formatIDR(amountPerProject)}</td>
+        </tr>
+        <tr>
+          <td>Tax (PPN 11%)</td>
+          <td>${formatIDR(Number(amountPerProject) * 0.11)}</td>
+        </tr>
+        <tr class="summary-total">
+          <td>TOTAL</td>
+          <td>${formatIDR(totalAmount)}</td>
+        </tr>
+      </table>
+    </div>
 
     <!-- Scope of Work Section -->
     ${
       scopeOfWork
         ? `
-    <div class="scope-of-work">
-      <div class="scope-title">Ruang Lingkup Pekerjaan (Scope of Work):</div>
-      <div class="scope-content">${scopeOfWork}</div>
+    <div class="section-box scope">
+      <div class="section-box-title">Scope of Work</div>
+      <div class="section-box-content">${scopeOfWork}</div>
     </div>
     `
         : ""
@@ -1000,18 +1424,25 @@ export class PdfService {
 
     <!-- Footer Section -->
     <div class="footer-section">
-      <div class="terms-section">
-        <div class="terms-title">Terms & Conditions</div>
-        <div class="terms-content">
-          ${terms || "Payment due within 30 days. All prices in Indonesian Rupiah (IDR). This quotation is valid until the specified date."}
+      <div class="footer-content">
+        <div class="footer-title">Terms & Conditions</div>
+        <div class="footer-text">${terms || "This quotation is valid for 30 days from the date specified above. All prices are in Indonesian Rupiah (IDR). Payment is due within 30 days upon invoice submission."}</div>
+      </div>
+      <div class="signature-section">
+        <div class="signature-box">
+          <div class="signature-title">Authorized By</div>
+          <div class="signature-line"></div>
+          <div class="signature-name">${companyData.companyName}</div>
+          <div class="signature-position">Project Manager</div>
         </div>
       </div>
-      
     </div>
 
     <!-- Contact Information Bar -->
     <div class="contact-bar">
-      Contact: ${companyData.phone || "N/A"} | ${companyData.address || "N/A"} | ${companyData.email || "N/A"}
+      <span class="contact-bar-item">${companyData.phone || "N/A"}</span>
+      <span class="contact-bar-item">${companyData.address || "N/A"}</span>
+      <span class="contact-bar-item">${companyData.email || "N/A"}</span>
     </div>
   </div>
 </body>

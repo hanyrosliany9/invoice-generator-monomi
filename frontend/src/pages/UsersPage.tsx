@@ -273,6 +273,7 @@ export const UsersPage: React.FC = () => {
     {
       title: 'User',
       key: 'user',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (_: any, user: User) => (
         <div className='flex items-center'>
           <Avatar icon={<UserOutlined />} className='mr-3' />
@@ -291,6 +292,7 @@ export const UsersPage: React.FC = () => {
       title: 'Role',
       dataIndex: 'role',
       key: 'role',
+      responsive: ['sm', 'md', 'lg'],
       render: (role: UserRole) => (
         <Tag color={getRoleBadgeColor(role)}>
           {getRoleDisplayName(role)}
@@ -310,6 +312,7 @@ export const UsersPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'status',
+      responsive: ['sm', 'md', 'lg'],
       render: (isActive: boolean, user: User) => (
         <Switch
           checked={isActive}
@@ -328,6 +331,7 @@ export const UsersPage: React.FC = () => {
       title: 'Created',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      responsive: ['md', 'lg'],
       render: (date: string) => formatDate(date),
       sorter: (a: User, b: User) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
@@ -336,6 +340,8 @@ export const UsersPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       width: 100,
+      fixed: 'right',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       className: 'actions-column',
       render: (_: any, user: User) => (
         <div className='row-actions'>
@@ -353,7 +359,7 @@ export const UsersPage: React.FC = () => {
 
   return (
     <div>
-      {/* Hover-revealed row actions CSS */}
+      {/* Hover-revealed row actions CSS + Responsive table */}
       <style>{`
         .row-actions {
           opacity: 0.2;
@@ -366,6 +372,21 @@ export const UsersPage: React.FC = () => {
 
         .row-actions:hover {
           opacity: 1;
+        }
+
+        /* Responsive table for mobile */
+        @media (max-width: 768px) {
+          .ant-table {
+            font-size: 12px;
+          }
+
+          .ant-table-cell {
+            padding: 8px 4px !important;
+          }
+
+          .ant-table-column-title {
+            font-size: 11px;
+          }
         }
       `}</style>
 
@@ -446,69 +467,100 @@ export const UsersPage: React.FC = () => {
         )}
 
         {/* Controls */}
-        <div className='flex justify-between items-center mb-4'>
-          <Space>
-            <Input
-              placeholder='Search users...'
-              prefix={<SearchOutlined />}
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              style={{ width: 300 }}
-              autoComplete='off'
-            />
-            <Select
-              placeholder='Filter by role'
-              value={roleFilter}
-              onChange={setRoleFilter}
-              style={{ width: 200 }}
-              allowClear
-            >
-              <Option value='SUPER_ADMIN'>Super Admin</Option>
-              <Option value='FINANCE_MANAGER'>Finance Manager</Option>
-              <Option value='ACCOUNTANT'>Accountant</Option>
-              <Option value='PROJECT_MANAGER'>Project Manager</Option>
-              <Option value='STAFF'>Staff</Option>
-              <Option value='VIEWER'>Viewer</Option>
-            </Select>
-            <Select
-              placeholder='Filter by status'
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: 150 }}
-              allowClear
-            >
-              <Option value='active'>Active</Option>
-              <Option value='inactive'>Inactive</Option>
-            </Select>
-          </Space>
+        <div style={{ marginBottom: '16px' }}>
+          <Row gutter={[8, 12]} style={{ marginBottom: '12px' }}>
+            <Col xs={24} sm={12} md={6}>
+              <Input
+                placeholder='Search users...'
+                prefix={<SearchOutlined />}
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                style={{ width: '100%' }}
+                size='large'
+                autoComplete='off'
+              />
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Select
+                placeholder='Filter by role'
+                value={roleFilter}
+                onChange={setRoleFilter}
+                style={{ width: '100%' }}
+                size='large'
+                allowClear
+              >
+                <Option value='SUPER_ADMIN'>Super Admin</Option>
+                <Option value='FINANCE_MANAGER'>Finance Manager</Option>
+                <Option value='ACCOUNTANT'>Accountant</Option>
+                <Option value='PROJECT_MANAGER'>Project Manager</Option>
+                <Option value='STAFF'>Staff</Option>
+                <Option value='VIEWER'>Viewer</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Select
+                placeholder='Filter by status'
+                value={statusFilter}
+                onChange={setStatusFilter}
+                style={{ width: '100%' }}
+                size='large'
+                allowClear
+              >
+                <Option value='active'>Active</Option>
+                <Option value='inactive'>Inactive</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Button
+                onClick={() => {
+                  setSearchInput('')
+                  setRoleFilter(undefined)
+                  setStatusFilter(undefined)
+                }}
+                style={{ width: '100%' }}
+                size='large'
+              >
+                Reset
+              </Button>
+            </Col>
+          </Row>
 
-          <Button
-            type='primary'
-            icon={<PlusOutlined />}
-            onClick={handleCreate}
-          >
-            Create User
-          </Button>
+          <Row gutter={[8, 12]}>
+            <Col xs={24}>
+              <Button
+                type='primary'
+                icon={<PlusOutlined />}
+                onClick={handleCreate}
+                style={{ width: '100%' }}
+                size='large'
+              >
+                Create User
+              </Button>
+            </Col>
+          </Row>
         </div>
       </div>
 
       {/* Main Table */}
       <Card>
-        <Table
-          columns={columns}
-          dataSource={filteredUsers}
-          loading={isLoading}
-          rowKey='id'
-          rowSelection={rowSelection}
-          pagination={{
-            total: filteredUsers.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} users`,
-          }}
-        />
+        <div style={{ overflowX: 'auto' }}>
+          <Table
+            columns={columns}
+            dataSource={filteredUsers}
+            loading={isLoading}
+            rowKey='id'
+            rowSelection={rowSelection}
+            pagination={{
+              total: filteredUsers.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} of ${total} users`,
+            }}
+            scroll={{ x: 1200 }}
+          />
+        </div>
       </Card>
     </div>
   )

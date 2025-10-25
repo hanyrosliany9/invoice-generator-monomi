@@ -389,6 +389,7 @@ export const ClientsPage: React.FC = () => {
     {
       title: 'Klien',
       key: 'client',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (_: any, client: Client) => (
         <div className='flex items-center'>
           <Avatar icon={getCompanyIcon(client?.company)} className='mr-3' />
@@ -406,6 +407,7 @@ export const ClientsPage: React.FC = () => {
     {
       title: 'Kontak',
       key: 'contact',
+      responsive: ['md', 'lg'],
       render: (_: any, client: Client) => (
         <div>
           <div className='flex items-center mb-1'>
@@ -426,6 +428,7 @@ export const ClientsPage: React.FC = () => {
     {
       title: 'Business Overview',
       key: 'business',
+      responsive: ['lg'],
       render: (_: any, client: Client) => (
         <div className='flex items-center space-x-4'>
           <HealthScore client={client} size='small' />
@@ -468,6 +471,7 @@ export const ClientsPage: React.FC = () => {
     {
       title: 'Revenue',
       key: 'revenue',
+      responsive: ['sm', 'md', 'lg'],
       render: (_: any, client: Client) => (
         <RevenueIndicator
           paid={client.totalPaid || 0}
@@ -481,6 +485,7 @@ export const ClientsPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (status: string) => {
         const getStatusBadgeColor = (status: string) => {
           switch (status) {
@@ -519,6 +524,7 @@ export const ClientsPage: React.FC = () => {
       title: 'Transaksi Terakhir',
       dataIndex: 'lastTransaction',
       key: 'lastTransaction',
+      responsive: ['md', 'lg'],
       render: (date: string) => formatDate(date),
       sorter: (a: Client, b: Client) => {
         if (!a.lastTransaction && !b.lastTransaction) return 0
@@ -531,6 +537,8 @@ export const ClientsPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
+      fixed: 'right',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       className: 'actions-column',
       render: (_: any, client: Client) => (
         <div className='row-actions'>
@@ -548,7 +556,7 @@ export const ClientsPage: React.FC = () => {
 
   return (
     <div>
-      {/* Hover-revealed row actions CSS */}
+      {/* Hover-revealed row actions CSS + Responsive table */}
       <style>{`
         .row-actions {
           opacity: 0.2;
@@ -561,6 +569,21 @@ export const ClientsPage: React.FC = () => {
 
         .row-actions:hover {
           opacity: 1;
+        }
+
+        /* Responsive table for mobile */
+        @media (max-width: 768px) {
+          .ant-table {
+            font-size: 12px;
+          }
+
+          .ant-table-cell {
+            padding: 8px 4px !important;
+          }
+
+          .ant-table-column-title {
+            font-size: 11px;
+          }
         }
       `}</style>
       <div className='mb-6'>
@@ -693,54 +716,85 @@ export const ClientsPage: React.FC = () => {
         )}
 
         {/* Controls */}
-        <div className='flex justify-between items-center mb-4'>
-          <Space>
-            <Input
-              id='client-search'
-              name='search'
-              placeholder='Cari klien...'
-              prefix={<SearchOutlined />}
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              style={{ width: 300 }}
-              autoComplete='off'
-            />
-            <Select
-              placeholder='Filter status'
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: 150 }}
-              allowClear
-            >
-              <Option value='active'>Aktif</Option>
-              <Option value='inactive'>Tidak Aktif</Option>
-            </Select>
-          </Space>
+        <div style={{ marginBottom: '16px' }}>
+          <Row gutter={[8, 12]} style={{ marginBottom: '12px' }}>
+            <Col xs={24} sm={12} md={8}>
+              <Input
+                id='client-search'
+                name='search'
+                placeholder='Cari klien...'
+                prefix={<SearchOutlined />}
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                style={{ width: '100%' }}
+                size='large'
+                autoComplete='off'
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Select
+                placeholder='Filter status'
+                value={statusFilter}
+                onChange={setStatusFilter}
+                style={{ width: '100%' }}
+                size='large'
+                allowClear
+              >
+                <Option value='active'>Aktif</Option>
+                <Option value='inactive'>Tidak Aktif</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Button
+                data-testid='client-reset-button'
+                onClick={() => {
+                  setSearchInput('')
+                  setStatusFilter(undefined)
+                }}
+                style={{ width: '100%' }}
+                size='large'
+              >
+                Reset
+              </Button>
+            </Col>
+          </Row>
 
-          <Space>
-            <Button
-              data-testid='client-import-button'
-              icon={<UploadOutlined />}
-              onClick={handleImport}
-            >
-              Import
-            </Button>
-            <Button
-              data-testid='client-export-button'
-              icon={<ExportOutlined />}
-              onClick={handleExport}
-            >
-              Export
-            </Button>
-            <Button
-              data-testid='create-client-button'
-              type='primary'
-              icon={<PlusOutlined />}
-              onClick={handleCreate}
-            >
-              {t('clients.create')}
-            </Button>
-          </Space>
+          <Row gutter={[8, 12]} justify='space-between' align='middle'>
+            <Col xs={24} sm={8}>
+              <Button
+                data-testid='client-import-button'
+                icon={<UploadOutlined />}
+                onClick={handleImport}
+                style={{ width: '100%' }}
+                size='large'
+              >
+                Import
+              </Button>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Button
+                data-testid='client-export-button'
+                icon={<ExportOutlined />}
+                onClick={handleExport}
+                style={{ width: '100%' }}
+                size='large'
+              >
+                Export
+              </Button>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Button
+                data-testid='create-client-button'
+                type='primary'
+                icon={<PlusOutlined />}
+                onClick={handleCreate}
+                style={{ width: '100%' }}
+                size='large'
+              >
+                {t('clients.create')}
+              </Button>
+            </Col>
+          </Row>
         </div>
 
         {/* Active Filters Pills (Notion-style) */}
@@ -801,21 +855,24 @@ export const ClientsPage: React.FC = () => {
 
       {/* Main Table */}
       <Card>
-        <Table
-          columns={columns}
-          dataSource={filteredClients}
-          loading={isLoading}
-          rowKey='id'
-          rowSelection={rowSelection}
-          pagination={{
-            total: filteredClients.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} dari ${total} klien`,
-          }}
-        />
+        <div style={{ overflowX: 'auto' }}>
+          <Table
+            columns={columns}
+            dataSource={filteredClients}
+            loading={isLoading}
+            rowKey='id'
+            rowSelection={rowSelection}
+            pagination={{
+              total: filteredClients.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} dari ${total} klien`,
+            }}
+            scroll={{ x: 1200 }}
+          />
+        </div>
       </Card>
 
       {/* Create/Edit Modal */}

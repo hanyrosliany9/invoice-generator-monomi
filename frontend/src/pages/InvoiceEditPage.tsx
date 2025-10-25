@@ -307,10 +307,10 @@ export const InvoiceEditPage: React.FC = () => {
   }
 
   const selectedClient =
-    clients.find(c => c.id === form.getFieldValue('clientId')) || invoice.client
+    clients.find(c => c.id === form.getFieldValue('clientId')) || invoice?.client
   const totalAmount =
-    form.getFieldValue('totalAmount') || Number(invoice.totalAmount)
-  const dueDate = form.getFieldValue('dueDate') || dayjs(invoice.dueDate)
+    form.getFieldValue('totalAmount') || (invoice ? Number(invoice.totalAmount) : 0)
+  const dueDate = form.getFieldValue('dueDate') || (invoice ? dayjs(invoice.dueDate) : dayjs())
   const daysToDue = dueDate.diff(dayjs(), 'day')
   const canEdit = invoice.status === 'DRAFT' || invoice.status === 'SENT'
 

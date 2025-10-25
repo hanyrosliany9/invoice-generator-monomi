@@ -254,6 +254,7 @@ export const AssetsPage: React.FC = () => {
     {
       title: 'Asset',
       key: 'asset',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (_: any, asset: Asset) => (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -280,6 +281,7 @@ export const AssetsPage: React.FC = () => {
     {
       title: 'Kategori',
       key: 'category',
+      responsive: ['sm', 'md', 'lg'],
       render: (_: any, asset: Asset) => (
         <div>
           <Text strong>{asset.category}</Text>
@@ -293,6 +295,7 @@ export const AssetsPage: React.FC = () => {
     {
       title: 'Spesifikasi',
       key: 'specs',
+      responsive: ['md', 'lg'],
       render: (_: any, asset: Asset) => (
         <div className='text-sm'>
           {asset.manufacturer && <div>Brand: {asset.manufacturer}</div>}
@@ -306,6 +309,7 @@ export const AssetsPage: React.FC = () => {
     {
       title: 'Status',
       key: 'status',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (_: any, asset: Asset) => {
         const statusColors = getStatusColor(asset.status)
         return (
@@ -343,6 +347,7 @@ export const AssetsPage: React.FC = () => {
     {
       title: 'Pembelian',
       key: 'purchase',
+      responsive: ['md', 'lg'],
       render: (_: any, asset: Asset) => (
         <div className='text-sm'>
           <div>
@@ -361,6 +366,7 @@ export const AssetsPage: React.FC = () => {
     {
       title: 'Lokasi',
       key: 'location',
+      responsive: ['md', 'lg'],
       render: (_: any, asset: Asset) => (
         <Text>{asset.location || '-'}</Text>
       ),
@@ -369,6 +375,8 @@ export const AssetsPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
+      fixed: 'right',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       className: 'actions-column',
       render: (_: any, asset: Asset) => (
         <div className='row-actions'>
@@ -492,7 +500,7 @@ export const AssetsPage: React.FC = () => {
 
   return (
     <div>
-      {/* Hover-revealed row actions CSS */}
+      {/* Hover-revealed row actions CSS + Responsive table */}
       <style>{`
         .row-actions {
           opacity: 0.2;
@@ -503,6 +511,21 @@ export const AssetsPage: React.FC = () => {
         }
         .row-actions:hover {
           opacity: 1;
+        }
+
+        /* Responsive table for mobile */
+        @media (max-width: 768px) {
+          .ant-table {
+            font-size: 12px;
+          }
+
+          .ant-table-cell {
+            padding: 8px 4px !important;
+          }
+
+          .ant-table-column-title {
+            font-size: 11px;
+          }
         }
       `}</style>
 
@@ -590,76 +613,107 @@ export const AssetsPage: React.FC = () => {
         </Row>
 
         {/* Controls */}
-        <div className='flex justify-between items-center mb-4'>
-          <Space>
-            <Input
-              id='asset-search'
-              name='search'
-              placeholder='Cari aset...'
-              prefix={<SearchOutlined />}
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              style={{ width: 300 }}
-              autoComplete='off'
-            />
-            <Select
-              id='asset-status-filter'
-              placeholder='Filter status'
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: 150 }}
-              allowClear
-            >
-              <Option value='AVAILABLE'>Tersedia</Option>
-              <Option value='RESERVED'>Direservasi</Option>
-              <Option value='CHECKED_OUT'>Dipinjam</Option>
-              <Option value='IN_MAINTENANCE'>Maintenance</Option>
-              <Option value='BROKEN'>Rusak</Option>
-            </Select>
-            <Select
-              id='asset-category-filter'
-              placeholder='Filter kategori'
-              value={categoryFilter}
-              onChange={setCategoryFilter}
-              style={{ width: 150 }}
-              allowClear
-            >
-              <Option value='Camera'>Camera</Option>
-              <Option value='Lens'>Lens</Option>
-              <Option value='Lighting'>Lighting</Option>
-              <Option value='Audio'>Audio</Option>
-              <Option value='Computer'>Computer</Option>
-              <Option value='Accessories'>Accessories</Option>
-            </Select>
-          </Space>
+        <div style={{ marginBottom: '16px' }}>
+          <Row gutter={[8, 12]} style={{ marginBottom: '12px' }}>
+            <Col xs={24} sm={12} md={6}>
+              <Input
+                id='asset-search'
+                name='search'
+                placeholder='Cari aset...'
+                prefix={<SearchOutlined />}
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                style={{ width: '100%' }}
+                size='large'
+                autoComplete='off'
+              />
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Select
+                id='asset-status-filter'
+                placeholder='Filter status'
+                value={statusFilter}
+                onChange={setStatusFilter}
+                style={{ width: '100%' }}
+                size='large'
+                allowClear
+              >
+                <Option value='AVAILABLE'>Tersedia</Option>
+                <Option value='RESERVED'>Direservasi</Option>
+                <Option value='CHECKED_OUT'>Dipinjam</Option>
+                <Option value='IN_MAINTENANCE'>Maintenance</Option>
+                <Option value='BROKEN'>Rusak</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Select
+                id='asset-category-filter'
+                placeholder='Filter kategori'
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                style={{ width: '100%' }}
+                size='large'
+                allowClear
+              >
+                <Option value='Camera'>Camera</Option>
+                <Option value='Lens'>Lens</Option>
+                <Option value='Lighting'>Lighting</Option>
+                <Option value='Audio'>Audio</Option>
+                <Option value='Computer'>Computer</Option>
+                <Option value='Accessories'>Accessories</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Button
+                onClick={() => {
+                  setSearchInput('')
+                  setStatusFilter(undefined)
+                  setCategoryFilter(undefined)
+                }}
+                style={{ width: '100%' }}
+                size='large'
+              >
+                Reset
+              </Button>
+            </Col>
+          </Row>
 
-          <Button
-            data-testid='create-asset-button'
-            type='primary'
-            icon={<PlusOutlined />}
-            onClick={handleCreate}
-          >
-            Tambah Aset
-          </Button>
+          <Row gutter={[8, 12]}>
+            <Col xs={24}>
+              <Button
+                data-testid='create-asset-button'
+                type='primary'
+                icon={<PlusOutlined />}
+                onClick={handleCreate}
+                style={{ width: '100%' }}
+                size='large'
+              >
+                Tambah Aset
+              </Button>
+            </Col>
+          </Row>
         </div>
 
         {/* Main Table */}
         <Card>
-          <Table
-            columns={columns}
-            dataSource={filteredAssets}
-            loading={isLoading}
-            rowKey='id'
-            rowSelection={rowSelection}
-            pagination={{
-              total: filteredAssets.length,
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} dari ${total} aset`,
-            }}
-          />
+          <div style={{ overflowX: 'auto' }}>
+            <Table
+              columns={columns}
+              dataSource={filteredAssets}
+              loading={isLoading}
+              rowKey='id'
+              rowSelection={rowSelection}
+              pagination={{
+                total: filteredAssets.length,
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} dari ${total} aset`,
+              }}
+              scroll={{ x: 1200 }}
+            />
+          </div>
         </Card>
               </div>
             ),

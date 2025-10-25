@@ -383,6 +383,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Proyek',
       key: 'project',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (_: any, project: Project) => (
         <div>
           <div className='font-semibold'>
@@ -433,6 +434,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Klien',
       key: 'clientName',
+      responsive: ['sm', 'md', 'lg'],
       render: (_: any, project: Project) => (
         <Button
           type='link'
@@ -449,6 +451,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Progress',
       key: 'progress',
+      responsive: ['md', 'lg'],
       render: (_: any, project: Project) => {
         const progress = calculateProjectProgress(project)
 
@@ -486,6 +489,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Status',
       key: 'status',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (_: any, project: Project) => {
         const statusConfig = getProjectStatusConfig(project.status)
         const badgeColors = statusConfig.badgeColor
@@ -526,6 +530,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Timeline',
       key: 'timeline',
+      responsive: ['md', 'lg'],
       render: (_: any, project: Project) => {
         const daysRemaining = getDaysRemaining(project.endDate)
         const isOverdue = isProjectOverdue(project)
@@ -553,6 +558,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Nilai Proyek',
       key: 'budget',
+      responsive: ['lg'],
       render: (_: any, project: Project) => {
         const budget = safeNumber(project.estimatedBudget || project.basePrice || 0)
         const actualPrice = safeNumber(project.basePrice || 0)
@@ -592,6 +598,8 @@ export const ProjectsPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
+      fixed: 'right',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       className: 'actions-column',
       render: (_: any, project: Project) => (
         <div className='row-actions'>
@@ -609,7 +617,7 @@ export const ProjectsPage: React.FC = () => {
 
   return (
     <div>
-      {/* Hover-revealed row actions CSS */}
+      {/* Hover-revealed row actions CSS + Responsive table */}
       <style>{`
         .row-actions {
           opacity: 0.2;
@@ -622,6 +630,21 @@ export const ProjectsPage: React.FC = () => {
 
         .row-actions:hover {
           opacity: 1;
+        }
+
+        /* Responsive table for mobile */
+        @media (max-width: 768px) {
+          .ant-table {
+            font-size: 12px;
+          }
+
+          .ant-table-cell {
+            padding: 8px 4px !important;
+          }
+
+          .ant-table-column-title {
+            font-size: 11px;
+          }
         }
       `}</style>
       <div className='mb-6'>
@@ -798,88 +821,118 @@ export const ProjectsPage: React.FC = () => {
         )}
 
         {/* Controls */}
-        <div className='flex justify-between items-center mb-4'>
-          <Space>
-            <Input
-              id='project-search'
-              name='search'
-              placeholder='Cari proyek...'
-              prefix={<SearchOutlined />}
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              style={{ width: 300 }}
-              autoComplete='off'
-            />
-            <Select
-              id='project-status-filter'
-              data-testid='project-filter-button'
-              placeholder='Filter status'
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: 150 }}
-              allowClear
-            >
-              <Option value='PLANNING'>Perencanaan</Option>
-              <Option value='IN_PROGRESS'>Berlangsung</Option>
-              <Option value='COMPLETED'>Selesai</Option>
-              <Option value='CANCELLED'>Dibatalkan</Option>
-            </Select>
-            <Select
-              id='project-type-filter'
-              data-testid='project-timeline-button'
-              placeholder='Filter tipe'
-              value={typeFilter}
-              onChange={setTypeFilter}
-              style={{ width: 150 }}
-              allowClear
-            >
-              <Option value='PRODUCTION'>Produksi</Option>
-              <Option value='SOCIAL_MEDIA'>Media Sosial</Option>
-            </Select>
-            <MonthPicker
-              placeholder='Pilih bulan & tahun'
-              value={filters.monthYear}
-              onChange={value => setFilters(prev => ({ ...prev, monthYear: value }))}
-              style={{ width: 180 }}
-              format='MMMM YYYY'
-              allowClear
-            />
-            <InputNumber
-              placeholder='Nilai min'
-              value={filters.amount?.[0]}
-              onChange={value => setFilters(prev => ({ ...prev, amount: [value, prev.amount?.[1]] }))}
-              style={{ width: 120 }}
-              formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-              parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
-            />
-            <InputNumber
-              placeholder='Nilai max'
-              value={filters.amount?.[1]}
-              onChange={value => setFilters(prev => ({ ...prev, amount: [prev.amount?.[0], value] }))}
-              style={{ width: 120 }}
-              formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-              parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
-            />
-            <Button onClick={() => setFilters({})}>Reset</Button>
-          </Space>
+        <div style={{ marginBottom: '16px' }}>
+          <Row gutter={[8, 12]} style={{ marginBottom: '12px' }}>
+            <Col xs={24} sm={12} md={6}>
+              <Input
+                id='project-search'
+                name='search'
+                placeholder='Cari proyek...'
+                prefix={<SearchOutlined />}
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                style={{ width: '100%' }}
+                autoComplete='off'
+                size='large'
+              />
+            </Col>
+            <Col xs={24} sm={12} md={5}>
+              <Select
+                id='project-status-filter'
+                data-testid='project-filter-button'
+                placeholder='Filter status'
+                value={statusFilter}
+                onChange={setStatusFilter}
+                style={{ width: '100%' }}
+                allowClear
+                size='large'
+              >
+                <Option value='PLANNING'>Perencanaan</Option>
+                <Option value='IN_PROGRESS'>Berlangsung</Option>
+                <Option value='COMPLETED'>Selesai</Option>
+                <Option value='CANCELLED'>Dibatalkan</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={5}>
+              <Select
+                id='project-type-filter'
+                data-testid='project-timeline-button'
+                placeholder='Filter tipe'
+                value={typeFilter}
+                onChange={setTypeFilter}
+                style={{ width: '100%' }}
+                allowClear
+                size='large'
+              >
+                <Option value='PRODUCTION'>Produksi</Option>
+                <Option value='SOCIAL_MEDIA'>Media Sosial</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={5}>
+              <MonthPicker
+                placeholder='Pilih bulan & tahun'
+                value={filters.monthYear}
+                onChange={value => setFilters(prev => ({ ...prev, monthYear: value }))}
+                style={{ width: '100%' }}
+                format='MMMM YYYY'
+                allowClear
+                size='large'
+              />
+            </Col>
+            <Col xs={12} sm={12} md={3}>
+              <InputNumber
+                placeholder='Min'
+                value={filters.amount?.[0]}
+                onChange={value => setFilters(prev => ({ ...prev, amount: [value, prev.amount?.[1]] }))}
+                style={{ width: '100%' }}
+                formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
+                size='large'
+              />
+            </Col>
+            <Col xs={12} sm={12} md={3}>
+              <InputNumber
+                placeholder='Max'
+                value={filters.amount?.[1]}
+                onChange={value => setFilters(prev => ({ ...prev, amount: [prev.amount?.[0], value] }))}
+                style={{ width: '100%' }}
+                formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
+                size='large'
+              />
+            </Col>
+          </Row>
 
-          <Space>
-            <Button
-              data-testid='project-export-button'
-              icon={<ExportOutlined />}
-              onClick={handleExport}
-            >
-              Export
-            </Button>
-            <Button
-              data-testid='create-project-button'
-              type='primary'
-              icon={<PlusOutlined />}
-              onClick={handleCreate}
-            >
-              {t('projects.create')}
-            </Button>
-          </Space>
+          <Row gutter={[8, 12]} justify='space-between' align='middle'>
+            <Col xs={24} sm={6}>
+              <Button onClick={() => setFilters({})} style={{ width: '100%' }} size='large'>
+                Reset
+              </Button>
+            </Col>
+            <Col xs={12} sm={6}>
+              <Button
+                data-testid='project-export-button'
+                icon={<ExportOutlined />}
+                onClick={handleExport}
+                size='large'
+                style={{ width: '100%' }}
+              >
+                Export
+              </Button>
+            </Col>
+            <Col xs={12} sm={6}>
+              <Button
+                data-testid='create-project-button'
+                type='primary'
+                icon={<PlusOutlined />}
+                onClick={handleCreate}
+                size='large'
+                style={{ width: '100%' }}
+              >
+                Project
+              </Button>
+            </Col>
+          </Row>
         </div>
 
         {/* Active Filters Pills (Notion-style) */}
@@ -990,21 +1043,24 @@ export const ProjectsPage: React.FC = () => {
 
       {/* Main Table */}
       <Card>
-        <Table
-          columns={columns}
-          dataSource={filteredProjects}
-          loading={isLoading}
-          rowKey='id'
-          rowSelection={rowSelection}
-          pagination={{
-            total: filteredProjects.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} dari ${total} proyek`,
-          }}
-        />
+        <div style={{ overflowX: 'auto' }}>
+          <Table
+            columns={columns}
+            dataSource={filteredProjects}
+            loading={isLoading}
+            rowKey='id'
+            rowSelection={rowSelection}
+            pagination={{
+              total: filteredProjects.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} dari ${total} proyek`,
+            }}
+            scroll={{ x: 1200 }}
+          />
+        </div>
       </Card>
     </div>
   )

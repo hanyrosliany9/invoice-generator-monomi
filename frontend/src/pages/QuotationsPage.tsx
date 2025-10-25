@@ -770,12 +770,14 @@ export const QuotationsPage: React.FC = () => {
           type='link'
           onClick={() => handleView(quotation)}
           className='text-blue-600 hover:text-blue-800 p-0'
+          style={{ fontSize: '12px' }}
         >
           {quotation.quotationNumber}
         </Button>
       ),
       sorter: (a: Quotation, b: Quotation) =>
         a.quotationNumber.localeCompare(b.quotationNumber),
+      responsive: ['xs'],
     },
     {
       title: 'Klien',
@@ -786,12 +788,14 @@ export const QuotationsPage: React.FC = () => {
           onClick={() => navigateToClient(quotation.client?.id || '')}
           className='text-blue-600 hover:text-blue-800 p-0'
           disabled={!quotation.client?.id}
+          style={{ fontSize: '12px' }}
         >
           {quotation.client?.name || 'N/A'}
         </Button>
       ),
       sorter: (a: Quotation, b: Quotation) =>
         (a.client?.name || '').localeCompare(b.client?.name || ''),
+      responsive: ['md'],
     },
     {
       title: 'Proyek',
@@ -802,6 +806,7 @@ export const QuotationsPage: React.FC = () => {
           onClick={() => navigateToProject(quotation.project?.id || '')}
           className='text-blue-600 hover:text-blue-800 p-0'
           disabled={!quotation.project?.id}
+          style={{ fontSize: '12px' }}
         >
           {quotation.project?.description || 'N/A'}
         </Button>
@@ -810,6 +815,7 @@ export const QuotationsPage: React.FC = () => {
         (a.project?.description || '').localeCompare(
           b.project?.description || ''
         ),
+      responsive: ['lg'],
     },
     {
       title: 'Jumlah',
@@ -821,12 +827,14 @@ export const QuotationsPage: React.FC = () => {
             : parseFloat(quotation.totalAmount) || 0
         return (
           <div>
-            <Text className='idr-amount'>{formatIDR(amount)}</Text>
+            <Text className='idr-amount' style={{ fontSize: '12px' }}>
+              {formatIDR(amount)}
+            </Text>
             {requiresMaterai(amount) && (
               <Tooltip title='Memerlukan materai'>
                 <Text
                   type='secondary'
-                  style={{ fontSize: '12px', marginLeft: '8px' }}
+                  style={{ fontSize: '12px', marginLeft: '4px' }}
                 >
                   📋
                 </Text>
@@ -846,6 +854,7 @@ export const QuotationsPage: React.FC = () => {
             : parseFloat(b.totalAmount) || 0
         return aAmount - bAmount
       },
+      responsive: ['sm'],
     },
     {
       title: 'Status',
@@ -875,9 +884,9 @@ export const QuotationsPage: React.FC = () => {
           <span style={{
             background: badgeColors.bg,
             color: badgeColors.color,
-            padding: '4px 12px',
+            padding: '4px 10px',
             borderRadius: '6px',
-            fontSize: '12px',
+            fontSize: '11px',
             fontWeight: 600,
             display: 'inline-block',
           }}>
@@ -893,19 +902,22 @@ export const QuotationsPage: React.FC = () => {
         { text: 'Revisi', value: 'REVISED' },
       ],
       onFilter: (value: any, record: Quotation) => record.status === value,
+      responsive: ['sm'],
     },
     {
       title: 'Berlaku Hingga',
       dataIndex: 'validUntil',
       key: 'validUntil',
-      render: (date: string) => formatDate(date),
+      render: (date: string) => <span style={{ fontSize: '12px' }}>{formatDate(date)}</span>,
       sorter: (a: Quotation, b: Quotation) =>
         dayjs(a.validUntil).unix() - dayjs(b.validUntil).unix(),
+      responsive: ['md'],
     },
     {
       title: 'Aksi',
       key: 'actions',
-      width: 100,
+      width: 60,
+      fixed: 'right',
       className: 'actions-column',
       render: (_: any, quotation: Quotation) => (
         <div className='row-actions'>
@@ -914,7 +926,7 @@ export const QuotationsPage: React.FC = () => {
             trigger={['click']}
             placement='bottomRight'
           >
-            <Button icon={<MoreOutlined />} />
+            <Button icon={<MoreOutlined />} size='small' />
           </Dropdown>
         </div>
       ),
@@ -1011,89 +1023,100 @@ export const QuotationsPage: React.FC = () => {
         </Row>
 
         {/* Filters and Actions */}
-        <div className='flex justify-between items-center mb-4'>
-          <Space>
-            <Input
-              placeholder='Cari quotation...'
-              prefix={<SearchOutlined />}
-              value={filters.search || ''}
-              onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              style={{ width: 300 }}
-              autoComplete='off'
-            />
-            <Select
-              placeholder='Filter status'
-              value={filters.status}
-              onChange={value => setFilters(prev => ({ ...prev, status: value }))}
-              style={{ width: 150 }}
-              allowClear
-            >
-              <Select.Option value='DRAFT'>Draft</Select.Option>
-              <Select.Option value='SENT'>Terkirim</Select.Option>
-              <Select.Option value='APPROVED'>Disetujui</Select.Option>
-              <Select.Option value='DECLINED'>Ditolak</Select.Option>
-              <Select.Option value='REVISED'>Revisi</Select.Option>
-            </Select>
-            <MonthPicker
-              placeholder='Pilih bulan & tahun'
-              value={filters.monthYear}
-              onChange={value => setFilters(prev => ({ ...prev, monthYear: value }))}
-              style={{ width: 180 }}
-              format='MMMM YYYY'
-              allowClear
-            />
-            <InputNumber
-              placeholder='Nilai min'
-              value={filters.amount?.[0]}
-              onChange={value => setFilters(prev => ({ ...prev, amount: [value, prev.amount?.[1]] }))}
-              style={{ width: 120 }}
-              formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-              parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
-            />
-            <InputNumber
-              placeholder='Nilai max'
-              value={filters.amount?.[1]}
-              onChange={value => setFilters(prev => ({ ...prev, amount: [prev.amount?.[0], value] }))}
-              style={{ width: 120 }}
-              formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-              parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
-            />
-            <Button onClick={() => setFilters({})}>Reset</Button>
-          </Space>
+        <div style={{ marginBottom: '16px' }}>
+          <Row gutter={[8, 12]} style={{ marginBottom: '12px' }}>
+            <Col xs={24} sm={12} md={6}>
+              <Input
+                placeholder='Cari quotation...'
+                prefix={<SearchOutlined />}
+                value={filters.search || ''}
+                onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                style={{ width: '100%' }}
+                autoComplete='off'
+                size='large'
+              />
+            </Col>
+            <Col xs={24} sm={12} md={5}>
+              <Select
+                placeholder='Filter status'
+                value={filters.status}
+                onChange={value => setFilters(prev => ({ ...prev, status: value }))}
+                style={{ width: '100%' }}
+                allowClear
+                size='large'
+              >
+                <Select.Option value='DRAFT'>Draft</Select.Option>
+                <Select.Option value='SENT'>Terkirim</Select.Option>
+                <Select.Option value='APPROVED'>Disetujui</Select.Option>
+                <Select.Option value='DECLINED'>Ditolak</Select.Option>
+                <Select.Option value='REVISED'>Revisi</Select.Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={5}>
+              <MonthPicker
+                placeholder='Pilih bulan & tahun'
+                value={filters.monthYear}
+                onChange={value => setFilters(prev => ({ ...prev, monthYear: value }))}
+                style={{ width: '100%' }}
+                format='MMMM YYYY'
+                allowClear
+                size='large'
+              />
+            </Col>
+            <Col xs={12} sm={12} md={4}>
+              <InputNumber
+                placeholder='Min'
+                value={filters.amount?.[0]}
+                onChange={value => setFilters(prev => ({ ...prev, amount: [value, prev.amount?.[1]] }))}
+                style={{ width: '100%' }}
+                formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
+                size='large'
+              />
+            </Col>
+            <Col xs={12} sm={12} md={4}>
+              <InputNumber
+                placeholder='Max'
+                value={filters.amount?.[1]}
+                onChange={value => setFilters(prev => ({ ...prev, amount: [prev.amount?.[0], value] }))}
+                style={{ width: '100%' }}
+                formatter={value => `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={value => value?.replace(/Rp\s?|(\.*)/g, '')}
+                size='large'
+              />
+            </Col>
+          </Row>
 
-          <Space>
-            <Button
-              data-testid='quotation-export-button'
-              icon={<ExportOutlined />}
-              onClick={handleExport}
-              size='large'
-              style={{
-                height: '44px',
-                borderRadius: '22px',
-                padding: '0 24px',
-                fontSize: '16px',
-                fontWeight: 500,
-              }}
-            >
-              Export
-            </Button>
-            <Button
-              data-testid='create-quotation-button'
-              type='primary'
-              icon={<PlusOutlined />}
-              onClick={handleCreate}
-              size='large'
-              style={{
-                height: '48px',
-                borderRadius: '24px',
-                padding: '0 32px',
-                fontSize: '16px',
-                fontWeight: 600,
-              }}
-            >
-              {t('quotations.create')}
-            </Button>
-          </Space>
+          <Row gutter={[8, 12]} justify='space-between' align='middle'>
+            <Col xs={24} sm={6}>
+              <Button onClick={() => setFilters({})} style={{ width: '100%' }} size='large'>
+                Reset
+              </Button>
+            </Col>
+            <Col xs={12} sm={6}>
+              <Button
+                data-testid='quotation-export-button'
+                icon={<ExportOutlined />}
+                onClick={handleExport}
+                size='large'
+                style={{ width: '100%' }}
+              >
+                Export
+              </Button>
+            </Col>
+            <Col xs={12} sm={6}>
+              <Button
+                data-testid='create-quotation-button'
+                type='primary'
+                icon={<PlusOutlined />}
+                onClick={handleCreate}
+                size='large'
+                style={{ width: '100%' }}
+              >
+                Quotation
+              </Button>
+            </Col>
+          </Row>
         </div>
 
         {/* Active Filters Pills (Notion-style) */}

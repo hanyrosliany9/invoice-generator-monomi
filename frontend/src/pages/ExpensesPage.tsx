@@ -174,6 +174,7 @@ export const ExpensesPage: React.FC = () => {
     {
       title: 'Expense & Context',
       key: 'expenseContext',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (_: any, expense: Expense) => (
         <div className='space-y-1'>
           <div className='font-medium'>
@@ -211,6 +212,7 @@ export const ExpensesPage: React.FC = () => {
     {
       title: 'Vendor',
       key: 'vendor',
+      responsive: ['sm', 'md', 'lg'],
       render: (_: any, expense: Expense) => (
         <div>
           <div className='font-medium'>{expense.vendorName}</div>
@@ -225,6 +227,7 @@ export const ExpensesPage: React.FC = () => {
       title: 'Deskripsi',
       dataIndex: 'description',
       key: 'description',
+      responsive: ['md', 'lg'],
       render: (desc: string, expense: Expense) => (
         <Tooltip title={expense.descriptionId || desc}>
           <div className='max-w-xs truncate'>{expense.descriptionId || desc}</div>
@@ -234,6 +237,7 @@ export const ExpensesPage: React.FC = () => {
     {
       title: 'Jumlah',
       key: 'amount',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (_: any, expense: Expense) => (
         <div className='space-y-1'>
           <div className='font-medium'>{expenseService.formatIDR(expense.totalAmount)}</div>
@@ -254,6 +258,7 @@ export const ExpensesPage: React.FC = () => {
     {
       title: 'Status',
       key: 'status',
+      responsive: ['sm', 'md', 'lg'],
       render: (_: any, expense: Expense) => (
         <div className='space-y-1'>
           <Tag color={getStatusTagColor(expense.status)}>
@@ -273,6 +278,7 @@ export const ExpensesPage: React.FC = () => {
       title: 'Tanggal',
       dataIndex: 'expenseDate',
       key: 'expenseDate',
+      responsive: ['sm', 'md', 'lg'],
       render: (date: string) => formatDate(date),
       sorter: (a: Expense, b: Expense) => dayjs(a.expenseDate).unix() - dayjs(b.expenseDate).unix(),
     },
@@ -280,6 +286,8 @@ export const ExpensesPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
+      fixed: 'right',
+      responsive: ['xs', 'sm', 'md', 'lg'],
       render: (_: any, expense: Expense) => (
         <Dropdown
           menu={{ items: getActionMenuItems(expense) }}
@@ -373,6 +381,22 @@ export const ExpensesPage: React.FC = () => {
 
   return (
     <div>
+      {/* Responsive table styles */}
+      <style>{`
+        @media (max-width: 768px) {
+          .ant-table {
+            font-size: 12px;
+          }
+
+          .ant-table-cell {
+            padding: 8px 4px !important;
+          }
+
+          .ant-table-column-title {
+            font-size: 11px;
+          }
+        }
+      `}</style>
       <div className='mb-6'>
         <Title level={2} style={{ color: theme.colors.text.primary, marginBottom: '24px' }}>
           Manajemen Biaya
@@ -419,59 +443,82 @@ export const ExpensesPage: React.FC = () => {
         </Row>
 
         {/* Controls */}
-        <div className='flex justify-between items-center mb-4 flex-wrap gap-4'>
-          <Space wrap>
-            <Input
-              placeholder='Cari expense...'
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
-              style={{ width: 250 }}
-            />
-            <Select
-              placeholder='Kategori'
-              value={categoryFilter}
-              onChange={setCategoryFilter}
-              style={{ width: 180 }}
-              allowClear
-            >
-              {categories.map(cat => (
-                <Option key={cat.id} value={cat.id}>
-                  {cat.nameId || cat.name}
-                </Option>
-              ))}
-            </Select>
-            <RangePicker
-              value={dateRange}
-              onChange={setDateRange}
-              placeholder={['Tanggal Mulai', 'Tanggal Akhir']}
-              format='DD/MM/YYYY'
-            />
-            {hasActiveFilters && (
-              <Button onClick={clearFilters}>Reset</Button>
-            )}
-          </Space>
+        <div style={{ marginBottom: '16px' }}>
+          <Row gutter={[8, 12]} style={{ marginBottom: '12px' }}>
+            <Col xs={24} sm={12} md={6}>
+              <Input
+                placeholder='Cari expense...'
+                prefix={<SearchOutlined />}
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                style={{ width: '100%' }}
+                size='large'
+              />
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Select
+                placeholder='Kategori'
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                style={{ width: '100%' }}
+                size='large'
+                allowClear
+              >
+                {categories.map(cat => (
+                  <Option key={cat.id} value={cat.id}>
+                    {cat.nameId || cat.name}
+                  </Option>
+                ))}
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <RangePicker
+                value={dateRange}
+                onChange={setDateRange}
+                placeholder={['Tanggal Mulai', 'Tanggal Akhir']}
+                format='DD/MM/YYYY'
+                style={{ width: '100%' }}
+              />
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              {hasActiveFilters && (
+                <Button onClick={clearFilters} style={{ width: '100%' }} size='large'>
+                  Reset
+                </Button>
+              )}
+            </Col>
+          </Row>
 
-          <Space>
-            <Button icon={<ExportOutlined />} onClick={handleExport} size='large'>
-              Export
-            </Button>
-            <Button
-              type='primary'
-              icon={<PlusOutlined />}
-              onClick={handleCreate}
-              size='large'
-              style={{
-                height: '48px',
-                borderRadius: '24px',
-                padding: '0 32px',
-                fontSize: '16px',
-                fontWeight: 600,
-              }}
-            >
-              Tambah Biaya
-            </Button>
-          </Space>
+          <Row gutter={[8, 12]} justify='space-between' align='middle'>
+            <Col xs={24} sm={12}>
+              <Button
+                icon={<ExportOutlined />}
+                onClick={handleExport}
+                style={{ width: '100%' }}
+                size='large'
+              >
+                Export
+              </Button>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Button
+                type='primary'
+                icon={<PlusOutlined />}
+                onClick={handleCreate}
+                size='large'
+                style={{
+                  width: '100%',
+                  height: '48px',
+                  borderRadius: '24px',
+                  padding: '0 32px',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                }}
+              >
+                Tambah Biaya
+              </Button>
+            </Col>
+          </Row>
         </div>
 
         {/* Active Filters */}
@@ -563,21 +610,24 @@ export const ExpensesPage: React.FC = () => {
           backdropFilter: theme.colors.glass.backdropFilter,
         }}
       >
-        <Table
-          columns={columns}
-          dataSource={expenses}
-          loading={isLoading}
-          rowKey='id'
-          rowSelection={rowSelection}
-          pagination={{
-            current: meta.page,
-            pageSize: meta.limit,
-            total: meta.total,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} expense`,
-          }}
-        />
+        <div style={{ overflowX: 'auto' }}>
+          <Table
+            columns={columns}
+            dataSource={expenses}
+            loading={isLoading}
+            rowKey='id'
+            rowSelection={rowSelection}
+            pagination={{
+              current: meta.page,
+              pageSize: meta.limit,
+              total: meta.total,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} expense`,
+            }}
+            scroll={{ x: 1200 }}
+          />
+        </div>
       </Card>
     </div>
   );
