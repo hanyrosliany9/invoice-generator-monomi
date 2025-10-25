@@ -25,6 +25,7 @@ import { AccountingExcelExportService } from "./services/accounting-excel-export
 import { CashTransactionService } from "./services/cash-transaction.service";
 import { BankTransferService } from "./services/bank-transfer.service";
 import { BankReconciliationService } from "./services/bank-reconciliation.service";
+import { RevenueRecognitionService } from "./services/revenue-recognition.service";
 import { CreateJournalEntryDto } from "./dto/create-journal-entry.dto";
 import { UpdateJournalEntryDto } from "./dto/update-journal-entry.dto";
 import { JournalQueryDto } from "./dto/journal-query.dto";
@@ -60,6 +61,7 @@ export class AccountingController {
     private readonly cashTransactionService: CashTransactionService,
     private readonly bankTransferService: BankTransferService,
     private readonly bankReconciliationService: BankReconciliationService,
+    private readonly revenueRecognitionService: RevenueRecognitionService,
   ) {}
 
   // ============ CHART OF ACCOUNTS ============
@@ -1174,5 +1176,88 @@ export class AccountingController {
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
+  }
+
+  // ============ PHASE 2: REVENUE RECOGNITION & DASHBOARD ============
+
+  /**
+   * Get revenue dashboard summary
+   * Returns recognized, deferred, and pending revenue metrics
+   */
+  @Get("revenue/dashboard")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
+  async getRevenueDashboard(
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    return this.revenueRecognitionService.getRevenueDashboardSummary(
+      start,
+      end,
+    );
+  }
+
+  /**
+   * Get recognized revenue (PSAK 72)
+   * Returns revenue recognized during specified period
+   */
+  @Get("revenue/recognized")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
+  async getRecognizedRevenue(
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    return this.revenueRecognitionService.getRevenueDashboardSummary(
+      start,
+      end,
+    );
+  }
+
+  /**
+   * Get deferred revenue
+   * Returns revenue received in advance but not yet earned
+   */
+  @Get("revenue/deferred")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
+  async getDeferredRevenue() {
+    return this.revenueRecognitionService.getRevenueDashboardSummary();
+  }
+
+  /**
+   * Get revenue by project
+   * Returns revenue breakdown by project
+   */
+  @Get("revenue/by-project")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
+  async getRevenueByProject() {
+    return this.revenueRecognitionService.getRevenueDashboardSummary();
+  }
+
+  /**
+   * Get milestone revenue summary
+   * Returns revenue recognition status for specific project's milestones
+   */
+  @Get("revenue/milestones/:projectId")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
+  async getProjectMilestonesRevenue(@Param("projectId") projectId: string) {
+    return this.revenueRecognitionService.getPaymentMilestonesSummary(projectId);
+  }
+
+  /**
+   * Manually trigger revenue recognition for a paid invoice
+   * Used for invoice payments outside the automatic listener
+   */
+  @Post("revenue/recognize/:invoiceId")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
+  async recognizeInvoiceRevenue(
+    @Param("invoiceId") invoiceId: string,
+    @Request() req,
+  ) {
+    return this.revenueRecognitionService.recognizeRevenueFromInvoicePayment(
+      invoiceId,
+    );
   }
 }

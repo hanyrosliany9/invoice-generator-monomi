@@ -8,6 +8,8 @@ import { transformMilestonesToEvents, getStatusLabel } from '../../utils/calenda
 import { formatIDR } from '../../utils/currency'
 import dayjs from 'dayjs'
 
+// FullCalendar CSS is embedded in the JavaScript bundles for v6
+
 interface EventClickInfo {
   event: { id: string; title: string }
 }

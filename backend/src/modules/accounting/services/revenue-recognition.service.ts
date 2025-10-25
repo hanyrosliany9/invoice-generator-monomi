@@ -750,4 +750,316 @@ export class RevenueRecognitionService {
       })),
     };
   }
+
+  /**
+   * Phase 1 Enhancement: Recognize revenue when milestone invoice is paid
+   * Called when a payment milestone invoice changes to PAID status
+   */
+  async recognizeRevenueFromMilestoneInvoice(invoiceId: string): Promise<void> {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        paymentMilestone: true,
+        projectMilestone: true,
+        payments: { where: { status: "CONFIRMED" } },
+      },
+    });
+
+    if (!invoice || invoice.status !== "PAID") {
+      return; // Only recognize revenue for paid invoices
+    }
+
+    // If project milestone linked, recognize revenue
+    if (invoice.projectMilestone) {
+      await this.recognizeMilestoneRevenue({
+        milestoneId: invoice.projectMilestone.id,
+        completionPercentage: 100, // Assume milestone completed if invoiced
+        recognitionDate: new Date(),
+        userId: "system",
+      });
+    }
+  }
+
+  /**
+   * Phase 1 Enhancement: Auto-create project milestones from payment milestones
+   * When a milestone-based quotation is approved, create corresponding project milestones
+   */
+  async createProjectMilestonesFromPaymentMilestones(
+    quotationId: string,
+    userId: string,
+  ): Promise<any[]> {
+    const quotation = await this.prisma.quotation.findUnique({
+      where: { id: quotationId },
+      include: { paymentMilestones: true, project: true },
+    });
+
+    if (!quotation) {
+      throw new NotFoundException("Quotation tidak ditemukan");
+    }
+
+    const projectMilestones: any[] = [];
+
+    for (const pm of quotation.paymentMilestones) {
+      const projectMilestone = await this.createMilestone({
+        projectId: quotation.projectId,
+        milestoneNumber: pm.milestoneNumber,
+        name: pm.name,
+        nameId: pm.nameId,
+        description: pm.description,
+        descriptionId: pm.descriptionId,
+        plannedRevenue: Number(pm.paymentAmount),
+        plannedEndDate: pm.dueDate,
+        deliverables: pm.deliverables,
+        userId,
+      });
+
+      // Link payment milestone to project milestone
+      await this.prisma.paymentMilestone.update({
+        where: { id: pm.id },
+        data: { projectMilestoneId: projectMilestone.id },
+      });
+
+      projectMilestones.push(projectMilestone);
+    }
+
+    return projectMilestones;
+  }
+
+  /**
+   * Phase 1 Enhancement: Get payment milestone invoicing summary
+   * Shows which milestones have been invoiced and payment status
+   */
+  async getPaymentMilestonesSummary(quotationId: string): Promise<any> {
+    const quotation = await this.prisma.quotation.findUnique({
+      where: { id: quotationId },
+      include: {
+        client: true,
+        project: true,
+        paymentMilestones: { include: { invoice: true } },
+      },
+    });
+
+    if (!quotation) {
+      throw new NotFoundException("Quotation tidak ditemukan");
+    }
+
+    const milestones = quotation.paymentMilestones;
+    const invoicedCount = milestones.filter((m) => m.invoiceId).length;
+    const paidCount = milestones.filter(
+      (m) => m.invoice && m.invoice.status === "PAID",
+    ).length;
+
+    const totalInvoiced = milestones
+      .filter((m) => m.invoiceId)
+      .reduce((sum, m) => sum + Number(m.paymentAmount), 0);
+
+    const totalPaid = milestones
+      .filter((m) => m.invoice && m.invoice.status === "PAID")
+      .reduce((sum, m) => sum + Number(m.paymentAmount), 0);
+
+    return {
+      quotationId,
+      quotationNumber: quotation.quotationNumber,
+      clientName: quotation.client.name,
+      projectDescription: quotation.project.description,
+      totalAmount: Number(quotation.totalAmount),
+      totalInvoiced,
+      totalPaid,
+      totalOutstanding: Number(quotation.totalAmount) - totalPaid,
+      summaryStats: {
+        totalMilestones: milestones.length,
+        milestonesInvoiced: invoicedCount,
+        milestonesPaid: paidCount,
+        invoicedPercentage: milestones.length
+          ? Math.round((invoicedCount / milestones.length) * 100)
+          : 0,
+        paidPercentage: milestones.length
+          ? Math.round((paidCount / milestones.length) * 100)
+          : 0,
+      },
+      milestones: milestones.map((m) => ({
+        milestoneNumber: m.milestoneNumber,
+        name: m.name,
+        nameId: m.nameId,
+        percentage: Number(m.paymentPercentage),
+        amount: Number(m.paymentAmount),
+        dueDate: m.dueDate,
+        isInvoiced: !!m.invoiceId,
+        invoiceId: m.invoiceId,
+        invoiceNumber: m.invoice?.invoiceNumber,
+        invoiceStatus: m.invoice?.status,
+      })),
+    };
+  }
+
+  /**
+   * PHASE 2: Recognize revenue from invoice payment
+   *
+   * Automatically triggered when an invoice is paid.
+   * Links invoice payment to project milestone and recognizes revenue.
+   *
+   * This is called by InvoicePaymentListener when an invoice reaches PAID_OFF status.
+   *
+   * @param invoiceId ID of the paid invoice
+   * @returns Updated invoice with revenue recognition details
+   */
+  async recognizeRevenueFromInvoicePayment(invoiceId: string) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        paymentMilestone: true,
+        projectMilestone: true,
+        payments: {
+          where: { status: "CONFIRMED" },
+        },
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException(`Invoice ${invoiceId} not found`);
+    }
+
+    if (invoice.status !== InvoiceStatus.PAID_OFF) {
+      throw new BadRequestException(
+        `Invoice must be in PAID_OFF status, current status: ${invoice.status}`,
+      );
+    }
+
+    // Only recognize revenue if invoice is linked to a project milestone
+    if (!invoice.projectMilestoneId) {
+      return {
+        invoiceId,
+        message: "Invoice not linked to project milestone, revenue recognition skipped",
+      };
+    }
+
+    const milestone = await this.prisma.projectMilestone.findUnique({
+      where: { id: invoice.projectMilestoneId },
+    });
+
+    if (!milestone) {
+      throw new NotFoundException(
+        `Project milestone ${invoice.projectMilestoneId} not found`,
+      );
+    }
+
+    // Recognize revenue for the milestone
+    // Assume milestone is 100% complete when invoice is paid
+    const updatedMilestone = await this.recognizeMilestoneRevenue({
+      milestoneId: milestone.id,
+      completionPercentage: 100,
+      recognitionDate: new Date(),
+      userId: "system",
+    });
+
+    return {
+      invoiceId,
+      milestoneId: milestone.id,
+      revenueRecognized: Number(updatedMilestone.recognizedRevenue),
+      message: `Revenue recognized for milestone ${milestone.name}`,
+    };
+  }
+
+  /**
+   * PHASE 2: Get revenue dashboard summary
+   *
+   * Returns comprehensive revenue recognition summary for dashboard display.
+   * Includes recognized, deferred, and pending revenue.
+   *
+   * @param startDate Optional start date for period analysis
+   * @param endDate Optional end date for period analysis
+   * @returns Revenue summary for dashboard
+   */
+  async getRevenueDashboardSummary(startDate?: Date, endDate?: Date) {
+    const start = startDate || new Date(new Date().getFullYear(), 0, 1);
+    const end = endDate || new Date();
+
+    // Get recognized revenue
+    const recognizedRevenue = await this.prisma.projectMilestone.aggregate({
+      where: {
+        status: {
+          in: [MilestoneStatus.COMPLETED, MilestoneStatus.ACCEPTED],
+        },
+      },
+      _sum: {
+        recognizedRevenue: true,
+      },
+    });
+
+    // Get deferred revenue
+    const deferredRevenue = await this.prisma.deferredRevenue.aggregate({
+      where: {
+        status: {
+          in: ["DEFERRED", "PARTIALLY_RECOGNIZED"],
+        },
+      },
+      _sum: {
+        remainingAmount: true,
+      },
+    });
+
+    // Get invoiced but not yet recognized revenue
+    const invoicedNotRecognized = await this.prisma.invoice.findMany({
+      where: {
+        status: InvoiceStatus.PAID_OFF,
+        projectMilestone: {
+          status: {
+            notIn: [MilestoneStatus.COMPLETED, MilestoneStatus.ACCEPTED],
+          },
+        },
+        createdAt: {
+          gte: start,
+          lte: end,
+        },
+      },
+    });
+
+    const pendingRevenueAmount = invoicedNotRecognized.reduce(
+      (sum, inv) => sum + Number(inv.totalAmount),
+      0,
+    );
+
+    return {
+      period: {
+        startDate: start,
+        endDate: end,
+      },
+      recognizedRevenue: {
+        total: Number(recognizedRevenue._sum.recognizedRevenue || 0),
+        count: 0, // Could add count if needed
+      },
+      deferredRevenue: {
+        total: Number(deferredRevenue._sum.remainingAmount || 0),
+        count: 0,
+      },
+      pendingRevenue: {
+        total: pendingRevenueAmount,
+        count: invoicedNotRecognized.length,
+      },
+      summary: {
+        totalInvoiced:
+          Number(recognizedRevenue._sum.recognizedRevenue || 0) +
+          Number(deferredRevenue._sum.remainingAmount || 0) +
+          pendingRevenueAmount,
+        recognitionRate: this.calculateRecognitionRate(
+          Number(recognizedRevenue._sum.recognizedRevenue || 0),
+          Number(recognizedRevenue._sum.recognizedRevenue || 0) +
+            Number(deferredRevenue._sum.remainingAmount || 0) +
+            pendingRevenueAmount,
+        ),
+      },
+    };
+  }
+
+  /**
+   * Calculate recognition rate percentage
+   * @private
+   */
+  private calculateRecognitionRate(
+    recognized: number,
+    total: number,
+  ): number {
+    if (total === 0) return 0;
+    return parseFloat(((recognized / total) * 100).toFixed(2));
+  }
 }

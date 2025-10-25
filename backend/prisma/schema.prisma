@@ -217,6 +217,10 @@ model Quotation {
   // Terms and conditions
   terms String?
 
+  // Payment Structure (Phase 1 Enhancement: Milestone Support)
+  paymentType PaymentType @default(FULL_PAYMENT) // FULL_PAYMENT or MILESTONE_BASED
+  paymentTermsText String? @db.Text // Legacy text field (keep for compatibility)
+
   // Status management
   status QuotationStatus @default(DRAFT)
 
@@ -235,6 +239,7 @@ model Quotation {
 
   // Relations
   invoices              Invoice[]
+  paymentMilestones     PaymentMilestone[] // Phase 1 Enhancement: Payment milestones for quotations
   businessJourneyEvents BusinessJourneyEvent[]
   documents             Document[]
 
@@ -308,6 +313,13 @@ model Invoice {
   journalEntryId   String? // Journal entry when invoice sent (AR/Revenue)
   paymentJournalId String? // Journal entry when invoice paid (Cash/AR)
 
+  // Milestone Integration (Phase 1 Enhancement)
+  paymentMilestoneId String? // Which payment milestone is this invoice for?
+  paymentMilestone   PaymentMilestone? @relation("PaymentMilestoneInvoices", fields: [paymentMilestoneId], references: [id], onDelete: SetNull)
+
+  projectMilestoneId String? // Which project milestone is this invoice for?
+  projectMilestone   ProjectMilestone? @relation("ProjectMilestoneInvoices", fields: [projectMilestoneId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -327,6 +339,8 @@ model Invoice {
   @@index([dueDate])
   @@index([materaiRequired])
   @@index([quotationId])
+  @@index([paymentMilestoneId]) // Phase 1 Enhancement: milestone lookup
+  @@index([projectMilestoneId]) // Phase 1 Enhancement: project milestone lookup
   // Composite indexes for performance optimization - Critical queries
   @@index([clientId, status])
   @@index([status, dueDate])
@@ -558,6 +572,13 @@ enum InvoiceStatus {
   PAID
   OVERDUE
   CANCELLED
+}
+
+enum PaymentType {
+  FULL_PAYMENT      // Pay in full upon completion
+  MILESTONE_BASED   // Pay per milestone (termin pembayaran)
+  ADVANCE_PAYMENT   // Advance + final payment
+  CUSTOM            // Custom payment structure
 }
 
 enum PaymentMethod {
@@ -2497,6 +2518,54 @@ model DeferredRevenue {
   @@map("deferred_revenue")
 }
 
+// ============================================
+// PAYMENT MILESTONES (Phase 1 Enhancement)
+// ============================================
+// Payment Milestones for Quotations - structured payment terms for "termin pembayaran"
+model PaymentMilestone {
+  id String @id @default(cuid())
+
+  // Quotation reference
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  // Milestone details
+  milestoneNumber Int       // 1, 2, 3... (sequence in quotation)
+  name            String    // "Down Payment", "Phase 1", "Final Payment"
+  nameId          String?   // Indonesian: "DP", "Tahap 1", "Pelunasan"
+  description     String?   @db.Text
+  descriptionId   String?   @db.Text
+
+  // Payment terms
+  paymentPercentage Decimal @db.Decimal(5, 2)  // % of total quotation (e.g., 30%)
+  paymentAmount     Decimal @db.Decimal(12, 2) // Calculated amount in IDR
+
+  // Timeline
+  dueDate         DateTime? // When payment is expected
+  dueDaysFromPrev Int?      // Alternative: "X days after previous milestone"
+
+  // Deliverables
+  deliverables Json? // What client receives at this milestone
+
+  // Status tracking
+  isInvoiced Boolean @default(false) // Has invoice been generated?
+
+  // Invoice relation (one-to-many: a payment milestone can have one or more invoices)
+  invoices Invoice[] @relation("PaymentMilestoneInvoices")
+
+  // Project milestone link (optional)
+  projectMilestoneId String?
+  projectMilestone   ProjectMilestone? @relation("PaymentToProjectMilestone", fields: [projectMilestoneId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([quotationId, milestoneNumber])
+  @@index([quotationId])
+  @@index([projectMilestoneId])
+  @@map("payment_milestones")
+}
+
 // Project Milestones (for percentage-of-completion revenue recognition)
 model ProjectMilestone {
   id String @id @default(cuid())
@@ -2554,6 +2623,14 @@ model ProjectMilestone {
   // Delay Tracking
   delayDays   Int?    @default(0) // Days delayed from planned
   delayReason String? @db.Text // Reason for delay
+
+  // Phase 1 Enhancement: Payment Milestone Integration
+  paymentMilestones PaymentMilestone[] @relation("PaymentToProjectMilestone") // Link to quotation payment terms
+  invoices          Invoice[] @relation("ProjectMilestoneInvoices") // Invoices generated from this milestone
+
+  // Phase 1 Enhancement: Indonesian Business Fields
+  materaiRequired Boolean @default(false) // Does this milestone invoice need stamp duty?
+  taxTreatment    String? // "PPN 11%", "PPh 23", etc.
 
   // Audit
   createdAt DateTime @default(now())

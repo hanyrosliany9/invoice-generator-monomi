@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react'
-import { Card, Table, Tag, Tooltip, Space, Progress, Empty, Row, Col, Statistic } from 'antd'
+import React, { useMemo, useRef, useEffect, useState } from 'react'
+import { Card, Table, Tag, Tooltip, Space, Progress, Empty, Row, Col, Statistic, Button, Drawer } from 'antd'
 import { ProjectMilestone } from '../../services/milestones'
-import { getStatusColor, getPriorityColor, getStatusLabel } from '../../utils/calendarUtils'
+import { getStatusColor, getPriorityColor, getStatusLabel, getTimelineMetrics, assessMilestoneRisks } from '../../utils/calendarUtils'
 import { formatIDR } from '../../utils/currency'
 import dayjs, { Dayjs } from 'dayjs'
+import { AlertOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons'
 
 interface GanttChartViewProps {
   milestones: ProjectMilestone[]
@@ -22,6 +23,8 @@ export const GanttChartView: React.FC<GanttChartViewProps> = ({
   milestones,
   onEventClick,
 }) => {
+  const [showRisks, setShowRisks] = useState(false)
+
   if (milestones.length === 0) {
     return <Empty description="No milestones to display" />
   }
@@ -257,10 +260,13 @@ export const GanttChartView: React.FC<GanttChartViewProps> = ({
     }
   }, [milestones, timeline])
 
+  const timelineMetrics = useMemo(() => getTimelineMetrics(milestones), [milestones])
+  const riskAssessments = useMemo(() => assessMilestoneRisks(milestones), [milestones])
+
   return (
     <div>
       <Row gutter={16} style={{ marginBottom: '24px' }}>
-        <Col xs={12} sm={6}>
+        <Col xs={12} sm={8}>
           <Card>
             <Statistic
               title="Total Duration"
@@ -269,7 +275,7 @@ export const GanttChartView: React.FC<GanttChartViewProps> = ({
             />
           </Card>
         </Col>
-        <Col xs={12} sm={6}>
+        <Col xs={12} sm={8}>
           <Card>
             <Statistic
               title="Days Remaining"
@@ -278,7 +284,25 @@ export const GanttChartView: React.FC<GanttChartViewProps> = ({
             />
           </Card>
         </Col>
-        <Col xs={12} sm={6}>
+        <Col xs={12} sm={8}>
+          <Card>
+            <Statistic
+              title="Critical Path"
+              value={criticalPath.size}
+              suffix="milestones"
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={8}>
+          <Card>
+            <Statistic
+              title="Buffer Days"
+              value={timelineMetrics.bufferDays}
+              suffix="days"
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={8}>
           <Card>
             <Statistic
               title="In Progress"
@@ -287,13 +311,16 @@ export const GanttChartView: React.FC<GanttChartViewProps> = ({
             />
           </Card>
         </Col>
-        <Col xs={12} sm={6}>
+        <Col xs={12} sm={8}>
           <Card>
-            <Statistic
-              title="Critical Path"
-              value={criticalPath.size}
-              suffix="milestones"
-            />
+            <Button
+              type={riskAssessments.length > 0 ? 'primary' : 'default'}
+              danger={riskAssessments.some(r => r.riskLevel === 'HIGH')}
+              onClick={() => setShowRisks(true)}
+              icon={<AlertOutlined />}
+            >
+              Risks: {riskAssessments.filter(r => r.riskLevel === 'HIGH').length} High
+            </Button>
           </Card>
         </Col>
       </Row>
@@ -326,6 +353,59 @@ export const GanttChartView: React.FC<GanttChartViewProps> = ({
           }
         `}</style>
       </Card>
+
+      <Drawer
+        title="Risk Assessment"
+        placement="right"
+        onClose={() => setShowRisks(false)}
+        open={showRisks}
+        width={400}
+      >
+        {riskAssessments.length === 0 ? (
+          <Empty description="No risks identified" />
+        ) : (
+          <Space direction="vertical" style={{ width: '100%' }}>
+            {riskAssessments.map((risk) => (
+              <Card
+                key={risk.milestoneId}
+                size="small"
+                style={{
+                  borderLeft: `4px solid ${
+                    risk.riskLevel === 'HIGH'
+                      ? '#ff4d4f'
+                      : risk.riskLevel === 'MEDIUM'
+                      ? '#faad14'
+                      : '#52c41a'
+                  }`,
+                }}
+              >
+                <Space direction="vertical" size={0} style={{ width: '100%' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                    {risk.milestoneName}
+                  </div>
+                  <Tag
+                    color={
+                      risk.riskLevel === 'HIGH'
+                        ? 'red'
+                        : risk.riskLevel === 'MEDIUM'
+                        ? 'orange'
+                        : 'green'
+                    }
+                    style={{ marginTop: '4px' }}
+                  >
+                    {risk.riskLevel} RISK
+                  </Tag>
+                  <ul style={{ margin: '8px 0', paddingLeft: '20px', fontSize: '12px' }}>
+                    {risk.reasons.map((reason, idx) => (
+                      <li key={idx}>{reason}</li>
+                    ))}
+                  </ul>
+                </Space>
+              </Card>
+            ))}
+          </Space>
+        )}
+      </Drawer>
     </div>
   )
 }

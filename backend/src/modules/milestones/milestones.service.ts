@@ -134,14 +134,6 @@ export class MilestonesService {
             status: true,
           },
         },
-        successors: {
-          select: {
-            id: true,
-            milestoneNumber: true,
-            name: true,
-            status: true,
-          },
-        },
       },
       orderBy: { milestoneNumber: 'asc' },
     });

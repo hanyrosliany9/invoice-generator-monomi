@@ -5,6 +5,7 @@ import { PrismaModule } from "../prisma/prisma.module";
 import { QuotationsModule } from "../quotations/quotations.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { AccountingModule } from "../accounting/accounting.module";
+import { InvoicePaymentListener } from "./listeners/invoice-payment.listener";
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { AccountingModule } from "../accounting/accounting.module";
     AccountingModule,
   ],
   controllers: [InvoicesController],
-  providers: [InvoicesService],
+  providers: [InvoicesService, InvoicePaymentListener],
   exports: [InvoicesService],
 })
 export class InvoicesModule {}

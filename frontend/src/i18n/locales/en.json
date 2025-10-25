@@ -125,6 +125,68 @@
     },
     "changeStatusModal": {
       "title": "Change Quotation Status"
+    },
+    "milestones": {
+      "title": "Payment Terms & Milestones",
+      "paymentStructure": "Payment Structure",
+      "paymentType": {
+        "fullPayment": "Full Payment",
+        "milestoneBased": "Milestone-Based (Termin)",
+        "advancePayment": "Advance + Final",
+        "customStructure": "Custom Structure"
+      },
+      "templates": {
+        "title": "Quick Start: Indonesian Payment Templates",
+        "termin3Standard": "Termin 3 Fase (Standard) - DP 30% → Tahap 1 40% → Pelunasan 30%",
+        "termin2_50_50": "Termin 2 Fase (50-50) - DP 50% → Pelunasan 50%",
+        "construction4Phase": "Konstruksi 4 Fase - Mobilisasi 20% → Tahap 1 30% → Tahap 2 30% → Selesai 20%"
+      },
+      "form": {
+        "nameEnglish": "Name (English)",
+        "nameIndonesian": "Name (Bahasa Indonesia)",
+        "percentage": "Payment Percentage (%)",
+        "amount": "Calculated Amount (IDR)",
+        "dueDate": "Due Date",
+        "daysAfterPrevious": "Days After Previous Milestone",
+        "description": "Description (English)",
+        "descriptionIndonesian": "Description (Bahasa Indonesia)",
+        "deliverables": "Deliverables (comma-separated)"
+      },
+      "status": {
+        "pending": "Pending",
+        "invoiced": "Invoiced",
+        "paid": "Paid",
+        "overdue": "Overdue"
+      },
+      "validation": {
+        "totalPercentageInvalid": "Total percentages must equal 100%",
+        "percentageNotEqual": "Total percentages must equal 100% (currently {{percentage}}%)",
+        "sequentialNumbers": "Milestone numbers must be sequential (1, 2, 3...)",
+        "amountMismatch": "Milestone {{number}} amount doesn't match percentage",
+        "firstMilestoneNoDays": "First milestone cannot have 'days after previous'"
+      },
+      "messages": {
+        "info": "Milestone-Based Payments (Termin Pembayaran) - This payment structure is common in Indonesian business. Each milestone represents a payment stage with specific deliverables.",
+        "infoContinued": "When you approve this quotation, invoices will be generated automatically for each milestone.",
+        "noMilestones": "No milestones yet",
+        "addFirstMilestone": "Add First Milestone",
+        "addAnother": "Add Another Milestone",
+        "deleteMilestone": "Delete Milestone",
+        "confirmDelete": "Are you sure you want to delete this milestone?"
+      },
+      "progress": {
+        "title": "Payment Progress",
+        "totalMilestones": "Total Milestones",
+        "invoiced": "Invoiced",
+        "paid": "Paid",
+        "overdue": "Overdue",
+        "totalPaid": "Total Paid",
+        "totalInvoiced": "Total Invoiced",
+        "outstanding": "Outstanding",
+        "completion": "Completion",
+        "generateInvoice": "Generate Invoice",
+        "viewInvoice": "View Invoice"
+      }
     }
   },
   "invoices": {
@@ -348,6 +410,118 @@
     "bankAccount": "Bank Account",
     "taxNumber": "Tax Number",
     "contactPerson": "Contact Person",
-    "companyType": "Company Type"
+    "companyType": "Company Type",
+    "milestone": "Milestone",
+    "dueDate": "Due Date",
+    "amount": "Amount",
+    "status": "Status",
+    "complete": "Complete",
+    "paid": "Paid",
+    "invoiced": "Invoiced",
+    "pending": "Pending",
+    "overdue": "Overdue",
+    "onTime": "On Time",
+    "daysBehind": "Days Behind",
+    "daysOverdue": "Days Overdue",
+    "dueToday": "Due Today",
+    "dueTomorrow": "Due Tomorrow",
+    "dueIn": "Due In",
+    "days": "Days",
+    "remaining": "Remaining",
+    "total": "Total",
+    "allMilestones": "All Milestones",
+    "details": "Details",
+    "deliverables": "Deliverables",
+    "paidDate": "Paid Date",
+    "daysToPayment": "Days to Payment",
+    "revenueRecognized": "Revenue Recognized",
+    "profitabilitySummary": "Profitability Summary",
+    "email": "Email",
+    "downloadFeatureComingSoon": "Download feature coming soon",
+    "timeRange": "Time Range",
+    "last30Days": "Last 30 Days",
+    "last90Days": "Last 90 Days",
+    "lastYear": "Last Year",
+    "custom": "Custom",
+    "forecast": "Forecast",
+    "expected": "Expected",
+    "revenue": "Revenue",
+    "cost": "Cost",
+    "profit": "Profit"
+  },
+  "pages": {
+    "milestoneAnalytics": "Milestone Analytics"
+  },
+  "descriptions": {
+    "milestoneAnalyticsDescription": "Track and analyze milestone payments, revenue recognition, and project profitability",
+    "averageTimeToPayment": "Average number of days from invoice to payment",
+    "percentagePaidOnTime": "Percentage of milestones paid on or before due date",
+    "percentageRevenueRecognized": "Percentage of revenue recognized per PSAK 72 standards",
+    "activeMilestones": "Number of active milestones in the system"
+  },
+  "metrics": {
+    "averagePaymentCycle": "Average Payment Cycle",
+    "onTimePaymentRate": "On-Time Payment Rate",
+    "revenueRecognitionRate": "Revenue Recognition Rate",
+    "totalMilestones": "Total Milestones"
+  },
+  "charts": {
+    "profitabilityByPhase": "Profitability by Phase",
+    "cashFlowForecast": "Cash Flow Forecast",
+    "profitMarginDistribution": "Profit Margin Distribution"
+  },
+  "notifications": {
+    "milestones": {
+      "title": "Milestone Notifications",
+      "dueSoon": "Milestone Due Soon",
+      "overdue": "Milestone Overdue",
+      "paymentOverdue": "Payment Overdue",
+      "completed": "Milestone Completed",
+      "revenueRecognitionRequired": "Revenue Recognition Required",
+      "preferences": "Notification Preferences",
+      "reminderFrequency": "Reminder Frequency",
+      "emailNotifications": "Email Notifications",
+      "pushNotifications": "Push Notifications"
+    }
+  },
+  "actions": {
+    "details": "Details",
+    "generateInvoice": "Generate Invoice",
+    "markAsPaid": "Mark As Paid",
+    "uploadProof": "Upload Proof",
+    "download": "Download",
+    "refresh": "Refresh",
+    "snooze": "Snooze",
+    "dismiss": "Dismiss"
+  },
+  "success": {
+    "invoiceGenerated": "Invoice generated successfully",
+    "markedAsPaid": "Marked as paid successfully",
+    "proofUploaded": "Proof of delivery uploaded successfully",
+    "shared": "Successfully shared",
+    "analyticsExported": "Analytics exported successfully",
+    "milestoneDeleted": "Milestone deleted successfully"
+  },
+  "error": {
+    "failedToLoadAnalytics": "Failed to load analytics",
+    "exportFailed": "Failed to export analytics",
+    "failedToGenerateInvoice": "Failed to generate invoice",
+    "failedToMarkAsPaid": "Failed to mark as paid",
+    "failedToShare": "Failed to share",
+    "failedToUploadProof": "Failed to upload proof",
+    "failedToDelete": "Failed to delete milestone"
+  },
+  "confirmations": {
+    "deleteTitle": "Confirm Delete",
+    "deleteMilestoneContent": "Are you sure you want to delete this milestone?"
+  },
+  "messages": {
+    "downloadFeatureComingSoon": "Download feature coming soon"
+  },
+  "status": {
+    "paid": "Paid",
+    "invoiced": "Invoiced",
+    "pending": "Pending",
+    "overdue": "Overdue"
   }
 }

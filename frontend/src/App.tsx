@@ -41,8 +41,8 @@ import { CashBankBalancePage } from './pages/accounting/CashBankBalancePage'
 import { ReportsPage } from './pages/ReportsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { UsersPage } from './pages/UsersPage'
-// import { CalendarPage } from './pages/CalendarPage'
-// import { ProjectCalendarPage } from './pages/ProjectCalendarPage'
+import { CalendarPage } from './pages/CalendarPage'
+import { ProjectCalendarPage } from './pages/ProjectCalendarPage'
 import './styles/relationships.css'
 
 // Lazy load heavy create/edit pages for performance
@@ -252,7 +252,7 @@ function App() {
                         </Suspense>
                       }
                     />
-                    {/* <Route path='/calendar' element={<CalendarPage />} /> */}
+                    <Route path='/calendar' element={<CalendarPage />} />
                     <Route path='/projects' element={<ProjectsPage />} />
                     <Route
                       path='/projects/new'
@@ -274,10 +274,10 @@ function App() {
                         </Suspense>
                       }
                     />
-                    {/* <Route
+                    <Route
                       path='/projects/:projectId/calendar'
                       element={<ProjectCalendarPage />}
-                    /> */}
+                    />
                     <Route path='/expenses' element={<ExpensesPage />} />
                     <Route
                       path='/expenses/new'

@@ -207,4 +207,65 @@ export class QuotationsController {
   remove(@Param("id") id: string) {
     return this.quotationsService.remove(id);
   }
+
+  /**
+   * Phase 1 Enhancement: Approve quotation with milestone support
+   * POST /quotations/:id/approve-with-milestones
+   * If quotation is milestone-based, handles milestone invoice generation
+   */
+  @Post(":id/approve-with-milestones")
+  @RequireFinancialApprover()
+  @ApiOperation({ summary: "Approve quotation dengan dukungan milestone" })
+  @ApiResponse({
+    status: 200,
+    description:
+      "Quotation approved, invoice generated untuk milestone pertama jika applicable",
+  })
+  async approveWithMilestones(@Param("id") id: string, @Request() req: any) {
+    return this.quotationsService.approveQuotationWithMilestones(id, req.user.id);
+  }
+
+  /**
+   * Phase 1 Enhancement: Generate next milestone invoice
+   * POST /quotations/:id/generate-next-milestone-invoice
+   * Called when client is ready for next phase payment
+   */
+  @Post(":id/generate-next-milestone-invoice")
+  @RequireFinancialApprover()
+  @ApiOperation({ summary: "Generate invoice untuk milestone berikutnya" })
+  @ApiResponse({
+    status: 200,
+    description: "Invoice untuk milestone berikutnya berhasil dibuat",
+  })
+  async generateNextMilestoneInvoice(
+    @Param("id") id: string,
+    @Request() req: any,
+  ) {
+    return this.quotationsService.generateNextMilestoneInvoice(id, req.user.id);
+  }
+
+  /**
+   * Phase 1 Enhancement: Get milestone progress
+   * GET /quotations/:id/milestone-progress
+   * Shows which milestones are invoiced, paid, etc.
+   */
+  @Get(":id/milestone-progress")
+  @RequireAuth()
+  @ApiOperation({ summary: "Get progress pembayaran milestone" })
+  @ApiResponse({
+    status: 200,
+    description: "Progress milestone untuk quotation",
+  })
+  async getMilestoneProgress(@Param("id") id: string) {
+    // This requires PaymentMilestonesService to be injected into QuotationsService
+    // For now, we'll use a basic response
+    const quotation = await this.quotationsService.findOne(id);
+
+    return {
+      quotationId: id,
+      paymentType: quotation.paymentType,
+      message: "Endpoint untuk mendapatkan progress milestone",
+      note: "Implement dengan menggunakan PaymentMilestonesService",
+    };
+  }
 }

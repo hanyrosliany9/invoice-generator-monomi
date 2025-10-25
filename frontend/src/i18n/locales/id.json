@@ -218,6 +218,68 @@
     },
     "changeStatusModal": {
       "title": "Ubah Status Quotation"
+    },
+    "milestones": {
+      "title": "Syarat Pembayaran & Milestone",
+      "paymentStructure": "Struktur Pembayaran",
+      "paymentType": {
+        "fullPayment": "Pembayaran Penuh",
+        "milestoneBased": "Pembayaran Bertahap (Termin)",
+        "advancePayment": "DP + Pelunasan",
+        "customStructure": "Struktur Kustom"
+      },
+      "templates": {
+        "title": "Mulai Cepat: Template Pembayaran Indonesia",
+        "termin3Standard": "Termin 3 Fase (Standard) - DP 30% → Tahap 1 40% → Pelunasan 30%",
+        "termin2_50_50": "Termin 2 Fase (50-50) - DP 50% → Pelunasan 50%",
+        "construction4Phase": "Konstruksi 4 Fase - Mobilisasi 20% → Tahap 1 30% → Tahap 2 30% → Selesai 20%"
+      },
+      "form": {
+        "nameEnglish": "Nama (English)",
+        "nameIndonesian": "Nama (Bahasa Indonesia)",
+        "percentage": "Persentase Pembayaran (%)",
+        "amount": "Jumlah Terhitung (IDR)",
+        "dueDate": "Tanggal Jatuh Tempo",
+        "daysAfterPrevious": "Hari Setelah Milestone Sebelumnya",
+        "description": "Deskripsi (English)",
+        "descriptionIndonesian": "Deskripsi (Bahasa Indonesia)",
+        "deliverables": "Deliverables (dipisahkan koma)"
+      },
+      "status": {
+        "pending": "Belum Diproses",
+        "invoiced": "Sudah di-Invoice",
+        "paid": "Sudah Dibayar",
+        "overdue": "Terlambat"
+      },
+      "validation": {
+        "totalPercentageInvalid": "Total persentase harus sama dengan 100%",
+        "percentageNotEqual": "Total persentase harus sama dengan 100% (saat ini {{percentage}}%)",
+        "sequentialNumbers": "Nomor milestone harus berurutan (1, 2, 3...)",
+        "amountMismatch": "Jumlah milestone {{number}} tidak sesuai dengan persentase",
+        "firstMilestoneNoDays": "Milestone pertama tidak boleh memiliki 'hari setelah milestone sebelumnya'"
+      },
+      "messages": {
+        "info": "Pembayaran Bertahap (Termin Pembayaran) - Struktur pembayaran ini umum di bisnis Indonesia. Setiap milestone mewakili tahap pembayaran dengan deliverables spesifik.",
+        "infoContinued": "Saat Anda menyetujui quotation ini, invoice akan dibuat secara otomatis untuk setiap milestone.",
+        "noMilestones": "Belum ada milestone",
+        "addFirstMilestone": "Tambah Milestone Pertama",
+        "addAnother": "Tambah Milestone Lainnya",
+        "deleteMilestone": "Hapus Milestone",
+        "confirmDelete": "Apakah Anda yakin ingin menghapus milestone ini?"
+      },
+      "progress": {
+        "title": "Progress Pembayaran",
+        "totalMilestones": "Total Milestone",
+        "invoiced": "Sudah di-Invoice",
+        "paid": "Sudah Dibayar",
+        "overdue": "Terlambat",
+        "totalPaid": "Total Dibayar",
+        "totalInvoiced": "Total di-Invoice",
+        "outstanding": "Belum Dibayar",
+        "completion": "Penyelesaian",
+        "generateInvoice": "Buat Invoice",
+        "viewInvoice": "Lihat Invoice"
+      }
     }
   },
   "invoices": {
@@ -535,6 +597,118 @@
     "bankAccount": "Rekening Bank",
     "taxNumber": "NPWP",
     "contactPerson": "Contact Person",
-    "companyType": "Jenis Perusahaan"
+    "companyType": "Jenis Perusahaan",
+    "milestone": "Termin",
+    "dueDate": "Tanggal Jatuh Tempo",
+    "amount": "Jumlah",
+    "status": "Status",
+    "complete": "Selesai",
+    "paid": "Dibayar",
+    "invoiced": "Diinvoice",
+    "pending": "Menunggu",
+    "overdue": "Jatuh Tempo",
+    "onTime": "Tepat Waktu",
+    "daysBehind": "Hari Terlambat",
+    "daysOverdue": "Hari Jatuh Tempo",
+    "dueToday": "Jatuh Tempo Hari Ini",
+    "dueTomorrow": "Jatuh Tempo Besok",
+    "dueIn": "Jatuh Tempo Dalam",
+    "days": "Hari",
+    "remaining": "Sisa",
+    "total": "Total",
+    "allMilestones": "Semua Termin",
+    "details": "Detail",
+    "deliverables": "Deliverable",
+    "paidDate": "Tanggal Pembayaran",
+    "daysToPayment": "Hari untuk Pembayaran",
+    "revenueRecognized": "Pendapatan Diakui",
+    "profitabilitySummary": "Ringkasan Profitabilitas",
+    "email": "Email",
+    "downloadFeatureComingSoon": "Fitur download segera hadir",
+    "timeRange": "Rentang Waktu",
+    "last30Days": "30 Hari Terakhir",
+    "last90Days": "90 Hari Terakhir",
+    "lastYear": "Tahun Terakhir",
+    "custom": "Kustom",
+    "forecast": "Prakiraan",
+    "expected": "Diharapkan",
+    "revenue": "Pendapatan",
+    "cost": "Biaya",
+    "profit": "Keuntungan"
+  },
+  "pages": {
+    "milestoneAnalytics": "Analitik Termin"
+  },
+  "descriptions": {
+    "milestoneAnalyticsDescription": "Lacak dan analisis pembayaran termin, pengakuan pendapatan, dan profitabilitas proyek",
+    "averageTimeToPayment": "Rata-rata jumlah hari dari invoice hingga pembayaran",
+    "percentagePaidOnTime": "Persentase termin yang dibayar tepat waktu atau lebih awal",
+    "percentageRevenueRecognized": "Persentase pendapatan yang diakui sesuai standar PSAK 72",
+    "activeMilestones": "Jumlah termin aktif dalam sistem"
+  },
+  "metrics": {
+    "averagePaymentCycle": "Siklus Pembayaran Rata-rata",
+    "onTimePaymentRate": "Tingkat Pembayaran Tepat Waktu",
+    "revenueRecognitionRate": "Tingkat Pengakuan Pendapatan",
+    "totalMilestones": "Total Termin"
+  },
+  "charts": {
+    "profitabilityByPhase": "Profitabilitas per Fase",
+    "cashFlowForecast": "Prakiraan Arus Kas",
+    "profitMarginDistribution": "Distribusi Margin Keuntungan"
+  },
+  "notifications": {
+    "milestones": {
+      "title": "Notifikasi Termin",
+      "dueSoon": "Termin Segera Jatuh Tempo",
+      "overdue": "Termin Jatuh Tempo",
+      "paymentOverdue": "Pembayaran Jatuh Tempo",
+      "completed": "Termin Selesai",
+      "revenueRecognitionRequired": "Pengakuan Pendapatan Diperlukan",
+      "preferences": "Preferensi Notifikasi",
+      "reminderFrequency": "Frekuensi Pengingat",
+      "emailNotifications": "Notifikasi Email",
+      "pushNotifications": "Notifikasi Push"
+    }
+  },
+  "actions": {
+    "details": "Detail",
+    "generateInvoice": "Buat Invoice",
+    "markAsPaid": "Tandai Lunas",
+    "uploadProof": "Unggah Bukti",
+    "download": "Unduh",
+    "refresh": "Segarkan",
+    "snooze": "Tunda",
+    "dismiss": "Tutup"
+  },
+  "success": {
+    "invoiceGenerated": "Invoice berhasil dibuat",
+    "markedAsPaid": "Berhasil ditandai sebagai lunas",
+    "proofUploaded": "Bukti pengiriman berhasil diunggah",
+    "shared": "Berhasil dibagikan",
+    "analyticsExported": "Analitik berhasil diekspor",
+    "milestoneDeleted": "Termin berhasil dihapus"
+  },
+  "error": {
+    "failedToLoadAnalytics": "Gagal memuat analitik",
+    "exportFailed": "Gagal mengekspor analitik",
+    "failedToGenerateInvoice": "Gagal membuat invoice",
+    "failedToMarkAsPaid": "Gagal ditandai sebagai lunas",
+    "failedToShare": "Gagal dibagikan",
+    "failedToUploadProof": "Gagal mengunggah bukti",
+    "failedToDelete": "Gagal menghapus termin"
+  },
+  "confirmations": {
+    "deleteTitle": "Konfirmasi Hapus",
+    "deleteMilestoneContent": "Apakah Anda yakin ingin menghapus termin ini?"
+  },
+  "messages": {
+    "downloadFeatureComingSoon": "Fitur download segera hadir"
+  },
+  "status": {
+    "paid": "Dibayar",
+    "invoiced": "Diinvoice",
+    "pending": "Menunggu",
+    "overdue": "Jatuh Tempo"
   }
 }

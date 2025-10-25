@@ -15,6 +15,7 @@ import { CashTransactionService } from "./services/cash-transaction.service";
 import { BankTransferService } from "./services/bank-transfer.service";
 import { BankReconciliationService } from "./services/bank-reconciliation.service";
 import { ExchangeRateService } from "./services/exchange-rate.service";
+import { PSAK72ReportsService } from "./services/psak72-reports.service";
 
 @Module({
   imports: [PrismaModule],
@@ -34,6 +35,7 @@ import { ExchangeRateService } from "./services/exchange-rate.service";
     BankTransferService,
     BankReconciliationService,
     ExchangeRateService,
+    PSAK72ReportsService,
   ],
   exports: [
     JournalService,
@@ -49,6 +51,7 @@ import { ExchangeRateService } from "./services/exchange-rate.service";
     BankTransferService,
     BankReconciliationService,
     ExchangeRateService,
+    PSAK72ReportsService,
   ],
 })
 export class AccountingModule {}

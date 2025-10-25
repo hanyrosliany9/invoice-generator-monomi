@@ -6,15 +6,17 @@ services:
       target: development
     container_name: invoice-app-dev
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://invoiceuser:devpassword@db:5432/invoices
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=dev-jwt-secret-key
       - FRONTEND_URL=http://localhost:3000
-      - SKIP_DB_INIT=true
+      - SKIP_DB_INIT=false
       - SMTP_HOST=localhost
       - SMTP_PORT=587
       - SMTP_USER=dev@monomi.finance
@@ -46,7 +48,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 120s
     user: root
     command: >
       sh -c "
@@ -58,7 +60,7 @@ services:
         npx prisma generate &&
         if [ \"$SKIP_DB_INIT\" = \"false\" ]; then
           echo '🌱 Running database seeding...' &&
-          npx prisma db seed || echo '⚠️  Seeding failed or already completed'
+          npx prisma db seed || { echo '❌ Error: Database seeding failed!'; exit 1; }
         fi &&
         echo '🚀 Starting backend server...' &&
         npm run start:dev &

@@ -31,8 +31,8 @@ FROM base AS backend-build
 COPY backend/package*.json ./backend/
 COPY backend/prisma ./backend/prisma/
 
-# Install backend dependencies
-RUN cd backend && npm ci --only=production
+# Install backend dependencies (including dev dependencies for build)
+RUN cd backend && npm ci
 
 # Copy backend source
 COPY backend/ ./backend/
@@ -42,6 +42,9 @@ RUN cd backend && npx prisma generate
 
 # Build backend
 RUN cd backend && npm run build
+
+# Prune dev dependencies after build
+RUN cd backend && npm prune --production
 
 # Frontend build stage
 FROM base AS frontend-build
@@ -112,17 +115,21 @@ RUN mkdir -p uploads storage logs backup
 # Create nginx config directory
 RUN mkdir -p /etc/nginx/conf.d
 
+# Copy frontend server script (CommonJS format for ES module package)
+COPY frontend/server.cjs ./frontend/
+
 # Change ownership to app user
 RUN chown -R appuser:appuser /app
 
 USER appuser
 
-# Expose port
-EXPOSE 5000
+# Expose ports (3000 for frontend, 5000 for backend)
+EXPOSE 3000 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:5000/health || exit 1
 
-# Start production server
-CMD ["node", "backend/dist/main.js"]
+# Start production server with database migrations
+# Run migrations before starting the app to ensure schema is current
+CMD sh -c "npm run db:migrate:deploy && node backend/dist/main.js"

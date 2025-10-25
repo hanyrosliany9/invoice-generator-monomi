@@ -6,9 +6,23 @@ import path from 'path'
 export default defineConfig({
   plugins: [react({ jsxRuntime: 'automatic' })],
   optimizeDeps: {
-    include: ['react', 'react-dom', 'antd', '@ant-design/icons', 'axios', 'dayjs', 'recharts'],
-    exclude: ['@testing-library/react'],
-    force: false,
+    include: [
+      'react',
+      'react-dom',
+      'antd',
+      '@ant-design/icons',
+      'axios',
+      'dayjs',
+      'recharts',
+    ],
+    exclude: [
+      '@testing-library/react',
+      '@fullcalendar/core',
+      '@fullcalendar/daygrid',
+      '@fullcalendar/timegrid',
+      '@fullcalendar/interaction',
+      '@fullcalendar/react',
+    ],
     esbuildOptions: { target: 'es2020' },
   },
   cacheDir: 'node_modules/.vite',
@@ -28,6 +42,7 @@ export default defineConfig({
         ws: true,
       },
     },
+    middlewareMode: false,
   },
   css: {
     modules: {
