@@ -53,8 +53,8 @@ export const UsersPage: React.FC = () => {
 
   const [searchInput, setSearchInput] = useState('')
   const searchText = useDebouncedValue(searchInput, 300)
-  const [roleFilter, setRoleFilter] = useState<string>('')
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [roleFilter, setRoleFilter] = useState<string | undefined>('')
+  const [statusFilter, setStatusFilter] = useState<string | undefined>('')
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [batchLoading, setBatchLoading] = useState(false)
 
@@ -269,11 +269,11 @@ export const UsersPage: React.FC = () => {
     }),
   }
 
-  const columns = [
+  const columns: any = [
     {
       title: 'User',
       key: 'user',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       render: (_: any, user: User) => (
         <div className='flex items-center'>
           <Avatar icon={<UserOutlined />} className='mr-3' />
@@ -292,7 +292,7 @@ export const UsersPage: React.FC = () => {
       title: 'Role',
       dataIndex: 'role',
       key: 'role',
-      responsive: ['sm', 'md', 'lg'],
+      responsive: ['sm', 'md', 'lg'] as any,
       render: (role: UserRole) => (
         <Tag color={getRoleBadgeColor(role)}>
           {getRoleDisplayName(role)}
@@ -312,7 +312,7 @@ export const UsersPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'status',
-      responsive: ['sm', 'md', 'lg'],
+      responsive: ['sm', 'md', 'lg'] as any,
       render: (isActive: boolean, user: User) => (
         <Switch
           checked={isActive}
@@ -331,7 +331,7 @@ export const UsersPage: React.FC = () => {
       title: 'Created',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      responsive: ['md', 'lg'],
+      responsive: ['md', 'lg'] as any,
       render: (date: string) => formatDate(date),
       sorter: (a: User, b: User) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
@@ -340,8 +340,8 @@ export const UsersPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       width: 100,
-      fixed: 'right',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      fixed: 'right' as const,
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       className: 'actions-column',
       render: (_: any, user: User) => (
         <div className='row-actions'>

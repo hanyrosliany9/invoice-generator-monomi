@@ -761,7 +761,7 @@ export const QuotationsPage: React.FC = () => {
     return items
   }
 
-  const columns = [
+  const columns: any = [
     {
       title: 'Nomor',
       key: 'quotationNumber',
@@ -777,7 +777,7 @@ export const QuotationsPage: React.FC = () => {
       ),
       sorter: (a: Quotation, b: Quotation) =>
         a.quotationNumber.localeCompare(b.quotationNumber),
-      responsive: ['xs'],
+      responsive: ['xs'] as any,
     },
     {
       title: 'Klien',
@@ -795,7 +795,7 @@ export const QuotationsPage: React.FC = () => {
       ),
       sorter: (a: Quotation, b: Quotation) =>
         (a.client?.name || '').localeCompare(b.client?.name || ''),
-      responsive: ['md'],
+      responsive: ['md'] as any,
     },
     {
       title: 'Proyek',
@@ -815,7 +815,7 @@ export const QuotationsPage: React.FC = () => {
         (a.project?.description || '').localeCompare(
           b.project?.description || ''
         ),
-      responsive: ['lg'],
+      responsive: ['lg'] as any,
     },
     {
       title: 'Jumlah',
@@ -854,7 +854,7 @@ export const QuotationsPage: React.FC = () => {
             : parseFloat(b.totalAmount) || 0
         return aAmount - bAmount
       },
-      responsive: ['sm'],
+      responsive: ['sm'] as any,
     },
     {
       title: 'Status',
@@ -902,7 +902,7 @@ export const QuotationsPage: React.FC = () => {
         { text: 'Revisi', value: 'REVISED' },
       ],
       onFilter: (value: any, record: Quotation) => record.status === value,
-      responsive: ['sm'],
+      responsive: ['sm'] as any,
     },
     {
       title: 'Berlaku Hingga',
@@ -911,13 +911,13 @@ export const QuotationsPage: React.FC = () => {
       render: (date: string) => <span style={{ fontSize: '12px' }}>{formatDate(date)}</span>,
       sorter: (a: Quotation, b: Quotation) =>
         dayjs(a.validUntil).unix() - dayjs(b.validUntil).unix(),
-      responsive: ['md'],
+      responsive: ['md'] as any,
     },
     {
       title: 'Aksi',
       key: 'actions',
       width: 60,
-      fixed: 'right',
+      fixed: 'right' as const,
       className: 'actions-column',
       render: (_: any, quotation: Quotation) => (
         <div className='row-actions'>

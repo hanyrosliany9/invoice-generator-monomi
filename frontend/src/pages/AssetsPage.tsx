@@ -65,8 +65,8 @@ export const AssetsPage: React.FC = () => {
 
   const [searchInput, setSearchInput] = useState('')
   const searchText = useDebouncedValue(searchInput, 300)
-  const [statusFilter, setStatusFilter] = useState<string>('')
-  const [categoryFilter, setCategoryFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<string | undefined>('')
+  const [categoryFilter, setCategoryFilter] = useState<string | undefined>('')
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
 
   // Depreciation tab state
@@ -250,11 +250,11 @@ export const AssetsPage: React.FC = () => {
     ]
   }
 
-  const columns = [
+  const columns: any = [
     {
       title: 'Asset',
       key: 'asset',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       render: (_: any, asset: Asset) => (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -281,7 +281,7 @@ export const AssetsPage: React.FC = () => {
     {
       title: 'Kategori',
       key: 'category',
-      responsive: ['sm', 'md', 'lg'],
+      responsive: ['sm', 'md', 'lg'] as any,
       render: (_: any, asset: Asset) => (
         <div>
           <Text strong>{asset.category}</Text>
@@ -295,7 +295,7 @@ export const AssetsPage: React.FC = () => {
     {
       title: 'Spesifikasi',
       key: 'specs',
-      responsive: ['md', 'lg'],
+      responsive: ['md', 'lg'] as any,
       render: (_: any, asset: Asset) => (
         <div className='text-sm'>
           {asset.manufacturer && <div>Brand: {asset.manufacturer}</div>}
@@ -347,7 +347,7 @@ export const AssetsPage: React.FC = () => {
     {
       title: 'Pembelian',
       key: 'purchase',
-      responsive: ['md', 'lg'],
+      responsive: ['md', 'lg'] as any,
       render: (_: any, asset: Asset) => (
         <div className='text-sm'>
           <div>
@@ -366,7 +366,7 @@ export const AssetsPage: React.FC = () => {
     {
       title: 'Lokasi',
       key: 'location',
-      responsive: ['md', 'lg'],
+      responsive: ['md', 'lg'] as any,
       render: (_: any, asset: Asset) => (
         <Text>{asset.location || '-'}</Text>
       ),
@@ -375,7 +375,7 @@ export const AssetsPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
-      fixed: 'right',
+      fixed: 'right' as const,
       responsive: ['xs', 'sm', 'md', 'lg'],
       className: 'actions-column',
       render: (_: any, asset: Asset) => (

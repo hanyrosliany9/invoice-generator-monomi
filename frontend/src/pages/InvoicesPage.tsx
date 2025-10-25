@@ -894,11 +894,11 @@ export const InvoicesPage: React.FC = () => {
     return items
   }
 
-  const columns = [
+  const columns: any = [
     {
       title: 'Invoice & Context',
       key: 'invoiceContext',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       render: (_: any, invoice: Invoice) => (
         <div className='space-y-1'>
           <div className='font-medium'>
@@ -975,7 +975,7 @@ export const InvoicesPage: React.FC = () => {
     {
       title: 'Klien',
       key: 'clientName',
-      responsive: ['sm', 'md', 'lg'],
+      responsive: ['sm', 'md', 'lg'] as any,
       render: (_: any, invoice: Invoice) => (
         <Button
           type='link'
@@ -992,7 +992,7 @@ export const InvoicesPage: React.FC = () => {
     {
       title: 'Proyek',
       key: 'projectName',
-      responsive: ['md', 'lg'],
+      responsive: ['md', 'lg'] as any,
       render: (_: any, invoice: Invoice) => (
         <Button
           type='link'
@@ -1009,7 +1009,7 @@ export const InvoicesPage: React.FC = () => {
     {
       title: 'Jumlah',
       key: 'amount',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       render: (_: any, invoice: Invoice) => {
         const amount = getAmount(invoice)
         return (
@@ -1044,7 +1044,7 @@ export const InvoicesPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       render: (status: string, record: Invoice) => {
         const getStatusBadgeColor = (status: string) => {
           switch (status) {
@@ -1111,7 +1111,7 @@ export const InvoicesPage: React.FC = () => {
       title: 'Batas Pembayaran',
       dataIndex: 'dueDate',
       key: 'dueDate',
-      responsive: ['sm', 'md', 'lg'],
+      responsive: ['sm', 'md', 'lg'] as any,
       render: (date: string, record: Invoice) => {
         const daysUntilDue = getDaysUntilDue(date)
         const isLate = isOverdue(record)
@@ -1145,7 +1145,7 @@ export const InvoicesPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       className: 'actions-column',
       render: (_: any, invoice: Invoice) => (
         <div className='row-actions'>

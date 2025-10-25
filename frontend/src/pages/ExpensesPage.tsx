@@ -170,11 +170,11 @@ export const ExpensesPage: React.FC = () => {
   }, [queryClient, message]);
 
   // Table columns
-  const columns = [
+  const columns: any = [
     {
       title: 'Expense & Context',
       key: 'expenseContext',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       render: (_: any, expense: Expense) => (
         <div className='space-y-1'>
           <div className='font-medium'>
@@ -212,7 +212,7 @@ export const ExpensesPage: React.FC = () => {
     {
       title: 'Vendor',
       key: 'vendor',
-      responsive: ['sm', 'md', 'lg'],
+      responsive: ['sm', 'md', 'lg'] as any,
       render: (_: any, expense: Expense) => (
         <div>
           <div className='font-medium'>{expense.vendorName}</div>
@@ -227,7 +227,7 @@ export const ExpensesPage: React.FC = () => {
       title: 'Deskripsi',
       dataIndex: 'description',
       key: 'description',
-      responsive: ['md', 'lg'],
+      responsive: ['md', 'lg'] as any,
       render: (desc: string, expense: Expense) => (
         <Tooltip title={expense.descriptionId || desc}>
           <div className='max-w-xs truncate'>{expense.descriptionId || desc}</div>
@@ -237,7 +237,7 @@ export const ExpensesPage: React.FC = () => {
     {
       title: 'Jumlah',
       key: 'amount',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       render: (_: any, expense: Expense) => (
         <div className='space-y-1'>
           <div className='font-medium'>{expenseService.formatIDR(expense.totalAmount)}</div>
@@ -258,7 +258,7 @@ export const ExpensesPage: React.FC = () => {
     {
       title: 'Status',
       key: 'status',
-      responsive: ['sm', 'md', 'lg'],
+      responsive: ['sm', 'md', 'lg'] as any,
       render: (_: any, expense: Expense) => (
         <div className='space-y-1'>
           <Tag color={getStatusTagColor(expense.status)}>
@@ -278,7 +278,7 @@ export const ExpensesPage: React.FC = () => {
       title: 'Tanggal',
       dataIndex: 'expenseDate',
       key: 'expenseDate',
-      responsive: ['sm', 'md', 'lg'],
+      responsive: ['sm', 'md', 'lg'] as any,
       render: (date: string) => formatDate(date),
       sorter: (a: Expense, b: Expense) => dayjs(a.expenseDate).unix() - dayjs(b.expenseDate).unix(),
     },
@@ -286,8 +286,8 @@ export const ExpensesPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
-      fixed: 'right',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      fixed: 'right' as const,
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       render: (_: any, expense: Expense) => (
         <Dropdown
           menu={{ items: getActionMenuItems(expense) }}

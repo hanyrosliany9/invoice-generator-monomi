@@ -383,7 +383,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Proyek',
       key: 'project',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       render: (_: any, project: Project) => (
         <div>
           <div className='font-semibold'>
@@ -434,7 +434,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Klien',
       key: 'clientName',
-      responsive: ['sm', 'md', 'lg'],
+      responsive: ['sm', 'md', 'lg'] as any,
       render: (_: any, project: Project) => (
         <Button
           type='link'
@@ -451,7 +451,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Progress',
       key: 'progress',
-      responsive: ['md', 'lg'],
+      responsive: ['md', 'lg'] as any,
       render: (_: any, project: Project) => {
         const progress = calculateProjectProgress(project)
 
@@ -489,7 +489,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Status',
       key: 'status',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       render: (_: any, project: Project) => {
         const statusConfig = getProjectStatusConfig(project.status)
         const badgeColors = statusConfig.badgeColor
@@ -530,7 +530,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Timeline',
       key: 'timeline',
-      responsive: ['md', 'lg'],
+      responsive: ['md', 'lg'] as any,
       render: (_: any, project: Project) => {
         const daysRemaining = getDaysRemaining(project.endDate)
         const isOverdue = isProjectOverdue(project)
@@ -558,7 +558,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'Nilai Proyek',
       key: 'budget',
-      responsive: ['lg'],
+      responsive: ['lg'] as any,
       render: (_: any, project: Project) => {
         const budget = safeNumber(project.estimatedBudget || project.basePrice || 0)
         const actualPrice = safeNumber(project.basePrice || 0)
@@ -598,8 +598,8 @@ export const ProjectsPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
-      fixed: 'right',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      fixed: 'right' as const,
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       className: 'actions-column',
       render: (_: any, project: Project) => (
         <div className='row-actions'>

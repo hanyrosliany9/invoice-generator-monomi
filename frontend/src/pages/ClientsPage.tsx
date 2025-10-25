@@ -71,7 +71,7 @@ export const ClientsPage: React.FC = () => {
 
   const [searchInput, setSearchInput] = useState('')
   const searchText = useDebouncedValue(searchInput, 300)
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<string | undefined>('')
   const [modalVisible, setModalVisible] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -385,11 +385,11 @@ export const ClientsPage: React.FC = () => {
     }),
   }
 
-  const columns = [
+  const columns: any = [
     {
       title: 'Klien',
       key: 'client',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       render: (_: any, client: Client) => (
         <div className='flex items-center'>
           <Avatar icon={getCompanyIcon(client?.company)} className='mr-3' />
@@ -407,7 +407,7 @@ export const ClientsPage: React.FC = () => {
     {
       title: 'Kontak',
       key: 'contact',
-      responsive: ['md', 'lg'],
+      responsive: ['md', 'lg'] as any,
       render: (_: any, client: Client) => (
         <div>
           <div className='flex items-center mb-1'>
@@ -428,7 +428,7 @@ export const ClientsPage: React.FC = () => {
     {
       title: 'Business Overview',
       key: 'business',
-      responsive: ['lg'],
+      responsive: ['lg'] as any,
       render: (_: any, client: Client) => (
         <div className='flex items-center space-x-4'>
           <HealthScore client={client} size='small' />
@@ -471,7 +471,7 @@ export const ClientsPage: React.FC = () => {
     {
       title: 'Revenue',
       key: 'revenue',
-      responsive: ['sm', 'md', 'lg'],
+      responsive: ['sm', 'md', 'lg'] as any,
       render: (_: any, client: Client) => (
         <RevenueIndicator
           paid={client.totalPaid || 0}
@@ -485,7 +485,7 @@ export const ClientsPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       render: (status: string) => {
         const getStatusBadgeColor = (status: string) => {
           switch (status) {
@@ -524,7 +524,7 @@ export const ClientsPage: React.FC = () => {
       title: 'Transaksi Terakhir',
       dataIndex: 'lastTransaction',
       key: 'lastTransaction',
-      responsive: ['md', 'lg'],
+      responsive: ['md', 'lg'] as any,
       render: (date: string) => formatDate(date),
       sorter: (a: Client, b: Client) => {
         if (!a.lastTransaction && !b.lastTransaction) return 0
@@ -537,8 +537,8 @@ export const ClientsPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
-      fixed: 'right',
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      fixed: 'right' as const,
+      responsive: ['xs', 'sm', 'md', 'lg'] as any,
       className: 'actions-column',
       render: (_: any, client: Client) => (
         <div className='row-actions'>

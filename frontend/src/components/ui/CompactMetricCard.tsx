@@ -83,7 +83,7 @@ export const CompactMetricCard: React.FC<CompactMetricCardProps> = ({
             lineHeight: '1.5',
             margin: 0,
             maxWidth: 'calc(100% - 46px)',
-            word: 'break-word',
+            wordBreak: 'break-word',
           }}
         >
           {label}
