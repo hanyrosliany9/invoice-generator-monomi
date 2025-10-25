@@ -28,7 +28,6 @@ import {
   ExclamationCircleOutlined,
   CalendarOutlined,
   BarsOutlined,
-  LineChartOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
@@ -46,7 +45,6 @@ import { useCalendarView } from '../hooks/useCalendarView'
 import { ProjectMilestone, CreateMilestoneRequest, UpdateMilestoneRequest } from '../services/milestones'
 import { MonthCalendarView } from '../components/calendar/MonthCalendarView'
 import { WeekCalendarView } from '../components/calendar/WeekCalendarView'
-import { GanttChartView } from '../components/calendar/GanttChartView'
 
 const { TextArea } = Input
 const { RangePicker } = DatePicker
@@ -373,14 +371,6 @@ export const ProjectCalendarPage: React.FC = () => {
                 ),
                 value: 'week',
               },
-              {
-                label: (
-                  <span>
-                    <LineChartOutlined /> Gantt
-                  </span>
-                ),
-                value: 'gantt',
-              },
             ]}
           />
         </Space>
@@ -403,12 +393,6 @@ export const ProjectCalendarPage: React.FC = () => {
           )}
           {view === 'week' && (
             <WeekCalendarView
-              milestones={milestones}
-              onEventClick={handleMilestoneClick}
-            />
-          )}
-          {view === 'gantt' && (
-            <GanttChartView
               milestones={milestones}
               onEventClick={handleMilestoneClick}
             />

@@ -804,11 +804,11 @@ export class RevenueRecognitionService {
         projectId: quotation.projectId,
         milestoneNumber: pm.milestoneNumber,
         name: pm.name,
-        nameId: pm.nameId,
-        description: pm.description,
-        descriptionId: pm.descriptionId,
+        nameId: pm.nameId || undefined,
+        description: pm.description || undefined,
+        descriptionId: pm.descriptionId || undefined,
         plannedRevenue: Number(pm.paymentAmount),
-        plannedEndDate: pm.dueDate,
+        plannedEndDate: pm.dueDate || undefined,
         deliverables: pm.deliverables,
         userId,
       });
@@ -835,7 +835,7 @@ export class RevenueRecognitionService {
       include: {
         client: true,
         project: true,
-        paymentMilestones: { include: { invoice: true } },
+        paymentMilestones: { include: { invoices: true } },
       },
     });
 
@@ -844,18 +844,18 @@ export class RevenueRecognitionService {
     }
 
     const milestones = quotation.paymentMilestones;
-    const invoicedCount = milestones.filter((m) => m.invoiceId).length;
+    const invoicedCount = milestones.filter((m) => m.isInvoiced).length;
     const paidCount = milestones.filter(
-      (m) => m.invoice && m.invoice.status === "PAID",
+      (m) => m.invoices && m.invoices.some((inv: any) => inv.status === "PAID"),
     ).length;
 
     const totalInvoiced = milestones
-      .filter((m) => m.invoiceId)
-      .reduce((sum, m) => sum + Number(m.paymentAmount), 0);
+      .filter((m) => m.isInvoiced)
+      .reduce((sum: number, m: any) => sum + Number(m.paymentAmount), 0);
 
     const totalPaid = milestones
-      .filter((m) => m.invoice && m.invoice.status === "PAID")
-      .reduce((sum, m) => sum + Number(m.paymentAmount), 0);
+      .filter((m) => m.invoices && m.invoices.some((inv: any) => inv.status === "PAID"))
+      .reduce((sum: number, m: any) => sum + Number(m.paymentAmount), 0);
 
     return {
       quotationId,
@@ -877,17 +877,16 @@ export class RevenueRecognitionService {
           ? Math.round((paidCount / milestones.length) * 100)
           : 0,
       },
-      milestones: milestones.map((m) => ({
+      milestones: milestones.map((m: any) => ({
         milestoneNumber: m.milestoneNumber,
         name: m.name,
         nameId: m.nameId,
         percentage: Number(m.paymentPercentage),
         amount: Number(m.paymentAmount),
         dueDate: m.dueDate,
-        isInvoiced: !!m.invoiceId,
-        invoiceId: m.invoiceId,
-        invoiceNumber: m.invoice?.invoiceNumber,
-        invoiceStatus: m.invoice?.status,
+        isInvoiced: m.isInvoiced,
+        invoiceNumber: m.invoices?.[0]?.invoiceNumber,
+        invoiceStatus: m.invoices?.[0]?.status,
       })),
     };
   }
@@ -919,9 +918,9 @@ export class RevenueRecognitionService {
       throw new NotFoundException(`Invoice ${invoiceId} not found`);
     }
 
-    if (invoice.status !== InvoiceStatus.PAID_OFF) {
+    if (invoice.status !== InvoiceStatus.PAID) {
       throw new BadRequestException(
-        `Invoice must be in PAID_OFF status, current status: ${invoice.status}`,
+        `Invoice must be in PAID status, current status: ${invoice.status}`,
       );
     }
 
@@ -1001,7 +1000,7 @@ export class RevenueRecognitionService {
     // Get invoiced but not yet recognized revenue
     const invoicedNotRecognized = await this.prisma.invoice.findMany({
       where: {
-        status: InvoiceStatus.PAID_OFF,
+        status: InvoiceStatus.PAID,
         projectMilestone: {
           status: {
             notIn: [MilestoneStatus.COMPLETED, MilestoneStatus.ACCEPTED],
@@ -1015,7 +1014,7 @@ export class RevenueRecognitionService {
     });
 
     const pendingRevenueAmount = invoicedNotRecognized.reduce(
-      (sum, inv) => sum + Number(inv.totalAmount),
+      (sum: number, inv: any) => sum + Number(inv.totalAmount),
       0,
     );
 

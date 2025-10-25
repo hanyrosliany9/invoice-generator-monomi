@@ -204,10 +204,8 @@ export const ProjectMilestoneTimeline: React.FC<ProjectMilestoneTimelineProps> =
           style={{
             display: 'none',
             marginBottom: '32px',
-            '@media (min-width: 768px)': {
-              display: 'block',
-            },
           }}
+          className="md:block"
         >
           <div
             style={{

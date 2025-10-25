@@ -210,8 +210,8 @@ export class UsersService {
       name: user.name,
       role: user.role,
       isActive: user.isActive,
-      createdAt: TransformationUtil.dateToString(user.createdAt)!,
-      updatedAt: TransformationUtil.dateToString(user.updatedAt)!,
+      createdAt: TransformationUtil.dateToString(user.createdAt) || new Date().toISOString(),
+      updatedAt: TransformationUtil.dateToString(user.updatedAt) || new Date().toISOString(),
       _count: user._count,
       preferences: user.preferences
         ? {

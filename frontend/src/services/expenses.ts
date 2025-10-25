@@ -95,6 +95,8 @@ export const expenseService = {
   createExpense: async (data: CreateExpenseFormData): Promise<Expense> => {
     const requestId = `expense_${Date.now()}_${Math.random()}`;
 
+    console.log('DEBUG: Expense API request payload:', JSON.stringify(data, null, 2));
+
     const response = await apiClient.post('/expenses', data, {
       headers: {
         'X-Request-ID': requestId,
@@ -367,7 +369,7 @@ export const expenseService = {
 
     return {
       grossAmount,
-      ppnRate: isLuxuryGoods ? 0.12 : 0.12, // Actual statutory rate
+      ppnRate: isLuxuryGoods ? 0.12 : 0.11, // Actual statutory rate
       ppnAmount,
       totalAmount,
       isLuxuryGoods,
@@ -478,7 +480,7 @@ export const expenseService = {
       grossAmount,
       ppnAmount: ppn.ppnAmount,
       withholdingAmount: withholding.withholdingAmount,
-      netAmount: grossAmount - withholding.withholdingAmount,
+      netAmount: (grossAmount + ppn.ppnAmount) - withholding.withholdingAmount,
       totalAmount: grossAmount + ppn.ppnAmount,
       totalPayable: grossAmount + ppn.ppnAmount - withholding.withholdingAmount,
     };
@@ -668,7 +670,8 @@ export const expenseService = {
    * @returns Whether expense can be edited
    */
   canEdit: (expense: Expense): boolean => {
-    return expense.status === 'DRAFT';
+    // Can edit any expense (even paid ones) to allow corrections
+    return true;
   },
 
   /**
@@ -678,7 +681,8 @@ export const expenseService = {
    * @returns Whether expense can be deleted
    */
   canDelete: (expense: Expense): boolean => {
-    return expense.status === 'DRAFT';
+    // Cannot delete paid expenses
+    return false;
   },
 
   /**
@@ -688,7 +692,8 @@ export const expenseService = {
    * @returns Whether expense can be submitted
    */
   canSubmit: (expense: Expense): boolean => {
-    return expense.status === 'DRAFT';
+    // Expenses are auto-paid on creation, no submission needed
+    return false;
   },
 
   /**

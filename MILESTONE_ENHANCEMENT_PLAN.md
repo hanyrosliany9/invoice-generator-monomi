@@ -218,20 +218,22 @@ model PaymentMilestone {
   deliverables Json? // What client receives at this milestone
 
   // Status tracking
-  isInvoiced      Boolean   @default(false) // Has invoice been generated?
-  invoiceId       String?   // Link to generated invoice
-  invoice         Invoice?  @relation(fields: [invoiceId], references: [id])
+  isInvoiced Boolean @default(false) // Has any invoice been generated?
+
+  // Invoice relation (one-to-many: a payment milestone can have multiple invoices)
+  // This supports complex scenarios where milestone payment might be split across invoices
+  invoices Invoice[] @relation("PaymentMilestoneInvoices")
 
   // Project milestone link (optional)
   projectMilestoneId String?
-  projectMilestone   ProjectMilestone? @relation(fields: [projectMilestoneId], references: [id])
+  projectMilestone   ProjectMilestone? @relation("PaymentToProjectMilestone", fields: [projectMilestoneId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([quotationId, milestoneNumber])
   @@index([quotationId])
-  @@index([invoiceId])
+  @@index([projectMilestoneId])
   @@map("payment_milestones")
 }
 ```
@@ -246,6 +248,8 @@ docker compose -f docker-compose.dev.yml exec app npx prisma migrate dev --name 
 - Supports Indonesian "termin pembayaran" directly
 - Enables automatic invoice generation per milestone
 - Links payment to deliverables (clear expectations)
+- One-to-many relationship between payments and invoices allows flexibility for complex billing scenarios
+- Handles edge cases where milestone payment might be split into multiple invoices
 
 ---
 
@@ -286,16 +290,18 @@ model ProjectMilestone {
 model Invoice {
   // ... existing fields ...
 
-  // Milestone reference
+  // Milestone reference (supports one invoice to many milestones tracking)
   paymentMilestoneId String? // Which payment milestone is this invoice for?
-  paymentMilestone   PaymentMilestone? @relation(fields: [paymentMilestoneId], references: [id])
+  paymentMilestone   PaymentMilestone? @relation("PaymentMilestoneInvoices", fields: [paymentMilestoneId], references: [id], onDelete: SetNull)
 
   projectMilestoneId String? // Which project milestone is this invoice for?
-  projectMilestone   ProjectMilestone? @relation(fields: [projectMilestoneId], references: [id])
+  projectMilestone   ProjectMilestone? @relation("ProjectMilestoneInvoices", fields: [projectMilestoneId], references: [id], onDelete: SetNull)
 
   // ... rest of model ...
 }
 ```
+
+**Note:** The actual implementation uses one-to-many relationships (one payment milestone can have multiple invoices), which is more flexible than one-to-one. This allows payment milestones to be split across multiple invoices if needed.
 
 ---
 

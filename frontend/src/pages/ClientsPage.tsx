@@ -566,7 +566,7 @@ export const ClientsPage: React.FC = () => {
       <div className='mb-6'>
         <Title level={2}>{t('clients.title')}</Title>
 
-        {/* Statistics - Compact Design */}
+        {/* Statistics - 4-2 Layout for Better Visual Hierarchy */}
         <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
           <Col xs={24} sm={12} lg={6}>
             <CompactMetricCard
@@ -595,10 +595,6 @@ export const ClientsPage: React.FC = () => {
               value={stats.totalQuotations}
             />
           </Col>
-        </Row>
-
-        {/* Secondary Statistics Row */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
           <Col xs={24} sm={12} lg={6}>
             <CompactMetricCard
               icon={<FileTextOutlined />}
@@ -608,7 +604,11 @@ export const ClientsPage: React.FC = () => {
               value={stats.totalInvoices}
             />
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+        </Row>
+
+        {/* Financial Metrics Row */}
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+          <Col xs={24} sm={12} lg={12}>
             <CompactMetricCard
               icon={<DollarOutlined />}
               iconColor='#10b981'
@@ -617,7 +617,7 @@ export const ClientsPage: React.FC = () => {
               value={formatIDR(stats.totalRevenue)}
             />
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={12}>
             <CompactMetricCard
               icon={<BankOutlined />}
               iconColor='#f59e0b'

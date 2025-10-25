@@ -628,85 +628,89 @@ export const ProjectsPage: React.FC = () => {
         <Title level={2}>{t('projects.title')}</Title>
 
         {/* Statistics - Compact Design */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col xs={24} sm={12} lg={6}>
+        <Row gutter={[12, 12]} style={{ marginBottom: '24px' }}>
+          <Col xs={12} sm={12} lg={6}>
             <CompactMetricCard
               icon={<ProjectOutlined />}
               iconColor='#f59e0b'
               iconBg='rgba(245, 158, 11, 0.15)'
               label='Total Proyek'
               value={stats.total}
+              style={{ minHeight: '100px' }}
             />
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={12} sm={12} lg={6}>
             <CompactMetricCard
               icon={<PlayCircleOutlined />}
               iconColor='#fa8c16'
               iconBg='rgba(250, 140, 22, 0.15)'
               label='Berlangsung'
               value={stats.inProgress}
+              style={{ minHeight: '100px' }}
             />
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={12} sm={12} lg={6}>
             <CompactMetricCard
               icon={<CheckCircleOutlined />}
               iconColor='#52c41a'
               iconBg='rgba(82, 196, 26, 0.15)'
               label='Selesai'
               value={stats.completed}
+              style={{ minHeight: '100px' }}
             />
           </Col>
-        </Row>
-
-        {/* Secondary Statistics */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={12} sm={12} lg={6}>
             <CompactMetricCard
               icon={<CalendarOutlined />}
               iconColor='#1890ff'
               iconBg='rgba(24, 144, 255, 0.15)'
               label='Perencanaan'
               value={stats.planning}
+              style={{ minHeight: '100px' }}
             />
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+        </Row>
+
+        {/* Secondary Statistics */}
+        <Row gutter={[12, 12]} style={{ marginBottom: '24px' }}>
+          <Col xs={12} sm={12} lg={6}>
             <CompactMetricCard
               icon={<TeamOutlined />}
               iconColor='#dc2626'
               iconBg='rgba(220, 38, 38, 0.15)'
               label='Produksi'
               value={stats.production}
+              style={{ minHeight: '100px' }}
             />
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={12} sm={12} lg={6}>
             <CompactMetricCard
               icon={<BarChartOutlined />}
               iconColor='#13c2c2'
               iconBg='rgba(19, 194, 194, 0.15)'
               label='Media Sosial'
               value={stats.socialMedia}
+              style={{ minHeight: '100px' }}
             />
           </Col>
-        </Row>
-
-        {/* Revenue Statistics */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col xs={24} lg={12}>
+          <Col xs={24} sm={12} lg={6}>
             <CompactMetricCard
               icon={<DollarOutlined />}
               iconColor='#3b82f6'
               iconBg='rgba(59, 130, 246, 0.15)'
               label='Budget Total'
               value={formatIDR(stats.totalBudget)}
+              style={{ minHeight: '100px' }}
             />
           </Col>
-          <Col xs={24} lg={12}>
+          <Col xs={24} sm={12} lg={6}>
             <CompactMetricCard
               icon={<DollarOutlined />}
               iconColor='#10b981'
               iconBg='rgba(16, 185, 129, 0.15)'
               label='Pendapatan'
               value={formatIDR(stats.totalRevenue)}
+              style={{ minHeight: '100px' }}
             />
           </Col>
         </Row>

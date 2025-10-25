@@ -480,7 +480,7 @@ export class QuotationsService {
     }
 
     // Find first milestone without invoice
-    const nextMilestone = milestones.find((m) => !m.invoiceId);
+    const nextMilestone = milestones.find((m) => !m.isInvoiced);
 
     if (!nextMilestone) {
       throw new BadRequestException("Semua milestone sudah diinvoice");
@@ -554,7 +554,7 @@ export class QuotationsService {
     // Update milestone as invoiced
     await this.prisma.paymentMilestone.update({
       where: { id: nextMilestone.id },
-      data: { invoiceId: invoice.id },
+      data: { isInvoiced: true },
     });
 
     return invoice;

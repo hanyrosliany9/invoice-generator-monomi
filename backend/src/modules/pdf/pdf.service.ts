@@ -5,6 +5,7 @@ import { readFileSync } from "fs";
 import { SettingsService } from "../settings/settings.service";
 import { InvoicesService } from "../invoices/invoices.service";
 import { QuotationsService } from "../quotations/quotations.service";
+import { generateProjectHTML } from "./templates/project.html";
 
 @Injectable()
 export class PdfService {
@@ -1014,5 +1015,40 @@ export class PdfService {
   </div>
 </body>
 </html>`;
+  }
+
+  async generateProjectPDF(projectData: any): Promise<Buffer> {
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    try {
+      const page = await browser.newPage();
+
+      // Set page format for A4
+      await page.setViewport({ width: 794, height: 1123 });
+
+      // Generate HTML content using the new project template
+      const htmlContent = generateProjectHTML(projectData);
+
+      // Set content and generate PDF
+      await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
+      const pdf = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+          top: "0.3in",
+          right: "0.3in",
+          bottom: "0.3in",
+          left: "0.3in",
+        },
+      });
+
+      return Buffer.from(pdf);
+    } finally {
+      await browser.close();
+    }
   }
 }

@@ -156,7 +156,7 @@ export class PaymentMilestonesService {
       throw new NotFoundException('Payment milestone tidak ditemukan');
     }
 
-    if (milestone.invoiceId) {
+    if (milestone.isInvoiced) {
       throw new BadRequestException(
         'Tidak dapat menghapus milestone yang sudah memiliki invoice',
       );
@@ -257,7 +257,7 @@ export class PaymentMilestonesService {
       throw new NotFoundException('Payment milestone tidak ditemukan');
     }
 
-    if (milestone.invoiceId) {
+    if (milestone.isInvoiced) {
       throw new BadRequestException('Milestone sudah memiliki invoice');
     }
 
@@ -306,7 +306,7 @@ export class PaymentMilestonesService {
         amountPerProject: quotation.amountPerProject,
         totalAmount: milestone.paymentAmount,
         scopeOfWork: quotation.scopeOfWork,
-        priceBreakdown: quotation.priceBreakdown,
+        priceBreakdown: quotation.priceBreakdown as any,
         paymentInfo: 'Bank Transfer', // Default, can be customized
         materaiRequired,
         status: 'DRAFT',
@@ -321,7 +321,7 @@ export class PaymentMilestonesService {
     // Mark milestone as invoiced
     await this.prisma.paymentMilestone.update({
       where: { id: paymentMilestoneId },
-      data: { invoiceId: invoice.id },
+      data: { isInvoiced: true },
     });
 
     return invoice;
@@ -333,7 +333,7 @@ export class PaymentMilestonesService {
   async getProgress(quotationId: string): Promise<any> {
     const quotation = await this.prisma.quotation.findUnique({
       where: { id: quotationId },
-      include: { paymentMilestones: { include: { invoice: true } } },
+      include: { paymentMilestones: { include: { invoices: true } } },
     });
 
     if (!quotation) {
@@ -342,30 +342,30 @@ export class PaymentMilestonesService {
 
     const milestones = quotation.paymentMilestones;
     const totalInvoiced = milestones
-      .filter((m) => m.invoiceId)
-      .reduce((sum, m) => sum + Number(m.paymentAmount), 0);
+      .filter((m: any) => m.invoices && m.invoices.length > 0)
+      .reduce((sum: number, m: any) => sum + Number(m.paymentAmount), 0);
 
     const invoicedPercentage = milestones.length
-      ? (milestones.filter((m) => m.invoiceId).length / milestones.length) * 100
+      ? (milestones.filter((m: any) => m.invoices && m.invoices.length > 0).length / milestones.length) * 100
       : 0;
 
     return {
       quotationId,
       totalMilestones: milestones.length,
-      milestonesInvoiced: milestones.filter((m) => m.invoiceId).length,
+      milestonesInvoiced: milestones.filter((m: any) => m.invoices && m.invoices.length > 0).length,
       invoicedPercentage: Math.round(invoicedPercentage),
       totalAmount: Number(quotation.totalAmount),
       totalInvoiced,
       outstandingAmount: Number(quotation.totalAmount) - totalInvoiced,
-      milestones: milestones.map((m) => ({
+      milestones: milestones.map((m: any) => ({
         number: m.milestoneNumber,
         name: m.name,
         nameId: m.nameId,
         percentage: Number(m.paymentPercentage),
         amount: Number(m.paymentAmount),
         dueDate: m.dueDate,
-        isInvoiced: !!m.invoiceId,
-        invoiceId: m.invoiceId,
+        isInvoiced: m.invoices && m.invoices.length > 0,
+        invoices: m.invoices?.map((inv: any) => inv.id) || [],
       })),
     };
   }

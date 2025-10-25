@@ -40,35 +40,38 @@ export const CompactMetricCard: React.FC<CompactMetricCardProps> = ({
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.2s ease',
         height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
         ...style,
       }}
-      styles={{ body: { padding: '12px 16px' } }}
+      styles={{ body: { padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 } }}
       hoverable={!!onClick}
     >
       {/* Icon + Label horizontal layout */}
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
-          marginBottom: '8px',
+          alignItems: 'flex-start',
+          marginBottom: '12px',
         }}
       >
         <div
           style={{
-            width: '24px',
-            height: '24px',
+            width: '36px',
+            height: '36px',
             borderRadius: '8px',
             background: iconBg,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginRight: '8px',
+            marginRight: '10px',
             flexShrink: 0,
           }}
         >
           {React.isValidElement(icon)
             ? React.cloneElement(icon as React.ReactElement<any>, {
-                style: { fontSize: '16px', color: iconColor },
+                style: { fontSize: '20px', color: iconColor },
               })
             : icon}
         </div>
@@ -76,27 +79,27 @@ export const CompactMetricCard: React.FC<CompactMetricCardProps> = ({
         <Text
           type='secondary'
           style={{
-            fontSize: '12px',
-            lineHeight: '1.4',
+            fontSize: '13px',
+            lineHeight: '1.5',
             margin: 0,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            maxWidth: 'calc(100% - 46px)',
+            word: 'break-word',
           }}
         >
           {label}
         </Text>
       </div>
 
-      {/* Value */}
+      {/* Value - Right aligned */}
       <Text
         strong
         style={{
-          fontSize: '24px',
-          fontWeight: 600,
+          fontSize: '28px',
+          fontWeight: 700,
           display: 'block',
           color: theme.colors.text.primary,
-          lineHeight: '1',
+          lineHeight: '1.2',
+          marginTop: 'auto',
         }}
       >
         {value}

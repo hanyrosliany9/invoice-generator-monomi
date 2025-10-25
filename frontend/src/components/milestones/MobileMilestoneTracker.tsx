@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Card, Button, Space, Badge, Drawer, Swiper, Modal, message, Spin, Empty, Tag } from 'antd';
-import { SwipeableList, SwipeableListItem } from '@react-swipeable-list';
+import { Card, Button, Space, Badge, Drawer, Modal, message, Spin, Empty, Tag } from 'antd';
 import {
   ArrowRightOutlined,
   CheckCircleOutlined,
@@ -14,7 +13,6 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import '@react-swipeable-list/css';
 
 interface MilestoneData {
   id: string;
@@ -256,22 +254,6 @@ const MobileMilestoneTracker: React.FC<MobileMilestoneTrackerProps> = ({
         </div>
       </Card>
 
-      {/* Milestone Carousel/Swiper */}
-      {milestones.length > 1 && (
-        <Card className="shadow-md border-0">
-          <div className="text-center mb-4 text-gray-600 text-sm">
-            {currentIndex + 1} / {milestones.length}
-          </div>
-
-          <Swiper
-            onSlideChange={(swiper) => setCurrentIndex(swiper.activeIndex)}
-            pagination={{ clickable: true }}
-            className="w-full"
-          >
-            {/* Swiper slides would be rendered here with actual Swiper component */}
-          </Swiper>
-        </Card>
-      )}
 
       {/* Current/Main Milestone Card */}
       {currentMilestone && (
@@ -405,47 +387,33 @@ const MobileMilestoneTracker: React.FC<MobileMilestoneTrackerProps> = ({
         </Card>
       )}
 
-      {/* Swipeable List of All Milestones */}
+      {/* List of All Milestones */}
       {milestones.length > 1 && (
         <Card title={t('labels.allMilestones')} className="shadow-md border-0">
-          <SwipeableList>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {milestones.map((milestone, idx) => (
-              <SwipeableListItem
+              <div
                 key={milestone.id}
-                onSwipeEnd={() => {
-                  setSelectedMilestone(milestone);
-                  setDetailsOpen(true);
-                }}
-                trailingActions={[
-                  {
-                    label: t('actions.delete'),
-                    onClick: () => handleDeleteMilestone(milestone),
-                    destructive: true
-                  }
-                ]}
+                className="flex items-center justify-between p-3 border-b hover:bg-gray-50 cursor-pointer"
+                onClick={() => setCurrentIndex(idx)}
               >
-                <div
-                  className="flex items-center justify-between p-3 border-b hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setCurrentIndex(idx)}
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    {getStatusIcon(milestone.status)}
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm">
-                        {milestone.nameId || milestone.name}
-                      </p>
-                      <p className="text-gray-500 text-xs">
-                        Rp {milestone.amount.toLocaleString('id-ID')}
-                      </p>
-                    </div>
+                <div className="flex items-center gap-3 flex-1">
+                  {getStatusIcon(milestone.status)}
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm">
+                      {milestone.nameId || milestone.name}
+                    </p>
+                    <p className="text-gray-500 text-xs">
+                      Rp {milestone.amount.toLocaleString('id-ID')}
+                    </p>
                   </div>
-                  <Tag color={getStatusColor(milestone.status)}>
-                    {getStatusLabel(milestone.status)}
-                  </Tag>
                 </div>
-              </SwipeableListItem>
+                <Tag color={getStatusColor(milestone.status)}>
+                  {getStatusLabel(milestone.status)}
+                </Tag>
+              </div>
             ))}
-          </SwipeableList>
+          </div>
         </Card>
       )}
 

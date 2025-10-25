@@ -44,10 +44,11 @@ export class CreateExpenseDto {
   @Min(0)
   grossAmount: number;
 
-  @ApiProperty({ description: "PPN amount", example: 110000 })
+  @ApiPropertyOptional({ description: "PPN amount (optional if not included)", example: 110000 })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  ppnAmount: number;
+  ppnAmount?: number;
 
   @ApiPropertyOptional({
     description: "Withholding tax amount",
@@ -100,14 +101,16 @@ export class CreateExpenseDto {
 
   // ===== TAX INFORMATION =====
 
-  @ApiProperty({ description: "PPN rate (0.11 or 0.12)", example: 0.11 })
+  @ApiPropertyOptional({ description: "PPN rate (0.11 or 0.12, optional if not included)", example: 0.11 })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  ppnRate: number;
+  ppnRate?: number;
 
-  @ApiProperty({ description: "PPN category", enum: PPNCategory })
+  @ApiPropertyOptional({ description: "PPN category (optional if not included)", enum: PPNCategory })
+  @IsOptional()
   @IsEnum(PPNCategory)
-  ppnCategory: PPNCategory;
+  ppnCategory?: PPNCategory;
 
   @ApiProperty({ description: "Is luxury goods (12% PPN)", default: false })
   @IsBoolean()

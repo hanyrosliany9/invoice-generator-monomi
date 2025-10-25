@@ -67,8 +67,16 @@ export const UserEditPage: React.FC = () => {
     error,
   } = useQuery({
     queryKey: ['user', id],
-    queryFn: () => usersService.getUserById(id!),
+    queryFn: async () => {
+      try {
+        return await usersService.getUserById(id!)
+      } catch (err) {
+        console.error('Error fetching user:', err)
+        throw err
+      }
+    },
     enabled: !!id,
+    retry: 1,
   })
 
   // Update user mutation
@@ -90,15 +98,19 @@ export const UserEditPage: React.FC = () => {
 
   // Initialize form when user data is loaded
   useEffect(() => {
-    if (user) {
+    if (user && user.id) {
       const formData: UserFormData = {
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
+        name: user.name || '',
+        email: user.email || '',
+        role: user.role || 'STAFF',
+        isActive: user.isActive ?? true, // Default to true if undefined
       }
-      form.setFieldsValue(formData)
-      setOriginalValues(formData)
+      // Use setTimeout to ensure form is mounted before setting values
+      const timeoutId = setTimeout(() => {
+        form.setFieldsValue(formData)
+        setOriginalValues(formData)
+      }, 0)
+      return () => clearTimeout(timeoutId)
     }
   }, [user, form])
 
@@ -160,12 +172,13 @@ export const UserEditPage: React.FC = () => {
   }
 
   if (error || !user) {
+    console.error('User fetch error:', { error, user, id })
     return (
       <div style={{ padding: '24px' }}>
         <Result
           status='404'
           title='User Not Found'
-          subTitle="The user you're trying to edit doesn't exist."
+          subTitle={error?.message || "The user you're trying to edit doesn't exist."}
           extra={
             <Button type='primary' onClick={() => navigate('/users')}>
               Back to Users
@@ -176,6 +189,29 @@ export const UserEditPage: React.FC = () => {
     )
   }
 
+  // Validate critical user data - check that user object has required fields
+  // Log detailed info about what we're receiving
+  if (!user || (typeof user === 'object' && Object.keys(user).length === 0)) {
+    console.warn('Invalid user data - empty or null user object:', { user })
+    return (
+      <div style={{ padding: '24px' }}>
+        <Result
+          status='error'
+          title='Invalid User Data'
+          subTitle='The user data is incomplete or corrupted. Please try again.'
+          extra={
+            <Button type='primary' onClick={() => navigate('/users')}>
+              Back to Users
+            </Button>
+          }
+        />
+      </div>
+    )
+  }
+
+  // Debug: Log all keys in the user object to understand API response structure
+  console.log('User object keys:', Object.keys(user), 'User data:', user)
+
   const roleOptions = getAllRoles()
   const roleChanged = originalValues && form.getFieldValue('role') !== originalValues.role
 
@@ -184,24 +220,24 @@ export const UserEditPage: React.FC = () => {
       title={user.name}
       subtitle={`Editing user account • ${getRoleDisplayName(user.role)}`}
       icon={<UserOutlined />}
-      avatar={user.name.charAt(0).toUpperCase()}
+      avatar={user.name?.charAt(0)?.toUpperCase() || '?'}
       breadcrumb={['Users', user.name, 'Edit']}
       metadata={[
         {
           label: 'Email',
-          value: user.email,
+          value: user.email || 'N/A',
         },
         {
           label: 'Role',
-          value: getRoleDisplayName(user.role),
+          value: user.role ? getRoleDisplayName(user.role) : 'N/A',
         },
         {
           label: 'Status',
-          value: user.isActive ? 'Active' : 'Inactive',
+          value: user.isActive !== undefined ? (user.isActive ? 'Active' : 'Inactive') : 'N/A',
         },
         {
           label: 'Created',
-          value: user.createdAt,
+          value: user.createdAt || 'N/A',
           format: 'date',
         },
       ]}

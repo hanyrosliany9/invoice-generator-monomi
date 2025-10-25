@@ -10,6 +10,11 @@ import {
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
+import type { Request as ExpressRequest } from 'express';
+
+interface AuthenticatedRequest extends ExpressRequest {
+  user: { id: string };
+}
 import { PaymentMilestonesService } from '../services/payment-milestones.service';
 import { CreatePaymentMilestoneDto } from '../dto/create-payment-milestone.dto';
 import { UpdatePaymentMilestoneDto } from '../dto/update-payment-milestone.dto';
@@ -36,7 +41,7 @@ export class PaymentMilestonesController {
   async create(
     @Param('quotationId') quotationId: string,
     @Body() dto: CreatePaymentMilestoneDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.paymentMilestonesService.addPaymentMilestone(quotationId, dto);
   }
@@ -84,7 +89,7 @@ export class PaymentMilestonesController {
     @Param('quotationId') quotationId: string,
     @Param('id') id: string,
     @Body() dto: UpdatePaymentMilestoneDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.paymentMilestonesService.updatePaymentMilestone(id, dto);
   }
@@ -97,7 +102,7 @@ export class PaymentMilestonesController {
   async remove(
     @Param('quotationId') quotationId: string,
     @Param('id') id: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     await this.paymentMilestonesService.removePaymentMilestone(id);
     return { message: 'Payment milestone berhasil dihapus' };
@@ -111,7 +116,7 @@ export class PaymentMilestonesController {
   async generateInvoice(
     @Param('quotationId') quotationId: string,
     @Param('id') id: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.paymentMilestonesService.generateMilestoneInvoice(
       id,
@@ -170,7 +175,7 @@ export class PaymentMilestonesController {
     @Param('quotationId') quotationId: string,
     @Param('id') id: string,
     @Body('projectMilestoneId') projectMilestoneId: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     if (!projectMilestoneId) {
       throw new BadRequestException('projectMilestoneId tidak boleh kosong');

@@ -265,10 +265,7 @@ export const ExpensesPage: React.FC = () => {
         </div>
       ),
       filters: [
-        { text: 'Draft', value: 'DRAFT' },
-        { text: 'Diajukan', value: 'SUBMITTED' },
-        { text: 'Disetujui', value: 'APPROVED' },
-        { text: 'Ditolak', value: 'REJECTED' },
+        { text: 'Lunas', value: 'PAID' },
       ],
       onFilter: (value: any, record: Expense) => record.status === value,
     },
@@ -394,37 +391,6 @@ export const ExpensesPage: React.FC = () => {
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <CompactMetricCard
-              icon={<CheckCircleOutlined />}
-              iconColor='#52c41a'
-              iconBg='rgba(82, 196, 26, 0.15)'
-              label='Disetujui'
-              value={statistics?.byStatus?.APPROVED?.count || 0}
-            />
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <CompactMetricCard
-              icon={<ClockCircleOutlined />}
-              iconColor='#3b82f6'
-              iconBg='rgba(59, 130, 246, 0.15)'
-              label='Diajukan'
-              value={statistics?.byStatus?.SUBMITTED?.count || 0}
-            />
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <CompactMetricCard
-              icon={<ExclamationCircleOutlined />}
-              iconColor='#f5222d'
-              iconBg='rgba(245, 34, 45, 0.15)'
-              label='Belum Dibayar'
-              value={statistics?.byPaymentStatus?.UNPAID?.count || 0}
-            />
-          </Col>
-        </Row>
-
-        {/* Financial Statistics */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col xs={24} sm={12} lg={8}>
-            <CompactMetricCard
               icon={<DollarOutlined />}
               iconColor='#10b981'
               iconBg='rgba(16, 185, 129, 0.15)'
@@ -432,7 +398,7 @@ export const ExpensesPage: React.FC = () => {
               value={expenseService.formatIDR(statistics?.totalAmount || '0')}
             />
           </Col>
-          <Col xs={24} sm={12} lg={8}>
+          <Col xs={24} sm={12} lg={6}>
             <CompactMetricCard
               icon={<WarningOutlined />}
               iconColor='#f59e0b'
@@ -441,7 +407,7 @@ export const ExpensesPage: React.FC = () => {
               value={expenseService.formatIDR(statistics?.totalPPN || '0')}
             />
           </Col>
-          <Col xs={24} sm={12} lg={8}>
+          <Col xs={24} sm={12} lg={6}>
             <CompactMetricCard
               icon={<ExclamationCircleOutlined />}
               iconColor='#ef4444'
@@ -462,30 +428,6 @@ export const ExpensesPage: React.FC = () => {
               onChange={e => setSearchText(e.target.value)}
               style={{ width: 250 }}
             />
-            <Select
-              placeholder='Filter status'
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: 150 }}
-              allowClear
-            >
-              <Option value='DRAFT'>Draft</Option>
-              <Option value='SUBMITTED'>Diajukan</Option>
-              <Option value='APPROVED'>Disetujui</Option>
-              <Option value='REJECTED'>Ditolak</Option>
-              <Option value='CANCELLED'>Dibatalkan</Option>
-            </Select>
-            <Select
-              placeholder='Status pembayaran'
-              value={paymentStatusFilter}
-              onChange={setPaymentStatusFilter}
-              style={{ width: 150 }}
-              allowClear
-            >
-              <Option value='UNPAID'>Belum Dibayar</Option>
-              <Option value='PARTIALLY_PAID'>Dibayar Sebagian</Option>
-              <Option value='PAID'>Lunas</Option>
-            </Select>
             <Select
               placeholder='Kategori'
               value={categoryFilter}

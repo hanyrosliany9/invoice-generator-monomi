@@ -37,7 +37,7 @@ export const paymentMilestonesService = {
     const response = await apiClient.get(
       `/api/quotations/${quotationId}/payment-milestones`
     )
-    return response.data
+    return (response.data as PaymentMilestone[]) || []
   },
 
   /**
@@ -51,7 +51,7 @@ export const paymentMilestonesService = {
       `/api/quotations/${quotationId}/payment-milestones`,
       data
     )
-    return response.data
+    return response.data as PaymentMilestone
   },
 
   /**
@@ -61,11 +61,11 @@ export const paymentMilestonesService = {
     paymentMilestoneId: string,
     data: UpdatePaymentMilestoneDTO
   ): Promise<PaymentMilestone> {
-    const response = await apiClient.patch(
+    const response = await (apiClient as any).patch(
       `/api/quotations/payment-milestones/${paymentMilestoneId}`,
       data
     )
-    return response.data
+    return response.data as PaymentMilestone
   },
 
   /**
@@ -87,7 +87,7 @@ export const paymentMilestonesService = {
     const response = await apiClient.post(
       `/api/quotations/${quotationId}/payment-milestones/validate`
     )
-    return response.data
+    return response.data as PaymentMilestoneValidationResponse
   },
 
   /**

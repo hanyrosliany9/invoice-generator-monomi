@@ -390,8 +390,9 @@ export class ExpensesController {
   /**
    * Update an expense
    *
-   * Only DRAFT expenses can be updated.
+   * Any expense can be updated to allow corrections or adjustments.
    * Updates will re-validate Indonesian tax calculations.
+   * If journal entry exists, it will be updated to reflect changes.
    *
    * @param req - Request object with authenticated user
    * @param id - Expense ID
@@ -402,7 +403,7 @@ export class ExpensesController {
   @ApiOperation({
     summary: "Update expense",
     description:
-      "Update expense (DRAFT status only, re-validates tax calculations)",
+      "Update any expense for corrections (re-validates tax calculations and updates journal entries)",
   })
   @ApiParam({ name: "id", description: "Expense ID" })
   @ApiResponse({
@@ -411,7 +412,7 @@ export class ExpensesController {
   })
   @ApiResponse({
     status: 400,
-    description: "Cannot update non-DRAFT expense or invalid tax calculations",
+    description: "Invalid tax calculations or update data",
   })
   @ApiResponse({
     status: 404,

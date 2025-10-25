@@ -108,6 +108,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       label: t('navigation.clients'),
     },
     {
+      key: '/vendors',
+      icon: <ShopOutlined />,
+      label: 'Vendor',
+    },
+    {
       key: 'accounting',
       icon: <CalculatorOutlined />,
       label: 'Akuntansi',

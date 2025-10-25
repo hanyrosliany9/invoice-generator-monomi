@@ -27,10 +27,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { expenseService } from '../services/expenses';
+import { VendorSelect } from '../components/vendors';
 import type {
   UpdateExpenseFormData,
   WithholdingTaxType,
 } from '../types/expense';
+import type { Vendor } from '../types/vendor';
 import { useTheme } from '../theme';
 
 const { TextArea } = Input;
@@ -51,6 +53,7 @@ export const ExpenseEditPage: React.FC = () => {
   const [isLuxuryGoods, setIsLuxuryGoods] = useState(false);
   const [withholdingType, setWithholdingType] = useState<WithholdingTaxType>('NONE' as WithholdingTaxType);
   const [includePPN, setIncludePPN] = useState(true);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | undefined>(undefined);
 
   // Fetch expense
   const {
@@ -238,6 +241,30 @@ export const ExpenseEditPage: React.FC = () => {
               }}
             >
               <Row gutter={[16, 16]}>
+                <Col xs={24}>
+                  <Form.Item
+                    label='Pilih Vendor dari Master Data'
+                    help='Pilih vendor dari daftar vendor yang sudah terdaftar.'
+                  >
+                    <VendorSelect
+                      value={selectedVendor?.id}
+                      onChange={(vendorId, vendor) => {
+                        setSelectedVendor(vendor);
+                        // Auto-fill vendor details from master data
+                        if (vendor) {
+                          form.setFieldsValue({
+                            vendorName: vendor.name,
+                            vendorNPWP: vendor.npwp,
+                          });
+                        }
+                      }}
+                      onlyActive={true}
+                      placeholder='Cari vendor...'
+                      allowClear
+                    />
+                  </Form.Item>
+                </Col>
+
                 <Col xs={24} sm={12}>
                   <Form.Item name='vendorName' label='Nama Vendor' rules={[{ required: true }]}>
                     <Input size='large' />

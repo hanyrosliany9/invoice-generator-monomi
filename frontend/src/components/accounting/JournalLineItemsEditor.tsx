@@ -57,6 +57,32 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
     onChange?.(newValue);
   };
 
+  // Handle debit input with smart auto-clear
+  const handleDebitChange = (index: number, val: number | null) => {
+    const numVal = val || 0;
+    const newValue = [...value];
+    newValue[index] = { ...newValue[index], debit: numVal };
+
+    // Only clear credit if new debit is > 0 and current credit is > 0
+    if (numVal > 0 && newValue[index].credit > 0) {
+      newValue[index] = { ...newValue[index], credit: 0 };
+    }
+    onChange?.(newValue);
+  };
+
+  // Handle credit input with smart auto-clear
+  const handleCreditChange = (index: number, val: number | null) => {
+    const numVal = val || 0;
+    const newValue = [...value];
+    newValue[index] = { ...newValue[index], credit: numVal };
+
+    // Only clear debit if new credit is > 0 and current debit is > 0
+    if (numVal > 0 && newValue[index].debit > 0) {
+      newValue[index] = { ...newValue[index], debit: 0 };
+    }
+    onChange?.(newValue);
+  };
+
   // Calculate totals
   const totalDebit = value.reduce((sum, item) => sum + (item.debit || 0), 0);
   const totalCredit = value.reduce((sum, item) => sum + (item.credit || 0), 0);
@@ -125,17 +151,11 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
       render: (text: number, record: JournalLineItemFormData, index: number) => (
         <InputNumber
           value={text}
-          onChange={(val) => {
-            handleFieldChange(index, 'debit', val || 0);
-            // Auto-clear credit if debit is entered
-            if (val && val > 0 && record.credit > 0) {
-              handleFieldChange(index, 'credit', 0);
-            }
-          }}
+          onChange={(val) => handleDebitChange(index, val)}
           min={0}
           precision={2}
           formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-          parser={(value) => value?.replace(/\$\s?|(,*)/g, '') as any}
+          parser={(value) => value?.replace(/[,\s]/g, '') as any}
           style={{ width: '100%' }}
           disabled={disabled}
         />
@@ -150,17 +170,11 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
       render: (text: number, record: JournalLineItemFormData, index: number) => (
         <InputNumber
           value={text}
-          onChange={(val) => {
-            handleFieldChange(index, 'credit', val || 0);
-            // Auto-clear debit if credit is entered
-            if (val && val > 0 && record.debit > 0) {
-              handleFieldChange(index, 'debit', 0);
-            }
-          }}
+          onChange={(val) => handleCreditChange(index, val)}
           min={0}
           precision={2}
           formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-          parser={(value) => value?.replace(/\$\s?|(,*)/g, '') as any}
+          parser={(value) => value?.replace(/[,\s]/g, '') as any}
           style={{ width: '100%' }}
           disabled={disabled}
         />
@@ -251,8 +265,11 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
       {/* Line Items Table */}
       <Table
         columns={columns}
-        dataSource={value}
-        rowKey={(record) => record.id || `fallback-${record.accountCode}-${record.debit}-${record.credit}`}
+        dataSource={value.map((item, index) => ({
+          ...item,
+          id: item.id || `line-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+        }))}
+        rowKey="id"
         pagination={false}
         size="small"
         style={{

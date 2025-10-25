@@ -18,6 +18,7 @@ import {
   Tabs,
   Tag,
   Typography,
+  message,
 } from 'antd'
 import {
   ArrowLeftOutlined,
@@ -30,6 +31,7 @@ import {
   ProjectOutlined,
   TeamOutlined,
   UserOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -45,7 +47,6 @@ import { getProjectStatusConfig } from '../utils/projectStatus'
 import { getDaysRemaining } from '../utils/projectProgress'
 import dayjs from 'dayjs'
 import { useTheme } from '../theme'
-import { jsPDF } from 'jspdf'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -59,6 +60,9 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
 
   // State for expense modal
   const [expenseModalOpen, setExpenseModalOpen] = useState(false)
+
+  // State for export loading
+  const [exporting, setExporting] = useState(false)
 
   // Fetch project data
   const {
@@ -200,341 +204,48 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   const progress = calculateProgress(project)
   const daysRemaining = getDaysRemaining(project.endDate)
 
-  // Export project data as PDF
-  const handleExportData = () => {
-    if (!project) return
+  // Export project data as PDF (server-side)
+  const handleExportData = async () => {
+    if (!project || !id) return
 
-    // Parse priceBreakdown to get products
-    let products: any[] = []
-    if (project.priceBreakdown) {
-      try {
-        const priceBreakdownData = typeof project.priceBreakdown === 'string'
-          ? JSON.parse(project.priceBreakdown)
-          : project.priceBreakdown
-        products = priceBreakdownData.products || []
-      } catch (error) {
-        console.error('Failed to parse priceBreakdown:', error)
-      }
-    }
-
-    // Create PDF document
-    const pdf = new jsPDF()
-    const pageWidth = pdf.internal.pageSize.getWidth()
-    const pageHeight = pdf.internal.pageSize.getHeight()
-    let yPosition = 20
-
-    // Helper function to add new page if needed
-    const checkAddPage = (requiredSpace: number) => {
-      if (yPosition + requiredSpace > pageHeight - 20) {
-        pdf.addPage()
-        yPosition = 20
-        return true
-      }
-      return false
-    }
-
-    // Helper function to format currency
-    const formatCurrency = (amount: number | null | undefined) => {
-      if (!amount) return 'Rp 0'
-      return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-      }).format(amount)
-    }
-
-    // ===== HEADER =====
-    pdf.setFillColor(33, 150, 243) // Blue header
-    pdf.rect(0, 0, pageWidth, 40, 'F')
-
-    pdf.setTextColor(255, 255, 255)
-    pdf.setFontSize(24)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text('LAPORAN PROYEK', pageWidth / 2, 20, { align: 'center' })
-
-    pdf.setFontSize(12)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(project.number || 'N/A', pageWidth / 2, 30, { align: 'center' })
-
-    yPosition = 50
-
-    // ===== PROJECT INFORMATION =====
-    pdf.setTextColor(0, 0, 0)
-    pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text('Informasi Proyek', 14, yPosition)
-    yPosition += 8
-
-    pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'normal')
-
-    const projectInfo = [
-      ['Nomor Proyek', project.number],
-      ['Status', project.status],
-      ['Tipe Proyek', project.projectType?.name || 'N/A'],
-      ['Deskripsi', project.description],
-      ['Output', project.output || 'N/A'],
-    ]
-
-    projectInfo.forEach(([label, value]) => {
-      pdf.setFont('helvetica', 'bold')
-      pdf.text(label + ':', 14, yPosition)
-      pdf.setFont('helvetica', 'normal')
-
-      // Handle long text with text wrapping
-      const maxWidth = pageWidth - 28
-      const lines = pdf.splitTextToSize(String(value || 'N/A'), maxWidth - 60)
-      pdf.text(lines, 70, yPosition)
-      yPosition += Math.max(6, lines.length * 5)
-    })
-
-    yPosition += 5
-    checkAddPage(30)
-
-    // ===== CLIENT INFORMATION =====
-    pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text('Informasi Klien', 14, yPosition)
-    yPosition += 8
-
-    pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'normal')
-
-    const clientInfo = [
-      ['Nama Klien', project.client?.name],
-      ['Perusahaan', project.client?.company],
-      ['Email', project.client?.email],
-      ['Telepon', project.client?.phone],
-    ]
-
-    clientInfo.forEach(([label, value]) => {
-      pdf.setFont('helvetica', 'bold')
-      pdf.text(label + ':', 14, yPosition)
-      pdf.setFont('helvetica', 'normal')
-      pdf.text(String(value || 'N/A'), 70, yPosition)
-      yPosition += 6
-    })
-
-    yPosition += 5
-    checkAddPage(40)
-
-    // ===== TIMELINE & PROGRESS =====
-    pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text('Timeline & Progress', 14, yPosition)
-    yPosition += 8
-
-    pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'normal')
-
-    const timelineInfo = [
-      ['Tanggal Mulai', project.startDate ? dayjs(project.startDate).format('DD MMMM YYYY') : 'N/A'],
-      ['Tanggal Selesai', project.endDate ? dayjs(project.endDate).format('DD MMMM YYYY') : 'N/A'],
-      ['Progress', `${progress}%`],
-      ['Hari Tersisa', daysRemaining > 0 ? `${daysRemaining} hari` : 'Terlambat'],
-    ]
-
-    timelineInfo.forEach(([label, value]) => {
-      pdf.setFont('helvetica', 'bold')
-      pdf.text(label + ':', 14, yPosition)
-      pdf.setFont('helvetica', 'normal')
-      pdf.text(String(value), 70, yPosition)
-      yPosition += 6
-    })
-
-    yPosition += 5
-    checkAddPage(60)
-
-    // ===== PRODUCTS & SERVICES =====
-    if (products.length > 0) {
-      pdf.setFontSize(14)
-      pdf.setFont('helvetica', 'bold')
-      pdf.text('Produk & Layanan', 14, yPosition)
-      yPosition += 8
-
-      // Table header
-      pdf.setFillColor(240, 240, 240)
-      pdf.rect(14, yPosition - 5, pageWidth - 28, 7, 'F')
-      pdf.setFontSize(9)
-      pdf.setFont('helvetica', 'bold')
-      pdf.text('Nama', 16, yPosition)
-      pdf.text('Qty', pageWidth - 60, yPosition)
-      pdf.text('Harga', pageWidth - 40, yPosition)
-      yPosition += 8
-
-      pdf.setFont('helvetica', 'normal')
-      let totalProducts = 0
-
-      products.forEach((product) => {
-        checkAddPage(15)
-
-        const productName = pdf.splitTextToSize(product.name || 'N/A', 100)
-        pdf.text(productName, 16, yPosition)
-        pdf.text(String(product.quantity || 1), pageWidth - 60, yPosition)
-        pdf.text(formatCurrency(product.price), pageWidth - 40, yPosition, { align: 'right' })
-
-        const subtotal = (product.price || 0) * (product.quantity || 1)
-        totalProducts += subtotal
-
-        yPosition += Math.max(6, productName.length * 5)
+    setExporting(true)
+    try {
+      // Call server-side PDF generation endpoint
+      const response = await fetch(`/api/v1/pdf/project/${id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
       })
 
-      yPosition += 2
-      pdf.setDrawColor(200, 200, 200)
-      pdf.line(14, yPosition, pageWidth - 14, yPosition)
-      yPosition += 6
-
-      pdf.setFont('helvetica', 'bold')
-      pdf.text('Total', pageWidth - 80, yPosition)
-      pdf.text(formatCurrency(totalProducts), pageWidth - 40, yPosition, { align: 'right' })
-      yPosition += 10
-    }
-
-    checkAddPage(60)
-
-    // ===== FINANCIAL SUMMARY =====
-    pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text('Ringkasan Keuangan', 14, yPosition)
-    yPosition += 8
-
-    pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'normal')
-
-    const financialInfo = [
-      ['Estimasi Budget', formatCurrency(safeNumber(project.estimatedBudget))],
-      ['Harga Dasar', formatCurrency(safeNumber(project.basePrice))],
-      ['Total Pendapatan', formatCurrency(safeNumber(project.totalRevenue))],
-      ['Total Estimasi Biaya', formatCurrency(projectedMargins.totalCosts)],
-    ]
-
-    financialInfo.forEach(([label, value]) => {
-      pdf.setFont('helvetica', 'bold')
-      pdf.text(label + ':', 14, yPosition)
-      pdf.setFont('helvetica', 'normal')
-      pdf.text(String(value), 110, yPosition, { align: 'right' })
-      yPosition += 6
-    })
-
-    yPosition += 5
-    checkAddPage(60)
-
-    // ===== ESTIMATED EXPENSES =====
-    if (estimatedExpenses.length > 0) {
-      pdf.setFontSize(14)
-      pdf.setFont('helvetica', 'bold')
-      pdf.text('Estimasi Biaya', 14, yPosition)
-      yPosition += 8
-
-      // Direct costs
-      const directExpenses = estimatedExpenses.filter(e => e.costType === 'direct')
-      if (directExpenses.length > 0) {
-        pdf.setFontSize(12)
-        pdf.setFont('helvetica', 'bold')
-        pdf.text('Biaya Langsung:', 14, yPosition)
-        yPosition += 6
-
-        pdf.setFontSize(9)
-        pdf.setFont('helvetica', 'normal')
-        directExpenses.forEach((expense) => {
-          checkAddPage(10)
-          pdf.text('• ' + (expense.categoryNameId || expense.categoryName), 20, yPosition)
-          pdf.text(formatCurrency(expense.amount), pageWidth - 20, yPosition, { align: 'right' })
-          yPosition += 5
-        })
-
-        yPosition += 2
-        pdf.setFont('helvetica', 'bold')
-        pdf.text('Subtotal Biaya Langsung:', 20, yPosition)
-        pdf.text(formatCurrency(projectedMargins.directCosts), pageWidth - 20, yPosition, { align: 'right' })
-        yPosition += 8
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF')
       }
 
-      checkAddPage(40)
+      // Get the PDF as a blob
+      const blob = await response.blob()
 
-      // Indirect costs
-      const indirectExpenses = estimatedExpenses.filter(e => e.costType === 'indirect')
-      if (indirectExpenses.length > 0) {
-        pdf.setFontSize(12)
-        pdf.setFont('helvetica', 'bold')
-        pdf.text('Biaya Tidak Langsung:', 14, yPosition)
-        yPosition += 6
+      // Create a temporary URL for the blob
+      const url = window.URL.createObjectURL(blob)
 
-        pdf.setFontSize(9)
-        pdf.setFont('helvetica', 'normal')
-        indirectExpenses.forEach((expense) => {
-          checkAddPage(10)
-          pdf.text('• ' + (expense.categoryNameId || expense.categoryName), 20, yPosition)
-          pdf.text(formatCurrency(expense.amount), pageWidth - 20, yPosition, { align: 'right' })
-          yPosition += 5
-        })
+      // Create a temporary link element and trigger download
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Laporan-Proyek-${project.number}-${dayjs().format('YYYY-MM-DD')}.pdf`
+      document.body.appendChild(link)
+      link.click()
 
-        yPosition += 2
-        pdf.setFont('helvetica', 'bold')
-        pdf.text('Subtotal Biaya Tidak Langsung:', 20, yPosition)
-        pdf.text(formatCurrency(projectedMargins.indirectCosts), pageWidth - 20, yPosition, { align: 'right' })
-        yPosition += 8
-      }
+      // Clean up
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
 
-      // Total costs
-      pdf.setFontSize(11)
-      pdf.setFillColor(245, 245, 245)
-      pdf.rect(14, yPosition - 5, pageWidth - 28, 8, 'F')
-      pdf.setFont('helvetica', 'bold')
-      pdf.text('TOTAL ESTIMASI BIAYA:', 20, yPosition)
-      pdf.text(formatCurrency(projectedMargins.totalCosts), pageWidth - 20, yPosition, { align: 'right' })
-      yPosition += 12
+      message.success('PDF berhasil diunduh')
+    } catch (error) {
+      console.error('PDF export error:', error)
+      message.error('Gagal membuat PDF. Silakan coba lagi.')
+    } finally {
+      setExporting(false)
     }
-
-    checkAddPage(40)
-
-    // ===== PROFIT PROJECTIONS =====
-    if (projectedMargins.grossMargin !== null) {
-      pdf.setFontSize(14)
-      pdf.setFont('helvetica', 'bold')
-      pdf.text('Proyeksi Profit', 14, yPosition)
-      yPosition += 8
-
-      pdf.setFontSize(10)
-      pdf.setFont('helvetica', 'normal')
-
-      const marginInfo = [
-        ['Margin Bruto (Proyeksi)', `${projectedMargins.grossMargin?.toFixed(2) || 0}%`],
-        ['Margin Netto (Proyeksi)', `${projectedMargins.netMargin?.toFixed(2) || 0}%`],
-        ['Proyeksi Profit', formatCurrency(projectedMargins.profit)],
-      ]
-
-      marginInfo.forEach(([label, value]) => {
-        pdf.setFont('helvetica', 'bold')
-        pdf.text(label + ':', 14, yPosition)
-        pdf.setFont('helvetica', 'normal')
-        pdf.text(String(value), 110, yPosition, { align: 'right' })
-        yPosition += 6
-      })
-
-      yPosition += 5
-    }
-
-    // ===== FOOTER =====
-    const footerY = pageHeight - 15
-    pdf.setFontSize(8)
-    pdf.setTextColor(128, 128, 128)
-    pdf.setFont('helvetica', 'italic')
-    pdf.text(
-      `Dicetak pada: ${dayjs().format('DD MMMM YYYY HH:mm')}`,
-      14,
-      footerY
-    )
-    pdf.text(
-      'Monomi Project Management System',
-      pageWidth - 14,
-      footerY,
-      { align: 'right' }
-    )
-
-    // Save PDF
-    const fileName = `Laporan-Proyek-${project.number}-${dayjs().format('YYYY-MM-DD')}.pdf`
-    pdf.save(fileName)
   }
 
   return (
@@ -615,13 +326,15 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 Edit Project
               </Button>
               <Button
-                icon={<ExportOutlined />}
+                icon={exporting ? <LoadingOutlined /> : <ExportOutlined />}
                 size='large'
                 block
                 aria-label='Export project report as PDF'
                 onClick={handleExportData}
+                loading={exporting}
+                disabled={exporting}
               >
-                Export PDF
+                {exporting ? 'Membuat PDF...' : 'Export PDF'}
               </Button>
             </Space>
           </Col>
@@ -1097,10 +810,15 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
           onClick={() => navigate(`/projects/${id}/edit`)}
         />
         <FloatButton
-          icon={<ExportOutlined />}
-          tooltip='Export PDF'
+          icon={exporting ? <LoadingOutlined /> : <ExportOutlined />}
+          tooltip={exporting ? 'Membuat PDF...' : 'Export PDF'}
           aria-label='Export project report as PDF'
-          onClick={handleExportData}
+          onClick={exporting ? undefined : handleExportData}
+          type={exporting ? 'default' : 'primary'}
+          style={{
+            opacity: exporting ? 0.6 : 1,
+            cursor: exporting ? 'not-allowed' : 'pointer'
+          }}
         />
       </FloatButton.Group>
     </div>

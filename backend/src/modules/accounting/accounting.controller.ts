@@ -12,6 +12,11 @@ import {
   Res,
 } from "@nestjs/common";
 import { Response } from "express";
+import type { Request as ExpressRequest } from "express";
+
+interface AuthenticatedRequest extends ExpressRequest {
+  user: { id: string };
+}
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -1254,7 +1259,7 @@ export class AccountingController {
   @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async recognizeInvoiceRevenue(
     @Param("invoiceId") invoiceId: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.revenueRecognitionService.recognizeRevenueFromInvoicePayment(
       invoiceId,

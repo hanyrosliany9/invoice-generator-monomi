@@ -55,7 +55,23 @@ interface MilestonePaymentTermsProps {
 }
 
 // Indonesian payment term templates
-const PAYMENT_TEMPLATES = {
+interface TemplatePaymentMilestone {
+  name: string
+  nameId?: string
+  description?: string
+  descriptionId?: string
+  paymentPercentage: number
+  dueDaysFromPrev?: number
+  deliverables?: string[]
+}
+
+interface PaymentTemplate {
+  name: string
+  description: string
+  milestones: TemplatePaymentMilestone[]
+}
+
+const PAYMENT_TEMPLATES: Record<string, PaymentTemplate> = {
   'termin-3-standard': {
     name: 'Termin 3 Fase (Standard)',
     description: 'DP 30% → Tahap 1 40% → Pelunasan 30%',
@@ -210,8 +226,8 @@ export const MilestonePaymentTerms: React.FC<MilestonePaymentTermsProps> = ({
       milestoneNumber: idx + 1,
       name: m.name,
       nameId: m.nameId,
-      description: m.description,
-      descriptionId: m.descriptionId,
+      description: m.description || undefined,
+      descriptionId: m.descriptionId || undefined,
       paymentPercentage: m.paymentPercentage,
       paymentAmount: (m.paymentPercentage / 100) * quotationTotal,
       dueDaysFromPrev: m.dueDaysFromPrev,

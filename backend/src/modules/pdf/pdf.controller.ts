@@ -16,6 +16,7 @@ import {
 import { PdfService } from "./pdf.service";
 import { InvoicesService } from "../invoices/invoices.service";
 import { QuotationsService } from "../quotations/quotations.service";
+import { ProjectsService } from "../projects/projects.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @ApiTags("PDF")
@@ -27,6 +28,7 @@ export class PdfController {
     private readonly pdfService: PdfService,
     private readonly invoicesService: InvoicesService,
     private readonly quotationsService: QuotationsService,
+    private readonly projectsService: ProjectsService,
   ) {}
 
   @Get("invoice/:id")
@@ -186,6 +188,86 @@ export class PdfController {
         throw error;
       }
       throw new Error("Gagal membuat preview PDF quotation");
+    }
+  }
+
+  @Get("project/:id")
+  @ApiOperation({ summary: "Generate PDF for project details report" })
+  @ApiResponse({
+    status: 200,
+    description: "PDF generated successfully",
+    schema: {
+      type: "string",
+      format: "binary",
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Project not found",
+  })
+  async generateProjectPdf(@Param("id") id: string, @Res() res: Response) {
+    try {
+      // Get project data
+      const project = await this.projectsService.findOne(id);
+
+      if (!project) {
+        throw new NotFoundException("Proyek tidak ditemukan");
+      }
+
+      // Generate PDF
+      const pdfBuffer = await this.pdfService.generateProjectPDF(project);
+
+      // Set response headers
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="Laporan-Proyek-${project.number}.pdf"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
+
+      // Send PDF
+      res.send(pdfBuffer);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error("Gagal membuat PDF proyek");
+    }
+  }
+
+  @Get("project/:id/preview")
+  @ApiOperation({ summary: "Preview project PDF in browser" })
+  @ApiResponse({
+    status: 200,
+    description: "PDF preview generated successfully",
+  })
+  async previewProjectPdf(@Param("id") id: string, @Res() res: Response) {
+    try {
+      // Get project data
+      const project = await this.projectsService.findOne(id);
+
+      if (!project) {
+        throw new NotFoundException("Proyek tidak ditemukan");
+      }
+
+      // Generate PDF
+      const pdfBuffer = await this.pdfService.generateProjectPDF(project);
+
+      // Set response headers for preview
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="Laporan-Proyek-${project.number}.pdf"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
+
+      // Send PDF
+      res.send(pdfBuffer);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error("Gagal membuat preview PDF proyek");
     }
   }
 }

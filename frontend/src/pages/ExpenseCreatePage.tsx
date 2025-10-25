@@ -29,6 +29,7 @@ import dayjs from 'dayjs';
 import { expenseService } from '../services/expenses';
 import { clientService } from '../services/clients';
 import { projectService } from '../services/projects';
+import { VendorSelect } from '../components/vendors';
 import type {
   CreateExpenseFormData,
   EFakturStatus,
@@ -36,6 +37,7 @@ import type {
   PPNCategory,
   WithholdingTaxType,
 } from '../types/expense';
+import type { Vendor } from '../types/vendor';
 import { useTheme } from '../theme';
 
 const { TextArea } = Input;
@@ -55,6 +57,7 @@ export const ExpenseCreatePage: React.FC = () => {
   const [isLuxuryGoods, setIsLuxuryGoods] = useState(false);
   const [withholdingType, setWithholdingType] = useState<WithholdingTaxType>('NONE' as WithholdingTaxType);
   const [includePPN, setIncludePPN] = useState(true);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | undefined>(undefined);
 
   // Queries
   const { data: categories = [] } = useQuery({
@@ -94,12 +97,16 @@ export const ExpenseCreatePage: React.FC = () => {
         withholdingType
       );
 
-      // If PPN is disabled, force ppnAmount to 0 and recalculate total
+      // If PPN is disabled, clear PPN-related fields
       const ppnAmount = includePPN ? amounts.ppnAmount : 0;
+      const ppnRate = includePPN ? (isLuxuryGoods ? 0.12 : 0.11) : 0;
+      const ppnCategory = includePPN ? form.getFieldValue('ppnCategory') : undefined;
       const totalAmount = grossAmount + ppnAmount;
 
       form.setFieldsValue({
-        ppnAmount: ppnAmount,
+        ppnAmount: includePPN ? ppnAmount : undefined,
+        ppnRate: includePPN ? ppnRate : undefined,
+        ppnCategory: includePPN ? ppnCategory : undefined,
         withholdingAmount: amounts.withholdingAmount,
         netAmount: amounts.netAmount,
         totalAmount: totalAmount,
@@ -127,36 +134,58 @@ export const ExpenseCreatePage: React.FC = () => {
   };
 
   const handleSubmit = (values: any) => {
+    // Ensure calculations are correct
+    const gross = Number(values.grossAmount) || 0;
+    const ppnAmt = includePPN ? Number(values.ppnAmount) || 0 : 0;
+    const total = gross + ppnAmt;
+    const withholding = Number(values.withholdingAmount) || 0;
+    const net = total - withholding;
+
     const expenseData: CreateExpenseFormData = {
       ...values,
       expenseDate: values.expenseDate.toISOString(),
-      grossAmount: Number(values.grossAmount),
-      ppnAmount: includePPN ? Number(values.ppnAmount) : 0,
-      withholdingAmount: values.withholdingAmount ? Number(values.withholdingAmount) : 0,
-      netAmount: Number(values.netAmount),
-      totalAmount: Number(values.totalAmount),
+      grossAmount: gross,
+      ppnAmount: ppnAmt,
       ppnRate: includePPN ? (isLuxuryGoods ? 0.12 : 0.11) : 0,
+      ppnCategory: includePPN ? values.ppnCategory : 'NON_CREDITABLE',
+      withholdingAmount: withholding,
+      netAmount: net,
+      totalAmount: total,
       withholdingTaxRate: values.withholdingTaxRate || 0,
       isLuxuryGoods: includePPN ? isLuxuryGoods : false,
+      currency: 'IDR',
+      isTaxDeductible: true,
     };
 
+    console.log('DEBUG: Submitting expense data:', expenseData);
     createMutation.mutate(expenseData);
   };
 
   const handleSaveAndSubmit = async () => {
     try {
       const values = await form.validateFields();
+
+      // Ensure calculations are correct
+      const gross = Number(values.grossAmount) || 0;
+      const ppnAmt = includePPN ? Number(values.ppnAmount) || 0 : 0;
+      const total = gross + ppnAmt;
+      const withholding = Number(values.withholdingAmount) || 0;
+      const net = total - withholding;
+
       const expenseData: CreateExpenseFormData = {
         ...values,
         expenseDate: values.expenseDate.toISOString(),
-        grossAmount: Number(values.grossAmount),
-        ppnAmount: includePPN ? Number(values.ppnAmount) : 0,
-        withholdingAmount: values.withholdingAmount ? Number(values.withholdingAmount) : 0,
-        netAmount: Number(values.netAmount),
-        totalAmount: Number(values.totalAmount),
+        grossAmount: gross,
+        ppnAmount: ppnAmt,
         ppnRate: includePPN ? (isLuxuryGoods ? 0.12 : 0.11) : 0,
+        ppnCategory: includePPN ? values.ppnCategory : 'NON_CREDITABLE',
+        withholdingAmount: withholding,
+        netAmount: net,
+        totalAmount: total,
         withholdingTaxRate: values.withholdingTaxRate || 0,
         isLuxuryGoods: includePPN ? isLuxuryGoods : false,
+        currency: 'IDR',
+        isTaxDeductible: true,
       };
 
       // Create and submit in one go
@@ -192,6 +221,14 @@ export const ExpenseCreatePage: React.FC = () => {
           withholdingTaxType: 'NONE',
           isLuxuryGoods: false,
           isBillable: false,
+          ppnAmount: 0,
+          ppnRate: 0,
+          netAmount: 0,
+          totalAmount: 0,
+          withholdingAmount: 0,
+          withholdingTaxRate: 0,
+          accountCode: '',
+          accountName: '',
         }}
         autoComplete='off'
       >
@@ -237,6 +274,11 @@ export const ExpenseCreatePage: React.FC = () => {
                   </Form.Item>
                 </Col>
 
+                {/* Hidden field for accountName - required by backend */}
+                <Form.Item name='accountName' style={{ display: 'none' }}>
+                  <Input />
+                </Form.Item>
+
                 <Col xs={24} sm={6}>
                   <Form.Item name='expenseClass' label='Kelas'>
                     <Select disabled>
@@ -281,6 +323,31 @@ export const ExpenseCreatePage: React.FC = () => {
               }}
             >
               <Row gutter={[16, 16]}>
+                <Col xs={24}>
+                  <Form.Item
+                    label='Pilih Vendor dari Master Data'
+                    help='Pilih vendor dari daftar vendor yang sudah terdaftar. Atau masukkan data vendor secara manual di bawah.'
+                  >
+                    <VendorSelect
+                      value={selectedVendor?.id}
+                      onChange={(vendorId, vendor) => {
+                        setSelectedVendor(vendor);
+                        // Auto-fill vendor details from master data
+                        if (vendor) {
+                          form.setFieldsValue({
+                            vendorName: vendor.name,
+                            vendorNPWP: vendor.npwp,
+                            vendorAddress: vendor.address,
+                          });
+                        }
+                      }}
+                      onlyActive={true}
+                      placeholder='Cari vendor...'
+                      allowClear
+                    />
+                  </Form.Item>
+                </Col>
+
                 <Col xs={24} sm={12}>
                   <Form.Item
                     name='vendorName'
@@ -567,19 +634,20 @@ export const ExpenseCreatePage: React.FC = () => {
                   </>
                 )}
 
-                <Alert
-                  message='Indonesian Tax Compliance'
-                  description={
-                    <>
-                      <div>✓ PPN 12% untuk barang mewah</div>
-                      <div>✓ PPN 11% efektif untuk non-mewah</div>
-                      <div>✓ PPh dipotong sesuai kategori</div>
-                      <div>✓ Format NSFP tervalidasi</div>
-                    </>
-                  }
-                  type='success'
-                  showIcon
-                />
+                {(includePPN || withholdingType !== 'NONE') && (
+                  <Alert
+                    message='Indonesian Tax Compliance'
+                    description={
+                      <>
+                        {includePPN && <div>✓ PPN {isLuxuryGoods ? '12%' : '11%'} untuk biaya</div>}
+                        {withholdingType !== 'NONE' && <div>✓ PPh dipotong sesuai kategori</div>}
+                        <div>✓ Format NSFP tervalidasi</div>
+                      </>
+                    }
+                    type='success'
+                    showIcon
+                  />
+                )}
 
                 <Card
                   style={{

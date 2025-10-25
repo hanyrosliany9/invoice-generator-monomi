@@ -380,7 +380,7 @@ export const ReportsPage: React.FC = () => {
       </div>
 
       {/* Key Metrics Overview - Compact Design */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: '32px' }}>
         <Col xs={24} sm={12} lg={6}>
           <CompactMetricCard
             icon={<DollarOutlined />}
@@ -410,10 +410,7 @@ export const ReportsPage: React.FC = () => {
             value={clientData?.totalClients || 0}
           />
         </Col>
-      </Row>
 
-      {/* Second Row - Compact Design */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} sm={12} lg={6}>
           <CompactMetricCard
             icon={<ProjectOutlined />}

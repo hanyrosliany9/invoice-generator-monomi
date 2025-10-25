@@ -43,6 +43,8 @@ import { SettingsPage } from './pages/SettingsPage'
 import { UsersPage } from './pages/UsersPage'
 import { CalendarPage } from './pages/CalendarPage'
 import { ProjectCalendarPage } from './pages/ProjectCalendarPage'
+import { VendorsPage } from './pages/VendorsPage'
+import { VendorDetailPage } from './pages/VendorDetailPage'
 import './styles/relationships.css'
 
 // Lazy load heavy create/edit pages for performance
@@ -124,6 +126,16 @@ const JournalEntryFormPage = lazy(() =>
 const AdjustingEntryWizard = lazy(() =>
   import('./pages/accounting/AdjustingEntryWizard').then(module => ({
     default: module.default,
+  }))
+)
+const VendorCreatePage = lazy(() =>
+  import('./pages/VendorCreatePage').then(module => ({
+    default: module.VendorCreatePage,
+  }))
+)
+const VendorEditPage = lazy(() =>
+  import('./pages/VendorEditPage').then(module => ({
+    default: module.VendorEditPage,
   }))
 )
 
@@ -297,6 +309,26 @@ function App() {
                       }
                     />
                     <Route path='/expense-categories' element={<ExpenseCategoriesPage />} />
+
+                    {/* Vendor Management Routes */}
+                    <Route path='/vendors' element={<VendorsPage />} />
+                    <Route
+                      path='/vendors/create'
+                      element={
+                        <Suspense fallback={<PageLoader />}>
+                          <VendorCreatePage />
+                        </Suspense>
+                      }
+                    />
+                    <Route path='/vendors/:id' element={<VendorDetailPage />} />
+                    <Route
+                      path='/vendors/:id/edit'
+                      element={
+                        <Suspense fallback={<PageLoader />}>
+                          <VendorEditPage />
+                        </Suspense>
+                      }
+                    />
 
                     {/* User Management Routes */}
                     <Route path='/users' element={<UsersPage />} />

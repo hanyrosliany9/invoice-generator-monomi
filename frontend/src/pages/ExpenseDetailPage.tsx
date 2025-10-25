@@ -17,7 +17,6 @@ import {
   CloseOutlined,
   DeleteOutlined,
   EditOutlined,
-  SendOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -47,13 +46,7 @@ export const ExpenseDetailPage: React.FC = () => {
   });
 
   // Mutations
-  const submitMutation = useMutation({
-    mutationFn: () => expenseService.submitExpense(id!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expense', id] });
-      message.success('Expense diajukan untuk persetujuan');
-    },
-  });
+  // Submit mutation removed - expenses are now automatically PAID on creation
 
   const deleteMutation = useMutation({
     mutationFn: () => expenseService.deleteExpense(id!),
@@ -62,6 +55,8 @@ export const ExpenseDetailPage: React.FC = () => {
       navigate('/expenses');
     },
   });
+
+  // All approval/payment mutations removed - expenses are now automatically PAID on creation
 
   const handleDelete = () => {
     modal.confirm({
@@ -74,15 +69,7 @@ export const ExpenseDetailPage: React.FC = () => {
     });
   };
 
-  const handleSubmit = () => {
-    modal.confirm({
-      title: 'Konfirmasi Pengajuan',
-      content: 'Apakah Anda yakin ingin mengajukan expense ini untuk persetujuan?',
-      okText: 'Ya, Ajukan',
-      cancelText: 'Batal',
-      onOk: () => submitMutation.mutate(),
-    });
-  };
+  // All handler functions for approval/payment removed
 
   if (isLoading) {
     return (
@@ -129,16 +116,6 @@ export const ExpenseDetailPage: React.FC = () => {
           {expenseService.canEdit(expense) && (
             <Button icon={<EditOutlined />} onClick={() => navigate(`/expenses/${id}/edit`)}>
               Edit
-            </Button>
-          )}
-          {expenseService.canSubmit(expense) && (
-            <Button
-              type='primary'
-              icon={<SendOutlined />}
-              onClick={handleSubmit}
-              loading={submitMutation.isPending}
-            >
-              Ajukan
             </Button>
           )}
           {expenseService.canDelete(expense) && (
