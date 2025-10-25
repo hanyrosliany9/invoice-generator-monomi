@@ -76,12 +76,13 @@ export function generateProjectHTML(projectData: any): string {
   // Parse products from priceBreakdown
   const products = Array.isArray(priceBreakdown) ? priceBreakdown : (priceBreakdown.products || []);
 
-  // Calculate expense totals
-  const directCosts = estimatedExpenses
+  // Calculate expense totals - ensure estimatedExpenses is an array
+  const expenses = estimatedExpenses ? (Array.isArray(estimatedExpenses) ? estimatedExpenses : []) : [];
+  const directCosts = expenses
     .filter((e: any) => e.costType === "direct")
     .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
 
-  const indirectCosts = estimatedExpenses
+  const indirectCosts = expenses
     .filter((e: any) => e.costType === "indirect")
     .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
 
@@ -108,8 +109,8 @@ export function generateProjectHTML(projectData: any): string {
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-      font-size: 11px;
-      line-height: 1.5;
+      font-size: 10px;
+      line-height: 1.4;
       color: #333;
       background-color: #fff;
     }
@@ -117,7 +118,7 @@ export function generateProjectHTML(projectData: any): string {
     .container {
       max-width: 210mm;
       margin: 0 auto;
-      padding: 20mm 15mm;
+      padding: 12mm 12mm;
       background-color: white;
     }
 
@@ -126,9 +127,9 @@ export function generateProjectHTML(projectData: any): string {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 8mm;
-      padding-bottom: 5mm;
-      border-bottom: 3px solid #dc2626;
+      margin-bottom: 4mm;
+      padding-bottom: 3mm;
+      border-bottom: 2px solid #dc2626;
     }
 
     .header-left {
@@ -136,17 +137,17 @@ export function generateProjectHTML(projectData: any): string {
     }
 
     .header-title {
-      font-size: 28px;
+      font-size: 22px;
       font-weight: 700;
       color: #dc2626;
-      margin-bottom: 2mm;
+      margin-bottom: 0.5mm;
       letter-spacing: -0.5px;
     }
 
     .header-subtitle {
-      font-size: 10px;
+      font-size: 8px;
       color: #666;
-      margin-bottom: 3mm;
+      margin-bottom: 1mm;
     }
 
     .header-right {
@@ -155,37 +156,37 @@ export function generateProjectHTML(projectData: any): string {
     }
 
     .project-number {
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 600;
       color: #555;
-      margin-bottom: 2mm;
+      margin-bottom: 1mm;
     }
 
     .print-date {
-      font-size: 9px;
+      font-size: 8px;
       color: #999;
-      margin-bottom: 2mm;
+      margin-bottom: 1mm;
     }
 
     .status-badge {
       display: inline-block;
-      padding: 2mm 4mm;
-      border-radius: 3px;
-      font-size: 10px;
+      padding: 1.5mm 3mm;
+      border-radius: 2px;
+      font-size: 9px;
       font-weight: 600;
       color: white;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 2mm;
+      letter-spacing: 0.3px;
+      margin-top: 1mm;
     }
 
     /* ===== CARD LAYOUT ===== */
     .card {
       background-color: #f9f9f9;
       border: 1px solid #e5e7eb;
-      border-radius: 4px;
-      padding: 4mm;
-      margin-bottom: 5mm;
+      border-radius: 3px;
+      padding: 3mm;
+      margin-bottom: 3mm;
       page-break-inside: avoid;
     }
 
@@ -193,21 +194,21 @@ export function generateProjectHTML(projectData: any): string {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 3mm;
-      padding-bottom: 2mm;
-      border-bottom: 2px solid #dc2626;
+      margin-bottom: 2mm;
+      padding-bottom: 1.5mm;
+      border-bottom: 1.5px solid #dc2626;
     }
 
     .card-title {
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 700;
       color: #1f2937;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
     }
 
     .card-subtitle {
-      font-size: 9px;
+      font-size: 8px;
       color: #999;
     }
 
@@ -215,8 +216,8 @@ export function generateProjectHTML(projectData: any): string {
     .info-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 4mm;
-      margin-bottom: 3mm;
+      gap: 2mm;
+      margin-bottom: 2mm;
     }
 
     .info-item {
@@ -225,16 +226,16 @@ export function generateProjectHTML(projectData: any): string {
     }
 
     .info-label {
-      font-size: 9px;
+      font-size: 7px;
       font-weight: 600;
       color: #666;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
-      margin-bottom: 1mm;
+      letter-spacing: 0.2px;
+      margin-bottom: 0.5mm;
     }
 
     .info-value {
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 500;
       color: #1f2937;
     }
@@ -246,28 +247,28 @@ export function generateProjectHTML(projectData: any): string {
 
     /* ===== PROGRESS BAR ===== */
     .progress-section {
-      margin-bottom: 3mm;
+      margin-bottom: 2mm;
     }
 
     .progress-bar {
       width: 100%;
-      height: 6mm;
+      height: 4mm;
       background-color: #e5e7eb;
-      border-radius: 3px;
+      border-radius: 2px;
       overflow: hidden;
-      margin-bottom: 1mm;
+      margin-bottom: 0.5mm;
     }
 
     .progress-fill {
       height: 100%;
-      border-radius: 3px;
+      border-radius: 2px;
       transition: width 0.3s ease;
     }
 
     .progress-text {
       display: flex;
       justify-content: space-between;
-      font-size: 10px;
+      font-size: 8px;
       color: #666;
     }
 
@@ -280,28 +281,28 @@ export function generateProjectHTML(projectData: any): string {
     .metrics-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      gap: 3mm;
-      margin-bottom: 3mm;
+      gap: 2mm;
+      margin-bottom: 2mm;
     }
 
     .metric-box {
       background-color: white;
-      border-left: 3px solid #dc2626;
-      padding: 3mm;
+      border-left: 2px solid #dc2626;
+      padding: 2mm;
       border-radius: 2px;
     }
 
     .metric-label {
-      font-size: 8px;
+      font-size: 7px;
       color: #999;
       text-transform: uppercase;
       font-weight: 600;
-      margin-bottom: 1mm;
-      letter-spacing: 0.3px;
+      margin-bottom: 0.5mm;
+      letter-spacing: 0.2px;
     }
 
     .metric-value {
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 700;
       color: #dc2626;
     }
@@ -310,8 +311,8 @@ export function generateProjectHTML(projectData: any): string {
     .table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 3mm;
-      font-size: 10px;
+      margin-bottom: 2mm;
+      font-size: 8px;
     }
 
     .table thead {
@@ -320,16 +321,16 @@ export function generateProjectHTML(projectData: any): string {
     }
 
     .table th {
-      padding: 2.5mm 3mm;
+      padding: 1.5mm 2mm;
       text-align: left;
       font-weight: 600;
-      font-size: 9px;
+      font-size: 8px;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.2px;
     }
 
     .table td {
-      padding: 2.5mm 3mm;
+      padding: 1.5mm 2mm;
       border-bottom: 1px solid #e5e7eb;
     }
 
@@ -350,7 +351,7 @@ export function generateProjectHTML(projectData: any): string {
     .table-total {
       background-color: #f3f4f6;
       font-weight: 700;
-      border-top: 2px solid #dc2626;
+      border-top: 1.5px solid #dc2626;
     }
 
     /* ===== SECTION DIVIDER ===== */
@@ -358,22 +359,22 @@ export function generateProjectHTML(projectData: any): string {
       height: 0;
       border: none;
       border-top: 1px dashed #d1d5db;
-      margin: 5mm 0;
+      margin: 2mm 0;
       page-break-inside: avoid;
     }
 
     /* ===== FOOTER ===== */
     .footer {
-      margin-top: 10mm;
-      padding-top: 5mm;
+      margin-top: 5mm;
+      padding-top: 3mm;
       border-top: 1px solid #d1d5db;
-      font-size: 9px;
+      font-size: 7px;
       color: #999;
       text-align: center;
     }
 
     .footer-text {
-      margin-bottom: 1mm;
+      margin-bottom: 0.5mm;
     }
 
     /* ===== PRINT STYLES ===== */
@@ -600,7 +601,7 @@ export function generateProjectHTML(projectData: any): string {
 
     <!-- EXPENSE BREAKDOWN -->
     ${
-      estimatedExpenses && estimatedExpenses.length > 0
+      expenses && expenses.length > 0
         ? `
     <div class="card section">
       <div class="card-header">
@@ -608,7 +609,7 @@ export function generateProjectHTML(projectData: any): string {
       </div>
 
       ${
-        estimatedExpenses.filter((e: any) => e.costType === "direct").length > 0
+        expenses.filter((e: any) => e.costType === "direct").length > 0
           ? `
       <div style="margin-bottom: 4mm;">
         <div style="font-weight: 700; color: #1f2937; margin-bottom: 2mm; font-size: 11px;">Biaya Langsung</div>
@@ -620,7 +621,7 @@ export function generateProjectHTML(projectData: any): string {
             </tr>
           </thead>
           <tbody>
-            ${estimatedExpenses
+            ${expenses
               .filter((e: any) => e.costType === "direct")
               .map(
                 (expense: any) => `
@@ -643,7 +644,7 @@ export function generateProjectHTML(projectData: any): string {
       }
 
       ${
-        estimatedExpenses.filter((e: any) => e.costType === "indirect").length > 0
+        expenses.filter((e: any) => e.costType === "indirect").length > 0
           ? `
       <div>
         <div style="font-weight: 700; color: #1f2937; margin-bottom: 2mm; font-size: 11px;">Biaya Tidak Langsung</div>
@@ -655,7 +656,7 @@ export function generateProjectHTML(projectData: any): string {
             </tr>
           </thead>
           <tbody>
-            ${estimatedExpenses
+            ${expenses
               .filter((e: any) => e.costType === "indirect")
               .map(
                 (expense: any) => `

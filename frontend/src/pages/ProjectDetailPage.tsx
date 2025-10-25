@@ -18,7 +18,7 @@ import {
   Tabs,
   Tag,
   Typography,
-  message,
+  App,
 } from 'antd'
 import {
   ArrowLeftOutlined,
@@ -47,6 +47,7 @@ import { getProjectStatusConfig } from '../utils/projectStatus'
 import { getDaysRemaining } from '../utils/projectProgress'
 import dayjs from 'dayjs'
 import { useTheme } from '../theme'
+import { useAuthStore } from '../store/auth'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -57,6 +58,8 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { theme } = useTheme()
+  const { message } = App.useApp()
+  const { token } = useAuthStore()
 
   // State for expense modal
   const [expenseModalOpen, setExpenseModalOpen] = useState(false)
@@ -206,7 +209,10 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
 
   // Export project data as PDF (server-side)
   const handleExportData = async () => {
-    if (!project || !id) return
+    if (!project || !id || !token) {
+      message.error('Silakan login terlebih dahulu')
+      return
+    }
 
     setExporting(true)
     try {
@@ -214,12 +220,17 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
       const response = await fetch(`/api/v1/pdf/project/${id}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       })
 
       if (!response.ok) {
-        throw new Error('Failed to generate PDF')
+        if (response.status === 401) {
+          throw new Error('Token tidak valid. Silakan login kembali.')
+        } else if (response.status === 404) {
+          throw new Error('Proyek tidak ditemukan')
+        }
+        throw new Error('Gagal membuat PDF')
       }
 
       // Get the PDF as a blob
@@ -242,7 +253,8 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
       message.success('PDF berhasil diunduh')
     } catch (error) {
       console.error('PDF export error:', error)
-      message.error('Gagal membuat PDF. Silakan coba lagi.')
+      const errorMessage = error instanceof Error ? error.message : 'Gagal membuat PDF. Silakan coba lagi.'
+      message.error(errorMessage)
     } finally {
       setExporting(false)
     }

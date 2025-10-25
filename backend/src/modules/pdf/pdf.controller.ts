@@ -5,6 +5,7 @@ import {
   Res,
   UseGuards,
   NotFoundException,
+  Logger,
 } from "@nestjs/common";
 import { Response } from "express";
 import {
@@ -24,6 +25,8 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class PdfController {
+  private readonly logger = new Logger(PdfController.name);
+
   constructor(
     private readonly pdfService: PdfService,
     private readonly invoicesService: InvoicesService,
@@ -231,6 +234,11 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(
+        `Failed to generate project PDF for project ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : "",
+      );
       throw new Error("Gagal membuat PDF proyek");
     }
   }

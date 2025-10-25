@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import * as puppeteer from "puppeteer";
 import { join } from "path";
 import { readFileSync } from "fs";
@@ -10,6 +10,7 @@ import { generateProjectHTML } from "./templates/project.html";
 @Injectable()
 export class PdfService {
   private templatePath = join(__dirname, "templates");
+  private readonly logger = new Logger(PdfService.name);
 
   constructor(private readonly settingsService: SettingsService) {}
 
@@ -1018,23 +1019,41 @@ export class PdfService {
   }
 
   async generateProjectPDF(projectData: any): Promise<Buffer> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-
+    let browser: puppeteer.Browser | null = null;
     try {
+      this.logger.debug("Launching Puppeteer browser...");
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage", // Disable /dev/shm usage - useful in containers
+        ],
+      });
+
       const page = await browser.newPage();
 
       // Set page format for A4
       await page.setViewport({ width: 794, height: 1123 });
 
       // Generate HTML content using the new project template
+      this.logger.debug("Generating project HTML...");
       const htmlContent = generateProjectHTML(projectData);
+      this.logger.debug(`HTML content length: ${htmlContent.length} characters`);
 
-      // Set content and generate PDF
-      await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+      // Set content with timeout and fallback to loadEventFired
+      this.logger.debug("Setting page content...");
+      try {
+        await page.setContent(htmlContent, {
+          waitUntil: "networkidle2",
+          timeout: 30000, // 30 second timeout
+        });
+      } catch (timeoutError) {
+        this.logger.warn(`Page load timeout, continuing with PDF generation: ${timeoutError}`);
+        // Continue with PDF generation even if networkidle times out
+      }
 
+      this.logger.debug("Generating PDF...");
       const pdf = await page.pdf({
         format: "A4",
         printBackground: true,
@@ -1046,9 +1065,24 @@ export class PdfService {
         },
       });
 
+      this.logger.debug(`PDF generated successfully, size: ${pdf.length} bytes`);
       return Buffer.from(pdf);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(
+        `Error generating project PDF: ${errorMessage}`,
+        error instanceof Error ? error.stack : "",
+      );
+      throw error;
     } finally {
-      await browser.close();
+      if (browser) {
+        this.logger.debug("Closing Puppeteer browser...");
+        try {
+          await browser.close();
+        } catch (closeError) {
+          this.logger.error(`Error closing browser: ${closeError}`);
+        }
+      }
     }
   }
 }
