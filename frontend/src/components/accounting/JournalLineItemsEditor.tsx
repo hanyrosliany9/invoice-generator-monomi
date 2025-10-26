@@ -1,10 +1,64 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { Button, Input, InputNumber, message, Space, Table, Tag, Typography } from 'antd';
 import { CheckCircleOutlined, DeleteOutlined, PlusOutlined, WarningOutlined } from '@ant-design/icons';
 import { useTheme } from '../../theme';
 import AccountSelector from './AccountSelector';
 
 const { Text } = Typography;
+
+// Memoized DebitCell component to prevent unnecessary re-renders and focus loss
+// Using custom comparison to only re-render if the actual value or disabled state changes
+const DebitCell = memo<{
+  value: number;
+  index: number;
+  onChange: (index: number, val: number | null) => void;
+  disabled: boolean;
+}>(
+  ({ value, index, onChange, disabled }) => (
+    <InputNumber
+      value={value}
+      onChange={(val) => onChange(index, val)}
+      min={0}
+      precision={2}
+      formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+      parser={(v) => v?.replace(/[,\s]/g, '') as any}
+      style={{ width: '100%' }}
+      disabled={disabled}
+    />
+  ),
+  (prevProps, nextProps) => {
+    // Return true if props are equal (don't re-render), false if different (re-render)
+    return prevProps.value === nextProps.value && prevProps.disabled === nextProps.disabled;
+  }
+);
+
+// Memoized CreditCell component to prevent unnecessary re-renders and focus loss
+const CreditCell = memo<{
+  value: number;
+  index: number;
+  onChange: (index: number, val: number | null) => void;
+  disabled: boolean;
+}>(
+  ({ value, index, onChange, disabled }) => (
+    <InputNumber
+      value={value}
+      onChange={(val) => onChange(index, val)}
+      min={0}
+      precision={2}
+      formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+      parser={(v) => v?.replace(/[,\s]/g, '') as any}
+      style={{ width: '100%' }}
+      disabled={disabled}
+    />
+  ),
+  (prevProps, nextProps) => {
+    // Return true if props are equal (don't re-render), false if different (re-render)
+    return prevProps.value === nextProps.value && prevProps.disabled === nextProps.disabled;
+  }
+);
+
+DebitCell.displayName = 'DebitCell';
+CreditCell.displayName = 'CreditCell';
 
 export interface JournalLineItemFormData {
   id?: string;
@@ -41,47 +95,59 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
     onChange?.([...value, newLine]);
   };
 
-  const handleRemoveLine = (index: number) => {
-    if (value.length <= 2) {
-      message.warning('Minimal 2 item baris diperlukan untuk jurnal entry');
-      return;
-    }
-    const newValue = [...value];
-    newValue.splice(index, 1);
-    onChange?.(newValue);
-  };
+  // Ensure all items have unique IDs - memoized to prevent unnecessary re-renders
+  const dataSourceWithIds = React.useMemo(() => {
+    return value.map((item, index) => {
+      // Ensure item ALWAYS has a stable ID - create a new object if ID is missing
+      if (!item.id) {
+        return {
+          ...item,
+          id: `line-${Date.now()}-${index}`,
+        };
+      }
+      return item;
+    });
+  }, [value]);
 
-  const handleFieldChange = (index: number, field: keyof JournalLineItemFormData, fieldValue: any) => {
-    const newValue = [...value];
-    newValue[index] = { ...newValue[index], [field]: fieldValue };
-    onChange?.(newValue);
-  };
+  const handleRemoveLine = useCallback((index: number) => {
+    onChange?.((prevValue) => {
+      if (prevValue.length <= 2) {
+        message.warning('Minimal 2 item baris diperlukan untuk jurnal entry');
+        return prevValue;
+      }
+      const newValue = [...prevValue];
+      newValue.splice(index, 1);
+      return newValue;
+    });
+  }, [onChange]);
 
-  // Handle debit input with smart auto-clear
-  const handleDebitChange = (index: number, val: number | null) => {
+  const handleFieldChange = useCallback((index: number, field: keyof JournalLineItemFormData, fieldValue: any) => {
+    onChange?.((prevValue) => {
+      const newValue = [...prevValue];
+      newValue[index] = { ...newValue[index], [field]: fieldValue };
+      return newValue;
+    });
+  }, [onChange]);
+
+  // Handle debit input - using functional update to avoid stale closures
+  const handleDebitChange = useCallback((index: number, val: number | null) => {
     const numVal = val || 0;
-    const newValue = [...value];
-    newValue[index] = { ...newValue[index], debit: numVal };
+    onChange?.((prevValue) => {
+      const newValue = [...prevValue];
+      newValue[index] = { ...newValue[index], debit: numVal };
+      return newValue;
+    });
+  }, [onChange]);
 
-    // Only clear credit if new debit is > 0 and current credit is > 0
-    if (numVal > 0 && newValue[index].credit > 0) {
-      newValue[index] = { ...newValue[index], credit: 0 };
-    }
-    onChange?.(newValue);
-  };
-
-  // Handle credit input with smart auto-clear
-  const handleCreditChange = (index: number, val: number | null) => {
+  // Handle credit input - using functional update to avoid stale closures
+  const handleCreditChange = useCallback((index: number, val: number | null) => {
     const numVal = val || 0;
-    const newValue = [...value];
-    newValue[index] = { ...newValue[index], credit: numVal };
-
-    // Only clear debit if new credit is > 0 and current debit is > 0
-    if (numVal > 0 && newValue[index].debit > 0) {
-      newValue[index] = { ...newValue[index], debit: 0 };
-    }
-    onChange?.(newValue);
-  };
+    onChange?.((prevValue) => {
+      const newValue = [...prevValue];
+      newValue[index] = { ...newValue[index], credit: numVal };
+      return newValue;
+    });
+  }, [onChange]);
 
   // Calculate totals
   const totalDebit = value.reduce((sum, item) => sum + (item.debit || 0), 0);
@@ -89,33 +155,43 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
   const difference = Math.abs(totalDebit - totalCredit);
   const isBalanced = difference < 0.01 && totalDebit > 0 && totalCredit > 0;
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
     }).format(amount);
-  };
+  }, []);
 
-  const columns = [
+  const columns = React.useMemo(() => [
     {
       title: <Text strong>Kode Akun</Text>,
       dataIndex: 'accountCode',
       key: 'accountCode',
       width: 250,
-      render: (text: string, record: JournalLineItemFormData, index: number) => (
-        <AccountSelector
-          value={text}
-          onChange={(code, account) => {
-            handleFieldChange(index, 'accountCode', code);
-            if (account) {
-              handleFieldChange(index, 'accountName', account.nameId || account.name);
-            }
-          }}
-          disabled={disabled}
-          placeholder="Pilih akun..."
-        />
-      ),
+      render: (text: string, record: JournalLineItemFormData, index: number) => {
+        return (
+          <AccountSelector
+            value={text}
+            onChange={(code, account) => {
+              // Update both accountCode and accountName using functional update
+              onChange?.((prevValue) => {
+                const newValue = [...prevValue];
+                if (index >= 0 && index < newValue.length) {
+                  newValue[index] = {
+                    ...newValue[index],
+                    accountCode: code,
+                    accountName: account ? (account.nameId || account.name) : '',
+                  };
+                }
+                return newValue;
+              });
+            }}
+            disabled={disabled}
+            placeholder="Pilih akun..."
+          />
+        );
+      },
     },
     {
       title: <Text strong>Nama Akun</Text>,
@@ -149,14 +225,10 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
       width: 150,
       align: 'right' as const,
       render: (text: number, record: JournalLineItemFormData, index: number) => (
-        <InputNumber
+        <DebitCell
           value={text}
-          onChange={(val) => handleDebitChange(index, val)}
-          min={0}
-          precision={2}
-          formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-          parser={(value) => value?.replace(/[,\s]/g, '') as any}
-          style={{ width: '100%' }}
+          index={index}
+          onChange={handleDebitChange}
           disabled={disabled}
         />
       ),
@@ -168,14 +240,10 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
       width: 150,
       align: 'right' as const,
       render: (text: number, record: JournalLineItemFormData, index: number) => (
-        <InputNumber
+        <CreditCell
           value={text}
-          onChange={(val) => handleCreditChange(index, val)}
-          min={0}
-          precision={2}
-          formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-          parser={(value) => value?.replace(/[,\s]/g, '') as any}
-          style={{ width: '100%' }}
+          index={index}
+          onChange={handleCreditChange}
           disabled={disabled}
         />
       ),
@@ -190,12 +258,16 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
           type="text"
           danger
           icon={<DeleteOutlined />}
-          onClick={() => handleRemoveLine(index)}
+          onClick={() => {
+            // Use index parameter directly - it's reliable because rowKey="id"
+            handleRemoveLine(index);
+          }}
           disabled={disabled || value.length <= 2}
         />
       ),
     },
-  ];
+  ], [value, onChange, handleDebitChange, handleCreditChange, disabled, handleRemoveLine, handleFieldChange])
+  ;
 
   return (
     <div>
@@ -265,10 +337,7 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
       {/* Line Items Table */}
       <Table
         columns={columns}
-        dataSource={value.map((item, index) => ({
-          ...item,
-          id: item.id || `line-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
-        }))}
+        dataSource={dataSourceWithIds}
         rowKey="id"
         pagination={false}
         size="small"

@@ -45,8 +45,8 @@ const JournalEntryFormPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
   const [lineItems, setLineItems] = useState<JournalLineItemFormData[]>([
-    { accountCode: '', debit: 0, credit: 0, descriptionId: '' },
-    { accountCode: '', debit: 0, credit: 0, descriptionId: '' },
+    { id: `line-${Date.now()}-1`, accountCode: '', debit: 0, credit: 0, descriptionId: '' },
+    { id: `line-${Date.now()}-2`, accountCode: '', debit: 0, credit: 0, descriptionId: '' },
   ]);
 
   const isEditMode = !!id;

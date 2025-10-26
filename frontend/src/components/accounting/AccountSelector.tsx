@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Select, Space, Typography } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { ChartOfAccount, getChartOfAccounts } from '../../services/accounting';
@@ -33,24 +33,38 @@ const AccountSelector: React.FC<AccountSelectorProps> = ({
     queryFn: () => getChartOfAccounts({ includeInactive: showInactive }),
   });
 
-  // Filter accounts by type if specified
-  const filteredAccounts = accountType
-    ? accounts.filter((acc) => acc.accountType === accountType)
-    : accounts;
+  // Filter by account type
+  const filteredByType = useMemo(() => {
+    if (!accountType) return accounts;
+    return accounts.filter((acc) => acc.accountType === accountType);
+  }, [accounts, accountType]);
 
-  // Filter by search
-  const searchedAccounts = searchValue
-    ? filteredAccounts.filter(
-        (acc) =>
-          acc.code.toLowerCase().includes(searchValue.toLowerCase()) ||
-          acc.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-          acc.nameId?.toLowerCase().includes(searchValue.toLowerCase())
-      )
-    : filteredAccounts;
+  // Further filter by search
+  const displayedAccounts = useMemo(() => {
+    if (!searchValue) return filteredByType;
+    const searchLower = searchValue.toLowerCase();
+    return filteredByType.filter(
+      (acc) =>
+        acc.code.toLowerCase().includes(searchLower) ||
+        acc.name.toLowerCase().includes(searchLower) ||
+        acc.nameId?.toLowerCase().includes(searchLower)
+    );
+  }, [filteredByType, searchValue]);
 
-  const handleChange = (code: string) => {
-    const selectedAccount = accounts.find((acc) => acc.code === code);
-    onChange?.(code, selectedAccount);
+  const handleChange = (selectedCode: string | null) => {
+    if (!selectedCode || selectedCode === '') {
+      onChange?.('', undefined);
+      setSearchValue('');
+      return;
+    }
+
+    // Ensure selectedCode is a string
+    const codeString = String(selectedCode).trim();
+
+    // Find account from full accounts list (not just filtered)
+    const selectedAccount = accounts.find((acc) => acc.code === codeString);
+    onChange?.(codeString, selectedAccount);
+    setSearchValue('');
   };
 
   const accountTypeColors: Record<string, string> = {
@@ -61,21 +75,29 @@ const AccountSelector: React.FC<AccountSelectorProps> = ({
     EXPENSE: theme.colors.status.error,
   };
 
+  // Get label for selected value
+  const selectedAccount = accounts.find((acc) => acc.code === value);
+  const selectedLabel = selectedAccount
+    ? `${selectedAccount.code} - ${selectedAccount.nameId || selectedAccount.name}`
+    : undefined;
+
   return (
     <Select
       showSearch
-      value={value}
+      value={value && String(value).trim() !== '' ? value : undefined}
       onChange={handleChange}
       onSearch={setSearchValue}
+      searchValue={searchValue}
       placeholder={placeholder}
-      disabled={disabled}
+      disabled={disabled || isLoading}
       allowClear={allowClear}
       loading={isLoading}
-      filterOption={false} // We handle filtering manually
+      filterOption={false}
+      notFoundContent={isLoading ? 'Memuat...' : 'Tidak ada akun yang cocok'}
       style={{ width: '100%' }}
       optionLabelProp="label"
     >
-      {searchedAccounts.map((account) => (
+      {displayedAccounts.map((account) => (
         <Select.Option
           key={account.code}
           value={account.code}
