@@ -204,3 +204,6 @@ backend/validate-*.js
 backend/verify-*.js
 backend/test-*.js
 backend/update-*.js
+
+# Production environment file with secrets
+.env.production

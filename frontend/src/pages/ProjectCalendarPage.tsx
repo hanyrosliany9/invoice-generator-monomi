@@ -43,8 +43,9 @@ import {
 } from '../hooks/useMilestones'
 import { useCalendarView } from '../hooks/useCalendarView'
 import { ProjectMilestone, CreateMilestoneRequest, UpdateMilestoneRequest } from '../services/milestones'
-import { MonthCalendarView } from '../components/calendar/MonthCalendarView'
-import { WeekCalendarView } from '../components/calendar/WeekCalendarView'
+// TODO: Calendar views temporarily disabled - fullcalendar dependency removed
+// import { MonthCalendarView } from '../components/calendar/MonthCalendarView'
+// import { WeekCalendarView } from '../components/calendar/WeekCalendarView'
 
 const { TextArea } = Input
 const { RangePicker } = DatePicker
@@ -376,7 +377,7 @@ export const ProjectCalendarPage: React.FC = () => {
         </Space>
       </Card>
 
-      {/* Calendar Views */}
+      {/* Calendar Views - Temporarily disabled until fullcalendar is re-added */}
       {isLoading ? (
         <Spin style={{ display: 'flex', justifyContent: 'center', padding: '60px' }} />
       ) : milestones.length === 0 ? (
@@ -384,20 +385,14 @@ export const ProjectCalendarPage: React.FC = () => {
           <Empty description="No milestones yet" />
         </Card>
       ) : (
-        <>
-          {view === 'month' && (
-            <MonthCalendarView
-              milestones={milestones}
-              onEventClick={handleMilestoneClick}
-            />
-          )}
-          {view === 'week' && (
-            <WeekCalendarView
-              milestones={milestones}
-              onEventClick={handleMilestoneClick}
-            />
-          )}
-        </>
+        <Card>
+          <Alert
+            message="Calendar View Temporarily Unavailable"
+            description="The calendar visualization is currently disabled. Please use the table view below to manage milestones."
+            type="info"
+            showIcon
+          />
+        </Card>
       )}
 
       {/* Old Table View - Now Hidden by Default but kept for reference */}

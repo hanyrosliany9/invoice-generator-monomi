@@ -52,9 +52,9 @@ FROM base AS frontend-build
 # Copy frontend package files
 COPY frontend/package*.json ./frontend/
 
-# Install frontend dependencies
-# Remove husky prepare script to avoid error in production
-RUN cd frontend && npm pkg delete scripts.prepare && npm ci --only=production
+# Install frontend dependencies (including dev for build tools like tsc, vite)
+# Use install instead of ci due to lock file complexity
+RUN cd frontend && npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps
 
 # Copy frontend source
 COPY frontend/ ./frontend/
@@ -128,8 +128,8 @@ EXPOSE 3000 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:5000/health || exit 1
+  CMD curl -f http://localhost:5000/api/v1/health || exit 1
 
 # Start production server with database migrations
 # Run migrations before starting the app to ensure schema is current
-CMD sh -c "npm run db:migrate:deploy && node backend/dist/main.js"
+CMD sh -c "cd backend && npx prisma migrate deploy && npx prisma generate && node dist/src/main.js"

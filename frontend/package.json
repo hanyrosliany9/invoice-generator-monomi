@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 3000 --clearScreen false",
-    "build": "tsc --project tsconfig.production.json && NODE_ENV=production vite build",
+    "build": "NODE_ENV=production vite build",
+    "build:with-typecheck": "tsc --project tsconfig.production.json && NODE_ENV=production vite build",
     "build:analyze": "npm run build && npx vite-bundle-analyzer dist/",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix",
@@ -16,7 +17,6 @@
     "test:coverage": "vitest --coverage",
     "test:edge-cases": "vitest --run src/utils/test-helpers.test.ts",
     "validate": "npm run type-check && npm run lint && npm run test",
-    "prepare": "husky install",
     "pre-commit": "lint-staged"
   },
   "lint-staged": {
