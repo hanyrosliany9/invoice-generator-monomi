@@ -96,30 +96,28 @@ CMD ["tail", "-f", "/dev/null"]
 # Production stage
 FROM base AS production
 
-# Copy built applications from build stages
-COPY --from=backend-build /app/backend/dist ./backend/dist
-COPY --from=backend-build /app/backend/node_modules ./backend/node_modules
-COPY --from=backend-build /app/backend/package*.json ./backend/
-COPY --from=backend-build /app/backend/prisma ./backend/prisma
+# Copy built applications from build stages with correct ownership
+COPY --chown=appuser:appuser --from=backend-build /app/backend/dist ./backend/dist
+COPY --chown=appuser:appuser --from=backend-build /app/backend/node_modules ./backend/node_modules
+COPY --chown=appuser:appuser --from=backend-build /app/backend/package*.json ./backend/
+COPY --chown=appuser:appuser --from=backend-build /app/backend/prisma ./backend/prisma
 
-COPY --from=frontend-build /app/frontend/dist ./frontend/dist
-COPY --from=frontend-build /app/frontend/node_modules ./frontend/node_modules
-COPY --from=frontend-build /app/frontend/package*.json ./frontend/
+COPY --chown=appuser:appuser --from=frontend-build /app/frontend/dist ./frontend/dist
+COPY --chown=appuser:appuser --from=frontend-build /app/frontend/node_modules ./frontend/node_modules
+COPY --chown=appuser:appuser --from=frontend-build /app/frontend/package*.json ./frontend/
 
-# Copy shared files
-COPY shared/ ./shared/
-
-# Create necessary directories
-RUN mkdir -p uploads storage logs backup
-
-# Create nginx config directory
-RUN mkdir -p /etc/nginx/conf.d
+# Copy shared files with correct ownership
+COPY --chown=appuser:appuser shared/ ./shared/
 
 # Copy frontend server script (CommonJS format for ES module package)
-COPY frontend/server.cjs ./frontend/
+COPY --chown=appuser:appuser frontend/server.cjs ./frontend/
 
-# Change ownership to app user
-RUN chown -R appuser:appuser /app
+# Create necessary directories with correct ownership
+RUN mkdir -p uploads storage logs backup && \
+    chown -R appuser:appuser uploads storage logs backup
+
+# Create nginx config directory (nginx runs as root, so no chown needed)
+RUN mkdir -p /etc/nginx/conf.d
 
 USER appuser
 

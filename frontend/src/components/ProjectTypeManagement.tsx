@@ -44,13 +44,13 @@ export const ProjectTypeManagement: React.FC = () => {
   const { data: projectTypes = [], isLoading, error: projectTypesError } = useQuery({
     queryKey: ['project-types'],
     queryFn: projectTypesApi.getAll,
-    initialData: [],
+    refetchOnMount: true,
   });
 
   const { data: projectTypeStats = [], error: statsError } = useQuery({
     queryKey: ['project-type-stats'],
     queryFn: projectTypesApi.getStats,
-    initialData: [],
+    refetchOnMount: true,
   });
 
   // Error handling for queries
@@ -140,10 +140,16 @@ export const ProjectTypeManagement: React.FC = () => {
   };
 
   const handleSubmit = async (values: any) => {
+    // Convert ColorPicker object to hex string
+    const formattedValues = {
+      ...values,
+      color: typeof values.color === 'string' ? values.color : values.color?.toHexString?.() || '#1890ff',
+    };
+
     if (editingType) {
-      updateMutation.mutate({ id: editingType.id, data: values });
+      updateMutation.mutate({ id: editingType.id, data: formattedValues });
     } else {
-      createMutation.mutate(values);
+      createMutation.mutate(formattedValues);
     }
   };
 
