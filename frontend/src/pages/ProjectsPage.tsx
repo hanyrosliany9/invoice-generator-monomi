@@ -51,7 +51,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { Project, projectService } from '../services/projects'
 import { useTheme } from '../theme'
 import { CompactMetricCard } from '../components/ui/CompactMetricCard'
-import { getProjectStatusConfig } from '../utils/projectStatus'
+import { getProjectStatusConfig, getStatusText, getStatusColor } from '../utils/projectStatus'
 import { calculateProjectProgress, getDaysRemaining, isProjectOverdue } from '../utils/projectProgress'
 import dayjs from 'dayjs'
 
@@ -79,6 +79,9 @@ export const ProjectsPage: React.FC = () => {
   const [filters, setFilters] = useState<Record<string, any>>({})
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [batchLoading, setBatchLoading] = useState(false)
+  const [statusModalVisible, setStatusModalVisible] = useState(false)
+  const [statusProject, setStatusProject] = useState<Project | null>(null)
+  const [statusForm] = Form.useForm()
   const { message } = App.useApp()
 
   // Export functionality
@@ -175,6 +178,22 @@ export const ProjectsPage: React.FC = () => {
     },
   })
 
+  // Single project status update mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      projectService.updateStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      message.success('Status proyek berhasil diubah')
+      setStatusModalVisible(false)
+      setStatusProject(null)
+      statusForm.resetFields()
+    },
+    onError: () => {
+      message.error('Gagal mengubah status proyek')
+    },
+  })
+
   // Handle URL parameters for direct navigation
   useEffect(() => {
     // Handle viewProject query parameter (navigate to specific project detail page)
@@ -242,16 +261,6 @@ export const ProjectsPage: React.FC = () => {
       0
     ),
   }), [safeProjects])
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      planning: 'blue',
-      inProgress: 'orange',
-      completed: 'green',
-      cancelled: 'red',
-    }
-    return colors[status as keyof typeof colors] || 'default'
-  }
 
   const getStatusIcon = (status: string) => {
     const icons = {
@@ -342,6 +351,29 @@ export const ProjectsPage: React.FC = () => {
     setSelectedRowKeys([])
   }
 
+  const handleChangeStatus = (project: Project) => {
+    setStatusProject(project)
+    statusForm.setFieldsValue({ status: project.status })
+    setStatusModalVisible(true)
+  }
+
+  const handleStatusModalOk = () => {
+    statusForm.validateFields().then(values => {
+      if (statusProject) {
+        updateStatusMutation.mutate({
+          id: statusProject.id,
+          status: values.status,
+        })
+      }
+    })
+  }
+
+  const handleStatusModalCancel = () => {
+    setStatusModalVisible(false)
+    setStatusProject(null)
+    statusForm.resetFields()
+  }
+
   const getActionMenuItems = useCallback((project: Project) => {
     return [
       {
@@ -351,6 +383,12 @@ export const ProjectsPage: React.FC = () => {
         onClick: () => handleEdit(project),
       },
       {
+        key: 'changeStatus',
+        icon: <EditOutlined />,
+        label: 'Ubah Status',
+        onClick: () => handleChangeStatus(project),
+      },
+      {
         key: 'delete',
         icon: <DeleteOutlined />,
         label: 'Hapus',
@@ -358,7 +396,7 @@ export const ProjectsPage: React.FC = () => {
         onClick: () => handleDelete(project.id),
       },
     ]
-  }, [handleEdit, handleDelete])
+  }, [handleEdit, handleDelete, handleChangeStatus])
 
   const rowSelection = {
     selectedRowKeys,
@@ -1062,6 +1100,55 @@ export const ProjectsPage: React.FC = () => {
           />
         </div>
       </Card>
+
+      {/* Status Change Modal */}
+      <Modal
+        title='Ubah Status Proyek'
+        open={statusModalVisible}
+        onOk={handleStatusModalOk}
+        onCancel={handleStatusModalCancel}
+        width={400}
+        confirmLoading={updateStatusMutation.isPending}
+      >
+        <Form
+          form={statusForm}
+          layout='vertical'
+          initialValues={{ status: statusProject?.status }}
+        >
+          <Form.Item
+            label='Status Baru'
+            name='status'
+            rules={[{ required: true, message: 'Pilih status baru' }]}
+          >
+            <Select placeholder='Pilih status'>
+              <Select.Option value='PLANNING'>Perencanaan</Select.Option>
+              <Select.Option value='IN_PROGRESS'>Sedang Berjalan</Select.Option>
+              <Select.Option value='ON_HOLD'>Ditahan</Select.Option>
+              <Select.Option value='COMPLETED'>Selesai</Select.Option>
+              <Select.Option value='CANCELLED'>Dibatalkan</Select.Option>
+            </Select>
+          </Form.Item>
+
+          {statusProject && (
+            <div
+              style={{
+                padding: '12px',
+                backgroundColor: theme.colors.background.secondary,
+                borderRadius: '8px',
+                marginTop: '12px',
+              }}
+            >
+              <Text strong>Proyek: </Text>
+              <Text>{statusProject.number}</Text>
+              <br />
+              <Text strong>Status Saat Ini: </Text>
+              <Tag color={getStatusColor(statusProject.status)}>
+                {getStatusText(statusProject.status)}
+              </Tag>
+            </div>
+          )}
+        </Form>
+      </Modal>
     </div>
   )
 }

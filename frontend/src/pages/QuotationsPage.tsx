@@ -1529,7 +1529,7 @@ export const QuotationsPage: React.FC = () => {
             <div
               style={{
                 padding: '12px',
-                backgroundColor: '#f5f5f5',
+                backgroundColor: theme.colors.background.secondary,
                 borderRadius: '8px',
                 marginTop: '12px',
               }}

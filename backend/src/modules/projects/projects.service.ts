@@ -390,6 +390,29 @@ export class ProjectsService {
     });
   }
 
+  async updateStatus(id: string, status: ProjectStatus) {
+    // Verify project exists (throws NotFoundException if not found)
+    await this.findOne(id);
+
+    // Update only the status field
+    const updatedProject = await this.prisma.project.update({
+      where: { id },
+      data: { status },
+      include: {
+        client: true,
+        projectType: true,
+        _count: {
+          select: {
+            quotations: true,
+            invoices: true,
+          },
+        },
+      },
+    });
+
+    return updatedProject;
+  }
+
   async remove(id: string) {
     const _project = await this.findOne(id);
 

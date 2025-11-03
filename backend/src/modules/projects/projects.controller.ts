@@ -203,6 +203,27 @@ export class ProjectsController {
     return this.projectsService.update(id, updateProjectDto);
   }
 
+  @Patch(":id/status")
+  @ApiOperation({ summary: "Mengubah status proyek" })
+  @ApiResponse({
+    status: 200,
+    description: "Status proyek berhasil diubah",
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Proyek tidak ditemukan",
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Status tidak valid",
+  })
+  async updateStatus(
+    @Param("id") id: string,
+    @Body("status") status: ProjectStatus,
+  ) {
+    return this.projectsService.updateStatus(id, status);
+  }
+
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Menghapus proyek" })

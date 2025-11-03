@@ -472,19 +472,38 @@ export const QuotationCreatePage: React.FC = () => {
         {(prefilledProjectId || prefilledClientId || templateId) && (
           <Alert
             style={{ marginBottom: '24px' }}
-            message='Smart Context Detected'
+            message={prefilledProjectId ? 'Creating Quotation from Project' : 'Smart Context Detected'}
             description={
-              prefilledProjectId
-                ? `Creating quotation from project: ${selectedProject?.description}`
-                : prefilledClientId
-                  ? `Creating quotation for client: ${selectedClient?.name}`
-                  : templateId
-                    ? `Using template: ${templateId}`
-                    : 'Form pre-filled with context data'
+              prefilledProjectId && selectedProject ? (
+                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  <Text><strong>Project:</strong> {selectedProject.number} - {selectedProject.description}</Text>
+                  <Text><strong>Client:</strong> {selectedProject.client?.name} ({selectedProject.client?.company})</Text>
+                  {selectedProject.basePrice && (
+                    <Text><strong>Estimated Budget:</strong> {formatIDR(selectedProject.basePrice)}</Text>
+                  )}
+                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                    All project data has been automatically inherited. You can modify values as needed.
+                  </Text>
+                </Space>
+              ) : prefilledClientId ? (
+                `Creating quotation for client: ${selectedClient?.name}`
+              ) : templateId ? (
+                `Using template: ${templateId}`
+              ) : (
+                'Form pre-filled with context data'
+              )
             }
             type='info'
+            icon={<ProjectOutlined />}
             showIcon
-            closable
+            closable={false}
+            action={
+              prefilledProjectId && selectedProject ? (
+                <Button size="small" onClick={() => navigate(`/projects/${prefilledProjectId}`)}>
+                  View Project
+                </Button>
+              ) : undefined
+            }
           />
         )}
 

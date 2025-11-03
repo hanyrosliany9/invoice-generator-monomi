@@ -78,6 +78,7 @@ export const QuotationEditPage: React.FC = () => {
     useState<QuotationFormData | null>(null)
   const [previewData, setPreviewData] = useState<any>(null)
   const [includePPN, setIncludePPN] = useState(true)
+  const [totalAmount, setTotalAmount] = useState(0)
 
   // Fetch quotation data
   const {
@@ -160,6 +161,7 @@ export const QuotationEditPage: React.FC = () => {
       }
       form.setFieldsValue(formData)
       setOriginalValues(formData)
+      setTotalAmount(Number(quotation.totalAmount))
       updatePreviewData(formData)
     }
   }, [quotation, form])
@@ -183,6 +185,10 @@ export const QuotationEditPage: React.FC = () => {
   // Track form changes
   const handleFormChange = () => {
     const currentValues = form.getFieldsValue()
+
+    // Update totalAmount state for React 19 compatibility
+    const newTotalAmount = currentValues.totalAmount || 0
+    setTotalAmount(Number(newTotalAmount))
 
     // Proper deep comparison that handles dayjs objects
     const changed = originalValues &&
@@ -292,7 +298,7 @@ export const QuotationEditPage: React.FC = () => {
     )
   }
 
-  const totalAmount = Form.useWatch('totalAmount', form) || 0
+  // totalAmount is now managed via state (React 19 compatible)
   const canEdit = quotation.status === 'DRAFT' || quotation.status === 'REVISED'
   const canGenerateInvoice = quotation.status === 'APPROVED'
 
