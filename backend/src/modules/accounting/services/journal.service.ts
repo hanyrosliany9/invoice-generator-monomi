@@ -41,6 +41,7 @@ export class JournalService {
 
   /**
    * Create new chart of account
+   * If the account is an EXPENSE type, automatically create corresponding ExpenseCategory
    */
   async createChartOfAccount(data: any) {
     // Check if account code already exists
@@ -55,7 +56,7 @@ export class JournalService {
     }
 
     // Create account
-    return this.prisma.chartOfAccounts.create({
+    const account = await this.prisma.chartOfAccounts.create({
       data: {
         code: data.code,
         name: data.name,
@@ -73,10 +74,96 @@ export class JournalService {
         descriptionId: data.descriptionId || null,
       },
     });
+
+    // AUTO-CREATE ExpenseCategory if this is an EXPENSE type account
+    if (account.accountType === 'EXPENSE') {
+      try {
+        const expenseClass = this.deriveExpenseClass(account.code);
+        const categoryCode = account.code
+          .replace('-', '_')
+          .toUpperCase()
+          .substring(0, 50); // Ensure it's not too long
+
+        // Check if category with this account code already exists
+        const existingCategory = await this.prisma.expenseCategory.findFirst({
+          where: { accountCode: account.code },
+        });
+
+        if (!existingCategory) {
+          await this.prisma.expenseCategory.create({
+            data: {
+              code: categoryCode,
+              accountCode: account.code,
+              expenseClass,
+              name: account.name,
+              nameId: account.nameId,
+              description: account.description || null,
+              descriptionId: account.descriptionId || null,
+              isActive: account.isActive,
+              // Set sensible defaults for expense configuration
+              withholdingTaxType: 'NONE',
+              defaultPPNRate: 0.12, // Default to 12% VAT
+              isLuxuryGoods: false,
+              isBillable: false,
+              requiresReceipt: true,
+              requiresEFaktur: true,
+              approvalRequired: true,
+              sortOrder: 100, // Default sort order
+              color: '#1890ff', // Ant Design blue
+              icon: 'shopping', // Default icon
+            },
+          });
+
+          console.log(
+            `✅ Auto-created ExpenseCategory for account ${account.code}`,
+          );
+        }
+      } catch (error) {
+        // Log but don't fail - expense account creation should succeed even if category creation fails
+        console.warn(
+          `⚠️ Failed to auto-create expense category for ${account.code}:`,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
+
+    return account;
+  }
+
+  /**
+   * Derive ExpenseClass from account code (PSAK-compliant)
+   * 6-1xxx → SELLING (Beban Penjualan)
+   * 6-2xxx → GENERAL_ADMIN (Beban Administrasi & Umum)
+   * 8-xxxx → OTHER (Beban Lain-Lain)
+   */
+  private deriveExpenseClass(
+    accountCode: string,
+  ): 'SELLING' | 'GENERAL_ADMIN' | 'OTHER' {
+    if (!accountCode) return 'GENERAL_ADMIN';
+
+    const prefix = accountCode.substring(0, 3); // Get first 3 chars (e.g., "6-1", "6-2", "8-")
+
+    if (prefix === '6-1') {
+      return 'SELLING';
+    } else if (prefix === '6-2') {
+      return 'GENERAL_ADMIN';
+    } else if (prefix.startsWith('8-')) {
+      return 'OTHER';
+    }
+
+    // Default to GENERAL_ADMIN for any expense account
+    return 'GENERAL_ADMIN';
   }
 
   /**
    * Update chart of account
+   *
+   * CASCADE BEHAVIOR:
+   * - If accountType changes FROM EXPENSE, deletes auto-created ExpenseCategory (if unused)
+   * - If accountType changes TO EXPENSE, creates new ExpenseCategory
+   * - If isActive changes, syncs status to ExpenseCategory
+   * - If name/nameId changes, syncs to ExpenseCategory
+   * - If code changes, updates ExpenseCategory.accountCode reference
    */
   async updateChartOfAccount(code: string, data: any) {
     // Check if account exists
@@ -106,8 +193,43 @@ export class JournalService {
       }
     }
 
-    // Update account
-    return this.prisma.chartOfAccounts.update({
+    // CASCADE SYNC: Handle ExpenseCategory changes
+    const isChangingType =
+      data.accountType && data.accountType !== account.accountType;
+    const wasExpense = account.accountType === "EXPENSE";
+    const willBeExpense = data.accountType === "EXPENSE";
+
+    // CASCADE CASE 1: Changing FROM EXPENSE to something else
+    if (isChangingType && wasExpense && !willBeExpense) {
+      const expenseCategory = await this.prisma.expenseCategory.findFirst({
+        where: { accountCode: account.code },
+      });
+
+      if (expenseCategory) {
+        // Check if category is used by expenses
+        const expenseCount = await this.prisma.expense.count({
+          where: { categoryId: expenseCategory.id },
+        });
+
+        if (expenseCount > 0) {
+          throw new BadRequestException(
+            `Cannot change account type from EXPENSE. The auto-created expense category is used by ${expenseCount} expense(s). Delete those expenses first.`,
+          );
+        }
+
+        // Safe to delete category
+        await this.prisma.expenseCategory.delete({
+          where: { id: expenseCategory.id },
+        });
+
+        console.log(
+          `✅ CASCADE: Deleted ExpenseCategory because account ${code} changed from EXPENSE to ${data.accountType}`,
+        );
+      }
+    }
+
+    // Update the account
+    const updatedAccount = await this.prisma.chartOfAccounts.update({
       where: { code },
       data: {
         code: data.code,
@@ -125,10 +247,128 @@ export class JournalService {
         descriptionId: data.descriptionId,
       },
     });
+
+    // CASCADE CASE 2: Changing TO EXPENSE type (create new category)
+    if (isChangingType && !wasExpense && willBeExpense) {
+      const expenseClass = this.deriveExpenseClass(
+        data.code || account.code,
+      );
+      const categoryCode = (data.code || account.code)
+        .replace("-", "_")
+        .toUpperCase()
+        .substring(0, 50);
+
+      try {
+        await this.prisma.expenseCategory.create({
+          data: {
+            code: categoryCode,
+            accountCode: data.code || account.code,
+            expenseClass,
+            name: data.name || account.name,
+            nameId: data.nameId || account.nameId,
+            description: data.description || account.description || null,
+            descriptionId:
+              data.descriptionId || account.descriptionId || null,
+            isActive: data.isActive !== undefined ? data.isActive : true,
+            withholdingTaxType: "NONE",
+            defaultPPNRate: 0.12,
+            isLuxuryGoods: false,
+            isBillable: false,
+            requiresReceipt: true,
+            requiresEFaktur: true,
+            approvalRequired: true,
+            sortOrder: 100,
+            color: "#1890ff",
+            icon: "shopping",
+          },
+        });
+
+        console.log(
+          `✅ CASCADE: Created ExpenseCategory because account ${code} changed to EXPENSE`,
+        );
+      } catch (error) {
+        console.warn(
+          `⚠️ Failed to auto-create expense category:`,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
+
+    // CASCADE CASE 3: EXPENSE account exists - sync changes to category
+    if (
+      (account.accountType === "EXPENSE" && !isChangingType) ||
+      (isChangingType && willBeExpense)
+    ) {
+      const expenseCategory = await this.prisma.expenseCategory.findFirst({
+        where: { accountCode: account.code },
+      });
+
+      if (expenseCategory) {
+        const categoryUpdates: any = {};
+
+        // Sync code change
+        if (data.code && data.code !== account.code) {
+          categoryUpdates.accountCode = data.code;
+          categoryUpdates.code = data.code
+            .replace("-", "_")
+            .toUpperCase()
+            .substring(0, 50);
+        }
+
+        // Sync name changes
+        if (data.name && data.name !== account.name) {
+          categoryUpdates.name = data.name;
+        }
+        if (data.nameId && data.nameId !== account.nameId) {
+          categoryUpdates.nameId = data.nameId;
+        }
+
+        // Sync description changes
+        if (
+          data.description !== undefined &&
+          data.description !== account.description
+        ) {
+          categoryUpdates.description = data.description;
+        }
+        if (
+          data.descriptionId !== undefined &&
+          data.descriptionId !== account.descriptionId
+        ) {
+          categoryUpdates.descriptionId = data.descriptionId;
+        }
+
+        // Sync status change
+        if (
+          data.isActive !== undefined &&
+          data.isActive !== account.isActive
+        ) {
+          categoryUpdates.isActive = data.isActive;
+        }
+
+        // Apply updates if any
+        if (Object.keys(categoryUpdates).length > 0) {
+          await this.prisma.expenseCategory.update({
+            where: { id: expenseCategory.id },
+            data: categoryUpdates,
+          });
+
+          console.log(
+            `✅ CASCADE: Synced ExpenseCategory changes for account ${code}`,
+          );
+        }
+      }
+    }
+
+    return updatedAccount;
   }
 
   /**
    * Delete chart of account
+   *
+   * CASCADE BEHAVIOR:
+   * - If account type is EXPENSE, auto-created ExpenseCategory will also be deleted
+   * - Deletion is prevented if the category is used by any expenses
+   * - Use deactivation (toggle status) instead for accounts with transaction history
    */
   async deleteChartOfAccount(code: string) {
     // Check if account exists
@@ -167,14 +407,50 @@ export class JournalService {
       );
     }
 
-    // Delete account
-    return this.prisma.chartOfAccounts.delete({
+    // CASCADE: Check if this is an EXPENSE account with auto-created ExpenseCategory
+    if (account.accountType === "EXPENSE") {
+      const expenseCategory = await this.prisma.expenseCategory.findFirst({
+        where: { accountCode: account.code },
+      });
+
+      if (expenseCategory) {
+        // Check if category is being used by any expenses
+        const expenseCount = await this.prisma.expense.count({
+          where: { categoryId: expenseCategory.id },
+        });
+
+        if (expenseCount > 0) {
+          throw new BadRequestException(
+            `Cannot delete account ${code}. It has an auto-created expense category that is used by ${expenseCount} expense(s). Consider deactivating the account instead.`,
+          );
+        }
+
+        // Safe to delete: No expenses using this category
+        // CASCADE DELETE the auto-created ExpenseCategory first
+        await this.prisma.expenseCategory.delete({
+          where: { id: expenseCategory.id },
+        });
+
+        console.log(
+          `✅ CASCADE: Deleted auto-created ExpenseCategory for account ${code}`,
+        );
+      }
+    }
+
+    // Delete the account
+    const deleted = await this.prisma.chartOfAccounts.delete({
       where: { code },
     });
+
+    console.log(`✅ Deleted ChartOfAccount: ${code}`);
+    return deleted;
   }
 
   /**
    * Toggle account active status
+   *
+   * CASCADE BEHAVIOR:
+   * - If account is EXPENSE type, also toggles ExpenseCategory status
    */
   async toggleAccountStatus(code: string) {
     const account = await this.prisma.chartOfAccounts.findUnique({
@@ -185,9 +461,29 @@ export class JournalService {
       throw new NotFoundException(`Account with code ${code} not found`);
     }
 
+    const newStatus = !account.isActive;
+
+    // CASCADE: Sync status to ExpenseCategory if this is an EXPENSE account
+    if (account.accountType === "EXPENSE") {
+      const expenseCategory = await this.prisma.expenseCategory.findFirst({
+        where: { accountCode: account.code },
+      });
+
+      if (expenseCategory) {
+        await this.prisma.expenseCategory.update({
+          where: { id: expenseCategory.id },
+          data: { isActive: newStatus },
+        });
+
+        console.log(
+          `✅ CASCADE: Toggled ExpenseCategory status to ${newStatus} for account ${code}`,
+        );
+      }
+    }
+
     return this.prisma.chartOfAccounts.update({
       where: { code },
-      data: { isActive: !account.isActive },
+      data: { isActive: newStatus },
     });
   }
 

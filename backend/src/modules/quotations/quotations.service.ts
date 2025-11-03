@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { SettingsService } from "../settings/settings.service";
 import { CreateQuotationDto } from "./dto/create-quotation.dto";
 import { UpdateQuotationDto } from "./dto/update-quotation.dto";
 import { QuotationStatus, Prisma } from "@prisma/client";
@@ -15,6 +16,7 @@ export class QuotationsService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private settingsService: SettingsService,
   ) {}
 
   async create(
@@ -349,6 +351,41 @@ export class QuotationsService {
     );
   }
 
+  /**
+   * Generate payment information string from company settings
+   * @returns Formatted payment info string with bank account details
+   */
+  private async generatePaymentInfo(): Promise<string> {
+    try {
+      const companySettings = await this.settingsService.getCompanySettings();
+      const bankAccounts: string[] = [];
+
+      // Build bank account list
+      if (companySettings.bankBCA) {
+        bankAccounts.push(`BCA: ${companySettings.bankBCA}`);
+      }
+      if (companySettings.bankMandiri) {
+        bankAccounts.push(`Mandiri: ${companySettings.bankMandiri}`);
+      }
+      if (companySettings.bankBNI) {
+        bankAccounts.push(`BNI: ${companySettings.bankBNI}`);
+      }
+
+      // Format payment info based on available bank accounts
+      if (bankAccounts.length > 0) {
+        const companyName = companySettings.companyName || "Company";
+        return `Bank Transfer\nRekening atas nama: ${companyName}\n${bankAccounts.join(" | ")}`;
+      }
+
+      // Fallback if no bank accounts configured
+      return "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran";
+    } catch (error) {
+      console.error("Error fetching company settings for payment info:", error);
+      // Safe fallback
+      return "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran";
+    }
+  }
+
   private async autoGenerateInvoice(quotation: any): Promise<any> {
     // Generate unique invoice number
     const invoiceNumber = await this.generateInvoiceNumber();
@@ -359,6 +396,9 @@ export class QuotationsService {
 
     // Check if materai is required (> 5M IDR)
     const materaiRequired = Number(quotation.totalAmount) > 5000000;
+
+    // Generate payment info from company settings
+    const paymentInfo = await this.generatePaymentInfo();
 
     // Create invoice from quotation data (with scopeOfWork and priceBreakdown cascade)
     const invoice = await this.prisma.invoice.create({
@@ -372,7 +412,7 @@ export class QuotationsService {
         totalAmount: quotation.totalAmount,
         scopeOfWork: quotation.scopeOfWork || null, // Cascade from quotation
         priceBreakdown: quotation.priceBreakdown || undefined, // Cascade from quotation
-        paymentInfo: "Bank Transfer - Lihat detail di company settings",
+        paymentInfo,
         materaiRequired,
         materaiApplied: false,
         terms:
@@ -526,6 +566,9 @@ export class QuotationsService {
 
     const materaiRequired = Number(nextMilestone.paymentAmount) > 5000000;
 
+    // Generate payment info from company settings
+    const paymentInfo = await this.generatePaymentInfo();
+
     const invoice = await this.prisma.invoice.create({
       data: {
         invoiceNumber,
@@ -539,7 +582,7 @@ export class QuotationsService {
         totalAmount: nextMilestone.paymentAmount,
         scopeOfWork: quotation.scopeOfWork,
         priceBreakdown: quotation.priceBreakdown,
-        paymentInfo: "Bank Transfer",
+        paymentInfo,
         materaiRequired,
         status: "DRAFT",
         createdBy: userId,

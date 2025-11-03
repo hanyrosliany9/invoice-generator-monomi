@@ -6,12 +6,14 @@ import { PaymentMilestonesController } from "./controllers/payment-milestones.co
 import { PrismaModule } from "../prisma/prisma.module";
 import { InvoicesModule } from "../invoices/invoices.module";
 import { NotificationsModule } from "../notifications/notifications.module";
+import { SettingsModule } from "../settings/settings.module";
 
 @Module({
   imports: [
     PrismaModule,
     forwardRef(() => InvoicesModule),
     NotificationsModule,
+    SettingsModule,
   ],
   controllers: [QuotationsController, PaymentMilestonesController],
   providers: [QuotationsService, PaymentMilestonesService],

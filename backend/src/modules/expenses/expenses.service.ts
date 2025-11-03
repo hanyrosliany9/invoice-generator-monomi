@@ -639,44 +639,95 @@ export class ExpensesService {
 
   /**
    * Create expense category
+   *
+   * @deprecated Manual expense category creation is no longer supported.
+   * Categories are automatically created when EXPENSE type accounts are added
+   * in Bagan Akun (Chart of Accounts).
+   *
+   * This method now throws an error to prevent manual creation.
+   * Internal auto-creation is handled by journal.service.ts directly via Prisma.
    */
   async createCategory(data: any) {
-    // Check if code already exists
-    const existing = await this.prisma.expenseCategory.findUnique({
-      where: { code: data.code },
-    });
-
-    if (existing) {
-      throw new BadRequestException(
-        `Category with code ${data.code} already exists`,
-      );
-    }
-
-    return this.prisma.expenseCategory.create({
-      data: {
-        ...data,
-        isActive: data.isActive !== undefined ? data.isActive : true,
-      },
-    });
+    throw new BadRequestException(
+      "Manual expense category creation is no longer supported. " +
+        "To add a new expense category:\n" +
+        "1. Go to Bagan Akun (Chart of Accounts)\n" +
+        "2. Click 'Tambah Akun Baru' (Add New Account)\n" +
+        "3. Select Account Type: 'EXPENSE' (Beban)\n" +
+        "4. Fill in the account details\n" +
+        "5. The expense category will be created automatically!\n\n" +
+        "The category will appear in expense dropdowns immediately with sensible defaults " +
+        "(PPN 12%, no withholding tax, not billable).",
+    );
   }
 
   /**
    * Update expense category
+   *
+   * @deprecated Manual expense category updates are no longer supported.
+   * Categories are automatically synced when you update the corresponding
+   * Chart of Accounts entry.
+   *
+   * To modify category details:
+   * - Go to Bagan Akun (Chart of Accounts)
+   * - Edit the EXPENSE account
+   * - Changes to name, description, and status will auto-sync to the category
    */
   async updateCategory(id: string, data: any) {
-    // Check if category exists
-    await this.getCategory(id);
-
-    return this.prisma.expenseCategory.update({
-      where: { id },
-      data,
-    });
+    throw new BadRequestException(
+      "Manual expense category updates are no longer supported. " +
+        "To modify an expense category:\n" +
+        "1. Go to Bagan Akun (Chart of Accounts)\n" +
+        "2. Find the EXPENSE account with this category\n" +
+        "3. Click Edit\n" +
+        "4. Make your changes (name, description, status)\n" +
+        "5. Changes will automatically sync to the expense category!\n\n" +
+        "Note: Business rule fields (PPN rate, withholding tax, billable status) " +
+        "are set to sensible defaults and cannot be changed via UI currently.",
+    );
   }
 
   /**
    * Delete expense category
+   *
+   * @deprecated Manual expense category deletion is no longer supported.
+   * Categories are automatically deleted when you delete the corresponding
+   * Chart of Accounts entry.
+   *
+   * To remove a category:
+   * - Go to Bagan Akun (Chart of Accounts)
+   * - Delete the EXPENSE account
+   * - The category will be automatically deleted (if not used by expenses)
    */
   async deleteCategory(id: string) {
+    throw new BadRequestException(
+      "Manual expense category deletion is no longer supported. " +
+        "To remove an expense category:\n" +
+        "1. Go to Bagan Akun (Chart of Accounts)\n" +
+        "2. Find the EXPENSE account for this category\n" +
+        "3. Click Delete\n" +
+        "4. The expense category will be automatically deleted!\n\n" +
+        "Note: Deletion will fail if the category is used by any expenses. " +
+        "In that case, deactivate the account instead by toggling its status.",
+    );
+  }
+
+  /**
+   * INTERNAL USE ONLY: Check if category is used by expenses
+   * Helper method for cascade delete validation
+   */
+  private async isCategoryUsed(id: string): Promise<boolean> {
+    const expenseCount = await this.prisma.expense.count({
+      where: { categoryId: id },
+    });
+
+    return expenseCount > 0;
+  }
+
+  /**
+   * DEPRECATED: Old delete logic - keeping for reference
+   */
+  private async oldDeleteCategory(id: string) {
     // Check if category exists
     await this.getCategory(id);
 

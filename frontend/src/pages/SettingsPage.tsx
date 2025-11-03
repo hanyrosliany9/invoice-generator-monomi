@@ -29,7 +29,6 @@ import {
   SecurityScanOutlined,
   SettingOutlined,
   ShopOutlined,
-  TagsOutlined,
   UndoOutlined,
   UserOutlined,
 } from '@ant-design/icons'
@@ -913,45 +912,6 @@ export const SettingsPage: React.FC = () => {
       </Card>
 
       <ProjectTypeManagement />
-
-      <Card
-        title={
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <TagsOutlined style={{ marginRight: '8px', color: '#dc2626' }} />
-            Expense Categories & PSAK Codes
-          </div>
-        }
-        style={{
-          borderRadius: '12px',
-          border: theme.colors.glass.border,
-          boxShadow: theme.colors.glass.shadow,
-          background: theme.colors.glass.background,
-          backdropFilter: theme.colors.glass.backdropFilter,
-        }}
-      >
-        <div style={{ marginBottom: '16px' }}>
-          <Text type='secondary'>
-            Manage expense categories with Indonesian PSAK (Pernyataan Standar Akuntansi Keuangan) accounting codes and withholding tax (PPh) configuration.
-          </Text>
-        </div>
-        <Button
-          type='primary'
-          icon={<SettingOutlined />}
-          size='large'
-          style={{
-            background: theme.colors.accent.primary,
-            border: 'none',
-            borderRadius: '20px',
-            height: '44px',
-            padding: '0 24px',
-            fontSize: '15px',
-            fontWeight: 500,
-          }}
-          onClick={() => navigate('/expense-categories')}
-        >
-          Manage Expense Categories
-        </Button>
-      </Card>
 
       <div style={{ textAlign: 'center' }}>
         <Space size='middle'>

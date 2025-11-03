@@ -27,7 +27,8 @@
     "db:init": "prisma migrate deploy && prisma generate && prisma db seed",
     "dev:setup": "npm run db:init && npm run start:dev",
     "dev:validate": "../scripts/validate-dev-environment.sh",
-    "migrate:journal-entries": "ts-node scripts/create-retroactive-journal-entries.ts"
+    "migrate:journal-entries": "ts-node scripts/create-retroactive-journal-entries.ts",
+    "migrate:fix-payment-info": "ts-node scripts/fix-invoice-payment-info.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

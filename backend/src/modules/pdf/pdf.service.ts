@@ -103,6 +103,34 @@ export class PdfService {
     }
   }
 
+  /**
+   * Generate dynamic payment information from company settings
+   * This method provides a runtime fallback for invoices with placeholder text
+   */
+  private async generateDynamicPaymentInfo(companyData: any): Promise<string> {
+    const bankAccounts: string[] = [];
+
+    // Build bank account list
+    if (companyData.bankBCA) {
+      bankAccounts.push(`BCA: ${companyData.bankBCA}`);
+    }
+    if (companyData.bankMandiri) {
+      bankAccounts.push(`Mandiri: ${companyData.bankMandiri}`);
+    }
+    if (companyData.bankBNI) {
+      bankAccounts.push(`BNI: ${companyData.bankBNI}`);
+    }
+
+    // Format payment info based on available bank accounts
+    if (bankAccounts.length > 0) {
+      const companyName = companyData.companyName || "Company";
+      return `Bank Transfer\nRekening atas nama: ${companyName}\n${bankAccounts.join(" | ")}`;
+    }
+
+    // Ultimate fallback if no bank accounts configured
+    return "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran";
+  }
+
   private async generateInvoiceHTML(invoiceData: any): Promise<string> {
     const {
       invoiceNumber,
@@ -126,6 +154,23 @@ export class PdfService {
 
     // Get company settings
     const companyData = await this.getCompanySettings();
+
+    // Runtime override: Detect and replace placeholder payment info
+    let finalPaymentInfo = paymentInfo;
+    const placeholderTexts = [
+      "Bank Transfer - Lihat detail di company settings",
+      "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran"
+    ];
+
+    const hasPlaceholder = placeholderTexts.some(placeholder =>
+      finalPaymentInfo?.includes(placeholder)
+    );
+
+    if (hasPlaceholder || !finalPaymentInfo) {
+      // Generate proper payment info from company settings
+      finalPaymentInfo = await this.generateDynamicPaymentInfo(companyData);
+      this.logger.log(`Replaced placeholder payment info for invoice ${invoiceNumber}`);
+    }
 
     // Parse products from priceBreakdown if available
     const products = priceBreakdown?.products || [];
@@ -755,19 +800,7 @@ export class PdfService {
     <!-- Payment Information -->
     <div class="section-box payment">
       <div class="section-box-title">Payment Information</div>
-      <div class="section-box-content">${paymentInfo}</div>
-      ${
-        companyData.bankBCA || companyData.bankMandiri || companyData.bankBNI
-          ? `
-      <div class="bank-details">
-        <span class="bank-details-title">Bank Accounts:</span>
-        ${companyData.bankBCA ? `<div class="bank-item">BCA: ${companyData.bankBCA} a.n. ${companyData.companyName}</div>` : ""}
-        ${companyData.bankMandiri ? `<div class="bank-item">Mandiri: ${companyData.bankMandiri} a.n. ${companyData.companyName}</div>` : ""}
-        ${companyData.bankBNI ? `<div class="bank-item">BNI: ${companyData.bankBNI} a.n. ${companyData.companyName}</div>` : ""}
-      </div>
-      `
-          : ""
-      }
+      <div class="section-box-content">${finalPaymentInfo}</div>
     </div>
 
     <!-- Footer Section -->
