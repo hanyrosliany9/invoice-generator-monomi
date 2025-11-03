@@ -426,7 +426,11 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
       {/* Statistics Grid - 4-Column Cards */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={12} sm={12} lg={6}>
-          <Card>
+          <Card
+            hoverable
+            onClick={() => navigate(`/quotations?search=${project.number}`)}
+            style={{ cursor: 'pointer' }}
+          >
             <Statistic
               title='Quotations'
               value={safeNumber(project._count?.quotations)}
@@ -437,7 +441,11 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
         </Col>
 
         <Col xs={12} sm={12} lg={6}>
-          <Card>
+          <Card
+            hoverable
+            onClick={() => navigate(`/invoices?search=${project.number}`)}
+            style={{ cursor: 'pointer' }}
+          >
             <Statistic
               title='Invoices'
               value={safeNumber(project._count?.invoices)}
@@ -825,6 +833,18 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
 
       {/* Floating Action Button */}
       <FloatButton.Group>
+        <FloatButton
+          icon={<FileTextOutlined />}
+          tooltip={project.client ? 'Create Quotation' : 'Assign client first'}
+          aria-label='Create quotation from this project'
+          onClick={() => navigate(`/quotations/new?projectId=${id}&clientId=${project.client?.id}`)}
+          badge={{ dot: project._count?.quotations === 0 && project.client }}
+          disabled={!project.client}
+          style={{
+            opacity: !project.client ? 0.4 : 1,
+            cursor: !project.client ? 'not-allowed' : 'pointer'
+          }}
+        />
         <FloatButton
           icon={<EditOutlined />}
           tooltip='Edit Project'
