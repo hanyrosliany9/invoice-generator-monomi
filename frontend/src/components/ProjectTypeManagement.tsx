@@ -24,6 +24,7 @@ import {
   EyeOutlined,
   PlusOutlined,
   SettingOutlined,
+  StarFilled,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateProjectTypeDto, ProjectType, projectTypesApi, UpdateProjectTypeDto } from '../services/project-types';
@@ -167,10 +168,7 @@ export const ProjectTypeManagement: React.FC = () => {
       dataIndex: 'code',
       key: 'code',
       render: (code: string, record: ProjectType) => (
-        <Space>
-          <Tag color={record.color}>{code}</Tag>
-          {record.isDefault && <Badge color="gold" text={t('settings.projectType.default')} />}
-        </Space>
+        <Tag color={record.color}>{code}</Tag>
       ),
     },
     {
@@ -189,6 +187,11 @@ export const ProjectTypeManagement: React.FC = () => {
             }}
           />
           {name}
+          {record.isDefault && (
+            <Tooltip title={t('settings.projectType.default')}>
+              <StarFilled style={{ color: '#faad14', fontSize: '12px' }} />
+            </Tooltip>
+          )}
         </Space>
       ),
     },

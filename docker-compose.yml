@@ -15,6 +15,7 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://invoiceuser:${DB_PASSWORD}@db:5432/invoices
       - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
     networks:
       - invoice-network
     volumes:

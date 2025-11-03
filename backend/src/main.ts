@@ -67,7 +67,11 @@ async function bootstrap() {
         transform: true,
         whitelist: true,
         forbidNonWhitelisted: true,
-        disableErrorMessages: process.env.NODE_ENV === "production",
+        disableErrorMessages: false, // TEMPORARY: Enable detailed validation errors for debugging
+        exceptionFactory: (errors) => {
+          console.error("VALIDATION ERRORS:", JSON.stringify(errors, null, 2));
+          return new ValidationPipe().createExceptionFactory()(errors);
+        },
       }),
     );
 

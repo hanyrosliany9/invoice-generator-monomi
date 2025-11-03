@@ -22,6 +22,7 @@ import {
 import {
   BellOutlined,
   CameraOutlined,
+  CloudDownloadOutlined,
   DollarOutlined,
   GlobalOutlined,
   SaveOutlined,
@@ -33,8 +34,9 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useAuthStore } from '../store/auth'
 import { settingsService } from '../services/settings'
 import { authService } from '../services/auth'
@@ -102,14 +104,91 @@ export const SettingsPage: React.FC = () => {
   const [profileForm] = Form.useForm()
   const [securityForm] = Form.useForm()
   const [companyForm] = Form.useForm()
+  const [notificationsForm] = Form.useForm()
+  const [invoiceSettingsForm] = Form.useForm()
+  const [backupSettingsForm] = Form.useForm()
 
-  // Fetch settings data - currently not used but prepared for future API integration
+  // Fetch user settings from backend
+  const { data: userSettings, isLoading: isLoadingUser } = useQuery({
+    queryKey: ['settings-user'],
+    queryFn: () => settingsService.getUserSettings(),
+    refetchOnMount: true,
+  })
+
+  // Fetch company settings from backend
+  const { data: companySettings, isLoading: isLoadingCompany } = useQuery({
+    queryKey: ['settings-company'],
+    queryFn: () => settingsService.getCompanySettings(),
+    refetchOnMount: true,
+  })
+
+  // Fetch system settings from backend
+  const { data: systemSettings, isLoading: isLoadingSystem } = useQuery({
+    queryKey: ['settings-system'],
+    queryFn: () => settingsService.getSystemSettings(),
+    refetchOnMount: true,
+  })
+
+  // Sync form with fetched user settings
+  useEffect(() => {
+    if (userSettings) {
+      profileForm.setFieldsValue({
+        name: userSettings.user.name,
+        email: userSettings.user.email,
+        role: userSettings.user.role,
+        phone: '',
+        timezone: userSettings.preferences.timezone,
+        language: userSettings.preferences.language,
+      })
+    }
+  }, [userSettings, profileForm])
+
+  // Sync company form with fetched company settings
+  useEffect(() => {
+    if (companySettings) {
+      companyForm.setFieldsValue({
+        companyName: companySettings.companyName,
+        address: companySettings.address,
+        phone: companySettings.phone,
+        email: companySettings.email,
+        website: companySettings.website,
+        taxNumber: companySettings.taxNumber,
+        currency: companySettings.currency,
+        bankBCA: companySettings.bankBCA,
+        bankMandiri: companySettings.bankMandiri,
+        bankBNI: companySettings.bankBNI,
+      })
+    }
+  }, [companySettings, companyForm])
+
+  // Sync system forms with fetched system settings
+  useEffect(() => {
+    if (systemSettings) {
+      invoiceSettingsForm.setFieldsValue({
+        paymentTerms: systemSettings.defaultPaymentTerms,
+        materaiThreshold: systemSettings.materaiThreshold,
+        invoicePrefix: systemSettings.invoicePrefix,
+        quotationPrefix: systemSettings.quotationPrefix,
+      })
+      backupSettingsForm.setFieldsValue({
+        autoBackup: systemSettings.autoBackup,
+        backupFrequency: systemSettings.backupFrequency,
+        backupTime: systemSettings.backupTime ? dayjs(systemSettings.backupTime, 'HH:mm') : null,
+      })
+    }
+  }, [systemSettings, invoiceSettingsForm, backupSettingsForm])
 
   // Mutations
   const updateUserMutation = useMutation({
     mutationFn: settingsService.updateUserSettings,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['settings-user'] })
+
+      // Update Zustand auth store with new user data
+      if (data?.user) {
+        useAuthStore.getState().updateUser(data.user)
+      }
+
       message.success(t('messages.success.saved'))
     },
     onError: () => {
@@ -161,8 +240,20 @@ export const SettingsPage: React.FC = () => {
     },
   })
 
+  const downloadBackupMutation = useMutation({
+    mutationFn: settingsService.downloadBackup,
+    onSuccess: () => {
+      message.success('Backup berhasil diunduh')
+    },
+    onError: (error: any) => {
+      message.error(`Gagal membuat backup: ${error.message}`)
+    },
+  })
+
   const handleSaveProfile = async (values: ProfileFormValues) => {
-    updateUserMutation.mutate(values)
+    // Filter out phone and role - they are not accepted by the backend DTO
+    const { phone, role, ...settingsData } = values
+    updateUserMutation.mutate(settingsData)
   }
 
   const handleChangePassword = async (values: PasswordFormValues) => {
@@ -177,7 +268,30 @@ export const SettingsPage: React.FC = () => {
   }
 
   const handleSaveSystem = async (values: SystemFormValues) => {
-    updateSystemMutation.mutate(values)
+    // Filter out notification fields - they are not accepted by the system settings DTO
+    const {
+      emailNotifications,
+      invoiceReminders,
+      paymentNotifications,
+      overdueAlerts,
+      systemUpdates,
+      marketingEmails,
+      paymentTerms, // Extract to map to backend field name
+      ...systemSettingsData
+    } = values
+
+    // Map frontend field names to backend DTO field names
+    const payload: any = {
+      ...systemSettingsData,
+      defaultPaymentTerms: paymentTerms, // Backend expects 'defaultPaymentTerms'
+    }
+
+    // Convert backupTime from dayjs to string format if present
+    if (payload.backupTime && typeof payload.backupTime !== 'string') {
+      payload.backupTime = (payload.backupTime as any).format('HH:mm')
+    }
+
+    updateSystemMutation.mutate(payload)
   }
 
   const ProfileSettings = () => (
@@ -203,12 +317,12 @@ export const SettingsPage: React.FC = () => {
         id='profile-form'
         name='profile'
         initialValues={{
-          name: user?.name,
-          email: user?.email,
-          role: user?.role,
+          name: userSettings?.user?.name || user?.name,
+          email: userSettings?.user?.email || user?.email,
+          role: userSettings?.user?.role || user?.role,
           phone: '',
-          timezone: 'Asia/Jakarta',
-          language: 'id',
+          timezone: userSettings?.preferences?.timezone || 'Asia/Jakarta',
+          language: userSettings?.preferences?.language || 'id',
         }}
       >
         <Row gutter={24}>
@@ -435,13 +549,16 @@ export const SettingsPage: React.FC = () => {
         id='company-form'
         name='company'
         initialValues={{
-          companyName: 'PT Teknologi Indonesia',
-          address: 'Jl. Sudirman No. 123, Jakarta Pusat',
-          phone: '021-1234567',
-          email: 'info@teknologi.co.id',
-          website: 'https://teknologi.co.id',
-          taxNumber: '01.234.567.8-901.000',
-          currency: 'IDR',
+          companyName: companySettings?.companyName || 'PT Teknologi Indonesia',
+          address: companySettings?.address || 'Jl. Sudirman No. 123, Jakarta Pusat',
+          phone: companySettings?.phone || '021-1234567',
+          email: companySettings?.email || 'info@teknologi.co.id',
+          website: companySettings?.website || 'https://teknologi.co.id',
+          taxNumber: companySettings?.taxNumber || '01.234.567.8-901.000',
+          currency: companySettings?.currency || 'IDR',
+          bankBCA: companySettings?.bankBCA || '',
+          bankMandiri: companySettings?.bankMandiri || '',
+          bankBNI: companySettings?.bankBNI || '',
         }}
       >
         <Row gutter={24}>
@@ -568,9 +685,10 @@ export const SettingsPage: React.FC = () => {
         backdropFilter: theme.colors.glass.backdropFilter,
       }}
       >
-        <Form 
-          layout='vertical' 
-          onFinish={handleSaveSystem} 
+        <Form
+          form={notificationsForm}
+          layout='vertical'
+          onFinish={handleSaveSystem}
           id='notifications-form'
           name='notifications'
           initialValues={{
@@ -648,15 +766,17 @@ export const SettingsPage: React.FC = () => {
         backdropFilter: theme.colors.glass.backdropFilter,
       }}
       >
-        <Form 
-          layout='vertical' 
+        <Form
+          form={invoiceSettingsForm}
+          layout='vertical'
+          onFinish={handleSaveSystem}
           id='invoice-settings-form'
           name='invoiceSettings'
           initialValues={{
-            paymentTerms: 'NET 30',
-            materaiThreshold: 5000000,
-            invoicePrefix: 'INV-',
-            quotationPrefix: 'QT-',
+            paymentTerms: systemSettings?.defaultPaymentTerms || 'NET 30',
+            materaiThreshold: systemSettings?.materaiThreshold || 5000000,
+            invoicePrefix: systemSettings?.invoicePrefix || 'INV-',
+            quotationPrefix: systemSettings?.quotationPrefix || 'QT-',
           }}
         >
           <Row gutter={24}>
@@ -716,14 +836,16 @@ export const SettingsPage: React.FC = () => {
         backdropFilter: theme.colors.glass.backdropFilter,
       }}
       >
-        <Form 
-          layout='vertical' 
+        <Form
+          form={backupSettingsForm}
+          layout='vertical'
+          onFinish={handleSaveSystem}
           id='backup-settings-form'
           name='backupSettings'
           initialValues={{
-            autoBackup: true,
-            backupFrequency: 'daily',
-            backupTime: dayjs('02:00', 'HH:mm'),
+            autoBackup: systemSettings?.autoBackup ?? true,
+            backupFrequency: systemSettings?.backupFrequency || 'daily',
+            backupTime: systemSettings?.backupTime ? dayjs(systemSettings.backupTime, 'HH:mm') : dayjs('02:00', 'HH:mm'),
           }}
         >
           <Row gutter={24}>
@@ -758,6 +880,35 @@ export const SettingsPage: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
+
+          <Divider>Manual Backup</Divider>
+
+          <Alert
+            message='Database Backup'
+            description='Download a complete backup of your database. This backup can be restored later using database tools.'
+            type='info'
+            showIcon
+            style={{ marginBottom: '16px', borderRadius: '8px' }}
+          />
+
+          <Button
+            type='primary'
+            icon={<CloudDownloadOutlined />}
+            size='large'
+            loading={downloadBackupMutation.isPending}
+            onClick={() => downloadBackupMutation.mutate()}
+            style={{
+              background: theme.colors.accent.primary,
+              border: 'none',
+              borderRadius: '20px',
+              height: '44px',
+              padding: '0 24px',
+              fontSize: '15px',
+              fontWeight: 500,
+            }}
+          >
+            Download Backup Now
+          </Button>
         </Form>
       </Card>
 
@@ -836,7 +987,24 @@ export const SettingsPage: React.FC = () => {
               fontSize: '15px',
               fontWeight: 500,
             }}
-            onClick={() => handleSaveSystem({})}
+            onClick={async () => {
+              try {
+                const notificationsValues = await notificationsForm.validateFields()
+                const invoiceValues = await invoiceSettingsForm.validateFields()
+                const backupValues = await backupSettingsForm.validateFields()
+
+                // Combine all form values
+                const allValues = {
+                  ...notificationsValues,
+                  ...invoiceValues,
+                  ...backupValues,
+                }
+
+                handleSaveSystem(allValues)
+              } catch (error) {
+                message.error('Please fill in all required fields')
+              }
+            }}
           >
             {t('settings.saveSettings')}
           </Button>

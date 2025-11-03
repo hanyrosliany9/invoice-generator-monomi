@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, InternalServerErrorException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { UpdateUserSettingsDto } from "./dto/update-user-settings.dto";
 import { UpdateSystemSettingsDto } from "./dto/update-system-settings.dto";
 import { UpdateCompanySettingsDto } from "./dto/update-company-settings.dto";
+import { exec } from "child_process";
+import { promisify } from "util";
+import * as fs from "fs";
+import * as path from "path";
+
+const execAsync = promisify(exec);
 
 @Injectable()
 export class SettingsService {
@@ -79,7 +85,8 @@ export class SettingsService {
       },
     });
 
-    return preferences;
+    // Return the same structure as getUserSettings for consistency
+    return this.getUserSettings(userId);
   }
 
   async getCompanySettings() {
@@ -211,5 +218,65 @@ export class SettingsService {
     });
 
     return { message: "Settings reset to default values" };
+  }
+
+  async createBackup(userId: string) {
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + new Date().toISOString().replace(/[:.]/g, '-').split('T')[1].split('.')[0];
+      const filename = `invoices_backup_${timestamp}.sql`;
+      const backupPath = `/tmp/${filename}`;
+
+      // Get database connection details from environment
+      const databaseUrl = process.env.DATABASE_URL;
+      if (!databaseUrl) {
+        throw new InternalServerErrorException("Database URL not configured");
+      }
+
+      // Parse DATABASE_URL: postgresql://user:password@host:port/database
+      const dbMatch = databaseUrl.match(/postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
+      if (!dbMatch) {
+        throw new InternalServerErrorException("Invalid database URL format");
+      }
+
+      const [, dbUser, dbPassword, dbHost, dbPort, dbName] = dbMatch;
+
+      // Create backup using pg_dump
+      const command = `PGPASSWORD="${dbPassword}" pg_dump -h ${dbHost} -p ${dbPort} -U ${dbUser} -d ${dbName} --clean --if-exists --create > ${backupPath}`;
+
+      await execAsync(command);
+
+      // Check if file was created and has content
+      if (!fs.existsSync(backupPath)) {
+        throw new InternalServerErrorException("Backup file was not created");
+      }
+
+      const stats = fs.statSync(backupPath);
+      if (stats.size === 0) {
+        fs.unlinkSync(backupPath);
+        throw new InternalServerErrorException("Backup file is empty");
+      }
+
+      // Read file as buffer for download
+      const fileBuffer = fs.readFileSync(backupPath);
+
+      // Clean up the backup file after reading
+      fs.unlinkSync(backupPath);
+
+      // Log backup activity
+      console.log(`Database backup created by user ${userId} at ${new Date().toISOString()}`);
+
+      return {
+        filename,
+        content: fileBuffer.toString('base64'),
+        size: stats.size,
+        createdAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error("Backup creation error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      throw new InternalServerErrorException(
+        `Failed to create backup: ${errorMessage}`
+      );
+    }
   }
 }

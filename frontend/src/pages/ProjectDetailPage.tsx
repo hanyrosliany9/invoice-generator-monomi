@@ -329,6 +329,16 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
             <Space direction='vertical' size='middle' style={{ width: '100%' }}>
               <Button
                 type='primary'
+                icon={<FileTextOutlined />}
+                size='large'
+                block
+                aria-label='Create quotation from this project'
+                onClick={() => navigate(`/quotations/new?projectId=${id}&clientId=${project.client?.id}`)}
+                disabled={!project.client}
+              >
+                Create Quotation
+              </Button>
+              <Button
                 icon={<EditOutlined />}
                 size='large'
                 block

@@ -222,11 +222,61 @@ export const ProjectCreatePage: React.FC = () => {
   const handleSaveDraft = async () => {
     setAutoSaving(true)
     try {
+      // Validate minimum required fields for draft
+      await form.validateFields(['description', 'projectTypeId', 'clientId'])
+
       const values = form.getFieldsValue()
-      // Auto-save logic would go here
-      message.success('Draft saved')
-    } catch (error) {
-      message.error('Failed to save draft')
+
+      // Calculate estimated budget from products
+      const validProducts = (values.products || [])
+        .filter((p: any) => p && p.name && p.price)
+        .map((p: any) => ({
+          name: p.name,
+          description: p.description || '',
+          price: parseFloat(p.price) || 0,
+          quantity: parseInt(p.quantity) || 1,
+        }))
+
+      const calculatedValue = validProducts.reduce((sum: number, p: any) => {
+        return sum + (p.price * p.quantity)
+      }, 0)
+
+      const validExpenses = (values.estimatedExpenses || [])
+        .filter((e: any) => e && e.categoryId && e.amount)
+        .map((e: any) => ({
+          categoryId: e.categoryId,
+          amount: parseFloat(e.amount) || 0,
+          notes: e.notes || '',
+          costType: e.costType || 'direct',
+        }))
+
+      // Prepare draft project data
+      const projectData: CreateProjectRequest = {
+        description: values.description,
+        scopeOfWork: values.scopeOfWork,
+        output: values.output || values.description, // Use description as fallback
+        projectTypeId: values.projectTypeId,
+        clientId: values.clientId,
+        startDate: values.startDate?.toISOString(),
+        endDate: values.endDate?.toISOString(),
+        estimatedBudget: calculatedValue,
+        products: validProducts,
+        estimatedExpenses: validExpenses,
+        status: 'PLANNING', // Draft status
+      }
+
+      const project = await projectService.createProject(projectData)
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      message.success('Draft project saved successfully')
+
+      // Navigate to projects list
+      navigate('/projects')
+    } catch (error: any) {
+      if (error.errorFields) {
+        message.error('Please fill in required fields: Description, Project Type, and Client')
+      } else {
+        message.error(`Failed to save draft: ${error.message || 'Unknown error'}`)
+      }
     } finally {
       setAutoSaving(false)
     }

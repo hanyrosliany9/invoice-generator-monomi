@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateAssetDto } from "./dto/create-asset.dto";
 import { UpdateAssetDto } from "./dto/update-asset.dto";
@@ -119,7 +119,7 @@ export class AssetsService {
     });
 
     if (activeReservations > 0) {
-      throw new Error("Tidak dapat menghapus asset dengan reservasi aktif");
+      throw new ConflictException("Tidak dapat menghapus asset dengan reservasi aktif");
     }
 
     return this.prisma.asset.delete({
@@ -161,7 +161,7 @@ export class AssetsService {
   async reserve(assetId: string, reserveDto: any) {
     const asset = await this.findOne(assetId);
     if (asset.status !== "AVAILABLE") {
-      throw new Error("Asset tidak tersedia");
+      throw new BadRequestException("Asset tidak tersedia");
     }
 
     const conflicts = await this.prisma.assetReservation.findMany({
@@ -178,7 +178,7 @@ export class AssetsService {
     });
 
     if (conflicts.length > 0) {
-      throw new Error("Asset sudah direservasi untuk periode ini");
+      throw new ConflictException("Asset sudah direservasi untuk periode ini");
     }
 
     return this.prisma.assetReservation.create({
@@ -223,7 +223,7 @@ export class AssetsService {
     });
 
     if (!activeUsage) {
-      throw new Error("Tidak ada catatan check-out aktif untuk asset ini");
+      throw new BadRequestException("Tidak ada catatan check-out aktif untuk asset ini");
     }
 
     return this.prisma.$transaction([

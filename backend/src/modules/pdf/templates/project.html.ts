@@ -22,6 +22,10 @@ export function generateProjectHTML(projectData: any): string {
     progress = 0,
     daysRemaining = 0,
     profitMargin = null,
+    statistics = null,
+    scopeOfWork = null,
+    createdAt = null,
+    updatedAt = null,
   } = projectData;
 
   // Format currency in Indonesian Rupiah
@@ -416,6 +420,32 @@ export function generateProjectHTML(projectData: any): string {
 
     <div class="divider"></div>
 
+    <!-- QUICK STATISTICS -->
+    ${
+      statistics
+        ? `
+    <div class="metrics-grid" style="margin-bottom: 4mm;">
+      <div class="metric-box">
+        <div class="metric-label">Quotations</div>
+        <div class="metric-value">${statistics.quotationsCount}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Invoices</div>
+        <div class="metric-value">${statistics.invoicesCount}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Expenses</div>
+        <div class="metric-value">${statistics.expensesCount}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Cost Allocations</div>
+        <div class="metric-value">${statistics.costAllocationsCount}</div>
+      </div>
+    </div>
+    `
+        : ""
+    }
+
     <!-- PROJECT INFORMATION -->
     <div class="card section">
       <div class="card-header">
@@ -454,6 +484,22 @@ export function generateProjectHTML(projectData: any): string {
         <span class="info-value">${output || "Tidak ada output"}</span>
       </div>
     </div>
+
+    <!-- SCOPE OF WORK -->
+    ${
+      scopeOfWork
+        ? `
+    <div class="card section">
+      <div class="card-header">
+        <div class="card-title">Ruang Lingkup Pekerjaan (Scope of Work)</div>
+      </div>
+      <div style="white-space: pre-wrap; font-size: 9px; line-height: 1.6;">
+        ${scopeOfWork}
+      </div>
+    </div>
+    `
+        : ""
+    }
 
     <!-- CLIENT INFORMATION -->
     <div class="card section">
@@ -682,33 +728,186 @@ export function generateProjectHTML(projectData: any): string {
         : ""
     }
 
-    <!-- PROFIT PROJECTION -->
+    <!-- COMPREHENSIVE PROFIT MARGIN ANALYSIS -->
     ${
-      profitMargin
+      profitMargin && (profitMargin.grossMargin !== 0 || profitMargin.netMargin !== 0)
         ? `
     <div class="card section">
       <div class="card-header">
-        <div class="card-title">Proyeksi Keuntungan</div>
+        <div class="card-title">Analisis Margin Laba (Profit Margin Analysis)</div>
+        ${
+          profitMargin.calculatedAt
+            ? `
+        <div class="card-subtitle">Terakhir dihitung: ${formatDate(profitMargin.calculatedAt)}</div>
+        `
+            : ""
+        }
       </div>
 
-      <div class="metrics-grid">
-        <div class="metric-box">
-          <div class="metric-label">Margin Bruto</div>
-          <div class="metric-value">${profitMargin.grossMargin?.toFixed(2) || 0}%</div>
+      <!-- Actual Margins (Realized) -->
+      <div style="margin-bottom: 4mm;">
+        <div style="font-weight: 700; font-size: 10px; margin-bottom: 2mm; color: #1f2937;">
+          📊 Margin Aktual (Realized Performance)
         </div>
-        <div class="metric-box">
-          <div class="metric-label">Margin Netto</div>
-          <div class="metric-value">${profitMargin.netMargin?.toFixed(2) || 0}%</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-label">Proyeksi Profit</div>
-          <div class="metric-value">${formatIDR(profitMargin.profit)}</div>
+
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-label">Margin Laba Kotor</div>
+            <div class="metric-value" style="color: ${profitMargin.grossMargin >= 20 ? "#22c55e" : profitMargin.grossMargin >= 10 ? "#3b82f6" : profitMargin.grossMargin >= 0 ? "#f59e0b" : "#ef4444"};">
+              ${profitMargin.grossMargin.toFixed(2)}%
+            </div>
+            <div style="font-size: 7px; color: #666; margin-top: 1mm;">
+              ${profitMargin.grossMargin >= 20 ? "Sangat Baik" : profitMargin.grossMargin >= 10 ? "Baik" : profitMargin.grossMargin >= 0 ? "Impas" : "Rugi"}
+            </div>
+          </div>
+
+          <div class="metric-box">
+            <div class="metric-label">Margin Laba Neto</div>
+            <div class="metric-value" style="color: ${profitMargin.netMargin >= 20 ? "#22c55e" : profitMargin.netMargin >= 10 ? "#3b82f6" : profitMargin.netMargin >= 0 ? "#f59e0b" : "#ef4444"};">
+              ${profitMargin.netMargin.toFixed(2)}%
+            </div>
+            <div style="font-size: 7px; color: #666; margin-top: 1mm;">
+              ${profitMargin.netMargin >= 20 ? "Sangat Baik" : profitMargin.netMargin >= 10 ? "Baik" : profitMargin.netMargin >= 0 ? "Impas" : "Rugi"}
+            </div>
+          </div>
+
+          <div class="metric-box">
+            <div class="metric-label">Laba Bersih</div>
+            <div class="metric-value" style="color: ${profitMargin.netProfit >= 0 ? "#22c55e" : "#ef4444"};">
+              ${formatIDR(profitMargin.netProfit)}
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- Revenue & Cost Breakdown -->
+      <div style="margin-bottom: 4mm;">
+        <div style="font-weight: 700; font-size: 10px; margin-bottom: 2mm; color: #1f2937;">
+          💰 Breakdown Pendapatan & Biaya
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Total Pendapatan (Terbayar)</span>
+            <span class="info-value amount">${formatIDR(profitMargin.totalRevenue)}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Total Biaya Teralokasi</span>
+            <span class="info-value amount">${formatIDR(profitMargin.totalCosts)}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Biaya Langsung</span>
+            <span class="info-value">${formatIDR(profitMargin.directCosts)}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Biaya Tidak Langsung</span>
+            <span class="info-value">${formatIDR(profitMargin.indirectCosts)}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Laba Kotor</span>
+            <span class="info-value" style="color: ${profitMargin.grossProfit >= 0 ? "#22c55e" : "#ef4444"};">
+              ${formatIDR(profitMargin.grossProfit)}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Laba Bersih</span>
+            <span class="info-value" style="color: ${profitMargin.netProfit >= 0 ? "#22c55e" : "#ef4444"};">
+              ${formatIDR(profitMargin.netProfit)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Budget Variance Analysis -->
+      ${
+        profitMargin.budgetVariance !== 0 || profitMargin.budgetVariancePercent !== 0
+          ? `
+      <div style="margin-bottom: 4mm;">
+        <div style="font-weight: 700; font-size: 10px; margin-bottom: 2mm; color: #1f2937;">
+          📈 Analisis Variansi Anggaran
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Variansi Anggaran (IDR)</span>
+            <span class="info-value" style="color: ${profitMargin.budgetVariance >= 0 ? "#22c55e" : "#ef4444"};">
+              ${profitMargin.budgetVariance >= 0 ? "+" : ""}${formatIDR(profitMargin.budgetVariance)}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Variansi Anggaran (%)</span>
+            <span class="info-value" style="color: ${profitMargin.budgetVariancePercent >= 0 ? "#22c55e" : "#ef4444"};">
+              ${profitMargin.budgetVariancePercent >= 0 ? "+" : ""}${profitMargin.budgetVariancePercent.toFixed(2)}%
+            </span>
+          </div>
+        </div>
+      </div>
+      `
+          : ""
+      }
+
+      <!-- Projected vs Actual Comparison -->
+      ${
+        profitMargin.projectedGrossMargin !== null
+          ? `
+      <div>
+        <div style="font-weight: 700; font-size: 10px; margin-bottom: 2mm; color: #1f2937;">
+          🎯 Proyeksi vs Aktual
+        </div>
+
+        <table class="table" style="font-size: 8px;">
+          <thead>
+            <tr>
+              <th>Metrik</th>
+              <th style="text-align: right;">Proyeksi</th>
+              <th style="text-align: right;">Aktual</th>
+              <th style="text-align: right;">Selisih</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Margin Bruto</td>
+              <td style="text-align: right;">${profitMargin.projectedGrossMargin?.toFixed(2) || 0}%</td>
+              <td style="text-align: right;">${profitMargin.grossMargin.toFixed(2)}%</td>
+              <td style="text-align: right; color: ${(profitMargin.grossMargin - (profitMargin.projectedGrossMargin || 0)) >= 0 ? "#22c55e" : "#ef4444"};">
+                ${(profitMargin.grossMargin - (profitMargin.projectedGrossMargin || 0)) >= 0 ? "+" : ""}${(profitMargin.grossMargin - (profitMargin.projectedGrossMargin || 0)).toFixed(2)}%
+              </td>
+            </tr>
+            <tr>
+              <td>Margin Netto</td>
+              <td style="text-align: right;">${profitMargin.projectedNetMargin?.toFixed(2) || 0}%</td>
+              <td style="text-align: right;">${profitMargin.netMargin.toFixed(2)}%</td>
+              <td style="text-align: right; color: ${(profitMargin.netMargin - (profitMargin.projectedNetMargin || 0)) >= 0 ? "#22c55e" : "#ef4444"};">
+                ${(profitMargin.netMargin - (profitMargin.projectedNetMargin || 0)) >= 0 ? "+" : ""}${(profitMargin.netMargin - (profitMargin.projectedNetMargin || 0)).toFixed(2)}%
+              </td>
+            </tr>
+            <tr style="font-weight: 700; background-color: #f3f4f6;">
+              <td>Profit</td>
+              <td style="text-align: right;">${formatIDR(profitMargin.projectedProfit || 0)}</td>
+              <td style="text-align: right;">${formatIDR(profitMargin.profit)}</td>
+              <td style="text-align: right; color: ${(profitMargin.profit - (profitMargin.projectedProfit || 0)) >= 0 ? "#22c55e" : "#ef4444"};">
+                ${formatIDR(profitMargin.profit - (profitMargin.projectedProfit || 0))}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      `
+          : ""
+      }
     </div>
     `
         : ""
     }
+
+    <!-- AUDIT TRAIL -->
+    <div style="margin-top: 5mm; padding-top: 3mm; border-top: 1px solid #e5e7eb; font-size: 8px; color: #999;">
+      <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+        ${createdAt ? `<span style="margin-right: 2mm;">Dibuat: ${formatDate(createdAt)}</span>` : ""}
+        ${updatedAt ? `<span style="margin-right: 2mm;">Terakhir diubah: ${formatDate(updatedAt)}</span>` : ""}
+        ${profitMargin?.calculatedBy ? `<span>Profit dihitung oleh: ${profitMargin.calculatedBy}</span>` : ""}
+      </div>
+    </div>
 
     <!-- FOOTER -->
     <div class="footer">

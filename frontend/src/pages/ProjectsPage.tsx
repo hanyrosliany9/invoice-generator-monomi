@@ -392,10 +392,10 @@ export const ProjectsPage: React.FC = () => {
               onClick={() => handleView(project)}
               className='text-blue-600 hover:text-blue-800 p-0 font-semibold'
             >
-              {project.number}
+              {project.number || `DRAFT-${project.id.slice(-6).toUpperCase()}`}
             </Button>
           </div>
-          <div className='text-sm text-gray-600'>{project.description}</div>
+          <div className='text-sm text-gray-600'>{project.description || 'No description'}</div>
           <div className='mt-1'>
             {project.projectType ? (
               <span style={{

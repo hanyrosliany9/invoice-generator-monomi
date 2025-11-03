@@ -171,4 +171,33 @@ export const settingsService = {
     }
     return response.data.data
   },
+
+  // Download database backup
+  downloadBackup: async (): Promise<void> => {
+    const response = await apiClient.get('/settings/backup/download')
+    if (!response?.data?.data) {
+      throw new Error('Failed to create backup')
+    }
+
+    const { filename, content } = response.data.data
+
+    // Convert base64 to blob
+    const byteCharacters = atob(content)
+    const byteNumbers = new Array(byteCharacters.length)
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i)
+    }
+    const byteArray = new Uint8Array(byteNumbers)
+    const blob = new Blob([byteArray], { type: 'application/sql' })
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  },
 }

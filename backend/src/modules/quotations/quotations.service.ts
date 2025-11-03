@@ -242,11 +242,7 @@ export class QuotationsService {
   async remove(id: string): Promise<any> {
     const quotation = await this.findOne(id);
 
-    // Only allow deletion of draft quotations
-    if (quotation.status !== QuotationStatus.DRAFT) {
-      throw new Error("Hanya quotation dengan status draft yang dapat dihapus");
-    }
-
+    // Allow deletion of quotations regardless of status
     return this.prisma.quotation.delete({
       where: { id },
     });

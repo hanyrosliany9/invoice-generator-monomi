@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateClientDto } from "./dto/create-client.dto";
 import { UpdateClientDto } from "./dto/update-client.dto";
@@ -261,7 +261,7 @@ export class ClientsService {
         hasRecords._count.invoices > 0 ||
         hasRecords._count.projects > 0)
     ) {
-      throw new Error(
+      throw new ConflictException(
         "Tidak dapat menghapus klien yang memiliki quotation, invoice, atau proyek",
       );
     }

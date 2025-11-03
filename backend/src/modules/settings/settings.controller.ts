@@ -36,6 +36,7 @@ export class SettingsController {
     @Request() req: any,
     @Body() updateUserSettingsDto: UpdateUserSettingsDto,
   ) {
+    console.log("UPDATE USER SETTINGS - Request body:", JSON.stringify(updateUserSettingsDto, null, 2));
     return this.settingsService.updateUserSettings(
       req.user.id,
       updateUserSettingsDto,
@@ -55,6 +56,7 @@ export class SettingsController {
   async updateCompanySettings(
     @Body() updateCompanySettingsDto: UpdateCompanySettingsDto,
   ) {
+    console.log("UPDATE COMPANY SETTINGS - Request body:", JSON.stringify(updateCompanySettingsDto, null, 2));
     return this.settingsService.updateCompanySettings(updateCompanySettingsDto);
   }
 
@@ -71,6 +73,8 @@ export class SettingsController {
   async updateSystemSettings(
     @Body() updateSystemSettingsDto: UpdateSystemSettingsDto,
   ) {
+    console.log("UPDATE SYSTEM SETTINGS - Request body:", JSON.stringify(updateSystemSettingsDto, null, 2));
+    console.log("UPDATE SYSTEM SETTINGS - Request body keys:", Object.keys(updateSystemSettingsDto));
     return this.settingsService.updateSystemSettings(updateSystemSettingsDto);
   }
 
@@ -96,5 +100,12 @@ export class SettingsController {
   @ApiOperation({ summary: "Reset settings to default" })
   async resetSettings(@Request() req: any) {
     return this.settingsService.resetUserSettings(req.user.id);
+  }
+
+  @Get("backup/download")
+  @RequireSuperAdmin() // CRITICAL SECURITY: Only admins can download database backups
+  @ApiOperation({ summary: "Download database backup" })
+  async downloadBackup(@Request() req: any) {
+    return this.settingsService.createBackup(req.user.id);
   }
 }

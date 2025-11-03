@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { QuotationsService } from "../quotations/quotations.service";
@@ -725,13 +726,12 @@ export class InvoicesService {
   async remove(id: string): Promise<any> {
     const invoice = await this.findOne(id);
 
-    // Only allow deletion of draft invoices
-    if (invoice.status !== InvoiceStatus.DRAFT) {
-      throw new BadRequestException(
-        "Hanya invoice dengan status draft yang dapat dihapus",
-      );
-    }
+    // Cascade delete: Delete all related payments first
+    await this.prisma.payment.deleteMany({
+      where: { invoiceId: id },
+    });
 
+    // Allow deletion of invoices regardless of status
     return this.prisma.invoice.delete({
       where: { id },
     });
