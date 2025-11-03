@@ -645,77 +645,164 @@ export function generateProjectHTML(projectData: any): string {
       </div>
     </div>
 
-    <!-- EXPENSE BREAKDOWN -->
+    <!-- ESTIMATED COSTS & PROJECTED PROFIT (PLANNING PHASE) -->
     ${
-      expenses && expenses.length > 0
+      profitMargin &&
+      (profitMargin.projectedGrossMargin !== null ||
+       profitMargin.projectedNetMargin !== null ||
+       profitMargin.estimatedTotalCosts > 0)
         ? `
     <div class="card section">
       <div class="card-header">
-        <div class="card-title">Detail Estimasi Biaya</div>
+        <div>
+          <div class="card-title">Estimasi Biaya & Proyeksi Profit</div>
+          <div class="card-subtitle">Projected margins and estimated costs from planning phase</div>
+        </div>
       </div>
 
+      <!-- Projected Margins Summary (4 Statistics Cards) -->
+      <div class="metrics-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; margin-bottom: 4mm;">
+        <div class="metric-box" style="border-left-color: ${
+          profitMargin.projectedGrossMargin >= 20
+            ? "#22c55e"
+            : profitMargin.projectedGrossMargin >= 10
+              ? "#3b82f6"
+              : "#f59e0b"
+        };">
+          <div class="metric-label">Margin Bruto (Proyeksi)</div>
+          <div class="metric-value" style="color: ${
+            profitMargin.projectedGrossMargin >= 20
+              ? "#22c55e"
+              : profitMargin.projectedGrossMargin >= 10
+                ? "#3b82f6"
+                : "#f59e0b"
+          };">
+            ${profitMargin.projectedGrossMargin?.toFixed(2) || 0}%
+          </div>
+        </div>
+
+        <div class="metric-box" style="border-left-color: ${
+          profitMargin.projectedNetMargin >= 20
+            ? "#22c55e"
+            : profitMargin.projectedNetMargin >= 10
+              ? "#3b82f6"
+              : profitMargin.projectedNetMargin >= 0
+                ? "#f59e0b"
+                : "#ef4444"
+        };">
+          <div class="metric-label">Margin Netto (Proyeksi)</div>
+          <div class="metric-value" style="color: ${
+            profitMargin.projectedNetMargin >= 20
+              ? "#22c55e"
+              : profitMargin.projectedNetMargin >= 10
+                ? "#3b82f6"
+                : profitMargin.projectedNetMargin >= 0
+                  ? "#f59e0b"
+                  : "#ef4444"
+          };">
+            ${profitMargin.projectedNetMargin?.toFixed(2) || 0}%
+          </div>
+        </div>
+
+        <div class="metric-box" style="border-left-color: ${
+          profitMargin.projectedProfit >= 0 ? "#22c55e" : "#ef4444"
+        };">
+          <div class="metric-label">Proyeksi Profit</div>
+          <div class="metric-value" style="color: ${
+            profitMargin.projectedProfit >= 0 ? "#22c55e" : "#ef4444"
+          };">
+            ${formatIDR(profitMargin.projectedProfit || 0)}
+          </div>
+        </div>
+
+        <div class="metric-box" style="border-left-color: #ef4444;">
+          <div class="metric-label">Total Estimasi Biaya</div>
+          <div class="metric-value" style="color: #ef4444;">
+            ${formatIDR(profitMargin.estimatedTotalCosts || 0)}
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Expense Breakdown Table (Rincian Estimasi Biaya) -->
       ${
-        expenses.filter((e: any) => e.costType === "direct").length > 0
+        expenses && expenses.length > 0
           ? `
-      <div style="margin-bottom: 4mm;">
-        <div style="font-weight: 700; color: #1f2937; margin-bottom: 2mm; font-size: 11px;">Biaya Langsung</div>
+      <div style="margin-top: 3mm;">
+        <div style="font-weight: 700; font-size: 10px; margin-bottom: 2mm; color: #1f2937;">
+          Rincian Estimasi Biaya
+        </div>
+
         <table class="table">
           <thead>
             <tr>
-              <th style="width: 70%;">Kategori</th>
-              <th style="width: 30%;" class="table-amount">Jumlah</th>
+              <th style="width: 60%;">Kategori</th>
+              <th style="width: 20%; text-align: right;">Estimasi</th>
+              <th style="width: 20%;">Catatan</th>
             </tr>
           </thead>
           <tbody>
             ${expenses
-              .filter((e: any) => e.costType === "direct")
               .map(
                 (expense: any) => `
             <tr>
-              <td>${expense.categoryNameId || expense.categoryName || "N/A"}</td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 2mm;">
+                  <span style="
+                    display: inline-block;
+                    padding: 0.5mm 1.5mm;
+                    background-color: ${expense.costType === "direct" ? "#dbeafe" : "#fed7aa"};
+                    color: ${expense.costType === "direct" ? "#1e40af" : "#c2410c"};
+                    border-radius: 1px;
+                    font-size: 7px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                  ">
+                    ${expense.costType === "direct" ? "Langsung" : "Tidak Langsung"}
+                  </span>
+                  <span>${expense.categoryNameId || expense.categoryName || "N/A"}</span>
+                </div>
+              </td>
               <td class="table-amount">${formatIDR(expense.amount)}</td>
+              <td style="font-size: 7px; color: #666;">${expense.notes || "-"}</td>
             </tr>
             `
               )
               .join("")}
-            <tr class="table-total">
-              <td style="text-align: right; padding-right: 3mm;">SUBTOTAL BIAYA LANGSUNG</td>
-              <td class="table-amount">${formatIDR(directCosts)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      `
-          : ""
-      }
 
-      ${
-        expenses.filter((e: any) => e.costType === "indirect").length > 0
-          ? `
-      <div>
-        <div style="font-weight: 700; color: #1f2937; margin-bottom: 2mm; font-size: 11px;">Biaya Tidak Langsung</div>
-        <table class="table">
-          <thead>
-            <tr>
-              <th style="width: 70%;">Kategori</th>
-              <th style="width: 30%;" class="table-amount">Jumlah</th>
+            <!-- Subtotal: Direct Costs -->
+            <tr style="background-color: #dbeafe; font-weight: 700;">
+              <td colspan="2" style="text-align: left; padding-left: 3mm;">
+                <strong>Total Biaya Langsung</strong>
+              </td>
+              <td class="table-amount">
+                <strong style="color: #1e40af;">
+                  ${formatIDR(profitMargin?.estimatedDirectCosts || 0)}
+                </strong>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            ${expenses
-              .filter((e: any) => e.costType === "indirect")
-              .map(
-                (expense: any) => `
-            <tr>
-              <td>${expense.categoryNameId || expense.categoryName || "N/A"}</td>
-              <td class="table-amount">${formatIDR(expense.amount)}</td>
+
+            <!-- Subtotal: Indirect Costs -->
+            <tr style="background-color: #fed7aa; font-weight: 700;">
+              <td colspan="2" style="text-align: left; padding-left: 3mm;">
+                <strong>Total Biaya Tidak Langsung</strong>
+              </td>
+              <td class="table-amount">
+                <strong style="color: #c2410c;">
+                  ${formatIDR(profitMargin?.estimatedIndirectCosts || 0)}
+                </strong>
+              </td>
             </tr>
-            `
-              )
-              .join("")}
+
+            <!-- Grand Total -->
             <tr class="table-total">
-              <td style="text-align: right; padding-right: 3mm;">SUBTOTAL BIAYA TIDAK LANGSUNG</td>
-              <td class="table-amount">${formatIDR(indirectCosts)}</td>
+              <td colspan="2" style="text-align: left; padding-left: 3mm;">
+                <strong style="font-size: 11px;">TOTAL ESTIMASI</strong>
+              </td>
+              <td class="table-amount">
+                <strong style="font-size: 11px; color: #22c55e;">
+                  ${formatIDR(profitMargin?.estimatedTotalCosts || 0)}
+                </strong>
+              </td>
             </tr>
           </tbody>
         </table>

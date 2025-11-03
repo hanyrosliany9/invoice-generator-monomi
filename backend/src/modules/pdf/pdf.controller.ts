@@ -217,9 +217,45 @@ export class PdfController {
         throw new NotFoundException("Proyek tidak ditemukan");
       }
 
+      // Parse estimatedExpenses JSON (same logic as frontend)
+      let parsedEstimatedExpenses: any[] = [];
+      let estimatedDirectTotal = 0;
+      let estimatedIndirectTotal = 0;
+
+      if (project.estimatedExpenses) {
+        try {
+          const expensesData = typeof project.estimatedExpenses === 'string'
+            ? JSON.parse(project.estimatedExpenses)
+            : project.estimatedExpenses;
+
+          // Extract expenses from the nested structure
+          if (expensesData.direct && expensesData.indirect) {
+            parsedEstimatedExpenses = [
+              ...expensesData.direct.map((exp: any, idx: number) => ({
+                ...exp,
+                costType: 'direct',
+                _uniqueKey: `direct-${exp.categoryId}-${exp.amount}-${idx}`,
+              })),
+              ...expensesData.indirect.map((exp: any, idx: number) => ({
+                ...exp,
+                costType: 'indirect',
+                _uniqueKey: `indirect-${exp.categoryId}-${exp.amount}-${idx}`,
+              })),
+            ];
+            estimatedDirectTotal = expensesData.totalDirect || 0;
+            estimatedIndirectTotal = expensesData.totalIndirect || 0;
+          }
+        } catch (error) {
+          this.logger.warn(`Failed to parse estimatedExpenses for project ${id}:`, error);
+        }
+      }
+
       // Transform data structure for PDF template
       const projectForPDF = {
         ...project,
+
+        // Include parsed estimated expenses for PDF template
+        estimatedExpenses: parsedEstimatedExpenses,
 
         // Map profit margin data to expected structure
         profitMargin: {
@@ -247,6 +283,11 @@ export class PdfController {
           projectedGrossMargin: project.projectedGrossMargin ? parseFloat(project.projectedGrossMargin.toString()) : null,
           projectedNetMargin: project.projectedNetMargin ? parseFloat(project.projectedNetMargin.toString()) : null,
           projectedProfit: project.projectedProfit ? parseFloat(project.projectedProfit.toString()) : null,
+
+          // Estimated costs totals (from planning phase)
+          estimatedDirectCosts: estimatedDirectTotal,
+          estimatedIndirectCosts: estimatedIndirectTotal,
+          estimatedTotalCosts: estimatedDirectTotal + estimatedIndirectTotal,
 
           // Metadata
           calculatedAt: project.profitCalculatedAt,
