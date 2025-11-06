@@ -146,7 +146,7 @@ const GeneralLedgerPage: React.FC = () => {
     {
       title: 'Akun',
       key: 'account',
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: any) => (
         <div>
           <div>
             <Text strong>{record.accountCode}</Text> - {record.accountNameId}

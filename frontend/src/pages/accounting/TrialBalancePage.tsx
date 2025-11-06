@@ -180,7 +180,7 @@ const TrialBalancePage: React.FC = () => {
       key: 'status',
       width: 100,
       align: 'center' as const,
-      render: (_: any, record: any) =>
+      render: (_: unknown, record: any) =>
         record.isAbnormal ? (
           <Tag color="warning" icon={<ExclamationCircleOutlined />}>
             Abnormal

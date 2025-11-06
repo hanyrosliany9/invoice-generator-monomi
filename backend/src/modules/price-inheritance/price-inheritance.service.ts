@@ -5,6 +5,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import {
@@ -54,6 +55,8 @@ interface IndonesianComplianceResult {
 
 @Injectable()
 export class PriceInheritanceService {
+  private readonly logger = new Logger(PriceInheritanceService.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -530,7 +533,7 @@ export class PriceInheritanceService {
       // })
     } catch (error) {
       // Log error but don't fail the main operation
-      console.error("Failed to track user interaction:", error);
+      this.logger.error("Failed to track user interaction:", error);
     }
   }
 

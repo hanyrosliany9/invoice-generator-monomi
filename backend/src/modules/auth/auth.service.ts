@@ -1,4 +1,6 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable, UnauthorizedException ,
+  Logger,
+} from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UsersService } from "../users/users.service";
 import * as bcrypt from "bcrypt";
@@ -8,6 +10,7 @@ import { getErrorMessage } from "../../common/utils/error-handling.util";
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
@@ -25,7 +28,7 @@ export class AuthService {
         try {
           passwordMatch = await bcrypt.compare(password, user.password);
         } catch (error) {
-          console.error("bcrypt.compare failed:", getErrorMessage(error));
+          this.logger.error("bcrypt.compare failed:", getErrorMessage(error));
           return null;
         }
       }

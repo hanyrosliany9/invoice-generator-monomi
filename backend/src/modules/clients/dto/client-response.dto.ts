@@ -7,8 +7,14 @@ export class ClientResponseDto {
   company?: string;
   contactPerson?: string;
   paymentTerms?: string;
+  status?: string;
   createdAt: string;
   updatedAt: string;
+
+  // Financial statistics
+  totalPaid?: string;
+  totalPending?: string;
+  totalRevenue?: string;
 
   // Relations - summary counts only
   _count?: {

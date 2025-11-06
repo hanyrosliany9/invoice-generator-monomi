@@ -8,6 +8,7 @@ import {
   Card,
   Col,
   Descriptions,
+  Divider,
   FloatButton,
   Modal,
   Progress,
@@ -16,6 +17,7 @@ import {
   Segmented,
   Space,
   Statistic,
+  Table,
   Tabs,
   Tag,
   Timeline,
@@ -51,6 +53,8 @@ import { usePaymentMilestones, useGenerateMilestoneInvoice } from '../hooks/useP
 import { useTheme } from '../theme'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import type { ApiError } from '../types/api'
+import type { PaymentMilestone } from '../types/payment-milestones'
 
 dayjs.extend(relativeTime)
 
@@ -145,10 +149,11 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
       })
       queryClient.invalidateQueries({ queryKey: ['paymentMilestones', id] })
       queryClient.invalidateQueries({ queryKey: ['quotation', id] })
-    } catch (error: any) {
+    } catch (error) {
+      const apiError = error as ApiError
       Modal.error({
         title: 'Gagal Membuat Invoice',
-        content: error.message || 'Terjadi kesalahan saat membuat invoice milestone.',
+        content: apiError.message || 'Terjadi kesalahan saat membuat invoice milestone.',
       })
     } finally {
       setCreatingInvoiceForMilestone(null)
@@ -157,6 +162,46 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
 
   const handleEdit = () => {
     navigate(`/quotations/${id}/edit`)
+  }
+
+  const handleStatusUpdate = async (newStatus: string) => {
+    if (!id) return
+    try {
+      await quotationService.updateStatus(id, newStatus)
+      queryClient.invalidateQueries({ queryKey: ['quotation', id] })
+      message.success(`Quotation ${newStatus.toLowerCase()} successfully`)
+    } catch (error) {
+      message.error(`Failed to update quotation status`)
+    }
+  }
+
+  const getStatusActions = () => {
+    if (!quotation) return []
+    const actions = []
+
+    if (quotation.status === 'DRAFT') {
+      actions.push({
+        icon: <SendOutlined />,
+        tooltip: 'Mark as Sent',
+        onClick: () => handleStatusUpdate('SENT'),
+      })
+    }
+
+    if (quotation.status === 'SENT') {
+      actions.push({
+        icon: <CheckCircleOutlined />,
+        tooltip: 'Approve',
+        onClick: () => handleStatusUpdate('APPROVED'),
+      })
+
+      actions.push({
+        icon: <CloseCircleOutlined />,
+        tooltip: 'Decline',
+        onClick: () => handleStatusUpdate('DECLINED'),
+      })
+    }
+
+    return actions
   }
 
   const handleShareWhatsApp = () => {
@@ -629,6 +674,55 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
         </Col>
       </Row>
 
+      {/* Tax & Compliance Information */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Col xs={24} sm={12}>
+          <Card title='Tax & Compliance Information' size='small'>
+            <Space direction='vertical' size='small' style={{ width: '100%' }}>
+              <div>
+                <Text type='secondary'>Subtotal (Before Tax)</Text>
+                <div>
+                  <Text strong style={{ fontSize: '16px' }}>
+                    {formatIDR(quotation.totalAmount)}
+                  </Text>
+                </div>
+              </div>
+
+              <Divider style={{ margin: '8px 0' }} />
+
+              <div>
+                <Text type='secondary'>PPN 11%</Text>
+                <div>
+                  <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+                    {formatIDR(quotation.totalAmount * 0.11)}
+                  </Text>
+                </div>
+              </div>
+
+              <div>
+                <Text type='secondary'>Total + Tax</Text>
+                <div>
+                  <Text strong style={{ fontSize: '18px', color: '#52c41a' }}>
+                    {formatIDR(quotation.totalAmount * 1.11)}
+                  </Text>
+                </div>
+              </div>
+
+              <Divider style={{ margin: '8px 0' }} />
+
+              <div>
+                <Text type='secondary'>Materai Requirement</Text>
+                <div>
+                  <Tag color={quotation.totalAmount > 5000000 ? 'warning' : 'success'}>
+                    {quotation.totalAmount > 5000000 ? 'Required (> 5M IDR)' : 'Not Required'}
+                  </Tag>
+                </div>
+              </div>
+            </Space>
+          </Card>
+        </Col>
+      </Row>
+
       {/* Payment Milestones Section (if quotation has milestones) */}
       {paymentMilestones.length > 0 && (
         <Card
@@ -696,6 +790,95 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
                     <div style={{ marginTop: '24px' }}>
                       <Title level={5}>Terms & Conditions</Title>
                       <Paragraph>{quotation.terms}</Paragraph>
+                    </div>
+                  )}
+
+                  {quotation.scopeOfWork && (
+                    <div style={{ marginTop: '24px' }}>
+                      <Title level={5}>Scope of Work</Title>
+                      <Card
+                        size='small'
+                        style={{
+                          background: theme.colors.glass.background,
+                          backdropFilter: theme.colors.glass.backdropFilter,
+                          border: theme.colors.glass.border,
+                          whiteSpace: 'pre-wrap',
+                          fontFamily: 'monospace',
+                          fontSize: '13px',
+                        }}
+                      >
+                        {quotation.scopeOfWork}
+                      </Card>
+                    </div>
+                  )}
+
+                  {quotation.priceBreakdown?.products && quotation.priceBreakdown.products.length > 0 && (
+                    <div style={{ marginTop: '24px' }}>
+                      <Title level={5}>Products & Services</Title>
+                      <Table
+                        dataSource={quotation.priceBreakdown.products}
+                        pagination={false}
+                        size='small'
+                        columns={[
+                          {
+                            title: 'Product/Service',
+                            dataIndex: 'name',
+                            key: 'name',
+                            render: (name: string, record: { name: string; description?: string; price: number; quantity: number; subtotal: number }) => (
+                              <div>
+                                <Text strong>{name}</Text>
+                                {record.description && (
+                                  <>
+                                    <br />
+                                    <Text type='secondary' style={{ fontSize: '12px' }}>
+                                      {record.description}
+                                    </Text>
+                                  </>
+                                )}
+                              </div>
+                            ),
+                          },
+                          {
+                            title: 'Quantity',
+                            dataIndex: 'quantity',
+                            key: 'quantity',
+                            align: 'center' as const,
+                            width: 100,
+                          },
+                          {
+                            title: 'Unit Price',
+                            dataIndex: 'price',
+                            key: 'price',
+                            align: 'right' as const,
+                            width: 150,
+                            render: (price: number) => formatIDR(price),
+                          },
+                          {
+                            title: 'Subtotal',
+                            dataIndex: 'subtotal',
+                            key: 'subtotal',
+                            align: 'right' as const,
+                            width: 150,
+                            render: (subtotal: number) => (
+                              <Text strong>{formatIDR(subtotal)}</Text>
+                            ),
+                          },
+                        ]}
+                        summary={(data) => (
+                          <Table.Summary fixed>
+                            <Table.Summary.Row>
+                              <Table.Summary.Cell index={0} colSpan={3} align='right'>
+                                <Text strong>Total</Text>
+                              </Table.Summary.Cell>
+                              <Table.Summary.Cell index={1} align='right'>
+                                <Text strong style={{ fontSize: '16px', color: '#52c41a' }}>
+                                  {formatIDR(quotation.priceBreakdown.total)}
+                                </Text>
+                              </Table.Summary.Cell>
+                            </Table.Summary.Row>
+                          </Table.Summary>
+                        )}
+                      />
                     </div>
                   )}
                 </div>
@@ -954,6 +1137,14 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
 
       {/* Floating Action Button */}
       <FloatButton.Group>
+        {getStatusActions().map((action, index) => (
+          <FloatButton
+            key={index}
+            icon={action.icon}
+            tooltip={action.tooltip}
+            onClick={action.onClick}
+          />
+        ))}
         <FloatButton
           icon={<EditOutlined />}
           tooltip='Edit Quotation'

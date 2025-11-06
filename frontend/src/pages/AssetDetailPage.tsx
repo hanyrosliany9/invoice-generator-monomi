@@ -84,7 +84,7 @@ export const AssetDetailPage: React.FC = () => {
     {
       title: 'Periode',
       key: 'period',
-      render: (_: any, reservation: any) => (
+      render: (_: unknown, reservation: any) => (
         <div>
           <div>{formatDate(reservation.startDate)}</div>
           <div className='text-xs text-gray-500'>s/d {formatDate(reservation.endDate)}</div>
@@ -94,21 +94,21 @@ export const AssetDetailPage: React.FC = () => {
     {
       title: 'User',
       key: 'user',
-      render: (_: any, reservation: any) => (
+      render: (_: unknown, reservation: any) => (
         <Text>{reservation.user?.name || '-'}</Text>
       ),
     },
     {
       title: 'Tujuan',
       key: 'purpose',
-      render: (_: any, reservation: any) => (
+      render: (_: unknown, reservation: any) => (
         <Text>{reservation.purpose}</Text>
       ),
     },
     {
       title: 'Status',
       key: 'status',
-      render: (_: any, reservation: any) => {
+      render: (_: unknown, reservation: any) => {
         const statusMap: Record<string, { color: string; text: string }> = {
           PENDING: { color: 'blue', text: 'Menunggu' },
           CONFIRMED: { color: 'green', text: 'Dikonfirmasi' },
@@ -125,29 +125,29 @@ export const AssetDetailPage: React.FC = () => {
     {
       title: 'Tanggal',
       key: 'date',
-      render: (_: any, record: any) => formatDate(record.performedDate),
+      render: (_: unknown, record: any) => formatDate(record.performedDate),
     },
     {
       title: 'Tipe',
       key: 'type',
-      render: (_: any, record: any) => <Text>{record.maintenanceType}</Text>,
+      render: (_: unknown, record: any) => <Text>{record.maintenanceType}</Text>,
     },
     {
       title: 'Deskripsi',
       key: 'description',
-      render: (_: any, record: any) => <Text>{record.description}</Text>,
+      render: (_: unknown, record: any) => <Text>{record.description}</Text>,
     },
     {
       title: 'Biaya',
       key: 'cost',
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: any) => (
         <Text>{record.cost ? formatIDR(record.cost) : '-'}</Text>
       ),
     },
     {
       title: 'Teknisi',
       key: 'performedBy',
-      render: (_: any, record: any) => <Text>{record.performedBy || '-'}</Text>,
+      render: (_: unknown, record: any) => <Text>{record.performedBy || '-'}</Text>,
     },
   ]
 

@@ -1,6 +1,7 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { InvoicesController } from "./invoices.controller";
 import { InvoicesService } from "./invoices.service";
+import { InvoiceCounterService } from "./services/invoice-counter.service";
 import { PrismaModule } from "../prisma/prisma.module";
 import { QuotationsModule } from "../quotations/quotations.module";
 import { NotificationsModule } from "../notifications/notifications.module";
@@ -15,7 +16,7 @@ import { AccountingModule } from "../accounting/accounting.module";
     AccountingModule,
   ],
   controllers: [InvoicesController],
-  providers: [InvoicesService], // InvoicePaymentListener temporarily disabled
-  exports: [InvoicesService],
+  providers: [InvoicesService, InvoiceCounterService], // InvoicePaymentListener temporarily disabled
+  exports: [InvoicesService, InvoiceCounterService],
 })
 export class InvoicesModule {}

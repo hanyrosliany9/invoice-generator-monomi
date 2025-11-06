@@ -8,8 +8,18 @@ export class InvoiceResponseDto {
   amountPerProject: string; // Convert Decimal to string
   totalAmount: string; // Convert Decimal to string
   paymentInfo: string;
+
+  // Business details
+  scopeOfWork?: string;
+  priceBreakdown?: Record<string, any>;
+
+  // Materai fields
   materaiRequired: boolean;
   materaiApplied: boolean;
+  materaiAmount?: string;
+  materaiAppliedAt?: string;
+  materaiAppliedBy?: string;
+
   terms?: string;
   signature?: string;
   status: InvoiceStatus;
@@ -33,6 +43,7 @@ export class InvoiceResponseDto {
   };
 
   // Quotation reference (if exists)
+  quotationId?: string; // Flattened for easy access
   quotation?: {
     id: string;
     quotationNumber: string;

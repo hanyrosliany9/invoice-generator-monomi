@@ -48,6 +48,7 @@ import { projectService } from '../services/projects'
 import { clientService } from '../services/clients'
 import { formatIDR } from '../utils/currency'
 import { useTheme } from '../theme'
+import type { ApiError } from '../types/api'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -76,7 +77,7 @@ export const InvoiceEditPage: React.FC = () => {
   const { theme } = useTheme()
   const { id } = useParams<{ id: string }>()
   const [autoSaving, setAutoSaving] = useState(false)
-  const [previewData, setPreviewData] = useState<any>(null)
+  const [previewData, setPreviewData] = useState<Partial<InvoiceFormData> | null>(null)
   const [includePPN, setIncludePPN] = useState(true)
 
   // Fetch invoice data
@@ -181,7 +182,7 @@ export const InvoiceEditPage: React.FC = () => {
   }, [invoice, form])
 
   // Update preview data when form changes
-  const updatePreviewData = (values: any) => {
+  const updatePreviewData = (values: Partial<InvoiceFormData>) => {
     const selectedClient =
       clients.find(c => c.id === values.clientId) || invoice?.client
     const selectedProject =

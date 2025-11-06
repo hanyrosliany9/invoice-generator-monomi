@@ -5,6 +5,8 @@ export class ProjectResponseDto {
   number: string;
   description: string;
   output: string;
+  scopeOfWork?: string;
+
   projectType: {
     id: string;
     code: string;
@@ -15,7 +17,18 @@ export class ProjectResponseDto {
   status: ProjectStatus;
   startDate?: string;
   endDate?: string;
+
+  // Pricing
   estimatedBudget?: string; // Convert Decimal to string
+  basePrice?: string;
+  priceBreakdown?: Record<string, any>;
+
+  // Project Projections (Planning Phase)
+  estimatedExpenses?: Record<string, any>;
+  projectedGrossMargin?: string;
+  projectedNetMargin?: string;
+  projectedProfit?: string;
+
   createdAt: string;
   updatedAt: string;
 

@@ -245,7 +245,7 @@ export const ReportsPage: React.FC = () => {
       window.URL.revokeObjectURL(url)
       message.success('Laporan PDF berhasil diunduh')
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(`Gagal mengunduh laporan PDF: ${error.message}`)
     },
   })
@@ -272,7 +272,7 @@ export const ReportsPage: React.FC = () => {
       window.URL.revokeObjectURL(url)
       message.success('Laporan Excel berhasil diunduh')
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(`Gagal mengunduh laporan Excel: ${error.message}`)
     },
   })

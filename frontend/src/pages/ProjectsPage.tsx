@@ -571,7 +571,7 @@ export const ProjectsPage: React.FC = () => {
       title: 'Proyek',
       key: 'project',
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
-      render: (_: any, project: Project) => (
+      render: (_: unknown, project: Project) => (
         <div>
           <div className='font-semibold'>
             <Button
@@ -622,7 +622,7 @@ export const ProjectsPage: React.FC = () => {
       title: 'Klien',
       key: 'clientName',
       responsive: ['sm', 'md', 'lg'] as any,
-      render: (_: any, project: Project) => (
+      render: (_: unknown, project: Project) => (
         <Button
           type='link'
           onClick={() => navigateToClient(project.client?.id || '')}
@@ -639,7 +639,7 @@ export const ProjectsPage: React.FC = () => {
       title: 'Progress',
       key: 'progress',
       responsive: ['md', 'lg'] as any,
-      render: (_: any, project: Project) => {
+      render: (_: unknown, project: Project) => {
         const progress = calculateProjectProgress(project)
 
         return (
@@ -677,7 +677,7 @@ export const ProjectsPage: React.FC = () => {
       title: 'Status',
       key: 'status',
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
-      render: (_: any, project: Project) => {
+      render: (_: unknown, project: Project) => {
         const statusConfig = getProjectStatusConfig(project.status)
         const badgeColors = statusConfig.badgeColor
 
@@ -718,7 +718,7 @@ export const ProjectsPage: React.FC = () => {
       title: 'Timeline',
       key: 'timeline',
       responsive: ['md', 'lg'] as any,
-      render: (_: any, project: Project) => {
+      render: (_: unknown, project: Project) => {
         const daysRemaining = getDaysRemaining(project.endDate)
         const isOverdue = isProjectOverdue(project)
 
@@ -746,7 +746,7 @@ export const ProjectsPage: React.FC = () => {
       title: 'Nilai Proyek',
       key: 'budget',
       responsive: ['lg'] as any,
-      render: (_: any, project: Project) => {
+      render: (_: unknown, project: Project) => {
         const budget = safeNumber(project.estimatedBudget || project.basePrice || 0)
         const actualPrice = safeNumber(project.basePrice || 0)
         const totalRevenue = safeNumber(project.totalRevenue || 0)
@@ -788,7 +788,7 @@ export const ProjectsPage: React.FC = () => {
       fixed: 'right' as const,
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
       className: 'actions-column',
-      render: (_: any, project: Project) => (
+      render: (_: unknown, project: Project) => (
         <div className='row-actions'>
           <Dropdown
             menu={{ items: getActionMenuItems(project) }}

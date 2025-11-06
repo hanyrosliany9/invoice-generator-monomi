@@ -6,6 +6,7 @@ import {
   Body,
   UseGuards,
   Request,
+  Logger,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags, ApiOperation } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -20,13 +21,15 @@ import { UpdateCompanySettingsDto } from "./dto/update-company-settings.dto";
 @UseGuards(JwtAuthGuard)
 @Controller("settings")
 export class SettingsController {
+  private readonly logger = new Logger(SettingsController.name);
+
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get("user")
   @ApiOperation({ summary: "Get user settings" })
   async getUserSettings(@Request() req: any) {
-    console.log("Controller: req.user =", req.user);
-    console.log("Controller: req.user.id =", req.user?.id);
+    this.logger.log("Controller: req.user =", req.user);
+    this.logger.log("Controller: req.user.id =", req.user?.id);
     return this.settingsService.getUserSettings(req.user?.id);
   }
 
@@ -36,7 +39,7 @@ export class SettingsController {
     @Request() req: any,
     @Body() updateUserSettingsDto: UpdateUserSettingsDto,
   ) {
-    console.log("UPDATE USER SETTINGS - Request body:", JSON.stringify(updateUserSettingsDto, null, 2));
+    this.logger.log("UPDATE USER SETTINGS - Request body:", JSON.stringify(updateUserSettingsDto, null, 2));
     return this.settingsService.updateUserSettings(
       req.user.id,
       updateUserSettingsDto,
@@ -56,7 +59,7 @@ export class SettingsController {
   async updateCompanySettings(
     @Body() updateCompanySettingsDto: UpdateCompanySettingsDto,
   ) {
-    console.log("UPDATE COMPANY SETTINGS - Request body:", JSON.stringify(updateCompanySettingsDto, null, 2));
+    this.logger.log("UPDATE COMPANY SETTINGS - Request body:", JSON.stringify(updateCompanySettingsDto, null, 2));
     return this.settingsService.updateCompanySettings(updateCompanySettingsDto);
   }
 
@@ -73,8 +76,8 @@ export class SettingsController {
   async updateSystemSettings(
     @Body() updateSystemSettingsDto: UpdateSystemSettingsDto,
   ) {
-    console.log("UPDATE SYSTEM SETTINGS - Request body:", JSON.stringify(updateSystemSettingsDto, null, 2));
-    console.log("UPDATE SYSTEM SETTINGS - Request body keys:", Object.keys(updateSystemSettingsDto));
+    this.logger.log("UPDATE SYSTEM SETTINGS - Request body:", JSON.stringify(updateSystemSettingsDto, null, 2));
+    this.logger.log("UPDATE SYSTEM SETTINGS - Request body keys:", Object.keys(updateSystemSettingsDto));
     return this.settingsService.updateSystemSettings(updateSystemSettingsDto);
   }
 

@@ -460,7 +460,7 @@ export const ClientsPage: React.FC = () => {
     setSelectedRowKeys([])
   }
 
-  const handleFormSubmit = (values: any) => {
+  const handleFormSubmit = (values: Record<string, any>) => {
     if (editingClient) {
       updateMutation.mutate({ id: editingClient.id, data: values })
     } else {
@@ -516,7 +516,7 @@ export const ClientsPage: React.FC = () => {
       title: 'Klien',
       key: 'client',
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
-      render: (_: any, client: Client) => (
+      render: (_: unknown, client: Client) => (
         <div className='flex items-center'>
           <Avatar icon={getCompanyIcon(client?.company)} className='mr-3' />
           <div>
@@ -534,7 +534,7 @@ export const ClientsPage: React.FC = () => {
       title: 'Kontak',
       key: 'contact',
       responsive: ['md', 'lg'] as any,
-      render: (_: any, client: Client) => (
+      render: (_: unknown, client: Client) => (
         <div>
           <div className='flex items-center mb-1'>
             <UserOutlined className='mr-2 text-gray-400' />
@@ -555,7 +555,7 @@ export const ClientsPage: React.FC = () => {
       title: 'Business Overview',
       key: 'business',
       responsive: ['lg'] as any,
-      render: (_: any, client: Client) => (
+      render: (_: unknown, client: Client) => (
         <div className='flex items-center space-x-4'>
           <HealthScore client={client} size='small' />
           <div className='flex items-center space-x-2'>
@@ -598,7 +598,7 @@ export const ClientsPage: React.FC = () => {
       title: 'Revenue',
       key: 'revenue',
       responsive: ['sm', 'md', 'lg'] as any,
-      render: (_: any, client: Client) => (
+      render: (_: unknown, client: Client) => (
         <RevenueIndicator
           paid={client.totalPaid || 0}
           pending={client.totalPending || 0}
@@ -666,7 +666,7 @@ export const ClientsPage: React.FC = () => {
       fixed: 'right' as const,
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
       className: 'actions-column',
-      render: (_: any, client: Client) => (
+      render: (_: unknown, client: Client) => (
         <div className='row-actions'>
           <Dropdown
             menu={{ items: getActionMenuItems(client) }}

@@ -83,7 +83,7 @@ export const ExpenseCreatePage: React.FC = () => {
       message.success('Expense berhasil dibuat');
       navigate(`/expenses/${expense.id}`);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(`Gagal membuat expense: ${error.message}`);
     },
   });
@@ -133,7 +133,7 @@ export const ExpenseCreatePage: React.FC = () => {
     }
   };
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = (values: Record<string, any>) => {
     // Ensure calculations are correct
     const gross = Number(values.grossAmount) || 0;
     const ppnAmt = includePPN ? Number(values.ppnAmount) || 0 : 0;

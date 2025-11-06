@@ -61,6 +61,8 @@ import { Modal } from 'antd'
 import { PaymentMilestoneForm } from '../components/quotations'
 import type { PaymentMilestoneFormItem, PaymentMilestone } from '../types/payment-milestones'
 import { useIsMobile } from '../hooks/useMediaQuery'
+import { useOptimizedAutoSave } from '../hooks/useOptimizedAutoSave'
+import type { ApiError } from '../types/api'
 
 const { TextArea} = Input
 const { Title, Text } = Typography
@@ -85,11 +87,10 @@ export const QuotationEditPage: React.FC = () => {
   const queryClient = useQueryClient()
   const { message } = App.useApp()
   const { theme } = useTheme()
-  const [autoSaving, setAutoSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [originalValues, setOriginalValues] =
     useState<QuotationFormData | null>(null)
-  const [previewData, setPreviewData] = useState<any>(null)
+  const [previewData, setPreviewData] = useState<Partial<QuotationFormData> | null>(null)
   const [includePPN, setIncludePPN] = useState(true)
   const [totalAmount, setTotalAmount] = useState(0)
   const [creatingInvoiceForMilestone, setCreatingInvoiceForMilestone] = useState<string | null>(null)
@@ -207,10 +208,11 @@ export const QuotationEditPage: React.FC = () => {
       })
       queryClient.invalidateQueries({ queryKey: ['paymentMilestones', id] })
       queryClient.invalidateQueries({ queryKey: ['quotation', id] })
-    } catch (error: any) {
+    } catch (error) {
+      const apiError = error as ApiError
       Modal.error({
         title: 'Gagal Membuat Invoice',
-        content: error.message || 'Terjadi kesalahan saat membuat invoice milestone.',
+        content: apiError.message || 'Terjadi kesalahan saat membuat invoice milestone.',
       })
     } finally {
       setCreatingInvoiceForMilestone(null)
@@ -261,7 +263,7 @@ export const QuotationEditPage: React.FC = () => {
   }, [quotation?.id])
 
   // Update preview data when form changes
-  const updatePreviewData = (values: any) => {
+  const updatePreviewData = (values: Partial<QuotationFormData>) => {
     const selectedClient =
       clients.find(c => c.id === values.clientId) || quotation?.client
     const selectedProject =
@@ -321,7 +323,7 @@ export const QuotationEditPage: React.FC = () => {
               }
 
               // Compare each milestone deeply
-              return current.some((currMilestone: any, index: number) => {
+              return current.some((currMilestone: PaymentMilestoneFormItem, index: number) => {
                 const origMilestone = original[index]
                 if (!origMilestone) return true
 
@@ -522,8 +524,9 @@ export const QuotationEditPage: React.FC = () => {
       message.success('Quotation and payment milestones updated successfully')
       setHasChanges(false)
       navigate(`/quotations/${id}`)
-    } catch (error: any) {
-      message.error(error.message || 'Failed to update quotation')
+    } catch (error) {
+      const apiError = error as ApiError
+      message.error(apiError.message || 'Failed to update quotation')
       console.error('Error updating quotation:', error)
     } finally {
       setIsSaving(false)
@@ -540,8 +543,26 @@ export const QuotationEditPage: React.FC = () => {
   }
 
   const handleGenerateInvoice = () => {
-    if (!id) return
-    generateInvoiceMutation.mutate(id)
+    if (!id || !quotation) return
+
+    // Check payment type to route appropriately
+    if (quotation.paymentType === 'MILESTONE_BASED') {
+      // Show modal explaining milestone workflow
+      Modal.info({
+        title: 'Milestone-Based Payment Detected',
+        content: (
+          <div>
+            <p>This quotation uses milestone-based payments.</p>
+            <p>You need to generate invoices for individual milestones from the quotation detail page.</p>
+          </div>
+        ),
+        onOk: () => navigate(`/quotations/${id}`),
+        okText: 'Go to Detail Page',
+      })
+    } else {
+      // For FULL_PAYMENT, ADVANCE_PAYMENT, CUSTOM - generate invoice directly
+      generateInvoiceMutation.mutate(id)
+    }
   }
 
   const handleSaveDraft = async () => {
@@ -586,8 +607,9 @@ export const QuotationEditPage: React.FC = () => {
       setHasChanges(false)
       setOriginalValues(values)
       message.success('Draft and payment milestones saved successfully')
-    } catch (error: any) {
-      message.error(error.message || 'Failed to save draft')
+    } catch (error) {
+      const apiError = error as ApiError
+      message.error(apiError.message || 'Failed to save draft')
       console.error('Error saving draft:', error)
     } finally {
       setAutoSaving(false)
@@ -775,22 +797,48 @@ export const QuotationEditPage: React.FC = () => {
               border: theme.colors.card.border,
             }}
           >
-            <Tag
-              color={getStatusColor(quotation.status)}
-              style={{ marginBottom: '8px' }}
-            >
-              {quotation.status}
-            </Tag>
-            <div>
-              <Text type='secondary' style={{ fontSize: '12px' }}>
-                Created by: {quotation.user?.name || 'Unknown'}
-              </Text>
-            </div>
-            <div>
-              <Text type='secondary' style={{ fontSize: '12px' }}>
-                Related invoices: {quotation.invoices?.length || 0}
-              </Text>
-            </div>
+            <Space direction='vertical' size='small' style={{ width: '100%' }}>
+              <div>
+                <Tag
+                  color={getStatusColor(quotation.status)}
+                  style={{ marginBottom: '8px' }}
+                >
+                  {quotation.status}
+                </Tag>
+              </div>
+
+              <div>
+                <Text type='secondary' style={{ fontSize: '12px' }}>
+                  Created by: {quotation.user?.name || 'Unknown'}
+                </Text>
+              </div>
+
+              {/* ENHANCED: Related invoices with navigation */}
+              <div>
+                <Text type='secondary' style={{ fontSize: '12px' }}>
+                  Related invoices: {quotation.invoices?.length || 0}
+                </Text>
+                {quotation.invoices && quotation.invoices.length > 0 && (
+                  <div style={{ marginTop: '8px' }}>
+                    {quotation.invoices.map((invoice) => (
+                      <div key={invoice.id} style={{ marginBottom: '4px' }}>
+                        <Button
+                          type='link'
+                          size='small'
+                          style={{ padding: 0, height: 'auto' }}
+                          onClick={() => navigate(`/invoices/${invoice.id}`)}
+                        >
+                          {invoice.invoiceNumber}
+                        </Button>
+                        <Tag size='small' color='blue' style={{ marginLeft: '8px' }}>
+                          {invoice.status}
+                        </Tag>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Space>
           </Card>
 
           {/* Materai Compliance */}
@@ -857,12 +905,15 @@ export const QuotationEditPage: React.FC = () => {
                 name='projectId'
                 label='Project'
                 rules={[{ required: true, message: 'Please select a project' }]}
+                tooltip='Project cannot be changed after quotation creation to maintain data integrity'
+                extra='Project association is locked to preserve inherited products, scope, and client data. To change project, create a new quotation.'
               >
                 <Select
                   placeholder='Select project'
                   size='large'
                   loading={projectsLoading}
                   showSearch
+                  disabled={true}
                   filterOption={(input, option) =>
                     ((option?.label as string) ?? '')
                       .toLowerCase()
@@ -1097,6 +1148,69 @@ export const QuotationEditPage: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
+        </ProgressiveSection>
+
+        {/* Products & Services Section (Read-only) */}
+        <ProgressiveSection
+          title='Products & Services'
+          subtitle='Items inherited from project (read-only on edit)'
+          icon={<ProjectOutlined />}
+          defaultOpen={false}
+        >
+          {quotation.priceBreakdown?.products && quotation.priceBreakdown.products.length > 0 ? (
+            <Alert
+              message='Products Inherited from Project'
+              description={
+                <div style={{ marginTop: '8px' }}>
+                  {quotation.priceBreakdown.products.map((product, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: '8px',
+                        marginBottom: '4px',
+                        background: theme.colors.glass.background,
+                        border: theme.colors.glass.border,
+                        borderRadius: '4px',
+                      }}
+                    >
+                      <div>
+                        <Text strong>{product.name}</Text>
+                        <br />
+                        {product.description && (
+                          <Text type='secondary' style={{ fontSize: '12px' }}>
+                            {product.description}
+                          </Text>
+                        )}
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <Text strong>{formatIDR(product.subtotal)}</Text>
+                        <br />
+                        <Text type='secondary' style={{ fontSize: '12px' }}>
+                          {product.quantity} × {formatIDR(product.price)}
+                        </Text>
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ textAlign: 'right', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #f0f0f0' }}>
+                    <Text strong style={{ fontSize: '16px', color: theme.colors.status.success }}>
+                      Total: {formatIDR(quotation.priceBreakdown.total)}
+                    </Text>
+                  </div>
+                </div>
+              }
+              type='info'
+              showIcon
+            />
+          ) : (
+            <Alert
+              message='No Products Defined'
+              description='This quotation does not have detailed product breakdown. Only total amounts are specified.'
+              type='info'
+              showIcon
+            />
+          )}
         </ProgressiveSection>
 
         {/* Quotation Details */}

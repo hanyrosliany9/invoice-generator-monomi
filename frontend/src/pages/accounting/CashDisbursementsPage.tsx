@@ -116,7 +116,7 @@ const CashDisbursementsPage: React.FC = () => {
       setIsCreateModalOpen(false);
       form.resetFields();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal membuat pengeluaran kas');
     },
   });
@@ -127,7 +127,7 @@ const CashDisbursementsPage: React.FC = () => {
       message.success('Pengeluaran kas berhasil diajukan');
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal mengajukan pengeluaran kas');
     },
   });
@@ -138,7 +138,7 @@ const CashDisbursementsPage: React.FC = () => {
       message.success('Pengeluaran kas berhasil disetujui dan diposting');
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menyetujui pengeluaran kas');
     },
   });
@@ -151,7 +151,7 @@ const CashDisbursementsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
       setRejectReason('');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menolak pengeluaran kas');
     },
   });
@@ -162,7 +162,7 @@ const CashDisbursementsPage: React.FC = () => {
       message.success('Pengeluaran kas berhasil dibatalkan');
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal membatalkan pengeluaran kas');
     },
   });
@@ -173,7 +173,7 @@ const CashDisbursementsPage: React.FC = () => {
       message.success('Pengeluaran kas berhasil dihapus');
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menghapus pengeluaran kas');
     },
   });
@@ -426,7 +426,7 @@ const CashDisbursementsPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 200,
-      render: (_: any, record: CashTransaction) => (
+      render: (_: unknown, record: CashTransaction) => (
         <Space size="small">
           <Tooltip title="Lihat Detail">
             <Button

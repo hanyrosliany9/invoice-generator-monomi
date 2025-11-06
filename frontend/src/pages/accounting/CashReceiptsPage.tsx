@@ -165,7 +165,7 @@ const CashReceiptsPage: React.FC = () => {
       setIsCreateModalOpen(false);
       form.resetFields();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal membuat penerimaan kas');
     },
   });
@@ -176,7 +176,7 @@ const CashReceiptsPage: React.FC = () => {
       message.success('Penerimaan kas berhasil diajukan');
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal mengajukan penerimaan kas');
     },
   });
@@ -187,7 +187,7 @@ const CashReceiptsPage: React.FC = () => {
       message.success('Penerimaan kas berhasil disetujui dan diposting');
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menyetujui penerimaan kas');
     },
   });
@@ -200,7 +200,7 @@ const CashReceiptsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
       setRejectReason('');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menolak penerimaan kas');
     },
   });
@@ -211,7 +211,7 @@ const CashReceiptsPage: React.FC = () => {
       message.success('Penerimaan kas berhasil dibatalkan');
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal membatalkan penerimaan kas');
     },
   });
@@ -222,7 +222,7 @@ const CashReceiptsPage: React.FC = () => {
       message.success('Penerimaan kas berhasil dihapus');
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menghapus penerimaan kas');
     },
   });
@@ -369,7 +369,7 @@ const CashReceiptsPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 200,
-      render: (_: any, record: CashTransaction) => (
+      render: (_: unknown, record: CashTransaction) => (
         <Space size="small">
           <Tooltip title="Lihat Detail">
             <Button

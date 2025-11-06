@@ -132,10 +132,6 @@ export class PaymentMilestonesController {
   async validate(
     @Param('quotationId') quotationId: string,
   ) {
-    const isValid =
-      await this.paymentMilestonesService.validateQuotationMilestones(
-        quotationId,
-      );
     const milestones =
       await this.paymentMilestonesService.getQuotationMilestones(quotationId);
     const totalPercentage = milestones.reduce(
@@ -143,16 +139,25 @@ export class PaymentMilestonesController {
       0,
     );
 
-    return {
-      valid: isValid,
-      totalPercentage,
-      totalMilestones: milestones.length,
-      errors: isValid
-        ? []
-        : [
-            `Total payment percentage harus 100% (saat ini: ${totalPercentage}%)`,
-          ],
-    };
+    try {
+      await this.paymentMilestonesService.validateQuotationMilestones(
+        quotationId,
+      );
+      return {
+        valid: true,
+        totalPercentage,
+        totalMilestones: milestones.length,
+        errors: [],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Validation failed';
+      return {
+        valid: false,
+        totalPercentage,
+        totalMilestones: milestones.length,
+        errors: [errorMessage],
+      };
+    }
   }
 
   /**

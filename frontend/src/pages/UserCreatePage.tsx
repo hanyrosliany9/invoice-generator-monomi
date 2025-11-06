@@ -66,7 +66,7 @@ export const UserCreatePage: React.FC = () => {
       message.success('User created successfully')
       navigate(`/users`)
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.message || 'Failed to create user')
     },
   })

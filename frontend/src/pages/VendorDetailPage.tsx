@@ -69,7 +69,7 @@ export const VendorDetailPage: React.FC = () => {
       message.success('Vendor berhasil dihapus');
       navigate('/vendors');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(
         error?.response?.data?.message ||
           'Gagal menghapus vendor. Mungkin vendor memiliki transaksi terkait.'

@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { CreateJournalEntryDto } from "../dto/create-journal-entry.dto";
@@ -12,6 +13,7 @@ import { JournalStatus, TransactionType } from "@prisma/client";
 
 @Injectable()
 export class JournalService {
+  private readonly logger = new Logger(JournalService.name);
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -114,13 +116,13 @@ export class JournalService {
             },
           });
 
-          console.log(
+          this.logger.log(
             `✅ Auto-created ExpenseCategory for account ${account.code}`,
           );
         }
       } catch (error) {
         // Log but don't fail - expense account creation should succeed even if category creation fails
-        console.warn(
+        this.logger.warn(
           `⚠️ Failed to auto-create expense category for ${account.code}:`,
           error instanceof Error ? error.message : String(error),
         );
@@ -222,7 +224,7 @@ export class JournalService {
           where: { id: expenseCategory.id },
         });
 
-        console.log(
+        this.logger.log(
           `✅ CASCADE: Deleted ExpenseCategory because account ${code} changed from EXPENSE to ${data.accountType}`,
         );
       }
@@ -283,11 +285,11 @@ export class JournalService {
           },
         });
 
-        console.log(
+        this.logger.log(
           `✅ CASCADE: Created ExpenseCategory because account ${code} changed to EXPENSE`,
         );
       } catch (error) {
-        console.warn(
+        this.logger.warn(
           `⚠️ Failed to auto-create expense category:`,
           error instanceof Error ? error.message : String(error),
         );
@@ -352,7 +354,7 @@ export class JournalService {
             data: categoryUpdates,
           });
 
-          console.log(
+          this.logger.log(
             `✅ CASCADE: Synced ExpenseCategory changes for account ${code}`,
           );
         }
@@ -431,7 +433,7 @@ export class JournalService {
           where: { id: expenseCategory.id },
         });
 
-        console.log(
+        this.logger.log(
           `✅ CASCADE: Deleted auto-created ExpenseCategory for account ${code}`,
         );
       }
@@ -442,7 +444,7 @@ export class JournalService {
       where: { code },
     });
 
-    console.log(`✅ Deleted ChartOfAccount: ${code}`);
+    this.logger.log(`✅ Deleted ChartOfAccount: ${code}`);
     return deleted;
   }
 
@@ -475,7 +477,7 @@ export class JournalService {
           data: { isActive: newStatus },
         });
 
-        console.log(
+        this.logger.log(
           `✅ CASCADE: Toggled ExpenseCategory status to ${newStatus} for account ${code}`,
         );
       }

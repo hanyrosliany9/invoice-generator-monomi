@@ -7,6 +7,7 @@ import {
   UseGuards,
   NotFoundException,
   Logger,
+  Request,
 } from "@nestjs/common";
 import { Response } from "express";
 import {
@@ -19,11 +20,13 @@ import { PdfService } from "./pdf.service";
 import { InvoicesService } from "../invoices/invoices.service";
 import { QuotationsService } from "../quotations/quotations.service";
 import { ProjectsService } from "../projects/projects.service";
+import { ExpensesService } from "../expenses/expenses.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { PdfAccessGuard } from "./guards/pdf-access.guard";
 
 @ApiTags("PDF")
 @Controller("pdf")
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PdfAccessGuard)
 @ApiBearerAuth()
 export class PdfController {
   private readonly logger = new Logger(PdfController.name);
@@ -33,6 +36,7 @@ export class PdfController {
     private readonly invoicesService: InvoicesService,
     private readonly quotationsService: QuotationsService,
     private readonly projectsService: ProjectsService,
+    private readonly expensesService: ExpensesService,
   ) {}
 
   @Get("invoice/:id")
@@ -240,7 +244,8 @@ export class PdfController {
   async generateProjectPdf(
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
-    @Res() res: Response
+    @Res() res: Response,
+    @Request() req: any
   ) {
     try {
       // Get project data
@@ -249,6 +254,14 @@ export class PdfController {
       if (!project) {
         throw new NotFoundException("Proyek tidak ditemukan");
       }
+
+      // Fetch actual expenses for this project
+      const expensesResponse = await this.expensesService.findAll(
+        req.user.userId,
+        { projectId: id, limit: 1000 }, // Get all expenses for the project
+        req.user.role
+      );
+      const actualExpenses = expensesResponse.data || [];
 
       // Parse continuous parameter (default: true for digital viewing)
       const isContinuous = continuous === "true";
@@ -292,6 +305,9 @@ export class PdfController {
 
         // Include parsed estimated expenses for PDF template
         estimatedExpenses: parsedEstimatedExpenses,
+
+        // Include actual expenses (transaction history)
+        actualExpenses: actualExpenses,
 
         // Map profit margin data to expected structure
         profitMargin: {
@@ -374,7 +390,8 @@ export class PdfController {
   async previewProjectPdf(
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
-    @Res() res: Response
+    @Res() res: Response,
+    @Request() req: any
   ) {
     try {
       // Get project data
@@ -383,6 +400,14 @@ export class PdfController {
       if (!project) {
         throw new NotFoundException("Proyek tidak ditemukan");
       }
+
+      // Fetch actual expenses for this project
+      const expensesResponse = await this.expensesService.findAll(
+        req.user.userId,
+        { projectId: id, limit: 1000 }, // Get all expenses for the project
+        req.user.role
+      );
+      const actualExpenses = expensesResponse.data || [];
 
       // Parse continuous parameter (default: true for digital viewing)
       const isContinuous = continuous === "true";
@@ -426,6 +451,9 @@ export class PdfController {
 
         // Include parsed estimated expenses for PDF template
         estimatedExpenses: parsedEstimatedExpenses,
+
+        // Include actual expenses (transaction history)
+        actualExpenses: actualExpenses,
 
         // Map profit margin data to expected structure
         profitMargin: {

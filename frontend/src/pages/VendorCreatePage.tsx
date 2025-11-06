@@ -56,14 +56,14 @@ export const VendorCreatePage: React.FC = () => {
       message.success('Vendor berhasil dibuat');
       navigate(`/vendors/${vendor.id}`);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(
         error?.response?.data?.message || 'Gagal membuat vendor'
       );
     },
   });
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, any>) => {
     const data: CreateVendorRequest = {
       name: values.name,
       vendorType: values.vendorType || 'SUPPLIER',

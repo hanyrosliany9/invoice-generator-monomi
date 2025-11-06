@@ -313,7 +313,7 @@ const AccountsPayablePage: React.FC = () => {
       title: 'Persentase',
       key: 'percentage',
       width: 200,
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: any) => {
         const percentage = data?.summary?.totalOutstanding
           ? (record.outstandingAmount / data.summary.totalOutstanding) * 100
           : 0;

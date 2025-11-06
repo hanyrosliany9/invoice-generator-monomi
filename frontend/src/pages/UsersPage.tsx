@@ -317,7 +317,7 @@ export const UsersPage: React.FC = () => {
       title: 'User',
       key: 'user',
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
-      render: (_: any, user: User) => (
+      render: (_: unknown, user: User) => (
         <div className='flex items-center'>
           <Avatar icon={<UserOutlined />} className='mr-3' />
           <div>
@@ -386,7 +386,7 @@ export const UsersPage: React.FC = () => {
       fixed: 'right' as const,
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
       className: 'actions-column',
-      render: (_: any, user: User) => (
+      render: (_: unknown, user: User) => (
         <div className='row-actions'>
           <Dropdown
             menu={{ items: getActionMenuItems(user) }}

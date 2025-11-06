@@ -123,7 +123,7 @@ export const AssetsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['depreciation-summary'] })
       setProcessModalVisible(false)
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(`Gagal memproses depresiasi: ${error.message}`)
     },
   })
@@ -309,7 +309,7 @@ export const AssetsPage: React.FC = () => {
       title: 'Asset',
       key: 'asset',
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
-      render: (_: any, asset: Asset) => (
+      render: (_: unknown, asset: Asset) => (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '18px', color: theme.colors.accent.primary }}>
@@ -336,7 +336,7 @@ export const AssetsPage: React.FC = () => {
       title: 'Kategori',
       key: 'category',
       responsive: ['sm', 'md', 'lg'] as any,
-      render: (_: any, asset: Asset) => (
+      render: (_: unknown, asset: Asset) => (
         <div>
           <Text strong>{asset.category}</Text>
           {asset.subcategory && (
@@ -350,7 +350,7 @@ export const AssetsPage: React.FC = () => {
       title: 'Spesifikasi',
       key: 'specs',
       responsive: ['md', 'lg'] as any,
-      render: (_: any, asset: Asset) => (
+      render: (_: unknown, asset: Asset) => (
         <div className='text-sm'>
           {asset.manufacturer && <div>Brand: {asset.manufacturer}</div>}
           {asset.model && <div>Model: {asset.model}</div>}
@@ -364,7 +364,7 @@ export const AssetsPage: React.FC = () => {
       title: 'Status',
       key: 'status',
       responsive: ['xs', 'sm', 'md', 'lg'],
-      render: (_: any, asset: Asset) => {
+      render: (_: unknown, asset: Asset) => {
         const statusColors = getStatusColor(asset.status)
         return (
           <div>
@@ -402,7 +402,7 @@ export const AssetsPage: React.FC = () => {
       title: 'Pembelian',
       key: 'purchase',
       responsive: ['md', 'lg'] as any,
-      render: (_: any, asset: Asset) => (
+      render: (_: unknown, asset: Asset) => (
         <div className='text-sm'>
           <div>
             <Text strong>{formatIDR(asset.purchasePrice)}</Text>
@@ -421,7 +421,7 @@ export const AssetsPage: React.FC = () => {
       title: 'Lokasi',
       key: 'location',
       responsive: ['md', 'lg'] as any,
-      render: (_: any, asset: Asset) => (
+      render: (_: unknown, asset: Asset) => (
         <Text>{asset.location || '-'}</Text>
       ),
     },
@@ -432,7 +432,7 @@ export const AssetsPage: React.FC = () => {
       fixed: 'right' as const,
       responsive: ['xs', 'sm', 'md', 'lg'],
       className: 'actions-column',
-      render: (_: any, asset: Asset) => (
+      render: (_: unknown, asset: Asset) => (
         <div className='row-actions'>
           <Dropdown
             menu={{ items: getActionMenuItems(asset) }}

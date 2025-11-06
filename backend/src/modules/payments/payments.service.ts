@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Inject,
   forwardRef,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { InvoicesService } from "../invoices/invoices.service";
@@ -12,6 +13,7 @@ import { PaymentStatus } from "@prisma/client";
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
   constructor(
     private prisma: PrismaService,
     @Inject(forwardRef(() => InvoicesService))
@@ -170,7 +172,7 @@ export class PaymentsService {
           "system", // TODO: Get actual user ID from context
         );
       } catch (error) {
-        console.error("Failed to process advance payment detection:", error);
+        this.logger.error("Failed to process advance payment detection:", error);
         // Don't fail payment confirmation if advance payment detection fails
       }
     }

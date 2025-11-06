@@ -242,8 +242,8 @@ export const ProjectCreatePage: React.FC = () => {
       }, 0)
 
       const validExpenses = (values.estimatedExpenses || [])
-        .filter((e: any) => e && e.categoryId && e.amount)
-        .map((e: any) => ({
+        .filter((e: React.ChangeEvent<HTMLInputElement>) => e && e.categoryId && e.amount)
+        .map((e: React.ChangeEvent<HTMLInputElement>) => ({
           categoryId: e.categoryId,
           amount: parseFloat(e.amount) || 0,
           notes: e.notes || '',

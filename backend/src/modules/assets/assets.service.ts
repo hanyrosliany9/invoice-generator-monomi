@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException, ConflictException, BadRequestException ,
+  Logger,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateAssetDto } from "./dto/create-asset.dto";
 import { UpdateAssetDto } from "./dto/update-asset.dto";
@@ -7,6 +9,7 @@ import * as QRCode from "qrcode";
 
 @Injectable()
 export class AssetsService {
+  private readonly logger = new Logger(AssetsService.name);
   constructor(private prisma: PrismaService) {}
 
   async create(createAssetDto: CreateAssetDto) {
@@ -153,7 +156,7 @@ export class AssetsService {
       });
       return qrCodeDataURL;
     } catch (error) {
-      console.error("QR Code generation failed:", error);
+      this.logger.error("QR Code generation failed:", error);
       return "";
     }
   }

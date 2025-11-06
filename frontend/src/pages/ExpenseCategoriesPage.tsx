@@ -117,7 +117,7 @@ export const ExpenseCategoriesPage: React.FC = () => {
       message.success('Category created successfully');
       handleCloseModal();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(`Failed to create category: ${error.message}`);
     },
   });
@@ -131,7 +131,7 @@ export const ExpenseCategoriesPage: React.FC = () => {
       message.success('Category updated successfully');
       handleCloseModal();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(`Failed to update category: ${error.message}`);
     },
   });
@@ -143,7 +143,7 @@ export const ExpenseCategoriesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['expense-categories'] });
       message.success('Category deleted successfully');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(`Failed to delete category: ${error.message}`);
     },
   });
@@ -166,7 +166,7 @@ export const ExpenseCategoriesPage: React.FC = () => {
     form.resetFields();
   };
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = (values: Record<string, any>) => {
     const data = {
       ...values,
       withholdingTaxRate: values.withholdingTaxRate
@@ -274,7 +274,7 @@ export const ExpenseCategoriesPage: React.FC = () => {
       key: 'actions',
       width: 120,
       fixed: 'right' as const,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: any) => (
         <Space>
           <Button
             type="link"

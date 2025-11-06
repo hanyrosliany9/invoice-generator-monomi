@@ -19,6 +19,7 @@ export function generateProjectHTML(projectData: any): string {
     totalRevenue,
     priceBreakdown = {},
     estimatedExpenses = [],
+    actualExpenses = [],
     progress = 0,
     daysRemaining = 0,
     profitMargin = null,
@@ -824,6 +825,172 @@ export function generateProjectHTML(projectData: any): string {
       `
           : ""
       }
+    </div>
+    `
+        : ""
+    }
+
+    <!-- ACTUAL EXPENSES (TRANSACTION HISTORY) -->
+    ${
+      actualExpenses && actualExpenses.length > 0
+        ? `
+    <div class="card section">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Riwayat Transaksi Biaya Aktual</div>
+          <div class="card-subtitle">Actual expense transactions recorded for this project</div>
+        </div>
+      </div>
+
+      <!-- Summary Statistics -->
+      <div class="metrics-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 3mm;">
+        <div class="metric-box" style="border-left-color: #8c8c8c;">
+          <div class="metric-label">Total Draft</div>
+          <div class="metric-value" style="color: #8c8c8c;">
+            ${formatIDR(
+              actualExpenses
+                .filter((e: any) => e.status === "DRAFT")
+                .reduce((sum: number, e: any) => sum + parseFloat(e.totalAmount), 0)
+            )}
+          </div>
+        </div>
+        <div class="metric-box" style="border-left-color: #22c55e;">
+          <div class="metric-label">Total Disetujui</div>
+          <div class="metric-value" style="color: #22c55e;">
+            ${formatIDR(
+              actualExpenses
+                .filter((e: any) => e.status === "APPROVED")
+                .reduce((sum: number, e: any) => sum + parseFloat(e.totalAmount), 0)
+            )}
+          </div>
+        </div>
+        <div class="metric-box" style="border-left-color: #3b82f6;">
+          <div class="metric-label">Total Dibayar</div>
+          <div class="metric-value" style="color: #3b82f6;">
+            ${formatIDR(
+              actualExpenses
+                .filter((e: any) => e.paymentStatus === "PAID")
+                .reduce((sum: number, e: any) => sum + parseFloat(e.totalAmount), 0)
+            )}
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Expense Transaction Table -->
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 10%;">Tanggal</th>
+            <th style="width: 12%;">No. Biaya</th>
+            <th style="width: 28%;">Deskripsi</th>
+            <th style="width: 12%;">Vendor</th>
+            <th style="width: 12%;">Kategori</th>
+            <th style="width: 13%; text-align: right;">Jumlah</th>
+            <th style="width: 8%;">Status</th>
+            <th style="width: 5%;">Bayar</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${actualExpenses
+            .map(
+              (expense: any) => {
+                // Status badge styling
+                const statusColorMap: { [key: string]: { bg: string; text: string } } = {
+                  DRAFT: { bg: "#f5f5f5", text: "#8c8c8c" },
+                  SUBMITTED: { bg: "#e6f7ff", text: "#1890ff" },
+                  APPROVED: { bg: "#f6ffed", text: "#52c41a" },
+                  REJECTED: { bg: "#fff2e8", text: "#fa8c16" },
+                  CANCELLED: { bg: "#fff1f0", text: "#ff4d4f" },
+                };
+                const statusLabelMap: { [key: string]: string } = {
+                  DRAFT: "Draft",
+                  SUBMITTED: "Diajukan",
+                  APPROVED: "Disetujui",
+                  REJECTED: "Ditolak",
+                  CANCELLED: "Batal",
+                };
+                const paymentColorMap: { [key: string]: { bg: string; text: string } } = {
+                  UNPAID: { bg: "#fff1f0", text: "#ff4d4f" },
+                  PARTIALLY_PAID: { bg: "#fff7e6", text: "#fa8c16" },
+                  PAID: { bg: "#f6ffed", text: "#52c41a" },
+                };
+                const paymentLabelMap: { [key: string]: string } = {
+                  UNPAID: "Belum",
+                  PARTIALLY_PAID: "Sebagian",
+                  PAID: "Lunas",
+                };
+                const statusStyle = statusColorMap[expense.status] || { bg: "#f5f5f5", text: "#8c8c8c" };
+                const paymentStyle = paymentColorMap[expense.paymentStatus] || { bg: "#f5f5f5", text: "#8c8c8c" };
+
+                return `
+          <tr>
+            <td style="font-size: 8px;">
+              ${formatDate(expense.expenseDate)}
+            </td>
+            <td style="font-size: 7.5px; font-weight: 600;">
+              ${expense.expenseNumber || "-"}
+            </td>
+            <td style="font-size: 8px;">
+              ${expense.description || expense.descriptionId || "-"}
+              ${expense.notes ? `<div style="font-size: 7px; color: #666; margin-top: 0.5mm;">Catatan: ${expense.notes}</div>` : ""}
+            </td>
+            <td style="font-size: 8px;">
+              ${expense.vendorName || "-"}
+            </td>
+            <td style="font-size: 8px;">
+              ${expense.category?.nameId || expense.category?.name || "-"}
+            </td>
+            <td class="table-amount" style="font-weight: 600;">
+              ${formatIDR(parseFloat(expense.totalAmount))}
+            </td>
+            <td style="text-align: center;">
+              <span style="
+                display: inline-block;
+                padding: 0.5mm 1.5mm;
+                background-color: ${statusStyle.bg};
+                color: ${statusStyle.text};
+                border-radius: 1px;
+                font-size: 7px;
+                font-weight: 600;
+              ">
+                ${statusLabelMap[expense.status] || expense.status}
+              </span>
+            </td>
+            <td style="text-align: center;">
+              <span style="
+                display: inline-block;
+                padding: 0.5mm 1mm;
+                background-color: ${paymentStyle.bg};
+                color: ${paymentStyle.text};
+                border-radius: 1px;
+                font-size: 6px;
+                font-weight: 600;
+              ">
+                ${paymentLabelMap[expense.paymentStatus] || expense.paymentStatus}
+              </span>
+            </td>
+          </tr>
+            `;
+              }
+            )
+            .join("")}
+
+          <!-- Grand Total Row -->
+          <tr class="table-total">
+            <td colspan="5" style="text-align: right; padding-right: 3mm;">
+              <strong style="font-size: 9px;">TOTAL BIAYA TERCATAT</strong>
+            </td>
+            <td class="table-amount">
+              <strong style="font-size: 10px;">
+                ${formatIDR(
+                  actualExpenses.reduce((sum: number, e: any) => sum + parseFloat(e.totalAmount), 0)
+                )}
+              </strong>
+            </td>
+            <td colspan="2"></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
     `
         : ""

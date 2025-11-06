@@ -176,23 +176,29 @@ export class PaymentMilestonesService {
 
   /**
    * Validate that all milestones for a quotation sum to 100%
+   * @throws BadRequestException if validation fails
    */
-  async validateQuotationMilestones(quotationId: string): Promise<boolean> {
-    const quotation = await this.prisma.quotation.findUnique({
-      where: { id: quotationId },
-      include: { paymentMilestones: true },
+  async validateQuotationMilestones(quotationId: string): Promise<void> {
+    const milestones = await this.prisma.paymentMilestone.findMany({
+      where: { quotationId },
     });
 
-    if (!quotation || quotation.paymentMilestones.length === 0) {
-      return false;
+    if (milestones.length === 0) {
+      throw new BadRequestException(
+        'Quotation must have at least one payment milestone',
+      );
     }
 
-    const total = quotation.paymentMilestones.reduce(
+    const total = milestones.reduce(
       (sum, m) => sum + Number(m.paymentPercentage),
       0,
     );
 
-    return total === 100;
+    if (total !== 100) {
+      throw new BadRequestException(
+        `Payment milestones must total exactly 100%. Current total: ${total}%`,
+      );
+    }
   }
 
   /**

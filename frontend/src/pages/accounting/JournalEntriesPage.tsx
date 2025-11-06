@@ -176,7 +176,7 @@ const JournalEntriesPage: React.FC = () => {
         setSelectedEntry(null);
       }
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal memposting jurnal entry');
     },
   });
@@ -191,7 +191,7 @@ const JournalEntriesPage: React.FC = () => {
       // Show the reversing entry
       showDetails(reversingEntry);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal membuat entry pembalik');
     },
   });
@@ -204,7 +204,7 @@ const JournalEntriesPage: React.FC = () => {
       setDetailsVisible(false);
       setSelectedEntry(null);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menghapus jurnal entry');
     },
   });

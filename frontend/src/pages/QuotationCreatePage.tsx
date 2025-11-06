@@ -51,6 +51,13 @@ import { formatIDR } from '../utils/currency'
 import { useTheme } from '../theme'
 import { PaymentMilestoneForm } from '../components/quotations'
 import type { PaymentMilestoneFormItem } from '../types/payment-milestones'
+import {
+  useCreatePaymentMilestone,
+  useUpdatePaymentMilestone,
+  useDeletePaymentMilestone,
+} from '../hooks/usePaymentMilestones'
+import type { ApiError } from '../types/api'
+import type { Project } from '../types/project'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -72,7 +79,7 @@ export const QuotationCreatePage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
-  const [previewData, setPreviewData] = useState<any>(null)
+  const [previewData, setPreviewData] = useState<Partial<QuotationFormData> | null>(null)
   const [includePPN, setIncludePPN] = useState(true)
   const { message } = App.useApp()
   const { theme } = useTheme()
@@ -85,7 +92,7 @@ export const QuotationCreatePage: React.FC = () => {
   const autoSave = useOptimizedAutoSave({
     delay: performanceSettings.autoSaveDelay,
     messageApi: message,
-    onSave: async (data: any) => {
+    onSave: async (data: Partial<QuotationFormData>) => {
       if (process.env.NODE_ENV === 'development') {
         console.log('Auto-saving quotation draft:', data)
       }
@@ -96,6 +103,11 @@ export const QuotationCreatePage: React.FC = () => {
     },
     enabled: true,
   })
+
+  // Milestone CRUD mutations
+  const createMilestoneMutation = useCreatePaymentMilestone()
+  const updateMilestoneMutation = useUpdatePaymentMilestone()
+  const deleteMilestoneMutation = useDeletePaymentMilestone()
 
   const prefilledProjectId = searchParams.get('projectId')
   const prefilledClientId = searchParams.get('clientId')
@@ -124,12 +136,62 @@ export const QuotationCreatePage: React.FC = () => {
     enabled: !!activeProjectId,
   })
 
+  /**
+   * Sync payment milestones after quotation creation
+   * Creates all milestones in the form
+   */
+  const syncPaymentMilestones = async (
+    quotationId: string,
+    formMilestones: PaymentMilestoneFormItem[]
+  ): Promise<void> => {
+    // If no form milestones, nothing to sync
+    if (!formMilestones || formMilestones.length === 0) {
+      return
+    }
+
+    // Validate total percentage equals 100%
+    const totalPercentage = formMilestones.reduce((sum, m) => sum + (m?.paymentPercentage || 0), 0)
+    if (totalPercentage !== 100) {
+      throw new Error(`Total milestone percentage must equal 100% (currently ${totalPercentage}%)`)
+    }
+
+    // Create all milestones
+    for (const formMilestone of formMilestones) {
+      await createMilestoneMutation.mutateAsync({
+        quotationId,
+        data: {
+          milestoneNumber: formMilestone.milestoneNumber,
+          name: formMilestone.name,
+          nameId: formMilestone.nameId || formMilestone.name,
+          description: formMilestone.description,
+          descriptionId: formMilestone.descriptionId,
+          paymentPercentage: formMilestone.paymentPercentage,
+          // Note: paymentAmount is calculated by backend from percentage
+        },
+      })
+    }
+  }
+
   // Create quotation mutation
   const createQuotationMutation = useMutation({
     mutationFn: quotationService.createQuotation,
-    onSuccess: quotation => {
+    onSuccess: async (quotation) => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
-      message.success('Quotation created successfully')
+
+      // Sync milestones after quotation creation
+      const formValues = form.getFieldsValue()
+      if (formValues.paymentMilestones && formValues.paymentMilestones.length > 0) {
+        try {
+          await syncPaymentMilestones(quotation.id, formValues.paymentMilestones)
+          message.success('Quotation and payment milestones created successfully')
+        } catch (error) {
+          const apiError = error as ApiError
+          message.warning(`Quotation created but milestone sync failed: ${apiError.message || 'Unknown error'}`)
+        }
+      } else {
+        message.success('Quotation created successfully')
+      }
+
       navigate(`/quotations/${quotation.id}`)
     },
     onError: () => {
@@ -150,7 +212,7 @@ export const QuotationCreatePage: React.FC = () => {
         )
       }
 
-      const inheritedData: any = {
+      const inheritedData: Partial<QuotationFormData> = {
         clientId: selectedProject.clientId,
         projectId: selectedProject.id,
         amountPerProject: calculatedTotal,
@@ -192,7 +254,7 @@ export const QuotationCreatePage: React.FC = () => {
   }, [selectedProject, prefilledClientId, form])
 
   // Generate default terms based on project
-  const generateDefaultTerms = (project: any) => {
+  const generateDefaultTerms = (project: Project) => {
     const baseTerms = `
 1. Payment Terms: Net 30 days from invoice date
 2. Project Timeline: ${project.startDate ? dayjs(project.startDate).format('DD MMM YYYY') : 'TBD'} - ${project.endDate ? dayjs(project.endDate).format('DD MMM YYYY') : 'TBD'}
@@ -209,7 +271,7 @@ export const QuotationCreatePage: React.FC = () => {
   }
 
   // Update preview data when form changes
-  const updatePreviewData = (values: any) => {
+  const updatePreviewData = (values: Partial<QuotationFormData>) => {
     const selectedClient = clients.find(c => c.id === values.clientId)
     const selectedProjectData =
       projects.find(p => p.id === values.projectId) || selectedProject
@@ -790,6 +852,41 @@ export const QuotationCreatePage: React.FC = () => {
             disabled={false}
           />
         )}
+
+        {/* Hidden validation for milestone percentages */}
+        <Form.Item
+          name='paymentMilestones'
+          rules={[
+            {
+              validator: (_, value) => {
+                // Only validate if milestones are enabled
+                if (!value || value.length === 0) {
+                  return Promise.resolve()
+                }
+
+                // Calculate total percentage
+                const totalPercentage = value.reduce(
+                  (sum: number, m: PaymentMilestoneFormItem) => sum + (m?.paymentPercentage || 0),
+                  0
+                )
+
+                // Validate total equals 100%
+                if (totalPercentage !== 100) {
+                  return Promise.reject(
+                    new Error(
+                      `Payment milestones must total 100% (currently ${totalPercentage}%). Please adjust the percentages before saving.`
+                    )
+                  )
+                }
+
+                return Promise.resolve()
+              },
+            },
+          ]}
+          hidden
+        >
+          <Input />
+        </Form.Item>
 
         {/* Scope of Work Section */}
         <ProgressiveSection

@@ -51,6 +51,8 @@ import { clientService } from '../services/clients'
 import { formatIDR } from '../utils/currency'
 import { useTheme } from '../theme'
 import type { PaymentMilestone } from '../types/payment-milestones'
+import type { ApiError } from '../types/api'
+import type { Quotation } from '../types/quotation'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -76,7 +78,7 @@ export const InvoiceCreatePage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
-  const [previewData, setPreviewData] = useState<any>(null)
+  const [previewData, setPreviewData] = useState<Partial<InvoiceFormData> | null>(null)
   const [includePPN, setIncludePPN] = useState(true)
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null)
 
@@ -88,7 +90,7 @@ export const InvoiceCreatePage: React.FC = () => {
   const autoSave = useOptimizedAutoSave({
     delay: performanceSettings.autoSaveDelay,
     messageApi: message,
-    onSave: async (data: any) => {
+    onSave: async (data: Partial<InvoiceFormData>) => {
       // In a real app, this would save a draft to the backend
       if (process.env.NODE_ENV === 'development') {
         console.log('Auto-saving invoice draft:', data)
@@ -187,7 +189,7 @@ export const InvoiceCreatePage: React.FC = () => {
   }, [selectedQuotation, prefilledClientId, form])
 
   // Generate default payment info
-  const generateDefaultPaymentInfo = (quotation: any) => {
+  const generateDefaultPaymentInfo = (quotation: Quotation) => {
     return `
 Payment Methods:
 • Bank Transfer: BCA 1234567890 (PT Monomi)
@@ -218,7 +220,7 @@ Reference: Quotation ${quotation.quotationNumber}
   }
 
   // Update preview data when form changes
-  const updatePreviewData = (values: any) => {
+  const updatePreviewData = (values: Partial<InvoiceFormData>) => {
     const selectedClient =
       clients.find(c => c.id === values.clientId) || selectedQuotation?.client
     const selectedProject =

@@ -106,14 +106,14 @@ export const VendorEditPage: React.FC = () => {
       message.success('Vendor berhasil diperbarui');
       navigate(`/vendors/${id}`);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(
         error?.response?.data?.message || 'Gagal memperbarui vendor'
       );
     },
   });
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, any>) => {
     const data: UpdateVendorRequest = {
       name: values.name,
       vendorType: values.vendorType,

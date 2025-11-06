@@ -76,7 +76,7 @@ const DepreciationPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['depreciation-summary'] });
       setProcessModalVisible(false);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(`Gagal memproses depresiasi: ${error.message}`);
     },
   });

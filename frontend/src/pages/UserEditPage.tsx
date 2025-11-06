@@ -91,7 +91,7 @@ export const UserEditPage: React.FC = () => {
       setIsChangingPassword(false)
       navigate('/users')
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.message || 'Failed to update user')
     },
   })

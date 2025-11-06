@@ -114,7 +114,7 @@ export const DashboardPage: React.FC = () => {
     {
       title: 'Jumlah',
       key: 'amount',
-      render: (_: any, record: RecentQuotation) => (
+      render: (_: unknown, record: RecentQuotation) => (
         <Text className='idr-amount'>
           {formatIDR(parseFloat(record.totalAmount) || 0)}
         </Text>
@@ -164,7 +164,7 @@ export const DashboardPage: React.FC = () => {
     {
       title: 'Jumlah',
       key: 'amount',
-      render: (_: any, record: RecentInvoice) => (
+      render: (_: unknown, record: RecentInvoice) => (
         <Text className='idr-amount'>
           {formatIDR(parseFloat(record.totalAmount) || 0)}
         </Text>

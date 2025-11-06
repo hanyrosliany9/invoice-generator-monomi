@@ -72,6 +72,8 @@ import {
   EntityBreadcrumb,
   RelatedEntitiesPanel,
 } from '../components/navigation'
+import type { ApiError } from '../types/api'
+import type { ColumnsType } from 'antd/es/table'
 import WorkflowIndicator from '../components/ui/WorkflowIndicator'
 import {
   BatchOperationsSkeleton,
@@ -375,8 +377,9 @@ export const InvoicesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       message.success('Invoice berhasil dikirim')
     },
-    onError: (error: any) => {
-      message.error(`Gagal mengirim invoice: ${error.message}`)
+    onError: (error) => {
+      const apiError = error as ApiError
+      message.error(`Gagal mengirim invoice: ${apiError.message}`)
     },
   })
 
@@ -393,8 +396,9 @@ export const InvoicesPage: React.FC = () => {
       window.URL.revokeObjectURL(url)
       message.success('Invoice siap untuk dicetak')
     },
-    onError: (error: any) => {
-      message.error(`Gagal mencetak invoice: ${error.message}`)
+    onError: (error) => {
+      const apiError = error as ApiError
+      message.error(`Gagal mencetak invoice: ${apiError.message}`)
     },
   })
 
@@ -405,8 +409,9 @@ export const InvoicesPage: React.FC = () => {
       message.success('Status invoice berhasil diubah')
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
     },
-    onError: (error: any) => {
-      message.error(error.message || 'Gagal mengubah status invoice')
+    onError: (error) => {
+      const apiError = error as ApiError
+      message.error(apiError.message || 'Gagal mengubah status invoice')
     },
   })
 
@@ -729,7 +734,7 @@ export const InvoicesPage: React.FC = () => {
     }
   }
 
-  const handlePriceInheritanceModeChange = (e: any) => {
+  const handlePriceInheritanceModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const mode = e.target.value
     setPriceInheritanceMode(mode)
 
@@ -744,7 +749,7 @@ export const InvoicesPage: React.FC = () => {
     }
   }
 
-  const handleFormSubmit = (values: any) => {
+  const handleFormSubmit = (values: Record<string, any>) => {
     const totalAmount = safeNumber(values.totalAmount)
 
     const data = {
@@ -763,7 +768,7 @@ export const InvoicesPage: React.FC = () => {
     }
   }
 
-  const handlePaymentSubmit = (values: any) => {
+  const handlePaymentSubmit = (values: { paidAt: dayjs.Dayjs }) => {
     if (paymentInvoice) {
       paymentMutation.mutate({
         id: paymentInvoice.id,
@@ -1014,12 +1019,12 @@ export const InvoicesPage: React.FC = () => {
     return items
   }
 
-  const columns: any = [
+  const columns: ColumnsType<Invoice> = [
     {
       title: 'Invoice & Context',
       key: 'invoiceContext',
-      responsive: ['xs', 'sm', 'md', 'lg'] as any,
-      render: (_: any, invoice: Invoice) => (
+      responsive: ['xs', 'sm', 'md', 'lg'],
+      render: (_: unknown, invoice: Invoice) => (
         <div className='space-y-1'>
           <div className='font-medium'>
             <Button
@@ -1095,8 +1100,8 @@ export const InvoicesPage: React.FC = () => {
     {
       title: 'Klien',
       key: 'clientName',
-      responsive: ['sm', 'md', 'lg'] as any,
-      render: (_: any, invoice: Invoice) => (
+      responsive: ['sm', 'md', 'lg'],
+      render: (_: unknown, invoice: Invoice) => (
         <Button
           type='link'
           onClick={() => navigateToClient(invoice.client?.id || '')}
@@ -1112,8 +1117,8 @@ export const InvoicesPage: React.FC = () => {
     {
       title: 'Proyek',
       key: 'projectName',
-      responsive: ['md', 'lg'] as any,
-      render: (_: any, invoice: Invoice) => (
+      responsive: ['md', 'lg'],
+      render: (_: unknown, invoice: Invoice) => (
         <Button
           type='link'
           onClick={() => navigateToProject(invoice.project?.id || '')}
@@ -1130,7 +1135,7 @@ export const InvoicesPage: React.FC = () => {
       title: 'Jumlah',
       key: 'amount',
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
-      render: (_: any, invoice: Invoice) => {
+      render: (_: unknown, invoice: Invoice) => {
         const amount = getAmount(invoice)
         return (
           <div>
@@ -1300,7 +1305,7 @@ export const InvoicesPage: React.FC = () => {
       width: 100,
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
       className: 'actions-column',
-      render: (_: any, invoice: Invoice) => (
+      render: (_: unknown, invoice: Invoice) => (
         <div className='row-actions'>
           <Dropdown
             menu={{ items: getActionMenuItems(invoice) }}

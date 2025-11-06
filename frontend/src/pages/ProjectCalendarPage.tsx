@@ -114,7 +114,7 @@ export const ProjectCalendarPage: React.FC = () => {
     progressMutation.mutate({ id, percentage })
   }
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, any>) => {
     try {
       const data = {
         ...values,
@@ -179,7 +179,7 @@ export const ProjectCalendarPage: React.FC = () => {
       dataIndex: 'milestoneNumber',
       key: 'milestoneNumber',
       width: 80,
-      render: (_: any, record: ProjectMilestone) => (
+      render: (_: unknown, record: ProjectMilestone) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>#{record.milestoneNumber}</div>
           <div style={{ fontSize: '12px', color: '#666' }}>{record.name}</div>
@@ -211,7 +211,7 @@ export const ProjectCalendarPage: React.FC = () => {
       title: 'Planned Dates',
       key: 'dates',
       width: 160,
-      render: (_: any, record: ProjectMilestone) => (
+      render: (_: unknown, record: ProjectMilestone) => (
         <div style={{ fontSize: '12px' }}>
           <div>{dayjs(record.plannedStartDate).format('DD MMM YYYY')}</div>
           <div style={{ color: '#999' }}>to</div>
@@ -237,7 +237,7 @@ export const ProjectCalendarPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       width: 150,
-      render: (_: any, record: ProjectMilestone) => (
+      render: (_: unknown, record: ProjectMilestone) => (
         <Space size="small">
           {record.status !== 'COMPLETED' && record.status !== 'ACCEPTED' && (
             <Tooltip title="Mark Complete">

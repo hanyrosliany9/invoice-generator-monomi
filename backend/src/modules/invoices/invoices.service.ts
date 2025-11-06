@@ -3,12 +3,16 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Logger,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { QuotationsService } from "../quotations/quotations.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { JournalService } from "../accounting/services/journal.service";
 import { RevenueRecognitionService } from "../accounting/services/revenue-recognition.service";
+import { InvoiceCounterService } from "./services/invoice-counter.service";
 import { CreateInvoiceDto } from "./dto/create-invoice.dto";
 import { UpdateInvoiceDto } from "./dto/update-invoice.dto";
 import {
@@ -24,12 +28,16 @@ import { handleServiceError } from "../../common/utils/error-handling.util";
 
 @Injectable()
 export class InvoicesService {
+  private readonly logger = new Logger(InvoicesService.name);
+
   constructor(
     private prisma: PrismaService,
+    @Inject(forwardRef(() => QuotationsService))
     private quotationsService: QuotationsService,
     private notificationsService: NotificationsService,
     private journalService: JournalService,
     private revenueRecognitionService: RevenueRecognitionService,
+    private invoiceCounterService: InvoiceCounterService,
   ) {}
 
   async create(
@@ -334,7 +342,7 @@ export class InvoicesService {
         );
       } catch (error) {
         // Log error but don't fail the invoice creation
-        console.error("Failed to send invoice generation notification:", error);
+        this.logger.error("Failed to send invoice generation notification:", error);
       }
 
       return {
@@ -411,7 +419,16 @@ export class InvoicesService {
               },
               select: {
                 id: true,
+                invoiceNumber: true,
                 totalAmount: true,
+                status: true,
+                paymentMilestone: {
+                  select: {
+                    milestoneNumber: true,
+                    name: true,
+                    nameId: true,
+                  },
+                },
               },
             },
           },
@@ -500,7 +517,7 @@ export class InvoicesService {
           data: { journalEntryId: journalEntry.id },
         });
       } catch (error) {
-        console.error("Failed to create journal entry for invoice:", error);
+        this.logger.error("Failed to create journal entry for invoice:", error);
         // Continue with status update even if journal entry fails
       }
     }
@@ -559,7 +576,7 @@ export class InvoicesService {
         data: { paymentJournalId: journalEntry.id },
       });
     } catch (error) {
-      console.error(
+      this.logger.error(
         "Failed to create payment journal entry for invoice:",
         error,
       );
@@ -599,12 +616,12 @@ export class InvoicesService {
           userId || "system",
         );
 
-        console.log(
+        this.logger.log(
           `ECL provision reversed for invoice ${invoice.invoiceNumber}: ${Number(provision.eclAmount)} IDR`,
         );
       }
     } catch (error) {
-      console.error("Failed to reverse ECL provision for invoice:", error);
+      this.logger.error("Failed to reverse ECL provision for invoice:", error);
       // Continue even if ECL reversal fails
     }
 
@@ -680,7 +697,7 @@ export class InvoicesService {
         await this.revenueRecognitionService.detectAdvancePayment(invoiceId);
 
       if (!isAdvancePayment) {
-        console.log(
+        this.logger.log(
           `Invoice ${invoiceId}: Not an advance payment - project completed or in final stages`,
         );
         return;
@@ -695,7 +712,7 @@ export class InvoicesService {
       });
 
       if (existingDeferred) {
-        console.log(`Invoice ${invoiceId}: Deferred revenue already exists`);
+        this.logger.log(`Invoice ${invoiceId}: Deferred revenue already exists`);
         return;
       }
 
@@ -734,7 +751,7 @@ export class InvoicesService {
           userId,
         });
 
-      console.log(
+      this.logger.log(
         `✅ PSAK 72: Deferred revenue created for Invoice ${invoice.invoiceNumber}`,
         `\n   Amount: Rp ${paymentAmount.toLocaleString("id-ID")}`,
         `\n   Recognition Date: ${recognitionDate.toISOString().split("T")[0]}`,
@@ -754,7 +771,7 @@ export class InvoicesService {
         userId,
       );
     } catch (error) {
-      console.error(
+      this.logger.error(
         `Failed to handle advance payment detection for invoice ${invoiceId}:`,
         error,
       );
@@ -857,7 +874,7 @@ export class InvoicesService {
           data: { isInvoiced: false },
         });
 
-        console.log(
+        this.logger.log(
           `✅ Milestone ${invoice.paymentMilestone?.milestoneNumber} reset to un-invoiced after deleting invoice ${invoice.invoiceNumber}`,
         );
       }
@@ -867,25 +884,8 @@ export class InvoicesService {
   }
 
   async generateInvoiceNumber(): Promise<string> {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, "0");
-
-    // Get count of invoices this month
-    const startOfMonth = new Date(year, now.getMonth(), 1);
-    const endOfMonth = new Date(year, now.getMonth() + 1, 0);
-
-    const count = await this.prisma.invoice.count({
-      where: {
-        creationDate: {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        },
-      },
-    });
-
-    const sequence = (count + 1).toString().padStart(3, "0");
-    return `INV-${year}${month}-${sequence}`;
+    // Use thread-safe atomic counter service
+    return await this.invoiceCounterService.getNextInvoiceNumber();
   }
 
   async getRecentInvoices(limit = 5): Promise<any[]> {
@@ -1084,7 +1084,7 @@ export class InvoicesService {
 
     if (unInvoicedPrev.length > 0) {
       // Log warning but don't block
-      console.warn(
+      this.logger.warn(
         `⚠️ Milestone ${milestone.milestoneNumber} invoiced out of sequence. ` +
         `Previous milestone(s) ${unInvoicedPrev.map((m) => m.milestoneNumber).join(', ')} not invoiced.`,
         { quotationId: milestone.quotationId, milestoneId },
@@ -1104,7 +1104,7 @@ export class InvoicesService {
         );
       } catch (error) {
         // Don't fail if event tracking fails
-        console.error('Failed to track out-of-sequence event:', error);
+        this.logger.error('Failed to track out-of-sequence event:', error);
       }
     }
   }
@@ -1268,7 +1268,7 @@ export class InvoicesService {
         },
       });
     } catch (error) {
-      console.error("Failed to track business journey event:", error);
+      this.logger.error("Failed to track business journey event:", error);
       // Don't fail the main process if tracking fails
     }
   }

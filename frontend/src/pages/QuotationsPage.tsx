@@ -612,7 +612,7 @@ export const QuotationsPage: React.FC = () => {
     ? projects.filter(project => project.clientId === selectedClientId)
     : []
 
-  const handlePriceInheritanceModeChange = (e: any) => {
+  const handlePriceInheritanceModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const mode = e.target.value
     setPriceInheritanceMode(mode)
 
@@ -769,7 +769,7 @@ export const QuotationsPage: React.FC = () => {
     }
   }
 
-  const handleFormSubmit = (values: any) => {
+  const handleFormSubmit = (values: Record<string, any>) => {
     let totalAmount = safeNumber(values.totalAmount)
     // Fix for price inheritance mode: when field is disabled, get inherited price
     if (
@@ -906,7 +906,7 @@ export const QuotationsPage: React.FC = () => {
       title: 'Nomor Quotation',
       dataIndex: 'quotationNumber',
       key: 'quotationNumber',
-      render: (_: any, quotation: Quotation) => (
+      render: (_: unknown, quotation: Quotation) => (
         <Button
           type='link'
           onClick={() => handleView(quotation)}
@@ -922,7 +922,7 @@ export const QuotationsPage: React.FC = () => {
     {
       title: 'Klien',
       key: 'clientName',
-      render: (_: any, quotation: Quotation) => (
+      render: (_: unknown, quotation: Quotation) => (
         <Button
           type='link'
           onClick={() => navigateToClient(quotation.client?.id || '')}
@@ -940,7 +940,7 @@ export const QuotationsPage: React.FC = () => {
     {
       title: 'Proyek',
       key: 'projectName',
-      render: (_: any, quotation: Quotation) => (
+      render: (_: unknown, quotation: Quotation) => (
         <Button
           type='link'
           onClick={() => navigateToProject(quotation.project?.id || '')}
@@ -960,7 +960,7 @@ export const QuotationsPage: React.FC = () => {
     {
       title: 'Jumlah',
       key: 'totalAmount',
-      render: (_: any, quotation: Quotation) => {
+      render: (_: unknown, quotation: Quotation) => {
         const amount =
           typeof quotation.totalAmount === 'number'
             ? quotation.totalAmount
@@ -1059,7 +1059,7 @@ export const QuotationsPage: React.FC = () => {
       width: 60,
       fixed: 'right' as const,
       className: 'actions-column',
-      render: (_: any, quotation: Quotation) => (
+      render: (_: unknown, quotation: Quotation) => (
         <div className='row-actions'>
           <Dropdown
             menu={{ items: getActionMenuItems(quotation) }}

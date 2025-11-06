@@ -80,7 +80,7 @@ export const ExpenseEditPage: React.FC = () => {
       message.success('Expense berhasil diupdate');
       navigate(`/expenses/${id}`);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(`Gagal update expense: ${error.message}`);
     },
   });
@@ -133,7 +133,7 @@ export const ExpenseEditPage: React.FC = () => {
     }
   }, [grossAmount, isLuxuryGoods, withholdingType, includePPN, form]);
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = (values: Record<string, any>) => {
     const expenseData: UpdateExpenseFormData = {
       ...values,
       expenseDate: values.expenseDate.toISOString(),

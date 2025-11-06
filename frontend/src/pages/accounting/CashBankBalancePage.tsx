@@ -81,7 +81,7 @@ export const CashBankBalancePage: React.FC = () => {
     }).format(amount);
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, any>) => {
     const openingBalance = Number(values.openingBalance);
     const periodDate = values.period as Dayjs;
 

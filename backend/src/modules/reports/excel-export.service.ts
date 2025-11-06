@@ -1,4 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable ,
+  Logger,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import * as ExcelJS from "exceljs";
 import { Decimal } from "@prisma/client/runtime/library";
@@ -45,6 +47,8 @@ interface ExportFilters {
 
 @Injectable()
 export class ExcelExportService {
+  private readonly logger = new Logger(ExcelExportService.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -625,7 +629,7 @@ export class ExcelExportService {
       const calculatedBalance =
         item.beginningBalance + item.salesAmount - item.paymentsReceived;
       if (Math.abs(calculatedBalance - item.endingBalance) > 0.01) {
-        console.warn(
+        this.logger.warn(
           `Balance mismatch for ${item.clientName}: Expected ${calculatedBalance}, Got ${item.endingBalance}`,
         );
       }
@@ -669,7 +673,7 @@ export class ExcelExportService {
     const expectedTotalBalance =
       totalSaldoAwal + totalPenjualan - totalPembayaran;
     if (Math.abs(expectedTotalBalance - totalSaldoAkhir) > 0.01) {
-      console.warn(
+      this.logger.warn(
         `Total balance validation failed: Expected ${expectedTotalBalance}, Got ${totalSaldoAkhir}`,
       );
     }

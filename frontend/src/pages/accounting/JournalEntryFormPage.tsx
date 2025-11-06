@@ -123,7 +123,7 @@ const JournalEntryFormPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       navigate('/accounting/journal-entries');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal membuat jurnal entry');
     },
   });
@@ -138,7 +138,7 @@ const JournalEntryFormPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entry', id] });
       navigate('/accounting/journal-entries');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal memperbarui jurnal entry');
     },
   });

@@ -1,4 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable ,
+  Logger,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   IndonesianPdfFormatter,
@@ -43,6 +45,8 @@ interface ExportFilters {
 
 @Injectable()
 export class PdfExportService {
+  private readonly logger = new Logger(PdfExportService.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -278,7 +282,7 @@ export class PdfExportService {
       const calculatedBalance =
         item.beginningBalance + item.salesAmount - item.paymentsReceived;
       if (Math.abs(calculatedBalance - item.endingBalance) > 0.01) {
-        console.warn(
+        this.logger.warn(
           `Balance mismatch for ${item.clientName}: Expected ${calculatedBalance}, Got ${item.endingBalance}`,
         );
       }
@@ -318,7 +322,7 @@ export class PdfExportService {
     const expectedTotalBalance =
       totalSaldoAwal + totalPenjualan - totalPembayaran;
     if (Math.abs(expectedTotalBalance - totalSaldoAkhir) > 0.01) {
-      console.warn(
+      this.logger.warn(
         `Total balance validation failed: Expected ${expectedTotalBalance}, Got ${totalSaldoAkhir}`,
       );
     }

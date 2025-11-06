@@ -112,7 +112,7 @@ const BankTransfersPage: React.FC = () => {
       setIsCreateModalOpen(false);
       form.resetFields();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal membuat transfer bank');
     },
   });
@@ -123,7 +123,7 @@ const BankTransfersPage: React.FC = () => {
       message.success('Transfer bank berhasil disetujui dan diposting');
       queryClient.invalidateQueries({ queryKey: ['bank-transfers'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menyetujui transfer bank');
     },
   });
@@ -136,7 +136,7 @@ const BankTransfersPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['bank-transfers'] });
       setRejectReason('');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menolak transfer bank');
     },
   });
@@ -147,7 +147,7 @@ const BankTransfersPage: React.FC = () => {
       message.success('Transfer bank berhasil dibatalkan');
       queryClient.invalidateQueries({ queryKey: ['bank-transfers'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal membatalkan transfer bank');
     },
   });
@@ -158,7 +158,7 @@ const BankTransfersPage: React.FC = () => {
       message.success('Transfer bank berhasil dihapus');
       queryClient.invalidateQueries({ queryKey: ['bank-transfers'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menghapus transfer bank');
     },
   });
@@ -379,7 +379,7 @@ const BankTransfersPage: React.FC = () => {
     {
       title: 'Transfer',
       key: 'transfer',
-      render: (_: any, record: BankTransfer) => (
+      render: (_: unknown, record: BankTransfer) => (
         <div>
           <div className='text-xs text-gray-600 mb-1'>Dari:</div>
           <div className='text-sm font-medium mb-2'>
@@ -410,7 +410,7 @@ const BankTransfersPage: React.FC = () => {
       key: 'amount',
       width: 180,
       align: 'right' as const,
-      render: (_: any, record: BankTransfer) => (
+      render: (_: unknown, record: BankTransfer) => (
         <div>
           <div>
             <Text strong style={{ color: theme.colors.text.primary }}>
@@ -444,7 +444,7 @@ const BankTransfersPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 200,
-      render: (_: any, record: BankTransfer) => (
+      render: (_: unknown, record: BankTransfer) => (
         <Space size="small">
           <Tooltip title="Lihat Detail">
             <Button

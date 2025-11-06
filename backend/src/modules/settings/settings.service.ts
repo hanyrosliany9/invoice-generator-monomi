@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException, InternalServerErrorException } from "@nestjs/common";
+import { Injectable, NotFoundException, InternalServerErrorException ,
+  Logger,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { UpdateUserSettingsDto } from "./dto/update-user-settings.dto";
 import { UpdateSystemSettingsDto } from "./dto/update-system-settings.dto";
@@ -12,10 +14,12 @@ const execAsync = promisify(exec);
 
 @Injectable()
 export class SettingsService {
+  private readonly logger = new Logger(SettingsService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async getUserSettings(userId: string) {
-    console.log("getUserSettings called with userId:", userId);
+    this.logger.log("getUserSettings called with userId:", userId);
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -263,7 +267,7 @@ export class SettingsService {
       fs.unlinkSync(backupPath);
 
       // Log backup activity
-      console.log(`Database backup created by user ${userId} at ${new Date().toISOString()}`);
+      this.logger.log(`Database backup created by user ${userId} at ${new Date().toISOString()}`);
 
       return {
         filename,
@@ -272,7 +276,7 @@ export class SettingsService {
         createdAt: new Date().toISOString(),
       };
     } catch (error) {
-      console.error("Backup creation error:", error);
+      this.logger.error("Backup creation error:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       throw new InternalServerErrorException(
         `Failed to create backup: ${errorMessage}`

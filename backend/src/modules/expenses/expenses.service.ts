@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { PPNCalculatorService } from "./services/ppn-calculator.service";
@@ -25,6 +26,7 @@ import {
 
 @Injectable()
 export class ExpensesService {
+  private readonly logger = new Logger(ExpensesService.name);
   constructor(
     private prisma: PrismaService,
     private ppnCalculator: PPNCalculatorService,
@@ -155,7 +157,7 @@ export class ExpensesService {
         data: { paymentJournalId: paymentJournal.id },
       });
     } catch (error) {
-      console.error('Error creating payment journal entry:', error);
+      this.logger.error('Error creating payment journal entry:', error);
       // Continue even if journal entry creation fails - expense was still created
     }
 
@@ -348,13 +350,13 @@ export class ExpensesService {
         if (amountDifference !== 0) {
           // Reverse the old journal entry by creating offsetting entries
           // Then the new amounts will be reflected in the expense record
-          console.log(
+          this.logger.log(
             `Journal entry would need adjustment for amount difference: ${amountDifference}`,
           );
           // In a full implementation, you would reverse and recreate the journal entry
         }
       } catch (error) {
-        console.error("Error updating journal entry for expense:", error);
+        this.logger.error("Error updating journal entry for expense:", error);
         // Continue - the expense record was updated successfully
       }
     }
@@ -477,7 +479,7 @@ export class ExpensesService {
         data: { journalEntryId: journalEntry.id },
       });
     } catch (error) {
-      console.error("Failed to create journal entry for expense:", error);
+      this.logger.error("Failed to create journal entry for expense:", error);
       // Continue with approval even if journal entry fails
     }
 
@@ -579,7 +581,7 @@ export class ExpensesService {
         data: { paymentJournalId: journalEntry.id },
       });
     } catch (error) {
-      console.error(
+      this.logger.error(
         "Failed to create payment journal entry for expense:",
         error,
       );
@@ -893,7 +895,7 @@ export class ExpensesService {
    */
   private validateIndonesianTaxCalculations(data: CreateExpenseDto | any) {
     // Debug logging
-    console.log('[EXPENSE_VALIDATION] Received data:', {
+    this.logger.log('[EXPENSE_VALIDATION] Received data:', {
       grossAmount: data.grossAmount,
       ppnAmount: data.ppnAmount,
       withholdingAmount: data.withholdingAmount,
@@ -912,7 +914,7 @@ export class ExpensesService {
       );
 
       if (!isPPNValid) {
-        console.error('[EXPENSE_VALIDATION] PPN validation failed');
+        this.logger.error('[EXPENSE_VALIDATION] PPN validation failed');
         throw new BadRequestException("Invalid PPN calculation");
       }
     }
@@ -928,7 +930,7 @@ export class ExpensesService {
         );
 
       if (!isWithholdingValid) {
-        console.error('[EXPENSE_VALIDATION] Withholding tax validation failed');
+        this.logger.error('[EXPENSE_VALIDATION] Withholding tax validation failed');
         throw new BadRequestException("Invalid withholding tax calculation");
       }
     }
@@ -938,7 +940,7 @@ export class ExpensesService {
     const expectedTotal = data.grossAmount + ppnAmount;
     const totalDiff = Math.abs(expectedTotal - data.totalAmount);
 
-    console.log('[EXPENSE_VALIDATION] Total amount check:', {
+    this.logger.log('[EXPENSE_VALIDATION] Total amount check:', {
       expectedTotal,
       actualTotal: data.totalAmount,
       difference: totalDiff,
@@ -947,7 +949,7 @@ export class ExpensesService {
     });
 
     if (totalDiff > 0.01) {
-      console.error('[EXPENSE_VALIDATION] Total amount validation failed', {
+      this.logger.error('[EXPENSE_VALIDATION] Total amount validation failed', {
         expectedTotal,
         actualTotal: data.totalAmount,
         difference: totalDiff,
@@ -961,7 +963,7 @@ export class ExpensesService {
     const expectedNet = expectedTotal - (data.withholdingAmount || 0);
     const netDiff = Math.abs(expectedNet - data.netAmount);
 
-    console.log('[EXPENSE_VALIDATION] Net amount check:', {
+    this.logger.log('[EXPENSE_VALIDATION] Net amount check:', {
       expectedNet,
       actualNet: data.netAmount,
       difference: netDiff,
@@ -970,7 +972,7 @@ export class ExpensesService {
     });
 
     if (netDiff > 0.01) {
-      console.error('[EXPENSE_VALIDATION] Net amount validation failed', {
+      this.logger.error('[EXPENSE_VALIDATION] Net amount validation failed', {
         expectedNet,
         actualNet: data.netAmount,
         difference: netDiff,

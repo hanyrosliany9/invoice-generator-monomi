@@ -234,7 +234,7 @@ export const SettingsPage: React.FC = () => {
       message.success('Password berhasil diubah')
       securityForm.resetFields()
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(`Gagal mengubah password: ${error.message}`)
     },
   })
@@ -244,7 +244,7 @@ export const SettingsPage: React.FC = () => {
     onSuccess: () => {
       message.success('Backup berhasil diunduh')
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(`Gagal membuat backup: ${error.message}`)
     },
   })

@@ -74,7 +74,7 @@ const ECLProvisionPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['ecl-summary'] });
       setProcessModalVisible(false);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(`Gagal memproses ECL: ${error.message}`);
     },
   });

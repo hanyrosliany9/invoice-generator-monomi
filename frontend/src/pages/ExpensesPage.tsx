@@ -228,7 +228,7 @@ export const ExpensesPage: React.FC = () => {
       title: 'Expense & Context',
       key: 'expenseContext',
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
-      render: (_: any, expense: Expense) => (
+      render: (_: unknown, expense: Expense) => (
         <div className='space-y-1'>
           <div className='font-medium'>
             <Button
@@ -266,7 +266,7 @@ export const ExpensesPage: React.FC = () => {
       title: 'Vendor',
       key: 'vendor',
       responsive: ['sm', 'md', 'lg'] as any,
-      render: (_: any, expense: Expense) => (
+      render: (_: unknown, expense: Expense) => (
         <div>
           <div className='font-medium'>{expense.vendorName}</div>
           {expense.vendorNPWP && (
@@ -291,7 +291,7 @@ export const ExpensesPage: React.FC = () => {
       title: 'Jumlah',
       key: 'amount',
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
-      render: (_: any, expense: Expense) => (
+      render: (_: unknown, expense: Expense) => (
         <div className='space-y-1'>
           <div className='font-medium'>{expenseService.formatIDR(expense.totalAmount)}</div>
           {parseFloat(expense.ppnAmount) > 0 && (
@@ -312,7 +312,7 @@ export const ExpensesPage: React.FC = () => {
       title: 'Status',
       key: 'status',
       responsive: ['sm', 'md', 'lg'] as any,
-      render: (_: any, expense: Expense) => (
+      render: (_: unknown, expense: Expense) => (
         <div className='space-y-1'>
           <Tag color={getStatusTagColor(expense.status)}>
             {expenseService.getStatusLabel(expense.status)}
@@ -341,7 +341,7 @@ export const ExpensesPage: React.FC = () => {
       width: 100,
       fixed: 'right' as const,
       responsive: ['xs', 'sm', 'md', 'lg'] as any,
-      render: (_: any, expense: Expense) => (
+      render: (_: unknown, expense: Expense) => (
         <Dropdown
           menu={{ items: getActionMenuItems(expense) }}
           trigger={['click']}
@@ -373,8 +373,8 @@ export const ExpensesPage: React.FC = () => {
     }
   };
 
-  const getActionMenuItems = (expense: Expense): any[] => {
-    const items: any[] = [
+  const getActionMenuItems = (expense: Expense):unknown[] => {
+    const items:unknown[] = [
       {
         key: 'view',
         icon: <EyeOutlined />,

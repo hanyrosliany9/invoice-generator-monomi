@@ -820,35 +820,116 @@ export class PdfService {
     <!-- Summary Section -->
     <div class="summary-section">
       <table class="summary-table">
-        <tr>
-          <td>Subtotal</td>
-          <td>${formatIDR(subTotal)}</td>
-        </tr>
-        ${
-          includeTax
-            ? `
-        <tr>
-          <td>Tax (${taxLabel} ${Math.round(taxRate * 100)}%)</td>
-          <td>${formatIDR(taxAmount)}</td>
-        </tr>
-        `
-            : ""
-        }
-        ${
-          taxExemptReason
-            ? `
-        <tr>
-          <td colspan="2" style="font-size: 9px; color: #6b7280; text-align: center; padding: 3mm;">
-            ${taxExemptReason}
-          </td>
-        </tr>
-        `
-            : ""
-        }
-        <tr class="summary-total">
-          <td>TOTAL${paymentMilestone ? ` (Milestone ${paymentMilestone.milestoneNumber} - ${paymentMilestone.nameId || paymentMilestone.name} ${paymentMilestone.paymentPercentage}%)` : ''}</td>
-          <td>${formatIDR(finalTotal)}</td>
-        </tr>
+
+        <!-- SCENARIO 1: Milestone-based invoice -->
+        ${paymentMilestone && quotation ? `
+          <!-- Full Project Subtotal -->
+          <tr>
+            <td>Subtotal (Full Project)</td>
+            <td>${formatIDR(quotation.totalAmount)}</td>
+          </tr>
+
+          <!-- This Milestone -->
+          <tr>
+            <td>Milestone ${paymentMilestone.milestoneNumber} - ${paymentMilestone.nameId || paymentMilestone.name} (${paymentMilestone.paymentPercentage}%)</td>
+            <td>${formatIDR(paymentMilestone.paymentAmount)}</td>
+          </tr>
+
+          <!-- Tax if applicable -->
+          ${includeTax ? `
+          <tr>
+            <td>Tax (${taxLabel} ${Math.round(taxRate * 100)}%)</td>
+            <td>${formatIDR(taxAmount)}</td>
+          </tr>
+          ` : ""}
+
+          <!-- Tax Exempt Reason if applicable -->
+          ${taxExemptReason ? `
+          <tr>
+            <td colspan="2" style="font-size: 9px; color: #6b7280; text-align: center; padding: 3mm;">
+              ${taxExemptReason}
+            </td>
+          </tr>
+          ` : ""}
+
+          <!-- Calculate previous payments from other PAID invoices -->
+          ${(() => {
+            const previousInvoices = quotation.invoices?.filter((inv: any) =>
+              inv.id !== invoiceData.id &&
+              inv.status === 'PAID' &&
+              inv.paymentMilestone?.milestoneNumber < paymentMilestone.milestoneNumber
+            ) || [];
+
+            const previousPaymentsTotal = previousInvoices.reduce((sum: number, inv: any) =>
+              sum + Number(inv.totalAmount), 0
+            );
+
+            if (previousPaymentsTotal > 0) {
+              return `
+              <tr style="border-top: 2px solid #e5e7eb;">
+                <td>Previous Payments</td>
+                <td>${formatIDR(previousPaymentsTotal)}</td>
+              </tr>
+              ${previousInvoices.map((inv: any) => `
+              <tr style="font-size: 8px; color: #6b7280;">
+                <td>&nbsp;&nbsp;↳ ${inv.invoiceNumber} - Milestone ${inv.paymentMilestone?.milestoneNumber}</td>
+                <td>${formatIDR(inv.totalAmount)}</td>
+              </tr>
+              `).join('')}
+              `;
+            }
+            return '';
+          })()}
+
+          <!-- Total Due for this invoice -->
+          <tr class="summary-total">
+            <td>TOTAL DUE (This Invoice)</td>
+            <td>${formatIDR(finalTotal)}</td>
+          </tr>
+
+          <!-- Remaining balance calculation -->
+          ${(() => {
+            const paidInvoicesTotal = quotation.invoices?.reduce((sum: number, inv: any) =>
+              inv.status === 'PAID' ? sum + Number(inv.totalAmount) : sum, 0
+            ) || 0;
+            const remainingBalance = Number(quotation.totalAmount) - paidInvoicesTotal - Number(finalTotal);
+
+            if (remainingBalance > 0) {
+              return `
+              <tr style="background-color: #fffbeb; border-top: 1px solid #f59e0b;">
+                <td style="color: #92400e; font-weight: 600;">Remaining Receivable</td>
+                <td style="color: #92400e; font-weight: 600;">${formatIDR(remainingBalance)}</td>
+              </tr>
+              `;
+            }
+            return '';
+          })()}
+
+        <!-- SCENARIO 2: Non-milestone invoice (fallback to current behavior) -->
+        ` : `
+          <tr>
+            <td>Subtotal</td>
+            <td>${formatIDR(subTotal)}</td>
+          </tr>
+          ${includeTax ? `
+          <tr>
+            <td>Tax (${taxLabel} ${Math.round(taxRate * 100)}%)</td>
+            <td>${formatIDR(taxAmount)}</td>
+          </tr>
+          ` : ""}
+          ${taxExemptReason ? `
+          <tr>
+            <td colspan="2" style="font-size: 9px; color: #6b7280; text-align: center; padding: 3mm;">
+              ${taxExemptReason}
+            </td>
+          </tr>
+          ` : ""}
+          <tr class="summary-total">
+            <td>TOTAL</td>
+            <td>${formatIDR(finalTotal)}</td>
+          </tr>
+        `}
+
       </table>
     </div>
 

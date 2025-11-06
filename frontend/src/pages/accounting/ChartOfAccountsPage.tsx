@@ -89,7 +89,7 @@ const ChartOfAccountsPage: React.FC = () => {
       setIsModalVisible(false);
       form.resetFields();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Failed to create account');
     },
   });
@@ -105,7 +105,7 @@ const ChartOfAccountsPage: React.FC = () => {
       setEditingAccount(null);
       form.resetFields();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Failed to update account');
     },
   });
@@ -117,7 +117,7 @@ const ChartOfAccountsPage: React.FC = () => {
       message.success('Account deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Failed to delete account');
     },
   });
@@ -129,7 +129,7 @@ const ChartOfAccountsPage: React.FC = () => {
       message.success('Account status updated successfully!');
       queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Failed to toggle account status');
     },
   });

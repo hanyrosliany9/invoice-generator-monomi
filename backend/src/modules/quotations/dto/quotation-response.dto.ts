@@ -8,7 +8,21 @@ export class QuotationResponseDto {
   amountPerProject: string; // Convert Decimal to string
   totalAmount: string; // Convert Decimal to string
   terms?: string;
+
+  // Business details
+  scopeOfWork?: string;
+  priceBreakdown?: Record<string, any>;
+  paymentType?: string;
+  paymentTermsText?: string;
+
   status: QuotationStatus;
+
+  // Approval audit fields
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+
   createdAt: string;
   updatedAt: string;
 
@@ -35,9 +49,29 @@ export class QuotationResponseDto {
     email: string;
   };
 
+  // Payment milestones (if milestone-based)
+  paymentMilestones?: {
+    id: string;
+    milestoneNumber: number;
+    name: string;
+    paymentPercentage: string;
+    paymentAmount: string;
+    dueDate?: string;
+    isInvoiced: boolean;
+  }[];
+
+  // Invoices summary
+  invoices?: {
+    id: string;
+    invoiceNumber: string;
+    status: string;
+    totalAmount: string;
+  }[];
+
   // Relations - summary counts only
   _count?: {
     invoices: number;
+    paymentMilestones: number;
   };
 
   // Business status

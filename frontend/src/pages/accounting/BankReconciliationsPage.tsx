@@ -167,7 +167,7 @@ const BankReconciliationsPage: React.FC = () => {
       setIsCreateModalOpen(false);
       form.resetFields();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal membuat rekonsiliasi bank');
     },
   });
@@ -178,7 +178,7 @@ const BankReconciliationsPage: React.FC = () => {
       message.success('Rekonsiliasi berhasil direview');
       queryClient.invalidateQueries({ queryKey: ['bank-reconciliations'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal mereview rekonsiliasi');
     },
   });
@@ -189,7 +189,7 @@ const BankReconciliationsPage: React.FC = () => {
       message.success('Rekonsiliasi berhasil disetujui dan diposting');
       queryClient.invalidateQueries({ queryKey: ['bank-reconciliations'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menyetujui rekonsiliasi');
     },
   });
@@ -202,7 +202,7 @@ const BankReconciliationsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['bank-reconciliations'] });
       setRejectReason('');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menolak rekonsiliasi');
     },
   });
@@ -213,7 +213,7 @@ const BankReconciliationsPage: React.FC = () => {
       message.success('Rekonsiliasi berhasil dihapus');
       queryClient.invalidateQueries({ queryKey: ['bank-reconciliations'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(error.response?.data?.message || 'Gagal menghapus rekonsiliasi');
     },
   });
@@ -340,7 +340,7 @@ const BankReconciliationsPage: React.FC = () => {
     {
       title: 'Akun Bank',
       key: 'bankAccount',
-      render: (_: any, record: BankReconciliation) => (
+      render: (_: unknown, record: BankReconciliation) => (
         <div>
           <div className='font-medium'>{record.bankAccount.code}</div>
           <div className='text-xs text-gray-600'>{record.bankAccount.nameId}</div>
@@ -351,7 +351,7 @@ const BankReconciliationsPage: React.FC = () => {
       title: 'Periode',
       key: 'period',
       width: 180,
-      render: (_: any, record: BankReconciliation) => (
+      render: (_: unknown, record: BankReconciliation) => (
         <div className='text-xs'>
           {dayjs(record.periodStartDate).format('DD/MM/YY')} - {dayjs(record.periodEndDate).format('DD/MM/YY')}
         </div>
@@ -413,7 +413,7 @@ const BankReconciliationsPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 200,
-      render: (_: any, record: BankReconciliation) => (
+      render: (_: unknown, record: BankReconciliation) => (
         <Space size="small">
           <Tooltip title="Lihat Detail">
             <Button

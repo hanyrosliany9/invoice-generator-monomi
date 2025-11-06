@@ -2,21 +2,29 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { SettingsService } from "../settings/settings.service";
+import { InvoiceCounterService } from "../invoices/services/invoice-counter.service";
+import { PaymentMilestonesService } from "./services/payment-milestones.service";
 import { CreateQuotationDto } from "./dto/create-quotation.dto";
 import { UpdateQuotationDto } from "./dto/update-quotation.dto";
 import { QuotationStatus, Prisma } from "@prisma/client";
 import { getErrorMessage } from "../../common/utils/error-handling.util";
+import { validateStatusTransition, QuotationStatus as ValidatorQuotationStatus } from "./validators/status-transition.validator";
 
 @Injectable()
 export class QuotationsService {
+  private readonly logger = new Logger(QuotationsService.name);
+
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
     private settingsService: SettingsService,
+    private invoiceCounterService: InvoiceCounterService,
+    private paymentMilestonesService: PaymentMilestonesService,
   ) {}
 
   async create(
@@ -236,37 +244,54 @@ export class QuotationsService {
   async updateStatus(id: string, status: QuotationStatus): Promise<any> {
     const quotation = await this.findOne(id);
 
-    const updatedQuotation = await this.prisma.quotation.update({
-      where: { id },
-      data: { status },
-      include: {
-        client: true,
-        project: true,
-      },
-    });
+    // Validate status transition
+    validateStatusTransition(
+      quotation.status as ValidatorQuotationStatus,
+      status as ValidatorQuotationStatus,
+    );
 
-    // Auto-generate invoice when quotation is approved
+    // Validate milestones before approval
     if (status === QuotationStatus.APPROVED) {
-      try {
-        await this.autoGenerateInvoice(updatedQuotation);
-        console.log(
-          `✅ Auto-generated invoice for approved quotation ${updatedQuotation.quotationNumber}`,
-        );
-      } catch (error) {
-        console.error(
-          `❌ Failed to auto-generate invoice for quotation ${updatedQuotation.quotationNumber}:`,
-          getErrorMessage(error),
-        );
-        // Don't fail the status update, but log the error
-      }
+      await this.paymentMilestonesService.validateQuotationMilestones(id);
     }
 
-    // Send notification about status change
+    // Use transaction for approval + invoice generation
+    const updatedQuotation = await this.prisma.$transaction(async (tx) => {
+      // Update quotation status
+      const updated = await tx.quotation.update({
+        where: { id },
+        data: { status },
+        include: {
+          client: true,
+          project: true,
+          paymentMilestones: true,
+        },
+      });
+
+      // Auto-generate invoice when quotation is approved (inside transaction)
+      if (status === QuotationStatus.APPROVED) {
+        try {
+          await this.autoGenerateInvoice(updated);
+          this.logger.log(
+            `Auto-generated invoice for approved quotation ${updated.quotationNumber}`,
+          );
+        } catch (error) {
+          // Transaction will auto-rollback on error
+          throw new BadRequestException(
+            `Failed to generate invoice from approved quotation: ${getErrorMessage(error)}`,
+          );
+        }
+      }
+
+      return updated;
+    });
+
+    // Send notification about status change (outside transaction)
     try {
       await this.notificationsService.sendQuotationStatusUpdate(id, status);
     } catch (error) {
       // Log error but don't fail the status update
-      console.error("Failed to send status update notification:", error);
+      this.logger.error("Failed to send status update notification", error);
     }
 
     return updatedQuotation;
@@ -282,25 +307,8 @@ export class QuotationsService {
   }
 
   async generateQuotationNumber(): Promise<string> {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, "0");
-
-    // Get count of quotations this month
-    const startOfMonth = new Date(year, now.getMonth(), 1);
-    const endOfMonth = new Date(year, now.getMonth() + 1, 0);
-
-    const count = await this.prisma.quotation.count({
-      where: {
-        createdAt: {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        },
-      },
-    });
-
-    const sequence = (count + 1).toString().padStart(3, "0");
-    return `QT-${year}${month}-${sequence}`;
+    // Use thread-safe atomic counter service
+    return await this.invoiceCounterService.getNextQuotationNumber();
   }
 
   async getRecentQuotations(limit = 5): Promise<any[]> {
@@ -411,7 +419,7 @@ export class QuotationsService {
       // Fallback if no bank accounts configured
       return "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran";
     } catch (error) {
-      console.error("Error fetching company settings for payment info:", error);
+      this.logger.error("Error fetching company settings for payment info", error);
       // Safe fallback
       return "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran";
     }
@@ -458,8 +466,8 @@ export class QuotationsService {
       },
     });
 
-    console.log(
-      `📄 Auto-generated invoice ${invoiceNumber} from quotation ${quotation.quotationNumber}`,
+    this.logger.log(
+      `Auto-generated invoice ${invoiceNumber} from quotation ${quotation.quotationNumber}`,
     );
     return invoice;
   }

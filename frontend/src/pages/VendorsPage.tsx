@@ -104,7 +104,7 @@ export const VendorsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['vendorStatistics'] });
       message.success('Vendor berhasil dihapus');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       message.error(
         error?.response?.data?.message ||
           'Gagal menghapus vendor. Mungkin vendor memiliki transaksi terkait.'
@@ -307,7 +307,7 @@ export const VendorsPage: React.FC = () => {
       title: 'Transaksi',
       key: 'transactions',
       width: 120,
-      render: (_: any, record: Vendor) => {
+      render: (_: unknown, record: Vendor) => {
         const count = record._count || {};
         const poCount = (count as any).purchaseOrders || 0;
         const invoiceCount = (count as any).vendorInvoices || 0;
@@ -332,7 +332,7 @@ export const VendorsPage: React.FC = () => {
       title: 'Aksi',
       key: 'actions',
       width: 100,
-      render: (_: any, record: Vendor) => (
+      render: (_: unknown, record: Vendor) => (
         <Space size="small">
           <Tooltip title="Lihat Detail">
             <Button
