@@ -387,8 +387,99 @@ export class PdfController {
       // Parse continuous parameter (default: true for digital viewing)
       const isContinuous = continuous === "true";
 
+      // Parse estimatedExpenses JSON (same logic as download endpoint)
+      let parsedEstimatedExpenses: any[] = [];
+      let estimatedDirectTotal = 0;
+      let estimatedIndirectTotal = 0;
+
+      if (project.estimatedExpenses) {
+        try {
+          const expensesData = typeof project.estimatedExpenses === 'string'
+            ? JSON.parse(project.estimatedExpenses)
+            : project.estimatedExpenses;
+
+          // Extract expenses from the nested structure
+          if (expensesData.direct && expensesData.indirect) {
+            parsedEstimatedExpenses = [
+              ...expensesData.direct.map((exp: any, idx: number) => ({
+                ...exp,
+                costType: 'direct',
+                _uniqueKey: `direct-${exp.categoryId}-${exp.amount}-${idx}`,
+              })),
+              ...expensesData.indirect.map((exp: any, idx: number) => ({
+                ...exp,
+                costType: 'indirect',
+                _uniqueKey: `indirect-${exp.categoryId}-${exp.amount}-${idx}`,
+              })),
+            ];
+            estimatedDirectTotal = expensesData.totalDirect || 0;
+            estimatedIndirectTotal = expensesData.totalIndirect || 0;
+          }
+        } catch (error) {
+          this.logger.warn(`Failed to parse estimatedExpenses for project ${id}:`, error);
+        }
+      }
+
+      // Transform data structure for PDF template (same as download endpoint)
+      const projectForPDF = {
+        ...project,
+
+        // Include parsed estimated expenses for PDF template
+        estimatedExpenses: parsedEstimatedExpenses,
+
+        // Map profit margin data to expected structure
+        profitMargin: {
+          // Actual margins (from real data)
+          grossMargin: parseFloat(project.grossMarginPercent?.toString() || "0") || 0,
+          netMargin: parseFloat(project.netMarginPercent?.toString() || "0") || 0,
+          profit: parseFloat(project.netProfit?.toString() || "0") || 0,
+
+          // Revenue & Cost breakdown
+          totalRevenue: parseFloat(project.totalPaidAmount?.toString() || "0") || 0,
+          totalInvoiced: parseFloat(project.totalInvoicedAmount?.toString() || "0") || 0,
+          totalCosts: parseFloat(project.totalAllocatedCosts?.toString() || "0") || 0,
+          directCosts: parseFloat(project.totalDirectCosts?.toString() || "0") || 0,
+          indirectCosts: parseFloat(project.totalIndirectCosts?.toString() || "0") || 0,
+
+          // Profit breakdown
+          grossProfit: parseFloat(project.grossProfit?.toString() || "0") || 0,
+          netProfit: parseFloat(project.netProfit?.toString() || "0") || 0,
+
+          // Budget variance
+          budgetVariance: parseFloat(project.budgetVariance?.toString() || "0") || 0,
+          budgetVariancePercent: parseFloat(project.budgetVariancePercent?.toString() || "0") || 0,
+
+          // Projected margins (from planning phase)
+          projectedGrossMargin: project.projectedGrossMargin ? parseFloat(project.projectedGrossMargin.toString()) : null,
+          projectedNetMargin: project.projectedNetMargin ? parseFloat(project.projectedNetMargin.toString()) : null,
+          projectedProfit: project.projectedProfit ? parseFloat(project.projectedProfit.toString()) : null,
+
+          // Estimated costs totals (from planning phase)
+          estimatedDirectCosts: estimatedDirectTotal,
+          estimatedIndirectCosts: estimatedIndirectTotal,
+          estimatedTotalCosts: estimatedDirectTotal + estimatedIndirectTotal,
+
+          // Metadata
+          calculatedAt: project.profitCalculatedAt,
+          calculatedBy: project.profitCalculatedBy,
+        },
+
+        // Add statistics
+        statistics: {
+          quotationsCount: project._count?.quotations || 0,
+          invoicesCount: project._count?.invoices || 0,
+          expensesCount: project._count?.expenses || 0,
+          costAllocationsCount: project._count?.costAllocations || 0,
+        },
+      };
+
+      // Log the profitMargin data being sent to PDF
+      this.logger.debug(
+        `Profit margin data for PDF preview: projectedGrossMargin=${projectForPDF.profitMargin.projectedGrossMargin}, projectedNetMargin=${projectForPDF.profitMargin.projectedNetMargin}, projectedProfit=${projectForPDF.profitMargin.projectedProfit}, estimatedTotalCosts=${projectForPDF.profitMargin.estimatedTotalCosts}`
+      );
+
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateProjectPDF(project, isContinuous);
+      const pdfBuffer = await this.pdfService.generateProjectPDF(projectForPDF, isContinuous);
 
       // Set response headers for preview
       res.setHeader("Content-Type", "application/pdf");
@@ -404,6 +495,11 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(
+        `Failed to generate project PDF preview for project ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : "",
+      );
       throw new Error("Gagal membuat preview PDF proyek");
     }
   }
