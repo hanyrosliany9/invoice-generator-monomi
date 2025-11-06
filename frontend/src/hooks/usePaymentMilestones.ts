@@ -94,16 +94,24 @@ export function useUpdatePaymentMilestone() {
 
   return useMutation({
     mutationFn: ({
+      quotationId,
       milestoneId,
       data,
     }: {
+      quotationId: string
       milestoneId: string
       data: UpdatePaymentMilestoneDTO
-    }) => paymentMilestonesService.updatePaymentMilestone(milestoneId, data),
-    onSuccess: (data) => {
-      // Invalidate all milestone queries
+    }) => paymentMilestonesService.updatePaymentMilestone(quotationId, milestoneId, data),
+    onSuccess: (data, { quotationId }) => {
+      // Invalidate related queries
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.all,
+        queryKey: QUERY_KEYS.quotation(quotationId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.validation(quotationId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.progress(quotationId),
       })
     },
   })
@@ -116,12 +124,23 @@ export function useDeletePaymentMilestone() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (milestoneId: string) =>
-      paymentMilestonesService.deletePaymentMilestone(milestoneId),
-    onSuccess: () => {
-      // Invalidate all milestone queries
+    mutationFn: ({
+      quotationId,
+      milestoneId,
+    }: {
+      quotationId: string
+      milestoneId: string
+    }) => paymentMilestonesService.deletePaymentMilestone(quotationId, milestoneId),
+    onSuccess: (data, { quotationId }) => {
+      // Invalidate related queries
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.all,
+        queryKey: QUERY_KEYS.quotation(quotationId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.validation(quotationId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.progress(quotationId),
       })
     },
   })

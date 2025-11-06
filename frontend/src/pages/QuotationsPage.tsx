@@ -64,6 +64,7 @@ import WorkflowIndicator from '../components/ui/WorkflowIndicator'
 import { useTheme } from '../theme'
 import { CompactMetricCard } from '../components/ui/CompactMetricCard'
 import { usePermissions } from '../hooks/usePermissions'
+import { useAuthStore } from '../store/auth'
 import dayjs from 'dayjs'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import MobileTableView from '../components/mobile/MobileTableView'
@@ -115,6 +116,7 @@ export const QuotationsPage: React.FC = () => {
   const [statusForm] = Form.useForm()
   const { message } = App.useApp()
   const { canApproveFinancial } = usePermissions()
+  const { user } = useAuthStore()
 
   // Export functionality
   const handleExport = useCallback(() => {
@@ -340,8 +342,16 @@ export const QuotationsPage: React.FC = () => {
       message.error('Hanya quotation yang disetujui dapat dijadikan invoice')
       return
     }
-    invoiceMutation.mutate(quotation.id)
-  }, [invoiceMutation, message])
+
+    // Check payment type to route appropriately
+    if (quotation.paymentType === 'MILESTONE_BASED') {
+      // Navigate to quotation detail page to show milestones
+      navigate(`/quotations/${quotation.id}`)
+    } else {
+      // For FULL_PAYMENT, ADVANCE_PAYMENT, CUSTOM - generate invoice directly
+      invoiceMutation.mutate(quotation.id)
+    }
+  }, [invoiceMutation, message, navigate])
 
   const handlePrintQuotation = useCallback(async (quotation: Quotation) => {
     try {
@@ -401,7 +411,12 @@ export const QuotationsPage: React.FC = () => {
             handleStatusChange(quotation, 'APPROVED')
           }
         },
-        visible: (record) => record.status === 'sent' && canApproveFinancial(),
+        visible: (record) => {
+          const quotation = quotations.find(q => q.id === record.id)
+          return record.status === 'sent' &&
+                 canApproveFinancial() &&
+                 quotation?.createdBy !== user?.id
+        },
       },
       {
         key: 'decline',
@@ -414,7 +429,12 @@ export const QuotationsPage: React.FC = () => {
             handleStatusChange(quotation, 'DECLINED')
           }
         },
-        visible: (record) => record.status === 'sent' && canApproveFinancial(),
+        visible: (record) => {
+          const quotation = quotations.find(q => q.id === record.id)
+          return record.status === 'sent' &&
+                 canApproveFinancial() &&
+                 quotation?.createdBy !== user?.id
+        },
       },
       {
         key: 'create-invoice',
@@ -458,6 +478,7 @@ export const QuotationsPage: React.FC = () => {
       handlePrintQuotation,
       handleDelete,
       canApproveFinancial,
+      user,
     ]
   )
 
@@ -826,7 +847,7 @@ export const QuotationsPage: React.FC = () => {
       })
     }
 
-    if (quotation.status === 'SENT' && canApproveFinancial()) {
+    if (quotation.status === 'SENT' && canApproveFinancial() && quotation.createdBy !== user?.id) {
       items.push(
         {
           key: 'approve',
@@ -878,7 +899,7 @@ export const QuotationsPage: React.FC = () => {
     })
 
     return items
-  }, [handleEdit, handlePrintQuotation, handlePreviewPDF, navigate, handleStatusChange, canApproveFinancial, handleGenerateInvoice, handleDelete])
+  }, [handleEdit, handlePrintQuotation, handlePreviewPDF, navigate, handleStatusChange, canApproveFinancial, handleGenerateInvoice, handleDelete, user])
 
   const columns = useMemo(() => [
     {

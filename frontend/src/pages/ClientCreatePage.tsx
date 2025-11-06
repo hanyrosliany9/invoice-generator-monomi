@@ -194,7 +194,11 @@ export const ClientCreatePage: React.FC = () => {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item name='company' label='Company'>
+              <Form.Item
+                name='company'
+                label='Company'
+                rules={[{ required: true, message: 'Please enter company name' }]}
+              >
                 <Input placeholder='Company name' size='large' />
               </Form.Item>
             </Col>
@@ -203,6 +207,7 @@ export const ClientCreatePage: React.FC = () => {
                 name='phone'
                 label='Phone Number'
                 rules={[
+                  { required: true, message: 'Please enter phone number' },
                   {
                     pattern: /^[+]?[\d\s\-\(\)]+$/,
                     message: 'Please enter a valid phone number',
@@ -213,7 +218,11 @@ export const ClientCreatePage: React.FC = () => {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item name='contactPerson' label='Contact Person'>
+              <Form.Item
+                name='contactPerson'
+                label='Contact Person'
+                rules={[{ required: true, message: 'Please enter contact person' }]}
+              >
                 <Input placeholder='Primary contact person' size='large' />
               </Form.Item>
             </Col>
@@ -229,7 +238,11 @@ export const ClientCreatePage: React.FC = () => {
         >
           <Row gutter={[16, 16]}>
             <Col xs={24}>
-              <Form.Item name='address' label='Business Address'>
+              <Form.Item
+                name='address'
+                label='Business Address'
+                rules={[{ required: true, message: 'Please enter business address' }]}
+              >
                 <TextArea rows={3} placeholder='Complete business address' />
               </Form.Item>
             </Col>
@@ -249,7 +262,11 @@ export const ClientCreatePage: React.FC = () => {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item name='paymentTerms' label='Payment Terms'>
+              <Form.Item
+                name='paymentTerms'
+                label='Payment Terms'
+                rules={[{ required: true, message: 'Please select payment terms' }]}
+              >
                 <Select
                   placeholder='Select payment terms'
                   size='large'

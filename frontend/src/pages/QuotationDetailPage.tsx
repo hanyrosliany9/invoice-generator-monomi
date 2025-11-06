@@ -282,7 +282,18 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
 
   const handleGenerateInvoice = () => {
     if (quotation?.status === 'APPROVED') {
-      generateInvoiceMutation.mutate(quotation.id)
+      // Check payment type to route appropriately
+      if (quotation.paymentType === 'MILESTONE_BASED') {
+        // Navigate to quotation detail to show milestones
+        // (User is already on this page, so scroll to milestones section)
+        const milestonesSection = document.getElementById('milestones-section')
+        if (milestonesSection) {
+          milestonesSection.scrollIntoView({ behavior: 'smooth' })
+        }
+      } else {
+        // For FULL_PAYMENT, ADVANCE_PAYMENT, CUSTOM - generate invoice directly
+        generateInvoiceMutation.mutate(quotation.id)
+      }
     }
   }
 
@@ -462,7 +473,9 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
                     color: 'white',
                   }}
                 >
-                  Generate Invoice
+                  {quotation.paymentType === 'MILESTONE_BASED'
+                    ? 'View Milestones & Generate Invoice'
+                    : 'Generate Invoice'}
                 </Button>
               )}
             </Space>
@@ -618,7 +631,11 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
 
       {/* Payment Milestones Section (if quotation has milestones) */}
       {paymentMilestones.length > 0 && (
-        <Card title="Payment Milestones" style={{ marginBottom: '24px' }}>
+        <Card
+          id="milestones-section"
+          title="Payment Milestones"
+          style={{ marginBottom: '24px' }}
+        >
           <MilestoneProgress
             quotationId={id!}
             onCreateInvoice={handleGenerateMilestoneInvoice}

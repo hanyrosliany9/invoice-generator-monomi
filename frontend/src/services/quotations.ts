@@ -1,4 +1,7 @@
 import { apiClient } from '../config/api'
+import type { PaymentMilestone } from '../types/payment-milestones'
+
+export type PaymentType = 'FULL_PAYMENT' | 'MILESTONE_BASED' | 'ADVANCE_PAYMENT' | 'CUSTOM'
 
 export interface Quotation {
   id: string
@@ -15,6 +18,12 @@ export interface Quotation {
   createdBy: string
   createdAt: string
   updatedAt: string
+  paymentType?: PaymentType
+  paymentMilestones?: PaymentMilestone[]
+  approvedBy?: string
+  approvedAt?: string
+  rejectedBy?: string
+  rejectedAt?: string
   priceBreakdown?: {
     products: Array<{
       name: string

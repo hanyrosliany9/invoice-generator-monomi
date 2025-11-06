@@ -381,7 +381,10 @@ export const QuotationEditPage: React.FC = () => {
     if (!formMilestones || formMilestones.length === 0) {
       for (const existing of existingMilestones) {
         if (existing.id && !existing.isInvoiced) {
-          await deleteMilestoneMutation.mutateAsync(existing.id)
+          await deleteMilestoneMutation.mutateAsync({
+            quotationId,
+            milestoneId: existing.id
+          })
         }
       }
       return
@@ -399,7 +402,10 @@ export const QuotationEditPage: React.FC = () => {
     // Delete milestones that are no longer in the form
     for (const existing of existingMilestones) {
       if (existing.id && !existing.isInvoiced && !formMilestoneNumbers.has(existing.milestoneNumber)) {
-        await deleteMilestoneMutation.mutateAsync(existing.id)
+        await deleteMilestoneMutation.mutateAsync({
+          quotationId,
+          milestoneId: existing.id
+        })
       }
     }
 
@@ -419,6 +425,7 @@ export const QuotationEditPage: React.FC = () => {
 
           if (hasChanges) {
             await updateMilestoneMutation.mutateAsync({
+              quotationId,
               milestoneId: existing.id,
               data: {
                 name: formMilestone.name,

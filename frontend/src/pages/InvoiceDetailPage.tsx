@@ -53,6 +53,7 @@ import { formatIDR, safeNumber, safeString } from '../utils/currency'
 import { Invoice, invoiceService } from '../services/invoices'
 import { FileUpload } from '../components/documents/FileUpload'
 import { useTheme } from '../theme'
+import { usePermissions } from '../hooks/usePermissions'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
@@ -67,6 +68,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { theme } = useTheme()
+  const { canApproveFinancial } = usePermissions()
   const queryClient = useQueryClient()
   const [pdfModalVisible, setPdfModalVisible] = useState(false)
   const [paymentModalVisible, setPaymentModalVisible] = useState(false)
@@ -469,7 +471,8 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                 View PDF
               </Button>
 
-              {invoice.status !== 'PAID' && invoice.status !== 'CANCELLED' && (
+              {(invoice.status === 'SENT' || invoice.status === 'OVERDUE') &&
+               canApproveFinancial() && (
                 <Button
                   icon={<DollarOutlined />}
                   size='large'
@@ -1128,7 +1131,8 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
           onClick={handleSendEmail}
           aria-label='Send via email'
         />
-        {invoice.status !== 'PAID' && invoice.status !== 'CANCELLED' && (
+        {(invoice.status === 'SENT' || invoice.status === 'OVERDUE') &&
+         canApproveFinancial() && (
           <FloatButton
             icon={<DollarOutlined />}
             tooltip='Mark as Paid'

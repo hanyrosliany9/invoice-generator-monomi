@@ -368,6 +368,7 @@ export class InvoicesService {
           client: true,
           project: true,
           quotation: true,
+          paymentMilestone: true,
           user: {
             select: {
               id: true,

@@ -774,6 +774,12 @@ export const InvoicesPage: React.FC = () => {
 
   // Batch operation handlers
   const handleBatchSend = async () => {
+    // Add permission check at the start
+    if (!canApproveFinancial()) {
+      message.warning('Anda tidak memiliki izin untuk mengirim invoice')
+      return
+    }
+
     if (selectedRowKeys.length === 0) {
       message.warning('Pilih invoice yang akan dikirim')
       return
@@ -989,12 +995,14 @@ export const InvoicesPage: React.FC = () => {
     }
 
     // Add general status change option (similar to quotation page)
-    items.push({
-      key: 'change-status',
-      icon: <EditOutlined />,
-      label: 'Ubah Status',
-      onClick: () => handleOpenStatusModal(invoice),
-    })
+    if (canApproveFinancial()) {
+      items.push({
+        key: 'change-status',
+        icon: <EditOutlined />,
+        label: 'Ubah Status',
+        onClick: () => handleOpenStatusModal(invoice),
+      })
+    }
 
     items.push({
       key: 'delete',

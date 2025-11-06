@@ -106,7 +106,7 @@ export class AccountingController {
 
   // ============ JOURNAL ENTRIES ============
   @Post("journal-entries")
-  @Roles("ADMIN", "USER")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT", "ADMIN", "USER")
   async createJournalEntry(
     @Body() createJournalEntryDto: CreateJournalEntryDto,
     @Request() req: any,
@@ -128,7 +128,7 @@ export class AccountingController {
   }
 
   @Patch("journal-entries/:id")
-  @Roles("ADMIN", "USER")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT", "ADMIN", "USER")
   async updateJournalEntry(
     @Param("id") id: string,
     @Body() updateJournalEntryDto: UpdateJournalEntryDto,
@@ -141,19 +141,19 @@ export class AccountingController {
   }
 
   @Post("journal-entries/:id/post")
-  @Roles("ADMIN")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ADMIN")
   async postJournalEntry(@Param("id") id: string, @Request() req: any) {
     return this.journalService.postJournalEntry(id, req.user.userId);
   }
 
   @Post("journal-entries/:id/reverse")
-  @Roles("ADMIN")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ADMIN")
   async reverseJournalEntry(@Param("id") id: string, @Request() req: any) {
     return this.journalService.reverseJournalEntry(id, req.user.userId);
   }
 
   @Delete("journal-entries/:id")
-  @Roles("ADMIN")
+  @Roles("SUPER_ADMIN", "ADMIN")
   async deleteJournalEntry(@Param("id") id: string) {
     return this.journalService.deleteJournalEntry(id);
   }

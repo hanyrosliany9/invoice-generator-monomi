@@ -732,6 +732,16 @@ Reference: Quotation ${quotation.quotationNumber}
                 label='Total Invoice Amount (IDR)'
                 rules={[
                   { required: true, message: 'Please enter total amount' },
+                  {
+                    type: 'number',
+                    min: 1000,
+                    message: 'Jumlah invoice minimal Rp 1.000'
+                  },
+                  {
+                    type: 'number',
+                    max: 1000000000,
+                    message: 'Jumlah invoice melebihi batas maksimal (Rp 1 miliar)'
+                  }
                 ]}
               >
                 <IDRCurrencyInput

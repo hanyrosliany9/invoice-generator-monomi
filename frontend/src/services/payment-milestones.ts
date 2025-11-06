@@ -58,11 +58,12 @@ export const paymentMilestonesService = {
    * Update a payment milestone
    */
   async updatePaymentMilestone(
+    quotationId: string,
     paymentMilestoneId: string,
     data: UpdatePaymentMilestoneDTO
   ): Promise<PaymentMilestone> {
     const response = await (apiClient as any).patch(
-      `/quotations/payment-milestones/${paymentMilestoneId}`,
+      `/quotations/${quotationId}/payment-milestones/${paymentMilestoneId}`,
       data
     )
     return (response.data as any).data as PaymentMilestone
@@ -71,9 +72,12 @@ export const paymentMilestonesService = {
   /**
    * Delete a payment milestone
    */
-  async deletePaymentMilestone(paymentMilestoneId: string): Promise<void> {
+  async deletePaymentMilestone(
+    quotationId: string,
+    paymentMilestoneId: string
+  ): Promise<void> {
     await apiClient.delete(
-      `/quotations/payment-milestones/${paymentMilestoneId}`
+      `/quotations/${quotationId}/payment-milestones/${paymentMilestoneId}`
     )
   },
 
@@ -108,7 +112,7 @@ export const paymentMilestonesService = {
    */
   async getMilestoneProgress(quotationId: string): Promise<any> {
     const response = await apiClient.get(
-      `/quotations/${quotationId}/milestone-progress`
+      `/quotations/${quotationId}/payment-milestones/progress`
     )
     return (response.data as any).data
   },

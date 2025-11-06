@@ -322,6 +322,7 @@ const AddressForm: React.FC = () => {
         <Form.Item
           label="Alamat"
           name="address"
+          rules={[{ required: true, message: 'Alamat wajib diisi' }]}
         >
           <TextArea
             rows={3}
@@ -476,6 +477,7 @@ const PaymentTermsForm: React.FC = () => {
           label="Syarat Pembayaran"
           name="paymentTerms"
           initialValue="NET 30"
+          rules={[{ required: true, message: 'Syarat pembayaran wajib dipilih' }]}
         >
           <Select
             placeholder="Pilih syarat pembayaran"
@@ -494,6 +496,7 @@ const PaymentTermsForm: React.FC = () => {
           label="Mata Uang"
           name="currency"
           initialValue="IDR"
+          rules={[{ required: true, message: 'Mata uang wajib dipilih' }]}
         >
           <Select placeholder="Pilih mata uang">
             {CURRENCIES.map(curr => (
