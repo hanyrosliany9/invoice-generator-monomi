@@ -43,9 +43,9 @@ import {
 } from '../hooks/useMilestones'
 import { useCalendarView } from '../hooks/useCalendarView'
 import { ProjectMilestone, CreateMilestoneRequest, UpdateMilestoneRequest } from '../services/milestones'
-// TODO: Calendar views temporarily disabled - fullcalendar dependency removed
-// import { MonthCalendarView } from '../components/calendar/MonthCalendarView'
-// import { WeekCalendarView } from '../components/calendar/WeekCalendarView'
+import { MonthCalendarView } from '../components/calendar/MonthCalendarView'
+import { WeekCalendarView } from '../components/calendar/WeekCalendarView'
+import { transformMilestonesToEvents } from '../utils/calendarUtils'
 
 const { TextArea } = Input
 const { RangePicker } = DatePicker
@@ -281,6 +281,15 @@ export const ProjectCalendarPage: React.FC = () => {
     handleEditClick(milestone)
   }
 
+  const handleEventClick = (eventId: string) => {
+    const milestone = milestones.find(m => m.id === eventId)
+    if (milestone) {
+      handleEditClick(milestone)
+    }
+  }
+
+  const calendarEvents = transformMilestonesToEvents(milestones)
+
   return (
     <div style={{ padding: '24px' }}>
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -377,21 +386,20 @@ export const ProjectCalendarPage: React.FC = () => {
         </Space>
       </Card>
 
-      {/* Calendar Views - Temporarily disabled until fullcalendar is re-added */}
+      {/* Calendar Views */}
       {isLoading ? (
         <Spin style={{ display: 'flex', justifyContent: 'center', padding: '60px' }} />
       ) : milestones.length === 0 ? (
         <Card>
-          <Empty description="No milestones yet" />
+          <Empty description="No milestones yet. Create your first milestone to see it on the calendar!" />
         </Card>
       ) : (
-        <Card>
-          <Alert
-            message="Calendar View Temporarily Unavailable"
-            description="The calendar visualization is currently disabled. Please use the table view below to manage milestones."
-            type="info"
-            showIcon
-          />
+        <Card style={{ padding: '24px' }}>
+          {view === 'month' ? (
+            <MonthCalendarView events={calendarEvents} onEventClick={handleEventClick} />
+          ) : (
+            <WeekCalendarView events={calendarEvents} onEventClick={handleEventClick} />
+          )}
         </Card>
       )}
 

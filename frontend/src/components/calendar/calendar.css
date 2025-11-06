@@ -1,0 +1,66 @@
+/* FullCalendar v6 Styles - Updated paths */
+@import '@fullcalendar/core/index.css';
+@import '@fullcalendar/daygrid/index.css';
+@import '@fullcalendar/timegrid/index.css';
+
+/* Custom FullCalendar Theme */
+.fc {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: #e8e8e8;
+}
+
+.fc-theme-standard .fc-scrollgrid {
+  border-color: #e8e8e8;
+}
+
+.fc .fc-button-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.fc .fc-button-primary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+
+.fc .fc-button-primary:disabled {
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+  color: rgba(0, 0, 0, 0.25);
+}
+
+.fc-event {
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.fc-event:hover {
+  opacity: 0.8;
+}
+
+.fc-daygrid-event {
+  white-space: normal !important;
+  align-items: normal !important;
+}
+
+.fc-daygrid-event-dot {
+  margin: 0 4px;
+}
+
+.fc-h-event .fc-event-title {
+  font-weight: 500;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .fc {
+    --fc-border-color: #434343;
+    --fc-neutral-bg-color: rgba(255, 255, 255, 0.08);
+  }
+}
