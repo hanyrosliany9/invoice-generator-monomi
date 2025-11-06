@@ -36,7 +36,6 @@ import {
   InheritanceIndicator,
   MateraiCompliancePanel,
   OptimizedFormLayout,
-  PreviewPanel,
   ProgressiveSection,
 } from '../components/forms'
 import { useOptimizedAutoSave } from '../hooks/useOptimizedAutoSave'
@@ -79,7 +78,6 @@ export const QuotationCreatePage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
-  const [previewData, setPreviewData] = useState<Partial<QuotationFormData> | null>(null)
   const [includePPN, setIncludePPN] = useState(true)
   const { message } = App.useApp()
   const { theme } = useTheme()
@@ -227,24 +225,6 @@ export const QuotationCreatePage: React.FC = () => {
       }
 
       form.setFieldsValue(inheritedData)
-
-      // Update preview with products
-      const previewDataWithProducts = {
-        ...inheritedData,
-        priceBreakdown: selectedProject.products && selectedProject.products.length > 0 ? {
-          products: selectedProject.products.map(p => ({
-            name: p.name,
-            description: p.description,
-            price: p.price,
-            quantity: p.quantity,
-            subtotal: p.price * p.quantity,
-          })),
-          total: calculatedTotal,
-          calculatedAt: new Date().toISOString(),
-        } : undefined,
-      }
-
-      updatePreviewData(previewDataWithProducts)
     } else if (prefilledClientId) {
       form.setFieldsValue({
         clientId: prefilledClientId,
@@ -270,26 +250,9 @@ export const QuotationCreatePage: React.FC = () => {
     return baseTerms
   }
 
-  // Update preview data when form changes
-  const updatePreviewData = (values: Partial<QuotationFormData>) => {
-    const selectedClient = clients.find(c => c.id === values.clientId)
-    const selectedProjectData =
-      projects.find(p => p.id === values.projectId) || selectedProject
-
-    setPreviewData({
-      ...values,
-      client: selectedClient,
-      project: selectedProjectData,
-      number: 'DRAFT',
-      status: 'DRAFT',
-      products: (selectedProjectData as any)?.products || [],
-    })
-  }
-
   const handleFormChange = () => {
     const values = form.getFieldsValue()
     setFormValues(values)
-    updatePreviewData(values)
 
     // Trigger auto-save when basic data is present
     if (values.clientId && values.projectId && values.totalAmount) {
@@ -515,15 +478,6 @@ export const QuotationCreatePage: React.FC = () => {
             />
           )}
         </Space>
-      }
-      preview={
-        <PreviewPanel
-          mode='live'
-          data={previewData}
-          template='quotation'
-          showPdf={false}
-          allowDownload={false}
-        />
       }
     >
       <Form

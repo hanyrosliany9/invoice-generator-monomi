@@ -5,7 +5,6 @@ interface EntityFormLayoutProps {
   children: React.ReactNode
   hero: React.ReactNode
   sidebar?: React.ReactNode
-  preview?: React.ReactNode
   loading?: boolean
   className?: string
   'data-testid'?: string
@@ -15,7 +14,6 @@ export const EntityFormLayout: React.FC<EntityFormLayoutProps> = ({
   children,
   hero,
   sidebar,
-  preview,
   loading = false,
   className,
   'data-testid': dataTestId,
@@ -40,7 +38,7 @@ export const EntityFormLayout: React.FC<EntityFormLayoutProps> = ({
           <Col
             xs={24}
             md={sidebar ? 16 : 24}
-            lg={preview ? 12 : sidebar ? 18 : 24}
+            lg={sidebar ? 18 : 24}
           >
             <div>{children}</div>
           </Col>
@@ -50,7 +48,7 @@ export const EntityFormLayout: React.FC<EntityFormLayoutProps> = ({
             <Col
               xs={24}
               md={8}
-              lg={preview ? 6 : 6}
+              lg={6}
               style={{
                 order: 1,
               }}
@@ -64,33 +62,6 @@ export const EntityFormLayout: React.FC<EntityFormLayoutProps> = ({
                 }}
               >
                 {sidebar}
-              </div>
-            </Col>
-          )}
-
-          {/* Preview Panel */}
-          {preview && (
-            <Col
-              xs={24}
-              md={sidebar ? 24 : 8}
-              lg={6}
-              style={{
-                order: 2,
-              }}
-            >
-              <div
-                style={{
-                  position: 'sticky',
-                  top: '24px',
-                  maxHeight: 'calc(100vh - 48px)',
-                  overflowY: 'auto',
-                  border: '1px solid #f0f0f0',
-                  borderRadius: '8px',
-                  backgroundColor: '#fafafa',
-                  padding: '16px',
-                }}
-              >
-                {preview}
               </div>
             </Col>
           )}

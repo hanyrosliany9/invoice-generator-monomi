@@ -10,13 +10,12 @@ const { Content } = Layout
 interface OptimizedFormLayoutProps {
   hero: React.ReactNode
   sidebar?: React.ReactNode
-  preview?: React.ReactNode
   children: React.ReactNode
   loading?: boolean
 }
 
 export const OptimizedFormLayout: React.FC<OptimizedFormLayoutProps> = memo(
-  ({ hero, sidebar, preview, children, loading = false }) => {
+  ({ hero, sidebar, children, loading = false }) => {
     const mobile = useMobileOptimized()
     const performanceSettings = mobile.getPerformanceSettings()
 
@@ -47,26 +46,12 @@ export const OptimizedFormLayout: React.FC<OptimizedFormLayoutProps> = memo(
       })
     }, [mobile])
 
-    // Wrap sidebar and preview in error boundaries for better resilience
+    // Wrap sidebar in error boundary for better resilience
     const wrappedSidebar = useMemo(() => {
       if (!sidebar) return undefined
 
       return <ErrorBoundary level='component'>{sidebar}</ErrorBoundary>
     }, [sidebar])
-
-    const wrappedPreview = useMemo(() => {
-      if (!preview) return undefined
-
-      // Skip preview on very slow connections to improve performance
-      if (
-        performanceSettings.reduceMotion &&
-        mobile.connectionType === 'slow'
-      ) {
-        return null
-      }
-
-      return <ErrorBoundary level='component'>{preview}</ErrorBoundary>
-    }, [preview, performanceSettings.reduceMotion, mobile.connectionType])
 
     // Main form content with enhanced error boundary
     const wrappedChildren = useMemo(
@@ -86,7 +71,6 @@ export const OptimizedFormLayout: React.FC<OptimizedFormLayoutProps> = memo(
       <EntityFormLayout
         hero={hero}
         sidebar={wrappedSidebar}
-        preview={wrappedPreview}
         {...optimizedProps}
       >
         {wrappedChildren}

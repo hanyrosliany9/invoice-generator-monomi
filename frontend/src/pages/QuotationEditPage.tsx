@@ -38,7 +38,6 @@ import {
   FormStatistics,
   IDRCurrencyInput,
   MateraiCompliancePanel,
-  PreviewPanel,
   ProgressiveSection,
 } from '../components/forms'
 import {
@@ -90,7 +89,6 @@ export const QuotationEditPage: React.FC = () => {
   const [hasChanges, setHasChanges] = useState(false)
   const [originalValues, setOriginalValues] =
     useState<QuotationFormData | null>(null)
-  const [previewData, setPreviewData] = useState<Partial<QuotationFormData> | null>(null)
   const [includePPN, setIncludePPN] = useState(true)
   const [totalAmount, setTotalAmount] = useState(0)
   const [creatingInvoiceForMilestone, setCreatingInvoiceForMilestone] = useState<string | null>(null)
@@ -240,18 +238,6 @@ export const QuotationEditPage: React.FC = () => {
       setOriginalValues(formData)
       setTotalAmount(Number(quotation.totalAmount))
 
-      // Update preview with the loaded data
-      const selectedClient = clients.find(c => c.id === formData.clientId) || quotation.client
-      const selectedProject = projects.find(p => p.id === formData.projectId) || quotation.project
-
-      setPreviewData({
-        ...formData,
-        client: selectedClient,
-        project: selectedProject,
-        number: quotation.quotationNumber || 'DRAFT',
-        status: formData.status || quotation.status,
-      })
-
       // Mark as initialized to prevent re-running
       initializedRef.current = true
     } catch (error) {
@@ -261,22 +247,6 @@ export const QuotationEditPage: React.FC = () => {
     // Only depend on quotation ID to prevent infinite loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quotation?.id])
-
-  // Update preview data when form changes
-  const updatePreviewData = (values: Partial<QuotationFormData>) => {
-    const selectedClient =
-      clients.find(c => c.id === values.clientId) || quotation?.client
-    const selectedProject =
-      projects.find(p => p.id === values.projectId) || quotation?.project
-
-    setPreviewData({
-      ...values,
-      client: selectedClient,
-      project: selectedProject,
-      number: quotation?.quotationNumber || 'DRAFT',
-      status: values.status || quotation?.status,
-    })
-  }
 
   // Track form changes with debouncing (FIX #3: Prevents rapid form state corruption)
   const handleFormChange = useCallback(() => {
@@ -351,7 +321,6 @@ export const QuotationEditPage: React.FC = () => {
         })
 
       setHasChanges(!!changed)
-      updatePreviewData(currentValues)
     }, 100)
   }, [form, originalValues])
 
@@ -537,7 +506,6 @@ export const QuotationEditPage: React.FC = () => {
     if (originalValues) {
       form.setFieldsValue(originalValues)
       setHasChanges(false)
-      updatePreviewData(originalValues)
       message.info('Changes reverted')
     }
   }
@@ -849,15 +817,6 @@ export const QuotationEditPage: React.FC = () => {
             />
           )}
         </Space>
-      }
-      preview={
-        <PreviewPanel
-          mode='live'
-          data={previewData}
-          template='quotation'
-          showPdf={false}
-          allowDownload={quotation.status !== 'DRAFT'}
-        />
       }
     >
       <Form

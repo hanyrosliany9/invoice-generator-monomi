@@ -37,7 +37,6 @@ import {
   InheritanceIndicator,
   MateraiCompliancePanel,
   OptimizedFormLayout,
-  PreviewPanel,
   ProgressiveSection,
 } from '../components/forms'
 import { MilestoneSelector } from '../components/invoices'
@@ -78,7 +77,6 @@ export const InvoiceCreatePage: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
-  const [previewData, setPreviewData] = useState<Partial<InvoiceFormData> | null>(null)
   const [includePPN, setIncludePPN] = useState(true)
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null)
 
@@ -179,7 +177,6 @@ export const InvoiceCreatePage: React.FC = () => {
         terms: selectedQuotation.terms || generateDefaultInvoiceTerms(),
       }
       form.setFieldsValue(inheritedData)
-      updatePreviewData(inheritedData)
     } else if (prefilledClientId) {
       form.setFieldsValue({
         clientId: prefilledClientId,
@@ -219,28 +216,8 @@ Reference: Quotation ${quotation.quotationNumber}
     `.trim()
   }
 
-  // Update preview data when form changes
-  const updatePreviewData = (values: Partial<InvoiceFormData>) => {
-    const selectedClient =
-      clients.find(c => c.id === values.clientId) || selectedQuotation?.client
-    const selectedProject =
-      projects.find(p => p.id === values.projectId) ||
-      selectedQuotation?.project
-
-    setPreviewData({
-      ...values,
-      client: selectedClient,
-      project: selectedProject,
-      quotation: selectedQuotation,
-      number: 'DRAFT',
-      status: 'DRAFT',
-      invoiceNumber: 'DRAFT',
-    })
-  }
-
   const handleFormChange = () => {
     const values = form.getFieldsValue()
-    updatePreviewData(values)
 
     // Trigger auto-save with current form data
     if (values.clientId && values.projectId && values.totalAmount) {
@@ -523,15 +500,6 @@ Reference: Quotation ${quotation.quotationNumber}
             />
           )}
         </Space>
-      }
-      preview={
-        <PreviewPanel
-          mode='live'
-          data={previewData}
-          template='invoice'
-          showPdf={false}
-          allowDownload={false}
-        />
       }
     >
       <Form

@@ -8,7 +8,6 @@ export { IDRCurrencyInput } from './IDRCurrencyInput'
 export { FormStatistics } from './FormStatistics'
 export { ActionPanel } from './ActionPanel'
 export { InheritanceIndicator } from './InheritanceIndicator'
-export { PreviewPanel } from './PreviewPanel'
 export { PriceInheritanceFlow } from './PriceInheritanceFlow'
 export { PriceInheritanceFormField } from './PriceInheritanceFormField'
 

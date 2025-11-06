@@ -39,7 +39,6 @@ import {
   IDRCurrencyInput,
   InheritanceIndicator,
   MateraiCompliancePanel,
-  PreviewPanel,
   ProgressiveSection,
 } from '../components/forms'
 import { invoiceService, UpdateInvoiceRequest } from '../services/invoices'
@@ -77,7 +76,6 @@ export const InvoiceEditPage: React.FC = () => {
   const { theme } = useTheme()
   const { id } = useParams<{ id: string }>()
   const [autoSaving, setAutoSaving] = useState(false)
-  const [previewData, setPreviewData] = useState<Partial<InvoiceFormData> | null>(null)
   const [includePPN, setIncludePPN] = useState(true)
 
   // Fetch invoice data
@@ -177,32 +175,11 @@ export const InvoiceEditPage: React.FC = () => {
         status: invoice.status,
       }
       form.setFieldsValue(formData)
-      updatePreviewData(formData)
     }
   }, [invoice, form])
 
-  // Update preview data when form changes
-  const updatePreviewData = (values: Partial<InvoiceFormData>) => {
-    const selectedClient =
-      clients.find(c => c.id === values.clientId) || invoice?.client
-    const selectedProject =
-      projects.find(p => p.id === values.projectId) || invoice?.project
-    const selectedQuotation =
-      quotations.find(q => q.id === values.quotationId) || invoice?.quotation
-
-    setPreviewData({
-      ...values,
-      client: selectedClient,
-      project: selectedProject,
-      quotation: selectedQuotation,
-      number: invoice?.invoiceNumber || 'DRAFT',
-      invoiceNumber: invoice?.invoiceNumber || 'DRAFT',
-    })
-  }
-
   const handleFormChange = () => {
     const values = form.getFieldsValue()
-    updatePreviewData(values)
   }
 
   const handleSubmit = async (values: InvoiceFormData) => {
@@ -594,15 +571,6 @@ export const InvoiceEditPage: React.FC = () => {
             />
           )}
         </Space>
-      }
-      preview={
-        <PreviewPanel
-          mode='live'
-          data={previewData}
-          template='invoice'
-          showPdf={true}
-          allowDownload={true}
-        />
       }
     >
       <Form
