@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Card,
   Form,
@@ -24,6 +24,10 @@ import {
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTheme } from '../../theme';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import type { MobileTableAction } from '../../components/mobile/MobileTableView';
+import { cashBankBalanceToBusinessEntity } from '../../adapters/mobileTableAdapters';
 
 const { Title, Text } = Typography;
 
@@ -42,6 +46,7 @@ interface CashBankBalance {
 export const CashBankBalancePage: React.FC = () => {
   const [form] = Form.useForm();
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const [isCalculating, setIsCalculating] = useState(false);
   const [balances, setBalances] = useState<CashBankBalance[]>([
     {
@@ -183,6 +188,23 @@ export const CashBankBalancePage: React.FC = () => {
 
   const latestBalance = balances[0];
   const totalBalanceChange = balances.reduce((sum, b) => sum + b.netChange, 0);
+
+  // Mobile view data
+  const mobileData = useMemo(() =>
+    balances.map(cashBankBalanceToBusinessEntity),
+    [balances]
+  );
+
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail',
+      icon: <BankOutlined />,
+      onClick: (record) => {
+        console.log('View balance:', record.number);
+      },
+    },
+  ], []);
 
   return (
     <div>
@@ -361,16 +383,29 @@ export const CashBankBalancePage: React.FC = () => {
 
       {/* Balance History Table */}
       <Card title="Riwayat Saldo Per Periode">
-        <Table
-          columns={columns}
-          dataSource={balances}
-          rowKey="id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} periode`,
-          }}
-        />
+        {isMobile ? (
+          <MobileTableView
+            data={mobileData}
+            loading={false}
+            entityType="cash-bank-balance"
+            showQuickStats
+            searchable
+            searchFields={['number', 'title']}
+            actions={mobileActions}
+            onRefresh={() => {}}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={balances}
+            rowKey="id"
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `Total ${total} periode`,
+            }}
+          />
+        )}
       </Card>
     </div>
   );

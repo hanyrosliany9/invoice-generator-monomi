@@ -1,8 +1,10 @@
-import { Theme } from './types'
+import type { Theme } from './types'
 
 /**
  * Get Recharts theme configuration based on current theme
  * This ensures charts display correctly in both light and dark modes
+ *
+ * NOTE: This file only imports types, not theme objects, to avoid circular dependencies
  */
 export const getChartThemeConfig = (theme: Theme) => {
   const isDark = theme.mode === 'dark'

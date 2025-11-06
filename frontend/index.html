@@ -50,6 +50,25 @@
         document.body.className = 'theme-dark'
       })()
     </script>
+    <!-- Eruda Mobile Console for Debugging -->
+    <script>
+      // Enable Eruda console by adding ?eruda=true to URL or localStorage.setItem('eruda', 'true')
+      (function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const enableEruda = urlParams.get('eruda') === 'true' || localStorage.getItem('eruda') === 'true';
+
+        if (enableEruda) {
+          // Load Eruda from CDN
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+          script.onload = function() {
+            eruda.init();
+            console.log('📱 Eruda mobile console enabled! Tap the icon in bottom-right to open.');
+          };
+          document.head.appendChild(script);
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

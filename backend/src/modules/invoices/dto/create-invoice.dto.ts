@@ -40,6 +40,15 @@ export class CreateInvoiceDto {
   quotationId?: string;
 
   @ApiProperty({
+    description: "ID payment milestone (untuk invoice berbasis termin)",
+    example: "clx123456789",
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: "ID payment milestone harus berupa string yang valid" })
+  paymentMilestoneId?: string;
+
+  @ApiProperty({
     description: "ID klien",
     example: "clx123456789",
   })

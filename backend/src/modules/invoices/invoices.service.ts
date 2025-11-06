@@ -66,6 +66,50 @@ export class InvoicesService {
       });
     }
 
+    // If paymentMilestoneId provided, validate and inherit data
+    let paymentMilestone = null;
+    if (createInvoiceDto.paymentMilestoneId) {
+      paymentMilestone = await this.prisma.paymentMilestone.findUnique({
+        where: { id: createInvoiceDto.paymentMilestoneId },
+        include: {
+          quotation: true,
+          invoices: true, // Check for existing invoices
+        },
+      });
+
+      if (!paymentMilestone) {
+        throw new NotFoundException(
+          "Payment milestone tidak ditemukan",
+        );
+      }
+
+      // CRITICAL: Prevent duplicate milestone invoices
+      if (paymentMilestone.isInvoiced) {
+        const existingInvoice = paymentMilestone.invoices[0];
+        throw new ConflictException({
+          message: "Milestone ini sudah memiliki invoice",
+          existingInvoiceId: existingInvoice?.id,
+          existingInvoiceNumber: existingInvoice?.invoiceNumber,
+          createdAt: existingInvoice?.creationDate,
+        });
+      }
+
+      // Validate milestone belongs to quotation (if quotationId provided)
+      if (
+        createInvoiceDto.quotationId &&
+        paymentMilestone.quotationId !== createInvoiceDto.quotationId
+      ) {
+        throw new BadRequestException(
+          "Payment milestone tidak sesuai dengan quotation",
+        );
+      }
+
+      // Override amounts with milestone data (prevent manual tampering)
+      createInvoiceDto.totalAmount = Number(paymentMilestone.paymentAmount);
+      createInvoiceDto.amountPerProject = Number(paymentMilestone.paymentAmount);
+      createInvoiceDto.quotationId = paymentMilestone.quotationId;
+    }
+
     // Validate business rules
     await this.validateBusinessRules(createInvoiceDto);
 
@@ -98,46 +142,66 @@ export class InvoicesService {
         : null,
     };
 
-    return this.prisma.$transaction(async (prisma) => {
-      const invoice = await prisma.invoice.create({
-        data: {
-          ...sanitizedData,
-          invoiceNumber,
-          materaiRequired,
-          materaiApplied: createInvoiceDto.materaiApplied || false,
-          priceBreakdown: priceBreakdown,
-          createdBy: userId,
-        },
-        include: {
-          client: true,
-          project: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
+    try {
+      return await this.prisma.$transaction(async (prisma) => {
+        const invoice = await prisma.invoice.create({
+          data: {
+            ...sanitizedData,
+            invoiceNumber,
+            materaiRequired,
+            materaiApplied: createInvoiceDto.materaiApplied || false,
+            priceBreakdown: priceBreakdown,
+            paymentMilestoneId: createInvoiceDto.paymentMilestoneId,
+            createdBy: userId,
+          },
+          include: {
+            client: true,
+            project: true,
+            paymentMilestone: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
             },
           },
-        },
-      });
-
-      // Create audit log
-      await prisma.auditLog
-        .create({
-          data: {
-            action: "CREATE",
-            entityType: "invoice",
-            entityId: invoice.id,
-            newValues: invoice as any,
-            userId: userId,
-          },
-        })
-        .catch(() => {
-          // Audit log is optional, don't fail the transaction if audit table doesn't exist
         });
 
-      return invoice;
-    });
+        // CRITICAL: Mark milestone as invoiced (INSIDE transaction for atomicity)
+        if (paymentMilestone) {
+          await prisma.paymentMilestone.update({
+            where: { id: paymentMilestone.id },
+            data: { isInvoiced: true },
+          });
+        }
+
+        // Create audit log
+        await prisma.auditLog
+          .create({
+            data: {
+              action: "CREATE",
+              entityType: "invoice",
+              entityId: invoice.id,
+              newValues: invoice as any,
+              userId: userId,
+            },
+          })
+          .catch(() => {
+            // Audit log is optional, don't fail the transaction if audit table doesn't exist
+          });
+
+        return invoice;
+      });
+    } catch (error: any) {
+      // Handle concurrent invoice creation (Prisma unique constraint violation)
+      if (error.code === "P2002" && error.meta?.target?.includes("paymentMilestoneId")) {
+        throw new ConflictException(
+          "Invoice untuk milestone ini sedang dibuat oleh user lain. Silakan refresh halaman.",
+        );
+      }
+      throw error;
+    }
   }
 
   async createFromQuotation(quotationId: string, userId: string): Promise<any> {
@@ -149,6 +213,31 @@ export class InvoicesService {
         throw new BadRequestException(
           "Hanya quotation yang disetujui yang dapat dibuat menjadi invoice",
         );
+      }
+
+      // BLOCK: Check if quotation is milestone-based
+      if (quotation.paymentType === "MILESTONE_BASED") {
+        const milestones = await this.prisma.paymentMilestone.findMany({
+          where: { quotationId },
+          orderBy: { milestoneNumber: "asc" },
+        });
+
+        if (milestones.length > 0) {
+          throw new BadRequestException({
+            message:
+              "Quotation ini menggunakan termin pembayaran. " +
+              "Silakan buat invoice untuk setiap milestone secara terpisah.",
+            code: "MILESTONE_BASED_QUOTATION",
+            quotationId,
+            milestones: milestones.map((m) => ({
+              id: m.id,
+              number: m.milestoneNumber,
+              name: m.nameId || m.name,
+              amount: m.paymentAmount,
+              isInvoiced: m.isInvoiced,
+            })),
+          });
+        }
       }
 
       // Check if invoice already exists for this quotation
@@ -312,7 +401,21 @@ export class InvoicesService {
       include: {
         client: true,
         project: true,
-        quotation: true,
+        quotation: {
+          include: {
+            paymentMilestones: true,
+            invoices: {
+              where: {
+                status: 'PAID',
+              },
+              select: {
+                id: true,
+                totalAmount: true,
+              },
+            },
+          },
+        },
+        paymentMilestone: true,
         user: {
           select: {
             id: true,
@@ -724,16 +827,41 @@ export class InvoicesService {
   }
 
   async remove(id: string): Promise<any> {
-    const invoice = await this.findOne(id);
-
-    // Cascade delete: Delete all related payments first
-    await this.prisma.payment.deleteMany({
-      where: { invoiceId: id },
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id },
+      include: { paymentMilestone: true },
     });
 
-    // Allow deletion of invoices regardless of status
-    return this.prisma.invoice.delete({
-      where: { id },
+    if (!invoice) {
+      throw new NotFoundException('Invoice tidak ditemukan');
+    }
+
+    // Business Rule #3: Reset milestone status when invoice is deleted
+    // Use transaction to ensure atomicity
+    return this.prisma.$transaction(async (prisma) => {
+      // Cascade delete: Delete all related payments first
+      await prisma.payment.deleteMany({
+        where: { invoiceId: id },
+      });
+
+      // Delete the invoice
+      const deletedInvoice = await prisma.invoice.delete({
+        where: { id },
+      });
+
+      // If invoice was linked to milestone, reset milestone status
+      if (invoice.paymentMilestoneId) {
+        await prisma.paymentMilestone.update({
+          where: { id: invoice.paymentMilestoneId },
+          data: { isInvoiced: false },
+        });
+
+        console.log(
+          `✅ Milestone ${invoice.paymentMilestone?.milestoneNumber} reset to un-invoiced after deleting invoice ${invoice.invoiceNumber}`,
+        );
+      }
+
+      return deletedInvoice;
     });
   }
 
@@ -917,6 +1045,66 @@ export class InvoicesService {
 
     if (dto.totalAmount > 1000000000) {
       throw new BadRequestException("Jumlah invoice melebihi batas maksimal");
+    }
+
+    // Business Rule #1: Milestone Invoice Sequence Warning
+    if (dto.paymentMilestoneId) {
+      await this.checkMilestoneSequence(dto.paymentMilestoneId);
+    }
+  }
+
+  /**
+   * Business Rule #1: Milestone Invoice Sequence Warning
+   * Warns (but doesn't block) when invoicing out of sequence
+   */
+  private async checkMilestoneSequence(milestoneId: string): Promise<void> {
+    const milestone = await this.prisma.paymentMilestone.findUnique({
+      where: { id: milestoneId },
+      include: {
+        quotation: {
+          include: {
+            paymentMilestones: {
+              orderBy: { milestoneNumber: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!milestone) {
+      return; // Already validated earlier
+    }
+
+    const prevMilestones = milestone.quotation.paymentMilestones.filter(
+      (m) => m.milestoneNumber < milestone.milestoneNumber,
+    );
+
+    const unInvoicedPrev = prevMilestones.filter((m) => !m.isInvoiced);
+
+    if (unInvoicedPrev.length > 0) {
+      // Log warning but don't block
+      console.warn(
+        `⚠️ Milestone ${milestone.milestoneNumber} invoiced out of sequence. ` +
+        `Previous milestone(s) ${unInvoicedPrev.map((m) => m.milestoneNumber).join(', ')} not invoiced.`,
+        { quotationId: milestone.quotationId, milestoneId },
+      );
+
+      // Track business journey event for analytics
+      try {
+        await this.trackBusinessJourneyEvent(
+          'MILESTONE_OUT_OF_SEQUENCE' as BusinessJourneyEventType,
+          {
+            milestoneId,
+            milestoneNumber: milestone.milestoneNumber,
+            unInvoicedPrev: unInvoicedPrev.map((m) => m.milestoneNumber),
+            quotationId: milestone.quotationId,
+          },
+          'system',
+        );
+      } catch (error) {
+        // Don't fail if event tracking fails
+        console.error('Failed to track out-of-sequence event:', error);
+      }
     }
   }
 

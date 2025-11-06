@@ -41,6 +41,10 @@ import { VENDOR_TYPES, PKP_STATUSES } from '../types/vendor';
 import { useTheme } from '../theme';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { formatDate } from '../utils/dateFormatters';
+import { useIsMobile } from '../hooks/useMediaQuery';
+import MobileTableView from '../components/mobile/MobileTableView';
+import { vendorToBusinessEntity } from '../adapters/mobileTableAdapters';
+import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -51,6 +55,7 @@ export const VendorsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { message, modal } = App.useApp();
+  const isMobile = useIsMobile();
 
   // State
   const [searchInput, setSearchInput] = useState('');
@@ -128,7 +133,16 @@ export const VendorsPage: React.FC = () => {
     },
   });
 
-  // Handlers
+  const vendors = vendorsData?.data || [];
+  const meta = vendorsData?.meta || { total: 0, page: 1, limit: 20, totalPages: 0 };
+
+  // Mobile data adapter
+  const mobileData = useMemo(() =>
+    vendors.map(vendorToBusinessEntity),
+    [vendors]
+  );
+
+  // Handler function (defined before mobileActions to avoid TDZ errors)
   const handleDeleteVendor = useCallback((vendor: Vendor) => {
     if (!vendorService.canDelete(vendor)) {
       message.error(
@@ -147,8 +161,49 @@ export const VendorsPage: React.FC = () => {
         deleteMutation.mutate(vendor.id);
       },
     });
-  }, []);
+  }, [message, modal, deleteMutation]);
 
+  // Mobile actions
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail',
+      icon: <EyeOutlined />,
+      onClick: (record) => navigate(`/vendors/${record.id}`),
+    },
+    {
+      key: 'edit',
+      label: 'Edit',
+      icon: <EditOutlined />,
+      color: '#1890ff',
+      onClick: (record) => navigate(`/vendors/${record.id}/edit`),
+    },
+    {
+      key: 'delete',
+      label: 'Hapus',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: (record) => {
+        const vendor = vendors.find(v => v.id === record.id);
+        if (vendor) handleDeleteVendor(vendor);
+      },
+    },
+  ], [navigate, vendors, handleDeleteVendor]);
+
+  // Mobile filters
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      options: [
+        { label: 'Aktif', value: 'approved' },
+        { label: 'Nonaktif', value: 'declined' },
+      ],
+    },
+  ], []);
+
+  // Handlers
   const handleBulkDelete = useCallback(() => {
     if (selectedRowKeys.length === 0) {
       message.warning('Pilih vendor yang akan dihapus');
@@ -508,37 +563,51 @@ export const VendorsPage: React.FC = () => {
         />
       )}
 
-      {/* Table */}
-      <Card>
-        <Table
+      {/* Table / Mobile View */}
+      {isMobile ? (
+        <MobileTableView
+          data={mobileData}
           loading={isLoading}
-          dataSource={vendorsData?.data || []}
-          columns={columns}
-          rowKey="id"
-          pagination={{
-            total: vendorsData?.meta.total || 0,
-            pageSize: limit,
-            current: page,
-            onChange: (newPage, newLimit) => {
-              setPage(newPage);
-              setLimit(newLimit);
-            },
-            showSizeChanger: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} dari ${total} vendor`,
-          }}
-          rowSelection={{
-            selectedRowKeys,
-            onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]),
-            selections: [
-              Table.SELECTION_ALL,
-              Table.SELECTION_NONE,
-            ],
-          }}
-          size="small"
-          scroll={{ x: 1200 }}
+          entityType="vendors"
+          showQuickStats
+          searchable
+          searchFields={['number', 'title', 'client.name', 'client.phone']}
+          filters={mobileFilters}
+          actions={mobileActions}
+          onRefresh={() => queryClient.invalidateQueries({ queryKey: ['vendors'] })}
         />
-      </Card>
+      ) : (
+        <Card>
+          <Table
+            loading={isLoading}
+            dataSource={vendorsData?.data || []}
+            columns={columns}
+            rowKey="id"
+            pagination={{
+              total: vendorsData?.meta.total || 0,
+              pageSize: limit,
+              current: page,
+              onChange: (newPage, newLimit) => {
+                setPage(newPage);
+                setLimit(newLimit);
+              },
+              showSizeChanger: true,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} dari ${total} vendor`,
+            }}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]),
+              selections: [
+                Table.SELECTION_ALL,
+                Table.SELECTION_NONE,
+              ],
+            }}
+            size="small"
+            scroll={{ x: 1200 }}
+          />
+        </Card>
+      )}
     </div>
   );
 };

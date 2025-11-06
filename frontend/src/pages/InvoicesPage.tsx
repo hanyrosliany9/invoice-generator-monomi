@@ -26,7 +26,6 @@ import {
   Typography,
 } from 'antd'
 
-const { MonthPicker } = DatePicker
 import {
   BankOutlined,
   CheckCircleOutlined,
@@ -49,6 +48,7 @@ import {
   SendOutlined,
   SettingOutlined,
   WarningOutlined,
+  WhatsAppOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -94,9 +94,14 @@ import dayjs from 'dayjs'
 import { useTheme } from '../theme'
 import { CompactMetricCard } from '../components/ui/CompactMetricCard'
 import { usePermissions } from '../hooks/usePermissions'
+import { useIsMobile } from '../hooks/useMediaQuery'
+import MobileTableView from '../components/mobile/MobileTableView'
+import { invoiceToBusinessEntity } from '../adapters/mobileTableAdapters'
+import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView'
 
 const { Title, Text } = Typography
 const { Option } = Select
+const { MonthPicker } = DatePicker
 const { TextArea } = Input
 
 // Unused interface - commented out to fix TypeScript error
@@ -114,6 +119,7 @@ export const InvoicesPage: React.FC = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { canApproveFinancial } = usePermissions()
+  const isMobile = useIsMobile()
 
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -511,6 +517,124 @@ export const InvoicesPage: React.FC = () => {
     return matchesSearch && matchesStatus && matchesMaterai
   })
 
+  // Handler functions (must be defined before mobileActions useMemo)
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id)
+  }
+
+  const handleStatusChange = (invoice: Invoice, newStatus: string) => {
+    statusMutation.mutate({ id: invoice.id, status: newStatus })
+  }
+
+  const handlePrintInvoice = (invoice: Invoice) => {
+    printMutation.mutate({ id: invoice.id })
+  }
+
+  // Mobile data adapter - convert invoices to BusinessEntity format
+  const mobileData = useMemo(
+    () => filteredInvoices.map(invoiceToBusinessEntity),
+    [filteredInvoices]
+  )
+
+  // Mobile actions configuration
+  const mobileActions = useMemo<MobileTableAction[]>(
+    () => [
+      {
+        key: 'view',
+        label: 'Lihat Detail',
+        icon: <EyeOutlined />,
+        onClick: (record) => navigate(`/invoices/${record.id}`),
+      },
+      {
+        key: 'edit',
+        label: 'Edit',
+        icon: <EditOutlined />,
+        color: theme.colors.accent.primary,
+        onClick: (record) => navigate(`/invoices/${record.id}/edit`),
+        visible: (record) => record.status === 'draft',
+      },
+      {
+        key: 'whatsapp',
+        label: 'WhatsApp',
+        icon: <WhatsAppOutlined />,
+        color: '#25d366',
+        visible: (record) => !!record.client.phone,
+        onClick: (record) => {
+          const phone = record.client.phone?.replace(/[^\d]/g, '')
+          if (phone) {
+            const message = `Halo ${record.client.name}, terkait invoice ${record.number}`
+            const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+            window.open(whatsappUrl, '_blank')
+          }
+        },
+      },
+      {
+        key: 'send',
+        label: 'Kirim',
+        icon: <SendOutlined />,
+        color: theme.colors.accent.primary,
+        onClick: (record) => {
+          const invoice = invoices.find(inv => inv.id === record.id)
+          if (invoice) {
+            handleStatusChange(invoice, 'SENT')
+          }
+        },
+        visible: (record) => record.status === 'draft',
+      },
+      {
+        key: 'mark-paid',
+        label: 'Tandai Lunas',
+        icon: <CheckCircleOutlined />,
+        color: theme.colors.status.success,
+        onClick: (record) => {
+          const invoice = invoices.find(inv => inv.id === record.id)
+          if (invoice && canApproveFinancial()) {
+            handleStatusChange(invoice, 'PAID')
+          }
+        },
+        visible: (record) => (record.status === 'sent' || record.status === 'overdue') && canApproveFinancial(),
+      },
+      {
+        key: 'print',
+        label: 'Print',
+        icon: <PrinterOutlined />,
+        onClick: (record) => {
+          const invoice = invoices.find(inv => inv.id === record.id)
+          if (invoice) {
+            handlePrintInvoice(invoice)
+          }
+        },
+      },
+      {
+        key: 'delete',
+        label: 'Hapus',
+        icon: <DeleteOutlined />,
+        danger: true,
+        onClick: (record) => handleDelete(record.id),
+        visible: (record) => record.status === 'draft',
+      },
+    ],
+    [navigate, invoices, canApproveFinancial, theme, handleStatusChange, handlePrintInvoice, handleDelete]
+  )
+
+  // Mobile filters configuration
+  const mobileFilters = useMemo<MobileFilterConfig[]>(
+    () => [
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        options: [
+          { label: 'Draft', value: 'draft' },
+          { label: 'Terkirim', value: 'sent' },
+          { label: 'Dibayar', value: 'paid' },
+          { label: 'Jatuh Tempo', value: 'overdue' },
+        ],
+      },
+    ],
+    []
+  )
+
   // Statistics
   const safeInvoices = safeArray(invoices)
   const stats = {
@@ -554,14 +678,6 @@ export const InvoicesPage: React.FC = () => {
     navigate(`/invoices/${invoice.id}`)
   }
 
-  const handleDelete = (id: string) => {
-    deleteMutation.mutate(id)
-  }
-
-  const handleStatusChange = (invoice: Invoice, newStatus: string) => {
-    statusMutation.mutate({ id: invoice.id, status: newStatus })
-  }
-
   const handleOpenStatusModal = (invoice: Invoice) => {
     setStatusInvoice(invoice)
     setStatusModalVisible(true)
@@ -590,10 +706,6 @@ export const InvoicesPage: React.FC = () => {
     setStatusModalVisible(false)
     setStatusInvoice(null)
     statusForm.resetFields()
-  }
-
-  const handlePrintInvoice = (invoice: Invoice) => {
-    printMutation.mutate({ id: invoice.id })
   }
 
   const handleQuotationChange = (quotationId: string) => {
@@ -1106,6 +1218,39 @@ export const InvoicesPage: React.FC = () => {
         { text: 'Dibatalkan', value: 'CANCELLED' },
       ],
       onFilter: (value: any, record: Invoice) => record.status === value,
+    },
+    {
+      title: 'Payment Term',
+      dataIndex: 'paymentMilestone',
+      key: 'paymentMilestone',
+      responsive: ['md', 'lg'] as any,
+      render: (milestone: any, invoice: Invoice) => {
+        if (!milestone && !(invoice as any).paymentMilestoneId) {
+          return <Tag color="default">Full Payment</Tag>
+        }
+
+        return (
+          <Space direction="vertical" size="small">
+            <Tag color="blue" icon={<ClockCircleOutlined />}>
+              Milestone {milestone?.milestoneNumber || 'N/A'}
+            </Tag>
+            {milestone && (
+              <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+                {milestone.nameId || milestone.name} ({milestone.paymentPercentage}%)
+              </Typography.Text>
+            )}
+          </Space>
+        )
+      },
+      filters: [
+        { text: 'Full Payment', value: 'full' },
+        { text: 'Milestone-based', value: 'milestone' },
+      ],
+      onFilter: (value: any, record: Invoice) => {
+        if (value === 'milestone') return !!(record as any).paymentMilestoneId
+        if (value === 'full') return !(record as any).paymentMilestoneId
+        return true
+      },
     },
     {
       title: 'Batas Pembayaran',
@@ -1743,35 +1888,51 @@ export const InvoicesPage: React.FC = () => {
         )}
       </div>
 
-      {/* Main Table */}
-      <Card
-        style={{
-          borderRadius: '12px',
-          border: theme.colors.glass.border,
-          boxShadow: theme.colors.glass.shadow,
-          background: theme.colors.glass.background,
-          backdropFilter: theme.colors.glass.backdropFilter,
-        }}
-      >
-        <div style={{ overflowX: 'auto' }}>
-          <Table
-            columns={columns}
-            dataSource={filteredInvoices}
-            loading={isLoading}
-            rowKey='id'
-            rowSelection={rowSelection}
-            pagination={{
-              total: filteredInvoices.length,
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} dari ${total} invoice`,
-            }}
-            scroll={{ x: 1200 }}
-          />
-        </div>
-      </Card>
+      {/* Main Table / Mobile View */}
+      {isMobile ? (
+        <MobileTableView
+          data={mobileData}
+          loading={isLoading}
+          entityType="invoices"
+          enableWhatsAppActions
+          showMateraiIndicators
+          showQuickStats
+          searchable
+          searchFields={['number', 'title', 'client.name']}
+          filters={mobileFilters}
+          actions={mobileActions}
+          onRefresh={handleRefresh}
+        />
+      ) : (
+        <Card
+          style={{
+            borderRadius: '12px',
+            border: theme.colors.glass.border,
+            boxShadow: theme.colors.glass.shadow,
+            background: theme.colors.glass.background,
+            backdropFilter: theme.colors.glass.backdropFilter,
+          }}
+        >
+          <div style={{ overflowX: 'auto' }}>
+            <Table
+              columns={columns}
+              dataSource={filteredInvoices}
+              loading={isLoading}
+              rowKey='id'
+              rowSelection={rowSelection}
+              pagination={{
+                total: filteredInvoices.length,
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} dari ${total} invoice`,
+              }}
+              scroll={{ x: 1200 }}
+            />
+          </div>
+        </Card>
+      )}
 
       {/* Create/Edit Modal */}
       <Modal

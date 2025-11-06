@@ -31,7 +31,7 @@ import {
   UserOutlined,
   WhatsAppOutlined,
 } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 
 const { Header, Content, Footer } = Layout
@@ -101,6 +101,7 @@ export interface MobileOptimizedLayoutProps {
   onQuickAction?: (action: string) => void
   onWhatsAppSend?: (recipient: string, message: string) => void
   onNavigationChange?: (path: string) => void
+  onRefresh?: () => void | Promise<void>
 }
 
 const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
@@ -120,8 +121,10 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
   onQuickAction,
   onWhatsAppSend,
   onNavigationChange,
+  onRefresh,
 }) => {
   const navigate = useNavigate()
+  const location = useLocation()
 
   // Responsive breakpoints
   const isMobile = useMediaQuery('(max-width: 768px)')
@@ -132,6 +135,7 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
   const [headerVisible, setHeaderVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
   const [notifications] = useState(3) // Mock notification count
+  const [pullTransform, setPullTransform] = useState(0)
 
   // Default Indonesian business navigation items
   const defaultNavigationItems: MobileNavigationItem[] = useMemo(
@@ -261,20 +265,28 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
       if (pullDistance > 0 && window.scrollY === 0) {
         e.preventDefault()
 
-        // Add visual feedback here
+        // Update pull transform state for visual feedback
         if (pullDistance > threshold) {
-          document.body.style.transform = `translateY(${Math.min(pullDistance - threshold, 50)}px)`
+          setPullTransform(Math.min(pullDistance - threshold, 50))
         }
       }
     }
 
     const handleTouchEnd = () => {
       if (pullDistance > threshold && window.scrollY === 0) {
-        // Trigger refresh
-        window.location.reload()
+        // Trigger refresh callback or fall back to reload
+        if (onRefresh) {
+          Promise.resolve(onRefresh()).catch(err => {
+            console.error('Refresh failed:', err)
+          })
+        } else {
+          // Fallback to hard reload if no refresh handler provided
+          window.location.reload()
+        }
       }
 
-      document.body.style.transform = ''
+      // Reset pull transform
+      setPullTransform(0)
       pullDistance = 0
     }
 
@@ -289,7 +301,7 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
       document.removeEventListener('touchmove', handleTouchMove)
       document.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [pullToRefresh, isMobile])
+  }, [pullToRefresh, isMobile, onRefresh])
 
   // WhatsApp integration functions
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -550,6 +562,8 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
           marginTop: stickyHeader ? (isMobile ? '56px' : '64px') : 0,
           marginBottom: showBottomNavigation && isMobile ? '60px' : 0,
           minHeight: 'calc(100vh - 120px)',
+          transform: pullToRefresh && isMobile ? `translateY(${pullTransform}px)` : 'none',
+          transition: pullTransform === 0 ? 'transform 0.3s ease-out' : 'none',
         }}
       >
         {lazyLoadContent ? (

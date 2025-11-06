@@ -69,6 +69,19 @@ export interface Invoice {
     id: string
     quotationNumber: string
   }
+  paymentMilestone?: {
+    id: string
+    milestoneNumber: number
+    name: string
+    nameId: string
+    description?: string
+    descriptionId?: string
+    paymentPercentage: number
+    paymentAmount: number
+    dueDate?: string
+    isInvoiced: boolean
+  }
+  paymentMilestoneId?: string
 }
 
 export interface CreateInvoiceRequest {
@@ -82,6 +95,7 @@ export interface CreateInvoiceRequest {
   dueDate: string
   materaiRequired?: boolean
   quotationId?: string
+  paymentMilestoneId?: string // ID of the payment milestone (for milestone-based invoices)
   priceBreakdown?: {
     products: Array<{
       name: string
@@ -194,16 +208,18 @@ export const invoiceService = {
   },
 
   // Generate PDF
-  generatePDF: async (id: string): Promise<Blob> => {
+  generatePDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
     const response = await apiClient.get(`/pdf/invoice/${id}`, {
+      params: { continuous: continuous.toString() },
       responseType: 'blob',
     })
     return response.data
   },
 
   // Preview PDF
-  previewPDF: async (id: string): Promise<Blob> => {
+  previewPDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
     const response = await apiClient.get(`/pdf/invoice/${id}/preview`, {
+      params: { continuous: continuous.toString() },
       responseType: 'blob',
     })
     return response.data

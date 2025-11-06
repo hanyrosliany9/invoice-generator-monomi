@@ -352,6 +352,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       )}
 
       <Layout>
+        {!isMobile && (
         <Header
           style={{
             padding: '0 32px',
@@ -436,17 +437,18 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             </Dropdown>
           </div>
         </Header>
+        )}
 
         <Content
           style={{
-            margin: isMobile ? '16px 8px 80px 8px' : '32px 24px 24px 24px',
-            padding: isMobile ? '16px' : '32px',
+            margin: isMobile ? '8px 8px 80px 8px' : '32px 24px 24px 24px',
+            padding: isMobile ? '12px' : '32px',
             background: theme.colors.background.secondary,
             borderRadius: isMobile ? '12px' : '20px',
             overflow: 'auto',
             boxShadow: theme.mode === 'dark' ? '0 8px 32px rgba(0, 0, 0, 0.4)' : '0 8px 32px rgba(0, 0, 0, 0.08)',
             border: `1px solid ${theme.colors.border.default}`,
-            marginTop: isMobile ? '0px' : '-16px', // Overlap with header for modern effect
+            marginTop: isMobile ? '8px' : '-16px', // No overlap on mobile (no header), overlap on desktop
             position: 'relative',
             zIndex: 2,
           }}

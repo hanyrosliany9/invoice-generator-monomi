@@ -11,6 +11,8 @@ import App from './App.tsx'
 import './i18n/config' // Initialize i18n
 import './index.css'
 
+// Fix for theme initialization order - v1.1
+
 // Create a client for React Query
 const queryClient = new QueryClient({
   defaultOptions: {

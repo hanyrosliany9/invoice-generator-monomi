@@ -14,7 +14,7 @@ export class PdfService {
 
   constructor(private readonly settingsService: SettingsService) {}
 
-  async generateInvoicePDF(invoiceData: any): Promise<Buffer> {
+  async generateInvoicePDF(invoiceData: any, continuous: boolean = true): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -23,33 +23,53 @@ export class PdfService {
     try {
       const page = await browser.newPage();
 
-      // Set page format for A4
-      await page.setViewport({ width: 794, height: 1123 });
-
       // Generate HTML content
       const htmlContent = await this.generateInvoiceHTML(invoiceData);
 
-      // Set content and generate PDF
-      await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+      if (continuous) {
+        // CONTINUOUS MODE: For digital viewing (email, web, mobile)
+        // Use 'screen' media type to prevent automatic pagination
+        await page.emulateMediaType('screen');
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
 
-      const pdf = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        margin: {
-          top: "0.3in",
-          right: "0.3in",
-          bottom: "0.3in",
-          left: "0.3in",
-        },
-      });
+        // Calculate dynamic height for continuous single-page PDF
+        const height = await page.evaluate('document.documentElement.offsetHeight');
+        this.logger.log(`Invoice PDF (continuous) dynamic height: ${height}px`);
 
-      return Buffer.from(pdf);
+        const pdf = await page.pdf({
+          width: '210mm',  // A4 width maintained
+          height: `${height}px`,  // Dynamic height based on content
+          printBackground: true,
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        });
+
+        return Buffer.from(pdf);
+      } else {
+        // PAGINATED MODE: For printing on physical paper
+        // DON'T use emulateMediaType - let Puppeteer naturally paginate with A4 format
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
+        this.logger.log(`Invoice PDF (paginated) mode for printing`);
+
+        const pdf = await page.pdf({
+          format: "A4",
+          printBackground: true,
+          margin: {
+            top: "0.5in",
+            right: "0.5in",
+            bottom: "0.5in",
+            left: "0.5in",
+          },
+        });
+
+        return Buffer.from(pdf);
+      }
     } finally {
       await browser.close();
     }
   }
 
-  async generateQuotationPDF(quotationData: any): Promise<Buffer> {
+  async generateQuotationPDF(quotationData: any, continuous: boolean = true): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -58,27 +78,47 @@ export class PdfService {
     try {
       const page = await browser.newPage();
 
-      // Set page format for A4
-      await page.setViewport({ width: 794, height: 1123 });
-
       // Generate HTML content
       const htmlContent = await this.generateQuotationHTML(quotationData);
 
-      // Set content and generate PDF
-      await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+      if (continuous) {
+        // CONTINUOUS MODE: For digital viewing (email, web, mobile)
+        // Use 'screen' media type to prevent automatic pagination
+        await page.emulateMediaType('screen');
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
 
-      const pdf = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        margin: {
-          top: "0.5in",
-          right: "0.5in",
-          bottom: "0.5in",
-          left: "0.5in",
-        },
-      });
+        // Calculate dynamic height for continuous single-page PDF
+        const height = await page.evaluate('document.documentElement.offsetHeight');
+        this.logger.log(`Quotation PDF (continuous) dynamic height: ${height}px`);
 
-      return Buffer.from(pdf);
+        const pdf = await page.pdf({
+          width: '210mm',  // A4 width maintained
+          height: `${height}px`,  // Dynamic height based on content
+          printBackground: true,
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        });
+
+        return Buffer.from(pdf);
+      } else {
+        // PAGINATED MODE: For printing on physical paper
+        // DON'T use emulateMediaType - let Puppeteer naturally paginate with A4 format
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
+        this.logger.log(`Quotation PDF (paginated) mode for printing`);
+
+        const pdf = await page.pdf({
+          format: "A4",
+          printBackground: true,
+          margin: {
+            top: "0.5in",
+            right: "0.5in",
+            bottom: "0.5in",
+            left: "0.5in",
+          },
+        });
+
+        return Buffer.from(pdf);
+      }
     } finally {
       await browser.close();
     }
@@ -124,11 +164,11 @@ export class PdfService {
     // Format payment info based on available bank accounts
     if (bankAccounts.length > 0) {
       const companyName = companyData.companyName || "Company";
-      return `Bank Transfer\nRekening atas nama: ${companyName}\n${bankAccounts.join(" | ")}`;
+      return `Bank Transfer<br>Rekening atas nama: ${companyName}<br>${bankAccounts.join("<br>")}`;
     }
 
     // Ultimate fallback if no bank accounts configured
-    return "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran";
+    return "Bank Transfer<br>Silakan hubungi kami untuk detail rekening pembayaran";
   }
 
   private async generateInvoiceHTML(invoiceData: any): Promise<string> {
@@ -150,6 +190,8 @@ export class PdfService {
       taxLabel = "PPN",
       taxExemptReason = null,
       priceBreakdown,
+      paymentMilestone,
+      quotation,
     } = invoiceData;
 
     // Get company settings
@@ -158,15 +200,18 @@ export class PdfService {
     // Runtime override: Detect and replace placeholder payment info
     let finalPaymentInfo = paymentInfo;
     const placeholderTexts = [
+      "Bank Transfer",
       "Bank Transfer - Lihat detail di company settings",
       "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran"
     ];
 
+    // Check if payment info is a placeholder or suspiciously short
     const hasPlaceholder = placeholderTexts.some(placeholder =>
-      finalPaymentInfo?.includes(placeholder)
+      finalPaymentInfo?.trim() === placeholder
     );
+    const isTooShort = finalPaymentInfo && finalPaymentInfo.trim().length < 20;
 
-    if (hasPlaceholder || !finalPaymentInfo) {
+    if (hasPlaceholder || !finalPaymentInfo || isTooShort) {
       // Generate proper payment info from company settings
       finalPaymentInfo = await this.generateDynamicPaymentInfo(companyData);
       this.logger.log(`Replaced placeholder payment info for invoice ${invoiceNumber}`);
@@ -217,7 +262,7 @@ export class PdfService {
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       margin: 0;
-      padding: 10mm;
+      padding: 8mm;
       background-color: #ffffff;
       color: #1f2937;
       line-height: 1.5;
@@ -558,8 +603,8 @@ export class PdfService {
       display: flex;
       justify-content: space-between;
       gap: 8mm;
-      margin-top: 6mm;
-      padding-top: 6mm;
+      margin-top: 4mm;
+      padding-top: 4mm;
       border-top: 1px solid #e5e7eb;
     }
 
@@ -586,7 +631,7 @@ export class PdfService {
 
     /* ===== CONTACT BAR ===== */
     .contact-bar {
-      margin-top: 6mm;
+      margin-top: 2mm;
       padding: 3mm 5mm;
       background: linear-gradient(90deg, #f9fafb 0%, #f3f4f6 100%);
       border-radius: 3px;
@@ -608,17 +653,6 @@ export class PdfService {
       color: #d1d5db;
     }
 
-    /* ===== PRINT STYLES ===== */
-    @media print {
-      body {
-        margin: 0;
-        padding: 10mm;
-      }
-      .invoice-container {
-        margin: 0;
-        padding: 0;
-      }
-    }
 
     /* ===== UTILITY CLASSES ===== */
     .text-right {
@@ -631,6 +665,39 @@ export class PdfService {
 
     .mt-md {
       margin-top: 4mm;
+    }
+
+    /* ===== PAGINATED MODE (PRINT) STYLES ===== */
+    @media print {
+      /* Prevent awkward breaks inside atomic elements */
+      .header,
+      .detail-card,
+      .section-box,
+      .footer-section,
+      .contact-bar {
+        page-break-inside: avoid;
+      }
+
+      /* Prevent table rows from breaking mid-row */
+      .service-table tr,
+      .summary-table tr {
+        page-break-inside: avoid;
+      }
+
+      /* Keep section titles with following content */
+      .section-title,
+      .section-box-title,
+      .footer-title {
+        page-break-after: avoid;
+      }
+
+      /* Allow natural breaks in large containers */
+      .invoice-container,
+      .invoice-details,
+      .service-table,
+      .summary-section {
+        page-break-inside: auto;
+      }
     }
   </style>
 </head>
@@ -779,7 +846,7 @@ export class PdfService {
             : ""
         }
         <tr class="summary-total">
-          <td>TOTAL</td>
+          <td>TOTAL${paymentMilestone ? ` (Milestone ${paymentMilestone.milestoneNumber} - ${paymentMilestone.nameId || paymentMilestone.name} ${paymentMilestone.paymentPercentage}%)` : ''}</td>
           <td>${formatIDR(finalTotal)}</td>
         </tr>
       </table>
@@ -811,7 +878,7 @@ export class PdfService {
       </div>
     </div>
 
-    <!-- Contact Information Bar -->
+    <!-- Contact Information Bar (inside invoice-container to prevent separation) -->
     <div class="contact-bar">
       <span class="contact-bar-item">${companyData.phone || "N/A"}</span>
       <span class="contact-bar-item">${companyData.address || "N/A"}</span>
@@ -879,7 +946,7 @@ export class PdfService {
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       margin: 0;
-      padding: 10mm;
+      padding: 8mm;
       background-color: #ffffff;
       color: #1f2937;
       line-height: 1.5;
@@ -1196,8 +1263,8 @@ export class PdfService {
       display: flex;
       justify-content: space-between;
       gap: 8mm;
-      margin-top: 6mm;
-      padding-top: 6mm;
+      margin-top: 4mm;
+      padding-top: 4mm;
       border-top: 1px solid #e5e7eb;
     }
 
@@ -1261,7 +1328,7 @@ export class PdfService {
 
     /* ===== CONTACT BAR ===== */
     .contact-bar {
-      margin-top: 6mm;
+      margin-top: 2mm;
       padding: 3mm 5mm;
       background: linear-gradient(90deg, #f9fafb 0%, #f3f4f6 100%);
       border-radius: 3px;
@@ -1283,18 +1350,6 @@ export class PdfService {
       color: #d1d5db;
     }
 
-    /* ===== PRINT STYLES ===== */
-    @media print {
-      body {
-        margin: 0;
-        padding: 10mm;
-      }
-      .quotation-container {
-        margin: 0;
-        padding: 0;
-      }
-    }
-
     /* ===== UTILITY CLASSES ===== */
     .text-right {
       text-align: right;
@@ -1306,6 +1361,41 @@ export class PdfService {
 
     .mt-md {
       margin-top: 4mm;
+    }
+
+    /* ===== PAGINATED MODE (PRINT) STYLES ===== */
+    @media print {
+      /* Prevent awkward breaks inside atomic elements */
+      .header,
+      .detail-card,
+      .section-box,
+      .footer-section,
+      .contact-bar,
+      .signature-section,
+      .signature-box {
+        page-break-inside: avoid;
+      }
+
+      /* Prevent table rows from breaking mid-row */
+      .service-table tr,
+      .summary-table tr {
+        page-break-inside: avoid;
+      }
+
+      /* Keep section titles with following content */
+      .section-title,
+      .section-box-title,
+      .footer-title {
+        page-break-after: avoid;
+      }
+
+      /* Allow natural breaks in large containers */
+      .quotation-container,
+      .quotation-details,
+      .service-table,
+      .summary-section {
+        page-break-inside: auto;
+      }
     }
   </style>
 </head>
@@ -1482,7 +1572,7 @@ export class PdfService {
 </html>`;
   }
 
-  async generateProjectPDF(projectData: any): Promise<Buffer> {
+  async generateProjectPDF(projectData: any, continuous: boolean = true): Promise<Buffer> {
     let browser: puppeteer.Browser | null = null;
     try {
       this.logger.debug("Launching Puppeteer browser...");
@@ -1497,9 +1587,6 @@ export class PdfService {
 
       const page = await browser.newPage();
 
-      // Set page format for A4
-      await page.setViewport({ width: 794, height: 1123 });
-
       // Generate HTML content using the new project template
       this.logger.debug("Generating project HTML...");
       const htmlContent = generateProjectHTML(projectData);
@@ -1507,30 +1594,63 @@ export class PdfService {
 
       // Set content with timeout and fallback to loadEventFired
       this.logger.debug("Setting page content...");
-      try {
-        await page.setContent(htmlContent, {
-          waitUntil: "networkidle2",
-          timeout: 30000, // 30 second timeout
+
+      if (continuous) {
+        // CONTINUOUS MODE: For digital viewing (email, web, mobile)
+        // Use 'screen' media type to prevent automatic pagination
+        await page.emulateMediaType('screen');
+
+        try {
+          await page.setContent(htmlContent, {
+            waitUntil: "networkidle2",
+            timeout: 30000, // 30 second timeout
+          });
+        } catch (timeoutError) {
+          this.logger.warn(`Page load timeout, continuing with PDF generation: ${timeoutError}`);
+        }
+
+        // Calculate dynamic height for continuous single-page PDF
+        const height = await page.evaluate('document.documentElement.offsetHeight');
+        this.logger.debug(`Project PDF (continuous) dynamic height: ${height}px`);
+
+        const pdf = await page.pdf({
+          width: '210mm',  // A4 width maintained
+          height: `${height}px`,  // Dynamic height based on content
+          printBackground: true,
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
         });
-      } catch (timeoutError) {
-        this.logger.warn(`Page load timeout, continuing with PDF generation: ${timeoutError}`);
-        // Continue with PDF generation even if networkidle times out
+
+        this.logger.debug(`PDF generated successfully, size: ${pdf.length} bytes`);
+        return Buffer.from(pdf);
+      } else {
+        // PAGINATED MODE: For printing on physical paper
+        // DON'T use emulateMediaType - let Puppeteer naturally paginate with A4 format
+
+        try {
+          await page.setContent(htmlContent, {
+            waitUntil: "networkidle2",
+            timeout: 30000,
+          });
+        } catch (timeoutError) {
+          this.logger.warn(`Page load timeout, continuing with PDF generation: ${timeoutError}`);
+        }
+
+        this.logger.debug(`Project PDF (paginated) mode for printing`);
+
+        const pdf = await page.pdf({
+          format: "A4",
+          printBackground: true,
+          margin: {
+            top: "0.5in",
+            right: "0.5in",
+            bottom: "0.5in",
+            left: "0.5in",
+          },
+        });
+
+        this.logger.debug(`PDF generated successfully, size: ${pdf.length} bytes`);
+        return Buffer.from(pdf);
       }
-
-      this.logger.debug("Generating PDF...");
-      const pdf = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        margin: {
-          top: "0.3in",
-          right: "0.3in",
-          bottom: "0.3in",
-          left: "0.3in",
-        },
-      });
-
-      this.logger.debug(`PDF generated successfully, size: ${pdf.length} bytes`);
-      return Buffer.from(pdf);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       this.logger.error(

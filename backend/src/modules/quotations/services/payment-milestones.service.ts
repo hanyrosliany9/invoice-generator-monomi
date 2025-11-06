@@ -2,12 +2,15 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentMilestone, Quotation } from '@prisma/client';
 import { CreatePaymentMilestoneDto } from '../dto/create-payment-milestone.dto';
 import { UpdatePaymentMilestoneDto } from '../dto/update-payment-milestone.dto';
 import { Decimal } from '@prisma/client/runtime/library';
+import { InvoicesService } from '../../invoices/invoices.service';
 
 /**
  * PaymentMilestonesService
@@ -22,7 +25,11 @@ import { Decimal } from '@prisma/client/runtime/library';
  */
 @Injectable()
 export class PaymentMilestonesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => InvoicesService))
+    private invoicesService: InvoicesService,
+  ) {}
 
   /**
    * Add a payment milestone to a quotation
@@ -244,6 +251,7 @@ export class PaymentMilestonesService {
     paymentMilestoneId: string,
     userId: string,
   ): Promise<any> {
+    // Validate milestone exists
     const milestone = await this.prisma.paymentMilestone.findUnique({
       where: { id: paymentMilestoneId },
       include: {
@@ -262,9 +270,6 @@ export class PaymentMilestonesService {
     }
 
     const quotation = milestone.quotation;
-
-    // Generate invoice number
-    const invoiceNumber = await this.generateInvoiceNumber();
 
     // Calculate due date if not set
     let dueDate = milestone.dueDate;
@@ -290,39 +295,24 @@ export class PaymentMilestonesService {
       dueDate.setDate(dueDate.getDate() + 30); // Default: 30 days
     }
 
-    // Check if invoice > 5 million IDR (requires materai)
-    const materaiRequired = Number(milestone.paymentAmount) > 5000000;
-
-    // Create invoice
-    const invoice = await this.prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        creationDate: new Date(),
-        dueDate,
+    // UNIFIED PATH: Call InvoicesService.create() with paymentMilestoneId
+    // This ensures consistent validation, audit logging, and milestone marking
+    const invoice = await this.invoicesService.create(
+      {
+        paymentMilestoneId: paymentMilestoneId, // This triggers milestone logic
+        quotationId: quotation.id,
         clientId: quotation.clientId,
         projectId: quotation.projectId,
-        quotationId: quotation.id,
-        paymentMilestoneId: paymentMilestoneId,
-        amountPerProject: quotation.amountPerProject,
-        totalAmount: milestone.paymentAmount,
-        scopeOfWork: quotation.scopeOfWork,
-        priceBreakdown: quotation.priceBreakdown as any,
+        amountPerProject: Number(milestone.paymentAmount),
+        totalAmount: Number(milestone.paymentAmount),
+        dueDate: dueDate.toISOString(),
         paymentInfo: 'Bank Transfer', // Default, can be customized
-        materaiRequired,
-        status: 'DRAFT',
-        createdBy: userId,
+        terms: quotation.terms || undefined,
+        scopeOfWork: quotation.scopeOfWork || undefined,
+        priceBreakdown: quotation.priceBreakdown as any,
       },
-      include: {
-        client: true,
-        project: true,
-      },
-    });
-
-    // Mark milestone as invoiced
-    await this.prisma.paymentMilestone.update({
-      where: { id: paymentMilestoneId },
-      data: { isInvoiced: true },
-    });
+      userId,
+    );
 
     return invoice;
   }
@@ -370,25 +360,4 @@ export class PaymentMilestonesService {
     };
   }
 
-  /**
-   * Generate unique invoice number
-   * Format: INV-YYYY-MM-XXXXX
-   */
-  private async generateInvoiceNumber(): Promise<string> {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-
-    const count = await this.prisma.invoice.count({
-      where: {
-        creationDate: {
-          gte: new Date(year, now.getMonth(), 1),
-          lt: new Date(year, now.getMonth() + 1, 1),
-        },
-      },
-    });
-
-    const sequence = String(count + 1).padStart(5, '0');
-    return `INV-${year}-${month}-${sequence}`;
-  }
 }

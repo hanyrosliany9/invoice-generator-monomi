@@ -11,7 +11,7 @@ import {
   CreatePaymentMilestoneDTO,
   UpdatePaymentMilestoneDTO,
 } from '../services/payment-milestones'
-import { PaymentMilestone } from '../components/quotations'
+import type { PaymentMilestone } from '../types/payment-milestones'
 
 const QUERY_KEYS = {
   all: ['paymentMilestones'] as const,
@@ -134,8 +134,8 @@ export function useGenerateMilestoneInvoice() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (milestoneId: string) =>
-      paymentMilestonesService.generateMilestoneInvoice(milestoneId),
+    mutationFn: ({ quotationId, milestoneId }: { quotationId: string; milestoneId: string }) =>
+      paymentMilestonesService.generateMilestoneInvoice(quotationId, milestoneId),
     onSuccess: () => {
       // Invalidate all milestone and invoice queries
       queryClient.invalidateQueries({

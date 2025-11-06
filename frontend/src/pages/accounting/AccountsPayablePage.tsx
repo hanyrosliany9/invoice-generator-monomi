@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Button,
@@ -19,10 +19,12 @@ import {
   CalendarOutlined,
   ClockCircleOutlined,
   DownloadOutlined,
+  EyeOutlined,
   FileTextOutlined,
   TagOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
   exportAccountsPayableExcel,
@@ -34,12 +36,18 @@ import {
 } from '../../services/accounting';
 import { useTheme } from '../../theme';
 import { ExportButton } from '../../components/accounting/ExportButton';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import { accountsPayableToBusinessEntity } from '../../adapters/mobileTableAdapters';
+import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const AccountsPayablePage: React.FC = () => {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
     dayjs().startOf('month'),
     dayjs().endOf('month'),
@@ -64,6 +72,38 @@ const AccountsPayablePage: React.FC = () => {
       }),
     enabled: !!asOfDate,
   });
+
+  const entries = data?.data || [];
+
+  // Mobile data adapter
+  const mobileData = useMemo(() =>
+    entries.map(accountsPayableToBusinessEntity),
+    [entries]
+  );
+
+  // Mobile actions
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail',
+      icon: <EyeOutlined />,
+      onClick: (record) => navigate(`/expenses/${record.id}`),
+    },
+  ], [navigate]);
+
+  // Mobile filters
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      options: [
+        { label: 'Belum Lunas', value: 'sent' },
+        { label: 'Telat', value: 'overdue' },
+        { label: 'Lunas', value: 'paid' },
+      ],
+    },
+  ], []);
 
   const handleExportPDF = async () => {
     await exportAccountsPayablePDF({
@@ -483,7 +523,19 @@ const AccountsPayablePage: React.FC = () => {
               borderColor: theme.colors.border.default,
             }}
           >
-            {data.aging?.aging && data.aging.aging.length > 0 ? (
+            {isMobile ? (
+              <MobileTableView
+                data={mobileData}
+                loading={isLoading}
+                entityType="accounts-payable"
+                showQuickStats
+                searchable
+                searchFields={['number', 'title', 'client.name']}
+                filters={mobileFilters}
+                actions={mobileActions}
+                onRefresh={() => message.success('Data diperbarui')}
+              />
+            ) : data.aging?.aging && data.aging.aging.length > 0 ? (
               <Table
                 columns={expenseColumns}
                 dataSource={data.aging.aging}

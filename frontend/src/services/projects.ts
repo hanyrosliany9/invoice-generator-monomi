@@ -276,4 +276,28 @@ export const projectService = {
     }
     return response.data
   },
+
+  // Download project PDF
+  downloadProjectPDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
+    const response = await apiClient.get(`/pdf/project/${id}`, {
+      params: { continuous: continuous.toString() },
+      responseType: 'blob',
+    })
+    if (!response?.data) {
+      throw new Error('Failed to download project PDF')
+    }
+    return response.data
+  },
+
+  // Preview project PDF
+  previewProjectPDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
+    const response = await apiClient.get(`/pdf/project/${id}/preview`, {
+      params: { continuous: continuous.toString() },
+      responseType: 'blob',
+    })
+    if (!response?.data) {
+      throw new Error('Failed to preview project PDF')
+    }
+    return response.data
+  },
 }

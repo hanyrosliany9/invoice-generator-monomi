@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -44,6 +44,10 @@ import {
   submitCashTransaction,
   voidCashTransaction,
 } from '../../services/accounting';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import { cashReceiptToBusinessEntity } from '../../adapters/mobileTableAdapters';
+import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -54,6 +58,7 @@ const CashReceiptsPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
+  const isMobile = useIsMobile();
 
   // State for filters
   const [page, setPage] = useState(1);
@@ -101,6 +106,55 @@ const CashReceiptsPage: React.FC = () => {
     queryKey: ['chart-of-accounts'],
     queryFn: () => getChartOfAccounts({ includeInactive: false }),
   });
+
+  const receipts = data?.data || [];
+
+  // Mobile data adapter
+  const mobileData = useMemo(() =>
+    receipts.map(cashReceiptToBusinessEntity),
+    [receipts]
+  );
+
+  // Mobile actions
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail',
+      icon: <EyeOutlined />,
+      onClick: (record) => {
+        const receipt = receipts.find((r: any) => r.id === record.id);
+        if (receipt) {
+          setSelectedTransaction(receipt);
+          setIsViewModalOpen(true);
+        }
+      },
+    },
+    {
+      key: 'delete',
+      label: 'Hapus',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: (record) => deleteMutation.mutate(record.id),
+      visible: (record) => record.status === 'draft',
+      confirm: {
+        title: 'Hapus penerimaan kas?',
+        description: 'Aksi ini tidak dapat dibatalkan.',
+      },
+    },
+  ], [receipts]);
+
+  // Mobile filters
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      options: [
+        { label: 'Draft', value: 'draft' },
+        { label: 'Posted', value: 'approved' },
+      ],
+    },
+  ], []);
 
   // Mutations
   const createMutation = useMutation({
@@ -452,27 +506,41 @@ const CashReceiptsPage: React.FC = () => {
         </Space>
       </Card>
 
-      {/* Table */}
+      {/* Table / Mobile View */}
       <Card
         style={{
           background: theme.colors.card.background,
           borderColor: theme.colors.border.default,
         }}
       >
-        <Table
-          columns={columns}
-          dataSource={data?.data || []}
-          rowKey="id"
-          loading={isLoading}
-          pagination={{
-            current: page,
-            pageSize: limit,
-            total: data?.pagination.total || 0,
-            showSizeChanger: false,
-            showTotal: (total) => `Total ${total} transaksi`,
-            onChange: (newPage) => setPage(newPage),
-          }}
-        />
+        {isMobile ? (
+          <MobileTableView
+            data={mobileData}
+            loading={isLoading}
+            entityType="cash-receipts"
+            showQuickStats
+            searchable
+            searchFields={['number', 'title', 'client.name']}
+            filters={mobileFilters}
+            actions={mobileActions}
+            onRefresh={() => queryClient.invalidateQueries({ queryKey: ['cash-transactions'] })}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={data?.data || []}
+            rowKey="id"
+            loading={isLoading}
+            pagination={{
+              current: page,
+              pageSize: limit,
+              total: data?.pagination.total || 0,
+              showSizeChanger: false,
+              showTotal: (total) => `Total ${total} transaksi`,
+              onChange: (newPage) => setPage(newPage),
+            }}
+          />
+        )}
       </Card>
 
       {/* Create Modal */}

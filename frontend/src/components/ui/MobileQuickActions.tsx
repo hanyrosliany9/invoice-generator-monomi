@@ -9,6 +9,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
+import { useTheme } from '../../theme'
 
 const { Title, Text } = Typography
 
@@ -48,6 +49,7 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
   onActionSelect,
 }) => {
   const navigate = useNavigate()
+  const { theme } = useTheme()
 
   const quickActions: QuickAction[] = [
     {
@@ -117,8 +119,8 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
       title={
         <div className='flex items-center justify-between'>
           <div className='flex items-center space-x-2'>
-            <PlusOutlined className='text-blue-600' />
-            <span>Quick Actions</span>
+            <PlusOutlined style={{ color: theme.colors.accent.primary }} />
+            <span style={{ color: theme.colors.text.primary }}>Quick Actions</span>
           </div>
           <Button
             type='text'
@@ -134,21 +136,37 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
       height='60vh'
       className='mobile-quick-actions'
       closable={false}
+      styles={{
+        header: {
+          background: theme.colors.background.secondary,
+          borderBottom: `1px solid ${theme.colors.border.default}`,
+          color: theme.colors.text.primary,
+        },
+        body: {
+          background: theme.colors.background.primary,
+        },
+      }}
     >
       <div className='space-y-4'>
         {/* Current Context */}
         {currentEntity && (
           <>
-            <div className='bg-blue-50 p-3 rounded-lg border border-blue-200'>
+            <div
+              className='p-3 rounded-lg border'
+              style={{
+                background: theme.colors.background.secondary,
+                borderColor: theme.colors.border.default,
+              }}
+            >
               <div className='flex items-center space-x-2 mb-2'>
                 <span className='text-lg'>
                   {getEntityIcon(currentEntity.type)}
                 </span>
-                <Text strong className='text-blue-800'>
+                <Text strong style={{ color: theme.colors.text.primary }}>
                   Current {currentEntity.type}
                 </Text>
               </div>
-              <Text className='text-blue-600 text-sm'>
+              <Text style={{ fontSize: '12px', color: theme.colors.text.secondary }}>
                 {currentEntity.name}
               </Text>
             </div>
@@ -158,7 +176,7 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
 
         {/* Quick Actions Grid */}
         <div>
-          <Title level={5} className='mb-3 text-gray-700'>
+          <Title level={5} className='mb-3' style={{ color: theme.colors.text.primary }}>
             Create New
           </Title>
           <div className='grid grid-cols-2 gap-3'>
@@ -179,16 +197,16 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
                 `}
                 style={{
                   borderColor: action.disabled
-                    ? '#d9d9d9'
+                    ? theme.colors.border.default
                     : action.color + '40',
-                  background: action.disabled ? '#f5f5f5' : action.color + '08',
+                  background: action.disabled ? theme.colors.background.secondary : action.color + '08',
                 }}
               >
                 <div className='flex flex-col items-center space-y-2'>
                   <div className='flex items-center space-x-1'>
                     <span
                       style={{
-                        color: action.disabled ? '#bfbfbf' : action.color,
+                        color: action.disabled ? theme.colors.text.disabled : action.color,
                       }}
                       className='text-lg'
                     >
@@ -206,12 +224,12 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
                     <div
                       className='font-medium text-sm'
                       style={{
-                        color: action.disabled ? '#bfbfbf' : action.color,
+                        color: action.disabled ? theme.colors.text.disabled : action.color,
                       }}
                     >
                       {action.label}
                     </div>
-                    <div className='text-xs text-gray-500 mt-1'>
+                    <div className='text-xs mt-1' style={{ color: theme.colors.text.secondary }}>
                       {action.description}
                     </div>
                   </div>
@@ -223,7 +241,7 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
 
         {/* Navigation Shortcuts */}
         <div>
-          <Title level={5} className='mb-3 text-gray-700'>
+          <Title level={5} className='mb-3' style={{ color: theme.colors.text.primary }}>
             Navigate To
           </Title>
           <div className='grid grid-cols-2 gap-2'>
@@ -236,9 +254,14 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
                   navigate(`/${section}`)
                   onClose()
                 }}
-                className='flex items-center justify-center space-x-2 p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                className='flex items-center justify-center space-x-2 p-3 rounded-lg border'
+                style={{
+                  borderColor: theme.colors.border.default,
+                }}
               >
-                <span className='text-sm capitalize'>{section}</span>
+                <span className='text-sm capitalize' style={{ color: theme.colors.text.primary }}>
+                  {section}
+                </span>
                 <Badge
                   count={relatedCounts[section as keyof typeof relatedCounts]}
                   size='small'
@@ -250,7 +273,7 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
         </div>
 
         {/* Help Text */}
-        <div className='bg-gray-50 p-3 rounded-lg mt-4'>
+        <div className='p-3 rounded-lg mt-4' style={{ background: theme.colors.background.secondary }}>
           <Text type='secondary' className='text-xs'>
             💡 Tip: Actions will be pre-filled based on your current context
           </Text>

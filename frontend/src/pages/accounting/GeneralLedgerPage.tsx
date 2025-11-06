@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Button,
@@ -18,17 +18,23 @@ import {
   BookOutlined,
   CalendarOutlined,
   DownloadOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { exportGeneralLedgerExcel, exportGeneralLedgerPDF, getChartOfAccounts, getGeneralLedger } from '../../services/accounting';
 import { useTheme } from '../../theme';
 import { ExportButton } from '../../components/accounting/ExportButton';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import { generalLedgerEntryToBusinessEntity } from '../../adapters/mobileTableAdapters';
+import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const GeneralLedgerPage: React.FC = () => {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
     dayjs('2025-01-01'),
     dayjs('2025-01-31'),
@@ -58,6 +64,42 @@ const GeneralLedgerPage: React.FC = () => {
       }),
     enabled: !!dateRange[0] && !!dateRange[1],
   });
+
+  const entries = data?.entries || [];
+
+  // Mobile data adapter
+  const mobileData = useMemo(() =>
+    entries.map(generalLedgerEntryToBusinessEntity),
+    [entries]
+  );
+
+  // Mobile actions
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail',
+      icon: <EyeOutlined />,
+      onClick: (record) => {
+        message.info(`Detail untuk ${record.number}`);
+      },
+    },
+  ], []);
+
+  // Mobile filters
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'accountType',
+      label: 'Tipe Akun',
+      type: 'select' as const,
+      options: [
+        { label: 'Aset', value: 'ASSET' },
+        { label: 'Liabilitas', value: 'LIABILITY' },
+        { label: 'Ekuitas', value: 'EQUITY' },
+        { label: 'Pendapatan', value: 'REVENUE' },
+        { label: 'Beban', value: 'EXPENSE' },
+      ],
+    },
+  ], []);
 
   const handleExportPDF = async () => {
     await exportGeneralLedgerPDF({
@@ -373,7 +415,22 @@ const GeneralLedgerPage: React.FC = () => {
               borderColor: theme.colors.border.default,
             }}
           >
-            {data.entries.length > 0 ? (
+            {isMobile ? (
+              <MobileTableView
+                data={mobileData}
+                loading={isLoading}
+                entityType="general-ledger"
+                showQuickStats
+                searchable
+                searchFields={['number', 'title', 'client.name']}
+                filters={mobileFilters}
+                actions={mobileActions}
+                onRefresh={() => {
+                  // Trigger refetch
+                  message.success('Data diperbarui');
+                }}
+              />
+            ) : data.entries.length > 0 ? (
               <Table
                 columns={columns}
                 dataSource={data.entries}

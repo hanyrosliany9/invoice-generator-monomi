@@ -1,13 +1,13 @@
 // Price Inheritance API Service - Indonesian Business Management System
 // HTTP client for price inheritance API with error handling and type safety
 
-import { apiClient } from './apiClient'
+import { apiClient } from '../config/api'
 import {
   PriceInheritanceConfig,
   PriceInheritanceMode,
   PriceSource,
   PriceValidationResult,
-} from '../components/forms/types/priceInheritance.types'
+} from '../types/priceInheritance.types'
 
 export interface CreatePriceInheritanceRequest {
   entityType: 'quotation' | 'invoice'
@@ -77,7 +77,7 @@ export interface PriceInheritanceAnalytics {
 }
 
 class PriceInheritanceApiService {
-  private readonly baseUrl = '/api/price-inheritance'
+  private readonly baseUrl = '/price-inheritance'
 
   /**
    * Get available price sources for an entity

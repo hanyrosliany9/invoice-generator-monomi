@@ -1,7 +1,7 @@
 // PriceInheritanceFlow Component - Indonesian Business Management System
 // Comprehensive price inheritance with visual indicators, validation, and Indonesian compliance
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Button,
@@ -277,10 +277,20 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
     [availableSources, onSourceChange, trackInteraction]
   )
 
-  // Effects
+  // Effects - Use refs to prevent infinite loops with object dependencies
+  const configRef = useRef(config)
+  const validationResultRef = useRef(validationResult)
+
+  // Update refs
+  useEffect(() => {
+    configRef.current = config
+    validationResultRef.current = validationResult
+  })
+
+  // Only trigger callbacks when primitive values actually change
   useEffect(() => {
     onAmountChange(config.currentAmount, config)
-  }, [config, onAmountChange])
+  }, [config.currentAmount, mode, selectedSource?.id, onAmountChange])
 
   useEffect(() => {
     onValidationChange?.(validationResult)
@@ -293,7 +303,13 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
         warningsCount: validationResult.warnings.length,
       })
     }
-  }, [validationResult, onValidationChange, trackInteraction])
+  }, [
+    validationResult.isValid,
+    validationResult.errors.length,
+    validationResult.warnings.length,
+    onValidationChange,
+    trackInteraction,
+  ])
 
   // Helper functions
   function getDeviationType(percentage: number) {

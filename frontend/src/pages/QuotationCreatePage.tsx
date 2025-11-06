@@ -49,6 +49,8 @@ import { projectService } from '../services/projects'
 import { clientService } from '../services/clients'
 import { formatIDR } from '../utils/currency'
 import { useTheme } from '../theme'
+import { PaymentMilestoneForm } from '../components/quotations'
+import type { PaymentMilestoneFormItem } from '../types/payment-milestones'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -61,6 +63,7 @@ interface QuotationFormData {
   scopeOfWork?: string
   terms: string
   validUntil: dayjs.Dayjs
+  paymentMilestones?: PaymentMilestoneFormItem[]
 }
 
 export const QuotationCreatePage: React.FC = () => {
@@ -253,6 +256,7 @@ export const QuotationCreatePage: React.FC = () => {
       scopeOfWork: values.scopeOfWork,
       terms: values.terms,
       validUntil: values.validUntil.toISOString(),
+      paymentMilestones: values.paymentMilestones && values.paymentMilestones.length > 0 ? values.paymentMilestones : undefined,
     }
 
     // Include price breakdown from project products
@@ -777,6 +781,15 @@ export const QuotationCreatePage: React.FC = () => {
             </Card>
           )}
         </ProgressiveSection>
+
+        {/* Payment Milestones Section */}
+        {totalAmount > 0 && (
+          <PaymentMilestoneForm
+            form={form}
+            quotationTotal={totalAmount}
+            disabled={false}
+          />
+        )}
 
         {/* Scope of Work Section */}
         <ProgressiveSection

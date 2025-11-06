@@ -185,6 +185,37 @@ export class QuotationsService {
   ): Promise<any> {
     const quotation = await this.findOne(id);
 
+    // Business Rule #2: Prevent Quotation Changes After First Milestone Invoice
+    // Check if quotation has invoiced milestones
+    const invoicedMilestones = await this.prisma.paymentMilestone.findFirst({
+      where: {
+        quotationId: id,
+        isInvoiced: true,
+      },
+    });
+
+    if (invoicedMilestones) {
+      // Block changes to financial fields
+      const financialFields: (keyof UpdateQuotationDto)[] = ['totalAmount', 'amountPerProject'];
+      const hasFinancialChanges = financialFields.some(
+        (field) => updateQuotationDto[field] !== undefined,
+      );
+
+      if (hasFinancialChanges) {
+        throw new BadRequestException(
+          'Tidak dapat mengubah jumlah quotation karena sudah ada milestone yang di-invoice. ' +
+          'Silakan batalkan invoice terlebih dahulu atau buat quotation baru.',
+        );
+      }
+
+      // Also block milestone changes (check if the DTO has this field)
+      if ((updateQuotationDto as any).paymentMilestones) {
+        throw new BadRequestException(
+          'Tidak dapat mengubah payment milestone karena sudah ada yang di-invoice.',
+        );
+      }
+    }
+
     return this.prisma.quotation.update({
       where: { id },
       data: updateQuotationDto,

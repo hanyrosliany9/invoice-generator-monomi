@@ -1,11 +1,104 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { theme as antdTheme, ConfigProvider } from 'antd'
-import { Theme, ThemeContextType, ThemeMode } from './types'
-import { themes } from './themes'
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+import type { Theme, ThemeContextType, ThemeMode } from './types'
 
 const THEME_STORAGE_KEY = 'monomi-theme-mode'
+
+// Inline theme definitions to avoid circular dependencies
+const darkTheme: Theme = {
+  mode: 'dark',
+  colors: {
+    background: {
+      primary: '#191919',
+      secondary: '#2F3438',
+      tertiary: '#3F4448',
+    },
+    glass: {
+      background: 'rgba(47, 52, 56, 0.7)',
+      backdropFilter: 'blur(16px)',
+      border: '1px solid rgba(63, 68, 72, 0.5)',
+      shadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+    },
+    card: {
+      background: 'rgba(47, 52, 56, 0.8)',
+      border: '1px solid rgba(63, 68, 72, 0.4)',
+      shadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+    },
+    text: {
+      primary: '#E3E3E3',
+      secondary: '#979A9B',
+      tertiary: '#6B7280',
+      inverse: '#191919',
+    },
+    border: {
+      default: 'rgba(151, 154, 155, 0.2)',
+      light: 'rgba(151, 154, 155, 0.1)',
+      strong: 'rgba(151, 154, 155, 0.3)',
+    },
+    status: {
+      success: '#4DAB9A',
+      warning: '#FFA344',
+      error: '#FF7369',
+      info: '#529CCA',
+    },
+    accent: {
+      primary: '#529CCA',
+      secondary: '#9A6DD7',
+      tertiary: '#E255A1',
+    },
+  },
+}
+
+const lightTheme: Theme = {
+  mode: 'light',
+  colors: {
+    background: {
+      primary: '#FFFFFF',
+      secondary: '#F7F6F3',
+      tertiary: '#F1F1EF',
+    },
+    glass: {
+      background: 'rgba(247, 246, 243, 0.85)',
+      backdropFilter: 'blur(16px)',
+      border: '1px solid rgba(225, 224, 220, 0.6)',
+      shadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+    },
+    card: {
+      background: '#FFFFFF',
+      border: '1px solid #E1E0DC',
+      shadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+    },
+    text: {
+      primary: '#37352F',
+      secondary: '#787774',
+      tertiary: '#9F9A97',
+      inverse: '#FFFFFF',
+    },
+    border: {
+      default: '#E1E0DC',
+      light: '#F1F1EF',
+      strong: '#CFCCC8',
+    },
+    status: {
+      success: '#448361',
+      warning: '#D9730D',
+      error: '#D44C47',
+      info: '#337EA9',
+    },
+    accent: {
+      primary: '#337EA9',
+      secondary: '#9065B0',
+      tertiary: '#C14C8A',
+    },
+  },
+}
+
+const themes = {
+  light: lightTheme,
+  dark: darkTheme,
+}
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 interface ThemeProviderProps {
   children: React.ReactNode
@@ -27,7 +120,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     return defaultTheme
   })
 
-  const [theme, setTheme] = useState<Theme>(themes[mode])
+  const [theme, setTheme] = useState<Theme>(() => themes[mode])
 
   // Update theme when mode changes
   useEffect(() => {
@@ -148,7 +241,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext)
   if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider')
+    // Fallback to default theme if context not available
+    console.warn('useTheme called outside ThemeProvider, using default theme')
+    return {
+      theme: darkTheme,
+      mode: 'dark' as ThemeMode,
+      toggleTheme: () => {},
+      setTheme: () => {},
+    }
   }
   return context
 }

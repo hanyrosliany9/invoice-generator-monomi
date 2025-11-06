@@ -26,7 +26,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
  * REST API endpoints for managing payment milestones in quotations
  * Supports Indonesian "termin pembayaran" (payment terms) workflow
  */
-@Controller('api/quotations/:quotationId/payment-milestones')
+@Controller('quotations/:quotationId/payment-milestones')
 @UseGuards(JwtAuthGuard)
 export class PaymentMilestonesController {
   constructor(

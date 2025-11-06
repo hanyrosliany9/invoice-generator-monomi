@@ -39,6 +39,21 @@ export class InvoiceResponseDto {
     date: string;
   };
 
+  // Payment Milestone reference (if exists)
+  paymentMilestone?: {
+    id: string;
+    milestoneNumber: number;
+    name: string;
+    nameId?: string;
+    description?: string;
+    descriptionId?: string;
+    paymentPercentage: string;
+    paymentAmount: string;
+    dueDate?: string;
+    deliverables?: any;
+    isInvoiced: boolean;
+  };
+
   // User reference (creator)
   createdBy: {
     id: string;

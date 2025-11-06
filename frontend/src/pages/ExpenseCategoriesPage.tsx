@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Button,
   Card,
@@ -20,12 +20,17 @@ import {
 import {
   DeleteOutlined,
   EditOutlined,
+  EyeOutlined,
   PlusOutlined,
   SaveOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../theme';
 import { expenseService } from '../services/expenses';
+import { useIsMobile } from '../hooks/useMediaQuery';
+import MobileTableView from '../components/mobile/MobileTableView';
+import { expenseCategoryToBusinessEntity } from '../adapters/mobileTableAdapters';
+import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -36,12 +41,73 @@ export const ExpenseCategoriesPage: React.FC = () => {
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const isMobile = useIsMobile();
 
   // Fetch categories
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ['expense-categories'],
     queryFn: expenseService.getExpenseCategories,
   });
+
+  // Mobile data adapter
+  const mobileData = useMemo(() =>
+    categories.map(expenseCategoryToBusinessEntity),
+    [categories]
+  );
+
+  // Handler functions (must be defined before mobileActions useMemo)
+  const handleEdit = (category: any) => {
+    setEditingCategory(category);
+    form.setFieldsValue({
+      ...category,
+      withholdingTaxRate: category.withholdingTaxRate
+        ? parseFloat(category.withholdingTaxRate) * 100
+        : 0,
+    });
+    setIsModalVisible(true);
+  };
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
+  };
+
+  // Mobile actions
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'edit',
+      label: 'Edit Kategori',
+      icon: <EditOutlined />,
+      color: '#1890ff',
+      onClick: (record) => {
+        const category = categories.find((c) => c.id === record.id);
+        if (category) handleEdit(category);
+      },
+    },
+    {
+      key: 'delete',
+      label: 'Hapus',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: (record) => handleDelete(record.id),
+      confirm: {
+        title: 'Hapus kategori?',
+        description: 'Aksi ini tidak dapat dibatalkan. Hanya kategori yang tidak digunakan oleh expense yang dapat dihapus.',
+      },
+    },
+  ], [categories, handleEdit, handleDelete]);
+
+  // Mobile filters
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      options: [
+        { label: 'Aktif', value: 'approved' },
+        { label: 'Nonaktif', value: 'declined' },
+      ],
+    },
+  ], []);
 
   // Create mutation
   const createMutation = useMutation({
@@ -92,21 +158,6 @@ export const ExpenseCategoriesPage: React.FC = () => {
       isBillable: false,
     });
     setIsModalVisible(true);
-  };
-
-  const handleEdit = (category: any) => {
-    setEditingCategory(category);
-    form.setFieldsValue({
-      ...category,
-      withholdingTaxRate: category.withholdingTaxRate
-        ? parseFloat(category.withholdingTaxRate) * 100
-        : 0,
-    });
-    setIsModalVisible(true);
-  };
-
-  const handleDelete = (id: string) => {
-    deleteMutation.mutate(id);
   };
 
   const handleCloseModal = () => {
@@ -270,26 +321,41 @@ export const ExpenseCategoriesPage: React.FC = () => {
         </Button>
       </div>
 
-      <Card
-        style={{
-          borderRadius: '12px',
-          border: theme.colors.glass.border,
-          background: theme.colors.glass.background,
-        }}
-      >
-        <Table
-          columns={columns}
-          dataSource={categories}
+      {/* Table / Mobile View */}
+      {isMobile ? (
+        <MobileTableView
+          data={mobileData}
           loading={isLoading}
-          rowKey="id"
-          pagination={{
-            pageSize: 20,
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} categories`,
-          }}
-          scroll={{ x: 1200 }}
+          entityType="expense-categories"
+          showQuickStats
+          searchable
+          searchFields={['number', 'title', 'client.company']}
+          filters={mobileFilters}
+          actions={mobileActions}
+          onRefresh={() => queryClient.invalidateQueries({ queryKey: ['expense-categories'] })}
         />
-      </Card>
+      ) : (
+        <Card
+          style={{
+            borderRadius: '12px',
+            border: theme.colors.glass.border,
+            background: theme.colors.glass.background,
+          }}
+        >
+          <Table
+            columns={columns}
+            dataSource={categories}
+            loading={isLoading}
+            rowKey="id"
+            pagination={{
+              pageSize: 20,
+              showSizeChanger: true,
+              showTotal: (total) => `Total ${total} categories`,
+            }}
+            scroll={{ x: 1200 }}
+          />
+        </Card>
+      )}
 
       {/* Create/Edit Modal */}
       <Modal

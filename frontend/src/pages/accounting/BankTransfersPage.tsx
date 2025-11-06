@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -31,6 +31,10 @@ import {
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import { useTheme } from '../../theme';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
+import { bankTransferToBusinessEntity } from '../../adapters/mobileTableAdapters';
 import {
   approveBankTransfer,
   type BankTransfer,
@@ -52,6 +56,7 @@ const BankTransfersPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
+  const isMobile = useIsMobile();
 
   // State for filters
   const [page, setPage] = useState(1);
@@ -245,6 +250,112 @@ const BankTransfersPage: React.FC = () => {
       },
     });
   };
+
+  // Mobile view data
+  const transfers = data?.data || [];
+
+  const mobileData = useMemo(() =>
+    transfers.map(bankTransferToBusinessEntity),
+    [transfers]
+  );
+
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail',
+      icon: <EyeOutlined />,
+      onClick: (record) => {
+        const transfer = transfers.find((t: BankTransfer) => t.id === record.id);
+        if (transfer) {
+          handleViewDetails(transfer);
+        }
+      },
+    },
+    {
+      key: 'approve',
+      label: 'Setujui',
+      icon: <CheckOutlined />,
+      visible: (record) => record.status === 'draft', // PENDING maps to draft in adapter
+      onClick: (record) => {
+        approveMutation.mutate(record.id);
+      },
+    },
+    {
+      key: 'reject',
+      label: 'Tolak',
+      icon: <CloseOutlined />,
+      danger: true,
+      visible: (record) => record.status === 'draft', // PENDING maps to draft in adapter
+      onClick: (record) => {
+        const transfer = transfers.find((t: BankTransfer) => t.id === record.id);
+        if (transfer) {
+          handleReject(transfer);
+        }
+      },
+    },
+    {
+      key: 'cancel',
+      label: 'Batalkan',
+      icon: <StopOutlined />,
+      danger: true,
+      visible: (record) => {
+        const transfer = transfers.find((t: BankTransfer) => t.id === record.id);
+        return transfer && (transfer.status === 'APPROVED' || transfer.status === 'IN_PROGRESS');
+      },
+      confirmMessage: 'Batalkan transfer ini?',
+      onClick: (record) => {
+        cancelMutation.mutate(record.id);
+      },
+    },
+    {
+      key: 'delete',
+      label: 'Hapus',
+      icon: <DeleteOutlined />,
+      danger: true,
+      visible: (record) => record.status === 'draft', // PENDING maps to draft in adapter
+      confirmMessage: 'Hapus transfer ini?',
+      onClick: (record) => {
+        deleteMutation.mutate(record.id);
+      },
+    },
+  ], [transfers, approveMutation, cancelMutation, deleteMutation]);
+
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select',
+      options: [
+        { label: 'Semua Status', value: '' },
+        { label: 'Menunggu', value: 'PENDING' },
+        { label: 'Disetujui', value: 'APPROVED' },
+        { label: 'Proses', value: 'IN_PROGRESS' },
+        { label: 'Selesai', value: 'COMPLETED' },
+        { label: 'Gagal', value: 'FAILED' },
+        { label: 'Ditolak', value: 'REJECTED' },
+        { label: 'Dibatalkan', value: 'CANCELLED' },
+      ],
+      value: status || '',
+      onChange: (value) => setStatus(value || undefined),
+    },
+    {
+      key: 'transferMethod',
+      label: 'Metode',
+      type: 'select',
+      options: [
+        { label: 'Semua Metode', value: '' },
+        { label: 'Internal', value: 'INTERNAL' },
+        { label: 'Antar Bank', value: 'INTERBANK' },
+        { label: 'RTGS', value: 'RTGS' },
+        { label: 'Kliring', value: 'CLEARING' },
+        { label: 'SKN', value: 'SKN' },
+        { label: 'BI-FAST', value: 'BIFAST' },
+        { label: 'Lainnya', value: 'OTHER' },
+      ],
+      value: transferMethod || '',
+      onChange: (value) => setTransferMethod(value || undefined),
+    },
+  ], [status, transferMethod]);
 
   const columns = [
     {
@@ -470,20 +581,34 @@ const BankTransfersPage: React.FC = () => {
           borderColor: theme.colors.border.default,
         }}
       >
-        <Table
-          columns={columns}
-          dataSource={data?.data || []}
-          rowKey="id"
-          loading={isLoading}
-          pagination={{
-            current: page,
-            pageSize: limit,
-            total: data?.pagination.total || 0,
-            showSizeChanger: false,
-            showTotal: (total) => `Total ${total} transfer`,
-            onChange: (newPage) => setPage(newPage),
-          }}
-        />
+        {isMobile ? (
+          <MobileTableView
+            data={mobileData}
+            loading={isLoading}
+            entityType="bank-transfers"
+            showQuickStats
+            searchable
+            searchFields={['number', 'title', 'client.name']}
+            filters={mobileFilters}
+            actions={mobileActions}
+            onRefresh={() => queryClient.invalidateQueries({ queryKey: ['bank-transfers'] })}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={data?.data || []}
+            rowKey="id"
+            loading={isLoading}
+            pagination={{
+              current: page,
+              pageSize: limit,
+              total: data?.pagination.total || 0,
+              showSizeChanger: false,
+              showTotal: (total) => `Total ${total} transfer`,
+              onChange: (newPage) => setPage(newPage),
+            }}
+          />
+        )}
       </Card>
 
       {/* Create Modal */}

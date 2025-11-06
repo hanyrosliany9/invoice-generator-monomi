@@ -1,7 +1,7 @@
 // PriceInheritanceFormField Component - Indonesian Business Management System
 // Form integration wrapper for price inheritance with seamless Ant Design Form integration
 
-import React, { useEffect, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo } from 'react'
 import { Form, FormItemProps } from 'antd'
 import { useWatch } from 'antd/es/form/Form'
 import { MessageInstance } from 'antd/es/message/interface'
@@ -148,20 +148,30 @@ export const PriceInheritanceFormField: React.FC<
     }
   }, [fieldValue, state.currentAmount, state.mode, actions])
 
-  // Handle mode changes
-  const handleModeChange = (mode: PriceInheritanceMode) => {
+  // Handle mode changes - Memoized to prevent infinite loops
+  const handleModeChange = useCallback((mode: PriceInheritanceMode) => {
     actions.setMode(mode)
     onModeChange?.(mode)
-  }
+  }, [actions, onModeChange])
 
-  // Handle amount changes
-  const handleAmountChange = (amount: number) => {
+  // Handle amount changes - Memoized to prevent infinite loops
+  const handleAmountChange = useCallback((amount: number) => {
     // Update form field
     form.setFieldValue(name, amount)
 
     // Trigger form validation
     form.validateFields([name])
-  }
+  }, [form, name])
+
+  // Handle source change - Memoized to prevent infinite loops
+  const handleSourceChange = useCallback((source: any) => {
+    actions.setSelectedSource(source)
+  }, [actions])
+
+  // Handle validation change - Memoized to prevent infinite loops
+  const handleValidationChange = useCallback((result: PriceValidationResult) => {
+    onValidationChange?.(result)
+  }, [onValidationChange])
 
   // Generate validation rules for the form field
   const validationRules = useMemo(() => {
@@ -295,8 +305,8 @@ export const PriceInheritanceFormField: React.FC<
         showDeviationWarnings={showDeviationWarnings}
         compactMode={compactMode}
         onModeChange={handleModeChange}
-        onSourceChange={actions.setSelectedSource}
-        onValidationChange={onValidationChange || (() => {})}
+        onSourceChange={handleSourceChange}
+        onValidationChange={handleValidationChange}
         indonesianLocale={indonesianLocale}
         trackUserInteraction={enableUserTesting}
         ariaLabel={`${label} - Form field for ${entityType} ${entityId}`}

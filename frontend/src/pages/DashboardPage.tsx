@@ -315,6 +315,7 @@ export const DashboardPage: React.FC = () => {
               pagination={false}
               size='small'
               rowKey='id'
+              scroll={{ x: 'max-content' }}
             />
           </Card>
         </Col>
@@ -341,6 +342,7 @@ export const DashboardPage: React.FC = () => {
               pagination={false}
               size='small'
               rowKey='id'
+              scroll={{ x: 'max-content' }}
             />
           </Card>
         </Col>

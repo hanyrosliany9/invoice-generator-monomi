@@ -35,12 +35,14 @@ import {
   EyeOutlined,
   FileTextOutlined,
   MoreOutlined,
+  PhoneOutlined,
   PlayCircleOutlined,
   PlusOutlined,
   ProjectOutlined,
   SearchOutlined,
   StopOutlined,
   TeamOutlined,
+  WhatsAppOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -54,6 +56,10 @@ import { CompactMetricCard } from '../components/ui/CompactMetricCard'
 import { getProjectStatusConfig, getStatusText, getStatusColor } from '../utils/projectStatus'
 import { calculateProjectProgress, getDaysRemaining, isProjectOverdue } from '../utils/projectProgress'
 import dayjs from 'dayjs'
+import { useIsMobile } from '../hooks/useMediaQuery'
+import MobileTableView from '../components/mobile/MobileTableView'
+import { projectToBusinessEntity } from '../adapters/mobileTableAdapters'
+import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -71,6 +77,7 @@ export const ProjectsPage: React.FC = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const isMobile = useIsMobile()
 
   const [searchInput, setSearchInput] = useState('')
   const searchText = useDebouncedValue(searchInput, 300)
@@ -231,6 +238,166 @@ export const ProjectsPage: React.FC = () => {
     return matchesSearch && matchesStatus && matchesType && matchesClient
   })
 
+  // Define handler functions BEFORE they're used in mobile actions
+  const handleEdit = useCallback((project: Project) => {
+    navigate(`/projects/${project.id}/edit`)
+  }, [navigate])
+
+  const handleDelete = useCallback((id: string) => {
+    const project = projects.find(p => p.id === id)
+    Modal.confirm({
+      title: 'Delete Project?',
+      content: `Are you sure you want to delete project "${project?.number || 'this project'}"? This action cannot be undone.`,
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: () => {
+        deleteMutation.mutate(id)
+      },
+    })
+  }, [projects, deleteMutation])
+
+  // Mobile data adapter - convert projects to BusinessEntity format
+  const mobileData = useMemo(
+    () => filteredProjects.map(projectToBusinessEntity),
+    [filteredProjects]
+  )
+
+  // Mobile actions configuration
+  const mobileActions = useMemo<MobileTableAction[]>(
+    () => [
+      {
+        key: 'view',
+        label: 'Lihat Detail',
+        icon: <EyeOutlined />,
+        onClick: (record) => navigate(`/projects/${record.id}`),
+      },
+      {
+        key: 'edit',
+        label: 'Edit',
+        icon: <EditOutlined />,
+        color: theme.colors.accent.primary,
+        onClick: (record) => {
+          const project = projects.find(p => p.id === record.id)
+          if (project) handleEdit(project)
+        },
+        visible: (record) => record.status === 'draft',
+      },
+      {
+        key: 'whatsapp',
+        label: 'WhatsApp',
+        icon: <WhatsAppOutlined />,
+        color: '#25d366',
+        visible: (record) => !!record.client.phone,
+        onClick: (record) => {
+          const phone = record.client.phone?.replace(/[^\d]/g, '')
+          if (phone) {
+            const message = `Halo ${record.client.name}, terkait proyek ${record.number}`
+            const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+            window.open(whatsappUrl, '_blank')
+          }
+        },
+      },
+      {
+        key: 'call',
+        label: 'Telepon',
+        icon: <PhoneOutlined />,
+        color: theme.colors.accent.primary,
+        visible: (record) => !!record.client.phone,
+        onClick: (record) => {
+          const phone = record.client.phone?.replace(/[^\d]/g, '')
+          if (phone) {
+            window.location.href = `tel:${phone}`
+          }
+        },
+      },
+      {
+        key: 'start',
+        label: 'Mulai Proyek',
+        icon: <PlayCircleOutlined />,
+        color: theme.colors.status.success,
+        visible: (record) => record.status === 'draft',
+        onClick: (record) => {
+          const project = projects.find(p => p.id === record.id)
+          if (project) {
+            bulkUpdateStatusMutation.mutate({ ids: [record.id], status: 'IN_PROGRESS' })
+          }
+        },
+      },
+      {
+        key: 'complete',
+        label: 'Selesaikan',
+        icon: <CheckCircleOutlined />,
+        color: theme.colors.status.success,
+        visible: (record) => record.status === 'sent',
+        onClick: (record) => {
+          Modal.confirm({
+            title: 'Selesaikan Proyek?',
+            content: `Apakah Anda yakin ingin menyelesaikan proyek ${record.number}?`,
+            okText: 'Ya, Selesaikan',
+            cancelText: 'Batal',
+            onOk: () => {
+              bulkUpdateStatusMutation.mutate({ ids: [record.id], status: 'COMPLETED' })
+            },
+          })
+        },
+      },
+      {
+        key: 'hold',
+        label: 'Tahan Proyek',
+        icon: <StopOutlined />,
+        color: theme.colors.status.warning,
+        visible: (record) => record.status === 'sent',
+        onClick: (record) => {
+          Modal.confirm({
+            title: 'Tahan Proyek?',
+            content: `Apakah Anda yakin ingin menahan proyek ${record.number}?`,
+            okText: 'Ya, Tahan',
+            cancelText: 'Batal',
+            onOk: () => {
+              bulkUpdateStatusMutation.mutate({ ids: [record.id], status: 'ON_HOLD' })
+            },
+          })
+        },
+      },
+      {
+        key: 'print',
+        label: 'Print',
+        icon: <FileTextOutlined />,
+        onClick: (record) => {
+          message.info('Fitur print proyek sedang dalam pengembangan')
+        },
+      },
+      {
+        key: 'delete',
+        label: 'Hapus',
+        icon: <DeleteOutlined />,
+        danger: true,
+        visible: (record) => record.status === 'draft',
+        onClick: (record) => handleDelete(record.id),
+      },
+    ],
+    [navigate, projects, handleEdit, handleDelete, bulkUpdateStatusMutation, message, theme]
+  )
+
+  // Mobile filters configuration
+  const mobileFilters = useMemo<MobileFilterConfig[]>(
+    () => [
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        options: [
+          { label: 'Perencanaan', value: 'draft' },
+          { label: 'Berlangsung', value: 'sent' },
+          { label: 'Selesai', value: 'paid' },
+          { label: 'Dibatalkan', value: 'declined' },
+        ],
+      },
+    ],
+    []
+  )
+
   // Statistics - memoized for performance
   const safeProjects = safeArray(projects)
   const stats = useMemo(() => ({
@@ -301,27 +468,9 @@ export const ProjectsPage: React.FC = () => {
     navigate('/projects/new')
   }, [navigate])
 
-  const handleEdit = useCallback((project: Project) => {
-    navigate(`/projects/${project.id}/edit`)
-  }, [navigate])
-
   const handleView = useCallback((project: Project) => {
     navigate(`/projects/${project.id}`)
   }, [navigate])
-
-  const handleDelete = useCallback((id: string) => {
-    const project = projects.find(p => p.id === id)
-    Modal.confirm({
-      title: 'Delete Project?',
-      content: `Are you sure you want to delete project "${project?.number || 'this project'}"? This action cannot be undone.`,
-      okText: 'Delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk: () => {
-        deleteMutation.mutate(id)
-      },
-    })
-  }, [projects, deleteMutation])
 
   const handleBulkDelete = () => {
     if (selectedRowKeys.length === 0) return
@@ -1079,27 +1228,43 @@ export const ProjectsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Main Table */}
-      <Card>
-        <div style={{ overflowX: 'auto' }}>
-          <Table
-            columns={columns}
-            dataSource={filteredProjects}
-            loading={isLoading}
-            rowKey='id'
-            rowSelection={rowSelection}
-            pagination={{
-              total: filteredProjects.length,
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} dari ${total} proyek`,
-            }}
-            scroll={{ x: 1200 }}
-          />
-        </div>
-      </Card>
+      {/* Main Table - Conditional rendering for mobile/desktop */}
+      {isMobile ? (
+        <MobileTableView
+          data={mobileData}
+          loading={isLoading}
+          entityType="projects"
+          enableWhatsAppActions
+          enableCallActions
+          showQuickStats
+          searchable
+          searchFields={['number', 'title', 'client.name']}
+          filters={mobileFilters}
+          actions={mobileActions}
+          onRefresh={() => queryClient.invalidateQueries({ queryKey: ['projects'] })}
+        />
+      ) : (
+        <Card>
+          <div style={{ overflowX: 'auto' }}>
+            <Table
+              columns={columns}
+              dataSource={filteredProjects}
+              loading={isLoading}
+              rowKey='id'
+              rowSelection={rowSelection}
+              pagination={{
+                total: filteredProjects.length,
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} dari ${total} proyek`,
+              }}
+              scroll={{ x: 1200 }}
+            />
+          </div>
+        </Card>
+      )}
 
       {/* Status Change Modal */}
       <Modal

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Button,
@@ -25,11 +25,16 @@ import dayjs from 'dayjs';
 import { exportARAgingExcel, exportARAgingPDF, getAccountsReceivableAging } from '../../services/accounting';
 import { useTheme } from '../../theme';
 import { ExportButton } from '../../components/accounting/ExportButton';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
+import { arAgingToBusinessEntity } from '../../adapters/mobileTableAdapters';
 
 const { Title, Text } = Typography;
 
 const ARAgingPage: React.FC = () => {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const [asOfDate, setAsOfDate] = useState<dayjs.Dayjs>(dayjs());
 
   const { data, isLoading } = useQuery({
@@ -60,6 +65,44 @@ const ARAgingPage: React.FC = () => {
       minimumFractionDigits: 0,
     }).format(amount);
   };
+
+  // Mobile view data
+  const agingEntries = data?.aging || [];
+
+  const mobileData = useMemo(() =>
+    agingEntries.map(arAgingToBusinessEntity),
+    [agingEntries]
+  );
+
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail Invoice',
+      icon: <UserOutlined />,
+      onClick: (record) => {
+        // Navigate to invoice detail if needed
+        console.log('View invoice:', record.number);
+      },
+    },
+  ], []);
+
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'agingBucket',
+      label: 'Kategori Umur',
+      type: 'select',
+      options: [
+        { label: 'Semua', value: '' },
+        { label: 'Belum Jatuh Tempo', value: 'Current' },
+        { label: '1-30 Hari', value: '1-30 days' },
+        { label: '31-60 Hari', value: '31-60 days' },
+        { label: '61-90 Hari', value: '61-90 days' },
+        { label: 'Lebih dari 90 Hari', value: 'Over 90 days' },
+      ],
+      value: '',
+      onChange: () => {},
+    },
+  ], []);
 
   const columns = [
     {
@@ -393,36 +436,50 @@ const ARAgingPage: React.FC = () => {
             }}
           >
             {data.aging.length > 0 ? (
-              <Table
-                columns={columns}
-                dataSource={data.aging}
-                rowKey={(record: any) => record.invoiceNumber || record.id || Math.random().toString()}
-                pagination={{
-                  pageSize: 20,
-                  showSizeChanger: true,
-                  showTotal: (total) => `Total ${total} invoice`,
-                }}
-                size="small"
-                summary={() => (
-                  <Table.Summary.Row
-                    style={{ background: theme.colors.background.tertiary }}
-                  >
-                    <Table.Summary.Cell index={0} colSpan={6}>
-                      <Text strong style={{ fontSize: '16px' }}>
-                        TOTAL PIUTANG
-                      </Text>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell index={6} align="right">
-                      <Text
-                        strong
-                        style={{ fontSize: '18px', color: theme.colors.accent.primary }}
-                      >
-                        {formatCurrency(data.summary.totalAR)}
-                      </Text>
-                    </Table.Summary.Cell>
-                  </Table.Summary.Row>
-                )}
-              />
+              isMobile ? (
+                <MobileTableView
+                  data={mobileData}
+                  loading={isLoading}
+                  entityType="ar-aging"
+                  showQuickStats
+                  searchable
+                  searchFields={['number', 'client.name']}
+                  filters={mobileFilters}
+                  actions={mobileActions}
+                  onRefresh={() => {}}
+                />
+              ) : (
+                <Table
+                  columns={columns}
+                  dataSource={data.aging}
+                  rowKey={(record: any) => record.invoiceNumber || record.id || Math.random().toString()}
+                  pagination={{
+                    pageSize: 20,
+                    showSizeChanger: true,
+                    showTotal: (total) => `Total ${total} invoice`,
+                  }}
+                  size="small"
+                  summary={() => (
+                    <Table.Summary.Row
+                      style={{ background: theme.colors.background.tertiary }}
+                    >
+                      <Table.Summary.Cell index={0} colSpan={6}>
+                        <Text strong style={{ fontSize: '16px' }}>
+                          TOTAL PIUTANG
+                        </Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={6} align="right">
+                        <Text
+                          strong
+                          style={{ fontSize: '18px', color: theme.colors.accent.primary }}
+                        >
+                          {formatCurrency(data.summary.totalAR)}
+                        </Text>
+                      </Table.Summary.Cell>
+                    </Table.Summary.Row>
+                  )}
+                />
+              )
             ) : (
               <Empty description="Tidak ada piutang pada tanggal ini" />
             )}

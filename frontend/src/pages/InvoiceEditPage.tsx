@@ -371,6 +371,12 @@ export const InvoiceEditPage: React.FC = () => {
           value: dayjs(invoice.dueDate).format('DD MMM YYYY'),
         },
         { label: 'Status', value: invoice.status },
+        ...(invoice.paymentMilestone ? [
+          {
+            label: 'Payment Term',
+            value: `Milestone ${invoice.paymentMilestone.milestoneNumber}: ${invoice.paymentMilestone.nameId || invoice.paymentMilestone.name} (${invoice.paymentMilestone.paymentPercentage}%)`
+          },
+        ] : []),
       ]}
       actions={[
         ...(canEdit
@@ -415,6 +421,72 @@ export const InvoiceEditPage: React.FC = () => {
       hero={heroCard}
       sidebar={
         <Space direction='vertical' size='large' style={{ width: '100%' }}>
+          {/* Payment Milestone Information */}
+          {invoice.paymentMilestone && (
+            <Card
+              title={
+                <Space>
+                  <ClockCircleOutlined />
+                  Payment Milestone
+                </Space>
+              }
+              size='small'
+              style={{
+                background: theme.colors.card.background,
+                border: theme.colors.card.border,
+              }}
+            >
+              <Space direction='vertical' size='small' style={{ width: '100%' }}>
+                <div>
+                  <Text type='secondary' style={{ fontSize: '12px' }}>Milestone Number</Text>
+                  <div>
+                    <Tag color='blue'>#{invoice.paymentMilestone.milestoneNumber}</Tag>
+                  </div>
+                </div>
+                <div>
+                  <Text type='secondary' style={{ fontSize: '12px' }}>Name</Text>
+                  <div>
+                    <Text strong>{invoice.paymentMilestone.nameId || invoice.paymentMilestone.name}</Text>
+                  </div>
+                </div>
+                {(invoice.paymentMilestone.descriptionId || invoice.paymentMilestone.description) && (
+                  <div>
+                    <Text type='secondary' style={{ fontSize: '12px' }}>Description</Text>
+                    <div>
+                      <Text>{invoice.paymentMilestone.descriptionId || invoice.paymentMilestone.description}</Text>
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <Text type='secondary' style={{ fontSize: '12px' }}>Payment Percentage</Text>
+                  <div>
+                    <Tag color='blue' style={{ fontSize: '14px', padding: '4px 12px' }}>
+                      {invoice.paymentMilestone.paymentPercentage}%
+                    </Tag>
+                  </div>
+                </div>
+                <div>
+                  <Text type='secondary' style={{ fontSize: '12px' }}>Milestone Amount</Text>
+                  <div>
+                    <Text strong style={{ fontSize: '16px', color: theme.colors.accent.primary }}>
+                      {formatIDR(invoice.paymentMilestone.paymentAmount)}
+                    </Text>
+                  </div>
+                </div>
+                {invoice.quotation && (
+                  <Button
+                    type='link'
+                    size='small'
+                    onClick={() => navigate(`/quotations/${invoice.quotation!.id}`)}
+                    style={{ padding: 0 }}
+                  >
+                    View All Milestones
+                  </Button>
+                )}
+              </Space>
+            </Card>
+          )}
+
           {/* Invoice Status Management */}
           {availableActions.length > 0 && (
             <Card
@@ -467,7 +539,7 @@ export const InvoiceEditPage: React.FC = () => {
                 value: totalAmount,
                 format: 'currency',
                 icon: <DollarOutlined />,
-                color: '#52c41a',
+                color: theme.colors.status.success,
               },
               {
                 label: 'Days to Due',
@@ -476,17 +548,17 @@ export const InvoiceEditPage: React.FC = () => {
                 icon: <CalendarOutlined />,
                 color:
                   daysToDue > 15
-                    ? '#1890ff'
+                    ? theme.colors.accent.primary
                     : daysToDue > 7
-                      ? '#faad14'
-                      : '#ff4d4f',
+                      ? theme.colors.status.warning
+                      : theme.colors.status.error,
               },
               ...(includePPN ? [{
                 label: 'Tax (PPN 11%)',
                 value: totalAmount * 0.11,
                 format: 'currency' as const,
                 icon: <BankOutlined />,
-                color: '#1890ff',
+                color: theme.colors.accent.primary,
               }] : []),
             ]}
             layout='vertical'
@@ -548,6 +620,46 @@ export const InvoiceEditPage: React.FC = () => {
             description={`This invoice has status "${invoice.status}" and cannot be edited. Only DRAFT and SENT invoices can be modified.`}
             type='warning'
             showIcon
+          />
+        )}
+
+        {/* Payment Milestone Alert */}
+        {invoice.paymentMilestone && (
+          <Alert
+            style={{ marginBottom: '24px' }}
+            message='Milestone-Based Invoice'
+            description={
+              <Space direction='vertical' size='small'>
+                <Text>
+                  This invoice is part of a payment milestone structure from quotation{' '}
+                  <Text strong>{invoice.quotation?.quotationNumber}</Text>.
+                </Text>
+                <Space wrap>
+                  <Tag color='blue' icon={<ClockCircleOutlined />}>
+                    Milestone {invoice.paymentMilestone.milestoneNumber}
+                  </Tag>
+                  <Tag color='cyan'>
+                    {invoice.paymentMilestone.nameId || invoice.paymentMilestone.name}
+                  </Tag>
+                  <Tag color='blue'>
+                    {invoice.paymentMilestone.paymentPercentage}% of total quotation
+                  </Tag>
+                </Space>
+                {invoice.quotation && (
+                  <Button
+                    type='link'
+                    size='small'
+                    onClick={() => navigate(`/quotations/${invoice.quotation!.id}`)}
+                    style={{ padding: 0, height: 'auto' }}
+                  >
+                    View all milestones in quotation →
+                  </Button>
+                )}
+              </Space>
+            }
+            type='info'
+            showIcon
+            icon={<ClockCircleOutlined />}
           />
         )}
 

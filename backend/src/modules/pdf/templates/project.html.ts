@@ -381,24 +381,38 @@ export function generateProjectHTML(projectData: any): string {
       margin-bottom: 0.5mm;
     }
 
-    /* ===== PRINT STYLES ===== */
+    /* ===== PAGINATED MODE (PRINT) STYLES ===== */
     @media print {
-      body {
-        margin: 0;
-        padding: 0;
-      }
-
-      .container {
-        padding: 15mm;
-        max-width: 100%;
-      }
-
-      .card {
+      /* Prevent awkward breaks inside atomic elements */
+      .header,
+      .card,
+      .section,
+      .metric-box,
+      .divider,
+      .footer {
         page-break-inside: avoid;
       }
 
-      .section {
+      /* Prevent table rows from breaking mid-row */
+      .table tr {
         page-break-inside: avoid;
+      }
+
+      /* Keep section titles with following content */
+      .card-header,
+      .card-title,
+      .card-subtitle,
+      .metric-label,
+      .info-label {
+        page-break-after: avoid;
+      }
+
+      /* Allow natural breaks in large containers */
+      .container,
+      .info-grid,
+      .metrics-grid,
+      .table {
+        page-break-inside: auto;
       }
     }
   </style>

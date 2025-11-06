@@ -52,6 +52,10 @@ import {
   processMonthlyDepreciation,
 } from '../services/accounting'
 import dayjs from 'dayjs'
+import { useIsMobile } from '../hooks/useMediaQuery'
+import MobileTableView from '../components/mobile/MobileTableView'
+import { assetToBusinessEntity } from '../adapters/mobileTableAdapters'
+import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -62,6 +66,7 @@ export const AssetsPage: React.FC = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { message } = App.useApp()
+  const isMobile = useIsMobile()
 
   const [searchInput, setSearchInput] = useState('')
   const searchText = useDebouncedValue(searchInput, 300)
@@ -135,6 +140,63 @@ export const AssetsPage: React.FC = () => {
     const matchesCategory = !categoryFilter || asset?.category === categoryFilter
     return matchesSearch && matchesStatus && matchesCategory
   })
+
+  // Handler functions (defined before mobileActions to avoid TDZ errors)
+  const handleView = (asset: Asset) => {
+    navigate(`/assets/${asset.id}`)
+  }
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id)
+  }
+
+  // Mobile data adapter
+  const mobileData = React.useMemo(() =>
+    filteredAssets.map(assetToBusinessEntity),
+    [filteredAssets]
+  )
+
+  // Mobile actions
+  const mobileActions: MobileTableAction[] = React.useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail',
+      icon: <EyeOutlined />,
+      onClick: (record) => {
+        const asset = filteredAssets.find(a => a.id === record.id)
+        if (asset) handleView(asset)
+      },
+    },
+    {
+      key: 'edit',
+      label: 'Edit',
+      icon: <EditOutlined />,
+      color: '#1890ff',
+      onClick: (record) => navigate(`/assets/${record.id}/edit`),
+    },
+    {
+      key: 'delete',
+      label: 'Hapus',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: (record) => handleDelete(record.id),
+    },
+  ], [navigate, filteredAssets, handleView, handleDelete])
+
+  // Mobile filters
+  const mobileFilters: MobileFilterConfig[] = React.useMemo(() => [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      options: [
+        { label: 'Available', value: 'approved' },
+        { label: 'Reserved', value: 'sent' },
+        { label: 'Maintenance', value: 'draft' },
+        { label: 'Broken', value: 'declined' },
+      ],
+    },
+  ], [])
 
   // Statistics
   const safeAssets = safeArray(assets)
@@ -216,14 +278,6 @@ export const AssetsPage: React.FC = () => {
 
   const handleEdit = (asset: Asset) => {
     navigate(`/assets/${asset.id}/edit`)
-  }
-
-  const handleView = (asset: Asset) => {
-    navigate(`/assets/${asset.id}`)
-  }
-
-  const handleDelete = (id: string) => {
-    deleteMutation.mutate(id)
   }
 
   const getActionMenuItems = (asset: Asset) => {
@@ -694,27 +748,41 @@ export const AssetsPage: React.FC = () => {
           </Row>
         </div>
 
-        {/* Main Table */}
-        <Card>
-          <div style={{ overflowX: 'auto' }}>
-            <Table
-              columns={columns}
-              dataSource={filteredAssets}
-              loading={isLoading}
-              rowKey='id'
-              rowSelection={rowSelection}
-              pagination={{
-                total: filteredAssets.length,
-                pageSize: 10,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} dari ${total} aset`,
-              }}
-              scroll={{ x: 1200 }}
-            />
-          </div>
-        </Card>
+        {/* Main Table / Mobile View */}
+        {isMobile ? (
+          <MobileTableView
+            data={mobileData}
+            loading={isLoading}
+            entityType="assets"
+            showQuickStats
+            searchable
+            searchFields={['number', 'title', 'client.name']}
+            filters={mobileFilters}
+            actions={mobileActions}
+            onRefresh={() => queryClient.invalidateQueries({ queryKey: ['assets'] })}
+          />
+        ) : (
+          <Card>
+            <div style={{ overflowX: 'auto' }}>
+              <Table
+                columns={columns}
+                dataSource={filteredAssets}
+                loading={isLoading}
+                rowKey='id'
+                rowSelection={rowSelection}
+                pagination={{
+                  total: filteredAssets.length,
+                  pageSize: 10,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} dari ${total} aset`,
+                }}
+                scroll={{ x: 1200 }}
+              />
+            </div>
+          </Card>
+        )}
               </div>
             ),
           },

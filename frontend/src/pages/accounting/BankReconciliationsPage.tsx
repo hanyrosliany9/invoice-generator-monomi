@@ -48,6 +48,10 @@ import {
   rejectBankReconciliation,
   reviewBankReconciliation,
 } from '../../services/accounting';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import { bankReconciliationToBusinessEntity } from '../../adapters/mobileTableAdapters';
+import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -58,6 +62,7 @@ const BankReconciliationsPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
+  const isMobile = useIsMobile();
 
   // State for filters
   const [page, setPage] = useState(1);
@@ -103,6 +108,55 @@ const BankReconciliationsPage: React.FC = () => {
     queryKey: ['chart-of-accounts'],
     queryFn: () => getChartOfAccounts({ includeInactive: false }),
   });
+
+  const reconciliations = data?.data || [];
+
+  // Mobile data adapter
+  const mobileData = useMemo(() =>
+    reconciliations.map(bankReconciliationToBusinessEntity),
+    [reconciliations]
+  );
+
+  // Mobile actions
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail',
+      icon: <EyeOutlined />,
+      onClick: (record) => {
+        const recon = reconciliations.find((r: any) => r.id === record.id);
+        if (recon) {
+          setSelectedReconciliation(recon);
+          setIsViewModalOpen(true);
+        }
+      },
+    },
+    {
+      key: 'delete',
+      label: 'Hapus',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: (record) => deleteMutation.mutate(record.id),
+      visible: (record) => record.status === 'draft',
+      confirm: {
+        title: 'Hapus rekonsiliasi?',
+        description: 'Aksi ini tidak dapat dibatalkan.',
+      },
+    },
+  ], [reconciliations]);
+
+  // Mobile filters
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      options: [
+        { label: 'Seimbang', value: 'approved' },
+        { label: 'Tidak Seimbang', value: 'draft' },
+      ],
+    },
+  ], []);
 
   // Mutations
   const createMutation = useMutation({
@@ -492,28 +546,42 @@ const BankReconciliationsPage: React.FC = () => {
         </Space>
       </Card>
 
-      {/* Table */}
+      {/* Table / Mobile View */}
       <Card
         style={{
           background: theme.colors.card.background,
           borderColor: theme.colors.border.default,
         }}
       >
-        <Table
-          columns={columns}
-          dataSource={data?.data || []}
-          rowKey="id"
-          loading={isLoading}
-          pagination={{
-            current: page,
-            pageSize: limit,
-            total: data?.pagination.total || 0,
-            showSizeChanger: false,
-            showTotal: (total) => `Total ${total} rekonsiliasi`,
-            onChange: (newPage) => setPage(newPage),
-          }}
-          scroll={{ x: 1400 }}
-        />
+        {isMobile ? (
+          <MobileTableView
+            data={mobileData}
+            loading={isLoading}
+            entityType="bank-reconciliations"
+            showQuickStats
+            searchable
+            searchFields={['number', 'title', 'client.name']}
+            filters={mobileFilters}
+            actions={mobileActions}
+            onRefresh={() => queryClient.invalidateQueries({ queryKey: ['bank-reconciliations'] })}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={data?.data || []}
+            rowKey="id"
+            loading={isLoading}
+            pagination={{
+              current: page,
+              pageSize: limit,
+              total: data?.pagination.total || 0,
+              showSizeChanger: false,
+              showTotal: (total) => `Total ${total} rekonsiliasi`,
+              onChange: (newPage) => setPage(newPage),
+            }}
+            scroll={{ x: 1400 }}
+          />
+        )}
       </Card>
 
       {/* Create Modal */}

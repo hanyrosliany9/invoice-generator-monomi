@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import {
   Alert,
   App,
@@ -49,8 +49,20 @@ import { projectService } from '../services/projects'
 import { clientService } from '../services/clients'
 import { formatIDR } from '../utils/currency'
 import { useTheme } from '../theme'
+import { MilestoneProgress } from '../components/invoices/MilestoneProgress'
+import {
+  usePaymentMilestones,
+  useGenerateMilestoneInvoice,
+  useCreatePaymentMilestone,
+  useUpdatePaymentMilestone,
+  useDeletePaymentMilestone,
+} from '../hooks/usePaymentMilestones'
+import { Modal } from 'antd'
+import { PaymentMilestoneForm } from '../components/quotations'
+import type { PaymentMilestoneFormItem, PaymentMilestone } from '../types/payment-milestones'
+import { useIsMobile } from '../hooks/useMediaQuery'
 
-const { TextArea } = Input
+const { TextArea} = Input
 const { Title, Text } = Typography
 
 interface QuotationFormData {
@@ -62,6 +74,7 @@ interface QuotationFormData {
   validUntil: dayjs.Dayjs
   status: 'DRAFT' | 'SENT' | 'APPROVED' | 'DECLINED' | 'REVISED'
   scopeOfWork?: string
+  paymentMilestones?: PaymentMilestoneFormItem[]
 }
 
 export const QuotationEditPage: React.FC = () => {
@@ -79,6 +92,11 @@ export const QuotationEditPage: React.FC = () => {
   const [previewData, setPreviewData] = useState<any>(null)
   const [includePPN, setIncludePPN] = useState(true)
   const [totalAmount, setTotalAmount] = useState(0)
+  const [creatingInvoiceForMilestone, setCreatingInvoiceForMilestone] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const initializedRef = useRef(false)
+  const isMobile = useIsMobile()
+  const onChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Fetch quotation data
   const {
@@ -146,9 +164,64 @@ export const QuotationEditPage: React.FC = () => {
     },
   })
 
-  // Initialize form when quotation data is loaded
+  // Fetch payment milestones for this quotation
+  const { data: paymentMilestones = [] } = usePaymentMilestones(id!)
+
+  // Check if any milestone is already invoiced (protection)
+  const hasInvoicedMilestones = paymentMilestones.some(m => m.isInvoiced)
+
+  // Generate milestone invoice mutation
+  const generateMilestoneInvoiceMutation = useGenerateMilestoneInvoice()
+
+  // Milestone CRUD mutations
+  const createMilestoneMutation = useCreatePaymentMilestone()
+  const updateMilestoneMutation = useUpdatePaymentMilestone()
+  const deleteMilestoneMutation = useDeletePaymentMilestone()
+
+  // Memoize existingMilestones to prevent prop recreation (FIX #1: Prevents infinite re-renders)
+  const memoizedExistingMilestones = useMemo(() => {
+    return paymentMilestones.map(m => ({
+      milestoneNumber: m.milestoneNumber,
+      name: m.name,
+      nameId: m.nameId,
+      description: m.description,
+      descriptionId: m.descriptionId,
+      paymentPercentage: m.paymentPercentage,
+      paymentAmount: m.paymentAmount,
+    }))
+  }, [paymentMilestones])
+
+  const handleGenerateMilestoneInvoice = async (milestoneId: string) => {
+    if (!id) return
+
+    setCreatingInvoiceForMilestone(milestoneId)
+    try {
+      const invoice = await generateMilestoneInvoiceMutation.mutateAsync({
+        quotationId: id,
+        milestoneId,
+      })
+      Modal.success({
+        title: 'Invoice Milestone Berhasil Dibuat',
+        content: `Invoice ${invoice.invoiceNumber} berhasil dibuat untuk milestone ini.`,
+        onOk: () => navigate(`/invoices/${invoice.id}`),
+      })
+      queryClient.invalidateQueries({ queryKey: ['paymentMilestones', id] })
+      queryClient.invalidateQueries({ queryKey: ['quotation', id] })
+    } catch (error: any) {
+      Modal.error({
+        title: 'Gagal Membuat Invoice',
+        content: error.message || 'Terjadi kesalahan saat membuat invoice milestone.',
+      })
+    } finally {
+      setCreatingInvoiceForMilestone(null)
+    }
+  }
+
+  // Initialize form when quotation data is loaded (FIX #5: Proper initialization)
   useEffect(() => {
-    if (quotation) {
+    if (!quotation || initializedRef.current) return
+
+    try {
       const formData: QuotationFormData = {
         clientId: quotation.clientId,
         projectId: quotation.projectId,
@@ -158,13 +231,34 @@ export const QuotationEditPage: React.FC = () => {
         validUntil: dayjs(quotation.validUntil),
         status: quotation.status,
         scopeOfWork: quotation.scopeOfWork || '',
+        paymentMilestones: memoizedExistingMilestones,
       }
+
       form.setFieldsValue(formData)
       setOriginalValues(formData)
       setTotalAmount(Number(quotation.totalAmount))
-      updatePreviewData(formData)
+
+      // Update preview with the loaded data
+      const selectedClient = clients.find(c => c.id === formData.clientId) || quotation.client
+      const selectedProject = projects.find(p => p.id === formData.projectId) || quotation.project
+
+      setPreviewData({
+        ...formData,
+        client: selectedClient,
+        project: selectedProject,
+        number: quotation.quotationNumber || 'DRAFT',
+        status: formData.status || quotation.status,
+      })
+
+      // Mark as initialized to prevent re-running
+      initializedRef.current = true
+    } catch (error) {
+      console.error('Error initializing quotation form:', error)
+      message.error('Failed to load quotation data')
     }
-  }, [quotation, form])
+    // Only depend on quotation ID to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quotation?.id])
 
   // Update preview data when form changes
   const updatePreviewData = (values: any) => {
@@ -182,48 +276,251 @@ export const QuotationEditPage: React.FC = () => {
     })
   }
 
-  // Track form changes
-  const handleFormChange = () => {
-    const currentValues = form.getFieldsValue()
+  // Track form changes with debouncing (FIX #3: Prevents rapid form state corruption)
+  const handleFormChange = useCallback(() => {
+    // Clear existing timeout
+    if (onChangeTimeoutRef.current) {
+      clearTimeout(onChangeTimeoutRef.current)
+    }
 
-    // Update totalAmount state for React 19 compatibility
-    const newTotalAmount = currentValues.totalAmount || 0
-    setTotalAmount(Number(newTotalAmount))
+    // Debounce the change detection by 100ms
+    onChangeTimeoutRef.current = setTimeout(() => {
+      // Get ALL form values including nested fields
+      const currentValues = form.getFieldsValue(true)
 
-    // Proper deep comparison that handles dayjs objects
-    const changed = originalValues &&
-      Object.keys(originalValues).some(key => {
-        const current = (currentValues as any)[key]
-        const original = (originalValues as any)[key]
+      // Safety check: if validUntil is missing but original had it, preserve it
+      if (!currentValues.validUntil && originalValues?.validUntil) {
+        console.warn('validUntil missing from form values, preserving from originalValues')
+        currentValues.validUntil = originalValues.validUntil
+        // Re-set the form value to restore it
+        form.setFieldValue('validUntil', originalValues.validUntil)
+      }
 
-        // Handle dayjs comparison
-        if (dayjs.isDayjs(current) && dayjs.isDayjs(original)) {
-          return !current.isSame(original)
+      // Update totalAmount state for React 19 compatibility
+      const newTotalAmount = currentValues.totalAmount || 0
+      setTotalAmount(Number(newTotalAmount))
+
+      // Proper deep comparison that handles dayjs objects and arrays
+      const changed = originalValues &&
+        Object.keys(originalValues).some(key => {
+          const current = (currentValues as any)[key]
+          const original = (originalValues as any)[key]
+
+          // Handle dayjs comparison
+          if (dayjs.isDayjs(current) && dayjs.isDayjs(original)) {
+            return !current.isSame(original)
+          }
+
+          // Handle paymentMilestones array comparison (deep comparison)
+          if (key === 'paymentMilestones') {
+            // Check if both are arrays
+            if (Array.isArray(current) && Array.isArray(original)) {
+              // Different length = changed
+              if (current.length !== original.length) {
+                return true
+              }
+
+              // Compare each milestone deeply
+              return current.some((currMilestone: any, index: number) => {
+                const origMilestone = original[index]
+                if (!origMilestone) return true
+
+                // Compare all milestone fields
+                return (
+                  currMilestone.milestoneNumber !== origMilestone.milestoneNumber ||
+                  currMilestone.name !== origMilestone.name ||
+                  currMilestone.nameId !== origMilestone.nameId ||
+                  currMilestone.description !== origMilestone.description ||
+                  currMilestone.descriptionId !== origMilestone.descriptionId ||
+                  currMilestone.paymentPercentage !== origMilestone.paymentPercentage ||
+                  currMilestone.paymentAmount !== origMilestone.paymentAmount
+                )
+              })
+            }
+
+            // One is array, other is not = changed
+            if (Array.isArray(current) !== Array.isArray(original)) {
+              return true
+            }
+          }
+
+          // Handle other types
+          return current !== original
+        })
+
+      setHasChanges(!!changed)
+      updatePreviewData(currentValues)
+    }, 100)
+  }, [form, originalValues])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (onChangeTimeoutRef.current) {
+        clearTimeout(onChangeTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  /**
+   * Sync payment milestones after quotation save
+   * Compares existing backend milestones with form milestones and performs CRUD operations
+   */
+  const syncPaymentMilestones = async (
+    quotationId: string,
+    formMilestones: PaymentMilestoneFormItem[]
+  ): Promise<void> => {
+    if (hasInvoicedMilestones) {
+      // Don't modify milestones if any are already invoiced
+      return
+    }
+
+    const existingMilestones = paymentMilestones || []
+
+    // If no form milestones, delete all existing milestones
+    if (!formMilestones || formMilestones.length === 0) {
+      for (const existing of existingMilestones) {
+        if (existing.id && !existing.isInvoiced) {
+          await deleteMilestoneMutation.mutateAsync(existing.id)
         }
+      }
+      return
+    }
 
-        // Handle other types
-        return current !== original
-      })
+    // Validate total percentage equals 100%
+    const totalPercentage = formMilestones.reduce((sum, m) => sum + m.paymentPercentage, 0)
+    if (totalPercentage !== 100) {
+      throw new Error(`Total milestone percentage must equal 100% (currently ${totalPercentage}%)`)
+    }
 
-    setHasChanges(!!changed)
-    updatePreviewData(currentValues)
+    // Track which existing milestones to keep (by milestone number)
+    const formMilestoneNumbers = new Set(formMilestones.map(m => m.milestoneNumber))
+
+    // Delete milestones that are no longer in the form
+    for (const existing of existingMilestones) {
+      if (existing.id && !existing.isInvoiced && !formMilestoneNumbers.has(existing.milestoneNumber)) {
+        await deleteMilestoneMutation.mutateAsync(existing.id)
+      }
+    }
+
+    // Create or update milestones
+    for (const formMilestone of formMilestones) {
+      const existing = existingMilestones.find(m => m.milestoneNumber === formMilestone.milestoneNumber)
+
+      if (existing?.id) {
+        // Update existing milestone (only if not invoiced)
+        if (!existing.isInvoiced) {
+          const hasChanges =
+            existing.name !== formMilestone.name ||
+            existing.nameId !== formMilestone.nameId ||
+            existing.description !== formMilestone.description ||
+            existing.descriptionId !== formMilestone.descriptionId ||
+            existing.paymentPercentage !== formMilestone.paymentPercentage
+
+          if (hasChanges) {
+            await updateMilestoneMutation.mutateAsync({
+              milestoneId: existing.id,
+              data: {
+                name: formMilestone.name,
+                nameId: formMilestone.nameId,
+                description: formMilestone.description,
+                descriptionId: formMilestone.descriptionId,
+                paymentPercentage: formMilestone.paymentPercentage,
+                // Note: paymentAmount is calculated by backend from percentage
+              },
+            })
+          }
+        }
+      } else {
+        // Create new milestone
+        await createMilestoneMutation.mutateAsync({
+          quotationId,
+          data: {
+            milestoneNumber: formMilestone.milestoneNumber,
+            name: formMilestone.name,
+            nameId: formMilestone.nameId || formMilestone.name,
+            description: formMilestone.description,
+            descriptionId: formMilestone.descriptionId,
+            paymentPercentage: formMilestone.paymentPercentage,
+            // Note: paymentAmount is calculated by backend from percentage
+          },
+        })
+      }
+    }
   }
 
   const handleSubmit = async (values: QuotationFormData) => {
     if (!id) return
 
-    const quotationData: UpdateQuotationRequest = {
-      clientId: values.clientId,
-      projectId: values.projectId,
-      amountPerProject: values.amountPerProject,
-      totalAmount: values.totalAmount,
-      terms: values.terms,
-      validUntil: values.validUntil.toISOString(),
-      status: values.status,
-      scopeOfWork: values.scopeOfWork,
+    // Clear any pending onChange timeout to ensure form state is stable
+    if (onChangeTimeoutRef.current) {
+      clearTimeout(onChangeTimeoutRef.current)
+      onChangeTimeoutRef.current = null
     }
 
-    updateQuotationMutation.mutate({ id, data: quotationData })
+    // FIX #2: Get individual field values directly to avoid Form.List corruption
+    // Ant Design Form.List has a bug where getFieldsValue() may not return all fields
+    const completeValues: QuotationFormData = {
+      clientId: form.getFieldValue('clientId') || values.clientId,
+      projectId: form.getFieldValue('projectId') || values.projectId,
+      amountPerProject: form.getFieldValue('amountPerProject') || values.amountPerProject,
+      totalAmount: form.getFieldValue('totalAmount') || values.totalAmount,
+      terms: form.getFieldValue('terms') || values.terms,
+      validUntil: form.getFieldValue('validUntil') || values.validUntil,
+      status: form.getFieldValue('status') || values.status,
+      scopeOfWork: form.getFieldValue('scopeOfWork') || values.scopeOfWork,
+      paymentMilestones: form.getFieldValue('paymentMilestones') || values.paymentMilestones,
+    }
+
+    console.log('Submitted values:', values)
+    console.log('Complete values after field-by-field fetch:', completeValues)
+
+    // Validate validUntil
+    if (!completeValues.validUntil || !dayjs.isDayjs(completeValues.validUntil)) {
+      message.error('Invalid validity date. Please check the form and try again.')
+      console.error('validUntil validation failed even after field-by-field fetch:', completeValues.validUntil)
+      return
+    }
+
+    values = completeValues
+
+    setIsSaving(true)
+    try {
+      // 1. Save quotation data (without milestones and status - backend doesn't accept them)
+      const quotationData: UpdateQuotationRequest = {
+        clientId: values.clientId,
+        projectId: values.projectId,
+        amountPerProject: values.amountPerProject,
+        totalAmount: values.totalAmount,
+        terms: values.terms,
+        validUntil: values.validUntil.toISOString(),
+        scopeOfWork: values.scopeOfWork,
+        // Note: status is NOT sent - it's read-only and updated via dedicated endpoints
+      }
+
+      await quotationService.updateQuotation(id, quotationData)
+
+      // 2. Sync payment milestones separately using dedicated service
+      if (values.paymentMilestones) {
+        await syncPaymentMilestones(id, values.paymentMilestones)
+      }
+
+      // 3. Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['quotation', id] })
+      queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      queryClient.invalidateQueries({ queryKey: ['quotation-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['recent-quotations'] })
+      queryClient.invalidateQueries({ queryKey: ['paymentMilestones', id] })
+
+      message.success('Quotation and payment milestones updated successfully')
+      setHasChanges(false)
+      navigate(`/quotations/${id}`)
+    } catch (error: any) {
+      message.error(error.message || 'Failed to update quotation')
+      console.error('Error updating quotation:', error)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleRevertChanges = () => {
@@ -247,6 +544,15 @@ export const QuotationEditPage: React.FC = () => {
     try {
       const values = form.getFieldsValue()
 
+      // FIX #2: Defensive validation for validUntil
+      if (!values.validUntil || !dayjs.isDayjs(values.validUntil)) {
+        message.error('Invalid validity date. Please check the form.')
+        console.error('validUntil validation failed in draft save:', values.validUntil)
+        setAutoSaving(false)
+        return
+      }
+
+      // 1. Save quotation data (without milestones and status)
       const quotationData: UpdateQuotationRequest = {
         clientId: values.clientId,
         projectId: values.projectId,
@@ -254,18 +560,28 @@ export const QuotationEditPage: React.FC = () => {
         totalAmount: values.totalAmount,
         terms: values.terms,
         validUntil: values.validUntil.toISOString(),
-        status: values.status,
         scopeOfWork: values.scopeOfWork,
+        // Note: status is NOT sent - it's read-only
       }
 
       await quotationService.updateQuotation(id, quotationData)
+
+      // 2. Sync payment milestones separately
+      if (values.paymentMilestones) {
+        await syncPaymentMilestones(id, values.paymentMilestones)
+      }
+
+      // 3. Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['quotation', id] })
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      queryClient.invalidateQueries({ queryKey: ['paymentMilestones', id] })
+
       setHasChanges(false)
       setOriginalValues(values)
-      message.success('Draft saved successfully')
-    } catch (error) {
-      message.error('Failed to save draft')
+      message.success('Draft and payment milestones saved successfully')
+    } catch (error: any) {
+      message.error(error.message || 'Failed to save draft')
+      console.error('Error saving draft:', error)
     } finally {
       setAutoSaving(false)
     }
@@ -357,7 +673,7 @@ export const QuotationEditPage: React.FC = () => {
                 type: 'primary' as const,
                 icon: <SaveOutlined />,
                 onClick: () => form.submit(),
-                loading: updateQuotationMutation.isPending,
+                loading: isSaving,
                 disabled: !hasChanges,
               },
             ]
@@ -398,6 +714,15 @@ export const QuotationEditPage: React.FC = () => {
       hero={heroCard}
       sidebar={
         <Space direction='vertical' size='large' style={{ width: '100%' }}>
+          {/* Payment Milestones Progress */}
+          {paymentMilestones.length > 0 && (
+            <MilestoneProgress
+              quotationId={id!}
+              onCreateInvoice={handleGenerateMilestoneInvoice}
+              creatingInvoiceForMilestone={creatingInvoiceForMilestone}
+            />
+          )}
+
           {/* Real-time Statistics */}
           <FormStatistics
             title='Quotation Overview'
@@ -685,6 +1010,64 @@ export const QuotationEditPage: React.FC = () => {
           )}
         </ProgressiveSection>
 
+        {/* Payment Milestones Configuration */}
+        {totalAmount > 0 && (
+          <>
+            {hasInvoicedMilestones && (
+              <Alert
+                style={{ marginBottom: '16px' }}
+                message='Payment Milestones Locked'
+                description='Cannot modify payment milestones because some have already been invoiced. This protects data integrity and ensures accurate financial records.'
+                type='warning'
+                showIcon
+                icon={<CheckCircleOutlined />}
+              />
+            )}
+            <PaymentMilestoneForm
+              form={form}
+              quotationTotal={totalAmount}
+              disabled={!canEdit || hasInvoicedMilestones}
+              existingMilestones={memoizedExistingMilestones}
+              onChange={handleFormChange}
+            />
+
+            {/* Hidden validation for milestone percentages */}
+            <Form.Item
+              name="paymentMilestones"
+              rules={[
+                {
+                  validator: (_, value) => {
+                    // Only validate if milestones are enabled
+                    if (!value || value.length === 0) {
+                      return Promise.resolve()
+                    }
+
+                    // Calculate total percentage
+                    const totalPercentage = value.reduce(
+                      (sum: number, m: PaymentMilestoneFormItem) => sum + (m?.paymentPercentage || 0),
+                      0
+                    )
+
+                    // Validate total equals 100%
+                    if (totalPercentage !== 100) {
+                      return Promise.reject(
+                        new Error(
+                          `Payment milestones must total 100% (currently ${totalPercentage}%). Please adjust the percentages before saving.`
+                        )
+                      )
+                    }
+
+                    return Promise.resolve()
+                  },
+                },
+              ]}
+              hidden
+            >
+              <Input />
+            </Form.Item>
+          </>
+        )}
+
         {/* Scope of Work Section */}
         <ProgressiveSection
           title='Scope of Work'
@@ -721,12 +1104,13 @@ export const QuotationEditPage: React.FC = () => {
             <Col xs={24} sm={12}>
               <Form.Item
                 name='status'
-                label='Quotation Status'
-                rules={[{ required: true, message: 'Please select status' }]}
+                label='Quotation Status (Read-only)'
+                help='Status cannot be changed directly. Use workflow actions to approve/decline/revise.'
               >
                 <Select
                   placeholder='Select status'
                   size='large'
+                  disabled={true}
                   options={[
                     { value: 'DRAFT', label: 'Draft' },
                     { value: 'SENT', label: 'Sent' },
@@ -819,8 +1203,9 @@ export const QuotationEditPage: React.FC = () => {
                   size='large'
                   icon={<SaveOutlined />}
                   htmlType='submit'
-                  loading={updateQuotationMutation.isPending}
+                  loading={isSaving}
                   disabled={!hasChanges}
+                  block={isMobile}
                 >
                   Save Changes
                 </Button>

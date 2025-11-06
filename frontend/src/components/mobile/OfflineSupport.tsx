@@ -162,13 +162,22 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Initialize offline support
   const initializeOfflineSupport = () => {
-    // Register service worker for offline caching
+    // TODO: Implement Service Worker for offline caching
+    // Service worker registration is currently disabled because sw.js is not implemented yet.
+    // This feature is deferred - needs proper implementation with Vite/Workbox integration.
+    // When implementing, consider:
+    // - Vite PWA plugin for SW generation
+    // - Cache strategies (network-first, cache-first)
+    // - Asset versioning and updates
+    // - Background sync for queue management
+    /*
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
         .then(() => console.log('Service Worker registered'))
         .catch(err => console.log('Service Worker registration failed'))
     }
+    */
 
     // Initialize IndexedDB for offline storage
     initializeIndexedDB()

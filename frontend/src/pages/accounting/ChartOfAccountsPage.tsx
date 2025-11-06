@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Badge,
@@ -23,6 +23,7 @@ import {
   DeleteOutlined,
   DollarOutlined,
   EditOutlined,
+  EyeOutlined,
   FallOutlined,
   PlusOutlined,
   PoweroffOutlined,
@@ -39,6 +40,10 @@ import {
   updateChartOfAccount,
 } from '../../services/accounting';
 import { useTheme } from '../../theme';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import { chartOfAccountToBusinessEntity } from '../../adapters/mobileTableAdapters';
+import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -68,6 +73,7 @@ const ChartOfAccountsPage: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingAccount, setEditingAccount] = useState<ChartOfAccount | null>(null);
   const [form] = Form.useForm();
+  const isMobile = useIsMobile();
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ['chart-of-accounts'],
@@ -150,6 +156,69 @@ const ChartOfAccountsPage: React.FC = () => {
     acc[type].push(account);
     return acc;
   }, {} as Record<string, ChartOfAccount[]>);
+
+  // Mobile data adapter
+  const mobileData = useMemo(() =>
+    filteredAccounts.map(chartOfAccountToBusinessEntity),
+    [filteredAccounts]
+  );
+
+  // Mobile actions
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'edit',
+      label: 'Edit Akun',
+      icon: <EditOutlined />,
+      color: '#1890ff',
+      onClick: (record) => {
+        const account = accounts.find((a) => a.id === record.id);
+        if (account) handleEdit(account);
+      },
+    },
+    {
+      key: 'toggle',
+      label: 'Toggle Status',
+      icon: <PoweroffOutlined />,
+      color: '#52c41a',
+      onClick: (record) => toggleStatusMutation.mutate(record.number),
+    },
+    {
+      key: 'delete',
+      label: 'Hapus',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: (record) => deleteMutation.mutate(record.number),
+      confirm: {
+        title: 'Hapus akun?',
+        description: 'Aksi ini tidak dapat dibatalkan.',
+      },
+    },
+  ], [accounts]);
+
+  // Mobile filters
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'accountType',
+      label: 'Tipe Akun',
+      type: 'select' as const,
+      options: [
+        { label: 'Aset', value: 'ASSET' },
+        { label: 'Liabilitas', value: 'LIABILITY' },
+        { label: 'Ekuitas', value: 'EQUITY' },
+        { label: 'Pendapatan', value: 'REVENUE' },
+        { label: 'Beban', value: 'EXPENSE' },
+      ],
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      options: [
+        { label: 'Aktif', value: 'approved' },
+        { label: 'Nonaktif', value: 'declined' },
+      ],
+    },
+  ], []);
 
   // Get icon for account type
   const getAccountTypeIcon = (type: string) => {
@@ -488,8 +557,20 @@ const ChartOfAccountsPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Accounts Table by Type */}
-      {isLoading ? (
+      {/* Accounts Table by Type / Mobile View */}
+      {isMobile ? (
+        <MobileTableView
+          data={mobileData}
+          loading={isLoading}
+          entityType="chart-of-accounts"
+          showQuickStats
+          searchable
+          searchFields={['number', 'title', 'client.company']}
+          filters={mobileFilters}
+          actions={mobileActions}
+          onRefresh={() => queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] })}
+        />
+      ) : isLoading ? (
         <Card style={{ textAlign: 'center', padding: '48px' }}>
           <Spin size="large" />
         </Card>

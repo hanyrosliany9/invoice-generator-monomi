@@ -26,24 +26,9 @@ import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { formatIDR } from '../../utils/currency'
+import type { MilestoneProgress } from '../../types/payment-milestones'
 
 dayjs.extend(relativeTime)
-
-export interface MilestoneProgress {
-  id: string
-  milestoneNumber: number
-  name: string
-  nameId?: string
-  paymentPercentage: number
-  paymentAmount: number
-  dueDate?: string
-  deliverables?: string[]
-  status: 'PENDING' | 'INVOICED' | 'PAID' | 'OVERDUE'
-  invoiceId?: string
-  invoiceNumber?: string
-  invoiceStatus?: 'DRAFT' | 'SENT' | 'PAID_OFF' | 'PENDING' | 'OVERDUE'
-  paidDate?: string
-}
 
 interface MilestoneProgressTrackerProps {
   quotationId: string

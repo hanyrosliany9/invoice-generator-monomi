@@ -29,21 +29,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 import { formatIDR } from '../../utils/currency'
-
-export interface PaymentMilestone {
-  id?: string
-  milestoneNumber: number
-  name: string
-  nameId?: string
-  description?: string
-  descriptionId?: string
-  paymentPercentage: number
-  paymentAmount: number
-  dueDate?: string
-  dueDaysFromPrev?: number
-  deliverables?: string[]
-  isInvoiced?: boolean
-}
+import type { PaymentMilestone } from '../../types/payment-milestones'
 
 interface MilestonePaymentTermsProps {
   form: any

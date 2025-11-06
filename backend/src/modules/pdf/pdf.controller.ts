@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Param,
+  Query,
   Res,
   UseGuards,
   NotFoundException,
@@ -48,7 +49,11 @@ export class PdfController {
     status: 404,
     description: "Invoice not found",
   })
-  async generateInvoicePdf(@Param("id") id: string, @Res() res: Response) {
+  async generateInvoicePdf(
+    @Param("id") id: string,
+    @Query("continuous") continuous: string = "true",
+    @Res() res: Response
+  ) {
     try {
       // Get invoice data
       const invoice = await this.invoicesService.findOne(id);
@@ -57,8 +62,11 @@ export class PdfController {
         throw new NotFoundException("Invoice tidak ditemukan");
       }
 
+      // Parse continuous parameter (default: true for digital viewing)
+      const isContinuous = continuous === "true";
+
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateInvoicePDF(invoice);
+      const pdfBuffer = await this.pdfService.generateInvoicePDF(invoice, isContinuous);
 
       // Set response headers
       res.setHeader("Content-Type", "application/pdf");
@@ -92,7 +100,11 @@ export class PdfController {
     status: 404,
     description: "Quotation not found",
   })
-  async generateQuotationPdf(@Param("id") id: string, @Res() res: Response) {
+  async generateQuotationPdf(
+    @Param("id") id: string,
+    @Query("continuous") continuous: string = "true",
+    @Res() res: Response
+  ) {
     try {
       // Get quotation data
       const quotation = await this.quotationsService.findOne(id);
@@ -101,8 +113,11 @@ export class PdfController {
         throw new NotFoundException("Quotation tidak ditemukan");
       }
 
+      // Parse continuous parameter (default: true for digital viewing)
+      const isContinuous = continuous === "true";
+
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateQuotationPDF(quotation);
+      const pdfBuffer = await this.pdfService.generateQuotationPDF(quotation, isContinuous);
 
       // Set response headers
       res.setHeader("Content-Type", "application/pdf");
@@ -128,7 +143,11 @@ export class PdfController {
     status: 200,
     description: "PDF preview generated successfully",
   })
-  async previewInvoicePdf(@Param("id") id: string, @Res() res: Response) {
+  async previewInvoicePdf(
+    @Param("id") id: string,
+    @Query("continuous") continuous: string = "true",
+    @Res() res: Response
+  ) {
     try {
       // Get invoice data
       const invoice = await this.invoicesService.findOne(id);
@@ -137,8 +156,11 @@ export class PdfController {
         throw new NotFoundException("Invoice tidak ditemukan");
       }
 
+      // Parse continuous parameter (default: true for digital viewing)
+      const isContinuous = continuous === "true";
+
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateInvoicePDF(invoice);
+      const pdfBuffer = await this.pdfService.generateInvoicePDF(invoice, isContinuous);
 
       // Set response headers for preview
       res.setHeader("Content-Type", "application/pdf");
@@ -164,7 +186,11 @@ export class PdfController {
     status: 200,
     description: "PDF preview generated successfully",
   })
-  async previewQuotationPdf(@Param("id") id: string, @Res() res: Response) {
+  async previewQuotationPdf(
+    @Param("id") id: string,
+    @Query("continuous") continuous: string = "true",
+    @Res() res: Response
+  ) {
     try {
       // Get quotation data
       const quotation = await this.quotationsService.findOne(id);
@@ -173,8 +199,11 @@ export class PdfController {
         throw new NotFoundException("Quotation tidak ditemukan");
       }
 
+      // Parse continuous parameter (default: true for digital viewing)
+      const isContinuous = continuous === "true";
+
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateQuotationPDF(quotation);
+      const pdfBuffer = await this.pdfService.generateQuotationPDF(quotation, isContinuous);
 
       // Set response headers for preview
       res.setHeader("Content-Type", "application/pdf");
@@ -208,7 +237,11 @@ export class PdfController {
     status: 404,
     description: "Project not found",
   })
-  async generateProjectPdf(@Param("id") id: string, @Res() res: Response) {
+  async generateProjectPdf(
+    @Param("id") id: string,
+    @Query("continuous") continuous: string = "true",
+    @Res() res: Response
+  ) {
     try {
       // Get project data
       const project = await this.projectsService.findOne(id);
@@ -216,6 +249,9 @@ export class PdfController {
       if (!project) {
         throw new NotFoundException("Proyek tidak ditemukan");
       }
+
+      // Parse continuous parameter (default: true for digital viewing)
+      const isContinuous = continuous === "true";
 
       // Parse estimatedExpenses JSON (same logic as frontend)
       let parsedEstimatedExpenses: any[] = [];
@@ -304,7 +340,7 @@ export class PdfController {
       };
 
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateProjectPDF(projectForPDF);
+      const pdfBuffer = await this.pdfService.generateProjectPDF(projectForPDF, isContinuous);
 
       // Set response headers
       res.setHeader("Content-Type", "application/pdf");
@@ -335,7 +371,11 @@ export class PdfController {
     status: 200,
     description: "PDF preview generated successfully",
   })
-  async previewProjectPdf(@Param("id") id: string, @Res() res: Response) {
+  async previewProjectPdf(
+    @Param("id") id: string,
+    @Query("continuous") continuous: string = "true",
+    @Res() res: Response
+  ) {
     try {
       // Get project data
       const project = await this.projectsService.findOne(id);
@@ -344,8 +384,11 @@ export class PdfController {
         throw new NotFoundException("Proyek tidak ditemukan");
       }
 
+      // Parse continuous parameter (default: true for digital viewing)
+      const isContinuous = continuous === "true";
+
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateProjectPDF(project);
+      const pdfBuffer = await this.pdfService.generateProjectPDF(project, isContinuous);
 
       // Set response headers for preview
       res.setHeader("Content-Type", "application/pdf");

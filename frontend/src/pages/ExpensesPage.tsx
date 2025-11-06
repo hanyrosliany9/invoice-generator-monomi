@@ -48,6 +48,10 @@ import { useTheme } from '../theme';
 import { CompactMetricCard } from '../components/ui/CompactMetricCard';
 import { formatDate } from '../utils/dateFormatters';
 import dayjs from 'dayjs';
+import { useIsMobile } from '../hooks/useMediaQuery';
+import MobileTableView from '../components/mobile/MobileTableView';
+import { expenseToBusinessEntity } from '../adapters/mobileTableAdapters';
+import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -59,6 +63,7 @@ export const ExpensesPage: React.FC = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { message, modal } = App.useApp();
+  const isMobile = useIsMobile();
 
   // State
   const [searchText, setSearchText] = useState('');
@@ -110,19 +115,13 @@ export const ExpensesPage: React.FC = () => {
   const expenses = expensesData?.data || [];
   const meta = expensesData?.meta || { total: 0, page: 1, limit: 20, totalPages: 0 };
 
-  // Navigation
-  const handleCreate = useCallback(() => {
-    navigate('/expenses/new');
-  }, [navigate]);
+  // Mobile data adapter
+  const mobileData = useMemo(() =>
+    expenses.map(expenseToBusinessEntity),
+    [expenses]
+  );
 
-  const handleView = useCallback((expense: Expense) => {
-    navigate(`/expenses/${expense.id}`);
-  }, [navigate]);
-
-  const handleEdit = useCallback((expense: Expense) => {
-    navigate(`/expenses/${expense.id}/edit`);
-  }, [navigate]);
-
+  // Handler function (defined before mobileActions to avoid TDZ errors)
   const handleDelete = useCallback((id: string) => {
     modal.confirm({
       title: 'Konfirmasi Hapus',
@@ -136,11 +135,65 @@ export const ExpensesPage: React.FC = () => {
           message.success('Expense berhasil dihapus');
           queryClient.invalidateQueries({ queryKey: ['expenses'] });
         } catch (error: any) {
-          message.error(`Gagal menghapus expense: ${error.message}`);
+          message.error(`Gagal menghapus expense: ${error.message || 'Unknown error'}`);
         }
       },
     });
-  }, [modal, message, queryClient]);
+  }, [message, queryClient, modal]);
+
+  // Mobile actions
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail',
+      icon: <EyeOutlined />,
+      onClick: (record) => navigate(`/expenses/${record.id}`),
+    },
+    {
+      key: 'edit',
+      label: 'Edit',
+      icon: <EditOutlined />,
+      color: '#1890ff',
+      onClick: (record) => navigate(`/expenses/${record.id}/edit`),
+      visible: (record) => record.status === 'draft',
+    },
+    {
+      key: 'delete',
+      label: 'Hapus',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: (record) => handleDelete(record.id),
+      visible: (record) => record.status === 'draft',
+    },
+  ], [navigate, handleDelete]);
+
+  // Mobile filters
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      options: [
+        { label: 'Draft', value: 'draft' },
+        { label: 'Diajukan', value: 'sent' },
+        { label: 'Disetujui', value: 'approved' },
+        { label: 'Ditolak', value: 'declined' },
+      ],
+    },
+  ], []);
+
+  // Navigation
+  const handleCreate = useCallback(() => {
+    navigate('/expenses/new');
+  }, [navigate]);
+
+  const handleView = useCallback((expense: Expense) => {
+    navigate(`/expenses/${expense.id}`);
+  }, [navigate]);
+
+  const handleEdit = useCallback((expense: Expense) => {
+    navigate(`/expenses/${expense.id}/edit`);
+  }, [navigate]);
 
   const handleSubmit = useCallback((expense: Expense) => {
     modal.confirm({
@@ -600,35 +653,49 @@ export const ExpensesPage: React.FC = () => {
         />
       )}
 
-      {/* Main Table */}
-      <Card
-        style={{
-          borderRadius: '12px',
-          border: theme.colors.glass.border,
-          boxShadow: theme.colors.glass.shadow,
-          background: theme.colors.glass.background,
-          backdropFilter: theme.colors.glass.backdropFilter,
-        }}
-      >
-        <div style={{ overflowX: 'auto' }}>
-          <Table
-            columns={columns}
-            dataSource={expenses}
-            loading={isLoading}
-            rowKey='id'
-            rowSelection={rowSelection}
-            pagination={{
-              current: meta.page,
-              pageSize: meta.limit,
-              total: meta.total,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} expense`,
-            }}
-            scroll={{ x: 1200 }}
-          />
-        </div>
-      </Card>
+      {/* Main Table / Mobile View */}
+      {isMobile ? (
+        <MobileTableView
+          data={mobileData}
+          loading={isLoading}
+          entityType="expenses"
+          showQuickStats
+          searchable
+          searchFields={['number', 'title', 'client.name']}
+          filters={mobileFilters}
+          actions={mobileActions}
+          onRefresh={handleRefresh}
+        />
+      ) : (
+        <Card
+          style={{
+            borderRadius: '12px',
+            border: theme.colors.glass.border,
+            boxShadow: theme.colors.glass.shadow,
+            background: theme.colors.glass.background,
+            backdropFilter: theme.colors.glass.backdropFilter,
+          }}
+        >
+          <div style={{ overflowX: 'auto' }}>
+            <Table
+              columns={columns}
+              dataSource={expenses}
+              loading={isLoading}
+              rowKey='id'
+              rowSelection={rowSelection}
+              pagination={{
+                current: meta.page,
+                pageSize: meta.limit,
+                total: meta.total,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} expense`,
+              }}
+              scroll={{ x: 1200 }}
+            />
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

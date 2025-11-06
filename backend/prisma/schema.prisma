@@ -331,6 +331,7 @@ model Invoice {
   allowances            AllowanceForDoubtfulAccounts[]
   deferredRevenues      DeferredRevenue[] // PSAK 72: Deferred revenue entries
 
+  @@unique([paymentMilestoneId])
   @@index([invoiceNumber])
   @@index([status])
   @@index([clientId])

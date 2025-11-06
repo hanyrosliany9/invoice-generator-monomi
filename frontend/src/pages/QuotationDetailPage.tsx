@@ -13,6 +13,7 @@ import {
   Progress,
   Result,
   Row,
+  Segmented,
   Space,
   Statistic,
   Tabs,
@@ -31,6 +32,7 @@ import {
   ExportOutlined,
   FilePdfOutlined,
   FileTextOutlined,
+  PrinterOutlined,
   ProjectOutlined,
   SendOutlined,
   SyncOutlined,
@@ -44,6 +46,9 @@ import { useTranslation } from 'react-i18next'
 import { formatIDR, safeNumber, safeString } from '../utils/currency'
 import { Quotation, quotationService } from '../services/quotations'
 import { FileUpload } from '../components/documents/FileUpload'
+import { MilestoneProgress } from '../components/invoices/MilestoneProgress'
+import { usePaymentMilestones, useGenerateMilestoneInvoice } from '../hooks/usePaymentMilestones'
+import { useTheme } from '../theme'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
@@ -57,9 +62,12 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { theme } = useTheme()
   const queryClient = useQueryClient()
   const [pdfModalVisible, setPdfModalVisible] = useState(false)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [pdfMode, setPdfMode] = useState<'continuous' | 'paginated'>('continuous')
+  const [creatingInvoiceForMilestone, setCreatingInvoiceForMilestone] = useState<string | null>(null)
 
   // Documents query for FileUpload component
   const {
@@ -111,8 +119,40 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
     },
   })
 
+  // Fetch payment milestones for this quotation
+  const { data: paymentMilestones = [] } = usePaymentMilestones(id!)
+
+  // Generate milestone invoice mutation
+  const generateMilestoneInvoiceMutation = useGenerateMilestoneInvoice()
+
   const handleBack = () => {
     navigate('/quotations')
+  }
+
+  const handleGenerateMilestoneInvoice = async (milestoneId: string) => {
+    if (!id) return
+
+    setCreatingInvoiceForMilestone(milestoneId)
+    try {
+      const invoice = await generateMilestoneInvoiceMutation.mutateAsync({
+        quotationId: id,
+        milestoneId,
+      })
+      Modal.success({
+        title: 'Invoice Milestone Berhasil Dibuat',
+        content: `Invoice ${invoice.invoiceNumber} berhasil dibuat untuk milestone ini.`,
+        onOk: () => navigate(`/invoices/${invoice.id}`),
+      })
+      queryClient.invalidateQueries({ queryKey: ['paymentMilestones', id] })
+      queryClient.invalidateQueries({ queryKey: ['quotation', id] })
+    } catch (error: any) {
+      Modal.error({
+        title: 'Gagal Membuat Invoice',
+        content: error.message || 'Terjadi kesalahan saat membuat invoice milestone.',
+      })
+    } finally {
+      setCreatingInvoiceForMilestone(null)
+    }
   }
 
   const handleEdit = () => {
@@ -246,11 +286,17 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
     }
   }
 
-  const handlePdfPreview = async () => {
+  const handlePdfPreview = async (mode?: 'continuous' | 'paginated') => {
+    // Check if mode is actually a mode string (not a MouseEvent from onClick)
+    const targetMode = (typeof mode === 'string' ? mode : undefined) ?? 'continuous'
+    setPdfMode(targetMode)
+
     setPdfLoading(true)
     setPdfModalVisible(true)
+
     try {
-      const blob = await quotationService.previewQuotationPDF(id!)
+      const isContinuous = targetMode === 'continuous'
+      const blob = await quotationService.previewQuotationPDF(id!, isContinuous)
       const url = URL.createObjectURL(blob)
       setPdfUrl(url)
     } catch (error) {
@@ -411,8 +457,8 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
                   onClick={handleGenerateInvoice}
                   aria-label='Generate invoice'
                   style={{
-                    backgroundColor: '#52c41a',
-                    borderColor: '#52c41a',
+                    backgroundColor: theme.colors.status.success,
+                    borderColor: theme.colors.status.success,
                     color: 'white',
                   }}
                 >
@@ -478,7 +524,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
                   {validityStatus.status === 'expired' && (
                     <Badge
                       count='EXPIRED'
-                      style={{ backgroundColor: '#ff4d4f', marginLeft: '8px' }}
+                      style={{ backgroundColor: theme.colors.status.error, marginLeft: '8px' }}
                     />
                   )}
                 </div>
@@ -520,7 +566,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
               value={quotation.totalAmount}
               formatter={value => formatIDR(Number(value))}
               prefix={<DollarOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              valueStyle={{ color: theme.colors.accent.primary }}
             />
           </Card>
         </Col>
@@ -532,7 +578,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
               value={quotation.amountPerProject}
               formatter={value => formatIDR(Number(value))}
               prefix={<ProjectOutlined />}
-              valueStyle={{ color: '#52c41a' }}
+              valueStyle={{ color: theme.colors.status.success }}
             />
           </Card>
         </Col>
@@ -549,10 +595,10 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
               valueStyle={{
                 color:
                   validityStatus.status === 'expired'
-                    ? '#ff4d4f'
+                    ? theme.colors.status.error
                     : validityStatus.status === 'expiring'
-                      ? '#faad14'
-                      : '#52c41a',
+                      ? theme.colors.status.warning
+                      : theme.colors.status.success,
               }}
             />
           </Card>
@@ -564,11 +610,22 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
               title='Related Invoices'
               value={quotation.invoices?.length || 0}
               prefix={<FileTextOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              valueStyle={{ color: theme.colors.accent.primary }}
             />
           </Card>
         </Col>
       </Row>
+
+      {/* Payment Milestones Section (if quotation has milestones) */}
+      {paymentMilestones.length > 0 && (
+        <Card title="Payment Milestones" style={{ marginBottom: '24px' }}>
+          <MilestoneProgress
+            quotationId={id!}
+            onCreateInvoice={handleGenerateMilestoneInvoice}
+            creatingInvoiceForMilestone={creatingInvoiceForMilestone}
+          />
+        </Card>
+      )}
 
       {/* Detailed Sections - Tabbed Interface */}
       <Card>
@@ -782,6 +839,34 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
         styles={{ body: { height: '85vh', padding: 0 } }}
         centered
         footer={[
+          <Segmented
+            key='mode-toggle'
+            value={pdfMode}
+            onChange={(value) => {
+              const newMode = value as 'continuous' | 'paginated'
+              setPdfMode(newMode)
+              // Regenerate PDF with new mode
+              if (pdfUrl) {
+                URL.revokeObjectURL(pdfUrl)
+                setPdfUrl(null)
+              }
+              // Pass the new mode directly to avoid React state timing issues
+              handlePdfPreview(newMode)
+            }}
+            options={[
+              {
+                label: 'Digital View',
+                value: 'continuous',
+                icon: <FileTextOutlined />,
+              },
+              {
+                label: 'Print Ready',
+                value: 'paginated',
+                icon: <PrinterOutlined />,
+              },
+            ]}
+            style={{ marginRight: 'auto' }}
+          />,
           <Button key='close' onClick={() => {
             setPdfModalVisible(false)
             if (pdfUrl) {
@@ -791,13 +876,14 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
           }}>
             Close
           </Button>,
-          <Button 
-            key='download' 
-            type='primary' 
+          <Button
+            key='download'
+            type='primary'
             icon={<ExportOutlined />}
             onClick={async () => {
               try {
-                const blob = await quotationService.downloadQuotationPDF(id!)
+                const isContinuous = pdfMode === 'continuous'
+                const blob = await quotationService.downloadQuotationPDF(id!, isContinuous)
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
@@ -820,7 +906,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
       >
         {pdfLoading ? (
           <div style={{ textAlign: 'center', padding: '64px' }}>
-            <SyncOutlined spin style={{ fontSize: '48px', color: '#1890ff' }} />
+            <SyncOutlined spin style={{ fontSize: '48px', color: theme.colors.accent.primary }} />
             <Title level={4} type='secondary' style={{ marginTop: '16px' }}>
               Loading PDF...
             </Title>
@@ -838,7 +924,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
           />
         ) : (
           <div style={{ textAlign: 'center', padding: '40px' }}>
-            <FilePdfOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
+            <FilePdfOutlined style={{ fontSize: '64px', color: theme.colors.border.default }} />
             <Title level={4} type='secondary'>
               PDF Preview
             </Title>

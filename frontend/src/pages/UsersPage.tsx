@@ -36,6 +36,10 @@ import { User, UserRole } from '../types/user'
 import { userService } from '../services/users'
 import { CompactMetricCard } from '../components/ui/CompactMetricCard'
 import { formatDate } from '../utils/dateFormatters'
+import { useIsMobile } from '../hooks/useMediaQuery'
+import MobileTableView from '../components/mobile/MobileTableView'
+import { userToBusinessEntity } from '../adapters/mobileTableAdapters'
+import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -44,6 +48,7 @@ export const UsersPage: React.FC = () => {
   const { message } = App.useApp()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const {
     canManageUsers,
     getRoleDisplayName,
@@ -197,6 +202,48 @@ export const UsersPage: React.FC = () => {
     return matchesSearch && matchesRole && matchesStatus
   })
 
+  // Mobile data adapter
+  const mobileData = React.useMemo(() =>
+    filteredUsers.map(userToBusinessEntity),
+    [filteredUsers]
+  )
+
+  // Handler function (defined before mobileActions to avoid TDZ errors)
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id)
+  }
+
+  // Mobile actions
+  const mobileActions: MobileTableAction[] = React.useMemo(() => [
+    {
+      key: 'edit',
+      label: 'Edit',
+      icon: <EditOutlined />,
+      color: '#1890ff',
+      onClick: (record) => navigate(`/users/${record.id}/edit`),
+    },
+    {
+      key: 'delete',
+      label: 'Hapus',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: (record) => handleDelete(record.id),
+    },
+  ], [navigate, handleDelete])
+
+  // Mobile filters
+  const mobileFilters: MobileFilterConfig[] = React.useMemo(() => [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      options: [
+        { label: 'Aktif', value: 'approved' },
+        { label: 'Nonaktif', value: 'declined' },
+      ],
+    },
+  ], [])
+
   // Handlers
   const handleCreate = () => {
     navigate('/users/new')
@@ -204,10 +251,6 @@ export const UsersPage: React.FC = () => {
 
   const handleEdit = (user: User) => {
     navigate(`/users/${user.id}/edit`)
-  }
-
-  const handleDelete = (id: string) => {
-    deleteMutation.mutate(id)
   }
 
   const handleToggleActive = (user: User) => {
@@ -541,27 +584,41 @@ export const UsersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Table */}
-      <Card>
-        <div style={{ overflowX: 'auto' }}>
-          <Table
-            columns={columns}
-            dataSource={filteredUsers}
-            loading={isLoading}
-            rowKey='id'
-            rowSelection={rowSelection}
-            pagination={{
-              total: filteredUsers.length,
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} of ${total} users`,
-            }}
-            scroll={{ x: 1200 }}
-          />
-        </div>
-      </Card>
+      {/* Main Table / Mobile View */}
+      {isMobile ? (
+        <MobileTableView
+          data={mobileData}
+          loading={isLoading}
+          entityType="users"
+          showQuickStats
+          searchable
+          searchFields={['title', 'client.email']}
+          filters={mobileFilters}
+          actions={mobileActions}
+          onRefresh={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
+        />
+      ) : (
+        <Card>
+          <div style={{ overflowX: 'auto' }}>
+            <Table
+              columns={columns}
+              dataSource={filteredUsers}
+              loading={isLoading}
+              rowKey='id'
+              rowSelection={rowSelection}
+              pagination={{
+                total: filteredUsers.length,
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} of ${total} users`,
+              }}
+              scroll={{ x: 1200 }}
+            />
+          </div>
+        </Card>
+      )}
     </div>
   )
 }

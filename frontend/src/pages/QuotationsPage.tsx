@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   App,
@@ -40,6 +40,7 @@ import {
   SearchOutlined,
   SendOutlined,
   SyncOutlined,
+  WhatsAppOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -64,6 +65,10 @@ import { useTheme } from '../theme'
 import { CompactMetricCard } from '../components/ui/CompactMetricCard'
 import { usePermissions } from '../hooks/usePermissions'
 import dayjs from 'dayjs'
+import { useIsMobile } from '../hooks/useMediaQuery'
+import MobileTableView from '../components/mobile/MobileTableView'
+import { quotationToBusinessEntity } from '../adapters/mobileTableAdapters'
+import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -83,6 +88,7 @@ export const QuotationsPage: React.FC = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const isMobile = useIsMobile()
 
   const [filters, setFilters] = useState<Record<string, any>>({})
   const [modalVisible, setModalVisible] = useState(false)
@@ -285,7 +291,7 @@ export const QuotationsPage: React.FC = () => {
     // Search filter (client-side for full-text search)
     const searchText = filters.search || ''
     const searchLower = safeString(searchText).toLowerCase()
-    const matchesSearch = !searchText || 
+    const matchesSearch = !searchText ||
       safeString(quotation?.quotationNumber)
         .toLowerCase()
         .includes(searchLower) ||
@@ -296,21 +302,182 @@ export const QuotationsPage: React.FC = () => {
       safeString(quotation?.project?.description)
         .toLowerCase()
         .includes(searchLower)
-    
+
     // Amount filter (client-side since API doesn't support amount range yet)
     const amountFilter = filters.amount
     const quotationAmount = safeNumber(quotation?.totalAmount)
-    const matchesAmount = !amountFilter || 
+    const matchesAmount = !amountFilter ||
       (!amountFilter[0] || quotationAmount >= amountFilter[0]) &&
       (!amountFilter[1] || quotationAmount <= amountFilter[1])
-    
+
     // Client filter (from URL params)
     const matchesClient =
       !filteredByClient || quotation?.clientId === filteredByClient
-    
+
     // Note: status and monthYear filters are now handled server-side via API
     return matchesSearch && matchesAmount && matchesClient
   })
+
+  // Handler functions (defined before mobile actions to avoid hook order issues)
+  const handleView = useCallback((quotation: Quotation) => {
+    navigate(`/quotations/${quotation.id}`)
+  }, [navigate])
+
+  const handleEdit = useCallback((quotation: Quotation) => {
+    navigate(`/quotations/${quotation.id}/edit`)
+  }, [navigate])
+
+  const handleDelete = useCallback((id: string) => {
+    deleteMutation.mutate(id)
+  }, [deleteMutation])
+
+  const handleStatusChange = useCallback((quotation: Quotation, newStatus: string) => {
+    statusMutation.mutate({ id: quotation.id, status: newStatus })
+  }, [statusMutation])
+
+  const handleGenerateInvoice = useCallback((quotation: Quotation) => {
+    if (quotation.status !== 'APPROVED') {
+      message.error('Hanya quotation yang disetujui dapat dijadikan invoice')
+      return
+    }
+    invoiceMutation.mutate(quotation.id)
+  }, [invoiceMutation, message])
+
+  const handlePrintQuotation = useCallback(async (quotation: Quotation) => {
+    try {
+      message.loading({ content: 'Mengunduh PDF quotation...', key: 'pdf' })
+      const blob = await quotationService.downloadQuotationPDF(quotation.id)
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Quotation-${quotation.quotationNumber}.pdf`
+      document.body.appendChild(link)
+      link.click()
+
+      // Cleanup
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+
+      message.success({ content: 'PDF quotation berhasil diunduh', key: 'pdf' })
+    } catch (error) {
+      console.error('Error downloading quotation PDF:', error)
+      message.error({ content: 'Gagal mengunduh PDF quotation', key: 'pdf' })
+    }
+  }, [message])
+
+  // Mobile data adapter - convert quotations to BusinessEntity format
+  const mobileData = useMemo(
+    () => filteredQuotations.map(quotationToBusinessEntity),
+    [filteredQuotations]
+  )
+
+  // Mobile actions configuration - quotation-specific actions only
+  // Note: 'view', 'edit', 'whatsapp' are provided by MobileTableView defaults
+  const mobileActions = useMemo<MobileTableAction[]>(
+    () => [
+      {
+        key: 'send',
+        label: 'Kirim',
+        icon: <SendOutlined />,
+        color: theme.colors.accent.primary,
+        onClick: (record) => {
+          const quotation = quotations.find(q => q.id === record.id)
+          if (quotation) {
+            handleStatusChange(quotation, 'SENT')
+          }
+        },
+        visible: (record) => record.status === 'draft',
+      },
+      {
+        key: 'approve',
+        label: 'Setujui',
+        icon: <CheckCircleOutlined />,
+        color: theme.colors.status.success,
+        onClick: (record) => {
+          const quotation = quotations.find(q => q.id === record.id)
+          if (quotation && canApproveFinancial()) {
+            handleStatusChange(quotation, 'APPROVED')
+          }
+        },
+        visible: (record) => record.status === 'sent' && canApproveFinancial(),
+      },
+      {
+        key: 'decline',
+        label: 'Tolak',
+        icon: <CloseCircleOutlined />,
+        danger: true,
+        onClick: (record) => {
+          const quotation = quotations.find(q => q.id === record.id)
+          if (quotation && canApproveFinancial()) {
+            handleStatusChange(quotation, 'DECLINED')
+          }
+        },
+        visible: (record) => record.status === 'sent' && canApproveFinancial(),
+      },
+      {
+        key: 'create-invoice',
+        label: 'Buat Invoice',
+        icon: <FileAddOutlined />,
+        color: theme.colors.accent.primary,
+        onClick: (record) => {
+          const quotation = quotations.find(q => q.id === record.id)
+          if (quotation) {
+            handleGenerateInvoice(quotation)
+          }
+        },
+        visible: (record) => record.status === 'approved',
+      },
+      {
+        key: 'print',
+        label: 'Print',
+        icon: <PrinterOutlined />,
+        onClick: (record) => {
+          const quotation = quotations.find(q => q.id === record.id)
+          if (quotation) {
+            handlePrintQuotation(quotation)
+          }
+        },
+      },
+      {
+        key: 'delete',
+        label: 'Hapus',
+        icon: <DeleteOutlined />,
+        danger: true,
+        onClick: (record) => handleDelete(record.id),
+        visible: (record) => record.status === 'draft',
+      },
+    ],
+    [
+      navigate,
+      theme,
+      quotations,
+      handleStatusChange,
+      handleGenerateInvoice,
+      handlePrintQuotation,
+      handleDelete,
+      canApproveFinancial,
+    ]
+  )
+
+  // Mobile filters configuration
+  const mobileFilters = useMemo<MobileFilterConfig[]>(
+    () => [
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        options: [
+          { label: 'Draft', value: 'draft' },
+          { label: 'Terkirim', value: 'sent' },
+          { label: 'Disetujui', value: 'approved' },
+          { label: 'Ditolak', value: 'declined' },
+        ],
+      },
+    ],
+    []
+  )
 
   // Statistics
   const safeQuotations = safeArray(quotations)
@@ -366,25 +533,9 @@ export const QuotationsPage: React.FC = () => {
     [navigate]
   )
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     navigate('/quotations/new')
-  }
-
-  const handleEdit = (quotation: Quotation) => {
-    navigate(`/quotations/${quotation.id}/edit`)
-  }
-
-  const handleView = (quotation: Quotation) => {
-    navigate(`/quotations/${quotation.id}`)
-  }
-
-  const handleDelete = (id: string) => {
-    deleteMutation.mutate(id)
-  }
-
-  const handleStatusChange = (quotation: Quotation, newStatus: string) => {
-    statusMutation.mutate({ id: quotation.id, status: newStatus })
-  }
+  }, [navigate])
 
   const handleOpenStatusModal = (quotation: Quotation) => {
     setStatusQuotation(quotation)
@@ -414,14 +565,6 @@ export const QuotationsPage: React.FC = () => {
     setStatusModalVisible(false)
     setStatusQuotation(null)
     statusForm.resetFields()
-  }
-
-  const handleGenerateInvoice = (quotation: Quotation) => {
-    if (quotation.status !== 'APPROVED') {
-      message.error('Hanya quotation yang disetujui dapat dijadikan invoice')
-      return
-    }
-    invoiceMutation.mutate(quotation.id)
   }
 
   const handleClientChange = (clientId: string) => {
@@ -577,30 +720,6 @@ export const QuotationsPage: React.FC = () => {
     }),
   }
 
-  const handlePrintQuotation = async (quotation: Quotation) => {
-    try {
-      message.loading({ content: 'Mengunduh PDF quotation...', key: 'pdf' })
-      const blob = await quotationService.downloadQuotationPDF(quotation.id)
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `Quotation-${quotation.quotationNumber}.pdf`
-      document.body.appendChild(link)
-      link.click()
-
-      // Cleanup
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(link)
-
-      message.success({ content: 'PDF quotation berhasil diunduh', key: 'pdf' })
-    } catch (error) {
-      console.error('Error downloading quotation PDF:', error)
-      message.error({ content: 'Gagal mengunduh PDF quotation', key: 'pdf' })
-    }
-  }
-
   const handlePreviewPDF = async (quotation: Quotation) => {
     try {
       message.loading({ content: 'Memuat preview PDF...', key: 'preview' })
@@ -662,7 +781,7 @@ export const QuotationsPage: React.FC = () => {
     }
   }
 
-  const getActionMenuItems = (quotation: Quotation) => {
+  const getActionMenuItems = useCallback((quotation: Quotation) => {
     const items: NonNullable<MenuProps['items']> = [
       {
         key: 'edit',
@@ -759,11 +878,12 @@ export const QuotationsPage: React.FC = () => {
     })
 
     return items
-  }
+  }, [handleEdit, handlePrintQuotation, handlePreviewPDF, navigate, handleStatusChange, canApproveFinancial, handleGenerateInvoice, handleDelete])
 
-  const columns: any = [
+  const columns = useMemo(() => [
     {
-      title: 'Nomor',
+      title: 'Nomor Quotation',
+      dataIndex: 'quotationNumber',
       key: 'quotationNumber',
       render: (_: any, quotation: Quotation) => (
         <Button
@@ -777,7 +897,6 @@ export const QuotationsPage: React.FC = () => {
       ),
       sorter: (a: Quotation, b: Quotation) =>
         a.quotationNumber.localeCompare(b.quotationNumber),
-      responsive: ['xs'] as any,
     },
     {
       title: 'Klien',
@@ -931,7 +1050,7 @@ export const QuotationsPage: React.FC = () => {
         </div>
       ),
     },
-  ]
+  ], [handleView, handleEdit, navigateToClient, navigateToProject, getActionMenuItems])
 
   return (
     <div>
@@ -1271,32 +1390,56 @@ export const QuotationsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Main Table */}
-      <Card
-        style={{
-          borderRadius: '12px',
-          border: theme.colors.glass.border,
-          boxShadow: theme.colors.glass.shadow,
-          background: theme.colors.glass.background,
-          backdropFilter: theme.colors.glass.backdropFilter,
-        }}
-      >
-        <Table
-          columns={columns}
-          dataSource={filteredQuotations}
+      {/* Main Table / Mobile View */}
+      {isMobile ? (
+        <MobileTableView
+          data={mobileData}
           loading={isLoading}
-          rowKey='id'
-          rowSelection={rowSelection}
-          pagination={{
-            total: filteredQuotations.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} dari ${total} quotation`,
+          entityType="quotations"
+          enableWhatsAppActions
+          showMateraiIndicators
+          showQuickStats
+          searchable
+          searchFields={['number', 'title', 'client.name']}
+          filters={mobileFilters}
+          actions={mobileActions}
+          onAction={(action, record) => {
+            if (action === 'view') {
+              navigate(`/quotations/${record.id}`)
+            } else if (action === 'edit') {
+              navigate(`/quotations/${record.id}/edit`)
+            }
           }}
+          onRefresh={() => queryClient.invalidateQueries({ queryKey: ['quotations'] })}
         />
-      </Card>
+      ) : (
+        <Card
+          style={{
+            borderRadius: '12px',
+            border: theme.colors.glass.border,
+            boxShadow: theme.colors.glass.shadow,
+            background: theme.colors.glass.background,
+            backdropFilter: theme.colors.glass.backdropFilter,
+          }}
+        >
+          <Table
+            columns={columns}
+            dataSource={filteredQuotations}
+            loading={isLoading}
+            rowKey='id'
+            rowSelection={rowSelection}
+            pagination={{
+              total: filteredQuotations.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} dari ${total} quotation`,
+            }}
+            scroll={{ x: 1200 }}
+          />
+        </Card>
+      )}
 
       {/* Create/Edit Modal */}
       <Modal

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -41,6 +41,10 @@ import {
   reverseJournalEntry,
 } from '../../services/accounting';
 import { useTheme } from '../../theme';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import { journalEntryToBusinessEntity } from '../../adapters/mobileTableAdapters';
+import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -58,6 +62,7 @@ const JournalEntriesPage: React.FC = () => {
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [detailsVisible, setDetailsVisible] = useState(false);
+  const isMobile = useIsMobile();
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -85,6 +90,79 @@ const JournalEntriesPage: React.FC = () => {
 
   const entries = data?.data || [];
   const pagination = data?.pagination;
+
+  // Mobile data adapter
+  const mobileData = useMemo(() =>
+    entries.map(journalEntryToBusinessEntity),
+    [entries]
+  );
+
+  // Mobile actions
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail',
+      icon: <EyeOutlined />,
+      onClick: (record) => {
+        const entry = entries.find((e) => e.id === record.id);
+        if (entry) showDetails(entry);
+      },
+    },
+    {
+      key: 'edit',
+      label: 'Edit',
+      icon: <EditOutlined />,
+      color: '#1890ff',
+      onClick: (record) => navigate(`/accounting/journal-entries/${record.id}/edit`),
+      visible: (record) => record.status === 'draft',
+    },
+    {
+      key: 'post',
+      label: 'Post ke Buku Besar',
+      icon: <CheckCircleOutlined />,
+      color: '#52c41a',
+      onClick: (record) => postMutation.mutate(record.id),
+      visible: (record) => record.status === 'draft',
+      confirm: {
+        title: 'Post jurnal entry?',
+        description: 'Entry yang sudah diposting tidak dapat diedit lagi.',
+      },
+    },
+    {
+      key: 'reverse',
+      label: 'Buat Entry Pembalik',
+      icon: <SwapOutlined />,
+      color: '#faad14',
+      onClick: (record) => reverseMutation.mutate(record.id),
+      visible: (record) => record.status === 'approved',
+    },
+    {
+      key: 'delete',
+      label: 'Hapus',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: (record) => deleteMutation.mutate(record.id),
+      visible: (record) => record.status === 'draft',
+      confirm: {
+        title: 'Hapus jurnal entry?',
+        description: 'Aksi ini tidak dapat dibatalkan.',
+      },
+    },
+  ], [entries, navigate]);
+
+  // Mobile filters
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      options: [
+        { label: 'Draft', value: 'draft' },
+        { label: 'Posted', value: 'approved' },
+        { label: 'Reversed', value: 'declined' },
+      ],
+    },
+  ], []);
 
   // Mutations
   const postMutation = useMutation({
@@ -443,7 +521,19 @@ const JournalEntriesPage: React.FC = () => {
           borderColor: theme.colors.border.default,
         }}
       >
-        {isLoading ? (
+        {isMobile ? (
+          <MobileTableView
+            data={mobileData}
+            loading={isLoading}
+            entityType="journal-entries"
+            showQuickStats
+            searchable
+            searchFields={['number', 'title', 'client.name']}
+            filters={mobileFilters}
+            actions={mobileActions}
+            onRefresh={() => queryClient.invalidateQueries({ queryKey: ['journal-entries'] })}
+          />
+        ) : isLoading ? (
           <div style={{ textAlign: 'center', padding: '48px' }}>
             <Spin size="large" />
           </div>

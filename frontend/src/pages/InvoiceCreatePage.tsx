@@ -40,14 +40,17 @@ import {
   PreviewPanel,
   ProgressiveSection,
 } from '../components/forms'
+import { MilestoneSelector } from '../components/invoices'
 import { useOptimizedAutoSave } from '../hooks/useOptimizedAutoSave'
 import { useMobileOptimized } from '../hooks/useMobileOptimized'
+import { usePaymentMilestones } from '../hooks/usePaymentMilestones'
 import { CreateInvoiceRequest, invoiceService } from '../services/invoices'
 import { quotationService } from '../services/quotations'
 import { projectService } from '../services/projects'
 import { clientService } from '../services/clients'
 import { formatIDR } from '../utils/currency'
 import { useTheme } from '../theme'
+import type { PaymentMilestone } from '../types/payment-milestones'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -75,6 +78,7 @@ export const InvoiceCreatePage: React.FC = () => {
   const [searchParams] = useSearchParams()
   const [previewData, setPreviewData] = useState<any>(null)
   const [includePPN, setIncludePPN] = useState(true)
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null)
 
   // Mobile optimization
   const mobile = useMobileOptimized()
@@ -126,6 +130,11 @@ export const InvoiceCreatePage: React.FC = () => {
     queryFn: () => quotationService.getQuotation(prefilledQuotationId!),
     enabled: !!prefilledQuotationId,
   })
+
+  // Fetch milestones for selected quotation
+  const { data: quotationMilestones = [] } = usePaymentMilestones(
+    form.getFieldValue('quotationId') || prefilledQuotationId || ''
+  )
 
   // Create invoice mutation
   const createInvoiceMutation = useMutation({
@@ -237,10 +246,36 @@ Reference: Quotation ${quotation.quotationNumber}
     }
   }
 
+  // Handle milestone selection
+  const handleMilestoneSelect = (milestoneId: string, milestone: PaymentMilestone) => {
+    setSelectedMilestoneId(milestoneId)
+
+    // Auto-populate form fields from milestone
+    form.setFieldsValue({
+      totalAmount: Number(milestone.paymentAmount),
+      amountPerProject: Number(milestone.paymentAmount),
+      dueDate: milestone.dueDate ? dayjs(milestone.dueDate) : undefined,
+    })
+
+    // Show materai warning if needed
+    if (Number(milestone.paymentAmount) > 5000000) {
+      message.warning({
+        content: 'Invoice ini memerlukan materai (> 5 juta IDR)',
+        duration: 5,
+      })
+    }
+  }
+
   const handleSubmit = async (values: InvoiceFormData) => {
     // Wait for pending auto-save before submitting
     if (autoSave.isSaving) {
       await autoSave.forceSave(values)
+    }
+
+    // Validate milestone selection for milestone-based quotations
+    if (quotationMilestones.length > 0 && !selectedMilestoneId) {
+      message.error('Silakan pilih payment milestone terlebih dahulu')
+      return
     }
 
     // Validate quotation status if quotation is selected
@@ -258,6 +293,7 @@ Reference: Quotation ${quotation.quotationNumber}
       clientId: values.clientId,
       projectId: values.projectId,
       quotationId: values.quotationId,
+      paymentMilestoneId: selectedMilestoneId || undefined,
       amountPerProject: values.amountPerProject,
       totalAmount: values.totalAmount,
       scopeOfWork: values.scopeOfWork,
@@ -279,6 +315,12 @@ Reference: Quotation ${quotation.quotationNumber}
         await autoSave.forceSave(values)
       }
 
+      // Validate milestone selection for milestone-based quotations
+      if (quotationMilestones.length > 0 && !selectedMilestoneId) {
+        message.error('Silakan pilih payment milestone terlebih dahulu')
+        return
+      }
+
       // Validate quotation status if quotation is selected
       if (values.quotationId && selectedQuotation) {
         if (selectedQuotation.status !== 'APPROVED') {
@@ -294,6 +336,7 @@ Reference: Quotation ${quotation.quotationNumber}
         clientId: values.clientId,
         projectId: values.projectId,
         quotationId: values.quotationId,
+        paymentMilestoneId: selectedMilestoneId || undefined,
         amountPerProject: values.amountPerProject,
         totalAmount: values.totalAmount,
         scopeOfWork: values.scopeOfWork,
@@ -426,7 +469,7 @@ Reference: Quotation ${quotation.quotationNumber}
                 value: totalAmount,
                 format: 'currency',
                 icon: <DollarOutlined />,
-                color: '#52c41a',
+                color: theme.colors.status.success,
               },
               {
                 label: 'Days to Due',
@@ -435,17 +478,17 @@ Reference: Quotation ${quotation.quotationNumber}
                 icon: <CalendarOutlined />,
                 color:
                   daysToDue > 15
-                    ? '#1890ff'
+                    ? theme.colors.accent.primary
                     : daysToDue > 7
-                      ? '#faad14'
-                      : '#ff4d4f',
+                      ? theme.colors.status.warning
+                      : theme.colors.status.error,
               },
               ...(includePPN ? [{
                 label: 'Tax (PPN 11%)',
                 value: totalAmount * 0.11,
                 format: 'currency' as const,
                 icon: <BankOutlined />,
-                color: '#1890ff',
+                color: theme.colors.accent.primary,
               }] : []),
             ]}
             layout='vertical'
@@ -527,7 +570,7 @@ Reference: Quotation ${quotation.quotationNumber}
                       {selectedQuotation.status}
                     </Tag>
                     {selectedQuotation.status !== 'APPROVED' && (
-                      <span style={{ color: '#faad14', marginLeft: '8px' }}>
+                      <span style={{ color: theme.colors.status.warning, marginLeft: '8px' }}>
                         ⚠️ Only APPROVED quotations can generate invoices
                       </span>
                     )}
@@ -580,6 +623,32 @@ Reference: Quotation ${quotation.quotationNumber}
                 />
               </Form.Item>
             </Col>
+
+            {/* Milestone Selection (if quotation has milestones) */}
+            {(prefilledQuotationId || form.getFieldValue('quotationId')) && quotationMilestones.length > 0 && (
+              <Col xs={24}>
+                <Form.Item
+                  label={
+                    <Space>
+                      <CalendarOutlined />
+                      <span>Pilih Payment Milestone</span>
+                    </Space>
+                  }
+                  required
+                  help={
+                    !selectedMilestoneId &&
+                    'Quotation ini menggunakan termin pembayaran. Pilih milestone untuk melanjutkan.'
+                  }
+                  validateStatus={!selectedMilestoneId ? 'warning' : 'success'}
+                >
+                  <MilestoneSelector
+                    quotationId={form.getFieldValue('quotationId') || prefilledQuotationId || ''}
+                    selectedMilestoneId={selectedMilestoneId}
+                    onSelect={handleMilestoneSelect}
+                  />
+                </Form.Item>
+              </Col>
+            )}
 
             <Col xs={24} sm={8}>
               <Form.Item
@@ -651,6 +720,8 @@ Reference: Quotation ${quotation.quotationNumber}
                 <IDRCurrencyInput
                   placeholder='Enter project amount'
                   showMateraiWarning={false}
+                  disabled={!!selectedMilestoneId}
+                  readOnly={!!selectedMilestoneId}
                 />
               </Form.Item>
             </Col>
@@ -666,8 +737,18 @@ Reference: Quotation ${quotation.quotationNumber}
                 <IDRCurrencyInput
                   placeholder='Enter total amount'
                   showMateraiWarning={true}
+                  disabled={!!selectedMilestoneId}
+                  readOnly={!!selectedMilestoneId}
                 />
               </Form.Item>
+              {selectedMilestoneId && (
+                <Alert
+                  type='info'
+                  message='Jumlah invoice diambil dari milestone yang dipilih'
+                  showIcon
+                  style={{ marginTop: -8, marginBottom: 16 }}
+                />
+              )}
             </Col>
           </Row>
 

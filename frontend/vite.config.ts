@@ -52,8 +52,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: process.env.NODE_ENV === 'development',
-    minify: 'esbuild',
+    sourcemap: false,
+    minify: false, // Disabled temporarily to catch TDZ errors with real variable names
     target: 'es2020',
     cssCodeSplit: true,
     chunkSizeWarningLimit: 1000,

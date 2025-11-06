@@ -59,6 +59,9 @@ RUN cd frontend && npm install --ignore-scripts --no-audit --no-fund --legacy-pe
 # Copy frontend source
 COPY frontend/ ./frontend/
 
+# Clean Vite cache to prevent stale builds
+RUN rm -rf frontend/node_modules/.vite frontend/dist
+
 # Build frontend
 RUN cd frontend && npm run build
 

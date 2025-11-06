@@ -181,8 +181,9 @@ export const quotationService = {
   },
 
   // Download quotation PDF
-  downloadQuotationPDF: async (id: string): Promise<Blob> => {
+  downloadQuotationPDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
     const response = await apiClient.get(`/pdf/quotation/${id}`, {
+      params: { continuous: continuous.toString() },
       responseType: 'blob',
     })
     if (!response?.data) {
@@ -192,8 +193,9 @@ export const quotationService = {
   },
 
   // Preview quotation PDF
-  previewQuotationPDF: async (id: string): Promise<Blob> => {
+  previewQuotationPDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
     const response = await apiClient.get(`/pdf/quotation/${id}/preview`, {
+      params: { continuous: continuous.toString() },
       responseType: 'blob',
     })
     if (!response?.data) {

@@ -64,8 +64,6 @@ export type {
   NavigationError,
 } from './types/navigation.types'
 
-// Default exports for advanced usage
-export { default as EnhancedBreadcrumbDefault } from './EnhancedBreadcrumb'
-export { default as RelationshipPanelDefault } from './RelationshipPanel'
-export { default as BusinessFlowNavigatorDefault } from './BusinessFlowNavigator'
-export { default as MobileNavigationDefault } from './MobileNavigation'
+// Note: Removed duplicate default exports to prevent circular dependency TDZ errors
+// Components are already exported as named exports above (lines 17-20)
+// If you need default exports, import directly from the component files

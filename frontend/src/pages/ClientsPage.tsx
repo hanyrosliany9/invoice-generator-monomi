@@ -37,6 +37,7 @@ import {
   TeamOutlined,
   UploadOutlined,
   UserOutlined,
+  WhatsAppOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -57,6 +58,10 @@ import RevenueIndicator from '../components/ui/RevenueIndicator'
 import HealthScore from '../components/ui/HealthScore'
 import { CompactMetricCard } from '../components/ui/CompactMetricCard'
 import dayjs from 'dayjs'
+import { useIsMobile } from '../hooks/useMediaQuery'
+import MobileTableView from '../components/mobile/MobileTableView'
+import { clientToBusinessEntity } from '../adapters/mobileTableAdapters'
+import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -68,6 +73,7 @@ export const ClientsPage: React.FC = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const isMobile = useIsMobile()
 
   const [searchInput, setSearchInput] = useState('')
   const searchText = useDebouncedValue(searchInput, 300)
@@ -232,6 +238,140 @@ export const ClientsPage: React.FC = () => {
     return matchesSearch && matchesStatus
   })
 
+  // Handler functions (must be defined before mobileActions useMemo)
+  const handleEdit = (client: Client) => {
+    setEditingClient(client)
+    form.setFieldsValue(client)
+    setModalVisible(true)
+  }
+
+  const handleView = (client: Client) => {
+    navigate(`/clients/${client.id}`)
+  }
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id)
+  }
+
+  // Mobile data adapter - convert clients to BusinessEntity format
+  const mobileData = React.useMemo(
+    () => filteredClients.map(clientToBusinessEntity),
+    [filteredClients]
+  )
+
+  // Mobile actions configuration
+  const mobileActions = React.useMemo<MobileTableAction[]>(
+    () => [
+      {
+        key: 'view',
+        label: 'Lihat Detail',
+        icon: <EyeOutlined />,
+        onClick: (record) => navigate(`/clients/${record.id}`),
+      },
+      {
+        key: 'edit',
+        label: 'Edit',
+        icon: <EditOutlined />,
+        color: theme.colors.accent.primary,
+        onClick: (record) => {
+          const client = clients.find(c => c.id === record.id)
+          if (client) handleEdit(client)
+        },
+      },
+      {
+        key: 'whatsapp',
+        label: 'WhatsApp',
+        icon: <WhatsAppOutlined />,
+        color: '#25d366',
+        visible: (record) => !!record.client.phone,
+        onClick: (record) => {
+          const phone = record.client.phone?.replace(/[^\d]/g, '')
+          if (phone) {
+            const message = `Halo ${record.client.name}, salam dari Tim Monomi`
+            const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+            window.open(whatsappUrl, '_blank')
+          }
+        },
+      },
+      {
+        key: 'call',
+        label: 'Telepon',
+        icon: <PhoneOutlined />,
+        color: theme.colors.accent.primary,
+        visible: (record) => !!record.client.phone,
+        onClick: (record) => {
+          const phone = record.client.phone?.replace(/[^\d]/g, '')
+          if (phone) {
+            window.location.href = `tel:${phone}`
+          }
+        },
+      },
+      {
+        key: 'email',
+        label: 'Email',
+        icon: <MailOutlined />,
+        color: theme.colors.status.warning,
+        visible: (record) => !!record.client.email,
+        onClick: (record) => {
+          if (record.client.email) {
+            window.location.href = `mailto:${record.client.email}`
+          }
+        },
+      },
+      {
+        key: 'projects',
+        label: 'Lihat Proyek',
+        icon: <ProjectOutlined />,
+        onClick: (record) => navigate(`/projects?clientId=${record.id}`),
+      },
+      {
+        key: 'quotations',
+        label: 'Lihat Quotasi',
+        icon: <FileTextOutlined />,
+        onClick: (record) => navigate(`/quotations?clientId=${record.id}`),
+      },
+      {
+        key: 'invoices',
+        label: 'Lihat Invoice',
+        icon: <FundOutlined />,
+        onClick: (record) => navigate(`/invoices?clientId=${record.id}`),
+      },
+      {
+        key: 'delete',
+        label: 'Hapus',
+        icon: <DeleteOutlined />,
+        danger: true,
+        onClick: (record) => {
+          Modal.confirm({
+            title: 'Hapus Klien?',
+            content: `Apakah Anda yakin ingin menghapus klien "${record.client.name}"? Tindakan ini tidak dapat dibatalkan.`,
+            okText: 'Hapus',
+            okType: 'danger',
+            cancelText: 'Batal',
+            onOk: () => handleDelete(record.id),
+          })
+        },
+      },
+    ],
+    [navigate, clients, handleEdit, handleDelete, theme]
+  )
+
+  // Mobile filters configuration
+  const mobileFilters = React.useMemo<MobileFilterConfig[]>(
+    () => [
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        options: [
+          { label: 'Aktif', value: 'active' },
+          { label: 'Tidak Aktif', value: 'inactive' },
+        ],
+      },
+    ],
+    []
+  )
+
   // Statistics
   const safeClients = safeArray(clients)
   const stats = {
@@ -293,20 +433,6 @@ export const ClientsPage: React.FC = () => {
     setEditingClient(null)
     form.resetFields()
     setModalVisible(true)
-  }
-
-  const handleEdit = (client: Client) => {
-    setEditingClient(client)
-    form.setFieldsValue(client)
-    setModalVisible(true)
-  }
-
-  const handleView = (client: Client) => {
-    navigate(`/clients/${client.id}`)
-  }
-
-  const handleDelete = (id: string) => {
-    deleteMutation.mutate(id)
   }
 
   const handleBulkDelete = () => {
@@ -853,27 +979,43 @@ export const ClientsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Main Table */}
-      <Card>
-        <div style={{ overflowX: 'auto' }}>
-          <Table
-            columns={columns}
-            dataSource={filteredClients}
-            loading={isLoading}
-            rowKey='id'
-            rowSelection={rowSelection}
-            pagination={{
-              total: filteredClients.length,
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} dari ${total} klien`,
-            }}
-            scroll={{ x: 1200 }}
-          />
-        </div>
-      </Card>
+      {/* Main Table - Conditional rendering for mobile/desktop */}
+      {isMobile ? (
+        <MobileTableView
+          data={mobileData}
+          loading={isLoading}
+          entityType="clients"
+          enableWhatsAppActions
+          enableCallActions
+          showQuickStats
+          searchable
+          searchFields={['client.name', 'client.email', 'client.company']}
+          filters={mobileFilters}
+          actions={mobileActions}
+          onRefresh={() => queryClient.invalidateQueries({ queryKey: ['clients'] })}
+        />
+      ) : (
+        <Card>
+          <div style={{ overflowX: 'auto' }}>
+            <Table
+              columns={columns}
+              dataSource={filteredClients}
+              loading={isLoading}
+              rowKey='id'
+              rowSelection={rowSelection}
+              pagination={{
+                total: filteredClients.length,
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} dari ${total} klien`,
+              }}
+              scroll={{ x: 1200 }}
+            />
+          </div>
+        </Card>
+      )}
 
       {/* Create/Edit Modal */}
       <Modal

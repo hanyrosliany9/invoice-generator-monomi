@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Alert,
@@ -24,11 +24,16 @@ import dayjs from 'dayjs';
 import { exportTrialBalanceExcel, exportTrialBalancePDF, getTrialBalance } from '../../services/accounting';
 import { useTheme } from '../../theme';
 import { ExportButton } from '../../components/accounting/ExportButton';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
+import { trialBalanceToBusinessEntity } from '../../adapters/mobileTableAdapters';
 
 const { Title, Text } = Typography;
 
 const TrialBalancePage: React.FC = () => {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const [asOfDate, setAsOfDate] = useState<dayjs.Dayjs>(dayjs());
 
   const { data, isLoading } = useQuery({
@@ -65,6 +70,55 @@ const TrialBalancePage: React.FC = () => {
       minimumFractionDigits: 0,
     }).format(amount);
   };
+
+  // Mobile view data
+  const trialBalanceEntries = data?.balances || [];
+
+  const mobileData = useMemo(() =>
+    trialBalanceEntries.map(trialBalanceToBusinessEntity),
+    [trialBalanceEntries]
+  );
+
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail Akun',
+      icon: <CheckCircleOutlined />,
+      onClick: (record) => {
+        console.log('View account:', record.number);
+      },
+    },
+  ], []);
+
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'accountType',
+      label: 'Tipe Akun',
+      type: 'select',
+      options: [
+        { label: 'Semua', value: '' },
+        { label: 'Aset', value: 'ASSET' },
+        { label: 'Liabilitas', value: 'LIABILITY' },
+        { label: 'Ekuitas', value: 'EQUITY' },
+        { label: 'Pendapatan', value: 'REVENUE' },
+        { label: 'Beban', value: 'EXPENSE' },
+      ],
+      value: '',
+      onChange: () => {},
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select',
+      options: [
+        { label: 'Semua', value: '' },
+        { label: 'Normal', value: 'normal' },
+        { label: 'Abnormal', value: 'abnormal' },
+      ],
+      value: '',
+      onChange: () => {},
+    },
+  ], []);
 
   const columns = [
     {
@@ -311,65 +365,79 @@ const TrialBalancePage: React.FC = () => {
             }}
           >
             {data.balances.length > 0 ? (
-              <Table
-                columns={columns}
-                dataSource={data.balances}
-                rowKey="accountCode"
-                pagination={{
-                  pageSize: 20,
-                  showSizeChanger: true,
-                  showTotal: (total) => `Total ${total} akun`,
-                }}
-                size="small"
-                summary={() => (
-                  <Table.Summary.Row
-                    style={{
-                      background: theme.colors.background.tertiary,
-                    }}
-                  >
-                    <Table.Summary.Cell index={0} colSpan={3}>
-                      <Text strong style={{ fontSize: '16px' }}>
-                        TOTAL
-                      </Text>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell index={3} align="right">
-                      <Text
-                        strong
-                        style={{ fontSize: '18px', color: theme.colors.status.success }}
-                      >
-                        {formatCurrency(data.summary.totalDebit)}
-                      </Text>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell index={4} align="right">
-                      <Text
-                        strong
-                        style={{ fontSize: '18px', color: theme.colors.status.error }}
-                      >
-                        {formatCurrency(data.summary.totalCredit)}
-                      </Text>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell index={5} align="center">
-                      {data.summary.isBalanced ? (
-                        <Tag
-                          color="success"
-                          icon={<CheckCircleOutlined />}
-                          style={{ fontSize: '14px' }}
+              isMobile ? (
+                <MobileTableView
+                  data={mobileData}
+                  loading={isLoading}
+                  entityType="trial-balance"
+                  showQuickStats
+                  searchable
+                  searchFields={['number', 'title']}
+                  filters={mobileFilters}
+                  actions={mobileActions}
+                  onRefresh={() => {}}
+                />
+              ) : (
+                <Table
+                  columns={columns}
+                  dataSource={data.balances}
+                  rowKey="accountCode"
+                  pagination={{
+                    pageSize: 20,
+                    showSizeChanger: true,
+                    showTotal: (total) => `Total ${total} akun`,
+                  }}
+                  size="small"
+                  summary={() => (
+                    <Table.Summary.Row
+                      style={{
+                        background: theme.colors.background.tertiary,
+                      }}
+                    >
+                      <Table.Summary.Cell index={0} colSpan={3}>
+                        <Text strong style={{ fontSize: '16px' }}>
+                          TOTAL
+                        </Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={3} align="right">
+                        <Text
+                          strong
+                          style={{ fontSize: '18px', color: theme.colors.status.success }}
                         >
-                          Seimbang
-                        </Tag>
-                      ) : (
-                        <Tag
-                          color="error"
-                          icon={<ExclamationCircleOutlined />}
-                          style={{ fontSize: '14px' }}
+                          {formatCurrency(data.summary.totalDebit)}
+                        </Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={4} align="right">
+                        <Text
+                          strong
+                          style={{ fontSize: '18px', color: theme.colors.status.error }}
                         >
-                          Tidak Seimbang
-                        </Tag>
-                      )}
-                    </Table.Summary.Cell>
-                  </Table.Summary.Row>
-                )}
-              />
+                          {formatCurrency(data.summary.totalCredit)}
+                        </Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={5} align="center">
+                        {data.summary.isBalanced ? (
+                          <Tag
+                            color="success"
+                            icon={<CheckCircleOutlined />}
+                            style={{ fontSize: '14px' }}
+                          >
+                            Seimbang
+                          </Tag>
+                        ) : (
+                          <Tag
+                            color="error"
+                            icon={<ExclamationCircleOutlined />}
+                            style={{ fontSize: '14px' }}
+                          >
+                            Tidak Seimbang
+                          </Tag>
+                        )}
+                      </Table.Summary.Cell>
+                    </Table.Summary.Row>
+                  )}
+                />
+              )
             ) : (
               <Empty description="Tidak ada saldo akun pada tanggal ini" />
             )}

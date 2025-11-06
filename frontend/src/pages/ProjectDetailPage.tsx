@@ -9,9 +9,11 @@ import {
   Descriptions,
   Divider,
   FloatButton,
+  Modal,
   Progress,
   Result,
   Row,
+  Segmented,
   Space,
   Statistic,
   Table,
@@ -27,8 +29,11 @@ import {
   DollarOutlined,
   EditOutlined,
   ExportOutlined,
+  FilePdfOutlined,
   FileTextOutlined,
+  PrinterOutlined,
   ProjectOutlined,
+  SyncOutlined,
   TeamOutlined,
   UserOutlined,
   LoadingOutlined,
@@ -64,7 +69,13 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   // State for expense modal
   const [expenseModalOpen, setExpenseModalOpen] = useState(false)
 
-  // State for export loading
+  // State for PDF
+  const [pdfModalVisible, setPdfModalVisible] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const [pdfMode, setPdfMode] = useState<'continuous' | 'paginated'>('continuous')
+
+  // State for export loading (deprecated - now using preview modal)
   const [exporting, setExporting] = useState(false)
 
   // Fetch project data
@@ -207,7 +218,32 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   const progress = calculateProgress(project)
   const daysRemaining = getDaysRemaining(project.endDate)
 
-  // Export project data as PDF (server-side)
+  // PDF Preview with mode toggle
+  const handlePdfPreview = async (mode?: 'continuous' | 'paginated') => {
+    // Check if mode is actually a mode string (not a MouseEvent from onClick)
+    const targetMode = (typeof mode === 'string' ? mode : undefined) ?? 'continuous'
+    setPdfMode(targetMode)
+
+    setPdfLoading(true)
+    setPdfModalVisible(true)
+
+    try {
+      const isContinuous = targetMode === 'continuous'
+      const blob = await projectService.previewProjectPDF(id!, isContinuous)
+      const url = URL.createObjectURL(blob)
+      setPdfUrl(url)
+    } catch (error) {
+      Modal.error({
+        title: 'Failed to Load PDF',
+        content: 'There was an error loading the PDF preview. Please try again.',
+      })
+      setPdfModalVisible(false)
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
+  // Export project data as PDF (deprecated - now using preview modal)
   const handleExportData = async () => {
     if (!project || !id || !token) {
       message.error('Silakan login terlebih dahulu')
@@ -348,15 +384,13 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 Edit Project
               </Button>
               <Button
-                icon={exporting ? <LoadingOutlined /> : <ExportOutlined />}
+                icon={<FilePdfOutlined />}
                 size='large'
                 block
-                aria-label='Export project report as PDF'
-                onClick={handleExportData}
-                loading={exporting}
-                disabled={exporting}
+                aria-label='View PDF report'
+                onClick={handlePdfPreview}
               >
-                {exporting ? 'Membuat PDF...' : 'Export PDF'}
+                View PDF
               </Button>
             </Space>
           </Col>
@@ -831,6 +865,118 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
         />
       </Card>
 
+      {/* PDF Preview Modal */}
+      <Modal
+        title='Project PDF Preview'
+        open={pdfModalVisible}
+        onCancel={() => {
+          setPdfModalVisible(false)
+          if (pdfUrl) {
+            URL.revokeObjectURL(pdfUrl)
+            setPdfUrl(null)
+          }
+        }}
+        width='95vw'
+        style={{ top: '2vh' }}
+        styles={{ body: { height: '85vh', padding: 0 } }}
+        centered
+        footer={[
+          <Segmented
+            key='mode-toggle'
+            value={pdfMode}
+            onChange={(value) => {
+              const newMode = value as 'continuous' | 'paginated'
+              setPdfMode(newMode)
+              // Regenerate PDF with new mode
+              if (pdfUrl) {
+                URL.revokeObjectURL(pdfUrl)
+                setPdfUrl(null)
+              }
+              // Pass the new mode directly to avoid React state timing issues
+              handlePdfPreview(newMode)
+            }}
+            options={[
+              {
+                label: 'Digital View',
+                value: 'continuous',
+                icon: <FileTextOutlined />,
+              },
+              {
+                label: 'Print Ready',
+                value: 'paginated',
+                icon: <PrinterOutlined />,
+              },
+            ]}
+            style={{ marginRight: 'auto' }}
+          />,
+          <Button key='close' onClick={() => {
+            setPdfModalVisible(false)
+            if (pdfUrl) {
+              URL.revokeObjectURL(pdfUrl)
+              setPdfUrl(null)
+            }
+          }}>
+            Close
+          </Button>,
+          <Button
+            key='download'
+            type='primary'
+            icon={<ExportOutlined />}
+            onClick={async () => {
+              try {
+                const isContinuous = pdfMode === 'continuous'
+                const blob = await projectService.downloadProjectPDF(id!, isContinuous)
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `Laporan-Proyek-${project.number}-${dayjs().format('YYYY-MM-DD')}.pdf`
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                URL.revokeObjectURL(url)
+              } catch (error) {
+                Modal.error({
+                  title: 'Download Failed',
+                  content: 'There was an error downloading the PDF. Please try again.',
+                })
+              }
+            }}
+          >
+            Download PDF
+          </Button>,
+        ]}
+      >
+        {pdfLoading ? (
+          <div style={{ textAlign: 'center', padding: '64px' }}>
+            <SyncOutlined spin style={{ fontSize: '48px', color: theme.colors.accent.primary }} />
+            <Title level={4} type='secondary' style={{ marginTop: '16px' }}>
+              Loading PDF...
+            </Title>
+          </div>
+        ) : pdfUrl ? (
+          <iframe
+            src={pdfUrl}
+            style={{
+              width: '100%',
+              height: '100%',
+              border: 'none',
+              borderRadius: '6px',
+            }}
+            title='Project PDF Preview'
+          />
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <FilePdfOutlined style={{ fontSize: '64px', color: theme.colors.border.default }} />
+            <Title level={4} type='secondary'>
+              PDF Preview
+            </Title>
+            <Text type='secondary'>
+              Failed to load PDF preview.
+            </Text>
+          </div>
+        )}
+      </Modal>
+
       {/* Floating Action Button */}
       <FloatButton.Group>
         <FloatButton
@@ -852,15 +998,11 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
           onClick={() => navigate(`/projects/${id}/edit`)}
         />
         <FloatButton
-          icon={exporting ? <LoadingOutlined /> : <ExportOutlined />}
-          tooltip={exporting ? 'Membuat PDF...' : 'Export PDF'}
-          aria-label='Export project report as PDF'
-          onClick={exporting ? undefined : handleExportData}
-          type={exporting ? 'default' : 'primary'}
-          style={{
-            opacity: exporting ? 0.6 : 1,
-            cursor: exporting ? 'not-allowed' : 'pointer'
-          }}
+          icon={<FilePdfOutlined />}
+          tooltip='View PDF'
+          aria-label='View project PDF report'
+          onClick={handlePdfPreview}
+          type='primary'
         />
       </FloatButton.Group>
     </div>

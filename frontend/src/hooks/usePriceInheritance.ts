@@ -11,7 +11,7 @@ import {
   PriceSource,
   PriceValidationResult,
   UserTestingMetrics,
-} from '../components/forms/types/priceInheritance.types'
+} from '../types/priceInheritance.types'
 import { priceInheritanceApi } from '../services/priceInheritanceApi'
 import { getAmountMetadata, validateIDRAmount } from '../utils/currency'
 

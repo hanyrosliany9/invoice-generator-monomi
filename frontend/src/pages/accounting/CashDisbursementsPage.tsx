@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -32,6 +32,10 @@ import {
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import { useTheme } from '../../theme';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
+import { cashDisbursementToBusinessEntity } from '../../adapters/mobileTableAdapters';
 import {
   approveCashTransaction,
   type CashTransaction,
@@ -54,6 +58,7 @@ const CashDisbursementsPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
+  const isMobile = useIsMobile();
 
   // State for filters
   const [page, setPage] = useState(1);
@@ -255,6 +260,112 @@ const CashDisbursementsPage: React.FC = () => {
       },
     });
   };
+
+  // Mobile view data
+  const disbursements = data?.data || [];
+
+  const mobileData = useMemo(() =>
+    disbursements.map(cashDisbursementToBusinessEntity),
+    [disbursements]
+  );
+
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail',
+      icon: <EyeOutlined />,
+      onClick: (record) => {
+        const transaction = disbursements.find((t: CashTransaction) => t.id === record.id);
+        if (transaction) {
+          handleViewDetails(transaction);
+        }
+      },
+    },
+    {
+      key: 'submit',
+      label: 'Ajukan',
+      icon: <SendOutlined />,
+      visible: (record) => record.status === 'draft',
+      onClick: (record) => {
+        submitMutation.mutate(record.id);
+      },
+    },
+    {
+      key: 'approve',
+      label: 'Setujui',
+      icon: <CheckOutlined />,
+      visible: (record) => record.status === 'approved', // MobileTableView maps SUBMITTED to 'approved'
+      onClick: (record) => {
+        approveMutation.mutate(record.id);
+      },
+    },
+    {
+      key: 'reject',
+      label: 'Tolak',
+      icon: <CloseOutlined />,
+      danger: true,
+      visible: (record) => record.status === 'approved', // MobileTableView maps SUBMITTED to 'approved'
+      onClick: (record) => {
+        const transaction = disbursements.find((t: CashTransaction) => t.id === record.id);
+        if (transaction) {
+          handleReject(transaction);
+        }
+      },
+    },
+    {
+      key: 'void',
+      label: 'Void',
+      icon: <StopOutlined />,
+      danger: true,
+      visible: (record) => record.status === 'declined', // MobileTableView maps POSTED/VOID to 'declined'
+      confirmMessage: 'Batalkan pengeluaran kas ini? Jurnal entry akan direverse.',
+      onClick: (record) => {
+        voidMutation.mutate(record.id);
+      },
+    },
+    {
+      key: 'delete',
+      label: 'Hapus',
+      icon: <DeleteOutlined />,
+      danger: true,
+      visible: (record) => record.status === 'draft',
+      confirmMessage: 'Hapus pengeluaran kas ini?',
+      onClick: (record) => {
+        deleteMutation.mutate(record.id);
+      },
+    },
+  ], [disbursements, submitMutation, approveMutation, deleteMutation, voidMutation]);
+
+  const mobileFilters: MobileFilterConfig[] = useMemo(() => [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select',
+      options: [
+        { label: 'Semua Status', value: '' },
+        { label: 'Draft', value: 'DRAFT' },
+        { label: 'Diajukan', value: 'SUBMITTED' },
+        { label: 'Posted', value: 'POSTED' },
+        { label: 'Ditolak', value: 'REJECTED' },
+        { label: 'Void', value: 'VOID' },
+      ],
+      value: status || '',
+      onChange: (value) => setStatus(value || undefined),
+    },
+    {
+      key: 'category',
+      label: 'Kategori',
+      type: 'select',
+      options: [
+        { label: 'Semua Kategori', value: '' },
+        { label: 'Operasional', value: 'OPERATING' },
+        { label: 'Investasi', value: 'INVESTING' },
+        { label: 'Pendanaan', value: 'FINANCING' },
+      ],
+      value: category || '',
+      onChange: (value) => setCategory(value || undefined),
+    },
+  ], [status, category]);
 
   const columns = [
     {
@@ -459,20 +570,34 @@ const CashDisbursementsPage: React.FC = () => {
           borderColor: theme.colors.border.default,
         }}
       >
-        <Table
-          columns={columns}
-          dataSource={data?.data || []}
-          rowKey="id"
-          loading={isLoading}
-          pagination={{
-            current: page,
-            pageSize: limit,
-            total: data?.pagination.total || 0,
-            showSizeChanger: false,
-            showTotal: (total) => `Total ${total} transaksi`,
-            onChange: (newPage) => setPage(newPage),
-          }}
-        />
+        {isMobile ? (
+          <MobileTableView
+            data={mobileData}
+            loading={isLoading}
+            entityType="cash-disbursements"
+            showQuickStats
+            searchable
+            searchFields={['number', 'title', 'client.name']}
+            filters={mobileFilters}
+            actions={mobileActions}
+            onRefresh={() => queryClient.invalidateQueries({ queryKey: ['cash-transactions'] })}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={data?.data || []}
+            rowKey="id"
+            loading={isLoading}
+            pagination={{
+              current: page,
+              pageSize: limit,
+              total: data?.pagination.total || 0,
+              showSizeChanger: false,
+              showTotal: (total) => `Total ${total} transaksi`,
+              onChange: (newPage) => setPage(newPage),
+            }}
+          />
+        )}
       </Card>
 
       {/* Create Modal */}

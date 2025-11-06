@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Alert,
@@ -25,11 +25,16 @@ import dayjs from 'dayjs';
 import { exportBalanceSheetExcel, exportBalanceSheetPDF, getBalanceSheet } from '../../services/accounting';
 import { useTheme } from '../../theme';
 import { ExportButton } from '../../components/accounting/ExportButton';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import type { MobileTableAction } from '../../components/mobile/MobileTableView';
+import { balanceSheetAccountToBusinessEntity } from '../../adapters/mobileTableAdapters';
 
 const { Title, Text } = Typography;
 
 const BalanceSheetPage: React.FC = () => {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const [asOfDate, setAsOfDate] = useState<dayjs.Dayjs>(dayjs());
 
   const { data, isLoading } = useQuery({
@@ -60,6 +65,33 @@ const BalanceSheetPage: React.FC = () => {
       minimumFractionDigits: 0,
     }).format(amount);
   };
+
+  // Mobile view data
+  const assetsData = useMemo(() =>
+    (data?.assets.accounts || []).map((acc: any) => balanceSheetAccountToBusinessEntity(acc, 'asset')),
+    [data?.assets.accounts]
+  );
+
+  const liabilitiesData = useMemo(() =>
+    (data?.liabilities.accounts || []).map((acc: any) => balanceSheetAccountToBusinessEntity(acc, 'liability')),
+    [data?.liabilities.accounts]
+  );
+
+  const equityData = useMemo(() =>
+    (data?.equity.accounts || []).map((acc: any) => balanceSheetAccountToBusinessEntity(acc, 'equity')),
+    [data?.equity.accounts]
+  );
+
+  const mobileActions: MobileTableAction[] = useMemo(() => [
+    {
+      key: 'view',
+      label: 'Lihat Detail Akun',
+      icon: <BankOutlined />,
+      onClick: (record) => {
+        console.log('View account:', record.number);
+      },
+    },
+  ], []);
 
   const accountColumns = [
     {
@@ -265,30 +297,42 @@ const BalanceSheetPage: React.FC = () => {
             }
           >
             {data.assets.accounts.length > 0 ? (
-              <Table
-                columns={accountColumns}
-                dataSource={data.assets.accounts}
-                rowKey="accountCode"
-                pagination={false}
-                size="small"
-                summary={() => (
-                  <Table.Summary.Row style={{ background: theme.colors.background.tertiary }}>
-                    <Table.Summary.Cell index={0} colSpan={2}>
-                      <Text strong style={{ fontSize: '16px' }}>
-                        Total Aset
-                      </Text>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell index={2} align="right">
-                      <Text
-                        strong
-                        style={{ fontSize: '18px', color: theme.colors.status.success }}
-                      >
-                        {formatCurrency(data.assets.total)}
-                      </Text>
-                    </Table.Summary.Cell>
-                  </Table.Summary.Row>
-                )}
-              />
+              isMobile ? (
+                <MobileTableView
+                  data={assetsData}
+                  loading={isLoading}
+                  entityType="balance-sheet-assets"
+                  searchable
+                  searchFields={['number', 'title']}
+                  actions={mobileActions}
+                  onRefresh={() => {}}
+                />
+              ) : (
+                <Table
+                  columns={accountColumns}
+                  dataSource={data.assets.accounts}
+                  rowKey="accountCode"
+                  pagination={false}
+                  size="small"
+                  summary={() => (
+                    <Table.Summary.Row style={{ background: theme.colors.background.tertiary }}>
+                      <Table.Summary.Cell index={0} colSpan={2}>
+                        <Text strong style={{ fontSize: '16px' }}>
+                          Total Aset
+                        </Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={2} align="right">
+                        <Text
+                          strong
+                          style={{ fontSize: '18px', color: theme.colors.status.success }}
+                        >
+                          {formatCurrency(data.assets.total)}
+                        </Text>
+                      </Table.Summary.Cell>
+                    </Table.Summary.Row>
+                  )}
+                />
+              )
             ) : (
               <Empty description="Tidak ada aset" />
             )}
@@ -314,30 +358,42 @@ const BalanceSheetPage: React.FC = () => {
             }
           >
             {data.liabilities.accounts.length > 0 ? (
-              <Table
-                columns={accountColumns}
-                dataSource={data.liabilities.accounts}
-                rowKey="accountCode"
-                pagination={false}
-                size="small"
-                summary={() => (
-                  <Table.Summary.Row style={{ background: theme.colors.background.tertiary }}>
-                    <Table.Summary.Cell index={0} colSpan={2}>
-                      <Text strong style={{ fontSize: '16px' }}>
-                        Total Kewajiban
-                      </Text>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell index={2} align="right">
-                      <Text
-                        strong
-                        style={{ fontSize: '18px', color: theme.colors.status.error }}
-                      >
-                        {formatCurrency(data.liabilities.total)}
-                      </Text>
-                    </Table.Summary.Cell>
-                  </Table.Summary.Row>
-                )}
-              />
+              isMobile ? (
+                <MobileTableView
+                  data={liabilitiesData}
+                  loading={isLoading}
+                  entityType="balance-sheet-liabilities"
+                  searchable
+                  searchFields={['number', 'title']}
+                  actions={mobileActions}
+                  onRefresh={() => {}}
+                />
+              ) : (
+                <Table
+                  columns={accountColumns}
+                  dataSource={data.liabilities.accounts}
+                  rowKey="accountCode"
+                  pagination={false}
+                  size="small"
+                  summary={() => (
+                    <Table.Summary.Row style={{ background: theme.colors.background.tertiary }}>
+                      <Table.Summary.Cell index={0} colSpan={2}>
+                        <Text strong style={{ fontSize: '16px' }}>
+                          Total Kewajiban
+                        </Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={2} align="right">
+                        <Text
+                          strong
+                          style={{ fontSize: '18px', color: theme.colors.status.error }}
+                        >
+                          {formatCurrency(data.liabilities.total)}
+                        </Text>
+                      </Table.Summary.Cell>
+                    </Table.Summary.Row>
+                  )}
+                />
+              )
             ) : (
               <Empty description="Tidak ada kewajiban" />
             )}
@@ -363,30 +419,42 @@ const BalanceSheetPage: React.FC = () => {
             }
           >
             {data.equity.accounts.length > 0 ? (
-              <Table
-                columns={accountColumns}
-                dataSource={data.equity.accounts}
-                rowKey="accountCode"
-                pagination={false}
-                size="small"
-                summary={() => (
-                  <Table.Summary.Row style={{ background: '#e6f7ff' }}>
-                    <Table.Summary.Cell index={0} colSpan={2}>
-                      <Text strong style={{ fontSize: '16px' }}>
-                        Total Ekuitas
-                      </Text>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell index={2} align="right">
-                      <Text
-                        strong
-                        style={{ fontSize: '18px', color: theme.colors.status.info }}
-                      >
-                        {formatCurrency(data.equity.total)}
-                      </Text>
-                    </Table.Summary.Cell>
-                  </Table.Summary.Row>
-                )}
-              />
+              isMobile ? (
+                <MobileTableView
+                  data={equityData}
+                  loading={isLoading}
+                  entityType="balance-sheet-equity"
+                  searchable
+                  searchFields={['number', 'title']}
+                  actions={mobileActions}
+                  onRefresh={() => {}}
+                />
+              ) : (
+                <Table
+                  columns={accountColumns}
+                  dataSource={data.equity.accounts}
+                  rowKey="accountCode"
+                  pagination={false}
+                  size="small"
+                  summary={() => (
+                    <Table.Summary.Row style={{ background: '#e6f7ff' }}>
+                      <Table.Summary.Cell index={0} colSpan={2}>
+                        <Text strong style={{ fontSize: '16px' }}>
+                          Total Ekuitas
+                        </Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={2} align="right">
+                        <Text
+                          strong
+                          style={{ fontSize: '18px', color: theme.colors.status.info }}
+                        >
+                          {formatCurrency(data.equity.total)}
+                        </Text>
+                      </Table.Summary.Cell>
+                    </Table.Summary.Row>
+                  )}
+                />
+              )
             ) : (
               <Empty description="Tidak ada ekuitas" />
             )}

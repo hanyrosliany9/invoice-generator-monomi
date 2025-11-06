@@ -48,6 +48,7 @@ import { useTranslation } from 'react-i18next'
 // Swiper components will be integrated when enhanced mobile gestures are required
 import { formatIDR, formatIndonesianDate } from '../../utils/currency'
 import { BusinessEntity } from '../tables/SmartTable'
+import { useTheme } from '../../theme'
 
 // Advanced mobile gestures deferred - current implementation provides adequate UX
 // import 'swiper/css'
@@ -144,6 +145,7 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
   onLoadMore,
 }) => {
   const { t } = useTranslation()
+  const { theme } = useTheme()
 
   // State management
   const [searchText, setSearchText] = useState('')
@@ -155,6 +157,7 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
   const [filterDrawerVisible, setFilterDrawerVisible] = useState(false)
   const [selectedItem, setSelectedItem] = useState<BusinessEntity | null>(null)
   const [detailsModalVisible, setDetailsModalVisible] = useState(false)
+  const [actionDrawerVisible, setActionDrawerVisible] = useState(false)
 
   // Default mobile actions for Indonesian business
   const defaultMobileActions: MobileTableAction[] = useMemo(
@@ -322,117 +325,82 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
         key={item.id}
         size='small'
         style={{
-          marginBottom: compactMode ? 8 : 12,
-          borderRadius: '8px',
+          marginBottom: 8,
+          borderRadius: '6px',
           overflow: 'hidden',
         }}
-        styles={{ body: { padding: compactMode ? '12px' : '16px' } }}
+        styles={{ body: { padding: '10px' } }}
       >
         <Row justify='space-between' align='top'>
-          <Col span={18}>
-            <Space direction='vertical' size='small' style={{ width: '100%' }}>
-              {/* Header */}
-              <Space wrap>
-                <Text
-                  strong
-                  style={{ fontSize: compactMode ? '14px' : '16px' }}
-                >
+          <Col span={20}>
+            <Space direction='vertical' size={2} style={{ width: '100%' }}>
+              {/* Header - Compact single line */}
+              <Space wrap size={4}>
+                <Text strong style={{ fontSize: '13px' }}>
                   {item.number}
                 </Text>
-                <Tag color={getStatusColor(item.status)}>
+                <Tag color={getStatusColor(item.status)} style={{ fontSize: '10px', padding: '0 6px', margin: 0 }}>
                   {getStatusText(item.status)}
                 </Tag>
                 {showBusinessPriority && item.priority && (
-                  <Space size='small'>{getPriorityIcon(item.priority)}</Space>
+                  <span style={{ fontSize: '12px' }}>{getPriorityIcon(item.priority)}</span>
                 )}
               </Space>
 
-              {/* Title */}
+              {/* Title - Compact */}
               <Text
                 style={{
-                  fontSize: compactMode ? '13px' : '14px',
+                  fontSize: '12px',
                   display: 'block',
+                  lineHeight: '1.3',
                 }}
                 ellipsis={{ tooltip: item.title }}
               >
                 {item.title}
               </Text>
 
-              {/* Client info */}
-              <Space size='small'>
-                <Avatar size='small' icon={<UserOutlined />} />
-                <div>
-                  <Text style={{ fontSize: '12px' }} strong>
-                    {item.client.name}
-                  </Text>
-                  {item.client.company && (
-                    <Text
-                      type='secondary'
-                      style={{ fontSize: '11px', display: 'block' }}
-                    >
-                      {item.client.company}
-                    </Text>
-                  )}
-                </div>
-              </Space>
+              {/* Client info - Inline, no avatar */}
+              <Text style={{ fontSize: '11px', color: '#666' }}>
+                <UserOutlined style={{ fontSize: '10px', marginRight: '4px' }} />
+                {item.client.name}
+                {item.client.company && ` • ${item.client.company}`}
+              </Text>
 
-              {/* Amount and materai */}
-              <Space wrap>
-                <Text strong style={{ color: '#1890ff', fontSize: '14px' }}>
+              {/* Amount and date on single line */}
+              <Space wrap size={6}>
+                <Text strong style={{ color: '#1890ff', fontSize: '13px' }}>
                   {formatIDR(item.amount)}
                 </Text>
                 {showMateraiIndicators && item.materaiRequired && (
-                  <Tag color='orange'>
-                    Materai: {formatIDR(item.materaiAmount || 10000)}
+                  <Tag color='orange' style={{ fontSize: '10px', padding: '0 4px', margin: 0 }}>
+                    📋 {formatIDR(item.materaiAmount || 10000)}
                   </Tag>
                 )}
-                {item.ppnRate && <Tag>PPN: {item.ppnRate}%</Tag>}
-              </Space>
-
-              {/* Date info */}
-              <Space size='small'>
-                <CalendarOutlined style={{ color: '#666' }} />
-                <Text type='secondary' style={{ fontSize: '11px' }}>
+                {item.ppnRate && <Tag style={{ fontSize: '10px', padding: '0 4px', margin: 0 }}>PPN {item.ppnRate}%</Tag>}
+                <Text type='secondary' style={{ fontSize: '10px' }}>
+                  <CalendarOutlined style={{ fontSize: '9px', marginRight: '2px' }} />
                   {indonesianDateFormat
                     ? formatIndonesianDate(item.createdAt)
                     : item.createdAt.toLocaleDateString()}
+                  {item.dueDate && ` • ${formatIndonesianDate(item.dueDate)}`}
                 </Text>
-                {item.dueDate && (
-                  <Text type='secondary' style={{ fontSize: '11px' }}>
-                    • Jatuh tempo: {formatIndonesianDate(item.dueDate)}
-                  </Text>
-                )}
               </Space>
             </Space>
           </Col>
 
-          {/* Actions */}
-          <Col span={6} style={{ textAlign: 'right' }}>
-            <Space direction='vertical' size='small'>
-              {primaryAction && (
-                <Button
-                  type='primary'
-                  size='small'
-                  icon={primaryAction.icon}
-                  onClick={() => primaryAction.onClick(item)}
-                  style={{
-                    backgroundColor: primaryAction.color,
-                    borderColor: primaryAction.color,
-                  }}
-                />
-              )}
-
-              {visibleActions.length > 0 && (
-                <Button
-                  size='small'
-                  icon={<MoreOutlined />}
-                  onClick={() => {
-                    setSelectedItem(item)
-                    // Show action sheet or dropdown
-                  }}
-                />
-              )}
-            </Space>
+          {/* Actions - Compact */}
+          <Col span={4} style={{ textAlign: 'right' }}>
+            {visibleActions.length > 0 && (
+              <Button
+                size='small'
+                icon={<MoreOutlined />}
+                onClick={() => {
+                  setSelectedItem(item)
+                  setActionDrawerVisible(true)
+                }}
+                style={{ padding: '2px 6px', fontSize: '12px' }}
+              />
+            )}
           </Col>
         </Row>
 
@@ -674,6 +642,87 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
             </Col>
           </Row>
         </Space>
+      </Drawer>
+
+      {/* Action Drawer */}
+      <Drawer
+        title={selectedItem ? `${selectedItem.number}` : 'Aksi'}
+        placement='bottom'
+        height='auto'
+        onClose={() => {
+          setActionDrawerVisible(false)
+          setSelectedItem(null)
+        }}
+        open={actionDrawerVisible}
+        styles={{
+          header: {
+            background: theme.colors.background.secondary,
+            borderBottom: `1px solid ${theme.colors.border.default}`,
+            color: theme.colors.text.primary,
+          },
+          body: {
+            background: theme.colors.background.primary,
+          },
+        }}
+      >
+        {selectedItem && (
+          <Space direction='vertical' style={{ width: '100%' }} size='middle'>
+            {/* Item Preview */}
+            <Card
+              size='small'
+              style={{
+                background: theme.colors.background.secondary,
+                border: `1px solid ${theme.colors.border.default}`,
+              }}
+            >
+              <Space direction='vertical' style={{ width: '100%' }} size={2}>
+                <Text strong style={{ fontSize: '13px', color: theme.colors.text.primary }}>{selectedItem.title}</Text>
+                <Text type='secondary' style={{ fontSize: '11px' }}>
+                  <UserOutlined style={{ marginRight: '4px' }} />
+                  {selectedItem.client.name}
+                </Text>
+                <Text strong style={{ color: theme.colors.accent.primary, fontSize: '13px' }}>
+                  {formatIDR(selectedItem.amount)}
+                </Text>
+              </Space>
+            </Card>
+
+            {/* Action Buttons */}
+            <Space direction='vertical' style={{ width: '100%' }} size={8}>
+              {(() => {
+                const allActions = [...defaultMobileActions, ...actions]
+                const visibleActions = allActions.filter(action =>
+                  action.visible ? action.visible(selectedItem) : true
+                )
+
+                return visibleActions.map(action => (
+                  <Button
+                    key={action.key}
+                    type={action.primary ? 'primary' : 'default'}
+                    danger={action.danger}
+                    icon={action.icon}
+                    size='large'
+                    block
+                    onClick={() => {
+                      action.onClick(selectedItem)
+                      setActionDrawerVisible(false)
+                      setSelectedItem(null)
+                    }}
+                    style={{
+                      height: '48px',
+                      fontSize: '14px',
+                      backgroundColor: action.color,
+                      borderColor: action.color,
+                      color: action.color ? '#ffffff' : undefined,
+                    }}
+                  >
+                    {action.label}
+                  </Button>
+                ))
+              })()}
+            </Space>
+          </Space>
+        )}
       </Drawer>
 
       {/* Details Modal */}
