@@ -707,126 +707,126 @@ export const QuotationEditPage: React.FC = () => {
   )
 
   return (
-    <EntityFormLayout
-      hero={heroCard}
-      sidebar={
-        <Space direction='vertical' size='large' style={{ width: '100%' }}>
-          {/* Payment Milestones Progress */}
-          {paymentMilestones.length > 0 && (
-            <MilestoneProgress
-              quotationId={id!}
-              onCreateInvoice={handleGenerateMilestoneInvoice}
-              creatingInvoiceForMilestone={creatingInvoiceForMilestone}
-            />
-          )}
-
-          {/* Real-time Statistics */}
-          <FormStatistics
-            title='Quotation Overview'
-            stats={[
-              {
-                label: 'Project Value',
-                value: form.getFieldValue('amountPerProject') || 0,
-                format: 'currency',
-                icon: <ProjectOutlined />,
-                color: '#1890ff',
-              },
-              {
-                label: 'Total Amount',
-                value: totalAmount,
-                format: 'currency',
-                icon: <DollarOutlined />,
-                color: '#52c41a',
-              },
-              {
-                label: 'Days Remaining',
-                value: Math.max(
-                  0,
-                  dayjs(quotation.validUntil).diff(dayjs(), 'day')
-                ),
-                format: 'duration',
-                icon: <CalendarOutlined />,
-                color:
-                  dayjs(quotation.validUntil).diff(dayjs(), 'day') > 7
-                    ? '#1890ff'
-                    : '#ff4d4f',
-              },
-            ]}
-            layout='vertical'
-            size='small'
-          />
-
-          {/* Status Information */}
-          <Card
-            size='small'
-            title='Quotation Status'
-            style={{
-              background: theme.colors.card.background,
-              border: theme.colors.card.border,
-            }}
-          >
-            <Space direction='vertical' size='small' style={{ width: '100%' }}>
-              <div>
-                <Tag
-                  color={getStatusColor(quotation.status)}
-                  style={{ marginBottom: '8px' }}
-                >
-                  {quotation.status}
-                </Tag>
-              </div>
-
-              <div>
-                <Text type='secondary' style={{ fontSize: '12px' }}>
-                  Created by: {quotation.user?.name || 'Unknown'}
-                </Text>
-              </div>
-
-              {/* ENHANCED: Related invoices with navigation */}
-              <div>
-                <Text type='secondary' style={{ fontSize: '12px' }}>
-                  Related invoices: {quotation.invoices?.length || 0}
-                </Text>
-                {quotation.invoices && quotation.invoices.length > 0 && (
-                  <div style={{ marginTop: '8px' }}>
-                    {quotation.invoices.map((invoice) => (
-                      <div key={invoice.id} style={{ marginBottom: '4px' }}>
-                        <Button
-                          type='link'
-                          size='small'
-                          style={{ padding: 0, height: 'auto' }}
-                          onClick={() => navigate(`/invoices/${invoice.id}`)}
-                        >
-                          {invoice.invoiceNumber}
-                        </Button>
-                        <Tag size='small' color='blue' style={{ marginLeft: '8px' }}>
-                          {invoice.status}
-                        </Tag>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Space>
-          </Card>
-
-          {/* Materai Compliance */}
-          {totalAmount > 0 && (
-            <MateraiCompliancePanel
-              totalAmount={totalAmount}
-              showCalculation={true}
-            />
-          )}
-        </Space>
-      }
+    <Form
+      form={form}
+      layout='vertical'
+      onFinish={handleSubmit}
+      onValuesChange={handleFormChange}
+      autoComplete='off'
+      style={{ width: '100%' }}
+      disabled={!canEdit}
     >
-      <Form
-        form={form}
-        layout='vertical'
-        onFinish={handleSubmit}
-        onValuesChange={handleFormChange}
-        autoComplete='off'
-        style={{ width: '100%' }}
-        disabled={!canEdit}
+      <EntityFormLayout
+        hero={heroCard}
+        sidebar={
+          <Space direction='vertical' size='large' style={{ width: '100%' }}>
+            {/* Payment Milestones Progress */}
+            {paymentMilestones.length > 0 && (
+              <MilestoneProgress
+                quotationId={id!}
+                onCreateInvoice={handleGenerateMilestoneInvoice}
+                creatingInvoiceForMilestone={creatingInvoiceForMilestone}
+              />
+            )}
+
+            {/* Real-time Statistics */}
+            <FormStatistics
+              title='Quotation Overview'
+              stats={[
+                {
+                  label: 'Project Value',
+                  value: form.getFieldValue('amountPerProject') || 0,
+                  format: 'currency',
+                  icon: <ProjectOutlined />,
+                  color: '#1890ff',
+                },
+                {
+                  label: 'Total Amount',
+                  value: totalAmount,
+                  format: 'currency',
+                  icon: <DollarOutlined />,
+                  color: '#52c41a',
+                },
+                {
+                  label: 'Days Remaining',
+                  value: Math.max(
+                    0,
+                    dayjs(quotation.validUntil).diff(dayjs(), 'day')
+                  ),
+                  format: 'duration',
+                  icon: <CalendarOutlined />,
+                  color:
+                    dayjs(quotation.validUntil).diff(dayjs(), 'day') > 7
+                      ? '#1890ff'
+                      : '#ff4d4f',
+                },
+              ]}
+              layout='vertical'
+              size='small'
+            />
+
+            {/* Status Information */}
+            <Card
+              size='small'
+              title='Quotation Status'
+              style={{
+                background: theme.colors.card.background,
+                border: theme.colors.card.border,
+              }}
+            >
+              <Space direction='vertical' size='small' style={{ width: '100%' }}>
+                <div>
+                  <Tag
+                    color={getStatusColor(quotation.status)}
+                    style={{ marginBottom: '8px' }}
+                  >
+                    {quotation.status}
+                  </Tag>
+                </div>
+
+                <div>
+                  <Text type='secondary' style={{ fontSize: '12px' }}>
+                    Created by: {quotation.user?.name || 'Unknown'}
+                  </Text>
+                </div>
+
+                {/* ENHANCED: Related invoices with navigation */}
+                <div>
+                  <Text type='secondary' style={{ fontSize: '12px' }}>
+                    Related invoices: {quotation.invoices?.length || 0}
+                  </Text>
+                  {quotation.invoices && quotation.invoices.length > 0 && (
+                    <div style={{ marginTop: '8px' }}>
+                      {quotation.invoices.map((invoice) => (
+                        <div key={invoice.id} style={{ marginBottom: '4px' }}>
+                          <Button
+                            type='link'
+                            size='small'
+                            style={{ padding: 0, height: 'auto' }}
+                            onClick={() => navigate(`/invoices/${invoice.id}`)}
+                          >
+                            {invoice.invoiceNumber}
+                          </Button>
+                          <Tag size='small' color='blue' style={{ marginLeft: '8px' }}>
+                            {invoice.status}
+                          </Tag>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Space>
+            </Card>
+
+            {/* Materai Compliance */}
+            {totalAmount > 0 && (
+              <MateraiCompliancePanel
+                totalAmount={totalAmount}
+                showCalculation={true}
+              />
+            )}
+          </Space>
+        }
       >
         {/* Status Warning */}
         {!canEdit && (
@@ -1305,7 +1305,7 @@ export const QuotationEditPage: React.FC = () => {
             )}
           </Space>
         </Card>
-      </Form>
-    </EntityFormLayout>
+      </EntityFormLayout>
+    </Form>
   )
 }
