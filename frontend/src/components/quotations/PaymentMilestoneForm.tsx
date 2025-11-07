@@ -191,8 +191,9 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                         <Row gutter={16}>
                           <Col xs={24} md={12}>
                             <Form.Item
-                              {...field}
+                              key={`${field.key}-name`}
                               name={[field.name, 'name']}
+                              fieldKey={[field.fieldKey, 'name']}
                               label="Name (English)"
                               rules={[{ required: true, message: 'Required' }]}
                             >
@@ -201,8 +202,9 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                           </Col>
                           <Col xs={24} md={12}>
                             <Form.Item
-                              {...field}
+                              key={`${field.key}-nameId`}
                               name={[field.name, 'nameId']}
+                              fieldKey={[field.fieldKey, 'nameId']}
                               label="Nama (Indonesia)"
                               rules={[{ required: true, message: 'Wajib diisi' }]}
                             >
@@ -214,8 +216,9 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                         <Row gutter={16}>
                           <Col xs={24} md={12}>
                             <Form.Item
-                              {...field}
+                              key={`${field.key}-description`}
                               name={[field.name, 'description']}
+                              fieldKey={[field.fieldKey, 'description']}
                               label="Description (English)"
                             >
                               <TextArea
@@ -228,8 +231,9 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                           </Col>
                           <Col xs={24} md={12}>
                             <Form.Item
-                              {...field}
+                              key={`${field.key}-descriptionId`}
                               name={[field.name, 'descriptionId']}
+                              fieldKey={[field.fieldKey, 'descriptionId']}
                               label="Deskripsi (Indonesia)"
                             >
                               <TextArea
@@ -245,8 +249,9 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                         <Row gutter={16}>
                           <Col xs={24} md={12}>
                             <Form.Item
-                              {...field}
+                              key={`${field.key}-paymentPercentage`}
                               name={[field.name, 'paymentPercentage']}
+                              fieldKey={[field.fieldKey, 'paymentPercentage']}
                               label="Payment Percentage"
                               rules={[
                                 { required: true, message: 'Required' },
@@ -273,8 +278,9 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                           </Col>
                           <Col xs={24} md={12}>
                             <Form.Item
-                              {...field}
+                              key={`${field.key}-paymentAmount`}
                               name={[field.name, 'paymentAmount']}
+                              fieldKey={[field.fieldKey, 'paymentAmount']}
                               label="Payment Amount"
                             >
                               <InputNumber
@@ -289,7 +295,12 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                         </Row>
 
                         {/* Hidden fields */}
-                        <Form.Item {...field} name={[field.name, 'milestoneNumber']} hidden>
+                        <Form.Item
+                          key={`${field.key}-milestoneNumber`}
+                          name={[field.name, 'milestoneNumber']}
+                          fieldKey={[field.fieldKey, 'milestoneNumber']}
+                          hidden
+                        >
                           <InputNumber />
                         </Form.Item>
                       </Card>

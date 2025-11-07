@@ -1051,12 +1051,1149 @@ async function main() {
     },
   });
 
-  console.log('📊 Chart of Accounts created: 29 accounts (PSAK 16 & 71 compliant)');
-  console.log('  - Assets: 7 accounts (Cash, Bank, AR, Allowance, Prepaid, Equipment, Depreciation)');
-  console.log('  - Liabilities: 3 accounts (AP, PPN Payable, PPh Payable)');
-  console.log('  - Equity: 4 accounts (Capital, Retained Earnings, Current Year Profit, Owner Drawing)');
-  console.log('  - Revenue: 3 accounts (Service Revenue, Sales Revenue, Other Income)');
-  console.log('  - Expenses: 12 accounts (Selling, Admin, Depreciation, Bad Debt, Other)');
+  // ============================================================
+  // ADDITIONAL PSAK-COMPLIANT ACCOUNTS (Comprehensive Coverage)
+  // ============================================================
+
+  // ASSETS - Inventory (1-15xx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-1510' },
+    update: {},
+    create: {
+      code: '1-1510',
+      name: 'Inventory - Raw Materials',
+      nameId: 'Persediaan Bahan Baku',
+      accountType: 'ASSET',
+      accountSubType: 'CURRENT_ASSET',
+      normalBalance: 'DEBIT',
+      isControlAccount: true,
+      description: 'Raw materials inventory',
+      descriptionId: 'Persediaan bahan baku untuk produksi',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-1520' },
+    update: {},
+    create: {
+      code: '1-1520',
+      name: 'Inventory - Work in Progress',
+      nameId: 'Persediaan Barang Dalam Proses',
+      accountType: 'ASSET',
+      accountSubType: 'CURRENT_ASSET',
+      normalBalance: 'DEBIT',
+      description: 'Work in progress inventory',
+      descriptionId: 'Persediaan barang yang masih dalam proses produksi',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-1530' },
+    update: {},
+    create: {
+      code: '1-1530',
+      name: 'Inventory - Finished Goods',
+      nameId: 'Persediaan Barang Jadi',
+      accountType: 'ASSET',
+      accountSubType: 'CURRENT_ASSET',
+      normalBalance: 'DEBIT',
+      isControlAccount: true,
+      description: 'Finished goods inventory',
+      descriptionId: 'Persediaan barang jadi siap dijual',
+    },
+  });
+
+  // ASSETS - Prepaid Taxes (1-25xx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-2510' },
+    update: {},
+    create: {
+      code: '1-2510',
+      name: 'Prepaid PPh 23',
+      nameId: 'PPh Pasal 23 Dibayar Dimuka',
+      accountType: 'ASSET',
+      accountSubType: 'CURRENT_ASSET',
+      normalBalance: 'DEBIT',
+      isTaxAccount: true,
+      taxType: 'PPh_23',
+      description: 'Prepaid income tax article 23',
+      descriptionId: 'Pajak penghasilan pasal 23 yang dibayar dimuka',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-2520' },
+    update: {},
+    create: {
+      code: '1-2520',
+      name: 'Prepaid PPh 25',
+      nameId: 'PPh Pasal 25 Dibayar Dimuka',
+      accountType: 'ASSET',
+      accountSubType: 'CURRENT_ASSET',
+      normalBalance: 'DEBIT',
+      isTaxAccount: true,
+      taxType: 'PPh_25',
+      description: 'Prepaid income tax article 25 (monthly installment)',
+      descriptionId: 'Pajak penghasilan pasal 25 (angsuran bulanan)',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-2530' },
+    update: {},
+    create: {
+      code: '1-2530',
+      name: 'Prepaid PPN',
+      nameId: 'PPN Masukan',
+      accountType: 'ASSET',
+      accountSubType: 'CURRENT_ASSET',
+      normalBalance: 'DEBIT',
+      isTaxAccount: true,
+      taxType: 'VAT_IN',
+      description: 'Prepaid VAT (input VAT)',
+      descriptionId: 'PPN yang dibayar saat pembelian (PPN Masukan)',
+    },
+  });
+
+  // ASSETS - Fixed Assets (1-41xx - 1-49xx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4110' },
+    update: {},
+    create: {
+      code: '1-4110',
+      name: 'Land',
+      nameId: 'Tanah',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'DEBIT',
+      description: 'Land (not depreciated)',
+      descriptionId: 'Tanah (tidak disusutkan)',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4210' },
+    update: {},
+    create: {
+      code: '1-4210',
+      name: 'Buildings',
+      nameId: 'Bangunan',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'DEBIT',
+      description: 'Buildings and structures',
+      descriptionId: 'Bangunan dan gedung',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4220' },
+    update: {},
+    create: {
+      code: '1-4220',
+      name: 'Accumulated Depreciation - Buildings',
+      nameId: 'Akumulasi Penyusutan Bangunan',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'CREDIT',
+      description: 'Accumulated depreciation for buildings',
+      descriptionId: 'Akumulasi penyusutan bangunan',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4310' },
+    update: {},
+    create: {
+      code: '1-4310',
+      name: 'Vehicles',
+      nameId: 'Kendaraan',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'DEBIT',
+      description: 'Vehicles and transportation equipment',
+      descriptionId: 'Kendaraan dan alat transportasi',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4320' },
+    update: {},
+    create: {
+      code: '1-4320',
+      name: 'Accumulated Depreciation - Vehicles',
+      nameId: 'Akumulasi Penyusutan Kendaraan',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'CREDIT',
+      description: 'Accumulated depreciation for vehicles',
+      descriptionId: 'Akumulasi penyusutan kendaraan',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4410' },
+    update: {},
+    create: {
+      code: '1-4410',
+      name: 'Furniture & Fixtures',
+      nameId: 'Perabotan Kantor',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'DEBIT',
+      description: 'Office furniture and fixtures',
+      descriptionId: 'Perabotan dan perlengkapan kantor',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4420' },
+    update: {},
+    create: {
+      code: '1-4420',
+      name: 'Accumulated Depreciation - Furniture',
+      nameId: 'Akumulasi Penyusutan Perabotan',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'CREDIT',
+      description: 'Accumulated depreciation for furniture',
+      descriptionId: 'Akumulasi penyusutan perabotan',
+    },
+  });
+
+  // ASSETS - Intangible Assets (1-5xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-5010' },
+    update: {},
+    create: {
+      code: '1-5010',
+      name: 'Goodwill',
+      nameId: 'Goodwill',
+      accountType: 'ASSET',
+      accountSubType: 'INTANGIBLE_ASSET',
+      normalBalance: 'DEBIT',
+      description: 'Goodwill and brand value',
+      descriptionId: 'Goodwill dan nilai merek',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-5020' },
+    update: {},
+    create: {
+      code: '1-5020',
+      name: 'Patents & Trademarks',
+      nameId: 'Hak Paten dan Merek Dagang',
+      accountType: 'ASSET',
+      accountSubType: 'INTANGIBLE_ASSET',
+      normalBalance: 'DEBIT',
+      description: 'Patents, trademarks, and intellectual property',
+      descriptionId: 'Hak paten, merek dagang, dan kekayaan intelektual',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-5030' },
+    update: {},
+    create: {
+      code: '1-5030',
+      name: 'Software Licenses',
+      nameId: 'Lisensi Perangkat Lunak',
+      accountType: 'ASSET',
+      accountSubType: 'INTANGIBLE_ASSET',
+      normalBalance: 'DEBIT',
+      description: 'Long-term software licenses',
+      descriptionId: 'Lisensi perangkat lunak jangka panjang',
+    },
+  });
+
+  // LIABILITIES - Current Liabilities (2-11xx - 2-19xx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '2-1110' },
+    update: {},
+    create: {
+      code: '2-1110',
+      name: 'Wages Payable',
+      nameId: 'Hutang Gaji',
+      accountType: 'LIABILITY',
+      accountSubType: 'CURRENT_LIABILITY',
+      normalBalance: 'CREDIT',
+      isControlAccount: true,
+      description: 'Accrued wages and salaries payable',
+      descriptionId: 'Hutang gaji dan upah karyawan',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '2-1120' },
+    update: {},
+    create: {
+      code: '2-1120',
+      name: 'Accrued Expenses',
+      nameId: 'Biaya Yang Masih Harus Dibayar',
+      accountType: 'LIABILITY',
+      accountSubType: 'CURRENT_LIABILITY',
+      normalBalance: 'CREDIT',
+      description: 'Accrued expenses not yet paid',
+      descriptionId: 'Biaya yang sudah terjadi tetapi belum dibayar',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '2-1130' },
+    update: {},
+    create: {
+      code: '2-1130',
+      name: 'Customer Deposits',
+      nameId: 'Uang Muka Pelanggan',
+      accountType: 'LIABILITY',
+      accountSubType: 'CURRENT_LIABILITY',
+      normalBalance: 'CREDIT',
+      description: 'Advance payments from customers',
+      descriptionId: 'Uang muka yang diterima dari pelanggan',
+    },
+  });
+
+  // LIABILITIES - Tax Payables (2-21xx - 2-29xx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '2-2110' },
+    update: {},
+    create: {
+      code: '2-2110',
+      name: 'PPh 21 Payable',
+      nameId: 'Hutang PPh Pasal 21',
+      accountType: 'LIABILITY',
+      accountSubType: 'CURRENT_LIABILITY',
+      normalBalance: 'CREDIT',
+      isTaxAccount: true,
+      taxType: 'PPh_21',
+      description: 'Income tax article 21 (employee withholding) payable',
+      descriptionId: 'Hutang pajak penghasilan pasal 21 (pemotongan gaji karyawan)',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '2-2120' },
+    update: {},
+    create: {
+      code: '2-2120',
+      name: 'PPh 23 Payable',
+      nameId: 'Hutang PPh Pasal 23',
+      accountType: 'LIABILITY',
+      accountSubType: 'CURRENT_LIABILITY',
+      normalBalance: 'CREDIT',
+      isTaxAccount: true,
+      taxType: 'PPh_23',
+      description: 'Income tax article 23 (service withholding) payable',
+      descriptionId: 'Hutang pajak penghasilan pasal 23 (pemotongan jasa)',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '2-2130' },
+    update: {},
+    create: {
+      code: '2-2130',
+      name: 'PPh 25 Payable',
+      nameId: 'Hutang PPh Pasal 25',
+      accountType: 'LIABILITY',
+      accountSubType: 'CURRENT_LIABILITY',
+      normalBalance: 'CREDIT',
+      isTaxAccount: true,
+      taxType: 'PPh_25',
+      description: 'Income tax article 25 (monthly corporate tax) payable',
+      descriptionId: 'Hutang pajak penghasilan pasal 25 (angsuran pajak badan)',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '2-2140' },
+    update: {},
+    create: {
+      code: '2-2140',
+      name: 'PPh 29 Payable',
+      nameId: 'Hutang PPh Pasal 29',
+      accountType: 'LIABILITY',
+      accountSubType: 'CURRENT_LIABILITY',
+      normalBalance: 'CREDIT',
+      isTaxAccount: true,
+      taxType: 'PPh_29',
+      description: 'Income tax article 29 (final annual tax) payable',
+      descriptionId: 'Hutang pajak penghasilan pasal 29 (kurang bayar tahunan)',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '2-2150' },
+    update: {},
+    create: {
+      code: '2-2150',
+      name: 'PPN Output',
+      nameId: 'PPN Keluaran',
+      accountType: 'LIABILITY',
+      accountSubType: 'CURRENT_LIABILITY',
+      normalBalance: 'CREDIT',
+      isTaxAccount: true,
+      taxType: 'VAT_OUT',
+      description: 'VAT collected from sales (output VAT)',
+      descriptionId: 'PPN yang dipungut dari penjualan (PPN Keluaran)',
+    },
+  });
+
+  // LIABILITIES - Long-term (2-3xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '2-3010' },
+    update: {},
+    create: {
+      code: '2-3010',
+      name: 'Bank Loans',
+      nameId: 'Pinjaman Bank',
+      accountType: 'LIABILITY',
+      accountSubType: 'LONG_TERM_LIABILITY',
+      normalBalance: 'CREDIT',
+      description: 'Long-term bank loans',
+      descriptionId: 'Pinjaman bank jangka panjang',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '2-3020' },
+    update: {},
+    create: {
+      code: '2-3020',
+      name: 'Bonds Payable',
+      nameId: 'Hutang Obligasi',
+      accountType: 'LIABILITY',
+      accountSubType: 'LONG_TERM_LIABILITY',
+      normalBalance: 'CREDIT',
+      description: 'Bonds and debentures payable',
+      descriptionId: 'Hutang obligasi dan surat utang',
+    },
+  });
+
+  // REVENUE - Sales Revenue (4-1xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-1020' },
+    update: {},
+    create: {
+      code: '4-1020',
+      name: 'Product Sales',
+      nameId: 'Penjualan Produk',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from product sales',
+      descriptionId: 'Pendapatan dari penjualan produk',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-1030' },
+    update: {},
+    create: {
+      code: '4-1030',
+      name: 'Consulting Revenue',
+      nameId: 'Pendapatan Konsultasi',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from consulting services',
+      descriptionId: 'Pendapatan dari jasa konsultasi',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-1040' },
+    update: {},
+    create: {
+      code: '4-1040',
+      name: 'Training Revenue',
+      nameId: 'Pendapatan Pelatihan',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from training services',
+      descriptionId: 'Pendapatan dari jasa pelatihan',
+    },
+  });
+
+  // REVENUE - Other Revenue (4-8xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-8010' },
+    update: {},
+    create: {
+      code: '4-8010',
+      name: 'Interest Income',
+      nameId: 'Pendapatan Bunga',
+      accountType: 'REVENUE',
+      accountSubType: 'OTHER_INCOME',
+      normalBalance: 'CREDIT',
+      description: 'Interest income from deposits',
+      descriptionId: 'Pendapatan bunga dari deposito',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-8020' },
+    update: {},
+    create: {
+      code: '4-8020',
+      name: 'Foreign Exchange Gain',
+      nameId: 'Keuntungan Selisih Kurs',
+      accountType: 'REVENUE',
+      accountSubType: 'OTHER_INCOME',
+      normalBalance: 'CREDIT',
+      description: 'Realized foreign exchange gains',
+      descriptionId: 'Keuntungan selisih kurs yang terealisasi',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-8030' },
+    update: {},
+    create: {
+      code: '4-8030',
+      name: 'Gain on Asset Sales',
+      nameId: 'Keuntungan Penjualan Aset',
+      accountType: 'REVENUE',
+      accountSubType: 'OTHER_INCOME',
+      normalBalance: 'CREDIT',
+      description: 'Gains from sale of fixed assets',
+      descriptionId: 'Keuntungan dari penjualan aset tetap',
+    },
+  });
+
+  // EXPENSES - Cost of Goods Sold (5-xxxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-1010' },
+    update: {},
+    create: {
+      code: '5-1010',
+      name: 'Cost of Goods Sold',
+      nameId: 'Harga Pokok Penjualan',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      isControlAccount: true,
+      description: 'Cost of goods sold',
+      descriptionId: 'Harga pokok barang yang terjual',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-1020' },
+    update: {},
+    create: {
+      code: '5-1020',
+      name: 'Direct Labor',
+      nameId: 'Biaya Tenaga Kerja Langsung',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Direct labor costs for production',
+      descriptionId: 'Biaya tenaga kerja langsung untuk produksi',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-1030' },
+    update: {},
+    create: {
+      code: '5-1030',
+      name: 'Manufacturing Overhead',
+      nameId: 'Biaya Overhead Pabrik',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Manufacturing overhead costs',
+      descriptionId: 'Biaya overhead produksi',
+    },
+  });
+
+  // EXPENSES - Payroll (6-5xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-5010' },
+    update: {},
+    create: {
+      code: '6-5010',
+      name: 'Salaries - Management',
+      nameId: 'Gaji Manajemen',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Management salaries and compensation',
+      descriptionId: 'Gaji dan kompensasi manajemen',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-5020' },
+    update: {},
+    create: {
+      code: '6-5020',
+      name: 'Salaries - Administrative',
+      nameId: 'Gaji Administrasi',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Administrative staff salaries',
+      descriptionId: 'Gaji karyawan administrasi',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-5030' },
+    update: {},
+    create: {
+      code: '6-5030',
+      name: 'Employee Benefits',
+      nameId: 'Tunjangan Karyawan',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Employee benefits (BPJS, insurance, allowances)',
+      descriptionId: 'Tunjangan karyawan (BPJS, asuransi, tunjangan)',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-5040' },
+    update: {},
+    create: {
+      code: '6-5040',
+      name: 'Severance Pay',
+      nameId: 'Pesangon',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Employee severance and termination benefits',
+      descriptionId: 'Pesangon dan uang pisah karyawan',
+    },
+  });
+
+  // EXPENSES - Tax Expenses (6-4xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-4010' },
+    update: {},
+    create: {
+      code: '6-4010',
+      name: 'Income Tax Expense',
+      nameId: 'Beban Pajak Penghasilan',
+      accountType: 'EXPENSE',
+      accountSubType: 'TAX_EXPENSE',
+      normalBalance: 'DEBIT',
+      isTaxAccount: true,
+      description: 'Corporate income tax expense',
+      descriptionId: 'Beban pajak penghasilan badan',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-4020' },
+    update: {},
+    create: {
+      code: '6-4020',
+      name: 'Property Tax',
+      nameId: 'Pajak Bumi dan Bangunan (PBB)',
+      accountType: 'EXPENSE',
+      accountSubType: 'TAX_EXPENSE',
+      normalBalance: 'DEBIT',
+      isTaxAccount: true,
+      description: 'Property tax (PBB)',
+      descriptionId: 'Pajak bumi dan bangunan',
+    },
+  });
+
+  // EXPENSES - Other Expenses (8-xxxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '8-3010' },
+    update: {},
+    create: {
+      code: '8-3010',
+      name: 'Interest Expense',
+      nameId: 'Beban Bunga',
+      accountType: 'EXPENSE',
+      accountSubType: 'OTHER_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Interest expense on loans',
+      descriptionId: 'Beban bunga pinjaman',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '8-3020' },
+    update: {},
+    create: {
+      code: '8-3020',
+      name: 'Foreign Exchange Loss',
+      nameId: 'Rugi Selisih Kurs',
+      accountType: 'EXPENSE',
+      accountSubType: 'OTHER_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Realized foreign exchange losses',
+      descriptionId: 'Kerugian selisih kurs yang terealisasi',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '8-3030' },
+    update: {},
+    create: {
+      code: '8-3030',
+      name: 'Loss on Asset Sales',
+      nameId: 'Kerugian Penjualan Aset',
+      accountType: 'EXPENSE',
+      accountSubType: 'OTHER_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Losses from sale of fixed assets',
+      descriptionId: 'Kerugian dari penjualan aset tetap',
+    },
+  });
+
+  // ============================================================
+  // DIGITAL CREATIVE AGENCY SPECIFIC ACCOUNTS
+  // ============================================================
+
+  // REVENUE - Creative Agency Services (4-2xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-2010' },
+    update: {},
+    create: {
+      code: '4-2010',
+      name: 'Video Production Revenue',
+      nameId: 'Pendapatan Produksi Video',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from video production services',
+      descriptionId: 'Pendapatan dari jasa produksi video',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-2020' },
+    update: {},
+    create: {
+      code: '4-2020',
+      name: 'Photography Revenue',
+      nameId: 'Pendapatan Fotografi',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from photography services',
+      descriptionId: 'Pendapatan dari jasa fotografi',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-2030' },
+    update: {},
+    create: {
+      code: '4-2030',
+      name: 'Graphic Design Revenue',
+      nameId: 'Pendapatan Desain Grafis',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from graphic design services',
+      descriptionId: 'Pendapatan dari jasa desain grafis',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-2040' },
+    update: {},
+    create: {
+      code: '4-2040',
+      name: 'Web Development Revenue',
+      nameId: 'Pendapatan Pengembangan Website',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from web development services',
+      descriptionId: 'Pendapatan dari jasa pembuatan website',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-2050' },
+    update: {},
+    create: {
+      code: '4-2050',
+      name: 'Social Media Management Revenue',
+      nameId: 'Pendapatan Manajemen Media Sosial',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from social media management services',
+      descriptionId: 'Pendapatan dari jasa manajemen media sosial',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-2060' },
+    update: {},
+    create: {
+      code: '4-2060',
+      name: 'Content Creation Revenue',
+      nameId: 'Pendapatan Pembuatan Konten',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from content creation services',
+      descriptionId: 'Pendapatan dari jasa pembuatan konten',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-2070' },
+    update: {},
+    create: {
+      code: '4-2070',
+      name: 'Video Editing Revenue',
+      nameId: 'Pendapatan Editing Video',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from video editing services',
+      descriptionId: 'Pendapatan dari jasa editing video',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-2080' },
+    update: {},
+    create: {
+      code: '4-2080',
+      name: 'Animation Revenue',
+      nameId: 'Pendapatan Animasi',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from animation services',
+      descriptionId: 'Pendapatan dari jasa animasi',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-2090' },
+    update: {},
+    create: {
+      code: '4-2090',
+      name: 'Branding & Identity Revenue',
+      nameId: 'Pendapatan Branding & Identitas',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from branding and corporate identity services',
+      descriptionId: 'Pendapatan dari jasa branding dan identitas korporat',
+    },
+  });
+
+  // EXPENSES - Creative Production Costs (5-2xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-2010' },
+    update: {},
+    create: {
+      code: '5-2010',
+      name: 'Freelancer - Videographer',
+      nameId: 'Freelancer Videografer',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Freelance videographer costs',
+      descriptionId: 'Biaya videografer freelance',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-2020' },
+    update: {},
+    create: {
+      code: '5-2020',
+      name: 'Freelancer - Photographer',
+      nameId: 'Freelancer Fotografer',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Freelance photographer costs',
+      descriptionId: 'Biaya fotografer freelance',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-2030' },
+    update: {},
+    create: {
+      code: '5-2030',
+      name: 'Freelancer - Graphic Designer',
+      nameId: 'Freelancer Desainer Grafis',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Freelance graphic designer costs',
+      descriptionId: 'Biaya desainer grafis freelance',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-2040' },
+    update: {},
+    create: {
+      code: '5-2040',
+      name: 'Freelancer - Web Developer',
+      nameId: 'Freelancer Developer Website',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Freelance web developer costs',
+      descriptionId: 'Biaya developer website freelance',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-2050' },
+    update: {},
+    create: {
+      code: '5-2050',
+      name: 'Freelancer - Video Editor',
+      nameId: 'Freelancer Editor Video',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Freelance video editor costs',
+      descriptionId: 'Biaya editor video freelance',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-2060' },
+    update: {},
+    create: {
+      code: '5-2060',
+      name: 'Freelancer - Content Writer',
+      nameId: 'Freelancer Penulis Konten',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Freelance content writer costs',
+      descriptionId: 'Biaya penulis konten freelance',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-3010' },
+    update: {},
+    create: {
+      code: '5-3010',
+      name: 'Stock Footage & Music',
+      nameId: 'Footage & Musik Stok',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Stock footage, music, and media assets',
+      descriptionId: 'Biaya footage, musik, dan aset media stok',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-3020' },
+    update: {},
+    create: {
+      code: '5-3020',
+      name: 'Props & Equipment Rental',
+      nameId: 'Sewa Properti & Peralatan',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Props and equipment rental for productions',
+      descriptionId: 'Biaya sewa properti dan peralatan untuk produksi',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-3030' },
+    update: {},
+    create: {
+      code: '5-3030',
+      name: 'Location Rental',
+      nameId: 'Sewa Lokasi',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Location rental for shoots',
+      descriptionId: 'Biaya sewa lokasi untuk pengambilan gambar',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-3040' },
+    update: {},
+    create: {
+      code: '5-3040',
+      name: 'Talent & Models',
+      nameId: 'Talent & Model',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Talent and model fees',
+      descriptionId: 'Biaya talent dan model',
+    },
+  });
+
+  // EXPENSES - Creative Agency Operations (6-3xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-3010' },
+    update: {},
+    create: {
+      code: '6-3010',
+      name: 'Adobe Creative Cloud Subscription',
+      nameId: 'Langganan Adobe Creative Cloud',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Adobe CC subscription for design software',
+      descriptionId: 'Langganan Adobe CC untuk software desain',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-3020' },
+    update: {},
+    create: {
+      code: '6-3020',
+      name: 'Cloud Storage (Dropbox/Google)',
+      nameId: 'Penyimpanan Cloud',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Cloud storage subscription for project files',
+      descriptionId: 'Langganan penyimpanan cloud untuk file proyek',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-3030' },
+    update: {},
+    create: {
+      code: '6-3030',
+      name: 'Project Management Software',
+      nameId: 'Software Manajemen Proyek',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Project management tools (Asana, Trello, Monday)',
+      descriptionId: 'Tools manajemen proyek (Asana, Trello, Monday)',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-3040' },
+    update: {},
+    create: {
+      code: '6-3040',
+      name: 'Stock Photo Subscriptions',
+      nameId: 'Langganan Foto Stok',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Stock photo subscriptions (Shutterstock, Unsplash Pro)',
+      descriptionId: 'Langganan foto stok (Shutterstock, Unsplash Pro)',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-3050' },
+    update: {},
+    create: {
+      code: '6-3050',
+      name: 'Video Hosting & Streaming',
+      nameId: 'Hosting & Streaming Video',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Video hosting services (Vimeo Pro, YouTube Premium)',
+      descriptionId: 'Layanan hosting video (Vimeo Pro, YouTube Premium)',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-3060' },
+    update: {},
+    create: {
+      code: '6-3060',
+      name: 'Equipment Maintenance & Repair',
+      nameId: 'Pemeliharaan & Perbaikan Peralatan',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Camera, lens, and equipment maintenance',
+      descriptionId: 'Pemeliharaan kamera, lensa, dan peralatan',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-3070' },
+    update: {},
+    create: {
+      code: '6-3070',
+      name: 'Internet & Bandwidth',
+      nameId: 'Internet & Bandwidth',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'High-speed internet for uploads and downloads',
+      descriptionId: 'Internet berkecepatan tinggi untuk upload dan download',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-3080' },
+    update: {},
+    create: {
+      code: '6-3080',
+      name: 'Portfolio Website Hosting',
+      nameId: 'Hosting Website Portfolio',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Portfolio website hosting and domain',
+      descriptionId: 'Hosting dan domain website portfolio',
+    },
+  });
+
+  console.log('📊 Chart of Accounts created: 100+ accounts (Comprehensive PSAK-compliant)');
+  console.log('  🎨 DIGITAL CREATIVE AGENCY EDITION');
+  console.log('  ');
+  console.log('  - ASET (Assets): 25 accounts');
+  console.log('    • Kas & Bank (Cash & Bank): 4 accounts');
+  console.log('    • Piutang (Receivables): 2 accounts');
+  console.log('    • Persediaan (Inventory): 3 accounts');
+  console.log('    • Biaya Dibayar Dimuka & Pajak (Prepaid & Tax): 4 accounts');
+  console.log('    • Aset Tetap (Fixed Assets): 9 accounts (incl. cameras, equipment)');
+  console.log('    • Aset Tidak Berwujud (Intangible): 3 accounts');
+  console.log('  ');
+  console.log('  - LIABILITAS (Liabilities): 13 accounts');
+  console.log('    • Hutang Jangka Pendek (Current): 6 accounts');
+  console.log('    • Hutang Pajak (Tax Payables): 5 accounts (PPh 21/23/25/29, PPN)');
+  console.log('    • Hutang Jangka Panjang (Long-term): 2 accounts');
+  console.log('  ');
+  console.log('  - EKUITAS (Equity): 4 accounts');
+  console.log('  ');
+  console.log('  - PENDAPATAN (Revenue): 18 accounts');
+  console.log('    • Core Services: 9 creative services (Video, Photo, Design, Web, etc.)');
+  console.log('    • General Revenue: 6 accounts');
+  console.log('    • Other Income: 3 accounts');
+  console.log('  ');
+  console.log('  - BEBAN (Expenses): 43 accounts');
+  console.log('    • Harga Pokok Produksi (Production COGS): 13 accounts');
+  console.log('      - Freelancers: 6 types (Videographer, Photographer, Designer, etc.)');
+  console.log('      - Production Costs: 4 types (Stock, Rental, Location, Talent)');
+  console.log('    • Beban Operasional Kreatif: 8 accounts (Adobe, Cloud Storage, etc.)');
+  console.log('    • Beban Penjualan (Selling): 3 accounts');
+  console.log('    • Beban Administrasi (Admin): 13 accounts');
+  console.log('    • Beban Gaji (Payroll): 4 accounts');
+  console.log('    • Beban Pajak (Tax): 2 accounts');
 
   // Create initial fiscal period for 2025
   console.log('📅 Creating fiscal periods for 2025...');

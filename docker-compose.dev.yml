@@ -1,3 +1,7 @@
+# Development environment with hot-reload
+# Access via Tailscale: http://<tailscale-ip>:3000 (frontend) and :5000 (backend)
+# No nginx or cloudflared needed - direct port access through Tailscale network
+
 services:
   app:
     build:
@@ -23,10 +27,9 @@ services:
       - SMTP_PASSWORD=dev-password
       - FROM_EMAIL=dev@monomi.finance
     ports:
-      - "0.0.0.0:3000:3000"  # Allow LAN access for partner preview
-      - "5000:5000"
-      - "8080:8080"  # Production build server
-      - "9229:9229" # Debug port
+      - "3000:3000"   # Frontend: React + Vite dev server with HMR (hot-reload)
+      - "5000:5000"   # Backend: NestJS API with auto-restart (hot-reload)
+      - "9229:9229"   # Node.js debug port (chrome://inspect)
     volumes:
       - ./backend:/app/backend
       - ./frontend:/app/frontend
@@ -55,7 +58,7 @@ services:
         echo '🧹 Cleaning caches...' &&
         rm -rf /tmp/.vite/* /tmp/.npm/* &&
         cd /app/backend &&
-        echo '🔧 Checking database initialization...' &&
+        echo '🔧 Running database migrations...' &&
         npx prisma migrate deploy &&
         npx prisma generate &&
         if [ \"$SKIP_DB_INIT\" = \"false\" ]; then

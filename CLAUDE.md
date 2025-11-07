@@ -8,6 +8,45 @@
 - **This is a containerized project - containers are the source of truth**
 - **Use `docker compose` command (NOT docker-compose hyphenated)**
 
+## Database Design Philosophy (IMPORTANT - READ THIS)
+
+**Clean Baseline Approach:**
+- ✅ ONE comprehensive baseline migration contains ALL 65 tables
+- ✅ Schema designed upfront to cover all business requirements
+- ✅ No migration drift - baseline was generated from complete schema.prisma
+- ✅ Future migrations only for TRUE new features
+
+**The Baseline Migration (20251107173854_init_baseline):**
+- Created from complete, production-ready schema.prisma
+- Includes all core tables: Users, Clients, Projects, Quotations, Invoices, Payments
+- Includes all accounting: Chart of Accounts, Journal Entries, General Ledger
+- Includes all asset management: Assets, Depreciation, Maintenance
+- Includes all vendor/procurement: Vendors, Purchase Orders, Goods Receipts
+- Includes all counters: InvoiceCounter, QuotationCounter
+- Includes Indonesian-specific: Holidays, Tax, Materai fields
+- Total: 65 tables with proper relationships, indexes, constraints
+
+**When to Create New Migrations:**
+- ✅ Adding entirely new feature (e.g., "add inventory management")
+- ✅ Business requirement changes (e.g., "track commission per sale")
+- ❌ NOT for fixes to existing tables (fix schema.prisma, recreate baseline)
+- ❌ NOT for "oops I forgot a field" (design it properly first!)
+
+**How to Add Schema Changes:**
+1. Edit `backend/prisma/schema.prisma`
+2. Run: `cd backend && npx prisma migrate dev --name descriptive_name`
+3. Migration auto-applies to local database
+4. Commit both schema.prisma AND new migration folder
+5. Docker containers auto-apply migrations on startup
+
+**Common mistakes to avoid:**
+- ❌ DON'T manually create SQL in migrations folder
+- ❌ DON'T edit existing migration files
+- ❌ DON'T use `db push` (we use proper migrations now)
+- ✅ DO edit schema.prisma for changes
+- ✅ DO use `prisma migrate dev` for new migrations
+- ✅ DO think through requirements before adding tables
+
 ## Common Commands for This Project
 - **Quick Start**: `docker compose -f docker-compose.dev.yml up` (auto-seeds database)
 - **Validate Environment**: `./scripts/validate-dev-environment.sh`
