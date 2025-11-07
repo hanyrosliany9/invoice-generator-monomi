@@ -24,12 +24,16 @@ import dayjs from 'dayjs';
 import { exportIncomeStatementExcel, exportIncomeStatementPDF, getIncomeStatement } from '../../services/accounting';
 import { useTheme } from '../../theme';
 import { ExportButton } from '../../components/accounting/ExportButton';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
+import { useMemo } from 'react';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const IncomeStatementPage: React.FC = () => {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
     dayjs().startOf('month'),
     dayjs().endOf('month'),
@@ -66,6 +70,40 @@ const IncomeStatementPage: React.FC = () => {
       minimumFractionDigits: 0,
     }).format(amount);
   };
+
+  // Mobile data adapters
+  const mobileRevenueData = useMemo(() => {
+    if (!data?.revenue?.accounts) return [];
+    return data.revenue.accounts.map(account => ({
+      id: account.accountCode,
+      number: account.accountCode,
+      title: account.accountNameId,
+      subtitle: formatCurrency(account.balance),
+      status: 'success',
+      metadata: {
+        accountCode: account.accountCode,
+        accountName: account.accountName,
+        amount: account.balance,
+      }
+    }));
+  }, [data]);
+
+  const mobileExpenseData = useMemo(() => {
+    if (!data?.expenses?.accounts) return [];
+    return data.expenses.accounts.map(account => ({
+      id: account.accountCode,
+      number: account.accountCode,
+      title: account.accountNameId,
+      subtitle: formatCurrency(account.balance),
+      status: 'error',
+      metadata: {
+        accountCode: account.accountCode,
+        accountName: account.accountName,
+        accountSubType: account.accountSubType,
+        amount: account.balance,
+      }
+    }));
+  }, [data]);
 
   const revenueColumns = [
     {
@@ -339,34 +377,45 @@ const IncomeStatementPage: React.FC = () => {
             }
           >
             {data.revenue.accounts.length > 0 ? (
-              <Table
-                columns={revenueColumns}
-                dataSource={data.revenue.accounts}
-                rowKey="accountCode"
-                pagination={false}
-                size="small"
-                summary={() => (
-                  <Table.Summary.Row
-                    style={{
-                      background: theme.colors.background.tertiary,
-                    }}
-                  >
-                    <Table.Summary.Cell index={0} colSpan={2}>
-                      <Text strong style={{ fontSize: '16px', color: theme.colors.text.primary}}>
-                        Total Pendapatan
-                      </Text>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell index={2} align="right">
-                      <Text
-                        strong
-                        style={{ fontSize: '18px', color: theme.colors.status.success }}
-                      >
-                        {formatCurrency(data.revenue.total)}
-                      </Text>
-                    </Table.Summary.Cell>
-                  </Table.Summary.Row>
-                )}
-              />
+              isMobile ? (
+                <MobileTableView
+                  data={mobileRevenueData}
+                  loading={isLoading}
+                  entityType="income-revenue"
+                  searchable
+                  searchFields={['number', 'title']}
+                />
+              ) : (
+                <Table
+                  columns={revenueColumns}
+                  dataSource={data.revenue.accounts}
+                  rowKey="accountCode"
+                  pagination={false}
+                  size="small"
+                  scroll={{ x: 'max-content' }}
+                  summary={() => (
+                    <Table.Summary.Row
+                      style={{
+                        background: theme.colors.background.tertiary,
+                      }}
+                    >
+                      <Table.Summary.Cell index={0} colSpan={2}>
+                        <Text strong style={{ fontSize: '16px', color: theme.colors.text.primary}}>
+                          Total Pendapatan
+                        </Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={2} align="right">
+                        <Text
+                          strong
+                          style={{ fontSize: '18px', color: theme.colors.status.success }}
+                        >
+                          {formatCurrency(data.revenue.total)}
+                        </Text>
+                      </Table.Summary.Cell>
+                    </Table.Summary.Row>
+                  )}
+                />
+              )
             ) : (
               <Empty description="Tidak ada pendapatan pada periode ini" />
             )}
@@ -393,34 +442,45 @@ const IncomeStatementPage: React.FC = () => {
             }
           >
             {data.expenses.accounts.length > 0 ? (
-              <Table
-                columns={expenseColumns}
-                dataSource={data.expenses.accounts}
-                rowKey="accountCode"
-                pagination={false}
-                size="small"
-                summary={() => (
-                  <Table.Summary.Row
-                    style={{
-                      background: theme.colors.background.tertiary,
-                    }}
-                  >
-                    <Table.Summary.Cell index={0} colSpan={3}>
-                      <Text strong style={{ fontSize: '16px', color: theme.colors.text.primary}}>
-                        Total Beban
-                      </Text>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell index={3} align="right">
-                      <Text
-                        strong
-                        style={{ fontSize: '18px', color: theme.colors.status.error }}
-                      >
-                        {formatCurrency(data.expenses.total)}
-                      </Text>
-                    </Table.Summary.Cell>
-                  </Table.Summary.Row>
-                )}
-              />
+              isMobile ? (
+                <MobileTableView
+                  data={mobileExpenseData}
+                  loading={isLoading}
+                  entityType="income-expense"
+                  searchable
+                  searchFields={['number', 'title']}
+                />
+              ) : (
+                <Table
+                  columns={expenseColumns}
+                  dataSource={data.expenses.accounts}
+                  rowKey="accountCode"
+                  pagination={false}
+                  size="small"
+                  scroll={{ x: 'max-content' }}
+                  summary={() => (
+                    <Table.Summary.Row
+                      style={{
+                        background: theme.colors.background.tertiary,
+                      }}
+                    >
+                      <Table.Summary.Cell index={0} colSpan={3}>
+                        <Text strong style={{ fontSize: '16px', color: theme.colors.text.primary}}>
+                          Total Beban
+                        </Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={3} align="right">
+                        <Text
+                          strong
+                          style={{ fontSize: '18px', color: theme.colors.status.error }}
+                        >
+                          {formatCurrency(data.expenses.total)}
+                        </Text>
+                      </Table.Summary.Cell>
+                    </Table.Summary.Row>
+                  )}
+                />
+              )
             ) : (
               <Empty description="Tidak ada beban pada periode ini" />
             )}

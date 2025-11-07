@@ -245,12 +245,25 @@ export class QuotationsService {
       }
     }
 
-    // Extract paymentMilestones (not a Prisma field, handled separately)
-    const { paymentMilestones: _paymentMilestones, ...quotationUpdateData } = updateQuotationDto as any;
+    // Extract paymentMilestones and relation IDs (not direct Prisma fields, handled separately)
+    const { paymentMilestones: _paymentMilestones, clientId, projectId, ...quotationUpdateData } = updateQuotationDto as any;
+
+    // Build the update data with proper Prisma relations
+    const updateData: any = {
+      ...quotationUpdateData,
+    };
+
+    // Add relation connects if IDs are provided
+    if (clientId) {
+      updateData.client = { connect: { id: clientId } };
+    }
+    if (projectId) {
+      updateData.project = { connect: { id: projectId } };
+    }
 
     return this.prisma.quotation.update({
       where: { id },
-      data: quotationUpdateData,
+      data: updateData,
       include: {
         client: true,
         project: true,

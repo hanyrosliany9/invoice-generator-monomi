@@ -39,6 +39,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { formatIDR, safeNumber, safeString } from '../utils/currency'
 import { Client, clientService } from '../services/clients'
+import { useIsMobile } from '../hooks/useMediaQuery'
+import { mobileTheme } from '../theme/mobileTheme'
 import dayjs from 'dayjs'
 
 const { Title, Text, Paragraph } = Typography
@@ -49,6 +51,7 @@ export const ClientDetailPage: React.FC<ClientDetailPageProps> = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const isMobile = useIsMobile()
 
   // Fetch client data
   const {
@@ -267,29 +270,31 @@ export const ClientDetailPage: React.FC<ClientDetailPageProps> = () => {
             </Space>
           </Col>
 
-          <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-            <Space direction='vertical' size='middle' style={{ width: '100%' }}>
-              <Button
-                type='primary'
-                icon={<EditOutlined />}
-                size='large'
-                block
-                onClick={handleEdit}
-                aria-label='Edit client details'
-              >
-                Edit Client
-              </Button>
-              <Button
-                icon={<ExportOutlined />}
-                size='large'
-                block
-                onClick={handleExportData}
-                aria-label='Export client data'
-              >
-                Export Data
-              </Button>
-            </Space>
-          </Col>
+          {!isMobile && (
+            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
+              <Space direction='vertical' size='middle' style={{ width: '100%' }}>
+                <Button
+                  type='primary'
+                  icon={<EditOutlined />}
+                  size='large'
+                  block
+                  onClick={handleEdit}
+                  aria-label='Edit client details'
+                >
+                  Edit Client
+                </Button>
+                <Button
+                  icon={<ExportOutlined />}
+                  size='large'
+                  block
+                  onClick={handleExportData}
+                  aria-label='Export client data'
+                >
+                  Export Data
+                </Button>
+              </Space>
+            </Col>
+          )}
         </Row>
       </Card>
 
@@ -574,21 +579,30 @@ export const ClientDetailPage: React.FC<ClientDetailPageProps> = () => {
         />
       </Card>
 
-      {/* Floating Action Button */}
-      <FloatButton.Group>
-        <FloatButton
-          icon={<EditOutlined />}
-          tooltip='Edit Client'
-          onClick={handleEdit}
-          aria-label='Edit client details'
-        />
-        <FloatButton
-          icon={<ExportOutlined />}
-          tooltip='Export Data'
-          onClick={handleExportData}
-          aria-label='Export client data'
-        />
-      </FloatButton.Group>
+      {/* Mobile-only FloatButton.Group */}
+      {isMobile && (
+        <FloatButton.Group
+          shape="circle"
+          style={{
+            right: mobileTheme.floatButton.right,
+            bottom: mobileTheme.floatButton.bottom
+          }}
+        >
+          <FloatButton
+            icon={<EditOutlined />}
+            tooltip='Edit Client'
+            onClick={handleEdit}
+            type="primary"
+            aria-label='Edit client details'
+          />
+          <FloatButton
+            icon={<ExportOutlined />}
+            tooltip='Export Data'
+            onClick={handleExportData}
+            aria-label='Export client data'
+          />
+        </FloatButton.Group>
+      )}
     </div>
   )
 }

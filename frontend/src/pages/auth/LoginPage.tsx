@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
 import { authService } from '../../services/auth'
+import { useIsMobile } from '../../hooks/useMediaQuery'
 
 interface LoginForm {
   email: string
@@ -16,6 +17,7 @@ interface LoginForm {
 export const LoginPage: React.FC = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const { login } = useAuthStore()
   const [form] = Form.useForm()
 

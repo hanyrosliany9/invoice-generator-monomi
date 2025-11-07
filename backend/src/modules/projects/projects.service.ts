@@ -176,6 +176,11 @@ export class ProjectsService {
         include: {
           client: true,
           projectType: true,
+          milestones: {
+            orderBy: {
+              milestoneNumber: 'asc',
+            },
+          },
           _count: {
             select: {
               quotations: true,

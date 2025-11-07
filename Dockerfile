@@ -105,6 +105,9 @@ COPY --chown=appuser:appuser --from=backend-build /app/backend/node_modules ./ba
 COPY --chown=appuser:appuser --from=backend-build /app/backend/package*.json ./backend/
 COPY --chown=appuser:appuser --from=backend-build /app/backend/prisma ./backend/prisma
 
+# Copy PDF assets (logo, templates) needed at runtime
+COPY --chown=appuser:appuser --from=backend-build /app/backend/src/modules/pdf/assets ./backend/dist/modules/pdf/assets
+
 COPY --chown=appuser:appuser --from=frontend-build /app/frontend/dist ./frontend/dist
 COPY --chown=appuser:appuser --from=frontend-build /app/frontend/node_modules ./frontend/node_modules
 COPY --chown=appuser:appuser --from=frontend-build /app/frontend/package*.json ./frontend/

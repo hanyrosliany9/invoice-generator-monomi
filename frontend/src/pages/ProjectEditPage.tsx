@@ -43,6 +43,7 @@ import { EstimatedExpense, ProductItem, projectService, ProjectionResult, Update
 import { clientService } from '../services/clients'
 import { ProjectType, projectTypesApi } from '../services/project-types'
 import { useTheme } from '../theme'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import { ExpenseEstimator } from '../components/projects/ExpenseEstimator'
 import { ProfitProjection } from '../components/projects/ProfitProjection'
 
@@ -70,6 +71,7 @@ export const ProjectEditPage: React.FC = () => {
   const queryClient = useQueryClient()
   const { message } = App.useApp()
   const { theme } = useTheme()
+  const isMobile = useIsMobile()
   const [autoSaving, setAutoSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [originalValues, setOriginalValues] = useState<ProjectFormData | null>(

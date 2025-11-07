@@ -1,5 +1,5 @@
 import React from 'react'
-import { App, Button, Card, Col, Row, Space, Table, Tag, Typography } from 'antd'
+import { App, Button, Card, Col, FloatButton, Row, Space, Table, Tag, Typography } from 'antd'
 import {
   ArrowLeftOutlined,
   CameraOutlined,
@@ -14,7 +14,9 @@ import { assetService } from '../services/assets'
 import { formatIDR } from '../utils/currency'
 import { formatDate } from '../utils/dateFormatters'
 import { useTheme } from '../theme'
+import { mobileTheme } from '../theme/mobileTheme'
 import { EntityHeroCard } from '../components/forms/EntityHeroCard'
+import { useIsMobile } from '../hooks/useMediaQuery'
 
 const { Title, Text } = Typography
 
@@ -24,6 +26,7 @@ export const AssetDetailPage: React.FC = () => {
   const { theme } = useTheme()
   const queryClient = useQueryClient()
   const { message } = App.useApp()
+  const isMobile = useIsMobile()
 
   const { data: asset, isLoading } = useQuery({
     queryKey: ['asset', id],
@@ -164,7 +167,7 @@ export const AssetDetailPage: React.FC = () => {
           { label: 'Tanggal Pembelian', value: asset.purchaseDate, format: 'date' },
           { label: 'Nilai', value: asset.purchasePrice, format: 'currency' },
         ]}
-        actions={[
+        actions={isMobile ? undefined : [
           {
             label: 'Edit',
             icon: <EditOutlined />,
@@ -307,6 +310,7 @@ export const AssetDetailPage: React.FC = () => {
               dataSource={asset.reservations || []}
               rowKey='id'
               pagination={{ pageSize: 5 }}
+              scroll={{ x: 'max-content' }}
             />
           </Card>
         </Col>
@@ -326,10 +330,44 @@ export const AssetDetailPage: React.FC = () => {
               dataSource={asset.maintenanceRecords || []}
               rowKey='id'
               pagination={{ pageSize: 5 }}
+              scroll={{ x: 'max-content' }}
             />
           </Card>
         </Col>
       </Row>
+
+      {/* Mobile-only FloatButton.Group */}
+      {isMobile && (
+        <FloatButton.Group
+          shape="circle"
+          style={{
+            right: mobileTheme.floatButton.right,
+            bottom: mobileTheme.floatButton.bottom
+          }}
+        >
+          <FloatButton
+            icon={<EditOutlined />}
+            tooltip="Edit Asset"
+            onClick={handleEdit}
+            type="primary"
+            aria-label="Edit asset"
+          />
+          <FloatButton
+            icon={<CameraOutlined />}
+            tooltip="Check Out"
+            onClick={handleCheckOut}
+            disabled={asset.status !== 'AVAILABLE'}
+            aria-label="Check out asset"
+          />
+          <FloatButton
+            icon={<CameraOutlined />}
+            tooltip="Check In"
+            onClick={handleCheckIn}
+            disabled={asset.status !== 'CHECKED_OUT'}
+            aria-label="Check in asset"
+          />
+        </FloatButton.Group>
+      )}
     </div>
   )
 }

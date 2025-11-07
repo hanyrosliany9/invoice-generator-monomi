@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Avatar, Button, Dropdown, Layout, Menu, Typography } from 'antd'
 import {
   BankOutlined,
@@ -31,9 +31,11 @@ import { useAuthStore } from '../../store/auth'
 import { usePermissions } from '../../hooks/usePermissions'
 import { ThemeToggle } from '../ThemeToggle'
 import { useTheme } from '../../theme'
+import { useIsMobile } from '../../hooks/useMediaQuery'
 // import { BreadcrumbProvider } from '../navigation'
 import MobileQuickActions from '../ui/MobileQuickActions'
 import MobileEntityNav from '../ui/MobileEntityNav'
+import logoImage from '../../assets/logos/monomi-logo-1.png'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -44,7 +46,6 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
   const [mobileQuickActionsVisible, setMobileQuickActionsVisible] =
     useState(false)
   const [entityCounts] = useState({
@@ -61,19 +62,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { canManageUsers } = usePermissions()
   const { theme } = useTheme()
 
-  // Mobile detection
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768)
-    }
-
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-
-    return () => {
-      window.removeEventListener('resize', checkMobile)
-    }
-  }, [])
+  // Mobile detection using centralized hook
+  const isMobile = useIsMobile()
 
   // Build menu items dynamically based on permissions
   const baseMenuItems = [
@@ -300,42 +290,27 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         >
           <div
             style={{
-              padding: '20px 16px',
+              padding: collapsed ? '16px 8px' : '16px',
               textAlign: 'center',
-              borderBottom: '1px solid #2d3548',
-              background:
-                'linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%)',
-              color: '#ffffff',
-              position: 'relative',
-              overflow: 'hidden',
+              borderBottom: `1px solid ${theme.colors.border.default}`,
+              background: theme.colors.background.secondary,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'column',
+              gap: '8px',
             }}
           >
-            {/* Financial pattern overlay */}
-            <div
+            <img
+              src={logoImage}
+              alt="Monomi Logo"
               style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                background:
-                  'radial-gradient(circle at 20% 50%, rgba(34, 197, 94, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)',
-                pointerEvents: 'none',
+                width: collapsed ? '48px' : '120px',
+                height: collapsed ? '48px' : '120px',
+                objectFit: 'contain',
+                transition: 'all 0.2s ease',
               }}
             />
-            <Text
-              strong
-              style={{
-                color: '#ffffff',
-                fontSize: collapsed ? '12px' : '14px',
-                fontWeight: 700,
-                position: 'relative',
-                zIndex: 1,
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
-              }}
-            >
-              {collapsed ? 'MF' : 'Monomi Finance'}
-            </Text>
           </div>
           <Menu
             mode='inline'

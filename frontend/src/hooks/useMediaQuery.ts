@@ -2,6 +2,7 @@
 // React hook for responsive design and media query handling
 
 import { useEffect, useState } from 'react'
+import { mediaQueries } from '../theme/breakpoints'
 
 export const useMediaQuery = (query: string): boolean => {
   const [matches, setMatches] = useState(false)
@@ -33,20 +34,20 @@ export const useMediaQuery = (query: string): boolean => {
 }
 
 // Common breakpoint hooks for Indonesian business interface
-export const useIsMobile = () => useMediaQuery('(max-width: 768px)')
-export const useIsTablet = () => useMediaQuery('(max-width: 1024px)')
-export const useIsDesktop = () => useMediaQuery('(min-width: 1025px)')
-export const useIsSmallMobile = () => useMediaQuery('(max-width: 480px)')
+// Now using centralized breakpoint configuration
+export const useIsMobile = () => useMediaQuery(mediaQueries.mobile)
+export const useIsTablet = () => useMediaQuery(mediaQueries.tablet)
+export const useIsDesktop = () => useMediaQuery(mediaQueries.desktop)
+export const useIsSmallMobile = () => useMediaQuery(mediaQueries.smallMobile)
 export const useIsLargeMobile = () =>
   useMediaQuery('(min-width: 481px) and (max-width: 768px)')
 
 // Orientation hooks
-export const useIsPortrait = () => useMediaQuery('(orientation: portrait)')
-export const useIsLandscape = () => useMediaQuery('(orientation: landscape)')
+export const useIsPortrait = () => useMediaQuery(mediaQueries.portrait)
+export const useIsLandscape = () => useMediaQuery(mediaQueries.landscape)
 
 // High DPI/Retina display detection
-export const useIsHighDPI = () =>
-  useMediaQuery('(-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi)')
+export const useIsHighDPI = () => useMediaQuery(mediaQueries.highDPI)
 
 // Specific Indonesian business interface breakpoints
 export const useIndonesianBusinessBreakpoints = () => {

@@ -7,6 +7,7 @@ import {
   Col,
   Divider,
   Dropdown,
+  FloatButton,
   Row,
   Space,
   Spin,
@@ -33,6 +34,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { vendorService } from '../services/vendors';
 import type { Vendor } from '../types/vendor';
 import { useTheme } from '../theme';
+import { mobileTheme } from '../theme/mobileTheme';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import { formatDate } from '../utils/dateFormatters';
 
 const { Title, Text } = Typography;
@@ -41,6 +44,7 @@ const { Paragraph } = Typography;
 export const VendorDetailPage: React.FC = () => {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { message, modal } = App.useApp();
@@ -138,33 +142,35 @@ export const VendorDetailPage: React.FC = () => {
                 </Text>
               </Space>
             </Col>
-            <Col>
-              <Space>
-                <Button
-                  type="primary"
-                  icon={<EditOutlined />}
-                  onClick={() => navigate(`/vendors/${id}/edit`)}
-                >
-                  Edit
-                </Button>
-                <Dropdown
-                  menu={{
-                    items: [
-                      {
-                        key: 'delete',
-                        icon: <DeleteOutlined />,
-                        label: 'Hapus Vendor',
-                        danger: true,
-                        onClick: handleDelete,
-                      },
-                    ],
-                  }}
-                  trigger={['click']}
-                >
-                  <Button icon={<MoreOutlined />} />
-                </Dropdown>
-              </Space>
-            </Col>
+            {!isMobile && (
+              <Col>
+                <Space>
+                  <Button
+                    type="primary"
+                    icon={<EditOutlined />}
+                    onClick={() => navigate(`/vendors/${id}/edit`)}
+                  >
+                    Edit
+                  </Button>
+                  <Dropdown
+                    menu={{
+                      items: [
+                        {
+                          key: 'delete',
+                          icon: <DeleteOutlined />,
+                          label: 'Hapus Vendor',
+                          danger: true,
+                          onClick: handleDelete,
+                        },
+                      ],
+                    }}
+                    trigger={['click']}
+                  >
+                    <Button icon={<MoreOutlined />} />
+                  </Dropdown>
+                </Space>
+              </Col>
+            )}
           </Row>
         </Col>
       </Row>
@@ -489,6 +495,31 @@ export const VendorDetailPage: React.FC = () => {
           </Col>
         </Row>
       </Card>
+
+      {/* Mobile-only FloatButton.Group */}
+      {isMobile && (
+        <FloatButton.Group
+          shape="circle"
+          style={{
+            right: mobileTheme.floatButton.right,
+            bottom: mobileTheme.floatButton.bottom
+          }}
+        >
+          <FloatButton
+            icon={<EditOutlined />}
+            tooltip="Edit Vendor"
+            onClick={() => navigate(`/vendors/${id}/edit`)}
+            type="primary"
+            aria-label="Edit vendor"
+          />
+          <FloatButton
+            icon={<DeleteOutlined />}
+            tooltip="Hapus Vendor"
+            onClick={handleDelete}
+            aria-label="Delete vendor"
+          />
+        </FloatButton.Group>
+      )}
     </div>
   );
 };

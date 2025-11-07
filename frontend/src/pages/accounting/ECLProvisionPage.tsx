@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Badge,
@@ -35,6 +35,8 @@ import {
   processMonthlyECL,
 } from '../../services/accounting';
 import { useTheme } from '../../theme';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -43,6 +45,7 @@ const { RangePicker } = DatePicker;
 const ECLProvisionPage: React.FC = () => {
   const { theme } = useTheme();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([
     dayjs().startOf('month'),
     dayjs().endOf('month'),
@@ -122,6 +125,28 @@ const ECLProvisionPage: React.FC = () => {
     setSelectedInvoice(invoice);
     setDetailsVisible(true);
   };
+
+  // Mobile data adapter
+  const mobileECLData = useMemo(() => {
+    if (!summary?.provisions) return [];
+    return summary.provisions.map(provision => ({
+      id: provision.id,
+      number: provision.invoiceNumber,
+      title: provision.clientName,
+      subtitle: `ECL: ${formatCurrency(provision.eclAmount)} | ${getAgingBucketName(provision.agingBucket)}`,
+      status: provision.agingBucket === 'Current' ? 'success' : provision.agingBucket === '1-30' ? 'info' : 'error',
+      metadata: {
+        id: provision.id,
+        invoiceNumber: provision.invoiceNumber,
+        clientName: provision.clientName,
+        agingBucket: provision.agingBucket,
+        daysPastDue: provision.daysPastDue,
+        outstandingAmount: provision.outstandingAmount,
+        eclRate: provision.eclRate,
+        eclAmount: provision.eclAmount,
+      }
+    }));
+  }, [summary]);
 
   const riskColumns = [
     {
@@ -390,12 +415,22 @@ const ECLProvisionPage: React.FC = () => {
           </div>
         ) : !summary || summary.provisions.length === 0 ? (
           <Empty description="Tidak ada faktur berisiko untuk periode ini" />
+        ) : isMobile ? (
+          <MobileTableView
+            data={mobileECLData}
+            loading={isLoading}
+            entityType="ecl-provision"
+            searchable
+            searchFields={['number', 'title']}
+            onRowClick={(record) => showInvoiceDetails(record.metadata)}
+          />
         ) : (
           <Table
             columns={riskColumns}
             dataSource={summary.provisions}
             rowKey="id"
             pagination={false}
+            scroll={{ x: 'max-content' }}
             style={{
               background: theme.colors.background.primary,
             }}

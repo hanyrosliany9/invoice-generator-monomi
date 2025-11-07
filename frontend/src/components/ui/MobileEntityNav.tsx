@@ -22,6 +22,7 @@ import { ThemeToggle } from '../ThemeToggle'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../../store/auth'
+import logoImage from '../../assets/logos/monomi-logo-1.png'
 
 const { Text } = Typography
 
@@ -333,7 +334,15 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
       <Drawer
         title={
           <Flex align="center" justify="space-between">
-            <Text strong style={{ color: theme.colors.text.primary }}>Menu</Text>
+            <img
+              src={logoImage}
+              alt="Monomi Logo"
+              style={{
+                width: '32px',
+                height: '32px',
+                objectFit: 'contain'
+              }}
+            />
             <ThemeToggle size="default" />
           </Flex>
         }

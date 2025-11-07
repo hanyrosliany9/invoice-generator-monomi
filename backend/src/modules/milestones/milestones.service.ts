@@ -71,8 +71,11 @@ export class MilestonesService {
       );
     }
 
-    // Calculate remaining revenue
-    const remainingRevenue = dto.plannedRevenue;
+    // AUTO-CALCULATE REVENUE if not provided
+    const plannedRevenue = await this.calculatePlannedRevenue(
+      dto.projectId,
+      dto.plannedRevenue
+    );
 
     // Create milestone
     return this.prisma.projectMilestone.create({
@@ -85,9 +88,9 @@ export class MilestonesService {
         descriptionId: dto.descriptionId,
         plannedStartDate: plannedStart,
         plannedEndDate: plannedEnd,
-        plannedRevenue: new Prisma.Decimal(dto.plannedRevenue),
+        plannedRevenue: new Prisma.Decimal(plannedRevenue),
         recognizedRevenue: new Prisma.Decimal(0),
-        remainingRevenue: new Prisma.Decimal(remainingRevenue),
+        remainingRevenue: new Prisma.Decimal(plannedRevenue),
         estimatedCost: dto.estimatedCost
           ? new Prisma.Decimal(dto.estimatedCost)
           : null,
@@ -471,5 +474,60 @@ export class MilestonesService {
     }
 
     return false;
+  }
+
+  /**
+   * Auto-calculate milestone revenue from project budget
+   * Distributes project estimatedBudget equally across all milestones
+   *
+   * PSAK 72 Note: This is initial allocation only.
+   * Finance team can adjust via Project Detail Page → Financial Tab
+   *
+   * @param projectId - Project ID
+   * @param providedRevenue - Optional revenue value from form
+   * @returns Calculated revenue value
+   */
+  private async calculatePlannedRevenue(
+    projectId: string,
+    providedRevenue?: number | null
+  ): Promise<number> {
+    // If revenue explicitly provided, use it
+    if (providedRevenue !== undefined && providedRevenue !== null) {
+      return Number(providedRevenue);
+    }
+
+    // Otherwise, auto-calculate from project budget
+    // First get the project budget
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: {
+        estimatedBudget: true,
+      },
+    });
+
+    if (!project?.estimatedBudget) {
+      // No budget = zero revenue allocation
+      console.warn(
+        `Project ${projectId} has no estimatedBudget. Setting milestone revenue to 0.`
+      );
+      return 0;
+    }
+
+    // Count existing milestones
+    const existingMilestonesCount = await this.prisma.projectMilestone.count({
+      where: { projectId },
+    });
+
+    // Equal distribution across all milestones (including this one being created)
+    const totalMilestones = existingMilestonesCount + 1;
+    const budgetNumber = Number(project.estimatedBudget);
+    const revenuePerMilestone = budgetNumber / totalMilestones;
+
+    console.log(
+      `Auto-calculated milestone revenue: ${revenuePerMilestone} ` +
+        `(Project budget: ${budgetNumber} / ${totalMilestones} milestones)`
+    );
+
+    return Math.round(revenuePerMilestone);
   }
 }

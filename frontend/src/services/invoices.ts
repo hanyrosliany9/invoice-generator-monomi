@@ -208,18 +208,24 @@ export const invoiceService = {
   },
 
   // Generate PDF
-  generatePDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
+  generatePDF: async (id: string, continuous: boolean = true, showMaterai: boolean = true): Promise<Blob> => {
     const response = await apiClient.get(`/pdf/invoice/${id}`, {
-      params: { continuous: continuous.toString() },
+      params: {
+        continuous: continuous.toString(),
+        showMaterai: showMaterai.toString()
+      },
       responseType: 'blob',
     })
     return response.data
   },
 
   // Preview PDF
-  previewPDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
+  previewPDF: async (id: string, continuous: boolean = true, showMaterai: boolean = true): Promise<Blob> => {
     const response = await apiClient.get(`/pdf/invoice/${id}/preview`, {
-      params: { continuous: continuous.toString() },
+      params: {
+        continuous: continuous.toString(),
+        showMaterai: showMaterai.toString()
+      },
       responseType: 'blob',
     })
     return response.data

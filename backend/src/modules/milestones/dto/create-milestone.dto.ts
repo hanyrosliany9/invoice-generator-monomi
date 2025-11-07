@@ -50,12 +50,13 @@ export class CreateMilestoneDto {
   @IsISO8601()
   plannedEndDate: string;
 
-  @ApiProperty({
-    description: 'Planned revenue allocated to this milestone',
+  @ApiPropertyOptional({
+    description: 'Planned revenue allocated to this milestone (auto-calculated if not provided)',
     example: 5000000,
   })
+  @IsOptional()
   @IsDecimal({ decimal_digits: '2' })
-  plannedRevenue: number;
+  plannedRevenue?: number;
 
   @ApiPropertyOptional({
     description: 'Estimated cost for this milestone',

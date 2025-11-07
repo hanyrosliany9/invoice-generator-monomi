@@ -6,6 +6,7 @@ import {
   Card,
   Col,
   Descriptions,
+  FloatButton,
   Row,
   Space,
   Spin,
@@ -23,6 +24,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { expenseService } from '../services/expenses';
 import type { Expense } from '../types/expense';
 import { useTheme } from '../theme';
+import { mobileTheme } from '../theme/mobileTheme';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import { formatDate } from '../utils/dateFormatters';
 
 const { Title, Text } = Typography;
@@ -31,6 +34,7 @@ export const ExpenseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const { message, modal } = App.useApp();
   const queryClient = useQueryClient();
 
@@ -109,26 +113,28 @@ export const ExpenseDetailPage: React.FC = () => {
           </Space>
         </div>
 
-        <Space>
-          <Button onClick={() => navigate('/expenses')}>
-            <CloseOutlined /> Tutup
-          </Button>
-          {expenseService.canEdit(expense) && (
-            <Button icon={<EditOutlined />} onClick={() => navigate(`/expenses/${id}/edit`)}>
-              Edit
+        {!isMobile && (
+          <Space>
+            <Button onClick={() => navigate('/expenses')}>
+              <CloseOutlined /> Tutup
             </Button>
-          )}
-          {expenseService.canDelete(expense) && (
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              onClick={handleDelete}
-              loading={deleteMutation.isPending}
-            >
-              Hapus
-            </Button>
-          )}
-        </Space>
+            {expenseService.canEdit(expense) && (
+              <Button icon={<EditOutlined />} onClick={() => navigate(`/expenses/${id}/edit`)}>
+                Edit
+              </Button>
+            )}
+            {expenseService.canDelete(expense) && (
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={handleDelete}
+                loading={deleteMutation.isPending}
+              >
+                Hapus
+              </Button>
+            )}
+          </Space>
+        )}
       </div>
 
       <Row gutter={[24, 24]}>
@@ -144,7 +150,7 @@ export const ExpenseDetailPage: React.FC = () => {
               background: theme.colors.glass.background,
             }}
           >
-            <Descriptions bordered column={2}>
+            <Descriptions bordered column={{ xs: 1, sm: 2 }}>
               <Descriptions.Item label='Kategori'>
                 {expense.category?.nameId || expense.category?.name}
               </Descriptions.Item>
@@ -179,7 +185,7 @@ export const ExpenseDetailPage: React.FC = () => {
               background: theme.colors.glass.background,
             }}
           >
-            <Descriptions bordered column={2}>
+            <Descriptions bordered column={{ xs: 1, sm: 2 }}>
               <Descriptions.Item label='Jumlah Bruto'>
                 {expenseService.formatIDR(expense.grossAmount)}
               </Descriptions.Item>
@@ -217,7 +223,7 @@ export const ExpenseDetailPage: React.FC = () => {
                 background: theme.colors.glass.background,
               }}
             >
-              <Descriptions bordered column={2}>
+              <Descriptions bordered column={{ xs: 1, sm: 2 }}>
                 <Descriptions.Item label='NSFP'>
                   {expenseService.formatNSFP(expense.eFakturNSFP)}
                 </Descriptions.Item>
@@ -244,7 +250,7 @@ export const ExpenseDetailPage: React.FC = () => {
                 background: theme.colors.glass.background,
               }}
             >
-              <Descriptions bordered column={2}>
+              <Descriptions bordered column={{ xs: 1, sm: 2 }}>
                 <Descriptions.Item label='Dapat Ditagih'>
                   <Tag color='green'>Ya</Tag>
                 </Descriptions.Item>
@@ -347,6 +353,41 @@ export const ExpenseDetailPage: React.FC = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Mobile-only FloatButton.Group */}
+      {isMobile && (
+        <FloatButton.Group
+          shape="circle"
+          style={{
+            right: mobileTheme.floatButton.right,
+            bottom: mobileTheme.floatButton.bottom
+          }}
+        >
+          <FloatButton
+            icon={<CloseOutlined />}
+            tooltip="Tutup"
+            onClick={() => navigate('/expenses')}
+            aria-label="Close expense detail"
+          />
+          {expenseService.canEdit(expense) && (
+            <FloatButton
+              icon={<EditOutlined />}
+              tooltip="Edit"
+              onClick={() => navigate(`/expenses/${id}/edit`)}
+              type="primary"
+              aria-label="Edit expense"
+            />
+          )}
+          {expenseService.canDelete(expense) && (
+            <FloatButton
+              icon={<DeleteOutlined />}
+              tooltip="Hapus"
+              onClick={handleDelete}
+              aria-label="Delete expense"
+            />
+          )}
+        </FloatButton.Group>
+      )}
     </div>
   );
 };

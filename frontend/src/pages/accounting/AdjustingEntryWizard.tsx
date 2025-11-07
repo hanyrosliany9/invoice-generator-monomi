@@ -26,6 +26,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../theme';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import AccountSelector from '../../components/accounting/AccountSelector';
 
 const { Title, Text, Paragraph } = Typography;
@@ -139,6 +140,7 @@ const templates: TemplateConfig[] = [
 
 const AdjustingEntryWizard: React.FC = () => {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);

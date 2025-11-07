@@ -35,6 +35,7 @@ import {
   DollarOutlined,
   EditOutlined,
   ExportOutlined,
+  EyeInvisibleOutlined,
   FilePdfOutlined,
   FileTextOutlined,
   MailOutlined,
@@ -53,7 +54,9 @@ import { formatIDR, safeNumber, safeString } from '../utils/currency'
 import { Invoice, invoiceService } from '../services/invoices'
 import { FileUpload } from '../components/documents/FileUpload'
 import { useTheme } from '../theme'
+import { mobileTheme } from '../theme/mobileTheme'
 import { usePermissions } from '../hooks/usePermissions'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
@@ -68,6 +71,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { theme } = useTheme()
+  const isMobile = useIsMobile()
   const { canApproveFinancial } = usePermissions()
   const queryClient = useQueryClient()
   const [pdfModalVisible, setPdfModalVisible] = useState(false)
@@ -75,6 +79,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [pdfMode, setPdfMode] = useState<'continuous' | 'paginated'>('continuous')
+  const [showMaterai, setShowMaterai] = useState(true) // Default: show if required
   const [form] = Form.useForm()
 
   // Fetch invoice data
@@ -295,17 +300,18 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
     })
   }
 
-  const handlePdfPreview = async (mode?: 'continuous' | 'paginated') => {
+  const handlePdfPreview = async (mode?: 'continuous' | 'paginated', showMateraiBox?: boolean) => {
     // Check if mode is actually a mode string (not a MouseEvent from onClick)
     const targetMode = (typeof mode === 'string' ? mode : undefined) ?? 'continuous'
-    setPdfMode(targetMode)
+    const shouldShowMaterai = showMateraiBox !== undefined ? showMateraiBox : showMaterai
 
+    setPdfMode(targetMode)
     setPdfLoading(true)
     setPdfModalVisible(true)
 
     try {
       const isContinuous = targetMode === 'continuous'
-      const blob = await invoiceService.previewPDF(id!, isContinuous)
+      const blob = await invoiceService.previewPDF(id!, isContinuous, shouldShowMaterai)
       const url = URL.createObjectURL(blob)
       setPdfUrl(url)
     } catch (error) {
@@ -448,49 +454,51 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
             </Space>
           </Col>
 
-          <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-            <Space direction='vertical' size='middle' style={{ width: '100%' }}>
-              <Button
-                type='primary'
-                icon={<EditOutlined />}
-                size='large'
-                block
-                onClick={handleEdit}
-                aria-label='Edit invoice'
-              >
-                Edit Invoice
-              </Button>
-
-              <Button
-                icon={<FilePdfOutlined />}
-                size='large'
-                block
-                onClick={handlePdfPreview}
-                aria-label='View PDF'
-              >
-                View PDF
-              </Button>
-
-              {(invoice.status === 'SENT' || invoice.status === 'OVERDUE') &&
-               canApproveFinancial() && (
+          {!isMobile && (
+            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
+              <Space direction='vertical' size='middle' style={{ width: '100%' }}>
                 <Button
-                  icon={<DollarOutlined />}
+                  type='primary'
+                  icon={<EditOutlined />}
                   size='large'
                   block
-                  loading={markAsPaidMutation.isPending}
-                  onClick={handleMarkAsPaid}
-                  aria-label='Mark as paid'
-                  style={{
-                    backgroundColor: theme.colors.status.success,
-                    borderColor: theme.colors.status.success,
-                    color: 'white',
-                  }}
+                  onClick={handleEdit}
+                  aria-label='Edit invoice'
                 >
-                  Mark as Paid
+                  Edit Invoice
                 </Button>
-              )}
-            </Space>
-          </Col>
+
+                <Button
+                  icon={<FilePdfOutlined />}
+                  size='large'
+                  block
+                  onClick={handlePdfPreview}
+                  aria-label='View PDF'
+                >
+                  View PDF
+                </Button>
+
+                {(invoice.status === 'SENT' || invoice.status === 'OVERDUE') &&
+                 canApproveFinancial() && (
+                  <Button
+                    icon={<DollarOutlined />}
+                    size='large'
+                    block
+                    loading={markAsPaidMutation.isPending}
+                    onClick={handleMarkAsPaid}
+                    aria-label='Mark as paid'
+                    style={{
+                      backgroundColor: theme.colors.status.success,
+                      borderColor: theme.colors.status.success,
+                      color: 'white',
+                    }}
+                  >
+                    Mark as Paid
+                  </Button>
+                )}
+              </Space>
+            </Col>
+          )}
         </Row>
       </Card>
 
@@ -1015,34 +1023,54 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
         styles={{ body: { height: '85vh', padding: 0 } }}
         centered
         footer={[
-          <Segmented
-            key='mode-toggle'
-            value={pdfMode}
-            onChange={(value) => {
-              const newMode = value as 'continuous' | 'paginated'
-              setPdfMode(newMode)
-              // Regenerate PDF with new mode
-              if (pdfUrl) {
-                URL.revokeObjectURL(pdfUrl)
-                setPdfUrl(null)
-              }
-              // Pass the new mode directly to avoid React state timing issues
-              handlePdfPreview(newMode)
-            }}
-            options={[
-              {
-                label: 'Digital View',
-                value: 'continuous',
-                icon: <FileTextOutlined />,
-              },
-              {
-                label: 'Print Ready',
-                value: 'paginated',
-                icon: <PrinterOutlined />,
-              },
-            ]}
-            style={{ marginRight: 'auto' }}
-          />,
+          <div key='controls' style={{ display: 'flex', gap: '12px', marginRight: 'auto' }}>
+            <Segmented
+              value={pdfMode}
+              onChange={(value) => {
+                const newMode = value as 'continuous' | 'paginated'
+                setPdfMode(newMode)
+                // Regenerate PDF with new mode
+                if (pdfUrl) {
+                  URL.revokeObjectURL(pdfUrl)
+                  setPdfUrl(null)
+                }
+                // Pass the new mode directly to avoid React state timing issues
+                handlePdfPreview(newMode)
+              }}
+              options={[
+                {
+                  label: 'Digital View',
+                  value: 'continuous',
+                  icon: <FileTextOutlined />,
+                },
+                {
+                  label: 'Print Ready',
+                  value: 'paginated',
+                  icon: <PrinterOutlined />,
+                },
+              ]}
+            />
+            {/* Materai Toggle - Only show if invoice requires materai */}
+            {invoice?.materaiRequired && (
+              <Segmented
+                value={showMaterai ? 'show' : 'hide'}
+                onChange={(value) => {
+                  const newShowMaterai = value === 'show'
+                  setShowMaterai(newShowMaterai)
+                  // Regenerate PDF with new materai setting
+                  if (pdfUrl) {
+                    URL.revokeObjectURL(pdfUrl)
+                    setPdfUrl(null)
+                  }
+                  handlePdfPreview(pdfMode, newShowMaterai)
+                }}
+                options={[
+                  { label: 'Show Materai', value: 'show', icon: <BankOutlined /> },
+                  { label: 'Hide Materai', value: 'hide', icon: <EyeInvisibleOutlined /> },
+                ]}
+              />
+            )}
+          </div>,
           <Button key='close' onClick={() => {
             setPdfModalVisible(false)
             if (pdfUrl) {
@@ -1059,7 +1087,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
             onClick={async () => {
               try {
                 const isContinuous = pdfMode === 'continuous'
-                const blob = await invoiceService.generatePDF(id!, isContinuous)
+                const blob = await invoiceService.generatePDF(id!, isContinuous, showMaterai)
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
@@ -1111,36 +1139,45 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
         )}
       </Modal>
 
-      {/* Floating Action Button */}
-      <FloatButton.Group>
-        <FloatButton
-          icon={<EditOutlined />}
-          tooltip='Edit Invoice'
-          onClick={handleEdit}
-          aria-label='Edit invoice'
-        />
-        <FloatButton
-          icon={<FilePdfOutlined />}
-          tooltip='View PDF'
-          onClick={handlePdfPreview}
-          aria-label='View PDF'
-        />
-        <FloatButton
-          icon={<MailOutlined />}
-          tooltip='Send via Email'
-          onClick={handleSendEmail}
-          aria-label='Send via email'
-        />
-        {(invoice.status === 'SENT' || invoice.status === 'OVERDUE') &&
-         canApproveFinancial() && (
+      {/* Mobile-only FloatButton.Group */}
+      {isMobile && (
+        <FloatButton.Group
+          shape="circle"
+          style={{
+            right: mobileTheme.floatButton.right,
+            bottom: mobileTheme.floatButton.bottom
+          }}
+        >
           <FloatButton
-            icon={<DollarOutlined />}
-            tooltip='Mark as Paid'
-            onClick={handleMarkAsPaid}
-            aria-label='Mark as paid'
+            icon={<EditOutlined />}
+            tooltip='Edit Invoice'
+            onClick={handleEdit}
+            type="primary"
+            aria-label='Edit invoice'
           />
-        )}
-      </FloatButton.Group>
+          <FloatButton
+            icon={<FilePdfOutlined />}
+            tooltip='View PDF'
+            onClick={handlePdfPreview}
+            aria-label='View PDF'
+          />
+          <FloatButton
+            icon={<MailOutlined />}
+            tooltip='Send via Email'
+            onClick={handleSendEmail}
+            aria-label='Send via email'
+          />
+          {(invoice.status === 'SENT' || invoice.status === 'OVERDUE') &&
+           canApproveFinancial() && (
+            <FloatButton
+              icon={<DollarOutlined />}
+              tooltip='Mark as Paid'
+              onClick={handleMarkAsPaid}
+              aria-label='Mark as paid'
+            />
+          )}
+        </FloatButton.Group>
+      )}
     </div>
   )
 }

@@ -207,3 +207,13 @@ backend/update-*.js
 
 # Production environment file with secrets
 .env.production
+
+# Logo and branding assets - EXCEPTION: These should be committed
+# Override the *.png, *.svg, and public/ exclusions above
+!frontend/src/assets/logos/*.png
+!frontend/src/assets/logos/*.svg
+!frontend/public/
+frontend/public/*
+!frontend/public/favicon.png
+!frontend/public/logo.png
+!backend/src/modules/pdf/assets/company-logo.png

@@ -53,7 +53,7 @@ export interface CreateMilestoneRequest {
   descriptionId?: string
   plannedStartDate: string
   plannedEndDate: string
-  plannedRevenue: number
+  plannedRevenue?: number // Optional - backend will auto-calculate if not provided
   estimatedCost?: number
   priority?: 'LOW' | 'MEDIUM' | 'HIGH'
   predecessorId?: string

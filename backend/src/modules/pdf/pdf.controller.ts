@@ -56,6 +56,7 @@ export class PdfController {
   async generateInvoicePdf(
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
+    @Query("showMaterai") showMaterai: string = "true",
     @Res() res: Response
   ) {
     try {
@@ -68,9 +69,10 @@ export class PdfController {
 
       // Parse continuous parameter (default: true for digital viewing)
       const isContinuous = continuous === "true";
+      const shouldShowMaterai = showMaterai === "true";
 
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateInvoicePDF(invoice, isContinuous);
+      const pdfBuffer = await this.pdfService.generateInvoicePDF(invoice, isContinuous, shouldShowMaterai);
 
       // Set response headers
       res.setHeader("Content-Type", "application/pdf");
@@ -150,6 +152,7 @@ export class PdfController {
   async previewInvoicePdf(
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
+    @Query("showMaterai") showMaterai: string = "true",
     @Res() res: Response
   ) {
     try {
@@ -162,9 +165,10 @@ export class PdfController {
 
       // Parse continuous parameter (default: true for digital viewing)
       const isContinuous = continuous === "true";
+      const shouldShowMaterai = showMaterai === "true";
 
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateInvoicePDF(invoice, isContinuous);
+      const pdfBuffer = await this.pdfService.generateInvoicePDF(invoice, isContinuous, shouldShowMaterai);
 
       // Set response headers for preview
       res.setHeader("Content-Type", "application/pdf");

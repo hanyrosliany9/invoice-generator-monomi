@@ -53,7 +53,7 @@ export class PdfService {
     }
   }
 
-  async generateInvoicePDF(invoiceData: any, continuous: boolean = true): Promise<Buffer> {
+  async generateInvoicePDF(invoiceData: any, continuous: boolean = true, showMaterai: boolean = true): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -63,7 +63,7 @@ export class PdfService {
       const page = await browser.newPage();
 
       // Generate HTML content
-      const htmlContent = await this.generateInvoiceHTML(invoiceData);
+      const htmlContent = await this.generateInvoiceHTML(invoiceData, showMaterai);
 
       if (continuous) {
         // CONTINUOUS MODE: For digital viewing (email, web, mobile)
@@ -210,7 +210,7 @@ export class PdfService {
     return "Bank Transfer<br>Silakan hubungi kami untuk detail rekening pembayaran";
   }
 
-  private async generateInvoiceHTML(invoiceData: any): Promise<string> {
+  private async generateInvoiceHTML(invoiceData: any, showMaterai: boolean = true): Promise<string> {
     const {
       invoiceNumber,
       creationDate,
@@ -827,8 +827,6 @@ export class PdfService {
     <div class="header">
       <div class="company-info">
         ${this.logoBase64 ? `<img src="${this.logoBase64}" alt="Company Logo" class="company-logo" />` : ""}
-        <div class="company-name">${companyData.companyName}</div>
-        <div class="company-tagline">Digital Creative Agency</div>
       </div>
       <div class="invoice-title-section">
         <h1>INVOICE</h1>
@@ -1081,7 +1079,7 @@ export class PdfService {
     </div>
 
     <!-- Materai Stamp Duty Section (Indonesian Compliance) -->
-    ${materaiRequired ? `
+    ${materaiRequired && showMaterai ? `
     <div class="materai-section">
       <div class="materai-placeholder${materaiApplied ? ' applied' : ''}">
         <div class="materai-title">Materai</div>
@@ -1629,8 +1627,6 @@ export class PdfService {
     <div class="header">
       <div class="company-info">
         ${this.logoBase64 ? `<img src="${this.logoBase64}" alt="Company Logo" class="company-logo" />` : ""}
-        <div class="company-name">${companyData.companyName}</div>
-        <div class="company-tagline">Digital Creative Agency</div>
       </div>
       <div class="quotation-title-section">
         <h1>QUOTATION</h1>

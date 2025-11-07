@@ -48,11 +48,14 @@ import { ProfitMarginCard } from '../components/projects/ProfitMarginCard'
 import { ProjectExpenseList } from '../components/projects/ProjectExpenseList'
 import { AddExpenseModal } from '../components/projects/AddExpenseModal'
 import { ExpenseBudgetSummary } from '../components/projects/ExpenseBudgetSummary'
+import { MilestoneManagementPanel } from '../components/projects/MilestoneManagementPanel'
+import { MilestoneRevenueAllocationEditor } from '../components/projects/MilestoneRevenueAllocationEditor'
 import { getProjectStatusConfig } from '../utils/projectStatus'
 import { getDaysRemaining } from '../utils/projectProgress'
 import dayjs from 'dayjs'
 import { useTheme } from '../theme'
 import { useAuthStore } from '../store/auth'
+import { useIsMobile } from '../hooks/useMediaQuery'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -61,6 +64,7 @@ interface ProjectDetailPageProps {}
 export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const { t } = useTranslation()
   const { theme } = useTheme()
   const { message } = App.useApp()
@@ -299,7 +303,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   return (
     <div
       style={{
-        padding: '16px 24px',
+        padding: isMobile ? '12px' : '16px 24px',
         maxWidth: '1400px',
         margin: '0 auto',
       }}
@@ -623,6 +627,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 pagination={false}
                 size="small"
                 bordered
+                scroll={{ x: 'max-content' }}
                 columns={[
                   {
                     title: 'Kategori',
@@ -725,7 +730,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 </span>
               ),
               children: (
-                <div>
+                <div style={{ padding: isMobile ? '12px' : '24px' }}>
                   <Row gutter={[16, 24]}>
                     <Col xs={24} md={12}>
                       <Space
@@ -793,6 +798,24 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
               ),
             },
             {
+              key: 'milestones',
+              label: (
+                <span>
+                  <CalendarOutlined />
+                  Milestones & Timeline
+                </span>
+              ),
+              children: (
+                <div style={{ padding: isMobile ? '12px' : '24px' }}>
+                  <MilestoneManagementPanel
+                    projectId={id!}
+                    projectBudget={safeNumber(project?.estimatedBudget) || 0}
+                    onRefresh={refetch}
+                  />
+                </div>
+              ),
+            },
+            {
               key: 'team',
               label: (
                 <span>
@@ -801,7 +824,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 </span>
               ),
               children: (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
+                <div style={{ textAlign: 'center', padding: isMobile ? '20px' : '40px' }}>
                   <TeamOutlined
                     style={{ fontSize: '48px', color: '#d9d9d9' }}
                   />
@@ -823,7 +846,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 </span>
               ),
               children: (
-                <div style={{ padding: '24px' }}>
+                <div style={{ padding: isMobile ? '12px' : '24px' }}>
                   {/* Budget Summary */}
                   <ExpenseBudgetSummary project={project} />
 
@@ -831,6 +854,16 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                   <ProjectExpenseList
                     projectId={project.id}
                     onAddExpense={() => setExpenseModalOpen(true)}
+                  />
+
+                  {/* Divider between Expenses and Revenue Allocation */}
+                  <Divider style={{ margin: '32px 0' }} />
+
+                  {/* NEW: Milestone Revenue Allocation (PSAK 72) */}
+                  <MilestoneRevenueAllocationEditor
+                    projectId={project.id}
+                    projectBudget={safeNumber(project?.estimatedBudget) || 0}
+                    onUpdate={refetch}
                   />
 
                   {/* Add Expense Modal */}
@@ -852,7 +885,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 </span>
               ),
               children: (
-                <div style={{ padding: '24px' }}>
+                <div style={{ padding: isMobile ? '12px' : '24px' }}>
                   <FileUpload
                     projectId={id}
                     documents={documents}
@@ -876,9 +909,9 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
             setPdfUrl(null)
           }
         }}
-        width='95vw'
-        style={{ top: '2vh' }}
-        styles={{ body: { height: '85vh', padding: 0 } }}
+        width={isMobile ? '100%' : '95vw'}
+        style={{ top: isMobile ? 0 : '2vh' }}
+        styles={{ body: { height: isMobile ? '100vh' : '85vh', padding: 0 } }}
         centered
         footer={[
           <Segmented

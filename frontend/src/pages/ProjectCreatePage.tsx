@@ -40,6 +40,7 @@ import { CreateProjectRequest, EstimatedExpense, projectService, ProjectionResul
 import { clientService } from '../services/clients'
 import { ProjectType, projectTypesApi } from '../services/project-types'
 import { useTheme } from '../theme'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import { ExpenseEstimator } from '../components/projects/ExpenseEstimator'
 import { ProfitProjection } from '../components/projects/ProfitProjection'
 
@@ -77,6 +78,7 @@ export const ProjectCreatePage: React.FC = () => {
   const [calculatingProjection, setCalculatingProjection] = useState(false)
   const { message } = App.useApp()
   const { theme } = useTheme()
+  const isMobile = useIsMobile()
 
   const prefilledClientId = searchParams.get('clientId')
 

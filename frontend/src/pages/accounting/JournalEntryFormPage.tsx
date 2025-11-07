@@ -22,6 +22,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../theme';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import JournalLineItemsEditor, {
   JournalLineItemFormData,
 } from '../../components/accounting/JournalLineItemsEditor';
@@ -39,6 +40,7 @@ const { Option } = Select;
 
 const JournalEntryFormPage: React.FC = () => {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();

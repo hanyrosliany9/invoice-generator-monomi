@@ -51,6 +51,8 @@ import { FileUpload } from '../components/documents/FileUpload'
 import { MilestoneProgress } from '../components/invoices/MilestoneProgress'
 import { usePaymentMilestones, useGenerateMilestoneInvoice } from '../hooks/usePaymentMilestones'
 import { useTheme } from '../theme'
+import { mobileTheme } from '../theme/mobileTheme'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import type { ApiError } from '../types/api'
@@ -67,6 +69,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { theme } = useTheme()
+  const isMobile = useIsMobile()
   const queryClient = useQueryClient()
   const [pdfModalVisible, setPdfModalVisible] = useState(false)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
@@ -481,50 +484,52 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
             </Space>
           </Col>
 
-          <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-            <Space direction='vertical' size='middle' style={{ width: '100%' }}>
-              <Button
-                type='primary'
-                icon={<EditOutlined />}
-                size='large'
-                block
-                onClick={handleEdit}
-                aria-label='Edit quotation'
-              >
-                Edit Quotation
-              </Button>
-
-              <Button
-                icon={<FilePdfOutlined />}
-                size='large'
-                block
-                onClick={handlePdfPreview}
-                aria-label='View PDF'
-              >
-                View PDF
-              </Button>
-
-              {quotation.status === 'APPROVED' && (
+          {!isMobile && (
+            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
+              <Space direction='vertical' size='middle' style={{ width: '100%' }}>
                 <Button
-                  icon={<DollarOutlined />}
+                  type='primary'
+                  icon={<EditOutlined />}
                   size='large'
                   block
-                  loading={generateInvoiceMutation.isPending}
-                  onClick={handleGenerateInvoice}
-                  aria-label='Generate invoice'
-                  style={{
-                    backgroundColor: theme.colors.status.success,
-                    borderColor: theme.colors.status.success,
-                    color: 'white',
-                  }}
+                  onClick={handleEdit}
+                  aria-label='Edit quotation'
                 >
-                  {quotation.paymentType === 'MILESTONE_BASED'
-                    ? 'View Milestones & Generate Invoice'
-                    : 'Generate Invoice'}
+                  Edit Quotation
                 </Button>
-              )}
-            </Space>
-          </Col>
+
+                <Button
+                  icon={<FilePdfOutlined />}
+                  size='large'
+                  block
+                  onClick={handlePdfPreview}
+                  aria-label='View PDF'
+                >
+                  View PDF
+                </Button>
+
+                {quotation.status === 'APPROVED' && (
+                  <Button
+                    icon={<DollarOutlined />}
+                    size='large'
+                    block
+                    loading={generateInvoiceMutation.isPending}
+                    onClick={handleGenerateInvoice}
+                    aria-label='Generate invoice'
+                    style={{
+                      backgroundColor: theme.colors.status.success,
+                      borderColor: theme.colors.status.success,
+                      color: 'white',
+                    }}
+                  >
+                    {quotation.paymentType === 'MILESTONE_BASED'
+                      ? 'View Milestones & Generate Invoice'
+                      : 'Generate Invoice'}
+                  </Button>
+                )}
+              </Space>
+            </Col>
+          )}
         </Row>
       </Card>
 
@@ -819,6 +824,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
                         dataSource={quotation.priceBreakdown.products}
                         pagination={false}
                         size='small'
+                        scroll={{ x: 'max-content' }}
                         columns={[
                           {
                             title: 'Product/Service',
@@ -1135,35 +1141,44 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
         )}
       </Modal>
 
-      {/* Floating Action Button */}
-      <FloatButton.Group>
-        {getStatusActions().map((action, index) => (
+      {/* Mobile-only FloatButton.Group */}
+      {isMobile && (
+        <FloatButton.Group
+          shape="circle"
+          style={{
+            right: mobileTheme.floatButton.right,
+            bottom: mobileTheme.floatButton.bottom
+          }}
+        >
+          {getStatusActions().map((action, index) => (
+            <FloatButton
+              key={index}
+              icon={action.icon}
+              tooltip={action.tooltip}
+              onClick={action.onClick}
+            />
+          ))}
           <FloatButton
-            key={index}
-            icon={action.icon}
-            tooltip={action.tooltip}
-            onClick={action.onClick}
+            icon={<EditOutlined />}
+            tooltip='Edit Quotation'
+            onClick={handleEdit}
+            type="primary"
+            aria-label='Edit quotation'
           />
-        ))}
-        <FloatButton
-          icon={<EditOutlined />}
-          tooltip='Edit Quotation'
-          onClick={handleEdit}
-          aria-label='Edit quotation'
-        />
-        <FloatButton
-          icon={<FilePdfOutlined />}
-          tooltip='View PDF'
-          onClick={handlePdfPreview}
-          aria-label='View PDF'
-        />
-        <FloatButton
-          icon={<WhatsAppOutlined />}
-          tooltip='Share via WhatsApp'
-          onClick={handleShareWhatsApp}
-          aria-label='Share via WhatsApp'
-        />
-      </FloatButton.Group>
+          <FloatButton
+            icon={<FilePdfOutlined />}
+            tooltip='View PDF'
+            onClick={handlePdfPreview}
+            aria-label='View PDF'
+          />
+          <FloatButton
+            icon={<WhatsAppOutlined />}
+            tooltip='Share via WhatsApp'
+            onClick={handleShareWhatsApp}
+            aria-label='Share via WhatsApp'
+          />
+        </FloatButton.Group>
+      )}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Button,
@@ -24,12 +24,15 @@ import dayjs from 'dayjs';
 import { exportCashFlowStatementExcel, exportCashFlowStatementPDF, getCashFlowStatement } from '../../services/accounting';
 import { useTheme } from '../../theme';
 import { ExportButton } from '../../components/accounting/ExportButton';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const CashFlowStatementPage: React.FC = () => {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
     dayjs().startOf('month'),
     dayjs().endOf('month'),
@@ -66,6 +69,67 @@ const CashFlowStatementPage: React.FC = () => {
       minimumFractionDigits: 0,
     }).format(amount);
   };
+
+  // Mobile data adapters
+  const mobileOperatingData = useMemo(() => {
+    if (!data?.operatingActivities?.transactions) return [];
+    return data.operatingActivities.transactions.map(transaction => ({
+      id: transaction.id || `operating-${transaction.date}-${transaction.description}`,
+      number: dayjs(transaction.date).format('DD/MM/YYYY'),
+      title: transaction.description,
+      subtitle: transaction.cashIn > 0
+        ? `Kas Masuk: ${formatCurrency(transaction.cashIn)}`
+        : `Kas Keluar: ${formatCurrency(transaction.cashOut)}`,
+      status: transaction.cashIn > 0 ? 'success' : 'error',
+      metadata: {
+        date: transaction.date,
+        description: transaction.description,
+        category: transaction.category,
+        cashIn: transaction.cashIn,
+        cashOut: transaction.cashOut,
+      }
+    }));
+  }, [data]);
+
+  const mobileInvestingData = useMemo(() => {
+    if (!data?.investingActivities?.transactions) return [];
+    return data.investingActivities.transactions.map(transaction => ({
+      id: transaction.id || `investing-${transaction.date}-${transaction.description}`,
+      number: dayjs(transaction.date).format('DD/MM/YYYY'),
+      title: transaction.description,
+      subtitle: transaction.cashIn > 0
+        ? `Kas Masuk: ${formatCurrency(transaction.cashIn)}`
+        : `Kas Keluar: ${formatCurrency(transaction.cashOut)}`,
+      status: transaction.cashIn > 0 ? 'success' : 'error',
+      metadata: {
+        date: transaction.date,
+        description: transaction.description,
+        category: transaction.category,
+        cashIn: transaction.cashIn,
+        cashOut: transaction.cashOut,
+      }
+    }));
+  }, [data]);
+
+  const mobileFinancingData = useMemo(() => {
+    if (!data?.financingActivities?.transactions) return [];
+    return data.financingActivities.transactions.map(transaction => ({
+      id: transaction.id || `financing-${transaction.date}-${transaction.description}`,
+      number: dayjs(transaction.date).format('DD/MM/YYYY'),
+      title: transaction.description,
+      subtitle: transaction.cashIn > 0
+        ? `Kas Masuk: ${formatCurrency(transaction.cashIn)}`
+        : `Kas Keluar: ${formatCurrency(transaction.cashOut)}`,
+      status: transaction.cashIn > 0 ? 'success' : 'error',
+      metadata: {
+        date: transaction.date,
+        description: transaction.description,
+        category: transaction.category,
+        cashIn: transaction.cashIn,
+        cashOut: transaction.cashOut,
+      }
+    }));
+  }, [data]);
 
   const cashFlowColumns = [
     {
@@ -337,13 +401,24 @@ const CashFlowStatementPage: React.FC = () => {
             }
           >
             {data.operatingActivities.transactions.length > 0 ? (
-              <Table
-                columns={cashFlowColumns}
-                dataSource={data.operatingActivities.transactions}
-                rowKey={(record) => record.id || `operating-${record.date}-${record.description}`}
-                pagination={false}
-                size="small"
-              />
+              isMobile ? (
+                <MobileTableView
+                  data={mobileOperatingData}
+                  loading={isLoading}
+                  entityType="cashflow-operating"
+                  searchable
+                  searchFields={['title', 'number']}
+                />
+              ) : (
+                <Table
+                  columns={cashFlowColumns}
+                  dataSource={data.operatingActivities.transactions}
+                  rowKey={(record) => record.id || `operating-${record.date}-${record.description}`}
+                  pagination={false}
+                  size="small"
+                  scroll={{ x: 'max-content' }}
+                />
+              )
             ) : (
               <Empty description="Tidak ada transaksi operasional" />
             )}
@@ -378,13 +453,24 @@ const CashFlowStatementPage: React.FC = () => {
             }
           >
             {data.investingActivities.transactions.length > 0 ? (
-              <Table
-                columns={cashFlowColumns}
-                dataSource={data.investingActivities.transactions}
-                rowKey={(record) => record.id || `investing-${record.date}-${record.description}`}
-                pagination={false}
-                size="small"
-              />
+              isMobile ? (
+                <MobileTableView
+                  data={mobileInvestingData}
+                  loading={isLoading}
+                  entityType="cashflow-investing"
+                  searchable
+                  searchFields={['title', 'number']}
+                />
+              ) : (
+                <Table
+                  columns={cashFlowColumns}
+                  dataSource={data.investingActivities.transactions}
+                  rowKey={(record) => record.id || `investing-${record.date}-${record.description}`}
+                  pagination={false}
+                  size="small"
+                  scroll={{ x: 'max-content' }}
+                />
+              )
             ) : (
               <Empty description="Tidak ada transaksi investasi" />
             )}
@@ -419,13 +505,24 @@ const CashFlowStatementPage: React.FC = () => {
             }
           >
             {data.financingActivities.transactions.length > 0 ? (
-              <Table
-                columns={cashFlowColumns}
-                dataSource={data.financingActivities.transactions}
-                rowKey={(record) => record.id || `financing-${record.date}-${record.description}`}
-                pagination={false}
-                size="small"
-              />
+              isMobile ? (
+                <MobileTableView
+                  data={mobileFinancingData}
+                  loading={isLoading}
+                  entityType="cashflow-financing"
+                  searchable
+                  searchFields={['title', 'number']}
+                />
+              ) : (
+                <Table
+                  columns={cashFlowColumns}
+                  dataSource={data.financingActivities.transactions}
+                  rowKey={(record) => record.id || `financing-${record.date}-${record.description}`}
+                  pagination={false}
+                  size="small"
+                  scroll={{ x: 'max-content' }}
+                />
+              )
             ) : (
               <Empty description="Tidak ada transaksi pendanaan" />
             )}
@@ -446,7 +543,7 @@ const CashFlowStatementPage: React.FC = () => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
                 gap: '24px',
                 alignItems: 'center',
               }}

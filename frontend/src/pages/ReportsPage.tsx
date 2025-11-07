@@ -5,6 +5,7 @@ import {
   Card,
   Col,
   DatePicker,
+  List,
   Progress,
   Row,
   Select,
@@ -15,6 +16,7 @@ import {
   Typography,
 } from 'antd'
 import { useTheme } from '../theme'
+import { mobileTheme } from '../theme/mobileTheme'
 import {
   BarChartOutlined,
   ClockCircleOutlined,
@@ -43,6 +45,7 @@ import {
 } from '../components/charts'
 import ChartErrorBoundary from '../components/ChartErrorBoundary'
 import { CompactMetricCard } from '../components/ui/CompactMetricCard'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -53,6 +56,7 @@ export const ReportsPage: React.FC = () => {
   const { t } = useTranslation()
   const { theme } = useTheme()
   const { message } = App.useApp()
+  const isMobile = useIsMobile()
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(
     null
   )
@@ -285,6 +289,10 @@ export const ReportsPage: React.FC = () => {
     excelExportMutation.mutate({ reportType: 'business-overview', dateRange })
   }
 
+  // Adaptive chart heights for mobile
+  const chartHeight = isMobile ? 250 : 350
+  const showLegend = !isMobile
+
   return (
     <div style={{ padding: '16px 24px' }}>
       <div
@@ -293,8 +301,8 @@ export const ReportsPage: React.FC = () => {
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           marginBottom: '32px',
-          flexDirection: window.innerWidth < 768 ? 'column' : 'row',
-          gap: window.innerWidth < 768 ? '16px' : '0',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? '16px' : '0',
         }}
       >
         <div>
@@ -460,7 +468,7 @@ export const ReportsPage: React.FC = () => {
                 <QuarterlyChart
                   data={revenueData?.revenueByPeriod || []}
                   loading={revenueLoading}
-                  height={350}
+                  height={chartHeight}
                 />
               </ChartErrorBoundary>
             ) : (
@@ -468,7 +476,7 @@ export const ReportsPage: React.FC = () => {
                 <RevenueChart
                   data={revenueData?.revenueByPeriod || []}
                   loading={revenueLoading}
-                  height={350}
+                  height={chartHeight}
                 />
               </ChartErrorBoundary>
             )}
@@ -499,7 +507,7 @@ export const ReportsPage: React.FC = () => {
               <PaymentChart
                 data={paymentData?.invoicesByStatus || []}
                 loading={paymentLoading}
-                height={350}
+                height={chartHeight}
               />
             </ChartErrorBoundary>
           </Card>
@@ -532,7 +540,7 @@ export const ReportsPage: React.FC = () => {
               <RevenueChart
                 data={paymentData?.paymentTrends || []}
                 loading={paymentLoading}
-                height={250}
+                height={isMobile ? 200 : 250}
               />
             </ChartErrorBoundary>
           </Card>
@@ -561,15 +569,45 @@ export const ReportsPage: React.FC = () => {
               backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
-            <Table
-              columns={topClientsColumns}
-              dataSource={generateTopClientsData()}
-              pagination={false}
-              loading={isLoading}
-              size='small'
-              style={{ marginTop: '16px' }}
-              scroll={{ x: 'max-content' }}
-            />
+            {isMobile ? (
+              <List
+                dataSource={generateTopClientsData()}
+                loading={isLoading}
+                renderItem={(item: any) => (
+                  <Card
+                    size="small"
+                    style={{
+                      marginBottom: mobileTheme.spacing.sm,
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Tag color="blue" style={{ fontSize: '14px', fontWeight: 600 }}>#{item.rank}</Tag>
+                        <Text strong style={{ fontSize: mobileTheme.fontSize.body }}>{item.name}</Text>
+                      </div>
+                    </div>
+                    <div style={{ color: '#52c41a', fontSize: '18px', fontWeight: 600, marginBottom: '8px' }}>
+                      {formatCurrency(item.revenue)}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>{item.invoices} invoices</Text>
+                      <Progress percent={parseFloat(item.percentage)} size="small" style={{ width: '100px' }} />
+                    </div>
+                  </Card>
+                )}
+              />
+            ) : (
+              <Table
+                columns={topClientsColumns}
+                dataSource={generateTopClientsData()}
+                pagination={false}
+                loading={isLoading}
+                size='small'
+                style={{ marginTop: '16px' }}
+                scroll={{ x: 'max-content' }}
+              />
+            )}
           </Card>
         </Col>
 
@@ -593,15 +631,51 @@ export const ReportsPage: React.FC = () => {
               backdropFilter: theme.colors.glass.backdropFilter,
             }}
           >
-            <Table
-              columns={projectAnalysisColumns}
-              dataSource={generateProjectAnalysis()}
-              pagination={false}
-              loading={isLoading}
-              size='small'
-              style={{ marginTop: '16px' }}
-              scroll={{ x: 'max-content' }}
-            />
+            {isMobile ? (
+              <List
+                dataSource={generateProjectAnalysis()}
+                loading={isLoading}
+                renderItem={(item: any) => (
+                  <Card
+                    size="small"
+                    style={{
+                      marginBottom: mobileTheme.spacing.sm,
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Tag color="blue" style={{ fontSize: '14px', fontWeight: 600 }}>#{item.rank}</Tag>
+                        <Text strong style={{ fontSize: mobileTheme.fontSize.body }}>{item.name}</Text>
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: '8px' }}>
+                      <Tag color={item.type === 'PRODUCTION' ? 'blue' : 'green'}>
+                        {item.type.replace('_', ' ')}
+                      </Tag>
+                      <Text type="secondary" style={{ fontSize: '12px', marginLeft: '8px' }}>{item.number}</Text>
+                    </div>
+                    <div style={{ color: '#52c41a', fontSize: '18px', fontWeight: 600, marginBottom: '8px' }}>
+                      {formatCurrency(item.revenue)}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>{item.invoices} invoices</Text>
+                      <Progress percent={parseFloat(item.percentage)} size="small" style={{ width: '100px' }} />
+                    </div>
+                  </Card>
+                )}
+              />
+            ) : (
+              <Table
+                columns={projectAnalysisColumns}
+                dataSource={generateProjectAnalysis()}
+                pagination={false}
+                loading={isLoading}
+                size='small'
+                style={{ marginTop: '16px' }}
+                scroll={{ x: 'max-content' }}
+              />
+            )}
           </Card>
         </Col>
       </Row>

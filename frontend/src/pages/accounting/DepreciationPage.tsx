@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   App,
@@ -38,6 +38,8 @@ import {
   processMonthlyDepreciation,
 } from '../../services/accounting';
 import { useTheme } from '../../theme';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTableView from '../../components/mobile/MobileTableView';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -47,6 +49,7 @@ const DepreciationPage: React.FC = () => {
   const { theme } = useTheme();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([
     dayjs().startOf('month'),
     dayjs().endOf('month'),
@@ -109,6 +112,27 @@ const DepreciationPage: React.FC = () => {
     setSelectedAsset(asset);
     setDetailsVisible(true);
   };
+
+  // Mobile data adapter
+  const mobileDepreciationData = useMemo(() => {
+    if (!summary?.byAsset) return [];
+    return summary.byAsset.map(asset => ({
+      id: asset.assetId,
+      number: asset.assetCode,
+      title: asset.assetName,
+      subtitle: `Depresiasi: ${formatCurrency(asset.depreciationAmount)}`,
+      status: asset.netBookValue > 0 ? 'success' : 'warning',
+      metadata: {
+        assetId: asset.assetId,
+        assetCode: asset.assetCode,
+        assetName: asset.assetName,
+        depreciationAmount: asset.depreciationAmount,
+        accumulatedDepreciation: asset.accumulatedDepreciation,
+        netBookValue: asset.netBookValue,
+        entryCount: asset.entryCount,
+      }
+    }));
+  }, [summary]);
 
   const columns = [
     {
@@ -328,12 +352,22 @@ const DepreciationPage: React.FC = () => {
           </div>
         ) : !summary || summary.byAsset.length === 0 ? (
           <Empty description="Tidak ada data depresiasi untuk periode ini" />
+        ) : isMobile ? (
+          <MobileTableView
+            data={mobileDepreciationData}
+            loading={isLoading}
+            entityType="depreciation"
+            searchable
+            searchFields={['number', 'title']}
+            onRowClick={(record) => showAssetDetails(record.metadata)}
+          />
         ) : (
           <Table
             columns={columns}
             dataSource={summary.byAsset}
             rowKey="assetId"
             pagination={false}
+            scroll={{ x: 'max-content' }}
             style={{
               background: theme.colors.background.primary,
             }}

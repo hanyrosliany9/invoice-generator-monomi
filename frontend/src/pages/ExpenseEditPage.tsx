@@ -34,6 +34,7 @@ import type {
 } from '../types/expense';
 import type { Vendor } from '../types/vendor';
 import { useTheme } from '../theme';
+import { useIsMobile } from '../hooks/useMediaQuery';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -43,6 +44,7 @@ export const ExpenseEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { message } = App.useApp();
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -389,8 +391,8 @@ export const ExpenseEditPage: React.FC = () => {
             <Card
               title='Ringkasan'
               style={{
-                position: 'sticky',
-                top: '24px',
+                position: isMobile ? 'relative' : 'sticky',
+                top: isMobile ? '0' : '24px',
                 borderRadius: '12px',
                 border: theme.colors.glass.border,
                 background: theme.colors.glass.background,

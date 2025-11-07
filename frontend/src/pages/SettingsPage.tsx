@@ -41,6 +41,8 @@ import { settingsService } from '../services/settings'
 import { authService } from '../services/auth'
 import { ProjectTypeManagement } from '../components/ProjectTypeManagement'
 import { useTheme } from '../theme'
+import { mobileTheme } from '../theme/mobileTheme'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -94,6 +96,7 @@ interface SystemFormValues {
 export const SettingsPage: React.FC = () => {
   const { t } = useTranslation()
   const { theme } = useTheme()
+  const isMobile = useIsMobile()
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const { message } = App.useApp()
@@ -344,7 +347,7 @@ export const SettingsPage: React.FC = () => {
         </Row>
 
         <Row gutter={24}>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item
               label='Name'
               name='name'
@@ -353,7 +356,7 @@ export const SettingsPage: React.FC = () => {
               <Input size='large' placeholder='Full Name' autoComplete='name' />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item
               label='Email'
               name='email'
@@ -368,12 +371,12 @@ export const SettingsPage: React.FC = () => {
         </Row>
 
         <Row gutter={24}>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item label='Phone' name='phone'>
               <Input size='large' placeholder='+62 812 3456 7890' autoComplete='tel' />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item label='Role' name='role'>
               <Input size='large' disabled autoComplete='organization-title' />
             </Form.Item>
@@ -381,7 +384,7 @@ export const SettingsPage: React.FC = () => {
         </Row>
 
         <Row gutter={24}>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item label={t('settings.timezone')} name='timezone'>
               <Select size='large'>
                 <Option value='Asia/Jakarta'>Asia/Jakarta (WIB)</Option>
@@ -390,7 +393,7 @@ export const SettingsPage: React.FC = () => {
               </Select>
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item label={t('settings.language')} name='language'>
               <Select size='large'>
                 <Option value='id'>Bahasa Indonesia</Option>
@@ -561,7 +564,7 @@ export const SettingsPage: React.FC = () => {
         }}
       >
         <Row gutter={24}>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item
               label='Company Name'
               name='companyName'
@@ -572,7 +575,7 @@ export const SettingsPage: React.FC = () => {
               <Input size='large' placeholder='PT Technology Indonesia' autoComplete='organization' />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item
               label='Tax Number (NPWP)'
               name='taxNumber'
@@ -592,7 +595,7 @@ export const SettingsPage: React.FC = () => {
         </Form.Item>
 
         <Row gutter={24}>
-          <Col span={8}>
+          <Col xs={24} sm={12} md={8}>
             <Form.Item
               label='Phone'
               name='phone'
@@ -603,7 +606,7 @@ export const SettingsPage: React.FC = () => {
               <Input size='large' placeholder='021-1234567' autoComplete='tel' />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col xs={24} sm={12} md={8}>
             <Form.Item
               label='Email'
               name='email'
@@ -615,7 +618,7 @@ export const SettingsPage: React.FC = () => {
               <Input size='large' placeholder='info@company.com' autoComplete='email' />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col xs={24} sm={12} md={8}>
             <Form.Item label='Website' name='website'>
               <Input size='large' placeholder='https://company.com' autoComplete='url' />
             </Form.Item>
@@ -625,17 +628,17 @@ export const SettingsPage: React.FC = () => {
         <Divider>{t('settings.bankAccounts')}</Divider>
 
         <Row gutter={24}>
-          <Col span={8}>
+          <Col xs={24} sm={12} md={8}>
             <Form.Item label='Bank BCA' name='bankBCA'>
               <Input size='large' placeholder='1234567890' autoComplete='off' />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col xs={24} sm={12} md={8}>
             <Form.Item label='Bank Mandiri' name='bankMandiri'>
               <Input size='large' placeholder='0987654321' autoComplete='off' />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col xs={24} sm={12} md={8}>
             <Form.Item label='Bank BNI' name='bankBNI'>
               <Input size='large' placeholder='1122334455' autoComplete='off' />
             </Form.Item>
@@ -700,7 +703,7 @@ export const SettingsPage: React.FC = () => {
           }}
         >
           <Row gutter={24}>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 label={t('settings.emailNotifications')}
                 name='emailNotifications'
@@ -723,7 +726,7 @@ export const SettingsPage: React.FC = () => {
                 <Switch />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 label='Overdue Alerts'
                 name='overdueAlerts'
@@ -779,7 +782,7 @@ export const SettingsPage: React.FC = () => {
           }}
         >
           <Row gutter={24}>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item label='Default Payment Terms' name='paymentTerms'>
                 <Select size='large'>
                   <Option value='NET 7'>NET 7 Days</Option>
@@ -789,7 +792,7 @@ export const SettingsPage: React.FC = () => {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item label='Auto Materai Threshold' name='materaiThreshold'>
                 <InputNumber
                   size='large'
@@ -806,12 +809,12 @@ export const SettingsPage: React.FC = () => {
           </Row>
 
           <Row gutter={24}>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item label='Invoice Prefix' name='invoicePrefix'>
                 <Input size='large' placeholder='INV-' autoComplete='off' />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item label='Quotation Prefix' name='quotationPrefix'>
                 <Input size='large' placeholder='QT-' autoComplete='off' />
               </Form.Item>
@@ -848,7 +851,7 @@ export const SettingsPage: React.FC = () => {
           }}
         >
           <Row gutter={24}>
-            <Col span={8}>
+            <Col xs={24} sm={12} md={8}>
               <Form.Item
                 label={t('settings.autoBackup')}
                 name='autoBackup'
@@ -857,7 +860,7 @@ export const SettingsPage: React.FC = () => {
                 <Switch />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={24} sm={12} md={8}>
               <Form.Item
                 label={t('settings.backupFrequency')}
                 name='backupFrequency'
@@ -869,7 +872,7 @@ export const SettingsPage: React.FC = () => {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={24} sm={12} md={8}>
               <Form.Item label='Backup Time' name='backupTime'>
                 <TimePicker
                   size='large'
@@ -997,7 +1000,8 @@ export const SettingsPage: React.FC = () => {
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
-          size='large'
+          size={isMobile ? 'large' : 'middle'}
+          tabPosition={isMobile ? 'top' : 'left'}
           items={[
           {
             key: 'profile',
