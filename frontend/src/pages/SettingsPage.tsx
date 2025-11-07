@@ -131,54 +131,9 @@ export const SettingsPage: React.FC = () => {
     refetchOnMount: true,
   })
 
-  // Sync form with fetched user settings
-  useEffect(() => {
-    if (userSettings) {
-      profileForm.setFieldsValue({
-        name: userSettings.user.name,
-        email: userSettings.user.email,
-        role: userSettings.user.role,
-        phone: '',
-        timezone: userSettings.preferences.timezone,
-        language: userSettings.preferences.language,
-      })
-    }
-  }, [userSettings, profileForm])
+  // Profile and company forms use initialValues prop in Form components, no need to setFieldsValue
 
-  // Sync company form with fetched company settings
-  useEffect(() => {
-    if (companySettings) {
-      companyForm.setFieldsValue({
-        companyName: companySettings.companyName,
-        address: companySettings.address,
-        phone: companySettings.phone,
-        email: companySettings.email,
-        website: companySettings.website,
-        taxNumber: companySettings.taxNumber,
-        currency: companySettings.currency,
-        bankBCA: companySettings.bankBCA,
-        bankMandiri: companySettings.bankMandiri,
-        bankBNI: companySettings.bankBNI,
-      })
-    }
-  }, [companySettings, companyForm])
-
-  // Sync system forms with fetched system settings
-  useEffect(() => {
-    if (systemSettings) {
-      invoiceSettingsForm.setFieldsValue({
-        paymentTerms: systemSettings.defaultPaymentTerms,
-        materaiThreshold: systemSettings.materaiThreshold,
-        invoicePrefix: systemSettings.invoicePrefix,
-        quotationPrefix: systemSettings.quotationPrefix,
-      })
-      backupSettingsForm.setFieldsValue({
-        autoBackup: systemSettings.autoBackup,
-        backupFrequency: systemSettings.backupFrequency,
-        backupTime: systemSettings.backupTime ? dayjs(systemSettings.backupTime, 'HH:mm') : null,
-      })
-    }
-  }, [systemSettings, invoiceSettingsForm, backupSettingsForm])
+  // System forms use initialValues prop in the Form components, no need to setFieldsValue
 
   // Mutations
   const updateUserMutation = useMutation({
