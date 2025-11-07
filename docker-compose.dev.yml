@@ -61,7 +61,7 @@ services:
         echo '🔧 Running database migrations...' &&
         npx prisma migrate deploy &&
         npx prisma generate &&
-        if [ \"$SKIP_DB_INIT\" = \"false\" ]; then
+        if [ \"${SKIP_DB_INIT:-false}\" = \"false\" ]; then
           echo '🌱 Running database seeding...' &&
           npx prisma db seed || { echo '❌ Error: Database seeding failed!'; exit 1; }
         fi &&
