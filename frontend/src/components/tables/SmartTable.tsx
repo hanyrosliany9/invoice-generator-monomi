@@ -518,7 +518,6 @@ const SmartTable = <T extends BusinessEntity>({
         recordCount: processedData.length,
       })
       // Export implementation would go here
-      console.log(`Exporting ${processedData.length} records as ${format}`)
     },
     [processedData, recordMetric]
   )

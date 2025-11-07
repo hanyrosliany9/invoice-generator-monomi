@@ -938,7 +938,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
         onCancel={() => setSettingsVisible(false)}
         onOk={() => {
           form.validateFields().then(values => {
-            console.log('Settings updated:', values)
+            // Settings updated successfully
             setSettingsVisible(false)
           })
         }}

@@ -357,9 +357,8 @@ export const EnhancedPriceInheritanceFormField: React.FC<
       try {
         await form.validateFields()
         // Trigger auto-save
-        console.log('Auto-saving price inheritance configuration...')
       } catch (error) {
-        console.log('Auto-save skipped due to validation errors')
+        // Auto-save skipped due to validation errors
       }
     }, autoSaveDelay)
 
@@ -373,7 +372,6 @@ export const EnhancedPriceInheritanceFormField: React.FC<
   useEffect(() => {
     if (dependentFields.length > 0) {
       // Logic to update price inheritance based on dependent field changes
-      console.log('Dependent fields changed:', dependentValues)
     }
   }, [dependentValues, dependentFields])
 

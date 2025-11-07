@@ -60,13 +60,7 @@ class ErrorBoundary extends Component<Props, State> {
 
   private trackError = (error: Error, errorInfo: ErrorInfo) => {
     // In a real app, this would send to error tracking service like Sentry
-    console.log('Error tracked:', {
-      message: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      retryCount: this.state.retryCount,
-      level: this.props.level || 'component',
-    })
+    // Error tracking would capture: message, stack, componentStack, retryCount, level
   }
 
   private handleReload = () => {

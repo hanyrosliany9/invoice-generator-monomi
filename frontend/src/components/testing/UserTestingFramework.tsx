@@ -787,7 +787,6 @@ function getSuccessCriteria(testType: string): SuccessCriteriaResult[] {
 
 function sendSessionResults(session: UserTestingSession): void {
   // In real implementation, this would send results to analytics service
-  console.log('User testing session completed:', session)
 
   // Calculate final metrics
   const completedTasks = session.tasks.filter(task => task.completed).length
@@ -800,13 +799,7 @@ function sendSessionResults(session: UserTestingSession): void {
   )
   const errorRate = totalTasks > 0 ? (totalErrors / totalTasks) * 100 : 0
 
-  console.log(`Session Results:
-    - Completion Rate: ${completionRate}%
-    - Error Rate: ${errorRate}%
-    - Duration: ${
-      session.endTime
-        ? (session.endTime.getTime() - session.startTime.getTime()) / 1000
-        : 0
-    }s
-  `)
+  // Session results calculated:
+  // - Completion Rate, Error Rate, Duration metrics available
+  // In production, these would be sent to an analytics service
 }
