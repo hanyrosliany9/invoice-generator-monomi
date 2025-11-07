@@ -1004,7 +1004,7 @@ export class PdfService {
 
           <!-- Total Due for this invoice -->
           <tr class="summary-total">
-            <td>TOTAL DUE (This Invoice)</td>
+            <td>TOTAL DUE</td>
             <td>${formatIDR(finalTotal)}</td>
           </tr>
 
