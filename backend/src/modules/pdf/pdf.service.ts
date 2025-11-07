@@ -1018,7 +1018,7 @@ export class PdfService {
             if (remainingBalance > 0) {
               return `
               <tr style="background-color: #fffbeb; border-top: 1px solid #f59e0b;">
-                <td style="color: #92400e; font-weight: 600;">Remaining Receivable</td>
+                <td style="color: #92400e; font-weight: 600;">Remaining Payment</td>
                 <td style="color: #92400e; font-weight: 600;">${formatIDR(remainingBalance)}</td>
               </tr>
               `;
