@@ -111,10 +111,19 @@ export const SettingsPage: React.FC = () => {
   const [backupSettingsForm] = Form.useForm()
 
   // Fetch user settings from backend
-  const { data: userSettings, isLoading: isLoadingUser } = useQuery({
+  const { data: userSettings, isLoading: isLoadingUser, error: userSettingsError } = useQuery({
     queryKey: ['settings-user'],
     queryFn: () => settingsService.getUserSettings(),
     refetchOnMount: true,
+    retry: false, // Don't retry on 404
+    onError: (error: any) => {
+      // If user not found (404), clear auth and redirect to login
+      if (error?.response?.status === 404) {
+        message.error('Session expired. Please log in again.')
+        useAuthStore.getState().logout()
+        navigate('/login')
+      }
+    },
   })
 
   // Fetch company settings from backend
