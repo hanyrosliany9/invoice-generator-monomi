@@ -5,9 +5,11 @@ import {
   IsOptional,
   Min,
   IsObject,
+  IsArray,
+  ValidateNested,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
+import { Transform, Type } from "class-transformer";
 
 export class CreateQuotationDto {
   @ApiProperty({ description: "ID klien" })
@@ -70,4 +72,22 @@ export class CreateQuotationDto {
   @IsOptional()
   @IsString({ message: "Terms harus berupa string" })
   terms?: string;
+
+  @ApiProperty({
+    description: "Payment milestones (optional, for milestone-based payments)",
+    required: false,
+    type: "array",
+    example: [
+      {
+        milestoneNumber: 1,
+        name: "Down Payment",
+        nameId: "DP 50%",
+        paymentPercentage: 50,
+        paymentAmount: 5000000,
+      },
+    ],
+  })
+  @IsOptional()
+  @IsArray({ message: "Payment milestones harus berupa array" })
+  paymentMilestones?: any[];
 }

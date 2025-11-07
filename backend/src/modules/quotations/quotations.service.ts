@@ -63,9 +63,13 @@ export class QuotationsService {
     const priceBreakdown =
       createQuotationDto.priceBreakdown || project.priceBreakdown || undefined;
 
-    return this.prisma.quotation.create({
+    // Extract paymentMilestones from DTO (should not be passed to Prisma create)
+    const { paymentMilestones, ...quotationData } = createQuotationDto as any;
+
+    // Create quotation
+    const quotation = await this.prisma.quotation.create({
       data: {
-        ...createQuotationDto,
+        ...quotationData,
         quotationNumber,
         createdBy: userId,
         scopeOfWork: scopeOfWork,
@@ -83,6 +87,23 @@ export class QuotationsService {
         },
       },
     });
+
+    // Create payment milestones if provided
+    if (paymentMilestones && Array.isArray(paymentMilestones) && paymentMilestones.length > 0) {
+      for (const milestone of paymentMilestones) {
+        await this.paymentMilestonesService.addPaymentMilestone(quotation.id, {
+          milestoneNumber: milestone.milestoneNumber,
+          name: milestone.name,
+          nameId: milestone.nameId || milestone.name,
+          description: milestone.description,
+          descriptionId: milestone.descriptionId,
+          paymentPercentage: milestone.paymentPercentage,
+          // paymentAmount is calculated by backend
+        });
+      }
+    }
+
+    return quotation;
   }
 
   async findAll(
@@ -224,9 +245,12 @@ export class QuotationsService {
       }
     }
 
+    // Extract paymentMilestones (not a Prisma field, handled separately)
+    const { paymentMilestones: _paymentMilestones, ...quotationUpdateData } = updateQuotationDto as any;
+
     return this.prisma.quotation.update({
       where: { id },
-      data: updateQuotationDto,
+      data: quotationUpdateData,
       include: {
         client: true,
         project: true,

@@ -152,7 +152,41 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 CMD ["nginx", "-g", "daemon off;"]
 
 # =============================================================================
-# STAGE 5: DEVELOPMENT RUNTIME (DEFAULT)
+# STAGE 5: PRODUCTION WITH NODE.JS SERVER (for docker-compose.prod.yml)
+# =============================================================================
+FROM base AS production-node
+
+# Set production environment
+ENV NODE_ENV=production \
+    TZ=Asia/Jakarta \
+    FRONTEND_PORT=3000
+
+WORKDIR /app/frontend
+
+# Copy built application from build stage
+COPY --from=build /app/dist ./dist
+
+# Copy server.cjs for serving the built files
+COPY server.cjs ./server.cjs
+
+# Set permissions
+RUN chown -R react:react /app
+
+# Switch to non-root user
+USER react
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Start Node.js server
+CMD ["node", "server.cjs"]
+
+# =============================================================================
+# STAGE 6: DEVELOPMENT RUNTIME (DEFAULT)
 # =============================================================================
 FROM base AS development
 

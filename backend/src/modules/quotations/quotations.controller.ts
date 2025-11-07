@@ -14,6 +14,7 @@ import {
 import { QuotationsService } from "./quotations.service";
 import { CreateQuotationDto } from "./dto/create-quotation.dto";
 import { UpdateQuotationDto } from "./dto/update-quotation.dto";
+import { UpdateQuotationStatusDto } from "./dto/update-quotation-status.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import {
   RequireAuth,
@@ -125,7 +126,7 @@ export class QuotationsController {
   @ApiOperation({ summary: "Update status quotation (approve/decline)" })
   async updateStatus(
     @Param("id") id: string,
-    @Body() body: { status: string },
+    @Body() body: UpdateQuotationStatusDto,
     @Request() req: any,
   ) {
     // Convert lowercase status to uppercase enum

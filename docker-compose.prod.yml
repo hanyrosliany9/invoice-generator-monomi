@@ -4,11 +4,11 @@ services:
   # Frontend Production Server
   frontend:
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile
-      target: production
+      target: production-node
     container_name: invoice-frontend-prod
-    command: sh -c "cd /app/frontend && node server.cjs"
+    # Command is defined in Dockerfile CMD
     environment:
       - NODE_ENV=production
       - FRONTEND_PORT=3000

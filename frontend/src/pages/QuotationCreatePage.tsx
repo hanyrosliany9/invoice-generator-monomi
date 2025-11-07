@@ -176,19 +176,9 @@ export const QuotationCreatePage: React.FC = () => {
     onSuccess: async (quotation) => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
 
-      // Sync milestones after quotation creation
-      const formValues = form.getFieldsValue()
-      if (formValues.paymentMilestones && formValues.paymentMilestones.length > 0) {
-        try {
-          await syncPaymentMilestones(quotation.id, formValues.paymentMilestones)
-          message.success('Quotation and payment milestones created successfully')
-        } catch (error) {
-          const apiError = error as ApiError
-          message.warning(`Quotation created but milestone sync failed: ${apiError.message || 'Unknown error'}`)
-        }
-      } else {
-        message.success('Quotation created successfully')
-      }
+      // Payment milestones are now created automatically by the backend
+      // No need to sync them here anymore
+      message.success('Quotation created successfully')
 
       navigate(`/quotations/${quotation.id}`)
     },
@@ -225,11 +215,15 @@ export const QuotationCreatePage: React.FC = () => {
       }
 
       form.setFieldsValue(inheritedData)
+      // Sync state with form values to show PaymentMilestoneForm
+      setFormValues(form.getFieldsValue())
     } else if (prefilledClientId) {
       form.setFieldsValue({
         clientId: prefilledClientId,
         validUntil: dayjs().add(30, 'day'),
       })
+      // Sync state with form values
+      setFormValues(form.getFieldsValue())
     }
   }, [selectedProject, prefilledClientId, form])
 
