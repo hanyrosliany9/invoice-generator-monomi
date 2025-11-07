@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import * as puppeteer from "puppeteer";
-import { join } from "path";
-import { readFileSync } from "fs";
+import { join, resolve } from "path";
+import { readFileSync, existsSync } from "fs";
 import { SettingsService } from "../settings/settings.service";
 import { InvoicesService } from "../invoices/invoices.service";
 import { QuotationsService } from "../quotations/quotations.service";
@@ -11,8 +11,47 @@ import { generateProjectHTML } from "./templates/project.html";
 export class PdfService {
   private templatePath = join(__dirname, "templates");
   private readonly logger = new Logger(PdfService.name);
+  private logoBase64: string | null = null;
 
-  constructor(private readonly settingsService: SettingsService) {}
+  constructor(private readonly settingsService: SettingsService) {
+    this.initializeLogo();
+  }
+
+  private initializeLogo() {
+    try {
+      // Try multiple paths to handle both development and production environments
+      const possiblePaths = [
+        join(__dirname, "assets", "company-logo.png"),                           // Development (ts-node)
+        join(__dirname, "..", "..", "..", "modules", "pdf", "assets", "company-logo.png"), // Production (compiled dist/src -> dist/modules)
+        join(__dirname, "..", "..", "..", "src", "modules", "pdf", "assets", "company-logo.png"), // Development fallback
+        join(process.cwd(), "backend", "dist", "modules", "pdf", "assets", "company-logo.png"),   // Production explicit
+        join(process.cwd(), "backend", "src", "modules", "pdf", "assets", "company-logo.png"),     // Docker dev
+        join(process.cwd(), "src", "modules", "pdf", "assets", "company-logo.png"),               // Alternative
+      ];
+
+      let logoPath: string | null = null;
+      for (const path of possiblePaths) {
+        if (existsSync(path)) {
+          logoPath = path;
+          this.logger.log(`Logo found at: ${path}`);
+          break;
+        }
+      }
+
+      if (!logoPath) {
+        throw new Error(`Logo file not found. Tried paths: ${possiblePaths.join(", ")}`);
+      }
+
+      const logoBuffer = readFileSync(logoPath);
+      this.logoBase64 = `data:image/png;base64,${logoBuffer.toString("base64")}`;
+      this.logger.log("Company logo loaded successfully");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to load company logo: ${errorMessage}`);
+      this.logger.warn("PDFs will render without logo");
+      this.logoBase64 = null;
+    }
+  }
 
   async generateInvoicePDF(invoiceData: any, continuous: boolean = true): Promise<Buffer> {
     const browser = await puppeteer.launch({
@@ -653,6 +692,85 @@ export class PdfService {
       color: #d1d5db;
     }
 
+    /* ===== MATERAI (STAMP DUTY) PLACEHOLDER ===== */
+    .materai-section {
+      margin-top: 6mm;
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-start;
+      padding-bottom: 4mm;
+    }
+
+    .materai-placeholder {
+      width: 32mm;
+      height: 32mm;
+      border: 2px dashed #d1d5db;
+      border-radius: 3px;
+      background-color: #fafafa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 3mm;
+      position: relative;
+    }
+
+    .materai-placeholder.applied {
+      border-color: #10b981;
+      background-color: #f0fdf4;
+      border-style: solid;
+    }
+
+    .materai-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 8px;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 1mm;
+    }
+
+    .materai-amount {
+      font-size: 9px;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 2mm;
+    }
+
+    .materai-status {
+      font-size: 7px;
+      color: #6b7280;
+      margin-top: 2mm;
+    }
+
+    .materai-status.applied {
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    .materai-icon {
+      width: 12mm;
+      height: 12mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 1mm 0;
+    }
+
+    .materai-icon.required {
+      border: 1px dashed #d1d5db;
+      border-radius: 50%;
+      color: #9ca3af;
+      font-size: 10px;
+    }
+
+    .materai-icon.applied {
+      color: #10b981;
+      font-size: 16px;
+      font-weight: 700;
+    }
 
     /* ===== UTILITY CLASSES ===== */
     .text-right {
@@ -674,7 +792,9 @@ export class PdfService {
       .detail-card,
       .section-box,
       .footer-section,
-      .contact-bar {
+      .contact-bar,
+      .materai-section,
+      .materai-placeholder {
         page-break-inside: avoid;
       }
 
@@ -706,6 +826,7 @@ export class PdfService {
     <!-- Header with Company Info and Invoice Title -->
     <div class="header">
       <div class="company-info">
+        ${this.logoBase64 ? `<img src="${this.logoBase64}" alt="Company Logo" class="company-logo" />` : ""}
         <div class="company-name">${companyData.companyName}</div>
         <div class="company-tagline">Digital Creative Agency</div>
       </div>
@@ -821,7 +942,7 @@ export class PdfService {
     <div class="summary-section">
       <table class="summary-table">
 
-        <!-- SCENARIO 1: Milestone-based invoice -->
+        <!-- SCENARIO 1: Termin-based invoice -->
         ${paymentMilestone && quotation ? `
           <!-- Full Project Subtotal -->
           <tr>
@@ -829,9 +950,9 @@ export class PdfService {
             <td>${formatIDR(quotation.totalAmount)}</td>
           </tr>
 
-          <!-- This Milestone -->
+          <!-- This Termin -->
           <tr>
-            <td>Milestone ${paymentMilestone.milestoneNumber} - ${paymentMilestone.nameId || paymentMilestone.name} (${paymentMilestone.paymentPercentage}%)</td>
+            <td>Termin ${paymentMilestone.milestoneNumber} - ${paymentMilestone.nameId || paymentMilestone.name} (${paymentMilestone.paymentPercentage}%)</td>
             <td>${formatIDR(paymentMilestone.paymentAmount)}</td>
           </tr>
 
@@ -872,7 +993,7 @@ export class PdfService {
               </tr>
               ${previousInvoices.map((inv: any) => `
               <tr style="font-size: 8px; color: #6b7280;">
-                <td>&nbsp;&nbsp;↳ ${inv.invoiceNumber} - Milestone ${inv.paymentMilestone?.milestoneNumber}</td>
+                <td>&nbsp;&nbsp;↳ ${inv.invoiceNumber} - Termin ${inv.paymentMilestone?.milestoneNumber}</td>
                 <td>${formatIDR(inv.totalAmount)}</td>
               </tr>
               `).join('')}
@@ -905,7 +1026,7 @@ export class PdfService {
             return '';
           })()}
 
-        <!-- SCENARIO 2: Non-milestone invoice (fallback to current behavior) -->
+        <!-- SCENARIO 2: Non-termin invoice (fallback to current behavior) -->
         ` : `
           <tr>
             <td>Subtotal</td>
@@ -958,6 +1079,28 @@ export class PdfService {
         <div class="footer-text">${terms || "Payment due within 30 days of invoice date. All prices are in Indonesian Rupiah (IDR). This invoice is valid until the due date specified above."}</div>
       </div>
     </div>
+
+    <!-- Materai Stamp Duty Section (Indonesian Compliance) -->
+    ${materaiRequired ? `
+    <div class="materai-section">
+      <div class="materai-placeholder${materaiApplied ? ' applied' : ''}">
+        <div class="materai-title">Materai</div>
+        <div class="materai-amount">Rp 10.000</div>
+        <div class="materai-icon${materaiApplied ? ' applied' : ' required'}">
+          ${materaiApplied
+            ? '<span>✓</span>'
+            : '<span style="font-size: 20px; color: #d1d5db;">□</span>'
+          }
+        </div>
+        <div class="materai-status${materaiApplied ? ' applied' : ''}">
+          ${materaiApplied
+            ? `Applied${invoiceData.materaiAppliedAt ? ' • ' + formatDate(invoiceData.materaiAppliedAt) : ''}`
+            : 'Stamp Required'
+          }
+        </div>
+      </div>
+    </div>
+    ` : ''}
 
     <!-- Contact Information Bar (inside invoice-container to prevent separation) -->
     <div class="contact-bar">
@@ -1485,6 +1628,7 @@ export class PdfService {
     <!-- Header with Company Info and Quotation Title -->
     <div class="header">
       <div class="company-info">
+        ${this.logoBase64 ? `<img src="${this.logoBase64}" alt="Company Logo" class="company-logo" />` : ""}
         <div class="company-name">${companyData.companyName}</div>
         <div class="company-tagline">Digital Creative Agency</div>
       </div>

@@ -220,7 +220,7 @@
       "title": "Ubah Status Quotation"
     },
     "milestones": {
-      "title": "Syarat Pembayaran & Milestone",
+      "title": "Syarat Pembayaran & Termin",
       "paymentStructure": "Struktur Pembayaran",
       "paymentType": {
         "fullPayment": "Pembayaran Penuh",
@@ -240,7 +240,7 @@
         "percentage": "Persentase Pembayaran (%)",
         "amount": "Jumlah Terhitung (IDR)",
         "dueDate": "Tanggal Jatuh Tempo",
-        "daysAfterPrevious": "Hari Setelah Milestone Sebelumnya",
+        "daysAfterPrevious": "Hari Setelah Termin Sebelumnya",
         "description": "Deskripsi (English)",
         "descriptionIndonesian": "Deskripsi (Bahasa Indonesia)",
         "deliverables": "Deliverables (dipisahkan koma)"
@@ -254,22 +254,22 @@
       "validation": {
         "totalPercentageInvalid": "Total persentase harus sama dengan 100%",
         "percentageNotEqual": "Total persentase harus sama dengan 100% (saat ini {{percentage}}%)",
-        "sequentialNumbers": "Nomor milestone harus berurutan (1, 2, 3...)",
-        "amountMismatch": "Jumlah milestone {{number}} tidak sesuai dengan persentase",
-        "firstMilestoneNoDays": "Milestone pertama tidak boleh memiliki 'hari setelah milestone sebelumnya'"
+        "sequentialNumbers": "Nomor termin harus berurutan (1, 2, 3...)",
+        "amountMismatch": "Jumlah termin {{number}} tidak sesuai dengan persentase",
+        "firstMilestoneNoDays": "Termin pertama tidak boleh memiliki 'hari setelah termin sebelumnya'"
       },
       "messages": {
-        "info": "Pembayaran Bertahap (Termin Pembayaran) - Struktur pembayaran ini umum di bisnis Indonesia. Setiap milestone mewakili tahap pembayaran dengan deliverables spesifik.",
-        "infoContinued": "Saat Anda menyetujui quotation ini, invoice akan dibuat secara otomatis untuk setiap milestone.",
-        "noMilestones": "Belum ada milestone",
-        "addFirstMilestone": "Tambah Milestone Pertama",
-        "addAnother": "Tambah Milestone Lainnya",
-        "deleteMilestone": "Hapus Milestone",
-        "confirmDelete": "Apakah Anda yakin ingin menghapus milestone ini?"
+        "info": "Pembayaran Bertahap (Termin Pembayaran) - Struktur pembayaran ini umum di bisnis Indonesia. Setiap termin mewakili tahap pembayaran dengan deliverables spesifik.",
+        "infoContinued": "Saat Anda menyetujui quotation ini, invoice akan dibuat secara otomatis untuk setiap termin.",
+        "noMilestones": "Belum ada termin",
+        "addFirstMilestone": "Tambah Termin Pertama",
+        "addAnother": "Tambah Termin Lainnya",
+        "deleteMilestone": "Hapus Termin",
+        "confirmDelete": "Apakah Anda yakin ingin menghapus termin ini?"
       },
       "progress": {
         "title": "Progress Pembayaran",
-        "totalMilestones": "Total Milestone",
+        "totalMilestones": "Total Termin",
         "invoiced": "Sudah di-Invoice",
         "paid": "Sudah Dibayar",
         "overdue": "Terlambat",

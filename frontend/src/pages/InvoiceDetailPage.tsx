@@ -420,7 +420,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                       )}
                       {invoice.paymentMilestone && (
                         <Tag color="blue" icon={<ClockCircleOutlined />}>
-                          Milestone {invoice.paymentMilestone.milestoneNumber}: {invoice.paymentMilestone.nameId || invoice.paymentMilestone.name} ({invoice.paymentMilestone.paymentPercentage}%)
+                          Termin {invoice.paymentMilestone.milestoneNumber}: {invoice.paymentMilestone.nameId || invoice.paymentMilestone.name} ({invoice.paymentMilestone.paymentPercentage}%)
                         </Tag>
                       )}
                     </div>
@@ -697,7 +697,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                       <Descriptions.Item label='Payment Term'>
                         <Space direction="vertical" size="small">
                           <Tag color="blue" icon={<ClockCircleOutlined />}>
-                            Milestone {invoice.paymentMilestone.milestoneNumber}: {invoice.paymentMilestone.paymentPercentage}%
+                            Termin {invoice.paymentMilestone.milestoneNumber}: {invoice.paymentMilestone.paymentPercentage}%
                           </Tag>
                           <Text type="secondary" style={{ fontSize: '12px' }}>
                             {invoice.paymentMilestone.nameId || invoice.paymentMilestone.name}
@@ -882,7 +882,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                           size='small'
                         >
                           <Descriptions column={1}>
-                            <Descriptions.Item label='Milestone Number'>
+                            <Descriptions.Item label='Termin Number'>
                               #{invoice.paymentMilestone.milestoneNumber}
                             </Descriptions.Item>
                             <Descriptions.Item label='Name'>

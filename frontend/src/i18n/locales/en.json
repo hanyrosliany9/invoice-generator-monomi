@@ -127,7 +127,7 @@
       "title": "Change Quotation Status"
     },
     "milestones": {
-      "title": "Payment Terms & Milestones",
+      "title": "Payment Terms & Termin",
       "paymentStructure": "Payment Structure",
       "paymentType": {
         "fullPayment": "Full Payment",
@@ -147,7 +147,7 @@
         "percentage": "Payment Percentage (%)",
         "amount": "Calculated Amount (IDR)",
         "dueDate": "Due Date",
-        "daysAfterPrevious": "Days After Previous Milestone",
+        "daysAfterPrevious": "Days After Previous Termin",
         "description": "Description (English)",
         "descriptionIndonesian": "Description (Bahasa Indonesia)",
         "deliverables": "Deliverables (comma-separated)"
@@ -161,22 +161,22 @@
       "validation": {
         "totalPercentageInvalid": "Total percentages must equal 100%",
         "percentageNotEqual": "Total percentages must equal 100% (currently {{percentage}}%)",
-        "sequentialNumbers": "Milestone numbers must be sequential (1, 2, 3...)",
-        "amountMismatch": "Milestone {{number}} amount doesn't match percentage",
-        "firstMilestoneNoDays": "First milestone cannot have 'days after previous'"
+        "sequentialNumbers": "Termin numbers must be sequential (1, 2, 3...)",
+        "amountMismatch": "Termin {{number}} amount doesn't match percentage",
+        "firstMilestoneNoDays": "First termin cannot have 'days after previous'"
       },
       "messages": {
-        "info": "Milestone-Based Payments (Termin Pembayaran) - This payment structure is common in Indonesian business. Each milestone represents a payment stage with specific deliverables.",
-        "infoContinued": "When you approve this quotation, invoices will be generated automatically for each milestone.",
-        "noMilestones": "No milestones yet",
-        "addFirstMilestone": "Add First Milestone",
-        "addAnother": "Add Another Milestone",
-        "deleteMilestone": "Delete Milestone",
-        "confirmDelete": "Are you sure you want to delete this milestone?"
+        "info": "Termin-Based Payments (Termin Pembayaran) - This payment structure is common in Indonesian business. Each termin represents a payment stage with specific deliverables.",
+        "infoContinued": "When you approve this quotation, invoices will be generated automatically for each termin.",
+        "noMilestones": "No termin yet",
+        "addFirstMilestone": "Add First Termin",
+        "addAnother": "Add Another Termin",
+        "deleteMilestone": "Delete Termin",
+        "confirmDelete": "Are you sure you want to delete this termin?"
       },
       "progress": {
         "title": "Payment Progress",
-        "totalMilestones": "Total Milestones",
+        "totalMilestones": "Total Termin",
         "invoiced": "Invoiced",
         "paid": "Paid",
         "overdue": "Overdue",
@@ -411,7 +411,7 @@
     "taxNumber": "Tax Number",
     "contactPerson": "Contact Person",
     "companyType": "Company Type",
-    "milestone": "Milestone",
+    "milestone": "Termin",
     "dueDate": "Due Date",
     "amount": "Amount",
     "status": "Status",
@@ -429,7 +429,7 @@
     "days": "Days",
     "remaining": "Remaining",
     "total": "Total",
-    "allMilestones": "All Milestones",
+    "allMilestones": "All Termin",
     "details": "Details",
     "deliverables": "Deliverables",
     "paidDate": "Paid Date",
@@ -450,20 +450,20 @@
     "profit": "Profit"
   },
   "pages": {
-    "milestoneAnalytics": "Milestone Analytics"
+    "milestoneAnalytics": "Termin Analytics"
   },
   "descriptions": {
-    "milestoneAnalyticsDescription": "Track and analyze milestone payments, revenue recognition, and project profitability",
+    "milestoneAnalyticsDescription": "Track and analyze termin payments, revenue recognition, and project profitability",
     "averageTimeToPayment": "Average number of days from invoice to payment",
-    "percentagePaidOnTime": "Percentage of milestones paid on or before due date",
+    "percentagePaidOnTime": "Percentage of termin paid on or before due date",
     "percentageRevenueRecognized": "Percentage of revenue recognized per PSAK 72 standards",
-    "activeMilestones": "Number of active milestones in the system"
+    "activeMilestones": "Number of active termin in the system"
   },
   "metrics": {
     "averagePaymentCycle": "Average Payment Cycle",
     "onTimePaymentRate": "On-Time Payment Rate",
     "revenueRecognitionRate": "Revenue Recognition Rate",
-    "totalMilestones": "Total Milestones"
+    "totalMilestones": "Total Termin"
   },
   "charts": {
     "profitabilityByPhase": "Profitability by Phase",
@@ -472,11 +472,11 @@
   },
   "notifications": {
     "milestones": {
-      "title": "Milestone Notifications",
-      "dueSoon": "Milestone Due Soon",
-      "overdue": "Milestone Overdue",
+      "title": "Termin Notifications",
+      "dueSoon": "Termin Due Soon",
+      "overdue": "Termin Overdue",
       "paymentOverdue": "Payment Overdue",
-      "completed": "Milestone Completed",
+      "completed": "Termin Completed",
       "revenueRecognitionRequired": "Revenue Recognition Required",
       "preferences": "Notification Preferences",
       "reminderFrequency": "Reminder Frequency",
@@ -500,7 +500,7 @@
     "proofUploaded": "Proof of delivery uploaded successfully",
     "shared": "Successfully shared",
     "analyticsExported": "Analytics exported successfully",
-    "milestoneDeleted": "Milestone deleted successfully"
+    "milestoneDeleted": "Termin deleted successfully"
   },
   "error": {
     "failedToLoadAnalytics": "Failed to load analytics",
@@ -509,11 +509,11 @@
     "failedToMarkAsPaid": "Failed to mark as paid",
     "failedToShare": "Failed to share",
     "failedToUploadProof": "Failed to upload proof",
-    "failedToDelete": "Failed to delete milestone"
+    "failedToDelete": "Failed to delete termin"
   },
   "confirmations": {
     "deleteTitle": "Confirm Delete",
-    "deleteMilestoneContent": "Are you sure you want to delete this milestone?"
+    "deleteMilestoneContent": "Are you sure you want to delete this termin?"
   },
   "messages": {
     "downloadFeatureComingSoon": "Download feature coming soon"

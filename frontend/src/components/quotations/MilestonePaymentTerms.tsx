@@ -124,14 +124,14 @@ const PAYMENT_TEMPLATES: Record<string, PaymentTemplate> = {
         nameId: 'Tahap 1 (40% Pekerjaan)',
         paymentPercentage: 30,
         dueDaysFromPrev: 30,
-        deliverables: ['40% progress', 'Milestone 1 completed'],
+        deliverables: ['40% progress', 'Termin 1 completed'],
       },
       {
         name: 'Phase 2 (80% Progress)',
         nameId: 'Tahap 2 (80% Pekerjaan)',
         paymentPercentage: 30,
         dueDaysFromPrev: 30,
-        deliverables: ['80% progress', 'Milestone 2 completed'],
+        deliverables: ['80% progress', 'Termin 2 completed'],
       },
       {
         name: 'Final & Handover',

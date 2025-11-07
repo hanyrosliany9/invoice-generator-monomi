@@ -253,7 +253,7 @@ Reference: Quotation ${quotation.quotationNumber}
 
     // Validate milestone selection for milestone-based quotations
     if (quotationMilestones.length > 0 && !selectedMilestoneId) {
-      message.error('Silakan pilih payment milestone terlebih dahulu')
+      message.error('Silakan pilih termin pembayaran terlebih dahulu')
       return
     }
 
@@ -296,7 +296,7 @@ Reference: Quotation ${quotation.quotationNumber}
 
       // Validate milestone selection for milestone-based quotations
       if (quotationMilestones.length > 0 && !selectedMilestoneId) {
-        message.error('Silakan pilih payment milestone terlebih dahulu')
+        message.error('Silakan pilih termin pembayaran terlebih dahulu')
         return
       }
 
@@ -607,7 +607,7 @@ Reference: Quotation ${quotation.quotationNumber}
                   required
                   help={
                     !selectedMilestoneId &&
-                    'Quotation ini menggunakan termin pembayaran. Pilih milestone untuk melanjutkan.'
+                    'Quotation ini menggunakan termin pembayaran. Pilih termin untuk melanjutkan.'
                   }
                   validateStatus={!selectedMilestoneId ? 'warning' : 'success'}
                 >
@@ -724,7 +724,7 @@ Reference: Quotation ${quotation.quotationNumber}
               {selectedMilestoneId && (
                 <Alert
                   type='info'
-                  message='Jumlah invoice diambil dari milestone yang dipilih'
+                  message='Jumlah invoice diambil dari termin yang dipilih'
                   showIcon
                   style={{ marginTop: -8, marginBottom: 16 }}
                 />

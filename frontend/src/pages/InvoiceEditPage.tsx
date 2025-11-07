@@ -352,7 +352,7 @@ export const InvoiceEditPage: React.FC = () => {
         ...(invoice.paymentMilestone ? [
           {
             label: 'Payment Term',
-            value: `Milestone ${invoice.paymentMilestone.milestoneNumber}: ${invoice.paymentMilestone.nameId || invoice.paymentMilestone.name} (${invoice.paymentMilestone.paymentPercentage}%)`
+            value: `Termin ${invoice.paymentMilestone.milestoneNumber}: ${invoice.paymentMilestone.nameId || invoice.paymentMilestone.name} (${invoice.paymentMilestone.paymentPercentage}%)`
           },
         ] : []),
       ]}
@@ -405,7 +405,7 @@ export const InvoiceEditPage: React.FC = () => {
               title={
                 <Space>
                   <ClockCircleOutlined />
-                  Payment Milestone
+                  Payment Termin
                 </Space>
               }
               size='small'
@@ -416,7 +416,7 @@ export const InvoiceEditPage: React.FC = () => {
             >
               <Space direction='vertical' size='small' style={{ width: '100%' }}>
                 <div>
-                  <Text type='secondary' style={{ fontSize: '12px' }}>Milestone Number</Text>
+                  <Text type='secondary' style={{ fontSize: '12px' }}>Termin Number</Text>
                   <div>
                     <Tag color='blue'>#{invoice.paymentMilestone.milestoneNumber}</Tag>
                   </div>
