@@ -305,8 +305,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               src={logoImage}
               alt="Monomi Logo"
               style={{
-                width: collapsed ? '48px' : '120px',
-                height: collapsed ? '48px' : '120px',
+                width: collapsed ? '64px' : '160px',
+                height: collapsed ? '64px' : '160px',
                 objectFit: 'contain',
                 transition: 'all 0.2s ease',
               }}

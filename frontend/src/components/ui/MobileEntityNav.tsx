@@ -338,8 +338,8 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
               src={logoImage}
               alt="Monomi Logo"
               style={{
-                width: '32px',
-                height: '32px',
+                width: '48px',
+                height: '48px',
                 objectFit: 'contain'
               }}
             />
