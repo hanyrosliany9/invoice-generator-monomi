@@ -101,15 +101,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
   })
 
   // Debug unused variables (development only)
-  console.debug('Component props:', {
-    validationRules,
-    indonesianLocale,
-    Paragraph,
-    t,
-    currencyLocale,
-    showHelp,
-    userTesting,
-  })
+  // Component props available for debugging
 
   // Price inheritance configuration
   const config: PriceInheritanceConfig = useMemo(() => {
@@ -208,7 +200,6 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
     (action: string, metadata?: any) => {
       if (!trackUserInteraction) return { success: false }
 
-      console.debug('Tracking interaction:', { action, metadata })
       // User interaction tracking will be implemented during analytics integration phase
 
       // Simplified tracking
@@ -259,7 +250,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
 
       // Sanitize input for security
       const sanitizedAmount = Math.max(0, Math.min(value, 999999999999))
-      console.debug('Sanitized amount:', sanitizedAmount)
+      // Amount sanitized for security (clamped to valid range)
     },
     [customAmount, trackInteraction]
   )

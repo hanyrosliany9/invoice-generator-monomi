@@ -97,7 +97,7 @@ export const BusinessJourneyTimeline: React.FC<
   const announceRef = useRef<HTMLDivElement>(null)
 
   // Virtualization configuration (future enhancement)
-  console.debug('Virtualization enabled:', enableVirtualization)
+  // Virtualization enabled status available for debugging
 
   // Fetch business journey data
   const {

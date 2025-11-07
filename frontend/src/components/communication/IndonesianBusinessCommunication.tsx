@@ -156,18 +156,7 @@ const IndonesianBusinessCommunication: React.FC<
   const composerRef = useRef<HTMLTextAreaElement>(null)
 
   // Debug unused variables (development only)
-  console.debug('Component state:', {
-    onUpdateContact,
-    onCreateTemplate,
-    selectedContact,
-    setSelectedContact,
-    templateEditor,
-    form,
-    getGreeting,
-    getBusinessPhrase,
-    t,
-    formatIndonesianDate,
-  })
+  // Component state available for debugging
 
   // Mock communication templates
   const predefinedTemplates: CommunicationTemplate[] = useMemo(
