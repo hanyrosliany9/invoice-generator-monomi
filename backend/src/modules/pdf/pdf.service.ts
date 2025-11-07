@@ -19,32 +19,42 @@ export class PdfService {
 
   private initializeLogo() {
     try {
-      // Try multiple paths to handle both development and production environments
-      const possiblePaths = [
-        join(__dirname, "assets", "company-logo.png"),                           // Development (ts-node)
-        join(__dirname, "..", "..", "..", "modules", "pdf", "assets", "company-logo.png"), // Production (compiled dist/src -> dist/modules)
-        join(__dirname, "..", "..", "..", "src", "modules", "pdf", "assets", "company-logo.png"), // Development fallback
-        join(process.cwd(), "backend", "dist", "modules", "pdf", "assets", "company-logo.png"),   // Production explicit
-        join(process.cwd(), "backend", "src", "modules", "pdf", "assets", "company-logo.png"),     // Docker dev
-        join(process.cwd(), "src", "modules", "pdf", "assets", "company-logo.png"),               // Alternative
+      // Try SVG first (optimized, scalable), then fall back to PNG
+      const logoFileNames = ["company-logo.svg", "company-logo.png"];
+      const basePaths = [
+        join(__dirname, "assets"),                                               // Development (ts-node)
+        join(__dirname, "..", "..", "..", "modules", "pdf", "assets"),           // Production (compiled dist/src -> dist/modules)
+        join(__dirname, "..", "..", "..", "src", "modules", "pdf", "assets"),    // Development fallback
+        join(process.cwd(), "backend", "dist", "modules", "pdf", "assets"),      // Production explicit
+        join(process.cwd(), "backend", "src", "modules", "pdf", "assets"),       // Docker dev
+        join(process.cwd(), "src", "modules", "pdf", "assets"),                  // Alternative
       ];
 
       let logoPath: string | null = null;
-      for (const path of possiblePaths) {
-        if (existsSync(path)) {
-          logoPath = path;
-          this.logger.log(`Logo found at: ${path}`);
-          break;
+      let logoType: "svg" | "png" | null = null;
+
+      // Try SVG first, then PNG
+      for (const fileName of logoFileNames) {
+        for (const basePath of basePaths) {
+          const path = join(basePath, fileName);
+          if (existsSync(path)) {
+            logoPath = path;
+            logoType = fileName.endsWith(".svg") ? "svg" : "png";
+            this.logger.log(`Logo found at: ${path} (${logoType.toUpperCase()})`);
+            break;
+          }
         }
+        if (logoPath) break;
       }
 
-      if (!logoPath) {
-        throw new Error(`Logo file not found. Tried paths: ${possiblePaths.join(", ")}`);
+      if (!logoPath || !logoType) {
+        throw new Error(`Logo file not found. Tried SVG and PNG in multiple paths`);
       }
 
       const logoBuffer = readFileSync(logoPath);
-      this.logoBase64 = `data:image/png;base64,${logoBuffer.toString("base64")}`;
-      this.logger.log("Company logo loaded successfully");
+      const mimeType = logoType === "svg" ? "image/svg+xml" : "image/png";
+      this.logoBase64 = `data:${mimeType};base64,${logoBuffer.toString("base64")}`;
+      this.logger.log(`Company logo loaded successfully (${logoType.toUpperCase()}, ${(logoBuffer.length / 1024).toFixed(2)} KB)`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to load company logo: ${errorMessage}`);

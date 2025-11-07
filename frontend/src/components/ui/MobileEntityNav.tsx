@@ -22,7 +22,7 @@ import { ThemeToggle } from '../ThemeToggle'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../../store/auth'
-import logoImage from '../../assets/logos/monomi-logo-1.png'
+import logoImage from '../../assets/logos/monomi-logo-optimized.svg'
 
 const { Text } = Typography
 
@@ -339,8 +339,11 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
               alt="Monomi Logo"
               style={{
                 width: '48px',
-                height: '48px',
-                objectFit: 'contain'
+                height: 'auto',
+                objectFit: 'contain',
+                filter: theme.mode === 'dark'
+                  ? 'brightness(0) invert(1)'
+                  : 'none',
               }}
             />
             <ThemeToggle size="default" />

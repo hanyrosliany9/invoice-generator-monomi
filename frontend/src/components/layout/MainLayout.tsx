@@ -35,7 +35,7 @@ import { useIsMobile } from '../../hooks/useMediaQuery'
 // import { BreadcrumbProvider } from '../navigation'
 import MobileQuickActions from '../ui/MobileQuickActions'
 import MobileEntityNav from '../ui/MobileEntityNav'
-import logoImage from '../../assets/logos/monomi-logo-1.png'
+import logoImage from '../../assets/logos/monomi-logo-optimized.svg'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -306,9 +306,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               alt="Monomi Logo"
               style={{
                 width: collapsed ? '64px' : '160px',
-                height: collapsed ? '64px' : '160px',
+                height: 'auto',
                 objectFit: 'contain',
                 transition: 'all 0.2s ease',
+                filter: theme.mode === 'dark'
+                  ? 'brightness(0) invert(1)'
+                  : 'none',
               }}
             />
           </div>
