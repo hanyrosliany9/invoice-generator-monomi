@@ -203,25 +203,27 @@ const CashFlowStatementPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
       {/* Header */}
       <div
         style={{
           display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '24px',
+          alignItems: isMobile ? 'stretch' : 'center',
+          marginBottom: isMobile ? '16px' : '24px',
+          gap: isMobile ? '12px' : '0',
         }}
       >
         <div>
-          <Title level={2} style={{ margin: 0, color: theme.colors.text.primary}}>
-            Laporan Arus Kas (Cash Flow Statement)
+          <Title level={isMobile ? 3 : 2} style={{ margin: 0, color: theme.colors.text.primary}}>
+            {isMobile ? 'Laporan Arus Kas' : 'Laporan Arus Kas (Cash Flow Statement)'}
           </Title>
-          <Text type="secondary">
-            Analisis pergerakan kas masuk dan keluar
+          <Text type="secondary" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+            {isMobile ? 'Pergerakan kas masuk dan keluar' : 'Analisis pergerakan kas masuk dan keluar'}
           </Text>
         </div>
-        <Space>
+        <Space direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
           <RangePicker
             value={dateRange}
             onChange={(dates) => {
@@ -230,7 +232,9 @@ const CashFlowStatementPage: React.FC = () => {
               }
             }}
             format="DD/MM/YYYY"
-            placeholder={['Tanggal Mulai', 'Tanggal Akhir']}
+            placeholder={isMobile ? ['Mulai', 'Akhir'] : ['Tanggal Mulai', 'Tanggal Akhir']}
+            size={isMobile ? 'small' : 'middle'}
+            style={{ width: isMobile ? '100%' : 'auto' }}
           />
           <ExportButton
             onExportPDF={handleExportPDF}
@@ -241,18 +245,18 @@ const CashFlowStatementPage: React.FC = () => {
 
       {/* Period Info */}
       <Card
+        size={isMobile ? 'small' : 'default'}
         style={{
-          marginBottom: '24px',
+          marginBottom: isMobile ? '16px' : '24px',
           background: theme.colors.accent.primary,
           borderColor: theme.colors.accent.primary,
         }}
       >
         <Space align="center">
-          <CalendarOutlined style={{ fontSize: '24px', color: '#fff' }} />
+          <CalendarOutlined style={{ fontSize: isMobile ? '20px' : '24px', color: '#fff' }} />
           <div>
-            <Text style={{ color: '#fff', fontSize: '16px', fontWeight: 500 }}>
-              Periode: {dateRange[0].format('DD MMMM YYYY')} -{' '}
-              {dateRange[1].format('DD MMMM YYYY')}
+            <Text style={{ color: '#fff', fontSize: isMobile ? '14px' : '16px', fontWeight: 500 }}>
+              Periode: {dateRange[0].format(isMobile ? 'DD MMM' : 'DD MMMM YYYY')} - {dateRange[1].format(isMobile ? 'DD MMM YY' : 'DD MMMM YYYY')}
             </Text>
           </div>
         </Space>
@@ -272,12 +276,15 @@ const CashFlowStatementPage: React.FC = () => {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '16px',
-              marginBottom: '24px',
+              gridTemplateColumns: isMobile
+                ? 'repeat(auto-fit, minmax(140px, 1fr))'
+                : 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: isMobile ? '8px' : '16px',
+              marginBottom: isMobile ? '16px' : '24px',
             }}
           >
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background: theme.colors.card.background,
                 borderColor: theme.colors.border.default,
@@ -285,18 +292,19 @@ const CashFlowStatementPage: React.FC = () => {
             >
               <Statistic
                 title={
-                  <Space>
-                    <DollarOutlined style={{ color: theme.colors.accent.primary }} />
-                    <span>Saldo Awal</span>
+                  <Space size={isMobile ? 'small' : 'middle'}>
+                    <DollarOutlined style={{ color: theme.colors.accent.primary, fontSize: isMobile ? '16px' : '20px' }} />
+                    <span style={{ fontSize: isMobile ? '11px' : '14px' }}>Saldo Awal</span>
                   </Space>
                 }
                 value={data.summary.openingBalance}
                 precision={0}
-                valueStyle={{ color: theme.colors.accent.primary, fontSize: '28px' }}
+                valueStyle={{ color: theme.colors.accent.primary, fontSize: isMobile ? '18px' : '28px' }}
                 prefix="Rp"
               />
             </Card>
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background: theme.colors.card.background,
                 borderColor: theme.colors.border.default,
@@ -304,18 +312,19 @@ const CashFlowStatementPage: React.FC = () => {
             >
               <Statistic
                 title={
-                  <Space>
-                    <ArrowUpOutlined style={{ color: theme.colors.status.success }} />
-                    <span>Arus Kas Operasional</span>
+                  <Space size={isMobile ? 'small' : 'middle'}>
+                    <ArrowUpOutlined style={{ color: theme.colors.status.success, fontSize: isMobile ? '16px' : '20px' }} />
+                    <span style={{ fontSize: isMobile ? '11px' : '14px' }}>{isMobile ? 'Operasional' : 'Arus Kas Operasional'}</span>
                   </Space>
                 }
                 value={data.summary.operatingCashFlow}
                 precision={0}
-                valueStyle={{ color: theme.colors.status.success, fontSize: '28px' }}
+                valueStyle={{ color: theme.colors.status.success, fontSize: isMobile ? '18px' : '28px' }}
                 prefix="Rp"
               />
             </Card>
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background: theme.colors.card.background,
                 borderColor: theme.colors.border.default,
@@ -323,18 +332,19 @@ const CashFlowStatementPage: React.FC = () => {
             >
               <Statistic
                 title={
-                  <Space>
-                    <ArrowDownOutlined style={{ color: theme.colors.status.error }} />
-                    <span>Saldo Akhir</span>
+                  <Space size={isMobile ? 'small' : 'middle'}>
+                    <ArrowDownOutlined style={{ color: theme.colors.status.error, fontSize: isMobile ? '16px' : '20px' }} />
+                    <span style={{ fontSize: isMobile ? '11px' : '14px' }}>Saldo Akhir</span>
                   </Space>
                 }
                 value={data.summary.closingBalance}
                 precision={0}
-                valueStyle={{ color: theme.colors.status.error, fontSize: '28px' }}
+                valueStyle={{ color: theme.colors.status.error, fontSize: isMobile ? '18px' : '28px' }}
                 prefix="Rp"
               />
             </Card>
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background:
                   data.summary.netCashFlow >= 0
@@ -349,16 +359,17 @@ const CashFlowStatementPage: React.FC = () => {
             >
               <Statistic
                 title={
-                  <Space>
+                  <Space size={isMobile ? 'small' : 'middle'}>
                     <DollarOutlined
                       style={{
                         color:
                           data.summary.netCashFlow >= 0
                             ? theme.colors.status.success
                             : theme.colors.status.error,
+                        fontSize: isMobile ? '16px' : '20px',
                       }}
                     />
-                    <span style={{ fontWeight: 600 }}>Arus Kas Bersih</span>
+                    <span style={{ fontWeight: 600, fontSize: isMobile ? '11px' : '14px' }}>{isMobile ? 'Kas Bersih' : 'Arus Kas Bersih'}</span>
                   </Space>
                 }
                 value={Math.abs(data.summary.netCashFlow)}
@@ -368,7 +379,7 @@ const CashFlowStatementPage: React.FC = () => {
                     data.summary.netCashFlow >= 0
                       ? theme.colors.status.success
                       : theme.colors.status.error,
-                  fontSize: '32px',
+                  fontSize: isMobile ? '20px' : '32px',
                   fontWeight: 'bold',
                 }}
                 prefix="Rp"
@@ -379,13 +390,14 @@ const CashFlowStatementPage: React.FC = () => {
           {/* Operating Activities */}
           <Card
             title={
-              <Space>
-                <Tag color="blue">Operasional</Tag>
-                <span>Aktivitas Operasional</span>
+              <Space size={isMobile ? 'small' : 'middle'}>
+                <Tag color="blue" style={{ fontSize: isMobile ? '10px' : '12px' }}>Operasional</Tag>
+                <span style={{ fontSize: isMobile ? '13px' : '14px' }}>{isMobile ? 'Operasional' : 'Aktivitas Operasional'}</span>
               </Space>
             }
+            size={isMobile ? 'small' : 'default'}
             style={{
-              marginBottom: '24px',
+              marginBottom: isMobile ? '16px' : '24px',
               background: theme.colors.card.background,
               borderColor: theme.colors.border.default,
             }}
@@ -393,7 +405,7 @@ const CashFlowStatementPage: React.FC = () => {
               <Text
                 strong
                 style={{
-                  fontSize: '18px',
+                  fontSize: isMobile ? '14px' : '18px',
                   color:
                     data.operatingActivities.netCashFlow >= 0
                       ? theme.colors.status.success
@@ -431,13 +443,14 @@ const CashFlowStatementPage: React.FC = () => {
           {/* Investing Activities */}
           <Card
             title={
-              <Space>
-                <Tag color="purple">Investasi</Tag>
-                <span>Aktivitas Investasi</span>
+              <Space size={isMobile ? 'small' : 'middle'}>
+                <Tag color="purple" style={{ fontSize: isMobile ? '10px' : '12px' }}>Investasi</Tag>
+                <span style={{ fontSize: isMobile ? '13px' : '14px' }}>{isMobile ? 'Investasi' : 'Aktivitas Investasi'}</span>
               </Space>
             }
+            size={isMobile ? 'small' : 'default'}
             style={{
-              marginBottom: '24px',
+              marginBottom: isMobile ? '16px' : '24px',
               background: theme.colors.card.background,
               borderColor: theme.colors.border.default,
             }}
@@ -445,7 +458,7 @@ const CashFlowStatementPage: React.FC = () => {
               <Text
                 strong
                 style={{
-                  fontSize: '18px',
+                  fontSize: isMobile ? '14px' : '18px',
                   color:
                     data.investingActivities.netCashFlow >= 0
                       ? theme.colors.status.success
@@ -483,13 +496,14 @@ const CashFlowStatementPage: React.FC = () => {
           {/* Financing Activities */}
           <Card
             title={
-              <Space>
-                <Tag color="orange">Pendanaan</Tag>
-                <span>Aktivitas Pendanaan</span>
+              <Space size={isMobile ? 'small' : 'middle'}>
+                <Tag color="orange" style={{ fontSize: isMobile ? '10px' : '12px' }}>Pendanaan</Tag>
+                <span style={{ fontSize: isMobile ? '13px' : '14px' }}>{isMobile ? 'Pendanaan' : 'Aktivitas Pendanaan'}</span>
               </Space>
             }
+            size={isMobile ? 'small' : 'default'}
             style={{
-              marginBottom: '24px',
+              marginBottom: isMobile ? '16px' : '24px',
               background: theme.colors.card.background,
               borderColor: theme.colors.border.default,
             }}
@@ -497,7 +511,7 @@ const CashFlowStatementPage: React.FC = () => {
               <Text
                 strong
                 style={{
-                  fontSize: '18px',
+                  fontSize: isMobile ? '14px' : '18px',
                   color:
                     data.financingActivities.netCashFlow >= 0
                       ? theme.colors.status.success
@@ -534,6 +548,7 @@ const CashFlowStatementPage: React.FC = () => {
 
           {/* Net Cash Flow Summary */}
           <Card
+            size={isMobile ? 'small' : 'default'}
             style={{
               background:
                 data.summary.netCashFlow >= 0
@@ -548,26 +563,26 @@ const CashFlowStatementPage: React.FC = () => {
               style={{
                 display: 'grid',
                 gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
-                gap: '24px',
+                gap: isMobile ? '16px' : '24px',
                 alignItems: 'center',
               }}
             >
               <div>
-                <Text type="secondary">Saldo Awal Kas</Text>
+                <Text type="secondary" style={{ fontSize: isMobile ? '11px' : '14px' }}>Saldo Awal Kas</Text>
                 <div>
-                  <Text style={{ fontSize: '20px', fontWeight: 'bold' }}>
+                  <Text style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 'bold' }}>
                     {formatCurrency(data.summary.openingBalance)}
                   </Text>
                 </div>
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <Text style={{ fontSize: '24px', fontWeight: 'bold' }}>
+              <div style={{ textAlign: isMobile ? 'left' : 'center' }}>
+                <Text style={{ fontSize: isMobile ? '16px' : '24px', fontWeight: 'bold' }}>
                   ARUS KAS BERSIH
                 </Text>
                 <div>
                   <Text
                     style={{
-                      fontSize: '32px',
+                      fontSize: isMobile ? '20px' : '32px',
                       fontWeight: 'bold',
                       color:
                         data.summary.netCashFlow >= 0
@@ -579,10 +594,10 @@ const CashFlowStatementPage: React.FC = () => {
                   </Text>
                 </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <Text type="secondary">Saldo Akhir Kas</Text>
+              <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
+                <Text type="secondary" style={{ fontSize: isMobile ? '11px' : '14px' }}>Saldo Akhir Kas</Text>
                 <div>
-                  <Text style={{ fontSize: '20px', fontWeight: 'bold' }}>
+                  <Text style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 'bold' }}>
                     {formatCurrency(data.summary.closingBalance)}
                   </Text>
                 </div>
