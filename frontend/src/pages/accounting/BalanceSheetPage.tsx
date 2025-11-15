@@ -142,23 +142,27 @@ const BalanceSheetPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
       {/* Header */}
       <div
         style={{
           display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '24px',
+          alignItems: isMobile ? 'stretch' : 'center',
+          marginBottom: isMobile ? '16px' : '24px',
+          gap: isMobile ? '12px' : '0',
         }}
       >
         <div>
-          <Title level={2} style={{ margin: 0, color: theme.colors.text.primary}}>
-            Neraca (Balance Sheet)
+          <Title level={isMobile ? 3 : 2} style={{ margin: 0, color: theme.colors.text.primary}}>
+            {isMobile ? 'Neraca' : 'Neraca (Balance Sheet)'}
           </Title>
-          <Text type="secondary">Laporan posisi keuangan perusahaan</Text>
+          <Text type="secondary" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+            {isMobile ? 'Laporan posisi keuangan' : 'Laporan posisi keuangan perusahaan'}
+          </Text>
         </div>
-        <Space>
+        <Space direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
           <DatePicker
             value={asOfDate}
             onChange={(date) => {
@@ -167,7 +171,9 @@ const BalanceSheetPage: React.FC = () => {
               }
             }}
             format="DD/MM/YYYY"
-            placeholder="Pilih Tanggal"
+            placeholder={isMobile ? 'Tanggal' : 'Pilih Tanggal'}
+            size={isMobile ? 'small' : 'middle'}
+            style={{ width: isMobile ? '100%' : 'auto' }}
           />
           <ExportButton
             onExportPDF={handleExportPDF}
@@ -178,17 +184,18 @@ const BalanceSheetPage: React.FC = () => {
 
       {/* Date Info */}
       <Card
+        size={isMobile ? 'small' : 'default'}
         style={{
-          marginBottom: '24px',
+          marginBottom: isMobile ? '16px' : '24px',
           background: theme.colors.accent.primary,
           borderColor: theme.colors.accent.primary,
         }}
       >
-        <Space align="center">
-          <CalendarOutlined style={{ fontSize: '24px', color: '#fff' }} />
-          <div>
-            <Text style={{ color: '#fff', fontSize: '16px', fontWeight: 500 }}>
-              Per Tanggal: {asOfDate.format('DD MMMM YYYY')}
+        <Space align="center" direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: '100%' }}>
+          <CalendarOutlined style={{ fontSize: isMobile ? '20px' : '24px', color: '#fff' }} />
+          <div style={{ width: isMobile ? '100%' : 'auto' }}>
+            <Text style={{ color: '#fff', fontSize: isMobile ? '13px' : '16px', fontWeight: 500 }}>
+              Per Tanggal: {asOfDate.format(isMobile ? 'DD MMM YYYY' : 'DD MMMM YYYY')}
             </Text>
           </div>
         </Space>
@@ -207,21 +214,25 @@ const BalanceSheetPage: React.FC = () => {
           {/* Balance Check */}
           {data.summary.isBalanced ? (
             <Alert
-              message="Neraca Seimbang"
-              description={`Aset = Kewajiban + Ekuitas (${formatCurrency(data.summary.totalAssets)} = ${formatCurrency(data.summary.liabilitiesAndEquity)})`}
+              message={isMobile ? 'Seimbang' : 'Neraca Seimbang'}
+              description={
+                isMobile
+                  ? `Aset = Kewajiban + Ekuitas`
+                  : `Aset = Kewajiban + Ekuitas (${formatCurrency(data.summary.totalAssets)} = ${formatCurrency(data.summary.liabilitiesAndEquity)})`
+              }
               type="success"
               showIcon
               icon={<CheckCircleOutlined />}
-              style={{ marginBottom: '24px' }}
+              style={{ marginBottom: isMobile ? '16px' : '24px', fontSize: isMobile ? '12px' : '14px' }}
             />
           ) : (
             <Alert
-              message="Neraca Tidak Seimbang"
+              message={isMobile ? 'Tidak Seimbang' : 'Neraca Tidak Seimbang'}
               description={`Selisih: ${formatCurrency(data.summary.difference)}`}
               type="error"
               showIcon
               icon={<CloseCircleOutlined />}
-              style={{ marginBottom: '24px' }}
+              style={{ marginBottom: isMobile ? '16px' : '24px', fontSize: isMobile ? '12px' : '14px' }}
             />
           )}
 
@@ -229,12 +240,15 @@ const BalanceSheetPage: React.FC = () => {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '16px',
-              marginBottom: '24px',
+              gridTemplateColumns: isMobile
+                ? 'repeat(auto-fit, minmax(140px, 1fr))'
+                : 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: isMobile ? '8px' : '16px',
+              marginBottom: isMobile ? '16px' : '24px',
             }}
           >
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background: theme.colors.card.background,
                 borderColor: theme.colors.border.default,
@@ -242,18 +256,21 @@ const BalanceSheetPage: React.FC = () => {
             >
               <Statistic
                 title={
-                  <Space>
+                  <Space size={isMobile ? 'small' : 'middle'}>
                     <BankOutlined style={{ color: theme.colors.status.success }} />
-                    <span>Total Aset</span>
+                    <span style={{ fontSize: isMobile ? '11px' : '14px' }}>
+                      {isMobile ? 'Aset' : 'Total Aset'}
+                    </span>
                   </Space>
                 }
                 value={data.summary.totalAssets}
                 precision={0}
-                valueStyle={{ color: theme.colors.status.success, fontSize: '28px' }}
+                valueStyle={{ color: theme.colors.status.success, fontSize: isMobile ? '18px' : '28px' }}
                 prefix="Rp"
               />
             </Card>
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background: theme.colors.card.background,
                 borderColor: theme.colors.border.default,
@@ -261,18 +278,21 @@ const BalanceSheetPage: React.FC = () => {
             >
               <Statistic
                 title={
-                  <Space>
+                  <Space size={isMobile ? 'small' : 'middle'}>
                     <DollarOutlined style={{ color: theme.colors.status.error }} />
-                    <span>Total Kewajiban</span>
+                    <span style={{ fontSize: isMobile ? '11px' : '14px' }}>
+                      {isMobile ? 'Kewajiban' : 'Total Kewajiban'}
+                    </span>
                   </Space>
                 }
                 value={data.summary.totalLiabilities}
                 precision={0}
-                valueStyle={{ color: theme.colors.status.error, fontSize: '28px' }}
+                valueStyle={{ color: theme.colors.status.error, fontSize: isMobile ? '18px' : '28px' }}
                 prefix="Rp"
               />
             </Card>
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background: theme.colors.card.background,
                 borderColor: theme.colors.border.default,
@@ -280,14 +300,16 @@ const BalanceSheetPage: React.FC = () => {
             >
               <Statistic
                 title={
-                  <Space>
+                  <Space size={isMobile ? 'small' : 'middle'}>
                     <DollarOutlined style={{ color: theme.colors.status.info }} />
-                    <span>Total Ekuitas</span>
+                    <span style={{ fontSize: isMobile ? '11px' : '14px' }}>
+                      {isMobile ? 'Ekuitas' : 'Total Ekuitas'}
+                    </span>
                   </Space>
                 }
                 value={data.summary.totalEquity}
                 precision={0}
-                valueStyle={{ color: theme.colors.status.info, fontSize: '28px' }}
+                valueStyle={{ color: theme.colors.status.info, fontSize: isMobile ? '18px' : '28px' }}
                 prefix="Rp"
               />
             </Card>
@@ -295,19 +317,22 @@ const BalanceSheetPage: React.FC = () => {
 
           {/* Assets Section */}
           <Card
+            size={isMobile ? 'small' : 'default'}
             title={
-              <Space>
-                <BankOutlined style={{ color: theme.colors.status.success }} />
-                <span>Aset (Assets)</span>
+              <Space size={isMobile ? 'small' : 'middle'}>
+                <BankOutlined style={{ color: theme.colors.status.success, fontSize: isMobile ? '14px' : '16px' }} />
+                <span style={{ fontSize: isMobile ? '13px' : '14px' }}>
+                  {isMobile ? 'Aset' : 'Aset (Assets)'}
+                </span>
               </Space>
             }
             style={{
-              marginBottom: '24px',
+              marginBottom: isMobile ? '16px' : '24px',
               background: theme.colors.card.background,
               borderColor: theme.colors.border.default,
             }}
             extra={
-              <Text strong style={{ fontSize: '18px', color: theme.colors.status.success }}>
+              <Text strong style={{ fontSize: isMobile ? '14px' : '18px', color: theme.colors.status.success }}>
                 {formatCurrency(data.assets.total)}
               </Text>
             }
@@ -356,19 +381,22 @@ const BalanceSheetPage: React.FC = () => {
 
           {/* Liabilities Section */}
           <Card
+            size={isMobile ? 'small' : 'default'}
             title={
-              <Space>
-                <DollarOutlined style={{ color: theme.colors.status.error }} />
-                <span>Kewajiban (Liabilities)</span>
+              <Space size={isMobile ? 'small' : 'middle'}>
+                <DollarOutlined style={{ color: theme.colors.status.error, fontSize: isMobile ? '14px' : '16px' }} />
+                <span style={{ fontSize: isMobile ? '13px' : '14px' }}>
+                  {isMobile ? 'Kewajiban' : 'Kewajiban (Liabilities)'}
+                </span>
               </Space>
             }
             style={{
-              marginBottom: '24px',
+              marginBottom: isMobile ? '16px' : '24px',
               background: theme.colors.card.background,
               borderColor: theme.colors.border.default,
             }}
             extra={
-              <Text strong style={{ fontSize: '18px', color: theme.colors.status.error }}>
+              <Text strong style={{ fontSize: isMobile ? '14px' : '18px', color: theme.colors.status.error }}>
                 {formatCurrency(data.liabilities.total)}
               </Text>
             }
@@ -417,19 +445,22 @@ const BalanceSheetPage: React.FC = () => {
 
           {/* Equity Section */}
           <Card
+            size={isMobile ? 'small' : 'default'}
             title={
-              <Space>
-                <DollarOutlined style={{ color: theme.colors.status.info }} />
-                <span>Ekuitas (Equity)</span>
+              <Space size={isMobile ? 'small' : 'middle'}>
+                <DollarOutlined style={{ color: theme.colors.status.info, fontSize: isMobile ? '14px' : '16px' }} />
+                <span style={{ fontSize: isMobile ? '13px' : '14px' }}>
+                  {isMobile ? 'Ekuitas' : 'Ekuitas (Equity)'}
+                </span>
               </Space>
             }
             style={{
-              marginBottom: '24px',
+              marginBottom: isMobile ? '16px' : '24px',
               background: theme.colors.card.background,
               borderColor: theme.colors.border.default,
             }}
             extra={
-              <Text strong style={{ fontSize: '18px', color: theme.colors.status.info }}>
+              <Text strong style={{ fontSize: isMobile ? '14px' : '18px', color: theme.colors.status.info }}>
                 {formatCurrency(data.equity.total)}
               </Text>
             }
@@ -478,6 +509,7 @@ const BalanceSheetPage: React.FC = () => {
 
           {/* Total Summary */}
           <Card
+            size={isMobile ? 'small' : 'default'}
             style={{
               background: data.summary.isBalanced
                 ? theme.colors.background.tertiary
@@ -491,20 +523,22 @@ const BalanceSheetPage: React.FC = () => {
             <div
               style={{
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '16px 0',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                padding: isMobile ? '8px 0' : '16px 0',
+                gap: isMobile ? '8px' : '0',
               }}
             >
               <div>
-                <Text style={{ fontSize: '20px', fontWeight: 'bold' }}>
-                  Total Kewajiban + Ekuitas
+                <Text style={{ fontSize: isMobile ? '14px' : '20px', fontWeight: 'bold' }}>
+                  {isMobile ? 'Kewajiban + Ekuitas' : 'Total Kewajiban + Ekuitas'}
                 </Text>
               </div>
-              <div style={{ textAlign: 'right' }}>
+              <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
                 <Text
                   style={{
-                    fontSize: '32px',
+                    fontSize: isMobile ? '20px' : '32px',
                     fontWeight: 'bold',
                     color: data.summary.isBalanced
                       ? theme.colors.status.success
