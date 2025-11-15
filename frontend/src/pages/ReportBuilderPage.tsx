@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Layout, Button, Space, App, Spin, theme, Tooltip, Dropdown, Tag, Typography } from 'antd';
+import { Layout, Button, Space, App, Spin, theme, Tooltip, Dropdown, Tag, Typography, Alert } from 'antd';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import {
   SaveOutlined,
   EyeOutlined,
@@ -53,6 +54,7 @@ export const ReportBuilderPage: React.FC = () => {
   const navigate = useNavigate();
   const { token } = useToken();
   const { message, modal } = App.useApp();
+  const isMobile = useIsMobile();
 
   // State
   const [report, setReport] = useState<SocialMediaReport | null>(null);
@@ -1042,6 +1044,18 @@ export const ReportBuilderPage: React.FC = () => {
       </Header>
 
       <Layout style={{ overflow: 'hidden', flex: 1 }}>
+        {/* Mobile Warning */}
+        {isMobile && (
+          <Alert
+            message="Limited Mobile Support"
+            description="The visual report builder is optimized for desktop use. For the best experience with drag-and-drop editing, please use a device with a larger screen."
+            type="warning"
+            showIcon
+            closable
+            style={{ margin: token.marginLG }}
+          />
+        )}
+
         {/* Canvas */}
         <Content
           style={{

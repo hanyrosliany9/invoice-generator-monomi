@@ -31,6 +31,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import ChartRenderer from '../components/reports/ChartRenderer';
 import VisualChartEditor from '../components/reports/VisualChartEditor';
+import { useIsMobile } from '../hooks/useMediaQuery';
 
 // Context import
 import { ReportProvider, useReportContext } from '../features/reports/contexts/ReportContext';
@@ -44,6 +45,7 @@ const { useToken } = theme;
 const ReportDetailContent: React.FC = () => {
   const navigate = useNavigate();
   const { token } = useToken();
+  const isMobile = useIsMobile();
 
   const [addSectionModalOpen, setAddSectionModalOpen] = useState(false);
   const [editVisualizationModalOpen, setEditVisualizationModalOpen] = useState(false);
@@ -164,24 +166,33 @@ const ReportDetailContent: React.FC = () => {
           </div>
 
           <Space direction="vertical" align="end">
-            <Space wrap>
+            <Space wrap size={isMobile ? 'small' : 'middle'}>
               <Button
                 icon={<PlusOutlined />}
                 type="primary"
                 onClick={() => setAddSectionModalOpen(true)}
+                title="Add Section"
               >
-                Add Section
+                {!isMobile && 'Add Section'}
               </Button>
 
               {report.status === 'DRAFT' && (
-                <Button icon={<CheckCircleOutlined />} onClick={() => updateStatus('COMPLETED')}>
-                  Mark Complete
+                <Button
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => updateStatus('COMPLETED')}
+                  title="Mark Complete"
+                >
+                  {!isMobile && 'Mark Complete'}
                 </Button>
               )}
 
               {report.status === 'COMPLETED' && (
-                <Button icon={<SendOutlined />} onClick={() => updateStatus('SENT')}>
-                  Mark as Sent
+                <Button
+                  icon={<SendOutlined />}
+                  onClick={() => updateStatus('SENT')}
+                  title="Mark as Sent"
+                >
+                  {!isMobile && 'Mark as Sent'}
                 </Button>
               )}
 
@@ -196,8 +207,9 @@ const ReportDetailContent: React.FC = () => {
                     color: token.colorTextLightSolid,
                     borderColor: token.colorSuccess,
                   }}
+                  title="Generate PDF"
                 >
-                  Generate PDF
+                  {!isMobile && 'Generate PDF'}
                 </Button>
               )}
 
@@ -205,13 +217,19 @@ const ReportDetailContent: React.FC = () => {
                 <Button
                   icon={<DownloadOutlined />}
                   onClick={() => window.open(report.pdfUrl, '_blank')}
+                  title="Download PDF"
                 >
-                  Download PDF
+                  {!isMobile && 'Download PDF'}
                 </Button>
               )}
             </Space>
 
-            <Button onClick={() => navigate('/social-media-reports')}>Back to Reports</Button>
+            <Button
+              onClick={() => navigate('/social-media-reports')}
+              title="Back to Reports"
+            >
+              {!isMobile ? 'Back to Reports' : 'Back'}
+            </Button>
           </Space>
         </div>
       </Card>
@@ -256,18 +274,20 @@ const ReportDetailContent: React.FC = () => {
                   </Space>
                 }
                 extra={
-                  <Space>
+                  <Space wrap={isMobile} size={isMobile ? 'small' : 'middle'}>
                     <Button
                       size="small"
                       icon={<ArrowUpOutlined />}
                       disabled={index === 0}
                       onClick={() => handleReorderSection(section.id, 'up')}
+                      title="Move Up"
                     />
                     <Button
                       size="small"
                       icon={<ArrowDownOutlined />}
                       disabled={index === (report.sections?.length || 0) - 1}
                       onClick={() => handleReorderSection(section.id, 'down')}
+                      title="Move Down"
                     />
                     <Button
                       size="small"
@@ -275,15 +295,17 @@ const ReportDetailContent: React.FC = () => {
                       onClick={() =>
                         navigate(`/social-media-reports/${report.id}/sections/${section.id}/builder`)
                       }
+                      title="Section Visual Builder"
                     >
-                      Section Only
+                      {!isMobile && 'Section Only'}
                     </Button>
                     <Button
                       size="small"
                       icon={<EditOutlined />}
                       onClick={() => handleEditVisualizations(section)}
+                      title="Edit Charts"
                     >
-                      Edit Charts
+                      {!isMobile && 'Edit Charts'}
                     </Button>
                     <Popconfirm
                       title="Remove this section?"
@@ -291,8 +313,8 @@ const ReportDetailContent: React.FC = () => {
                       okText="Yes"
                       cancelText="No"
                     >
-                      <Button size="small" danger icon={<DeleteOutlined />}>
-                        Remove
+                      <Button size="small" danger icon={<DeleteOutlined />} title="Remove Section">
+                        {!isMobile && 'Remove'}
                       </Button>
                     </Popconfirm>
                   </Space>
