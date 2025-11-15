@@ -11,6 +11,7 @@ import { Vendor } from '../types/vendor'
 import { User } from '../types/user'
 import { Asset } from '../services/assets'
 import { JournalEntry as ServiceJournalEntry } from '../services/accounting'
+import { ContentCalendarItem } from '../services/content-calendar'
 import { now } from '../utils/date'
 
 /**
@@ -1111,5 +1112,59 @@ export function balanceSheetAccountToBusinessEntity(account: any, accountType: '
     updatedAt: now(),
     materaiRequired: false,
     priority: 'medium',
+  }
+}
+
+/**
+ * Convert ContentCalendarItem to BusinessEntity for MobileTableView
+ */
+export function contentToBusinessEntity(content: ContentCalendarItem): BusinessEntity {
+  // Map content status to BusinessEntity status
+  const mapContentStatus = (status: string): 'draft' | 'sent' | 'paid' | 'overdue' | 'pending' => {
+    switch (status) {
+      case 'DRAFT': return 'draft'
+      case 'SCHEDULED': return 'pending'
+      case 'PUBLISHED': return 'paid'
+      case 'FAILED': return 'overdue'
+      case 'ARCHIVED': return 'sent'
+      default: return 'draft'
+    }
+  }
+
+  // Get caption preview (first 60 chars)
+  const captionPreview = content.caption.length > 60
+    ? content.caption.substring(0, 60) + '...'
+    : content.caption
+
+  // Count media files
+  const mediaCount = content.media?.length || 0
+  const hasVideo = content.media?.some(m => m.type === 'VIDEO') || false
+
+  return {
+    id: content.id,
+    number: content.scheduledAt
+      ? new Date(content.scheduledAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })
+      : 'No date',
+    title: captionPreview,
+    subtitle: content.platforms.join(', '),
+    description: mediaCount + ' file' + (mediaCount !== 1 ? 's' : '') + ' • ' + (content.project?.number || 'No project'),
+    status: mapContentStatus(content.status),
+    client: {
+      name: content.client?.name || 'No client',
+      company: content.project?.description || '',
+      phone: '',
+      email: content.client?.email || '',
+    },
+    createdAt: new Date(content.createdAt),
+    updatedAt: new Date(content.updatedAt),
+    dueDate: content.scheduledAt ? new Date(content.scheduledAt) : undefined,
+    materaiRequired: false,
+    priority: content.status === 'SCHEDULED' ? 'high' : content.status === 'DRAFT' ? 'medium' : 'low',
+    metadata: [
+      { label: 'Platforms', value: content.platforms.join(', ') },
+      { label: 'Media', value: mediaCount + ' ' + (hasVideo ? '(Video)' : '(Image)') },
+      { label: 'Status', value: content.status },
+    ],
+    rawData: content, // Store original data for access in actions
   }
 }

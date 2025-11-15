@@ -62,6 +62,9 @@ import { exportContentToPDF } from '../utils/pdfExport';
 import { useFilterPresets } from '../hooks/useFilterPresets';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { getMediaLimitForPlatforms, validateMediaForPlatforms, PLATFORM_MEDIA_LIMITS } from '../utils/platformLimits';
+import MobileTableView from '../components/mobile/MobileTableView';
+import { contentToBusinessEntity } from '../adapters/mobileTableAdapters';
+import type { MobileTableAction, MobileFilterConfig, BusinessEntity } from '../components/mobile/MobileTableView';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
@@ -1114,26 +1117,114 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
     onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]),
   };
 
+  // Mobile data adapter - convert content to BusinessEntity format
+  const mobileData = useMemo(
+    () => filteredData.map(contentToBusinessEntity),
+    [filteredData]
+  )
+
+  // Mobile actions configuration
+  const mobileActions = useMemo<MobileTableAction[]>(
+    () => [
+      {
+        key: 'publish',
+        label: 'Publish',
+        icon: <RocketOutlined />,
+        color: '#52c41a',
+        onClick: (record) => {
+          const content = filteredData.find(c => c.id === record.id)
+          if (content) publishMutation.mutate(content.id)
+        },
+        visible: (record) => {
+          const content = record.rawData as ContentCalendarItem
+          return content.status !== CONTENT_STATUS.PUBLISHED
+        },
+      },
+      {
+        key: 'archive',
+        label: 'Archive',
+        icon: <InboxOutlined />,
+        onClick: (record) => {
+          const content = filteredData.find(c => c.id === record.id)
+          if (content) archiveMutation.mutate(content.id)
+        },
+        visible: (record) => {
+          const content = record.rawData as ContentCalendarItem
+          return content.status !== CONTENT_STATUS.ARCHIVED
+        },
+      },
+      {
+        key: 'duplicate',
+        label: 'Duplicate',
+        icon: <CopyOutlined />,
+        onClick: (record) => {
+          const content = filteredData.find(c => c.id === record.id)
+          if (content) handleDuplicate(content)
+        },
+      },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: <DeleteOutlined />,
+        danger: true,
+        onClick: (record) => {
+          const content = filteredData.find(c => c.id === record.id)
+          if (content) deleteMutation.mutate(content.id)
+        },
+      },
+    ],
+    [filteredData, publishMutation, archiveMutation, deleteMutation]
+  )
+
+  // Mobile filters configuration
+  const mobileFilters = useMemo<MobileFilterConfig[]>(
+    () => [
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        options: [
+          { label: 'Draft', value: 'DRAFT' },
+          { label: 'Scheduled', value: 'SCHEDULED' },
+          { label: 'Published', value: 'PUBLISHED' },
+          { label: 'Failed', value: 'FAILED' },
+          { label: 'Archived', value: 'ARCHIVED' },
+        ],
+        value: statusFilter,
+        onChange: (value) => setStatusFilter(value as typeof CONTENT_STATUS[keyof typeof CONTENT_STATUS]),
+      },
+      {
+        key: 'platform',
+        label: 'Platform',
+        type: 'select',
+        options: PLATFORMS.map(p => ({ label: p.label, value: p.value })),
+        value: platformFilter,
+        onChange: (value) => setPlatformFilter(value),
+      },
+    ],
+    [statusFilter, platformFilter]
+  )
+
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
       <Card>
-        <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-          <Col>
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col xs={24} sm={24} md={8}>
             <h2 style={{ margin: 0 }}>Content Calendar</h2>
           </Col>
-          <Col>
-            <Space>
+          <Col xs={24} sm={24} md={16}>
+            <Space wrap size={isMobile ? 'small' : 'middle'} style={{ width: '100%', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
               {/* Project Quick Switcher - Stay in content calendar context */}
               {!lockedProjectId && (
                 <Select
                   showSearch
-                  placeholder="Quick Switch Project"
+                  placeholder={isMobile ? "Project" : "Quick Switch Project"}
                   value={projectFilter}
                   onChange={(value) => {
                     // Just update the filter, don't navigate away
                     setProjectFilter(value);
                   }}
-                  style={{ width: 250 }}
+                  style={{ width: isMobile ? 120 : 250 }}
                   allowClear
                   filterOption={(input, option) => {
                     const label = option?.children?.toString() || '';
@@ -1157,11 +1248,11 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
               )}
 
               <Input
-                placeholder="Search content..."
+                placeholder={isMobile ? "Search..." : "Search content..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 prefix={<SearchOutlined />}
-                style={{ width: isMobile ? 150 : 300 }}
+                style={{ width: isMobile ? 120 : 300 }}
                 allowClear
               />
               <Segmented
@@ -1407,22 +1498,44 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
 
         {/* Mobile-friendly view rendering */}
         {viewMode === 'list' ? (
-          <Table
-            columns={columns}
-            dataSource={filteredData}
-            loading={isLoading}
-            rowKey="id"
-            rowSelection={rowSelection}
-            scroll={{ x: 1500 }}
-            pagination={{
-              showTotal: (total) => `Total ${total} items`,
-              showSizeChanger: true,
-            }}
-            onRow={(record) => ({
-              onClick: () => handlePreview(record),
-              style: { cursor: 'pointer' },
-            })}
-          />
+          isMobile ? (
+            <MobileTableView
+              data={mobileData}
+              loading={isLoading}
+              entityType="content"
+              searchable
+              searchFields={['title', 'subtitle', 'description']}
+              filters={mobileFilters}
+              actions={mobileActions}
+              onItemSelect={(item) => {
+                const content = filteredData.find(c => c.id === item.id)
+                if (content) handlePreview(content)
+              }}
+              onAction={(action, record) => {
+                if (action === 'edit') {
+                  const content = filteredData.find(c => c.id === record.id)
+                  if (content) handleOpenModal(content)
+                }
+              }}
+            />
+          ) : (
+            <Table
+              columns={columns}
+              dataSource={filteredData}
+              loading={isLoading}
+              rowKey="id"
+              rowSelection={rowSelection}
+              scroll={{ x: 1500 }}
+              pagination={{
+                showTotal: (total) => `Total ${total} items`,
+                showSizeChanger: true,
+              }}
+              onRow={(record) => ({
+                onClick: () => handlePreview(record),
+                style: { cursor: 'pointer' },
+              })}
+            />
+          )
         ) : viewMode === 'grid' ? (
           <ContentGridView
             data={filteredData}

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowUpOutlined, ArrowDownOutlined, CalendarOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { milestonesService, type MilestoneAnalytics, type MilestoneMetric } from '../services/milestones';
+import { useIsMobile } from '../hooks/useMediaQuery';
 
 // Types for analytics filter
 interface AnalyticsFilter {
@@ -17,6 +18,7 @@ interface AnalyticsFilter {
 
 const MilestoneAnalyticsPage: React.FC = () => {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [filter, setFilter] = useState<AnalyticsFilter>({
     startDate: dayjs().subtract(90, 'days'),
     endDate: dayjs(),
@@ -156,20 +158,20 @@ const MilestoneAnalyticsPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className={isMobile ? "p-3 bg-gray-50 min-h-screen" : "p-6 bg-gray-50 min-h-screen"}>
       {/* Page Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className={isMobile ? "text-2xl font-bold text-gray-900" : "text-3xl font-bold text-gray-900"}>
           {t('pages.milestoneAnalytics')}
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className={isMobile ? "text-sm text-gray-600 mt-2" : "text-gray-600 mt-2"}>
           {t('descriptions.milestoneAnalyticsDescription')}
         </p>
       </div>
 
       {/* Filters */}
       <Card className="mb-6 shadow-sm">
-        <Row gutter={16}>
+        <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} md={6}>
             <label className="block text-sm font-medium mb-2">
               {t('labels.timeRange')}
@@ -183,23 +185,27 @@ const MilestoneAnalyticsPage: React.FC = () => {
                 { label: t('labels.lastYear'), value: '1year' },
                 { label: t('labels.custom'), value: 'custom' }
               ]}
+              style={{ width: '100%' }}
             />
           </Col>
-          <Col xs={24} sm={12} md={18} className="flex justify-end">
-            <Space>
+          <Col xs={24} sm={12} md={18} style={{ display: 'flex', justifyContent: isMobile ? 'flex-start' : 'flex-end', alignItems: 'flex-end' }}>
+            <Space wrap size={isMobile ? 'small' : 'middle'}>
               <Button
                 type="primary"
                 icon={<FilePdfOutlined />}
                 onClick={exportAnalytics}
                 loading={isLoading}
+                title={t('actions.export')}
               >
-                {t('actions.export')}
+                {!isMobile && t('actions.export')}
               </Button>
               <Button
+                icon={<FilePdfOutlined />}
                 onClick={() => refetch()}
                 loading={isLoading}
+                title={t('actions.refresh')}
               >
-                {t('actions.refresh')}
+                {!isMobile && t('actions.refresh')}
               </Button>
             </Space>
           </Col>
