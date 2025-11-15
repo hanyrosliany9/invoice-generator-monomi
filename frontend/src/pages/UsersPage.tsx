@@ -213,15 +213,9 @@ export const UsersPage: React.FC = () => {
     deleteMutation.mutate(id)
   }
 
-  // Mobile actions
+  // Mobile actions - only user-specific actions
+  // Note: 'view', 'edit', and 'whatsapp' are provided by MobileTableView's defaultMobileActions
   const mobileActions: MobileTableAction[] = React.useMemo(() => [
-    {
-      key: 'edit',
-      label: 'Edit',
-      icon: <EditOutlined />,
-      color: '#1890ff',
-      onClick: (record) => navigate(`/users/${record.id}/edit`),
-    },
     {
       key: 'delete',
       label: 'Hapus',
@@ -229,7 +223,7 @@ export const UsersPage: React.FC = () => {
       danger: true,
       onClick: (record) => handleDelete(record.id),
     },
-  ], [navigate, handleDelete])
+  ], [handleDelete])
 
   // Mobile filters
   const mobileFilters: MobileFilterConfig[] = React.useMemo(() => [

@@ -156,24 +156,9 @@ export const AssetsPage: React.FC = () => {
     [filteredAssets]
   )
 
-  // Mobile actions
+  // Mobile actions - only asset-specific actions
+  // Note: 'view', 'edit', and 'whatsapp' are provided by MobileTableView's defaultMobileActions
   const mobileActions: MobileTableAction[] = React.useMemo(() => [
-    {
-      key: 'view',
-      label: 'Lihat Detail',
-      icon: <EyeOutlined />,
-      onClick: (record) => {
-        const asset = filteredAssets.find(a => a.id === record.id)
-        if (asset) handleView(asset)
-      },
-    },
-    {
-      key: 'edit',
-      label: 'Edit',
-      icon: <EditOutlined />,
-      color: '#1890ff',
-      onClick: (record) => navigate(`/assets/${record.id}/edit`),
-    },
     {
       key: 'delete',
       label: 'Hapus',
@@ -181,7 +166,7 @@ export const AssetsPage: React.FC = () => {
       danger: true,
       onClick: (record) => handleDelete(record.id),
     },
-  ], [navigate, filteredAssets, handleView, handleDelete])
+  ], [handleDelete])
 
   // Mobile filters
   const mobileFilters: MobileFilterConfig[] = React.useMemo(() => [

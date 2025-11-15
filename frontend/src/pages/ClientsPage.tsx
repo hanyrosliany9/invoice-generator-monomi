@@ -264,39 +264,10 @@ export const ClientsPage: React.FC = () => {
   )
 
   // Mobile actions configuration
+  // Mobile actions - only client-specific actions
+  // Note: 'view', 'edit', and 'whatsapp' are provided by MobileTableView's defaultMobileActions
   const mobileActions = React.useMemo<MobileTableAction[]>(
     () => [
-      {
-        key: 'view',
-        label: 'Lihat Detail',
-        icon: <EyeOutlined />,
-        onClick: (record) => navigate(`/clients/${record.id}`),
-      },
-      {
-        key: 'edit',
-        label: 'Edit',
-        icon: <EditOutlined />,
-        color: theme.colors.accent.primary,
-        onClick: (record) => {
-          const client = clients.find(c => c.id === record.id)
-          if (client) handleEdit(client)
-        },
-      },
-      {
-        key: 'whatsapp',
-        label: 'WhatsApp',
-        icon: <WhatsAppOutlined />,
-        color: '#25d366',
-        visible: (record) => !!record.client?.phone,
-        onClick: (record) => {
-          const phone = record.client?.phone?.replace(/[^\d]/g, '')
-          if (phone) {
-            const message = `Halo ${record.client?.name}, salam dari Tim Monomi`
-            const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
-            window.open(whatsappUrl, '_blank')
-          }
-        },
-      },
       {
         key: 'call',
         label: 'Telepon',
@@ -357,7 +328,7 @@ export const ClientsPage: React.FC = () => {
         },
       },
     ],
-    [navigate, clients, handleEdit, handleDelete, theme]
+    [navigate, clients, handleDelete, theme]
   )
 
   // Mobile filters configuration

@@ -141,22 +141,9 @@ export const ExpensesPage: React.FC = () => {
     });
   }, [message, queryClient, modal]);
 
-  // Mobile actions
+  // Mobile actions - only expense-specific actions
+  // Note: 'view', 'edit', and 'whatsapp' are provided by MobileTableView's defaultMobileActions
   const mobileActions: MobileTableAction[] = useMemo(() => [
-    {
-      key: 'view',
-      label: 'Lihat Detail',
-      icon: <EyeOutlined />,
-      onClick: (record) => navigate(`/expenses/${record.id}`),
-    },
-    {
-      key: 'edit',
-      label: 'Edit',
-      icon: <EditOutlined />,
-      color: '#1890ff',
-      onClick: (record) => navigate(`/expenses/${record.id}/edit`),
-      visible: (record) => record.status === 'draft',
-    },
     {
       key: 'delete',
       label: 'Hapus',
@@ -165,7 +152,7 @@ export const ExpensesPage: React.FC = () => {
       onClick: (record) => handleDelete(record.id),
       visible: (record) => record.status === 'draft',
     },
-  ], [navigate, handleDelete]);
+  ], [handleDelete]);
 
   // Mobile filters
   const mobileFilters: MobileFilterConfig[] = useMemo(() => [

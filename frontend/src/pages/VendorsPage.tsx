@@ -163,21 +163,9 @@ export const VendorsPage: React.FC = () => {
     });
   }, [message, modal, deleteMutation]);
 
-  // Mobile actions
+  // Mobile actions - only vendor-specific actions
+  // Note: 'view', 'edit', and 'whatsapp' are provided by MobileTableView's defaultMobileActions
   const mobileActions: MobileTableAction[] = useMemo(() => [
-    {
-      key: 'view',
-      label: 'Lihat Detail',
-      icon: <EyeOutlined />,
-      onClick: (record) => navigate(`/vendors/${record.id}`),
-    },
-    {
-      key: 'edit',
-      label: 'Edit',
-      icon: <EditOutlined />,
-      color: '#1890ff',
-      onClick: (record) => navigate(`/vendors/${record.id}/edit`),
-    },
     {
       key: 'delete',
       label: 'Hapus',
@@ -188,7 +176,7 @@ export const VendorsPage: React.FC = () => {
         if (vendor) handleDeleteVendor(vendor);
       },
     },
-  ], [navigate, vendors, handleDeleteVendor]);
+  ], [vendors, handleDeleteVendor]);
 
   // Mobile filters
   const mobileFilters: MobileFilterConfig[] = useMemo(() => [
