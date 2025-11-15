@@ -941,16 +941,8 @@ export const InvoicesPage: React.FC = () => {
       })
     }
 
-    if (invoice.status === 'SENT' && canApproveFinancial()) {
-      items.push({
-        key: 'mark-paid',
-        icon: <CheckCircleOutlined />,
-        label: 'Tandai Lunas',
-        onClick: () => handleStatusChange(invoice, 'PAID'),
-      })
-    }
-
-    if (invoice.status === 'OVERDUE' && canApproveFinancial()) {
+    // Add mark as paid for both SENT and OVERDUE statuses
+    if ((invoice.status === 'SENT' || invoice.status === 'OVERDUE') && canApproveFinancial()) {
       items.push({
         key: 'mark-paid',
         icon: <CheckCircleOutlined />,
