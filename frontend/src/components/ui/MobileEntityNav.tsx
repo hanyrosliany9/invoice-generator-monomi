@@ -153,8 +153,8 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
       label: 'Marketing',
       children: [
         {
-          key: '/campaigns',
-          label: 'Campaigns',
+          key: '/social-media-reports',
+          label: 'Social Media Reports',
         },
         {
           key: '/content-calendar',
