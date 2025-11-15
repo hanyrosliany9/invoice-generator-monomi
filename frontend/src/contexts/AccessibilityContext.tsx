@@ -9,6 +9,7 @@ import React, {
   useMemo,
   useState,
 } from 'react'
+import { now } from '../utils/date'
 
 // WCAG 2.1 AA Compliance levels
 export type AccessibilityLevel = 'A' | 'AA' | 'AAA'
@@ -126,7 +127,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       level: 'AA',
       score: 0,
       issues: [],
-      lastChecked: new Date(),
+      lastChecked: now(),
     },
     screenReader: {
       active: false,
@@ -420,7 +421,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         level: score >= 95 ? 'AAA' : score >= 85 ? 'AA' : 'A',
         score: Math.round(score),
         issues,
-        lastChecked: new Date(),
+        lastChecked: now(),
       },
     }))
   }, [])

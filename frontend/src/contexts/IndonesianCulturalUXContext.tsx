@@ -10,6 +10,7 @@ import React, {
   useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
+import { now } from '../utils/date'
 
 // Indonesian cultural preferences
 export interface IndonesianCulturalPreferences {
@@ -394,7 +395,7 @@ export const IndonesianCulturalUXProvider: React.FC<{
         return messages.greetings[timeOfDay]
       }
 
-      const hour = new Date().getHours()
+      const hour = now().getHours()
       if (hour < 12) return messages.greetings.morning
       if (hour < 17) return messages.greetings.afternoon
       return messages.greetings.evening

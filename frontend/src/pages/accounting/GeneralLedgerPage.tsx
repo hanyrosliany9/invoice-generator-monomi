@@ -36,8 +36,8 @@ const GeneralLedgerPage: React.FC = () => {
   const { theme } = useTheme();
   const isMobile = useIsMobile();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
-    dayjs('2025-01-01'),
-    dayjs('2025-01-31'),
+    dayjs().startOf('month'),
+    dayjs().endOf('month'),
   ]);
   const [selectedAccountCode, setSelectedAccountCode] = useState<string | undefined>(
     undefined

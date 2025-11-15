@@ -206,7 +206,7 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
                   <div className='flex items-center space-x-1'>
                     <span
                       style={{
-                        color: action.disabled ? theme.colors.text.disabled : action.color,
+                        color: action.disabled ? theme.colors.text.secondary : action.color,
                       }}
                       className='text-lg'
                     >
@@ -224,7 +224,7 @@ const MobileQuickActions: React.FC<MobileQuickActionsProps> = ({
                     <div
                       className='font-medium text-sm'
                       style={{
-                        color: action.disabled ? theme.colors.text.disabled : action.color,
+                        color: action.disabled ? theme.colors.text.secondary : action.color,
                       }}
                     >
                       {action.label}

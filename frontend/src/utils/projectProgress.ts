@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import type { ProjectStatus } from './projectStatus'
+import { now } from '../utils/date'
 
 export interface ProjectProgressData {
   status: ProjectStatus
@@ -36,12 +37,12 @@ export const calculateProjectProgress = (project: ProjectProgressData): number =
     case 'IN_PROGRESS':
       // Calculate based on time elapsed
       if (startDate && endDate) {
-        const now = new Date()
+        const currentTime = now()
         const start = new Date(startDate)
         const end = new Date(endDate)
 
         const totalDuration = end.getTime() - start.getTime()
-        const elapsedDuration = now.getTime() - start.getTime()
+        const elapsedDuration = currentTime.getTime() - start.getTime()
 
         // Calculate progress, capped at 95% for in-progress projects
         const timeProgress = Math.max(0, Math.min(95, (elapsedDuration / totalDuration) * 100))

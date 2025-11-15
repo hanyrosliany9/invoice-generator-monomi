@@ -13,6 +13,7 @@ import {
   EnhancedPriceInheritanceFormField,
 } from '../PriceInheritanceFormField'
 import { priceInheritanceApi } from '../../../services/priceInheritanceApi'
+import { now } from '../../../utils/date'
 
 // Mock the API service
 vi.mock('../../../services/priceInheritanceApi', () => ({
@@ -122,7 +123,7 @@ const mockValidationResult = {
     },
   },
   totalRules: 3,
-  validationTimestamp: new Date(),
+  validationTimestamp: now(),
 }
 
 describe('PriceInheritanceFormField', () => {
@@ -147,7 +148,7 @@ describe('PriceInheritanceFormField', () => {
       metadata: {
         entityType: 'quotation',
         entityId: 'quotation-123',
-        calculatedAt: new Date(),
+        calculatedAt: now(),
         version: '1.0',
       },
     })

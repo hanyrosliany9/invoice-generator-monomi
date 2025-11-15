@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException ,
   Logger,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { JournalService } from "../accounting/services/journal.service";
 import { CreateAssetDto } from "./dto/create-asset.dto";
 import { UpdateAssetDto } from "./dto/update-asset.dto";
 import { AssetStatus, AssetCondition } from "@prisma/client";
@@ -10,13 +13,17 @@ import * as QRCode from "qrcode";
 @Injectable()
 export class AssetsService {
   private readonly logger = new Logger(AssetsService.name);
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => JournalService))
+    private journalService: JournalService,
+  ) {}
 
   async create(createAssetDto: CreateAssetDto) {
     const assetCode = await this.generateAssetCode(createAssetDto.category);
     const qrCode = await this.generateQRCode(assetCode);
 
-    return this.prisma.asset.create({
+    const asset = await this.prisma.asset.create({
       data: {
         ...createAssetDto,
         assetCode,
@@ -26,6 +33,99 @@ export class AssetsService {
         createdBy: true,
       },
     });
+
+    // ✅ FIX: Create journal entry for asset purchase
+    // Debit: Fixed Asset Account, Credit: Cash/Accounts Payable
+    if (asset.purchasePrice && asset.purchaseDate) {
+      try {
+        const purchasePrice = parseFloat(asset.purchasePrice.toString());
+
+        // Map asset category to fixed asset account code
+        const assetAccountMap: Record<string, string> = {
+          'Camera': '1-4510', // Camera & Photography Equipment
+          'Lens': '1-4510', // Camera & Photography Equipment
+          'Lighting': '1-4550', // Lighting Equipment
+          'Video Equipment': '1-4530', // Video & Audio Production Equipment
+          'Audio Equipment': '1-4530', // Video & Audio Production Equipment
+          'Computer': '1-4570', // Editing Workstations & Computers
+          'Vehicle': '1-4310', // Vehicles
+          'Furniture': '1-4410', // Furniture & Fixtures
+          'Building': '1-4210', // Buildings
+          'Land': '1-4110', // Land
+        };
+
+        const assetAccount = assetAccountMap[asset.category] || '1-4010'; // Default to Equipment
+
+        // Create and auto-post journal entry for asset purchase
+        const journalEntry = await this.journalService.createJournalEntry({
+          entryDate: asset.purchaseDate,
+          description: `Asset Purchase - ${asset.name}`,
+          descriptionId: `Pembelian Aset - ${asset.name}`,
+          transactionType: 'ASSET_PURCHASE' as any,
+          transactionId: asset.id,
+          documentNumber: asset.assetCode,
+          documentDate: asset.purchaseDate,
+          createdBy: createAssetDto.createdById || 'system',
+          autoPost: true, // ✅ Auto-post to General Ledger
+          lineItems: [
+            {
+              accountCode: assetAccount, // Debit: Fixed Asset account
+              description: `Purchase of ${asset.name}`,
+              descriptionId: `Pembelian ${asset.name}`,
+              debit: purchasePrice,
+              credit: 0,
+            },
+            {
+              accountCode: '1-1010', // Credit: Cash (assume cash purchase)
+              description: `Payment for ${asset.name}`,
+              descriptionId: `Pembayaran ${asset.name}`,
+              debit: 0,
+              credit: purchasePrice,
+            },
+          ],
+        });
+
+        this.logger.log(
+          `✅ Created and posted asset purchase journal entry ${journalEntry.entryNumber} for ${asset.assetCode}`
+        );
+
+        // Auto-create default depreciation schedule for the asset
+        const residualValue = purchasePrice * 0.1; // 10% residual value
+        const usefulLifeYears = 5; // Default 5 years
+        const usefulLifeMonths = usefulLifeYears * 12;
+
+        await this.prisma.depreciationSchedule.create({
+          data: {
+            assetId: asset.id,
+            method: "STRAIGHT_LINE",
+            depreciableAmount: purchasePrice - residualValue,
+            residualValue: residualValue,
+            usefulLifeMonths: usefulLifeMonths,
+            usefulLifeYears: usefulLifeYears,
+            depreciationPerMonth: (purchasePrice - residualValue) / usefulLifeMonths,
+            depreciationPerYear: (purchasePrice - residualValue) / usefulLifeYears,
+            annualRate: 1 / usefulLifeYears,
+            startDate: asset.purchaseDate,
+            endDate: new Date(
+              new Date(asset.purchaseDate).setMonth(
+                new Date(asset.purchaseDate).getMonth() + usefulLifeMonths
+              )
+            ),
+            isActive: true,
+            isFulfilled: false,
+          },
+        });
+
+        this.logger.log(`Auto-created depreciation schedule for asset ${asset.assetCode}`);
+      } catch (error: any) {
+        this.logger.warn(
+          `Failed to auto-create journal/schedule for asset ${asset.assetCode}: ${error.message}`
+        );
+        // Don't fail asset creation if journal/schedule creation fails
+      }
+    }
+
+    return asset;
   }
 
   async findAll(page = 1, limit = 10, status?: AssetStatus, category?: string) {
@@ -55,8 +155,16 @@ export class AssetsService {
       this.prisma.asset.count({ where }),
     ]);
 
+    // Transform Decimal fields to numbers for JSON serialization
+    const transformedAssets = assets.map((asset) => ({
+      ...asset,
+      purchasePrice: asset.purchasePrice ? Number(asset.purchasePrice) : 0,
+      currentValue: asset.currentValue ? Number(asset.currentValue) : null,
+      residualValue: asset.residualValue ? Number(asset.residualValue) : 0,
+    }));
+
     return {
-      data: assets,
+      data: transformedAssets,
       pagination: {
         page,
         limit,
@@ -97,7 +205,13 @@ export class AssetsService {
       throw new NotFoundException("Asset tidak ditemukan");
     }
 
-    return asset;
+    // Transform Decimal fields to numbers for JSON serialization
+    return {
+      ...asset,
+      purchasePrice: asset.purchasePrice ? Number(asset.purchasePrice) : 0,
+      currentValue: asset.currentValue ? Number(asset.currentValue) : null,
+      residualValue: asset.residualValue ? Number(asset.residualValue) : 0,
+    };
   }
 
   async update(id: string, updateAssetDto: UpdateAssetDto) {
@@ -282,5 +396,106 @@ export class AssetsService {
       ),
       totalValue: totalValue._sum.purchasePrice || 0,
     };
+  }
+
+  /**
+   * ✅ Backfill journal entries for existing assets
+   * Creates asset purchase journal entries for assets that don't have them yet
+   */
+  async backfillAssetJournalEntries(userId: string) {
+    this.logger.log('Starting backfill of asset purchase journal entries...');
+
+    // Get all assets
+    const assets = await this.prisma.asset.findMany({
+      where: {
+        purchasePrice: { not: 0 },
+        purchaseDate: { not: undefined },
+      },
+    });
+
+    const results = {
+      total: assets.length,
+      success: 0,
+      failed: 0,
+      errors: [] as string[],
+    };
+
+    // Map asset category to fixed asset account code
+    const assetAccountMap: Record<string, string> = {
+      'Camera': '1-4510',
+      'Lens': '1-4510',
+      'Lighting': '1-4550',
+      'Video Equipment': '1-4530',
+      'Audio Equipment': '1-4530',
+      'Computer': '1-4570',
+      'Vehicle': '1-4310',
+      'Furniture': '1-4410',
+      'Building': '1-4210',
+      'Land': '1-4110',
+    };
+
+    for (const asset of assets) {
+      try {
+        const purchasePrice = parseFloat(asset.purchasePrice.toString());
+        const assetAccount = assetAccountMap[asset.category] || '1-4010';
+
+        // Check if journal entry already exists for this asset
+        const existingJournal = await this.prisma.journalEntry.findFirst({
+          where: {
+            transactionId: asset.id,
+            transactionType: 'ASSET_PURCHASE' as any,
+          },
+        });
+
+        if (existingJournal) {
+          this.logger.log(`Asset ${asset.assetCode} already has journal entry, skipping`);
+          continue;
+        }
+
+        // Create and auto-post journal entry
+        const journalEntry = await this.journalService.createJournalEntry({
+          entryDate: asset.purchaseDate,
+          description: `Asset Purchase - ${asset.name} (Backfill)`,
+          descriptionId: `Pembelian Aset - ${asset.name} (Backfill)`,
+          transactionType: 'ASSET_PURCHASE' as any,
+          transactionId: asset.id,
+          documentNumber: asset.assetCode,
+          documentDate: asset.purchaseDate,
+          createdBy: userId,
+          autoPost: true,
+          lineItems: [
+            {
+              accountCode: assetAccount,
+              description: `Purchase of ${asset.name}`,
+              descriptionId: `Pembelian ${asset.name}`,
+              debit: purchasePrice,
+              credit: 0,
+            },
+            {
+              accountCode: '1-1010', // Cash
+              description: `Payment for ${asset.name}`,
+              descriptionId: `Pembayaran ${asset.name}`,
+              debit: 0,
+              credit: purchasePrice,
+            },
+          ],
+        });
+
+        this.logger.log(
+          `✅ Created journal entry ${journalEntry.entryNumber} for asset ${asset.assetCode}`
+        );
+        results.success++;
+      } catch (error: any) {
+        this.logger.error(`Failed to create journal entry for asset ${asset.assetCode}: ${error.message}`);
+        results.failed++;
+        results.errors.push(`${asset.assetCode}: ${error.message}`);
+      }
+    }
+
+    this.logger.log(
+      `Backfill completed: ${results.success} success, ${results.failed} failed out of ${results.total} total`
+    );
+
+    return results;
   }
 }

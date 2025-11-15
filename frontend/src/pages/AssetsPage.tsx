@@ -480,6 +480,7 @@ export const AssetsPage: React.FC = () => {
       title: 'Aset',
       dataIndex: 'assetName',
       key: 'assetName',
+      width: 200,
       render: (name: string, record: any) => (
         <div>
           <div>
@@ -496,13 +497,31 @@ export const AssetsPage: React.FC = () => {
       ),
     },
     {
+      title: 'Nilai Perolehan',
+      dataIndex: 'purchasePrice',
+      key: 'purchasePrice',
+      align: 'right' as const,
+      width: 150,
+      render: (amount: number) => (
+        <Text>{formatCurrency(amount || 0)}</Text>
+      ),
+    },
+    {
+      title: 'Usia Manfaat',
+      dataIndex: 'usefulLifeYears',
+      key: 'usefulLifeYears',
+      align: 'center' as const,
+      width: 120,
+      render: (years: number) => <Text>{years || '-'} Tahun</Text>,
+    },
+    {
       title: 'Depresiasi Periode',
       dataIndex: 'depreciationAmount',
       key: 'depreciationAmount',
       align: 'right' as const,
-      width: 180,
+      width: 150,
       render: (amount: number) => (
-        <Text strong style={{ color: theme.colors.status.error }}>
+        <Text strong style={{ color: theme.colors.status.warning }}>
           {formatCurrency(amount)}
         </Text>
       ),
@@ -512,9 +531,9 @@ export const AssetsPage: React.FC = () => {
       dataIndex: 'accumulatedDepreciation',
       key: 'accumulatedDepreciation',
       align: 'right' as const,
-      width: 200,
+      width: 150,
       render: (amount: number) => (
-        <Text style={{ color: theme.colors.text.secondary }}>
+        <Text style={{ color: theme.colors.status.error }}>
           {formatCurrency(amount)}
         </Text>
       ),
@@ -524,7 +543,7 @@ export const AssetsPage: React.FC = () => {
       dataIndex: 'netBookValue',
       key: 'netBookValue',
       align: 'right' as const,
-      width: 180,
+      width: 150,
       render: (amount: number) => (
         <Text strong style={{ color: theme.colors.status.success }}>
           {formatCurrency(amount)}
@@ -890,9 +909,9 @@ export const AssetsPage: React.FC = () => {
                       rowKey="assetId"
                       pagination={false}
                       summary={(data) => {
-                        const totalDep = data.reduce((sum, item) => sum + item.depreciationAmount, 0)
-                        const totalAcc = data.reduce((sum, item) => sum + item.accumulatedDepreciation, 0)
-                        const totalNBV = data.reduce((sum, item) => sum + item.netBookValue, 0)
+                        const totalDep = data.reduce((sum, item) => sum + Number(item.depreciationAmount), 0)
+                        const totalAcc = data.reduce((sum, item) => sum + Number(item.accumulatedDepreciation), 0)
+                        const totalNBV = data.reduce((sum, item) => sum + Number(item.netBookValue), 0)
                         return (
                           <Table.Summary.Row>
                             <Table.Summary.Cell index={0}>

@@ -46,6 +46,7 @@ import {
   PerformanceMetric,
   usePerformanceMonitor,
 } from '../../hooks/usePerformanceMonitor'
+import { now } from '../../utils/date'
 
 const { Title, Text, Paragraph } = Typography
 const { TabPane } = Tabs
@@ -364,7 +365,7 @@ const PerformanceMonitoringDashboard: React.FC<
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
-                a.download = `performance-report-${new Date().toISOString()}.json`
+                a.download = `performance-report-${now().toISOString()}.json`
                 a.click()
               }}
             >

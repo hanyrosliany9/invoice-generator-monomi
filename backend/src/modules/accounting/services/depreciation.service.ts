@@ -267,16 +267,17 @@ export class DepreciationService {
 
     // Ensure book value doesn't go below residual value
     if (bookValue < Number(schedule.residualValue)) {
+      // Adjust depreciation to not go below residual value
+      const purchasePrice = Number(schedule.depreciableAmount) + Number(schedule.residualValue);
+      depreciationAmount = purchasePrice - Number(schedule.residualValue) - previousAccumulated;
+      newAccumulatedDepreciation = previousAccumulated + depreciationAmount;
       bookValue = Number(schedule.residualValue);
-      depreciationAmount =
-        Number(schedule.depreciableAmount) +
-        Number(schedule.residualValue) -
-        previousAccumulated -
-        bookValue;
-      newAccumulatedDepreciation =
-        Number(schedule.depreciableAmount) +
-        Number(schedule.residualValue) -
-        bookValue;
+
+      // Prevent negative depreciation
+      if (depreciationAmount < 0) {
+        depreciationAmount = 0;
+        newAccumulatedDepreciation = previousAccumulated;
+      }
     }
 
     // Create depreciation entry
@@ -407,6 +408,16 @@ export class DepreciationService {
     userId: string;
     autoPost?: boolean;
   }) {
+    // First, auto-create schedules for assets that don't have them
+    try {
+      const backfillResult = await this.backfillDepreciationSchedules();
+      if (backfillResult.created > 0) {
+        console.log(`Auto-created ${backfillResult.created} depreciation schedules`);
+      }
+    } catch (error: any) {
+      console.warn('Failed to backfill depreciation schedules:', error.message);
+    }
+
     // Get all assets with active depreciation schedules
     const activeSchedules = await this.prisma.depreciationSchedule.findMany({
       where: {
@@ -422,7 +433,7 @@ export class DepreciationService {
 
     const results = {
       total: activeSchedules.length,
-      calculated: 0,
+      processed: 0,
       posted: 0,
       errors: [] as string[],
       entries: [] as any[],
@@ -437,7 +448,7 @@ export class DepreciationService {
           fiscalPeriodId: data.fiscalPeriodId,
         });
 
-        results.calculated++;
+        results.processed++;
         results.entries.push(entry);
 
         // Auto-post if requested
@@ -449,6 +460,86 @@ export class DepreciationService {
         results.errors.push(
           `Asset ${schedule.asset.assetCode}: ${error.message}`,
         );
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Backfill depreciation schedules for existing assets that don't have them
+   */
+  async backfillDepreciationSchedules() {
+    // Get all assets
+    const allAssets = await this.prisma.asset.findMany({
+      include: {
+        depreciationSchedules: {
+          where: {
+            isActive: true,
+            isFulfilled: false,
+          },
+        },
+      },
+    });
+
+    // Filter assets without schedules and with purchase data
+    const assetsWithoutSchedules = allAssets.filter(
+      (asset) =>
+        asset.purchasePrice &&
+        asset.purchaseDate &&
+        asset.depreciationSchedules.length === 0
+    );
+
+    const results = {
+      total: assetsWithoutSchedules.length,
+      created: 0,
+      errors: [] as string[],
+    };
+
+    for (const asset of assetsWithoutSchedules) {
+      try {
+        const purchasePrice = parseFloat(asset.purchasePrice.toString());
+
+        // Use asset's residualValue if set, otherwise default to 10%
+        const residualValue = asset.residualValue
+          ? parseFloat(asset.residualValue.toString())
+          : purchasePrice * 0.1;
+
+        // Use asset's usefulLifeYears if set, otherwise default to 5 years
+        const usefulLifeYears = asset.usefulLifeYears || 5;
+        const usefulLifeMonths = usefulLifeYears * 12;
+
+        // Validate depreciable amount
+        if (purchasePrice <= residualValue) {
+          results.errors.push(`Asset ${asset.assetCode}: Purchase price must be greater than residual value`);
+          continue;
+        }
+
+        await this.prisma.depreciationSchedule.create({
+          data: {
+            assetId: asset.id,
+            method: DepreciationMethod.STRAIGHT_LINE,
+            depreciableAmount: purchasePrice - residualValue,
+            residualValue: residualValue,
+            usefulLifeMonths: usefulLifeMonths,
+            usefulLifeYears: usefulLifeYears,
+            depreciationPerMonth: (purchasePrice - residualValue) / usefulLifeMonths,
+            depreciationPerYear: (purchasePrice - residualValue) / usefulLifeYears,
+            annualRate: 1 / usefulLifeYears,
+            startDate: asset.purchaseDate,
+            endDate: new Date(
+              new Date(asset.purchaseDate).setMonth(
+                new Date(asset.purchaseDate).getMonth() + usefulLifeMonths
+              )
+            ),
+            isActive: true,
+            isFulfilled: false,
+          },
+        });
+
+        results.created++;
+      } catch (error: any) {
+        results.errors.push(`Asset ${asset.assetCode}: ${error.message}`);
       }
     }
 
@@ -532,28 +623,36 @@ export class DepreciationService {
         const assetCode = entry.asset.assetCode;
         if (!acc[assetCode]) {
           acc[assetCode] = {
+            assetId: entry.asset.id,
             assetCode,
             assetName: entry.asset.name,
-            totalDepreciation: 0,
-            entries: 0,
+            purchasePrice: Number(entry.asset.purchasePrice) || 0,
+            purchaseDate: entry.asset.purchaseDate,
+            usefulLifeYears: entry.asset.usefulLifeYears,
+            depreciationAmount: 0,
+            accumulatedDepreciation: 0,
+            netBookValue: Number(entry.asset.purchasePrice) || 0,
+            entryCount: 0,
           };
         }
-        acc[assetCode].totalDepreciation += Number(entry.depreciationAmount);
-        acc[assetCode].entries++;
+        acc[assetCode].depreciationAmount += Number(entry.depreciationAmount);
+        acc[assetCode].accumulatedDepreciation = Number(entry.accumulatedDepreciation);
+        acc[assetCode].netBookValue = Number(entry.bookValue);
+        acc[assetCode].entryCount++;
         return acc;
       },
       {} as Record<string, any>,
     );
 
     return {
+      period: {
+        startDate: data.startDate,
+        endDate: data.endDate,
+      },
       totalDepreciation,
-      totalEntries: entries.length,
-      posted: entries.filter((e) => e.status === DepreciationStatus.POSTED)
-        .length,
-      calculated: entries.filter(
-        (e) => e.status === DepreciationStatus.CALCULATED,
-      ).length,
+      assetCount: Object.keys(byAsset).length,
       byAsset: Object.values(byAsset),
+      byMethod: {}, // Can be enhanced later if needed
     };
   }
 

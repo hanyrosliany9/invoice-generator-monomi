@@ -52,6 +52,7 @@ import { useIsMobile } from '../../hooks/useMediaQuery';
 import MobileTableView from '../../components/mobile/MobileTableView';
 import { bankReconciliationToBusinessEntity } from '../../adapters/mobileTableAdapters';
 import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
+import { getErrorMessage } from '../../utils/errorHandling';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -113,7 +114,7 @@ const BankReconciliationsPage: React.FC = () => {
 
   // Mobile data adapter
   const mobileData = useMemo(() =>
-    reconciliations.map(bankReconciliationToBusinessEntity),
+    reconciliations.map((rec) => bankReconciliationToBusinessEntity(rec as any)),
     [reconciliations]
   );
 
@@ -168,7 +169,7 @@ const BankReconciliationsPage: React.FC = () => {
       form.resetFields();
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal membuat rekonsiliasi bank');
+      message.error(getErrorMessage(error, 'Gagal membuat rekonsiliasi bank'));
     },
   });
 
@@ -179,7 +180,7 @@ const BankReconciliationsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['bank-reconciliations'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal mereview rekonsiliasi');
+      message.error(getErrorMessage(error, 'Gagal mereview rekonsiliasi'));
     },
   });
 
@@ -190,7 +191,7 @@ const BankReconciliationsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['bank-reconciliations'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menyetujui rekonsiliasi');
+      message.error(getErrorMessage(error, 'Gagal menyetujui rekonsiliasi'));
     },
   });
 
@@ -203,7 +204,7 @@ const BankReconciliationsPage: React.FC = () => {
       setRejectReason('');
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menolak rekonsiliasi');
+      message.error(getErrorMessage(error, 'Gagal menolak rekonsiliasi'));
     },
   });
 
@@ -214,7 +215,7 @@ const BankReconciliationsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['bank-reconciliations'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menghapus rekonsiliasi');
+      message.error(getErrorMessage(error, 'Gagal menghapus rekonsiliasi'));
     },
   });
 
@@ -594,6 +595,7 @@ const BankReconciliationsPage: React.FC = () => {
         }}
         width={900}
         footer={null}
+        forceRender
       >
         <Form form={form} layout="vertical" onFinish={handleCreate}>
           <Row gutter={16}>

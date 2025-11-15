@@ -141,6 +141,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       cancelText="Batal"
       width={800}
       confirmLoading={createMutation.isPending}
+      forceRender
     >
       <Alert
         message="Biaya akan ditautkan ke proyek ini"
@@ -306,6 +307,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
           <Col span={8}>
             <Form.Item name="isLuxuryGoods" label="Barang Mewah?" valuePropName="checked">
               <Switch
+                id="isLuxuryGoods"
                 onChange={setIsLuxuryGoods}
                 checkedChildren="Ya (12%)"
                 unCheckedChildren="Tidak (11%)"

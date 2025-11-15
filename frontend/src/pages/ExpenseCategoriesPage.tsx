@@ -51,7 +51,7 @@ export const ExpenseCategoriesPage: React.FC = () => {
 
   // Mobile data adapter
   const mobileData = useMemo(() =>
-    categories.map(expenseCategoryToBusinessEntity),
+    categories.map((category) => expenseCategoryToBusinessEntity(category)),
     [categories]
   );
 
@@ -364,6 +364,7 @@ export const ExpenseCategoriesPage: React.FC = () => {
         onCancel={handleCloseModal}
         footer={null}
         width={800}
+        forceRender
       >
         <Form
           form={form}

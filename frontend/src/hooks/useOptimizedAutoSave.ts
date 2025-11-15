@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MessageInstance } from 'antd/es/message/interface'
+import { now } from '../utils/date'
 
 // Simple debounce implementation
 function debounce<T extends (...args: any[]) => any>(
@@ -85,7 +86,7 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
         setState(prev => ({
           ...prev,
           isSaving: false,
-          lastSaved: new Date(),
+          lastSaved: now(),
           isDirty: false,
           saveCount: prev.saveCount + 1,
         }))
@@ -146,7 +147,7 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
         setState(prev => ({
           ...prev,
           isSaving: false,
-          lastSaved: new Date(),
+          lastSaved: now(),
           isDirty: false,
           saveCount: prev.saveCount + 1,
         }))
@@ -193,8 +194,8 @@ export const useOptimizedAutoSave = (options: UseOptimizedAutoSaveOptions) => {
   const getLastSavedText = useCallback(() => {
     if (!state.lastSaved) return 'Never saved'
 
-    const now = new Date()
-    const diffMs = now.getTime() - state.lastSaved.getTime()
+    const currentTime = now()
+    const diffMs = currentTime.getTime() - state.lastSaved.getTime()
     const diffSeconds = Math.floor(diffMs / 1000)
     const diffMinutes = Math.floor(diffSeconds / 60)
 

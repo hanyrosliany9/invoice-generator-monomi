@@ -23,7 +23,7 @@ export interface PaymentMilestone {
 export interface PaymentMilestoneFormItem {
   milestoneNumber: number
   name: string
-  nameId: string
+  nameId?: string
   description?: string
   descriptionId?: string
   paymentPercentage: number

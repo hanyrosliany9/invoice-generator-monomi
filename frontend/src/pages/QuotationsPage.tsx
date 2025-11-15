@@ -19,9 +19,12 @@ import {
   Statistic,
   Table,
   Tag,
+  theme,
   Tooltip,
   Typography,
 } from 'antd'
+
+const { useToken } = theme
 
 const { MonthPicker } = DatePicker
 import {
@@ -86,6 +89,7 @@ const { TextArea } = Input
 export const QuotationsPage: React.FC = () => {
   const { t } = useTranslation()
   const { theme } = useTheme()
+  const { token } = useToken()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -612,8 +616,8 @@ export const QuotationsPage: React.FC = () => {
     ? projects.filter(project => project.clientId === selectedClientId)
     : []
 
-  const handlePriceInheritanceModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const mode = e.target.value
+  const handlePriceInheritanceModeChange = (e: any) => {
+    const mode = e.target.value as 'inherit' | 'custom'
     setPriceInheritanceMode(mode)
 
     if (mode === 'inherit' && selectedProject) {
@@ -788,7 +792,7 @@ export const QuotationsPage: React.FC = () => {
       return
     }
 
-    const data = {
+    const data: any = {
       ...values,
       validUntil: values.validUntil.endOf('day').toISOString(),
       amountPerProject: totalAmount, // Set same as total
@@ -1476,6 +1480,7 @@ export const QuotationsPage: React.FC = () => {
         }}
         footer={null}
         width={800}
+        forceRender
       >
         <Form
           data-testid='quotation-form'
@@ -1669,6 +1674,7 @@ export const QuotationsPage: React.FC = () => {
         onOk={handleStatusModalOk}
         onCancel={handleStatusModalCancel}
         width={400}
+        forceRender
       >
         <Form
           form={statusForm}
@@ -1714,7 +1720,7 @@ export const QuotationsPage: React.FC = () => {
       <Modal
         title={
           <Space>
-            <CheckCircleOutlined style={{ color: '#52c41a' }} />
+            <CheckCircleOutlined style={{ color: token.colorSuccess }} />
             {invoiceResultModal.data?.isExisting
               ? 'Invoice Sudah Tersedia'
               : 'Invoice Berhasil Dibuat'}
@@ -1742,19 +1748,18 @@ export const QuotationsPage: React.FC = () => {
             type='primary'
             icon={<EyeOutlined />}
             onClick={() => {
+              const invoiceId = invoiceResultModal.data?.invoiceId
               setInvoiceResultModal({
                 visible: false,
                 data: null,
                 quotation: null,
               })
-              navigate(`/invoices`, {
-                state: {
-                  highlightInvoice: invoiceResultModal.data?.invoiceId,
-                  fromQuotation: true,
-                  quotationNumber:
-                    invoiceResultModal.quotation?.quotationNumber,
-                },
-              })
+              // Navigate directly to the specific invoice detail page
+              if (invoiceId) {
+                navigate(`/invoices/${invoiceId}`)
+              } else {
+                navigate(`/invoices`)
+              }
             }}
           >
             Lihat Invoice
@@ -1774,10 +1779,10 @@ export const QuotationsPage: React.FC = () => {
 
               <div
                 style={{
-                  background: '#f8f9fa',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  marginBottom: '16px',
+                  background: token.colorBgLayout,
+                  padding: token.padding,
+                  borderRadius: token.borderRadiusLG,
+                  marginBottom: token.marginMD,
                 }}
               >
                 <Row gutter={[16, 8]}>
@@ -1819,13 +1824,13 @@ export const QuotationsPage: React.FC = () => {
               {invoiceResultModal.quotation && (
                 <div
                   style={{
-                    background: '#f0f8ff',
-                    padding: '12px',
-                    borderRadius: '6px',
-                    border: '1px solid #d4edda',
+                    background: token.colorInfoBg,
+                    padding: token.paddingSM,
+                    borderRadius: token.borderRadius,
+                    border: `1px solid ${token.colorInfoBorder}`,
                   }}
                 >
-                  <Text strong style={{ color: '#0066cc' }}>
+                  <Text strong style={{ color: token.colorInfo }}>
                     Quotation Context:
                   </Text>
                   <br />

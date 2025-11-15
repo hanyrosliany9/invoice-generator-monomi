@@ -163,4 +163,43 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsString({ message: "ID pembuat harus berupa string yang valid" })
   createdBy?: string;
+
+  // Tax fields (Indonesian PPN compliance)
+  @ApiProperty({
+    description: "Apakah totalAmount sudah termasuk PPN",
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: "Include tax harus berupa boolean" })
+  includeTax?: boolean;
+
+  @ApiProperty({
+    description: "Persentase pajak (e.g., 11 untuk PPN 11%)",
+    example: 11,
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: "Tax rate harus berupa number" })
+  taxRate?: number;
+
+  @ApiProperty({
+    description: "Jumlah pajak yang dihitung",
+    example: 550000,
+    required: false,
+  })
+  @IsOptional()
+  @FinancialTransform()
+  @IsNumber({}, { message: "Tax amount harus berupa number" })
+  taxAmount?: number;
+
+  @ApiProperty({
+    description: "Jumlah sebelum pajak (subtotal)",
+    example: 5000000,
+    required: false,
+  })
+  @IsOptional()
+  @FinancialTransform()
+  @IsNumber({}, { message: "Subtotal amount harus berupa number" })
+  subtotalAmount?: number;
 }

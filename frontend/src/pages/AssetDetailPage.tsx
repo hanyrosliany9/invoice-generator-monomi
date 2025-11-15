@@ -290,6 +290,18 @@ export const AssetDetailPage: React.FC = () => {
                   <div><Text strong>{formatDate(asset.warrantyExpiration)}</Text></div>
                 </Col>
               )}
+              {asset.usefulLifeYears && (
+                <Col xs={24} sm={12} md={6}>
+                  <Text type='secondary'>Umur Ekonomis</Text>
+                  <div><Text strong>{asset.usefulLifeYears} Tahun</Text></div>
+                </Col>
+              )}
+              {asset.residualValue !== undefined && asset.residualValue !== null && (
+                <Col xs={24} sm={12} md={6}>
+                  <Text type='secondary'>Nilai Sisa</Text>
+                  <div><Text strong>{formatIDR(asset.residualValue)}</Text></div>
+                </Col>
+              )}
             </Row>
           </Card>
         </Col>

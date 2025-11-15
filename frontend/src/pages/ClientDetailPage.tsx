@@ -42,6 +42,7 @@ import { Client, clientService } from '../services/clients'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import { mobileTheme } from '../theme/mobileTheme'
 import dayjs from 'dayjs'
+import { now } from '../utils/date'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -90,7 +91,7 @@ export const ClientDetailPage: React.FC<ClientDetailPageProps> = () => {
         pendingInvoices: client.pendingInvoices,
         overdueInvoices: client.overdueInvoices,
       },
-      exportDate: new Date().toISOString(),
+      exportDate: now().toISOString(),
     }
 
     const dataStr = JSON.stringify(exportData, null, 2)
@@ -98,7 +99,7 @@ export const ClientDetailPage: React.FC<ClientDetailPageProps> = () => {
     const url = URL.createObjectURL(dataBlob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `client-${client.name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`
+    link.download = `client-${client.name.replace(/\s+/g, '-').toLowerCase()}-${now().toISOString().split('T')[0]}.json`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)

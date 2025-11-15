@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { getErrorMessage } from '../../utils/errorHandling';
 import {
   Badge,
   Button,
@@ -23,6 +24,7 @@ import {
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
+  CloseOutlined,
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
@@ -62,6 +64,7 @@ const JournalEntriesPage: React.FC = () => {
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [detailsVisible, setDetailsVisible] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const isMobile = useIsMobile();
 
   const { data, isLoading } = useQuery({
@@ -177,7 +180,7 @@ const JournalEntriesPage: React.FC = () => {
       }
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal memposting jurnal entry');
+      message.error(getErrorMessage(error, 'Gagal memposting jurnal entry'));
     },
   });
 
@@ -192,7 +195,7 @@ const JournalEntriesPage: React.FC = () => {
       showDetails(reversingEntry);
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal membuat entry pembalik');
+      message.error(getErrorMessage(error, 'Gagal membuat entry pembalik'));
     },
   });
 
@@ -205,7 +208,7 @@ const JournalEntriesPage: React.FC = () => {
       setSelectedEntry(null);
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menghapus jurnal entry');
+      message.error(getErrorMessage(error, 'Gagal menghapus jurnal entry'));
     },
   });
 
@@ -267,6 +270,50 @@ const JournalEntriesPage: React.FC = () => {
     if (selectedEntry) {
       deleteMutation.mutate(selectedEntry.id);
     }
+  };
+
+  const handleBatchDelete = () => {
+    Modal.confirm({
+      title: 'Hapus Jurnal Terpilih',
+      content: `Apakah Anda yakin ingin menghapus ${selectedRowKeys.length} jurnal entry? Hanya draft entries yang akan dihapus. Tindakan ini tidak dapat dibatalkan.`,
+      okText: 'Ya, Hapus',
+      cancelText: 'Batal',
+      okType: 'danger',
+      onOk: async () => {
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const id of selectedRowKeys) {
+          try {
+            await deleteJournalEntry(id);
+            successCount++;
+          } catch (error) {
+            errorCount++;
+          }
+        }
+
+        if (successCount > 0) {
+          message.success(`${successCount} jurnal entry berhasil dihapus`);
+          queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+        }
+
+        if (errorCount > 0) {
+          message.warning(`${errorCount} jurnal entry gagal dihapus (mungkin sudah diposting)`);
+        }
+
+        setSelectedRowKeys([]);
+      },
+    });
+  };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys: React.Key[]) => {
+      setSelectedRowKeys(newSelectedRowKeys as string[]);
+    },
+    getCheckboxProps: (record: JournalEntry) => ({
+      disabled: record.isPosted, // Disable selection for posted entries
+    }),
   };
 
   const columns = [
@@ -344,7 +391,7 @@ const JournalEntriesPage: React.FC = () => {
       width: 150,
       align: 'right' as const,
       render: (record: JournalEntry) => {
-        const total = record.lineItems.reduce((sum, item) => sum + item.debitAmount, 0);
+        const total = record.lineItems.reduce((sum, item) => sum + Number(item.debitAmount), 0);
         return (
           <Text strong style={{ color: theme.colors.status.success }}>
             {formatCurrency(total)}
@@ -446,6 +493,42 @@ const JournalEntriesPage: React.FC = () => {
         </Space>
       </Card>
 
+      {/* Batch Operations */}
+      {selectedRowKeys.length > 0 && (
+        <Card
+          size="small"
+          style={{
+            marginBottom: '24px',
+            borderRadius: '12px',
+            border: theme.colors.border.default,
+            background: theme.colors.card.background,
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text strong style={{ color: theme.colors.text.primary }}>
+              {selectedRowKeys.length} jurnal entry dipilih
+            </Text>
+            <Space>
+              <Button
+                size="small"
+                icon={<DeleteOutlined />}
+                danger
+                onClick={handleBatchDelete}
+              >
+                Hapus Terpilih
+              </Button>
+              <Button
+                size="small"
+                icon={<CloseOutlined />}
+                onClick={() => setSelectedRowKeys([])}
+              >
+                Batal Pilih
+              </Button>
+            </Space>
+          </div>
+        </Card>
+      )}
+
       {/* Summary Cards */}
       <div
         style={{
@@ -544,6 +627,7 @@ const JournalEntriesPage: React.FC = () => {
             columns={columns}
             dataSource={entries}
             rowKey="id"
+            rowSelection={rowSelection}
             pagination={{
               current: page,
               pageSize: pageSize,
@@ -711,8 +795,8 @@ const JournalEntriesPage: React.FC = () => {
                 pagination={false}
                 size="small"
                 summary={(data) => {
-                  const totalDebit = data.reduce((sum, item) => sum + item.debitAmount, 0);
-                  const totalCredit = data.reduce((sum, item) => sum + item.creditAmount, 0);
+                  const totalDebit = data.reduce((sum, item) => sum + Number(item.debitAmount), 0);
+                  const totalCredit = data.reduce((sum, item) => sum + Number(item.creditAmount), 0);
                   return (
                     <Table.Summary.Row>
                       <Table.Summary.Cell index={0} colSpan={2}>

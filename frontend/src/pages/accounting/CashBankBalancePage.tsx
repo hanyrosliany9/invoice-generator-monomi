@@ -13,65 +13,90 @@ import {
   Statistic,
   Alert,
   Tag,
+  theme,
+  Popconfirm,
+  message,
 } from 'antd';
 import {
   BankOutlined,
   CalculatorOutlined,
   CalendarOutlined,
+  DeleteOutlined,
   DollarOutlined,
   FallOutlined,
   RiseOutlined,
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../theme';
 import { useIsMobile } from '../../hooks/useMediaQuery';
+import { useAuthStore } from '../../store/auth';
 import MobileTableView from '../../components/mobile/MobileTableView';
 import type { MobileTableAction } from '../../components/mobile/MobileTableView';
 import { cashBankBalanceToBusinessEntity } from '../../adapters/mobileTableAdapters';
+import {
+  getCashBankBalances,
+  createCashBankBalance,
+  deleteCashBankBalance,
+  type CashBankBalance as APICashBankBalance,
+} from '../../services/cash-bank-balance';
 
 const { Title, Text } = Typography;
+const { useToken } = theme;
 
-interface CashBankBalance {
-  id: string;
-  period: string;
+// Component-level type that extends API type with Dayjs
+interface CashBankBalance extends Omit<APICashBankBalance, 'periodDate'> {
   periodDate: Dayjs;
-  openingBalance: number;
-  closingBalance: number;
-  totalInflow: number;
-  totalOutflow: number;
-  netChange: number;
-  createdAt: string;
 }
 
 export const CashBankBalancePage: React.FC = () => {
   const [form] = Form.useForm();
   const { theme } = useTheme();
+  const { token } = useToken();
   const isMobile = useIsMobile();
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [balances, setBalances] = useState<CashBankBalance[]>([
-    {
-      id: '1',
-      period: 'Januari 2025',
-      periodDate: dayjs('2025-01-01'),
-      openingBalance: 50000000,
-      totalInflow: 100000000, // Calculated from journal entries (cash/bank debits)
-      totalOutflow: 75000000, // Calculated from journal entries (cash/bank credits)
-      closingBalance: 75000000, // Auto: 50M + 100M - 75M = 75M
-      netChange: 25000000, // Auto: 100M - 75M = 25M
-      createdAt: '2025-01-31',
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+
+  // Fetch cash/bank balances from API
+  const { data: balancesData, isLoading } = useQuery({
+    queryKey: ['cash-bank-balances'],
+    queryFn: () => getCashBankBalances({ sortBy: 'periodDate', sortOrder: 'desc' }),
+  });
+
+  // Transform API data to component data (convert date strings to Dayjs)
+  const balances: CashBankBalance[] = useMemo(() => {
+    const dataArray = balancesData?.data;
+    if (!dataArray || !Array.isArray(dataArray)) return [];
+    return dataArray.map(b => ({
+      ...b,
+      periodDate: dayjs(b.periodDate),
+    }));
+  }, [balancesData]);
+
+  // Mutation to create new balance
+  const createMutation = useMutation({
+    mutationFn: createCashBankBalance,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-bank-balances'] });
+      message.success('Saldo kas/bank berhasil dihitung dan disimpan');
+      form.resetFields();
     },
-    {
-      id: '2',
-      period: 'Februari 2025',
-      periodDate: dayjs('2025-02-01'),
-      openingBalance: 75000000,
-      totalInflow: 80000000, // Calculated from journal entries
-      totalOutflow: 65000000, // Calculated from journal entries
-      closingBalance: 90000000, // Auto: 75M + 80M - 65M = 90M
-      netChange: 15000000, // Auto: 80M - 65M = 15M
-      createdAt: '2025-02-28',
+    onError: (error: any) => {
+      message.error(error?.response?.data?.message || 'Gagal menyimpan saldo kas/bank');
     },
-  ]);
+  });
+
+  // Mutation to delete balance
+  const deleteMutation = useMutation({
+    mutationFn: deleteCashBankBalance,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-bank-balances'] });
+      message.success('Saldo berhasil dihapus');
+    },
+    onError: (error: any) => {
+      message.error(error?.response?.data?.message || 'Gagal menghapus saldo');
+    },
+  });
 
   const formatIDR = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -81,49 +106,22 @@ export const CashBankBalancePage: React.FC = () => {
     }).format(amount);
   };
 
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
+  };
+
   const handleSubmit = async (values: Record<string, any>) => {
     const openingBalance = Number(values.openingBalance);
     const periodDate = values.period as Dayjs;
 
-    setIsCalculating(true);
-
-    // TODO: Backend Implementation
-    // This should call an API endpoint that:
-    // 1. Queries all journal entries for the selected period
-    // 2. Sums all debits to Cash/Bank accounts (inflows)
-    // 3. Sums all credits to Cash/Bank accounts (outflows)
-    // Example:
-    // const { totalInflow, totalOutflow } = await getCashBankMovements({
-    //   startDate: periodDate.startOf('month').format('YYYY-MM-DD'),
-    //   endDate: periodDate.endOf('month').format('YYYY-MM-DD'),
-    // });
-
-    // MOCK DATA for demonstration (in production, this comes from database)
-    // Simulating database query for cash movements
-    const totalInflow = Math.floor(Math.random() * 150000000) + 50000000;
-    const totalOutflow = Math.floor(Math.random() * 100000000) + 40000000;
-
-    // Automatically calculate closing balance and net change
-    const closingBalance = openingBalance + totalInflow - totalOutflow;
-    const netChange = totalInflow - totalOutflow;
-
-    setTimeout(() => {
-      const newBalance: CashBankBalance = {
-        id: Date.now().toString(),
-        period: periodDate.format('MMMM YYYY'),
-        periodDate: periodDate,
-        openingBalance,
-        closingBalance,
-        totalInflow,
-        totalOutflow,
-        netChange,
-        createdAt: new Date().toISOString(),
-      };
-
-      setBalances([newBalance, ...balances]);
-      setIsCalculating(false);
-      form.resetFields();
-    }, 1000);
+    // Backend will automatically calculate totalInflow, totalOutflow, closingBalance, netChange
+    createMutation.mutate({
+      period: periodDate.format('MMMM YYYY'),
+      periodDate: periodDate.format('YYYY-MM-DD'),
+      year: periodDate.year(),
+      month: periodDate.month() + 1, // dayjs months are 0-indexed
+      openingBalance,
+    });
   };
 
   const columns = [
@@ -151,7 +149,7 @@ export const CashBankBalancePage: React.FC = () => {
       key: 'totalInflow',
       align: 'right' as const,
       render: (value: number) => (
-        <Text style={{ color: '#52c41a' }}>{formatIDR(value)}</Text>
+        <Text style={{ color: token.colorSuccess }}>{formatIDR(value)}</Text>
       ),
     },
     {
@@ -160,7 +158,7 @@ export const CashBankBalancePage: React.FC = () => {
       key: 'totalOutflow',
       align: 'right' as const,
       render: (value: number) => (
-        <Text style={{ color: '#ff4d4f' }}>{formatIDR(value)}</Text>
+        <Text style={{ color: token.colorError }}>{formatIDR(value)}</Text>
       ),
     },
     {
@@ -184,10 +182,28 @@ export const CashBankBalancePage: React.FC = () => {
         </Tag>
       ),
     },
+    {
+      title: 'Aksi',
+      key: 'action',
+      align: 'center' as const,
+      width: 100,
+      render: (_: any, record: CashBankBalance) => (
+        <Popconfirm
+          title="Hapus Saldo"
+          description={`Yakin ingin menghapus saldo periode ${record.period}?`}
+          onConfirm={() => handleDelete(record.id)}
+          okText="Ya"
+          cancelText="Batal"
+          okButtonProps={{ danger: true }}
+        >
+          <Button type="text" danger icon={<DeleteOutlined />} />
+        </Popconfirm>
+      ),
+    },
   ];
 
   const latestBalance = balances[0];
-  const totalBalanceChange = balances.reduce((sum, b) => sum + b.netChange, 0);
+  const latestNetChange = latestBalance?.netChange ? Number(latestBalance.netChange) : 0;
 
   // Mobile view data
   const mobileData = useMemo(() =>
@@ -204,7 +220,21 @@ export const CashBankBalancePage: React.FC = () => {
         console.log('View balance:', record.number);
       },
     },
-  ], []);
+    {
+      key: 'delete',
+      label: 'Hapus',
+      icon: <DeleteOutlined />,
+      onClick: (record) => {
+        const balance = balances.find((b) => b.id === record.id);
+        if (balance) {
+          if (window.confirm(`Yakin ingin menghapus saldo periode ${balance.period}?`)) {
+            handleDelete(record.id);
+          }
+        }
+      },
+      danger: true,
+    },
+  ], [balances]);
 
   return (
     <div>
@@ -244,7 +274,7 @@ export const CashBankBalancePage: React.FC = () => {
               value={latestBalance?.closingBalance || 0}
               formatter={(value) => formatIDR(Number(value))}
               prefix={<DollarOutlined />}
-              valueStyle={{ color: '#3f8600' }}
+              valueStyle={{ color: token.colorSuccess }}
             />
             <Text type="secondary" style={{ fontSize: '12px' }}>
               {latestBalance?.period || '-'}
@@ -258,7 +288,7 @@ export const CashBankBalancePage: React.FC = () => {
               value={latestBalance?.totalInflow || 0}
               formatter={(value) => formatIDR(Number(value))}
               prefix={<RiseOutlined />}
-              valueStyle={{ color: '#52c41a' }}
+              valueStyle={{ color: token.colorSuccess }}
             />
           </Card>
         </Col>
@@ -269,21 +299,24 @@ export const CashBankBalancePage: React.FC = () => {
               value={latestBalance?.totalOutflow || 0}
               formatter={(value) => formatIDR(Number(value))}
               prefix={<FallOutlined />}
-              valueStyle={{ color: '#ff4d4f' }}
+              valueStyle={{ color: token.colorError }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Perubahan Bersih (Total)"
-              value={totalBalanceChange}
+              title="Perubahan Bersih (Periode Terakhir)"
+              value={latestNetChange}
               formatter={(value) => formatIDR(Number(value))}
-              prefix={totalBalanceChange >= 0 ? <RiseOutlined /> : <FallOutlined />}
+              prefix={latestNetChange >= 0 ? <RiseOutlined /> : <FallOutlined />}
               valueStyle={{
-                color: totalBalanceChange >= 0 ? '#52c41a' : '#ff4d4f',
+                color: latestNetChange >= 0 ? token.colorSuccess : token.colorError,
               }}
             />
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              {latestBalance?.period || '-'}
+            </Text>
           </Card>
         </Col>
       </Row>
@@ -363,7 +396,7 @@ export const CashBankBalancePage: React.FC = () => {
                   icon={<CalculatorOutlined />}
                   size="large"
                   block
-                  loading={isCalculating}
+                  loading={createMutation.isPending}
                 >
                   Hitung Saldo
                 </Button>
@@ -386,19 +419,20 @@ export const CashBankBalancePage: React.FC = () => {
         {isMobile ? (
           <MobileTableView
             data={mobileData}
-            loading={false}
+            loading={isLoading}
             entityType="cash-bank-balance"
             showQuickStats
             searchable
             searchFields={['number', 'title']}
             actions={mobileActions}
-            onRefresh={() => {}}
+            onRefresh={() => queryClient.invalidateQueries({ queryKey: ['cash-bank-balances'] })}
           />
         ) : (
           <Table
             columns={columns}
             dataSource={balances}
             rowKey="id"
+            loading={isLoading}
             pagination={{
               pageSize: 10,
               showSizeChanger: true,

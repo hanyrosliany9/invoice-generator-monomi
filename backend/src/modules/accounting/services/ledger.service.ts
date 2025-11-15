@@ -148,23 +148,29 @@ export class LedgerService {
   }
 
   /**
-   * Calculate account balance as of a specific date
+   * Calculate account balance for a period (startDate to endDate)
+   * If startDate is null, calculate cumulative balance up to endDate
    */
-  private async calculateAccountBalance(
+  private async calculateAccountBalanceForPeriod(
     accountCode: string,
-    asOfDate: Date,
+    startDate: Date | null,
+    endDate: Date,
   ): Promise<number> {
     const account = await this.getAccountInfo(accountCode);
 
-    // Get all posted ledger entries up to the date
-    const entries = await this.prisma.generalLedger.findMany({
-      where: {
-        accountId: account.id,
-        entryDate: { lte: asOfDate },
-        journalEntry: {
-          isPosted: true,
-        },
+    // Get all posted ledger entries within the period
+    const where: any = {
+      accountId: account.id,
+      entryDate: startDate
+        ? { gte: startDate, lte: endDate }
+        : { lte: endDate },
+      journalEntry: {
+        isPosted: true,
       },
+    };
+
+    const entries = await this.prisma.generalLedger.findMany({
+      where,
     });
 
     const totalDebit = entries.reduce((sum, e) => sum + Number(e.debit), 0);
@@ -179,11 +185,23 @@ export class LedgerService {
   }
 
   /**
+   * Calculate account balance as of a specific date (legacy method)
+   */
+  private async calculateAccountBalance(
+    accountCode: string,
+    asOfDate: Date,
+  ): Promise<number> {
+    return this.calculateAccountBalanceForPeriod(accountCode, null, asOfDate);
+  }
+
+  /**
    * Get trial balance
+   * Shows account balances for a specific period (or cumulative if startDate is null)
    */
   async getTrialBalance(query: TrialBalanceQueryDto) {
     const {
-      asOfDate,
+      startDate,
+      endDate,
       fiscalPeriodId,
       includeInactive = false,
       includeZeroBalances = false,
@@ -200,9 +218,10 @@ export class LedgerService {
     // Calculate balance for each account
     const balances = await Promise.all(
       accounts.map(async (account) => {
-        const balance = await this.calculateAccountBalance(
+        const balance = await this.calculateAccountBalanceForPeriod(
           account.code,
-          asOfDate,
+          startDate || null,
+          endDate,
         );
 
         // Separate into debit and credit columns for trial balance
@@ -269,7 +288,8 @@ export class LedgerService {
     );
 
     return {
-      asOfDate,
+      startDate,
+      endDate,
       fiscalPeriodId,
       balances: filteredBalances,
       balancesByType,
@@ -286,9 +306,9 @@ export class LedgerService {
   /**
    * Get account balance summary by type
    */
-  async getAccountBalanceSummary(asOfDate: Date) {
+  async getAccountBalanceSummary(endDate: Date) {
     const trialBalance = await this.getTrialBalance({
-      asOfDate,
+      endDate,
       includeInactive: false,
       includeZeroBalances: false,
     });
@@ -314,7 +334,7 @@ export class LedgerService {
     );
 
     return {
-      asOfDate,
+      endDate,
       summary,
       totals: trialBalance.summary,
     };
@@ -389,11 +409,13 @@ export class LedgerService {
    * Get accounts receivable aging report
    */
   async getAccountsReceivableAging(asOfDate: Date) {
-    // Get all unpaid invoices with ECL provisions
+    // ✅ FIX: Only include invoices with POSTED journal entries (connected to General Ledger)
     const invoices = await this.prisma.invoice.findMany({
       where: {
         status: { in: ["SENT", "OVERDUE"] },
         creationDate: { lte: asOfDate },
+        // ✅ CRITICAL: Must have posted journal entry to be in AR
+        journalEntryId: { not: null },
       },
       include: {
         client: {
@@ -416,8 +438,34 @@ export class LedgerService {
       },
     });
 
+    // ✅ Filter out invoices with unposted journal entries
+    // Fetch journal entries for all invoices with journalEntryId
+    const invoiceIdsWithJournalEntry = invoices
+      .filter((inv) => inv.journalEntryId)
+      .map((inv) => inv.journalEntryId as string);
+
+    const journalEntries = await this.prisma.journalEntry.findMany({
+      where: {
+        id: { in: invoiceIdsWithJournalEntry },
+      },
+      select: {
+        id: true,
+        isPosted: true,
+        entryNumber: true,
+      },
+    });
+
+    const journalEntryMap = new Map(journalEntries.map((je) => [je.id, je]));
+
+    // Only include invoices with posted journal entries
+    const postedInvoices = invoices.filter((inv) => {
+      if (!inv.journalEntryId) return false;
+      const journalEntry = journalEntryMap.get(inv.journalEntryId);
+      return journalEntry?.isPosted === true;
+    });
+
     // Calculate aging buckets with ECL data
-    const aging = invoices.map((invoice) => {
+    const aging = postedInvoices.map((invoice) => {
       const daysOverdue = Math.floor(
         (asOfDate.getTime() - new Date(invoice.dueDate).getTime()) /
           (1000 * 60 * 60 * 24),
@@ -469,6 +517,36 @@ export class LedgerService {
     const netAR = totalAR - totalECL;
     const coverageRatio = totalAR > 0 ? (totalECL / totalAR) * 100 : 0;
 
+    // ✅ FIX: Reconcile with General Ledger AR balance (Account 1-2010)
+    const arAccount = await this.prisma.chartOfAccounts.findFirst({
+      where: { code: "1-2010" }, // Accounts Receivable
+    });
+
+    let generalLedgerARBalance = 0;
+    if (arAccount) {
+      const glEntries = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: arAccount.id,
+          entryDate: { lte: asOfDate },
+        },
+      });
+
+      const totalDebit = glEntries.reduce(
+        (sum, e) => sum + Number(e.debit),
+        0,
+      );
+      const totalCredit = glEntries.reduce(
+        (sum, e) => sum + Number(e.credit),
+        0,
+      );
+
+      // AR is a debit balance account
+      generalLedgerARBalance = totalDebit - totalCredit;
+    }
+
+    const reconciliationDifference = totalAR - generalLedgerARBalance;
+    const isReconciled = Math.abs(reconciliationDifference) < 0.01;
+
     return {
       asOfDate,
       aging,
@@ -519,6 +597,16 @@ export class LedgerService {
           (sum, a) => sum + a.eclAmount,
           0,
         ),
+      },
+      // ✅ NEW: General Ledger reconciliation
+      reconciliation: {
+        generalLedgerARBalance,
+        invoiceARBalance: totalAR,
+        difference: reconciliationDifference,
+        isReconciled,
+        note: isReconciled
+          ? "AR Aging matches General Ledger"
+          : `WARNING: AR Aging differs from General Ledger by ${reconciliationDifference.toFixed(2)}`,
       },
     };
   }

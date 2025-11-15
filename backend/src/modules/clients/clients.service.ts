@@ -20,8 +20,9 @@ export class ClientsService {
 
       // Sanitize input data
       const sanitizedData = {
-        ...createClientDto,
         name: sanitizeIndonesianInput(createClientDto.name),
+        email: createClientDto.email || null,
+        phone: createClientDto.phone || null,
         company: createClientDto.company
           ? sanitizeIndonesianInput(createClientDto.company)
           : null,
@@ -31,6 +32,11 @@ export class ClientsService {
         contactPerson: createClientDto.contactPerson
           ? sanitizeIndonesianInput(createClientDto.contactPerson)
           : null,
+        paymentTerms: createClientDto.paymentTerms,
+        status: createClientDto.status || 'active',
+        taxNumber: createClientDto.taxNumber || null,
+        bankAccount: createClientDto.bankAccount || null,
+        notes: createClientDto.notes || null,
       };
 
       return await this.prisma.client.create({

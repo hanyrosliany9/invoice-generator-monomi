@@ -25,6 +25,7 @@ import { useMobileOptimized } from '../hooks/useMobileOptimized'
 import { assetService } from '../services/assets'
 import { useTheme } from '../theme'
 import dayjs from 'dayjs'
+import { now } from '../utils/date'
 
 const { TextArea } = Input
 
@@ -40,6 +41,8 @@ interface AssetFormData {
   supplier?: string
   invoiceNumber?: string
   warrantyExpiration?: string
+  usefulLifeYears?: number
+  residualValue?: number
   location?: string
   notes?: string
 }
@@ -88,7 +91,7 @@ export const AssetCreatePage: React.FC = () => {
     
     const submitData = {
       ...values,
-      purchaseDate: values.purchaseDate ? dayjs(values.purchaseDate).toISOString() : new Date().toISOString(),
+      purchaseDate: values.purchaseDate ? dayjs(values.purchaseDate).toISOString() : now().toISOString(),
       warrantyExpiration: values.warrantyExpiration ? dayjs(values.warrantyExpiration).toISOString() : undefined,
     }
     
@@ -266,6 +269,51 @@ export const AssetCreatePage: React.FC = () => {
                   size='large'
                   style={{ width: '100%' }}
                   format='DD/MM/YYYY'
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name='usefulLifeYears'
+                label='Umur Ekonomis (Tahun)'
+                tooltip='Perkiraan masa manfaat aset untuk perhitungan penyusutan'
+              >
+                <InputNumber
+                  placeholder='5'
+                  size='large'
+                  style={{ width: '100%' }}
+                  min={1}
+                  max={50}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name='residualValue'
+                label='Nilai Sisa (IDR)'
+                tooltip='Nilai perkiraan aset di akhir masa manfaat'
+                dependencies={['purchasePrice']}
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const purchasePrice = getFieldValue('purchasePrice')
+                      if (!value || !purchasePrice || value < purchasePrice) {
+                        return Promise.resolve()
+                      }
+                      return Promise.reject(new Error('Nilai sisa harus lebih kecil dari harga pembelian'))
+                    },
+                  }),
+                ]}
+              >
+                <InputNumber
+                  placeholder='5000000'
+                  size='large'
+                  style={{ width: '100%' }}
+                  formatter={value =>
+                    `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                  }
+                  parser={value => value!.replace(/Rp\s?|(,*)/g, '') as any}
+                  min={0}
                 />
               </Form.Item>
             </Col>

@@ -3,7 +3,7 @@ import { Injectable, UnauthorizedException ,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UsersService } from "../users/users.service";
-import * as bcrypt from "bcrypt";
+import * as bcrypt from "bcryptjs";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { getErrorMessage } from "../../common/utils/error-handling.util";
@@ -20,23 +20,17 @@ export class AuthService {
     const user = await this.usersService.findByEmailForAuth(email);
 
     if (user) {
-      // Temporary fix: bcrypt.compare crashes in Alpine, use password bypass for testing
-      let passwordMatch = false;
-      if (password === "password123") {
-        passwordMatch = true; // Bypass for demo credentials
-      } else {
-        try {
-          passwordMatch = await bcrypt.compare(password, user.password);
-        } catch (error) {
-          this.logger.error("bcrypt.compare failed:", getErrorMessage(error));
-          return null;
-        }
-      }
+      try {
+        const passwordMatch = await bcrypt.compare(password, user.password);
 
-      if (passwordMatch) {
-        // Remove password from response
-        const { password: userPassword, ...result } = user;
-        return result;
+        if (passwordMatch) {
+          // Remove password from response
+          const { password: userPassword, ...result } = user;
+          return result;
+        }
+      } catch (error) {
+        this.logger.error("bcrypt.compare failed:", getErrorMessage(error));
+        return null;
       }
     }
     return null;

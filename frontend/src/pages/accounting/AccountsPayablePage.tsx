@@ -55,7 +55,11 @@ const AccountsPayablePage: React.FC = () => {
   const [asOfDate, setAsOfDate] = useState<dayjs.Dayjs>(dayjs());
 
   const { data, isLoading } = useQuery({
-    queryKey: ['accounts-payable', dateRange],
+    queryKey: [
+      'accounts-payable',
+      dateRange[0]?.format('YYYY-MM-DD'),
+      dateRange[1]?.format('YYYY-MM-DD')
+    ],
     queryFn: () =>
       getAccountsPayableReport({
         startDate: dateRange[0].format('YYYY-MM-DD'),

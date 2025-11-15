@@ -27,7 +27,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
-import { debounce } from 'lodash'
+import { debounce } from '../utils/debounce'
 import {
   EntityFormLayout,
   EntityHeroCard,
@@ -244,8 +244,8 @@ export const ProjectCreatePage: React.FC = () => {
       }, 0)
 
       const validExpenses = (values.estimatedExpenses || [])
-        .filter((e: React.ChangeEvent<HTMLInputElement>) => e && e.categoryId && e.amount)
-        .map((e: React.ChangeEvent<HTMLInputElement>) => ({
+        .filter((e: any) => e && e.categoryId && e.amount)
+        .map((e: any) => ({
           categoryId: e.categoryId,
           amount: parseFloat(e.amount) || 0,
           notes: e.notes || '',
@@ -264,7 +264,6 @@ export const ProjectCreatePage: React.FC = () => {
         estimatedBudget: calculatedValue,
         products: validProducts,
         estimatedExpenses: validExpenses,
-        status: 'PLANNING', // Draft status
       }
 
       const project = await projectService.createProject(projectData)

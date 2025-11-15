@@ -13,6 +13,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import { PaymentsService } from "./payments.service";
 import { CreatePaymentDto, UpdatePaymentDto, PaymentResponseDto } from "./dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -25,6 +26,7 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post()
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 payments per minute (fraud protection)
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createPaymentDto: CreatePaymentDto,

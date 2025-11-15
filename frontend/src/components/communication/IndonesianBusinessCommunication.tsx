@@ -41,6 +41,7 @@ import { useTranslation } from 'react-i18next'
 import { useIndonesianCulturalUX } from '../../contexts/IndonesianCulturalUXContext'
 import { formatIndonesianDate } from '../../utils/currency'
 import dayjs from 'dayjs'
+import { now } from '../../utils/date'
 
 const { Title, Text, Paragraph } = Typography
 const { TabPane } = Tabs
@@ -231,7 +232,7 @@ const IndonesianBusinessCommunication: React.FC<
 
   // Get time-appropriate greeting
   const getTimeGreeting = useCallback(() => {
-    const hour = new Date().getHours()
+    const hour = now().getHours()
     if (hour < 12) return 'pagi'
     if (hour < 15) return 'siang'
     if (hour < 18) return 'sore'
@@ -316,7 +317,7 @@ const IndonesianBusinessCommunication: React.FC<
         channel: channel as any,
         subject: getSubjectFromContent(content),
         content,
-        timestamp: new Date(),
+        timestamp: now(),
         status: 'sent',
         culturalScore,
       }
@@ -415,7 +416,7 @@ const IndonesianBusinessCommunication: React.FC<
         {
           quotationNumber: 'QT-2025-001',
           invoiceNumber: 'INV-2025-001',
-          quotationDate: formatDateTime(new Date()),
+          quotationDate: formatDateTime(now()),
           amount: formatCurrency(5000000),
           validUntil: formatDateTime(dayjs().add(30, 'days').toDate()),
           dueDate: formatDateTime(dayjs().add(14, 'days').toDate()),
@@ -469,8 +470,8 @@ const IndonesianBusinessCommunication: React.FC<
         )
       }
 
-      const hour = new Date().getHours()
-      if (hour >= 11 && hour <= 13 && new Date().getDay() === 5) {
+      const hour = now().getHours()
+      if (hour >= 11 && hour <= 13 && now().getDay() === 5) {
         tips.push(
           'Hindari mengirim pesan saat waktu sholat Jumat (11:30-13:00)'
         )

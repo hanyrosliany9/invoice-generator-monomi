@@ -12,6 +12,11 @@ export interface Quotation {
   projectId: string
   amountPerProject: number
   totalAmount: number
+  // Tax fields (Indonesian PPN compliance)
+  includeTax?: boolean
+  subtotalAmount?: number
+  taxRate?: number
+  taxAmount?: number
   scopeOfWork?: string // Narrative description of work scope (inherited from project or custom)
   terms: string
   status: 'DRAFT' | 'SENT' | 'APPROVED' | 'DECLINED' | 'REVISED'
@@ -40,6 +45,7 @@ export interface Quotation {
     name: string
     company: string
     email: string
+    phone?: string
   }
   project?: {
     id: string
@@ -64,6 +70,11 @@ export interface CreateQuotationRequest {
   projectId: string
   amountPerProject: number
   totalAmount: number
+  // Tax fields (Indonesian PPN compliance)
+  includeTax?: boolean
+  subtotalAmount?: number
+  taxRate?: number
+  taxAmount?: number
   scopeOfWork?: string // Narrative description of work scope (inherited from project or custom)
   terms: string
   validUntil: string

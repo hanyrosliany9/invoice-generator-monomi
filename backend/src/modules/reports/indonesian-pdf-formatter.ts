@@ -76,7 +76,41 @@ export class IndonesianPdfFormatter {
   }
 
   /**
-   * Generate Indonesian business letterhead HTML
+   * Get company logo as data URI (SVG or PNG)
+   */
+  static getCompanyLogo(): string {
+    // Logo will be embedded at build time
+    const fs = require("fs");
+    const path = require("path");
+
+    try {
+      // Try SVG first (optimized logo)
+      const svgLogoPath = path.join(__dirname, "../../../assets/logo.svg");
+      if (fs.existsSync(svgLogoPath)) {
+        const svgContent = fs.readFileSync(svgLogoPath, "utf8");
+        // Encode SVG as data URI
+        const svgBase64 = Buffer.from(svgContent).toString("base64");
+        return `data:image/svg+xml;base64,${svgBase64}`;
+      }
+
+      // Fallback to PNG
+      const pngLogoPath = path.join(__dirname, "../../../assets/logo.png");
+      if (fs.existsSync(pngLogoPath)) {
+        const logoBuffer = fs.readFileSync(pngLogoPath);
+        const logoBase64 = logoBuffer.toString("base64");
+        return `data:image/png;base64,${logoBase64}`;
+      }
+    } catch (error) {
+      // Logo not found, return empty string
+      console.warn(`Company logo not found, using text-only letterhead`);
+      console.error(error);
+    }
+
+    return "";
+  }
+
+  /**
+   * Generate Indonesian business letterhead HTML with logo
    */
   static generateIndonesianLetterhead(
     companyInfo: IndonesianCompanyInfo,
@@ -88,27 +122,37 @@ export class IndonesianPdfFormatter {
       year: "numeric",
     });
 
+    const logoDataUri = this.getCompanyLogo();
+
     return `
       <div class="letterhead" style="margin-bottom: 30px; border-bottom: 3px solid #1F4E79; padding-bottom: 20px;">
         <div class="company-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-          <div class="company-info" style="flex: 1;">
-            <h1 style="margin: 0; color: #1F4E79; font-size: 24px; font-weight: bold; font-family: 'Arial', sans-serif;">
+          ${
+            logoDataUri
+              ? `<div class="company-logo" style="margin-right: 20px; flex-shrink: 0;">
+            <img src="${logoDataUri}" alt="${companyInfo.name}" style="height: 32px; width: auto; max-width: 180px; object-fit: contain;" />
+          </div>`
+              : `<div class="company-logo-text" style="margin-right: 20px; flex-shrink: 0;">
+            <h1 style="margin: 0; color: #1F4E79; font-size: 18px; font-weight: bold; font-family: 'Arial', sans-serif;">
               ${companyInfo.name}
             </h1>
-            <div style="margin-top: 5px; color: #333; font-size: 11px; line-height: 1.4;">
+          </div>`
+          }
+          <div class="company-info" style="flex: 1; margin-top: 2px;">
+            <div style="color: #333; font-size: 11px; line-height: 1.5;">
               <div>${companyInfo.address}</div>
               <div>${companyInfo.city} ${companyInfo.postalCode}</div>
               <div>Telp: ${companyInfo.phone} | Email: ${companyInfo.email}</div>
               <div>Website: ${companyInfo.website}</div>
             </div>
           </div>
-          <div class="license-info" style="text-align: right; font-size: 10px; color: #666;">
+          <div class="license-info" style="text-align: right; font-size: 10px; color: #666; margin-top: 2px;">
             <div><strong>NPWP:</strong> ${companyInfo.npwp}</div>
             <div><strong>SIUP:</strong> ${companyInfo.siup}</div>
             <div style="margin-top: 8px; color: #999;">Dicetak: ${currentDate}</div>
           </div>
         </div>
-        
+
         <div class="report-header" style="text-align: center; margin-top: 20px;">
           <h2 style="margin: 0; color: #1F4E79; font-size: 18px; font-weight: bold;">
             ${reportHeader.reportTitle}

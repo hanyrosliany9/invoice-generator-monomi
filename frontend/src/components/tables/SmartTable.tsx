@@ -42,16 +42,16 @@ export interface BusinessEntity {
   id: string
   number: string
   title: string
-  amount: number
-  status: 'draft' | 'sent' | 'approved' | 'declined' | 'paid' | 'overdue'
-  client: {
+  amount?: number
+  status?: 'draft' | 'sent' | 'approved' | 'declined' | 'paid' | 'overdue' | string
+  client?: {
     name: string
     company?: string
     phone?: string
     email?: string
   }
-  createdAt: Date
-  updatedAt: Date
+  createdAt?: Date
+  updatedAt?: Date
   dueDate?: Date
 
   // Indonesian business specific
@@ -64,6 +64,9 @@ export interface BusinessEntity {
   tags?: string[]
   priority?: 'low' | 'medium' | 'high'
   assignedTo?: string
+
+  // Allow additional properties for flexible entity types
+  [key: string]: any
 }
 
 export interface SmartTableProps<T = BusinessEntity>
@@ -275,9 +278,11 @@ const SmartTable = <T extends BusinessEntity>({
         render: (title: string, record: T) => (
           <Space direction='vertical' size='small'>
             <Text strong>{title}</Text>
-            <Text type='secondary' style={{ fontSize: '12px' }}>
-              {record.client.company || record.client.name}
-            </Text>
+            {record.client && (
+              <Text type='secondary' style={{ fontSize: '12px' }}>
+                {record.client.company || record.client.name}
+              </Text>
+            )}
           </Space>
         ),
       },
@@ -362,7 +367,7 @@ const SmartTable = <T extends BusinessEntity>({
         key: 'client',
         width: 200,
         ellipsis: true,
-        render: (client: T['client']) => (
+        render: (client: T['client']) => client ? (
           <Space direction='vertical' size='small'>
             <Text strong>{client.name}</Text>
             {client.company && (
@@ -376,7 +381,7 @@ const SmartTable = <T extends BusinessEntity>({
               </Text>
             )}
           </Space>
-        ),
+        ) : null,
       },
       {
         title: 'Aksi',
@@ -527,7 +532,7 @@ const SmartTable = <T extends BusinessEntity>({
     if (!showBusinessMetrics) return null
 
     const totalAmount = processedData.reduce(
-      (sum, item) => sum + item.amount,
+      (sum, item) => sum + (item.amount || 0),
       0
     )
     const totalMaterai = processedData
@@ -536,7 +541,9 @@ const SmartTable = <T extends BusinessEntity>({
 
     const statusCounts = processedData.reduce(
       (acc, item) => {
-        acc[item.status] = (acc[item.status] || 0) + 1
+        if (item.status) {
+          acc[item.status] = (acc[item.status] || 0) + 1
+        }
         return acc
       },
       {} as Record<string, number>
@@ -547,7 +554,7 @@ const SmartTable = <T extends BusinessEntity>({
       totalMaterai,
       statusCounts,
       averageAmount: totalAmount / (processedData.length || 1),
-      highValueCount: processedData.filter(item => item.amount >= 5000000)
+      highValueCount: processedData.filter(item => (item.amount || 0) >= 5000000)
         .length,
     }
   }, [processedData, showBusinessMetrics])

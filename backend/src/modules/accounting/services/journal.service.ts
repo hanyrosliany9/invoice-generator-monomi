@@ -939,11 +939,208 @@ export class JournalService {
           postedBy: userId,
         },
       }),
-      // Update account balances (this will be handled by a separate function)
-      // For now, we'll leave this as a placeholder
     ]);
 
+    // AUTO-SYNC: Update Cash Bank Balance if this entry affects cash/bank accounts
+    await this.syncCashBankBalanceIfNeeded(entry, userId);
+
     return this.getJournalEntry(id);
+  }
+
+  /**
+   * Check if journal entry affects cash/bank accounts and sync Cash Bank Balance
+   * Indonesian accounting: Cash/Bank accounts start with 1-1xxx
+   */
+  private async syncCashBankBalanceIfNeeded(
+    entry: any,
+    userId: string,
+  ): Promise<void> {
+    try {
+      // Check if any line items affect cash/bank accounts (1-1xxx)
+      const hasCashBankAccounts = entry.lineItems.some((line: any) =>
+        line.account.code.startsWith("1-1"),
+      );
+
+      if (!hasCashBankAccounts) {
+        return; // No cash/bank accounts affected, skip sync
+      }
+
+      // Get the year and month from entry date
+      const entryDate = new Date(entry.entryDate);
+      const year = entryDate.getFullYear();
+      const month = entryDate.getMonth() + 1;
+
+      // Check if Cash Bank Balance record exists for this period
+      const existingBalance = await this.prisma.cashBankBalance.findUnique({
+        where: {
+          year_month: { year, month },
+        },
+      });
+
+      if (existingBalance) {
+        // Recalculate existing balance
+        await this.recalculateCashBankBalance(
+          existingBalance.id,
+          year,
+          month,
+          userId,
+        );
+        this.logger.log(
+          `✅ AUTO-SYNC: Recalculated Cash Bank Balance for ${year}-${String(month).padStart(2, "0")}`,
+        );
+      } else {
+        // Auto-create Cash Bank Balance for this period
+        await this.createCashBankBalance(year, month, userId);
+        this.logger.log(
+          `✅ AUTO-SYNC: Created Cash Bank Balance for ${year}-${String(month).padStart(2, "0")}`,
+        );
+      }
+    } catch (error) {
+      // Log but don't fail - posting should succeed even if sync fails
+      this.logger.error(
+        "⚠️ Failed to sync Cash Bank Balance:",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
+  /**
+   * Auto-create Cash Bank Balance for a period
+   */
+  private async createCashBankBalance(
+    year: number,
+    month: number,
+    userId: string,
+  ): Promise<void> {
+    // Get opening balance from previous month
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+
+    const previousBalance = await this.prisma.cashBankBalance.findUnique({
+      where: {
+        year_month: { year: prevYear, month: prevMonth },
+      },
+    });
+
+    const openingBalance = previousBalance
+      ? Number(previousBalance.closingBalance)
+      : 0;
+
+    // Calculate movements for current period
+    const { totalInflow, totalOutflow } = await this.calculateCashMovements(
+      year,
+      month,
+    );
+
+    const closingBalance = openingBalance + totalInflow - totalOutflow;
+    const netChange = totalInflow - totalOutflow;
+
+    await this.prisma.cashBankBalance.create({
+      data: {
+        period: `${year}-${String(month).padStart(2, "0")}`,
+        periodDate: new Date(year, month - 1, 1),
+        year,
+        month,
+        openingBalance,
+        closingBalance,
+        totalInflow,
+        totalOutflow,
+        netChange,
+        calculatedAt: new Date(),
+        calculatedBy: userId,
+        createdBy: userId,
+      },
+    });
+  }
+
+  /**
+   * Recalculate Cash Bank Balance for a period
+   */
+  private async recalculateCashBankBalance(
+    id: string,
+    year: number,
+    month: number,
+    userId: string,
+  ): Promise<void> {
+    const existing = await this.prisma.cashBankBalance.findUnique({
+      where: { id },
+    });
+
+    if (!existing) return;
+
+    // ✅ FIX: Recalculate opening balance from previous month's closing balance
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+
+    const previousBalance = await this.prisma.cashBankBalance.findUnique({
+      where: {
+        year_month: { year: prevYear, month: prevMonth },
+      },
+    });
+
+    const openingBalance = previousBalance
+      ? Number(previousBalance.closingBalance)
+      : 0;
+
+    const { totalInflow, totalOutflow } = await this.calculateCashMovements(
+      year,
+      month,
+    );
+
+    const closingBalance = openingBalance + totalInflow - totalOutflow;
+    const netChange = totalInflow - totalOutflow;
+
+    await this.prisma.cashBankBalance.update({
+      where: { id },
+      data: {
+        openingBalance, // ✅ FIX: Update opening balance from previous month
+        closingBalance,
+        totalInflow,
+        totalOutflow,
+        netChange,
+        calculatedAt: new Date(),
+        calculatedBy: userId,
+        updatedBy: userId,
+      },
+    });
+  }
+
+  /**
+   * Calculate cash/bank movements from journal entries for a period
+   */
+  private async calculateCashMovements(
+    year: number,
+    month: number,
+  ): Promise<{ totalInflow: number; totalOutflow: number }> {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    // Query all journal line items for cash/bank accounts (1-1xxx) in this period
+    const cashMovements = await this.prisma.journalLineItem.findMany({
+      where: {
+        journalEntry: {
+          entryDate: { gte: startDate, lte: endDate },
+          isPosted: true, // Only count posted entries
+        },
+        account: {
+          code: { startsWith: "1-1" }, // Cash & Bank accounts
+        },
+      },
+      include: { account: true },
+    });
+
+    let totalInflow = 0;
+    let totalOutflow = 0;
+
+    for (const item of cashMovements) {
+      const debitAmount = parseFloat(item.debit?.toString() || "0");
+      const creditAmount = parseFloat(item.credit?.toString() || "0");
+
+      totalInflow += debitAmount; // Cash increases with debits
+      totalOutflow += creditAmount; // Cash decreases with credits
+    }
+
+    return { totalInflow, totalOutflow };
   }
 
   /**
@@ -1063,6 +1260,164 @@ export class JournalService {
     });
 
     return updatedPeriod;
+  }
+
+  /**
+   * ADMIN: Backfill missing journal entries for all invoices
+   */
+  async backfillMissingInvoiceJournals(userId: string): Promise<{
+    fixed: number;
+    posted: number;
+    paymentJournalsCreated: number;
+    errors: string[];
+  }> {
+    const results = {
+      fixed: 0,
+      posted: 0,
+      paymentJournalsCreated: 0,
+      errors: [] as string[],
+    };
+
+    this.logger.log("🔄 Starting backfill of missing invoice journal entries...");
+
+    try {
+      // 1. Find invoices with SENT/OVERDUE/PAID status but NO SENT journal entry
+      const invoicesWithoutJournal = await this.prisma.invoice.findMany({
+        where: {
+          status: { in: ["SENT", "OVERDUE", "PAID"] },
+          journalEntryId: null,
+        },
+        include: {
+          client: { select: { id: true, name: true } },
+        },
+      });
+
+      this.logger.log(
+        `Found ${invoicesWithoutJournal.length} invoices without SENT journal entries`,
+      );
+
+      // Create and post SENT journal entries for these invoices
+      for (const invoice of invoicesWithoutJournal) {
+        try {
+          this.logger.log(
+            `Creating SENT journal for invoice ${invoice.invoiceNumber}...`,
+          );
+
+          const sentJournal = await this.createInvoiceJournalEntry(
+            invoice.id,
+            invoice.invoiceNumber,
+            invoice.clientId,
+            Number(invoice.totalAmount),
+            "SENT",
+            userId,
+          );
+
+          await this.postJournalEntry(sentJournal.id, userId);
+
+          await this.prisma.invoice.update({
+            where: { id: invoice.id },
+            data: { journalEntryId: sentJournal.id },
+          });
+
+          results.fixed++;
+          this.logger.log(
+            `✅ Fixed invoice ${invoice.invoiceNumber} - Created and posted SENT journal`,
+          );
+        } catch (error) {
+          const errorMsg = `Failed to fix invoice ${invoice.invoiceNumber}: ${error instanceof Error ? error.message : String(error)}`;
+          this.logger.error(errorMsg);
+          results.errors.push(errorMsg);
+        }
+      }
+
+      // 2. Find PAID invoices without payment journal entries
+      const paidInvoicesWithoutPaymentJournal = await this.prisma.invoice.findMany({
+        where: {
+          status: "PAID",
+          paymentJournalId: null,
+        },
+        include: {
+          client: { select: { id: true, name: true } },
+        },
+      });
+
+      this.logger.log(
+        `Found ${paidInvoicesWithoutPaymentJournal.length} PAID invoices without payment journal entries`,
+      );
+
+      // Create and post PAYMENT journal entries for paid invoices
+      for (const invoice of paidInvoicesWithoutPaymentJournal) {
+        try {
+          this.logger.log(
+            `Creating PAYMENT journal for invoice ${invoice.invoiceNumber}...`,
+          );
+
+          const paymentJournal = await this.createInvoiceJournalEntry(
+            invoice.id,
+            invoice.invoiceNumber,
+            invoice.clientId,
+            Number(invoice.totalAmount),
+            "PAID",
+            userId,
+          );
+
+          await this.postJournalEntry(paymentJournal.id, userId);
+
+          await this.prisma.invoice.update({
+            where: { id: invoice.id },
+            data: { paymentJournalId: paymentJournal.id },
+          });
+
+          results.paymentJournalsCreated++;
+          this.logger.log(
+            `✅ Created payment journal for invoice ${invoice.invoiceNumber} - Cash increased`,
+          );
+        } catch (error) {
+          const errorMsg = `Failed to create payment journal for invoice ${invoice.invoiceNumber}: ${error instanceof Error ? error.message : String(error)}`;
+          this.logger.error(errorMsg);
+          results.errors.push(errorMsg);
+        }
+      }
+
+      // 3. Find and post any unposted journal entries
+      const unpostedJournals = await this.prisma.journalEntry.findMany({
+        where: {
+          isPosted: false,
+          status: JournalStatus.DRAFT, // Only post DRAFT entries
+        },
+        take: 100, // Safety limit
+      });
+
+      this.logger.log(
+        `Found ${unpostedJournals.length} unposted journal entries`,
+      );
+
+      for (const journal of unpostedJournals) {
+        try {
+          this.logger.log(`Posting journal entry ${journal.entryNumber}...`);
+
+          await this.postJournalEntry(journal.id, userId);
+
+          results.posted++;
+          this.logger.log(
+            `✅ Posted journal entry ${journal.entryNumber}`,
+          );
+        } catch (error) {
+          const errorMsg = `Failed to post journal ${journal.entryNumber}: ${error instanceof Error ? error.message : String(error)}`;
+          this.logger.error(errorMsg);
+          results.errors.push(errorMsg);
+        }
+      }
+
+      this.logger.log(
+        `✅ Backfill complete: ${results.fixed} SENT journals, ${results.paymentJournalsCreated} payment journals, ${results.posted} other journals posted, ${results.errors.length} errors`,
+      );
+
+      return results;
+    } catch (error) {
+      this.logger.error("Failed to backfill missing journal entries:", error);
+      throw error;
+    }
   }
 
   /**

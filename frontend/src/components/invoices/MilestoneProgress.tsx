@@ -137,7 +137,7 @@ export const MilestoneProgress: React.FC<MilestoneProgressProps> = ({
                             size="small"
                             type="default"
                             icon={<WarningOutlined />}
-                            onClick={() => onCreateInvoice(milestone.id)}
+                            onClick={() => onCreateInvoice(milestone.id || '')}
                             loading={isCreating}
                             style={{ borderColor: theme.colors.status.warning, color: theme.colors.status.warning }}
                           >
@@ -149,7 +149,7 @@ export const MilestoneProgress: React.FC<MilestoneProgressProps> = ({
                           size="small"
                           type="primary"
                           icon={<PlusOutlined />}
-                          onClick={() => onCreateInvoice(milestone.id)}
+                          onClick={() => onCreateInvoice(milestone.id ?? '')}
                           loading={isCreating}
                         >
                           Create Invoice

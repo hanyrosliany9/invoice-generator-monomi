@@ -40,7 +40,11 @@ const IncomeStatementPage: React.FC = () => {
   ]);
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['income-statement', dateRange],
+    queryKey: [
+      'income-statement',
+      dateRange[0]?.format('YYYY-MM-DD'),
+      dateRange[1]?.format('YYYY-MM-DD')
+    ],
     queryFn: () =>
       getIncomeStatement({
         startDate: dateRange[0].format('YYYY-MM-DD'),

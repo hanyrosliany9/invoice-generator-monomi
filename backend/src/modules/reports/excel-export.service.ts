@@ -10,6 +10,7 @@ import {
   IndonesianCompanyInfo,
   IndonesianReportHeader,
 } from "./indonesian-excel-formatter";
+import { CompanySettingsService } from "../company/company-settings.service";
 
 interface SalesReportData {
   clientName: string;
@@ -49,23 +50,16 @@ interface ExportFilters {
 export class ExcelExportService {
   private readonly logger = new Logger(ExcelExportService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly companySettings: CompanySettingsService,
+  ) {}
 
   /**
    * Get Indonesian company information for SAK EMKM compliance
    */
-  private getIndonesianCompanyInfo(): IndonesianCompanyInfo {
-    return {
-      name: "MONOMI",
-      address: "Jl. Usaha Mandiri No. 123",
-      city: "Jakarta Selatan",
-      postalCode: "12345",
-      phone: "+62-21-1234-5678",
-      email: "info@monomi.co.id",
-      website: "www.monomi.co.id",
-      npwp: "01.234.567.8-901.234", // Example NPWP format
-      siup: "SIUP/123/2024", // Example SIUP
-    };
+  private async getIndonesianCompanyInfo(): Promise<IndonesianCompanyInfo> {
+    return await this.companySettings.getCompanyInfo();
   }
 
   async generateSalesAndReceivablesReport(
@@ -74,7 +68,7 @@ export class ExcelExportService {
     const workbook = new ExcelJS.Workbook();
 
     // Get Indonesian company information and validate compliance
-    const companyInfo = this.getIndonesianCompanyInfo();
+    const companyInfo = await this.getIndonesianCompanyInfo();
     const validationErrors =
       IndonesianExcelFormatter.validateIndonesianCompliance(companyInfo);
 

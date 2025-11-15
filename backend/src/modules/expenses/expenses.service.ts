@@ -135,6 +135,7 @@ export class ExpensesService {
         transactionId: expense.expenseNumber,
         transactionType: 'EXPENSE_PAID',
         createdBy: userId,
+        autoPost: true, // ✅ FIX: Auto-post to General Ledger
         lineItems: [
           {
             accountCode: category.accountCode, // Debit expense account
@@ -156,6 +157,10 @@ export class ExpensesService {
         where: { id: expense.id },
         data: { paymentJournalId: paymentJournal.id },
       });
+
+      this.logger.log(
+        `✅ Created and posted journal entry for expense ${expense.expenseNumber}`,
+      );
     } catch (error) {
       this.logger.error('Error creating payment journal entry:', error);
       // Continue even if journal entry creation fails - expense was still created
@@ -394,6 +399,18 @@ export class ExpensesService {
    */
   async submit(id: string, userId: string, userRole: string) {
     const expense = await this.findOne(id, userId, userRole);
+
+    // If expense is already PAID, return it as-is (auto-paid on creation)
+    if (expense.status === ExpenseStatus.PAID) {
+      this.logger.log(`[EXPENSE_SUBMIT] Expense ${id} is already PAID, returning as-is`);
+      return expense;
+    }
+
+    // If expense is already SUBMITTED or APPROVED, return it as-is
+    if (expense.status === ExpenseStatus.SUBMITTED || expense.status === ExpenseStatus.APPROVED) {
+      this.logger.log(`[EXPENSE_SUBMIT] Expense ${id} is already ${expense.status}, returning as-is`);
+      return expense;
+    }
 
     if (expense.status !== ExpenseStatus.DRAFT) {
       throw new BadRequestException(

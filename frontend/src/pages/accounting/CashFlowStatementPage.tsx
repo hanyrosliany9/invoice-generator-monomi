@@ -39,7 +39,11 @@ const CashFlowStatementPage: React.FC = () => {
   ]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['cash-flow-statement', dateRange],
+    queryKey: [
+      'cash-flow-statement',
+      dateRange[0]?.format('YYYY-MM-DD'),
+      dateRange[1]?.format('YYYY-MM-DD')
+    ],
     queryFn: () =>
       getCashFlowStatement({
         startDate: dateRange[0].format('YYYY-MM-DD'),

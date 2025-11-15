@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   UseGuards,
+  Req,
 } from "@nestjs/common";
 import { AssetsService } from "./assets.service";
 import { CreateAssetDto } from "./dto/create-asset.dto";
@@ -40,6 +41,15 @@ export class AssetsController {
   @Get("stats")
   getStats() {
     return this.assetsService.getAssetStats();
+  }
+
+  /**
+   * ✅ Backfill asset purchase journal entries
+   * Creates journal entries for existing assets that don't have them
+   */
+  @Post("backfill-journal-entries")
+  async backfillJournalEntries(@Req() req: any) {
+    return this.assetsService.backfillAssetJournalEntries(req.user.id);
   }
 
   @Get(":id")

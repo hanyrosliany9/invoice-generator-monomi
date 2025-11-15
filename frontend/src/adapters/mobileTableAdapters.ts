@@ -6,10 +6,12 @@ import { Invoice } from '../services/invoices'
 import { Quotation } from '../services/quotations'
 import { Project } from '../services/projects'
 import { Client } from '../services/clients'
-import { Expense } from '../types/expense'
+import { Expense, ExpenseCategory as ExpenseCategoryType } from '../types/expense'
 import { Vendor } from '../types/vendor'
 import { User } from '../types/user'
 import { Asset } from '../services/assets'
+import { JournalEntry as ServiceJournalEntry } from '../services/accounting'
+import { now } from '../utils/date'
 
 /**
  * Convert Invoice to BusinessEntity for MobileTableView
@@ -392,24 +394,6 @@ function mapAssetPriority(condition: Asset['condition']): 'low' | 'medium' | 'hi
 // ============================
 
 /**
- * Expense Category Interface
- */
-interface ExpenseCategory {
-  id: string
-  code: string
-  name: string
-  nameId: string
-  expenseClass: 'SELLING' | 'GENERAL_ADMIN' | 'OTHER'
-  withholdingTaxType: string
-  withholdingTaxRate?: number
-  isActive: boolean
-  isBillable: boolean
-  accountCode?: string
-  createdAt: string
-  updatedAt: string
-}
-
-/**
  * Chart of Account Interface
  */
 interface ChartOfAccount {
@@ -428,29 +412,11 @@ interface ChartOfAccount {
   updatedAt: string
 }
 
-/**
- * Journal Entry Interface
- */
-interface JournalEntry {
-  id: string
-  entryNumber: string
-  entryDate: string
-  description: string
-  descriptionId: string
-  transactionType: string
-  status: 'DRAFT' | 'POSTED' | 'REVERSED'
-  totalDebit: number
-  totalCredit: number
-  isBalanced: boolean
-  isAutomatic: boolean
-  createdAt: string
-  updatedAt: string
-}
 
 /**
  * Convert ExpenseCategory to BusinessEntity for MobileTableView
  */
-export function expenseCategoryToBusinessEntity(category: ExpenseCategory): BusinessEntity {
+export function expenseCategoryToBusinessEntity(category: ExpenseCategoryType): BusinessEntity {
   if (!category || !category.id) {
     throw new Error('Invalid expense category data')
   }
@@ -504,7 +470,7 @@ export function chartOfAccountToBusinessEntity(account: ChartOfAccount): Busines
 /**
  * Convert JournalEntry to BusinessEntity for MobileTableView
  */
-export function journalEntryToBusinessEntity(entry: JournalEntry): BusinessEntity {
+export function journalEntryToBusinessEntity(entry: ServiceJournalEntry): BusinessEntity {
   if (!entry || !entry.id) {
     throw new Error('Invalid journal entry data')
   }
@@ -513,16 +479,16 @@ export function journalEntryToBusinessEntity(entry: JournalEntry): BusinessEntit
     id: entry.id,
     number: entry.entryNumber || '',
     title: entry.descriptionId || entry.description,
-    amount: entry.totalDebit || entry.totalCredit,
+    amount: 0, // Journal entries don't have a single total amount
     status: mapJournalEntryStatus(entry.status),
     client: {
       name: entry.transactionType || '',
-      company: entry.isBalanced ? 'Balanced' : 'Unbalanced',
+      company: entry.isPosted ? 'Posted' : 'Draft',
       phone: '',
       email: '',
     },
-    createdAt: new Date(entry.createdAt),
-    updatedAt: new Date(entry.updatedAt),
+    createdAt: new Date(entry.createdAt || new Date()),
+    updatedAt: new Date(entry.updatedAt || new Date()),
     dueDate: entry.entryDate ? new Date(entry.entryDate) : undefined,
     materaiRequired: false,
     priority: mapJournalEntryPriority(entry),
@@ -532,11 +498,10 @@ export function journalEntryToBusinessEntity(entry: JournalEntry): BusinessEntit
 /**
  * Map journal entry status to BusinessEntity status
  */
-function mapJournalEntryStatus(status: JournalEntry['status']): BusinessEntity['status'] {
-  const statusMap: Record<JournalEntry['status'], BusinessEntity['status']> = {
+function mapJournalEntryStatus(status: ServiceJournalEntry['status']): BusinessEntity['status'] {
+  const statusMap: Record<ServiceJournalEntry['status'], BusinessEntity['status']> = {
     DRAFT: 'draft',
     POSTED: 'approved',
-    REVERSED: 'declined',
   }
   return statusMap[status] || 'draft'
 }
@@ -544,10 +509,9 @@ function mapJournalEntryStatus(status: JournalEntry['status']): BusinessEntity['
 /**
  * Map journal entry to priority level
  */
-function mapJournalEntryPriority(entry: JournalEntry): 'low' | 'medium' | 'high' {
-  if (entry.status === 'DRAFT' && !entry.isBalanced) return 'high'
+function mapJournalEntryPriority(entry: ServiceJournalEntry): 'low' | 'medium' | 'high' {
   if (entry.status === 'DRAFT') return 'medium'
-  if (entry.isAutomatic) return 'low'
+  if (entry.isPosted) return 'low'
   return 'medium'
 }
 
@@ -788,11 +752,34 @@ export function bankReconciliationToBusinessEntity(reconciliation: BankReconcili
 /**
  * Convert CashReceipt to BusinessEntity
  */
-export function cashReceiptToBusinessEntity(receipt: CashReceipt): BusinessEntity {
+export function cashReceiptToBusinessEntity(receipt: CashReceipt | any): BusinessEntity {
   if (!receipt || !receipt.id) {
     throw new Error('Invalid cash receipt data')
   }
 
+  // Handle CashTransaction type (from accounting service)
+  if ('transactionNumber' in receipt && 'transactionType' in receipt) {
+    return {
+      id: receipt.id,
+      number: receipt.transactionNumber || '',
+      title: receipt.descriptionId || receipt.description || 'Cash Receipt',
+      amount: receipt.amount,
+      status: mapCashTransactionStatus(receipt.status),
+      client: {
+        name: receipt.cashAccount?.nameId || receipt.cashAccount?.name || '',
+        company: receipt.category || '',
+        phone: '',
+        email: '',
+      },
+      createdAt: new Date(receipt.createdAt),
+      updatedAt: new Date(receipt.updatedAt),
+      dueDate: receipt.transactionDate ? new Date(receipt.transactionDate) : undefined,
+      materaiRequired: false,
+      priority: receipt.status === 'SUBMITTED' ? 'high' : 'medium',
+    }
+  }
+
+  // Handle legacy CashReceipt type
   return {
     id: receipt.id,
     number: receipt.receiptNumber || '',
@@ -816,11 +803,34 @@ export function cashReceiptToBusinessEntity(receipt: CashReceipt): BusinessEntit
 /**
  * Convert CashDisbursement to BusinessEntity
  */
-export function cashDisbursementToBusinessEntity(disbursement: CashDisbursement): BusinessEntity {
+export function cashDisbursementToBusinessEntity(disbursement: CashDisbursement | any): BusinessEntity {
   if (!disbursement || !disbursement.id) {
     throw new Error('Invalid cash disbursement data')
   }
 
+  // Handle CashTransaction type (from accounting service)
+  if ('transactionNumber' in disbursement && 'transactionType' in disbursement) {
+    return {
+      id: disbursement.id,
+      number: disbursement.transactionNumber || '',
+      title: disbursement.descriptionId || disbursement.description || 'Cash Disbursement',
+      amount: disbursement.amount,
+      status: mapCashTransactionStatus(disbursement.status),
+      client: {
+        name: disbursement.offsetAccount?.nameId || disbursement.offsetAccount?.name || '',
+        company: disbursement.category || '',
+        phone: '',
+        email: '',
+      },
+      createdAt: new Date(disbursement.createdAt),
+      updatedAt: new Date(disbursement.updatedAt),
+      dueDate: disbursement.transactionDate ? new Date(disbursement.transactionDate) : undefined,
+      materaiRequired: false,
+      priority: disbursement.status === 'SUBMITTED' ? 'high' : 'medium',
+    }
+  }
+
+  // Handle legacy CashDisbursement type
   return {
     id: disbursement.id,
     number: disbursement.disbursementNumber || '',
@@ -905,6 +915,21 @@ function mapCashStatus(status: string): BusinessEntity['status'] {
 }
 
 /**
+ * Map CashTransaction status to BusinessEntity status
+ */
+function mapCashTransactionStatus(status: string): BusinessEntity['status'] {
+  const statusMap: Record<string, BusinessEntity['status']> = {
+    DRAFT: 'draft',
+    SUBMITTED: 'approved', // Changed to 'approved' to match MobileTableView visible logic
+    APPROVED: 'approved',
+    REJECTED: 'declined',
+    POSTED: 'declined', // Changed to 'declined' to match MobileTableView visible logic for void
+    VOID: 'declined',
+  }
+  return statusMap[status] || 'draft'
+}
+
+/**
  * Convert AR Aging Entry to BusinessEntity
  */
 export function arAgingToBusinessEntity(entry: any): BusinessEntity {
@@ -939,7 +964,7 @@ export function arAgingToBusinessEntity(entry: any): BusinessEntity {
       email: '',
     },
     createdAt: new Date(entry.invoiceDate),
-    updatedAt: new Date(),
+    updatedAt: now(),
     dueDate: entry.dueDate ? new Date(entry.dueDate) : undefined,
     materaiRequired: entry.amount >= 5000000,
     priority: getPriority(entry.agingBucket),
@@ -981,7 +1006,7 @@ export function apAgingToBusinessEntity(entry: any): BusinessEntity {
       email: '',
     },
     createdAt: new Date(entry.expenseDate || entry.createdAt),
-    updatedAt: new Date(),
+    updatedAt: now(),
     dueDate: entry.dueDate ? new Date(entry.dueDate) : undefined,
     materaiRequired: false,
     priority: getPriority(entry.agingBucket),
@@ -1016,8 +1041,8 @@ export function trialBalanceToBusinessEntity(entry: any): BusinessEntity {
       phone: '',
       email: '',
     },
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: now(),
+    updatedAt: now(),
     materaiRequired: false,
     priority: entry.isAbnormal ? 'high' : 'medium',
   }
@@ -1082,8 +1107,8 @@ export function balanceSheetAccountToBusinessEntity(account: any, accountType: '
       phone: '',
       email: '',
     },
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: now(),
+    updatedAt: now(),
     materaiRequired: false,
     priority: 'medium',
   }

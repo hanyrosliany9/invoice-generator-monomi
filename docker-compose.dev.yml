@@ -1,6 +1,9 @@
 # Development environment with hot-reload
-# Access via Tailscale: http://<tailscale-ip>:3000 (frontend) and :5000 (backend)
+# Access via Tailscale: http://<tailscale-ip>:3001 (frontend) and :5000 (backend)
 # No nginx or cloudflared needed - direct port access through Tailscale network
+# Note: DEV uses port 3001 to avoid conflict with PROD (which uses 3000)
+
+name: invoice-dev
 
 services:
   app:
@@ -19,15 +22,23 @@ services:
       - DATABASE_URL=postgresql://invoiceuser:devpassword@db:5432/invoices
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=dev-jwt-secret-key
-      - FRONTEND_URL=http://localhost:3000
+      - FRONTEND_URL=http://localhost:3001
       - SKIP_DB_INIT=false
       - SMTP_HOST=localhost
       - SMTP_PORT=587
       - SMTP_USER=dev@monomi.finance
       - SMTP_PASSWORD=dev-password
       - FROM_EMAIL=dev@monomi.finance
+      # R2 (Cloudflare Object Storage) Configuration
+      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID:-}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID:-}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY:-}
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME:-monomi-finance}
+      - R2_PUBLIC_URL=${R2_PUBLIC_URL:-}
+      - R2_ENDPOINT=${R2_ENDPOINT:-}
+      - MAX_FILE_SIZE_MB=${MAX_FILE_SIZE_MB:-100}
     ports:
-      - "3000:3000"   # Frontend: React + Vite dev server with HMR (hot-reload)
+      - "3001:3000"   # Frontend: React + Vite dev server with HMR (hot-reload) - DEV uses 3001 to avoid conflict with PROD
       - "5000:5000"   # Backend: NestJS API with auto-restart (hot-reload)
       - "9229:9229"   # Node.js debug port (chrome://inspect)
     volumes:
@@ -118,4 +129,5 @@ volumes:
   
 networks:
   invoice-network:
+    name: invoice-network-dev
     driver: bridge

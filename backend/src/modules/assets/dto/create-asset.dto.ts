@@ -56,6 +56,12 @@ export class CreateAssetDto {
   @IsOptional()
   warrantyExpiration?: string;
 
+  @IsOptional()
+  usefulLifeYears?: number;
+
+  @IsOptional()
+  residualValue?: number;
+
   @IsString()
   @IsOptional()
   location?: string;

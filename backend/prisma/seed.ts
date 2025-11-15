@@ -34,6 +34,12 @@ async function main() {
     await prisma.expenseCategory.deleteMany({});
     await prisma.fiscalPeriod.deleteMany({});
     await prisma.businessJourneyEvent.deleteMany({});
+
+    // Social Media Reporting cleanup (Universal)
+    await prisma.reportSection.deleteMany({});
+    await prisma.socialMediaReport.deleteMany({});
+    // DELETED: Old campaign models removed 2025-11-09
+
     console.log('✅ Cleanup completed');
   } catch (error) {
     console.warn('⚠️  Cleanup encountered issues (may be first run):', (error as any).message);
@@ -157,6 +163,28 @@ async function main() {
     staff: staffUser.email,
     viewer: viewerUser.email,
   });
+
+  // Create company settings
+  console.log('🏢 Creating company settings...');
+  const companySettings = await prisma.companySettings.upsert({
+    where: { id: 'default' },
+    update: {},
+    create: {
+      id: 'default',
+      companyName: 'Monomi Agency',
+      address: 'Taman Cibaduyut Indah Blok E 232',
+      phone: '085156662098',
+      email: 'admin@monomiagency.com',
+      website: '',
+      taxNumber: '000000000000000', // NPWP
+      currency: 'IDR',
+      bankBCA: '3462676350',
+      bankMandiri: '',
+      bankBNI: '',
+    },
+  });
+
+  console.log('✅ Company settings created:', companySettings.companyName);
 
   // Create test clients
   const client1 = await prisma.client.upsert({
@@ -2162,15 +2190,577 @@ async function main() {
     },
   });
 
-  console.log('📊 Chart of Accounts created: 100+ accounts (Comprehensive PSAK-compliant)');
-  console.log('  🎨 DIGITAL CREATIVE AGENCY EDITION');
+  // REVENUE - Additional Creative Services (4-3xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-3010' },
+    update: {},
+    create: {
+      code: '4-3010',
+      name: 'SEO & SEM Services Revenue',
+      nameId: 'Pendapatan Layanan SEO & SEM',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from SEO and search engine marketing services',
+      descriptionId: 'Pendapatan dari layanan SEO dan marketing mesin pencari',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-3020' },
+    update: {},
+    create: {
+      code: '4-3020',
+      name: 'UI/UX Design Revenue',
+      nameId: 'Pendapatan Desain UI/UX',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from user interface and experience design',
+      descriptionId: 'Pendapatan dari desain antarmuka dan pengalaman pengguna',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-3030' },
+    update: {},
+    create: {
+      code: '4-3030',
+      name: 'Mobile App Development Revenue',
+      nameId: 'Pendapatan Pengembangan Aplikasi Mobile',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from mobile application development',
+      descriptionId: 'Pendapatan dari pembuatan aplikasi mobile (iOS/Android)',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-3040' },
+    update: {},
+    create: {
+      code: '4-3040',
+      name: 'Influencer Marketing Revenue',
+      nameId: 'Pendapatan Marketing Influencer',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from influencer marketing campaign management',
+      descriptionId: 'Pendapatan dari manajemen kampanye influencer marketing',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-3050' },
+    update: {},
+    create: {
+      code: '4-3050',
+      name: 'Podcast Production Revenue',
+      nameId: 'Pendapatan Produksi Podcast',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from podcast recording and production services',
+      descriptionId: 'Pendapatan dari jasa rekaman dan produksi podcast',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-3060' },
+    update: {},
+    create: {
+      code: '4-3060',
+      name: 'Livestreaming Services Revenue',
+      nameId: 'Pendapatan Jasa Livestreaming',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from live event streaming services',
+      descriptionId: 'Pendapatan dari jasa siaran langsung acara',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-3070' },
+    update: {},
+    create: {
+      code: '4-3070',
+      name: '3D Modeling & Rendering Revenue',
+      nameId: 'Pendapatan Modeling & Rendering 3D',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from 3D modeling and rendering services',
+      descriptionId: 'Pendapatan dari jasa modeling dan rendering 3D',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '4-3080' },
+    update: {},
+    create: {
+      code: '4-3080',
+      name: 'Email Marketing Services Revenue',
+      nameId: 'Pendapatan Jasa Email Marketing',
+      accountType: 'REVENUE',
+      accountSubType: 'OPERATING_REVENUE',
+      normalBalance: 'CREDIT',
+      description: 'Revenue from email marketing campaign management',
+      descriptionId: 'Pendapatan dari manajemen kampanye email marketing',
+    },
+  });
+
+  // ASSETS - Creative Agency Equipment (1-45xx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4510' },
+    update: {},
+    create: {
+      code: '1-4510',
+      name: 'Camera & Photography Equipment',
+      nameId: 'Kamera & Peralatan Fotografi',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'DEBIT',
+      description: 'Cameras, lenses, tripods, and photography accessories',
+      descriptionId: 'Kamera, lensa, tripod, dan aksesoris fotografi',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4520' },
+    update: {},
+    create: {
+      code: '1-4520',
+      name: 'Accumulated Depreciation - Camera Equipment',
+      nameId: 'Akumulasi Penyusutan Peralatan Kamera',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'CREDIT',
+      description: 'Accumulated depreciation for camera equipment',
+      descriptionId: 'Akumulasi penyusutan peralatan kamera',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4530' },
+    update: {},
+    create: {
+      code: '1-4530',
+      name: 'Video & Audio Production Equipment',
+      nameId: 'Peralatan Produksi Video & Audio',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'DEBIT',
+      description: 'Video cameras, microphones, audio recorders, mixers',
+      descriptionId: 'Kamera video, mikrofon, perekam audio, mixer',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4540' },
+    update: {},
+    create: {
+      code: '1-4540',
+      name: 'Accumulated Depreciation - Video/Audio Equipment',
+      nameId: 'Akumulasi Penyusutan Peralatan Video/Audio',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'CREDIT',
+      description: 'Accumulated depreciation for video and audio equipment',
+      descriptionId: 'Akumulasi penyusutan peralatan video dan audio',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4550' },
+    update: {},
+    create: {
+      code: '1-4550',
+      name: 'Lighting Equipment',
+      nameId: 'Peralatan Pencahayaan',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'DEBIT',
+      description: 'Studio lights, LED panels, reflectors, and lighting accessories',
+      descriptionId: 'Lampu studio, panel LED, reflektor, dan aksesoris pencahayaan',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4560' },
+    update: {},
+    create: {
+      code: '1-4560',
+      name: 'Accumulated Depreciation - Lighting Equipment',
+      nameId: 'Akumulasi Penyusutan Peralatan Pencahayaan',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'CREDIT',
+      description: 'Accumulated depreciation for lighting equipment',
+      descriptionId: 'Akumulasi penyusutan peralatan pencahayaan',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4570' },
+    update: {},
+    create: {
+      code: '1-4570',
+      name: 'Editing Workstations & Computers',
+      nameId: 'Workstation Editing & Komputer',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'DEBIT',
+      description: 'High-performance computers for video/photo editing and rendering',
+      descriptionId: 'Komputer performa tinggi untuk editing video/foto dan rendering',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-4580' },
+    update: {},
+    create: {
+      code: '1-4580',
+      name: 'Accumulated Depreciation - Computers',
+      nameId: 'Akumulasi Penyusutan Komputer',
+      accountType: 'ASSET',
+      accountSubType: 'FIXED_ASSET',
+      normalBalance: 'CREDIT',
+      description: 'Accumulated depreciation for editing workstations',
+      descriptionId: 'Akumulasi penyusutan workstation editing',
+    },
+  });
+
+  // EXPENSES - Digital Marketing & Ads (6-6xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-6010' },
+    update: {},
+    create: {
+      code: '6-6010',
+      name: 'Meta Ads (Facebook/Instagram)',
+      nameId: 'Iklan Meta (Facebook/Instagram)',
+      accountType: 'EXPENSE',
+      accountSubType: 'SELLING_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Advertising spend on Meta platforms',
+      descriptionId: 'Biaya iklan di platform Meta',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-6020' },
+    update: {},
+    create: {
+      code: '6-6020',
+      name: 'Google Ads (Search/Display/YouTube)',
+      nameId: 'Google Ads (Search/Display/YouTube)',
+      accountType: 'EXPENSE',
+      accountSubType: 'SELLING_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Advertising spend on Google platforms',
+      descriptionId: 'Biaya iklan di platform Google',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-6030' },
+    update: {},
+    create: {
+      code: '6-6030',
+      name: 'TikTok Ads',
+      nameId: 'Iklan TikTok',
+      accountType: 'EXPENSE',
+      accountSubType: 'SELLING_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Advertising spend on TikTok platform',
+      descriptionId: 'Biaya iklan di platform TikTok',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-6040' },
+    update: {},
+    create: {
+      code: '6-6040',
+      name: 'LinkedIn Ads',
+      nameId: 'Iklan LinkedIn',
+      accountType: 'EXPENSE',
+      accountSubType: 'SELLING_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Advertising spend on LinkedIn platform',
+      descriptionId: 'Biaya iklan di platform LinkedIn',
+    },
+  });
+
+  // EXPENSES - Software & Tools (6-7xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-7010' },
+    update: {},
+    create: {
+      code: '6-7010',
+      name: 'Figma/Sketch Subscription',
+      nameId: 'Langganan Figma/Sketch',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'UI/UX design tool subscription',
+      descriptionId: 'Langganan tools desain UI/UX',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-7020' },
+    update: {},
+    create: {
+      code: '6-7020',
+      name: 'Font & Typography Licenses',
+      nameId: 'Lisensi Font & Tipografi',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Premium font licenses for commercial use',
+      descriptionId: 'Lisensi font premium untuk penggunaan komersial',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-7030' },
+    update: {},
+    create: {
+      code: '6-7030',
+      name: 'Music Licensing (Epidemic Sound, Artlist)',
+      nameId: 'Lisensi Musik (Epidemic Sound, Artlist)',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Music licensing for video production',
+      descriptionId: 'Lisensi musik untuk produksi video',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-7040' },
+    update: {},
+    create: {
+      code: '6-7040',
+      name: '3D Software (Blender/Cinema 4D)',
+      nameId: 'Software 3D (Blender/Cinema 4D)',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: '3D modeling and rendering software subscriptions',
+      descriptionId: 'Langganan software modeling dan rendering 3D',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-7050' },
+    update: {},
+    create: {
+      code: '6-7050',
+      name: 'Color Grading Software (DaVinci Resolve)',
+      nameId: 'Software Color Grading (DaVinci Resolve)',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Professional color grading and finishing software',
+      descriptionId: 'Software color grading dan finishing profesional',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-7060' },
+    update: {},
+    create: {
+      code: '6-7060',
+      name: 'Analytics Tools (Google Analytics, Hotjar)',
+      nameId: 'Tools Analitik (Google Analytics, Hotjar)',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Website analytics and user behavior tracking tools',
+      descriptionId: 'Tools analitik website dan pelacakan perilaku user',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-7070' },
+    update: {},
+    create: {
+      code: '6-7070',
+      name: 'Email Marketing Platform (Mailchimp, SendGrid)',
+      nameId: 'Platform Email Marketing (Mailchimp, SendGrid)',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Email marketing automation platform subscriptions',
+      descriptionId: 'Langganan platform otomasi email marketing',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-7080' },
+    update: {},
+    create: {
+      code: '6-7080',
+      name: 'CRM Software (HubSpot, Salesforce)',
+      nameId: 'Software CRM (HubSpot, Salesforce)',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Customer relationship management software',
+      descriptionId: 'Software manajemen hubungan pelanggan',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-7090' },
+    update: {},
+    create: {
+      code: '6-7090',
+      name: 'Social Media Scheduling Tools (Buffer, Hootsuite)',
+      nameId: 'Tools Penjadwalan Sosmed (Buffer, Hootsuite)',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Social media scheduling and management platforms',
+      descriptionId: 'Platform penjadwalan dan manajemen media sosial',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-7100' },
+    update: {},
+    create: {
+      code: '6-7100',
+      name: 'Domain & SSL Certificates',
+      nameId: 'Domain & Sertifikat SSL',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Domain registrations and SSL certificate renewals',
+      descriptionId: 'Registrasi domain dan perpanjangan sertifikat SSL',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-7110' },
+    update: {},
+    create: {
+      code: '6-7110',
+      name: 'Web Hosting Services',
+      nameId: 'Layanan Web Hosting',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'Web hosting for client projects and internal sites',
+      descriptionId: 'Web hosting untuk proyek klien dan website internal',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '6-7120' },
+    update: {},
+    create: {
+      code: '6-7120',
+      name: 'VPN & Security Software',
+      nameId: 'VPN & Software Keamanan',
+      accountType: 'EXPENSE',
+      accountSubType: 'ADMIN_EXPENSE',
+      normalBalance: 'DEBIT',
+      description: 'VPN services and cybersecurity software subscriptions',
+      descriptionId: 'Layanan VPN dan langganan software keamanan cyber',
+    },
+  });
+
+  // EXPENSES - Freelancers & Contractors - Additional (5-4xxx)
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-4010' },
+    update: {},
+    create: {
+      code: '5-4010',
+      name: 'Freelancer - Social Media Specialist',
+      nameId: 'Freelancer Spesialis Media Sosial',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Freelance social media specialist costs',
+      descriptionId: 'Biaya spesialis media sosial freelance',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-4020' },
+    update: {},
+    create: {
+      code: '5-4020',
+      name: 'Freelancer - SEO Specialist',
+      nameId: 'Freelancer Spesialis SEO',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Freelance SEO specialist costs',
+      descriptionId: 'Biaya spesialis SEO freelance',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-4030' },
+    update: {},
+    create: {
+      code: '5-4030',
+      name: 'Freelancer - UI/UX Designer',
+      nameId: 'Freelancer Desainer UI/UX',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Freelance UI/UX designer costs',
+      descriptionId: 'Biaya desainer UI/UX freelance',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-4040' },
+    update: {},
+    create: {
+      code: '5-4040',
+      name: 'Freelancer - Motion Graphics Designer',
+      nameId: 'Freelancer Desainer Motion Graphics',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Freelance motion graphics designer costs',
+      descriptionId: 'Biaya desainer motion graphics freelance',
+    },
+  });
+
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '5-4050' },
+    update: {},
+    create: {
+      code: '5-4050',
+      name: 'Freelancer - Voice Over Artist',
+      nameId: 'Freelancer Pengisi Suara',
+      accountType: 'EXPENSE',
+      accountSubType: 'COGS',
+      normalBalance: 'DEBIT',
+      description: 'Voice over artist fees for video narration',
+      descriptionId: 'Biaya pengisi suara untuk narasi video',
+    },
+  });
+
+  console.log('📊 Chart of Accounts created: 160+ accounts (Comprehensive PSAK-compliant)');
+  console.log('  🎨 DIGITAL CREATIVE AGENCY EDITION - ENHANCED');
   console.log('  ');
-  console.log('  - ASET (Assets): 25 accounts');
-  console.log('    • Kas & Bank (Cash & Bank): 4 accounts');
+  console.log('  - ASET (Assets): 33 accounts');
+  console.log('    • Kas & Bank (Cash & Bank): 4 accounts (IDR, USD, USDT)');
   console.log('    • Piutang (Receivables): 2 accounts');
   console.log('    • Persediaan (Inventory): 3 accounts');
   console.log('    • Biaya Dibayar Dimuka & Pajak (Prepaid & Tax): 4 accounts');
-  console.log('    • Aset Tetap (Fixed Assets): 9 accounts (incl. cameras, equipment)');
+  console.log('    • Aset Tetap (Fixed Assets): 17 accounts');
+  console.log('      - General: 9 accounts (Land, Buildings, Vehicles, Furniture)');
+  console.log('      - Creative Equipment: 8 accounts (Cameras, Video/Audio, Lighting, Workstations)');
   console.log('    • Aset Tidak Berwujud (Intangible): 3 accounts');
   console.log('  ');
   console.log('  - LIABILITAS (Liabilities): 13 accounts');
@@ -2180,20 +2770,35 @@ async function main() {
   console.log('  ');
   console.log('  - EKUITAS (Equity): 4 accounts');
   console.log('  ');
-  console.log('  - PENDAPATAN (Revenue): 18 accounts');
-  console.log('    • Core Services: 9 creative services (Video, Photo, Design, Web, etc.)');
+  console.log('  - PENDAPATAN (Revenue): 26 accounts');
+  console.log('    • Core Creative Services: 17 accounts');
+  console.log('      - Production: Video, Photography, Animation, 3D Modeling');
+  console.log('      - Design: Graphic Design, UI/UX, Branding, Motion Graphics');
+  console.log('      - Digital: Web Dev, Mobile Apps, Social Media, Content Creation');
+  console.log('      - Marketing: SEO/SEM, Email Marketing, Influencer Marketing');
+  console.log('      - Media: Podcast Production, Livestreaming');
   console.log('    • General Revenue: 6 accounts');
   console.log('    • Other Income: 3 accounts');
   console.log('  ');
-  console.log('  - BEBAN (Expenses): 43 accounts');
-  console.log('    • Harga Pokok Produksi (Production COGS): 13 accounts');
-  console.log('      - Freelancers: 6 types (Videographer, Photographer, Designer, etc.)');
-  console.log('      - Production Costs: 4 types (Stock, Rental, Location, Talent)');
-  console.log('    • Beban Operasional Kreatif: 8 accounts (Adobe, Cloud Storage, etc.)');
-  console.log('    • Beban Penjualan (Selling): 3 accounts');
+  console.log('  - BEBAN (Expenses): 84 accounts');
+  console.log('    • Harga Pokok Produksi (Production COGS): 22 accounts');
+  console.log('      - Freelancers: 11 types (Videographer, Photographer, Designer, Developer,');
+  console.log('        Video Editor, Content Writer, Social Media, SEO, UI/UX, Motion Graphics, Voice Over)');
+  console.log('      - Production Costs: 4 types (Stock Footage/Music, Props/Equipment Rental, Location, Talent)');
+  console.log('      - Direct Labor & Manufacturing: 3 accounts');
+  console.log('      - COGS Control: 4 accounts');
+  console.log('    • Beban Operasional Digital Agency: 31 accounts');
+  console.log('      - Creative Software: 8 accounts (Adobe, Cloud Storage, Project Management, etc.)');
+  console.log('      - Digital Tools: 12 accounts (Figma, Fonts, Music Licensing, 3D Software,');
+  console.log('        Color Grading, Analytics, Email Marketing, CRM, Social Media Tools, etc.)');
+  console.log('      - Infrastructure: 3 accounts (Domain/SSL, Web Hosting, VPN/Security)');
+  console.log('      - Digital Ads: 4 accounts (Meta, Google, TikTok, LinkedIn)');
+  console.log('      - General Admin: 4 accounts (Office Rent, Utilities, Supplies, etc.)');
+  console.log('    • Beban Penjualan (Selling): 7 accounts');
   console.log('    • Beban Administrasi (Admin): 13 accounts');
   console.log('    • Beban Gaji (Payroll): 4 accounts');
   console.log('    • Beban Pajak (Tax): 2 accounts');
+  console.log('    • Beban Lain-lain (Other Expenses): 5 accounts');
 
   // Create initial fiscal period for 2025
   console.log('📅 Creating fiscal periods for 2025...');
@@ -4874,6 +5479,115 @@ async function main() {
     balanceSheet: 'As of January 31, 2025',
     netIncome: `Rp ${netIncome.toLocaleString('id-ID')}`,
   });
+
+  // ==========================================================
+  // SOCIAL MEDIA ADS PLATFORMS
+  // ==========================================================
+  console.log('\n📱 Creating social media ad platforms...');
+
+  const metaAds = await prisma.adPlatform.upsert({
+    where: { slug: 'meta' },
+    update: {},
+    create: {
+      name: 'Meta Ads',
+      slug: 'meta',
+      description: 'Facebook, Instagram, Messenger, and Audience Network advertising',
+      iconUrl: 'https://cdn.worldvectorlogo.com/logos/meta-1.svg',
+      apiEndpoint: 'https://graph.facebook.com/v18.0',
+      isActive: true,
+      supportedObjectives: [
+        'OUTCOME_AWARENESS',
+        'OUTCOME_TRAFFIC',
+        'OUTCOME_ENGAGEMENT',
+        'OUTCOME_LEADS',
+        'OUTCOME_APP_PROMOTION',
+        'OUTCOME_SALES'
+      ],
+      supportedMetrics: [
+        'impressions',
+        'reach',
+        'clicks',
+        'ctr',
+        'cpc',
+        'cpm',
+        'results',
+        'cost_per_result',
+        'video_views',
+        'engagement',
+        'link_clicks'
+      ]
+    }
+  });
+
+  const googleAds = await prisma.adPlatform.upsert({
+    where: { slug: 'google' },
+    update: {},
+    create: {
+      name: 'Google Ads',
+      slug: 'google',
+      description: 'Google Search, Display, YouTube, Shopping, and App advertising',
+      iconUrl: 'https://cdn.worldvectorlogo.com/logos/google-ads-1.svg',
+      apiEndpoint: 'https://googleads.googleapis.com/v15',
+      isActive: true,
+      supportedObjectives: [
+        'SEARCH',
+        'DISPLAY',
+        'VIDEO',
+        'SHOPPING',
+        'APP',
+        'SMART',
+        'PERFORMANCE_MAX'
+      ],
+      supportedMetrics: [
+        'impressions',
+        'clicks',
+        'ctr',
+        'cost',
+        'cpc',
+        'conversions',
+        'conversion_rate',
+        'cost_per_conversion',
+        'view_through_conversions'
+      ]
+    }
+  });
+
+  const tiktokAds = await prisma.adPlatform.upsert({
+    where: { slug: 'tiktok' },
+    update: {},
+    create: {
+      name: 'TikTok Ads',
+      slug: 'tiktok',
+      description: 'TikTok video advertising and branded content',
+      iconUrl: 'https://cdn.worldvectorlogo.com/logos/tiktok-icon-2.svg',
+      apiEndpoint: 'https://business-api.tiktok.com/open_api/v1.3',
+      isActive: true,
+      supportedObjectives: [
+        'REACH',
+        'TRAFFIC',
+        'VIDEO_VIEWS',
+        'COMMUNITY_INTERACTION',
+        'APP_PROMOTION',
+        'CONVERSIONS',
+        'PRODUCT_SALES'
+      ],
+      supportedMetrics: [
+        'impressions',
+        'reach',
+        'clicks',
+        'ctr',
+        'cpc',
+        'cpm',
+        'video_views',
+        'video_view_rate',
+        'engagement',
+        'conversions',
+        'cost_per_conversion'
+      ]
+    }
+  });
+
+  console.log(`✅ Created ${3} ad platforms: Meta Ads, Google Ads, TikTok Ads`);
 
   console.log('✅ Database seeding completed successfully!');
   console.log('\n🔑 Test Credentials (Legacy - Backward Compatibility):');

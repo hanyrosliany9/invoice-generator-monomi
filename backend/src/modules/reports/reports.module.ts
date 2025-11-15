@@ -4,9 +4,10 @@ import { ReportsService } from "./reports.service";
 import { ExcelExportService } from "./excel-export.service";
 import { PdfExportService } from "./pdf-export.service";
 import { PrismaModule } from "../prisma/prisma.module";
+import { CompanyModule } from "../company/company.module";
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, CompanyModule],
   controllers: [ReportsController],
   providers: [ReportsService, ExcelExportService, PdfExportService],
   exports: [ReportsService, ExcelExportService, PdfExportService],

@@ -1,4 +1,5 @@
 import { apiClient } from '../config/api'
+import { now } from '../utils/date'
 
 export interface RevenueAnalytics {
   totalRevenue: number
@@ -178,7 +179,7 @@ export const reportsService = {
           overdueAmount: 0,
           paymentTrends: [],
         },
-        generatedAt: new Date().toISOString(),
+        generatedAt: now().toISOString(),
       }
     )
   },

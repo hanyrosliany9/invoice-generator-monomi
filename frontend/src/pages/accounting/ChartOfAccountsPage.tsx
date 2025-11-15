@@ -44,6 +44,7 @@ import { useIsMobile } from '../../hooks/useMediaQuery';
 import MobileTableView from '../../components/mobile/MobileTableView';
 import { chartOfAccountToBusinessEntity } from '../../adapters/mobileTableAdapters';
 import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
+import { getErrorMessage } from '../../utils/errorHandling';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -90,7 +91,7 @@ const ChartOfAccountsPage: React.FC = () => {
       form.resetFields();
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to create account');
+      message.error(getErrorMessage(error, 'Failed to create account'));
     },
   });
 
@@ -106,7 +107,7 @@ const ChartOfAccountsPage: React.FC = () => {
       form.resetFields();
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to update account');
+      message.error(getErrorMessage(error, 'Failed to update account'));
     },
   });
 
@@ -118,7 +119,7 @@ const ChartOfAccountsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to delete account');
+      message.error(getErrorMessage(error, 'Failed to delete account'));
     },
   });
 
@@ -130,7 +131,7 @@ const ChartOfAccountsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to toggle account status');
+      message.error(getErrorMessage(error, 'Failed to toggle account status'));
     },
   });
 
@@ -620,6 +621,7 @@ const ChartOfAccountsPage: React.FC = () => {
         }}
         footer={null}
         width={700}
+        forceRender
       >
         <Form
           form={form}

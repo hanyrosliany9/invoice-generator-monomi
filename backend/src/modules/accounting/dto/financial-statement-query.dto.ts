@@ -68,8 +68,13 @@ export class LedgerQueryDto {
 
 export class TrialBalanceQueryDto {
   @IsDate()
+  @IsOptional()
   @Type(() => Date)
-  asOfDate: Date;
+  startDate?: Date;
+
+  @IsDate()
+  @Type(() => Date)
+  endDate: Date;
 
   @IsString()
   @IsOptional()

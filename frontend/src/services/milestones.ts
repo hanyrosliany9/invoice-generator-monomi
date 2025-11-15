@@ -100,6 +100,50 @@ export interface DependencyCheckResult {
   }
 }
 
+export interface MilestoneAnalyticsQuery {
+  projectId?: string
+  startDate?: string
+  endDate?: string
+  timeRange?: '30days' | '90days' | '1year' | 'custom'
+}
+
+export interface ProfitabilityData {
+  milestone: string
+  revenue: number
+  cost: number
+  profit: number
+  profitMargin: number
+}
+
+export interface CashFlowData {
+  date: string
+  expectedInflow: number
+  actualInflow: number
+  forecastedInflow: number
+}
+
+export interface MilestoneMetric {
+  id: string
+  milestoneNumber: number
+  name: string
+  amount: number
+  dueDate: string
+  invoicedDate?: string
+  paidDate?: string
+  daysToPayment?: number
+  status: 'PENDING' | 'INVOICED' | 'PAID' | 'OVERDUE'
+  revenueRecognized: number
+}
+
+export interface MilestoneAnalytics {
+  averagePaymentCycle: number
+  onTimePaymentRate: number
+  revenueRecognitionRate: number
+  projectProfitabilityByPhase: ProfitabilityData[]
+  cashFlowForecast: CashFlowData[]
+  milestoneMetrics: MilestoneMetric[]
+}
+
 export const milestonesService = {
   // Get all milestones for a project
   getProjectMilestones: async (projectId: string): Promise<ProjectMilestone[]> => {
@@ -145,6 +189,18 @@ export const milestonesService = {
   // Check milestone dependencies
   checkDependencies: async (id: string): Promise<DependencyCheckResult> => {
     const response = await apiClient.get(`/milestones/${id}/dependencies`)
+    return response?.data?.data
+  },
+
+  // Get milestone analytics
+  getAnalytics: async (query: MilestoneAnalyticsQuery = {}): Promise<MilestoneAnalytics> => {
+    const params = new URLSearchParams()
+    if (query.projectId) params.append('projectId', query.projectId)
+    if (query.startDate) params.append('startDate', query.startDate)
+    if (query.endDate) params.append('endDate', query.endDate)
+    if (query.timeRange) params.append('timeRange', query.timeRange)
+
+    const response = await apiClient.get(`/milestones/analytics/overview?${params.toString()}`)
     return response?.data?.data
   },
 }

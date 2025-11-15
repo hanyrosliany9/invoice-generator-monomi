@@ -7,26 +7,18 @@ import {
 } from "../../reports/indonesian-pdf-formatter";
 import { LedgerService } from "./ledger.service";
 import { FinancialStatementsService } from "./financial-statements.service";
+import { CompanySettingsService } from "../../company/company-settings.service";
 
 @Injectable()
 export class AccountingExportService {
   constructor(
     private readonly ledgerService: LedgerService,
     private readonly financialStatementsService: FinancialStatementsService,
+    private readonly companySettings: CompanySettingsService,
   ) {}
 
-  private getCompanyInfo(): IndonesianCompanyInfo {
-    return {
-      name: "MONOMI",
-      address: "Jl. Usaha Mandiri No. 123",
-      city: "Jakarta Selatan",
-      postalCode: "12345",
-      phone: "+62-21-1234-5678",
-      email: "info@monomi.co.id",
-      website: "www.monomi.co.id",
-      npwp: "01.234.567.8-901.234",
-      siup: "SIUP/123/2024",
-    };
+  private async getCompanyInfo(): Promise<IndonesianCompanyInfo> {
+    return await this.companySettings.getCompanyInfo();
   }
 
   private formatCurrency(amount: number): string {
@@ -45,7 +37,8 @@ export class AccountingExportService {
   // ============ TRIAL BALANCE EXPORT ============
   async exportTrialBalancePDF(
     params: {
-      asOfDate: string;
+      startDate?: string | null;
+      endDate: string;
       fiscalPeriodId?: string;
       includeInactive?: boolean;
       includeZeroBalances?: boolean;
@@ -53,17 +46,22 @@ export class AccountingExportService {
     options: PdfFormattingOptions = {},
   ): Promise<Buffer> {
     const data = await this.ledgerService.getTrialBalance({
-      asOfDate: new Date(params.asOfDate),
+      startDate: params.startDate ? new Date(params.startDate) : undefined,
+      endDate: new Date(params.endDate),
       fiscalPeriodId: params.fiscalPeriodId,
       includeInactive: params.includeInactive,
       includeZeroBalances: params.includeZeroBalances,
     });
-    const companyInfo = this.getCompanyInfo();
+    const companyInfo = await this.getCompanyInfo();
+
+    const reportPeriod = params.startDate
+      ? `Periode: ${this.formatDate(params.startDate)} s/d ${this.formatDate(params.endDate)}`
+      : `Per Tanggal: ${this.formatDate(params.endDate)}`;
 
     const reportHeader: IndonesianReportHeader = {
       reportTitle: "NERACA SALDO (TRIAL BALANCE)",
       reportSubtitle: "LAPORAN AKUNTANSI",
-      reportPeriod: `Per Tanggal: ${this.formatDate(params.asOfDate)}`,
+      reportPeriod,
       preparationDate: new Date(),
       reportType: "TRIAL_BALANCE",
     };
@@ -156,7 +154,7 @@ export class AccountingExportService {
       fiscalPeriodId: params.fiscalPeriodId,
       includeInactive: params.includeInactive,
     });
-    const companyInfo = this.getCompanyInfo();
+    const companyInfo = await this.getCompanyInfo();
 
     const reportHeader: IndonesianReportHeader = {
       reportTitle: "LAPORAN LABA RUGI (INCOME STATEMENT)",
@@ -249,7 +247,7 @@ export class AccountingExportService {
       fiscalPeriodId: params.fiscalPeriodId,
       includeInactive: params.includeInactive,
     });
-    const companyInfo = this.getCompanyInfo();
+    const companyInfo = await this.getCompanyInfo();
 
     const reportHeader: IndonesianReportHeader = {
       reportTitle: "NERACA (BALANCE SHEET)",
@@ -360,7 +358,7 @@ export class AccountingExportService {
       endDate: new Date(params.endDate),
       fiscalPeriodId: params.fiscalPeriodId,
     });
-    const companyInfo = this.getCompanyInfo();
+    const companyInfo = await this.getCompanyInfo();
 
     const reportHeader: IndonesianReportHeader = {
       reportTitle: "LAPORAN ARUS KAS (CASH FLOW STATEMENT)",
@@ -430,7 +428,7 @@ export class AccountingExportService {
   ): Promise<Buffer> {
     const date = params.asOfDate ? new Date(params.asOfDate) : new Date();
     const data = await this.ledgerService.getAccountsReceivableAging(date);
-    const companyInfo = this.getCompanyInfo();
+    const companyInfo = await this.getCompanyInfo();
 
     const reportHeader: IndonesianReportHeader = {
       reportTitle: "AGING PIUTANG (AR Aging Report)",
@@ -469,7 +467,7 @@ export class AccountingExportService {
     data.aging.forEach((item: any, index: number) => {
       tableData.push([
         item.invoiceNumber,
-        item.clientName,
+        item.client?.name || "Unknown",
         this.formatDate(item.invoiceDate),
         this.formatDate(item.dueDate),
         item.daysOverdue > 0 ? `${item.daysOverdue} hari` : "Belum jatuh tempo",
@@ -517,7 +515,7 @@ export class AccountingExportService {
   ): Promise<Buffer> {
     const date = params.asOfDate ? new Date(params.asOfDate) : new Date();
     const data = await this.ledgerService.getAccountsPayableAging(date);
-    const companyInfo = this.getCompanyInfo();
+    const companyInfo = await this.getCompanyInfo();
 
     const reportHeader: IndonesianReportHeader = {
       reportTitle: "AGING HUTANG (AP Aging Report)",
@@ -543,8 +541,8 @@ export class AccountingExportService {
 
   private generateAPAgingTableHtml(data: any): string {
     const headers = [
-      "Vendor",
-      "Tgl Tagihan",
+      "Kategori/Deskripsi",
+      "Tgl Pengeluaran",
       "Jatuh Tempo",
       "Hari Terlambat",
       "Kategori Umur",
@@ -554,8 +552,8 @@ export class AccountingExportService {
 
     data.aging.forEach((item: any) => {
       tableData.push([
-        item.vendorName || item.description,
-        this.formatDate(item.billDate),
+        item.category?.nameId || item.description || "N/A",
+        this.formatDate(item.expenseDate),
         this.formatDate(item.dueDate),
         item.daysOverdue > 0 ? `${item.daysOverdue} hari` : "Belum jatuh tempo",
         item.agingBucket,
@@ -593,7 +591,7 @@ export class AccountingExportService {
       await this.financialStatementsService.getAccountsReceivableReport({
         endDate: new Date(params.endDate),
       });
-    const companyInfo = this.getCompanyInfo();
+    const companyInfo = await this.getCompanyInfo();
 
     const reportHeader: IndonesianReportHeader = {
       reportTitle: "LAPORAN PIUTANG (Accounts Receivable)",
@@ -622,25 +620,28 @@ export class AccountingExportService {
       "No. Invoice",
       "Klien",
       "Tgl Invoice",
-      "Status",
+      "Umur (Hari)",
       "Jumlah (IDR)",
-      "Saldo (IDR)",
+      "Piutang Bersih (IDR)",
     ];
     const tableData: any[][] = [];
     let totalAmount = 0;
     let totalOutstanding = 0;
 
-    data.receivables.forEach((item: any) => {
+    // Access the aging data from data.aging.aging array
+    const receivables = data.aging?.aging || [];
+
+    receivables.forEach((item: any) => {
       tableData.push([
         item.invoiceNumber,
-        item.clientName,
+        item.client?.name || "Unknown",
         this.formatDate(item.invoiceDate),
-        item.status,
+        item.daysOverdue >= 0 ? `${item.daysOverdue} hari` : "Belum jatuh tempo",
         item.amount,
-        item.outstanding,
+        item.netReceivable,
       ]);
-      totalAmount += item.amount;
-      totalOutstanding += item.outstanding;
+      totalAmount += Number(item.amount);
+      totalOutstanding += Number(item.netReceivable);
     });
 
     const summaryRow = ["", "", "", "TOTAL", totalAmount, totalOutstanding];
@@ -675,7 +676,7 @@ export class AccountingExportService {
         endDate: new Date(params.endDate),
       },
     );
-    const companyInfo = this.getCompanyInfo();
+    const companyInfo = await this.getCompanyInfo();
 
     const reportHeader: IndonesianReportHeader = {
       reportTitle: "LAPORAN HUTANG (Accounts Payable)",
@@ -701,9 +702,9 @@ export class AccountingExportService {
 
   private generateAccountsPayableTableHtml(data: any): string {
     const headers = [
-      "Vendor/Deskripsi",
-      "Tgl Tagihan",
-      "Status",
+      "Kategori/Deskripsi",
+      "Tgl Pengeluaran",
+      "Umur (Hari)",
       "Jumlah (IDR)",
       "Saldo (IDR)",
     ];
@@ -711,16 +712,19 @@ export class AccountingExportService {
     let totalAmount = 0;
     let totalOutstanding = 0;
 
-    data.payables.forEach((item: any) => {
+    // Access the aging data from data.aging.aging array
+    const payables = data.aging?.aging || [];
+
+    payables.forEach((item: any) => {
       tableData.push([
-        item.vendorName || item.description,
-        this.formatDate(item.billDate),
-        item.status,
+        item.category?.nameId || item.description || "N/A",
+        this.formatDate(item.expenseDate),
+        item.daysOverdue >= 0 ? `${item.daysOverdue} hari` : "Belum jatuh tempo",
         item.amount,
-        item.outstanding,
+        item.amount, // Outstanding = Amount for unpaid expenses
       ]);
-      totalAmount += item.amount;
-      totalOutstanding += item.outstanding;
+      totalAmount += Number(item.amount);
+      totalOutstanding += Number(item.amount);
     });
 
     const summaryRow = ["", "", "TOTAL", totalAmount, totalOutstanding];
@@ -763,7 +767,7 @@ export class AccountingExportService {
       fiscalPeriodId: params.fiscalPeriodId,
       includeInactive: params.includeInactive,
     });
-    const companyInfo = this.getCompanyInfo();
+    const companyInfo = await this.getCompanyInfo();
 
     const periodText =
       params.startDate && params.endDate

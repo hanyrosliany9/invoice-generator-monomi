@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Metric, onCLS, onFCP, onFID, onLCP, onTTFB } from 'web-vitals'
+import { now } from '../utils/date'
 
 export interface PerformanceThresholds {
   // Core Web Vitals (optimized for Indonesian conditions)
@@ -228,7 +229,7 @@ export const usePerformanceMonitor = (
       const performanceMetric: PerformanceMetric = {
         name: metric.name,
         duration: metric.value,
-        timestamp: new Date(),
+        timestamp: now(),
         type: 'web-vital',
         threshold: getThresholdForMetric(metric.name.toLowerCase()),
         exceeded: false,
@@ -324,7 +325,7 @@ export const usePerformanceMonitor = (
             metric: metricName,
             value,
             threshold,
-            timestamp: new Date(),
+            timestamp: now(),
             impact: metric.severity === 'high' ? 'high' : 'medium',
             recommendation: `Optimize ${metricName} performance`,
             message: `${metricName} exceeded threshold: ${value.toFixed(2)}ms > ${threshold}ms`,
@@ -345,7 +346,7 @@ export const usePerformanceMonitor = (
       const metric: PerformanceMetric = {
         name,
         duration,
-        timestamp: new Date(),
+        timestamp: now(),
         metadata: metadata || {},
         type: 'component-render',
         threshold:
@@ -636,7 +637,7 @@ function sendPerformanceData(metric: PerformanceMetric): void {
       body: JSON.stringify({
         type: 'performance',
         metric,
-        timestamp: new Date().toISOString(),
+        timestamp: now().toISOString(),
         userAgent: navigator.userAgent,
         url: window.location.href,
       }),

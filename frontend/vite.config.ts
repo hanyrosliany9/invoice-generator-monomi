@@ -14,6 +14,11 @@ export default defineConfig({
       'axios',
       'dayjs',
       'recharts',
+      'react-is',
+      'slate',
+      'slate-dom',
+      'slate-react',
+      'slate-history',
     ],
     exclude: [
       '@testing-library/react',

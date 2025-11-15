@@ -97,10 +97,15 @@ export class CreateJournalEntryDto {
   reversedEntryId?: string;
 
   @IsString()
-  createdBy: string;
+  @IsOptional()
+  createdBy?: string;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateJournalLineItemDto)
   lineItems: CreateJournalLineItemDto[];
+
+  @IsBoolean()
+  @IsOptional()
+  autoPost?: boolean = false; // Auto-post to General Ledger after creation
 }

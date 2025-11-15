@@ -25,6 +25,7 @@ import {
 } from "@prisma/client";
 import { PaginatedResponse } from "../../common/dto/api-response.dto";
 import { handleServiceError } from "../../common/utils/error-handling.util";
+import { sanitizeText, sanitizeRichText, sanitizeJsonObject } from "../../common/utils/sanitization.util";
 
 @Injectable()
 export class InvoicesService {
@@ -141,12 +142,16 @@ export class InvoicesService {
       project.priceBreakdown ||
       undefined;
 
-    // Sanitize input data
+    // Sanitize input data with comprehensive sanitization
     const sanitizedData = {
       ...createInvoiceDto,
-      paymentInfo: this.sanitizeInput(createInvoiceDto.paymentInfo),
+      paymentInfo: sanitizeText(createInvoiceDto.paymentInfo),
       terms: createInvoiceDto.terms
-        ? this.sanitizeInput(createInvoiceDto.terms)
+        ? sanitizeRichText(createInvoiceDto.terms)
+        : null,
+      // Sanitize JSON fields
+      priceBreakdown: createInvoiceDto.priceBreakdown
+        ? sanitizeJsonObject(createInvoiceDto.priceBreakdown)
         : null,
     };
 
@@ -486,6 +491,13 @@ export class InvoicesService {
   ): Promise<any> {
     const invoice = await this.findOne(id);
 
+    // ✅ FIX: Block PAID status changes - must use markAsPaid endpoint
+    if (status === InvoiceStatus.PAID) {
+      throw new BadRequestException(
+        "Tidak dapat mengubah status ke PAID melalui endpoint ini. Gunakan endpoint /mark-paid untuk menandai invoice sebagai lunas agar jurnal pembayaran dibuat dengan benar.",
+      );
+    }
+
     // Validate status transition
     this.validateStatusTransition(invoice.status, status);
 
@@ -516,9 +528,17 @@ export class InvoicesService {
           where: { id },
           data: { journalEntryId: journalEntry.id },
         });
+
+        this.logger.log(
+          `✅ Created and posted SENT journal entry for invoice ${invoice.invoiceNumber}`,
+        );
       } catch (error) {
         this.logger.error("Failed to create journal entry for invoice:", error);
-        // Continue with status update even if journal entry fails
+        // ✅ FIX: Don't update status if journal entry fails
+        // This prevents invoice being marked as SENT without AR being debited
+        throw new BadRequestException(
+          "Gagal membuat jurnal entry untuk invoice. Status tidak dapat diubah.",
+        );
       }
     }
 
@@ -553,6 +573,80 @@ export class InvoicesService {
       );
     }
 
+    // ✅ FIX: Ensure SENT journal entry exists AND is posted before marking as PAID
+    // This prevents AR from going negative if SENT journal failed or wasn't posted
+    if (!invoice.journalEntryId) {
+      this.logger.warn(
+        `Invoice ${invoice.invoiceNumber} has no SENT journal entry. Creating it now...`,
+      );
+
+      try {
+        // Create and post the missing SENT journal entry (AR debit, Revenue credit)
+        const sentJournalEntry =
+          await this.journalService.createInvoiceJournalEntry(
+            invoice.id,
+            invoice.invoiceNumber,
+            invoice.clientId,
+            Number(invoice.totalAmount),
+            "SENT",
+            userId || "system",
+          );
+
+        await this.journalService.postJournalEntry(
+          sentJournalEntry.id,
+          userId || "system",
+        );
+
+        await this.prisma.invoice.update({
+          where: { id },
+          data: { journalEntryId: sentJournalEntry.id },
+        });
+
+        this.logger.log(
+          `✅ Backfilled SENT journal entry for invoice ${invoice.invoiceNumber}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          "Failed to create SENT journal entry during markAsPaid:",
+          error,
+        );
+        throw new BadRequestException(
+          "Gagal membuat jurnal entry untuk invoice SENT. Tidak dapat menandai sebagai lunas.",
+        );
+      }
+    } else {
+      // Verify that the SENT journal entry was actually posted
+      const sentJournal = await this.prisma.journalEntry.findUnique({
+        where: { id: invoice.journalEntryId },
+        select: { isPosted: true, entryNumber: true },
+      });
+
+      if (!sentJournal?.isPosted) {
+        this.logger.warn(
+          `Invoice ${invoice.invoiceNumber} has unposted SENT journal entry. Posting it now...`,
+        );
+
+        try {
+          await this.journalService.postJournalEntry(
+            invoice.journalEntryId,
+            userId || "system",
+          );
+
+          this.logger.log(
+            `✅ Posted SENT journal entry ${sentJournal?.entryNumber} for invoice ${invoice.invoiceNumber}`,
+          );
+        } catch (error) {
+          this.logger.error(
+            "Failed to post SENT journal entry during markAsPaid:",
+            error,
+          );
+          throw new BadRequestException(
+            "Gagal posting jurnal entry untuk invoice SENT. Tidak dapat menandai sebagai lunas.",
+          );
+        }
+      }
+    }
+
     // Create journal entry for payment (Cash/Bank debit, AR credit)
     try {
       const journalEntry = await this.journalService.createInvoiceJournalEntry(
@@ -580,7 +674,9 @@ export class InvoicesService {
         "Failed to create payment journal entry for invoice:",
         error,
       );
-      // Continue with status update even if journal entry fails
+      throw new BadRequestException(
+        "Gagal membuat jurnal entry untuk pembayaran.",
+      );
     }
 
     // Reverse ECL provision if exists (PSAK 71)
@@ -1025,9 +1121,7 @@ export class InvoicesService {
     return new Prisma.Decimal(0);
   }
 
-  private sanitizeInput(input: string): string {
-    return input.trim().replace(/<[^>]*>/g, "");
-  }
+  // Removed old sanitizeInput method - now using comprehensive sanitization utility
 
   private async validateBusinessRules(dto: CreateInvoiceDto) {
     // Check due date is in future
@@ -1174,7 +1268,7 @@ export class InvoicesService {
 
     if (companySettings.bankBCA) {
       paymentMethods.push(
-        `Bank BCA: ${companySettings.bankBCA} a.n. ${companySettings.companyName}`,
+        `Bank BCA Digital (Blu): ${companySettings.bankBCA} a.n. ${companySettings.companyName}`,
       );
     }
 

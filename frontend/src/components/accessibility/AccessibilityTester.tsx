@@ -37,6 +37,7 @@ import type {
   AccessibilityIssue,
   AccessibilityLevel,
 } from '../../contexts/AccessibilityContext'
+import { now } from '../../utils/date'
 
 const { Title, Text, Paragraph } = Typography
 const { TabPane } = Tabs
@@ -200,7 +201,7 @@ const AccessibilityTester: React.FC<AccessibilityTesterProps> = ({
 
       const testResult: AccessibilityTestResult = {
         id: `test_${Date.now()}`,
-        timestamp: new Date(),
+        timestamp: now(),
         overallScore: 0,
         level: 'A',
         issues: [],

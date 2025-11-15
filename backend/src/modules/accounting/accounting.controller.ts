@@ -11,6 +11,7 @@ import {
   Request,
   Res,
 } from "@nestjs/common";
+import { ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { Response } from "express";
 import type { Request as ExpressRequest } from "express";
 
@@ -31,6 +32,7 @@ import { CashTransactionService } from "./services/cash-transaction.service";
 import { BankTransferService } from "./services/bank-transfer.service";
 import { BankReconciliationService } from "./services/bank-reconciliation.service";
 import { RevenueRecognitionService } from "./services/revenue-recognition.service";
+import { CashBankBalanceService } from "./services/cash-bank-balance.service";
 import { CreateJournalEntryDto } from "./dto/create-journal-entry.dto";
 import { UpdateJournalEntryDto } from "./dto/update-journal-entry.dto";
 import { JournalQueryDto } from "./dto/journal-query.dto";
@@ -46,6 +48,9 @@ import {
 } from "./dto/create-bank-reconciliation.dto";
 import { UpdateBankReconciliationDto } from "./dto/update-bank-reconciliation.dto";
 import { BankReconciliationQueryDto } from "./dto/bank-reconciliation-query.dto";
+import { CreateCashBankBalanceDto } from "./dto/create-cash-bank-balance.dto";
+import { UpdateCashBankBalanceDto } from "./dto/update-cash-bank-balance.dto";
+import { CashBankBalanceQueryDto } from "./dto/cash-bank-balance-query.dto";
 import {
   FinancialStatementQueryDto,
   LedgerQueryDto,
@@ -67,6 +72,7 @@ export class AccountingController {
     private readonly bankTransferService: BankTransferService,
     private readonly bankReconciliationService: BankReconciliationService,
     private readonly revenueRecognitionService: RevenueRecognitionService,
+    private readonly cashBankBalanceService: CashBankBalanceService,
   ) {}
 
   // ============ CHART OF ACCOUNTS ============
@@ -111,10 +117,17 @@ export class AccountingController {
     @Body() createJournalEntryDto: CreateJournalEntryDto,
     @Request() req: any,
   ) {
-    return this.journalService.createJournalEntry({
+    const entry = await this.journalService.createJournalEntry({
       ...createJournalEntryDto,
       createdBy: req.user.userId,
     });
+
+    // Auto-post if requested
+    if (createJournalEntryDto.autoPost) {
+      return this.journalService.postJournalEntry(entry.id, req.user.userId);
+    }
+
+    return entry;
   }
 
   @Get("journal-entries")
@@ -267,6 +280,64 @@ export class AccountingController {
   @Roles("ADMIN")
   async deleteCashTransaction(@Param("id") id: string) {
     return this.cashTransactionService.deleteCashTransaction(id);
+  }
+
+  // ============ CASH/BANK BALANCES ============
+  @Post("cash-bank-balances")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
+  async createCashBankBalance(
+    @Body() dto: CreateCashBankBalanceDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    dto.createdBy = req.user.id;
+    return this.cashBankBalanceService.create(dto);
+  }
+
+  @Get("cash-bank-balances")
+  async getCashBankBalances(@Query() query: CashBankBalanceQueryDto) {
+    return this.cashBankBalanceService.findAll(query);
+  }
+
+  @Get("cash-bank-balances/:id")
+  async getCashBankBalance(@Param("id") id: string) {
+    return this.cashBankBalanceService.findOne(id);
+  }
+
+  @Get("cash-bank-balances/period/:year/:month")
+  async getCashBankBalanceByPeriod(
+    @Param("year") year: string,
+    @Param("month") month: string,
+  ) {
+    return this.cashBankBalanceService.findByPeriod(
+      parseInt(year),
+      parseInt(month),
+    );
+  }
+
+  @Patch("cash-bank-balances/:id")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
+  async updateCashBankBalance(
+    @Param("id") id: string,
+    @Body() dto: UpdateCashBankBalanceDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    dto.updatedBy = req.user.id;
+    return this.cashBankBalanceService.update(id, dto);
+  }
+
+  @Post("cash-bank-balances/:id/recalculate")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
+  async recalculateCashBankBalance(
+    @Param("id") id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.cashBankBalanceService.recalculate(id, req.user.id);
+  }
+
+  @Delete("cash-bank-balances/:id")
+  @Roles("SUPER_ADMIN", "FINANCE_MANAGER")
+  async deleteCashBankBalance(@Param("id") id: string) {
+    return this.cashBankBalanceService.remove(id);
   }
 
   // ============ BANK TRANSFERS ============
@@ -487,6 +558,43 @@ export class AccountingController {
     return this.journalService.closeFiscalPeriod(id, req.user.userId);
   }
 
+  /**
+   * ✅ Year-End Closing
+   *
+   * Performs year-end closing to transfer net income to retained earnings.
+   * This creates a closing journal entry that:
+   * - Zeros out all revenue and expense accounts
+   * - Transfers net income to Retained Earnings (3-2010)
+   * - Updates Balance Sheet to show proper equity structure
+   *
+   * Required: ADMIN role
+   */
+  @Post("year-end-closing")
+  @Roles("ADMIN")
+  @ApiOperation({
+    summary: "Perform year-end closing",
+    description:
+      "Closes revenue and expense accounts to retained earnings at fiscal year end (requires ADMIN role)",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Year-end closing completed successfully",
+  })
+  @ApiResponse({
+    status: 403,
+    description: "Access forbidden (requires ADMIN role)",
+  })
+  async performYearEndClosing(
+    @Body() data: { fiscalYearEndDate: string },
+    @Request() req: any,
+  ) {
+    const fiscalYearEndDate = new Date(data.fiscalYearEndDate);
+    return this.financialStatementsService.performYearEndClosing(
+      fiscalYearEndDate,
+      req.user.id,
+    );
+  }
+
   // ============ DEPRECIATION (PSAK 16) ============
   @Post("depreciation/calculate")
   @Roles("ADMIN", "USER")
@@ -552,6 +660,12 @@ export class AccountingController {
   @Roles("ADMIN", "USER")
   async createDepreciationSchedule(@Body() data: any) {
     return this.depreciationService.createDepreciationSchedule(data);
+  }
+
+  @Post("depreciation/backfill-schedules")
+  @Roles("ADMIN")
+  async backfillDepreciationSchedules() {
+    return this.depreciationService.backfillDepreciationSchedules();
   }
 
   @Delete("depreciation/schedule/:scheduleId")
@@ -666,13 +780,21 @@ export class AccountingController {
     @Res() res: Response,
   ) {
     try {
+      const startDateStr = query.startDate
+        ? query.startDate.toISOString().split("T")[0]
+        : undefined;
+      const endDateStr = query.endDate.toISOString().split("T")[0];
+
       const buffer = await this.exportService.exportTrialBalancePDF({
-        asOfDate: query.asOfDate.toISOString().split("T")[0],
+        startDate: startDateStr,
+        endDate: endDateStr,
         fiscalPeriodId: query.fiscalPeriodId,
         includeInactive: query.includeInactive,
         includeZeroBalances: query.includeZeroBalances,
       });
-      const filename = `neraca-saldo-${query.asOfDate.toISOString().split("T")[0]}.pdf`;
+      const filename = startDateStr
+        ? `neraca-saldo-${startDateStr}-${endDateStr}.pdf`
+        : `neraca-saldo-${endDateStr}.pdf`;
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
@@ -912,13 +1034,21 @@ export class AccountingController {
     @Res() res: Response,
   ) {
     try {
+      const startDateStr = query.startDate
+        ? query.startDate.toISOString().split("T")[0]
+        : undefined;
+      const endDateStr = query.endDate.toISOString().split("T")[0];
+
       const buffer = await this.excelExportService.exportTrialBalanceExcel({
-        asOfDate: query.asOfDate.toISOString().split("T")[0],
+        startDate: startDateStr,
+        endDate: endDateStr,
         fiscalPeriodId: query.fiscalPeriodId,
         includeInactive: query.includeInactive,
         includeZeroBalances: query.includeZeroBalances,
       });
-      const filename = `neraca-saldo-${query.asOfDate.toISOString().split("T")[0]}.xlsx`;
+      const filename = startDateStr
+        ? `neraca-saldo-${startDateStr}-${endDateStr}.xlsx`
+        : `neraca-saldo-${endDateStr}.xlsx`;
 
       res.setHeader(
         "Content-Type",
@@ -1264,5 +1394,27 @@ export class AccountingController {
     return this.revenueRecognitionService.recognizeRevenueFromInvoicePayment(
       invoiceId,
     );
+  }
+
+  // ============ ADMIN: DATA FIXES ============
+
+  /**
+   * ADMIN ONLY: Backfill missing journal entries for invoices
+   *
+   * This endpoint will:
+   * 1. Find all SENT/OVERDUE/PAID invoices without journal entries
+   * 2. Create and post the missing SENT journal entries (AR debit, Revenue credit)
+   * 3. Find all unposted journal entries and post them to General Ledger
+   *
+   * Use this to fix:
+   * - Laporan Piutang (AR Report) not showing all invoices
+   * - Laporan Laba Rugi (Income Statement) not showing revenue
+   *
+   * Safe to run multiple times - idempotent operation
+   */
+  @Post("admin/backfill-invoice-journals")
+  @Roles("SUPER_ADMIN", "ADMIN")
+  async backfillMissingInvoiceJournals(@Request() req: any) {
+    return this.journalService.backfillMissingInvoiceJournals(req.user.userId);
   }
 }

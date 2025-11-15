@@ -48,6 +48,7 @@ import { useIsMobile } from '../../hooks/useMediaQuery';
 import MobileTableView from '../../components/mobile/MobileTableView';
 import { cashReceiptToBusinessEntity } from '../../adapters/mobileTableAdapters';
 import type { MobileTableAction, MobileFilterConfig } from '../../components/mobile/MobileTableView';
+import { getErrorMessage } from '../../utils/errorHandling';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -166,7 +167,7 @@ const CashReceiptsPage: React.FC = () => {
       form.resetFields();
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal membuat penerimaan kas');
+      message.error(getErrorMessage(error, 'Gagal membuat penerimaan kas'));
     },
   });
 
@@ -177,7 +178,7 @@ const CashReceiptsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal mengajukan penerimaan kas');
+      message.error(getErrorMessage(error, 'Gagal mengajukan penerimaan kas'));
     },
   });
 
@@ -188,7 +189,7 @@ const CashReceiptsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menyetujui penerimaan kas');
+      message.error(getErrorMessage(error, 'Gagal menyetujui penerimaan kas'));
     },
   });
 
@@ -201,7 +202,7 @@ const CashReceiptsPage: React.FC = () => {
       setRejectReason('');
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menolak penerimaan kas');
+      message.error(getErrorMessage(error, 'Gagal menolak penerimaan kas'));
     },
   });
 
@@ -212,7 +213,7 @@ const CashReceiptsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal membatalkan penerimaan kas');
+      message.error(getErrorMessage(error, 'Gagal membatalkan penerimaan kas'));
     },
   });
 
@@ -223,7 +224,7 @@ const CashReceiptsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menghapus penerimaan kas');
+      message.error(getErrorMessage(error, 'Gagal menghapus penerimaan kas'));
     },
   });
 
@@ -553,6 +554,7 @@ const CashReceiptsPage: React.FC = () => {
         }}
         width={700}
         footer={null}
+        forceRender
       >
         <Form form={form} layout="vertical" onFinish={handleCreate}>
           <Form.Item

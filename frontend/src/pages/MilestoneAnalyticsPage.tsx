@@ -1,48 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Card, Row, Col, Statistic, DatePicker, Select, Button, Spin, message, Table, Space, Badge } from 'antd';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { ArrowUpOutlined, ArrowDownOutlined, CalendarOutlined, FilePdfOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
+import { milestonesService, type MilestoneAnalytics, type MilestoneMetric } from '../services/milestones';
 
-// Types for analytics data
-interface MilestoneAnalytics {
-  averagePaymentCycle: number;
-  onTimePaymentRate: number;
-  revenueRecognitionRate: number;
-  projectProfitabilityByPhase: ProfitabilityData[];
-  cashFlowForecast: CashFlowData[];
-  milestoneMetrics: MilestoneMetric[];
-}
-
-interface ProfitabilityData {
-  milestone: string;
-  revenue: number;
-  cost: number;
-  profit: number;
-  profitMargin: number;
-}
-
-interface CashFlowData {
-  date: string;
-  expectedInflow: number;
-  actualInflow: number;
-  forecastedInflow: number;
-}
-
-interface MilestoneMetric {
-  id: string;
-  milestoneNumber: number;
-  name: string;
-  amount: number;
-  dueDate: string;
-  invoicedDate?: string;
-  paidDate?: string;
-  daysToPayment?: number;
-  status: 'PENDING' | 'INVOICED' | 'PAID' | 'OVERDUE';
-  revenueRecognized: number;
-}
-
+// Types for analytics filter
 interface AnalyticsFilter {
   startDate: dayjs.Dayjs;
   endDate: dayjs.Dayjs;
@@ -52,8 +17,6 @@ interface AnalyticsFilter {
 
 const MilestoneAnalyticsPage: React.FC = () => {
   const { t } = useTranslation();
-  const [analytics, setAnalytics] = useState<MilestoneAnalytics | null>(null);
-  const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<AnalyticsFilter>({
     startDate: dayjs().subtract(90, 'days'),
     endDate: dayjs(),
@@ -62,79 +25,16 @@ const MilestoneAnalyticsPage: React.FC = () => {
 
   const COLORS = ['#1890ff', '#52c41a', '#f5222d', '#faad14', '#13c2c2', '#eb2f96'];
 
-  // Mock data - replace with actual API calls
-  const fetchAnalytics = async () => {
-    setLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const mockData: MilestoneAnalytics = {
-        averagePaymentCycle: 28,
-        onTimePaymentRate: 85,
-        revenueRecognitionRate: 92,
-        projectProfitabilityByPhase: [
-          { milestone: 'DP (Uang Muka)', revenue: 15000000, cost: 2000000, profit: 13000000, profitMargin: 86.67 },
-          { milestone: 'Tahap 1', revenue: 20000000, cost: 8000000, profit: 12000000, profitMargin: 60 },
-          { milestone: 'Pelunasan', revenue: 15000000, cost: 3000000, profit: 12000000, profitMargin: 80 }
-        ],
-        cashFlowForecast: [
-          { date: '2025-11-01', expectedInflow: 15000000, actualInflow: 15000000, forecastedInflow: 15000000 },
-          { date: '2025-12-01', expectedInflow: 20000000, actualInflow: 0, forecastedInflow: 20000000 },
-          { date: '2026-01-01', expectedInflow: 15000000, actualInflow: 0, forecastedInflow: 15000000 },
-          { date: '2026-02-01', expectedInflow: 20000000, actualInflow: 0, forecastedInflow: 18000000 }
-        ],
-        milestoneMetrics: [
-          {
-            id: '1',
-            milestoneNumber: 1,
-            name: 'Down Payment (DP)',
-            amount: 15000000,
-            dueDate: '2025-11-01',
-            invoicedDate: '2025-11-01',
-            paidDate: '2025-11-05',
-            daysToPayment: 4,
-            status: 'PAID',
-            revenueRecognized: 15000000
-          },
-          {
-            id: '2',
-            milestoneNumber: 2,
-            name: 'Phase 1 Completion',
-            amount: 20000000,
-            dueDate: '2025-12-01',
-            invoicedDate: '2025-12-01',
-            paidDate: undefined,
-            daysToPayment: undefined,
-            status: 'INVOICED',
-            revenueRecognized: 0
-          },
-          {
-            id: '3',
-            milestoneNumber: 3,
-            name: 'Final Payment',
-            amount: 15000000,
-            dueDate: '2026-01-01',
-            invoicedDate: undefined,
-            paidDate: undefined,
-            daysToPayment: undefined,
-            status: 'PENDING',
-            revenueRecognized: 0
-          }
-        ]
-      };
-
-      setAnalytics(mockData);
-    } catch (error) {
-      message.error(t('error.failedToLoadAnalytics'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, [filter]);
+  // Fetch analytics using React Query
+  const { data: analytics, isLoading, refetch } = useQuery<MilestoneAnalytics>({
+    queryKey: ['milestone-analytics', filter.projectId, filter.startDate.toISOString(), filter.endDate.toISOString(), filter.timeRange],
+    queryFn: () => milestonesService.getAnalytics({
+      projectId: filter.projectId,
+      startDate: filter.startDate.toISOString(),
+      endDate: filter.endDate.toISOString(),
+      timeRange: filter.timeRange,
+    }),
+  });
 
   const handleTimeRangeChange = (value: string) => {
     const timeRange = value as '30days' | '90days' | '1year' | 'custom';
@@ -251,7 +151,7 @@ const MilestoneAnalyticsPage: React.FC = () => {
     }
   ];
 
-  if (loading && !analytics) {
+  if (isLoading && !analytics) {
     return <Spin size="large" className="flex justify-center items-center h-screen" />;
   }
 
@@ -291,13 +191,13 @@ const MilestoneAnalyticsPage: React.FC = () => {
                 type="primary"
                 icon={<FilePdfOutlined />}
                 onClick={exportAnalytics}
-                loading={loading}
+                loading={isLoading}
               >
                 {t('actions.export')}
               </Button>
               <Button
-                onClick={() => fetchAnalytics()}
-                loading={loading}
+                onClick={() => refetch()}
+                loading={isLoading}
               >
                 {t('actions.refresh')}
               </Button>
@@ -314,7 +214,7 @@ const MilestoneAnalyticsPage: React.FC = () => {
               <Card className="shadow-sm">
                 <Statistic
                   title={t('metrics.averagePaymentCycle')}
-                  value={analytics.averagePaymentCycle}
+                  value={analytics?.averagePaymentCycle || 0}
                   suffix="days"
                   prefix={<CalendarOutlined />}
                   valueStyle={{ color: '#1890ff' }}
@@ -329,12 +229,12 @@ const MilestoneAnalyticsPage: React.FC = () => {
               <Card className="shadow-sm">
                 <Statistic
                   title={t('metrics.onTimePaymentRate')}
-                  value={analytics.onTimePaymentRate}
+                  value={analytics?.onTimePaymentRate || 0}
                   suffix="%"
                   precision={1}
-                  valueStyle={{ color: analytics.onTimePaymentRate >= 80 ? '#52c41a' : '#f5222d' }}
+                  valueStyle={{ color: (analytics?.onTimePaymentRate || 0) >= 80 ? '#52c41a' : '#f5222d' }}
                   prefix={
-                    analytics.onTimePaymentRate >= 80 ? (
+                    (analytics?.onTimePaymentRate || 0) >= 80 ? (
                       <ArrowUpOutlined />
                     ) : (
                       <ArrowDownOutlined />
@@ -351,7 +251,7 @@ const MilestoneAnalyticsPage: React.FC = () => {
               <Card className="shadow-sm">
                 <Statistic
                   title={t('metrics.revenueRecognitionRate')}
-                  value={analytics.revenueRecognitionRate}
+                  value={analytics?.revenueRecognitionRate || 0}
                   suffix="%"
                   precision={1}
                   valueStyle={{ color: '#52c41a' }}
@@ -366,7 +266,7 @@ const MilestoneAnalyticsPage: React.FC = () => {
               <Card className="shadow-sm">
                 <Statistic
                   title={t('metrics.totalMilestones')}
-                  value={analytics.milestoneMetrics.length}
+                  value={analytics?.milestoneMetrics?.length || 0}
                   valueStyle={{ color: '#faad14' }}
                 />
                 <p className="text-xs text-gray-500 mt-2">
@@ -382,7 +282,7 @@ const MilestoneAnalyticsPage: React.FC = () => {
             <Col xs={24} lg={12}>
               <Card title={t('charts.profitabilityByPhase')} className="shadow-sm">
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={analytics.projectProfitabilityByPhase}>
+                  <BarChart data={analytics?.projectProfitabilityByPhase || []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="milestone"
@@ -409,7 +309,7 @@ const MilestoneAnalyticsPage: React.FC = () => {
             <Col xs={24} lg={12}>
               <Card title={t('charts.cashFlowForecast')} className="shadow-sm">
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={analytics.cashFlowForecast}>
+                  <LineChart data={analytics?.cashFlowForecast || []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="date"
@@ -454,7 +354,7 @@ const MilestoneAnalyticsPage: React.FC = () => {
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      data={analytics.projectProfitabilityByPhase}
+                      data={(analytics?.projectProfitabilityByPhase as any) || []}
                       dataKey="profitMargin"
                       nameKey="milestone"
                       cx="50%"
@@ -462,7 +362,7 @@ const MilestoneAnalyticsPage: React.FC = () => {
                       outerRadius={100}
                       label
                     >
-                      {analytics.projectProfitabilityByPhase.map((_, index) => (
+                      {(analytics?.projectProfitabilityByPhase || []).map((_: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -478,7 +378,7 @@ const MilestoneAnalyticsPage: React.FC = () => {
             <Col xs={24} lg={12}>
               <Card title={t('labels.profitabilitySummary')} className="shadow-sm">
                 <div className="space-y-4">
-                  {analytics.projectProfitabilityByPhase.map((item, idx) => (
+                  {(analytics?.projectProfitabilityByPhase || []).map((item: any, idx: number) => (
                     <div key={idx} className="pb-4 border-b last:border-b-0">
                       <div className="flex justify-between items-start">
                         <div>
@@ -509,7 +409,7 @@ const MilestoneAnalyticsPage: React.FC = () => {
               <Card title={t('labels.milestoneDetails')} className="shadow-sm">
                 <Table
                   columns={milestoneTableColumns}
-                  dataSource={analytics.milestoneMetrics}
+                  dataSource={analytics?.milestoneMetrics || []}
                   rowKey="id"
                   pagination={{ pageSize: 10 }}
                   scroll={{ x: true }}

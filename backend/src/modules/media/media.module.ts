@@ -1,0 +1,33 @@
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import r2Config from "../../config/r2.config";
+import { MediaService } from "./media.service";
+import { MediaController } from "./media.controller";
+
+/**
+ * MediaModule - Cloudflare R2 Media Storage
+ *
+ * Provides:
+ * - MediaService for R2 file operations
+ * - MediaController for upload/delete REST API
+ * - R2 configuration loading
+ *
+ * Dependencies:
+ * - @aws-sdk/client-s3 (S3-compatible API)
+ * - @nestjs/config (environment variables)
+ *
+ * Environment variables required:
+ * - R2_ACCOUNT_ID
+ * - R2_ACCESS_KEY_ID
+ * - R2_SECRET_ACCESS_KEY
+ * - R2_BUCKET_NAME
+ * - R2_PUBLIC_URL
+ * - R2_ENDPOINT
+ */
+@Module({
+  imports: [ConfigModule.forFeature(r2Config)],
+  controllers: [MediaController],
+  providers: [MediaService],
+  exports: [MediaService], // Export for use in other modules
+})
+export class MediaModule {}

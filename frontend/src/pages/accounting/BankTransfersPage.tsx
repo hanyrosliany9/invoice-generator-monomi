@@ -46,6 +46,7 @@ import {
   getChartOfAccounts,
   rejectBankTransfer,
 } from '../../services/accounting';
+import { getErrorMessage } from '../../utils/errorHandling';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -113,7 +114,7 @@ const BankTransfersPage: React.FC = () => {
       form.resetFields();
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal membuat transfer bank');
+      message.error(getErrorMessage(error, 'Gagal membuat transfer bank'));
     },
   });
 
@@ -124,7 +125,7 @@ const BankTransfersPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['bank-transfers'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menyetujui transfer bank');
+      message.error(getErrorMessage(error, 'Gagal menyetujui transfer bank'));
     },
   });
 
@@ -137,7 +138,7 @@ const BankTransfersPage: React.FC = () => {
       setRejectReason('');
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menolak transfer bank');
+      message.error(getErrorMessage(error, 'Gagal menolak transfer bank'));
     },
   });
 
@@ -148,7 +149,7 @@ const BankTransfersPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['bank-transfers'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal membatalkan transfer bank');
+      message.error(getErrorMessage(error, 'Gagal membatalkan transfer bank'));
     },
   });
 
@@ -159,7 +160,7 @@ const BankTransfersPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['bank-transfers'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menghapus transfer bank');
+      message.error(getErrorMessage(error, 'Gagal menghapus transfer bank'));
     },
   });
 
@@ -255,11 +256,11 @@ const BankTransfersPage: React.FC = () => {
   const transfers = data?.data || [];
 
   const mobileData = useMemo(() =>
-    transfers.map(bankTransferToBusinessEntity),
+    transfers.map((transfer) => bankTransferToBusinessEntity(transfer as any)),
     [transfers]
   );
 
-  const mobileActions: MobileTableAction[] = useMemo(() => [
+  const mobileActions: MobileTableAction[] = useMemo(() => ([
     {
       key: 'view',
       label: 'Lihat Detail',
@@ -318,7 +319,7 @@ const BankTransfersPage: React.FC = () => {
         deleteMutation.mutate(record.id);
       },
     },
-  ], [transfers, approveMutation, cancelMutation, deleteMutation]);
+  ] as MobileTableAction[]), [transfers, approveMutation, cancelMutation, deleteMutation]);
 
   const mobileFilters: MobileFilterConfig[] = useMemo(() => [
     {
@@ -336,7 +337,7 @@ const BankTransfersPage: React.FC = () => {
         { label: 'Dibatalkan', value: 'CANCELLED' },
       ],
       value: status || '',
-      onChange: (value) => setStatus(value || undefined),
+      onChange: (value: any) => setStatus(value || undefined),
     },
     {
       key: 'transferMethod',
@@ -353,7 +354,7 @@ const BankTransfersPage: React.FC = () => {
         { label: 'Lainnya', value: 'OTHER' },
       ],
       value: transferMethod || '',
-      onChange: (value) => setTransferMethod(value || undefined),
+      onChange: (value: any) => setTransferMethod(value || undefined),
     },
   ], [status, transferMethod]);
 
@@ -621,6 +622,7 @@ const BankTransfersPage: React.FC = () => {
         }}
         width={700}
         footer={null}
+        forceRender
       >
         <Form form={form} layout="vertical" onFinish={handleCreate}>
           <Form.Item

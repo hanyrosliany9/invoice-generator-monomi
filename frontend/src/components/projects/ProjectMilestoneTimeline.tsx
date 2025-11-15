@@ -26,7 +26,7 @@ export interface ProjectMilestoneItem {
   milestoneNumber: number
   name: string
   nameId?: string
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED'
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'ACCEPTED' | 'BILLED'
   plannedStartDate?: string
   plannedEndDate?: string
   actualStartDate?: string

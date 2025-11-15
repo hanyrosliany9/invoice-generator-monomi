@@ -118,16 +118,21 @@ export const CalendarPage: React.FC = () => {
   const calendarEvents = useMemo(() => {
     return filteredMilestones.map((milestone) => ({
       id: milestone.id,
-      title: `${milestone.project.number} - ${milestone.name}`,
+      title: `${milestone.project?.number} - ${milestone.name}`,
       start: milestone.plannedStartDate,
       end: milestone.plannedEndDate,
       backgroundColor: milestone.color,
       borderColor: milestone.color,
+      textColor: '#ffffff',
       extendedProps: {
-        projectId: milestone.project.id,
-        projectNumber: milestone.project.number,
+        projectId: milestone.project?.id,
+        projectNumber: milestone.project?.number,
         milestoneNumber: milestone.milestoneNumber,
         status: milestone.status,
+        priority: milestone.priority || 'MEDIUM',
+        revenue: milestone.plannedRevenue || 0,
+        cost: milestone.estimatedCost,
+        completion: milestone.completionPercentage || 0,
         description: milestone.description,
       },
     }))

@@ -38,7 +38,7 @@ const ARAgingPage: React.FC = () => {
   const [asOfDate, setAsOfDate] = useState<dayjs.Dayjs>(dayjs());
 
   const { data, isLoading } = useQuery({
-    queryKey: ['ar-aging', asOfDate],
+    queryKey: ['ar-aging', asOfDate?.format('YYYY-MM-DD')],
     queryFn: () =>
       getAccountsReceivableAging({
         asOfDate: asOfDate.format('YYYY-MM-DD'),

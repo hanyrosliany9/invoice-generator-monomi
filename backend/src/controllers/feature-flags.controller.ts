@@ -21,8 +21,8 @@ import {
   ApiBearerAuth,
 } from "@nestjs/swagger";
 import { FeatureFlagsService } from "../services/feature-flags.service";
-import { JwtAuthGuard } from "../guards/jwt-auth.guard";
-import { RolesGuard } from "../guards/roles.guard";
+import { JwtAuthGuard } from "../modules/auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../modules/auth/guards/roles.guard";
 import { Roles } from "../decorators/roles.decorator";
 import { User } from "../decorators/user.decorator";
 import {

@@ -1,8 +1,9 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
-import { ThrottlerModule } from "@nestjs/throttler";
-import { APP_INTERCEPTOR, APP_FILTER } from "@nestjs/core";
+import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
+import { APP_INTERCEPTOR, APP_FILTER, APP_GUARD } from "@nestjs/core";
+import { validate } from "./config/env.validation";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UsersModule } from "./modules/users/users.module";
 import { ClientsModule } from "./modules/clients/clients.module";
@@ -27,6 +28,12 @@ import { PurchaseOrdersModule } from "./modules/purchase-orders/purchase-orders.
 import { GoodsReceiptsModule } from "./modules/goods-receipts/goods-receipts.module";
 import { VendorInvoicesModule } from "./modules/vendor-invoices/vendor-invoices.module";
 import { MilestonesModule } from "./modules/milestones/milestones.module";
+// DELETED: CampaignsModule - replaced with SocialMediaReportsModule
+import { SocialMediaReportsModule } from "./modules/reports/social-media-reports.module";
+import { MediaModule } from "./modules/media/media.module";
+import { ContentCalendarModule } from "./modules/content-calendar/content-calendar.module";
+import { SecurityModule } from "./modules/security/security.module";
+import { SystemModule } from "./modules/system/system.module";
 import { PrismaModule } from "./modules/prisma/prisma.module";
 import { HealthModule } from "./health/health.module";
 import { MetricsModule } from "./metrics/metrics.module";
@@ -38,6 +45,11 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ".env",
+      validate,
+      validationOptions: {
+        allowUnknown: true,
+        abortEarly: false,
+      },
     }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
@@ -71,10 +83,20 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     GoodsReceiptsModule,
     VendorInvoicesModule,
     MilestonesModule,
+    // DELETED: CampaignsModule
+    SocialMediaReportsModule,
+    MediaModule,
+    ContentCalendarModule,
+    SecurityModule,
+    SystemModule,
     HealthModule,
     MetricsModule,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,

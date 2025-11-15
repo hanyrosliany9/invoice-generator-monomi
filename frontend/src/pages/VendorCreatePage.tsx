@@ -56,7 +56,7 @@ export const VendorCreatePage: React.FC = () => {
       message.success('Vendor berhasil dibuat');
       navigate(`/vendors/${vendor.id}`);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       message.error(
         error?.response?.data?.message || 'Gagal membuat vendor'
       );

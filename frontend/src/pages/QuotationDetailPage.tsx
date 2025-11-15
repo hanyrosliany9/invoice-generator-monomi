@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import {
   Alert,
+  App,
   Avatar,
   Badge,
   Breadcrumb,
@@ -71,6 +72,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
   const { theme } = useTheme()
   const isMobile = useIsMobile()
   const queryClient = useQueryClient()
+  const { message } = App.useApp()
   const [pdfModalVisible, setPdfModalVisible] = useState(false)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [pdfMode, setPdfMode] = useState<'continuous' | 'paginated'>('continuous')
@@ -345,7 +347,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
     }
   }
 
-  const handlePdfPreview = async (mode?: 'continuous' | 'paginated') => {
+  const handlePdfPreview = async (mode?: 'continuous' | 'paginated' | React.MouseEvent) => {
     // Check if mode is actually a mode string (not a MouseEvent from onClick)
     const targetMode = (typeof mode === 'string' ? mode : undefined) ?? 'continuous'
     setPdfMode(targetMode)
@@ -684,34 +686,54 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
         <Col xs={24} sm={12}>
           <Card title='Tax & Compliance Information' size='small'>
             <Space direction='vertical' size='small' style={{ width: '100%' }}>
-              <div>
-                <Text type='secondary'>Subtotal (Before Tax)</Text>
-                <div>
-                  <Text strong style={{ fontSize: '16px' }}>
-                    {formatIDR(quotation.totalAmount)}
-                  </Text>
-                </div>
-              </div>
+              {quotation.includeTax ? (
+                <>
+                  {/* Show tax breakdown when PPN is enabled */}
+                  <div>
+                    <Text type='secondary'>Subtotal (Before Tax)</Text>
+                    <div>
+                      <Text strong style={{ fontSize: '16px' }}>
+                        {formatIDR(Number(quotation.subtotalAmount || quotation.totalAmount))}
+                      </Text>
+                    </div>
+                  </div>
 
-              <Divider style={{ margin: '8px 0' }} />
+                  <Divider style={{ margin: '8px 0' }} />
 
-              <div>
-                <Text type='secondary'>PPN 11%</Text>
-                <div>
-                  <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
-                    {formatIDR(quotation.totalAmount * 0.11)}
-                  </Text>
-                </div>
-              </div>
+                  <div>
+                    <Text type='secondary'>PPN {(Number(quotation.taxRate || 11))}%</Text>
+                    <div>
+                      <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+                        {formatIDR(Number(quotation.taxAmount || (quotation.totalAmount * (Number(quotation.taxRate) || 0.11))))}
+                      </Text>
+                    </div>
+                  </div>
 
-              <div>
-                <Text type='secondary'>Total + Tax</Text>
-                <div>
-                  <Text strong style={{ fontSize: '18px', color: '#52c41a' }}>
-                    {formatIDR(quotation.totalAmount * 1.11)}
-                  </Text>
-                </div>
-              </div>
+                  <div>
+                    <Text type='secondary'>Total + Tax</Text>
+                    <div>
+                      <Text strong style={{ fontSize: '18px', color: '#52c41a' }}>
+                        {formatIDR(Number(quotation.totalAmount))}
+                      </Text>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Show without tax when PPN is disabled */}
+                  <div>
+                    <Text type='secondary'>Total Amount</Text>
+                    <div>
+                      <Text strong style={{ fontSize: '18px', color: '#52c41a' }}>
+                        {formatIDR(Number(quotation.totalAmount))}
+                      </Text>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '8px' }}>
+                    <Tag color='default'>Tax not included</Tag>
+                  </div>
+                </>
+              )}
 
               <Divider style={{ margin: '8px 0' }} />
 
@@ -825,6 +847,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
                         pagination={false}
                         size='small'
                         scroll={{ x: 'max-content' }}
+                        rowKey={(record) => `product-${record.name}-${record.price}-${record.quantity}`}
                         columns={[
                           {
                             title: 'Product/Service',
@@ -878,7 +901,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
                               </Table.Summary.Cell>
                               <Table.Summary.Cell index={1} align='right'>
                                 <Text strong style={{ fontSize: '16px', color: '#52c41a' }}>
-                                  {formatIDR(quotation.priceBreakdown.total)}
+                                  {formatIDR(quotation.priceBreakdown?.total || 0)}
                                 </Text>
                               </Table.Summary.Cell>
                             </Table.Summary.Row>

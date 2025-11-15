@@ -3,6 +3,7 @@ import { App, Button, Popconfirm, Select, Tag } from 'antd'
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons'
 import { InvoiceStatus } from '../types/invoice'
 import { invoiceService } from '../services/invoices'
+import { now } from '../utils/date'
 
 interface InvoiceStatusEditorProps {
   invoice: {
@@ -47,6 +48,14 @@ export const InvoiceStatusEditor: React.FC<InvoiceStatusEditorProps> = ({
     setIsEditing(false)
   }
 
+  /**
+   * ✅ FIX: Use correct endpoint based on status change
+   *
+   * - For PAID status: Call markAsPaid endpoint (creates payment journal)
+   * - For other statuses: Call updateStatus endpoint
+   *
+   * This ensures accounting logic is never bypassed when marking invoice as paid.
+   */
   const handleSave = async () => {
     if (selectedStatus === invoice.status) {
       setIsEditing(false)
@@ -55,7 +64,17 @@ export const InvoiceStatusEditor: React.FC<InvoiceStatusEditorProps> = ({
 
     setLoading(true)
     try {
-      await invoiceService.updateStatus(invoice.id, selectedStatus)
+      // ✅ FIX: Use markAsPaid endpoint for PAID status to create payment journal entry
+      if (selectedStatus === InvoiceStatus.PAID) {
+        await invoiceService.markAsPaid(invoice.id, {
+          paymentMethod: 'BANK_TRANSFER', // Default payment method
+          paymentDate: now().toISOString(),
+          notes: 'Ditandai lunas melalui status editor'
+        })
+      } else {
+        // For all other status changes, use the generic updateStatus endpoint
+        await invoiceService.updateStatus(invoice.id, selectedStatus)
+      }
 
       message.success(
         `Status invoice ${invoice.invoiceNumber} berhasil diubah ke ${invoiceService.getStatusLabel(selectedStatus)}`

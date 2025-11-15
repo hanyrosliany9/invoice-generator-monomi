@@ -74,6 +74,7 @@ const { Option } = Select
 export const ProjectsPage: React.FC = () => {
   const { t } = useTranslation()
   const { theme } = useTheme()
+  const { modal, message } = App.useApp()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -89,7 +90,6 @@ export const ProjectsPage: React.FC = () => {
   const [statusModalVisible, setStatusModalVisible] = useState(false)
   const [statusProject, setStatusProject] = useState<Project | null>(null)
   const [statusForm] = Form.useForm()
-  const { message } = App.useApp()
 
   // Export functionality
   const handleExport = useCallback(() => {
@@ -245,7 +245,7 @@ export const ProjectsPage: React.FC = () => {
 
   const handleDelete = useCallback((id: string) => {
     const project = projects.find(p => p.id === id)
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Project?',
       content: `Are you sure you want to delete project "${project?.number || 'this project'}"? This action cannot be undone.`,
       okText: 'Delete',
@@ -255,7 +255,7 @@ export const ProjectsPage: React.FC = () => {
         deleteMutation.mutate(id)
       },
     })
-  }, [projects, deleteMutation])
+  }, [projects, deleteMutation, modal])
 
   // Mobile data adapter - convert projects to BusinessEntity format
   const mobileData = useMemo(
@@ -288,11 +288,11 @@ export const ProjectsPage: React.FC = () => {
         label: 'WhatsApp',
         icon: <WhatsAppOutlined />,
         color: '#25d366',
-        visible: (record) => !!record.client.phone,
+        visible: (record) => !!record.client?.phone,
         onClick: (record) => {
-          const phone = record.client.phone?.replace(/[^\d]/g, '')
+          const phone = record.client?.phone?.replace(/[^\d]/g, '')
           if (phone) {
-            const message = `Halo ${record.client.name}, terkait proyek ${record.number}`
+            const message = `Halo ${record.client?.name}, terkait proyek ${record.number}`
             const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
             window.open(whatsappUrl, '_blank')
           }
@@ -303,9 +303,9 @@ export const ProjectsPage: React.FC = () => {
         label: 'Telepon',
         icon: <PhoneOutlined />,
         color: theme.colors.accent.primary,
-        visible: (record) => !!record.client.phone,
+        visible: (record) => !!record.client?.phone,
         onClick: (record) => {
-          const phone = record.client.phone?.replace(/[^\d]/g, '')
+          const phone = record.client?.phone?.replace(/[^\d]/g, '')
           if (phone) {
             window.location.href = `tel:${phone}`
           }
@@ -331,7 +331,7 @@ export const ProjectsPage: React.FC = () => {
         color: theme.colors.status.success,
         visible: (record) => record.status === 'sent',
         onClick: (record) => {
-          Modal.confirm({
+          modal.confirm({
             title: 'Selesaikan Proyek?',
             content: `Apakah Anda yakin ingin menyelesaikan proyek ${record.number}?`,
             okText: 'Ya, Selesaikan',
@@ -349,7 +349,7 @@ export const ProjectsPage: React.FC = () => {
         color: theme.colors.status.warning,
         visible: (record) => record.status === 'sent',
         onClick: (record) => {
-          Modal.confirm({
+          modal.confirm({
             title: 'Tahan Proyek?',
             content: `Apakah Anda yakin ingin menahan proyek ${record.number}?`,
             okText: 'Ya, Tahan',
@@ -377,7 +377,7 @@ export const ProjectsPage: React.FC = () => {
         onClick: (record) => handleDelete(record.id),
       },
     ],
-    [navigate, projects, handleEdit, handleDelete, bulkUpdateStatusMutation, message, theme]
+    [navigate, projects, handleEdit, handleDelete, bulkUpdateStatusMutation, message, theme, modal]
   )
 
   // Mobile filters configuration
@@ -475,7 +475,7 @@ export const ProjectsPage: React.FC = () => {
   const handleBulkDelete = () => {
     if (selectedRowKeys.length === 0) return
 
-    Modal.confirm({
+    modal.confirm({
       title: `Delete ${selectedRowKeys.length} Project${selectedRowKeys.length > 1 ? 's' : ''}?`,
       content: `Are you sure you want to delete ${selectedRowKeys.length} selected project${selectedRowKeys.length > 1 ? 's' : ''}? This action cannot be undone.`,
       okText: 'Delete All',
@@ -927,82 +927,96 @@ export const ProjectsPage: React.FC = () => {
 
         {/* Bulk Actions Toolbar */}
         {selectedRowKeys.length > 0 && (
-          <Card className='mb-4 border-blue-200 bg-blue-50' size='small'>
+          <Card
+            className='mb-4'
+            size='small'
+            style={{
+              borderRadius: '12px',
+              border: theme.colors.glass.border,
+              boxShadow: theme.colors.glass.shadow,
+              background: theme.colors.glass.background,
+              backdropFilter: theme.colors.glass.backdropFilter,
+            }}
+          >
             <div className='flex justify-between items-center'>
-              <div className='flex items-center space-x-4'>
-                <Text strong className='text-blue-700'>
-                  {selectedRowKeys.length} proyek dipilih
-                </Text>
-                <div className='flex items-center space-x-2'>
-                  <Button
-                    size='small'
-                    type='primary'
-                    icon={<PlayCircleOutlined />}
-                    loading={batchLoading}
-                    onClick={() => handleBulkStatusUpdate('IN_PROGRESS')}
-                    disabled={selectedRowKeys.length === 0}
-                  >
-                    Mulai (
-                    {
-                      selectedRowKeys.filter(id => {
-                        const project = filteredProjects.find(p => p.id === id)
-                        return project?.status === 'PLANNING'
-                      }).length
-                    }
-                    )
-                  </Button>
-                  <Button
-                    size='small'
-                    icon={<CheckCircleOutlined />}
-                    loading={batchLoading}
-                    onClick={() => handleBulkStatusUpdate('COMPLETED')}
-                    disabled={selectedRowKeys.length === 0}
-                  >
-                    Selesaikan (
-                    {
-                      selectedRowKeys.filter(id => {
-                        const project = filteredProjects.find(p => p.id === id)
-                        return project?.status === 'IN_PROGRESS'
-                      }).length
-                    }
-                    )
-                  </Button>
-                  <Button
-                    size='small'
-                    icon={<StopOutlined />}
-                    loading={batchLoading}
-                    onClick={() => handleBulkStatusUpdate('ON_HOLD')}
-                    disabled={selectedRowKeys.length === 0}
-                  >
-                    Tahan (
-                    {
-                      selectedRowKeys.filter(id => {
-                        const project = filteredProjects.find(p => p.id === id)
-                        return project?.status === 'IN_PROGRESS'
-                      }).length
-                    }
-                    )
-                  </Button>
-                  <Button
-                    size='small'
-                    danger
-                    icon={<DeleteOutlined />}
-                    loading={batchLoading}
-                    onClick={handleBulkDelete}
-                    disabled={selectedRowKeys.length === 0}
-                  >
-                    Hapus ({selectedRowKeys.length})
-                  </Button>
-                </div>
-              </div>
-              <Button
-                size='small'
-                type='text'
-                onClick={handleClearSelection}
-                className='text-gray-500 hover:text-gray-700'
-              >
-                Batal
-              </Button>
+              <Text strong style={{ color: theme.colors.text.primary }}>
+                {selectedRowKeys.length} proyek dipilih
+              </Text>
+              <Space>
+                <Button
+                  size='small'
+                  type='primary'
+                  icon={<PlayCircleOutlined />}
+                  loading={batchLoading}
+                  onClick={() => handleBulkStatusUpdate('IN_PROGRESS')}
+                  disabled={selectedRowKeys.filter(id => {
+                    const project = filteredProjects.find(p => p.id === id)
+                    return project?.status === 'PLANNING'
+                  }).length === 0}
+                >
+                  Mulai (
+                  {
+                    selectedRowKeys.filter(id => {
+                      const project = filteredProjects.find(p => p.id === id)
+                      return project?.status === 'PLANNING'
+                    }).length
+                  }
+                  )
+                </Button>
+                <Button
+                  size='small'
+                  icon={<CheckCircleOutlined />}
+                  loading={batchLoading}
+                  onClick={() => handleBulkStatusUpdate('COMPLETED')}
+                  disabled={selectedRowKeys.filter(id => {
+                    const project = filteredProjects.find(p => p.id === id)
+                    return project?.status === 'IN_PROGRESS'
+                  }).length === 0}
+                >
+                  Selesaikan (
+                  {
+                    selectedRowKeys.filter(id => {
+                      const project = filteredProjects.find(p => p.id === id)
+                      return project?.status === 'IN_PROGRESS'
+                    }).length
+                  }
+                  )
+                </Button>
+                <Button
+                  size='small'
+                  icon={<StopOutlined />}
+                  loading={batchLoading}
+                  onClick={() => handleBulkStatusUpdate('ON_HOLD')}
+                  disabled={selectedRowKeys.filter(id => {
+                    const project = filteredProjects.find(p => p.id === id)
+                    return project?.status === 'IN_PROGRESS'
+                  }).length === 0}
+                >
+                  Tahan (
+                  {
+                    selectedRowKeys.filter(id => {
+                      const project = filteredProjects.find(p => p.id === id)
+                      return project?.status === 'IN_PROGRESS'
+                    }).length
+                  }
+                  )
+                </Button>
+                <Button
+                  size='small'
+                  danger
+                  icon={<DeleteOutlined />}
+                  loading={batchLoading}
+                  onClick={handleBulkDelete}
+                >
+                  Hapus ({selectedRowKeys.length})
+                </Button>
+                <Button
+                  size='small'
+                  onClick={handleClearSelection}
+                >
+                  Batal Pilih
+                </Button>
+              </Space>
             </div>
           </Card>
         )}
@@ -1235,7 +1249,6 @@ export const ProjectsPage: React.FC = () => {
           loading={isLoading}
           entityType="projects"
           enableWhatsAppActions
-          enableCallActions
           showQuickStats
           searchable
           searchFields={['number', 'title', 'client.name']}
@@ -1274,6 +1287,7 @@ export const ProjectsPage: React.FC = () => {
         onCancel={handleStatusModalCancel}
         width={400}
         confirmLoading={updateStatusMutation.isPending}
+        forceRender
       >
         <Form
           form={statusForm}

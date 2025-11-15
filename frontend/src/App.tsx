@@ -1,7 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { App as AntApp, Layout, Spin } from 'antd'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { useAuthStore } from './store/auth'
+import { dateTimeSync } from './services/dateTimeSync'
 import { AuthLayout } from './components/layout/AuthLayout'
 import { MainLayout } from './components/layout/MainLayout'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -45,6 +46,19 @@ import { CalendarPage } from './pages/CalendarPage'
 import { ProjectCalendarPage } from './pages/ProjectCalendarPage'
 import { VendorsPage } from './pages/VendorsPage'
 import { VendorDetailPage } from './pages/VendorDetailPage'
+// DELETED: Campaign page imports - replaced with Universal Social Media Reports
+import SocialMediaReportsPage from './pages/SocialMediaReportsPage'
+import ReportDetailPage from './pages/ReportDetailPage'
+import ContentCalendarPage from './pages/ContentCalendarPage'
+import ProjectContentCalendarPage from './pages/ProjectContentCalendarPage'
+
+// Lazy load report builder for performance
+const ReportBuilderPage = lazy(() =>
+  import('./pages/ReportBuilderPage').then(module => ({
+    default: module.ReportBuilderPage,
+  }))
+)
+
 import './styles/relationships.css'
 
 // Lazy load heavy create/edit pages for performance
@@ -138,6 +152,7 @@ const VendorEditPage = lazy(() =>
     default: module.VendorEditPage,
   }))
 )
+// DELETED: CampaignFormPage lazy load
 
 // Loading component for lazy-loaded routes
 const PageLoader = () => (
@@ -158,6 +173,18 @@ const PageLoader = () => (
 
 function App() {
   const { isAuthenticated } = useAuthStore()
+
+  // Initialize date/time synchronization on app mount
+  useEffect(() => {
+    dateTimeSync.initialize().catch(error => {
+      console.error('[App] Failed to initialize date/time sync:', error)
+    })
+
+    // Cleanup on unmount
+    return () => {
+      dateTimeSync.stopPeriodicSync()
+    }
+  }, [])
 
   return (
     <AntApp>
@@ -329,6 +356,36 @@ function App() {
                         </Suspense>
                       }
                     />
+
+                    {/* DELETED: Campaign Management Routes - replaced with Universal Social Media Reports */}
+
+                    {/* Social Media Reports Routes (NEW - Universal System) */}
+                    <Route path='/social-media-reports' element={<SocialMediaReportsPage />} />
+                    <Route path='/social-media-reports/:id' element={<ReportDetailPage />} />
+                    {/* Report-level visual builder (all sections on one canvas) */}
+                    <Route
+                      path='/social-media-reports/:id/builder'
+                      element={
+                        <Suspense fallback={<PageLoader />}>
+                          <ReportBuilderPage />
+                        </Suspense>
+                      }
+                    />
+                    {/* Section-level visual builder (single section) - DEPRECATED */}
+                    <Route
+                      path='/social-media-reports/:id/sections/:sectionId/builder'
+                      element={
+                        <Suspense fallback={<PageLoader />}>
+                          <ReportBuilderPage />
+                        </Suspense>
+                      }
+                    />
+
+                    {/* Content Calendar Routes */}
+                    <Route path='/content-calendar'>
+                      <Route index element={<ContentCalendarPage />} />
+                      <Route path='project/:projectId' element={<ProjectContentCalendarPage />} />
+                    </Route>
 
                     {/* User Management Routes */}
                     <Route path='/users' element={<UsersPage />} />

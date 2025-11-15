@@ -39,6 +39,7 @@ import { useTranslation } from 'react-i18next'
 // Advanced charts deferred - using Recharts for core functionality
 import dayjs from 'dayjs'
 import { usePerformanceMonitor } from '../../hooks/usePerformanceMonitor'
+import { now } from '../../utils/date'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -242,11 +243,11 @@ const PerformanceBenchmark: React.FC<PerformanceBenchmarkProps> = ({
   // Performance data for charts
   const chartData = useMemo(() => {
     const metrics = getMetrics()
-    const now = new Date()
+    const currentTime = now()
 
     // Generate time series data for the last hour
     const timePoints = Array.from({ length: 60 }, (_, i) => {
-      const time = new Date(now.getTime() - (59 - i) * 60 * 1000)
+      const time = new Date(currentTime.getTime() - (59 - i) * 60 * 1000)
       return time
     })
 

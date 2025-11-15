@@ -82,7 +82,7 @@ export interface MobileTableViewProps {
   loading?: boolean
 
   // Entity configuration
-  entityType: 'quotations' | 'invoices' | 'projects' | 'clients'
+  entityType: 'quotations' | 'invoices' | 'projects' | 'clients' | 'assets' | 'expenses' | 'expense-categories' | 'journal-entries' | 'trial-balance' | 'income-revenue' | 'income-expense' | 'ecl-provision' | 'general-ledger' | 'ar-aging' | 'ap-aging' | 'accounts-payable' | 'accounts-receivable' | 'balance-sheet-assets' | 'balance-sheet-liabilities' | 'balance-sheet-equity' | 'cash-flow' | 'depreciation' | 'cashflow-operating' | 'cashflow-investing' | 'cashflow-financing' | 'cash-receipts' | 'cash-disbursements' | 'chart-of-accounts' | 'bank-transfers' | 'bank-reconciliations' | 'cash-bank-balance' | 'users' | 'vendors' | 'reports'
 
   // Mobile-specific features
   enableSwipeActions?: boolean
@@ -116,6 +116,7 @@ export interface MobileTableViewProps {
   onAction?: (action: string, item: BusinessEntity) => void
   onRefresh?: () => void
   onLoadMore?: () => void
+  onRowClick?: (record: any) => void
 }
 
 const MobileTableView: React.FC<MobileTableViewProps> = ({
@@ -184,11 +185,11 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
         label: 'WhatsApp',
         icon: <WhatsAppOutlined />,
         color: '#25d366',
-        visible: record => enableWhatsAppActions && !!record.client.phone,
+        visible: record => enableWhatsAppActions && !!record.client?.phone,
         onClick: record => {
-          const phone = record.client.phone?.replace(/[^\d]/g, '')
+          const phone = record.client?.phone?.replace(/[^\d]/g, '')
           if (phone) {
-            const message = `Halo ${record.client.name}, terkait ${entityType} ${record.number}`
+            const message = `Halo ${record.client?.name}, terkait ${entityType} ${record.number}`
             const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
             window.open(whatsappUrl, '_blank')
             onAction?.('whatsapp', record)
@@ -256,11 +257,11 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
     if (!showQuickStats) return null
 
     const totalAmount = processedData.reduce(
-      (sum, item) => sum + item.amount,
+      (sum, item) => sum + (item.amount || 0),
       0
     )
     const highValueCount = processedData.filter(
-      item => item.amount >= 5000000
+      item => (item.amount || 0) >= 5000000
     ).length
     const materaiCount = processedData.filter(
       item => item.materaiRequired
@@ -279,7 +280,8 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
   }, [processedData, showQuickStats])
 
   // Get status color for Indonesian business context
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status?: string) => {
+    if (!status) return 'default'
     const colors = {
       draft: 'default',
       sent: 'processing',
@@ -292,7 +294,8 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
   }
 
   // Get status text in Indonesian
-  const getStatusText = (status: string) => {
+  const getStatusText = (status?: string) => {
+    if (!status) return 'N/A'
     const texts = {
       draft: 'Draft',
       sent: 'Terkirim',
@@ -360,30 +363,36 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
               </Text>
 
               {/* Client info - Inline, no avatar */}
-              <Text style={{ fontSize: '11px', color: '#666' }}>
-                <UserOutlined style={{ fontSize: '10px', marginRight: '4px' }} />
-                {item.client.name}
-                {item.client.company && ` • ${item.client.company}`}
-              </Text>
+              {item.client && (
+                <Text style={{ fontSize: '11px', color: '#666' }}>
+                  <UserOutlined style={{ fontSize: '10px', marginRight: '4px' }} />
+                  {item.client.name}
+                  {item.client.company && ` • ${item.client.company}`}
+                </Text>
+              )}
 
               {/* Amount and date on single line */}
               <Space wrap size={6}>
-                <Text strong style={{ color: '#1890ff', fontSize: '13px' }}>
-                  {formatIDR(item.amount)}
-                </Text>
+                {item.amount !== undefined && (
+                  <Text strong style={{ color: '#1890ff', fontSize: '13px' }}>
+                    {formatIDR(item.amount)}
+                  </Text>
+                )}
                 {showMateraiIndicators && item.materaiRequired && (
                   <Tag color='orange' style={{ fontSize: '10px', padding: '0 4px', margin: 0 }}>
                     📋 {formatIDR(item.materaiAmount || 10000)}
                   </Tag>
                 )}
                 {item.ppnRate && <Tag style={{ fontSize: '10px', padding: '0 4px', margin: 0 }}>PPN {item.ppnRate}%</Tag>}
-                <Text type='secondary' style={{ fontSize: '10px' }}>
-                  <CalendarOutlined style={{ fontSize: '9px', marginRight: '2px' }} />
-                  {indonesianDateFormat
-                    ? formatIndonesianDate(item.createdAt)
-                    : item.createdAt.toLocaleDateString()}
-                  {item.dueDate && ` • ${formatIndonesianDate(item.dueDate)}`}
-                </Text>
+                {item.createdAt && (
+                  <Text type='secondary' style={{ fontSize: '10px' }}>
+                    <CalendarOutlined style={{ fontSize: '9px', marginRight: '2px' }} />
+                    {indonesianDateFormat
+                      ? formatIndonesianDate(item.createdAt)
+                      : item.createdAt.toLocaleDateString()}
+                    {item.dueDate && ` • ${formatIndonesianDate(item.dueDate)}`}
+                  </Text>
+                )}
               </Space>
             </Space>
           </Col>
@@ -523,7 +532,7 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
           </Card>
         ) : (
           <div>
-            {processedData.map(renderMobileCard)}
+            {processedData.map(item => renderMobileCard(item))}
 
             {/* Load More Button */}
             {data.length >= pageSize && (
@@ -677,13 +686,17 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
             >
               <Space direction='vertical' style={{ width: '100%' }} size={2}>
                 <Text strong style={{ fontSize: '13px', color: theme.colors.text.primary }}>{selectedItem.title}</Text>
-                <Text type='secondary' style={{ fontSize: '11px' }}>
-                  <UserOutlined style={{ marginRight: '4px' }} />
-                  {selectedItem.client.name}
-                </Text>
-                <Text strong style={{ color: theme.colors.accent.primary, fontSize: '13px' }}>
-                  {formatIDR(selectedItem.amount)}
-                </Text>
+                {selectedItem.client && (
+                  <Text type='secondary' style={{ fontSize: '11px' }}>
+                    <UserOutlined style={{ marginRight: '4px' }} />
+                    {selectedItem.client.name}
+                  </Text>
+                )}
+                {selectedItem.amount !== undefined && (
+                  <Text strong style={{ color: theme.colors.accent.primary, fontSize: '13px' }}>
+                    {formatIDR(selectedItem.amount)}
+                  </Text>
+                )}
               </Space>
             </Card>
 
@@ -755,14 +768,16 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
                     </Tag>
                   </Col>
                 </Row>
-                <Row>
-                  <Col span={8}>
-                    <Text strong>Nilai:</Text>
-                  </Col>
-                  <Col span={16}>
-                    <Text strong>{formatIDR(selectedItem.amount)}</Text>
-                  </Col>
-                </Row>
+                {selectedItem.amount !== undefined && (
+                  <Row>
+                    <Col span={8}>
+                      <Text strong>Nilai:</Text>
+                    </Col>
+                    <Col span={16}>
+                      <Text strong>{formatIDR(selectedItem.amount)}</Text>
+                    </Col>
+                  </Row>
+                )}
                 {selectedItem.materaiRequired && (
                   <Row>
                     <Col span={8}>
@@ -778,54 +793,56 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
               </Space>
             </Card>
 
-            <Card title='Klien'>
-              <Space direction='vertical' style={{ width: '100%' }}>
-                <Row>
-                  <Col span={8}>
-                    <Text strong>Nama:</Text>
-                  </Col>
-                  <Col span={16}>
-                    <Text>{selectedItem.client.name}</Text>
-                  </Col>
-                </Row>
-                {selectedItem.client.company && (
+            {selectedItem.client && (
+              <Card title='Klien'>
+                <Space direction='vertical' style={{ width: '100%' }}>
                   <Row>
                     <Col span={8}>
-                      <Text strong>Perusahaan:</Text>
+                      <Text strong>Nama:</Text>
                     </Col>
                     <Col span={16}>
-                      <Text>{selectedItem.client.company}</Text>
+                      <Text>{selectedItem.client.name}</Text>
                     </Col>
                   </Row>
-                )}
-                {selectedItem.client.phone && (
-                  <Row>
-                    <Col span={8}>
-                      <Text strong>Telepon:</Text>
-                    </Col>
-                    <Col span={16}>
-                      <Space>
-                        <Text>{selectedItem.client.phone}</Text>
-                        <Button
-                          size='small'
-                          icon={<WhatsAppOutlined />}
-                          style={{ color: '#25d366' }}
-                          onClick={() => {
-                            const phone = selectedItem.client.phone?.replace(
-                              /[^\d]/g,
-                              ''
-                            )
-                            if (phone) {
-                              window.open(`https://wa.me/${phone}`, '_blank')
-                            }
-                          }}
-                        />
-                      </Space>
-                    </Col>
-                  </Row>
-                )}
-              </Space>
-            </Card>
+                  {selectedItem.client.company && (
+                    <Row>
+                      <Col span={8}>
+                        <Text strong>Perusahaan:</Text>
+                      </Col>
+                      <Col span={16}>
+                        <Text>{selectedItem.client.company}</Text>
+                      </Col>
+                    </Row>
+                  )}
+                  {selectedItem.client.phone && (
+                    <Row>
+                      <Col span={8}>
+                        <Text strong>Telepon:</Text>
+                      </Col>
+                      <Col span={16}>
+                        <Space>
+                          <Text>{selectedItem.client.phone}</Text>
+                          <Button
+                            size='small'
+                            icon={<WhatsAppOutlined />}
+                            style={{ color: '#25d366' }}
+                            onClick={() => {
+                              const phone = selectedItem.client?.phone?.replace(
+                                /[^\d]/g,
+                                ''
+                              )
+                              if (phone) {
+                                window.open(`https://wa.me/${phone}`, '_blank')
+                              }
+                            }}
+                          />
+                        </Space>
+                      </Col>
+                    </Row>
+                  )}
+                </Space>
+              </Card>
+            )}
           </Space>
         )}
       </Modal>

@@ -1,7 +1,7 @@
 # Multi-stage build for production
 FROM node:20-alpine AS base
 
-# Install system dependencies including Chromium for Puppeteer
+# Install system dependencies including Chromium for Puppeteer and Canvas for chart rendering
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -12,7 +12,16 @@ RUN apk add --no-cache \
     curl \
     git \
     openssl \
-    openssl-dev
+    openssl-dev \
+    # Dependencies for canvas (chartjs-node-canvas)
+    python3 \
+    make \
+    g++ \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    giflib-dev \
+    pixman-dev
 
 # Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
@@ -85,10 +94,10 @@ COPY shared/ ./shared/
 RUN mkdir -p uploads storage logs backend/dist frontend/.vite frontend/node_modules/.vite backend/.tmp && \
     chmod -R 755 uploads storage logs backend/dist frontend/.vite backend/.tmp
 
-# Change ownership to app user
-RUN chown -R appuser:appuser /app
+# DEV ONLY: Skip chown for faster builds (running as root is OK in development)
+# RUN chown -R appuser:appuser /app
 
-USER appuser
+# USER appuser
 
 # Expose ports
 EXPOSE 3000 5000 9229
@@ -105,8 +114,8 @@ COPY --chown=appuser:appuser --from=backend-build /app/backend/node_modules ./ba
 COPY --chown=appuser:appuser --from=backend-build /app/backend/package*.json ./backend/
 COPY --chown=appuser:appuser --from=backend-build /app/backend/prisma ./backend/prisma
 
-# Copy PDF assets (logo, templates) needed at runtime
-COPY --chown=appuser:appuser --from=backend-build /app/backend/src/modules/pdf/assets ./backend/dist/modules/pdf/assets
+# Copy assets (logo, templates) needed at runtime
+COPY --chown=appuser:appuser --from=backend-build /app/backend/src/assets ./backend/dist/assets
 
 COPY --chown=appuser:appuser --from=frontend-build /app/frontend/dist ./frontend/dist
 COPY --chown=appuser:appuser --from=frontend-build /app/frontend/node_modules ./frontend/node_modules

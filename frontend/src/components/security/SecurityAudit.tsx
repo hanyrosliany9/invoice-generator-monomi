@@ -39,6 +39,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { formatIndonesianDate } from '../../utils/currency'
+import { now } from '../../utils/date'
 
 const { Title, Text, Paragraph } = Typography
 const { TabPane } = Tabs
@@ -231,7 +232,7 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
 
     const scanResult: SecurityScanResult = {
       id: `scan_${Date.now()}`,
-      timestamp: new Date(),
+      timestamp: now(),
       duration: 0,
       totalChecks: securityRules.filter(rule => rule.enabled).length,
       vulnerabilities: [],
@@ -356,7 +357,7 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
           'Implementasikan sanitasi input menggunakan DOMPurify dan validasi server-side',
         cwe: 'CWE-79',
         cvss: 7.5,
-        foundAt: new Date(),
+        foundAt: now(),
         status: 'open',
         affectsIndonesianCompliance: false,
         businessCritical: true,
@@ -383,7 +384,7 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         impact: 'Potensi pelanggaran regulasi Indonesia dan denda pajak',
         recommendation:
           'Update algoritma materai sesuai dengan tarif terbaru (Rp 10.000 untuk transaksi 5-1M, Rp 20.000 untuk >1M)',
-        foundAt: new Date(),
+        foundAt: now(),
         status: 'open',
         affectsIndonesianCompliance: true,
         materaiRelated: true,
@@ -411,7 +412,7 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
           'Pelanggaran UU No. 27 Tahun 2022, potensi denda hingga 2% dari pendapatan tahunan',
         recommendation:
           'Implementasikan enkripsi AES-256 untuk data sensitif seperti NIK, NPWP',
-        foundAt: new Date(),
+        foundAt: now(),
         status: 'open',
         affectsIndonesianCompliance: true,
         privacyImpact: true,
@@ -442,7 +443,7 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
           'Masking data sensitif dalam log dan API response, implementasikan field-level encryption',
         cwe: 'CWE-200',
         cvss: 8.5,
-        foundAt: new Date(),
+        foundAt: now(),
         status: 'open',
         affectsIndonesianCompliance: true,
         privacyImpact: true,
@@ -470,7 +471,7 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         recommendation: 'Implementasikan CSRF token pada semua form submission',
         cwe: 'CWE-352',
         cvss: 6.8,
-        foundAt: new Date(),
+        foundAt: now(),
         status: 'open',
         businessCritical: true,
       })
@@ -498,7 +499,7 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         impact: 'Kebocoran informasi bisnis sensitif',
         recommendation:
           'Implementasikan access control berbasis role dan audit trail',
-        foundAt: new Date(),
+        foundAt: now(),
         status: 'open',
         affectsIndonesianCompliance: true,
         businessCritical: true,

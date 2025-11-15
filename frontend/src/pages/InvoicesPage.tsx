@@ -100,6 +100,7 @@ import { useIsMobile } from '../hooks/useMediaQuery'
 import MobileTableView from '../components/mobile/MobileTableView'
 import { invoiceToBusinessEntity } from '../adapters/mobileTableAdapters'
 import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView'
+import { now } from '../utils/date'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -129,12 +130,9 @@ export const InvoicesPage: React.FC = () => {
   const [filters, setFilters] = useState<Record<string, any>>({})
   const [modalVisible, setModalVisible] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
-  const [paymentModalVisible, setPaymentModalVisible] = useState(false)
-  const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null)
   const [statusModalVisible, setStatusModalVisible] = useState(false)
   const [statusInvoice, setStatusInvoice] = useState<Invoice | null>(null)
   const [form] = Form.useForm()
-  const [paymentForm] = Form.useForm()
   const [statusForm] = Form.useForm()
   const { message, modal } = App.useApp()
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -358,18 +356,6 @@ export const InvoicesPage: React.FC = () => {
     },
   })
 
-  const paymentMutation = useMutation({
-    mutationFn: ({ id }: { id: string; paidAt: string }) =>
-      invoiceService.markAsPaid(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] })
-      setPaymentModalVisible(false)
-      setPaymentInvoice(null)
-      paymentForm.resetFields()
-      message.success('Invoice berhasil ditandai lunas')
-    },
-  })
-
   const sendMutation = useMutation({
     mutationFn: ({ id, email }: { id: string; email?: string }) =>
       invoiceService.sendInvoice(id, email),
@@ -377,7 +363,7 @@ export const InvoicesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       message.success('Invoice berhasil dikirim')
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       const apiError = error as ApiError
       message.error(`Gagal mengirim invoice: ${apiError.message}`)
     },
@@ -396,7 +382,7 @@ export const InvoicesPage: React.FC = () => {
       window.URL.revokeObjectURL(url)
       message.success('Invoice siap untuk dicetak')
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       const apiError = error as ApiError
       message.error(`Gagal mencetak invoice: ${apiError.message}`)
     },
@@ -409,9 +395,26 @@ export const InvoicesPage: React.FC = () => {
       message.success('Status invoice berhasil diubah')
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       const apiError = error as ApiError
       message.error(apiError.message || 'Gagal mengubah status invoice')
+    },
+  })
+
+  // ✅ FIX: Mark as paid mutation (creates payment journal entry)
+  const markAsPaidMutation = useMutation({
+    mutationFn: (id: string) => invoiceService.markAsPaid(id, {
+      paymentMethod: 'BANK_TRANSFER',
+      paymentDate: now().toISOString(),
+      notes: 'Ditandai lunas melalui halaman daftar invoice'
+    }),
+    onSuccess: () => {
+      message.success('Invoice berhasil ditandai lunas')
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+    },
+    onError: (error: unknown) => {
+      const apiError = error as ApiError
+      message.error(apiError.message || 'Gagal menandai invoice sebagai lunas')
     },
   })
 
@@ -527,8 +530,20 @@ export const InvoicesPage: React.FC = () => {
     deleteMutation.mutate(id)
   }
 
+  /**
+   * ✅ FIX: Use correct endpoint based on status change
+   *
+   * - For PAID status: Call markAsPaid endpoint (creates payment journal)
+   * - For other statuses: Call updateStatus endpoint
+   *
+   * This ensures accounting logic is never bypassed when marking invoice as paid.
+   */
   const handleStatusChange = (invoice: Invoice, newStatus: string) => {
-    statusMutation.mutate({ id: invoice.id, status: newStatus })
+    if (newStatus === 'PAID') {
+      markAsPaidMutation.mutate(invoice.id)
+    } else {
+      statusMutation.mutate({ id: invoice.id, status: newStatus })
+    }
   }
 
   const handlePrintInvoice = (invoice: Invoice) => {
@@ -563,11 +578,11 @@ export const InvoicesPage: React.FC = () => {
         label: 'WhatsApp',
         icon: <WhatsAppOutlined />,
         color: '#25d366',
-        visible: (record) => !!record.client.phone,
+        visible: (record) => !!record.client?.phone,
         onClick: (record) => {
-          const phone = record.client.phone?.replace(/[^\d]/g, '')
+          const phone = record.client?.phone?.replace(/[^\d]/g, '')
           if (phone) {
-            const message = `Halo ${record.client.name}, terkait invoice ${record.number}`
+            const message = `Halo ${record.client?.name}, terkait invoice ${record.number}`
             const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
             window.open(whatsappUrl, '_blank')
           }
@@ -734,8 +749,8 @@ export const InvoicesPage: React.FC = () => {
     }
   }
 
-  const handlePriceInheritanceModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const mode = e.target.value
+  const handlePriceInheritanceModeChange = (e: any) => {
+    const mode = e.target.value as 'inherit' | 'custom'
     setPriceInheritanceMode(mode)
 
     if (mode === 'inherit' && selectedQuotation) {
@@ -752,7 +767,7 @@ export const InvoicesPage: React.FC = () => {
   const handleFormSubmit = (values: Record<string, any>) => {
     const totalAmount = safeNumber(values.totalAmount)
 
-    const data = {
+    const data: any = {
       ...values,
       dueDate: values.dueDate.endOf('day').toISOString(),
       amountPerProject: totalAmount, // Set same as total
@@ -765,15 +780,6 @@ export const InvoicesPage: React.FC = () => {
       updateMutation.mutate({ id: editingInvoice.id, data })
     } else {
       createMutation.mutate(data)
-    }
-  }
-
-  const handlePaymentSubmit = (values: { paidAt: dayjs.Dayjs }) => {
-    if (paymentInvoice) {
-      paymentMutation.mutate({
-        id: paymentInvoice.id,
-        paidAt: values.paidAt.format('YYYY-MM-DD'),
-      })
     }
   }
 
@@ -820,52 +826,6 @@ export const InvoicesPage: React.FC = () => {
       setSelectedRowKeys([])
     } catch (error) {
       message.error('Gagal mengirim beberapa invoice')
-    } finally {
-      setBatchLoading(false)
-    }
-  }
-
-  const handleBatchMarkPaid = async () => {
-    if (selectedRowKeys.length === 0) {
-      message.warning('Pilih invoice yang akan ditandai lunas')
-      return
-    }
-
-    // Filter only SENT and OVERDUE invoices
-    const payableInvoices = invoices.filter(
-      invoice =>
-        selectedRowKeys.includes(invoice.id) &&
-        (invoice.status === 'SENT' || invoice.status === 'OVERDUE')
-    )
-
-    if (payableInvoices.length === 0) {
-      message.warning(
-        'Pilih invoice dengan status Terkirim atau Jatuh Tempo untuk ditandai lunas'
-      )
-      return
-    }
-
-    if (payableInvoices.length < selectedRowKeys.length) {
-      message.warning(
-        `Hanya ${payableInvoices.length} dari ${selectedRowKeys.length} invoice yang dapat ditandai lunas`
-      )
-    }
-
-    setBatchLoading(true)
-    try {
-      const promises = payableInvoices.map(invoice =>
-        paymentMutation.mutateAsync({
-          id: invoice.id,
-          paidAt: dayjs().format('YYYY-MM-DD'),
-        })
-      )
-      await Promise.all(promises)
-      message.success(
-        `${payableInvoices.length} invoice berhasil ditandai lunas`
-      )
-      setSelectedRowKeys([])
-    } catch (error) {
-      message.error('Gagal menandai lunas beberapa invoice')
     } finally {
       setBatchLoading(false)
     }
@@ -1861,16 +1821,6 @@ export const InvoicesPage: React.FC = () => {
                 >
                   Kirim
                 </Button>
-                {canApproveFinancial() && (
-                  <Button
-                    size='small'
-                    icon={<CheckCircleOutlined />}
-                    loading={batchLoading}
-                    onClick={handleBatchMarkPaid}
-                  >
-                    Tandai Lunas
-                  </Button>
-                )}
                 <Button
                   size='small'
                   icon={<PrinterOutlined />}
@@ -1961,6 +1911,7 @@ export const InvoicesPage: React.FC = () => {
         }}
         footer={null}
         width={800}
+        forceRender
       >
         <Form
           data-testid='invoice-form'
@@ -2114,7 +2065,7 @@ export const InvoicesPage: React.FC = () => {
             <TextArea
               name='paymentInfo'
               rows={3}
-              placeholder='Contoh: Bank BCA: 123-456-789 a.n. Perusahaan'
+              placeholder='Contoh: Bank BCA Digital (Blu): 123-456-789 a.n. Perusahaan'
               autoComplete='off'
             />
           </Form.Item>
@@ -2153,50 +2104,6 @@ export const InvoicesPage: React.FC = () => {
         </Form>
       </Modal>
 
-      {/* Payment Modal */}
-      <Modal
-        title={`Tandai Lunas - ${paymentInvoice?.number || paymentInvoice?.invoiceNumber}`}
-        open={paymentModalVisible}
-        onCancel={() => {
-          setPaymentModalVisible(false)
-          setPaymentInvoice(null)
-        }}
-        footer={null}
-        width={500}
-      >
-        <Form
-          form={paymentForm}
-          layout='vertical'
-          onFinish={handlePaymentSubmit}
-        >
-          <Form.Item
-            name='paidAt'
-            label='Tanggal Pembayaran'
-            rules={[{ required: true, message: 'Pilih tanggal pembayaran' }]}
-          >
-            <DatePicker name='paidAt' style={{ width: '100%' }} />
-          </Form.Item>
-
-          <div className='flex justify-end space-x-2'>
-            <Button
-              onClick={() => {
-                setPaymentModalVisible(false)
-                setPaymentInvoice(null)
-              }}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type='primary'
-              htmlType='submit'
-              loading={paymentMutation.isPending}
-            >
-              Tandai Lunas
-            </Button>
-          </div>
-        </Form>
-      </Modal>
-
       {/* Status Change Modal */}
       <Modal
         title='Ubah Status Invoice'
@@ -2204,6 +2111,7 @@ export const InvoicesPage: React.FC = () => {
         onOk={handleStatusModalOk}
         onCancel={handleStatusModalCancel}
         width={400}
+        forceRender
       >
         <Form
           form={statusForm}

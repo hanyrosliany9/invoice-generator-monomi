@@ -158,3 +158,12 @@ h4 {
     display: none !important;
   }
 }
+
+/* Force hide pagination in report builder table widgets */
+.report-table-no-pagination .ant-table-pagination {
+  display: none !important;
+}
+
+.report-table-no-pagination .ant-pagination {
+  display: none !important;
+}

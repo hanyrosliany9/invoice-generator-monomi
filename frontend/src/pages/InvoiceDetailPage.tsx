@@ -472,7 +472,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                   icon={<FilePdfOutlined />}
                   size='large'
                   block
-                  onClick={handlePdfPreview}
+                  onClick={() => handlePdfPreview()}
                   aria-label='View PDF'
                 >
                   View PDF
@@ -945,7 +945,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                       <Button
                         type='primary'
                         icon={<FilePdfOutlined />}
-                        onClick={handlePdfPreview}
+                        onClick={() => handlePdfPreview()}
                       >
                         Preview Invoice PDF
                       </Button>
@@ -1158,7 +1158,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
           <FloatButton
             icon={<FilePdfOutlined />}
             tooltip='View PDF'
-            onClick={handlePdfPreview}
+            onClick={() => handlePdfPreview()}
             aria-label='View PDF'
           />
           <FloatButton

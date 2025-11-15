@@ -104,7 +104,7 @@ export const VendorsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['vendorStatistics'] });
       message.success('Vendor berhasil dihapus');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       message.error(
         error?.response?.data?.message ||
           'Gagal menghapus vendor. Mungkin vendor memiliki transaksi terkait.'

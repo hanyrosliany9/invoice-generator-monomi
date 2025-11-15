@@ -1,6 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { LedgerService } from "./ledger.service";
+import { JournalService } from "./journal.service";
 import { FinancialStatementQueryDto } from "../dto/financial-statement-query.dto";
 import { AccountType, StatementType } from "@prisma/client";
 
@@ -17,9 +18,12 @@ export interface CashFlowActivity {
 
 @Injectable()
 export class FinancialStatementsService {
+  private readonly logger = new Logger(FinancialStatementsService.name);
+
   constructor(
     private prisma: PrismaService,
     private ledgerService: LedgerService,
+    private journalService: JournalService,
   ) {}
 
   /**
@@ -268,6 +272,16 @@ export class FinancialStatementsService {
           balance = totalCredit - totalDebit;
         }
 
+        // ✅ FIX: Detect contra accounts and invert sign for Balance Sheet presentation
+        // Contra accounts REDUCE the main account balance, so display as negative
+        const isContraAccount =
+          (account.accountType === "ASSET" && account.normalBalance === "CREDIT") ||
+          (account.accountType === "LIABILITY" && account.normalBalance === "DEBIT") ||
+          (account.accountType === "EQUITY" && account.normalBalance === "DEBIT");
+
+        // Invert sign for contra accounts on Balance Sheet
+        const displayBalance = isContraAccount ? -balance : balance;
+
         return {
           accountCode: account.code,
           accountName: account.name,
@@ -275,7 +289,9 @@ export class FinancialStatementsService {
           accountType: account.accountType,
           accountSubType: account.accountSubType,
           normalBalance: account.normalBalance,
-          balance,
+          balance: displayBalance, // Display balance (negative for contra accounts)
+          actualBalance: balance, // Raw balance for auditing
+          isContraAccount, // Flag for frontend
           totalDebit,
           totalCredit,
         };
@@ -320,10 +336,69 @@ export class FinancialStatementsService {
       {} as Record<string, typeof liabilities>,
     );
 
+    // ✅ FIX: Calculate Current Year Earnings (Laba Rugi Berjalan)
+    // Determine fiscal year start date
+    const fiscalYearStart = new Date(endDate.getFullYear(), 0, 1); // January 1st of current year
+
+    // Get revenue and expense accounts for the fiscal year
+    const revenueExpenseAccounts = await this.prisma.chartOfAccounts.findMany({
+      where: {
+        accountType: { in: ["REVENUE", "EXPENSE"] },
+        isActive: true,
+      },
+    });
+
+    // Calculate net income for the period
+    let totalRevenue = 0;
+    let totalExpenses = 0;
+
+    for (const account of revenueExpenseAccounts) {
+      const glEntries = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: account.id,
+          entryDate: { gte: fiscalYearStart, lte: endDate },
+        },
+      });
+
+      const debit = glEntries.reduce((sum, e) => sum + Number(e.debit), 0);
+      const credit = glEntries.reduce((sum, e) => sum + Number(e.credit), 0);
+
+      if (account.accountType === "REVENUE") {
+        totalRevenue += credit - debit; // Revenue increases with credits
+      } else {
+        totalExpenses += debit - credit; // Expenses increase with debits
+      }
+    }
+
+    const currentYearEarnings = totalRevenue - totalExpenses;
+
+    // ✅ Add Current Year Earnings as virtual equity account
+    const currentYearEarningsAccount = {
+      accountCode: "3-3010",
+      accountName: "Current Year Profit/Loss",
+      accountNameId: "Laba/Rugi Tahun Berjalan",
+      accountType: "EQUITY" as const,
+      accountSubType: "CURRENT_EARNINGS" as const,
+      normalBalance: "CREDIT" as const,
+      balance: currentYearEarnings,
+      totalDebit: 0,
+      totalCredit: currentYearEarnings,
+    };
+
+    // Add to equity accounts if net income is non-zero
+    const equityWithEarnings =
+      Math.abs(currentYearEarnings) > 0.01
+        ? [...equity, currentYearEarningsAccount]
+        : equity;
+
     // Calculate totals
     const totalAssets = assets.reduce((sum, a) => sum + a.balance, 0);
     const totalLiabilities = liabilities.reduce((sum, l) => sum + l.balance, 0);
-    const totalEquity = equity.reduce((sum, e) => sum + e.balance, 0);
+    const totalEquityBeforeEarnings = equity.reduce(
+      (sum, e) => sum + e.balance,
+      0,
+    );
+    const totalEquity = totalEquityBeforeEarnings + currentYearEarnings;
 
     // Get depreciation details (PSAK 16)
     const depreciationDetails =
@@ -342,10 +417,21 @@ export class FinancialStatementsService {
         total: totalLiabilities,
       },
       equity: {
-        accounts: equity,
+        accounts: equityWithEarnings,
         total: totalEquity,
+        // ✅ Breakdown of equity components
+        capitalAccounts: totalEquityBeforeEarnings,
+        currentYearEarnings: currentYearEarnings,
       },
       depreciation: depreciationDetails,
+      // ✅ NEW: Income statement summary for the period
+      incomeStatement: {
+        fiscalYearStart,
+        totalRevenue,
+        totalExpenses,
+        netIncome: currentYearEarnings,
+        note: "Revenue and expenses from fiscal year start to balance sheet date",
+      },
       summary: {
         totalAssets,
         totalLiabilities,
@@ -615,7 +701,7 @@ export class FinancialStatementsService {
     const { endDate } = query;
 
     // Use ledger service for AR aging
-    const aging = await this.ledgerService.getAccountsReceivableAging(endDate);
+    const aging = await this.ledgerService.getAccountsReceivableAging(new Date(endDate));
 
     // Get AR account
     const arAccount = await this.prisma.chartOfAccounts.findUnique({
@@ -699,7 +785,7 @@ export class FinancialStatementsService {
     const { endDate } = query;
 
     // Use ledger service for AP aging
-    const aging = await this.ledgerService.getAccountsPayableAging(endDate);
+    const aging = await this.ledgerService.getAccountsPayableAging(new Date(endDate));
 
     // Get AP account
     const apAccount = await this.prisma.chartOfAccounts.findUnique({
@@ -824,5 +910,144 @@ export class FinancialStatementsService {
         generatedAt: "desc",
       },
     });
+  }
+
+  /**
+   * ✅ Year-End Closing Process
+   *
+   * Closes revenue and expense accounts to retained earnings at fiscal year end.
+   * This process:
+   * 1. Calculates net income for the fiscal year
+   * 2. Creates closing journal entry to zero out revenue/expense accounts
+   * 3. Transfers net income to Retained Earnings (3-2010)
+   *
+   * After closing, Current Year Earnings (3-3010) becomes Retained Earnings (3-2010)
+   *
+   * @param fiscalYearEndDate - Last day of the fiscal year
+   * @param userId - User performing the closing
+   * @returns Closing journal entry and summary
+   */
+  async performYearEndClosing(fiscalYearEndDate: Date, userId: string) {
+    this.logger.log(
+      `Starting year-end closing for fiscal year ending ${fiscalYearEndDate.toISOString()}`,
+    );
+
+    // Determine fiscal year start date
+    const fiscalYearStart = new Date(fiscalYearEndDate.getFullYear(), 0, 1);
+
+    // Get all revenue and expense accounts
+    const revenueExpenseAccounts = await this.prisma.chartOfAccounts.findMany({
+      where: {
+        accountType: { in: ["REVENUE", "EXPENSE"] },
+        isActive: true,
+      },
+    });
+
+    // Calculate net income and build closing entries
+    let totalRevenue = 0;
+    let totalExpenses = 0;
+    const closingLineItems: any[] = [];
+
+    for (const account of revenueExpenseAccounts) {
+      const glEntries = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: account.id,
+          entryDate: { gte: fiscalYearStart, lte: fiscalYearEndDate },
+        },
+      });
+
+      const debit = glEntries.reduce((sum, e) => sum + Number(e.debit), 0);
+      const credit = glEntries.reduce((sum, e) => sum + Number(e.credit), 0);
+
+      let accountBalance = 0;
+
+      if (account.accountType === "REVENUE") {
+        accountBalance = credit - debit; // Revenue credit balance
+        totalRevenue += accountBalance;
+
+        // Close revenue: Debit Revenue, Credit Income Summary
+        if (Math.abs(accountBalance) > 0.01) {
+          closingLineItems.push({
+            accountCode: account.code,
+            description: `Year-end closing: ${account.name}`,
+            descriptionId: `Penutupan akhir tahun: ${account.nameId}`,
+            debit: accountBalance, // Debit to close credit balance
+            credit: 0,
+          });
+        }
+      } else {
+        accountBalance = debit - credit; // Expense debit balance
+        totalExpenses += accountBalance;
+
+        // Close expense: Debit Income Summary, Credit Expense
+        if (Math.abs(accountBalance) > 0.01) {
+          closingLineItems.push({
+            accountCode: account.code,
+            description: `Year-end closing: ${account.name}`,
+            descriptionId: `Penutupan akhir tahun: ${account.nameId}`,
+            debit: 0,
+            credit: accountBalance, // Credit to close debit balance
+          });
+        }
+      }
+    }
+
+    const netIncome = totalRevenue - totalExpenses;
+
+    // Transfer net income to Retained Earnings (3-2010)
+    if (Math.abs(netIncome) > 0.01) {
+      if (netIncome > 0) {
+        // Profit: Debit Income Summary, Credit Retained Earnings
+        closingLineItems.push({
+          accountCode: "3-2010", // Retained Earnings
+          description: `Net income for fiscal year ${fiscalYearEndDate.getFullYear()}`,
+          descriptionId: `Laba bersih tahun fiskal ${fiscalYearEndDate.getFullYear()}`,
+          debit: 0,
+          credit: netIncome,
+        });
+      } else {
+        // Loss: Debit Retained Earnings, Credit Income Summary
+        closingLineItems.push({
+          accountCode: "3-2010", // Retained Earnings
+          description: `Net loss for fiscal year ${fiscalYearEndDate.getFullYear()}`,
+          descriptionId: `Rugi bersih tahun fiskal ${fiscalYearEndDate.getFullYear()}`,
+          debit: Math.abs(netIncome),
+          credit: 0,
+        });
+      }
+    }
+
+    // Create closing journal entry
+    const closingJournalEntry = await this.journalService.createJournalEntry({
+      entryDate: fiscalYearEndDate,
+      description: `Year-End Closing Entry for Fiscal Year ${fiscalYearEndDate.getFullYear()}`,
+      descriptionId: `Jurnal Penutup Akhir Tahun Fiskal ${fiscalYearEndDate.getFullYear()}`,
+      transactionType: "YEAR_END_CLOSING" as any,
+      transactionId: `CLOSING-${fiscalYearEndDate.getFullYear()}`,
+      documentNumber: `CLOSE-${fiscalYearEndDate.getFullYear()}`,
+      documentDate: fiscalYearEndDate,
+      createdBy: userId,
+      lineItems: closingLineItems,
+    });
+
+    // Post the closing entry
+    await this.journalService.postJournalEntry(closingJournalEntry.id, userId);
+
+    this.logger.log(
+      `✅ Year-end closing completed. Net income: ${netIncome.toFixed(2)} transferred to Retained Earnings`,
+    );
+
+    return {
+      closingJournalEntry,
+      summary: {
+        fiscalYearStart,
+        fiscalYearEnd: fiscalYearEndDate,
+        totalRevenue,
+        totalExpenses,
+        netIncome,
+        closingEntryNumber: closingJournalEntry.entryNumber,
+        accountsClosed: revenueExpenseAccounts.length,
+      },
+    };
   }
 }

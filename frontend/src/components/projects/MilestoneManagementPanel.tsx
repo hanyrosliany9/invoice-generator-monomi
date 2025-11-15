@@ -24,7 +24,7 @@ import {
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { ProjectMilestoneTimeline } from './ProjectMilestoneTimeline'
+import { ProjectMilestoneTimeline, ProjectMilestoneItem } from './ProjectMilestoneTimeline'
 import {
   useProjectMilestones,
   useDeleteMilestone,
@@ -111,9 +111,31 @@ export const MilestoneManagementPanel: React.FC<MilestoneManagementPanelProps> =
     navigate(`/projects/${projectId}/calendar`)
   }
 
-  const handleMilestoneClick = (milestone: ProjectMilestone) => {
-    handleEdit(milestone)
+  const handleMilestoneClick = (milestone: ProjectMilestoneItem) => {
+    // Find the full milestone object from the milestones array
+    const fullMilestone = milestones.find(m => m.id === milestone.id)
+    if (fullMilestone) {
+      handleEdit(fullMilestone)
+    }
   }
+
+  // Convert ProjectMilestone to ProjectMilestoneItem for the timeline component
+  const timelineMilestones = useMemo(() => {
+    return milestones.map(milestone => ({
+      id: milestone.id,
+      milestoneNumber: milestone.milestoneNumber,
+      name: milestone.name,
+      nameId: milestone.nameId,
+      status: milestone.status,
+      plannedStartDate: milestone.plannedStartDate,
+      plannedEndDate: milestone.plannedEndDate,
+      actualStartDate: milestone.actualStartDate,
+      actualEndDate: milestone.actualEndDate,
+      plannedRevenue: milestone.plannedRevenue,
+      recognizedRevenue: milestone.recognizedRevenue,
+      deliverables: milestone.deliverables ? JSON.parse(milestone.deliverables) : undefined,
+    }))
+  }, [milestones])
 
   const handleSave = () => {
     setModalOpen(false)
@@ -338,7 +360,7 @@ export const MilestoneManagementPanel: React.FC<MilestoneManagementPanelProps> =
       {/* Timeline Visualization - USE ORPHANED COMPONENT! */}
       <ProjectMilestoneTimeline
         projectId={projectId}
-        milestones={milestones}
+        milestones={timelineMilestones}
         onMilestoneClick={handleMilestoneClick}
         isLoading={isLoading}
       />

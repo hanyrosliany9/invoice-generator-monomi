@@ -2,6 +2,7 @@
 // Comprehensive XSS prevention and input sanitization for Indonesian business data
 
 import DOMPurify from 'dompurify'
+import { now } from '../utils/date'
 
 // Basic DOMPurify type augmentation
 declare module 'dompurify' {
@@ -512,7 +513,7 @@ export const logSecurityEvent = (event: {
 }) => {
   const logEntry = {
     ...event,
-    timestamp: event.timestamp || new Date(),
+    timestamp: event.timestamp || now(),
     indonesianCompliance: true,
     severity: event.type === 'sensitive_data_exposure' ? 'critical' : 'high',
   }

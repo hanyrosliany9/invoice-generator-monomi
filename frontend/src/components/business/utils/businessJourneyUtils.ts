@@ -10,6 +10,7 @@ import {
   BusinessJourneyFilters,
   MateraiComplianceStatus,
 } from '../types/businessJourney.types'
+import { now } from '../../../utils/date'
 
 // Security utilities
 export const sanitizeInput = (input: string): string => {
@@ -44,7 +45,7 @@ export const formatIDRForScreenReader = (amount: number): string => {
 }
 
 export const getTimeGreeting = (): string => {
-  const hour = new Date().getHours()
+  const hour = now().getHours()
   if (hour < 12) return 'pagi'
   if (hour < 15) return 'siang'
   if (hour < 18) return 'sore'

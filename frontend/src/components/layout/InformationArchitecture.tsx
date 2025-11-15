@@ -36,6 +36,7 @@ import {
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { formatIDR, formatIndonesianDate } from '../../utils/currency'
+import { now } from '../../utils/date'
 
 const { Sider, Content } = Layout
 const { Text, Title } = Typography
@@ -204,7 +205,7 @@ const InformationArchitecture: React.FC<InformationArchitectureProps> = ({
       unreadNotificationsCount: unreadNotifications.length,
       criticalNotificationsCount: criticalNotifications.length,
       todayTasks: upcomingTasks.filter(task => {
-        const today = new Date()
+        const today = now()
         const taskDate = new Date(task.dueDate)
         return taskDate.toDateString() === today.toDateString()
       }),

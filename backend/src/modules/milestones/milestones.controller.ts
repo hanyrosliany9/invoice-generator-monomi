@@ -9,19 +9,26 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { MilestonesService } from './milestones.service';
+import { MilestoneAnalyticsService } from './milestone-analytics.service';
 import { CreateMilestoneDto } from './dto/create-milestone.dto';
 import { UpdateMilestoneDto } from './dto/update-milestone.dto';
+import { MilestoneAnalyticsQueryDto } from './dto/milestone-analytics-query.dto';
+import { MilestoneAnalyticsDto } from './dto/milestone-analytics.dto';
 
 @ApiTags('Project Milestones')
 @ApiBearerAuth()
 @Controller('milestones')
 @UseGuards(JwtAuthGuard)
 export class MilestonesController {
-  constructor(private readonly milestonesService: MilestonesService) {}
+  constructor(
+    private readonly milestonesService: MilestonesService,
+    private readonly analyticsService: MilestoneAnalyticsService
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new project milestone' })
@@ -124,5 +131,19 @@ export class MilestonesController {
   @ApiResponse({ status: 404, description: 'Milestone not found' })
   async checkDependencies(@Param('id') id: string) {
     return this.milestonesService.checkDependencies(id);
+  }
+
+  @Get('analytics/overview')
+  @ApiOperation({
+    summary: 'Get comprehensive milestone analytics',
+    description: 'Provides analytics including payment cycles, revenue recognition, profitability, and cash flow forecasts',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns milestone analytics data',
+    type: MilestoneAnalyticsDto,
+  })
+  async getAnalytics(@Query() query: MilestoneAnalyticsQueryDto) {
+    return this.analyticsService.getAnalytics(query);
   }
 }

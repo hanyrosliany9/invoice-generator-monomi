@@ -8,6 +8,7 @@ import {
   IndonesianCompanyInfo,
   IndonesianReportHeader,
 } from "../../reports/indonesian-excel-formatter";
+import { CompanySettingsService } from "../../company/company-settings.service";
 
 interface ExportParams {
   startDate?: string;
@@ -23,23 +24,14 @@ interface ExportParams {
 @Injectable()
 export class AccountingExcelExportService {
   constructor(
-    private prisma: PrismaService,
-    private ledgerService: LedgerService,
-    private financialStatementsService: FinancialStatementsService,
+    private readonly prisma: PrismaService,
+    private readonly ledgerService: LedgerService,
+    private readonly financialStatementsService: FinancialStatementsService,
+    private readonly companySettings: CompanySettingsService,
   ) {}
 
-  private getIndonesianCompanyInfo(): IndonesianCompanyInfo {
-    return {
-      name: "MONOMI",
-      address: "Jl. Usaha Mandiri No. 123",
-      city: "Jakarta Selatan",
-      postalCode: "12345",
-      phone: "+62-21-1234-5678",
-      email: "info@monomi.co.id",
-      website: "www.monomi.co.id",
-      npwp: "01.234.567.8-901.234",
-      siup: "SIUP/123/2024",
-    };
+  private async getIndonesianCompanyInfo(): Promise<IndonesianCompanyInfo> {
+    return await this.companySettings.getCompanyInfo();
   }
 
   private formatIndonesianDate(date: Date | string): string {
@@ -71,16 +63,17 @@ export class AccountingExcelExportService {
 
   // ============ TRIAL BALANCE EXCEL EXPORT ============
   async exportTrialBalanceExcel(params: ExportParams): Promise<Buffer> {
-    if (!params.asOfDate) {
-      throw new Error("asOfDate is required for Trial Balance export");
+    if (!params.endDate) {
+      throw new Error("endDate is required for Trial Balance export");
     }
 
     const workbook = new ExcelJS.Workbook();
-    const companyInfo = this.getIndonesianCompanyInfo();
+    const companyInfo = await this.getIndonesianCompanyInfo();
 
     // Fetch trial balance data
     const data = await this.ledgerService.getTrialBalance({
-      asOfDate: new Date(params.asOfDate),
+      startDate: params.startDate ? new Date(params.startDate) : undefined,
+      endDate: new Date(params.endDate),
       fiscalPeriodId: params.fiscalPeriodId,
       includeInactive: params.includeInactive || false,
       includeZeroBalances: params.includeZeroBalances || false,
@@ -88,11 +81,16 @@ export class AccountingExcelExportService {
 
     const worksheet = workbook.addWorksheet("Neraca Saldo");
 
+    // Create report period text
+    const reportPeriod = params.startDate
+      ? `Periode: ${this.formatIndonesianDate(params.startDate)} s/d ${this.formatIndonesianDate(params.endDate)}`
+      : `Per Tanggal: ${this.formatIndonesianDate(params.endDate)}`;
+
     // Create report header
     const reportHeader: IndonesianReportHeader = {
       reportTitle: "NERACA SALDO",
       reportSubtitle: "TRIAL BALANCE",
-      reportPeriod: `Per Tanggal: ${this.formatIndonesianDate(params.asOfDate)}`,
+      reportPeriod,
       preparationDate: new Date(),
       reportType: "NERACA_SALDO",
     };
@@ -191,7 +189,7 @@ export class AccountingExcelExportService {
     }
 
     const workbook = new ExcelJS.Workbook();
-    const companyInfo = this.getIndonesianCompanyInfo();
+    const companyInfo = await this.getIndonesianCompanyInfo();
 
     // Fetch general ledger data
     const data = await this.ledgerService.getGeneralLedger({
@@ -311,7 +309,7 @@ export class AccountingExcelExportService {
     }
 
     const workbook = new ExcelJS.Workbook();
-    const companyInfo = this.getIndonesianCompanyInfo();
+    const companyInfo = await this.getIndonesianCompanyInfo();
 
     // Fetch income statement data
     const data = await this.financialStatementsService.getIncomeStatement({
@@ -440,7 +438,7 @@ export class AccountingExcelExportService {
     }
 
     const workbook = new ExcelJS.Workbook();
-    const companyInfo = this.getIndonesianCompanyInfo();
+    const companyInfo = await this.getIndonesianCompanyInfo();
 
     // Fetch balance sheet data
     const data = await this.financialStatementsService.getBalanceSheet({
@@ -610,7 +608,7 @@ export class AccountingExcelExportService {
     }
 
     const workbook = new ExcelJS.Workbook();
-    const companyInfo = this.getIndonesianCompanyInfo();
+    const companyInfo = await this.getIndonesianCompanyInfo();
 
     // Fetch cash flow data
     const data = await this.financialStatementsService.getCashFlowStatement({
@@ -730,7 +728,7 @@ export class AccountingExcelExportService {
     }
 
     const workbook = new ExcelJS.Workbook();
-    const companyInfo = this.getIndonesianCompanyInfo();
+    const companyInfo = await this.getIndonesianCompanyInfo();
 
     // Fetch AR data
     const data =
@@ -850,7 +848,7 @@ export class AccountingExcelExportService {
     }
 
     const workbook = new ExcelJS.Workbook();
-    const companyInfo = this.getIndonesianCompanyInfo();
+    const companyInfo = await this.getIndonesianCompanyInfo();
 
     // Fetch AP data
     const data = await this.financialStatementsService.getAccountsPayableReport(
@@ -967,7 +965,7 @@ export class AccountingExcelExportService {
   // ============ AR AGING EXCEL EXPORT ============
   async exportARAgingExcel(params: ExportParams): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    const companyInfo = this.getIndonesianCompanyInfo();
+    const companyInfo = await this.getIndonesianCompanyInfo();
 
     // Fetch AR aging data
     const asOfDate = params.asOfDate ? new Date(params.asOfDate) : new Date();
@@ -1083,7 +1081,7 @@ export class AccountingExcelExportService {
   // ============ AP AGING EXCEL EXPORT ============
   async exportAPAgingExcel(params: ExportParams): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    const companyInfo = this.getIndonesianCompanyInfo();
+    const companyInfo = await this.getIndonesianCompanyInfo();
 
     // Fetch AP aging data
     const asOfDate = params.asOfDate ? new Date(params.asOfDate) : new Date();

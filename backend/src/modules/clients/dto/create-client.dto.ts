@@ -18,23 +18,29 @@ export class CreateClientDto {
   @ApiProperty({
     description: "Email klien",
     example: "contact@contoh.com",
+    required: false,
   })
+  @IsOptional()
   @IsEmail({}, { message: "Format email tidak valid" })
-  email: string;
+  email?: string;
 
   @ApiProperty({
     description: "Nomor telepon klien",
     example: "+62812345678",
+    required: false,
   })
+  @IsOptional()
   @IsString({ message: "Nomor telepon harus berupa string" })
-  phone: string;
+  phone?: string;
 
   @ApiProperty({
     description: "Alamat klien",
     example: "Jl. Sudirman No. 123, Jakarta",
+    required: false,
   })
+  @IsOptional()
   @IsString({ message: "Alamat harus berupa string" })
-  address: string;
+  address?: string;
 
   @ApiProperty({
     description: "Nama perusahaan klien",

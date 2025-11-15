@@ -24,6 +24,8 @@ export interface Asset {
   rfidTag?: string
   tags?: string[]
   notes?: string
+  usefulLifeYears?: number
+  residualValue?: number | string
   createdAt: string
   updatedAt: string
   createdBy?: any

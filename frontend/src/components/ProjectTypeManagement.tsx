@@ -213,6 +213,7 @@ export const ProjectTypeManagement: React.FC = () => {
       key: 'isActive',
       render: (isActive: boolean, record: ProjectType) => (
         <Switch
+          id={`switch-active-${record.id}`}
           checked={isActive}
           onChange={() => handleToggleActive(record.id)}
           loading={toggleActiveMutation.isPending}
@@ -302,6 +303,7 @@ export const ProjectTypeManagement: React.FC = () => {
         }}
         footer={null}
         width={600}
+        forceRender
       >
         <Form
           form={form}
@@ -369,7 +371,7 @@ export const ProjectTypeManagement: React.FC = () => {
             valuePropName="checked"
           >
             <div>
-              <Switch />
+              <Switch id="isDefault" />
               <span style={{ marginLeft: 8 }}>{t('settings.projectType.setAsDefault')}</span>
             </div>
           </Form.Item>

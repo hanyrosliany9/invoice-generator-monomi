@@ -9,6 +9,7 @@ import {
   ReloadOutlined,
   SettingOutlined,
 } from '@ant-design/icons'
+import { now } from '../../utils/date'
 
 const { Text, Paragraph } = Typography
 const { Panel } = Collapse
@@ -281,7 +282,7 @@ export const ActionableError: React.FC<ActionableErrorProps> = ({
       window.open(
         'mailto:support@monomi.id?subject=Error Report&body=' +
           encodeURIComponent(
-            `Error: ${errorMessage}\nContext: ${context}\nTime: ${new Date().toISOString()}`
+            `Error: ${errorMessage}\nContext: ${context}\nTime: ${now().toISOString()}`
           )
       )
     }

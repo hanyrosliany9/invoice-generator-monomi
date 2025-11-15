@@ -40,6 +40,7 @@ import {
 import { useTheme } from '../../theme';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import MobileTableView from '../../components/mobile/MobileTableView';
+import { now } from '../../utils/date'
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -61,7 +62,11 @@ const DepreciationPage: React.FC = () => {
   const [autoPost, setAutoPost] = useState(false);
 
   const { data: summary, isLoading } = useQuery({
-    queryKey: ['depreciation-summary', dateRange],
+    queryKey: [
+      'depreciation-summary',
+      dateRange[0]?.format('YYYY-MM-DD'),
+      dateRange[1]?.format('YYYY-MM-DD')
+    ],
     queryFn: () =>
       getDepreciationSummary({
         startDate: dateRange[0]?.format('YYYY-MM-DD') || '',
@@ -139,6 +144,7 @@ const DepreciationPage: React.FC = () => {
       title: 'Aset',
       dataIndex: 'assetName',
       key: 'assetName',
+      width: 200,
       render: (name: string, record: any) => (
         <div>
           <div>
@@ -155,35 +161,66 @@ const DepreciationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Depresiasi Periode',
+      title: 'Tahun Penggunaan',
+      key: 'yearsInUse',
+      align: 'center' as const,
+      width: 130,
+      render: (record: any) => {
+        const purchaseDate = record.purchaseDate ? new Date(record.purchaseDate) : null
+        const yearsInUse = purchaseDate
+          ? Math.floor((now().getTime() - purchaseDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+          : 0
+        return <Text>{yearsInUse} Tahun</Text>
+      },
+    },
+    {
+      title: 'Harga Perolehan',
+      dataIndex: 'purchasePrice',
+      key: 'purchasePrice',
+      align: 'right' as const,
+      width: 150,
+      render: (amount: number) => (
+        <Text>{formatCurrency(amount || 0)}</Text>
+      ),
+    },
+    {
+      title: 'Umur Ekonomis',
+      dataIndex: 'usefulLifeYears',
+      key: 'usefulLifeYears',
+      align: 'center' as const,
+      width: 120,
+      render: (years: number) => <Text>{years || '-'} Tahun</Text>,
+    },
+    {
+      title: 'Nilai Penyusutan',
       dataIndex: 'depreciationAmount',
       key: 'depreciationAmount',
       align: 'right' as const,
-      width: 180,
+      width: 150,
       render: (amount: number) => (
-        <Text strong style={{ color: theme.colors.status.error }}>
+        <Text strong style={{ color: theme.colors.status.warning }}>
           {formatCurrency(amount)}
         </Text>
       ),
     },
     {
-      title: 'Akumulasi Depresiasi',
+      title: 'Akumulasi Penyusutan',
       dataIndex: 'accumulatedDepreciation',
       key: 'accumulatedDepreciation',
       align: 'right' as const,
-      width: 200,
+      width: 150,
       render: (amount: number) => (
-        <Text style={{ color: theme.colors.text.secondary }}>
+        <Text style={{ color: theme.colors.status.error }}>
           {formatCurrency(amount)}
         </Text>
       ),
     },
     {
-      title: 'Nilai Buku Bersih',
+      title: 'Harga Buku',
       dataIndex: 'netBookValue',
       key: 'netBookValue',
       align: 'right' as const,
-      width: 180,
+      width: 150,
       render: (amount: number) => (
         <Text strong style={{ color: theme.colors.status.success }}>
           {formatCurrency(amount)}
@@ -191,17 +228,10 @@ const DepreciationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Entri',
-      dataIndex: 'entryCount',
-      key: 'entryCount',
-      align: 'center' as const,
-      width: 80,
-      render: (count: number) => <Badge count={count} showZero color={theme.colors.accent.primary} />,
-    },
-    {
       title: 'Aksi',
       key: 'actions',
       width: 100,
+      fixed: 'right' as const,
       align: 'center' as const,
       render: (record: any) => (
         <Button type="link" icon={<EyeOutlined />} onClick={() => showAssetDetails(record)}>
@@ -359,7 +389,7 @@ const DepreciationPage: React.FC = () => {
             entityType="depreciation"
             searchable
             searchFields={['number', 'title']}
-            onRowClick={(record) => showAssetDetails(record.metadata)}
+            onRowClick={(record: any) => showAssetDetails(record.metadata)}
           />
         ) : (
           <Table
@@ -372,9 +402,9 @@ const DepreciationPage: React.FC = () => {
               background: theme.colors.background.primary,
             }}
             summary={(data) => {
-              const totalDep = data.reduce((sum, item) => sum + item.depreciationAmount, 0);
-              const totalAcc = data.reduce((sum, item) => sum + item.accumulatedDepreciation, 0);
-              const totalNBV = data.reduce((sum, item) => sum + item.netBookValue, 0);
+              const totalDep = data.reduce((sum, item) => sum + Number(item.depreciationAmount), 0);
+              const totalAcc = data.reduce((sum, item) => sum + Number(item.accumulatedDepreciation), 0);
+              const totalNBV = data.reduce((sum, item) => sum + Number(item.netBookValue), 0);
               return (
                 <Table.Summary.Row>
                   <Table.Summary.Cell index={0}>

@@ -7,6 +7,7 @@ import {
   IsObject,
   IsArray,
   ValidateNested,
+  IsBoolean,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
@@ -35,6 +36,27 @@ export class CreateQuotationDto {
   @ApiProperty({ description: "Tanggal berlaku hingga" })
   @IsDateString({}, { message: "Valid until harus berupa tanggal yang valid" })
   validUntil: string;
+
+  @ApiProperty({ description: "Apakah termasuk pajak (PPN 11%)", required: false, default: false })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean({ message: "Include tax harus berupa boolean" })
+  includeTax?: boolean;
+
+  @ApiProperty({ description: "Subtotal sebelum pajak", required: false, example: 5000000 })
+  @IsOptional()
+  @Transform(({ value }) => value !== undefined && value !== null ? parseFloat(value) : undefined)
+  subtotalAmount?: number;
+
+  @ApiProperty({ description: "Persentase pajak (PPN)", required: false, example: 11 })
+  @IsOptional()
+  @Transform(({ value }) => value !== undefined && value !== null ? parseFloat(value) : undefined)
+  taxRate?: number;
+
+  @ApiProperty({ description: "Jumlah pajak yang dihitung", required: false, example: 550000 })
+  @IsOptional()
+  @Transform(({ value }) => value !== undefined && value !== null ? parseFloat(value) : undefined)
+  taxAmount?: number;
 
   @ApiProperty({
     description:

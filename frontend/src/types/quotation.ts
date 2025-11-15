@@ -5,6 +5,7 @@ export enum QuotationStatus {
   SENT = 'SENT',
   APPROVED = 'APPROVED',
   DECLINED = 'DECLINED',
+  REVISED = 'REVISED',
   EXPIRED = 'EXPIRED',
   CANCELLED = 'CANCELLED',
 }

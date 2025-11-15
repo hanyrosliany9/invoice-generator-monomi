@@ -106,7 +106,7 @@ export const VendorEditPage: React.FC = () => {
       message.success('Vendor berhasil diperbarui');
       navigate(`/vendors/${id}`);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       message.error(
         error?.response?.data?.message || 'Gagal memperbarui vendor'
       );

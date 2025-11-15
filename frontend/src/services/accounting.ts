@@ -125,22 +125,40 @@ export interface IncomeStatement {
   };
 }
 
+export interface BalanceSheetAccount {
+  accountCode: string;
+  accountName: string;
+  accountNameId: string;
+  accountType: 'ASSET' | 'LIABILITY' | 'EQUITY';
+  accountSubType: string;
+  normalBalance: 'DEBIT' | 'CREDIT';
+  balance: number; // Display balance (negative for contra accounts)
+  actualBalance?: number; // Raw balance for auditing
+  isContraAccount?: boolean; // Flag for contra accounts
+  totalDebit: number;
+  totalCredit: number;
+}
+
 export interface BalanceSheet {
   asOfDate: string;
   assets: {
-    accounts: any[];
-    byType: Record<string, any[]>;
+    accounts: BalanceSheetAccount[];
+    byType: Record<string, BalanceSheetAccount[]>;
     total: number;
   };
   liabilities: {
-    accounts: any[];
-    byType: Record<string, any[]>;
+    accounts: BalanceSheetAccount[];
+    byType: Record<string, BalanceSheetAccount[]>;
     total: number;
   };
   equity: {
-    accounts: any[];
+    accounts: BalanceSheetAccount[];
     total: number;
+    capitalAccounts?: number;
+    currentYearEarnings?: number;
   };
+  depreciation?: any; // Depreciation details
+  incomeStatement?: any; // Income statement summary
   summary: {
     totalAssets: number;
     totalLiabilities: number;
@@ -298,7 +316,8 @@ export const getAccountLedger = async (
 };
 
 export const getTrialBalance = async (params: {
-  asOfDate: string;
+  startDate: string;
+  endDate: string;
   fiscalPeriodId?: string;
   includeInactive?: boolean;
   includeZeroBalances?: boolean;
@@ -425,6 +444,9 @@ export interface DepreciationSummary {
     assetId: string;
     assetName: string;
     assetCode: string;
+    purchasePrice: number;
+    purchaseDate: string;
+    usefulLifeYears?: number;
     depreciationAmount: number;
     accumulatedDepreciation: number;
     netBookValue: number;
@@ -456,8 +478,10 @@ export const processMonthlyDepreciation = async (data: {
   fiscalPeriodId?: string;
   autoPost?: boolean;
 }): Promise<{
+  total: number;
   processed: number;
   posted: number;
+  errors: string[];
   entries: DepreciationEntry[];
 }> => {
   const response = await apiClient.post('/accounting/depreciation/process-monthly', data);
@@ -647,7 +671,8 @@ const downloadBlob = (blob: Blob, filename: string) => {
 };
 
 export const exportTrialBalancePDF = async (params: {
-  asOfDate: string;
+  startDate: string;
+  endDate: string;
   fiscalPeriodId?: string;
   includeInactive?: boolean;
   includeZeroBalances?: boolean;
@@ -656,7 +681,8 @@ export const exportTrialBalancePDF = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `neraca-saldo-${params.asOfDate}.pdf`);
+  const filename = `neraca-saldo-${params.startDate}-${params.endDate}.pdf`;
+  downloadBlob(response.data, filename);
 };
 
 export const exportIncomeStatementPDF = async (params: {
@@ -745,7 +771,8 @@ export const exportGeneralLedgerPDF = async (params: {
 
 // ============ EXCEL EXPORT FUNCTIONS (NEW) ============
 export const exportTrialBalanceExcel = async (params: {
-  asOfDate: string;
+  startDate: string;
+  endDate: string;
   fiscalPeriodId?: string;
   includeInactive?: boolean;
   includeZeroBalances?: boolean;
@@ -754,7 +781,8 @@ export const exportTrialBalanceExcel = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `neraca-saldo-${params.asOfDate}.xlsx`);
+  const filename = `neraca-saldo-${params.startDate}-${params.endDate}.xlsx`;
+  downloadBlob(response.data, filename);
 };
 
 export const exportIncomeStatementExcel = async (params: {

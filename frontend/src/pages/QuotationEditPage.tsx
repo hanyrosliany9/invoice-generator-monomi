@@ -71,6 +71,11 @@ interface QuotationFormData {
   projectId: string
   amountPerProject: number
   totalAmount: number
+  // Tax fields (Indonesian PPN compliance)
+  includeTax?: boolean
+  subtotalAmount?: number
+  taxRate?: number
+  taxAmount?: number
   terms: string
   validUntil: dayjs.Dayjs
   status: 'DRAFT' | 'SENT' | 'APPROVED' | 'DECLINED' | 'REVISED'
@@ -89,13 +94,13 @@ export const QuotationEditPage: React.FC = () => {
   const [hasChanges, setHasChanges] = useState(false)
   const [originalValues, setOriginalValues] =
     useState<QuotationFormData | null>(null)
-  const [includePPN, setIncludePPN] = useState(true)
   const [totalAmount, setTotalAmount] = useState(0)
   const [creatingInvoiceForMilestone, setCreatingInvoiceForMilestone] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const initializedRef = useRef(false)
   const isMobile = useIsMobile()
   const onChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isUpdatingTotalAmountRef = useRef(false)
 
   // Fetch quotation data
   const {
@@ -185,8 +190,9 @@ export const QuotationEditPage: React.FC = () => {
       nameId: m.nameId,
       description: m.description,
       descriptionId: m.descriptionId,
-      paymentPercentage: m.paymentPercentage,
-      paymentAmount: m.paymentAmount,
+      // Ensure paymentPercentage is a number (from API it might be Decimal/string)
+      paymentPercentage: Number(m.paymentPercentage),
+      paymentAmount: Number(m.paymentAmount),
     }))
   }, [paymentMilestones])
 
@@ -227,6 +233,11 @@ export const QuotationEditPage: React.FC = () => {
         projectId: quotation.projectId,
         amountPerProject: Number(quotation.amountPerProject),
         totalAmount: Number(quotation.totalAmount),
+        // Initialize tax fields from quotation data
+        includeTax: quotation.includeTax ?? false,
+        subtotalAmount: quotation.subtotalAmount ? Number(quotation.subtotalAmount) : undefined,
+        taxRate: quotation.taxRate ? Number(quotation.taxRate) : undefined,
+        taxAmount: quotation.taxAmount ? Number(quotation.taxAmount) : undefined,
         terms: quotation.terms,
         validUntil: dayjs(quotation.validUntil),
         status: quotation.status,
@@ -250,6 +261,11 @@ export const QuotationEditPage: React.FC = () => {
 
   // Track form changes with debouncing (FIX #3: Prevents rapid form state corruption)
   const handleFormChange = useCallback(() => {
+    // Skip if we're programmatically updating totalAmount to prevent circular refs
+    if (isUpdatingTotalAmountRef.current) {
+      return
+    }
+
     // Clear existing timeout
     if (onChangeTimeoutRef.current) {
       clearTimeout(onChangeTimeoutRef.current)
@@ -262,7 +278,6 @@ export const QuotationEditPage: React.FC = () => {
 
       // Safety check: if validUntil is missing but original had it, preserve it
       if (!currentValues.validUntil && originalValues?.validUntil) {
-        console.warn('validUntil missing from form values, preserving from originalValues')
         currentValues.validUntil = originalValues.validUntil
         // Re-set the form value to restore it
         form.setFieldValue('validUntil', originalValues.validUntil)
@@ -273,8 +288,14 @@ export const QuotationEditPage: React.FC = () => {
       setTotalAmount(Number(newTotalAmount))
 
       // Proper deep comparison that handles dayjs objects and arrays
+      // Check both originalValues keys AND currentValues keys to catch new fields
+      const allKeys = new Set([
+        ...Object.keys(originalValues || {}),
+        ...Object.keys(currentValues)
+      ])
+
       const changed = originalValues &&
-        Object.keys(originalValues).some(key => {
+        Array.from(allKeys).some(key => {
           const current = (currentValues as any)[key]
           const original = (originalValues as any)[key]
 
@@ -314,6 +335,11 @@ export const QuotationEditPage: React.FC = () => {
             if (Array.isArray(current) !== Array.isArray(original)) {
               return true
             }
+          }
+
+          // Handle boolean comparison (includeTax)
+          if (typeof current === 'boolean' && typeof original === 'boolean') {
+            return current !== original
           }
 
           // Handle other types
@@ -420,7 +446,7 @@ export const QuotationEditPage: React.FC = () => {
             description: formMilestone.description,
             descriptionId: formMilestone.descriptionId,
             paymentPercentage: formMilestone.paymentPercentage,
-            // Note: paymentAmount is calculated by backend from percentage
+            paymentAmount: formMilestone.paymentAmount,
           },
         })
       }
@@ -428,7 +454,9 @@ export const QuotationEditPage: React.FC = () => {
   }
 
   const handleSubmit = async (values: QuotationFormData) => {
-    if (!id) return
+    if (!id) {
+      return
+    }
 
     // Clear any pending onChange timeout to ensure form state is stable
     if (onChangeTimeoutRef.current) {
@@ -443,6 +471,11 @@ export const QuotationEditPage: React.FC = () => {
       projectId: form.getFieldValue('projectId') || values.projectId,
       amountPerProject: form.getFieldValue('amountPerProject') || values.amountPerProject,
       totalAmount: form.getFieldValue('totalAmount') || values.totalAmount,
+      // Tax fields
+      includeTax: form.getFieldValue('includeTax') ?? values.includeTax ?? false,
+      subtotalAmount: form.getFieldValue('subtotalAmount') || values.subtotalAmount,
+      taxRate: form.getFieldValue('taxRate') || values.taxRate,
+      taxAmount: form.getFieldValue('taxAmount') || values.taxAmount,
       terms: form.getFieldValue('terms') || values.terms,
       validUntil: form.getFieldValue('validUntil') || values.validUntil,
       status: form.getFieldValue('status') || values.status,
@@ -450,26 +483,35 @@ export const QuotationEditPage: React.FC = () => {
       paymentMilestones: form.getFieldValue('paymentMilestones') || values.paymentMilestones,
     }
 
-    console.log('Submitted values:', values)
-    console.log('Complete values after field-by-field fetch:', completeValues)
-
     // Validate validUntil
     if (!completeValues.validUntil || !dayjs.isDayjs(completeValues.validUntil)) {
       message.error('Invalid validity date. Please check the form and try again.')
-      console.error('validUntil validation failed even after field-by-field fetch:', completeValues.validUntil)
       return
     }
 
     values = completeValues
 
     setIsSaving(true)
+
     try {
+      // Calculate tax fields based on includeTax checkbox
+      const subtotal = values.amountPerProject
+      const includeTax = values.includeTax ?? false
+      const taxRate = includeTax ? 11 : 0
+      const taxAmount = includeTax ? subtotal * 0.11 : 0
+      const finalTotal = includeTax ? subtotal + taxAmount : subtotal
+
       // 1. Save quotation data (without milestones and status - backend doesn't accept them)
       const quotationData: UpdateQuotationRequest = {
         clientId: values.clientId,
         projectId: values.projectId,
         amountPerProject: values.amountPerProject,
-        totalAmount: values.totalAmount,
+        totalAmount: finalTotal,
+        // Include tax fields with calculated values
+        includeTax: includeTax,
+        subtotalAmount: subtotal,
+        taxRate: taxRate,
+        taxAmount: taxAmount,
         terms: values.terms,
         validUntil: values.validUntil.toISOString(),
         scopeOfWork: values.scopeOfWork,
@@ -496,7 +538,6 @@ export const QuotationEditPage: React.FC = () => {
     } catch (error) {
       const apiError = error as ApiError
       message.error(apiError.message || 'Failed to update quotation')
-      console.error('Error updating quotation:', error)
     } finally {
       setIsSaving(false)
     }
@@ -536,24 +577,33 @@ export const QuotationEditPage: React.FC = () => {
   const handleSaveDraft = async () => {
     if (!id) return
 
-    setAutoSaving(true)
     try {
       const values = form.getFieldsValue()
 
       // FIX #2: Defensive validation for validUntil
       if (!values.validUntil || !dayjs.isDayjs(values.validUntil)) {
         message.error('Invalid validity date. Please check the form.')
-        console.error('validUntil validation failed in draft save:', values.validUntil)
-        setAutoSaving(false)
         return
       }
+
+      // Calculate tax fields based on includeTax checkbox
+      const subtotal = values.amountPerProject
+      const includeTax = values.includeTax ?? false
+      const taxRate = includeTax ? 11 : 0
+      const taxAmount = includeTax ? subtotal * 0.11 : 0
+      const finalTotal = includeTax ? subtotal + taxAmount : subtotal
 
       // 1. Save quotation data (without milestones and status)
       const quotationData: UpdateQuotationRequest = {
         clientId: values.clientId,
         projectId: values.projectId,
         amountPerProject: values.amountPerProject,
-        totalAmount: values.totalAmount,
+        totalAmount: finalTotal,
+        // Include tax fields with calculated values
+        includeTax: includeTax,
+        subtotalAmount: subtotal,
+        taxRate: taxRate,
+        taxAmount: taxAmount,
         terms: values.terms,
         validUntil: values.validUntil.toISOString(),
         scopeOfWork: values.scopeOfWork,
@@ -578,9 +628,6 @@ export const QuotationEditPage: React.FC = () => {
     } catch (error) {
       const apiError = error as ApiError
       message.error(apiError.message || 'Failed to save draft')
-      console.error('Error saving draft:', error)
-    } finally {
-      setAutoSaving(false)
     }
   }
 
@@ -711,6 +758,9 @@ export const QuotationEditPage: React.FC = () => {
       form={form}
       layout='vertical'
       onFinish={handleSubmit}
+      onFinishFailed={(errorInfo) => {
+        message.error(`Validation error: ${errorInfo.errorFields[0]?.errors[0] || 'Please fix the errors before saving'}`)
+      }}
       onValuesChange={handleFormChange}
       autoComplete='off'
       style={{ width: '100%' }}
@@ -807,7 +857,7 @@ export const QuotationEditPage: React.FC = () => {
                           >
                             {invoice.invoiceNumber}
                           </Button>
-                          <Tag size='small' color='blue' style={{ marginLeft: '8px' }}>
+                          <Tag color='blue' style={{ marginLeft: '8px' }}>
                             {invoice.status}
                           </Tag>
                         </div>
@@ -979,12 +1029,50 @@ export const QuotationEditPage: React.FC = () => {
                 <Title level={5} style={{ margin: 0 }}>
                   Pricing Breakdown
                 </Title>
-                <Checkbox
-                  checked={includePPN}
-                  onChange={(e) => setIncludePPN(e.target.checked)}
+                <Form.Item
+                  noStyle
+                  shouldUpdate={(prevValues, currentValues) =>
+                    prevValues.includeTax !== currentValues.includeTax ||
+                    prevValues.amountPerProject !== currentValues.amountPerProject
+                  }
                 >
-                  Include PPN (11%)
-                </Checkbox>
+                  {({ getFieldValue, setFieldValue }) => {
+                    const includeTax = getFieldValue('includeTax')
+                    const amountPerProject = getFieldValue('amountPerProject')
+
+                    return (
+                      <Form.Item name="includeTax" valuePropName="checked" noStyle>
+                        <Checkbox
+                          onChange={(e) => {
+                            const checked = e.target.checked
+
+                            if (amountPerProject) {
+                              // Calculate new total with or without tax
+                              const taxAmount = checked ? amountPerProject * 0.11 : 0
+                              const newTotal = amountPerProject + taxAmount
+
+                              // Set flag to prevent our change handler from triggering
+                              isUpdatingTotalAmountRef.current = true
+
+                              // Use requestAnimationFrame to defer the update and avoid sync circular ref
+                              requestAnimationFrame(() => {
+                                setFieldValue('totalAmount', newTotal)
+                                requestAnimationFrame(() => {
+                                  form.validateFields(['totalAmount']).finally(() => {
+                                    // Reset flag after validation completes
+                                    isUpdatingTotalAmountRef.current = false
+                                  })
+                                })
+                              })
+                            }
+                          }}
+                        >
+                          Include PPN (11%)
+                        </Checkbox>
+                      </Form.Item>
+                    )
+                  }}
+                </Form.Item>
               </div>
               <Row gutter={[16, 8]}>
                 <Col xs={12} sm={6}>
@@ -993,7 +1081,7 @@ export const QuotationEditPage: React.FC = () => {
                     <Text strong>{formatIDR(totalAmount)}</Text>
                   </div>
                 </Col>
-                {includePPN && (
+                {form.getFieldValue('includeTax') && (
                   <Col xs={12} sm={6}>
                     <Text type='secondary'>PPN (11%):</Text>
                     <div>
@@ -1002,10 +1090,10 @@ export const QuotationEditPage: React.FC = () => {
                   </Col>
                 )}
                 <Col xs={12} sm={6}>
-                  <Text type='secondary'>{includePPN ? 'Total + Tax:' : 'Total:'}</Text>
+                  <Text type='secondary'>{form.getFieldValue('includeTax') ? 'Total + Tax:' : 'Total:'}</Text>
                   <div>
                     <Text strong style={{ color: '#52c41a' }}>
-                      {formatIDR(includePPN ? totalAmount * 1.11 : totalAmount)}
+                      {formatIDR(form.getFieldValue('includeTax') ? totalAmount * 1.11 : totalAmount)}
                     </Text>
                   </div>
                 </Col>
@@ -1059,17 +1147,20 @@ export const QuotationEditPage: React.FC = () => {
                       return Promise.resolve()
                     }
 
-                    // Calculate total percentage
+                    // Calculate total percentage - ensure numbers
                     const totalPercentage = value.reduce(
-                      (sum: number, m: PaymentMilestoneFormItem) => sum + (m?.paymentPercentage || 0),
+                      (sum: number, m: PaymentMilestoneFormItem) => {
+                        const percentage = Number(m?.paymentPercentage || 0)
+                        return sum + percentage
+                      },
                       0
                     )
 
-                    // Validate total equals 100%
-                    if (totalPercentage !== 100) {
+                    // Validate total equals 100% (with small tolerance for floating point)
+                    if (Math.abs(totalPercentage - 100) > 0.01) {
                       return Promise.reject(
                         new Error(
-                          `Payment milestones must total 100% (currently ${totalPercentage}%). Please adjust the percentages before saving.`
+                          `Payment milestones must total 100% (currently ${totalPercentage.toFixed(1)}%). Please adjust the percentages before saving.`
                         )
                       )
                     }

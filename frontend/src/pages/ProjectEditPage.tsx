@@ -30,7 +30,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
-import { debounce } from 'lodash'
+import { debounce } from '../utils/debounce'
 import {
   EntityFormLayout,
   EntityHeroCard,

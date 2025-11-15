@@ -38,7 +38,7 @@ const BalanceSheetPage: React.FC = () => {
   const [asOfDate, setAsOfDate] = useState<dayjs.Dayjs>(dayjs());
 
   const { data, isLoading } = useQuery({
-    queryKey: ['balance-sheet', asOfDate],
+    queryKey: ['balance-sheet', asOfDate?.format('YYYY-MM-DD')],
     queryFn: () =>
       getBalanceSheet({
         endDate: asOfDate.format('YYYY-MM-DD'),
@@ -106,7 +106,14 @@ const BalanceSheetPage: React.FC = () => {
       key: 'accountNameId',
       render: (nameId: string, record: any) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{nameId}</div>
+          <div style={{ fontWeight: 500 }}>
+            {nameId}
+            {record.isContraAccount && (
+              <Text type="secondary" style={{ fontSize: '11px', marginLeft: '8px' }}>
+                (Kontra)
+              </Text>
+            )}
+          </div>
           <Text type="secondary" style={{ fontSize: '12px' }}>
             {record.accountName}
           </Text>
@@ -119,8 +126,17 @@ const BalanceSheetPage: React.FC = () => {
       key: 'balance',
       align: 'right' as const,
       width: 180,
-      render: (balance: number) => (
-        <Text strong>{formatCurrency(balance)}</Text>
+      render: (balance: number, record: any) => (
+        <Text
+          strong
+          style={{
+            color: record.isContraAccount && balance < 0
+              ? theme.colors.status.error
+              : theme.colors.text.primary
+          }}
+        >
+          {formatCurrency(balance)}
+        </Text>
       ),
     },
   ];

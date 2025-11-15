@@ -35,6 +35,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { formatIDR, formatIndonesianDate } from '../../utils/currency'
+import { now } from '../../utils/date'
 
 const { Text, Title } = Typography
 
@@ -281,7 +282,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({
       const queueItem: OfflineQueueItem = {
         ...item,
         id: `queue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        timestamp: new Date(),
+        timestamp: now(),
         retryCount: 0,
         status: 'pending',
       }
@@ -368,11 +369,11 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Update last sync time
-      const now = new Date()
-      localStorage.setItem('lastSync', now.toISOString())
+      const currentTime = now()
+      localStorage.setItem('lastSync', currentTime.toISOString())
       setState(prev => ({
         ...prev,
-        lastSync: now,
+        lastSync: currentTime,
         syncProgress: 100,
       }))
 

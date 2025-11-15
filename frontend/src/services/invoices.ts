@@ -1,5 +1,6 @@
 import { apiClient } from '../config/api'
 import { InvoiceStatus } from '../types/invoice'
+import { now } from '../utils/date'
 
 export interface Invoice {
   id: string
@@ -24,6 +25,11 @@ export interface Invoice {
   createdAt: string
   updatedAt: string
   paidAt?: string
+  // Tax fields (Indonesian PPN compliance)
+  includeTax?: boolean // Whether totalAmount includes tax
+  taxRate?: number // Tax percentage (e.g., 11 for PPN 11%)
+  taxAmount?: number // Calculated tax amount
+  subtotalAmount?: number // Amount before tax
   priceBreakdown?: {
     products: Array<{
       name: string
@@ -96,6 +102,11 @@ export interface CreateInvoiceRequest {
   materaiRequired?: boolean
   quotationId?: string
   paymentMilestoneId?: string // ID of the payment milestone (for milestone-based invoices)
+  // Tax fields (Indonesian PPN compliance)
+  includeTax?: boolean // Whether totalAmount includes tax
+  taxRate?: number // Tax percentage (e.g., 11 for PPN 11%)
+  taxAmount?: number // Calculated tax amount
+  subtotalAmount?: number // Amount before tax
   priceBreakdown?: {
     products: Array<{
       name: string
@@ -109,8 +120,17 @@ export interface CreateInvoiceRequest {
   }
 }
 
+/**
+ * ✅ FIX: Exclude 'status' from UpdateInvoiceRequest
+ *
+ * Invoice status should NEVER be changed through the generic update endpoint.
+ * Status changes must go through dedicated endpoints:
+ * - PATCH /invoices/:id/status - for status changes (SENT, OVERDUE, CANCELLED)
+ * - PATCH /invoices/:id/mark-paid - for marking as paid (creates payment journal)
+ *
+ * This prevents bypassing accounting logic (payment journal entries, AR updates, etc.)
+ */
 export interface UpdateInvoiceRequest extends Partial<CreateInvoiceRequest> {
-  status?: 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED'
   materaiApplied?: boolean
   signature?: string
 }
@@ -256,14 +276,14 @@ export const invoiceService = {
 
   // Calculate business status for invoice
   calculateBusinessStatus: (invoice: Invoice) => {
-    const now = new Date()
+    const currentTime = now()
     const dueDate = new Date(invoice.dueDate)
-    const isOverdue = now > dueDate && invoice.status !== 'PAID'
+    const isOverdue = currentTime > dueDate && invoice.status !== 'PAID'
     const daysToDue = Math.ceil(
-      (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      (dueDate.getTime() - currentTime.getTime()) / (1000 * 60 * 60 * 24)
     )
     const daysOverdue = isOverdue
-      ? Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+      ? Math.ceil((currentTime.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
       : 0
 
     let materaiStatus: 'NOT_REQUIRED' | 'REQUIRED' | 'APPLIED' = 'NOT_REQUIRED'

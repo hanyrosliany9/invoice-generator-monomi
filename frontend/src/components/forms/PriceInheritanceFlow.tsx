@@ -40,7 +40,7 @@ import {
   PriceInheritanceMode,
   UserTestingMetrics,
   PriceSource,
-} from './types/priceInheritance.types'
+} from '../../types/priceInheritance.types'
 import { formatIDR, parseIDRAmount } from '../../utils/currency'
 // UX metrics integration pending - will be implemented in performance optimization phase
 // CSS modules temporarily disabled - using Tailwind/Ant Design for styling consistency
@@ -214,11 +214,11 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
                 ? 'helpViewed'
                 : 'modeChanges'
 
-      setUserTesting(prev => ({
+      setUserTesting((prev: Partial<UserTestingMetrics>) => ({
         ...prev,
         interactions: {
-          ...prev.interactions!,
-          [actionKey]: (prev.interactions![actionKey] || 0) + 1,
+          ...(prev.interactions || { modeChanges: 0, amountEdits: 0, validationTriggered: 0, helpViewed: 0 }),
+          [actionKey]: ((prev.interactions?.[actionKey] as number) || 0) + 1,
         },
       }))
 
@@ -258,7 +258,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
   // Handle source change
   const handleSourceChange = useCallback(
     (sourceId: string) => {
-      const source = availableSources.find(s => s.id === sourceId)
+      const source = availableSources.find((s: PriceSource) => s.id === sourceId)
       if (source) {
         setSelectedSource(source)
         onSourceChange?.(source)
@@ -337,7 +337,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
   // Render validation alerts
   const renderValidationAlerts = () => (
     <Space direction='vertical' style={{ width: '100%' }}>
-      {validationResult.errors.map((error, index) => (
+      {validationResult.errors.map((error: {message: string; indonesianContext?: string; suggestedAction?: string}, index: number) => (
         <Alert
           key={`error-${index}`}
           type='error'
@@ -354,7 +354,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
         />
       ))}
 
-      {validationResult.warnings.map((warning, index) => (
+      {validationResult.warnings.map((warning: {message: string; indonesianContext?: string; suggestedAction?: string}, index: number) => (
         <Alert
           key={`warning-${index}`}
           type='warning'
@@ -397,7 +397,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
         style={{ width: '100%', marginTop: 8 }}
         placeholder='Pilih sumber harga'
       >
-        {availableSources.map(source => (
+        {availableSources.map((source: PriceSource) => (
           <Select.Option key={source.id} value={source.id}>
             <Space>
               <DollarOutlined />
@@ -496,7 +496,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
         <Title level={5}>Tips Komunikasi:</Title>
         <ul>
           {validationResult.businessEtiquette?.culturalNotes?.map(
-            (note, index) => (
+            (note: string, index: number) => (
               <li key={index}>
                 <Text>{note}</Text>
               </li>
@@ -559,12 +559,13 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
             Mode Harga:
           </Text>
           <Radio.Group
+            id='priceMode'
             value={mode}
             onChange={e => handleModeChange(e.target.value)}
             style={{ width: '100%' }}
           >
             <Space direction='vertical' style={{ width: '100%' }}>
-              <Radio value='inherit' disabled={!selectedSource}>
+              <Radio id='priceMode-inherit' value='inherit' disabled={!selectedSource}>
                 <Space>
                   <CheckCircleOutlined style={{ color: '#52c41a' }} />
                   <span>Gunakan Harga dari Sumber</span>
@@ -577,7 +578,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
               </Radio>
 
               {allowCustomOverride && (
-                <Radio value='custom'>
+                <Radio id='priceMode-custom' value='custom'>
                   <Space>
                     <CalculatorOutlined style={{ color: '#fa8c16' }} />
                     <span>Masukkan Harga Kustom</span>

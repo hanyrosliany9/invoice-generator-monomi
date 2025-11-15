@@ -9,6 +9,7 @@ import { vi } from 'vitest'
 
 import { PriceInheritanceFlow } from '../PriceInheritanceFlow'
 import {
+import { now } from '../../../utils/date'
   PriceInheritanceFlowProps,
   PriceSource,
   PriceValidationRule,
@@ -582,7 +583,7 @@ describe('PriceInheritanceFlow Component', () => {
         type: 'project' as const,
         entityName: `Project ${index + 1}`,
         originalAmount: (index + 1) * 1000000,
-        lastUpdated: new Date(),
+        lastUpdated: now(),
       }))
 
       const startTime = performance.now()
@@ -647,7 +648,7 @@ describe('PriceInheritanceFlow Component', () => {
         type: 'project',
         entityName: 'Simple Project',
         originalAmount: 25000000,
-        lastUpdated: new Date(),
+        lastUpdated: now(),
       }
 
       render(

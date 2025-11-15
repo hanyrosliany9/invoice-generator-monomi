@@ -7,6 +7,7 @@ import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 
 import PerformanceMonitoringDashboard from '../PerformanceMonitoringDashboard'
+import { now } from '../../../utils/date'
 
 // Mock dependencies
 vi.mock('react-i18next', () => ({
@@ -47,7 +48,7 @@ vi.mock('../../../hooks/usePerformanceMonitor', () => ({
       {
         name: 'test-metric',
         duration: 100,
-        timestamp: new Date(),
+        timestamp: now(),
         type: 'component-render',
         threshold: 150,
         exceeded: false,
@@ -63,7 +64,7 @@ vi.mock('../../../hooks/usePerformanceMonitor', () => ({
         threshold: 2500,
         impact: 'medium',
         recommendation: 'Optimize images and reduce server response time',
-        timestamp: new Date(),
+        timestamp: now(),
       },
     ],
     isLoading: false,

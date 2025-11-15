@@ -16,7 +16,7 @@ import {
   PriceInheritanceConfig,
   PriceInheritanceMode,
   PriceValidationResult,
-} from './types/priceInheritance.types'
+} from '../../types/priceInheritance.types'
 
 export interface PriceInheritanceFormFieldProps
   extends Omit<FormItemProps, 'children'> {

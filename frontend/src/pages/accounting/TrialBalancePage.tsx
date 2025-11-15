@@ -30,26 +30,36 @@ import type { MobileTableAction, MobileFilterConfig } from '../../components/mob
 import { trialBalanceToBusinessEntity } from '../../adapters/mobileTableAdapters';
 
 const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
 
 const TrialBalancePage: React.FC = () => {
   const { theme } = useTheme();
   const isMobile = useIsMobile();
-  const [asOfDate, setAsOfDate] = useState<dayjs.Dayjs>(dayjs());
+  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
+    dayjs().startOf('month'),
+    dayjs().endOf('month'),
+  ]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['trial-balance', asOfDate],
+    queryKey: [
+      'trial-balance',
+      dateRange[0]?.format('YYYY-MM-DD'),
+      dateRange[1]?.format('YYYY-MM-DD')
+    ],
     queryFn: () =>
       getTrialBalance({
-        asOfDate: asOfDate.format('YYYY-MM-DD'),
+        startDate: dateRange[0].format('YYYY-MM-DD'),
+        endDate: dateRange[1].format('YYYY-MM-DD'),
         includeInactive: false,
         includeZeroBalances: false,
       }),
-    enabled: !!asOfDate,
+    enabled: !!dateRange[0] && !!dateRange[1],
   });
 
   const handleExportPDF = async () => {
     await exportTrialBalancePDF({
-      asOfDate: asOfDate.format('YYYY-MM-DD'),
+      startDate: dateRange[0].format('YYYY-MM-DD'),
+      endDate: dateRange[1].format('YYYY-MM-DD'),
       includeInactive: false,
       includeZeroBalances: false,
     });
@@ -57,7 +67,8 @@ const TrialBalancePage: React.FC = () => {
 
   const handleExportExcel = async () => {
     await exportTrialBalanceExcel({
-      asOfDate: asOfDate.format('YYYY-MM-DD'),
+      startDate: dateRange[0].format('YYYY-MM-DD'),
+      endDate: dateRange[1].format('YYYY-MM-DD'),
       includeInactive: false,
       includeZeroBalances: false,
     });
@@ -213,15 +224,15 @@ const TrialBalancePage: React.FC = () => {
           </Text>
         </div>
         <Space>
-          <DatePicker
-            value={asOfDate}
-            onChange={(date) => {
-              if (date) {
-                setAsOfDate(date);
+          <RangePicker
+            value={dateRange}
+            onChange={(dates) => {
+              if (dates && dates[0] && dates[1]) {
+                setDateRange([dates[0], dates[1]]);
               }
             }}
             format="DD/MM/YYYY"
-            placeholder="Per Tanggal"
+            placeholder={['Dari Tanggal', 'Sampai Tanggal']}
           />
           <ExportButton
             onExportPDF={handleExportPDF}
@@ -242,7 +253,7 @@ const TrialBalancePage: React.FC = () => {
           <CalendarOutlined style={{ fontSize: '24px', color: '#fff' }} />
           <div>
             <Text style={{ color: '#fff', fontSize: '16px', fontWeight: 500 }}>
-              Per Tanggal: {asOfDate.format('DD MMMM YYYY')}
+              Periode: {dateRange[0].format('DD MMMM YYYY')} s/d {dateRange[1].format('DD MMMM YYYY')}
             </Text>
           </div>
         </Space>

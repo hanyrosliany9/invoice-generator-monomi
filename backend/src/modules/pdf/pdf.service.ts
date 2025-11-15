@@ -364,6 +364,17 @@ export class PdfService {
       letter-spacing: 0.5px;
     }
 
+    .company-details {
+      font-size: 9px;
+      color: #4b5563;
+      line-height: 1.5;
+      margin-top: 2mm;
+    }
+
+    .company-details-line {
+      margin-bottom: 1mm;
+    }
+
     .invoice-title-section {
       text-align: right;
       flex: 1;
@@ -837,6 +848,12 @@ export class PdfService {
     <div class="header">
       <div class="company-info">
         ${this.logoBase64 ? `<img src="${this.logoBase64}" alt="Company Logo" class="company-logo" />` : ""}
+        <div class="company-details">
+          ${companyData.address ? `<div class="company-details-line">${companyData.address}</div>` : ""}
+          ${companyData.phone ? `<div class="company-details-line">Tel: ${companyData.phone}</div>` : ""}
+          ${companyData.email ? `<div class="company-details-line">Email: ${companyData.email}</div>` : ""}
+          ${companyData.website ? `<div class="company-details-line">${companyData.website}</div>` : ""}
+        </div>
       </div>
       <div class="invoice-title-section">
         <h1>INVOICE</h1>
@@ -1133,6 +1150,11 @@ export class PdfService {
       scopeOfWork,
       terms,
       priceBreakdown,
+      // Tax fields (Indonesian PPN compliance)
+      includeTax = false,
+      taxRate = 0.11,
+      taxAmount = 0,
+      subtotalAmount,
     } = quotationData;
 
     // Get company settings
@@ -1229,6 +1251,17 @@ export class PdfService {
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+    }
+
+    .company-details {
+      font-size: 9px;
+      color: #4b5563;
+      line-height: 1.5;
+      margin-top: 2mm;
+    }
+
+    .company-details-line {
+      margin-bottom: 1mm;
     }
 
     .quotation-title-section {
@@ -1637,6 +1670,12 @@ export class PdfService {
     <div class="header">
       <div class="company-info">
         ${this.logoBase64 ? `<img src="${this.logoBase64}" alt="Company Logo" class="company-logo" />` : ""}
+        <div class="company-details">
+          ${companyData.address ? `<div class="company-details-line">${companyData.address}</div>` : ""}
+          ${companyData.phone ? `<div class="company-details-line">Tel: ${companyData.phone}</div>` : ""}
+          ${companyData.email ? `<div class="company-details-line">Email: ${companyData.email}</div>` : ""}
+          ${companyData.website ? `<div class="company-details-line">${companyData.website}</div>` : ""}
+        </div>
       </div>
       <div class="quotation-title-section">
         <h1>QUOTATION</h1>
@@ -1749,14 +1788,21 @@ export class PdfService {
     <!-- Summary Section -->
     <div class="summary-section">
       <table class="summary-table">
+        ${includeTax ? `
+        <tr>
+          <td>Subtotal</td>
+          <td>${formatIDR(subtotalAmount || amountPerProject)}</td>
+        </tr>
+        <tr>
+          <td>Tax (PPN ${Math.round((taxRate || 0.11) * 100)}%)</td>
+          <td>${formatIDR(taxAmount || 0)}</td>
+        </tr>
+        ` : `
         <tr>
           <td>Subtotal</td>
           <td>${formatIDR(amountPerProject)}</td>
         </tr>
-        <tr>
-          <td>Tax (PPN 11%)</td>
-          <td>${formatIDR(Number(amountPerProject) * 0.11)}</td>
-        </tr>
+        `}
         <tr class="summary-total">
           <td>TOTAL</td>
           <td>${formatIDR(totalAmount)}</td>
@@ -1781,14 +1827,6 @@ export class PdfService {
       <div class="footer-content">
         <div class="footer-title">Terms & Conditions</div>
         <div class="footer-text">${terms || "This quotation is valid for 30 days from the date specified above. All prices are in Indonesian Rupiah (IDR). Payment is due within 30 days upon invoice submission."}</div>
-      </div>
-      <div class="signature-section">
-        <div class="signature-box">
-          <div class="signature-title">Authorized By</div>
-          <div class="signature-line"></div>
-          <div class="signature-name">${companyData.companyName}</div>
-          <div class="signature-position">Project Manager</div>
-        </div>
       </div>
     </div>
 

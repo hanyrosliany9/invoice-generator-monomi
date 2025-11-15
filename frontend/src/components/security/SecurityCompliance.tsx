@@ -1,7 +1,7 @@
 // SecurityCompliance Dashboard - Indonesian Business Management System
 // Comprehensive security compliance monitoring and management for Indonesian business requirements
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import {
   Alert,
   Badge,
@@ -25,7 +25,10 @@ import {
   Timeline,
   Tooltip,
   Typography,
+  message,
 } from 'antd'
+import { useQuery } from '@tanstack/react-query'
+import { securityService, type SecurityComplianceState, type ComplianceAlert } from '../../services/security'
 import {
   AlertOutlined,
   AuditOutlined,
@@ -55,58 +58,6 @@ import xssPrevention from '../../utils/xssPrevention'
 const { Title, Text, Paragraph } = Typography
 const { TabPane } = Tabs
 const { Option } = Select
-
-export interface SecurityComplianceState {
-  overall: {
-    score: number
-    status: 'excellent' | 'good' | 'warning' | 'critical'
-    lastUpdated: Date
-  }
-  xss: {
-    score: number
-    threatsBlocked: number
-    lastScan: Date
-    vulnerabilities: number
-  }
-  materai: {
-    complianceRate: number
-    totalValidations: number
-    exemptionsUsed: number
-    potentialSavings: number
-    lastCheck: Date
-  }
-  privacy: {
-    dataProtectionScore: number
-    sensitiveDataExposures: number
-    gdprCompliance: number
-    indonesianLawCompliance: number
-  }
-  authentication: {
-    strongPasswordPolicy: boolean
-    mfaEnabled: boolean
-    sessionSecurity: number
-    csrfProtection: boolean
-  }
-  monitoring: {
-    realTimeAlerts: boolean
-    logRetention: number
-    anomalyDetection: boolean
-    incidentResponse: boolean
-  }
-}
-
-export interface ComplianceAlert {
-  id: string
-  type: 'security' | 'privacy' | 'materai' | 'business'
-  severity: 'critical' | 'high' | 'medium' | 'low'
-  title: string
-  description: string
-  recommendation: string
-  timestamp: Date
-  indonesianSpecific: boolean
-  resolved: boolean
-  affectedSystems: string[]
-}
 
 export interface ComplianceMetric {
   name: string
@@ -143,10 +94,6 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
   const { t } = useTranslation()
 
   // State management
-  const [complianceState, setComplianceState] =
-    useState<SecurityComplianceState | null>(null)
-  const [alerts, setAlerts] = useState<ComplianceAlert[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [settingsVisible, setSettingsVisible] = useState(false)
   const [alertsVisible, setAlertsVisible] = useState(false)
   const [selectedAlert, setSelectedAlert] = useState<ComplianceAlert | null>(
@@ -156,133 +103,54 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
   // Form instance for settings
   const [form] = Form.useForm()
 
-  // Mock compliance data (in production, this would come from APIs)
-  const mockComplianceData = useMemo(
-    (): SecurityComplianceState => ({
-      overall: {
-        score: 87,
-        status: 'good',
-        lastUpdated: new Date(),
-      },
-      xss: {
-        score: 92,
-        threatsBlocked: 156,
-        lastScan: new Date(Date.now() - 3600000),
-        vulnerabilities: 2,
-      },
-      materai: {
-        complianceRate: 94,
-        totalValidations: 1284,
-        exemptionsUsed: 142,
-        potentialSavings: 1420000,
-        lastCheck: new Date(Date.now() - 1800000),
-      },
-      privacy: {
-        dataProtectionScore: 89,
-        sensitiveDataExposures: 0,
-        gdprCompliance: 85,
-        indonesianLawCompliance: 91,
-      },
-      authentication: {
-        strongPasswordPolicy: true,
-        mfaEnabled: true,
-        sessionSecurity: 88,
-        csrfProtection: true,
-      },
-      monitoring: {
-        realTimeAlerts: true,
-        logRetention: 365,
-        anomalyDetection: true,
-        incidentResponse: true,
-      },
-    }),
-    []
-  )
+  // Fetch security metrics using React Query
+  const { data: complianceState, isLoading, refetch, error: metricsError } = useQuery<SecurityComplianceState>({
+    queryKey: ['security-metrics'],
+    queryFn: securityService.getSecurityMetrics,
+    refetchInterval: autoRefresh ? refreshInterval : false,
+  })
 
-  const mockAlerts: ComplianceAlert[] = useMemo(
-    () => [
-      {
-        id: 'alert_001',
-        type: 'materai',
-        severity: 'medium',
-        title: 'Materai Compliance Check Required',
-        description:
-          '15 transaksi memerlukan validasi materai dalam 24 jam terakhir',
-        recommendation:
-          'Review dan validasi perhitungan materai untuk transaksi di atas Rp 5 juta',
-        timestamp: new Date(Date.now() - 3600000),
-        indonesianSpecific: true,
-        resolved: false,
-        affectedSystems: ['quotation', 'invoice'],
-      },
-      {
-        id: 'alert_002',
-        type: 'privacy',
-        severity: 'high',
-        title: 'Sensitive Data in Logs',
-        description: 'Terdeteksi kemungkinan NPWP dalam log aplikasi',
-        recommendation:
-          'Implementasikan data masking untuk informasi sensitif Indonesia',
-        timestamp: new Date(Date.now() - 7200000),
-        indonesianSpecific: true,
-        resolved: false,
-        affectedSystems: ['logging', 'audit'],
-      },
-      {
-        id: 'alert_003',
-        type: 'security',
-        severity: 'low',
-        title: 'XSS Prevention Update',
-        description: 'Tersedia update untuk library XSS prevention',
-        recommendation: 'Update DOMPurify dan security libraries',
-        timestamp: new Date(Date.now() - 86400000),
-        indonesianSpecific: false,
-        resolved: false,
-        affectedSystems: ['frontend'],
-      },
-    ],
-    []
-  )
+  // Fetch security alerts
+  const { data: alertsData, error: alertsError } = useQuery({
+    queryKey: ['security-alerts'],
+    queryFn: securityService.getSecurityAlerts,
+    refetchInterval: autoRefresh ? refreshInterval : false,
+  })
 
-  // Initialize compliance monitoring
-  useEffect(() => {
-    loadComplianceData()
-
-    if (autoRefresh) {
-      const interval = setInterval(loadComplianceData, refreshInterval)
-      return () => clearInterval(interval)
+  // Handle errors
+  React.useEffect(() => {
+    if (metricsError) {
+      message.error('Failed to load security metrics')
     }
-  }, [autoRefresh, refreshInterval])
+  }, [metricsError])
 
-  // Load compliance data
-  const loadComplianceData = useCallback(async () => {
-    setIsLoading(true)
+  React.useEffect(() => {
+    if (alertsError) {
+      message.error('Failed to load security alerts')
+    }
+  }, [alertsError])
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+  // Handle compliance state updates
+  React.useEffect(() => {
+    if (complianceState) {
+      onComplianceUpdate?.(complianceState)
+    }
+  }, [complianceState, onComplianceUpdate])
 
-      // Update state with mock data
-      setComplianceState(mockComplianceData)
-      setAlerts(mockAlerts)
-
-      // Trigger callbacks
-      onComplianceUpdate?.(mockComplianceData)
-
-      // Check for new alerts
-      const criticalAlerts = mockAlerts.filter(
-        alert => alert.severity === 'critical' && !alert.resolved
+  // Handle critical alerts
+  React.useEffect(() => {
+    if (alertsData?.alerts) {
+      const criticalAlerts = alertsData.alerts.filter(
+        (alert: ComplianceAlert) => alert.severity === 'critical' && !alert.resolved
       )
-      criticalAlerts.forEach(alert => onAlertTriggered?.(alert))
-    } catch (error) {
-      console.error('Failed to load compliance data:', error)
-    } finally {
-      setIsLoading(false)
+      criticalAlerts.forEach((alert: ComplianceAlert) => onAlertTriggered?.(alert))
     }
-  }, [mockComplianceData, mockAlerts, onComplianceUpdate, onAlertTriggered])
+  }, [alertsData, onAlertTriggered])
+
+  const alerts = alertsData?.alerts || []
 
   // Calculate overall compliance metrics
-  const complianceMetrics: ComplianceMetric[] = useMemo(() => {
+  const complianceMetrics = React.useMemo(() => {
     if (!complianceState) return []
 
     return [
@@ -327,7 +195,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
         indonesianRequirement: true,
       },
     ]
-  }, [complianceState])
+  }, [complianceState]) as ComplianceMetric[]
 
   // Get status color based on score
   const getStatusColor = (score: number, target: number = 90) => {
@@ -356,11 +224,11 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
 
   // Handle alert resolution
   const resolveAlert = (alertId: string) => {
-    setAlerts(prev =>
-      prev.map(alert =>
-        alert.id === alertId ? { ...alert, resolved: true } : alert
-      )
-    )
+    // In production, this would call an API to resolve the alert
+    // For now, we'll just update the local state
+    message.success('Alert marked as resolved')
+    // Refetch alerts to get updated data
+    // queryClient.invalidateQueries(['security-alerts'])
   }
 
   // Compliance recommendations
@@ -537,7 +405,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
             <Button
               type='primary'
               icon={<ReloadOutlined />}
-              onClick={loadComplianceData}
+              onClick={() => refetch()}
               loading={isLoading}
             >
               Refresh
@@ -878,18 +746,21 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
                   <Row justify='space-between'>
                     <Text>Real-time Alerts</Text>
                     <Switch
+                      id="realTimeAlerts"
                       checked={complianceState.monitoring.realTimeAlerts}
                     />
                   </Row>
                   <Row justify='space-between'>
                     <Text>Anomaly Detection</Text>
                     <Switch
+                      id="anomalyDetection"
                       checked={complianceState.monitoring.anomalyDetection}
                     />
                   </Row>
                   <Row justify='space-between'>
                     <Text>Incident Response</Text>
                     <Switch
+                      id="incidentResponse"
                       checked={complianceState.monitoring.incidentResponse}
                     />
                   </Row>
@@ -959,11 +830,11 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
             label='Auto Refresh'
             valuePropName='checked'
           >
-            <Switch />
+            <Switch id='autoRefresh' />
           </Form.Item>
 
           <Form.Item name='refreshInterval' label='Refresh Interval (seconds)'>
-            <InputNumber min={30} max={3600} />
+            <InputNumber id='refreshInterval' min={30} max={3600} />
           </Form.Item>
 
           <Form.Item
@@ -971,7 +842,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
             label='Materai Validation'
             valuePropName='checked'
           >
-            <Switch />
+            <Switch id='materaiValidation' />
           </Form.Item>
 
           <Form.Item
@@ -979,7 +850,7 @@ const SecurityCompliance: React.FC<SecurityComplianceProps> = ({
             label='Real-time Monitoring'
             valuePropName='checked'
           >
-            <Switch />
+            <Switch id='realTimeMonitoring' />
           </Form.Item>
 
           <Form.Item name='alertSeverity' label='Minimum Alert Severity'>

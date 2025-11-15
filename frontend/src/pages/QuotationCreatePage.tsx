@@ -44,7 +44,7 @@ import {
   CreateQuotationRequest,
   quotationService,
 } from '../services/quotations'
-import { projectService } from '../services/projects'
+import { projectService, Project as ServiceProject } from '../services/projects'
 import { clientService } from '../services/clients'
 import { formatIDR } from '../utils/currency'
 import { useTheme } from '../theme'
@@ -57,6 +57,7 @@ import {
 } from '../hooks/usePaymentMilestones'
 import type { ApiError } from '../types/api'
 import type { Project } from '../types/project'
+import { now } from '../utils/date'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -164,7 +165,7 @@ export const QuotationCreatePage: React.FC = () => {
           description: formMilestone.description,
           descriptionId: formMilestone.descriptionId,
           paymentPercentage: formMilestone.paymentPercentage,
-          // Note: paymentAmount is calculated by backend from percentage
+          paymentAmount: formMilestone.paymentAmount,
         },
       })
     }
@@ -228,7 +229,7 @@ export const QuotationCreatePage: React.FC = () => {
   }, [selectedProject, prefilledClientId, form])
 
   // Generate default terms based on project
-  const generateDefaultTerms = (project: Project) => {
+  const generateDefaultTerms = (project: ServiceProject) => {
     const baseTerms = `
 1. Payment Terms: Net 30 days from invoice date
 2. Project Timeline: ${project.startDate ? dayjs(project.startDate).format('DD MMM YYYY') : 'TBD'} - ${project.endDate ? dayjs(project.endDate).format('DD MMM YYYY') : 'TBD'}
@@ -275,7 +276,6 @@ export const QuotationCreatePage: React.FC = () => {
       scopeOfWork: values.scopeOfWork,
       terms: values.terms,
       validUntil: values.validUntil.toISOString(),
-      paymentMilestones: values.paymentMilestones && values.paymentMilestones.length > 0 ? values.paymentMilestones : undefined,
     }
 
     // Include price breakdown from project products
@@ -289,7 +289,7 @@ export const QuotationCreatePage: React.FC = () => {
           subtotal: p.price * p.quantity,
         })),
         total: selectedProject.products.reduce((sum, p) => sum + (p.price * p.quantity), 0),
-        calculatedAt: new Date().toISOString(),
+        calculatedAt: now().toISOString(),
       }
     }
 
@@ -326,7 +326,7 @@ export const QuotationCreatePage: React.FC = () => {
             subtotal: p.price * p.quantity,
           })),
           total: selectedProject.products.reduce((sum, p) => sum + (p.price * p.quantity), 0),
-          calculatedAt: new Date().toISOString(),
+          calculatedAt: now().toISOString(),
         }
       }
 

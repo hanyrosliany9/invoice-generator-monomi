@@ -20,6 +20,7 @@ import {
   ApiQuery,
   ApiBody,
 } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 import { InvoicesService } from "./invoices.service";
 import { CreateInvoiceDto } from "./dto/create-invoice.dto";
 import { UpdateInvoiceDto } from "./dto/update-invoice.dto";
@@ -42,6 +43,7 @@ export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
   @Post()
+  @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 invoices per minute (prevent spam)
   @RequireEditorRole() // All users except VIEWER can create invoices
   @ApiOperation({ summary: "Membuat invoice baru" })
   @ApiResponse({
@@ -60,6 +62,7 @@ export class InvoicesController {
   }
 
   @Post("from-quotation/:quotationId")
+  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 per minute (quotation conversion)
   @RequireOperationsRole() // Operations roles can create invoices from quotations
   @ApiOperation({ summary: "Membuat invoice dari quotation" })
   @ApiResponse({

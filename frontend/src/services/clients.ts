@@ -3,9 +3,9 @@ import { apiClient } from '../config/api'
 export interface Client {
   id: string
   name: string
-  email: string
-  phone: string
-  address: string
+  email?: string
+  phone?: string
+  address?: string
   company: string
   contactPerson: string
   paymentTerms: string
@@ -35,7 +35,7 @@ export interface Client {
 
 export interface CreateClientRequest {
   name: string
-  email: string
+  email?: string
   phone?: string
   address?: string
   company?: string

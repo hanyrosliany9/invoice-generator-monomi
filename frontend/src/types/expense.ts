@@ -80,6 +80,7 @@ export interface ExpenseCategory {
   withholdingTaxType?: WithholdingTaxType;
   withholdingTaxRate?: number;      // Decimal (0.02 = 2%, 0.10 = 10%)
   requiresEFaktur: boolean;
+  isBillable: boolean;               // Can be billed to clients
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -369,6 +370,9 @@ export interface CreateExpenseFormData {
 
   // Date
   expenseDate: string;
+
+  // Optional fields
+  isTaxDeductible?: boolean;
 }
 
 /**

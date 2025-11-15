@@ -2,6 +2,7 @@
 // HTTP client for price inheritance API with error handling and type safety
 
 import { apiClient } from '../config/api'
+import { now } from '../utils/date'
 import {
   PriceInheritanceConfig,
   PriceInheritanceMode,
@@ -310,7 +311,7 @@ class PriceInheritanceApiService {
             ],
             warnings: [],
             suggestions: [],
-            validationTimestamp: new Date(),
+            validationTimestamp: now(),
           }
         }
       })

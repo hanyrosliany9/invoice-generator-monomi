@@ -47,17 +47,75 @@
 - ✅ DO use `prisma migrate dev` for new migrations
 - ✅ DO think through requirements before adding tables
 
-## Common Commands for This Project
-- **Quick Start**: `docker compose -f docker-compose.dev.yml up` (auto-seeds database)
+## Environment Management (CRITICAL - UPDATED 2025-11-08)
+
+### Unified Management Scripts (RECOMMENDED)
+**Dev and Prod run ISOLATED with separate project names - no conflicts!**
+
+```bash
+# Unified commands (easiest)
+./scripts/manage.sh status              # Show all environments
+./scripts/manage.sh dev start           # Start development
+./scripts/manage.sh prod start          # Start production
+./scripts/manage.sh both status         # Both environments status
+./scripts/manage.sh both stop           # Stop everything
+
+# Development only
+./scripts/manage-dev.sh start           # Start dev
+./scripts/manage-dev.sh stop            # Stop dev
+./scripts/manage-dev.sh logs -f         # Follow logs
+./scripts/manage-dev.sh rebuild         # Rebuild dev
+./scripts/manage-dev.sh shell           # Open shell
+./scripts/manage-dev.sh db-shell        # PostgreSQL shell
+./scripts/manage-dev.sh status          # Status
+
+# Production only
+./scripts/manage-prod.sh start          # Start prod
+./scripts/manage-prod.sh stop           # Stop prod
+./scripts/manage-prod.sh logs -f app    # Follow app logs
+./scripts/manage-prod.sh rebuild        # Rebuild prod (with prompts)
+./scripts/manage-prod.sh health         # Health checks
+./scripts/manage-prod.sh backup         # Database backup
+./scripts/manage-prod.sh status         # Status
+```
+
+### Direct Docker Compose (Advanced)
+**Both compose files now have `name:` field set for isolation:**
+- `docker-compose.dev.yml` → Project: `invoice-dev`
+- `docker-compose.prod.yml` → Project: `invoice-prod`
+
+```bash
+# Development (project name: invoice-dev)
+docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml down
+docker compose -f docker-compose.dev.yml logs -f
+
+# Production (project name: invoice-prod)
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml logs -f app
+```
+
+### Port Allocation (No Conflicts)
+**Development:**
+- Frontend: `http://localhost:3001`
+- Backend API: `http://localhost:5000`
+- API Docs: `http://localhost:5000/api/docs`
+- PostgreSQL: `localhost:5436`
+- Redis: `localhost:6383`
+
+**Production:**
+- Nginx: `http://localhost:80`
+- Frontend: `http://localhost:3000`
+- Backend: Internal only (via nginx)
+- PostgreSQL: Internal only
+- Redis: Internal only
+
+### Legacy Commands (Still Work)
 - **Validate Environment**: `./scripts/validate-dev-environment.sh`
 - **Manual Database Reset**: `docker compose -f docker-compose.dev.yml exec app npm run db:reset`
-- **Manual Seeding**: `docker compose -f docker-compose.dev.yml exec app npm run db:seed`
-- Install dependencies: `docker compose -f docker-compose.dev.yml exec app npm install <package>`
-- Rebuild after changes: `docker compose -f docker-compose.dev.yml build`
-- Production: `docker compose -f docker-compose.prod.yml up`
-- Build: `docker compose build`
-- Cleanup: `docker system prune -af`
-- Backup: `./scripts/backup.sh`
+- **Install Dependencies**: `docker compose -f docker-compose.dev.yml exec app npm install <package>`
+- **Cleanup**: `docker system prune -af`
 
 ## Critical Reminders
 - This is a containerized project - containers are the source of truth
@@ -101,13 +159,55 @@
 - Read-only filesystems where possible
 - Regular vulnerability scanning
 
-## Database Initialization (IMPORTANT)
+## Database Initialization & Seeding (IMPORTANT)
+
+### Auto-Initialization
 - **Database auto-initialization is ENABLED** in development (`SKIP_DB_INIT=false`)
 - On first startup, containers will automatically:
-  - Create database schema from Prisma
+  - Create database schema from Prisma migrations
   - Run database seeders with test data
   - Create default admin user: `admin@monomi.id` / `password123`
-- This ensures consistent setup for all developers
+
+### Manual Seeding (Two Approaches)
+
+**Approach 1: SQL Backup (RECOMMENDED - Contains Real Data)**
+```bash
+# Load pre-populated development database
+cat backend/prisma/seed-from-backup.sql | docker compose -f docker-compose.dev.yml exec -T db psql -U invoiceuser -d invoices
+
+# What's included:
+# - 8 test users (all roles)
+# - 138 Chart of Accounts (Indonesian)
+# - 11 Expense Categories
+# - 10 Assets (cameras, computers, etc.)
+# - 1 Client, 1 Project, 1 Quotation, 1 PAID Invoice
+# - Journal entries and General Ledger data
+```
+
+**Approach 2: TypeScript Seeder (Programmatic)**
+```bash
+# Run TypeScript seed file
+docker compose -f docker-compose.dev.yml exec app sh -c "cd backend && npm run db:seed"
+
+# Or reset everything (migrations + seed)
+docker compose -f docker-compose.dev.yml exec app sh -c "cd backend && npm run db:reset"
+```
+
+### Update Seed Data
+When you add important data and want to include it in future seeds:
+```bash
+# 1. Export current database
+./scripts/export-seed-data.sh
+
+# 2. Update backup file
+cat /tmp/full_seed_data.sql > backend/prisma/seed-from-backup.sql
+
+# 3. Commit changes
+git add backend/prisma/seed-from-backup.sql
+git commit -m "chore: Update seed data with latest development database"
+```
+
+See `SEEDING_GUIDE.md` for detailed documentation.
 
 ## Legacy Commands Section (MOVED TO TOP)
 - See "Common Commands for This Project" section above for Docker-first commands

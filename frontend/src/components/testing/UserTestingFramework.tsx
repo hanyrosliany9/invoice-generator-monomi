@@ -31,6 +31,7 @@ import {
   WarningOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import { now } from '../../utils/date'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -180,7 +181,7 @@ export const UserTestingProvider: React.FC<{ children: React.ReactNode }> = ({
         userId: 'current-user', // Would get from auth context
         testType,
         component: component as any,
-        startTime: new Date(),
+        startTime: now(),
         status: 'in_progress',
         tasks: getPredefinedTasks(testType, component),
         currentTaskIndex: 0,
@@ -223,7 +224,7 @@ export const UserTestingProvider: React.FC<{ children: React.ReactNode }> = ({
     if (currentSession) {
       const endedSession = {
         ...currentSession,
-        endTime: new Date(),
+        endTime: now(),
         status: 'completed' as const,
       }
 
@@ -243,7 +244,7 @@ export const UserTestingProvider: React.FC<{ children: React.ReactNode }> = ({
       const newError: UserError = {
         ...error,
         id: `error-${Date.now()}`,
-        timestamp: new Date(),
+        timestamp: now(),
       }
 
       setCurrentSession(prev => {
@@ -269,7 +270,7 @@ export const UserTestingProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!currentSession) return
 
       const hesitation: HesitationPoint = {
-        timestamp: new Date(),
+        timestamp: now(),
         element,
         duration: 0, // Would be calculated based on actual hesitation detection
         context,
@@ -305,7 +306,7 @@ export const UserTestingProvider: React.FC<{ children: React.ReactNode }> = ({
 
         const task = prev.tasks[taskIndex]
         if (task) {
-          task.endTime = new Date()
+          task.endTime = now()
           task.status = success ? 'completed' : 'failed'
           task.completed = success
         }
@@ -316,7 +317,7 @@ export const UserTestingProvider: React.FC<{ children: React.ReactNode }> = ({
           const nextTask = prev.tasks[nextTaskIndex]
           if (nextTask) {
             nextTask.status = 'in_progress'
-            nextTask.startTime = new Date()
+            nextTask.startTime = now()
           }
         }
 

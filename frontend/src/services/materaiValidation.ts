@@ -1,3 +1,4 @@
+import { now } from '../utils/date'
 // Materai Validation Service - Indonesian Business Management System
 // Comprehensive Indonesian stamp duty (materai) compliance validation and calculation
 
@@ -180,7 +181,7 @@ class MateraiValidationService {
     businessContext?: BusinessContext
   ): MateraiValidationResult {
     const validationId = this.generateValidationId()
-    const calculatedAt = new Date()
+    const calculatedAt = now()
 
     // Find applicable rule
     const applicableRule = this.findApplicableRule(amount)

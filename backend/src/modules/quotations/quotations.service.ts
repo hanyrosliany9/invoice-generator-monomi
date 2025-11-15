@@ -287,8 +287,8 @@ export class QuotationsService {
       status as ValidatorQuotationStatus,
     );
 
-    // Validate milestones before approval
-    if (status === QuotationStatus.APPROVED) {
+    // Validate milestones before approval (only for MILESTONE payment type)
+    if (status === QuotationStatus.APPROVED && quotation.paymentType === 'MILESTONE') {
       await this.paymentMilestonesService.validateQuotationMilestones(id);
     }
 

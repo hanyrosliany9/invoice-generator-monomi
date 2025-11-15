@@ -206,10 +206,10 @@ const MobileMilestoneTracker: React.FC<MobileMilestoneTrackerProps> = ({
   }
 
   const currentMilestone = milestones[currentIndex];
-  const totalAmount = milestones.reduce((sum, m) => sum + m.amount, 0);
+  const totalAmount = milestones.reduce((sum, m) => sum + Number(m.amount), 0);
   const paidAmount = milestones
     .filter(m => m.status === 'PAID')
-    .reduce((sum, m) => sum + m.amount, 0);
+    .reduce((sum, m) => sum + Number(m.amount), 0);
   const progressPercentage = Math.round((paidAmount / totalAmount) * 100);
 
   return (

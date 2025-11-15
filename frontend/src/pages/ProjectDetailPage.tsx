@@ -223,7 +223,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   const daysRemaining = getDaysRemaining(project.endDate)
 
   // PDF Preview with mode toggle
-  const handlePdfPreview = async (mode?: 'continuous' | 'paginated') => {
+  const handlePdfPreview = async (mode?: 'continuous' | 'paginated' | React.MouseEvent) => {
     // Check if mode is actually a mode string (not a MouseEvent from onClick)
     const targetMode = (typeof mode === 'string' ? mode : undefined) ?? 'continuous'
     setPdfMode(targetMode)
@@ -395,6 +395,15 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
                 onClick={handlePdfPreview}
               >
                 View PDF
+              </Button>
+              <Button
+                icon={<CalendarOutlined />}
+                size='large'
+                block
+                aria-label='View content calendar for this project'
+                onClick={() => navigate(`/content-calendar/project/${id}`)}
+              >
+                Content Calendar
               </Button>
             </Space>
           </Col>
@@ -1017,7 +1026,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
           tooltip={project.client ? 'Create Quotation' : 'Assign client first'}
           aria-label='Create quotation from this project'
           onClick={() => navigate(`/quotations/new?projectId=${id}&clientId=${project.client?.id}`)}
-          badge={{ dot: project._count?.quotations === 0 && project.client }}
+          badge={{ dot: project._count?.quotations === 0 && !!project.client }}
           disabled={!project.client}
           style={{
             opacity: !project.client ? 0.4 : 1,

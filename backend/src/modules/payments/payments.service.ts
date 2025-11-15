@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { InvoicesService } from "../invoices/invoices.service";
+import { JournalService } from "../accounting/services/journal.service";
 import { CreatePaymentDto, UpdatePaymentDto, PaymentResponseDto } from "./dto";
 import { PaymentStatus } from "@prisma/client";
 
@@ -18,6 +19,7 @@ export class PaymentsService {
     private prisma: PrismaService,
     @Inject(forwardRef(() => InvoicesService))
     private invoicesService: InvoicesService,
+    private journalService: JournalService,
   ) {}
 
   async create(
@@ -162,6 +164,61 @@ export class PaymentsService {
     // Update invoice status if payment is confirmed
     if (payment.status === PaymentStatus.CONFIRMED) {
       await this.updateInvoiceStatus(payment.invoiceId);
+
+      // ✅ FIX: Create journal entry for payment (Cash debit, AR credit)
+      try {
+        const invoice = await this.prisma.invoice.findUnique({
+          where: { id: payment.invoiceId },
+          select: {
+            invoiceNumber: true,
+            clientId: true,
+            client: { select: { name: true } },
+          },
+        });
+
+        if (invoice) {
+          const journalEntry = await this.journalService.createJournalEntry({
+            description: `Payment for Invoice ${invoice.invoiceNumber}`,
+            descriptionId: `Pembayaran Faktur ${invoice.invoiceNumber}`,
+            entryDate: new Date(payment.paymentDate),
+            transactionId: payment.id,
+            transactionType: 'PAYMENT_RECEIVED',
+            createdBy: 'system', // TODO: Get actual user ID from context
+            autoPost: true, // Auto-post to General Ledger
+            lineItems: [
+              {
+                accountCode: '1-1020', // Bank Account (adjust based on payment method)
+                description: `Payment from ${invoice.client.name}`,
+                descriptionId: `Pembayaran dari ${invoice.client.name}`,
+                debit: Number(payment.amount),
+                credit: 0,
+                clientId: invoice.clientId,
+              },
+              {
+                accountCode: '1-2010', // Accounts Receivable
+                description: `Payment for Invoice ${invoice.invoiceNumber}`,
+                descriptionId: `Pembayaran Faktur ${invoice.invoiceNumber}`,
+                debit: 0,
+                credit: Number(payment.amount),
+                clientId: invoice.clientId,
+              },
+            ],
+          });
+
+          // Link journal entry to payment
+          await this.prisma.payment.update({
+            where: { id: payment.id },
+            data: { journalEntryId: journalEntry.id },
+          });
+
+          this.logger.log(
+            `✅ Created and posted journal entry for payment ${payment.id}`,
+          );
+        }
+      } catch (error) {
+        this.logger.error("Failed to create payment journal entry:", error);
+        // Don't fail payment confirmation if journal entry fails
+      }
 
       // Detect and handle advance payment (PSAK 72)
       try {

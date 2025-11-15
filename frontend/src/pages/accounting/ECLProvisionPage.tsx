@@ -422,7 +422,7 @@ const ECLProvisionPage: React.FC = () => {
             entityType="ecl-provision"
             searchable
             searchFields={['number', 'title']}
-            onRowClick={(record) => showInvoiceDetails(record.metadata)}
+            onRowClick={(record: any) => showInvoiceDetails(record.metadata)}
           />
         ) : (
           <Table
@@ -435,8 +435,8 @@ const ECLProvisionPage: React.FC = () => {
               background: theme.colors.background.primary,
             }}
             summary={(data) => {
-              const totalOutstanding = data.reduce((sum, item) => sum + item.outstandingAmount, 0);
-              const totalECL = data.reduce((sum, item) => sum + item.eclAmount, 0);
+              const totalOutstanding = data.reduce((sum, item) => sum + Number(item.outstandingAmount), 0);
+              const totalECL = data.reduce((sum, item) => sum + Number(item.eclAmount), 0);
               const avgRate = totalOutstanding > 0 ? (totalECL / totalOutstanding) : 0;
               return (
                 <Table.Summary.Row>

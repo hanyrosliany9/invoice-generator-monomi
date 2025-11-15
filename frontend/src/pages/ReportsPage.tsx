@@ -64,7 +64,12 @@ export const ReportsPage: React.FC = () => {
 
   // Fetch reports data
   const { data: revenueData, isLoading: revenueLoading } = useQuery({
-    queryKey: ['reports-revenue', reportType, dateRange],
+    queryKey: [
+      'reports-revenue',
+      reportType,
+      dateRange?.[0]?.format('YYYY-MM-DD'),
+      dateRange?.[1]?.format('YYYY-MM-DD')
+    ],
     queryFn: () =>
       reportsService.getRevenueAnalytics({
         period: reportType,

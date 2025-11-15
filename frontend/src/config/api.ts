@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/auth'
 // API Configuration
 export const API_CONFIG = {
   BASE_URL: '/api/v1',
-  TIMEOUT: 30000, // 30 seconds
+  TIMEOUT: 10000, // 10 seconds (reduced for better UX on failed uploads)
 }
 
 // Default headers for API requests

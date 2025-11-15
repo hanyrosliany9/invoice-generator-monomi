@@ -37,7 +37,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAuthStore } from '../store/auth'
-import { settingsService } from '../services/settings'
+import { settingsService, UserSettings } from '../services/settings'
 import { authService } from '../services/auth'
 import { ProjectTypeManagement } from '../components/ProjectTypeManagement'
 import { useTheme } from '../theme'
@@ -111,19 +111,11 @@ export const SettingsPage: React.FC = () => {
   const [backupSettingsForm] = Form.useForm()
 
   // Fetch user settings from backend
-  const { data: userSettings, isLoading: isLoadingUser, error: userSettingsError } = useQuery({
+  const { data: userSettings, isLoading: isLoadingUser, error: userSettingsError } = useQuery<UserSettings>({
     queryKey: ['settings-user'],
     queryFn: () => settingsService.getUserSettings(),
     refetchOnMount: true,
     retry: false, // Don't retry on 404
-    onError: (error: any) => {
-      // If user not found (404), clear auth and redirect to login
-      if (error?.response?.status === 404) {
-        message.error('Session expired. Please log in again.')
-        useAuthStore.getState().logout()
-        navigate('/login')
-      }
-    },
   })
 
   // Fetch company settings from backend
@@ -140,6 +132,15 @@ export const SettingsPage: React.FC = () => {
     refetchOnMount: true,
   })
 
+  // Handle 404 user not found error
+  useEffect(() => {
+    if (userSettingsError && (userSettingsError as any)?.response?.status === 404) {
+      message.error('Session expired. Please log in again.')
+      useAuthStore.getState().logout()
+      navigate('/login')
+    }
+  }, [userSettingsError, message, navigate])
+
   // Profile and company forms use initialValues prop in Form components, no need to setFieldsValue
 
   // System forms use initialValues prop in the Form components, no need to setFieldsValue
@@ -155,7 +156,7 @@ export const SettingsPage: React.FC = () => {
         useAuthStore.getState().updateUser(data.user)
       }
 
-      message.success(t('messages.success.saved'))
+      message.success('Berhasil disimpan')
     },
     onError: () => {
       message.error(t('messages.error.general'))
@@ -166,7 +167,7 @@ export const SettingsPage: React.FC = () => {
     mutationFn: settingsService.updateCompanySettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings-company'] })
-      message.success(t('messages.success.saved'))
+      message.success('Berhasil disimpan')
     },
     onError: () => {
       message.error(t('messages.error.general'))
@@ -177,7 +178,7 @@ export const SettingsPage: React.FC = () => {
     mutationFn: settingsService.updateSystemSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings-system'] })
-      message.success(t('messages.success.saved'))
+      message.success('Berhasil disimpan')
     },
     onError: () => {
       message.error(t('messages.error.general'))
@@ -188,7 +189,7 @@ export const SettingsPage: React.FC = () => {
     mutationFn: settingsService.resetSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings-user'] })
-      message.success('Settings reset to default')
+      message.success('Berhasil direset')
     },
     onError: () => {
       message.error(t('messages.error.general'))
@@ -198,21 +199,21 @@ export const SettingsPage: React.FC = () => {
   const changePasswordMutation = useMutation({
     mutationFn: authService.changePassword,
     onSuccess: () => {
-      message.success('Password berhasil diubah')
+      message.success('Berhasil diubah')
       securityForm.resetFields()
     },
     onError: (error) => {
-      message.error(`Gagal mengubah password: ${error.message}`)
+      message.error(`Gagal: ${error.message}`)
     },
   })
 
   const downloadBackupMutation = useMutation({
     mutationFn: settingsService.downloadBackup,
     onSuccess: () => {
-      message.success('Backup berhasil diunduh')
+      message.success('Berhasil diunduh')
     },
     onError: (error) => {
-      message.error(`Gagal membuat backup: ${error.message}`)
+      message.error(`Gagal: ${error.message}`)
     },
   })
 
@@ -593,7 +594,7 @@ export const SettingsPage: React.FC = () => {
 
         <Row gutter={24}>
           <Col xs={24} sm={12} md={8}>
-            <Form.Item label='Bank BCA' name='bankBCA'>
+            <Form.Item label='Bank BCA Digital (Blu)' name='bankBCA'>
               <Input size='large' placeholder='1234567890' autoComplete='off' />
             </Form.Item>
           </Col>

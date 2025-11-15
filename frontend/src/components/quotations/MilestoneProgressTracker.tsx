@@ -67,8 +67,8 @@ export const MilestoneProgressTracker: React.FC<MilestoneProgressTrackerProps> =
     const invoicedMilestones = milestones.filter(m => m.status === 'INVOICED' || m.status === 'PAID')
     const overdueMilestones = milestones.filter(m => m.status === 'OVERDUE')
 
-    const totalPaid = paidMilestones.reduce((sum, m) => sum + m.paymentAmount, 0)
-    const totalInvoiced = invoicedMilestones.reduce((sum, m) => sum + m.paymentAmount, 0)
+    const totalPaid = paidMilestones.reduce((sum, m) => sum + Number(m.paymentAmount), 0)
+    const totalInvoiced = invoicedMilestones.reduce((sum, m) => sum + Number(m.paymentAmount), 0)
     const totalOutstanding = quotationTotal - totalInvoiced
 
     return {

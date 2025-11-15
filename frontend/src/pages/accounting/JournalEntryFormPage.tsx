@@ -33,6 +33,7 @@ import {
   JournalEntry,
   updateJournalEntry,
 } from '../../services/accounting';
+import { getErrorMessage } from '../../utils/errorHandling';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -126,7 +127,7 @@ const JournalEntryFormPage: React.FC = () => {
       navigate('/accounting/journal-entries');
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal membuat jurnal entry');
+      message.error(getErrorMessage(error, 'Gagal membuat jurnal entry'));
     },
   });
 
@@ -141,7 +142,7 @@ const JournalEntryFormPage: React.FC = () => {
       navigate('/accounting/journal-entries');
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal memperbarui jurnal entry');
+      message.error(getErrorMessage(error, 'Gagal memperbarui jurnal entry'));
     },
   });
 
@@ -172,8 +173,8 @@ const JournalEntryFormPage: React.FC = () => {
       }
 
       // Validate balanced entry
-      const totalDebit = lineItems.reduce((sum, item) => sum + item.debit, 0);
-      const totalCredit = lineItems.reduce((sum, item) => sum + item.credit, 0);
+      const totalDebit = lineItems.reduce((sum, item) => sum + Number(item.debit || 0), 0);
+      const totalCredit = lineItems.reduce((sum, item) => sum + Number(item.credit || 0), 0);
       if (Math.abs(totalDebit - totalCredit) >= 0.01) {
         message.error('Total debit harus sama dengan total kredit');
         return;
@@ -183,7 +184,7 @@ const JournalEntryFormPage: React.FC = () => {
 
       const journalData = {
         entryDate: values.entryDate.toISOString(),
-        description: values.description,
+        description: values.description || values.descriptionId, // Fallback to descriptionId if description is empty
         descriptionId: values.descriptionId || values.description,
         transactionType: values.transactionType,
         transactionId: id || 'MANUAL-' + Date.now(), // Use unique ID for manual entries
@@ -215,12 +216,14 @@ const JournalEntryFormPage: React.FC = () => {
 
   const transactionTypeOptions = [
     { value: 'ADJUSTMENT', label: 'Penyesuaian (Adjustment)' },
-    { value: 'MANUAL', label: 'Manual Entry' },
+    { value: 'CASH_RECEIPT', label: 'Penerimaan Kas (Cash Receipt)' },
+    { value: 'CASH_DISBURSEMENT', label: 'Pengeluaran Kas (Cash Disbursement)' },
     { value: 'DEPRECIATION', label: 'Penyusutan (Depreciation)' },
-    { value: 'ECL_PROVISION', label: 'Penyisihan Piutang (ECL)' },
-    { value: 'REVENUE_RECOGNITION', label: 'Pengakuan Pendapatan' },
-    { value: 'DEFERRED_REVENUE', label: 'Pendapatan Ditangguhkan' },
-    { value: 'TAX_PROVISION', label: 'Provisi Pajak' },
+    { value: 'BANK_TRANSFER', label: 'Transfer Bank' },
+    { value: 'CAPITAL_CONTRIBUTION', label: 'Setoran Modal' },
+    { value: 'OWNER_DRAWING', label: 'Penarikan Pemilik' },
+    { value: 'CLOSING', label: 'Penutupan Period' },
+    { value: 'OPENING', label: 'Pembukaan Period' },
   ];
 
   if (loadingEntry) {

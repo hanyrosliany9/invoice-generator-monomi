@@ -138,6 +138,10 @@ export const ClientsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       message.success(t('messages.success.deleted', { item: 'Klien' }))
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Gagal menghapus klien'
+      message.error(errorMessage)
+    },
   })
 
   const bulkDeleteMutation = useMutation({
@@ -283,11 +287,11 @@ export const ClientsPage: React.FC = () => {
         label: 'WhatsApp',
         icon: <WhatsAppOutlined />,
         color: '#25d366',
-        visible: (record) => !!record.client.phone,
+        visible: (record) => !!record.client?.phone,
         onClick: (record) => {
-          const phone = record.client.phone?.replace(/[^\d]/g, '')
+          const phone = record.client?.phone?.replace(/[^\d]/g, '')
           if (phone) {
-            const message = `Halo ${record.client.name}, salam dari Tim Monomi`
+            const message = `Halo ${record.client?.name}, salam dari Tim Monomi`
             const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
             window.open(whatsappUrl, '_blank')
           }
@@ -298,9 +302,9 @@ export const ClientsPage: React.FC = () => {
         label: 'Telepon',
         icon: <PhoneOutlined />,
         color: theme.colors.accent.primary,
-        visible: (record) => !!record.client.phone,
+        visible: (record) => !!record.client?.phone,
         onClick: (record) => {
-          const phone = record.client.phone?.replace(/[^\d]/g, '')
+          const phone = record.client?.phone?.replace(/[^\d]/g, '')
           if (phone) {
             window.location.href = `tel:${phone}`
           }
@@ -311,9 +315,9 @@ export const ClientsPage: React.FC = () => {
         label: 'Email',
         icon: <MailOutlined />,
         color: theme.colors.status.warning,
-        visible: (record) => !!record.client.email,
+        visible: (record) => !!record.client?.email,
         onClick: (record) => {
-          if (record.client.email) {
+          if (record.client?.email) {
             window.location.href = `mailto:${record.client.email}`
           }
         },
@@ -344,7 +348,7 @@ export const ClientsPage: React.FC = () => {
         onClick: (record) => {
           Modal.confirm({
             title: 'Hapus Klien?',
-            content: `Apakah Anda yakin ingin menghapus klien "${record.client.name}"? Tindakan ini tidak dapat dibatalkan.`,
+            content: `Apakah Anda yakin ingin menghapus klien "${record.client?.name}"? Tindakan ini tidak dapat dibatalkan.`,
             okText: 'Hapus',
             okType: 'danger',
             cancelText: 'Batal',
@@ -462,9 +466,9 @@ export const ClientsPage: React.FC = () => {
 
   const handleFormSubmit = (values: Record<string, any>) => {
     if (editingClient) {
-      updateMutation.mutate({ id: editingClient.id, data: values })
+      updateMutation.mutate({ id: editingClient.id, data: values as Partial<Client> })
     } else {
-      createMutation.mutate(values)
+      createMutation.mutate(values as any)
     }
   }
 
@@ -986,7 +990,6 @@ export const ClientsPage: React.FC = () => {
           loading={isLoading}
           entityType="clients"
           enableWhatsAppActions
-          enableCallActions
           showQuickStats
           searchable
           searchFields={['client.name', 'client.email', 'client.company']}
@@ -1028,6 +1031,7 @@ export const ClientsPage: React.FC = () => {
         }}
         footer={null}
         width={800}
+        forceRender
       >
         <FormErrorBoundary
           formTitle={editingClient ? 'Edit Klien' : 'Klien Baru'}
@@ -1083,11 +1087,10 @@ export const ClientsPage: React.FC = () => {
                 name='email'
                 label={t('clients.email')}
                 rules={[
-                  { required: true, message: 'Email wajib diisi' },
                   { type: 'email', message: 'Format email tidak valid' },
                 ]}
               >
-                <Input id='client-email' placeholder='nama@email.com' />
+                <Input id='client-email' placeholder='nama@email.com (opsional)' />
               </Form.Item>
             </Col>
           </Row>
@@ -1097,11 +1100,8 @@ export const ClientsPage: React.FC = () => {
               <Form.Item
                 name='phone'
                 label={t('clients.phone')}
-                rules={[
-                  { required: true, message: 'Nomor telepon wajib diisi' },
-                ]}
               >
-                <Input id='client-phone' placeholder='+62 21 1234567' />
+                <Input id='client-phone' placeholder='+62 21 1234567 (opsional)' />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -1128,9 +1128,8 @@ export const ClientsPage: React.FC = () => {
           <Form.Item
             name='address'
             label={t('clients.address')}
-            rules={[{ required: true, message: 'Alamat wajib diisi' }]}
           >
-            <TextArea rows={2} placeholder='Alamat lengkap klien' />
+            <TextArea rows={2} placeholder='Alamat lengkap klien (opsional)' />
           </Form.Item>
 
           <Row gutter={16}>

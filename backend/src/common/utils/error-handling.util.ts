@@ -82,7 +82,8 @@ export function validateIndonesianBusinessRules(data: any): void {
   }
 
   // Phone number validation (Indonesian format)
-  if (data.phone && !isValidIndonesianPhone(data.phone)) {
+  // Skip validation for placeholder values like "-" or "N/A"
+  if (data.phone && data.phone.trim() !== "-" && data.phone.trim().toLowerCase() !== "n/a" && !isValidIndonesianPhone(data.phone)) {
     throw new BadRequestException("Format nomor telepon Indonesia tidak valid");
   }
 

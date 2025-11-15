@@ -131,7 +131,7 @@ export const LoginPage: React.FC = () => {
             }}
           >
             <Form.Item name='remember' valuePropName='checked' noStyle>
-              <Checkbox style={{ color: '#6b7280' }}>
+              <Checkbox id='remember' style={{ color: '#6b7280' }}>
                 {t('auth.rememberMe')}
               </Checkbox>
             </Form.Item>

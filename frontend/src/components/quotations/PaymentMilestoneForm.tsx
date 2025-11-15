@@ -193,7 +193,7 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                             <Form.Item
                               key={`${field.key}-name`}
                               name={[field.name, 'name']}
-                              fieldKey={[field.fieldKey, 'name']}
+                              fieldKey={[field.fieldKey ?? 0, 'name']}
                               label="Name (English)"
                               rules={[{ required: true, message: 'Required' }]}
                             >
@@ -204,7 +204,7 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                             <Form.Item
                               key={`${field.key}-nameId`}
                               name={[field.name, 'nameId']}
-                              fieldKey={[field.fieldKey, 'nameId']}
+                              fieldKey={[field.fieldKey ?? 0, 'nameId']}
                               label="Nama (Indonesia)"
                               rules={[{ required: true, message: 'Wajib diisi' }]}
                             >
@@ -218,7 +218,7 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                             <Form.Item
                               key={`${field.key}-description`}
                               name={[field.name, 'description']}
-                              fieldKey={[field.fieldKey, 'description']}
+                              fieldKey={[field.fieldKey ?? 0, 'description']}
                               label="Description (English)"
                             >
                               <TextArea
@@ -233,7 +233,7 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                             <Form.Item
                               key={`${field.key}-descriptionId`}
                               name={[field.name, 'descriptionId']}
-                              fieldKey={[field.fieldKey, 'descriptionId']}
+                              fieldKey={[field.fieldKey ?? 0, 'descriptionId']}
                               label="Deskripsi (Indonesia)"
                             >
                               <TextArea
@@ -251,7 +251,7 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                             <Form.Item
                               key={`${field.key}-paymentPercentage`}
                               name={[field.name, 'paymentPercentage']}
-                              fieldKey={[field.fieldKey, 'paymentPercentage']}
+                              fieldKey={[field.fieldKey ?? 0, 'paymentPercentage']}
                               label="Payment Percentage"
                               rules={[
                                 { required: true, message: 'Required' },
@@ -280,7 +280,7 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                             <Form.Item
                               key={`${field.key}-paymentAmount`}
                               name={[field.name, 'paymentAmount']}
-                              fieldKey={[field.fieldKey, 'paymentAmount']}
+                              fieldKey={[field.fieldKey ?? 0, 'paymentAmount']}
                               label="Payment Amount"
                             >
                               <InputNumber
@@ -298,7 +298,7 @@ export const PaymentMilestoneForm: React.FC<PaymentMilestoneFormProps> = ({
                         <Form.Item
                           key={`${field.key}-milestoneNumber`}
                           name={[field.name, 'milestoneNumber']}
-                          fieldKey={[field.fieldKey, 'milestoneNumber']}
+                          fieldKey={[field.fieldKey ?? 0, 'milestoneNumber']}
                           hidden
                         >
                           <InputNumber />

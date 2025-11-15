@@ -1,4 +1,5 @@
 import { ProjectMilestone } from '../services/milestones'
+import { now } from '../utils/date'
 
 export interface CalendarEvent {
   id: string
@@ -267,7 +268,7 @@ export const getTimelineMetrics = (milestones: ProjectMilestone[]): TimelineMetr
   const totalDays = calculateDuration(minDate.toISOString(), maxDate.toISOString())
   const daysRemaining = Math.max(
     0,
-    Math.ceil((maxDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    Math.ceil((maxDate.getTime() - now().getTime()) / (1000 * 60 * 60 * 24))
   )
 
   const criticalPath = calculateCriticalPath(milestones)
@@ -311,7 +312,7 @@ export interface RiskAssessment {
 
 export const assessMilestoneRisks = (milestones: ProjectMilestone[]): RiskAssessment[] => {
   const assessments: RiskAssessment[] = []
-  const now = new Date()
+  const currentTime = now()
   const criticalPath = calculateCriticalPath(milestones)
 
   milestones.forEach((milestone) => {
@@ -325,7 +326,7 @@ export const assessMilestoneRisks = (milestones: ProjectMilestone[]): RiskAssess
     }
 
     // Check if overdue
-    if (new Date(milestone.plannedEndDate) < now && milestone.status !== 'COMPLETED' && milestone.status !== 'ACCEPTED' && milestone.status !== 'BILLED') {
+    if (new Date(milestone.plannedEndDate) < currentTime && milestone.status !== 'COMPLETED' && milestone.status !== 'ACCEPTED' && milestone.status !== 'BILLED') {
       reasons.push('Planned end date has passed')
       riskLevel = 'HIGH'
     }
@@ -343,7 +344,7 @@ export const assessMilestoneRisks = (milestones: ProjectMilestone[]): RiskAssess
     // Check if pending with approaching start date
     if (milestone.status === 'PENDING') {
       const daysUntilStart = Math.ceil(
-        (new Date(milestone.plannedStartDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        (new Date(milestone.plannedStartDate).getTime() - currentTime.getTime()) / (1000 * 60 * 60 * 24)
       )
       if (daysUntilStart < 7 && daysUntilStart >= 0) {
         reasons.push('Starting soon - ensure readiness')

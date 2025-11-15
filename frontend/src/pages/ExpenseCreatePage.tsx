@@ -144,7 +144,7 @@ export const ExpenseCreatePage: React.FC = () => {
     const net = total - withholding;
 
     const expenseData: CreateExpenseFormData = {
-      ...values,
+      ...(values as CreateExpenseFormData),
       expenseDate: values.expenseDate.toISOString(),
       grossAmount: gross,
       ppnAmount: ppnAmt,
@@ -155,7 +155,6 @@ export const ExpenseCreatePage: React.FC = () => {
       totalAmount: total,
       withholdingTaxRate: values.withholdingTaxRate || 0,
       isLuxuryGoods: includePPN ? isLuxuryGoods : false,
-      currency: 'IDR',
       isTaxDeductible: true,
     };
 
@@ -190,11 +189,10 @@ export const ExpenseCreatePage: React.FC = () => {
         isTaxDeductible: true,
       };
 
-      // Create and submit in one go
+      // Create expense (auto-paid)
       const expense = await expenseService.createExpense(expenseData);
-      await expenseService.submitExpense(expense.id);
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      message.success('Expense berhasil dibuat dan diajukan untuk persetujuan');
+      message.success('Expense berhasil dibuat dan dibayar');
       navigate(`/expenses/${expense.id}`);
     } catch (error: any) {
       message.error(`Gagal: ${error.message || 'Please complete required fields'}`);

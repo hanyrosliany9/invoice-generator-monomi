@@ -30,6 +30,7 @@ import { clientService } from '../services/clients'
 import { formatIDR, safeNumber } from '../utils/currency'
 import dayjs from 'dayjs'
 import { useTheme } from '../theme'
+import { now } from '../utils/date'
 
 const { TextArea } = Input
 
@@ -92,7 +93,7 @@ export const ClientEditPage: React.FC = () => {
     if (client) {
       const formData: ClientFormData = {
         name: client.name,
-        email: client.email,
+        email: client.email || '',
         phone: client.phone || '',
         company: client.company || '',
         contactPerson: client.contactPerson || '',
@@ -179,7 +180,7 @@ export const ClientEditPage: React.FC = () => {
       metadata={[
         {
           label: 'Created',
-          value: client.createdAt || new Date().toISOString(),
+          value: client.createdAt || now().toISOString(),
           format: 'date',
         },
         {

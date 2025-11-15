@@ -5,6 +5,7 @@ import {
   BarChartOutlined,
   BookOutlined,
   CalculatorOutlined,
+  CalendarOutlined,
   CameraOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -19,6 +20,7 @@ import {
   MenuUnfoldOutlined,
   ProjectOutlined,
   RiseOutlined,
+  RocketOutlined,
   SettingOutlined,
   ShopOutlined,
   TeamOutlined,
@@ -101,6 +103,24 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       key: '/vendors',
       icon: <ShopOutlined />,
       label: 'Vendor',
+    },
+    {
+      key: 'marketing',
+      icon: <RocketOutlined />,
+      label: 'Marketing',
+      children: [
+        // DELETED: Campaigns menu item (old system)
+        {
+          key: '/social-media-reports',
+          icon: <FileTextOutlined />,
+          label: 'Social Media Reports',
+        },
+        {
+          key: '/content-calendar',
+          icon: <CalendarOutlined />,
+          label: 'Content Calendar',
+        },
+      ],
     },
     {
       key: 'accounting',
@@ -256,6 +276,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       return { type: 'client' as const, id: '', name: 'Client Management' }
     if (path.startsWith('/projects'))
       return { type: 'project' as const, id: '', name: 'Project Management' }
+    // DELETED: Campaigns breadcrumb logic
+    if (path.startsWith('/content-calendar'))
+      return { type: 'client' as const, id: '', name: 'Content Calendar' }
     if (path.startsWith('/quotations'))
       return {
         type: 'quotation' as const,

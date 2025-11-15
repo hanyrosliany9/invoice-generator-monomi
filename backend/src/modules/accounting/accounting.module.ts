@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { PrismaModule } from "../prisma/prisma.module";
+import { CompanyModule } from "../company/company.module";
 import { AccountingController } from "./accounting.controller";
 import { JournalService } from "./services/journal.service";
 import { LedgerService } from "./services/ledger.service";
@@ -14,11 +15,12 @@ import { AccountingExcelExportService } from "./services/accounting-excel-export
 import { CashTransactionService } from "./services/cash-transaction.service";
 import { BankTransferService } from "./services/bank-transfer.service";
 import { BankReconciliationService } from "./services/bank-reconciliation.service";
+import { CashBankBalanceService } from "./services/cash-bank-balance.service";
 import { ExchangeRateService } from "./services/exchange-rate.service";
 import { PSAK72ReportsService } from "./services/psak72-reports.service";
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, CompanyModule],
   controllers: [AccountingController],
   providers: [
     JournalService,
@@ -34,6 +36,7 @@ import { PSAK72ReportsService } from "./services/psak72-reports.service";
     CashTransactionService,
     BankTransferService,
     BankReconciliationService,
+    CashBankBalanceService,
     ExchangeRateService,
     PSAK72ReportsService,
   ],

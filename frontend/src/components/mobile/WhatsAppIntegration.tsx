@@ -37,6 +37,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { formatIDR, formatIndonesianDate } from '../../utils/currency'
+import { now } from '../../utils/date'
 
 const { Text, Paragraph, Title } = Typography
 const { TextArea } = Input
@@ -170,7 +171,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
         name: 'Kirim Quotation',
         category: 'quotation',
         title: 'Quotation Baru',
-        message: `Selamat ${new Date().getHours() < 12 ? 'pagi' : new Date().getHours() < 15 ? 'siang' : new Date().getHours() < 18 ? 'sore' : 'malam'} Bapak/Ibu {{client_name}},\n\nKami telah menyiapkan quotation untuk {{project_title}} dengan nilai {{amount}}.\n\nMohon untuk direview dan kami tunggu konfirmasinya.\n\nTerima kasih atas kepercayaannya.\n\nHormat kami,\n{{company_name}}`,
+        message: `Selamat ${now().getHours() < 12 ? 'pagi' : now().getHours() < 15 ? 'siang' : now().getHours() < 18 ? 'sore' : 'malam'} Bapak/Ibu {{client_name}},\n\nKami telah menyiapkan quotation untuk {{project_title}} dengan nilai {{amount}}.\n\nMohon untuk direview dan kami tunggu konfirmasinya.\n\nTerima kasih atas kepercayaannya.\n\nHormat kami,\n{{company_name}}`,
         variables: ['client_name', 'project_title', 'amount', 'company_name'],
         indonesianBusinessContext: true,
         useBusinessEtiquette: true,
@@ -287,7 +288,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
         }
 
         // Date formatting
-        const dueDate = new Date()
+        const dueDate = now()
         dueDate.setDate(dueDate.getDate() + 30) // 30 days from now
         processedMessage = processedMessage.replace(
           /\{\{due_date\}\}/g,
@@ -345,7 +346,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
 
   // Get Indonesian time-appropriate greeting
   const getIndonesianTimeGreeting = () => {
-    const hour = new Date().getHours()
+    const hour = now().getHours()
     if (hour < 12) return 'Selamat pagi'
     if (hour < 15) return 'Selamat siang'
     if (hour < 18) return 'Selamat sore'
@@ -390,6 +391,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
       width={800}
       footer={null}
       styles={{ body: { padding: 0 } }}
+      forceRender
     >
       <Tabs
         activeKey={activeTab}
@@ -783,6 +785,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
         onCancel={() => setNewTemplateVisible(false)}
         onOk={() => form.submit()}
         width={600}
+        forceRender
       >
         <Form form={form} layout='vertical' onFinish={handleCreateTemplate}>
           <Form.Item

@@ -14,6 +14,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
@@ -26,6 +27,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute (brute force protection)
   @Post("login")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Login pengguna" })
@@ -57,6 +59,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 registrations per hour (spam protection)
   @Post("register")
   @ApiOperation({ summary: "Registrasi pengguna baru" })
   @ApiResponse({

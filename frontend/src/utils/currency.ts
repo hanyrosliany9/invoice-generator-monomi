@@ -54,6 +54,38 @@ export const formatIDR = (
 }
 
 /**
+ * Format currency with multi-currency support
+ */
+export const formatCurrency = (
+  amount: number | string | null | undefined,
+  currency: string = 'IDR'
+): string => {
+  const numericAmount = safeNumber(amount)
+
+  // Use Indonesian locale for IDR
+  if (currency === 'IDR') {
+    return formatIDR(numericAmount)
+  }
+
+  // For other currencies, use appropriate locale
+  const localeMap: Record<string, string> = {
+    USD: 'en-US',
+    EUR: 'de-DE',
+    SGD: 'en-SG',
+    MYR: 'ms-MY',
+  }
+
+  const locale = localeMap[currency] || 'en-US'
+
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numericAmount)
+}
+
+/**
  * Parse IDR string back to number
  */
 export const parseIDR = (idrString: string | null | undefined): number => {

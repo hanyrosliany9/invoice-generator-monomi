@@ -11,6 +11,7 @@ import {
   MenuOutlined,
   PlusOutlined,
   ProjectOutlined,
+  RocketOutlined,
   SettingOutlined,
   ShopOutlined,
   TeamOutlined,
@@ -145,6 +146,21 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
       key: '/vendors',
       icon: <ShopOutlined />,
       label: 'Vendor',
+    },
+    {
+      key: 'marketing',
+      icon: <RocketOutlined />,
+      label: 'Marketing',
+      children: [
+        {
+          key: '/campaigns',
+          label: 'Campaigns',
+        },
+        {
+          key: '/content-calendar',
+          label: 'Content Calendar',
+        },
+      ],
     },
     {
       key: 'accounting',
@@ -346,7 +362,7 @@ const MobileEntityNav: React.FC<MobileEntityNavProps> = ({
                   : 'none',
               }}
             />
-            <ThemeToggle size="default" />
+            <ThemeToggle />
           </Flex>
         }
         placement='left'

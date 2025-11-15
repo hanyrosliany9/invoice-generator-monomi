@@ -48,6 +48,7 @@ import {
   submitCashTransaction,
   voidCashTransaction,
 } from '../../services/accounting';
+import { getErrorMessage } from '../../utils/errorHandling';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -117,7 +118,7 @@ const CashDisbursementsPage: React.FC = () => {
       form.resetFields();
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal membuat pengeluaran kas');
+      message.error(getErrorMessage(error, 'Gagal membuat pengeluaran kas'));
     },
   });
 
@@ -128,7 +129,7 @@ const CashDisbursementsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal mengajukan pengeluaran kas');
+      message.error(getErrorMessage(error, 'Gagal mengajukan pengeluaran kas'));
     },
   });
 
@@ -139,7 +140,7 @@ const CashDisbursementsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menyetujui pengeluaran kas');
+      message.error(getErrorMessage(error, 'Gagal menyetujui pengeluaran kas'));
     },
   });
 
@@ -152,7 +153,7 @@ const CashDisbursementsPage: React.FC = () => {
       setRejectReason('');
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menolak pengeluaran kas');
+      message.error(getErrorMessage(error, 'Gagal menolak pengeluaran kas'));
     },
   });
 
@@ -163,7 +164,7 @@ const CashDisbursementsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal membatalkan pengeluaran kas');
+      message.error(getErrorMessage(error, 'Gagal membatalkan pengeluaran kas'));
     },
   });
 
@@ -174,7 +175,7 @@ const CashDisbursementsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['cash-transactions'] });
     },
     onError: (error) => {
-      message.error(error.response?.data?.message || 'Gagal menghapus pengeluaran kas');
+      message.error(getErrorMessage(error, 'Gagal menghapus pengeluaran kas'));
     },
   });
 
@@ -340,7 +341,7 @@ const CashDisbursementsPage: React.FC = () => {
     {
       key: 'status',
       label: 'Status',
-      type: 'select',
+      type: 'select' as const,
       options: [
         { label: 'Semua Status', value: '' },
         { label: 'Draft', value: 'DRAFT' },
@@ -349,23 +350,19 @@ const CashDisbursementsPage: React.FC = () => {
         { label: 'Ditolak', value: 'REJECTED' },
         { label: 'Void', value: 'VOID' },
       ],
-      value: status || '',
-      onChange: (value) => setStatus(value || undefined),
     },
     {
       key: 'category',
       label: 'Kategori',
-      type: 'select',
+      type: 'select' as const,
       options: [
         { label: 'Semua Kategori', value: '' },
         { label: 'Operasional', value: 'OPERATING' },
         { label: 'Investasi', value: 'INVESTING' },
         { label: 'Pendanaan', value: 'FINANCING' },
       ],
-      value: category || '',
-      onChange: (value) => setCategory(value || undefined),
     },
-  ], [status, category]);
+  ], []);
 
   const columns = [
     {
@@ -610,6 +607,7 @@ const CashDisbursementsPage: React.FC = () => {
         }}
         width={700}
         footer={null}
+        forceRender
       >
         <Form form={form} layout="vertical" onFinish={handleCreate}>
           <Form.Item

@@ -90,8 +90,8 @@ const RevenueChart: React.FC<RevenueChartProps> = ({
   }
 
   return (
-    <div style={{ width: '100%', height: `${height}px` }}>
-      <ResponsiveContainer width='100%' height='100%'>
+    <div style={{ width: '100%', height: `${height}px`, minHeight: `${height}px`, position: 'relative' }}>
+      <ResponsiveContainer width='100%' height='100%' minHeight={height}>
         <LineChart
           data={chartData}
           margin={{

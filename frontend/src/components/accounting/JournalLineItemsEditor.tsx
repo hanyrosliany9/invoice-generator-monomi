@@ -102,7 +102,7 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
       if (!item.id) {
         return {
           ...item,
-          id: `line-${Date.now()}-${index}`,
+          id: `line-${index}-${Math.random().toString(36).substr(2, 9)}`,
         };
       }
       return item;
@@ -110,44 +110,36 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
   }, [value]);
 
   const handleRemoveLine = useCallback((index: number) => {
-    onChange?.((prevValue) => {
-      if (prevValue.length <= 2) {
-        message.warning('Minimal 2 item baris diperlukan untuk jurnal entry');
-        return prevValue;
-      }
-      const newValue = [...prevValue];
-      newValue.splice(index, 1);
-      return newValue;
-    });
-  }, [onChange]);
+    if (value.length <= 2) {
+      message.warning('Minimal 2 item baris diperlukan untuk jurnal entry');
+      return;
+    }
+    const newValue = [...value];
+    newValue.splice(index, 1);
+    onChange?.(newValue);
+  }, [onChange, value]);
 
   const handleFieldChange = useCallback((index: number, field: keyof JournalLineItemFormData, fieldValue: any) => {
-    onChange?.((prevValue) => {
-      const newValue = [...prevValue];
-      newValue[index] = { ...newValue[index], [field]: fieldValue };
-      return newValue;
-    });
-  }, [onChange]);
+    const newValue = [...value];
+    newValue[index] = { ...newValue[index], [field]: fieldValue };
+    onChange?.(newValue);
+  }, [onChange, value]);
 
-  // Handle debit input - using functional update to avoid stale closures
+  // Handle debit input
   const handleDebitChange = useCallback((index: number, val: number | null) => {
     const numVal = val || 0;
-    onChange?.((prevValue) => {
-      const newValue = [...prevValue];
-      newValue[index] = { ...newValue[index], debit: numVal };
-      return newValue;
-    });
-  }, [onChange]);
+    const newValue = [...value];
+    newValue[index] = { ...newValue[index], debit: numVal };
+    onChange?.(newValue);
+  }, [onChange, value]);
 
-  // Handle credit input - using functional update to avoid stale closures
+  // Handle credit input
   const handleCreditChange = useCallback((index: number, val: number | null) => {
     const numVal = val || 0;
-    onChange?.((prevValue) => {
-      const newValue = [...prevValue];
-      newValue[index] = { ...newValue[index], credit: numVal };
-      return newValue;
-    });
-  }, [onChange]);
+    const newValue = [...value];
+    newValue[index] = { ...newValue[index], credit: numVal };
+    onChange?.(newValue);
+  }, [onChange, value]);
 
   // Calculate totals
   const totalDebit = value.reduce((sum, item) => sum + (item.debit || 0), 0);
@@ -163,6 +155,19 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
     }).format(amount);
   }, []);
 
+  // Handle account selection
+  const handleAccountChange = useCallback((index: number, code: string, account: any) => {
+    const newValue = [...value];
+    if (index >= 0 && index < newValue.length) {
+      newValue[index] = {
+        ...newValue[index],
+        accountCode: code,
+        accountName: account ? (account.nameId || account.name) : '',
+      };
+    }
+    onChange?.(newValue);
+  }, [onChange, value]);
+
   const columns = React.useMemo(() => [
     {
       title: <Text strong>Kode Akun</Text>,
@@ -173,20 +178,7 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
         return (
           <AccountSelector
             value={text}
-            onChange={(code, account) => {
-              // Update both accountCode and accountName using functional update
-              onChange?.((prevValue) => {
-                const newValue = [...prevValue];
-                if (index >= 0 && index < newValue.length) {
-                  newValue[index] = {
-                    ...newValue[index],
-                    accountCode: code,
-                    accountName: account ? (account.nameId || account.name) : '',
-                  };
-                }
-                return newValue;
-              });
-            }}
+            onChange={(code, account) => handleAccountChange(index, code, account)}
             disabled={disabled}
             placeholder="Pilih akun..."
           />
@@ -266,7 +258,7 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
         />
       ),
     },
-  ], [value, onChange, handleDebitChange, handleCreditChange, disabled, handleRemoveLine, handleFieldChange])
+  ], [value, handleAccountChange, handleDebitChange, handleCreditChange, disabled, handleRemoveLine, handleFieldChange])
   ;
 
   return (

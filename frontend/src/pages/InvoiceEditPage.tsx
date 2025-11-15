@@ -25,6 +25,7 @@ import {
   DollarOutlined,
   FileTextOutlined,
   ProjectOutlined,
+  ReloadOutlined,
   SaveOutlined,
   SendOutlined,
 } from '@ant-design/icons'
@@ -45,9 +46,11 @@ import { invoiceService, UpdateInvoiceRequest } from '../services/invoices'
 import { quotationService } from '../services/quotations'
 import { projectService } from '../services/projects'
 import { clientService } from '../services/clients'
+import { settingsService } from '../services/settings'
 import { formatIDR } from '../utils/currency'
 import { useTheme } from '../theme'
 import type { ApiError } from '../types/api'
+import { now } from '../utils/date'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -107,6 +110,12 @@ export const InvoiceEditPage: React.FC = () => {
     queryFn: () => quotationService.getQuotations(),
   })
 
+  // Fetch company settings for payment info
+  const { data: companySettings, isLoading: companySettingsLoading } = useQuery({
+    queryKey: ['company-settings'],
+    queryFn: settingsService.getCompanySettings,
+  })
+
   // Update invoice mutation
   const updateInvoiceMutation = useMutation({
     mutationFn: (data: UpdateInvoiceRequest) =>
@@ -122,22 +131,6 @@ export const InvoiceEditPage: React.FC = () => {
     },
     onError: () => {
       message.error('Failed to update invoice')
-    },
-  })
-
-  // Mark as paid mutation
-  const markAsPaidMutation = useMutation({
-    mutationFn: () => invoiceService.markAsPaid(id!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] })
-      queryClient.invalidateQueries({ queryKey: ['invoice', id] })
-      queryClient.invalidateQueries({ queryKey: ['invoice-stats'] })
-      queryClient.invalidateQueries({ queryKey: ['recent-invoices'] })
-      queryClient.invalidateQueries({ queryKey: ['overdue-invoices'] })
-      message.success('Invoice marked as paid')
-    },
-    onError: () => {
-      message.error('Failed to mark invoice as paid')
     },
   })
 
@@ -157,6 +150,57 @@ export const InvoiceEditPage: React.FC = () => {
     },
   })
 
+  // ✅ FIX: Mark as paid mutation (creates payment journal entry)
+  const markAsPaidMutation = useMutation({
+    mutationFn: () => invoiceService.markAsPaid(id!, {
+      paymentMethod: 'BANK_TRANSFER',
+      paymentDate: now().toISOString(),
+      notes: 'Ditandai lunas melalui halaman edit invoice'
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] })
+      queryClient.invalidateQueries({ queryKey: ['invoice-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['recent-invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['overdue-invoices'] })
+      message.success('Invoice berhasil ditandai lunas')
+    },
+    onError: () => {
+      message.error('Gagal menandai invoice sebagai lunas')
+    },
+  })
+
+  // Generate default payment info template from company settings
+  const generatePaymentInfo = () => {
+    if (!companySettings) return ''
+
+    const bankAccounts: string[] = []
+
+    if (companySettings.bankBCA) {
+      bankAccounts.push(`Bank BCA: ${companySettings.bankBCA} a.n. ${companySettings.companyName}`)
+    }
+    if (companySettings.bankMandiri) {
+      bankAccounts.push(`Bank Mandiri: ${companySettings.bankMandiri} a.n. ${companySettings.companyName}`)
+    }
+    if (companySettings.bankBNI) {
+      bankAccounts.push(`Bank BNI: ${companySettings.bankBNI} a.n. ${companySettings.companyName}`)
+    }
+
+    if (bankAccounts.length === 0) {
+      return `INFORMASI PEMBAYARAN:\n\nSilakan hubungi ${companySettings.email || 'kami'} untuk informasi rekening pembayaran.`
+    }
+
+    return `INFORMASI PEMBAYARAN:
+
+${bankAccounts.join('\n')}
+
+Silakan transfer ke salah satu rekening di atas dan kirim bukti pembayaran ke ${companySettings.email || 'email kami'}.
+
+Untuk pertanyaan pembayaran, hubungi:
+${companySettings.phone ? `Telepon: ${companySettings.phone}` : ''}
+${companySettings.email ? `Email: ${companySettings.email}` : ''}`
+  }
+
   // Pre-fill form when invoice data is loaded
   useEffect(() => {
     if (invoice) {
@@ -175,57 +219,93 @@ export const InvoiceEditPage: React.FC = () => {
         status: invoice.status,
       }
       form.setFieldsValue(formData)
+      // Set PPN state from database
+      setIncludePPN(invoice.includeTax ?? false)
     }
   }, [invoice, form])
+
+  // Auto-fill payment info if empty and company settings are loaded
+  useEffect(() => {
+    if (invoice && companySettings && !invoice.paymentInfo) {
+      const defaultPaymentInfo = generatePaymentInfo()
+      form.setFieldsValue({ paymentInfo: defaultPaymentInfo })
+    }
+  }, [invoice, companySettings, form])
 
   const handleFormChange = () => {
     const values = form.getFieldsValue()
   }
 
   const handleSubmit = async (values: InvoiceFormData) => {
+    const subtotal = values.amountPerProject
+    const taxAmount = includePPN ? subtotal * 0.11 : 0
+    const finalTotal = includePPN ? subtotal + taxAmount : subtotal
+
     const updateData: UpdateInvoiceRequest = {
       clientId: values.clientId,
       projectId: values.projectId,
       quotationId: values.quotationId,
       amountPerProject: values.amountPerProject,
-      totalAmount: values.totalAmount,
+      totalAmount: finalTotal,
       paymentInfo: values.paymentInfo,
       terms: values.terms,
       scopeOfWork: values.scopeOfWork,
       dueDate: values.dueDate.toISOString(),
       materaiRequired: values.materaiRequired,
       materaiApplied: values.materaiApplied,
+      // Tax fields
+      includeTax: includePPN,
+      taxRate: includePPN ? 11 : 0,
+      taxAmount: taxAmount,
+      subtotalAmount: subtotal,
     }
 
     updateInvoiceMutation.mutate(updateData)
   }
 
+  /**
+   * ✅ FIX: Update invoice and change status to SENT separately
+   * Status changes must go through dedicated updateStatus endpoint
+   */
   const handleSaveAndSend = async () => {
     try {
       const values = await form.validateFields()
+      const subtotal = values.amountPerProject
+      const taxAmount = includePPN ? subtotal * 0.11 : 0
+      const finalTotal = includePPN ? subtotal + taxAmount : subtotal
+
       const updateData: UpdateInvoiceRequest = {
         clientId: values.clientId,
         projectId: values.projectId,
         quotationId: values.quotationId,
         amountPerProject: values.amountPerProject,
-        totalAmount: values.totalAmount,
+        totalAmount: finalTotal,
         paymentInfo: values.paymentInfo,
         terms: values.terms,
         scopeOfWork: values.scopeOfWork,
         dueDate: values.dueDate.toISOString(),
         materaiRequired: values.materaiRequired,
         materaiApplied: values.materaiApplied,
-        status: 'SENT',
+        // Tax fields
+        includeTax: includePPN,
+        taxRate: includePPN ? 11 : 0,
+        taxAmount: taxAmount,
+        subtotalAmount: subtotal,
       }
 
-      updateInvoiceMutation.mutate(updateData)
-    } catch (error) {
-      message.error('Please complete required fields')
-    }
-  }
+      // First update the invoice
+      await invoiceService.updateInvoice(id!, updateData)
+      // Then change status to SENT through dedicated endpoint
+      await invoiceService.updateStatus(id!, 'SENT')
 
-  const handleMarkAsPaid = () => {
-    markAsPaidMutation.mutate()
+      // Invalidate queries and show success message
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] })
+      message.success('Invoice saved and sent successfully')
+      navigate('/invoices')
+    } catch (error) {
+      message.error('Failed to save and send invoice')
+    }
   }
 
   const handleSaveDraft = async () => {
@@ -234,19 +314,27 @@ export const InvoiceEditPage: React.FC = () => {
     setAutoSaving(true)
     try {
       const values = form.getFieldsValue()
+      const subtotal = values.amountPerProject
+      const taxAmount = includePPN ? subtotal * 0.11 : 0
+      const finalTotal = includePPN ? subtotal + taxAmount : subtotal
 
       const updateData: UpdateInvoiceRequest = {
         clientId: values.clientId,
         projectId: values.projectId,
         quotationId: values.quotationId,
         amountPerProject: values.amountPerProject,
-        totalAmount: values.totalAmount,
+        totalAmount: finalTotal,
         paymentInfo: values.paymentInfo,
         terms: values.terms,
         scopeOfWork: values.scopeOfWork,
         dueDate: values.dueDate.toISOString(),
         materaiRequired: values.materaiRequired,
         materaiApplied: values.materaiApplied,
+        // Tax fields
+        includeTax: includePPN,
+        taxRate: includePPN ? 11 : 0,
+        taxAmount: taxAmount,
+        subtotalAmount: subtotal,
       }
 
       await invoiceService.updateInvoice(id, updateData)
@@ -260,8 +348,26 @@ export const InvoiceEditPage: React.FC = () => {
     }
   }
 
+  /**
+   * ✅ FIX: Use correct endpoint based on status change
+   *
+   * - For PAID status: Call markAsPaid endpoint (creates payment journal)
+   * - For other statuses: Call updateStatus endpoint
+   *
+   * This ensures accounting logic is never bypassed when marking invoice as paid.
+   */
   const handleStatusChange = (newStatus: string) => {
-    updateStatusMutation.mutate(newStatus)
+    if (newStatus === 'PAID') {
+      markAsPaidMutation.mutate()
+    } else {
+      updateStatusMutation.mutate(newStatus)
+    }
+  }
+
+  const handleRestoreDefaultPaymentInfo = () => {
+    const defaultPaymentInfo = generatePaymentInfo()
+    form.setFieldsValue({ paymentInfo: defaultPaymentInfo })
+    message.success('Payment information restored to default template')
   }
 
   if (invoiceLoading) {
@@ -379,17 +485,6 @@ export const InvoiceEditPage: React.FC = () => {
                 : []),
             ]
           : []),
-        ...(invoice.status === 'SENT' || invoice.status === 'OVERDUE'
-          ? [
-              {
-                label: 'Mark as Paid',
-                type: 'primary' as const,
-                icon: <CheckCircleOutlined />,
-                onClick: handleMarkAsPaid,
-                loading: markAsPaidMutation.isPending,
-              },
-            ]
-          : []),
       ]}
     />
   )
@@ -489,7 +584,7 @@ export const InvoiceEditPage: React.FC = () => {
                       )
                     }
                     onClick={() => handleStatusChange(action.value)}
-                    loading={updateStatusMutation.isPending}
+                    loading={action.value === 'PAID' ? markAsPaidMutation.isPending : updateStatusMutation.isPending}
                   >
                     {action.label}
                   </Button>
@@ -872,7 +967,22 @@ export const InvoiceEditPage: React.FC = () => {
           <Col xs={24}>
             <Form.Item
               name='paymentInfo'
-              label='Payment Information'
+              label={
+                <Space>
+                  <span>Payment Information</span>
+                  {canEdit && companySettings && (
+                    <Button
+                      type='link'
+                      size='small'
+                      icon={<ReloadOutlined />}
+                      onClick={handleRestoreDefaultPaymentInfo}
+                      style={{ padding: 0, height: 'auto' }}
+                    >
+                      Use Default Template
+                    </Button>
+                  )}
+                </Space>
+              }
               rules={[
                 { required: true, message: 'Please enter payment information' },
                 {
@@ -880,11 +990,27 @@ export const InvoiceEditPage: React.FC = () => {
                   message: 'Payment info must be at least 50 characters',
                 },
               ]}
+              extra={
+                companySettingsLoading ? (
+                  <Text type='secondary' style={{ fontSize: '12px' }}>
+                    Loading company settings...
+                  </Text>
+                ) : !companySettings ? (
+                  <Text type='warning' style={{ fontSize: '12px' }}>
+                    Company settings not configured. Please set up bank accounts in Settings.
+                  </Text>
+                ) : (
+                  <Text type='secondary' style={{ fontSize: '12px' }}>
+                    Auto-filled from company settings. Click "Use Default Template" to restore.
+                  </Text>
+                )
+              }
             >
               <TextArea
-                rows={6}
+                rows={8}
                 placeholder='Enter payment methods, bank details, and payment instructions...'
                 disabled={!canEdit}
+                style={{ fontFamily: 'monospace', fontSize: '13px' }}
               />
             </Form.Item>
           </Col>

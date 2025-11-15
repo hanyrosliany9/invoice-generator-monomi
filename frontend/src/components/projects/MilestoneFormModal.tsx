@@ -153,6 +153,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
       width={700}
       okText={isEditMode ? 'Update' : 'Create'}
       cancelText="Cancel"
+      forceRender
     >
       <Form
         form={form}

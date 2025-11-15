@@ -8,6 +8,7 @@ import {
   IndonesianReportHeader,
   PdfFormattingOptions,
 } from "./indonesian-pdf-formatter";
+import { CompanySettingsService } from "../company/company-settings.service";
 
 interface SalesReportData {
   clientName: string;
@@ -47,23 +48,16 @@ interface ExportFilters {
 export class PdfExportService {
   private readonly logger = new Logger(PdfExportService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly companySettings: CompanySettingsService,
+  ) {}
 
   /**
    * Get Indonesian company information for SAK EMKM compliance
    */
-  private getIndonesianCompanyInfo(): IndonesianCompanyInfo {
-    return {
-      name: "MONOMI",
-      address: "Jl. Usaha Mandiri No. 123",
-      city: "Jakarta Selatan",
-      postalCode: "12345",
-      phone: "+62-21-1234-5678",
-      email: "info@monomi.co.id",
-      website: "www.monomi.co.id",
-      npwp: "01.234.567.8-901.234",
-      siup: "SIUP/123/2024",
-    };
+  private async getIndonesianCompanyInfo(): Promise<IndonesianCompanyInfo> {
+    return await this.companySettings.getCompanyInfo();
   }
 
   /**
@@ -74,7 +68,7 @@ export class PdfExportService {
     options: PdfFormattingOptions = {},
   ): Promise<Buffer> {
     // Get company information and validate compliance
-    const companyInfo = this.getIndonesianCompanyInfo();
+    const companyInfo = await this.getIndonesianCompanyInfo();
     const validationErrors =
       IndonesianPdfFormatter.validateIndonesianCompliance(companyInfo);
 

@@ -59,14 +59,15 @@ describe('Payment Milestones (E2E)', () => {
         email: 'test@client.com',
         phone: '081234567890',
         address: 'Jakarta',
-        taxId: '12.345.678.9-123.000',
       },
     });
 
     testProject = await prisma.project.create({
       data: {
-        projectNumber: `PRJ-TEST-${Date.now()}`,
+        number: `PRJ-TEST-${Date.now()}`,
         description: 'Test Project for Milestones',
+        output: 'Test deliverables',
+        projectTypeId: 'default-project-type', // Will need to be created or use existing
         clientId: testClient.id,
         status: 'PLANNING',
         startDate: new Date('2025-02-01'),
@@ -335,7 +336,8 @@ describe('Payment Milestones (E2E)', () => {
         await prisma.paymentMilestone.findUnique({
           where: { id: milestone.id },
         });
-      expect(updatedMilestone.invoiceId).toBe(invoice.id);
+      expect(updatedMilestone).not.toBeNull();
+      expect(updatedMilestone!.isInvoiced).toBe(true);
     });
 
     it('should not allow duplicate invoice for same milestone', async () => {

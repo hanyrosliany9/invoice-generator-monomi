@@ -50,15 +50,40 @@ async function bootstrap() {
       }),
     );
 
+    // CORS configuration with environment-based origin validation
+    const isProduction = process.env.NODE_ENV === 'production';
+    const allowedOrigins = isProduction
+      ? [process.env.FRONTEND_URL].filter(Boolean) // Production: Only FRONTEND_URL
+      : [
+          process.env.FRONTEND_URL || 'http://localhost:3001',
+          'http://localhost:3001', // Dev frontend port
+          'http://localhost:3000',
+          'http://127.0.0.1:3001',
+          'http://127.0.0.1:3000',
+        ]; // Development: Include localhost variants
+
     app.enableCors({
-      origin: [
-        process.env.FRONTEND_URL || "http://localhost:3000",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-      ],
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or Postman)
+        if (!origin) {
+          return callback(null, true);
+        }
+
+        // In development, allow any origin from Tailscale network (100.x.x.x)
+        const isTailscale = !isProduction && origin && /^https?:\/\/100\.\d+\.\d+\.\d+:\d+$/.test(origin);
+
+        if (allowedOrigins.includes(origin) || isTailscale) {
+          callback(null, true);
+        } else {
+          logger.warn(`🚫 CORS blocked origin: ${origin}`);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       credentials: true,
-      methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
+      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
+      maxAge: 86400, // 24 hours
     });
 
     // Global validation pipe

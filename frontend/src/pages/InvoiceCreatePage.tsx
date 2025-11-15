@@ -23,6 +23,7 @@ import {
   DollarOutlined,
   FileTextOutlined,
   ProjectOutlined,
+  ReloadOutlined,
   SaveOutlined,
   SendOutlined,
 } from '@ant-design/icons'
@@ -44,9 +45,10 @@ import { useOptimizedAutoSave } from '../hooks/useOptimizedAutoSave'
 import { useMobileOptimized } from '../hooks/useMobileOptimized'
 import { usePaymentMilestones } from '../hooks/usePaymentMilestones'
 import { CreateInvoiceRequest, invoiceService } from '../services/invoices'
-import { quotationService } from '../services/quotations'
+import { quotationService, Quotation as ServiceQuotation } from '../services/quotations'
 import { projectService } from '../services/projects'
 import { clientService } from '../services/clients'
+import { settingsService } from '../services/settings'
 import { formatIDR } from '../utils/currency'
 import { useTheme } from '../theme'
 import type { PaymentMilestone } from '../types/payment-milestones'
@@ -124,6 +126,12 @@ export const InvoiceCreatePage: React.FC = () => {
     queryFn: () => quotationService.getQuotations({ status: 'APPROVED' }),
   })
 
+  // Fetch company settings for payment info
+  const { data: companySettings, isLoading: companySettingsLoading } = useQuery({
+    queryKey: ['company-settings'],
+    queryFn: settingsService.getCompanySettings,
+  })
+
   // Fetch specific quotation if prefilled
   const { data: selectedQuotation, isLoading: quotationLoading } = useQuery({
     queryKey: ['quotation', prefilledQuotationId],
@@ -185,21 +193,35 @@ export const InvoiceCreatePage: React.FC = () => {
     }
   }, [selectedQuotation, prefilledClientId, form])
 
-  // Generate default payment info
-  const generateDefaultPaymentInfo = (quotation: Quotation) => {
-    return `
-Payment Methods:
-• Bank Transfer: BCA 1234567890 (PT Monomi)
-• Digital Payment: GoPay, OVO, DANA
-• Cash on Delivery (for local clients)
+  // Generate default payment info from company settings
+  const generateDefaultPaymentInfo = (quotation?: ServiceQuotation) => {
+    if (!companySettings) return ''
 
-Payment Terms:
-• Net 30 days from invoice date
-• Early payment discount: 2% if paid within 10 days
-• Late payment fee: 2% per month
+    const bankAccounts: string[] = []
 
-Reference: Quotation ${quotation.quotationNumber}
-    `.trim()
+    if (companySettings.bankBCA) {
+      bankAccounts.push(`Bank BCA: ${companySettings.bankBCA} a.n. ${companySettings.companyName}`)
+    }
+    if (companySettings.bankMandiri) {
+      bankAccounts.push(`Bank Mandiri: ${companySettings.bankMandiri} a.n. ${companySettings.companyName}`)
+    }
+    if (companySettings.bankBNI) {
+      bankAccounts.push(`Bank BNI: ${companySettings.bankBNI} a.n. ${companySettings.companyName}`)
+    }
+
+    if (bankAccounts.length === 0) {
+      return `INFORMASI PEMBAYARAN:\n\nSilakan hubungi ${companySettings.email || 'kami'} untuk informasi rekening pembayaran.${quotation ? `\n\nReferensi: Quotation ${quotation.quotationNumber}` : ''}`
+    }
+
+    return `INFORMASI PEMBAYARAN:
+
+${bankAccounts.join('\n')}
+
+Silakan transfer ke salah satu rekening di atas dan kirim bukti pembayaran ke ${companySettings.email || 'email kami'}.
+
+Untuk pertanyaan pembayaran, hubungi:
+${companySettings.phone ? `Telepon: ${companySettings.phone}` : ''}
+${companySettings.email ? `Email: ${companySettings.email}` : ''}${quotation ? `\n\nReferensi: Quotation ${quotation.quotationNumber}` : ''}`
   }
 
   // Generate default invoice terms
@@ -341,6 +363,12 @@ Reference: Quotation ${quotation.quotationNumber}
     } catch (error) {
       message.error('Please complete required fields')
     }
+  }
+
+  const handleRestoreDefaultPaymentInfo = () => {
+    const defaultPaymentInfo = generateDefaultPaymentInfo()
+    form.setFieldsValue({ paymentInfo: defaultPaymentInfo })
+    message.success('Payment information restored to default template')
   }
 
   const handleSaveDraft = async () => {
@@ -691,7 +719,6 @@ Reference: Quotation ${quotation.quotationNumber}
                   placeholder='Enter project amount'
                   showMateraiWarning={false}
                   disabled={!!selectedMilestoneId}
-                  readOnly={!!selectedMilestoneId}
                 />
               </Form.Item>
             </Col>
@@ -718,7 +745,6 @@ Reference: Quotation ${quotation.quotationNumber}
                   placeholder='Enter total amount'
                   showMateraiWarning={true}
                   disabled={!!selectedMilestoneId}
-                  readOnly={!!selectedMilestoneId}
                 />
               </Form.Item>
               {selectedMilestoneId && (
@@ -788,7 +814,7 @@ Reference: Quotation ${quotation.quotationNumber}
                         overflow: 'auto',
                         color: theme.colors.text.secondary
                       }}>
-                        {selectedQuotation.scopeOfWork}
+                        {(selectedQuotation as any).scopeOfWork}
                       </div>
                     </div>
                   }
@@ -857,7 +883,22 @@ Reference: Quotation ${quotation.quotationNumber}
           <Col xs={24}>
             <Form.Item
               name='paymentInfo'
-              label='Payment Information'
+              label={
+                <Space>
+                  <span>Payment Information</span>
+                  {companySettings && (
+                    <Button
+                      type='link'
+                      size='small'
+                      icon={<ReloadOutlined />}
+                      onClick={handleRestoreDefaultPaymentInfo}
+                      style={{ padding: 0, height: 'auto' }}
+                    >
+                      Use Default Template
+                    </Button>
+                  )}
+                </Space>
+              }
               rules={[
                 { required: true, message: 'Please enter payment information' },
                 {
@@ -865,10 +906,26 @@ Reference: Quotation ${quotation.quotationNumber}
                   message: 'Payment info must be at least 50 characters',
                 },
               ]}
+              extra={
+                companySettingsLoading ? (
+                  <Text type='secondary' style={{ fontSize: '12px' }}>
+                    Loading company settings...
+                  </Text>
+                ) : !companySettings ? (
+                  <Text type='warning' style={{ fontSize: '12px' }}>
+                    Company settings not configured. Please set up bank accounts in Settings.
+                  </Text>
+                ) : (
+                  <Text type='secondary' style={{ fontSize: '12px' }}>
+                    Auto-filled from company settings. Click "Use Default Template" to restore.
+                  </Text>
+                )
+              }
             >
               <TextArea
-                rows={6}
+                rows={8}
                 placeholder='Enter payment methods, bank details, and payment instructions...'
+                style={{ fontFamily: 'monospace', fontSize: '13px' }}
               />
             </Form.Item>
           </Col>

@@ -373,8 +373,8 @@ export const ExpensesPage: React.FC = () => {
     }
   };
 
-  const getActionMenuItems = (expense: Expense):unknown[] => {
-    const items:unknown[] = [
+  const getActionMenuItems = (expense: Expense): Array<{ key: string; icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }> => {
+    const items: Array<{ key: string; icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }> = [
       {
         key: 'view',
         icon: <EyeOutlined />,
