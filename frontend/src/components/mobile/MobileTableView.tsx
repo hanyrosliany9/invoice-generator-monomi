@@ -318,7 +318,10 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
 
   // Render mobile card item
   const renderMobileCard = (item: BusinessEntity) => {
-    const allActions = [...defaultMobileActions, ...actions]
+    // Merge actions, preferring custom actions over defaults (no duplicates)
+    const customActionKeys = new Set(actions.map(a => a.key))
+    const filteredDefaults = defaultMobileActions.filter(a => !customActionKeys.has(a.key))
+    const allActions = [...actions, ...filteredDefaults]
     const visibleActions = allActions.filter(action =>
       action.visible ? action.visible(item) : true
     )
@@ -703,7 +706,10 @@ const MobileTableView: React.FC<MobileTableViewProps> = ({
             {/* Action Buttons */}
             <Space direction='vertical' style={{ width: '100%' }} size={8}>
               {(() => {
-                const allActions = [...defaultMobileActions, ...actions]
+                // Merge actions, preferring custom actions over defaults (no duplicates)
+                const customActionKeys = new Set(actions.map(a => a.key))
+                const filteredDefaults = defaultMobileActions.filter(a => !customActionKeys.has(a.key))
+                const allActions = [...actions, ...filteredDefaults]
                 const visibleActions = allActions.filter(action =>
                   action.visible ? action.visible(selectedItem) : true
                 )
