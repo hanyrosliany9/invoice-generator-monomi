@@ -221,22 +221,24 @@ const GeneralLedgerPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
       {/* Header */}
       <div
         style={{
           display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '24px',
+          alignItems: isMobile ? 'stretch' : 'center',
+          marginBottom: isMobile ? '16px' : '24px',
+          gap: isMobile ? '12px' : '0',
         }}
       >
         <div>
-          <Title level={2} style={{ margin: 0, color: theme.colors.text.primary}}>
-            Buku Besar (General Ledger)
+          <Title level={isMobile ? 3 : 2} style={{ margin: 0, color: theme.colors.text.primary}}>
+            {isMobile ? 'Buku Besar' : 'Buku Besar (General Ledger)'}
           </Title>
-          <Text type="secondary">
-            Catatan transaksi per akun secara detail
+          <Text type="secondary" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+            {isMobile ? 'Catatan transaksi per akun' : 'Catatan transaksi per akun secara detail'}
           </Text>
         </div>
         <ExportButton
@@ -245,97 +247,101 @@ const GeneralLedgerPage: React.FC = () => {
         />
       </div>
 
-      {/* Filters */}
-      <Card
-        style={{
-          marginBottom: '24px',
-          background: theme.colors.card.background,
-          borderColor: theme.colors.border.default,
-        }}
-      >
-        <Space wrap size="middle">
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-              Periode:
-            </Text>
-            <RangePicker
-              value={dateRange}
-              onChange={(dates) => {
-                if (dates && dates[0] && dates[1]) {
-                  setDateRange([dates[0], dates[1]]);
+      {/* Filters - Desktop Only */}
+      {!isMobile && (
+        <Card
+          style={{
+            marginBottom: '24px',
+            background: theme.colors.card.background,
+            borderColor: theme.colors.border.default,
+          }}
+        >
+          <Space wrap size="middle">
+            <div>
+              <Text strong style={{ display: 'block', marginBottom: '8px' }}>
+                Periode:
+              </Text>
+              <RangePicker
+                value={dateRange}
+                onChange={(dates) => {
+                  if (dates && dates[0] && dates[1]) {
+                    setDateRange([dates[0], dates[1]]);
+                  }
+                }}
+                format="DD/MM/YYYY"
+                placeholder={['Tanggal Mulai', 'Tanggal Akhir']}
+              />
+            </div>
+            <div style={{ minWidth: '250px' }}>
+              <Text strong style={{ display: 'block', marginBottom: '8px' }}>
+                Filter Akun:
+              </Text>
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Pilih Akun (opsional)"
+                allowClear
+                showSearch
+                value={selectedAccountCode}
+                onChange={(value) => {
+                  setSelectedAccountCode(value);
+                  setSelectedAccountType(undefined);
+                }}
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
-              }}
-              format="DD/MM/YYYY"
-              placeholder={['Tanggal Mulai', 'Tanggal Akhir']}
-            />
-          </div>
-          <div style={{ minWidth: '250px' }}>
-            <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-              Filter Akun:
-            </Text>
-            <Select
-              style={{ width: '100%' }}
-              placeholder="Pilih Akun (opsional)"
-              allowClear
-              showSearch
-              value={selectedAccountCode}
-              onChange={(value) => {
-                setSelectedAccountCode(value);
-                setSelectedAccountType(undefined);
-              }}
-              filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-              }
-              options={accountsData?.map((account: any) => ({
-                value: account.code,
-                label: `${account.code} - ${account.nameId}`,
-              }))}
-            />
-          </div>
-          <div style={{ minWidth: '200px' }}>
-            <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-              Tipe Akun:
-            </Text>
-            <Select
-              style={{ width: '100%' }}
-              placeholder="Pilih Tipe (opsional)"
-              allowClear
-              value={selectedAccountType}
-              onChange={(value) => {
-                setSelectedAccountType(value);
-                setSelectedAccountCode(undefined);
-              }}
-              options={[
-                { value: 'ASSET', label: 'Aset' },
-                { value: 'LIABILITY', label: 'Liabilitas' },
-                { value: 'EQUITY', label: 'Ekuitas' },
-                { value: 'REVENUE', label: 'Pendapatan' },
-                { value: 'EXPENSE', label: 'Beban' },
-              ]}
-            />
-          </div>
-        </Space>
-      </Card>
+                options={accountsData?.map((account: any) => ({
+                  value: account.code,
+                  label: `${account.code} - ${account.nameId}`,
+                }))}
+              />
+            </div>
+            <div style={{ minWidth: '200px' }}>
+              <Text strong style={{ display: 'block', marginBottom: '8px' }}>
+                Tipe Akun:
+              </Text>
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Pilih Tipe (opsional)"
+                allowClear
+                value={selectedAccountType}
+                onChange={(value) => {
+                  setSelectedAccountType(value);
+                  setSelectedAccountCode(undefined);
+                }}
+                options={[
+                  { value: 'ASSET', label: 'Aset' },
+                  { value: 'LIABILITY', label: 'Liabilitas' },
+                  { value: 'EQUITY', label: 'Ekuitas' },
+                  { value: 'REVENUE', label: 'Pendapatan' },
+                  { value: 'EXPENSE', label: 'Beban' },
+                ]}
+              />
+            </div>
+          </Space>
+        </Card>
+      )}
 
       {/* Period Info */}
       <Card
+        size={isMobile ? 'small' : 'default'}
         style={{
-          marginBottom: '24px',
+          marginBottom: isMobile ? '16px' : '24px',
           background: theme.colors.accent.primary,
           borderColor: theme.colors.accent.primary,
         }}
       >
-        <Space align="center">
-          <BookOutlined style={{ fontSize: '24px', color: '#fff' }} />
-          <div>
-            <Text style={{ color: '#fff', fontSize: '16px', fontWeight: 500 }}>
+        <Space align="center" direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: '100%' }}>
+          <BookOutlined style={{ fontSize: isMobile ? '20px' : '24px', color: '#fff' }} />
+          <div style={{ width: isMobile ? '100%' : 'auto' }}>
+            <Text style={{ color: '#fff', fontSize: isMobile ? '13px' : '16px', fontWeight: 500 }}>
               {selectedAccountCode
                 ? `Akun: ${selectedAccountCode}`
                 : selectedAccountType
                 ? `Tipe: ${selectedAccountType}`
-                : 'Semua Akun'}{' '}
-              | Periode: {dateRange[0].format('DD MMM YYYY')} -{' '}
-              {dateRange[1].format('DD MMM YYYY')}
+                : 'Semua Akun'}
+              {isMobile && <br />}
+              {!isMobile && ' | '}
+              Periode: {dateRange[0].format(isMobile ? 'DD MMM' : 'DD MMM YYYY')} - {dateRange[1].format(isMobile ? 'DD MMM YY' : 'DD MMM YYYY')}
             </Text>
           </div>
         </Space>
@@ -355,48 +361,53 @@ const GeneralLedgerPage: React.FC = () => {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '16px',
-              marginBottom: '24px',
+              gridTemplateColumns: isMobile
+                ? 'repeat(auto-fit, minmax(100px, 1fr))'
+                : 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: isMobile ? '8px' : '16px',
+              marginBottom: isMobile ? '16px' : '24px',
             }}
           >
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background: theme.colors.card.background,
                 borderColor: theme.colors.border.default,
               }}
             >
               <Statistic
-                title="Total Entri"
+                title={<span style={{ fontSize: isMobile ? '11px' : '14px' }}>Total Entri</span>}
                 value={data.summary.totalEntries}
-                valueStyle={{ color: theme.colors.accent.primary, fontSize: '28px' }}
+                valueStyle={{ color: theme.colors.accent.primary, fontSize: isMobile ? '20px' : '28px' }}
               />
             </Card>
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background: theme.colors.card.background,
                 borderColor: theme.colors.border.default,
               }}
             >
               <Statistic
-                title="Total Debit"
+                title={<span style={{ fontSize: isMobile ? '11px' : '14px' }}>Total Debit</span>}
                 value={data.summary.totalDebit}
                 precision={0}
-                valueStyle={{ color: theme.colors.status.success, fontSize: '28px' }}
+                valueStyle={{ color: theme.colors.status.success, fontSize: isMobile ? '18px' : '28px' }}
                 prefix="Rp"
               />
             </Card>
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background: theme.colors.card.background,
                 borderColor: theme.colors.border.default,
               }}
             >
               <Statistic
-                title="Total Kredit"
+                title={<span style={{ fontSize: isMobile ? '11px' : '14px' }}>Total Kredit</span>}
                 value={data.summary.totalCredit}
                 precision={0}
-                valueStyle={{ color: theme.colors.status.error, fontSize: '28px' }}
+                valueStyle={{ color: theme.colors.status.error, fontSize: isMobile ? '18px' : '28px' }}
                 prefix="Rp"
               />
             </Card>
@@ -405,11 +416,12 @@ const GeneralLedgerPage: React.FC = () => {
           {/* Ledger Entries Table */}
           <Card
             title={
-              <Space>
-                <span>Catatan Transaksi</span>
-                <Tag color="blue">{data.entries.length} Entri</Tag>
+              <Space size={isMobile ? 'small' : 'middle'}>
+                <span style={{ fontSize: isMobile ? '13px' : '14px' }}>{isMobile ? 'Transaksi' : 'Catatan Transaksi'}</span>
+                <Tag color="blue" style={{ fontSize: isMobile ? '10px' : '12px' }}>{data.entries.length} Entri</Tag>
               </Space>
             }
+            size={isMobile ? 'small' : 'default'}
             style={{
               background: theme.colors.card.background,
               borderColor: theme.colors.border.default,
@@ -436,11 +448,12 @@ const GeneralLedgerPage: React.FC = () => {
                 dataSource={data.entries}
                 rowKey="id"
                 pagination={{
-                  pageSize: 20,
-                  showSizeChanger: true,
+                  pageSize: isMobile ? 10 : 20,
+                  showSizeChanger: !isMobile,
                   showTotal: (total) => `Total ${total} entri`,
                 }}
                 size="small"
+                scroll={isMobile ? { x: 800 } : undefined}
                 summary={() => (
                   <Table.Summary.Row style={{ background: theme.colors.background.tertiary }}>
                     <Table.Summary.Cell index={0} colSpan={4}>
