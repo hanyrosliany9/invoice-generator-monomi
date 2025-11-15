@@ -337,30 +337,31 @@ const AccountsPayablePage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
       {/* Header */}
       <div
         style={{
-          marginBottom: '24px',
+          marginBottom: isMobile ? '16px' : '24px',
         }}
       >
-        <Title level={2} style={{ margin: 0, color: theme.colors.text.primary}}>
-          Laporan Hutang (Accounts Payable)
+        <Title level={isMobile ? 3 : 2} style={{ margin: 0, color: theme.colors.text.primary}}>
+          {isMobile ? 'Laporan Hutang' : 'Laporan Hutang (Accounts Payable)'}
         </Title>
-        <Text type="secondary">
-          Ringkasan hutang usaha dan analisis umur hutang
+        <Text type="secondary" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+          {isMobile ? 'Ringkasan hutang usaha' : 'Ringkasan hutang usaha dan analisis umur hutang'}
         </Text>
       </div>
 
       <Tabs
         defaultActiveKey="1"
+        size={isMobile ? 'small' : 'middle'}
         items={[
           {
             key: '1',
             label: (
-              <span>
+              <span style={{ fontSize: isMobile ? '12px' : '14px' }}>
                 <FileTextOutlined />
-                {' '}Ringkasan Hutang
+                {!isMobile && ' '}Ringkasan{isMobile ? '' : ' Hutang'}
               </span>
             ),
             children: (
@@ -369,12 +370,14 @@ const AccountsPayablePage: React.FC = () => {
                 <div
                   style={{
                     display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '24px',
+                    alignItems: isMobile ? 'stretch' : 'center',
+                    marginBottom: isMobile ? '16px' : '24px',
+                    gap: isMobile ? '12px' : '0',
                   }}
                 >
-                  <Space>
+                  <Space style={{ width: isMobile ? '100%' : 'auto' }}>
                     <RangePicker
                       value={dateRange}
                       onChange={(dates) => {
@@ -383,7 +386,9 @@ const AccountsPayablePage: React.FC = () => {
                         }
                       }}
                       format="DD/MM/YYYY"
-                      placeholder={['Tanggal Mulai', 'Tanggal Akhir']}
+                      placeholder={['Mulai', 'Akhir']}
+                      size={isMobile ? 'small' : 'middle'}
+                      style={{ width: isMobile ? '100%' : 'auto' }}
                     />
                   </Space>
                   <ExportButton
@@ -394,18 +399,18 @@ const AccountsPayablePage: React.FC = () => {
 
                 {/* Period Info */}
                 <Card
+                  size={isMobile ? 'small' : 'default'}
                   style={{
-                    marginBottom: '24px',
+                    marginBottom: isMobile ? '16px' : '24px',
                     background: theme.colors.accent.primary,
                     borderColor: theme.colors.accent.primary,
                   }}
                 >
                   <Space align="center">
-                    <CalendarOutlined style={{ fontSize: '24px', color: '#fff' }} />
+                    <CalendarOutlined style={{ fontSize: isMobile ? '20px' : '24px', color: '#fff' }} />
                     <div>
-                      <Text style={{ color: '#fff', fontSize: '16px', fontWeight: 500 }}>
-                        Periode: {dateRange[0].format('DD MMMM YYYY')} -{' '}
-                        {dateRange[1].format('DD MMMM YYYY')}
+                      <Text style={{ color: '#fff', fontSize: isMobile ? '14px' : '16px', fontWeight: 500 }}>
+                        Periode: {dateRange[0].format(isMobile ? 'DD MMM' : 'DD MMMM YYYY')} - {dateRange[1].format(isMobile ? 'DD MMM YY' : 'DD MMMM YYYY')}
                       </Text>
                     </div>
                   </Space>
@@ -425,12 +430,15 @@ const AccountsPayablePage: React.FC = () => {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '16px',
-              marginBottom: '24px',
+              gridTemplateColumns: isMobile
+                ? 'repeat(auto-fit, minmax(140px, 1fr))'
+                : 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: isMobile ? '8px' : '16px',
+              marginBottom: isMobile ? '16px' : '24px',
             }}
           >
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background: theme.colors.card.background,
                 borderColor: theme.colors.border.default,
@@ -438,18 +446,19 @@ const AccountsPayablePage: React.FC = () => {
             >
               <Statistic
                 title={
-                  <Space>
-                    <FileTextOutlined style={{ color: theme.colors.status.error }} />
-                    <span>Total Hutang</span>
+                  <Space size={isMobile ? 'small' : 'middle'}>
+                    <FileTextOutlined style={{ color: theme.colors.status.error, fontSize: isMobile ? '16px' : '20px' }} />
+                    <span style={{ fontSize: isMobile ? '11px' : '14px' }}>Total Hutang</span>
                   </Space>
                 }
                 value={data.summary.totalOutstanding}
                 precision={0}
-                valueStyle={{ color: theme.colors.status.error, fontSize: '28px' }}
+                valueStyle={{ color: theme.colors.status.error, fontSize: isMobile ? '18px' : '28px' }}
                 prefix="Rp"
               />
             </Card>
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background: theme.colors.card.background,
                 borderColor: theme.colors.border.default,
@@ -457,16 +466,17 @@ const AccountsPayablePage: React.FC = () => {
             >
               <Statistic
                 title={
-                  <Space>
-                    <TagOutlined style={{ color: theme.colors.status.info }} />
-                    <span>Jumlah Kategori</span>
+                  <Space size={isMobile ? 'small' : 'middle'}>
+                    <TagOutlined style={{ color: theme.colors.status.info, fontSize: isMobile ? '16px' : '20px' }} />
+                    <span style={{ fontSize: isMobile ? '11px' : '14px' }}>{isMobile ? 'Kategori' : 'Jumlah Kategori'}</span>
                   </Space>
                 }
                 value={data.summary.categoryCount}
-                valueStyle={{ color: theme.colors.status.info, fontSize: '28px' }}
+                valueStyle={{ color: theme.colors.status.info, fontSize: isMobile ? '18px' : '28px' }}
               />
             </Card>
             <Card
+              size={isMobile ? 'small' : 'default'}
               style={{
                 background: theme.colors.card.background,
                 borderColor: theme.colors.border.default,
@@ -474,13 +484,13 @@ const AccountsPayablePage: React.FC = () => {
             >
               <Statistic
                 title={
-                  <Space>
-                    <FileTextOutlined style={{ color: theme.colors.status.warning }} />
-                    <span>Beban Belum Bayar</span>
+                  <Space size={isMobile ? 'small' : 'middle'}>
+                    <FileTextOutlined style={{ color: theme.colors.status.warning, fontSize: isMobile ? '16px' : '20px' }} />
+                    <span style={{ fontSize: isMobile ? '11px' : '14px' }}>{isMobile ? 'Belum Bayar' : 'Beban Belum Bayar'}</span>
                   </Space>
                 }
                 value={data.aging?.aging?.length || 0}
-                valueStyle={{ color: theme.colors.status.warning, fontSize: '28px' }}
+                valueStyle={{ color: theme.colors.status.warning, fontSize: isMobile ? '18px' : '28px' }}
               />
             </Card>
           </div>
@@ -488,14 +498,15 @@ const AccountsPayablePage: React.FC = () => {
           {/* Payables by Category */}
           <Card
             title={
-              <Space>
-                <TagOutlined />
-                <span>Hutang Per Kategori</span>
-                <Tag color="blue">{data.topCategories?.length || 0} Kategori</Tag>
+              <Space size={isMobile ? 'small' : 'middle'}>
+                <TagOutlined style={{ fontSize: isMobile ? '14px' : '16px' }} />
+                <span style={{ fontSize: isMobile ? '13px' : '14px' }}>{isMobile ? 'Per Kategori' : 'Hutang Per Kategori'}</span>
+                <Tag color="blue" style={{ fontSize: isMobile ? '10px' : '12px' }}>{data.topCategories?.length || 0} Kategori</Tag>
               </Space>
             }
+            size={isMobile ? 'small' : 'default'}
             style={{
-              marginBottom: '24px',
+              marginBottom: isMobile ? '16px' : '24px',
               background: theme.colors.card.background,
               borderColor: theme.colors.border.default,
             }}
@@ -507,6 +518,7 @@ const AccountsPayablePage: React.FC = () => {
                 rowKey={(record) => record.category?.code || 'unknown'}
                 pagination={false}
                 size="small"
+                scroll={isMobile ? { x: 500 } : undefined}
               />
             ) : (
               <Empty description="Tidak ada hutang pada periode ini" />
@@ -516,12 +528,13 @@ const AccountsPayablePage: React.FC = () => {
           {/* Outstanding Expenses */}
           <Card
             title={
-              <Space>
-                <FileTextOutlined />
-                <span>Beban Belum Terbayar</span>
-                <Tag color="orange">{data.aging?.aging?.length || 0} Beban</Tag>
+              <Space size={isMobile ? 'small' : 'middle'}>
+                <FileTextOutlined style={{ fontSize: isMobile ? '14px' : '16px' }} />
+                <span style={{ fontSize: isMobile ? '13px' : '14px' }}>{isMobile ? 'Belum Terbayar' : 'Beban Belum Terbayar'}</span>
+                <Tag color="orange" style={{ fontSize: isMobile ? '10px' : '12px' }}>{data.aging?.aging?.length || 0} Beban</Tag>
               </Space>
             }
+            size={isMobile ? 'small' : 'default'}
             style={{
               background: theme.colors.card.background,
               borderColor: theme.colors.border.default,
@@ -582,9 +595,9 @@ const AccountsPayablePage: React.FC = () => {
           {
             key: '2',
             label: (
-              <span>
+              <span style={{ fontSize: isMobile ? '12px' : '14px' }}>
                 <ClockCircleOutlined />
-                {' '}Analisis Umur Hutang
+                {!isMobile && ' '}Analisis{isMobile ? '' : ' Umur Hutang'}
               </span>
             ),
             children: (
@@ -593,9 +606,11 @@ const AccountsPayablePage: React.FC = () => {
                 <div
                   style={{
                     display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '24px',
+                    alignItems: isMobile ? 'stretch' : 'center',
+                    marginBottom: isMobile ? '16px' : '24px',
+                    gap: isMobile ? '12px' : '0',
                   }}
                 >
                   <Space>
@@ -608,6 +623,8 @@ const AccountsPayablePage: React.FC = () => {
                       }}
                       format="DD/MM/YYYY"
                       placeholder="Per Tanggal"
+                      size={isMobile ? 'small' : 'middle'}
+                      style={{ width: isMobile ? '100%' : 'auto' }}
                     />
                   </Space>
                   <ExportButton
@@ -618,17 +635,18 @@ const AccountsPayablePage: React.FC = () => {
 
                 {/* Date Info */}
                 <Card
+                  size={isMobile ? 'small' : 'default'}
                   style={{
-                    marginBottom: '24px',
+                    marginBottom: isMobile ? '16px' : '24px',
                     background: theme.colors.accent.primary,
                     borderColor: theme.colors.accent.primary,
                   }}
                 >
                   <Space align="center">
-                    <CalendarOutlined style={{ fontSize: '24px', color: '#fff' }} />
+                    <CalendarOutlined style={{ fontSize: isMobile ? '20px' : '24px', color: '#fff' }} />
                     <div>
-                      <Text style={{ color: '#fff', fontSize: '16px', fontWeight: 500 }}>
-                        Per Tanggal: {asOfDate.format('DD MMMM YYYY')}
+                      <Text style={{ color: '#fff', fontSize: isMobile ? '14px' : '16px', fontWeight: 500 }}>
+                        Per Tanggal: {asOfDate.format(isMobile ? 'DD MMM YYYY' : 'DD MMMM YYYY')}
                       </Text>
                     </div>
                   </Space>
@@ -648,22 +666,25 @@ const AccountsPayablePage: React.FC = () => {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                        gap: '16px',
-                        marginBottom: '24px',
+                        gridTemplateColumns: isMobile
+                          ? 'repeat(auto-fit, minmax(140px, 1fr))'
+                          : 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: isMobile ? '8px' : '16px',
+                        marginBottom: isMobile ? '16px' : '24px',
                       }}
                     >
                       <Card
+                        size={isMobile ? 'small' : 'default'}
                         style={{
                           background: theme.colors.background.tertiary,
                           borderColor: theme.colors.status.success,
                         }}
                       >
                         <Statistic
-                          title="Belum Jatuh Tempo"
+                          title={<span style={{ fontSize: isMobile ? '11px' : '14px' }}>{isMobile ? 'Belum J.T.' : 'Belum Jatuh Tempo'}</span>}
                           value={agingData.summary.current}
                           precision={0}
-                          valueStyle={{ color: theme.colors.status.success, fontSize: '24px' }}
+                          valueStyle={{ color: theme.colors.status.success, fontSize: isMobile ? '18px' : '24px' }}
                           prefix="Rp"
                         />
                         <Progress
@@ -675,20 +696,21 @@ const AccountsPayablePage: React.FC = () => {
                           strokeColor={theme.colors.status.success}
                           showInfo={false}
                           size="small"
-                          style={{ marginTop: '8px' }}
+                          style={{ marginTop: isMobile ? '4px' : '8px' }}
                         />
                       </Card>
                       <Card
+                        size={isMobile ? 'small' : 'default'}
                         style={{
                           background: theme.colors.card.background,
                           borderColor: theme.colors.border.default,
                         }}
                       >
                         <Statistic
-                          title="1-30 Hari"
+                          title={<span style={{ fontSize: isMobile ? '11px' : '14px' }}>1-30 Hari</span>}
                           value={agingData.summary.days1to30}
                           precision={0}
-                          valueStyle={{ color: theme.colors.status.info, fontSize: '24px' }}
+                          valueStyle={{ color: theme.colors.status.info, fontSize: isMobile ? '18px' : '24px' }}
                           prefix="Rp"
                         />
                         <Progress
@@ -700,20 +722,21 @@ const AccountsPayablePage: React.FC = () => {
                           strokeColor={theme.colors.status.info}
                           showInfo={false}
                           size="small"
-                          style={{ marginTop: '8px' }}
+                          style={{ marginTop: isMobile ? '4px' : '8px' }}
                         />
                       </Card>
                       <Card
+                        size={isMobile ? 'small' : 'default'}
                         style={{
                           background: theme.colors.card.background,
                           borderColor: theme.colors.border.default,
                         }}
                       >
                         <Statistic
-                          title="31-60 Hari"
+                          title={<span style={{ fontSize: isMobile ? '11px' : '14px' }}>31-60 Hari</span>}
                           value={agingData.summary.days31to60}
                           precision={0}
-                          valueStyle={{ color: theme.colors.status.warning, fontSize: '24px' }}
+                          valueStyle={{ color: theme.colors.status.warning, fontSize: isMobile ? '18px' : '24px' }}
                           prefix="Rp"
                         />
                         <Progress
@@ -725,20 +748,21 @@ const AccountsPayablePage: React.FC = () => {
                           strokeColor={theme.colors.status.warning}
                           showInfo={false}
                           size="small"
-                          style={{ marginTop: '8px' }}
+                          style={{ marginTop: isMobile ? '4px' : '8px' }}
                         />
                       </Card>
                       <Card
+                        size={isMobile ? 'small' : 'default'}
                         style={{
                           background: theme.colors.card.background,
                           borderColor: theme.colors.border.default,
                         }}
                       >
                         <Statistic
-                          title="61-90 Hari"
+                          title={<span style={{ fontSize: isMobile ? '11px' : '14px' }}>61-90 Hari</span>}
                           value={agingData.summary.days61to90}
                           precision={0}
-                          valueStyle={{ color: '#ff7875', fontSize: '24px' }}
+                          valueStyle={{ color: '#ff7875', fontSize: isMobile ? '18px' : '24px' }}
                           prefix="Rp"
                         />
                         <Progress
@@ -750,10 +774,11 @@ const AccountsPayablePage: React.FC = () => {
                           strokeColor="#ff7875"
                           showInfo={false}
                           size="small"
-                          style={{ marginTop: '8px' }}
+                          style={{ marginTop: isMobile ? '4px' : '8px' }}
                         />
                       </Card>
                       <Card
+                        size={isMobile ? 'small' : 'default'}
                         style={{
                           background: theme.colors.background.tertiary,
                           borderColor: theme.colors.status.error,
@@ -761,14 +786,14 @@ const AccountsPayablePage: React.FC = () => {
                       >
                         <Statistic
                           title={
-                            <Space>
-                              <WarningOutlined />
-                              <span>Lebih dari 90 Hari</span>
+                            <Space size={isMobile ? 'small' : 'middle'}>
+                              <WarningOutlined style={{ fontSize: isMobile ? '12px' : '14px' }} />
+                              <span style={{ fontSize: isMobile ? '11px' : '14px' }}>{isMobile ? '>90 Hari' : 'Lebih dari 90 Hari'}</span>
                             </Space>
                           }
                           value={agingData.summary.over90}
                           precision={0}
-                          valueStyle={{ color: theme.colors.status.error, fontSize: '24px' }}
+                          valueStyle={{ color: theme.colors.status.error, fontSize: isMobile ? '18px' : '24px' }}
                           prefix="Rp"
                         />
                         <Progress
@@ -780,15 +805,16 @@ const AccountsPayablePage: React.FC = () => {
                           strokeColor={theme.colors.status.error}
                           showInfo={false}
                           size="small"
-                          style={{ marginTop: '8px' }}
+                          style={{ marginTop: isMobile ? '4px' : '8px' }}
                         />
                       </Card>
                     </div>
 
                     {/* Total AP Card */}
                     <Card
+                      size={isMobile ? 'small' : 'default'}
                       style={{
-                        marginBottom: '24px',
+                        marginBottom: isMobile ? '16px' : '24px',
                         background: theme.colors.status.error,
                         borderColor: theme.colors.status.error,
                       }}
@@ -796,12 +822,14 @@ const AccountsPayablePage: React.FC = () => {
                       <div
                         style={{
                           display: 'flex',
+                          flexDirection: isMobile ? 'column' : 'row',
                           justifyContent: 'space-between',
-                          alignItems: 'center',
+                          alignItems: isMobile ? 'flex-start' : 'center',
+                          gap: isMobile ? '8px' : '0',
                         }}
                       >
                         <div>
-                          <Text style={{ color: '#fff', fontSize: '18px' }}>
+                          <Text style={{ color: '#fff', fontSize: isMobile ? '14px' : '18px' }}>
                             Total Hutang Usaha
                           </Text>
                         </div>
@@ -809,7 +837,7 @@ const AccountsPayablePage: React.FC = () => {
                           <Text
                             style={{
                               color: '#fff',
-                              fontSize: '36px',
+                              fontSize: isMobile ? '24px' : '36px',
                               fontWeight: 'bold',
                             }}
                           >
@@ -822,12 +850,13 @@ const AccountsPayablePage: React.FC = () => {
                     {/* Aging Details Table */}
                     <Card
                       title={
-                        <Space>
-                          <ClockCircleOutlined />
-                          <span>Detail Hutang Per Umur</span>
-                          <Tag color="blue">{agingData.aging.length} Beban</Tag>
+                        <Space size={isMobile ? 'small' : 'middle'}>
+                          <ClockCircleOutlined style={{ fontSize: isMobile ? '14px' : '16px' }} />
+                          <span style={{ fontSize: isMobile ? '13px' : '14px' }}>{isMobile ? 'Per Umur' : 'Detail Hutang Per Umur'}</span>
+                          <Tag color="blue" style={{ fontSize: isMobile ? '10px' : '12px' }}>{agingData.aging.length} Beban</Tag>
                         </Space>
                       }
+                      size={isMobile ? 'small' : 'default'}
                       style={{
                         background: theme.colors.card.background,
                         borderColor: theme.colors.border.default,
@@ -839,11 +868,12 @@ const AccountsPayablePage: React.FC = () => {
                           dataSource={agingData.aging}
                           rowKey={(record: any) => record.expenseNumber || record.id || Math.random().toString()}
                           pagination={{
-                            pageSize: 20,
-                            showSizeChanger: true,
+                            pageSize: isMobile ? 10 : 20,
+                            showSizeChanger: !isMobile,
                             showTotal: (total) => `Total ${total} beban`,
                           }}
                           size="small"
+                          scroll={isMobile ? { x: 800 } : undefined}
                           summary={() => (
                             <Table.Summary.Row
                               style={{ background: theme.colors.background.tertiary }}
