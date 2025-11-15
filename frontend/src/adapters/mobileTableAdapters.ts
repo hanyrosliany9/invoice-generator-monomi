@@ -28,7 +28,7 @@ export function invoiceToBusinessEntity(invoice: Invoice): BusinessEntity {
     client: {
       name: invoice.client?.name || invoice.clientName || 'Unknown Client',
       company: invoice.client?.company || '',
-      phone: '', // Invoice doesn't have phone in current structure
+      phone: invoice.client?.phone || '',
       email: invoice.client?.email || '',
     },
     createdAt: new Date(invoice.createdAt),

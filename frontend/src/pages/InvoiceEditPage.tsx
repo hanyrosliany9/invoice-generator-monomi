@@ -12,6 +12,7 @@ import {
   Row,
   Select,
   Space,
+  Spin,
   Switch,
   Tag,
   Typography,
@@ -371,7 +372,23 @@ ${companySettings.email ? `Email: ${companySettings.email}` : ''}`
   }
 
   if (invoiceLoading) {
-    return <div>Loading invoice...</div>
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '60vh',
+          padding: '20px',
+        }}
+      >
+        <Spin size='large' />
+        <p style={{ marginTop: '16px', color: '#666', fontSize: '16px' }}>
+          Loading invoice...
+        </p>
+      </div>
+    )
   }
 
   if (invoiceError || !invoice) {
