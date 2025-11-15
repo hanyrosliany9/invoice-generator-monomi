@@ -470,7 +470,7 @@ export const QuotationsPage: React.FC = () => {
         icon: <DeleteOutlined />,
         danger: true,
         onClick: (record) => handleDelete(record.id),
-        visible: (record) => record.status === 'draft',
+        // No visibility restriction - matches desktop behavior
       },
     ],
     [
