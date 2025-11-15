@@ -60,6 +60,7 @@ import { generateVideoThumbnail, isVideoFile } from '../utils/videoThumbnail';
 import { downloadSingleMedia, downloadMediaAsZip } from '../utils/zipDownload';
 import { exportContentToPDF } from '../utils/pdfExport';
 import { useFilterPresets } from '../hooks/useFilterPresets';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import { getMediaLimitForPlatforms, validateMediaForPlatforms, PLATFORM_MEDIA_LIMITS } from '../utils/platformLimits';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
@@ -281,6 +282,7 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { token } = theme.useToken();
+  const isMobile = useIsMobile();
 
   // Filter presets management
   const { presets, savePreset, deletePreset, applyPreset } = useFilterPresets(
@@ -321,7 +323,8 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadingCount, setUploadingCount] = useState<{ current: number; total: number }>({ current: 0, total: 0 });
-  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'kanban' | 'calendar'>('list');
+  // Default to grid view on mobile, list view on desktop (unless saved preference exists)
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'kanban' | 'calendar'>(isMobile ? 'grid' : 'list');
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [formSelectedClientId, setFormSelectedClientId] = useState<string | undefined>();
 
@@ -352,13 +355,16 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
     }
   };
 
-  // Persist view mode to localStorage
+  // Persist view mode to localStorage (with mobile-friendly default)
   useEffect(() => {
     const saved = localStorage.getItem('content-calendar-view-mode');
     if (saved && (saved === 'list' || saved === 'grid' || saved === 'kanban' || saved === 'calendar')) {
       setViewMode(saved as 'list' | 'grid' | 'kanban' | 'calendar');
+    } else if (isMobile && !saved) {
+      // On mobile with no saved preference, default to grid view
+      setViewMode('grid');
     }
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     localStorage.setItem('content-calendar-view-mode', viewMode);
@@ -1155,31 +1161,42 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 prefix={<SearchOutlined />}
-                style={{ width: 300 }}
+                style={{ width: isMobile ? 150 : 300 }}
                 allowClear
               />
               <Segmented
-                options={[
-                  { label: 'List', value: 'list', icon: <UnorderedListOutlined /> },
-                  { label: 'Grid', value: 'grid', icon: <AppstoreOutlined /> },
-                  { label: 'Board', value: 'kanban', icon: <ProjectOutlined /> },
-                  { label: 'Calendar', value: 'calendar', icon: <CalendarOutlined /> },
-                ]}
+                options={
+                  isMobile
+                    ? [
+                        { value: 'list', icon: <UnorderedListOutlined /> },
+                        { value: 'grid', icon: <AppstoreOutlined /> },
+                        { value: 'kanban', icon: <ProjectOutlined /> },
+                        { value: 'calendar', icon: <CalendarOutlined /> },
+                      ]
+                    : [
+                        { label: 'List', value: 'list', icon: <UnorderedListOutlined /> },
+                        { label: 'Grid', value: 'grid', icon: <AppstoreOutlined /> },
+                        { label: 'Board', value: 'kanban', icon: <ProjectOutlined /> },
+                        { label: 'Calendar', value: 'calendar', icon: <CalendarOutlined /> },
+                      ]
+                }
                 value={viewMode}
                 onChange={(value) => setViewMode(value as 'list' | 'grid' | 'kanban' | 'calendar')}
               />
               <Button
                 icon={<FilePdfOutlined />}
                 onClick={handleExportPDF}
+                title="Export PDF"
               >
-                Export PDF
+                {!isMobile && 'Export PDF'}
               </Button>
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={() => handleOpenModal()}
+                title="Create Content"
               >
-                Create Content
+                {!isMobile && 'Create Content'}
               </Button>
             </Space>
           </Col>
