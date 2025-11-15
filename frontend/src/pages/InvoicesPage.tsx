@@ -99,7 +99,7 @@ import { usePermissions } from '../hooks/usePermissions'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import MobileTableView from '../components/mobile/MobileTableView'
 import { invoiceToBusinessEntity } from '../adapters/mobileTableAdapters'
-import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView'
+import type { MobileTableAction, MobileFilterConfig, BusinessEntity } from '../components/mobile/MobileTableView'
 import { now } from '../utils/date'
 
 const { Title, Text } = Typography
@@ -530,6 +530,22 @@ export const InvoicesPage: React.FC = () => {
     deleteMutation.mutate(id)
   }
 
+  // Handler for mobile default actions (view, edit, whatsapp)
+  const handleMobileAction = useCallback(
+    (action: string, record: BusinessEntity) => {
+      switch (action) {
+        case 'edit':
+          navigate(`/invoices/${record.id}/edit`)
+          break
+        case 'view':
+          navigate(`/invoices/${record.id}`)
+          break
+        // whatsapp is handled by MobileTableView internally
+      }
+    },
+    [navigate]
+  )
+
   /**
    * ✅ FIX: Use correct endpoint based on status change
    *
@@ -604,7 +620,7 @@ export const InvoicesPage: React.FC = () => {
         icon: <DeleteOutlined />,
         danger: true,
         onClick: (record) => handleDelete(record.id),
-        visible: (record) => record.status === 'draft',
+        // No visibility restriction - matches desktop behavior
       },
     ],
     [invoices, canApproveFinancial, theme, handleStatusChange, handlePrintInvoice, handleDelete]
@@ -1829,6 +1845,7 @@ export const InvoicesPage: React.FC = () => {
           searchFields={['number', 'title', 'client.name']}
           filters={mobileFilters}
           actions={mobileActions}
+          onAction={handleMobileAction}
           onRefresh={handleRefresh}
         />
       ) : (
