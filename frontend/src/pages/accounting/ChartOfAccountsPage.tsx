@@ -203,23 +203,33 @@ const ChartOfAccountsPage: React.FC = () => {
       label: 'Tipe Akun',
       type: 'select' as const,
       options: [
+        { label: 'Semua Tipe', value: 'ALL' },
         { label: 'Aset', value: 'ASSET' },
         { label: 'Liabilitas', value: 'LIABILITY' },
         { label: 'Ekuitas', value: 'EQUITY' },
         { label: 'Pendapatan', value: 'REVENUE' },
         { label: 'Beban', value: 'EXPENSE' },
       ],
+      value: filterType,
+      onChange: (value) => setFilterType(value as string),
     },
     {
-      key: 'status',
-      label: 'Status',
+      key: 'subType',
+      label: 'Sub Tipe',
       type: 'select' as const,
       options: [
-        { label: 'Aktif', value: 'approved' },
-        { label: 'Nonaktif', value: 'declined' },
+        { label: 'Semua Sub Tipe', value: 'ALL' },
+        { label: 'Current Asset', value: 'CURRENT_ASSET' },
+        { label: 'Fixed Asset', value: 'FIXED_ASSET' },
+        { label: 'Current Liability', value: 'CURRENT_LIABILITY' },
+        { label: 'Selling Expense', value: 'SELLING_EXPENSE' },
+        { label: 'Admin Expense', value: 'ADMIN_EXPENSE' },
+        { label: 'Other Expense', value: 'OTHER_EXPENSE' },
       ],
+      value: filterSubType,
+      onChange: (value) => setFilterSubType(value as string),
     },
-  ], []);
+  ], [filterType, filterSubType]);
 
   // Get icon for account type
   const getAccountTypeIcon = (type: string) => {
@@ -457,81 +467,94 @@ const ChartOfAccountsPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
       {/* Header */}
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{
+        marginBottom: isMobile ? '16px' : '24px',
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: isMobile ? '12px' : '0',
+        justifyContent: 'space-between',
+        alignItems: isMobile ? 'stretch' : 'center'
+      }}>
         <div>
-          <Title level={2} style={{ margin: 0, color: theme.colors.text.primary }}>
-            Bagan Akun (Chart of Accounts)
+          <Title level={isMobile ? 3 : 2} style={{ margin: 0, color: theme.colors.text.primary }}>
+            Bagan Akun {!isMobile && '(Chart of Accounts)'}
           </Title>
-          <Text type="secondary">
-            Daftar akun berdasarkan standar akuntansi PSAK Indonesia
+          <Text type="secondary" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+            Daftar akun {!isMobile && 'berdasarkan standar akuntansi PSAK Indonesia'}
           </Text>
         </div>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={handleCreate}
-          size="large"
+          size={isMobile ? 'middle' : 'large'}
+          block={isMobile}
+          title="Tambah Akun Baru"
         >
-          Tambah Akun Baru
+          {isMobile ? 'Tambah Akun' : 'Tambah Akun Baru'}
         </Button>
       </div>
 
       {/* Filters */}
-      <Card
-        style={{
-          marginBottom: '24px',
-          background: theme.colors.background.primary,
-          borderColor: theme.colors.border.default,
-        }}
-      >
-        <Space wrap size="middle" style={{ width: '100%' }}>
-          <Input
-            placeholder="Cari kode atau nama akun..."
-            prefix={<SearchOutlined style={{ color: theme.colors.text.secondary }} />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 300 }}
-            allowClear
-          />
-          <Select
-            value={filterType}
-            onChange={setFilterType}
-            style={{ width: 150 }}
-            placeholder="Filter Tipe"
-          >
-            <Option value="ALL">Semua Tipe</Option>
-            <Option value="ASSET">Aset</Option>
-            <Option value="LIABILITY">Kewajiban</Option>
-            <Option value="EQUITY">Ekuitas</Option>
-            <Option value="REVENUE">Pendapatan</Option>
-            <Option value="EXPENSE">Beban</Option>
-          </Select>
-          <Select
-            value={filterSubType}
-            onChange={setFilterSubType}
-            style={{ width: 180 }}
-            placeholder="Filter Sub Tipe"
-          >
-            <Option value="ALL">Semua Sub Tipe</Option>
-            <Option value="CURRENT_ASSET">Current Asset</Option>
-            <Option value="FIXED_ASSET">Fixed Asset</Option>
-            <Option value="CURRENT_LIABILITY">Current Liability</Option>
-            <Option value="SELLING_EXPENSE">Selling Expense</Option>
-            <Option value="ADMIN_EXPENSE">Admin Expense</Option>
-            <Option value="OTHER_EXPENSE">Other Expense</Option>
-          </Select>
-        </Space>
-      </Card>
+      {!isMobile && (
+        <Card
+          style={{
+            marginBottom: '24px',
+            background: theme.colors.background.primary,
+            borderColor: theme.colors.border.default,
+          }}
+        >
+          <Space wrap size="middle" style={{ width: '100%' }}>
+            <Input
+              placeholder="Cari kode atau nama akun..."
+              prefix={<SearchOutlined style={{ color: theme.colors.text.secondary }} />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 300 }}
+              allowClear
+            />
+            <Select
+              value={filterType}
+              onChange={setFilterType}
+              style={{ width: 150 }}
+              placeholder="Filter Tipe"
+            >
+              <Option value="ALL">Semua Tipe</Option>
+              <Option value="ASSET">Aset</Option>
+              <Option value="LIABILITY">Kewajiban</Option>
+              <Option value="EQUITY">Ekuitas</Option>
+              <Option value="REVENUE">Pendapatan</Option>
+              <Option value="EXPENSE">Beban</Option>
+            </Select>
+            <Select
+              value={filterSubType}
+              onChange={setFilterSubType}
+              style={{ width: 180 }}
+              placeholder="Filter Sub Tipe"
+            >
+              <Option value="ALL">Semua Sub Tipe</Option>
+              <Option value="CURRENT_ASSET">Current Asset</Option>
+              <Option value="FIXED_ASSET">Fixed Asset</Option>
+              <Option value="CURRENT_LIABILITY">Current Liability</Option>
+              <Option value="SELLING_EXPENSE">Selling Expense</Option>
+              <Option value="ADMIN_EXPENSE">Admin Expense</Option>
+              <Option value="OTHER_EXPENSE">Other Expense</Option>
+            </Select>
+          </Space>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '16px',
-          marginBottom: '24px',
+          gridTemplateColumns: isMobile
+            ? 'repeat(auto-fit, minmax(140px, 1fr))'
+            : 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: isMobile ? '8px' : '16px',
+          marginBottom: isMobile ? '16px' : '24px',
         }}
       >
         {Object.entries(groupedAccounts).map(([type, accts]) => (
@@ -543,13 +566,13 @@ const ChartOfAccountsPage: React.FC = () => {
               borderColor: theme.colors.border.default,
             }}
           >
-            <Space>
+            <Space direction={isMobile ? 'vertical' : 'horizontal'} size={isMobile ? 4 : 8}>
               {getAccountTypeIcon(type)}
               <div>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.colors.text.primary }}>
+                <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 'bold', color: theme.colors.text.primary }}>
                   {accts.length}
                 </div>
-                <Text type="secondary" style={{ fontSize: '12px' }}>
+                <Text type="secondary" style={{ fontSize: isMobile ? '10px' : '12px' }}>
                   {getTypeNameId(type)}
                 </Text>
               </div>
