@@ -417,84 +417,90 @@ const JournalEntriesPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
       {/* Header */}
       <div
         style={{
           display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '24px',
+          alignItems: isMobile ? 'stretch' : 'center',
+          marginBottom: isMobile ? '16px' : '24px',
+          gap: isMobile ? '12px' : '0',
         }}
       >
         <div>
-          <Title level={2} style={{ margin: 0, color: theme.colors.text.primary }}>
-            <FileTextOutlined /> Jurnal Umum (Journal Entries)
+          <Title level={isMobile ? 3 : 2} style={{ margin: 0, color: theme.colors.text.primary }}>
+            <FileTextOutlined /> {isMobile ? 'Jurnal Umum' : 'Jurnal Umum (Journal Entries)'}
           </Title>
-          <Text type="secondary">
-            Semua transaksi jurnal dengan sistem pembukuan berpasangan
+          <Text type="secondary" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+            {isMobile ? 'Semua transaksi jurnal' : 'Semua transaksi jurnal dengan sistem pembukuan berpasangan'}
           </Text>
         </div>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={handleCreateEntry}
-          size="large"
+          size={isMobile ? 'middle' : 'large'}
+          block={isMobile}
+          title="Buat Entry Manual"
         >
-          Buat Entry Manual
+          {isMobile ? 'Buat Entry' : 'Buat Entry Manual'}
         </Button>
       </div>
 
-      {/* Filters */}
-      <Card
-        style={{
-          marginBottom: '24px',
-          background: theme.colors.background.primary,
-          borderColor: theme.colors.border.default,
-        }}
-      >
-        <Space wrap size="middle" style={{ width: '100%' }}>
-          <Input
-            placeholder="Cari no. jurnal atau deskripsi..."
-            prefix={<SearchOutlined style={{ color: theme.colors.text.secondary }} />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 300 }}
-            allowClear
-          />
-          <RangePicker
-            value={dateRange}
-            onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
-            format="DD/MM/YYYY"
-            placeholder={['Tanggal Mulai', 'Tanggal Akhir']}
-          />
-          <Select
-            value={filterStatus}
-            onChange={setFilterStatus}
-            style={{ width: 150 }}
-            placeholder="Filter Status"
-          >
-            <Option value="ALL">Semua Status</Option>
-            <Option value="DRAFT">Draft</Option>
-            <Option value="POSTED">Posted</Option>
-          </Select>
-          <Select
-            value={filterType}
-            onChange={setFilterType}
-            style={{ width: 180 }}
-            placeholder="Filter Tipe"
-          >
-            <Option value="ALL">Semua Tipe</Option>
-            <Option value="INVOICE">Faktur</Option>
-            <Option value="PAYMENT_RECEIVED">Pembayaran Diterima</Option>
-            <Option value="EXPENSE">Beban</Option>
-            <Option value="PAYMENT_MADE">Pembayaran Dilakukan</Option>
-          </Select>
-        </Space>
-      </Card>
+      {/* Filters - Desktop Only */}
+      {!isMobile && (
+        <Card
+          style={{
+            marginBottom: '24px',
+            background: theme.colors.background.primary,
+            borderColor: theme.colors.border.default,
+          }}
+        >
+          <Space wrap size="middle" style={{ width: '100%' }}>
+            <Input
+              placeholder="Cari no. jurnal atau deskripsi..."
+              prefix={<SearchOutlined style={{ color: theme.colors.text.secondary }} />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 300 }}
+              allowClear
+            />
+            <RangePicker
+              value={dateRange}
+              onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
+              format="DD/MM/YYYY"
+              placeholder={['Tanggal Mulai', 'Tanggal Akhir']}
+            />
+            <Select
+              value={filterStatus}
+              onChange={setFilterStatus}
+              style={{ width: 150 }}
+              placeholder="Filter Status"
+            >
+              <Option value="ALL">Semua Status</Option>
+              <Option value="DRAFT">Draft</Option>
+              <Option value="POSTED">Posted</Option>
+            </Select>
+            <Select
+              value={filterType}
+              onChange={setFilterType}
+              style={{ width: 180 }}
+              placeholder="Filter Tipe"
+            >
+              <Option value="ALL">Semua Tipe</Option>
+              <Option value="INVOICE">Faktur</Option>
+              <Option value="PAYMENT_RECEIVED">Pembayaran Diterima</Option>
+              <Option value="EXPENSE">Beban</Option>
+              <Option value="PAYMENT_MADE">Pembayaran Dilakukan</Option>
+            </Select>
+          </Space>
+        </Card>
+      )}
 
-      {/* Batch Operations */}
-      {selectedRowKeys.length > 0 && (
+      {/* Batch Operations - Desktop Only */}
+      {!isMobile && selectedRowKeys.length > 0 && (
         <Card
           size="small"
           style={{
@@ -533,9 +539,11 @@ const JournalEntriesPage: React.FC = () => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '16px',
-          marginBottom: '24px',
+          gridTemplateColumns: isMobile
+            ? 'repeat(auto-fit, minmax(100px, 1fr))'
+            : 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: isMobile ? '8px' : '16px',
+          marginBottom: isMobile ? '16px' : '24px',
         }}
       >
         <Card
@@ -545,13 +553,13 @@ const JournalEntriesPage: React.FC = () => {
             borderColor: theme.colors.border.default,
           }}
         >
-          <Space>
-            <FileTextOutlined style={{ fontSize: '24px', color: theme.colors.accent.primary }} />
+          <Space direction={isMobile ? 'vertical' : 'horizontal'} size={isMobile ? 4 : 8} style={{ width: '100%' }}>
+            <FileTextOutlined style={{ fontSize: isMobile ? '20px' : '24px', color: theme.colors.accent.primary }} />
             <div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.colors.text.primary}}>
+              <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 'bold', color: theme.colors.text.primary}}>
                 {pagination?.total || 0}
               </div>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+              <Text type="secondary" style={{ fontSize: isMobile ? '10px' : '12px' }}>
                 Total Jurnal
               </Text>
             </div>
@@ -564,13 +572,13 @@ const JournalEntriesPage: React.FC = () => {
             borderColor: theme.colors.border.default,
           }}
         >
-          <Space>
-            <CheckCircleOutlined style={{ fontSize: '24px', color: theme.colors.status.success }} />
+          <Space direction={isMobile ? 'vertical' : 'horizontal'} size={isMobile ? 4 : 8} style={{ width: '100%' }}>
+            <CheckCircleOutlined style={{ fontSize: isMobile ? '20px' : '24px', color: theme.colors.status.success }} />
             <div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.colors.text.primary}}>
+              <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 'bold', color: theme.colors.text.primary}}>
                 {entries.filter((e) => e.isPosted).length}
               </div>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+              <Text type="secondary" style={{ fontSize: isMobile ? '10px' : '12px' }}>
                 Posted
               </Text>
             </div>
@@ -583,13 +591,13 @@ const JournalEntriesPage: React.FC = () => {
             borderColor: theme.colors.border.default,
           }}
         >
-          <Space>
-            <ClockCircleOutlined style={{ fontSize: '24px', color: theme.colors.status.warning }} />
+          <Space direction={isMobile ? 'vertical' : 'horizontal'} size={isMobile ? 4 : 8} style={{ width: '100%' }}>
+            <ClockCircleOutlined style={{ fontSize: isMobile ? '20px' : '24px', color: theme.colors.status.warning }} />
             <div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.colors.text.primary}}>
+              <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 'bold', color: theme.colors.text.primary}}>
                 {entries.filter((e) => !e.isPosted).length}
               </div>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+              <Text type="secondary" style={{ fontSize: isMobile ? '10px' : '12px' }}>
                 Draft
               </Text>
             </div>
@@ -651,7 +659,7 @@ const JournalEntriesPage: React.FC = () => {
         title={
           <Space>
             <FileTextOutlined />
-            <span>Detail Jurnal Umum</span>
+            <span style={{ fontSize: isMobile ? '14px' : '16px' }}>Detail Jurnal Umum</span>
           </Space>
         }
         open={detailsVisible}
@@ -662,8 +670,9 @@ const JournalEntriesPage: React.FC = () => {
               key="edit"
               icon={<EditOutlined />}
               onClick={handleEditEntry}
+              size={isMobile ? 'small' : 'middle'}
             >
-              Edit
+              {!isMobile && 'Edit'}
             </Button>
           ),
           selectedEntry && !selectedEntry.isPosted && (
@@ -679,8 +688,9 @@ const JournalEntriesPage: React.FC = () => {
                 icon={<LockOutlined />}
                 type="primary"
                 loading={postMutation.isPending}
+                size={isMobile ? 'small' : 'middle'}
               >
-                Post ke Ledger
+                {isMobile ? 'Post' : 'Post ke Ledger'}
               </Button>
             </Popconfirm>
           ),
@@ -697,8 +707,9 @@ const JournalEntriesPage: React.FC = () => {
                 icon={<SwapOutlined />}
                 type="primary"
                 loading={reverseMutation.isPending}
+                size={isMobile ? 'small' : 'middle'}
               >
-                Balik Entry
+                {isMobile ? 'Balik' : 'Balik Entry'}
               </Button>
             </Popconfirm>
           ),
@@ -716,21 +727,22 @@ const JournalEntriesPage: React.FC = () => {
                 danger
                 icon={<DeleteOutlined />}
                 loading={deleteMutation.isPending}
+                size={isMobile ? 'small' : 'middle'}
               >
-                Hapus
+                {!isMobile && 'Hapus'}
               </Button>
             </Popconfirm>
           ),
-          <Button key="close" onClick={() => setDetailsVisible(false)}>
+          <Button key="close" onClick={() => setDetailsVisible(false)} size={isMobile ? 'small' : 'middle'}>
             Tutup
           </Button>,
         ]}
-        width={800}
+        width={isMobile ? '100%' : 800}
       >
         {selectedEntry && (
           <div>
-            <Descriptions bordered size="small" column={2}>
-              <Descriptions.Item label="No. Jurnal" span={2}>
+            <Descriptions bordered size="small" column={isMobile ? 1 : 2}>
+              <Descriptions.Item label="No. Jurnal" span={isMobile ? 1 : 2}>
                 <Text strong>{selectedEntry.entryNumber}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Tanggal">
@@ -743,21 +755,21 @@ const JournalEntriesPage: React.FC = () => {
                   <Tag color="default">Draft</Tag>
                 )}
               </Descriptions.Item>
-              <Descriptions.Item label="Tipe Transaksi" span={2}>
+              <Descriptions.Item label="Tipe Transaksi" span={isMobile ? 1 : 2}>
                 {getTransactionTypeName(selectedEntry.transactionType)}
               </Descriptions.Item>
-              <Descriptions.Item label="Deskripsi" span={2}>
+              <Descriptions.Item label="Deskripsi" span={isMobile ? 1 : 2}>
                 {selectedEntry.descriptionId || selectedEntry.description}
               </Descriptions.Item>
               {selectedEntry.documentNumber && (
-                <Descriptions.Item label="No. Dokumen" span={2}>
+                <Descriptions.Item label="No. Dokumen" span={isMobile ? 1 : 2}>
                   {selectedEntry.documentNumber}
                 </Descriptions.Item>
               )}
             </Descriptions>
 
-            <div style={{ marginTop: '24px' }}>
-              <Title level={5}>Item Jurnal</Title>
+            <div style={{ marginTop: isMobile ? '16px' : '24px' }}>
+              <Title level={5} style={{ fontSize: isMobile ? '14px' : '16px' }}>Item Jurnal</Title>
               <Table
                 dataSource={selectedEntry.lineItems}
                 columns={[
@@ -765,19 +777,20 @@ const JournalEntriesPage: React.FC = () => {
                     title: 'Kode Akun',
                     dataIndex: 'accountCode',
                     key: 'accountCode',
-                    width: 100,
+                    width: isMobile ? 80 : 100,
                   },
                   {
                     title: 'Deskripsi',
                     dataIndex: 'descriptionId',
                     key: 'descriptionId',
                     render: (descId: string, record: any) => descId || record.description,
+                    ellipsis: isMobile,
                   },
                   {
                     title: 'Debit',
                     dataIndex: 'debitAmount',
                     key: 'debitAmount',
-                    width: 150,
+                    width: isMobile ? 100 : 150,
                     align: 'right' as const,
                     render: (amount: number) =>
                       amount > 0 ? formatCurrency(amount) : '-',
@@ -786,7 +799,7 @@ const JournalEntriesPage: React.FC = () => {
                     title: 'Kredit',
                     dataIndex: 'creditAmount',
                     key: 'creditAmount',
-                    width: 150,
+                    width: isMobile ? 100 : 150,
                     align: 'right' as const,
                     render: (amount: number) =>
                       amount > 0 ? formatCurrency(amount) : '-',
@@ -794,6 +807,7 @@ const JournalEntriesPage: React.FC = () => {
                 ]}
                 pagination={false}
                 size="small"
+                scroll={isMobile ? { x: 400 } : undefined}
                 summary={(data) => {
                   const totalDebit = data.reduce((sum, item) => sum + Number(item.debitAmount), 0);
                   const totalCredit = data.reduce((sum, item) => sum + Number(item.creditAmount), 0);
