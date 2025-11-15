@@ -557,37 +557,10 @@ export const InvoicesPage: React.FC = () => {
   )
 
   // Mobile actions configuration
+  // Mobile actions - only include invoice-specific actions
+  // Note: 'view', 'edit', and 'whatsapp' are provided by MobileTableView's defaultMobileActions
   const mobileActions = useMemo<MobileTableAction[]>(
     () => [
-      {
-        key: 'view',
-        label: 'Lihat Detail',
-        icon: <EyeOutlined />,
-        onClick: (record) => navigate(`/invoices/${record.id}`),
-      },
-      {
-        key: 'edit',
-        label: 'Edit',
-        icon: <EditOutlined />,
-        color: theme.colors.accent.primary,
-        onClick: (record) => navigate(`/invoices/${record.id}/edit`),
-        visible: (record) => record.status === 'draft',
-      },
-      {
-        key: 'whatsapp',
-        label: 'WhatsApp',
-        icon: <WhatsAppOutlined />,
-        color: '#25d366',
-        visible: (record) => !!record.client?.phone,
-        onClick: (record) => {
-          const phone = record.client?.phone?.replace(/[^\d]/g, '')
-          if (phone) {
-            const message = `Halo ${record.client?.name}, terkait invoice ${record.number}`
-            const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
-            window.open(whatsappUrl, '_blank')
-          }
-        },
-      },
       {
         key: 'send',
         label: 'Kirim',
@@ -634,7 +607,7 @@ export const InvoicesPage: React.FC = () => {
         visible: (record) => record.status === 'draft',
       },
     ],
-    [navigate, invoices, canApproveFinancial, theme, handleStatusChange, handlePrintInvoice, handleDelete]
+    [invoices, canApproveFinancial, theme, handleStatusChange, handlePrintInvoice, handleDelete]
   )
 
   // Mobile filters configuration
