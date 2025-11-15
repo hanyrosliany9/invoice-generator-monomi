@@ -587,22 +587,25 @@ export const AssetsPage: React.FC = () => {
         }
       `}</style>
 
-      <div className='mb-6'>
-        <Title level={2}>Aset & Depresiasi</Title>
-        <Text type='secondary'>
-          Manajemen aset dan depresiasi sesuai standar PSAK 16
+      <div className='mb-6' style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <Title level={isMobile ? 3 : 2} style={{ marginBottom: isMobile ? '4px' : '8px' }}>
+          {isMobile ? 'Aset & Depresiasi' : 'Aset & Depresiasi'}
+        </Title>
+        <Text type='secondary' style={{ fontSize: isMobile ? '12px' : '14px' }}>
+          {isMobile ? 'Manajemen aset sesuai PSAK 16' : 'Manajemen aset dan depresiasi sesuai standar PSAK 16'}
         </Text>
       </div>
 
       <Tabs
         defaultActiveKey="1"
+        size={isMobile ? 'small' : 'middle'}
         items={[
           {
             key: '1',
             label: (
-              <span>
+              <span style={{ fontSize: isMobile ? '12px' : '14px' }}>
                 <ToolOutlined />
-                {' '}Daftar Aset
+                {!isMobile && ' '}Daftar Aset
               </span>
             ),
             children: (
@@ -793,53 +796,62 @@ export const AssetsPage: React.FC = () => {
           {
             key: '2',
             label: (
-              <span>
+              <span style={{ fontSize: isMobile ? '12px' : '14px' }}>
                 <DollarOutlined />
-                {' '}Depresiasi Aset
+                {!isMobile && ' '}Depresiasi
               </span>
             ),
             children: (
               <div>
                 {/* Depreciation Controls */}
-                <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{
+                  marginBottom: isMobile ? '16px' : '24px',
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  justifyContent: 'space-between',
+                  gap: isMobile ? '12px' : '0',
+                }}>
                   <Space wrap size="middle">
                     <RangePicker
                       value={dateRange}
                       onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
                       format="DD/MM/YYYY"
-                      placeholder={['Tanggal Mulai', 'Tanggal Akhir']}
+                      placeholder={isMobile ? ['Mulai', 'Akhir'] : ['Tanggal Mulai', 'Tanggal Akhir']}
+                      size={isMobile ? 'small' : 'middle'}
+                      style={{ width: isMobile ? '100%' : 'auto' }}
                     />
                   </Space>
                   <Button
                     type="primary"
                     icon={<PlayCircleOutlined />}
                     onClick={() => setProcessModalVisible(true)}
-                    size="large"
+                    size={isMobile ? 'middle' : 'large'}
+                    style={{ width: isMobile ? '100%' : 'auto' }}
                   >
-                    Proses Depresiasi Bulanan
+                    {isMobile ? 'Proses Bulanan' : 'Proses Depresiasi Bulanan'}
                   </Button>
                 </div>
 
                 {/* Depreciation Summary Cards */}
-                <Row gutter={16} style={{ marginBottom: '24px' }}>
+                <Row gutter={isMobile ? 8 : 16} style={{ marginBottom: isMobile ? '16px' : '24px' }}>
                   <Col xs={24} sm={12} lg={6}>
                     <Card size="small">
                       <Statistic
-                        title="Total Depresiasi"
+                        title={<span style={{ fontSize: isMobile ? '11px' : '14px' }}>Total Depresiasi</span>}
                         value={depreciationSummary?.totalDepreciation || 0}
                         formatter={(value) => formatCurrency(Number(value))}
                         prefix={<DollarOutlined />}
-                        valueStyle={{ color: theme.colors.status.error }}
+                        valueStyle={{ color: theme.colors.status.error, fontSize: isMobile ? '18px' : '24px' }}
                       />
                     </Card>
                   </Col>
                   <Col xs={24} sm={12} lg={6}>
                     <Card size="small">
                       <Statistic
-                        title="Jumlah Aset"
+                        title={<span style={{ fontSize: isMobile ? '11px' : '14px' }}>Jumlah Aset</span>}
                         value={depreciationSummary?.assetCount || 0}
                         prefix={<FileTextOutlined />}
-                        valueStyle={{ color: theme.colors.accent.primary }}
+                        valueStyle={{ color: theme.colors.accent.primary, fontSize: isMobile ? '20px' : '24px' }}
                       />
                     </Card>
                   </Col>
@@ -848,12 +860,12 @@ export const AssetsPage: React.FC = () => {
                       <Col xs={24} sm={12} lg={6}>
                         <Card size="small">
                           <Statistic
-                            title="Garis Lurus"
+                            title={<span style={{ fontSize: isMobile ? '11px' : '14px' }}>Garis Lurus</span>}
                             value={depreciationSummary?.byMethod['STRAIGHT_LINE']?.totalDepreciation || 0}
                             formatter={(value) => formatCurrency(Number(value))}
-                            valueStyle={{ color: theme.colors.status.info, fontSize: '18px' }}
+                            valueStyle={{ color: theme.colors.status.info, fontSize: isMobile ? '16px' : '18px' }}
                             suffix={
-                              <Text type="secondary" style={{ fontSize: '12px' }}>
+                              <Text type="secondary" style={{ fontSize: isMobile ? '10px' : '12px' }}>
                                 ({depreciationSummary?.byMethod['STRAIGHT_LINE']?.assetCount || 0} aset)
                               </Text>
                             }
@@ -863,12 +875,12 @@ export const AssetsPage: React.FC = () => {
                       <Col xs={24} sm={12} lg={6}>
                         <Card size="small">
                           <Statistic
-                            title="Saldo Menurun"
+                            title={<span style={{ fontSize: isMobile ? '11px' : '14px' }}>Saldo Menurun</span>}
                             value={depreciationSummary?.byMethod['DECLINING_BALANCE']?.totalDepreciation || 0}
                             formatter={(value) => formatCurrency(Number(value))}
-                            valueStyle={{ color: theme.colors.status.warning, fontSize: '18px' }}
+                            valueStyle={{ color: theme.colors.status.warning, fontSize: isMobile ? '16px' : '18px' }}
                             suffix={
-                              <Text type="secondary" style={{ fontSize: '12px' }}>
+                              <Text type="secondary" style={{ fontSize: isMobile ? '10px' : '12px' }}>
                                 ({depreciationSummary?.byMethod['DECLINING_BALANCE']?.assetCount || 0} aset)
                               </Text>
                             }
@@ -892,7 +904,9 @@ export const AssetsPage: React.FC = () => {
                       columns={depreciationColumns}
                       dataSource={depreciationSummary.byAsset}
                       rowKey="assetId"
-                      pagination={false}
+                      pagination={isMobile ? { pageSize: 10 } : false}
+                      scroll={isMobile ? { x: 1000 } : undefined}
+                      size={isMobile ? 'small' : 'middle'}
                       summary={(data) => {
                         const totalDep = data.reduce((sum, item) => sum + Number(item.depreciationAmount), 0)
                         const totalAcc = data.reduce((sum, item) => sum + Number(item.accumulatedDepreciation), 0)
@@ -930,7 +944,9 @@ export const AssetsPage: React.FC = () => {
         title={
           <Space>
             <PlayCircleOutlined />
-            <span>Proses Depresiasi Bulanan</span>
+            <span style={{ fontSize: isMobile ? '14px' : '16px' }}>
+              {isMobile ? 'Proses Bulanan' : 'Proses Depresiasi Bulanan'}
+            </span>
           </Space>
         }
         open={processModalVisible}
@@ -939,6 +955,7 @@ export const AssetsPage: React.FC = () => {
         confirmLoading={processMutation.isPending}
         okText="Proses"
         cancelText="Batal"
+        width={isMobile ? '90%' : 520}
       >
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <div>
@@ -982,22 +999,24 @@ export const AssetsPage: React.FC = () => {
         title={
           <Space>
             <FileTextOutlined />
-            <span>Detail Depresiasi Aset</span>
+            <span style={{ fontSize: isMobile ? '14px' : '16px' }}>
+              {isMobile ? 'Detail Aset' : 'Detail Depresiasi Aset'}
+            </span>
           </Space>
         }
         open={detailsVisible}
         onCancel={() => setDetailsVisible(false)}
         footer={[
-          <Button key="close" onClick={() => setDetailsVisible(false)}>
+          <Button key="close" onClick={() => setDetailsVisible(false)} size={isMobile ? 'small' : 'middle'}>
             Tutup
           </Button>,
         ]}
-        width={700}
+        width={isMobile ? '95%' : 700}
       >
         {selectedAsset && (
           <div>
-            <Descriptions bordered size="small" column={2}>
-              <Descriptions.Item label="Nama Aset" span={2}>
+            <Descriptions bordered size="small" column={isMobile ? 1 : 2}>
+              <Descriptions.Item label="Nama Aset" span={isMobile ? 1 : 2}>
                 <Text strong>{selectedAsset.assetName}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Kode Aset">
@@ -1014,7 +1033,7 @@ export const AssetsPage: React.FC = () => {
               <Descriptions.Item label="Akumulasi Depresiasi">
                 <Text>{formatCurrency(selectedAsset.accumulatedDepreciation)}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label="Nilai Buku Bersih" span={2}>
+              <Descriptions.Item label="Nilai Buku Bersih" span={isMobile ? 1 : 2}>
                 <Text strong style={{ color: theme.colors.status.success }}>
                   {formatCurrency(selectedAsset.netBookValue)}
                 </Text>
