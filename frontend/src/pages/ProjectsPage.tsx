@@ -342,8 +342,8 @@ export const ProjectsPage: React.FC = () => {
         label: 'Hapus',
         icon: <DeleteOutlined />,
         danger: true,
-        visible: (record) => record.status === 'draft',
         onClick: (record) => handleDelete(record.id),
+        // No visibility restriction - matches desktop behavior
       },
     ],
     [projects, handleDelete, bulkUpdateStatusMutation, message, theme, modal]
