@@ -237,84 +237,87 @@ export const CashBankBalancePage: React.FC = () => {
   ], [balances]);
 
   return (
-    <div>
-      <div style={{ marginBottom: '24px' }}>
-        <Title level={2} style={{ color: theme.colors.text.primary }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
+      <div style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <Title level={isMobile ? 3 : 2} style={{ color: theme.colors.text.primary }}>
           <BankOutlined style={{ marginRight: '8px' }} />
           Saldo Kas/Bank
         </Title>
-        <Text type="secondary">
-          Kelola saldo awal dan akhir kas/bank per periode
+        <Text type="secondary" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+          Kelola saldo {isMobile ? '' : 'awal dan akhir '}kas/bank per periode
         </Text>
       </div>
 
       <Alert
-        message="Cara Kerja Saldo Kas/Bank"
+        message={isMobile ? "Cara Kerja" : "Cara Kerja Saldo Kas/Bank"}
         description={
-          <div>
+          <div style={{ fontSize: isMobile ? '12px' : '14px' }}>
             <div><strong>Input Manual:</strong> Periode dan Saldo Awal</div>
             <div><strong>Dihitung Otomatis:</strong> Total Masuk, Total Keluar, Saldo Akhir</div>
-            <div style={{ marginTop: '8px' }}>
-              Sistem akan mengambil semua transaksi kas/bank dari jurnal umum pada periode yang dipilih.
-              Formula: <strong>Saldo Akhir = Saldo Awal (manual) + Total Masuk (otomatis) - Total Keluar (otomatis)</strong>
-            </div>
+            {!isMobile && (
+              <div style={{ marginTop: '8px' }}>
+                Sistem akan mengambil semua transaksi kas/bank dari jurnal umum pada periode yang dipilih.
+                Formula: <strong>Saldo Akhir = Saldo Awal (manual) + Total Masuk (otomatis) - Total Keluar (otomatis)</strong>
+              </div>
+            )}
           </div>
         }
         type="info"
         showIcon
-        style={{ marginBottom: '24px' }}
+        style={{ marginBottom: isMobile ? '16px' : '24px' }}
       />
 
       {/* Summary Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={isMobile ? [8, 8] : [16, 16]} style={{ marginBottom: isMobile ? '16px' : '24px' }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
+          <Card size={isMobile ? 'small' : 'default'}>
             <Statistic
               title="Saldo Terakhir"
               value={latestBalance?.closingBalance || 0}
               formatter={(value) => formatIDR(Number(value))}
-              prefix={<DollarOutlined />}
-              valueStyle={{ color: token.colorSuccess }}
+              prefix={<DollarOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />}
+              valueStyle={{ color: token.colorSuccess, fontSize: isMobile ? '18px' : '24px' }}
             />
-            <Text type="secondary" style={{ fontSize: '12px' }}>
+            <Text type="secondary" style={{ fontSize: isMobile ? '10px' : '12px' }}>
               {latestBalance?.period || '-'}
             </Text>
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
+          <Card size={isMobile ? 'small' : 'default'}>
             <Statistic
-              title="Total Masuk (Periode Terakhir)"
+              title={isMobile ? "Total Masuk" : "Total Masuk (Periode Terakhir)"}
               value={latestBalance?.totalInflow || 0}
               formatter={(value) => formatIDR(Number(value))}
-              prefix={<RiseOutlined />}
-              valueStyle={{ color: token.colorSuccess }}
+              prefix={<RiseOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />}
+              valueStyle={{ color: token.colorSuccess, fontSize: isMobile ? '18px' : '24px' }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
+          <Card size={isMobile ? 'small' : 'default'}>
             <Statistic
-              title="Total Keluar (Periode Terakhir)"
+              title={isMobile ? "Total Keluar" : "Total Keluar (Periode Terakhir)"}
               value={latestBalance?.totalOutflow || 0}
               formatter={(value) => formatIDR(Number(value))}
-              prefix={<FallOutlined />}
-              valueStyle={{ color: token.colorError }}
+              prefix={<FallOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />}
+              valueStyle={{ color: token.colorError, fontSize: isMobile ? '18px' : '24px' }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
+          <Card size={isMobile ? 'small' : 'default'}>
             <Statistic
-              title="Perubahan Bersih (Periode Terakhir)"
+              title={isMobile ? "Perubahan Bersih" : "Perubahan Bersih (Periode Terakhir)"}
               value={latestNetChange}
               formatter={(value) => formatIDR(Number(value))}
-              prefix={latestNetChange >= 0 ? <RiseOutlined /> : <FallOutlined />}
+              prefix={latestNetChange >= 0 ? <RiseOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} /> : <FallOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />}
               valueStyle={{
                 color: latestNetChange >= 0 ? token.colorSuccess : token.colorError,
+                fontSize: isMobile ? '18px' : '24px'
               }}
             />
-            <Text type="secondary" style={{ fontSize: '12px' }}>
+            <Text type="secondary" style={{ fontSize: isMobile ? '10px' : '12px' }}>
               {latestBalance?.period || '-'}
             </Text>
           </Card>
@@ -326,10 +329,13 @@ export const CashBankBalancePage: React.FC = () => {
         title={
           <Space>
             <CalculatorOutlined />
-            <span>Hitung Saldo Kas/Bank untuk Periode Baru</span>
+            <span style={{ fontSize: isMobile ? '14px' : '16px' }}>
+              {isMobile ? 'Hitung Saldo Periode Baru' : 'Hitung Saldo Kas/Bank untuk Periode Baru'}
+            </span>
           </Space>
         }
-        style={{ marginBottom: '24px' }}
+        size={isMobile ? 'small' : 'default'}
+        style={{ marginBottom: isMobile ? '16px' : '24px' }}
       >
         <Form
           form={form}
@@ -339,7 +345,7 @@ export const CashBankBalancePage: React.FC = () => {
             period: dayjs(),
           }}
         >
-          <Row gutter={16} align="bottom">
+          <Row gutter={isMobile ? 8 : 16} align="bottom">
             <Col xs={24} md={8}>
               <Form.Item
                 name="period"
@@ -350,7 +356,7 @@ export const CashBankBalancePage: React.FC = () => {
                   picker="month"
                   format="MMMM YYYY"
                   style={{ width: '100%' }}
-                  size="large"
+                  size={isMobile ? 'middle' : 'large'}
                   placeholder="Pilih bulan"
                 />
               </Form.Item>
@@ -360,30 +366,30 @@ export const CashBankBalancePage: React.FC = () => {
               <Form.Item
                 name="openingBalance"
                 label={
-                  <Space>
-                    <span>Saldo Awal (IDR)</span>
-                    <Tag color="blue">Manual Input</Tag>
+                  <Space size={isMobile ? 'small' : 'middle'}>
+                    <span style={{ fontSize: isMobile ? '12px' : '14px' }}>Saldo Awal (IDR)</span>
+                    <Tag color="blue" style={{ fontSize: isMobile ? '10px' : '12px' }}>Manual Input</Tag>
                   </Space>
                 }
                 rules={[{ required: true, message: 'Masukkan saldo awal' }]}
-                tooltip="Masukkan saldo awal periode ini secara manual. Biasanya sama dengan saldo akhir periode sebelumnya."
+                tooltip={!isMobile && "Masukkan saldo awal periode ini secara manual. Biasanya sama dengan saldo akhir periode sebelumnya."}
                 extra={
                   balances.length > 0 && (
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                    <Text type="secondary" style={{ fontSize: isMobile ? '10px' : '12px' }}>
                       Saldo akhir periode terakhir: {formatIDR(balances[0].closingBalance)}
                     </Text>
                   )
                 }
               >
                 <InputNumber
-                  size="large"
+                  size={isMobile ? 'middle' : 'large'}
                   style={{ width: '100%' }}
                   formatter={(value) =>
                     `Rp ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
                   }
                   parser={(value) => value?.replace(/Rp\s?|(\.*)/g, '') as any}
                   min={0}
-                  placeholder="Masukkan saldo awal secara manual"
+                  placeholder={isMobile ? "Masukkan saldo awal" : "Masukkan saldo awal secara manual"}
                 />
               </Form.Item>
             </Col>
@@ -394,7 +400,7 @@ export const CashBankBalancePage: React.FC = () => {
                   type="primary"
                   htmlType="submit"
                   icon={<CalculatorOutlined />}
-                  size="large"
+                  size={isMobile ? 'middle' : 'large'}
                   block
                   loading={createMutation.isPending}
                 >
@@ -406,16 +412,22 @@ export const CashBankBalancePage: React.FC = () => {
 
           <Alert
             message="Catatan"
-            description="Total Masuk dan Total Keluar akan dihitung otomatis dari semua transaksi jurnal kas/bank pada periode yang dipilih."
+            description={isMobile
+              ? "Total Masuk dan Keluar dihitung otomatis dari jurnal."
+              : "Total Masuk dan Total Keluar akan dihitung otomatis dari semua transaksi jurnal kas/bank pada periode yang dipilih."
+            }
             type="success"
             showIcon
-            style={{ marginTop: '16px' }}
+            style={{ marginTop: isMobile ? '12px' : '16px', fontSize: isMobile ? '12px' : '14px' }}
           />
         </Form>
       </Card>
 
       {/* Balance History Table */}
-      <Card title="Riwayat Saldo Per Periode">
+      <Card
+        title={<span style={{ fontSize: isMobile ? '14px' : '16px' }}>Riwayat Saldo Per Periode</span>}
+        size={isMobile ? 'small' : 'default'}
+      >
         {isMobile ? (
           <MobileTableView
             data={mobileData}
