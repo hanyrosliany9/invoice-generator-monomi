@@ -113,6 +113,30 @@ export const ProjectsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       message.success(t('messages.success.deleted', { item: 'Proyek' }))
     },
+    onError: (error: any) => {
+      // Handle 409 Conflict (project has quotations/invoices)
+      if (error?.response?.status === 409) {
+        const errorMessage = error?.response?.data?.message ||
+          'Tidak dapat menghapus proyek yang memiliki quotation atau invoice'
+
+        modal.error({
+          title: 'Tidak Dapat Menghapus Proyek',
+          content: (
+            <div>
+              <p>{errorMessage}</p>
+              <p style={{ marginTop: '12px', color: theme.colors.text.secondary }}>
+                <strong>Solusi:</strong> Hapus semua quotation dan invoice yang terkait dengan proyek ini terlebih dahulu,
+                atau ubah status proyek menjadi "Cancelled" jika ingin mengarsipkannya.
+              </p>
+            </div>
+          ),
+          okText: 'Mengerti',
+        })
+      } else {
+        // Generic error
+        message.error(error?.response?.data?.message || 'Gagal menghapus proyek')
+      }
+    },
   })
 
   const bulkDeleteMutation = useMutation({
@@ -122,16 +146,35 @@ export const ProjectsPage: React.FC = () => {
       )
       const succeeded = results.filter(r => r.status === 'fulfilled').length
       const failed = results.filter(r => r.status === 'rejected').length
-      return { succeeded, failed, total: ids.length }
+      const conflictErrors = results.filter(
+        r => r.status === 'rejected' && (r.reason as any)?.response?.status === 409
+      ).length
+      return { succeeded, failed, conflictErrors, total: ids.length }
     },
-    onSuccess: ({ succeeded, failed, total }) => {
+    onSuccess: ({ succeeded, failed, conflictErrors, total }) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       setSelectedRowKeys([])
       setBatchLoading(false)
       if (failed > 0) {
-        message.warning(
-          `${succeeded} dari ${total} proyek berhasil dihapus. ${failed} gagal.`
-        )
+        const conflictMsg = conflictErrors > 0
+          ? ` (${conflictErrors} proyek memiliki quotation/invoice yang masih aktif)`
+          : ''
+        modal.warning({
+          title: 'Penghapusan Sebagian Berhasil',
+          content: (
+            <div>
+              <p><strong>{succeeded}</strong> dari <strong>{total}</strong> proyek berhasil dihapus.</p>
+              <p><strong>{failed}</strong> proyek gagal dihapus{conflictMsg}.</p>
+              {conflictErrors > 0 && (
+                <p style={{ marginTop: '12px', color: theme.colors.text.secondary }}>
+                  <strong>Catatan:</strong> Proyek yang memiliki quotation atau invoice tidak dapat dihapus.
+                  Hapus quotation/invoice terlebih dahulu atau ubah status proyek menjadi "Cancelled".
+                </p>
+              )}
+            </div>
+          ),
+          okText: 'Mengerti',
+        })
       } else {
         message.success(`Berhasil menghapus ${succeeded} proyek`)
       }
