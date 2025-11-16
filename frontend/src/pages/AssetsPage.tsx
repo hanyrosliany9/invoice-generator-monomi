@@ -763,7 +763,7 @@ export const AssetsPage: React.FC = () => {
             entityType="assets"
             showQuickStats
             searchable
-            searchFields={['number', 'title', 'client.name']}
+            searchFields={['number', 'title']}
             filters={mobileFilters}
             actions={mobileActions}
             onRefresh={() => queryClient.invalidateQueries({ queryKey: ['assets'] })}

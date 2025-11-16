@@ -434,7 +434,7 @@ const GeneralLedgerPage: React.FC = () => {
                 entityType="general-ledger"
                 showQuickStats
                 searchable
-                searchFields={['number', 'title', 'client.name']}
+                searchFields={['number', 'title']}
                 filters={mobileFilters}
                 actions={mobileActions}
                 onRefresh={() => {

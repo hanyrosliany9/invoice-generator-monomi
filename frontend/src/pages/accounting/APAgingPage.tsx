@@ -443,7 +443,7 @@ const APAgingPage: React.FC = () => {
                   entityType="ap-aging"
                   showQuickStats
                   searchable
-                  searchFields={['number', 'client.name']}
+                  searchFields={['number', 'title']}
                   filters={mobileFilters}
                   actions={mobileActions}
                   onRefresh={() => {}}

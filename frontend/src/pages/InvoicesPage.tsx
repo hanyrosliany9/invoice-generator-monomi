@@ -1261,7 +1261,7 @@ export const InvoicesPage: React.FC = () => {
   ]
 
   return (
-    <div>
+    <div style={{ padding: isMobile ? '12px' : '0' }}>
       {/* Hover-revealed row actions CSS + Responsive table */}
       <style>{`
         .row-actions {
@@ -1292,8 +1292,8 @@ export const InvoicesPage: React.FC = () => {
           }
         }
       `}</style>
-      <div className='mb-6'>
-        <Title level={2} style={{ color: theme.colors.text.primary, marginBottom: '24px' }}>
+      <div className='mb-6' style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <Title level={isMobile ? 3 : 2} style={{ color: theme.colors.text.primary, marginBottom: isMobile ? '12px' : '24px' }}>
           {t('invoices.title')}
         </Title>
 
@@ -1309,7 +1309,7 @@ export const InvoicesPage: React.FC = () => {
         )}
 
         {/* Statistics - Compact Design */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Row gutter={isMobile ? [8, 8] : [16, 16]} style={{ marginBottom: isMobile ? '16px' : '24px' }}>
           <Col xs={24} sm={12} lg={6}>
             {isLoading ? (
               <Skeleton.Input
@@ -1842,7 +1842,7 @@ export const InvoicesPage: React.FC = () => {
           showMateraiIndicators
           showQuickStats
           searchable
-          searchFields={['number', 'title', 'client.name']}
+          searchFields={['number', 'title']}
           filters={mobileFilters}
           actions={mobileActions}
           onAction={handleMobileAction}

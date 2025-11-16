@@ -589,7 +589,7 @@ const BankTransfersPage: React.FC = () => {
             entityType="bank-transfers"
             showQuickStats
             searchable
-            searchFields={['number', 'title', 'client.name']}
+            searchFields={['number', 'title']}
             filters={mobileFilters}
             actions={mobileActions}
             onRefresh={() => queryClient.invalidateQueries({ queryKey: ['bank-transfers'] })}

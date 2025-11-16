@@ -589,7 +589,7 @@ const ChartOfAccountsPage: React.FC = () => {
           entityType="chart-of-accounts"
           showQuickStats
           searchable
-          searchFields={['number', 'title', 'client.company']}
+          searchFields={['number', 'title']}
           filters={mobileFilters}
           actions={mobileActions}
           onRefresh={() => queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] })}

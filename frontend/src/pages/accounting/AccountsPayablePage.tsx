@@ -547,7 +547,7 @@ const AccountsPayablePage: React.FC = () => {
                 entityType="accounts-payable"
                 showQuickStats
                 searchable
-                searchFields={['number', 'title', 'client.name']}
+                searchFields={['number', 'title']}
                 filters={mobileFilters}
                 actions={mobileActions}
                 onRefresh={() => message.success('Data diperbarui')}

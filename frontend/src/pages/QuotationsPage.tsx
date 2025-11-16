@@ -1078,7 +1078,7 @@ export const QuotationsPage: React.FC = () => {
   ], [handleView, handleEdit, navigateToClient, navigateToProject, getActionMenuItems])
 
   return (
-    <div>
+    <div style={{ padding: isMobile ? '12px' : '0' }}>
       {/* Hover-revealed row actions CSS */}
       <style>{`
         .row-actions {
@@ -1094,11 +1094,11 @@ export const QuotationsPage: React.FC = () => {
           opacity: 1;
         }
       `}</style>
-      <div className='mb-6'>
-        <Title level={2}>{t('quotations.title')}</Title>
+      <div className='mb-6' style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <Title level={isMobile ? 3 : 2} style={{ marginBottom: isMobile ? '8px' : '16px' }}>{t('quotations.title')}</Title>
 
         {/* Statistics - Compact Design */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Row gutter={isMobile ? [8, 8] : [16, 16]} style={{ marginBottom: isMobile ? '16px' : '24px' }}>
           <Col xs={24} sm={12} lg={6}>
             <CompactMetricCard
               icon={<FileTextOutlined />}
@@ -1136,7 +1136,7 @@ export const QuotationsPage: React.FC = () => {
             />
           </Col>
         </Row>
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Row gutter={isMobile ? [8, 8] : [16, 16]} style={{ marginBottom: isMobile ? '16px' : '24px' }}>
           <Col xs={24} sm={12} lg={6}>
             <CompactMetricCard
               icon={<CloseCircleOutlined />}
@@ -1425,7 +1425,7 @@ export const QuotationsPage: React.FC = () => {
           showMateraiIndicators
           showQuickStats
           searchable
-          searchFields={['number', 'title', 'client.name']}
+          searchFields={['number', 'title']}
           filters={mobileFilters}
           actions={mobileActions}
           onAction={(action, record) => {

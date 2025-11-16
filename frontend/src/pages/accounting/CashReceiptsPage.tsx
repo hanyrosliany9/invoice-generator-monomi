@@ -521,7 +521,7 @@ const CashReceiptsPage: React.FC = () => {
             entityType="cash-receipts"
             showQuickStats
             searchable
-            searchFields={['number', 'title', 'client.name']}
+            searchFields={['number', 'title']}
             filters={mobileFilters}
             actions={mobileActions}
             onRefresh={() => queryClient.invalidateQueries({ queryKey: ['cash-transactions'] })}

@@ -619,7 +619,7 @@ const JournalEntriesPage: React.FC = () => {
             entityType="journal-entries"
             showQuickStats
             searchable
-            searchFields={['number', 'title', 'client.name']}
+            searchFields={['number', 'title']}
             filters={mobileFilters}
             actions={mobileActions}
             onRefresh={() => queryClient.invalidateQueries({ queryKey: ['journal-entries'] })}
