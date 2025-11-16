@@ -232,8 +232,8 @@ export const UsersPage: React.FC = () => {
       label: 'Status',
       type: 'select' as const,
       options: [
-        { label: 'Aktif', value: 'approved' },
-        { label: 'Nonaktif', value: 'declined' },
+        { label: 'Aktif', value: 'active' },
+        { label: 'Nonaktif', value: 'inactive' },
       ],
     },
   ], [])
@@ -395,7 +395,7 @@ export const UsersPage: React.FC = () => {
   ]
 
   return (
-    <div>
+    <div style={{ padding: isMobile ? '12px' : '0' }}>
       {/* Hover-revealed row actions CSS + Responsive table */}
       <style>{`
         .row-actions {
@@ -427,11 +427,13 @@ export const UsersPage: React.FC = () => {
         }
       `}</style>
 
-      <div className='mb-6'>
-        <Title level={2}>User Management</Title>
+      <div className='mb-6' style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <Title level={isMobile ? 3 : 2} style={{ marginBottom: isMobile ? '4px' : '8px' }}>
+          {isMobile ? 'User Management' : 'User Management'}
+        </Title>
 
         {/* Statistics */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Row gutter={isMobile ? [8, 8] : [16, 16]} style={{ marginBottom: isMobile ? '16px' : '24px' }}>
           <Col xs={24} sm={12} lg={6}>
             <CompactMetricCard
               icon={<TeamOutlined />}
@@ -464,7 +466,7 @@ export const UsersPage: React.FC = () => {
         </Row>
 
         {/* Bulk Actions Toolbar */}
-        {selectedRowKeys.length > 0 && (
+        {selectedRowKeys.length > 0 && !isMobile && (
           <Card className='mb-4 border-blue-200 bg-blue-50' size='small'>
             <div className='flex justify-between items-center'>
               <div className='flex items-center space-x-4'>
@@ -586,7 +588,7 @@ export const UsersPage: React.FC = () => {
           entityType="users"
           showQuickStats
           searchable
-          searchFields={['title', 'client.email']}
+          searchFields={['title', 'number']}
           filters={mobileFilters}
           actions={mobileActions}
           onRefresh={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
