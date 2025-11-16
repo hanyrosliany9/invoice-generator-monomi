@@ -772,7 +772,7 @@ export const ProjectsPage: React.FC = () => {
   ], [handleView, navigateToClient, getActionMenuItems])
 
   return (
-    <div>
+    <div style={{ padding: isMobile ? '12px' : '0' }}>
       {/* Hover-revealed row actions CSS + Responsive table */}
       <style>{`
         .row-actions {
@@ -803,11 +803,11 @@ export const ProjectsPage: React.FC = () => {
           }
         }
       `}</style>
-      <div className='mb-6'>
-        <Title level={2}>{t('projects.title')}</Title>
+      <div className='mb-6' style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <Title level={isMobile ? 3 : 2} style={{ marginBottom: isMobile ? '4px' : '8px' }}>{t('projects.title')}</Title>
 
         {/* Statistics - Compact Design */}
-        <Row gutter={[12, 12]} style={{ marginBottom: '24px' }}>
+        <Row gutter={isMobile ? [8, 8] : [12, 12]} style={{ marginBottom: isMobile ? '16px' : '24px' }}>
           <Col xs={12} sm={12} lg={6}>
             <CompactMetricCard
               icon={<ProjectOutlined />}
@@ -851,7 +851,7 @@ export const ProjectsPage: React.FC = () => {
         </Row>
 
         {/* Secondary Statistics */}
-        <Row gutter={[12, 12]} style={{ marginBottom: '24px' }}>
+        <Row gutter={isMobile ? [8, 8] : [12, 12]} style={{ marginBottom: isMobile ? '16px' : '24px' }}>
           <Col xs={12} sm={12} lg={6}>
             <CompactMetricCard
               icon={<TeamOutlined />}
@@ -895,7 +895,7 @@ export const ProjectsPage: React.FC = () => {
         </Row>
 
         {/* Bulk Actions Toolbar */}
-        {selectedRowKeys.length > 0 && (
+        {selectedRowKeys.length > 0 && !isMobile && (
           <Card
             className='mb-4'
             size='small'

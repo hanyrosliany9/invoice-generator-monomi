@@ -656,7 +656,7 @@ export const ClientsPage: React.FC = () => {
   ]
 
   return (
-    <div>
+    <div style={{ padding: isMobile ? '12px' : '0' }}>
       {/* Hover-revealed row actions CSS + Responsive table */}
       <style>{`
         .row-actions {
@@ -687,11 +687,11 @@ export const ClientsPage: React.FC = () => {
           }
         }
       `}</style>
-      <div className='mb-6'>
-        <Title level={2}>{t('clients.title')}</Title>
+      <div className='mb-6' style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <Title level={isMobile ? 3 : 2} style={{ marginBottom: isMobile ? '4px' : '8px' }}>{t('clients.title')}</Title>
 
         {/* Statistics - 4-2 Layout for Better Visual Hierarchy */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Row gutter={isMobile ? [8, 8] : [16, 16]} style={{ marginBottom: isMobile ? '16px' : '24px' }}>
           <Col xs={24} sm={12} lg={6}>
             <CompactMetricCard
               icon={<UserOutlined />}
@@ -731,7 +731,7 @@ export const ClientsPage: React.FC = () => {
         </Row>
 
         {/* Financial Metrics Row */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Row gutter={isMobile ? [8, 8] : [16, 16]} style={{ marginBottom: isMobile ? '16px' : '24px' }}>
           <Col xs={24} sm={12} lg={12}>
             <CompactMetricCard
               icon={<DollarOutlined />}
@@ -753,7 +753,7 @@ export const ClientsPage: React.FC = () => {
         </Row>
 
         {/* Bulk Actions Toolbar */}
-        {selectedRowKeys.length > 0 && (
+        {selectedRowKeys.length > 0 && !isMobile && (
           <Card className='mb-4 border-blue-200 bg-blue-50' size='small'>
             <div className='flex justify-between items-center'>
               <div className='flex items-center space-x-4'>
@@ -963,7 +963,7 @@ export const ClientsPage: React.FC = () => {
           enableWhatsAppActions
           showQuickStats
           searchable
-          searchFields={['client.name', 'client.email', 'client.company']}
+          searchFields={['title', 'number']}
           filters={mobileFilters}
           actions={mobileActions}
           onRefresh={() => queryClient.invalidateQueries({ queryKey: ['clients'] })}

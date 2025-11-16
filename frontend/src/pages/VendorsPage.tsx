@@ -375,17 +375,17 @@ export const VendorsPage: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
       {/* Header */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={isMobile ? [8, 8] : [16, 16]} style={{ marginBottom: isMobile ? '16px' : '24px' }}>
         <Col span={24}>
           <Row justify="space-between" align="middle">
             <Col>
-              <Title level={2} style={{ margin: 0 }}>
-                Manajemen Vendor
+              <Title level={isMobile ? 3 : 2} style={{ margin: 0, marginBottom: isMobile ? '4px' : '0' }}>
+                {isMobile ? 'Vendor' : 'Manajemen Vendor'}
               </Title>
-              <Text type="secondary">
-                Kelola data vendor, supplier, dan penyedia layanan
+              <Text type="secondary" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+                {isMobile ? 'Kelola data vendor' : 'Kelola data vendor, supplier, dan penyedia layanan'}
               </Text>
             </Col>
             <Col>
@@ -411,7 +411,7 @@ export const VendorsPage: React.FC = () => {
 
       {/* Statistics Cards */}
       {statistics && (
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Row gutter={isMobile ? [8, 8] : [16, 16]} style={{ marginBottom: isMobile ? '16px' : '24px' }}>
           <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
@@ -454,10 +454,10 @@ export const VendorsPage: React.FC = () => {
 
       {/* Filters */}
       <Card
-        style={{ marginBottom: '24px' }}
+        style={{ marginBottom: isMobile ? '16px' : '24px' }}
         size="small"
       >
-        <Row gutter={[16, 16]}>
+        <Row gutter={isMobile ? [8, 8] : [16, 16]}>
           <Col xs={24} sm={12} md={8}>
             <Input
               placeholder="Cari nama, kode, atau kontak vendor..."
@@ -559,7 +559,7 @@ export const VendorsPage: React.FC = () => {
           entityType="vendors"
           showQuickStats
           searchable
-          searchFields={['number', 'title', 'client.name', 'client.phone']}
+          searchFields={['number', 'title']}
           filters={mobileFilters}
           actions={mobileActions}
           onRefresh={() => queryClient.invalidateQueries({ queryKey: ['vendors'] })}

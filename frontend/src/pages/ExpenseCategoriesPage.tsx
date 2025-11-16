@@ -301,14 +301,14 @@ export const ExpenseCategoriesPage: React.FC = () => {
   ];
 
   return (
-    <div>
-      <div className="mb-6 flex justify-between items-center">
+    <div style={{ padding: isMobile ? '12px' : '0' }}>
+      <div className="mb-6 flex justify-between items-center" style={{ marginBottom: isMobile ? '16px' : '24px', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '12px' : '0' }}>
         <div>
-          <Title level={2} style={{ marginBottom: 8, color: theme.colors.text.primary }}>
-            Expense Categories & PSAK Codes
+          <Title level={isMobile ? 3 : 2} style={{ marginBottom: isMobile ? 4 : 8, color: theme.colors.text.primary }}>
+            {isMobile ? 'Expense Categories' : 'Expense Categories & PSAK Codes'}
           </Title>
-          <Text type="secondary">
-            Manage expense categories with Indonesian PSAK accounting codes
+          <Text type="secondary" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+            {isMobile ? 'Manage expense categories' : 'Manage expense categories with Indonesian PSAK accounting codes'}
           </Text>
         </div>
         <Button
@@ -329,7 +329,7 @@ export const ExpenseCategoriesPage: React.FC = () => {
           entityType="expense-categories"
           showQuickStats
           searchable
-          searchFields={['number', 'title', 'client.company']}
+          searchFields={['number', 'title']}
           filters={mobileFilters}
           actions={mobileActions}
           onRefresh={() => queryClient.invalidateQueries({ queryKey: ['expense-categories'] })}
