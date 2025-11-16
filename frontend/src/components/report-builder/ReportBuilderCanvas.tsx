@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import GridLayout, { Layout } from 'react-grid-layout';
 import { theme, Empty } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useSelectionContainer } from '@air/react-drag-to-select';
+import { throttle } from 'lodash';
 import {
   Widget,
   DEFAULT_GRID_COLS,
@@ -11,6 +12,7 @@ import {
   DataSource,
 } from '../../types/report-builder';
 import WidgetContainer from './widgets/WidgetContainer';
+import { useViewportCulling } from '../../hooks/useViewportCulling';
 import 'react-grid-layout/css/styles.css';
 import 'react-grid-layout/css/styles.css';
 
@@ -59,9 +61,29 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
 
+  // Track active drag delta for real-time visual feedback during multi-drag
+  const [activeDragDelta, setActiveDragDelta] = useState<{ deltaX: number; deltaY: number } | null>(null);
+  const [draggedWidgetId, setDraggedWidgetId] = useState<string | null>(null);
+
   // ✅ Fixed canvas width matching A4 PDF size (794px at 96 DPI)
   const CANVAS_WIDTH = 794;
   const containerRef = useRef<HTMLDivElement>(null);
+  const dragStartPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
+
+  // Viewport culling for performance with 50+ widgets
+  const COL_WIDTH = CANVAS_WIDTH / DEFAULT_GRID_COLS;
+  const { visibleWidgets, isCullingActive, culledCount } = useViewportCulling(widgets, {
+    enabled: true,
+    threshold: 50, // Only activate for 50+ widgets
+    buffer: 200, // 200px buffer outside viewport
+    containerRef,
+    colWidth: COL_WIDTH,
+    rowHeight: DEFAULT_ROW_HEIGHT,
+  });
+
+  // Use visible widgets when culling is active, otherwise all widgets
+  const renderedWidgets = isCullingActive ? visibleWidgets : widgets;
 
   // Drag-box selection
   const { DragSelection } = useSelectionContainer({
@@ -135,11 +157,30 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
 
   // ✅ No need to measure container width - using fixed CANVAS_WIDTH
 
-  // Convert widgets to grid layout format
-  const layouts = widgets.map((widget) => ({
-    ...widget.layout,
-    i: widget.id,
-  }));
+  // Convert widgets to grid layout format with real-time drag delta applied
+  // Use all widgets for layout (grid needs to know all positions), but only render visible ones
+  const layouts = widgets.map((widget) => {
+    const baseLayout = {
+      ...widget.layout,
+      i: widget.id,
+    };
+
+    // Apply real-time drag delta to selected widgets (excluding the dragged one)
+    if (
+      activeDragDelta &&
+      draggedWidgetId &&
+      selectedWidgetIds.includes(widget.id) &&
+      widget.id !== draggedWidgetId
+    ) {
+      return {
+        ...baseLayout,
+        x: baseLayout.x + activeDragDelta.deltaX,
+        y: baseLayout.y + activeDragDelta.deltaY,
+      };
+    }
+
+    return baseLayout;
+  });
 
   const handleLayoutChange = useCallback(
     (newLayout: Layout[]) => {
@@ -166,24 +207,78 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
     [readonly, onWidgetSelect, onWidgetClick]
   );
 
-  const handleCanvasClick = useCallback(() => {
-    if (!readonly) {
+  const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
+    if (readonly) return;
+    // Store mouse down position
+    mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
+  }, [readonly]);
+
+  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
+    if (readonly) return;
+
+    // Check if this was a drag (mouse moved > 5px) or a click
+    if (mouseDownPosRef.current) {
+      const deltaX = Math.abs(e.clientX - mouseDownPosRef.current.x);
+      const deltaY = Math.abs(e.clientY - mouseDownPosRef.current.y);
+      const isDrag = deltaX > 5 || deltaY > 5;
+
+      if (isDrag) {
+        // This was a drag, not a click - don't clear selection
+        mouseDownPosRef.current = null;
+        return;
+      }
+    }
+
+    // Reset mouse down position
+    mouseDownPosRef.current = null;
+
+    // Only clear selection if clicking directly on the canvas, not on widgets
+    const target = e.target as HTMLElement;
+
+    // Check if the click was on the canvas background (not a widget or its children)
+    const isCanvasBackground =
+      target.classList.contains('report-builder-grid') ||
+      target.classList.contains('report-builder-grid-readonly') ||
+      target.classList.contains('report-canvas') ||
+      target.dataset.gridArea === 'true';
+
+    if (isCanvasBackground) {
       onWidgetSelect(null);
     }
   }, [readonly, onWidgetSelect]);
 
   const handleDragStart = useCallback((layout: Layout[], oldItem: Layout, newItem: Layout) => {
     setIsDragging(true);
+    setDraggedWidgetId(newItem.i);
+    dragStartPositionRef.current = { x: oldItem.x, y: oldItem.y };
     onDragStart?.(newItem.i);  // Pass the dragged widget ID
   }, [onDragStart]);
 
+  // Throttle drag updates to ~30 FPS instead of 60 FPS for better performance
+  const throttledLayoutChange = useCallback(
+    throttle((layout: Layout[]) => {
+      onLayoutChange(layout);
+    }, 32, { leading: true, trailing: true }), // 32ms ≈ 30 FPS
+    [onLayoutChange]
+  );
+
   const handleDrag = useCallback((layout: Layout[], oldItem: Layout, newItem: Layout, placeholder: Layout) => {
-    // Trigger layout change during drag so group drag can process
-    onLayoutChange(layout);
-  }, [onLayoutChange]);
+    // Calculate real-time delta for multi-drag visual feedback
+    if (dragStartPositionRef.current && selectedWidgetIds.length > 1) {
+      const deltaX = newItem.x - dragStartPositionRef.current.x;
+      const deltaY = newItem.y - dragStartPositionRef.current.y;
+      setActiveDragDelta({ deltaX, deltaY });
+    }
+
+    // Use throttled version to reduce state updates from 60 FPS to ~30 FPS
+    throttledLayoutChange(layout);
+  }, [throttledLayoutChange, selectedWidgetIds.length]);
 
   const handleDragStop = useCallback((layout: Layout[], oldItem: Layout, newItem: Layout) => {
     setIsDragging(false);
+    setDraggedWidgetId(null);
+    setActiveDragDelta(null);
+    dragStartPositionRef.current = null;
     onDragStop?.(newItem.i);  // Pass the dragged widget ID
   }, [onDragStop]);
 
@@ -197,18 +292,77 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
     onResizeStop?.();
   }, [onResizeStop]);
 
+  // Memoize frequently-used style objects to prevent recreation on every render
+  const emptyCanvasStyle = useMemo(() => ({
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: token.colorBgLayout,
+    border: `2px dashed ${token.colorBorder}`,
+    borderRadius: token.borderRadiusLG,
+  }), [token.colorBgLayout, token.colorBorder, token.borderRadiusLG]);
+
+  const containerStyle = useMemo(() => ({
+    height: '100%',
+    width: '100%',
+    background: token.colorBgLayout,
+    padding: token.paddingLG,
+    overflowY: 'auto' as const,
+    overflowX: 'auto' as const,
+    position: 'relative' as const,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+  }), [token.colorBgLayout, token.paddingLG]);
+
+  const canvasWrapperStyle = useMemo(() => ({
+    width: `${CANVAS_WIDTH}px`,
+    minHeight: '1123px',
+    background: token.colorBgContainer,
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+    transform: `scale(${zoomLevel})`,
+    transformOrigin: 'top center',
+    transition: 'transform 0.2s ease',
+    marginBottom: token.marginLG,
+    position: 'relative' as const,
+  }), [token.colorBgContainer, token.marginLG, zoomLevel]);
+
+  const overlayContainerStyle = useMemo(() => ({
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: 'none' as const,
+    zIndex: 1000,
+  }), []);
+
+  const gridLayoutStyle = useMemo(() => ({
+    position: 'relative' as const,
+    minHeight: readonly ? 'auto' : 'calc(100vh - 200px)',
+  }), [readonly]);
+
+  const zoomControlsStyle = useMemo(() => ({
+    position: 'sticky' as const,
+    bottom: token.paddingLG,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: token.marginSM,
+    background: '#ffffff',
+    padding: `${token.paddingSM}px ${token.paddingMD}px`,
+    borderRadius: token.borderRadiusLG,
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+    zIndex: 1000,
+    marginTop: token.marginLG,
+  }), [token.paddingLG, token.marginSM, token.paddingSM, token.paddingMD, token.borderRadiusLG, token.marginLG]);
+
   if (widgets.length === 0) {
     return (
       <div
-        style={{
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: token.colorBgLayout,
-          border: `2px dashed ${token.colorBorder}`,
-          borderRadius: token.borderRadiusLG,
-        }}
+        style={emptyCanvasStyle}
         onClick={handleCanvasClick}
       >
         <Empty
@@ -232,20 +386,10 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
   return (
     <div
       ref={containerRef}
+      onMouseDown={handleCanvasMouseDown}
       onClick={handleCanvasClick}
       data-grid-area="true"
-      style={{
-        height: '100%',
-        width: '100%',
-        background: token.colorBgLayout,
-        padding: token.paddingLG,
-        overflowY: 'auto',
-        overflowX: 'auto',
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-      }}
+      style={containerStyle}
     >
       {/* Drag-box selection overlay */}
       {!readonly && <DragSelection />}
@@ -253,17 +397,40 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
       {/* ✅ Fixed-width canvas wrapper with zoom */}
       <div
         className="report-canvas"
-        style={{
-          width: `${CANVAS_WIDTH}px`,
-          minHeight: '1123px', // A4 height at 96 DPI
-          background: token.colorBgContainer,
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-          transform: `scale(${zoomLevel})`,
-          transformOrigin: 'top center',
-          transition: 'transform 0.2s ease',
-          marginBottom: token.marginLG,
-        }}
+        style={canvasWrapperStyle}
       >
+        {/* Visual feedback for multi-select group drag */}
+        {!readonly && isDragging && selectedWidgetIds.length > 1 && (
+          <div
+            style={overlayContainerStyle}
+          >
+            {selectedWidgetIds.map((widgetId) => {
+              const widget = widgets.find((w) => w.id === widgetId);
+              if (!widget) return null;
+
+              const colWidth = CANVAS_WIDTH / DEFAULT_GRID_COLS;
+
+              return (
+                <div
+                  key={`overlay-${widgetId}`}
+                  style={{
+                    position: 'absolute',
+                    left: `${widget.layout.x * colWidth}px`,
+                    top: `${widget.layout.y * DEFAULT_ROW_HEIGHT}px`,
+                    width: `${widget.layout.w * colWidth}px`,
+                    height: `${widget.layout.h * DEFAULT_ROW_HEIGHT}px`,
+                    border: `2px solid ${token.colorPrimary}`,
+                    borderRadius: token.borderRadius,
+                    backgroundColor: `${token.colorPrimaryBg}`,
+                    opacity: 0.3,
+                    transition: 'all 0.1s ease',
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+
         <GridLayout
           className={readonly ? 'report-builder-grid-readonly' : 'report-builder-grid'}
           layout={layouts}
@@ -287,12 +454,10 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
         draggableCancel="button, input, textarea, .recharts-surface, .recharts-wrapper, svg, path, .no-drag"
         useCSSTransforms={true}
         autoSize={true}
-        style={{
-          position: 'relative',
-          minHeight: readonly ? 'auto' : 'calc(100vh - 200px)',
-        }}
+        style={gridLayoutStyle}
       >
-        {widgets.map((widget) => (
+        {/* Render only visible widgets when viewport culling is active (50+ widgets) */}
+        {renderedWidgets.map((widget) => (
           <div
             key={widget.id}
             data-widget-id={widget.id}
@@ -320,6 +485,22 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
             />
           </div>
         ))}
+        {/* Debug info when culling is active */}
+        {isCullingActive && process.env.NODE_ENV === 'development' && (
+          <div style={{
+            position: 'fixed',
+            top: 10,
+            right: 10,
+            background: 'rgba(0,0,0,0.8)',
+            color: 'white',
+            padding: '8px 12px',
+            borderRadius: 4,
+            fontSize: 12,
+            zIndex: 9999,
+          }}>
+            Viewport Culling: {renderedWidgets.length}/{widgets.length} rendered ({culledCount} culled)
+          </div>
+        )}
       </GridLayout>
 
       <style>{`
@@ -399,21 +580,7 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
       {/* ✅ Zoom controls - only show in edit mode */}
       {!readonly && (
         <div
-          style={{
-            position: 'sticky',
-            bottom: token.paddingLG,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: token.marginSM,
-            background: '#ffffff',
-            padding: `${token.paddingSM}px ${token.paddingMD}px`,
-            borderRadius: token.borderRadiusLG,
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-            zIndex: 1000,
-            marginTop: token.marginLG,
-          }}
+          style={zoomControlsStyle}
         >
           <button
             onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.1))}

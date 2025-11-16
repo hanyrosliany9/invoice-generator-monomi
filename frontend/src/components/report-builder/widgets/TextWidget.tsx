@@ -65,7 +65,7 @@ const serializeToHTML = (nodes: Descendant[]): string => {
   }).join('');
 };
 
-export const TextWidget: React.FC<TextWidgetProps> = ({ widget, onChange, readonly }) => {
+const TextWidgetComponent: React.FC<TextWidgetProps> = ({ widget, onChange, readonly }) => {
   const { token } = useToken();
 
   // Parse content (could be string or Slate value)
@@ -128,5 +128,19 @@ export const TextWidget: React.FC<TextWidgetProps> = ({ widget, onChange, readon
     />
   );
 };
+
+// Wrap with React.memo to prevent unnecessary re-renders
+export const TextWidget = React.memo(
+  TextWidgetComponent,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.widget.id === nextProps.widget.id &&
+      prevProps.readonly === nextProps.readonly &&
+      JSON.stringify(prevProps.widget.config) === JSON.stringify(nextProps.widget.config)
+    );
+  }
+);
+
+TextWidget.displayName = 'TextWidget';
 
 export default TextWidget;

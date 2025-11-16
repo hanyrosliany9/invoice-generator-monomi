@@ -1,13 +1,15 @@
-import React from 'react';
-import { Card, Button, Tooltip, theme, Space } from 'antd';
+import React, { Suspense, lazy } from 'react';
+import { Card, Button, Tooltip, theme, Space, Spin } from 'antd';
 import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { Widget, DataSource } from '../../../types/report-builder';
-import ChartWidget from './ChartWidget';
-import TextWidget from './TextWidget';
 import MetricWidget from './MetricWidget';
 import DividerWidget from './DividerWidget';
 import CalloutWidget from './CalloutWidget';
 import TableWidget from './TableWidget';
+
+// Lazy load heavy widgets for better performance and code splitting
+const ChartWidget = lazy(() => import('./ChartWidget'));
+const TextWidget = lazy(() => import('./TextWidget'));
 
 const { useToken } = theme;
 
@@ -22,7 +24,7 @@ interface WidgetContainerProps {
   onToggleProperties?: () => void;
 }
 
-export const WidgetContainer: React.FC<WidgetContainerProps> = ({
+const WidgetContainerComponent: React.FC<WidgetContainerProps> = ({
   widget,
   dataSource,
   isSelected,
@@ -35,11 +37,37 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
   const { token } = useToken();
 
   const renderWidget = () => {
+    // Lazy-loaded widgets need Suspense wrapper
+    const renderLazyWidget = (component: React.ReactNode) => (
+      <Suspense fallback={
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%',
+          minHeight: '100px',
+          gap: '8px'
+        }}>
+          <Spin size="small" />
+          <span style={{ fontSize: '12px', color: token.colorTextSecondary }}>
+            Loading...
+          </span>
+        </div>
+      }>
+        {component}
+      </Suspense>
+    );
+
     switch (widget.type) {
       case 'chart':
-        return <ChartWidget widget={widget} dataSource={dataSource} onChange={onUpdate} />;
+        return renderLazyWidget(
+          <ChartWidget widget={widget} dataSource={dataSource} onChange={onUpdate} />
+        );
       case 'text':
-        return <TextWidget widget={widget} onChange={onUpdate} readonly={readonly} />;
+        return renderLazyWidget(
+          <TextWidget widget={widget} onChange={onUpdate} readonly={readonly} />
+        );
       case 'metric':
         return <MetricWidget widget={widget} dataSource={dataSource} onChange={onUpdate} />;
       case 'divider':
@@ -159,5 +187,26 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
     </div>
   );
 };
+
+// Wrap with React.memo to prevent unnecessary re-renders
+// Only re-render if widget id, selection state, readonly, config, or layout changes
+export const WidgetContainer = React.memo(
+  WidgetContainerComponent,
+  (prevProps, nextProps) => {
+    // Return true if props are equal (skip re-render)
+    // Return false if props changed (re-render needed)
+    return (
+      prevProps.widget.id === nextProps.widget.id &&
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.readonly === nextProps.readonly &&
+      prevProps.showProperties === nextProps.showProperties &&
+      JSON.stringify(prevProps.widget.config) === JSON.stringify(nextProps.widget.config) &&
+      JSON.stringify(prevProps.widget.layout) === JSON.stringify(nextProps.widget.layout) &&
+      prevProps.dataSource === nextProps.dataSource
+    );
+  }
+);
+
+WidgetContainer.displayName = 'WidgetContainer';
 
 export default WidgetContainer;

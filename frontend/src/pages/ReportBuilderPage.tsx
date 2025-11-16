@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout, Button, Space, App, Spin, theme, Tooltip, Dropdown, Tag, Typography, Alert } from 'antd';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { useBuilderStore } from '../store/builder';
 import {
   SaveOutlined,
   EyeOutlined,
@@ -56,38 +57,62 @@ export const ReportBuilderPage: React.FC = () => {
   const { message, modal } = App.useApp();
   const isMobile = useIsMobile();
 
-  // State
+  // Page-specific state (keep as useState)
   const [report, setReport] = useState<SocialMediaReport | null>(null);
   const [section, setSection] = useState<ReportSection | null>(null);
-  const [widgets, setWidgets] = useState<Widget[]>([]);
-  const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
-  const [selectedWidgetIds, setSelectedWidgetIds] = useState<string[]>([]); // Multi-select support
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  // Sync selectedWidgetIds to ref whenever it changes
+  // Builder state (migrated to Zustand)
+  const widgets = useBuilderStore(state => state.widgets);
+  const selectedWidgetId = useBuilderStore(state => state.selectedWidgetId);
+  const selectedWidgetIds = useBuilderStore(state => state.selectedWidgetIds);
+  const showProperties = useBuilderStore(state => state.showProperties);
+  const showPalette = useBuilderStore(state => state.showPalette);
+  const previewMode = useBuilderStore(state => state.previewMode);
+  const isDraggingOrResizing = useBuilderStore(state => state.isDraggingOrResizing);
+  const isSelecting = useBuilderStore(state => state.isSelecting);
+
+  // Builder actions
+  const setWidgets = useBuilderStore(state => state.setWidgets);
+  const selectWidget = useBuilderStore(state => state.selectWidget);
+  const selectWidgets = useBuilderStore(state => state.selectWidgets);
+  const clearSelection = useBuilderStore(state => state.clearSelection);
+  const selectAll = useBuilderStore(state => state.selectAll);
+  const setShowProperties = useBuilderStore(state => state.setShowProperties);
+  const setShowPalette = useBuilderStore(state => state.setShowPalette);
+  const setPreviewMode = useBuilderStore(state => state.setPreviewMode);
+  const setIsDraggingOrResizing = useBuilderStore(state => state.setIsDraggingOrResizing);
+  const setIsSelecting = useBuilderStore(state => state.setIsSelecting);
+  const updateWidget = useBuilderStore(state => state.updateWidget);
+  const deleteWidget = useBuilderStore(state => state.deleteWidget);
+  const deleteWidgets = useBuilderStore(state => state.deleteWidgets);
+  const addWidget = useBuilderStore(state => state.addWidget);
+  const batchUpdateLayouts = useBuilderStore(state => state.batchUpdateLayouts);
+  const undo = useBuilderStore(state => state.undo);
+  const redo = useBuilderStore(state => state.redo);
+  const addToHistory = useBuilderStore(state => state.addToHistory);
+  const canUndo = useBuilderStore(state => state.canUndo);
+  const canRedo = useBuilderStore(state => state.canRedo);
+  const setDragStartPosition = useBuilderStore(state => state.setDragStartPosition);
+  const setDraggedWidgetId = useBuilderStore(state => state.setDraggedWidgetId);
+  const clearDragState = useBuilderStore(state => state.clearDragState);
+
+  // Refs for synchronous access during drag (still needed for react-grid-layout callbacks)
+  const selectedWidgetIdsRef = useRef<string[]>([]);
+  const widgetsRef = useRef<Widget[]>([]);
+  const isDraggingRef = useRef<boolean>(false);
+  const dragStartPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const draggedWidgetIdRef = useRef<string | null>(null);
+
+  // Sync Zustand state to refs for drag callbacks
   useEffect(() => {
     selectedWidgetIdsRef.current = selectedWidgetIds;
   }, [selectedWidgetIds]);
 
-  // Sync widgets to ref whenever it changes
   useEffect(() => {
     widgetsRef.current = widgets;
   }, [widgets]);
-  const [showProperties, setShowProperties] = useState(false);
-  const [showPalette, setShowPalette] = useState(false);
-  const [history, setHistory] = useState<Widget[][]>([[]]);
-  const [historyIndex, setHistoryIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [previewMode, setPreviewMode] = useState(false);
-  const [isDraggingOrResizing, setIsDraggingOrResizing] = useState(false);
-  const [isSelecting, setIsSelecting] = useState(false); // Track selection box drag
-
-  // Use refs for synchronous access during drag (no state timing issues)
-  const dragStartPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const draggedWidgetIdRef = useRef<string | null>(null);
-  const selectedWidgetIdsRef = useRef<string[]>([]); // Store selectedWidgetIds in ref to avoid closure issues
-  const isDraggingRef = useRef<boolean>(false); // Track if we're currently in a drag operation
-  const widgetsRef = useRef<Widget[]>([]); // Store widgets in ref to avoid callback recreation
 
   // Load report and section data
   useEffect(() => {
@@ -133,15 +158,13 @@ export const ReportBuilderPage: React.FC = () => {
       // Escape to clear selection
       if (e.key === 'Escape' && !isEditing) {
         e.preventDefault();
-        setSelectedWidgetIds([]);
-        setSelectedWidgetId(null);
-        setShowProperties(false);
+        clearSelection(); // Use Zustand's clearSelection action
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [historyIndex, history, selectedWidgetIds, widgets]);
+  }, [selectedWidgetIds, clearSelection]);
 
   const loadReportData = async () => {
     try {
@@ -212,7 +235,7 @@ export const ReportBuilderPage: React.FC = () => {
 
         console.log('[ReportBuilder] Combined widgets:', allWidgets.length, 'widgets total');
         setWidgets(allWidgets);
-        setHistory([allWidgets]);
+        addToHistory(); // Initialize history with current state
         setSection(null); // No single section in multi-section mode
       }
       // Single-section mode (sectionId present) - LEGACY BEHAVIOR
@@ -229,12 +252,12 @@ export const ReportBuilderPage: React.FC = () => {
         // Load existing layout or create default
         if (sectionData.layout && Array.isArray(sectionData.layout.widgets)) {
           setWidgets(sectionData.layout.widgets);
-          setHistory([sectionData.layout.widgets]);
+          addToHistory(); // Initialize history
         } else {
           // Create a default layout with suggested visualizations
           const defaultWidgets = createDefaultLayout(sectionData);
           setWidgets(defaultWidgets);
-          setHistory([defaultWidgets]);
+          addToHistory(); // Initialize history
         }
       }
     } catch (error: any) {
@@ -393,7 +416,7 @@ export const ReportBuilderPage: React.FC = () => {
 
       const newWidgets = [...widgets, newWidget];
       updateWidgetsWithHistory(newWidgets);
-      setSelectedWidgetId(newWidget.id);
+      selectWidget(newWidget.id); // Use Zustand's selectWidget (also sets showProperties)
       setShowPalette(false); // Close palette after adding widget
       message.success(`${type.charAt(0).toUpperCase() + type.slice(1)} added to canvas`);
     },
@@ -423,7 +446,7 @@ export const ReportBuilderPage: React.FC = () => {
         onOk: () => {
           const newWidgets = widgets.filter((w) => w.id !== widgetId);
           updateWidgetsWithHistory(newWidgets);
-          setSelectedWidgetId(null);
+          selectWidget(null); // Use Zustand's selectWidget to clear selection
           message.success('Widget deleted');
         },
       });
@@ -436,12 +459,11 @@ export const ReportBuilderPage: React.FC = () => {
       const isDragging = isDraggingRef.current;
       const draggedWidgetId = draggedWidgetIdRef.current;
       const dragStartPositions = dragStartPositionsRef.current;
-      const currentSelectedIds = selectedWidgetIdsRef.current; // Read from ref instead of closure
-      const currentWidgets = widgetsRef.current; // Read from ref to avoid dependency
+      const currentSelectedIds = selectedWidgetIdsRef.current;
+      const currentWidgets = widgetsRef.current;
 
-      // CRITICAL: Only process group drag when isDragging is true (during active drag)
+      // GROUP DRAG: Process multi-select drag movement
       if (isDragging && draggedWidgetId && currentSelectedIds.length > 1 && currentSelectedIds.includes(draggedWidgetId) && dragStartPositions.size > 0) {
-        // Find the dragged widget in the new layout
         const draggedItem = layout.find((item) => item.i === draggedWidgetId);
         const startPosition = dragStartPositions.get(draggedWidgetId);
 
@@ -456,18 +478,14 @@ export const ReportBuilderPage: React.FC = () => {
               if (currentSelectedIds.includes(widget.id)) {
                 const widgetStartPos = dragStartPositions.get(widget.id);
                 if (widgetStartPos) {
-                  const newX = widgetStartPos.x + deltaX;
-                  const newY = widgetStartPos.y + deltaY;
-
-                  // Apply delta to selected widgets using their start positions
                   widget.layout = {
                     ...widget.layout,
-                    x: newX,
-                    y: newY,
+                    x: widgetStartPos.x + deltaX,
+                    y: widgetStartPos.y + deltaY,
                   };
                 }
               } else {
-                // Update non-selected widgets from layout (they might have been pushed by collision)
+                // Update non-selected widgets from layout (collision handling)
                 const layoutItem = layout.find((l) => l.i === widget.id);
                 if (layoutItem) {
                   widget.layout = { ...widget.layout, ...layoutItem };
@@ -477,28 +495,16 @@ export const ReportBuilderPage: React.FC = () => {
           });
 
           setWidgets(newWidgets);
-          // DON'T return - we need to update GridLayout's layout prop too!
-          // Modify layout array for normal flow
-          layout.forEach(item => {
-            const widget = newWidgets.find(w => w.id === item.i);
-            if (widget) {
-              item.x = widget.layout.x;
-              item.y = widget.layout.y;
-              item.w = widget.layout.w;
-              item.h = widget.layout.h;
-            }
-          });
-          // Fall through to normal update so GridLayout gets the modified layout
+          return; // Early return - don't process as normal drag
         }
       }
 
-      // Normal single widget update - only if layout actually changed
+      // NORMAL DRAG/RESIZE: Single widget or non-group movement
       let hasChanges = false;
       const newWidgets = produce(currentWidgets, (draft) => {
         layout.forEach((item) => {
           const widget = draft.find((w) => w.id === item.i);
           if (widget) {
-            // Check if position actually changed
             if (widget.layout.x !== item.x || widget.layout.y !== item.y ||
                 widget.layout.w !== item.w || widget.layout.h !== item.h) {
               hasChanges = true;
@@ -508,21 +514,18 @@ export const ReportBuilderPage: React.FC = () => {
         });
       });
 
-      // Only update state if something actually changed (prevents unnecessary re-renders during drag)
       if (hasChanges) {
         setWidgets(newWidgets);
       }
     },
-    []  // No dependencies - all state accessed via refs to keep callback stable
+    []  // No dependencies - all state accessed via refs
   );
 
   // Multi-select handlers
   const handleSelectAll = useCallback(() => {
-    const allIds = widgets.map((w) => w.id);
-    setSelectedWidgetIds(allIds);
-    setShowProperties(false); // Close properties panel when selecting all
-    message.info(`Selected ${allIds.length} widgets`);
-  }, [widgets]);
+    selectAll(); // Use Zustand's selectAll action
+    message.info(`Selected ${widgets.length} widgets`);
+  }, [selectAll, widgets.length]);
 
   const handleBulkDelete = useCallback(() => {
     if (selectedWidgetIds.length === 0) return;
@@ -533,10 +536,7 @@ export const ReportBuilderPage: React.FC = () => {
       okText: 'Delete',
       okType: 'danger',
       onOk: () => {
-        const newWidgets = widgets.filter((w) => !selectedWidgetIds.includes(w.id));
-        updateWidgetsWithHistory(newWidgets);
-        setSelectedWidgetIds([]);
-        setSelectedWidgetId(null);
+        deleteWidgets(selectedWidgetIds); // Use Zustand's deleteWidgets action (includes history)
         message.success(`${selectedWidgetIds.length} widget(s) deleted`);
       },
     });
@@ -551,77 +551,53 @@ export const ReportBuilderPage: React.FC = () => {
       const isShift = event?.shiftKey;
 
       if (isCtrlOrCmd) {
-        // Toggle selection - NEVER show properties panel for multi-select
-        if (selectedWidgetIds.includes(widgetId)) {
-          setSelectedWidgetIds(selectedWidgetIds.filter((id) => id !== widgetId));
-          if (selectedWidgetId === widgetId) {
-            setSelectedWidgetId(null);
-            setShowProperties(false);
-          }
-        } else {
-          setSelectedWidgetIds([...selectedWidgetIds, widgetId]);
-          setSelectedWidgetId(widgetId);
-          setShowProperties(false); // Close properties panel when multi-selecting
-        }
+        // Toggle selection with Ctrl/Cmd (multi-select mode)
+        selectWidget(widgetId, true); // Use Zustand's multi-select
       } else if (isShift && selectedWidgetId) {
-        // Range selection - NEVER show properties panel for multi-select
+        // Range selection - select all widgets between last selected and current
         const currentIndex = widgets.findIndex((w) => w.id === widgetId);
         const lastIndex = widgets.findIndex((w) => w.id === selectedWidgetId);
         const startIndex = Math.min(currentIndex, lastIndex);
         const endIndex = Math.max(currentIndex, lastIndex);
         const rangeIds = widgets.slice(startIndex, endIndex + 1).map((w) => w.id);
-        setSelectedWidgetIds(rangeIds);
-        setShowProperties(false); // Close properties panel when multi-selecting
+        selectWidgets(rangeIds); // Use Zustand's selectWidgets
       } else {
-        // CRITICAL FIX: If clicking an already-selected widget with multiple selections,
-        // preserve the selection (user might be starting a group drag)
+        // FIXED: If clicking an already-selected widget with multiple selections,
+        // update the selectedWidgetId (primary widget) but preserve multi-selection for drag
         if (selectedWidgetIds.length > 1 && selectedWidgetIds.includes(widgetId)) {
-          // Don't change selection - preserve multi-selection for potential drag
+          // Update primary selection widget without changing the array
+          // This allows the user to indicate which widget drives the group drag
+          selectWidgets(selectedWidgetIds, widgetId); // Re-select with clicked widget as primary
           return;
         }
 
-        // Single selection (clear others) - ONLY show properties for single selection
-        setSelectedWidgetIds([widgetId]);
-        setSelectedWidgetId(widgetId);
-        setShowProperties(true);
+        // Single selection (clear others)
+        selectWidget(widgetId, false); // Use Zustand's single select
       }
     },
-    [widgets, selectedWidgetId, selectedWidgetIds, isDraggingOrResizing]
+    [widgets, selectedWidgetId, selectedWidgetIds, isDraggingOrResizing, selectWidget, selectWidgets]
   );
 
   // Drag-box selection handler
   const handleDragBoxSelection = useCallback(
     (widgetIds: string[]) => {
-      setSelectedWidgetIds(widgetIds);
-      if (widgetIds.length > 0) {
-        setSelectedWidgetId(widgetIds[0]); // Set first widget as primary
-      }
-      setShowProperties(false); // Always close properties panel for drag-box selection
+      selectWidgets(widgetIds); // Use Zustand's selectWidgets
     },
-    []
+    [selectWidgets]
   );
 
-  // History management
+  // History management (Zustand handles history automatically)
   const updateWidgetsWithHistory = (newWidgets: Widget[]) => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(newWidgets);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-    setWidgets(newWidgets);
+    setWidgets(newWidgets); // Zustand setWidgets
+    addToHistory(); // Zustand's history tracking
   };
 
   const handleUndo = () => {
-    if (historyIndex > 0) {
-      setHistoryIndex(historyIndex - 1);
-      setWidgets(history[historyIndex - 1]);
-    }
+    undo(); // Use Zustand's undo action
   };
 
   const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
-      setHistoryIndex(historyIndex + 1);
-      setWidgets(history[historyIndex + 1]);
-    }
+    redo(); // Use Zustand's redo action
   };
 
   // Save layout
@@ -1014,14 +990,14 @@ export const ReportBuilderPage: React.FC = () => {
           <Tooltip title="Undo (Ctrl+Z)">
             <Button
               icon={<UndoOutlined />}
-              disabled={historyIndex === 0}
+              disabled={!canUndo()}
               onClick={handleUndo}
             />
           </Tooltip>
           <Tooltip title="Redo (Ctrl+Shift+Z)">
             <Button
               icon={<RedoOutlined />}
-              disabled={historyIndex === history.length - 1}
+              disabled={!canRedo()}
               onClick={handleRedo}
             />
           </Tooltip>
@@ -1071,7 +1047,7 @@ export const ReportBuilderPage: React.FC = () => {
             selectedWidgetId={selectedWidgetId}
             selectedWidgetIds={selectedWidgetIds}
             showProperties={showProperties}
-            onWidgetSelect={setSelectedWidgetId}
+            onWidgetSelect={selectWidget}
             onWidgetClick={handleWidgetClick}
             onSelectionChange={handleDragBoxSelection}
             onToggleProperties={() => setShowProperties(!showProperties)}
@@ -1088,11 +1064,14 @@ export const ReportBuilderPage: React.FC = () => {
               // Initialize refs in onDragStart
               draggedWidgetIdRef.current = widgetId;
 
+              // Get current selection from ref (most up-to-date)
+              const currentSelectedIds = selectedWidgetIdsRef.current;
+
               // Store start positions for all selected widgets (for group drag)
-              if (selectedWidgetIds.length > 1 && selectedWidgetIds.includes(widgetId)) {
+              if (currentSelectedIds.length > 1 && currentSelectedIds.includes(widgetId)) {
                 const positions = new Map<string, { x: number; y: number }>();
-                selectedWidgetIds.forEach((id) => {
-                  const widget = widgets.find((w) => w.id === id);
+                currentSelectedIds.forEach((id) => {
+                  const widget = widgetsRef.current.find((w) => w.id === id);
                   if (widget) {
                     positions.set(id, { x: widget.layout.x, y: widget.layout.y });
                   }
@@ -1105,15 +1084,18 @@ export const ReportBuilderPage: React.FC = () => {
             onDragStop={(widgetId) => {
               setIsDraggingOrResizing(false);
 
+              // Add to history when drag stops
+              // Use setTimeout to ensure handleLayoutChange has completed
+              setTimeout(() => {
+                addToHistory();
+              }, 50);
+
               // Cleanup refs after a delay to allow onLayoutChange to process first
               setTimeout(() => {
                 isDraggingRef.current = false;
                 draggedWidgetIdRef.current = null;
                 dragStartPositionsRef.current = new Map();
               }, 100);
-
-              // Add to history when drag stops
-              updateWidgetsWithHistory(widgetsRef.current);
             }}
             onResizeStart={() => {
               setIsDraggingOrResizing(true);
@@ -1122,7 +1104,9 @@ export const ReportBuilderPage: React.FC = () => {
             onResizeStop={() => {
               setIsDraggingOrResizing(false);
               // Add to history when resize stops
-              updateWidgetsWithHistory(widgets);
+              setTimeout(() => {
+                addToHistory();
+              }, 50);
             }}
             readonly={false}
           />

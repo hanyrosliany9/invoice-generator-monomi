@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ChartWidget as ChartWidgetType, DataSource } from '../../../types/report-builder';
 import ChartRenderer from '../../reports/ChartRenderer';
 
@@ -8,16 +8,23 @@ interface ChartWidgetProps {
   onChange: (updates: Partial<ChartWidgetType>) => void;
 }
 
-export const ChartWidget: React.FC<ChartWidgetProps> = ({ widget, dataSource }) => {
-  // Convert our chart config to the format expected by ChartRenderer
-  const visualizationConfig = {
+const ChartWidgetComponent: React.FC<ChartWidgetProps> = ({ widget, dataSource }) => {
+  // Memoize chart config to prevent Recharts recalculation on every render
+  const visualizationConfig = useMemo(() => ({
     type: widget.config.chartType,
     title: widget.config.title,
     xAxis: widget.config.xAxis,
     yAxis: widget.config.yAxis,
     nameKey: widget.config.nameKey,
     valueKey: widget.config.valueKey,
-  };
+  }), [
+    widget.config.chartType,
+    widget.config.title,
+    widget.config.xAxis,
+    widget.config.yAxis,
+    widget.config.nameKey,
+    widget.config.valueKey,
+  ]);
 
   return (
     <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
@@ -25,5 +32,19 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({ widget, dataSource }) 
     </div>
   );
 };
+
+// Wrap with React.memo to prevent unnecessary re-renders
+export const ChartWidget = React.memo(
+  ChartWidgetComponent,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.widget.id === nextProps.widget.id &&
+      JSON.stringify(prevProps.widget.config) === JSON.stringify(nextProps.widget.config) &&
+      prevProps.dataSource === nextProps.dataSource
+    );
+  }
+);
+
+ChartWidget.displayName = 'ChartWidget';
 
 export default ChartWidget;

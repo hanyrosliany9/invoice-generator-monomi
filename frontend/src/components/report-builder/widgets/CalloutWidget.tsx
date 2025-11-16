@@ -24,7 +24,7 @@ const CALLOUT_ICONS = {
   error: <CloseCircleOutlined />,
 };
 
-export const CalloutWidget: React.FC<CalloutWidgetProps> = ({ widget, onChange, readonly }) => {
+const CalloutWidgetComponent: React.FC<CalloutWidgetProps> = ({ widget, onChange, readonly }) => {
   const { token } = useToken();
   const [content, setContent] = useState(
     typeof widget.config.content === 'string'
@@ -84,5 +84,19 @@ export const CalloutWidget: React.FC<CalloutWidgetProps> = ({ widget, onChange, 
     />
   );
 };
+
+// Wrap with React.memo to prevent unnecessary re-renders
+export const CalloutWidget = React.memo(
+  CalloutWidgetComponent,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.widget.id === nextProps.widget.id &&
+      prevProps.readonly === nextProps.readonly &&
+      JSON.stringify(prevProps.widget.config) === JSON.stringify(nextProps.widget.config)
+    );
+  }
+);
+
+CalloutWidget.displayName = 'CalloutWidget';
 
 export default CalloutWidget;
