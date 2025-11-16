@@ -113,52 +113,29 @@ export class ReportsController {
     return this.reportsService.updateLayout(sectionId, layout);
   }
 
-  // PDF Generation
+  // PDF Generation (Template-Based Only - Legacy Removed)
   @Post(':id/generate-pdf')
   async generatePDF(
     @Param('id') id: string,
     @Body() body: {
-      sectionId?: string; // NEW: Section ID for visual builder PDF generation
-      renderedHTML?: string; // OLD: Legacy snapshot approach
-      styles?: string;
-      dimensions?: { width: number; rowHeight: number; cols: number };
+      sectionId?: string; // Optional: Generate single section PDF
     },
     @Res() res: Response,
   ) {
-    console.log('📥 Received PDF generation request:', { id, body, hasSectionId: !!body.sectionId });
+    console.log('📥 PDF generation request:', { id, sectionId: body.sectionId || 'full-report' });
+
     let pdfBuffer: Buffer;
 
-    // ✅ NEW: Server-side rendering from data (RELIABLE - Industry Standard)
+    // Single-section PDF (visual builder)
     if (body.sectionId) {
-      console.log('✅ Generating single-section PDF from visual builder (server-side template mode)');
+      console.log('✅ Generating single-section PDF (template-based)');
       pdfBuffer = await this.pdfGeneratorService.generatePDFFromData(id, body.sectionId);
     }
-    // Legacy snapshot approach (kept for backward compatibility)
-    else if (body.renderedHTML && body.styles && body.dimensions) {
-      console.log('📊 Generating PDF from HTML snapshot (legacy mode)');
-      pdfBuffer = await this.pdfGeneratorService.generatePDFFromSnapshot(id, {
-        renderedHTML: body.renderedHTML,
-        styles: body.styles,
-        dimensions: body.dimensions,
-      });
-    }
-    // ✅ NEW: Full multi-section report using server-side templates
+    // Full multi-section report PDF
     else {
-      console.log('✅ Generating full multi-section report PDF (server-side template mode)');
+      console.log('✅ Generating full multi-section report PDF (template-based)');
       pdfBuffer = await this.pdfGeneratorService.generateFullReportPDFFromData(id);
     }
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="report-${id}.pdf"`,
-    );
-    res.send(pdfBuffer);
-  }
-
-  @Get(':id/download-pdf')
-  async downloadPDF(@Param('id') id: string, @Res() res: Response) {
-    const pdfBuffer = await this.pdfGeneratorService.generateReportPDF(id);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(

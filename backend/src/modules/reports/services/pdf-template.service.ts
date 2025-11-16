@@ -452,6 +452,7 @@ export class PDFTemplateService {
 
   /**
    * Render Table Widget
+   * ✅ FIXED: Shows ALL rows with auto height (no overflow clipping)
    */
   private renderTableWidget(widget: BaseWidget, dataSource: DataSource): string {
     const config = widget.config as TableConfig;
@@ -468,8 +469,13 @@ export class PDFTemplateService {
       columnNames = Object.keys(dataSource.columns);
     }
 
-    const maxRows = config.maxRows || 10;
-    const rows = dataSource.rows.slice(0, maxRows);
+    // ✅ FIX: Show ALL rows (no maxRows limit) - matches frontend TableWidget behavior
+    const rows = dataSource.rows;
+
+    this.logger.log(
+      `Rendering table widget: ${columnNames.length} columns × ${rows.length} rows ` +
+      `(width: ${dim.width}px, position: ${dim.left}px, ${dim.top}px)`
+    );
 
     return `
       <div class="widget-container widget-table" style="
@@ -477,8 +483,8 @@ export class PDFTemplateService {
         left: ${dim.left}px;
         top: ${dim.top}px;
         width: ${dim.width}px;
-        height: ${dim.height}px;
-        overflow: hidden;
+        height: auto;
+        overflow: visible;
         background: #ffffff;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
@@ -687,12 +693,17 @@ export class PDFTemplateService {
 
   /**
    * Calculate total canvas height based on widgets
+   * ✅ FIXED: Tables shrink to content, no extra padding needed
    */
   private calculateCanvasHeight(widgets: BaseWidget[]): number {
     if (widgets.length === 0) return 1123; // A4 height minimum
 
     const maxY = Math.max(...widgets.map(w => w.layout.y + w.layout.h));
-    return Math.max(maxY * ROW_HEIGHT + 100, 1123); // Add padding, minimum A4 height
+
+    // Standard padding for all widgets (tables auto-size to content)
+    const extraPadding = 100;
+
+    return Math.max(maxY * ROW_HEIGHT + extraPadding, 1123); // Minimum A4 height
   }
 
   /**
@@ -733,9 +744,11 @@ export class PDFTemplateService {
             .pdf-canvas {
               width: ${CANVAS_WIDTH}px;
               min-height: ${canvasHeight}px;
+              height: auto;
               position: relative;
               background: #ffffff;
               margin: 0 auto;
+              overflow: visible;
             }
 
             /* Print optimizations */
