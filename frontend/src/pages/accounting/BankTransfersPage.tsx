@@ -501,21 +501,22 @@ const BankTransfersPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <Title level={2} style={{ margin: 0, color: theme.colors.text.primary }}>
-          Transfer Bank (Bank Transfers)
+      <div style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <Title level={isMobile ? 3 : 2} style={{ margin: 0, marginBottom: isMobile ? '4px' : '8px', color: theme.colors.text.primary }}>
+          {isMobile ? 'Transfer Bank' : 'Transfer Bank (Bank Transfers)'}
         </Title>
-        <Text type="secondary">
-          Kelola transfer antar rekening bank dan akun kas
+        <Text type="secondary" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+          {isMobile ? 'Transfer antar rekening' : 'Kelola transfer antar rekening bank dan akun kas'}
         </Text>
       </div>
 
       {/* Filters */}
       <Card
+        size={isMobile ? 'small' : 'default'}
         style={{
-          marginBottom: '24px',
+          marginBottom: isMobile ? '16px' : '24px',
           background: theme.colors.card.background,
           borderColor: theme.colors.border.default,
         }}

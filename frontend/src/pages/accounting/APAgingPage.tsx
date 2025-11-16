@@ -182,21 +182,21 @@ const APAgingPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
       {/* Header */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '24px',
+          marginBottom: isMobile ? '16px' : '24px',
         }}
       >
         <div>
-          <Title level={2} style={{ margin: 0, color: theme.colors.text.primary}}>
+          <Title level={isMobile ? 3 : 2} style={{ margin: 0, color: theme.colors.text.primary}}>
             Aging Hutang (AP Aging Report)
           </Title>
-          <Text type="secondary">
+          <Text type="secondary" style={{ fontSize: isMobile ? '12px' : '14px' }}>
             Analisis umur hutang berdasarkan jatuh tempo
           </Text>
         </div>
@@ -221,7 +221,7 @@ const APAgingPage: React.FC = () => {
       {/* Date Info */}
       <Card
         style={{
-          marginBottom: '24px',
+          marginBottom: isMobile ? '16px' : '24px',
           background: theme.colors.accent.primary,
           borderColor: theme.colors.accent.primary,
         }}
@@ -252,7 +252,7 @@ const APAgingPage: React.FC = () => {
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: '16px',
-              marginBottom: '24px',
+              marginBottom: isMobile ? '16px' : '24px',
             }}
           >
             <Card
@@ -390,7 +390,7 @@ const APAgingPage: React.FC = () => {
           {/* Total AP Card */}
           <Card
             style={{
-              marginBottom: '24px',
+              marginBottom: isMobile ? '16px' : '24px',
               background: theme.colors.status.error,
               borderColor: theme.colors.status.error,
             }}

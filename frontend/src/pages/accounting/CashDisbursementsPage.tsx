@@ -492,13 +492,13 @@ const CashDisbursementsPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <Title level={2} style={{ margin: 0, color: theme.colors.text.primary }}>
+      <div style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <Title level={isMobile ? 3 : 2} style={{ margin: 0, color: theme.colors.text.primary }}>
           Pengeluaran Kas (Cash Disbursements)
         </Title>
-        <Text type="secondary">
+        <Text type="secondary" style={{ fontSize: isMobile ? '12px' : '14px' }}>
           Kelola pengeluaran kas keluar untuk berbagai keperluan operasional
         </Text>
       </div>
@@ -506,7 +506,7 @@ const CashDisbursementsPage: React.FC = () => {
       {/* Filters */}
       <Card
         style={{
-          marginBottom: '24px',
+          marginBottom: isMobile ? '16px' : '24px',
           background: theme.colors.card.background,
           borderColor: theme.colors.border.default,
         }}
