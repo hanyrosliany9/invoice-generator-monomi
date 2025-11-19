@@ -22,8 +22,20 @@ class ApiClient {
   private token: string | null = null
 
   constructor() {
-    this.baseURL =
-      import.meta.env['VITE_API_URL'] || 'http://localhost:5000/api'
+    // In development, use the same hostname as the frontend (for Tailscale compatibility)
+    // In production, use the configured VITE_API_URL (which is relative /api)
+    const envUrl = import.meta.env['VITE_API_URL'];
+
+    if (envUrl && envUrl.startsWith('http')) {
+      // Absolute URL from env - use as-is
+      this.baseURL = envUrl;
+    } else if (envUrl && envUrl.startsWith('/')) {
+      // Relative URL from env (production) - use current origin
+      this.baseURL = `${window.location.origin}${envUrl}`;
+    } else {
+      // Fallback: use current hostname with port 5000 (development)
+      this.baseURL = `${window.location.protocol}//${window.location.hostname}:5000/api`;
+    }
   }
 
   setToken(token: string) {

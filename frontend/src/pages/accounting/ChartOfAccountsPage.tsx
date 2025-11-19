@@ -211,7 +211,7 @@ const ChartOfAccountsPage: React.FC = () => {
         { label: 'Beban', value: 'EXPENSE' },
       ],
       value: filterType,
-      onChange: (value) => setFilterType(value as string),
+      onChange: (value: any) => setFilterType(value as string),
     },
     {
       key: 'subType',
@@ -227,7 +227,7 @@ const ChartOfAccountsPage: React.FC = () => {
         { label: 'Other Expense', value: 'OTHER_EXPENSE' },
       ],
       value: filterSubType,
-      onChange: (value) => setFilterSubType(value as string),
+      onChange: (value: any) => setFilterSubType(value as string),
     },
   ], [filterType, filterSubType]);
 

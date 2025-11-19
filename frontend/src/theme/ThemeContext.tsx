@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { theme as antdTheme, ConfigProvider } from 'antd'
+import { theme as antdTheme, ConfigProvider, App } from 'antd'
 import type { Theme, ThemeContextType, ThemeMode } from './types'
 
 const THEME_STORAGE_KEY = 'monomi-theme-mode'
@@ -232,7 +232,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   return (
     <ThemeContext.Provider value={value}>
       <ConfigProvider theme={antdThemeConfig}>
-        {children}
+        <App>
+          {children}
+        </App>
       </ConfigProvider>
     </ThemeContext.Provider>
   )

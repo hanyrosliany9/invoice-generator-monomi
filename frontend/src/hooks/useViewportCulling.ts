@@ -12,7 +12,7 @@ interface UseViewportCullingOptions {
   enabled?: boolean;
   threshold?: number; // Minimum widget count to enable culling
   buffer?: number; // Buffer pixels outside viewport
-  containerRef: RefObject<HTMLElement>;
+  containerRef: RefObject<HTMLDivElement | null>;
   colWidth: number;
   rowHeight: number;
 }

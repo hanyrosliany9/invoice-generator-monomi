@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { App as AntdApp } from 'antd'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+// import { ReactQueryDevtools } from '@tanstack/react-query-devtools' // DISABLED: Causes 3 dev tabs to reopen repeatedly
 import { ThemeProvider } from './theme'
 import App from './App.tsx'
 import './i18n/config' // Initialize i18n
@@ -37,8 +37,13 @@ const rootElement = document.getElementById('root')
 
 if (rootElement) {
   const root = ReactDOM.createRoot(rootElement)
+
+  // Disable React.StrictMode in development to prevent double-rendering issues
+  // that can cause browser dev tools or tabs to open repeatedly
+  const AppWrapper = import.meta.env.DEV ? React.Fragment : React.StrictMode;
+
   root.render(
-    <React.StrictMode>
+    <AppWrapper>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider defaultTheme='dark'>
           <AntdApp>
@@ -52,9 +57,9 @@ if (rootElement) {
             </BrowserRouter>
           </AntdApp>
         </ThemeProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
+        {/* <ReactQueryDevtools initialIsOpen={false} /> */}
       </QueryClientProvider>
-    </React.StrictMode>
+    </AppWrapper>
   )
 
   if (import.meta.env.DEV) {

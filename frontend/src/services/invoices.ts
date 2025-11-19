@@ -64,6 +64,7 @@ export interface Invoice {
     name: string
     company: string
     email: string
+    phone?: string
   }
   project?: {
     id: string

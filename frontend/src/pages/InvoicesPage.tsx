@@ -99,7 +99,8 @@ import { usePermissions } from '../hooks/usePermissions'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import MobileTableView from '../components/mobile/MobileTableView'
 import { invoiceToBusinessEntity } from '../adapters/mobileTableAdapters'
-import type { MobileTableAction, MobileFilterConfig, BusinessEntity } from '../components/mobile/MobileTableView'
+import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView'
+import type { BusinessEntity } from '../components/tables/SmartTable'
 import { now } from '../utils/date'
 
 const { Title, Text } = Typography

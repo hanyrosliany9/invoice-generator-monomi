@@ -48,6 +48,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Note: Port 8081 is NOT exposed to host (only internal Docker network)
+    # Cloudflare Tunnel #2 connects directly to app:8081 inside Docker network
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://invoiceuser:${DB_PASSWORD}@db:5432/invoices
@@ -62,6 +64,8 @@ services:
       - FRONTEND_URL=https://admin.monomiagency.com
       - LOG_LEVEL=info
       - SKIP_DB_INIT=true
+      - WEBSOCKET_PORT=${WEBSOCKET_PORT}
+      - WEBSOCKET_CORS_ORIGIN=${WEBSOCKET_CORS_ORIGIN}
     networks:
       - invoice-network
     volumes:
@@ -185,7 +189,7 @@ services:
           cpus: '0.25'
           memory: 128M
 
-  # Cloudflare Tunnel
+  # Cloudflare Tunnel #1 (Main App - HTTP/REST API)
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: invoice-cloudflared-prod
@@ -201,6 +205,26 @@ services:
         limits:
           cpus: '0.25'
           memory: 128M
+
+  # Cloudflare Tunnel #2 (WebSocket - Real-time Collaboration)
+  cloudflared-ws:
+    image: cloudflare/cloudflared:latest
+    container_name: invoice-cloudflared-ws-prod
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_WS_TUNNEL_TOKEN}
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - invoice-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.125'
+          memory: 64M
 
   # Database backup service
   backup:

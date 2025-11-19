@@ -89,7 +89,10 @@ export class MediaService {
     };
 
     this.bucketName = r2Config.bucketName || "content-media";
-    this.publicUrl = r2Config.publicUrl || "";
+    // ✅ CORS FIX: Use relative URL instead of absolute to allow Vite proxy to intercept requests
+    // This prevents cross-origin issues when frontend (port 3000) requests from backend (port 5000)
+    // Vite proxy will convert /api/* requests to http://localhost:5000/api/*
+    this.publicUrl = `/api/v1/media/proxy`;
     this.maxFileSizeMB = r2Config.maxFileSizeMB;
 
     // Initialize S3 client for R2
@@ -103,6 +106,7 @@ export class MediaService {
         },
       });
       this.logger.log(`✅ R2 client initialized for bucket: ${this.bucketName}`);
+      this.logger.log(`✅ Media proxy URL: ${this.publicUrl}`);
     } else {
       this.logger.warn(
         "⚠️  R2 credentials not configured. Media upload will be disabled.",
@@ -297,6 +301,47 @@ export class MediaService {
   async deleteMultipleFiles(keys: string[]): Promise<void> {
     for (const key of keys) {
       await this.deleteFile(key);
+    }
+  }
+
+  /**
+   * Delete a file and its associated thumbnail from R2
+   *
+   * @param key - Primary file R2 object key
+   * @param thumbnailUrl - Optional thumbnail URL to delete
+   */
+  async deleteFileWithThumbnail(key: string, thumbnailUrl?: string): Promise<void> {
+    // Delete main file
+    await this.deleteFile(key);
+
+    // Delete thumbnail if provided
+    if (thumbnailUrl) {
+      const thumbnailKey = this.extractKeyFromUrl(thumbnailUrl);
+      if (thumbnailKey) {
+        try {
+          await this.deleteFile(thumbnailKey);
+          this.logger.log(`✅ Thumbnail deleted: ${thumbnailKey}`);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          this.logger.warn(`⚠️  Failed to delete thumbnail ${thumbnailKey}: ${errorMessage}`);
+          // Don't throw - main file deletion succeeded
+        }
+      }
+    }
+  }
+
+  /**
+   * Extract R2 key from proxy URL
+   * Example: /api/v1/media/proxy/thumbnails/2025-01-08/abc123-video-thumb.jpg
+   * Returns: thumbnails/2025-01-08/abc123-video-thumb.jpg
+   */
+  private extractKeyFromUrl(url: string): string | null {
+    try {
+      // Handle both full URLs and relative paths
+      const match = url.match(/\/api\/v1\/media\/proxy\/(.+)/);
+      return match ? match[1] : null;
+    } catch {
+      return null;
     }
   }
 

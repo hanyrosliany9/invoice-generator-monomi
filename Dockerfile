@@ -1,7 +1,7 @@
 # Multi-stage build for production
 FROM node:20-alpine AS base
 
-# Install system dependencies including Chromium for Puppeteer and Canvas for chart rendering
+# Install system dependencies including Chromium for Puppeteer, Canvas for chart rendering, and FFmpeg for video processing
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -21,7 +21,9 @@ RUN apk add --no-cache \
     jpeg-dev \
     pango-dev \
     giflib-dev \
-    pixman-dev
+    pixman-dev \
+    # FFmpeg for video processing and thumbnail generation
+    ffmpeg
 
 # Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \

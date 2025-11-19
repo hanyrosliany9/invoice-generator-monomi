@@ -82,7 +82,7 @@ export interface MobileTableViewProps {
   loading?: boolean
 
   // Entity configuration
-  entityType: 'quotations' | 'invoices' | 'projects' | 'clients' | 'assets' | 'expenses' | 'expense-categories' | 'journal-entries' | 'trial-balance' | 'income-revenue' | 'income-expense' | 'ecl-provision' | 'general-ledger' | 'ar-aging' | 'ap-aging' | 'accounts-payable' | 'accounts-receivable' | 'balance-sheet-assets' | 'balance-sheet-liabilities' | 'balance-sheet-equity' | 'cash-flow' | 'depreciation' | 'cashflow-operating' | 'cashflow-investing' | 'cashflow-financing' | 'cash-receipts' | 'cash-disbursements' | 'chart-of-accounts' | 'bank-transfers' | 'bank-reconciliations' | 'cash-bank-balance' | 'users' | 'vendors' | 'reports'
+  entityType: 'quotations' | 'invoices' | 'projects' | 'clients' | 'assets' | 'expenses' | 'expense-categories' | 'journal-entries' | 'trial-balance' | 'income-revenue' | 'income-expense' | 'ecl-provision' | 'general-ledger' | 'ar-aging' | 'ap-aging' | 'accounts-payable' | 'accounts-receivable' | 'balance-sheet-assets' | 'balance-sheet-liabilities' | 'balance-sheet-equity' | 'cash-flow' | 'depreciation' | 'cashflow-operating' | 'cashflow-investing' | 'cashflow-financing' | 'cash-receipts' | 'cash-disbursements' | 'chart-of-accounts' | 'bank-transfers' | 'bank-reconciliations' | 'cash-bank-balance' | 'users' | 'vendors' | 'reports' | 'content'
 
   // Mobile-specific features
   enableSwipeActions?: boolean

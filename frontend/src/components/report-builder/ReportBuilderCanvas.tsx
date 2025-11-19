@@ -67,7 +67,7 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
 
   // ✅ Fixed canvas width matching A4 PDF size (794px at 96 DPI)
   const CANVAS_WIDTH = 794;
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const dragStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
 

@@ -13,6 +13,7 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { JournalService } from "../accounting/services/journal.service";
 import { RevenueRecognitionService } from "../accounting/services/revenue-recognition.service";
 import { InvoiceCounterService } from "./services/invoice-counter.service";
+import { DocumentsService } from "../documents/documents.service";
 import { CreateInvoiceDto } from "./dto/create-invoice.dto";
 import { UpdateInvoiceDto } from "./dto/update-invoice.dto";
 import {
@@ -39,6 +40,7 @@ export class InvoicesService {
     private journalService: JournalService,
     private revenueRecognitionService: RevenueRecognitionService,
     private invoiceCounterService: InvoiceCounterService,
+    private documentsService: DocumentsService,
   ) {}
 
   async create(
@@ -950,6 +952,9 @@ export class InvoicesService {
       throw new NotFoundException('Invoice tidak ditemukan');
     }
 
+    // CRITICAL: Delete document files from filesystem BEFORE database deletion
+    await this.documentsService.deleteDocumentsByInvoice(id);
+
     // Business Rule #3: Reset milestone status when invoice is deleted
     // Use transaction to ensure atomicity
     return this.prisma.$transaction(async (prisma) => {
@@ -958,7 +963,7 @@ export class InvoicesService {
         where: { invoiceId: id },
       });
 
-      // Delete the invoice
+      // Delete the invoice (CASCADE will delete Document DB records)
       const deletedInvoice = await prisma.invoice.delete({
         where: { id },
       });

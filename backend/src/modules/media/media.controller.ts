@@ -23,6 +23,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { UserRole } from "@prisma/client";
 import { MediaService } from "./media.service";
+import { MediaCleanupService } from "./services/media-cleanup.service";
 
 /**
  * MediaController - File Upload/Delete Endpoints
@@ -46,7 +47,10 @@ import { MediaService } from "./media.service";
 export class MediaController {
   private readonly logger = new Logger(MediaController.name);
 
-  constructor(private readonly mediaService: MediaService) {}
+  constructor(
+    private readonly mediaService: MediaService,
+    private readonly mediaCleanupService: MediaCleanupService,
+  ) {}
 
   /**
    * Upload a single file to R2 with optional thumbnail
@@ -181,13 +185,17 @@ export class MediaController {
 
     this.logger.log(`Proxying file: ${key}`);
 
-    const { stream, contentType, contentLength, originalName } = await this.mediaService.getFileStream(key);
+    const { stream, contentType, contentLength, originalName} = await this.mediaService.getFileStream(key);
 
     // Set appropriate headers
     res.setHeader("Content-Type", contentType);
     res.setHeader("Content-Length", contentLength);
-    res.setHeader("Cache-Control", "public, max-age=31536000"); // Cache for 1 year
+    // ✅ CORS FIX: Use shorter cache with revalidation to prevent caching 404 errors
+    // When thumbnails are requested before upload completes, browser caches 404
+    // Solution: must-revalidate ensures browser checks with server even if cached
+    res.setHeader("Cache-Control", "public, max-age=86400, must-revalidate"); // Cache for 1 day with revalidation
     res.setHeader("Access-Control-Allow-Origin", "*"); // Allow CORS
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin"); // Allow cross-origin resource loading
 
     // Set Content-Disposition header with original filename to preserve filename on download
     if (originalName) {
@@ -226,6 +234,31 @@ export class MediaController {
     return {
       success: true,
       message: "File deleted successfully",
+    };
+  }
+
+  /**
+   * Manual cleanup trigger for orphaned thumbnails and old files
+   *
+   * POST /media/cleanup
+   * Requires SUPER_ADMIN role
+   *
+   * This endpoint manually triggers the cleanup job that normally runs daily at 2 AM.
+   * Useful for testing or immediate cleanup needs.
+   */
+  @Post("cleanup")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: "Manually trigger thumbnail and file cleanup" })
+  async manualCleanup() {
+    this.logger.log("Manual cleanup triggered by admin");
+
+    const result = await this.mediaCleanupService.manualCleanup();
+
+    return {
+      success: true,
+      message: "Cleanup completed",
+      data: result,
     };
   }
 }

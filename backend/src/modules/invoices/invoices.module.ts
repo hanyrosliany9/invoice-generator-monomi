@@ -6,6 +6,7 @@ import { PrismaModule } from "../prisma/prisma.module";
 import { QuotationsModule } from "../quotations/quotations.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { AccountingModule } from "../accounting/accounting.module";
+import { DocumentsModule } from "../documents/documents.module";
 // import { InvoicePaymentListener } from "./listeners/invoice-payment.listener";
 
 @Module({
@@ -14,6 +15,7 @@ import { AccountingModule } from "../accounting/accounting.module";
     forwardRef(() => QuotationsModule),
     NotificationsModule,
     AccountingModule,
+    DocumentsModule,
   ],
   controllers: [InvoicesController],
   providers: [InvoicesService, InvoiceCounterService], // InvoicePaymentListener temporarily disabled

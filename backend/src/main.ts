@@ -38,13 +38,21 @@ async function bootstrap() {
       logger: ["error", "warn", "log", "debug", "verbose"],
     });
 
+    // BigInt serialization fix for JSON.stringify
+    (BigInt.prototype as any).toJSON = function () {
+      return this.toString();
+    };
+
     // Security
     app.use(
       helmet({
         crossOriginEmbedderPolicy: false,
+        // ✅ CORS FIX: Disable Helmet's CORP to prevent it from overriding our custom headers
+        // We set CORP manually in exception filter and media controller
+        crossOriginResourcePolicy: false,
         contentSecurityPolicy: {
           directives: {
-            imgSrc: [`'self'`, "data:", "https:"],
+            imgSrc: [`'self'`, "data:", "https:", "http:"], // Allow http for local development
           },
         },
       }),

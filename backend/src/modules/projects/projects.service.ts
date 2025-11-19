@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { DocumentsService } from "../documents/documents.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
 import { UpdateProjectDto } from "./dto/update-project.dto";
 import { ProjectStatus, Prisma } from "@prisma/client";
@@ -10,6 +11,7 @@ export class ProjectsService {
   constructor(
     private prisma: PrismaService,
     private profitCalc: ProfitCalculationService,
+    private documentsService: DocumentsService,
   ) {}
 
   async create(createProjectDto: CreateProjectDto) {
@@ -443,6 +445,10 @@ export class ProjectsService {
       );
     }
 
+    // CRITICAL: Delete document files from filesystem BEFORE database deletion
+    await this.documentsService.deleteDocumentsByProject(id);
+
+    // CASCADE will delete Document DB records
     return this.prisma.project.delete({
       where: { id },
     });

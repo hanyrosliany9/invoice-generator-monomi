@@ -8,6 +8,9 @@ import { MainLayout } from './components/layout/MainLayout'
 import ErrorBoundary from './components/ErrorBoundary'
 import { LoginPage } from './pages/auth/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
+import GuestAcceptInvitePage from './pages/GuestAcceptInvitePage'
+import GuestProjectViewPage from './pages/GuestProjectViewPage'
+import PublicProjectViewPage from './pages/PublicProjectViewPage'
 import { QuotationsPage } from './pages/QuotationsPage'
 import { InvoicesPage } from './pages/InvoicesPage'
 import { ClientsPage } from './pages/ClientsPage'
@@ -51,6 +54,8 @@ import SocialMediaReportsPage from './pages/SocialMediaReportsPage'
 import ReportDetailPage from './pages/ReportDetailPage'
 import ContentCalendarPage from './pages/ContentCalendarPage'
 import ProjectContentCalendarPage from './pages/ProjectContentCalendarPage'
+import MediaCollaborationPage from './pages/MediaCollaborationPage'
+import MediaProjectDetailPage from './pages/MediaProjectDetailPage'
 
 // Lazy load report builder for performance
 const ReportBuilderPage = lazy(() =>
@@ -190,6 +195,11 @@ function App() {
     <AntApp>
       <Layout style={{ minHeight: '100vh' }}>
         <Routes>
+        {/* Guest Routes (No Auth Required) */}
+        <Route path='/guest/accept' element={<GuestAcceptInvitePage />} />
+        <Route path='/guest/project/:projectId' element={<GuestProjectViewPage />} />
+        <Route path='/shared/:token' element={<PublicProjectViewPage />} />
+
         {/* Auth Routes */}
         <Route
           path='/login'
@@ -386,6 +396,10 @@ function App() {
                       <Route index element={<ContentCalendarPage />} />
                       <Route path='project/:projectId' element={<ProjectContentCalendarPage />} />
                     </Route>
+
+                    {/* Media Collaboration Routes */}
+                    <Route path='/media-collab' element={<MediaCollaborationPage />} />
+                    <Route path='/media-collab/projects/:projectId' element={<MediaProjectDetailPage />} />
 
                     {/* User Management Routes */}
                     <Route path='/users' element={<UsersPage />} />

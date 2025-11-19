@@ -197,9 +197,8 @@ export const ReportBuilderPage: React.FC = () => {
             headerWidget.config = {
               content: `<h2>${sec.title}</h2><p style="color: #666;">${sec.rowCount} rows</p>`,
               fontSize: 24,
-              textAlign: 'left',
-              fontWeight: 'bold',
-              color: '#1a1a1a',
+              alignment: 'left',
+              fontWeight: 700,
             };
             headerWidget.layout.w = 24; // Full width
             headerWidget.layout.h = 2;

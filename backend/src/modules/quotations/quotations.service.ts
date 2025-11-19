@@ -9,6 +9,7 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { SettingsService } from "../settings/settings.service";
 import { InvoiceCounterService } from "../invoices/services/invoice-counter.service";
 import { PaymentMilestonesService } from "./services/payment-milestones.service";
+import { DocumentsService } from "../documents/documents.service";
 import { CreateQuotationDto } from "./dto/create-quotation.dto";
 import { UpdateQuotationDto } from "./dto/update-quotation.dto";
 import { QuotationStatus, Prisma } from "@prisma/client";
@@ -25,6 +26,7 @@ export class QuotationsService {
     private settingsService: SettingsService,
     private invoiceCounterService: InvoiceCounterService,
     private paymentMilestonesService: PaymentMilestonesService,
+    private documentsService: DocumentsService,
   ) {}
 
   async create(
@@ -337,7 +339,11 @@ export class QuotationsService {
   async remove(id: string): Promise<any> {
     const quotation = await this.findOne(id);
 
+    // CRITICAL: Delete document files from filesystem BEFORE database deletion
+    await this.documentsService.deleteDocumentsByQuotation(id);
+
     // Allow deletion of quotations regardless of status
+    // CASCADE will delete Document DB records
     return this.prisma.quotation.delete({
       where: { id },
     });

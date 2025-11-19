@@ -7,6 +7,7 @@ import { PrismaModule } from "../prisma/prisma.module";
 import { InvoicesModule } from "../invoices/invoices.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { SettingsModule } from "../settings/settings.module";
+import { DocumentsModule } from "../documents/documents.module";
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { SettingsModule } from "../settings/settings.module";
     forwardRef(() => InvoicesModule),
     NotificationsModule,
     SettingsModule,
+    DocumentsModule,
   ],
   controllers: [QuotationsController, PaymentMilestonesController],
   providers: [QuotationsService, PaymentMilestonesService],

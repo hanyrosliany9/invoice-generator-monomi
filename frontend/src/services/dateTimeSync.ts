@@ -73,7 +73,7 @@ class DateTimeSyncService {
   private constructor() {
     this.config = {
       timezone: 'Asia/Jakarta', // Indonesian WIB
-      syncIntervalMinutes: 30, // Sync every 30 minutes
+      syncIntervalMinutes: 1440, // Sync every 24 hours (1440 minutes)
       retryAttempts: 3,
       retryDelayMs: 2000,
     }
@@ -102,7 +102,7 @@ class DateTimeSyncService {
    * Initialize date/time synchronization
    */
   public async initialize(): Promise<void> {
-    console.log('[DateTimeSync] Initializing date/time synchronization...')
+    // console.log('[DateTimeSync] Initializing date/time synchronization...')
 
     // Perform initial sync
     await this.syncWithServer()
@@ -143,7 +143,7 @@ class DateTimeSyncService {
           const serverTime = await api.fetch()
           if (serverTime) {
             this.updateSyncState(serverTime)
-            console.log(`[DateTimeSync] Successfully synced with ${api.name}`)
+            // console.log(`[DateTimeSync] Successfully synced with ${api.name}`)
             return
           }
         } catch (error) {
@@ -299,16 +299,17 @@ class DateTimeSyncService {
       isSynced: true,
     }
 
-    // Log sync info
+    // Log sync info (only show warnings for significant offset)
     const offsetMinutes = Math.round(offset / 60000)
     if (Math.abs(offsetMinutes) > 1) {
       console.warn(
         `[DateTimeSync] Clock offset detected: ${offsetMinutes} minutes. ` +
         `Server time: ${serverTime.toISOString()}, Local time: ${localTime.toISOString()}`
       )
-    } else {
-      console.log('[DateTimeSync] Clock is synchronized (offset < 1 minute)')
     }
+    // else {
+    //   console.log('[DateTimeSync] Clock is synchronized (offset < 1 minute)')
+    // }
   }
 
   /**
@@ -324,9 +325,10 @@ class DateTimeSyncService {
       this.config.syncIntervalMinutes * 60 * 1000
     )
 
-    console.log(
-      `[DateTimeSync] Periodic sync started (every ${this.config.syncIntervalMinutes} minutes)`
-    )
+    // const hours = Math.floor(this.config.syncIntervalMinutes / 60)
+    // console.log(
+    //   `[DateTimeSync] Periodic sync started (every ${hours} hours / ${this.config.syncIntervalMinutes} minutes)`
+    // )
   }
 
   /**

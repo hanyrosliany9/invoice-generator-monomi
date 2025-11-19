@@ -64,7 +64,8 @@ import { useIsMobile } from '../hooks/useMediaQuery';
 import { getMediaLimitForPlatforms, validateMediaForPlatforms, PLATFORM_MEDIA_LIMITS } from '../utils/platformLimits';
 import MobileTableView from '../components/mobile/MobileTableView';
 import { contentToBusinessEntity } from '../adapters/mobileTableAdapters';
-import type { MobileTableAction, MobileFilterConfig, BusinessEntity } from '../components/mobile/MobileTableView';
+import type { MobileTableAction, MobileFilterConfig } from '../components/mobile/MobileTableView';
+import type { BusinessEntity } from '../components/tables/SmartTable';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
@@ -1132,7 +1133,7 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
         icon: <RocketOutlined />,
         color: '#52c41a',
         onClick: (record) => {
-          const content = filteredData.find(c => c.id === record.id)
+          const content = filteredData.find((c: ContentCalendarItem) => c.id === record.id)
           if (content) publishMutation.mutate(content.id)
         },
         visible: (record) => {
@@ -1145,7 +1146,7 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
         label: 'Archive',
         icon: <InboxOutlined />,
         onClick: (record) => {
-          const content = filteredData.find(c => c.id === record.id)
+          const content = filteredData.find((c: ContentCalendarItem) => c.id === record.id)
           if (content) archiveMutation.mutate(content.id)
         },
         visible: (record) => {
@@ -1158,7 +1159,7 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
         label: 'Duplicate',
         icon: <CopyOutlined />,
         onClick: (record) => {
-          const content = filteredData.find(c => c.id === record.id)
+          const content = filteredData.find((c: ContentCalendarItem) => c.id === record.id)
           if (content) handleDuplicate(content)
         },
       },
@@ -1168,7 +1169,7 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
         icon: <DeleteOutlined />,
         danger: true,
         onClick: (record) => {
-          const content = filteredData.find(c => c.id === record.id)
+          const content = filteredData.find((c: ContentCalendarItem) => c.id === record.id)
           if (content) deleteMutation.mutate(content.id)
         },
       },
@@ -1191,7 +1192,7 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
           { label: 'Archived', value: 'ARCHIVED' },
         ],
         value: statusFilter,
-        onChange: (value) => setStatusFilter(value as typeof CONTENT_STATUS[keyof typeof CONTENT_STATUS]),
+        onChange: (value: any) => setStatusFilter(value as typeof CONTENT_STATUS[keyof typeof CONTENT_STATUS]),
       },
       {
         key: 'platform',
@@ -1199,7 +1200,7 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
         type: 'select',
         options: PLATFORMS.map(p => ({ label: p.label, value: p.value })),
         value: platformFilter,
-        onChange: (value) => setPlatformFilter(value),
+        onChange: (value: any) => setPlatformFilter(value),
       },
     ],
     [statusFilter, platformFilter]
@@ -1508,12 +1509,12 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
               filters={mobileFilters}
               actions={mobileActions}
               onItemSelect={(item) => {
-                const content = filteredData.find(c => c.id === item.id)
+                const content = filteredData.find((c: ContentCalendarItem) => c.id === item.id)
                 if (content) handlePreview(content)
               }}
               onAction={(action, record) => {
                 if (action === 'edit') {
-                  const content = filteredData.find(c => c.id === record.id)
+                  const content = filteredData.find((c: ContentCalendarItem) => c.id === record.id)
                   if (content) handleOpenModal(content)
                 }
               }}

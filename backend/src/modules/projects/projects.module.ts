@@ -4,9 +4,10 @@ import { ProjectsService } from "./projects.service";
 import { ProfitCalculationService } from "./profit-calculation.service";
 import { ProjectProjectionService } from "./project-projection.service";
 import { PrismaModule } from "../prisma/prisma.module";
+import { DocumentsModule } from "../documents/documents.module";
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, DocumentsModule],
   controllers: [ProjectsController],
   providers: [
     ProjectsService,

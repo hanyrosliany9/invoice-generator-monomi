@@ -2,8 +2,27 @@ import axios from 'axios'
 import { useAuthStore } from '../store/auth'
 
 // API Configuration
+// Dynamically determine backend URL based on environment
+const getBaseURL = () => {
+  // If VITE_API_URL is set and is absolute, use it
+  const envUrl = import.meta.env.VITE_API_URL as string | undefined;
+
+  if (envUrl && envUrl.startsWith('http')) {
+    return envUrl + '/v1';
+  }
+
+  // If relative URL in production, use it (assumes nginx proxy)
+  if (envUrl && envUrl.startsWith('/')) {
+    return envUrl + '/v1';
+  }
+
+  // Development: Use relative URL to leverage Vite proxy (vite.config.ts proxies /api/* to port 5000)
+  // This prevents absolute URLs from bypassing Vite proxy and causing CORS/routing issues
+  return '/api/v1';
+};
+
 export const API_CONFIG = {
-  BASE_URL: '/api/v1',
+  BASE_URL: getBaseURL(),
   TIMEOUT: 10000, // 10 seconds (reduced for better UX on failed uploads)
 }
 

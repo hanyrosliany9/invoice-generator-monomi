@@ -25,6 +25,7 @@ import {
   ShopOutlined,
   TeamOutlined,
   UserOutlined,
+  VideoCameraOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -119,6 +120,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           key: '/content-calendar',
           icon: <CalendarOutlined />,
           label: 'Content Calendar',
+        },
+        {
+          key: '/media-collab',
+          icon: <VideoCameraOutlined />,
+          label: 'Media Collaboration',
         },
       ],
     },

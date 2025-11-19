@@ -106,6 +106,46 @@ export class UsersController {
     }
   }
 
+  @Get("lookup-by-email")
+  @UseGuards(JwtAuthGuard) // Only authenticated users, no SuperAdmin required
+  @ApiOperation({ summary: "Find user by email address (for collaborator invites)" })
+  @ApiQuery({ name: "email", required: true, type: String, description: "Email address to lookup" })
+  @ApiResponse({
+    status: 200,
+    description: "User found successfully",
+  })
+  @ApiResponse({
+    status: 404,
+    description: "User not found",
+  })
+  async findByEmail(
+    @Query("email") email: string,
+  ): Promise<ApiResponseDto<{ id: string; name: string; email: string } | null>> {
+    try {
+      if (!email || !email.includes('@')) {
+        throw new BadRequestException('Valid email address is required');
+      }
+
+      const user = await this.usersService.findByEmail(email);
+      if (!user) {
+        throw new NotFoundException(`No user found with email: ${email}`);
+      }
+
+      return ApiResponseDto.success(
+        { id: user.id, name: user.name, email: user.email },
+        "User found successfully",
+      );
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      return ApiResponseDto.error("Failed to lookup user", null);
+    }
+  }
+
   @Get("stats")
   @ApiOperation({ summary: "Mendapatkan statistik pengguna" })
   @ApiResponse({

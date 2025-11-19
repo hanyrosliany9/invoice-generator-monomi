@@ -39,7 +39,7 @@ services:
       - MAX_FILE_SIZE_MB=${MAX_FILE_SIZE_MB:-100}
     ports:
       - "3001:3000"   # Frontend: React + Vite dev server with HMR (hot-reload) - DEV uses 3001 to avoid conflict with PROD
-      - "5000:5000"   # Backend: NestJS API with auto-restart (hot-reload)
+      - "5000:5000"   # Backend: NestJS API + WebSocket (media-collab namespace) with auto-restart (hot-reload)
       - "9229:9229"   # Node.js debug port (chrome://inspect)
     volumes:
       - ./backend:/app/backend
