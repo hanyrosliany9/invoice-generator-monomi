@@ -86,7 +86,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   };
 
   const handleClearFilters = () => {
-    onFilterChange({});
+    onFilterChange({
+      sortBy: 'uploadedAt',
+      sortOrder: 'desc',
+    });
     setSearchValue('');
   };
 

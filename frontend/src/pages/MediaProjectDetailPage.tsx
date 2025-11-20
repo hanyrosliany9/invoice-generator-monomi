@@ -35,6 +35,8 @@ import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, DragE
 import { useImageWithFallback } from '../hooks/useImageWithFallback';
 import { useAuthStore } from '../store/auth';
 import { downloadMediaAsZip } from '../utils/zipDownload';
+import { useMediaToken } from '../hooks/useMediaToken';
+import { getProxyUrl } from '../utils/mediaProxy';
 
 const { Content, Sider } = Layout;
 const { TabPane } = Tabs;
@@ -56,6 +58,7 @@ export const MediaProjectDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const { mediaToken } = useMediaToken();
 
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
@@ -65,7 +68,10 @@ export const MediaProjectDetailPage: React.FC = () => {
   const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
   const [lightboxVisible, setLightboxVisible] = useState(false);
   const [videoPlayerVisible, setVideoPlayerVisible] = useState(false);
-  const [filters, setFilters] = useState<MediaAssetFilters>({});
+  const [filters, setFilters] = useState<MediaAssetFilters>({
+    sortBy: 'uploadedAt',
+    sortOrder: 'desc',
+  });
   const videoPlayerKey = React.useRef(0);
 
   // DndKit sensors for drag-and-drop
@@ -860,7 +866,7 @@ export const MediaProjectDetailPage: React.FC = () => {
 
                 return (
                   <MediaLibrary
-                    projectId={undefined} // Don't fetch - we're providing filtered assets
+                    projectId={undefined}
                     assets={assetsToShow}
                     folders={foldersToShow}
                     onAssetClick={handleAssetClick}
@@ -872,8 +878,9 @@ export const MediaProjectDetailPage: React.FC = () => {
                     onFolderDelete={handleDeleteFolder}
                     onFolderDownload={handleDownloadFolder}
                     filters={filters}
-                    disableDndContext={true} // Page-level DndContext wraps everything
-                    onDragStart={handlePageDragStart} // Track selection for multi-asset drag
+                    disableDndContext={true}
+                    onDragStart={handlePageDragStart}
+                    mediaToken={mediaToken}
                   />
                 );
               })()}
@@ -892,7 +899,7 @@ export const MediaProjectDetailPage: React.FC = () => {
         {selectedAsset && (selectedAsset.mediaType === 'IMAGE' || selectedAsset.mediaType === 'RAW_IMAGE') && (
           <PhotoLightbox
             visible={lightboxVisible}
-            imageUrl={selectedAsset.url}
+            imageUrl={getProxyUrl(selectedAsset.url, mediaToken)}
             imageName={selectedAsset.originalName}
             onClose={() => setLightboxVisible(false)}
             onPrevious={() => navigateToAsset('prev')}
@@ -922,7 +929,7 @@ export const MediaProjectDetailPage: React.FC = () => {
               videoPlayerKey.current += 1;
             }}
           >
-            <VideoPlayer key={videoPlayerKey.current} url={selectedAsset.url} />
+            <VideoPlayer key={videoPlayerKey.current} url={getProxyUrl(selectedAsset.url, mediaToken)} />
           </Modal>
         )}
 
@@ -1001,6 +1008,7 @@ export const MediaProjectDetailPage: React.FC = () => {
             <ComparisonView
               assetIds={comparisonAssetIds}
               onClose={() => setComparisonAssetIds([])}
+              mediaToken={mediaToken}
             />
           )}
         </Modal>
