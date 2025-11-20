@@ -1979,6 +1979,13 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
         )}
 
         {/* Assets Table - File Explorer Style */}
+        <div style={{
+          overflow: 'auto',
+          maxHeight: 'calc(100vh - 400px)',
+          background: token.colorBgContainer,
+          borderRadius: 8,
+          border: `1px solid ${token.colorBorderSecondary}`,
+        }}>
         <Table
           dataSource={displayedAssets}
           rowKey="id"
@@ -2149,6 +2156,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
             },
           ]}
         />
+        </div>
 
         {/* Load More Button for List View */}
         {hasMore && (
