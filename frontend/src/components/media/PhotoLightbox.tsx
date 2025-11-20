@@ -12,6 +12,8 @@ import {
   DownloadOutlined,
   FullscreenOutlined,
   InfoCircleOutlined,
+  StarFilled,
+  StarOutlined,
 } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -25,6 +27,8 @@ interface PhotoLightboxProps {
   onNext?: () => void;
   hasPrevious?: boolean;
   hasNext?: boolean;
+  currentRating?: number | null;
+  onRatingChange?: (rating: number) => void;
 }
 
 /**
@@ -45,6 +49,8 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
   onNext,
   hasPrevious = false,
   hasNext = false,
+  currentRating = null,
+  onRatingChange,
 }) => {
   const { token } = theme.useToken();
   const [zoom, setZoom] = useState(100);
@@ -101,12 +107,22 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
         case 'I':
           setShowInfo(!showInfo);
           break;
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+          if (onRatingChange) {
+            const rating = parseInt(e.key);
+            onRatingChange(rating === currentRating ? 0 : rating);
+          }
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [visible, hasPrevious, hasNext, onPrevious, onNext, onClose, showInfo]);
+  }, [visible, hasPrevious, hasNext, onPrevious, onNext, onClose, showInfo, currentRating, onRatingChange]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (zoom > 100) {
@@ -148,11 +164,33 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
     }
   };
 
-  const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = imageName || 'image';
-    link.click();
+  const handleDownload = async () => {
+    try {
+      // Fetch the image as a blob to work around mobile browser restrictions
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error('Download failed');
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = imageName || 'image';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up the blob URL
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback to direct download attempt
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = imageName || 'image';
+      link.target = '_blank';
+      link.click();
+    }
   };
 
   const handleReset = () => {
@@ -193,7 +231,42 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
         }}
       >
         <div style={{ flex: 1 }}>
-          <Text style={{ color: 'white', fontSize: 15, fontWeight: 500 }}>{imageName || 'Photo'}</Text>
+          <Text style={{ color: 'white', fontSize: 15, fontWeight: 500, display: 'block', marginBottom: 8 }}>
+            {imageName || 'Photo'}
+          </Text>
+          {/* Star Rating */}
+          {onRatingChange && (
+            <div style={{ display: 'flex', gap: 4 }}>
+              {[1, 2, 3, 4, 5].map((star) => {
+                const isActive = star <= (currentRating || 0);
+                return (
+                  <Tooltip key={star} title={`Rate ${star} star${star > 1 ? 's' : ''} (Press ${star})`}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={isActive ? <StarFilled style={{ fontSize: 18, color: '#faad14' }} /> : <StarOutlined style={{ fontSize: 18, color: '#d9d9d9' }} />}
+                      onClick={() => onRatingChange(star === currentRating ? 0 : star)}
+                      style={{
+                        padding: '2px 4px',
+                        height: 'auto',
+                        minWidth: 'auto',
+                        border: 'none',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.transform = 'scale(1.2)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    />
+                  </Tooltip>
+                );
+              })}
+            </div>
+          )}
         </div>
         <Space size="small">
           <Tooltip title="Download (D)">
@@ -237,6 +310,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
             position: 'relative',
             cursor: zoom > 100 ? (isDragging ? 'grabbing' : 'grab') : 'default',
             transition: 'flex 0.3s ease',
+            minHeight: 0, // Critical: allows flex child to shrink below content size
           }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -249,8 +323,12 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
             src={imageUrl}
             alt={imageName}
             style={{
-              maxWidth: zoom > 100 ? 'none' : '90%',
-              maxHeight: zoom > 100 ? 'none' : '90%',
+              maxWidth: zoom > 100 ? 'none' : showInfo ? 'calc(100vw - 320px - 80px)' : 'calc(100vw - 80px)',
+              maxHeight: zoom > 100 ? 'none' : 'calc(100vh - 140px)', // Direct viewport constraint for both portrait & landscape
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+              display: 'block', // Critical: removes inline spacing that causes scrollbars
               transform: `scale(${zoom / 100}) translate(${position.x}px, ${position.y}px) rotate(${rotation}deg)`,
               transition: isDragging ? 'none' : 'transform 0.3s ease',
               userSelect: 'none',
@@ -443,7 +521,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
 
           {/* Keyboard Shortcuts Hint */}
           <Text type="secondary" style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 11 }}>
-            ← → (navigate) • +/- (zoom) • R (rotate) • I (info) • 0 (reset) • Esc (close)
+            ← → (navigate) • 1-5 (rate) • +/- (zoom) • R (rotate) • I (info) • 0 (reset) • Esc (close)
           </Text>
         </div>
       </div>

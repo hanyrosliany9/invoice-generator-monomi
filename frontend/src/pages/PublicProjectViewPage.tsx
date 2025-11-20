@@ -384,8 +384,11 @@ export const PublicProjectViewPage: React.FC = () => {
     try {
       message.loading({ content: 'Preparing download...', key: 'download', duration: 0 });
 
+      // Use proxied URL with public token for fetching
+      const proxyUrl = getProxyUrl(asset.url, shareToken);
+
       // Fetch the file as a blob to work around mobile browser limitations
-      const response = await fetch(asset.url);
+      const response = await fetch(proxyUrl);
       if (!response.ok) throw new Error('Download failed');
 
       const blob = await response.blob();
@@ -398,8 +401,8 @@ export const PublicProjectViewPage: React.FC = () => {
       link.click();
       document.body.removeChild(link);
 
-      // Clean up the blob URL
-      window.URL.revokeObjectURL(blobUrl);
+      // Clean up the blob URL after a short delay
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
 
       message.success({ content: 'Download started', key: 'download' });
     } catch (error) {
