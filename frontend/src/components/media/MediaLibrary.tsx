@@ -29,6 +29,7 @@ import { getErrorMessage } from '../../utils/errorHandlers';
 import { useImageWithFallback } from '../../hooks/useImageWithFallback';
 import { useSelectionContainer } from '@air/react-drag-to-select';
 import { downloadMediaAsZip } from '../../utils/zipDownload';
+import { getProxyUrl } from '../../utils/mediaProxy';
 import {
   DndContext,
   closestCenter,
@@ -75,9 +76,11 @@ interface MediaLibraryProps {
   onFolderDownload?: (folderId: string, folderName: string) => void;
   removeButtonText?: string;
   filters?: MediaAssetFilters;
-  disableDndContext?: boolean; // If true, parent handles DndContext (avoids nesting)
-  onDragStart?: (assetId: string, selectedAssets: string[]) => void; // Notify parent of drag start
-  onDragEnd?: (assetId: string, selectedAssets: string[]) => void; // Notify parent of drag end
+  disableDndContext?: boolean;
+  onDragStart?: (assetId: string, selectedAssets: string[]) => void;
+  onDragEnd?: (assetId: string, selectedAssets: string[]) => void;
+  onSelectionChange?: (selectedAssets: string[]) => void;
+  mediaToken?: string | null;
 }
 
 /**
@@ -88,16 +91,19 @@ interface MediaLibraryProps {
  */
 interface MediaThumbnailProps {
   asset: MediaAsset;
+  mediaToken?: string | null;
 }
 
-const MediaThumbnail: React.FC<MediaThumbnailProps> = ({ asset }) => {
+const MediaThumbnail: React.FC<MediaThumbnailProps> = ({ asset, mediaToken }) => {
   const { token } = theme.useToken();
 
-  // Use fallback hook with retry for thumbnails
+  const thumbnailUrl = asset.thumbnailUrl ? getProxyUrl(asset.thumbnailUrl, mediaToken) : '';
+  const mainUrl = asset.url ? getProxyUrl(asset.url, mediaToken) : '';
+
   const { imgSrc, loading, error, handleError, handleLoad } = useImageWithFallback(
-    asset.thumbnailUrl || asset.url,
-    asset.url, // Fallback to main image if thumbnail fails
-    3 // Retry 3 times with exponential backoff
+    thumbnailUrl || mainUrl,
+    mainUrl,
+    3
   );
 
   if (asset.mediaType === 'VIDEO') {
@@ -358,6 +364,7 @@ const FolderDropZone: React.FC<FolderDropZoneProps> = ({
  * Supports filtering by media type, status, and star rating.
  */
 export const MediaLibrary: React.FC<MediaLibraryProps> = ({
+  mediaToken,
   projectId,
   assets: propAssets,
   folders = [],
@@ -375,10 +382,18 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   disableDndContext = false,
   onDragStart: onDragStartProp,
   onDragEnd: onDragEndProp,
+  onSelectionChange,
 }) => {
   const { token } = theme.useToken();
   const { message } = App.useApp();
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+
+  // Notify parent of selection changes
+  React.useEffect(() => {
+    if (onSelectionChange) {
+      onSelectionChange(selectedAssets);
+    }
+  }, [selectedAssets, onSelectionChange]);
   const [isSelecting, setIsSelecting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [gridDensity, setGridDensity] = useState<'comfortable' | 'compact' | 'spacious'>('comfortable');
@@ -714,20 +729,29 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
       if (onBulkRemove) {
         // Use custom bulk remove handler (e.g., for collections)
         onBulkRemove(selectedAssets);
+        clearSelection();
       } else {
-        // Default bulk delete behavior
-        const deletePromises = selectedAssets.map((id) => {
-          const asset = assets?.find((a) => a.id === id);
-          return mediaCollabService.deleteAsset(id);
-        });
+        // Use bulk delete API (supports up to 100 assets per batch)
+        const result = await mediaCollabService.bulkDeleteAssets(selectedAssets);
 
-        await Promise.all(deletePromises);
-        message.success(`${selectedAssets.length} asset(s) deleted successfully`);
-        if (projectId) {
-          refetch();
+        if (result.failed > 0) {
+          // Partial failure
+          message.warning(
+            `Deleted ${result.deleted} of ${result.total} asset(s). ${result.failed} failed.`
+          );
+        } else {
+          // Complete success
+          message.success(`${result.deleted} asset(s) deleted successfully`);
         }
+
+        // Refetch data to update UI
+        if (projectId) {
+          await refetch();
+        }
+
+        // Clear selection after refetch completes
+        clearSelection();
       }
-      clearSelection();
     } catch (error: unknown) {
       message.error(getErrorMessage(error, 'Failed to delete assets'));
     }
@@ -1258,11 +1282,10 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               style={{
                 position: 'relative',
                 width: '100%',
-                paddingBottom: asset.width && asset.height
-                  ? `${(asset.height / asset.width) * 100}%`
-                  : '75%', // Default 4:3 ratio if dimensions unknown
+                aspectRatio: '1 / 1',
                 background: token.colorBgContainer,
                 overflow: 'hidden',
+                borderRadius: '8px 8px 0 0',
               }}
               className="media-card-cover"
             >
@@ -1280,7 +1303,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                 }}
               >
               {/* Use MediaThumbnail component with retry logic */}
-              <MediaThumbnail asset={asset} />
+              <MediaThumbnail asset={asset} mediaToken={mediaToken} />
               {/* Selection Checkbox */}
               {(isSelecting || selectedAssets.includes(asset.id)) && (
                 <div
@@ -1601,11 +1624,10 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               style={{
                 position: 'relative',
                 width: '100%',
-                paddingBottom: asset.width && asset.height
-                  ? `${(asset.height / asset.width) * 100}%`
-                  : '75%', // Default 4:3 ratio if dimensions unknown
+                aspectRatio: '1 / 1',
                 background: token.colorBgContainer,
                 overflow: 'hidden',
+                borderRadius: '8px 8px 0 0',
               }}
               className="media-card-cover"
             >
@@ -1623,7 +1645,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                 }}
               >
               {/* Use MediaThumbnail component with retry logic */}
-              <MediaThumbnail asset={asset} />
+              <MediaThumbnail asset={asset} mediaToken={mediaToken} />
               {/* Selection Checkbox */}
               {(isSelecting || selectedAssets.includes(asset.id)) && (
                 <div
@@ -2055,7 +2077,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                         position: 'relative',
                       }}
                     >
-                      <MediaThumbnail asset={asset} />
+                      <MediaThumbnail asset={asset} mediaToken={mediaToken} />
                       {asset.mediaType === 'VIDEO' && asset.duration && (
                         <Badge
                           count={formatDuration(asset.duration)}

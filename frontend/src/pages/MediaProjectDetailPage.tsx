@@ -373,10 +373,18 @@ export const MediaProjectDetailPage: React.FC = () => {
     moveAssetsMutation.mutate({ assetIds, targetFolderId });
   };
 
+  // Track MediaLibrary's selection state
+  const [mediaLibrarySelectedAssets, setMediaLibrarySelectedAssets] = React.useState<string[]>([]);
+
   // Page-level drag-and-drop handlers
-  const handlePageDragStart = (assetId: string, selectedAssets: string[]) => {
-    setDraggedAssetId(assetId);
-    setDraggedSelectedAssets(selectedAssets);
+  const handlePageDragStart = (event: any) => {
+    const draggedAssetId = String(event.active.id);
+    console.log('[MediaProjectDetailPage] Drag started:', {
+      draggedAssetId,
+      mediaLibrarySelectedAssets,
+    });
+    setDraggedAssetId(draggedAssetId);
+    setDraggedSelectedAssets(mediaLibrarySelectedAssets);
   };
 
   const handlePageDragEnd = (event: DragEndEvent) => {
@@ -652,6 +660,7 @@ export const MediaProjectDetailPage: React.FC = () => {
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
+      onDragStart={handlePageDragStart}
       onDragEnd={handlePageDragEnd}
     >
       <Layout style={{ minHeight: '100vh', background: token.colorBgLayout }}>
@@ -904,7 +913,7 @@ export const MediaProjectDetailPage: React.FC = () => {
                     onFolderDownload={handleDownloadFolder}
                     filters={filters}
                     disableDndContext={true}
-                    onDragStart={handlePageDragStart}
+                    onSelectionChange={setMediaLibrarySelectedAssets}
                     mediaToken={mediaToken}
                   />
                 );
