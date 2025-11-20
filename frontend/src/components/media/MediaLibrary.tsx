@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Card, Empty, Spin, Badge, Space, Typography, Tooltip, theme, Button, App, Popconfirm, Checkbox, List, Dropdown, Popover, Skeleton, Radio } from 'antd';
+import { Card, Empty, Spin, Badge, Space, Typography, Tooltip, theme, Button, App, Popconfirm, Checkbox, List, Dropdown, Popover, Skeleton, Radio, Table } from 'antd';
 const { Compact } = Space;
 import {
   VideoCameraOutlined,
@@ -1978,165 +1978,176 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
           </div>
         )}
 
-        {/* Assets List */}
-        <List
+        {/* Assets Table - File Explorer Style */}
+        <Table
           dataSource={displayedAssets}
-          renderItem={(asset) => (
-            <List.Item
-              key={asset.id}
-              style={{
-                padding: '12px 16px',
-                cursor: 'pointer',
-                background: selectedAssets.includes(asset.id) ? token.colorPrimaryBg : 'transparent',
-                borderLeft: selectedAssets.includes(asset.id) ? `4px solid ${token.colorPrimary}` : '4px solid transparent',
-              }}
-              onClick={() => {
-                if (isSelecting || selectedAssets.length > 0) {
-                  toggleSelection(asset.id);
+          rowKey="id"
+          size="small"
+          pagination={false}
+          rowSelection={
+            isSelecting || selectedAssets.length > 0
+              ? {
+                  selectedRowKeys: selectedAssets,
+                  onChange: (keys) => setSelectedAssets(keys as string[]),
                 }
-              }}
-              actions={
-                !isSelecting && selectedAssets.length === 0
-                  ? [
-                      <Tooltip key="view" title="View">
-                        <Button
-                          type="text"
-                          icon={<EyeOutlined />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAssetClick && onAssetClick(asset);
-                          }}
-                        />
-                      </Tooltip>,
-                      <Tooltip key="download" title="Download">
-                        <Button
-                          type="text"
-                          icon={<DownloadOutlined />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownload(asset);
-                          }}
-                        />
-                      </Tooltip>,
-                      <Popconfirm
-                        key="delete"
-                        title={`${removeButtonText} asset`}
-                        description={`Are you sure you want to ${removeButtonText.toLowerCase()} "${asset.originalName}"?`}
-                        onConfirm={(e) => {
-                          e?.stopPropagation();
-                          handleDelete(asset.id, asset.originalName);
-                        }}
-                        onCancel={(e) => e?.stopPropagation()}
-                        okText="Yes"
-                        cancelText="No"
-                      >
-                        <Tooltip title={removeButtonText}>
-                          <Button
-                            type="text"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </Tooltip>
-                      </Popconfirm>,
-                    ]
-                  : undefined
+              : undefined
+          }
+          onRow={(record) => ({
+            onClick: () => {
+              if (isSelecting || selectedAssets.length > 0) {
+                toggleSelection(record.id);
               }
-            >
-              <List.Item.Meta
-                avatar={
-                  <div style={{ position: 'relative' }}>
-                    {(isSelecting || selectedAssets.includes(asset.id)) && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: -4,
-                          left: -4,
-                          zIndex: 2,
-                        }}
+            },
+            onDoubleClick: () => {
+              if (!isSelecting && selectedAssets.length === 0) {
+                onAssetClick && onAssetClick(record);
+              }
+            },
+            style: {
+              cursor: 'pointer',
+              background: selectedAssets.includes(record.id) ? token.colorPrimaryBg : 'transparent',
+            },
+          })}
+          columns={[
+            {
+              title: 'Name',
+              dataIndex: 'originalName',
+              key: 'name',
+              width: '40%',
+              ellipsis: true,
+              render: (name: string, asset: MediaAsset) => (
+                <Space size={8}>
+                  {asset.mediaType === 'VIDEO' ? (
+                    <VideoCameraOutlined style={{ fontSize: 16, color: token.colorPrimary }} />
+                  ) : asset.mediaType === 'RAW_IMAGE' ? (
+                    <FileImageOutlined style={{ fontSize: 16, color: token.colorWarning }} />
+                  ) : (
+                    <FileImageOutlined style={{ fontSize: 16, color: token.colorSuccess }} />
+                  )}
+                  <Text strong ellipsis>{name}</Text>
+                </Space>
+              ),
+            },
+            {
+              title: 'Type',
+              dataIndex: 'mediaType',
+              key: 'type',
+              width: '10%',
+              render: (type: string) => (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {type === 'VIDEO' ? 'Video' : type === 'RAW_IMAGE' ? 'RAW' : 'Image'}
+                </Text>
+              ),
+            },
+            {
+              title: 'Size',
+              dataIndex: 'size',
+              key: 'size',
+              width: '10%',
+              render: (size: bigint) => (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {formatFileSize(size)}
+                </Text>
+              ),
+            },
+            {
+              title: 'Modified',
+              dataIndex: 'updatedAt',
+              key: 'date',
+              width: '15%',
+              render: (date: string) => (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {new Date(date).toLocaleDateString()} {new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              ),
+            },
+            {
+              title: 'Status',
+              dataIndex: 'status',
+              key: 'status',
+              width: '10%',
+              render: (status: string) => (
+                <Badge
+                  status={
+                    status === 'APPROVED'
+                      ? 'success'
+                      : status === 'NEEDS_CHANGES'
+                      ? 'error'
+                      : status === 'IN_REVIEW'
+                      ? 'processing'
+                      : 'default'
+                  }
+                  text={<span style={{ fontSize: 11 }}>{status}</span>}
+                />
+              ),
+            },
+            {
+              title: 'Rating',
+              dataIndex: 'starRating',
+              key: 'rating',
+              width: '10%',
+              render: (rating: number | null, asset: MediaAsset) => (
+                <StarRating
+                  value={rating}
+                  onChange={(newRating) => handleStarRatingChange(asset.id, newRating)}
+                  size={12}
+                />
+              ),
+            },
+            {
+              title: 'Actions',
+              key: 'actions',
+              width: '5%',
+              render: (_, asset: MediaAsset) =>
+                !isSelecting && selectedAssets.length === 0 ? (
+                  <Space size={0}>
+                    <Tooltip title="View">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<EyeOutlined />}
                         onClick={(e) => {
                           e.stopPropagation();
-                          toggleSelection(asset.id);
+                          onAssetClick && onAssetClick(asset);
                         }}
-                      >
-                        <Checkbox
-                          checked={selectedAssets.includes(asset.id)}
-                        />
-                      </div>
-                    )}
-                    <div
-                      style={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: 4,
-                        overflow: 'hidden',
-                        background: token.colorBgContainer,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative',
+                      />
+                    </Tooltip>
+                    <Tooltip title="Download">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<DownloadOutlined />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(asset);
+                        }}
+                      />
+                    </Tooltip>
+                    <Popconfirm
+                      title={`${removeButtonText} asset`}
+                      description={`Are you sure you want to ${removeButtonText.toLowerCase()} "${asset.originalName}"?`}
+                      onConfirm={(e) => {
+                        e?.stopPropagation();
+                        handleDelete(asset.id, asset.originalName);
                       }}
+                      onCancel={(e) => e?.stopPropagation()}
+                      okText="Yes"
+                      cancelText="No"
                     >
-                      <MediaThumbnail asset={asset} mediaToken={mediaToken} />
-                      {asset.mediaType === 'VIDEO' && asset.duration && (
-                        <Badge
-                          count={formatDuration(asset.duration)}
-                          style={{
-                            position: 'absolute',
-                            bottom: 4,
-                            right: 4,
-                            background: 'rgba(0, 0, 0, 0.7)',
-                            color: 'white',
-                            fontSize: 10,
-                          }}
+                      <Tooltip title={removeButtonText}>
+                        <Button
+                          type="text"
+                          size="small"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={(e) => e.stopPropagation()}
                         />
-                      )}
-                    </div>
-                  </div>
-                }
-                title={
-                  <Space>
-                    <Text strong>{asset.originalName}</Text>
-                    <Badge
-                      status={
-                        asset.status === 'APPROVED'
-                          ? 'success'
-                          : asset.status === 'NEEDS_CHANGES'
-                          ? 'error'
-                          : asset.status === 'IN_REVIEW'
-                          ? 'processing'
-                          : 'default'
-                      }
-                      text={asset.status}
-                    />
+                      </Tooltip>
+                    </Popconfirm>
                   </Space>
-                }
-                description={
-                  <Space direction="vertical" size={4}>
-                    <StarRating
-                      value={asset.starRating}
-                      onChange={(rating) => handleStarRatingChange(asset.id, rating)}
-                      size={14}
-                    />
-                    <Space split="|" style={{ fontSize: 12, color: token.colorTextSecondary }}>
-                      <span>{formatFileSize(asset.size)}</span>
-                      {asset.width && asset.height && (
-                        <span>
-                          {asset.width}×{asset.height}
-                        </span>
-                      )}
-                      {asset._count && (
-                        <Tooltip title="Comments">
-                          <span>{asset._count.frames || 0} 💬</span>
-                        </Tooltip>
-                      )}
-                      <span>by {asset.uploader.name}</span>
-                    </Space>
-                  </Space>
-                }
-              />
-            </List.Item>
-          )}
+                ) : null,
+            },
+          ]}
         />
 
         {/* Load More Button for List View */}
