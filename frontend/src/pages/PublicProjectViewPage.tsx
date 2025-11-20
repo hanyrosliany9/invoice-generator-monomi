@@ -21,6 +21,7 @@ import { VideoPlayer } from '../components/media/VideoPlayer';
 import { ComparisonView } from '../components/media/ComparisonView';
 import { MetadataPanel } from '../components/media/MetadataPanel';
 import { useImageWithFallback } from '../hooks/useImageWithFallback';
+import { getProxyUrl } from '../utils/mediaProxy';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -28,15 +29,20 @@ const { Title, Text } = Typography;
 // MediaThumbnail Component (matching internal implementation)
 interface MediaThumbnailProps {
   asset: MediaAsset;
+  publicToken?: string;
 }
 
-const MediaThumbnail: React.FC<MediaThumbnailProps> = ({ asset }) => {
+const MediaThumbnail: React.FC<MediaThumbnailProps> = ({ asset, publicToken }) => {
   const { token: themeToken } = theme.useToken();
+
+  // Convert URLs to worker URLs with public token
+  const thumbnailUrl = asset.thumbnailUrl ? getProxyUrl(asset.thumbnailUrl, publicToken) : '';
+  const mainUrl = asset.url ? getProxyUrl(asset.url, publicToken) : '';
 
   // Use fallback hook with retry for thumbnails
   const { imgSrc, loading, error, handleError, handleLoad } = useImageWithFallback(
-    asset.thumbnailUrl || asset.url,
-    asset.url, // Fallback to main image if thumbnail fails
+    thumbnailUrl || mainUrl,
+    mainUrl, // Fallback to main image if thumbnail fails
     3 // Retry 3 times with exponential backoff
   );
 
@@ -46,16 +52,23 @@ const MediaThumbnail: React.FC<MediaThumbnailProps> = ({ asset }) => {
         {asset.thumbnailUrl ? (
           <img
             src={imgSrc}
-            alt={asset.originalName}
+            alt={`${asset.mediaType} - ${asset.originalName}`}
+            loading="lazy"
             style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
               width: '100%',
               height: '100%',
               objectFit: 'cover',
+              objectPosition: 'center',
               opacity: loading ? 0.7 : 1,
-              transition: 'opacity 0.3s ease',
+              transition: 'transform 0.2s ease, opacity 0.3s ease',
             }}
             onError={handleError}
             onLoad={handleLoad}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
           />
         ) : (
           <VideoCameraOutlined style={{ fontSize: 48, color: themeToken.colorTextTertiary }} />
@@ -82,16 +95,23 @@ const MediaThumbnail: React.FC<MediaThumbnailProps> = ({ asset }) => {
       {asset.thumbnailUrl || asset.url ? (
         <img
           src={imgSrc}
-          alt={asset.originalName}
+          alt={`${asset.mediaType} - ${asset.originalName}`}
+          loading="lazy"
           style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
             width: '100%',
             height: '100%',
             objectFit: 'cover',
+            objectPosition: 'center',
             opacity: loading ? 0.7 : 1,
-            transition: 'opacity 0.3s ease',
+            transition: 'transform 0.2s ease, opacity 0.3s ease',
           }}
           onError={handleError}
           onLoad={handleLoad}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
         />
       ) : (
         <FileImageOutlined style={{ fontSize: 48, color: themeToken.colorTextTertiary }} />
@@ -359,12 +379,33 @@ export const PublicProjectViewPage: React.FC = () => {
     }
   };
 
-  // Download handler
-  const handleDownload = (asset: MediaAsset) => {
-    const link = document.createElement('a');
-    link.href = asset.url;
-    link.download = asset.originalName;
-    link.click();
+  // Download handler - fetch as blob for mobile compatibility
+  const handleDownload = async (asset: MediaAsset) => {
+    try {
+      message.loading({ content: 'Preparing download...', key: 'download', duration: 0 });
+
+      // Fetch the file as a blob to work around mobile browser limitations
+      const response = await fetch(asset.url);
+      if (!response.ok) throw new Error('Download failed');
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = asset.originalName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(blobUrl);
+
+      message.success({ content: 'Download started', key: 'download' });
+    } catch (error) {
+      console.error('Download failed:', error);
+      message.error({ content: 'Download failed. Please try again.', key: 'download' });
+    }
   };
 
   // Selection handlers
@@ -446,10 +487,19 @@ export const PublicProjectViewPage: React.FC = () => {
   // Status and rating handlers
   const handleStarRatingChange = async (assetId: string, rating: number) => {
     try {
+      // Optimistic update: immediately update the selectedAsset if it's the one being rated
+      if (selectedAsset && selectedAsset.id === assetId) {
+        setSelectedAsset({ ...selectedAsset, starRating: rating });
+      }
+
       await mediaCollabService.updatePublicAssetRating(shareToken!, assetId, rating);
       message.success(`Rating updated to ${rating} star${rating !== 1 ? 's' : ''}`);
       refetchAssets();
     } catch (error) {
+      // Rollback on error
+      if (selectedAsset && selectedAsset.id === assetId) {
+        setSelectedAsset({ ...selectedAsset, starRating: selectedAsset.starRating });
+      }
       message.error('Failed to update rating');
       console.error('Failed to update star rating:', error);
     }
@@ -634,9 +684,30 @@ export const PublicProjectViewPage: React.FC = () => {
   }
 
   return (
-    <Layout className="min-h-screen bg-gray-50">
+    <Layout className="min-h-screen h-auto bg-gray-50">
       <style>{`
+        /* Prevent horizontal overflow - surgical approach */
+        body, html {
+          overflow-x: hidden !important;
+        }
+
+        .ant-layout {
+          overflow-x: hidden !important;
+        }
+
         @media (max-width: 767px) {
+          /* Ensure proper box-sizing for all elements */
+          * {
+            box-sizing: border-box;
+          }
+
+          /* Container level overflow prevention */
+          .ant-layout-content {
+            overflow-x: hidden !important;
+            width: 100vw !important;
+            max-width: 100vw !important;
+          }
+
           .public-header {
             padding-left: 12px !important;
             padding-right: 12px !important;
@@ -650,6 +721,12 @@ export const PublicProjectViewPage: React.FC = () => {
 
           .public-content {
             padding: 12px !important;
+            width: 100% !important;
+          }
+
+          /* Prevent cards from overflowing */
+          .ant-card {
+            width: 100% !important;
           }
 
           .filter-controls {
@@ -663,10 +740,14 @@ export const PublicProjectViewPage: React.FC = () => {
 
           .bulk-action-bar {
             min-width: unset !important;
+            width: calc(100vw - 24px) !important;
             max-width: 95vw !important;
             padding: 12px 16px !important;
             flex-direction: column !important;
             gap: 8px;
+            left: 12px !important;
+            right: 12px !important;
+            transform: none !important;
           }
 
           .bulk-action-buttons {
@@ -677,6 +758,25 @@ export const PublicProjectViewPage: React.FC = () => {
           .mobile-grid-2col {
             grid-template-columns: repeat(2, 1fr) !important;
             gap: 8px !important;
+          }
+
+          /* Grid container should respect parent width */
+          .media-library-grid {
+            width: 100% !important;
+            max-width: 100% !important;
+            gap: 8px !important;
+          }
+
+          /* Folder cards should be flexible on mobile */
+          [data-folder-id] > div {
+            min-width: unset !important;
+            width: 100% !important;
+          }
+
+          /* Individual grid items should not overflow */
+          .media-library-grid > div {
+            min-width: 0 !important;
+            overflow: hidden;
           }
 
           .asset-list-item {
@@ -1162,11 +1262,10 @@ export const PublicProjectViewPage: React.FC = () => {
                       style={{
                         position: 'relative',
                         width: '100%',
-                        paddingBottom: asset.width && asset.height
-                          ? `${(asset.height / asset.width) * 100}%`
-                          : '75%', // Default 4:3 ratio if dimensions unknown
+                        aspectRatio: '1 / 1', // Modern 1:1 square aspect ratio (Frame.io standard)
                         background: themeToken.colorBgContainer,
                         overflow: 'hidden',
+                        borderRadius: '8px 8px 0 0',
                       }}
                       className="media-card-cover"
                     >
@@ -1177,14 +1276,11 @@ export const PublicProjectViewPage: React.FC = () => {
                           left: 0,
                           width: '100%',
                           height: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
                           cursor: 'pointer',
                         }}
                       >
                         {/* Use MediaThumbnail component with retry logic */}
-                        <MediaThumbnail asset={asset} />
+                        <MediaThumbnail asset={asset} publicToken={shareToken!} />
 
                         {/* Status Badge - Compact */}
                         <div
@@ -1241,17 +1337,6 @@ export const PublicProjectViewPage: React.FC = () => {
                               e.currentTarget.style.opacity = '0';
                             }}
                           >
-                            <Tooltip title="View">
-                              <Button
-                                type="primary"
-                                shape="circle"
-                                icon={<EyeOutlined />}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleAssetClick(asset);
-                                }}
-                              />
-                            </Tooltip>
                             <Dropdown
                               menu={{
                                 items: [
@@ -1570,13 +1655,15 @@ export const PublicProjectViewPage: React.FC = () => {
       {selectedAsset && (selectedAsset.mediaType === 'IMAGE' || selectedAsset.mediaType === 'RAW_IMAGE') && (
         <PhotoLightbox
           visible={lightboxVisible}
-          imageUrl={selectedAsset.url}
+          imageUrl={getProxyUrl(selectedAsset.url, shareToken)}
           imageName={selectedAsset.originalName}
           onClose={() => setLightboxVisible(false)}
           onPrevious={() => navigateToAsset('prev')}
           onNext={() => navigateToAsset('next')}
           hasPrevious={filteredAndSortedAssets ? filteredAndSortedAssets.findIndex((a) => a.id === selectedAsset.id) > 0 : false}
           hasNext={filteredAndSortedAssets ? filteredAndSortedAssets.findIndex((a) => a.id === selectedAsset.id) < filteredAndSortedAssets.length - 1 : false}
+          currentRating={selectedAsset.starRating}
+          onRatingChange={(rating) => handleStarRatingChange(selectedAsset.id, rating)}
         />
       )}
 
@@ -1598,7 +1685,7 @@ export const PublicProjectViewPage: React.FC = () => {
             videoPlayerKey.current += 1;
           }}
         >
-          <VideoPlayer key={videoPlayerKey.current} url={selectedAsset.url} />
+          <VideoPlayer key={videoPlayerKey.current} url={getProxyUrl(selectedAsset.url, shareToken)} />
         </Modal>
       )}
 
@@ -1616,6 +1703,7 @@ export const PublicProjectViewPage: React.FC = () => {
           <ComparisonView
             assetIds={comparisonAssetIds}
             onClose={() => setComparisonAssetIds([])}
+            mediaToken={shareToken}
           />
         )}
       </Modal>
