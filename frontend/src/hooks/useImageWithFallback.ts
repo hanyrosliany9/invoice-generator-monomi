@@ -36,7 +36,7 @@ import { useState, useEffect } from 'react';
 export function useImageWithFallback(
   src: string,
   fallbackSrc?: string,
-  retries: number = 2
+  retries: number = 1 // Reduced from 2 to 1 for performance (CDN is reliable)
 ) {
   const [imgSrc, setImgSrc] = useState(src);
   const [loading, setLoading] = useState(true);
@@ -54,30 +54,22 @@ export function useImageWithFallback(
   /**
    * Handle image load error with retry logic
    *
-   * Retry strategy:
-   * 1. First retry after 1s
-   * 2. Second retry after 2s
-   * 3. Third retry after 3s
-   * 4. After max retries, use fallback or set error state
+   * Retry strategy (optimized for performance):
+   * 1. Immediate retry (no delay) - trusts CDN cache
+   * 2. No cache busting - allows Cloudflare CDN to serve cached responses
+   * 3. After max retries, use fallback or set error state
    */
   const handleError = () => {
     if (retryCount < retries) {
-      const delay = 1000 * (retryCount + 1); // Exponential backoff: 1s, 2s, 3s...
-
       console.log(
         `[useImageWithFallback] Image failed to load: ${imgSrc}. ` +
-        `Retrying (${retryCount + 1}/${retries}) in ${delay}ms...`
+        `Retrying immediately (${retryCount + 1}/${retries})...`
       );
 
-      // Retry after delay with cache busting
-      setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-        // Add timestamp to bypass browser cache
-        const cacheBustUrl = src.includes('?')
-          ? `${src}&retry=${retryCount + 1}&t=${Date.now()}`
-          : `${src}?retry=${retryCount + 1}&t=${Date.now()}`;
-        setImgSrc(cacheBustUrl);
-      }, delay);
+      // Immediate retry without delay (performance optimization)
+      // No cache busting - trust Cloudflare CDN (99.99% reliable)
+      setRetryCount(prev => prev + 1);
+      setImgSrc(src); // Use original URL (no timestamp, allows CDN cache)
     } else if (fallbackSrc) {
       // All retries exhausted, use fallback
       console.warn(
