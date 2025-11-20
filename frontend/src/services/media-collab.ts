@@ -295,6 +295,7 @@ class MediaCollabService {
     description?: string,
     folderId?: string,
     conflictResolution?: 'skip' | 'replace' | 'keep-both',
+    onProgress?: (progressEvent: { loaded: number; total?: number }) => void,
   ): Promise<MediaAsset> {
     const formData = new FormData();
     formData.append('file', file);
@@ -315,6 +316,7 @@ class MediaCollabService {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        onUploadProgress: onProgress,
       },
     );
     return response.data.data;
@@ -342,6 +344,18 @@ class MediaCollabService {
 
   async deleteAsset(id: string): Promise<{ message: string }> {
     const response = await apiClient.delete(`/media-collab/assets/${id}`);
+    return response.data.data;
+  }
+
+  async bulkDeleteAssets(assetIds: string[]): Promise<{
+    total: number;
+    deleted: number;
+    failed: number;
+    results: Array<{ assetId: string; success: boolean; error?: string }>;
+  }> {
+    const response = await apiClient.post('/media-collab/assets/bulk-delete', {
+      assetIds,
+    });
     return response.data.data;
   }
 
@@ -733,7 +747,7 @@ export interface MediaAssetFilters {
   dateTo?: string;
   uploadedBy?: string;
   search?: string;
-  sortBy?: 'uploadedAt' | 'filename' | 'size' | 'starRating';
+  sortBy?: 'uploadedAt' | 'originalName' | 'size' | 'starRating';
   sortOrder?: 'asc' | 'desc';
 }
 

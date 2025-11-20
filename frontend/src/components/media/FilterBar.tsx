@@ -80,7 +80,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     const [sortBy, sortOrder] = value.split('-');
     onFilterChange({
       ...filters,
-      sortBy: sortBy as 'uploadedAt' | 'filename' | 'size' | 'starRating',
+      sortBy: sortBy as 'uploadedAt' | 'originalName' | 'size' | 'starRating',
       sortOrder: sortOrder as 'asc' | 'desc',
     });
   };
@@ -183,8 +183,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           >
             <Option value="uploadedAt-desc">📅 Newest First</Option>
             <Option value="uploadedAt-asc">📅 Oldest First</Option>
-            <Option value="filename-asc">🔤 Name (A-Z)</Option>
-            <Option value="filename-desc">🔤 Name (Z-A)</Option>
+            <Option value="originalName-asc">🔤 Name (A-Z)</Option>
+            <Option value="originalName-desc">🔤 Name (Z-A)</Option>
             <Option value="size-desc">📦 Size (Largest)</Option>
             <Option value="size-asc">📦 Size (Smallest)</Option>
             <Option value="starRating-desc">⭐ Rating (Highest)</Option>
