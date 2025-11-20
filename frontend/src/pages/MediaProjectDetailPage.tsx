@@ -277,7 +277,7 @@ export const MediaProjectDetailPage: React.FC = () => {
 
   const moveAssetsMutation = useMutation({
     mutationFn: ({ assetIds, targetFolderId }: { assetIds: string[]; targetFolderId: string | null }) =>
-      mediaCollabService.moveAssets(projectId!, { assetIds, folderId: targetFolderId ?? undefined }),
+      mediaCollabService.moveAssets(projectId!, { assetIds, folderId: targetFolderId === null ? undefined : targetFolderId }),
     onSuccess: async () => {
       // Invalidate and refetch all related queries
       await queryClient.invalidateQueries({ queryKey: ['folder-tree', projectId] });
@@ -365,6 +365,11 @@ export const MediaProjectDetailPage: React.FC = () => {
   };
 
   const handleMoveAssets = (assetIds: string[], targetFolderId: string | null) => {
+    console.log('[MediaProjectDetailPage] Moving assets:', {
+      assetIds,
+      targetFolderId,
+      projectId
+    });
     moveAssetsMutation.mutate({ assetIds, targetFolderId });
   };
 
@@ -404,13 +409,33 @@ export const MediaProjectDetailPage: React.FC = () => {
       message.success(
         `Moved ${assetsToMove.length} asset(s) ${targetFolderId === null ? 'to project root' : 'via breadcrumb'}`
       );
+
+      // Clear drag state
+      setDraggedAssetId(null);
+      setDraggedSelectedAssets([]);
+      return;
+    }
+
+    // Check if dropped on a folder (folder-{folderId} or folder-root)
+    if (overIdStr.startsWith('folder-')) {
+      const folderIdOrRoot = overIdStr.replace('folder-', '');
+      const targetFolderId = folderIdOrRoot === 'root' ? null : folderIdOrRoot;
+
+      handleMoveAssets(assetsToMove, targetFolderId);
+
+      message.success(
+        `Moved ${assetsToMove.length} asset(s) ${targetFolderId === null ? 'to project root' : 'to folder'}`
+      );
+
+      // Clear drag state
+      setDraggedAssetId(null);
+      setDraggedSelectedAssets([]);
+      return;
     }
 
     // Clear drag state
     setDraggedAssetId(null);
     setDraggedSelectedAssets([]);
-
-    // Note: MediaLibrary will handle folder drop zones internally
   };
 
   const handleDeleteAsset = (assetId: string) => {

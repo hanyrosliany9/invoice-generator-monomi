@@ -712,7 +712,9 @@ class MediaCollabService {
   }
 
   async moveAssets(projectId: string, data: MoveAssetsDto): Promise<{ message: string; movedCount: number; targetFolderId: string | null }> {
+    console.log('[mediaCollabService] moveAssets called:', { projectId, data });
     const response = await apiClient.post(`/media-collab/folders/project/${projectId}/move-assets`, data);
+    console.log('[mediaCollabService] moveAssets response:', response.data);
     return response.data.data;
   }
 }
