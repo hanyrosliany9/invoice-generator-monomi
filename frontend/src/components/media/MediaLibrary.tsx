@@ -272,6 +272,28 @@ const FolderDropZone: React.FC<FolderDropZoneProps> = ({
     id: `folder-${folder.id}`,
   });
 
+  // Detect mobile device
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                   ('ontouchstart' in window) ||
+                   (window.innerWidth <= 768);
+
+  const handleFolderClick = (e: React.MouseEvent) => {
+    // On mobile, single click opens folder
+    // On desktop, only double-click opens folder
+    if (isMobile && onDoubleClick) {
+      e.stopPropagation();
+      onDoubleClick();
+    }
+  };
+
+  const handleFolderDoubleClick = (e: React.MouseEvent) => {
+    // Desktop double-click
+    if (!isMobile && onDoubleClick) {
+      e.stopPropagation();
+      onDoubleClick();
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -288,7 +310,7 @@ const FolderDropZone: React.FC<FolderDropZoneProps> = ({
         transform: isOver ? 'scale(1.02)' : 'scale(1)',
       }}
     >
-      <div onDoubleClick={onDoubleClick}>
+      <div onClick={handleFolderClick} onDoubleClick={handleFolderDoubleClick}>
         <Space align="start">
           <FolderOutlined style={{ fontSize: 32, color: isOver ? token.colorPrimary : token.colorTextSecondary }} />
           <div>
@@ -1273,8 +1295,16 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
           }}
           styles={{ body: { padding: 8 } }}
           onClick={() => {
+            // Detect mobile device
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                             ('ontouchstart' in window) ||
+                             (window.innerWidth <= 768);
+
             if (isSelecting || selectedAssets.length > 0) {
               toggleSelection(asset.id);
+            } else if (isMobile && onAssetClick) {
+              // On mobile, single tap opens the asset viewer
+              onAssetClick(asset);
             }
           }}
           cover={
@@ -1615,8 +1645,16 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
           }}
           styles={{ body: { padding: 8 } }}
           onClick={() => {
+            // Detect mobile device
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                             ('ontouchstart' in window) ||
+                             (window.innerWidth <= 768);
+
             if (isSelecting || selectedAssets.length > 0) {
               toggleSelection(asset.id);
+            } else if (isMobile && onAssetClick) {
+              // On mobile, single tap opens the asset viewer
+              onAssetClick(asset);
             }
           }}
           cover={
@@ -1914,7 +1952,26 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                     marginBottom: 8,
                     borderRadius: 8,
                   }}
-                  onDoubleClick={() => onFolderDoubleClick?.(folder.id)}
+                  onClick={() => {
+                    // Detect mobile device
+                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                                     ('ontouchstart' in window) ||
+                                     (window.innerWidth <= 768);
+                    // On mobile, single tap opens folder
+                    if (isMobile && onFolderDoubleClick) {
+                      onFolderDoubleClick(folder.id);
+                    }
+                  }}
+                  onDoubleClick={() => {
+                    // Detect mobile device
+                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                                     ('ontouchstart' in window) ||
+                                     (window.innerWidth <= 768);
+                    // On desktop, double-click opens folder
+                    if (!isMobile && onFolderDoubleClick) {
+                      onFolderDoubleClick(folder.id);
+                    }
+                  }}
                   actions={[
                     onFolderRename && (
                       <Tooltip key="rename" title="Rename folder">
@@ -1999,22 +2056,33 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                 }
               : undefined
           }
-          onRow={(record) => ({
-            onClick: () => {
-              if (isSelecting || selectedAssets.length > 0) {
-                toggleSelection(record.id);
-              }
-            },
-            onDoubleClick: () => {
-              if (!isSelecting && selectedAssets.length === 0) {
-                onAssetClick && onAssetClick(record);
-              }
-            },
-            style: {
-              cursor: 'pointer',
-              background: selectedAssets.includes(record.id) ? token.colorPrimaryBg : 'transparent',
-            },
-          })}
+          onRow={(record) => {
+            // Detect mobile device
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                             ('ontouchstart' in window) ||
+                             (window.innerWidth <= 768);
+
+            return {
+              onClick: () => {
+                if (isSelecting || selectedAssets.length > 0) {
+                  toggleSelection(record.id);
+                } else if (isMobile && onAssetClick) {
+                  // On mobile, single tap opens the asset viewer
+                  onAssetClick(record);
+                }
+              },
+              onDoubleClick: () => {
+                // On desktop, double-click opens the asset viewer
+                if (!isMobile && !isSelecting && selectedAssets.length === 0) {
+                  onAssetClick && onAssetClick(record);
+                }
+              },
+              style: {
+                cursor: 'pointer',
+                background: selectedAssets.includes(record.id) ? token.colorPrimaryBg : 'transparent',
+              },
+            };
+          }}
           columns={[
             {
               title: 'Name',
