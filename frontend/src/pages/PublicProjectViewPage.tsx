@@ -216,6 +216,9 @@ export const PublicProjectViewPage: React.FC = () => {
   const [metadataPanelVisible, setMetadataPanelVisible] = useState(false);
   const videoPlayerKey = React.useRef(0);
 
+  // Prefetch tracking - keep track of already prefetched images to avoid duplicate requests
+  const prefetchedImages = React.useRef(new Set<string>());
+
   // Image fallback handling for selected asset
   const { imgSrc, loading, error, handleError, handleLoad } = useImageWithFallback(
     selectedAsset?.thumbnailUrl || selectedAsset?.url || '',
@@ -355,6 +358,28 @@ export const PublicProjectViewPage: React.FC = () => {
 
     // Desktop: dynamic columns with 220px minimum (matching internal comfortable)
     return 'repeat(auto-fill, minmax(220px, 1fr))';
+  };
+
+  // Hover prefetch handler - start loading image when user hovers over thumbnail
+  const handleAssetHover = (asset: MediaAsset) => {
+    // Only prefetch images (not videos)
+    if (asset.mediaType !== 'IMAGE' && asset.mediaType !== 'RAW_IMAGE') return;
+
+    // Skip if already prefetched
+    if (prefetchedImages.current.has(asset.id)) return;
+
+    // Mark as prefetched to avoid duplicate requests
+    prefetchedImages.current.add(asset.id);
+
+    // Start prefetching full-size image in background
+    const img = new Image();
+    img.src = getProxyUrl(asset.url, shareToken);
+
+    // Optional: Also prefetch thumbnail if not already loaded
+    if (asset.thumbnailUrl) {
+      const thumb = new Image();
+      thumb.src = getProxyUrl(asset.thumbnailUrl, shareToken);
+    }
   };
 
   // Asset click handler - open lightbox/video player
@@ -1253,6 +1278,7 @@ export const PublicProjectViewPage: React.FC = () => {
                         : undefined,
                     }}
                     styles={{ body: { padding: 8 } }}
+                    onMouseEnter={() => handleAssetHover(asset)}
                     onClick={() => {
                       if (isSelecting || selectedAssets.length > 0) {
                         toggleSelection(asset.id);
@@ -1655,20 +1681,29 @@ export const PublicProjectViewPage: React.FC = () => {
       </Content>
 
       {/* Photo Lightbox */}
-      {selectedAsset && (selectedAsset.mediaType === 'IMAGE' || selectedAsset.mediaType === 'RAW_IMAGE') && (
-        <PhotoLightbox
-          visible={lightboxVisible}
-          imageUrl={getProxyUrl(selectedAsset.url, shareToken)}
-          imageName={selectedAsset.originalName}
-          onClose={() => setLightboxVisible(false)}
-          onPrevious={() => navigateToAsset('prev')}
-          onNext={() => navigateToAsset('next')}
-          hasPrevious={filteredAndSortedAssets ? filteredAndSortedAssets.findIndex((a) => a.id === selectedAsset.id) > 0 : false}
-          hasNext={filteredAndSortedAssets ? filteredAndSortedAssets.findIndex((a) => a.id === selectedAsset.id) < filteredAndSortedAssets.length - 1 : false}
-          currentRating={selectedAsset.starRating}
-          onRatingChange={(rating) => handleStarRatingChange(selectedAsset.id, rating)}
-        />
-      )}
+      {selectedAsset && (selectedAsset.mediaType === 'IMAGE' || selectedAsset.mediaType === 'RAW_IMAGE') && (() => {
+        const currentIndex = filteredAndSortedAssets?.findIndex((a) => a.id === selectedAsset.id) ?? -1;
+        const nextAsset = filteredAndSortedAssets && currentIndex < filteredAndSortedAssets.length - 1 ? filteredAndSortedAssets[currentIndex + 1] : null;
+        const prevAsset = filteredAndSortedAssets && currentIndex > 0 ? filteredAndSortedAssets[currentIndex - 1] : null;
+
+        return (
+          <PhotoLightbox
+            visible={lightboxVisible}
+            imageUrl={getProxyUrl(selectedAsset.url, shareToken)}
+            thumbnailUrl={selectedAsset.thumbnailUrl ? getProxyUrl(selectedAsset.thumbnailUrl, shareToken) : undefined}
+            imageName={selectedAsset.originalName}
+            onClose={() => setLightboxVisible(false)}
+            onPrevious={() => navigateToAsset('prev')}
+            onNext={() => navigateToAsset('next')}
+            hasPrevious={currentIndex > 0}
+            hasNext={currentIndex < (filteredAndSortedAssets?.length ?? 0) - 1}
+            nextImageUrl={nextAsset ? getProxyUrl(nextAsset.url, shareToken) : undefined}
+            previousImageUrl={prevAsset ? getProxyUrl(prevAsset.url, shareToken) : undefined}
+            currentRating={selectedAsset.starRating}
+            onRatingChange={(rating) => handleStarRatingChange(selectedAsset.id, rating)}
+          />
+        );
+      })()}
 
       {/* Video Player Modal */}
       {selectedAsset && selectedAsset.mediaType === 'VIDEO' && (

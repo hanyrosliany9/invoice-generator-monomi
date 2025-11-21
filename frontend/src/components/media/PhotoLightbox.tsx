@@ -18,15 +18,31 @@ import {
 
 const { Text } = Typography;
 
+// Add spinner animation keyframes
+const spinnerStyle = document.createElement('style');
+spinnerStyle.textContent = `
+  @keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+`;
+if (!document.head.querySelector('style[data-spinner-animation]')) {
+  spinnerStyle.setAttribute('data-spinner-animation', 'true');
+  document.head.appendChild(spinnerStyle);
+}
+
 interface PhotoLightboxProps {
   visible: boolean;
   imageUrl: string;
+  thumbnailUrl?: string; // Optional thumbnail for progressive loading
   imageName?: string;
   onClose: () => void;
   onPrevious?: () => void;
   onNext?: () => void;
   hasPrevious?: boolean;
   hasNext?: boolean;
+  nextImageUrl?: string; // NEW: Optional next image URL for prefetching
+  previousImageUrl?: string; // NEW: Optional previous image URL for prefetching
   currentRating?: number | null;
   onRatingChange?: (rating: number) => void;
 }
@@ -43,12 +59,15 @@ interface PhotoLightboxProps {
 export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
   visible,
   imageUrl,
+  thumbnailUrl,
   imageName,
   onClose,
   onPrevious,
   onNext,
   hasPrevious = false,
   hasNext = false,
+  nextImageUrl,
+  previousImageUrl,
   currentRating = null,
   onRatingChange,
 }) => {
@@ -63,14 +82,40 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
   const [showInfo, setShowInfo] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
 
+  // Progressive loading state
+  const [fullSizeLoaded, setFullSizeLoaded] = useState(false);
+
   useEffect(() => {
     if (!visible) {
       setZoom(100);
       setRotation(0);
       setPosition({ x: 0, y: 0 });
       setShowInfo(false);
+      setFullSizeLoaded(false); // Reset loading state
     }
   }, [visible]);
+
+  // Reset full-size loaded state when image URL changes
+  useEffect(() => {
+    setFullSizeLoaded(false);
+  }, [imageUrl]);
+
+  // Prefetch adjacent images when lightbox opens or image changes
+  useEffect(() => {
+    if (!visible) return;
+
+    // Prefetch next image
+    if (hasNext && nextImageUrl) {
+      const nextImg = new Image();
+      nextImg.src = nextImageUrl;
+    }
+
+    // Prefetch previous image
+    if (hasPrevious && previousImageUrl) {
+      const prevImg = new Image();
+      prevImg.src = previousImageUrl;
+    }
+  }, [visible, imageUrl, hasNext, nextImageUrl, hasPrevious, previousImageUrl]);
 
   useEffect(() => {
     if (!visible) return;
@@ -318,10 +363,37 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
           onMouseLeave={handleMouseUp}
           onMouseEnter={() => setShowLoupe(true)}
         >
+          {/* Progressive Loading: Thumbnail Layer (instant visibility) */}
+          {thumbnailUrl && !fullSizeLoaded && (
+            <img
+              src={thumbnailUrl}
+              alt={imageName}
+              style={{
+                position: 'absolute',
+                maxWidth: zoom > 100 ? 'none' : showInfo ? 'calc(100vw - 320px - 80px)' : 'calc(100vw - 80px)',
+                maxHeight: zoom > 100 ? 'none' : 'calc(100vh - 140px)',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                display: 'block',
+                transform: `scale(${zoom / 100}) translate(${position.x}px, ${position.y}px) rotate(${rotation}deg)`,
+                transition: isDragging ? 'none' : 'transform 0.3s ease',
+                userSelect: 'none',
+                filter: 'blur(8px)', // Blur effect for LQIP (Low Quality Image Placeholder)
+                opacity: fullSizeLoaded ? 0 : 1,
+                transitionProperty: 'opacity, filter',
+                transitionDuration: '0.3s',
+              }}
+              draggable={false}
+            />
+          )}
+
+          {/* Full-Size Layer (loads in background) */}
           <img
             ref={imageRef}
             src={imageUrl}
             alt={imageName}
+            onLoad={() => setFullSizeLoaded(true)}
             style={{
               maxWidth: zoom > 100 ? 'none' : showInfo ? 'calc(100vw - 320px - 80px)' : 'calc(100vw - 80px)',
               maxHeight: zoom > 100 ? 'none' : 'calc(100vh - 140px)', // Direct viewport constraint for both portrait & landscape
@@ -330,11 +402,36 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
               objectFit: 'contain',
               display: 'block', // Critical: removes inline spacing that causes scrollbars
               transform: `scale(${zoom / 100}) translate(${position.x}px, ${position.y}px) rotate(${rotation}deg)`,
-              transition: isDragging ? 'none' : 'transform 0.3s ease',
+              transition: isDragging ? 'none' : 'transform 0.3s ease, opacity 0.3s ease',
               userSelect: 'none',
+              opacity: fullSizeLoaded ? 1 : (thumbnailUrl ? 0 : 1), // Fade in when loaded (if thumbnail exists)
             }}
             draggable={false}
           />
+
+          {/* Loading Spinner (shows while full-size is loading) */}
+          {!fullSizeLoaded && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                zIndex: 10,
+              }}
+            >
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  border: '4px solid rgba(255, 255, 255, 0.2)',
+                  borderTop: '4px solid white',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                }}
+              />
+            </div>
+          )}
 
         {/* Loupe (Magnifying Glass) - Only show when zoomed in above 110% */}
         {showLoupe && zoom > 110 && (
