@@ -3,6 +3,8 @@ import { Card, Descriptions, Tag, theme, Spin } from 'antd';
 import { VideoCameraOutlined, FileImageOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { MediaAsset } from '../../services/media-collab';
+import { useMediaToken } from '../../hooks/useMediaToken';
+import { getProxyUrl } from '../../utils/mediaProxy';
 
 interface MediaPreviewCardProps {
   asset: MediaAsset;
@@ -16,6 +18,7 @@ interface MediaPreviewCardProps {
  */
 export const MediaPreviewCard: React.FC<MediaPreviewCardProps> = ({ asset }) => {
   const { token } = theme.useToken();
+  const { mediaToken } = useMediaToken();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -63,7 +66,7 @@ export const MediaPreviewCard: React.FC<MediaPreviewCardProps> = ({ asset }) => 
             )}
             {asset.thumbnailUrl && !imageError ? (
               <img
-                src={asset.thumbnailUrl}
+                src={getProxyUrl(asset.thumbnailUrl, mediaToken)}
                 alt={asset.originalName}
                 style={{
                   maxWidth: '100%',
@@ -99,7 +102,7 @@ export const MediaPreviewCard: React.FC<MediaPreviewCardProps> = ({ asset }) => 
             )}
             {(asset.thumbnailUrl || asset.url) && !imageError ? (
               <img
-                src={asset.thumbnailUrl || asset.url}
+                src={getProxyUrl(asset.thumbnailUrl || asset.url, mediaToken)}
                 alt={asset.originalName}
                 style={{
                   maxWidth: '100%',

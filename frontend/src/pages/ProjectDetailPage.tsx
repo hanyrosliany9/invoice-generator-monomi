@@ -43,6 +43,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { formatIDR, safeNumber, safeString } from '../utils/currency'
 import { EstimatedExpense, Project, projectService } from '../services/projects'
+import { apiClient } from '../config/api'
 import { FileUpload } from '../components/documents/FileUpload'
 import { ProfitMarginCard } from '../components/projects/ProfitMarginCard'
 import { ProjectExpenseList } from '../components/projects/ProjectExpenseList'
@@ -68,7 +69,8 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
   const { t } = useTranslation()
   const { theme } = useTheme()
   const { message } = App.useApp()
-  const { token } = useAuthStore()
+  const { getAccessToken } = useAuthStore()
+  const token = getAccessToken()
 
   // State for expense modal
   const [expenseModalOpen, setExpenseModalOpen] = useState(false)
@@ -532,10 +534,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
         project={project}
         onRecalculate={async () => {
           try {
-            await fetch(`/api/v1/projects/${id}/calculate-profit`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-            });
+            await apiClient.post(`/projects/${id}/calculate-profit`);
             refetch(); // Re-fetch project data with updated metrics
           } catch (error) {
             console.error('Failed to recalculate profit:', error);

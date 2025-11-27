@@ -16,6 +16,7 @@ import {
 } from '@ant-design/icons';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { MediaFolder, MediaAsset } from '../../services/media-collab';
+import { getProxyUrl } from '../../utils/mediaProxy';
 
 interface FolderViewDnDProps {
   currentFolder: MediaFolder | null;
@@ -29,6 +30,7 @@ interface FolderViewDnDProps {
   onRenameFolder?: (folderId: string, newName: string) => void;
   onMoveAssets: (assetIds: string[], targetFolderId: string | null) => void;
   selectionMode?: boolean;
+  mediaToken?: string | null;
 }
 
 export const FolderViewDnD: React.FC<FolderViewDnDProps> = ({
@@ -43,6 +45,7 @@ export const FolderViewDnD: React.FC<FolderViewDnDProps> = ({
   onRenameFolder,
   onMoveAssets,
   selectionMode = false,
+  mediaToken,
 }) => {
   const { token } = theme.useToken();
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
@@ -360,9 +363,10 @@ export const FolderViewDnD: React.FC<FolderViewDnDProps> = ({
                                       style={{
                                         position: 'relative',
                                         width: '100%',
-                                        paddingBottom: '75%',
+                                        aspectRatio: '1 / 1',
                                         background: token.colorBgContainer,
                                         overflow: 'hidden',
+                                        borderRadius: '8px 8px 0 0',
                                       }}
                                     >
                                       {/* Drag handle */}
@@ -401,9 +405,10 @@ export const FolderViewDnD: React.FC<FolderViewDnDProps> = ({
                                       {/* Thumbnail or icon */}
                                       {asset.thumbnailUrl ? (
                                         <img
-                                          src={asset.thumbnailUrl}
-                                          alt={asset.originalName}
+                                          src={getProxyUrl(asset.thumbnailUrl, mediaToken)}
+                                          alt={`${asset.mediaType} - ${asset.originalName}`}
                                           onClick={() => onAssetClick(asset)}
+                                          loading="lazy"
                                           style={{
                                             position: 'absolute',
                                             top: 0,
@@ -411,7 +416,11 @@ export const FolderViewDnD: React.FC<FolderViewDnDProps> = ({
                                             width: '100%',
                                             height: '100%',
                                             objectFit: 'cover',
+                                            objectPosition: 'center',
+                                            transition: 'transform 0.2s ease',
                                           }}
+                                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                         />
                                       ) : (
                                         <div
@@ -484,7 +493,7 @@ export const FolderViewDnD: React.FC<FolderViewDnDProps> = ({
                                           icon={<DownloadOutlined />}
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            window.open(asset.url, '_blank');
+                                            window.open(getProxyUrl(asset.url, mediaToken), '_blank');
                                           }}
                                         />
                                         <Button

@@ -58,6 +58,7 @@ import { ContentPreviewModal } from '../components/content-calendar/ContentPrevi
 import { getProxyUrl } from '../utils/mediaProxy';
 import { generateVideoThumbnail, isVideoFile } from '../utils/videoThumbnail';
 import { downloadSingleMedia, downloadMediaAsZip } from '../utils/zipDownload';
+import { useMediaToken } from '../hooks/useMediaToken';
 import { exportContentToPDF } from '../utils/pdfExport';
 import { useFilterPresets } from '../hooks/useFilterPresets';
 import { useIsMobile } from '../hooks/useMediaQuery';
@@ -108,9 +109,10 @@ interface SortableMediaItemProps {
   onRemove: (index: number) => void;
   onDownload: (media: any) => void;
   token: any;
+  mediaToken: string | null;
 }
 
-function SortableMediaItem({ media, index, onRemove, onDownload, token }: SortableMediaItemProps) {
+function SortableMediaItem({ media, index, onRemove, onDownload, token, mediaToken }: SortableMediaItemProps) {
   const {
     attributes,
     listeners,
@@ -164,7 +166,7 @@ function SortableMediaItem({ media, index, onRemove, onDownload, token }: Sortab
             <img
               width="100%"
               height="150"
-              src={media.previewUrl || media.url}
+              src={media.previewUrl || getProxyUrl(media.url, mediaToken)}
               style={{ objectFit: 'cover' }}
               alt={`Media ${index + 1}`}
               onError={(e) => {
@@ -176,7 +178,7 @@ function SortableMediaItem({ media, index, onRemove, onDownload, token }: Sortab
               <img
                 width="100%"
                 height="150"
-                src={getProxyUrl(media.thumbnailUrl)}
+                src={getProxyUrl(media.thumbnailUrl, mediaToken)}
                 style={{ objectFit: 'cover' }}
                 alt={`Video ${index + 1}`}
               />
@@ -286,6 +288,7 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { token } = theme.useToken();
+  const { mediaToken } = useMediaToken();
   const isMobile = useIsMobile();
 
   // Filter presets management
@@ -790,7 +793,7 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
   const handleMediaDownload = async (media: any) => {
     try {
       // Priority: previewUrl (blob) > proxy URL > direct URL
-      const downloadUrl = media.previewUrl || getProxyUrl(media.url);
+      const downloadUrl = media.previewUrl || getProxyUrl(media.url, mediaToken);
       await downloadSingleMedia(downloadUrl, media.originalName || `media-${Date.now()}`);
       message.success(`Downloaded: ${media.originalName || 'media file'}`);
     } catch (error) {
@@ -1738,6 +1741,7 @@ const ContentCalendarPage: React.FC<ContentCalendarPageProps> = ({
                           onRemove={handleMediaRemove}
                           onDownload={handleMediaDownload}
                           token={token}
+                          mediaToken={mediaToken}
                         />
                       ))}
                     </div>

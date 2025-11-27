@@ -30,6 +30,11 @@ export class CreatePaymentMilestoneDto {
   paymentPercentage: number; // % of total quotation (e.g., 30%)
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  paymentAmount?: number; // Calculated amount based on percentage (optional, can be calculated server-side)
+
+  @IsOptional()
   @IsDate()
   @Type(() => Date)
   dueDate?: Date; // When payment is expected

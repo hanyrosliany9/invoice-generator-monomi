@@ -247,8 +247,18 @@ export class QuotationsService {
       }
     }
 
-    // Extract paymentMilestones and relation IDs (not direct Prisma fields, handled separately)
-    const { paymentMilestones: _paymentMilestones, clientId, projectId, ...quotationUpdateData } = updateQuotationDto as any;
+    // Extract paymentMilestones, relation IDs, and fields not in Prisma schema
+    // Note: includeTax, subtotalAmount, taxRate, taxAmount are in DTO but not in database schema
+    const {
+      paymentMilestones: _paymentMilestones,
+      clientId,
+      projectId,
+      includeTax: _includeTax,
+      subtotalAmount: _subtotalAmount,
+      taxRate: _taxRate,
+      taxAmount: _taxAmount,
+      ...quotationUpdateData
+    } = updateQuotationDto as any;
 
     // Build the update data with proper Prisma relations
     const updateData: any = {

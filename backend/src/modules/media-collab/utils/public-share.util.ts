@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import { getPublicUrl } from '../../../config/url.config';
 
 /**
  * Generate a URL-safe public share token
@@ -16,8 +17,11 @@ export function generatePublicShareToken(): string {
 
 /**
  * Generate public share URL
+ *
+ * Production: https://share.monomiagency.com/shared/{token}
+ * Development: http://localhost:3001/shared/{token}
  */
 export function generatePublicShareUrl(token: string): string {
-  const baseUrl = process.env.APP_URL || 'http://localhost:3001';
+  const baseUrl = getPublicUrl();
   return `${baseUrl}/shared/${token}`;
 }

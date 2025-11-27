@@ -64,7 +64,40 @@ model User {
   collectionsCreated     Collection[]        @relation("CollectionCreator")
   assetMetadataAssignee  AssetMetadata[]     @relation("AssetAssignee")
 
+  // Authentication Relations
+  refreshTokens RefreshToken[]
+
   @@map("users")
+}
+
+// Refresh Token Management (OAuth2 Pattern)
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Token metadata
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  // Security fields
+  isRevoked      Boolean  @default(false)
+  revokedAt      DateTime?
+  revokedReason  String?  // "logout", "security", "expired", "replaced"
+
+  // Device tracking (for multi-device support)
+  userAgent String?
+  ipAddress String?
+  deviceId  String? // Client-generated UUID for device identification
+
+  // Audit trail
+  replacedBy String? // ID of new refresh token (for rotation)
+
+  @@index([userId, isRevoked, expiresAt])
+  @@index([token, isRevoked])
+  @@map("refresh_tokens")
 }
 
 // Client Management

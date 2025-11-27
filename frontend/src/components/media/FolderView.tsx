@@ -13,6 +13,7 @@ import {
   EditOutlined,
 } from '@ant-design/icons';
 import { MediaFolder, MediaAsset } from '../../services/media-collab';
+import { getProxyUrl } from '../../utils/mediaProxy';
 
 interface FolderViewProps {
   currentFolder: MediaFolder | null;
@@ -26,6 +27,7 @@ interface FolderViewProps {
   onRenameFolder?: (folderId: string, newName: string) => void;
   onMoveAssets?: (assetIds: string[], targetFolderId: string | null) => void;
   selectionMode?: boolean;
+  mediaToken?: string | null;
 }
 
 export const FolderView: React.FC<FolderViewProps> = ({
@@ -40,6 +42,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
   onRenameFolder,
   onMoveAssets,
   selectionMode = false,
+  mediaToken,
 }) => {
   const { token } = theme.useToken();
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
@@ -302,9 +305,10 @@ export const FolderView: React.FC<FolderViewProps> = ({
                         style={{
                           position: 'relative',
                           width: '100%',
-                          paddingBottom: '75%',
+                          aspectRatio: '1 / 1',
                           background: token.colorBgContainer,
                           overflow: 'hidden',
+                          borderRadius: '8px 8px 0 0',
                         }}
                       >
                         {/* Selection checkbox */}
@@ -325,9 +329,10 @@ export const FolderView: React.FC<FolderViewProps> = ({
                         {/* Thumbnail or icon */}
                         {asset.thumbnailUrl ? (
                           <img
-                            src={asset.thumbnailUrl}
-                            alt={asset.originalName}
+                            src={getProxyUrl(asset.thumbnailUrl, mediaToken)}
+                            alt={`${asset.mediaType} - ${asset.originalName}`}
                             onClick={() => onAssetClick(asset)}
+                            loading="lazy"
                             style={{
                               position: 'absolute',
                               top: 0,
@@ -335,7 +340,11 @@ export const FolderView: React.FC<FolderViewProps> = ({
                               width: '100%',
                               height: '100%',
                               objectFit: 'cover',
+                              objectPosition: 'center',
+                              transition: 'transform 0.2s ease',
                             }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                           />
                         ) : (
                           <div
@@ -408,7 +417,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
                             icon={<DownloadOutlined />}
                             onClick={(e) => {
                               e.stopPropagation();
-                              window.open(asset.url, '_blank');
+                              window.open(getProxyUrl(asset.url, mediaToken), '_blank');
                             }}
                           />
                           <Button

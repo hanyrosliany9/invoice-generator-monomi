@@ -21,10 +21,12 @@ import {
   ApiConsumes,
   ApiBody,
 } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { MediaAssetsService } from '../services/media-assets.service';
 import { AuthenticatedRequest } from '../interfaces/authenticated-request.interface';
 import { AssetFilters } from '../types/asset-filters.interface';
+import { BulkDeleteAssetsDto } from '../dto/bulk-delete-assets.dto';
 
 @ApiTags('Media Collaboration - Assets')
 @ApiBearerAuth()
@@ -126,5 +128,58 @@ export class MediaAssetsController {
   @ApiOperation({ summary: 'Delete an asset (OWNER/EDITOR only)' })
   remove(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.assetsService.remove(id, req.user.id);
+  }
+
+  @Post('bulk-delete')
+  @SkipThrottle() // Exempt from rate limiting - handles bulk operations internally
+  @ApiOperation({
+    summary: 'Bulk delete multiple assets',
+    description: 'Follows industry best practices from Google Drive, Dropbox, and Frame.io. Phase 1 supports up to 100 assets synchronously. Returns detailed results per asset.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Bulk delete completed (may include partial failures)',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', example: 50 },
+            deleted: { type: 'number', example: 48 },
+            failed: { type: 'number', example: 2 },
+            results: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  assetId: { type: 'string', example: 'cmi65bkbh006xrlrp39n0rn0q' },
+                  success: { type: 'boolean', example: false },
+                  error: { type: 'string', example: 'Asset not found' },
+                },
+              },
+              description: 'Only failed assets are returned for debugging',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid request (empty array, exceeds 100 limit)' })
+  @ApiResponse({ status: 403, description: 'Access denied (not OWNER/EDITOR)' })
+  async bulkDelete(
+    @Request() req: AuthenticatedRequest,
+    @Body() bulkDeleteDto: BulkDeleteAssetsDto,
+  ) {
+    const result = await this.assetsService.bulkDeleteAssets(
+      bulkDeleteDto.assetIds,
+      req.user.id,
+    );
+
+    return {
+      success: true,
+      data: result,
+    };
   }
 }

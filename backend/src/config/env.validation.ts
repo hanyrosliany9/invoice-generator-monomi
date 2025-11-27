@@ -45,6 +45,14 @@ export class EnvironmentVariables {
   @IsOptional()
   FRONTEND_URL: string = 'http://localhost:3000';
 
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  PUBLIC_URL?: string; // Falls back to FRONTEND_URL if not set
+
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  MEDIA_URL?: string;
+
   // Email (optional for development)
   @IsString()
   @IsOptional()

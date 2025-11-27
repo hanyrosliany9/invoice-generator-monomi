@@ -16,6 +16,7 @@ import { Card, Space, Tag, Image, Empty, Spin, theme } from 'antd';
 import { CalendarOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import type { ContentCalendarItem } from '../../services/content-calendar';
 import { getProxyUrl } from '../../utils/mediaProxy';
+import { useMediaToken } from '../../hooks/useMediaToken';
 
 // Note: Colors will be replaced with theme tokens in component
 const COLUMNS = {
@@ -42,12 +43,14 @@ function DraggableCard({
   onPreview,
   isDragging,
   token,
+  mediaToken,
 }: {
   item: ContentCalendarItem;
   onEdit: (item: ContentCalendarItem) => void;
   onPreview: (item: ContentCalendarItem) => void;
   isDragging?: boolean;
   token: any;
+  mediaToken: string | null;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: item.id,
@@ -78,7 +81,7 @@ function DraggableCard({
             <div style={{ position: 'relative', height: 120, overflow: 'hidden' }}>
               {item.media[0].type === 'IMAGE' || item.media[0].mimeType?.startsWith('image') ? (
                 <img
-                  src={getProxyUrl(item.media[0].url)}
+                  src={getProxyUrl(item.media[0].url, mediaToken)}
                   alt={item.caption}
                   height={120}
                   width="100%"
@@ -87,7 +90,7 @@ function DraggableCard({
               ) : item.media[0].thumbnailUrl ? (
                 <div style={{ position: 'relative', height: 120 }}>
                   <img
-                    src={getProxyUrl(item.media[0].thumbnailUrl)}
+                    src={getProxyUrl(item.media[0].thumbnailUrl, mediaToken)}
                     height={120}
                     width="100%"
                     style={{ objectFit: 'cover' }}
@@ -195,6 +198,7 @@ function DroppableColumn({
   onEdit,
   onPreview,
   token,
+  mediaToken,
 }: {
   status: string;
   config: { title: string; colorKey: string };
@@ -203,6 +207,7 @@ function DroppableColumn({
   onEdit: (item: ContentCalendarItem) => void;
   onPreview: (item: ContentCalendarItem) => void;
   token: any;
+  mediaToken: string | null;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: status,
@@ -249,6 +254,7 @@ function DroppableColumn({
                 onPreview={onPreview}
                 isDragging={activeId === item.id}
                 token={token}
+                mediaToken={mediaToken}
               />
             ))
           ) : (
@@ -273,6 +279,7 @@ export const KanbanBoardView: React.FC<Props> = ({
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const { token } = theme.useToken();
+  const { mediaToken } = useMediaToken();
 
   // Group by status
   const columnData = Object.keys(COLUMNS).reduce((acc, status) => {
@@ -355,6 +362,7 @@ export const KanbanBoardView: React.FC<Props> = ({
               onEdit={onEdit}
               onPreview={onPreview}
               token={token}
+              mediaToken={mediaToken}
             />
           )
         )}
@@ -363,7 +371,7 @@ export const KanbanBoardView: React.FC<Props> = ({
       <DragOverlay>
         {activeItem ? (
           <div style={{ width: 300, cursor: 'grabbing' }}>
-            <DraggableCard item={activeItem} onEdit={onEdit} onPreview={onPreview} isDragging token={token} />
+            <DraggableCard item={activeItem} onEdit={onEdit} onPreview={onPreview} isDragging token={token} mediaToken={mediaToken} />
           </div>
         ) : null}
       </DragOverlay>

@@ -30,6 +30,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mediaCollabService, MediaAsset, MediaCollection } from '../services/media-collab';
 import { MediaLibrary } from '../components/media/MediaLibrary';
 import { getErrorMessage } from '../utils/errorHandlers';
+import { useMediaToken } from '../hooks/useMediaToken';
+import { getProxyUrl } from '../utils/mediaProxy';
 
 const { Content } = Layout;
 const { confirm } = Modal;
@@ -50,6 +52,7 @@ export const CollectionDetailPage: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { mediaToken } = useMediaToken();
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [addAssetsModalVisible, setAddAssetsModalVisible] = useState(false);
@@ -325,6 +328,7 @@ export const CollectionDetailPage: React.FC = () => {
               onRemove={!isSmartCollection ? handleRemoveAsset : undefined}
               onBulkRemove={!isSmartCollection ? handleBulkRemove : undefined}
               removeButtonText="Remove from Collection"
+              mediaToken={mediaToken}
             />
           )}
         </Card>
@@ -422,7 +426,7 @@ export const CollectionDetailPage: React.FC = () => {
                       </Checkbox>
                       {asset.thumbnailUrl && (
                         <img
-                          src={asset.thumbnailUrl}
+                          src={getProxyUrl(asset.thumbnailUrl, mediaToken)}
                           alt={asset.filename}
                           style={{
                             width: '100%',

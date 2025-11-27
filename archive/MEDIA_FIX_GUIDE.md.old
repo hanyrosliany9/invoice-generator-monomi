@@ -1,0 +1,194 @@
+# 🚀 Media Preview Fix - R2 Public Bucket Setup
+
+## Problem Summary
+Media uploads work but previews timeout (504 error) because:
+- ❌ Cloudflare Tunnel free tier **prohibits serving media files** (ToS violation)
+- ❌ 4-minute timeout limit on Cloudflare Tunnel
+- ❌ Serving media through tunnel risks account suspension
+
+## Solution: R2 Public Bucket with Custom Domain
+✅ ToS compliant | ✅ Free tier (10GB, unlimited bandwidth) | ✅ Global CDN | ✅ No timeout
+
+---
+
+## 📋 Implementation Steps
+
+### **STEP 1: Enable R2 Public Access**
+
+1. Go to: https://dash.cloudflare.com
+2. Navigate to **R2** → Select **monomi-finance** bucket
+3. Click **Settings** tab
+4. Scroll to **Public Access** section
+5. Click **Allow Access** button
+6. Note the `r2.dev` URL (for testing):
+   ```
+   https://pub-XXXXX.r2.dev
+   ```
+
+---
+
+### **STEP 2: Add Custom Domain (REQUIRED)**
+
+1. Still in bucket **Settings**, scroll to **Custom Domains**
+2. Click **Connect Domain** button
+3. Enter domain: `media.monomiagency.com`
+4. Click **Connect** - Cloudflare will:
+   - ✅ Add DNS CNAME record automatically
+   - ✅ Issue SSL certificate
+   - ✅ Enable CDN caching
+5. **Wait 2-5 minutes** for Status: **Active** ⏳
+6. Refresh page to check status
+
+**Verification**: Try accessing in browser:
+```
+https://media.monomiagency.com/content/2025-11-19/[any-file-key].jpg
+```
+
+---
+
+### **STEP 3: Update Environment Variables**
+
+Edit your `.env` file:
+
+```bash
+# OLD (Cloudflare API endpoint - NOT for public access)
+R2_PUBLIC_URL=https://209896b6231b1f8246620be3ab526b3f.r2.cloudflarestorage.com
+
+# NEW (Custom domain for public access)
+R2_PUBLIC_URL=https://media.monomiagency.com
+```
+
+**Save the file** (code changes already applied ✅)
+
+---
+
+### **STEP 4: Rebuild Production Docker Image**
+
+The backend code has been updated to use R2 public URLs in production. Now rebuild:
+
+```bash
+# 1. Rebuild the production image
+docker compose -f docker-compose.prod.yml build app
+
+# 2. Recreate the app container with new image
+docker compose -f docker-compose.prod.yml up -d app
+
+# 3. Wait for container to start (30-60 seconds)
+docker compose -f docker-compose.prod.yml logs app -f --tail 50
+```
+
+**Look for**: `✅ Media proxy URL: https://media.monomiagency.com`
+
+---
+
+### **STEP 5: Update Existing Database URLs**
+
+All previously uploaded media has `/api/v1/media/proxy/` URLs. Update them:
+
+```bash
+# Apply the SQL migration
+cat scripts/update-media-urls.sql | docker compose -f docker-compose.prod.yml exec -T db psql -U invoiceuser -d invoices
+
+# Expected output:
+# BEGIN
+# UPDATE 50  (number of assets updated)
+# UPDATE 0   (versions, if any)
+# total_assets | using_r2_urls | using_proxy_urls
+# --------------|---------------|------------------
+#      50      |      50       |        0
+# COMMIT
+```
+
+---
+
+### **STEP 6: Verify Everything Works**
+
+1. **Check logs**:
+   ```bash
+   docker compose -f docker-compose.prod.yml logs app --tail 30 | grep -E "Media|R2"
+   ```
+   Should see: `✅ R2 client initialized` and `✅ Media proxy URL: https://media.monomiagency.com`
+
+2. **Test in browser**:
+   - Go to: https://admin.monomiagency.com/media-collab/projects
+   - Upload a new image
+   - **Media should preview instantly! ⚡**
+
+3. **Check database**:
+   ```bash
+   docker compose -f docker-compose.prod.yml exec db psql -U invoiceuser -d invoices -c "SELECT url FROM media_assets ORDER BY \"uploadedAt\" DESC LIMIT 1;"
+   ```
+   Should show: `https://media.monomiagency.com/content/2025-11-19/...`
+
+---
+
+## 🔧 Troubleshooting
+
+### **Issue: DNS not resolving**
+```bash
+# Check DNS propagation
+dig media.monomiagency.com +short
+
+# Should return Cloudflare IPs (e.g., 104.x.x.x)
+```
+
+### **Issue: 403 Forbidden**
+- R2 public access not enabled properly
+- Go back to Step 1 and ensure "Allow Access" is clicked
+
+### **Issue: Still seeing proxy URLs**
+```bash
+# Re-run the database update
+cat scripts/update-media-urls.sql | docker compose -f docker-compose.prod.yml exec -T db psql -U invoiceuser -d invoices
+```
+
+### **Issue: Images not loading**
+1. Check R2 bucket contains files:
+   ```bash
+   # List files (requires AWS CLI configured with R2)
+   aws s3 ls s3://monomi-finance/content/2025-11-19/ --endpoint-url=https://209896b6231b1f8246620be3ab526b3f.r2.cloudflarestorage.com
+   ```
+
+2. Test direct R2 URL in browser:
+   ```
+   https://media.monomiagency.com/content/2025-11-19/[filename]
+   ```
+
+---
+
+## 📊 Performance Comparison
+
+| Metric | Before (Proxy) | After (R2 Direct) |
+|--------|---------------|-------------------|
+| Load Time | **Timeout (60s)** | **< 500ms** ⚡ |
+| ToS Compliant | ❌ Violation | ✅ Compliant |
+| Bandwidth Limit | Limited | ✅ Unlimited |
+| Global CDN | Through tunnel | ✅ Native edge |
+| Cost | Risk suspension | ✅ Free tier |
+
+---
+
+## 🎯 Benefits Achieved
+
+✅ **ToS Compliant**: No risk of account suspension
+✅ **Fast**: Direct edge delivery, < 500ms load times
+✅ **Scalable**: Unlimited bandwidth on free tier
+✅ **Global**: Automatic CDN caching worldwide
+✅ **Secure**: HTTPS with automatic SSL certificates
+✅ **Future-proof**: Proper media serving architecture
+
+---
+
+## 📝 Post-Implementation Checklist
+
+- [ ] R2 public access enabled
+- [ ] Custom domain `media.monomiagency.com` added and **Active**
+- [ ] `.env` updated with `R2_PUBLIC_URL=https://media.monomiagency.com`
+- [ ] Production containers rebuilt and restarted
+- [ ] Database URLs updated to use R2 public URL
+- [ ] New uploads showing direct R2 URLs in database
+- [ ] Media previews loading instantly in browser
+- [ ] No 504 timeout errors
+- [ ] Cloudflare Tunnel logs show no media proxy requests
+
+**Done! Your media serving is now production-ready! 🎉**

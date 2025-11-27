@@ -7,6 +7,13 @@ import * as bcrypt from "bcryptjs";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { getErrorMessage } from "../../common/utils/error-handling.util";
+import { RefreshTokenService } from "./refresh-token.service";
+
+interface DeviceInfo {
+  userAgent?: string;
+  ipAddress?: string;
+  deviceId?: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -14,6 +21,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private refreshTokenService: RefreshTokenService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -36,8 +44,13 @@ export class AuthService {
     return null;
   }
 
-  async login(loginDto: LoginDto): Promise<{
+  async login(
+    loginDto: LoginDto,
+    deviceInfo?: DeviceInfo
+  ): Promise<{
     access_token: string;
+    refresh_token: string;
+    expires_in: number;
     user: { id: string; email: string; name: string; role: string };
   }> {
     const user = await this.validateUser(loginDto.email, loginDto.password);
@@ -50,10 +63,20 @@ export class AuthService {
       throw new UnauthorizedException("Akun Anda telah dinonaktifkan");
     }
 
+    // Generate access token (15 minutes)
     const payload = { email: user.email, sub: user.id, role: user.role };
+    const access_token = this.jwtService.sign(payload);
+
+    // Generate refresh token (30 days)
+    const { token: refresh_token } = await this.refreshTokenService.generateRefreshToken(
+      user.id,
+      deviceInfo
+    );
 
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token,
+      refresh_token,
+      expires_in: 900, // 15 minutes in seconds
       user: {
         id: user.id,
         email: user.email,
@@ -92,5 +115,47 @@ export class AuthService {
 
     // Password already filtered out by service
     return user;
+  }
+
+  async refreshAccessToken(
+    refreshToken: string,
+    deviceInfo?: DeviceInfo
+  ): Promise<{
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+  }> {
+    // Validate and rotate refresh token
+    const { token: new_refresh_token, userId } = await this.refreshTokenService.rotateRefreshToken(
+      refreshToken,
+      deviceInfo
+    );
+
+    // Get user
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('User tidak ditemukan');
+    }
+
+    // Generate new access token
+    const payload = { email: user.email, sub: user.id, role: user.role };
+    const access_token = this.jwtService.sign(payload);
+
+    return {
+      access_token,
+      refresh_token: new_refresh_token,
+      expires_in: 900, // 15 minutes
+    };
+  }
+
+  async logout(userId: string, refreshToken?: string): Promise<void> {
+    if (refreshToken) {
+      // Logout from this device only
+      await this.refreshTokenService.revokeToken(refreshToken, 'logout');
+    } else {
+      // Logout from all devices
+      await this.refreshTokenService.revokeAllUserTokens(userId, 'logout');
+    }
   }
 }

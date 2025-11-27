@@ -62,10 +62,19 @@ services:
       - FROM_EMAIL=${FROM_EMAIL}
       - CORS_ORIGIN=https://admin.monomiagency.com
       - FRONTEND_URL=https://admin.monomiagency.com
+      - PUBLIC_URL=https://share.monomiagency.com
+      - MEDIA_URL=https://media.monomiagency.com
       - LOG_LEVEL=info
       - SKIP_DB_INIT=true
       - WEBSOCKET_PORT=${WEBSOCKET_PORT}
       - WEBSOCKET_CORS_ORIGIN=${WEBSOCKET_CORS_ORIGIN}
+      # Cloudflare R2 Storage
+      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME:-monomi-finance}
+      - R2_PUBLIC_URL=${R2_PUBLIC_URL}
+      - R2_ENDPOINT=${R2_ENDPOINT}
     networks:
       - invoice-network
     volumes:

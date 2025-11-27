@@ -271,10 +271,10 @@ export const projectService = {
     estimatedExpenses?: EstimatedExpense[]
   }): Promise<ProjectionResult> => {
     const response = await apiClient.post('/projects/calculate-projection', data)
-    if (!response?.data) {
+    if (!response?.data?.data) {
       throw new Error('Projection calculation failed')
     }
-    return response.data
+    return response.data.data
   },
 
   // Download project PDF

@@ -2,7 +2,9 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { App as AntApp, Layout, Spin } from 'antd'
 import { lazy, Suspense, useEffect } from 'react'
 import { useAuthStore } from './store/auth'
+import { useMediaTokenStore } from './stores/mediaTokenStore'
 import { dateTimeSync } from './services/dateTimeSync'
+import { tokenRefreshService } from './services/token-refresh.service'
 import { AuthLayout } from './components/layout/AuthLayout'
 import { MainLayout } from './components/layout/MainLayout'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -178,6 +180,7 @@ const PageLoader = () => (
 
 function App() {
   const { isAuthenticated } = useAuthStore()
+  const { token: mediaToken, fetchToken } = useMediaTokenStore()
 
   // Initialize date/time synchronization on app mount
   useEffect(() => {
@@ -190,6 +193,29 @@ function App() {
       dateTimeSync.stopPeriodicSync()
     }
   }, [])
+
+  // Initialize media token for authenticated users
+  useEffect(() => {
+    if (isAuthenticated && !mediaToken) {
+      console.log('[App] User authenticated, fetching media token...')
+      fetchToken()
+    }
+  }, [isAuthenticated, mediaToken, fetchToken])
+
+  // Initialize token refresh service for authenticated users
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('[App] Starting automatic token refresh...')
+      tokenRefreshService.startAutoRefresh()
+    } else {
+      tokenRefreshService.stopAutoRefresh()
+    }
+
+    // Cleanup on unmount
+    return () => {
+      tokenRefreshService.stopAutoRefresh()
+    }
+  }, [isAuthenticated])
 
   return (
     <AntApp>

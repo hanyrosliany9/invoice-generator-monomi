@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import { getPublicUrl } from '../../../config/url.config';
 
 /**
  * Generate a cryptographically secure random token for guest invites
@@ -18,8 +19,11 @@ export function generateSecureToken(): string {
  * Generate guest invite link with token
  * @param token - The secure invite token
  * @returns Full URL for guest to accept invite
+ *
+ * Production: https://share.monomiagency.com/guest/accept?token={token}
+ * Development: http://localhost:3001/guest/accept?token={token}
  */
 export function generateGuestInviteLink(token: string): string {
-  const baseUrl = process.env.APP_URL || 'http://localhost:3001';
+  const baseUrl = getPublicUrl();
   return `${baseUrl}/guest/accept?token=${token}`;
 }

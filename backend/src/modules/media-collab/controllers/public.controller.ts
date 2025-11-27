@@ -1,5 +1,5 @@
-import { Controller, Get, Param, Put, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { Controller, Get, Param, Put, Body, Query, BadRequestException } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { MediaProjectsService } from '../services/media-projects.service';
 import { MediaAssetsService } from '../services/media-assets.service';
 import { MetadataService } from '../services/metadata.service';
@@ -16,6 +16,39 @@ export class PublicController {
     private readonly assetsService: MediaAssetsService,
     private readonly metadataService: MetadataService,
   ) {}
+
+  /**
+   * Validate public share token (for Cloudflare Worker)
+   *
+   * GET /media-collab/public/validate-token?token=xxx
+   * Query: token - Public share token to validate
+   *
+   * Returns project ID if token is valid, otherwise throws error.
+   * Used by Cloudflare Workers to validate public tokens before serving media.
+   */
+  @Get('validate-token')
+  @ApiOperation({ summary: 'Validate public share token for media access' })
+  @ApiQuery({ name: 'token', description: 'Public share token to validate', required: true })
+  @ApiResponse({ status: 200, description: 'Token is valid' })
+  @ApiResponse({ status: 400, description: 'No token provided' })
+  @ApiResponse({ status: 404, description: 'Token not found or project not public' })
+  async validatePublicToken(@Query('token') token: string) {
+    if (!token) {
+      throw new BadRequestException('No token provided');
+    }
+
+    // Validate token by attempting to get the public project
+    const project = await this.projectsService.getPublicProject(token);
+
+    return {
+      success: true,
+      data: {
+        projectId: project.id,
+        valid: true,
+        isPublic: true,
+      },
+    };
+  }
 
   /**
    * Get public project by share token

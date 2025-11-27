@@ -12,6 +12,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { ContentCalendarItem } from '../../services/content-calendar';
 import { getProxyUrl } from '../../utils/mediaProxy';
 import { downloadSingleMedia } from '../../utils/zipDownload';
+import { useMediaToken } from '../../hooks/useMediaToken';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -59,6 +60,7 @@ const getPlatformColor = (platform: string): string => {
 
 export const ContentPreviewModal: React.FC<Props> = ({ open, content, onClose }) => {
   const { token } = theme.useToken();
+  const { mediaToken } = useMediaToken();
   const [currentSlide, setCurrentSlide] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -139,7 +141,7 @@ export const ContentPreviewModal: React.FC<Props> = ({ open, content, onClose })
                     >
                       {isImage ? (
                         <Image
-                          src={getProxyUrl(media.url)}
+                          src={getProxyUrl(media.url, mediaToken)}
                           alt={`Media ${index + 1}`}
                           style={{
                             maxWidth: '100%',
@@ -153,7 +155,7 @@ export const ContentPreviewModal: React.FC<Props> = ({ open, content, onClose })
                       ) : isVideo ? (
                         <video
                           ref={videoRef}
-                          src={getProxyUrl(media.url)}
+                          src={getProxyUrl(media.url, mediaToken)}
                           controls
                           style={{
                             maxWidth: '100%',
@@ -161,7 +163,7 @@ export const ContentPreviewModal: React.FC<Props> = ({ open, content, onClose })
                             objectFit: 'contain',
                           }}
                           controlsList="nodownload"
-                          poster={media.thumbnailUrl ? getProxyUrl(media.thumbnailUrl) : undefined}
+                          poster={media.thumbnailUrl ? getProxyUrl(media.thumbnailUrl, mediaToken) : undefined}
                         >
                           Your browser does not support the video tag.
                         </video>

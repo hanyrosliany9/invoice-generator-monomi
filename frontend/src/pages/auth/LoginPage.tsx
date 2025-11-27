@@ -24,7 +24,7 @@ export const LoginPage: React.FC = () => {
   const loginMutation = useMutation({
     mutationFn: authService.login,
     onSuccess: data => {
-      login(data.user, data.access_token)
+      login(data.user, data.access_token, data.refresh_token, data.expires_in)
       navigate('/dashboard')
     },
   })

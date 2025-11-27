@@ -562,6 +562,51 @@ export class MediaAssetsService {
   }
 
   /**
+   * Bulk delete multiple assets
+   * Follows industry best practices: Google Drive (batch), Dropbox (async), Frame.io (bulk endpoint)
+   *
+   * Phase 1: Synchronous processing for up to 100 assets
+   * Returns detailed results with success/failure status per asset
+   *
+   * @param assetIds Array of asset IDs to delete (max 100)
+   * @param userId User performing the delete
+   * @returns Summary of deletion results with per-asset status
+   */
+  async bulkDeleteAssets(assetIds: string[], userId: string): Promise<{
+    total: number;
+    deleted: number;
+    failed: number;
+    results: Array<{ assetId: string; success: boolean; error?: string }>;
+  }> {
+    console.log(`[MediaAssetsService] Bulk delete started: ${assetIds.length} assets`);
+    const results = [];
+
+    for (const assetId of assetIds) {
+      try {
+        await this.remove(assetId, userId);
+        results.push({ assetId, success: true });
+        console.log(`[MediaAssetsService] Successfully deleted asset: ${assetId}`);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`[MediaAssetsService] Failed to delete asset ${assetId}: ${errorMessage}`);
+        results.push({ assetId, success: false, error: errorMessage });
+      }
+    }
+
+    const deleted = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
+
+    console.log(`[MediaAssetsService] Bulk delete completed: ${deleted}/${assetIds.length} successful, ${failed} failed`);
+
+    return {
+      total: assetIds.length,
+      deleted,
+      failed,
+      results: results.filter(r => !r.success), // Only return failures for debugging
+    };
+  }
+
+  /**
    * Determine media type from MIME type
    */
   private determineMediaType(mimeType: string): 'VIDEO' | 'IMAGE' | 'RAW_IMAGE' {

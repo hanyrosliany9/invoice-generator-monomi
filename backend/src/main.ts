@@ -7,6 +7,7 @@ import { initDatabase } from "./scripts/init-db";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 import { ValidationInterceptor } from "./common/interceptors/validation.interceptor";
 import { getErrorMessage } from "./common/utils/error-handling.util";
+import { validateUrls } from "./config/url.config";
 
 const logger = new Logger("Bootstrap");
 
@@ -61,9 +62,10 @@ async function bootstrap() {
     // CORS configuration with environment-based origin validation
     const isProduction = process.env.NODE_ENV === 'production';
     const allowedOrigins = isProduction
-      ? [process.env.FRONTEND_URL].filter(Boolean) // Production: Only FRONTEND_URL
+      ? [process.env.FRONTEND_URL, process.env.PUBLIC_URL].filter(Boolean) // Production: FRONTEND_URL + PUBLIC_URL for public share
       : [
           process.env.FRONTEND_URL || 'http://localhost:3001',
+          process.env.PUBLIC_URL || 'http://localhost:3000',
           'http://localhost:3001', // Dev frontend port
           'http://localhost:3000',
           'http://127.0.0.1:3001',
@@ -140,6 +142,9 @@ async function bootstrap() {
         "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css",
       ],
     });
+
+    // Validate URL configuration
+    validateUrls();
 
     const port = process.env.PORT || 5000;
     await app.listen(port, "0.0.0.0");

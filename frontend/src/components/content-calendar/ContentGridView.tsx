@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import type { ContentCalendarItem } from '../../services/content-calendar';
 import { getProxyUrl } from '../../utils/mediaProxy';
+import { useMediaToken } from '../../hooks/useMediaToken';
 
 interface ContentMedia {
   url: string;
@@ -91,6 +92,7 @@ export const ContentGridView: React.FC<Props> = ({
   loading
 }) => {
   const { token } = theme.useToken();
+  const { mediaToken } = useMediaToken();
 
   if (!loading && (!data || data.length === 0)) {
     return (
@@ -186,7 +188,7 @@ export const ContentGridView: React.FC<Props> = ({
                     {/* Media content */}
                     {item.media[0].mimeType?.startsWith('image') ? (
                       <img
-                        src={getProxyUrl(item.media[0].url)}
+                        src={getProxyUrl(item.media[0].url, mediaToken)}
                         style={{
                           position: 'absolute',
                           top: 0,
@@ -200,7 +202,7 @@ export const ContentGridView: React.FC<Props> = ({
                     ) : item.media[0].thumbnailUrl ? (
                       <>
                         <img
-                          src={getProxyUrl(item.media[0].thumbnailUrl)}
+                          src={getProxyUrl(item.media[0].thumbnailUrl, mediaToken)}
                           style={{
                             position: 'absolute',
                             top: 0,

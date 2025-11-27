@@ -4,8 +4,10 @@ import {
   BadRequestException,
   InternalServerErrorException,
   NotFoundException,
+  Optional,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { JwtService } from "@nestjs/jwt";
 import {
   S3Client,
   PutObjectCommand,
@@ -72,7 +74,10 @@ export class MediaService {
     "application/pdf", // PDF files
   ];
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() private readonly jwtService?: JwtService,
+  ) {
     // Load R2 configuration
     const r2Config = {
       accountId: this.configService.get<string>("R2_ACCOUNT_ID"),
@@ -89,10 +94,14 @@ export class MediaService {
     };
 
     this.bucketName = r2Config.bucketName || "content-media";
-    // ✅ CORS FIX: Use relative URL instead of absolute to allow Vite proxy to intercept requests
-    // This prevents cross-origin issues when frontend (port 3000) requests from backend (port 5000)
-    // Vite proxy will convert /api/* requests to http://localhost:5000/api/*
-    this.publicUrl = `/api/v1/media/proxy`;
+    // ✅ CLOUDFLARE WORKERS APPROACH: Media served via workers at media.monomiagency.com
+    // This keeps R2 bucket private while avoiding Cloudflare Tunnel ToS violations
+    // Workers validate JWT tokens and serve from R2 with CDN caching
+    // In development, still use proxy for Vite dev server compatibility
+    const isProduction = process.env.NODE_ENV === "production";
+    this.publicUrl = isProduction
+      ? (r2Config.endpoint || "https://media.monomiagency.com")  // Use Worker domain in production
+      : `/api/v1/media/proxy`;  // Dev: use proxy through Vite
     this.maxFileSizeMB = r2Config.maxFileSizeMB;
 
     // Initialize S3 client for R2
@@ -346,6 +355,121 @@ export class MediaService {
   }
 
   /**
+   * Generate media access token for Cloudflare Workers
+   *
+   * This token is used by the Cloudflare Worker to authenticate requests
+   * and serve media files from the private R2 bucket.
+   *
+   * Token payload:
+   * - userId: User ID who requested the token
+   * - purpose: 'media-access'
+   * - iat: Issued at timestamp
+   * - exp: Expiration timestamp (24 hours)
+   *
+   * @param userId - ID of the user requesting media access
+   * @returns JWT token valid for 24 hours
+   */
+  async generateMediaAccessToken(userId: string): Promise<string> {
+    if (!this.jwtService) {
+      throw new InternalServerErrorException(
+        'JwtService not available. Media token generation is not configured.',
+      );
+    }
+
+    try {
+      const payload = {
+        sub: userId,
+        purpose: 'media-access',
+        iat: Math.floor(Date.now() / 1000),
+      };
+
+      // Token expires in 24 hours (configured in media.module.ts)
+      const token = this.jwtService.sign(payload);
+
+      this.logger.debug(`✅ Generated media access token for user: ${userId}`);
+
+      return token;
+    } catch (error) {
+      this.logger.error(`❌ Failed to generate media access token:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new InternalServerErrorException(
+        `Failed to generate media access token: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Validate media access token
+   *
+   * Verifies the JWT token and returns the user ID if valid.
+   * Used for token validation before serving media files.
+   *
+   * @param token - JWT token to validate
+   * @returns User ID if token is valid
+   * @throws UnauthorizedException if token is invalid or expired
+   */
+  async validateMediaAccessToken(token: string): Promise<string> {
+    if (!this.jwtService) {
+      throw new InternalServerErrorException(
+        'JwtService not available. Media token validation is not configured.',
+      );
+    }
+
+    try {
+      const payload = this.jwtService.verify(token);
+
+      if (payload.purpose !== 'media-access') {
+        throw new Error('Invalid token purpose');
+      }
+
+      this.logger.debug(`✅ Validated media access token for user: ${payload.sub}`);
+
+      return payload.sub;
+    } catch (error) {
+      this.logger.error(`❌ Failed to validate media access token:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new InternalServerErrorException(
+        `Failed to validate media access token: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Generate a presigned URL for secure, temporary access to R2 object
+   *
+   * @param key - R2 object key (e.g., "content/2025-11-19/abc123-photo.jpg")
+   * @param expiresIn - URL expiration time in seconds (default: 3600 = 1 hour)
+   * @returns Presigned URL that expires after specified time
+   */
+  async getPresignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+    if (!this.isR2Enabled()) {
+      throw new InternalServerErrorException(
+        "Presigned URLs are not available. R2 storage is not configured.",
+      );
+    }
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      });
+
+      // Generate presigned URL (AWS SDK compatible)
+      const presignedUrl = await getSignedUrl(this.s3Client, command, { expiresIn });
+
+      this.logger.debug(`✅ Generated presigned URL for: ${key} (expires in ${expiresIn}s)`);
+
+      return presignedUrl;
+    } catch (error) {
+      this.logger.error(`❌ Failed to generate presigned URL for ${key}:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new InternalServerErrorException(
+        `Failed to generate presigned URL: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
    * Get file stream from R2 for proxying
    *
    * @param key - R2 object key
@@ -396,38 +520,6 @@ export class MediaService {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new InternalServerErrorException(
         `Failed to get file stream: ${errorMessage}`,
-      );
-    }
-  }
-
-  /**
-   * Generate a presigned URL for temporary access (optional)
-   *
-   * @param key - R2 object key
-   * @param expiresIn - Expiration time in seconds (default: 3600 = 1 hour)
-   * @returns Presigned URL
-   */
-  async getPresignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
-    if (!this.isR2Enabled()) {
-      throw new InternalServerErrorException(
-        "Presigned URL generation is not available. R2 storage is not configured.",
-      );
-    }
-
-    try {
-      const command = new GetObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
-      });
-
-      const url = await getSignedUrl(this.s3Client, command, { expiresIn });
-
-      return url;
-    } catch (error) {
-      this.logger.error(`❌ Failed to generate presigned URL:`, error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new InternalServerErrorException(
-        `Failed to generate presigned URL: ${errorMessage}`,
       );
     }
   }

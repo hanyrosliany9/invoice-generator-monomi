@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Layout, Result, Spin, Typography, Card, Empty, Image, Tag } from 'antd';
 import { LockOutlined, EyeOutlined } from '@ant-design/icons';
 import { mediaCollabService } from '../services/media-collab';
+import { getProxyUrl } from '../utils/mediaProxy';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -46,7 +47,7 @@ export const GuestProjectViewPage: React.FC = () => {
   }
 
   return (
-    <Layout className="min-h-screen bg-gray-50">
+    <Layout className="min-h-screen h-auto bg-gray-50">
       {/* Simple header (no navigation) */}
       <Header className="bg-white shadow-sm px-6 flex items-center justify-between">
         <div>
@@ -89,20 +90,34 @@ export const GuestProjectViewPage: React.FC = () => {
                   key={asset.id}
                   hoverable
                   cover={
-                    asset.thumbnailUrl ? (
-                      <Image
-                        src={asset.thumbnailUrl}
-                        alt={asset.originalName}
-                        className="object-cover h-48"
-                        preview={{
-                          src: asset.url,
-                        }}
-                      />
-                    ) : (
-                      <div className="h-48 bg-gray-200 flex items-center justify-center">
-                        <Text type="secondary">{asset.mediaType}</Text>
-                      </div>
-                    )
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', overflow: 'hidden', borderRadius: '8px 8px 0 0' }}>
+                      {asset.thumbnailUrl ? (
+                        <Image
+                          src={getProxyUrl(asset.thumbnailUrl, token)}
+                          alt={`${asset.mediaType} - ${asset.originalName}`}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            objectPosition: 'center',
+                          }}
+                          preview={{
+                            src: getProxyUrl(asset.url, token),
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '100%',
+                          height: '100%',
+                          background: '#f0f0f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <Text type="secondary">{asset.mediaType}</Text>
+                        </div>
+                      )}
+                    </div>
                   }
                 >
                   <Card.Meta

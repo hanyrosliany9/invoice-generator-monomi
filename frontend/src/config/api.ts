@@ -94,7 +94,8 @@ const performTokenRefresh = async (): Promise<string> => {
       headers: DEFAULT_HEADERS,
     });
 
-    const { access_token, refresh_token: new_refresh_token, expires_in } = response.data;
+    // Backend wraps response in ApiResponse { data: {...}, message, status, timestamp }
+    const { access_token, refresh_token: new_refresh_token, expires_in } = response.data.data;
 
     // Update tokens in store atomically
     updateTokens(access_token, new_refresh_token, expires_in);
@@ -142,6 +143,13 @@ apiClient.interceptors.response.use(
 
     // Skip handling for non-401 errors or missing config
     if (!originalRequest || error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
+
+    // Skip token refresh for auth endpoints (login, register, refresh)
+    // These endpoints don't need token refresh - they ARE the auth flow
+    const authEndpoints = ['/auth/login', '/auth/register', '/auth/refresh'];
+    if (authEndpoints.some(endpoint => originalRequest.url?.includes(endpoint))) {
       return Promise.reject(error);
     }
 

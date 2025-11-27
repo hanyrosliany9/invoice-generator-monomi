@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Query,
   Body,
   Req,
   UseInterceptors,
@@ -18,6 +19,7 @@ import {
 import { Response } from "express";
 import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express";
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -164,6 +166,114 @@ export class MediaController {
     return {
       success: true,
       data: results,
+    };
+  }
+
+  /**
+   * Generate media access token for Cloudflare Workers
+   *
+   * POST /media/access-token
+   * Requires: JWT authentication
+   *
+   * Returns a token that can be used in media URLs served by Cloudflare Workers.
+   * Token is valid for 24 hours and tied to the authenticated user.
+   *
+   * Usage: https://media.monomiagency.com/view/{TOKEN}/{key}
+   *
+   * Rate Limiting: Exempt from global rate limiting since:
+   * - Tokens last 24 hours (low request frequency)
+   * - Frontend uses global singleton store (request deduplication)
+   * - Critical for media loading across the app
+   */
+  @Post("access-token")
+  @SkipThrottle() // Exempt from rate limiting
+  @ApiOperation({ summary: "Generate media access token for Cloudflare Workers" })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async generateMediaAccessToken(@Req() req: any) {
+    const userId = req.user.id;
+
+    this.logger.log(`Generating media access token for user: ${userId}`);
+
+    const token = await this.mediaService.generateMediaAccessToken(userId);
+
+    return {
+      success: true,
+      data: {
+        token,
+        expiresIn: 86400, // 24 hours in seconds
+        expiresAt: new Date(Date.now() + 86400 * 1000).toISOString(),
+        usage: `https://media.monomiagency.com/view/${token}/content/file.jpg`,
+      },
+    };
+  }
+
+  /**
+   * Validate media access token
+   *
+   * GET /media/validate-token?token=xxx
+   * Query: token - Media access token to validate
+   *
+   * Returns user ID if token is valid, otherwise throws error.
+   * Used by Cloudflare Workers to validate tokens before serving media.
+   */
+  @Get("validate-token")
+  @ApiOperation({ summary: "Validate media access token" })
+  async validateMediaAccessToken(@Query("token") token: string) {
+    if (!token) {
+      throw new BadRequestException("No token provided");
+    }
+
+    this.logger.log(`Validating media access token`);
+
+    const userId = await this.mediaService.validateMediaAccessToken(token);
+
+    return {
+      success: true,
+      data: {
+        userId,
+        valid: true,
+      },
+    };
+  }
+
+  /**
+   * Generate presigned URL for secure, temporary access to media
+   *
+   * GET /media/presigned-url?key=xxx&expiresIn=3600
+   * Query: key - R2 object key
+   * Query: expiresIn - Expiration time in seconds (optional, default: 3600 = 1 hour)
+   *
+   * Returns a temporary signed URL that expires after the specified time.
+   * This keeps R2 bucket private while providing secure access.
+   *
+   * NOTE: This endpoint is deprecated in favor of Cloudflare Workers approach.
+   * Use /media/access-token instead for better performance and caching.
+   */
+  @Get("presigned-url")
+  @ApiOperation({ summary: "Generate presigned URL for private R2 access (DEPRECATED)" })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async getPresignedUrl(
+    @Query("key") key: string,
+    @Query("expiresIn") expiresIn?: string,
+  ) {
+    if (!key) {
+      throw new BadRequestException("No file key provided");
+    }
+
+    const expiry = expiresIn ? parseInt(expiresIn, 10) : 3600; // Default: 1 hour
+
+    if (expiry < 60 || expiry > 604800) {
+      throw new BadRequestException("expiresIn must be between 60 (1 min) and 604800 (7 days)");
+    }
+
+    const url = await this.mediaService.getPresignedUrl(key, expiry);
+
+    return {
+      url,
+      expiresIn: expiry,
+      expiresAt: new Date(Date.now() + expiry * 1000).toISOString(),
     };
   }
 

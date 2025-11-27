@@ -3,12 +3,14 @@ import { Radio, Slider, Card, Space, theme, Spin, Typography } from 'antd';
 import { SwapOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { mediaCollabService } from '../../services/media-collab';
+import { getProxyUrl } from '../../utils/mediaProxy';
 
 const { Text } = Typography;
 
 interface ComparisonViewProps {
   assetIds: string[];
   onClose?: () => void;
+  mediaToken?: string | null;
 }
 
 type ComparisonMode = 'side-by-side' | 'overlay' | 'swipe';
@@ -23,6 +25,7 @@ type ComparisonMode = 'side-by-side' | 'overlay' | 'swipe';
 export const ComparisonView: React.FC<ComparisonViewProps> = ({
   assetIds,
   onClose,
+  mediaToken,
 }) => {
   const { token } = theme.useToken();
   const [mode, setMode] = useState<ComparisonMode>('side-by-side');
@@ -84,7 +87,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
               bodyStyle={{ height: 'calc(100% - 40px)', padding: 0, overflow: 'hidden' }}
             >
               <img
-                src={asset.url}
+                src={getProxyUrl(asset.url, mediaToken)}
                 alt={asset.originalName}
                 style={{
                   width: '100%',
@@ -121,7 +124,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
       >
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <img
-            src={asset1.url}
+            src={getProxyUrl(asset1.url, mediaToken)}
             alt={asset1.filename}
             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
           />
@@ -134,7 +137,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
       >
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <img
-            src={asset2.url}
+            src={getProxyUrl(asset2.url, mediaToken)}
             alt={asset2.filename}
             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
           />
@@ -168,7 +171,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
         }}
       >
         <img
-          src={asset1.url}
+          src={getProxyUrl(asset1.url, mediaToken)}
           alt={asset1.filename}
           style={{
             position: 'absolute',
@@ -178,7 +181,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
           }}
         />
         <img
-          src={asset2.url}
+          src={getProxyUrl(asset2.url, mediaToken)}
           alt={asset2.filename}
           style={{
             position: 'absolute',
@@ -219,7 +222,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
           }}
         >
           <img
-            src={asset1.url}
+            src={getProxyUrl(asset1.url, mediaToken)}
             alt={asset1.filename}
             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
           />
@@ -240,7 +243,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
           }}
         >
           <img
-            src={asset2.url}
+            src={getProxyUrl(asset2.url, mediaToken)}
             alt={asset2.filename}
             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
           />

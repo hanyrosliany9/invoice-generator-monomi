@@ -1,0 +1,25 @@
+# Wrangler configuration for Media Delivery Worker
+# Docs: https://developers.cloudflare.com/workers/wrangler/configuration/
+
+name = "media-monomi"
+main = "media-worker.js"
+compatibility_date = "2025-01-15"
+account_id = "209896b6231b1f8246620be3ab526b3f"
+
+# R2 bucket binding
+[[r2_buckets]]
+binding = "MY_BUCKET"
+bucket_name = "monomi-finance"
+
+# Custom domain configuration
+routes = [
+  { pattern = "media.monomiagency.com/*", custom_domain = true }
+]
+
+# Environment variables (secrets, set via CLI)
+# wrangler secret put BACKEND_URL
+# wrangler secret put TOKEN_SECRET
+
+[vars]
+# Non-secret environment variables (optional)
+# BACKEND_URL will be set as secret instead

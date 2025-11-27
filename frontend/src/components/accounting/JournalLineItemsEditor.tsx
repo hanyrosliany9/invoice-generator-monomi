@@ -60,6 +60,51 @@ const CreditCell = memo<{
 DebitCell.displayName = 'DebitCell';
 CreditCell.displayName = 'CreditCell';
 
+// Memoized AccountSelectorCell to prevent unnecessary re-renders when other cells change
+const AccountSelectorCell = memo<{
+  value: string;
+  index: number;
+  onChange: (index: number, code: string, account: any) => void;
+  disabled: boolean;
+}>(
+  ({ value, index, onChange, disabled }) => (
+    <AccountSelector
+      value={value}
+      onChange={(code, account) => onChange(index, code, account)}
+      disabled={disabled}
+      placeholder="Pilih akun..."
+    />
+  ),
+  (prevProps, nextProps) => {
+    // Only re-render if value or disabled changes
+    return prevProps.value === nextProps.value && prevProps.disabled === nextProps.disabled;
+  }
+);
+
+AccountSelectorCell.displayName = 'AccountSelectorCell';
+
+// Memoized DescriptionCell to prevent unnecessary re-renders
+const DescriptionCell = memo<{
+  value: string;
+  index: number;
+  onChange: (index: number, field: string, value: string) => void;
+  disabled: boolean;
+}>(
+  ({ value, index, onChange, disabled }) => (
+    <Input
+      value={value}
+      onChange={(e) => onChange(index, 'descriptionId', e.target.value)}
+      placeholder="Deskripsi (opsional)"
+      disabled={disabled}
+    />
+  ),
+  (prevProps, nextProps) => {
+    return prevProps.value === nextProps.value && prevProps.disabled === nextProps.disabled;
+  }
+);
+
+DescriptionCell.displayName = 'DescriptionCell';
+
 export interface JournalLineItemFormData {
   id?: string;
   accountCode: string;
@@ -83,7 +128,17 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const handleAddLine = () => {
+  // Use refs to store current value and onChange to avoid recreating callbacks
+  const valueRef = React.useRef(value);
+  const onChangeRef = React.useRef(onChange);
+
+  // Keep refs updated
+  React.useEffect(() => {
+    valueRef.current = value;
+    onChangeRef.current = onChange;
+  }, [value, onChange]);
+
+  const handleAddLine = useCallback(() => {
     const newLine: JournalLineItemFormData = {
       id: `line-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       accountCode: '',
@@ -92,54 +147,53 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
       debit: 0,
       credit: 0,
     };
-    onChange?.([...value, newLine]);
-  };
+    onChangeRef.current?.([...valueRef.current, newLine]);
+  }, []);
 
-  // Ensure all items have unique IDs - memoized to prevent unnecessary re-renders
+  // Ensure all items have unique IDs
   const dataSourceWithIds = React.useMemo(() => {
     return value.map((item, index) => {
-      // Ensure item ALWAYS has a stable ID - create a new object if ID is missing
-      if (!item.id) {
-        return {
-          ...item,
-          id: `line-${index}-${Math.random().toString(36).substr(2, 9)}`,
-        };
+      if (item.id) {
+        return item;
       }
-      return item;
+      return {
+        ...item,
+        id: `line-${index}-${Date.now()}`,
+      };
     });
   }, [value]);
 
   const handleRemoveLine = useCallback((index: number) => {
-    if (value.length <= 2) {
+    if (valueRef.current.length <= 2) {
       message.warning('Minimal 2 item baris diperlukan untuk jurnal entry');
       return;
     }
-    const newValue = [...value];
+    const newValue = [...valueRef.current];
     newValue.splice(index, 1);
-    onChange?.(newValue);
-  }, [onChange, value]);
+    onChangeRef.current?.(newValue);
+  }, []);
 
-  const handleFieldChange = useCallback((index: number, field: keyof JournalLineItemFormData, fieldValue: any) => {
-    const newValue = [...value];
+  const handleFieldChange = useCallback((index: number, field: string, fieldValue: any) => {
+    const newValue = [...valueRef.current];
     newValue[index] = { ...newValue[index], [field]: fieldValue };
-    onChange?.(newValue);
-  }, [onChange, value]);
+    onChangeRef.current?.(newValue);
+  }, []);
 
-  // Handle debit input
+  // Handle debit input - stable callback using ref
   const handleDebitChange = useCallback((index: number, val: number | null) => {
     const numVal = val || 0;
-    const newValue = [...value];
+    const newValue = [...valueRef.current];
     newValue[index] = { ...newValue[index], debit: numVal };
-    onChange?.(newValue);
-  }, [onChange, value]);
+    onChangeRef.current?.(newValue);
+  }, []);
 
-  // Handle credit input
+  // Handle credit input - stable callback using ref
   const handleCreditChange = useCallback((index: number, val: number | null) => {
     const numVal = val || 0;
-    const newValue = [...value];
+    const newValue = [...valueRef.current];
     newValue[index] = { ...newValue[index], credit: numVal };
-    onChange?.(newValue);
-  }, [onChange, value]);
+    onChangeRef.current?.(newValue);
+  }, []);
 
   // Calculate totals
   const totalDebit = value.reduce((sum, item) => sum + (item.debit || 0), 0);
@@ -155,9 +209,9 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
     }).format(amount);
   }, []);
 
-  // Handle account selection
+  // Handle account selection - stable callback using ref
   const handleAccountChange = useCallback((index: number, code: string, account: any) => {
-    const newValue = [...value];
+    const newValue = [...valueRef.current];
     if (index >= 0 && index < newValue.length) {
       newValue[index] = {
         ...newValue[index],
@@ -165,8 +219,11 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
         accountName: account ? (account.nameId || account.name) : '',
       };
     }
-    onChange?.(newValue);
-  }, [onChange, value]);
+    onChangeRef.current?.(newValue);
+  }, []);
+
+  // Track value length separately to avoid full re-render on value changes
+  const valueLength = value.length;
 
   const columns = React.useMemo(() => [
     {
@@ -174,16 +231,14 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
       dataIndex: 'accountCode',
       key: 'accountCode',
       width: 250,
-      render: (text: string, record: JournalLineItemFormData, index: number) => {
-        return (
-          <AccountSelector
-            value={text}
-            onChange={(code, account) => handleAccountChange(index, code, account)}
-            disabled={disabled}
-            placeholder="Pilih akun..."
-          />
-        );
-      },
+      render: (text: string, record: JournalLineItemFormData, index: number) => (
+        <AccountSelectorCell
+          value={text}
+          index={index}
+          onChange={handleAccountChange}
+          disabled={disabled}
+        />
+      ),
     },
     {
       title: <Text strong>Nama Akun</Text>,
@@ -202,10 +257,10 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
       key: 'descriptionId',
       width: 250,
       render: (text: string, record: JournalLineItemFormData, index: number) => (
-        <Input
+        <DescriptionCell
           value={text}
-          onChange={(e) => handleFieldChange(index, 'descriptionId', e.target.value)}
-          placeholder="Deskripsi (opsional)"
+          index={index}
+          onChange={handleFieldChange}
           disabled={disabled}
         />
       ),
@@ -254,11 +309,11 @@ const JournalLineItemsEditor: React.FC<JournalLineItemsEditorProps> = ({
             // Use index parameter directly - it's reliable because rowKey="id"
             handleRemoveLine(index);
           }}
-          disabled={disabled || value.length <= 2}
+          disabled={disabled || valueLength <= 2}
         />
       ),
     },
-  ], [value, handleAccountChange, handleDebitChange, handleCreditChange, disabled, handleRemoveLine, handleFieldChange])
+  ], [valueLength, disabled])
   ;
 
   return (
