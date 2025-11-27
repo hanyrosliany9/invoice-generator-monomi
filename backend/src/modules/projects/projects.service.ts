@@ -458,18 +458,28 @@ export class ProjectsService {
     const now = new Date();
     const year = now.getFullYear();
     const month = (now.getMonth() + 1).toString().padStart(2, "0");
+    const prefix = `PRJ-${typePrefix}-${year}${month}-`;
 
-    // Count existing projects for this type and month
-    const existingProjects = await this.prisma.project.count({
-      where: {
-        number: {
-          startsWith: `PRJ-${typePrefix}-${year}${month}-`,
-        },
-      },
-    });
+    // Use raw query with FOR UPDATE to lock and get max sequence atomically
+    // This prevents race conditions when multiple requests come in simultaneously
+    const result = await this.prisma.$queryRaw<Array<{ number: string }>>`
+      SELECT number
+      FROM projects
+      WHERE number LIKE ${prefix + '%'}
+      ORDER BY number DESC
+      LIMIT 1
+      FOR UPDATE
+    `;
 
-    const sequence = (existingProjects + 1).toString().padStart(3, "0");
-    return `PRJ-${typePrefix}-${year}${month}-${sequence}`;
+    let sequence = 1;
+    if (result.length > 0) {
+      // Extract sequence from last number (e.g., "PRJ-PH-202511-002" -> 2)
+      const lastNumber = result[0].number;
+      const lastSequence = parseInt(lastNumber.split('-').pop() || '0', 10);
+      sequence = lastSequence + 1;
+    }
+
+    return `${prefix}${sequence.toString().padStart(3, "0")}`;
   }
 
   async getProjectStats() {
