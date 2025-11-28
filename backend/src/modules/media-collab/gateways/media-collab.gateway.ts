@@ -21,13 +21,15 @@ import { JwtService } from '@nestjs/jwt';
  * - Presence system (who's viewing what)
  * - Playhead synchronization for video review
  *
- * Production: Dedicated port 8081 via Cloudflare Tunnel #2 (ws.monomiagency.com)
- * Development: Same port as main app (5000)
+ * Uses same port as main HTTP server (5000) - WebSocket upgrades handled by nginx
+ * Production: ws.monomiagency.com → nginx:80 → app:5000
+ * Development: localhost:5000
  */
 @WebSocketGateway({
-  port: process.env.NODE_ENV === 'production' ? parseInt(process.env.WEBSOCKET_PORT || '8081') : undefined,
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    origin: process.env.NODE_ENV === 'production'
+      ? [process.env.FRONTEND_URL, process.env.PUBLIC_URL, process.env.WEBSOCKET_CORS_ORIGIN].filter(Boolean)
+      : ['http://localhost:3001', 'http://localhost:3000'],
     credentials: true,
   },
   namespace: '/media-collab',
