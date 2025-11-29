@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout, Card, Button, Space, Tabs, Spin, App, Breadcrumb, theme, Modal, Form, Input, Tooltip, Typography } from 'antd';
 import {
@@ -519,14 +519,77 @@ export const MediaProjectDetailPage: React.FC = () => {
     });
   };
 
-  const navigateToAsset = (direction: 'prev' | 'next') => {
-    if (!assets || !selectedAsset) return;
+  // Compute navigable assets list for lightbox navigation
+  // This handles both root level and folder level, with filters applied
+  const navigableAssets = useMemo(() => {
+    // Get base assets based on current location
+    let baseAssets = currentFolderId
+      ? folderContents?.assets || []
+      : assets?.filter(asset => !asset.folderId) || [];
 
-    const currentIndex = assets.findIndex((a) => a.id === selectedAsset.id);
+    // Apply client-side filters (same logic as in render)
+    if (baseAssets.length > 0) {
+      // Media type filter
+      if (filters.mediaType) {
+        baseAssets = baseAssets.filter(asset => asset.mediaType === filters.mediaType);
+      }
+      // Status filter
+      if (filters.status) {
+        baseAssets = baseAssets.filter(asset => asset.status === filters.status);
+      }
+      // Star rating filter
+      if (filters.starRating) {
+        baseAssets = baseAssets.filter(asset =>
+          asset.starRating && asset.starRating >= filters.starRating!
+        );
+      }
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        baseAssets = baseAssets.filter(asset =>
+          asset.originalName.toLowerCase().includes(searchLower) ||
+          asset.description?.toLowerCase().includes(searchLower)
+        );
+      }
+      // Sort
+      if (filters.sortBy) {
+        baseAssets = [...baseAssets].sort((a, b) => {
+          let comparison = 0;
+          switch (filters.sortBy) {
+            case 'uploadedAt':
+              comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
+              break;
+            case 'originalName':
+              comparison = a.originalName.localeCompare(b.originalName);
+              break;
+            case 'size':
+              comparison = (Number(a.size) || 0) - (Number(b.size) || 0);
+              break;
+            case 'starRating':
+              comparison = (a.starRating || 0) - (b.starRating || 0);
+              break;
+          }
+          return filters.sortOrder === 'asc' ? comparison : -comparison;
+        });
+      }
+    }
+
+    // Filter to only include images (navigable in lightbox)
+    return baseAssets.filter(asset =>
+      asset.mediaType === 'IMAGE' || asset.mediaType === 'RAW_IMAGE'
+    );
+  }, [assets, folderContents?.assets, currentFolderId, filters]);
+
+  const navigateToAsset = (direction: 'prev' | 'next') => {
+    if (!navigableAssets.length || !selectedAsset) return;
+
+    const currentIndex = navigableAssets.findIndex((a) => a.id === selectedAsset.id);
+    if (currentIndex === -1) return;
+
     const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
 
-    if (newIndex >= 0 && newIndex < assets.length) {
-      setSelectedAsset(assets[newIndex]);
+    if (newIndex >= 0 && newIndex < navigableAssets.length) {
+      setSelectedAsset(navigableAssets[newIndex]);
     }
   };
 
@@ -986,8 +1049,8 @@ export const MediaProjectDetailPage: React.FC = () => {
             onClose={() => setLightboxVisible(false)}
             onPrevious={() => navigateToAsset('prev')}
             onNext={() => navigateToAsset('next')}
-            hasPrevious={assets ? assets.findIndex((a) => a.id === selectedAsset.id) > 0 : false}
-            hasNext={assets ? assets.findIndex((a) => a.id === selectedAsset.id) < assets.length - 1 : false}
+            hasPrevious={navigableAssets.findIndex((a) => a.id === selectedAsset.id) > 0}
+            hasNext={navigableAssets.findIndex((a) => a.id === selectedAsset.id) < navigableAssets.length - 1}
           />
         )}
 

@@ -416,6 +416,14 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   const [localAssets, setLocalAssets] = useState<MediaAsset[]>([]); // Local reordered assets
   const gridContainerRef = useRef<HTMLDivElement | null>(null); // Ref for drag-to-select container
 
+  // Detect mobile device for simplified interactions
+  const isMobile = React.useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+           ('ontouchstart' in window) ||
+           (window.innerWidth <= 768);
+  }, []);
+
   // Fetch assets from API if projectId provided, otherwise use propAssets
   const { data: fetchedAssets, isLoading, refetch } = useQuery({
     queryKey: ['media-assets', projectId, filters],
@@ -1286,15 +1294,10 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
           }}
           styles={{ body: { padding: 8 } }}
           onClick={() => {
-            // Detect mobile device
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
-                             ('ontouchstart' in window) ||
-                             (window.innerWidth <= 768);
-
             if (isSelecting || selectedAssets.length > 0) {
               toggleSelection(asset.id);
             } else if (isMobile && onAssetClick) {
-              // On mobile, single tap opens the asset viewer
+              // On mobile, single tap opens the asset viewer directly
               onAssetClick(asset);
             }
           }}
@@ -1384,8 +1387,8 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                 />
               </div>
 
-              {/* Action Buttons Overlay - Only show when NOT in selection mode */}
-              {!isSelecting && selectedAssets.length === 0 && (
+              {/* Action Buttons Overlay - Only show on desktop when NOT in selection mode */}
+              {!isSelecting && selectedAssets.length === 0 && !isMobile && (
                 <div
                   className="media-actions-overlay"
                   style={{
@@ -1636,15 +1639,10 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
           }}
           styles={{ body: { padding: 8 } }}
           onClick={() => {
-            // Detect mobile device
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
-                             ('ontouchstart' in window) ||
-                             (window.innerWidth <= 768);
-
             if (isSelecting || selectedAssets.length > 0) {
               toggleSelection(asset.id);
             } else if (isMobile && onAssetClick) {
-              // On mobile, single tap opens the asset viewer
+              // On mobile, single tap opens the asset viewer directly
               onAssetClick(asset);
             }
           }}
@@ -1734,8 +1732,8 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                 />
               </div>
 
-              {/* Action Buttons Overlay - Only show when NOT in selection mode */}
-              {!isSelecting && selectedAssets.length === 0 && (
+              {/* Action Buttons Overlay - Only show on desktop when NOT in selection mode */}
+              {!isSelecting && selectedAssets.length === 0 && !isMobile && (
                 <div
                   className="media-actions-overlay"
                   style={{
@@ -2034,17 +2032,12 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               : undefined
           }
           onRow={(record) => {
-            // Detect mobile device
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
-                             ('ontouchstart' in window) ||
-                             (window.innerWidth <= 768);
-
             return {
               onClick: () => {
                 if (isSelecting || selectedAssets.length > 0) {
                   toggleSelection(record.id);
                 } else if (isMobile && onAssetClick) {
-                  // On mobile, single tap opens the asset viewer
+                  // On mobile, single tap opens the asset viewer directly
                   onAssetClick(record);
                 }
               },
