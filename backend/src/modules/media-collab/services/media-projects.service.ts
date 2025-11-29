@@ -602,7 +602,30 @@ export class MediaProjectsService {
 
     return this.prisma.mediaAsset.findMany({
       where: { projectId: project.id },
-      include: {
+      select: {
+        id: true,
+        projectId: true,
+        folderId: true,
+        filename: true,
+        originalName: true,
+        description: true,
+        url: true,
+        key: true,
+        thumbnailUrl: true,
+        mediaType: true,
+        mimeType: true,
+        size: true,
+        width: true,
+        height: true,
+        duration: true,
+        fps: true,
+        codec: true,
+        bitrate: true,
+        status: true,
+        starRating: true,
+        uploadedBy: true,
+        uploadedAt: true,
+        updatedAt: true,
         uploader: {
           select: {
             id: true,

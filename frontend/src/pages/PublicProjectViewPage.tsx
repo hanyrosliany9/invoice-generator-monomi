@@ -811,11 +811,6 @@ export const PublicProjectViewPage: React.FC = () => {
             padding: 8px !important;
           }
 
-          .asset-list-thumbnail {
-            width: 60px !important;
-            height: 60px !important;
-          }
-
           .ant-modal {
             max-width: 95vw !important;
             margin: 8px !important;
@@ -1557,72 +1552,18 @@ export const PublicProjectViewPage: React.FC = () => {
                 >
                   <List.Item.Meta
                     avatar={
-                      <div style={{ position: 'relative' }}>
-                        {/* Selection Checkbox */}
-                        {(isSelecting || selectedAssets.includes(asset.id)) && (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              top: -4,
-                              left: -4,
-                              zIndex: 2,
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleSelection(asset.id);
-                            }}
-                          >
-                            <Checkbox
-                              checked={selectedAssets.includes(asset.id)}
-                            />
-                          </div>
-                        )}
+                      (isSelecting || selectedAssets.includes(asset.id)) ? (
                         <div
-                          className="asset-list-thumbnail"
-                          style={{
-                            width: 80,
-                            height: 80,
-                            borderRadius: 4,
-                            overflow: 'hidden',
-                            background: themeToken.colorBgContainer,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            position: 'relative',
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSelection(asset.id);
                           }}
                         >
-                        {asset.thumbnailUrl || asset.url ? (
-                          <img
-                            src={asset.thumbnailUrl || asset.url}
-                            alt={asset.originalName}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                            }}
+                          <Checkbox
+                            checked={selectedAssets.includes(asset.id)}
                           />
-                        ) : (
-                          asset.mediaType === 'VIDEO' ? (
-                            <VideoCameraOutlined style={{ fontSize: 32, color: themeToken.colorTextTertiary }} />
-                          ) : (
-                            <FileImageOutlined style={{ fontSize: 32, color: themeToken.colorTextTertiary }} />
-                          )
-                        )}
-                        {asset.mediaType === 'VIDEO' && asset.duration && (
-                          <Badge
-                            count={formatDuration(asset.duration)}
-                            style={{
-                              position: 'absolute',
-                              bottom: 4,
-                              right: 4,
-                              background: themeToken.colorBgMask,
-                              color: themeToken.colorTextLightSolid,
-                              fontSize: 10,
-                            }}
-                          />
-                        )}
                         </div>
-                      </div>
+                      ) : undefined
                     }
                     title={
                       <Space>

@@ -925,6 +925,7 @@ export const MediaProjectDetailPage: React.FC = () => {
         <UploadMediaModal
           visible={uploadModalVisible}
           projectId={projectId!}
+          folderId={currentFolderId}
           onClose={() => setUploadModalVisible(false)}
           onSuccess={handleUploadSuccess}
         />

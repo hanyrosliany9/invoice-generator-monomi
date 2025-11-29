@@ -13,6 +13,7 @@ const { Text } = Typography;
 interface UploadMediaModalProps {
   visible: boolean;
   projectId: string;
+  folderId?: string | null;
   onClose: () => void;
   onSuccess?: () => void;
 }
@@ -52,6 +53,7 @@ interface UploadQueueItem {
 export const UploadMediaModal: React.FC<UploadMediaModalProps> = ({
   visible,
   projectId,
+  folderId,
   onClose,
   onSuccess,
 }) => {
@@ -124,7 +126,7 @@ export const UploadMediaModal: React.FC<UploadMediaModalProps> = ({
         projectId,
         file,
         description,
-        undefined, // folderId
+        folderId || undefined,
         resolution,
         (progressEvent) => {
           const { loaded, total } = progressEvent;

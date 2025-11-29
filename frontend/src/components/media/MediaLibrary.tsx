@@ -278,17 +278,8 @@ const FolderDropZone: React.FC<FolderDropZoneProps> = ({
                    (window.innerWidth <= 768);
 
   const handleFolderClick = (e: React.MouseEvent) => {
-    // On mobile, single click opens folder
-    // On desktop, only double-click opens folder
-    if (isMobile && onDoubleClick) {
-      e.stopPropagation();
-      onDoubleClick();
-    }
-  };
-
-  const handleFolderDoubleClick = (e: React.MouseEvent) => {
-    // Desktop double-click
-    if (!isMobile && onDoubleClick) {
+    // Single click opens folder on all devices
+    if (onDoubleClick) {
       e.stopPropagation();
       onDoubleClick();
     }
@@ -310,7 +301,7 @@ const FolderDropZone: React.FC<FolderDropZoneProps> = ({
         transform: isOver ? 'scale(1.02)' : 'scale(1)',
       }}
     >
-      <div onClick={handleFolderClick} onDoubleClick={handleFolderDoubleClick}>
+      <div onClick={handleFolderClick}>
         <Space align="start">
           <FolderOutlined style={{ fontSize: 32, color: isOver ? token.colorPrimary : token.colorTextSecondary }} />
           <div>
@@ -1953,22 +1944,8 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                     borderRadius: 8,
                   }}
                   onClick={() => {
-                    // Detect mobile device
-                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
-                                     ('ontouchstart' in window) ||
-                                     (window.innerWidth <= 768);
-                    // On mobile, single tap opens folder
-                    if (isMobile && onFolderDoubleClick) {
-                      onFolderDoubleClick(folder.id);
-                    }
-                  }}
-                  onDoubleClick={() => {
-                    // Detect mobile device
-                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
-                                     ('ontouchstart' in window) ||
-                                     (window.innerWidth <= 768);
-                    // On desktop, double-click opens folder
-                    if (!isMobile && onFolderDoubleClick) {
+                    // Single click opens folder on all devices
+                    if (onFolderDoubleClick) {
                       onFolderDoubleClick(folder.id);
                     }
                   }}
