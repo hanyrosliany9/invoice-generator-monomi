@@ -892,11 +892,58 @@ export const MediaProjectDetailPage: React.FC = () => {
                   : folderTree ?? [];
 
                 // Filter assets based on current location
-                // At root: show only assets without folderId
-                // In folder: assets are fetched from folderContents
-                const assetsToShow = currentFolderId
+                // At root: show only assets without folderId (already filtered by backend)
+                // In folder: assets are fetched from folderContents (need client-side filtering)
+                let assetsToShow = currentFolderId
                   ? folderContents?.assets || []
                   : assets?.filter(asset => !asset.folderId) || [];
+
+                // Apply client-side filters for folder contents (backend doesn't filter these)
+                if (currentFolderId && assetsToShow.length > 0) {
+                  // Media type filter
+                  if (filters.mediaType) {
+                    assetsToShow = assetsToShow.filter(asset => asset.mediaType === filters.mediaType);
+                  }
+                  // Status filter
+                  if (filters.status) {
+                    assetsToShow = assetsToShow.filter(asset => asset.status === filters.status);
+                  }
+                  // Star rating filter (show assets with rating >= filter value)
+                  if (filters.starRating) {
+                    assetsToShow = assetsToShow.filter(asset =>
+                      asset.starRating && asset.starRating >= filters.starRating!
+                    );
+                  }
+                  // Search filter
+                  if (filters.search) {
+                    const searchLower = filters.search.toLowerCase();
+                    assetsToShow = assetsToShow.filter(asset =>
+                      asset.originalName.toLowerCase().includes(searchLower) ||
+                      asset.description?.toLowerCase().includes(searchLower)
+                    );
+                  }
+                  // Sort
+                  if (filters.sortBy) {
+                    assetsToShow = [...assetsToShow].sort((a, b) => {
+                      let comparison = 0;
+                      switch (filters.sortBy) {
+                        case 'uploadedAt':
+                          comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
+                          break;
+                        case 'originalName':
+                          comparison = a.originalName.localeCompare(b.originalName);
+                          break;
+                        case 'size':
+                          comparison = (Number(a.size) || 0) - (Number(b.size) || 0);
+                          break;
+                        case 'starRating':
+                          comparison = (a.starRating || 0) - (b.starRating || 0);
+                          break;
+                      }
+                      return filters.sortOrder === 'asc' ? comparison : -comparison;
+                    });
+                  }
+                }
 
                 return (
                   <MediaLibrary

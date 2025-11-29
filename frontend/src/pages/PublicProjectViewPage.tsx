@@ -200,6 +200,7 @@ export const PublicProjectViewPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [mediaTypeFilter, setMediaTypeFilter] = useState<'all' | 'IMAGE' | 'VIDEO'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | string>('all');
+  const [starRatingFilter, setStarRatingFilter] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'rating'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -322,6 +323,11 @@ export const PublicProjectViewPage: React.FC = () => {
       filtered = filtered.filter(asset => asset.status === statusFilter);
     }
 
+    // Star rating filter (show assets with rating >= selected rating)
+    if (starRatingFilter !== null && starRatingFilter > 0) {
+      filtered = filtered.filter(asset => asset.starRating && asset.starRating >= starRatingFilter);
+    }
+
     // Sort
     const sorted = [...filtered].sort((a, b) => {
       let comparison = 0;
@@ -338,7 +344,7 @@ export const PublicProjectViewPage: React.FC = () => {
     });
 
     return sorted;
-  }, [assets, searchQuery, mediaTypeFilter, statusFilter, sortBy, sortOrder, currentFolderId]);
+  }, [assets, searchQuery, mediaTypeFilter, statusFilter, starRatingFilter, sortBy, sortOrder, currentFolderId]);
 
   // Get grid template based on responsive breakpoints (matching internal)
   const getGridTemplate = () => {
@@ -946,6 +952,22 @@ export const PublicProjectViewPage: React.FC = () => {
                       { label: 'Needs Changes', value: 'NEEDS_CHANGES' },
                       { label: 'Approved', value: 'APPROVED' },
                       { label: 'Archived', value: 'ARCHIVED' },
+                    ]}
+                  />
+
+                  {/* Star Rating Filter */}
+                  <Select
+                    value={starRatingFilter}
+                    onChange={setStarRatingFilter}
+                    style={{ width: 140 }}
+                    placeholder="Filter by rating"
+                    allowClear
+                    options={[
+                      { label: <><StarFilled style={{ color: '#faad14' }} /> 1+ Stars</>, value: 1 },
+                      { label: <><StarFilled style={{ color: '#faad14' }} /> 2+ Stars</>, value: 2 },
+                      { label: <><StarFilled style={{ color: '#faad14' }} /> 3+ Stars</>, value: 3 },
+                      { label: <><StarFilled style={{ color: '#faad14' }} /> 4+ Stars</>, value: 4 },
+                      { label: <><StarFilled style={{ color: '#faad14' }} /> 5 Stars</>, value: 5 },
                     ]}
                   />
 
