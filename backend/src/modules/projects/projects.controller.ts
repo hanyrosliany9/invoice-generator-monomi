@@ -305,4 +305,18 @@ export class ProjectsController {
       dto.estimatedExpenses || [],
     );
   }
+
+  @Post(":id/duplicate")
+  @ApiOperation({ summary: "Duplicate an existing project" })
+  @ApiResponse({
+    status: 201,
+    description: "Proyek berhasil diduplikasi",
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Proyek tidak ditemukan",
+  })
+  async duplicate(@Param("id") id: string) {
+    return this.projectsService.duplicate(id);
+  }
 }

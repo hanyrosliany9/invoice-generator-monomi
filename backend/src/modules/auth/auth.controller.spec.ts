@@ -16,6 +16,11 @@ describe("AuthController", () => {
     validateToken: jest.fn(),
   };
 
+  const mockRequest = {
+    headers: { 'user-agent': 'test-agent' },
+    ip: '127.0.0.1',
+  };
+
   const mockUsersService = {
     findByEmail: jest.fn(),
     create: jest.fn(),
@@ -83,10 +88,13 @@ describe("AuthController", () => {
 
       mockAuthService.login.mockResolvedValue(expectedResult);
 
-      const result = await controller.login(loginDto);
+      const result = await controller.login(loginDto, mockRequest);
 
       expect(result).toEqual(expectedResult);
-      expect(mockAuthService.login).toHaveBeenCalledWith(loginDto);
+      expect(mockAuthService.login).toHaveBeenCalledWith(loginDto, {
+        userAgent: 'test-agent',
+        ipAddress: '127.0.0.1',
+      });
     });
 
     it("should throw UnauthorizedException for invalid credentials", async () => {
@@ -99,7 +107,7 @@ describe("AuthController", () => {
         new UnauthorizedException("Email atau password salah"),
       );
 
-      await expect(controller.login(loginDto)).rejects.toThrow(
+      await expect(controller.login(loginDto, mockRequest)).rejects.toThrow(
         UnauthorizedException,
       );
     });

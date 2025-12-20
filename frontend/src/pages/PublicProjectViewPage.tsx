@@ -378,12 +378,13 @@ export const PublicProjectViewPage: React.FC = () => {
     prefetchedImages.current.add(asset.id);
 
     // Start prefetching full-size image in background
-    const img = new Image();
+    // Use window.Image to avoid conflict with Ant Design's Image component
+    const img = new window.Image();
     img.src = getProxyUrl(asset.url, shareToken);
 
     // Optional: Also prefetch thumbnail if not already loaded
     if (asset.thumbnailUrl) {
-      const thumb = new Image();
+      const thumb = new window.Image();
       thumb.src = getProxyUrl(asset.thumbnailUrl, shareToken);
     }
   };

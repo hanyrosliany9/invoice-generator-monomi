@@ -846,8 +846,8 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
     }
   };
 
-  const formatFileSize = (bytes: string | number): string => {
-    const size = typeof bytes === 'string' ? parseInt(bytes, 10) : bytes;
+  const formatFileSize = (bytes: string | number | bigint): string => {
+    const size = typeof bytes === 'string' ? parseInt(bytes, 10) : Number(bytes);
     if (size < 1024) return `${size} B`;
     if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
     if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;

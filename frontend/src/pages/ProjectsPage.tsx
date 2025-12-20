@@ -28,6 +28,7 @@ import {
   CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
+  CopyOutlined,
   DeleteOutlined,
   DollarOutlined,
   EditOutlined,
@@ -136,6 +137,17 @@ export const ProjectsPage: React.FC = () => {
         // Generic error
         message.error(error?.response?.data?.message || 'Gagal menghapus proyek')
       }
+    },
+  })
+
+  const duplicateMutation = useMutation({
+    mutationFn: projectService.duplicateProject,
+    onSuccess: (newProject) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      message.success(`Proyek berhasil diduplikasi: ${newProject.number}`)
+    },
+    onError: (error: any) => {
+      message.error(error?.response?.data?.message || 'Gagal menduplikasi proyek')
     },
   })
 
@@ -299,6 +311,18 @@ export const ProjectsPage: React.FC = () => {
       },
     })
   }, [projects, deleteMutation, modal])
+
+  const handleDuplicate = useCallback((project: Project) => {
+    modal.confirm({
+      title: 'Duplikasi Proyek?',
+      content: `Apakah Anda yakin ingin menduplikasi proyek "${project.number}"? Proyek baru akan dibuat dengan status PLANNING.`,
+      okText: 'Duplikasi',
+      cancelText: 'Batal',
+      onOk: () => {
+        duplicateMutation.mutate(project.id)
+      },
+    })
+  }, [duplicateMutation, modal])
 
   // Mobile data adapter - convert projects to BusinessEntity format
   const mobileData = useMemo(
@@ -550,6 +574,12 @@ export const ProjectsPage: React.FC = () => {
         onClick: () => handleChangeStatus(project),
       },
       {
+        key: 'duplicate',
+        icon: <CopyOutlined />,
+        label: 'Duplikasi',
+        onClick: () => handleDuplicate(project),
+      },
+      {
         key: 'delete',
         icon: <DeleteOutlined />,
         label: 'Hapus',
@@ -557,7 +587,7 @@ export const ProjectsPage: React.FC = () => {
         onClick: () => handleDelete(project.id),
       },
     ]
-  }, [handleEdit, handleDelete, handleChangeStatus])
+  }, [handleEdit, handleDelete, handleChangeStatus, handleDuplicate])
 
   const rowSelection = {
     selectedRowKeys,

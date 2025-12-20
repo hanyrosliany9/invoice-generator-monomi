@@ -364,20 +364,22 @@ export const AssetDetailPage: React.FC = () => {
             type="primary"
             aria-label="Edit asset"
           />
-          <FloatButton
-            icon={<CameraOutlined />}
-            tooltip="Check Out"
-            onClick={handleCheckOut}
-            disabled={asset.status !== 'AVAILABLE'}
-            aria-label="Check out asset"
-          />
-          <FloatButton
-            icon={<CameraOutlined />}
-            tooltip="Check In"
-            onClick={handleCheckIn}
-            disabled={asset.status !== 'CHECKED_OUT'}
-            aria-label="Check in asset"
-          />
+          {asset.status === 'AVAILABLE' && (
+            <FloatButton
+              icon={<CameraOutlined />}
+              tooltip="Check Out"
+              onClick={handleCheckOut}
+              aria-label="Check out asset"
+            />
+          )}
+          {asset.status === 'CHECKED_OUT' && (
+            <FloatButton
+              icon={<CameraOutlined />}
+              tooltip="Check In"
+              onClick={handleCheckIn}
+              aria-label="Check in asset"
+            />
+          )}
         </FloatButton.Group>
       )}
     </div>

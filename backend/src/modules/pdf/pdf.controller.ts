@@ -67,6 +67,11 @@ export class PdfController {
         throw new NotFoundException("Invoice tidak ditemukan");
       }
 
+      // Quick fix: Use current project priceBreakdown instead of stale snapshot
+      if (invoice.project?.priceBreakdown) {
+        invoice.priceBreakdown = invoice.project.priceBreakdown;
+      }
+
       // Parse continuous parameter (default: true for digital viewing)
       const isContinuous = continuous === "true";
       const shouldShowMaterai = showMaterai === "true";
@@ -119,6 +124,11 @@ export class PdfController {
         throw new NotFoundException("Quotation tidak ditemukan");
       }
 
+      // Quick fix: Use current project priceBreakdown instead of stale snapshot
+      if (quotation.project?.priceBreakdown) {
+        quotation.priceBreakdown = quotation.project.priceBreakdown;
+      }
+
       // Parse continuous parameter (default: true for digital viewing)
       const isContinuous = continuous === "true";
 
@@ -163,6 +173,11 @@ export class PdfController {
         throw new NotFoundException("Invoice tidak ditemukan");
       }
 
+      // Quick fix: Use current project priceBreakdown instead of stale snapshot
+      if (invoice.project?.priceBreakdown) {
+        invoice.priceBreakdown = invoice.project.priceBreakdown;
+      }
+
       // Parse continuous parameter (default: true for digital viewing)
       const isContinuous = continuous === "true";
       const shouldShowMaterai = showMaterai === "true";
@@ -205,6 +220,11 @@ export class PdfController {
 
       if (!quotation) {
         throw new NotFoundException("Quotation tidak ditemukan");
+      }
+
+      // Quick fix: Use current project priceBreakdown instead of stale snapshot
+      if (quotation.project?.priceBreakdown) {
+        quotation.priceBreakdown = quotation.project.priceBreakdown;
       }
 
       // Parse continuous parameter (default: true for digital viewing)

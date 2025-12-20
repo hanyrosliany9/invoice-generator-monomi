@@ -1024,9 +1024,8 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = () => {
           icon={<FileTextOutlined />}
           tooltip={project.client ? 'Create Quotation' : 'Assign client first'}
           aria-label='Create quotation from this project'
-          onClick={() => navigate(`/quotations/new?projectId=${id}&clientId=${project.client?.id}`)}
+          onClick={() => project.client && navigate(`/quotations/new?projectId=${id}&clientId=${project.client?.id}`)}
           badge={{ dot: project._count?.quotations === 0 && !!project.client }}
-          disabled={!project.client}
           style={{
             opacity: !project.client ? 0.4 : 1,
             cursor: !project.client ? 'not-allowed' : 'pointer'

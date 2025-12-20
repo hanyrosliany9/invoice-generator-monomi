@@ -26,8 +26,10 @@ RUN apk add --no-cache \
     ffmpeg
 
 # Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
+# CXXFLAGS workaround for canvas package C++ compilation on Alpine (missing <cstdint> includes)
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
+    CXXFLAGS="-include cstdint"
 
 # Create app user
 RUN addgroup -g 1001 -S appuser && \

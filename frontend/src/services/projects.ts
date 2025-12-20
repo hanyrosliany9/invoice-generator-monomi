@@ -236,6 +236,15 @@ export const projectService = {
     return response.data.data
   },
 
+  // Duplicate project
+  duplicateProject: async (id: string): Promise<Project> => {
+    const response = await apiClient.post(`/projects/${id}/duplicate`)
+    if (!response?.data?.data) {
+      throw new Error('Project duplication failed')
+    }
+    return response.data.data
+  },
+
   // Get projects by client
   getProjectsByClient: async (clientId: string): Promise<Project[]> => {
     const response = await apiClient.get(`/projects/by-client/${clientId}`)

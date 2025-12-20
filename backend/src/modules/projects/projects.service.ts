@@ -634,4 +634,71 @@ export class ProjectsService {
       },
     };
   }
+
+  /**
+   * Duplicate an existing project with a new project number
+   * Copies all project details but resets status and financial tracking
+   */
+  async duplicate(id: string) {
+    // Fetch original project with related data
+    const original = await this.prisma.project.findUnique({
+      where: { id },
+      include: {
+        projectType: true,
+        client: true,
+      },
+    });
+
+    if (!original) {
+      throw new NotFoundException("Proyek tidak ditemukan");
+    }
+
+    // Generate new project number
+    const newNumber = await this.generateProjectNumber(
+      original.projectType.prefix,
+    );
+
+    // Create duplicate with copied fields, reset status and financial data
+    const duplicated = await this.prisma.project.create({
+      data: {
+        number: newNumber,
+        description: `${original.description} (Copy)`,
+        scopeOfWork: original.scopeOfWork,
+        output: original.output,
+        projectTypeId: original.projectTypeId,
+        clientId: original.clientId,
+        startDate: original.startDate,
+        endDate: original.endDate,
+        estimatedBudget: original.estimatedBudget,
+        basePrice: original.basePrice,
+        priceBreakdown: original.priceBreakdown || undefined,
+        estimatedExpenses: original.estimatedExpenses || undefined,
+        projectedGrossMargin: original.projectedGrossMargin,
+        projectedNetMargin: original.projectedNetMargin,
+        projectedProfit: original.projectedProfit,
+        // Reset status to PLANNING for new project
+        status: "PLANNING",
+        // Financial tracking fields reset to defaults (0 or null)
+        totalDirectCosts: 0,
+        totalIndirectCosts: 0,
+        totalAllocatedCosts: 0,
+        totalInvoicedAmount: 0,
+        totalPaidAmount: 0,
+        grossProfit: null,
+        netProfit: null,
+        grossMarginPercent: null,
+        netMarginPercent: null,
+        budgetVariance: null,
+        budgetVariancePercent: null,
+        profitCalculatedAt: null,
+        profitCalculatedBy: null,
+      },
+      include: {
+        client: true,
+        projectType: true,
+      },
+    });
+
+    return duplicated;
+  }
 }
