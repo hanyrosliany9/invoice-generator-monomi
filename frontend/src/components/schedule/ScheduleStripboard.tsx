@@ -42,8 +42,9 @@ export default function ScheduleStripboard({ schedule, onAddStrip }: Props) {
 
   const handleDragStart = (event: any) => {
     const { active } = event;
-    const strip = schedule.shootDays
-      .flatMap((d) => d.strips)
+    const shootDays = schedule.shootDays || [];
+    const strip = shootDays
+      .flatMap((d) => d.strips || [])
       .find((s) => s.id === active.id);
     setActiveStrip(strip || null);
   };
@@ -54,8 +55,9 @@ export default function ScheduleStripboard({ schedule, onAddStrip }: Props) {
     if (!over || active.id === over.id) return;
 
     // Build reorder request
-    const allStrips = schedule.shootDays.flatMap((d) =>
-      d.strips.map((s) => ({ stripId: s.id, shootDayId: s.shootDayId, order: s.order }))
+    const shootDays = schedule.shootDays || [];
+    const allStrips = shootDays.flatMap((d) =>
+      (d.strips || []).map((s) => ({ stripId: s.id, shootDayId: s.shootDayId, order: s.order }))
     );
 
     // Find target day and recalculate orders
@@ -69,6 +71,8 @@ export default function ScheduleStripboard({ schedule, onAddStrip }: Props) {
     }
   };
 
+  const shootDays = schedule.shootDays || [];
+
   return (
     <DndContext
       sensors={sensors}
@@ -77,7 +81,7 @@ export default function ScheduleStripboard({ schedule, onAddStrip }: Props) {
       onDragEnd={handleDragEnd}
     >
       <div style={{ display: 'flex', gap: 16, overflowX: 'auto', minHeight: 400 }}>
-        {schedule.shootDays.map((day) => (
+        {shootDays.map((day) => (
           <ShootDayColumn
             key={day.id}
             day={day}

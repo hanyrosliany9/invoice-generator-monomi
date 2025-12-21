@@ -26,17 +26,19 @@ export default function ScheduleToolbar({ schedule }: Props) {
   });
 
   // Calculate statistics
-  const totalPages = schedule.shootDays.reduce(
+  const shootDays = schedule.shootDays || [];
+
+  const totalPages = shootDays.reduce(
     (sum, day) =>
       sum +
-      day.strips
+      (day.strips || [])
         .filter((s) => s.stripType === 'SCENE')
         .reduce((daySum, s) => daySum + (s.pageCount || 0), 0),
     0
   );
 
-  const totalScenes = schedule.shootDays.reduce(
-    (sum, day) => sum + day.strips.filter((s) => s.stripType === 'SCENE').length,
+  const totalScenes = shootDays.reduce(
+    (sum, day) => sum + (day.strips || []).filter((s) => s.stripType === 'SCENE').length,
     0
   );
 
@@ -52,7 +54,7 @@ export default function ScheduleToolbar({ schedule }: Props) {
         <Col span={6}>
           <Statistic
             title="Shoot Days"
-            value={schedule.shootDays.length}
+            value={shootDays.length}
             size="small"
           />
         </Col>
