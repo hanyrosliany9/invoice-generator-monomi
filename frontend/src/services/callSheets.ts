@@ -7,6 +7,11 @@ import type {
 } from '../types/callSheet';
 
 export const callSheetsApi = {
+  getAll: async (): Promise<CallSheet[]> => {
+    const res = await apiClient.get(`/call-sheets`);
+    return res.data.data;
+  },
+
   getBySchedule: async (scheduleId: string): Promise<CallSheet[]> => {
     const res = await apiClient.get(`/call-sheets?scheduleId=${scheduleId}`);
     return res.data.data;

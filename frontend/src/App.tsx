@@ -62,7 +62,9 @@ import DecksPage from './pages/DecksPage'
 import ShotListsPage from './pages/ShotListsPage'
 import ShotListEditorPage from './pages/ShotListEditorPage'
 import ShootingSchedulePage from './pages/ShootingSchedulePage'
+import SchedulesListPage from './pages/SchedulesListPage'
 import CallSheetEditorPage from './pages/CallSheetEditorPage'
+import CallSheetsListPage from './pages/CallSheetsListPage'
 
 // Lazy load report builder for performance
 const ReportBuilderPage = lazy(() =>
@@ -463,9 +465,11 @@ function App() {
                     <Route path='/shot-lists/:id' element={<ShotListEditorPage />} />
 
                     {/* Shooting Schedule Routes */}
+                    <Route path='/schedules' element={<SchedulesListPage />} />
                     <Route path='/schedules/:id' element={<ShootingSchedulePage />} />
 
                     {/* Call Sheet Routes */}
+                    <Route path='/call-sheets' element={<CallSheetsListPage />} />
                     <Route path='/call-sheets/:id' element={<CallSheetEditorPage />} />
 
                     {/* User Management Routes */}

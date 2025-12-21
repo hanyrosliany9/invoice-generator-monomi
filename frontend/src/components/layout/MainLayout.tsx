@@ -132,11 +132,30 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           icon: <FileTextOutlined />,
           label: 'Presentation Decks',
         },
+      ],
+    },
+    {
+      key: 'production',
+      icon: <CameraOutlined />,
+      label: 'Production',
+      children: [
         {
           key: '/shot-lists',
           icon: <PlayCircleOutlined />,
           label: 'Shot Lists',
           title: 'Film Production Shot Lists',
+        },
+        {
+          key: '/schedules',
+          icon: <CalendarOutlined />,
+          label: 'Shooting Schedules',
+          title: 'Shooting Schedule & Stripboard',
+        },
+        {
+          key: '/call-sheets',
+          icon: <FileTextOutlined />,
+          label: 'Call Sheets',
+          title: 'Daily Production Call Sheets',
         },
       ],
     },

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID, IsNumber, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsDateString } from 'class-validator';
 
 export class CreateScheduleDto {
   @IsString()
@@ -8,11 +8,11 @@ export class CreateScheduleDto {
   @IsString()
   description?: string;
 
-  @IsUUID()
+  @IsString()
   projectId: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   shotListId?: string;
 
   @IsOptional()
