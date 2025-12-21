@@ -64,6 +64,19 @@ model User {
   collectionsCreated     Collection[]        @relation("CollectionCreator")
   assetMetadataAssignee  AssetMetadata[]     @relation("AssetAssignee")
 
+  // Deck Presentation Relations
+  decksCreated       Deck[]              @relation("DeckCreator")
+  deckCollaborations DeckCollaborator[]  @relation("DeckCollaboratorUser")
+  deckInvitesSent    DeckCollaborator[]  @relation("DeckInviter")
+  deckSlideComments  DeckSlideComment[]  @relation("DeckSlideCommentAuthor")
+
+  // Shot List Relations
+  shotLists          ShotList[]          @relation("ShotListCreator")
+
+  // Shooting Schedule & Call Sheet Relations
+  shootingSchedules  ShootingSchedule[]  @relation("ScheduleCreator")
+  callSheets         CallSheet[]         @relation("CallSheetCreator")
+
   // Authentication Relations
   refreshTokens RefreshToken[]
 
@@ -130,6 +143,7 @@ model Client {
   expenses              Expense[] // Client-related expenses
   contentCalendarItems  ContentCalendarItem[]
   mediaProjects         MediaProject[] // Media collaboration projects
+  decks                 Deck[]
 
   @@index([name])
   @@index([email])
@@ -234,6 +248,13 @@ model Project {
   socialMediaReports   SocialMediaReport[]
   contentCalendarItems ContentCalendarItem[]
   mediaProjects        MediaProject[] // Media collaboration projects
+  decks                Deck[]
+
+  // Shot List Relations
+  shotLists            ShotList[]
+
+  // Shooting Schedule Relations
+  shootingSchedules    ShootingSchedule[]
 
   @@index([number])
   @@index([status])
@@ -3960,6 +3981,7 @@ model MediaProject {
   collaborators   MediaCollaborator[]
   collections     Collection[]
   folders         MediaFolder[]     @relation("MediaProjectFolders")
+  decks           Deck[]
 
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
@@ -4375,4 +4397,577 @@ enum DrawingType {
 enum SortOrder {
   ASC
   DESC
+}
+
+// ============================================
+// DECK PRESENTATION ENUMS
+// ============================================
+
+enum SlideTemplate {
+  TITLE           // Large title + subtitle
+  TITLE_CONTENT   // Title with content area
+  TWO_COLUMN      // Two equal columns
+  FULL_MEDIA      // Full-bleed image/video
+  MOOD_BOARD      // Grid of images (2x2, 3x3)
+  CHARACTER       // Character profile (image + attributes)
+  SHOT_LIST       // Tabular shot breakdown
+  SCHEDULE        // Timeline/stripboard view
+  COMPARISON      // Side-by-side comparison
+  BLANK           // Empty canvas
+}
+
+enum DeckStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// ============================================
+// DECK PRESENTATION MODELS
+// ============================================
+
+// Main deck container
+model Deck {
+  id              String            @id @default(cuid())
+  title           String
+  description     String?           @db.Text
+  status          DeckStatus        @default(DRAFT)
+
+  // Theme settings (JSON for flexibility)
+  theme           Json?             // { primaryColor, fontFamily, logoUrl, etc. }
+
+  // Ownership
+  createdById     String
+  createdBy       User              @relation("DeckCreator", fields: [createdById], references: [id])
+
+  // Optional business entity links
+  clientId        String?
+  client          Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId       String?
+  project         Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  mediaProjectId  String?
+  mediaProject    MediaProject?     @relation(fields: [mediaProjectId], references: [id], onDelete: SetNull)
+
+  // PUBLIC SHARING (follows MediaProject pattern)
+  isPublic           Boolean            @default(false)
+  publicShareToken   String?            @unique
+  publicShareUrl     String?
+  publicViewCount    Int                @default(0)
+  publicSharedAt     DateTime?
+  publicAccessLevel  PublicAccessLevel  @default(VIEW_ONLY)
+
+  // Presentation settings
+  slideWidth      Int               @default(1920)  // Default 16:9
+  slideHeight     Int               @default(1080)
+
+  // Relations
+  slides          DeckSlide[]
+  collaborators   DeckCollaborator[]
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([createdById])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([mediaProjectId])
+  @@index([publicShareToken])
+  @@index([status])
+  @@map("decks")
+}
+
+// Individual slides
+model DeckSlide {
+  id              String            @id @default(cuid())
+  deckId          String
+  deck            Deck              @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  // Ordering
+  order           Int               @default(0)
+
+  // Template and content
+  template        SlideTemplate     @default(BLANK)
+  title           String?
+  subtitle        String?
+
+  // Flexible content storage (JSON)
+  // Structure depends on template, e.g.:
+  // MOOD_BOARD: { images: [{ url, caption, order }], columns: 3 }
+  // SHOT_LIST: { shots: [{ number, size, angle, description }] }
+  // TWO_COLUMN: { left: { type, content }, right: { type, content } }
+  content         Json              @default("{}")
+
+  // Background settings
+  backgroundColor String?           @default("#FFFFFF")
+  backgroundImage String?           // R2 URL
+  backgroundImageKey String?        // R2 key for deletion
+
+  // Speaker notes
+  notes           String?           @db.Text
+
+  // Transition settings
+  transition      String?           @default("fade")  // fade, slide, zoom, none
+  transitionDuration Int            @default(500)     // milliseconds
+
+  // Relations
+  elements        DeckSlideElement[]
+  comments        DeckSlideComment[]
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([deckId])
+  @@index([deckId, order])
+  @@map("deck_slides")
+}
+
+// Flexible elements on slides (text boxes, images, shapes, etc.)
+model DeckSlideElement {
+  id              String            @id @default(cuid())
+  slideId         String
+  slide           DeckSlide         @relation(fields: [slideId], references: [id], onDelete: Cascade)
+
+  // Element type
+  type            String            // TEXT, IMAGE, VIDEO, SHAPE, ICON
+
+  // Position and size (percentage-based for responsiveness)
+  x               Float             @default(0)      // % from left
+  y               Float             @default(0)      // % from top
+  width           Float             @default(100)    // % of slide width
+  height          Float             @default(100)    // % of slide height
+  rotation        Float             @default(0)      // degrees
+  zIndex          Int               @default(0)
+
+  // Content (type-specific JSON)
+  // TEXT: { text, fontSize, fontFamily, fontWeight, color, align }
+  // IMAGE: { url, key, alt, objectFit }
+  // VIDEO: { url, key, autoplay, loop, muted }
+  // SHAPE: { shape, fill, stroke, strokeWidth }
+  content         Json              @default("{}")
+
+  // Locking (prevent accidental edits)
+  isLocked        Boolean           @default(false)
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([slideId])
+  @@index([slideId, zIndex])
+  @@map("deck_slide_elements")
+}
+
+// Slide-level comments (follows FrameComment pattern)
+model DeckSlideComment {
+  id              String            @id @default(cuid())
+  slideId         String
+  slide           DeckSlide         @relation(fields: [slideId], references: [id], onDelete: Cascade)
+
+  // Author (user or guest)
+  userId          String?
+  user            User?             @relation("DeckSlideCommentAuthor", fields: [userId], references: [id], onDelete: SetNull)
+  guestName       String?
+  guestEmail      String?
+
+  // Comment content
+  content         String            @db.Text
+
+  // Position on slide (optional - for positioned comments)
+  positionX       Float?            // % from left
+  positionY       Float?            // % from top
+
+  // Threading
+  parentId        String?
+  parent          DeckSlideComment? @relation("CommentThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies         DeckSlideComment[] @relation("CommentThread")
+
+  // Status
+  isResolved      Boolean           @default(false)
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([slideId])
+  @@index([parentId])
+  @@index([userId])
+  @@map("deck_slide_comments")
+}
+
+// Deck collaborators (follows MediaCollaborator pattern)
+model DeckCollaborator {
+  id              String            @id @default(cuid())
+  deckId          String
+  deck            Deck              @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  // Internal user OR guest
+  userId          String?
+  user            User?             @relation("DeckCollaboratorUser", fields: [userId], references: [id], onDelete: Cascade)
+  guestEmail      String?
+  guestName       String?
+
+  // Role (reuse CollaboratorRole enum)
+  role            CollaboratorRole  @default(VIEWER)
+
+  // Invite tracking
+  inviteToken     String?           @unique
+  invitedBy       String
+  inviter         User              @relation("DeckInviter", fields: [invitedBy], references: [id])
+  status          InviteStatus      @default(PENDING)
+  expiresAt       DateTime?
+  acceptedAt      DateTime?
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([deckId, userId])
+  @@unique([deckId, guestEmail])
+  @@index([deckId])
+  @@index([userId])
+  @@index([inviteToken])
+  @@index([status])
+  @@map("deck_collaborators")
+}
+
+// ============================================
+// SHOT LIST MODELS
+// ============================================
+
+model ShotList {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User     @relation("ShotListCreator", fields: [createdById], references: [id])
+
+  scenes      ShotListScene[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@map("shot_lists")
+}
+
+model ShotListScene {
+  id          String   @id @default(cuid())
+  shotListId  String
+  shotList    ShotList @relation(fields: [shotListId], references: [id], onDelete: Cascade)
+  sceneNumber String
+  name        String
+  location    String?
+  intExt      String?  // INT / EXT
+  dayNight    String?  // DAY / NIGHT
+  description String?
+  order       Int      @default(0)
+
+  shots       Shot[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([shotListId])
+  @@map("shot_list_scenes")
+}
+
+model Shot {
+  id              String         @id @default(cuid())
+  sceneId         String
+  scene           ShotListScene  @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  shotNumber      String
+  order           Int            @default(0)
+
+  // Shot Specs
+  shotSize        String?        // EWS, WS, FS, MWS, MS, MCU, CU, ECU
+  shotType        String?        // MASTER, SINGLE, TWO_SHOT, OTS, POV, INSERT
+  cameraAngle     String?        // EYE_LEVEL, LOW_ANGLE, HIGH_ANGLE, DUTCH, BIRD'S_EYE
+  cameraMovement  String?        // STATIC, PAN, TILT, DOLLY, TRACK, CRANE, HANDHELD, STEADICAM
+  lens            String?        // 14mm - 200mm
+  frameRate       String?        // 24fps, 30fps, 60fps, 120fps
+  camera          String?        // A CAM, B CAM, C CAM, DRONE
+
+  // Content
+  description     String?
+  action          String?
+  dialogue        String?
+  notes           String?
+
+  // Storyboard
+  storyboardUrl   String?
+  storyboardKey   String?
+
+  // Production
+  setupNumber     Int?           // Camera/lighting setup group
+  estimatedTime   Int?           // Seconds
+  status          ShotStatus     @default(PLANNED)
+
+  // VFX/SFX
+  vfx             String?
+  sfx             String?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([sceneId])
+  @@map("shots")
+}
+
+enum ShotStatus {
+  PLANNED
+  IN_PROGRESS
+  SHOT
+  WRAPPED
+  CUT
+}
+
+// ============================================
+// SHOOTING SCHEDULE MODELS
+// ============================================
+
+model ShootingSchedule {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  shotListId  String?  // Optional link to shot list
+  createdById String
+  createdBy   User     @relation("ScheduleCreator", fields: [createdById], references: [id])
+
+  // Settings
+  startDate   DateTime?
+  pagesPerDay Float    @default(5)  // Estimated pages per day
+
+  shootDays   ShootDay[]
+  callSheets  CallSheet[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@map("shooting_schedules")
+}
+
+model ShootDay {
+  id          String           @id @default(cuid())
+  scheduleId  String
+  schedule    ShootingSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  dayNumber   Int              // Day 1, Day 2, etc.
+  shootDate   DateTime?        // Actual date if set
+  location    String?          // Main location for the day
+  notes       String?
+  order       Int              @default(0)
+
+  strips      ScheduleStrip[]
+  callSheet   CallSheet?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([scheduleId])
+  @@map("shoot_days")
+}
+
+model ScheduleStrip {
+  id          String    @id @default(cuid())
+  shootDayId  String
+  shootDay    ShootDay  @relation(fields: [shootDayId], references: [id], onDelete: Cascade)
+  order       Int       @default(0)
+
+  // Strip type
+  stripType   StripType @default(SCENE)
+
+  // Scene reference (if SCENE type)
+  sceneId     String?   // Reference to ShotListScene
+
+  // Scene data (denormalized for display)
+  sceneNumber String?
+  sceneName   String?
+  intExt      String?   // INT / EXT
+  dayNight    String?   // DAY / NIGHT
+  location    String?
+  pageCount   Float?    // 1/8 pages (e.g., 2.5 = 2 4/8)
+  estimatedTime Int?    // Minutes
+
+  // Banner data (if BANNER type)
+  bannerType  BannerType?
+  bannerText  String?
+  bannerColor String?   // Hex color
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([shootDayId])
+  @@map("schedule_strips")
+}
+
+enum StripType {
+  SCENE
+  BANNER
+}
+
+enum BannerType {
+  DAY_BREAK
+  MEAL_BREAK
+  COMPANY_MOVE
+  NOTE
+}
+
+// ============================================
+// CALL SHEET MODELS
+// ============================================
+
+model CallSheet {
+  id            String           @id @default(cuid())
+  scheduleId    String
+  schedule      ShootingSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  shootDayId    String           @unique
+  shootDay      ShootDay         @relation(fields: [shootDayId], references: [id], onDelete: Cascade)
+  createdById   String
+  createdBy     User             @relation("CallSheetCreator", fields: [createdById], references: [id])
+
+  // Header Info
+  callSheetNumber Int            @default(1)
+  productionName  String?
+  director        String?
+  producer        String?
+
+  // Date & Time
+  shootDate       DateTime
+  generalCallTime String?        // e.g., "7:00 AM"
+  firstShotTime   String?        // e.g., "8:00 AM"
+  wrapTime        String?        // Estimated wrap
+
+  // Location
+  locationName    String?
+  locationAddress String?
+  parkingNotes    String?
+  mapUrl          String?
+
+  // Weather (optional integration)
+  weatherHigh     Int?
+  weatherLow      Int?
+  weatherCondition String?
+  sunrise         String?
+  sunset          String?
+
+  // Emergency
+  nearestHospital String?
+  hospitalAddress String?
+  hospitalPhone   String?
+
+  // Notes
+  generalNotes    String?
+  productionNotes String?
+
+  // Status
+  status          CallSheetStatus @default(DRAFT)
+  sentAt          DateTime?
+
+  // Relations
+  castCalls       CallSheetCast[]
+  crewCalls       CallSheetCrew[]
+  scenes          CallSheetScene[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([scheduleId])
+  @@map("call_sheets")
+}
+
+model CallSheetCast {
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+  order       Int       @default(0)
+
+  // Cast info
+  castNumber  String?   // #1, #2, etc.
+  actorName   String
+  character   String?
+
+  // Times
+  pickupTime  String?   // e.g., "5:30 AM"
+  callTime    String    // e.g., "6:00 AM"
+  onSetTime   String?   // e.g., "7:30 AM"
+
+  // Notes
+  notes       String?
+  status      CallStatus @default(PENDING)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_cast")
+}
+
+model CallSheetCrew {
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+  order       Int       @default(0)
+
+  // Crew info
+  department  String    // e.g., "Camera", "Grip", "Art"
+  position    String    // e.g., "DP", "1st AC", "Gaffer"
+  name        String
+
+  // Times
+  callTime    String    // e.g., "6:30 AM"
+
+  // Contact
+  phone       String?
+  email       String?
+
+  // Notes
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_crew")
+}
+
+model CallSheetScene {
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+  order       Int       @default(0)
+
+  // Scene info (from schedule strip)
+  sceneNumber String
+  sceneName   String?
+  intExt      String?
+  dayNight    String?
+  location    String?
+  pageCount   Float?
+
+  // Cast in scene
+  castIds     String?   // Comma-separated cast numbers: "1,2,5"
+
+  // Notes
+  description String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_scenes")
+}
+
+enum CallSheetStatus {
+  DRAFT
+  READY
+  SENT
+  UPDATED
+}
+
+enum CallStatus {
+  PENDING
+  CONFIRMED
+  ON_SET
+  WRAPPED
 }

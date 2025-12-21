@@ -33,6 +33,10 @@ import { SocialMediaReportsModule } from "./modules/reports/social-media-reports
 import { MediaModule } from "./modules/media/media.module";
 import { ContentCalendarModule } from "./modules/content-calendar/content-calendar.module";
 import { MediaCollabModule } from "./modules/media-collab/media-collab.module";
+import { DecksModule } from "./modules/decks/decks.module";
+import { ShotListsModule } from "./modules/shot-lists/shot-lists.module";
+import { SchedulesModule } from "./modules/schedules/schedules.module";
+import { CallSheetsModule } from "./modules/call-sheets/call-sheets.module";
 import { SecurityModule } from "./modules/security/security.module";
 import { SystemModule } from "./modules/system/system.module";
 import { PrismaModule } from "./modules/prisma/prisma.module";
@@ -89,6 +93,10 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     MediaModule,
     ContentCalendarModule,
     MediaCollabModule,
+    DecksModule,
+    ShotListsModule,
+    SchedulesModule,
+    CallSheetsModule,
     SecurityModule,
     SystemModule,
     HealthModule,

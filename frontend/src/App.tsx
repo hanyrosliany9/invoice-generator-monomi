@@ -58,6 +58,11 @@ import ContentCalendarPage from './pages/ContentCalendarPage'
 import ProjectContentCalendarPage from './pages/ProjectContentCalendarPage'
 import MediaCollaborationPage from './pages/MediaCollaborationPage'
 import MediaProjectDetailPage from './pages/MediaProjectDetailPage'
+import DecksPage from './pages/DecksPage'
+import ShotListsPage from './pages/ShotListsPage'
+import ShotListEditorPage from './pages/ShotListEditorPage'
+import ShootingSchedulePage from './pages/ShootingSchedulePage'
+import CallSheetEditorPage from './pages/CallSheetEditorPage'
 
 // Lazy load report builder for performance
 const ReportBuilderPage = lazy(() =>
@@ -160,6 +165,13 @@ const VendorEditPage = lazy(() =>
   }))
 )
 // DELETED: CampaignFormPage lazy load
+
+// Lazy load Deck pages
+const DeckEditorPage = lazy(() =>
+  import('./pages/DeckEditorPage').then(module => ({
+    default: module.default,
+  }))
+)
 
 // Loading component for lazy-loaded routes
 const PageLoader = () => (
@@ -426,6 +438,35 @@ function App() {
                     {/* Media Collaboration Routes */}
                     <Route path='/media-collab' element={<MediaCollaborationPage />} />
                     <Route path='/media-collab/projects/:projectId' element={<MediaProjectDetailPage />} />
+
+                    {/* Deck Presentation Routes */}
+                    <Route path='/decks' element={<DecksPage />} />
+                    <Route
+                      path='/decks/:id'
+                      element={
+                        <Suspense fallback={<PageLoader />}>
+                          <DeckEditorPage />
+                        </Suspense>
+                      }
+                    />
+                    <Route
+                      path='/decks/:id/edit'
+                      element={
+                        <Suspense fallback={<PageLoader />}>
+                          <DeckEditorPage />
+                        </Suspense>
+                      }
+                    />
+
+                    {/* Shot List Routes */}
+                    <Route path='/shot-lists' element={<ShotListsPage />} />
+                    <Route path='/shot-lists/:id' element={<ShotListEditorPage />} />
+
+                    {/* Shooting Schedule Routes */}
+                    <Route path='/schedules/:id' element={<ShootingSchedulePage />} />
+
+                    {/* Call Sheet Routes */}
+                    <Route path='/call-sheets/:id' element={<CallSheetEditorPage />} />
 
                     {/* User Management Routes */}
                     <Route path='/users' element={<UsersPage />} />

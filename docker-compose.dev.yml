@@ -24,11 +24,18 @@ services:
       - JWT_SECRET=dev-jwt-secret-key
       - FRONTEND_URL=http://localhost:3001
       - SKIP_DB_INIT=false
+      # WebSocket & Real-time Collaboration
+      - SOCKET_IO_CORS_ORIGIN=http://localhost:3001
+      - VITE_WS_URL=http://localhost:5000
+      # PDF Export (Puppeteer)
+      - TEMP_EXPORT_DIR=/app/temp/exports
       - SMTP_HOST=localhost
       - SMTP_PORT=587
       - SMTP_USER=dev@monomi.finance
       - SMTP_PASSWORD=dev-password
       - FROM_EMAIL=dev@monomi.finance
+      # File Storage Configuration
+      - UPLOAD_PATH=/app/uploads
       # R2 (Cloudflare Object Storage) Configuration
       - R2_ACCOUNT_ID=${R2_ACCOUNT_ID:-}
       - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID:-}

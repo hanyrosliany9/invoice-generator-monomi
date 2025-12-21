@@ -172,11 +172,11 @@ export class EnvironmentVariables {
   @IsOptional()
   R2_BUCKET_NAME?: string;
 
-  @IsUrl({ require_tld: false })
+  @IsString()
   @IsOptional()
   R2_PUBLIC_URL?: string;
 
-  @IsUrl({ require_tld: false })
+  @IsString()
   @IsOptional()
   R2_ENDPOINT?: string;
 

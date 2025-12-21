@@ -25,7 +25,7 @@
       "@/modules/*": ["src/modules/*"],
       "@/prisma/*": ["src/prisma/*"]
     },
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     "moduleResolution": "node",
     "esModuleInterop": true,
     "resolveJsonModule": true,

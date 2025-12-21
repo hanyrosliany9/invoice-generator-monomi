@@ -60,6 +60,8 @@ services:
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - FROM_EMAIL=${FROM_EMAIL}
+      # File Storage Configuration
+      - UPLOAD_PATH=/app/uploads
       - CORS_ORIGIN=https://admin.monomiagency.com
       - FRONTEND_URL=https://admin.monomiagency.com
       - PUBLIC_URL=https://share.monomiagency.com
@@ -68,6 +70,12 @@ services:
       - SKIP_DB_INIT=true
       - WEBSOCKET_PORT=${WEBSOCKET_PORT}
       - WEBSOCKET_CORS_ORIGIN=${WEBSOCKET_CORS_ORIGIN}
+      # WebSocket & Real-time Collaboration
+      - SOCKET_IO_CORS_ORIGIN=${SOCKET_IO_CORS_ORIGIN}
+      - VITE_WS_URL=${VITE_WS_URL}
+      # PDF Export (Puppeteer)
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+      - TEMP_EXPORT_DIR=/app/temp/exports
       # Cloudflare R2 Storage
       - R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
       - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
