@@ -1,7 +1,7 @@
-import { IsArray, IsUUID } from 'class-validator';
+import { IsArray, IsString } from 'class-validator';
 
 export class ReorderShotsDto {
   @IsArray()
-  @IsUUID('4', { each: true })
+  @IsString({ each: true })
   shotIds: string[];
 }

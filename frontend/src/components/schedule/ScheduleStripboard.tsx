@@ -3,26 +3,35 @@ import {
   DndContext,
   DragEndEvent,
   DragOverlay,
-  closestCorners,
+  closestCenter,
   PointerSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { useState } from 'react';
-import { App } from 'antd';
+import { App, Button } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import { useTheme } from '../../theme';
 import { schedulesApi } from '../../services/schedules';
-import type { ShootingSchedule, ScheduleStrip } from '../../types/schedule';
-import ShootDayColumn from './ShootDayColumn';
-import ScheduleStripComponent from './ScheduleStrip';
+import type { ShootingSchedule, ScheduleStrip, ShootDay } from '../../types/schedule';
+import ScheduleStripRow from './ScheduleStripRow';
+import DayHeaderRow from './DayHeaderRow';
 
 interface Props {
   schedule: ShootingSchedule;
   onAddStrip: (dayId: string) => void;
+  onEditStrip?: (strip: ScheduleStrip) => void;
+  onAddDay?: () => void;
 }
 
-export default function ScheduleStripboard({ schedule, onAddStrip }: Props) {
+export default function ScheduleStripboard({ schedule, onAddStrip, onEditStrip, onAddDay }: Props) {
   const queryClient = useQueryClient();
   const { message } = App.useApp();
+  const { theme } = useTheme();
   const [activeStrip, setActiveStrip] = useState<ScheduleStrip | null>(null);
 
   const sensors = useSensors(
@@ -33,7 +42,6 @@ export default function ScheduleStripboard({ schedule, onAddStrip }: Props) {
     mutationFn: schedulesApi.reorderStrips,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedule', schedule.id] });
-      message.success('Order updated');
     },
     onError: () => {
       message.error('Failed to reorder');
@@ -73,27 +81,167 @@ export default function ScheduleStripboard({ schedule, onAddStrip }: Props) {
 
   const shootDays = schedule.shootDays || [];
 
+  // Flatten all strips with day info for the sortable context
+  const allStripIds = shootDays.flatMap((d) => (d.strips || []).map((s) => s.id));
+
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div style={{ display: 'flex', gap: 16, overflowX: 'auto', minHeight: 400 }}>
-        {shootDays.map((day) => (
-          <ShootDayColumn
-            key={day.id}
-            day={day}
-            scheduleId={schedule.id}
-            onAddStrip={() => onAddStrip(day.id)}
-          />
-        ))}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '16px 0',
+          minHeight: 'calc(100vh - 180px)',
+        }}
+      >
+        {/* Table Header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '8px 12px',
+            background: theme.colors.background.tertiary,
+            borderRadius: '8px 8px 0 0',
+            borderBottom: `2px solid ${theme.colors.accent.primary}`,
+            fontWeight: 600,
+            fontSize: 11,
+            textTransform: 'uppercase',
+            color: theme.colors.text.secondary,
+            letterSpacing: 1,
+          }}
+        >
+          <div style={{ width: 40 }}></div>
+          <div style={{ width: 80, textAlign: 'center' }}>Scene</div>
+          <div style={{ width: 70, textAlign: 'center' }}>I/E</div>
+          <div style={{ width: 70, textAlign: 'center' }}>D/N</div>
+          <div style={{ flex: 1, paddingLeft: 12 }}>Description / Set</div>
+          <div style={{ width: 120, textAlign: 'center' }}>Location</div>
+          <div style={{ width: 60, textAlign: 'center' }}>Pages</div>
+          <div style={{ width: 80, textAlign: 'center' }}>Actions</div>
+        </div>
+
+        {/* Stripboard Content */}
+        <SortableContext items={allStripIds} strategy={verticalListSortingStrategy}>
+          <div
+            style={{
+              flex: 1,
+              background: theme.colors.background.primary,
+              borderRadius: '0 0 8px 8px',
+              overflow: 'hidden',
+              border: `1px solid ${theme.colors.border.default}`,
+              borderTop: 'none',
+            }}
+          >
+            {shootDays.length === 0 ? (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 60,
+                  color: theme.colors.text.tertiary,
+                }}
+              >
+                <div style={{ fontSize: 16, marginBottom: 20 }}>
+                  No shoot days scheduled yet
+                </div>
+                {onAddDay && (
+                  <Button type="primary" icon={<PlusOutlined />} onClick={onAddDay}>
+                    Add First Shoot Day
+                  </Button>
+                )}
+              </div>
+            ) : (
+              shootDays.map((day) => (
+                <DaySection
+                  key={day.id}
+                  day={day}
+                  scheduleId={schedule.id}
+                  onAddStrip={() => onAddStrip(day.id)}
+                  onEditStrip={onEditStrip}
+                />
+              ))
+            )}
+
+            {/* Add Day Button at Bottom */}
+            {shootDays.length > 0 && onAddDay && (
+              <div
+                style={{
+                  padding: '16px',
+                  borderTop: `1px solid ${theme.colors.border.default}`,
+                  display: 'flex',
+                  justifyContent: 'center',
+                }}
+              >
+                <Button type="dashed" icon={<PlusOutlined />} onClick={onAddDay}>
+                  Add Shoot Day
+                </Button>
+              </div>
+            )}
+          </div>
+        </SortableContext>
       </div>
 
       <DragOverlay>
-        {activeStrip && <ScheduleStripComponent strip={activeStrip} isDragging />}
+        {activeStrip && (
+          <div style={{ opacity: 0.9 }}>
+            <ScheduleStripRow strip={activeStrip} isDragging />
+          </div>
+        )}
       </DragOverlay>
     </DndContext>
+  );
+}
+
+// Day section component with header and strips
+interface DaySectionProps {
+  day: ShootDay;
+  scheduleId: string;
+  onAddStrip: () => void;
+  onEditStrip?: (strip: ScheduleStrip) => void;
+}
+
+function DaySection({ day, scheduleId, onAddStrip, onEditStrip }: DaySectionProps) {
+  const { theme } = useTheme();
+  const strips = day.strips || [];
+
+  return (
+    <div>
+      {/* Day Header Row */}
+      <DayHeaderRow day={day} scheduleId={scheduleId} onAddStrip={onAddStrip} />
+
+      {/* Strips */}
+      {strips.length === 0 ? (
+        <div
+          style={{
+            padding: '20px 12px',
+            textAlign: 'center',
+            color: theme.colors.text.tertiary,
+            background: theme.colors.background.secondary,
+            borderBottom: `1px solid ${theme.colors.border.default}`,
+          }}
+        >
+          <span style={{ marginRight: 12 }}>No scenes scheduled</span>
+          <Button size="small" type="primary" ghost onClick={onAddStrip}>
+            Add Scene
+          </Button>
+        </div>
+      ) : (
+        strips.map((strip) => (
+          <ScheduleStripRow
+            key={strip.id}
+            strip={strip}
+            scheduleId={scheduleId}
+            onEdit={onEditStrip}
+          />
+        ))
+      )}
+    </div>
   );
 }

@@ -1,10 +1,10 @@
-import { IsString, IsOptional, IsUUID, IsInt, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsDateString } from 'class-validator';
 
 export class CreateCallSheetDto {
-  @IsUUID()
+  @IsString()
   scheduleId: string;
 
-  @IsUUID()
+  @IsString()
   shootDayId: string;
 
   @IsOptional() @IsInt() callSheetNumber?: number;

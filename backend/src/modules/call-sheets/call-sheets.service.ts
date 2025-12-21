@@ -23,6 +23,17 @@ export class CallSheetsService {
     });
   }
 
+  async findAll() {
+    return this.prisma.callSheet.findMany({
+      include: {
+        shootDay: true,
+        schedule: { select: { id: true, name: true } },
+        _count: { select: { castCalls: true, crewCalls: true } },
+      },
+      orderBy: { shootDate: 'asc' },
+    });
+  }
+
   async findBySchedule(scheduleId: string) {
     return this.prisma.callSheet.findMany({
       where: { scheduleId },

@@ -1,11 +1,11 @@
-import { IsArray, IsUUID, ValidateNested, IsInt } from 'class-validator';
+import { IsArray, IsString, ValidateNested, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class StripPosition {
-  @IsUUID()
+  @IsString()
   stripId: string;
 
-  @IsUUID()
+  @IsString()
   shootDayId: string;
 
   @IsInt()

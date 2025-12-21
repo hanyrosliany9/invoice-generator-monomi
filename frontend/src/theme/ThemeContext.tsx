@@ -211,6 +211,16 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
         colorBgContainer: theme.colors.card.background,
         boxShadow: theme.colors.card.shadow,
       },
+      Modal: {
+        contentBg: theme.colors.background.secondary,
+        headerBg: theme.colors.background.secondary,
+        footerBg: theme.colors.background.secondary,
+        titleColor: theme.colors.text.primary,
+      },
+      Table: {
+        colorBgContainer: theme.colors.card.background,
+        headerBg: theme.colors.background.tertiary,
+      },
       Button: {
         controlHeight: 40,
         controlHeightLG: 48,

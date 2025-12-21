@@ -18,6 +18,11 @@ export const shotListsApi = {
     return res.data.data;
   },
 
+  update: async (id: string, data: { name?: string; description?: string }): Promise<ShotList> => {
+    const res = await apiClient.put(`/shot-lists/${id}`, data);
+    return res.data.data;
+  },
+
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/shot-lists/${id}`);
   },

@@ -15,6 +15,9 @@ export const schedulesApi = {
 
   create: async (dto: CreateScheduleDto): Promise<ShootingSchedule> => {
     const res = await apiClient.post('/schedules', dto);
+    console.log('[SchedulesAPI] Full response:', res);
+    console.log('[SchedulesAPI] res.data:', res.data);
+    console.log('[SchedulesAPI] res.data.data:', res.data.data);
     return res.data.data;
   },
 

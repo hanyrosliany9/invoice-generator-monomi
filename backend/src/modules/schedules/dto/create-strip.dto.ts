@@ -1,7 +1,7 @@
-import { IsString, IsOptional, IsUUID, IsInt, IsNumber, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsNumber, IsEnum } from 'class-validator';
 
 export class CreateStripDto {
-  @IsUUID()
+  @IsString()
   shootDayId: string;
 
   @IsOptional()
@@ -12,7 +12,7 @@ export class CreateStripDto {
   stripType: string;
 
   // Scene fields
-  @IsOptional() @IsUUID() sceneId?: string;
+  @IsOptional() @IsString() sceneId?: string;
   @IsOptional() @IsString() sceneNumber?: string;
   @IsOptional() @IsString() sceneName?: string;
   @IsOptional() @IsString() intExt?: string;

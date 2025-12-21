@@ -11,23 +11,22 @@ export class SchedulesController {
 
   @Post()
   async create(@Request() req: any, @Body() dto: CreateScheduleDto) {
-    const result = await this.service.create(req.user.id, dto);
-    return { data: result };
+    return this.service.create(req.user.id, dto);
   }
 
   @Get()
-  findByProject(@Query('projectId') projectId: string) {
-    return { data: this.service.findByProject(projectId) };
+  async findByProject(@Query('projectId') projectId: string) {
+    return this.service.findByProject(projectId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return { data: this.service.findOne(id) };
+  async findOne(@Param('id') id: string) {
+    return this.service.findOne(id);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateScheduleDto>) {
-    return { data: this.service.update(id, dto) };
+  async update(@Param('id') id: string, @Body() dto: Partial<CreateScheduleDto>) {
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
@@ -36,8 +35,8 @@ export class SchedulesController {
   }
 
   @Post(':id/auto-schedule')
-  autoSchedule(@Param('id') id: string, @Body('groupBy') groupBy: string) {
-    return { data: this.service.autoSchedule(id, groupBy as any) };
+  async autoSchedule(@Param('id') id: string, @Body('groupBy') groupBy: string) {
+    return this.service.autoSchedule(id, groupBy as any);
   }
 
   @Get(':id/export/pdf')

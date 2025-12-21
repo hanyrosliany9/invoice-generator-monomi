@@ -1,24 +1,24 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Typography, Popconfirm, Button, App } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { Button, App, Popconfirm } from 'antd';
+import { DeleteOutlined, EditOutlined, MenuOutlined } from '@ant-design/icons';
 import { schedulesApi } from '../../services/schedules';
 import { getStripColor } from '../../constants/scheduleSpecs';
 import type { ScheduleStrip } from '../../types/schedule';
-
-const { Text } = Typography;
 
 interface Props {
   strip: ScheduleStrip;
   scheduleId?: string;
   isDragging?: boolean;
+  onEdit?: (strip: ScheduleStrip) => void;
 }
 
 export default function ScheduleStripComponent({
   strip,
   scheduleId,
   isDragging,
+  onEdit,
 }: Props) {
   const queryClient = useQueryClient();
   const { message } = App.useApp();
@@ -53,82 +53,223 @@ export default function ScheduleStripComponent({
   });
 
   const backgroundColor = getStripColor(strip);
+  const isBanner = strip.stripType === 'BANNER';
 
-  if (strip.stripType === 'BANNER') {
+  // Banner strip - full width colored bar
+  if (isBanner) {
+    const bannerIcons: Record<string, string> = {
+      DAY_BREAK: '🌙',
+      MEAL_BREAK: '🍽️',
+      COMPANY_MOVE: '🚚',
+      NOTE: '📝',
+    };
+
     return (
       <div
         ref={setNodeRef}
         style={{
           ...style,
-          padding: '8px 12px',
-          background: backgroundColor,
-          color: '#fff',
-          borderRadius: 4,
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
+          background: backgroundColor,
+          borderRadius: 4,
+          padding: '10px 12px',
+          marginBottom: 2,
           cursor: 'grab',
+          boxShadow: isSortableDragging ? '0 8px 20px rgba(0,0,0,0.4)' : 'none',
         }}
         {...attributes}
         {...listeners}
       >
-        <Text style={{ color: '#fff' }} strong>
-          {strip.bannerText || strip.bannerType}
-        </Text>
-        <Popconfirm title="Delete?" onConfirm={() => deleteMutation.mutate()}>
-          <Button
-            size="small"
-            type="text"
-            icon={<DeleteOutlined />}
-            style={{ color: '#fff' }}
-          />
-        </Popconfirm>
+        <MenuOutlined style={{ color: 'rgba(255,255,255,0.5)', marginRight: 12 }} />
+        <span style={{
+          flex: 1,
+          color: '#fff',
+          fontWeight: 600,
+          fontSize: 13,
+          letterSpacing: 1,
+          textTransform: 'uppercase',
+        }}>
+          {bannerIcons[strip.bannerType || 'NOTE']} {strip.bannerText || strip.bannerType?.replace('_', ' ')}
+        </span>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {onEdit && (
+            <Button
+              size="small"
+              type="text"
+              icon={<EditOutlined />}
+              onClick={(e) => { e.stopPropagation(); onEdit(strip); }}
+              style={{ color: 'rgba(255,255,255,0.7)' }}
+            />
+          )}
+          <Popconfirm title="Delete?" onConfirm={() => deleteMutation.mutate()} okButtonProps={{ danger: true }}>
+            <Button
+              size="small"
+              type="text"
+              icon={<DeleteOutlined />}
+              onClick={(e) => e.stopPropagation()}
+              style={{ color: 'rgba(255,255,255,0.7)' }}
+            />
+          </Popconfirm>
+        </div>
       </div>
     );
   }
 
+  // Scene strip - table-like row with columns
   return (
     <div
       ref={setNodeRef}
       style={{
         ...style,
-        padding: '8px 12px',
+        display: 'flex',
+        alignItems: 'stretch',
         background: backgroundColor,
-        border: '1px solid #d9d9d9',
         borderRadius: 4,
+        marginBottom: 2,
         cursor: 'grab',
+        boxShadow: isSortableDragging ? '0 8px 20px rgba(0,0,0,0.4)' : 'none',
+        border: '1px solid rgba(0,0,0,0.1)',
+        minHeight: 52,
       }}
       {...attributes}
       {...listeners}
     >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-        }}
-      >
-        <div>
-          <Text strong>{strip.sceneNumber}</Text>
-          <Text type="secondary" style={{ marginLeft: 8 }}>
-            {strip.intExt} / {strip.dayNight}
-          </Text>
+      {/* Drag Handle + Scene Number */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: '8px 12px',
+        borderRight: '1px solid rgba(0,0,0,0.1)',
+        minWidth: 80,
+        background: 'rgba(0,0,0,0.05)',
+      }}>
+        <MenuOutlined style={{ color: 'rgba(0,0,0,0.3)', marginRight: 8, fontSize: 12 }} />
+        <span style={{
+          fontWeight: 700,
+          fontSize: 16,
+          color: '#1a1a1a',
+          fontFamily: 'ui-monospace, monospace',
+        }}>
+          {strip.sceneNumber || '—'}
+        </span>
+      </div>
+
+      {/* INT/EXT + DAY/NIGHT */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        padding: '4px 10px',
+        borderRight: '1px solid rgba(0,0,0,0.1)',
+        minWidth: 70,
+        gap: 2,
+      }}>
+        <span style={{
+          background: strip.intExt === 'EXT' ? '#16a34a' : strip.intExt === 'INT/EXT' ? '#ca8a04' : '#2563eb',
+          color: '#fff',
+          padding: '2px 6px',
+          borderRadius: 3,
+          fontSize: 10,
+          fontWeight: 700,
+          textAlign: 'center',
+        }}>
+          {strip.intExt || 'INT'}
+        </span>
+        <span style={{
+          background: strip.dayNight === 'NIGHT' ? '#1e293b' : strip.dayNight === 'DAWN' ? '#ea580c' : strip.dayNight === 'DUSK' ? '#db2777' : '#eab308',
+          color: strip.dayNight === 'DAY' ? '#1a1a1a' : '#fff',
+          padding: '2px 6px',
+          borderRadius: 3,
+          fontSize: 10,
+          fontWeight: 700,
+          textAlign: 'center',
+        }}>
+          {strip.dayNight || 'DAY'}
+        </span>
+      </div>
+
+      {/* Scene Description + Location */}
+      <div style={{
+        flex: 1,
+        padding: '6px 12px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          fontSize: 13,
+          fontWeight: 500,
+          color: '#1a1a1a',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
+          {strip.sceneName || 'Untitled Scene'}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Text type="secondary">{strip.pageCount?.toFixed(1) || '0'}p</Text>
-          <Popconfirm title="Delete?" onConfirm={() => deleteMutation.mutate()}>
-            <Button size="small" type="text" icon={<DeleteOutlined />} danger />
-          </Popconfirm>
+        {strip.location && (
+          <div style={{
+            fontSize: 11,
+            color: 'rgba(0,0,0,0.6)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            marginTop: 2,
+          }}>
+            📍 {strip.location}
+          </div>
+        )}
+      </div>
+
+      {/* Page Count */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '8px 12px',
+        borderLeft: '1px solid rgba(0,0,0,0.1)',
+        minWidth: 60,
+        background: 'rgba(0,0,0,0.03)',
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>
+            {strip.pageCount?.toFixed(1) || '0'}
+          </div>
+          <div style={{ fontSize: 9, color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase' }}>
+            pages
+          </div>
         </div>
       </div>
-      <Text ellipsis style={{ fontSize: 12 }}>
-        {strip.sceneName}
-      </Text>
-      {strip.location && (
-        <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
-          {strip.location}
-        </Text>
-      )}
+
+      {/* Actions */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: '4px 8px',
+        borderLeft: '1px solid rgba(0,0,0,0.1)',
+        background: 'rgba(0,0,0,0.03)',
+        gap: 2,
+      }}>
+        {onEdit && (
+          <Button
+            size="small"
+            type="text"
+            icon={<EditOutlined style={{ fontSize: 12 }} />}
+            onClick={(e) => { e.stopPropagation(); onEdit(strip); }}
+            style={{ color: 'rgba(0,0,0,0.5)' }}
+          />
+        )}
+        <Popconfirm title="Delete?" onConfirm={() => deleteMutation.mutate()} okButtonProps={{ danger: true }}>
+          <Button
+            size="small"
+            type="text"
+            danger
+            icon={<DeleteOutlined style={{ fontSize: 12 }} />}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </Popconfirm>
+      </div>
     </div>
   );
 }

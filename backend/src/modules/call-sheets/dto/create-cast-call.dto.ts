@@ -1,7 +1,7 @@
-import { IsString, IsOptional, IsUUID, IsInt, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsEnum } from 'class-validator';
 
 export class CreateCastCallDto {
-  @IsUUID()
+  @IsString()
   callSheetId: string;
 
   @IsOptional() @IsInt() order?: number;

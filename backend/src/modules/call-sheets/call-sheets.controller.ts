@@ -14,59 +14,61 @@ export class CallSheetsController {
 
   @Post()
   async create(@Request() req: any, @Body() dto: CreateCallSheetDto) {
-    const result = await this.service.create(req.user.id, dto);
-    return { data: result };
+    return this.service.create(req.user.id, dto);
   }
 
   @Get()
-  findBySchedule(@Query('scheduleId') scheduleId: string) {
-    return { data: this.service.findBySchedule(scheduleId) };
+  async findBySchedule(@Query('scheduleId') scheduleId?: string) {
+    if (!scheduleId) {
+      return this.service.findAll();
+    }
+    return this.service.findBySchedule(scheduleId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return { data: this.service.findOne(id) };
+  async findOne(@Param('id') id: string) {
+    return this.service.findOne(id);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateCallSheetDto) {
-    return { data: this.service.update(id, dto) };
+  async update(@Param('id') id: string, @Body() dto: UpdateCallSheetDto) {
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string) {
     return this.service.remove(id);
   }
 
   // Cast endpoints
   @Post(':id/cast')
-  addCast(@Param('id') id: string, @Body() dto: Omit<CreateCastCallDto, 'callSheetId'>) {
-    return { data: this.service.addCast({ ...dto, callSheetId: id }) };
+  async addCast(@Param('id') id: string, @Body() dto: Omit<CreateCastCallDto, 'callSheetId'>) {
+    return this.service.addCast({ ...dto, callSheetId: id });
   }
 
   @Put('cast/:id')
-  updateCast(@Param('id') id: string, @Body() dto: UpdateCastCallDto) {
-    return { data: this.service.updateCast(id, dto) };
+  async updateCast(@Param('id') id: string, @Body() dto: UpdateCastCallDto) {
+    return this.service.updateCast(id, dto);
   }
 
   @Delete('cast/:id')
-  removeCast(@Param('id') id: string) {
+  async removeCast(@Param('id') id: string) {
     return this.service.removeCast(id);
   }
 
   // Crew endpoints
   @Post(':id/crew')
-  addCrew(@Param('id') id: string, @Body() dto: Omit<CreateCrewCallDto, 'callSheetId'>) {
-    return { data: this.service.addCrew({ ...dto, callSheetId: id }) };
+  async addCrew(@Param('id') id: string, @Body() dto: Omit<CreateCrewCallDto, 'callSheetId'>) {
+    return this.service.addCrew({ ...dto, callSheetId: id });
   }
 
   @Put('crew/:id')
-  updateCrew(@Param('id') id: string, @Body() dto: UpdateCrewCallDto) {
-    return { data: this.service.updateCrew(id, dto) };
+  async updateCrew(@Param('id') id: string, @Body() dto: UpdateCrewCallDto) {
+    return this.service.updateCrew(id, dto);
   }
 
   @Delete('crew/:id')
-  removeCrew(@Param('id') id: string) {
+  async removeCrew(@Param('id') id: string) {
     return this.service.removeCrew(id);
   }
 

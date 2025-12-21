@@ -11,22 +11,22 @@ export class StripsController {
   constructor(private readonly service: StripsService) {}
 
   @Post()
-  create(@Body() dto: CreateStripDto) {
-    return { data: this.service.create(dto) };
+  async create(@Body() dto: CreateStripDto) {
+    return this.service.create(dto);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateStripDto) {
-    return { data: this.service.update(id, dto) };
+  async update(@Param('id') id: string, @Body() dto: UpdateStripDto) {
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string) {
     return this.service.remove(id);
   }
 
   @Post('reorder')
-  reorder(@Body() dto: ReorderStripsDto) {
+  async reorder(@Body() dto: ReorderStripsDto) {
     return this.service.reorder(dto);
   }
 }

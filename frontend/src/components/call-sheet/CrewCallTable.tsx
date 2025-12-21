@@ -15,7 +15,8 @@ import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { callSheetsApi } from '../../services/callSheets';
 import { DEPARTMENTS, COMMON_POSITIONS } from '../../constants/departments';
-import type { CrewCall, CreateCrewCallDto } from '../../types/callSheet';
+import type { CrewCall } from '../../types/callSheet';
+import AddCrewModal from './AddCrewModal';
 
 interface Props {
   callSheetId: string;
@@ -26,20 +27,6 @@ export default function CrewCallTable({ callSheetId, crewCalls }: Props) {
   const queryClient = useQueryClient();
   const { message } = App.useApp();
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [selectedDept, setSelectedDept] = useState<string>('');
-
-  const addMutation = useMutation({
-    mutationFn: (dto: CreateCrewCallDto) =>
-      callSheetsApi.addCrew(callSheetId, dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', callSheetId] });
-      setAddModalOpen(false);
-      message.success('Crew member added');
-    },
-    onError: () => {
-      message.error('Failed to add crew member');
-    },
-  });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: Partial<CrewCall> }) =>
@@ -201,6 +188,16 @@ export default function CrewCallTable({ callSheetId, crewCalls }: Props) {
         rowKey="id"
         pagination={false}
         size="small"
+      />
+
+      <AddCrewModal
+        open={addModalOpen}
+        callSheetId={callSheetId}
+        onClose={() => setAddModalOpen(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['call-sheet', callSheetId] });
+          setAddModalOpen(false);
+        }}
       />
     </Card>
   );

@@ -1,7 +1,7 @@
-import { IsString, IsOptional, IsUUID, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsInt } from 'class-validator';
 
 export class CreateShotDto {
-  @IsUUID()
+  @IsString()
   sceneId: string;
 
   @IsString()

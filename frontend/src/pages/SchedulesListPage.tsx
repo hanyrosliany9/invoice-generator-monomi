@@ -58,14 +58,21 @@ export default function SchedulesListPage() {
   const createMutation = useMutation({
     mutationFn: (dto: CreateScheduleDto) => schedulesApi.create(dto),
     onSuccess: (newSchedule) => {
+      console.log('[SchedulesList] Create mutation success:', newSchedule);
+      console.log('[SchedulesList] Schedule ID:', newSchedule?.id);
       queryClient.invalidateQueries({ queryKey: ['schedules'] });
       message.success('Schedule created successfully');
       form.resetFields();
       setCreateModalOpen(false);
       // Navigate to the new schedule
-      setTimeout(() => {
-        navigate(`/schedules/${newSchedule.id}`);
-      }, 500);
+      if (newSchedule?.id) {
+        setTimeout(() => {
+          navigate(`/schedules/${newSchedule.id}`);
+        }, 500);
+      } else {
+        console.error('[SchedulesList] No schedule ID returned!', newSchedule);
+        message.error('Schedule created but ID not returned');
+      }
     },
     onError: (error: any) => {
       const errorMessage = error?.response?.data?.message || error?.message || 'Failed to create schedule';

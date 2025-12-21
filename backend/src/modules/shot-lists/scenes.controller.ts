@@ -10,25 +10,21 @@ export class ScenesController {
 
   @Post()
   async create(@Body() dto: CreateSceneDto) {
-    const result = await this.service.create(dto);
-    return { data: result };
+    return this.service.create(dto);
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    const result = await this.service.findOne(id);
-    return { data: result };
+    return this.service.findOne(id);
   }
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: Partial<CreateSceneDto>) {
-    const result = await this.service.update(id, dto);
-    return { data: result };
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    const result = await this.service.remove(id);
-    return result;
+    return this.service.remove(id);
   }
 }

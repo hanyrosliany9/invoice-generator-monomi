@@ -12,31 +12,26 @@ export class ShotsController {
 
   @Post()
   async create(@Body() dto: CreateShotDto) {
-    const result = await this.service.create(dto);
-    return { data: result };
+    return this.service.create(dto);
   }
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateShotDto) {
-    const result = await this.service.update(id, dto);
-    return { data: result };
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    const result = await this.service.remove(id);
-    return result;
+    return this.service.remove(id);
   }
 
   @Post('reorder/:sceneId')
   async reorder(@Param('sceneId') sceneId: string, @Body() dto: ReorderShotsDto) {
-    const result = await this.service.reorder(sceneId, dto);
-    return { data: result };
+    return this.service.reorder(sceneId, dto);
   }
 
   @Post(':id/duplicate')
   async duplicate(@Param('id') id: string) {
-    const result = await this.service.duplicate(id);
-    return { data: result };
+    return this.service.duplicate(id);
   }
 }

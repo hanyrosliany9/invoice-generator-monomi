@@ -9,13 +9,13 @@ export class ShootDaysController {
   constructor(private readonly service: ShootDaysService) {}
 
   @Post()
-  create(@Body() dto: CreateShootDayDto) {
-    return { data: this.service.create(dto) };
+  async create(@Body() dto: CreateShootDayDto) {
+    return this.service.create(dto);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateShootDayDto>) {
-    return { data: this.service.update(id, dto) };
+  async update(@Param('id') id: string, @Body() dto: Partial<CreateShootDayDto>) {
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')

@@ -41,6 +41,22 @@ export class ShotListsService {
     return list;
   }
 
+  async update(id: string, dto: Partial<{ name: string; description: string }>) {
+    const existing = await this.prisma.shotList.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Shot list not found');
+
+    return this.prisma.shotList.update({
+      where: { id },
+      data: dto,
+      include: {
+        scenes: {
+          orderBy: { order: 'asc' },
+          include: { shots: { orderBy: { order: 'asc' } } },
+        },
+      },
+    });
+  }
+
   async remove(id: string) {
     await this.prisma.shotList.delete({ where: { id } });
     return { success: true };

@@ -15,9 +15,13 @@ export class SchedulesService {
   }
 
   async findByProject(projectId: string) {
+    // If 'all' is passed, return all schedules (for list page)
+    const where = projectId === 'all' ? {} : { projectId };
+
     return this.prisma.shootingSchedule.findMany({
-      where: { projectId },
+      where,
       include: {
+        project: { select: { id: true, number: true, description: true } },
         shootDays: { orderBy: { order: 'asc' } },
         _count: { select: { shootDays: true } },
       },
@@ -55,11 +59,111 @@ export class SchedulesService {
   }
 
   async autoSchedule(id: string, groupBy: 'location' | 'intExt' | 'dayNight') {
-    // Get all strips, reorder by groupBy field
-    const schedule = await this.findOne(id);
-    // Implementation: sort strips and redistribute to days
-    // This is a simplified version - full implementation would be more complex
-    return schedule;
+    // Get the schedule with all data
+    const schedule = await this.prisma.shootingSchedule.findUnique({
+      where: { id },
+      include: {
+        shootDays: {
+          orderBy: { order: 'asc' },
+          include: { strips: { orderBy: { order: 'asc' } } },
+        },
+      },
+    });
+
+    if (!schedule) throw new NotFoundException('Schedule not found');
+
+    // Collect all scene strips from all days
+    const allStrips = schedule.shootDays.flatMap((day) =>
+      day.strips.filter((s) => s.stripType === 'SCENE')
+    );
+
+    if (allStrips.length === 0) {
+      return this.findOne(id);
+    }
+
+    // Group strips by the specified field
+    const groups = new Map<string, typeof allStrips>();
+    for (const strip of allStrips) {
+      let key: string;
+      switch (groupBy) {
+        case 'location':
+          key = strip.location || 'Unknown';
+          break;
+        case 'intExt':
+          key = strip.intExt || 'INT';
+          break;
+        case 'dayNight':
+          key = strip.dayNight || 'DAY';
+          break;
+        default:
+          key = 'Unknown';
+      }
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(strip);
+    }
+
+    // Flatten groups back to a sorted array (grouped together)
+    const sortedStrips = Array.from(groups.values()).flat();
+
+    // Calculate pages per day (default to 8 if not set)
+    const pagesPerDay = schedule.pagesPerDay || 8;
+
+    // Distribute strips across shoot days
+    const dayAssignments: { dayId: string; stripIds: string[] }[] = [];
+    let currentDayIndex = 0;
+    let currentDayPages = 0;
+    let currentDayStrips: string[] = [];
+
+    // Ensure we have enough shoot days
+    const existingDays = schedule.shootDays;
+    const dayIds = existingDays.map((d) => d.id);
+
+    for (const strip of sortedStrips) {
+      const stripPages = strip.pageCount || 1;
+
+      // If adding this strip would exceed pages per day, start a new day
+      if (currentDayPages + stripPages > pagesPerDay && currentDayStrips.length > 0) {
+        if (currentDayIndex < dayIds.length) {
+          dayAssignments.push({
+            dayId: dayIds[currentDayIndex],
+            stripIds: currentDayStrips,
+          });
+        }
+        currentDayIndex++;
+        currentDayPages = 0;
+        currentDayStrips = [];
+      }
+
+      currentDayStrips.push(strip.id);
+      currentDayPages += stripPages;
+    }
+
+    // Add remaining strips to the last day
+    if (currentDayStrips.length > 0 && currentDayIndex < dayIds.length) {
+      dayAssignments.push({
+        dayId: dayIds[currentDayIndex],
+        stripIds: currentDayStrips,
+      });
+    }
+
+    // Update strip assignments in database
+    await this.prisma.$transaction(async (tx) => {
+      for (const assignment of dayAssignments) {
+        for (let i = 0; i < assignment.stripIds.length; i++) {
+          await tx.scheduleStrip.update({
+            where: { id: assignment.stripIds[i] },
+            data: {
+              shootDayId: assignment.dayId,
+              order: i,
+            },
+          });
+        }
+      }
+    });
+
+    return this.findOne(id);
   }
 
   async generatePdf(id: string): Promise<Buffer> {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards, Request, Res } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ShotListsService } from './shot-lists.service';
@@ -11,26 +11,27 @@ export class ShotListsController {
 
   @Post()
   async create(@Request() req: any, @Body() dto: CreateShotListDto) {
-    const result = await this.service.create(req.user.id, dto);
-    return { data: result };
+    return this.service.create(req.user.id, dto);
   }
 
   @Get()
   async findByProject(@Query('projectId') projectId: string) {
-    const result = await this.service.findByProject(projectId);
-    return { data: result };
+    return this.service.findByProject(projectId);
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    const result = await this.service.findOne(id);
-    return { data: result };
+    return this.service.findOne(id);
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() dto: Partial<CreateShotListDto>) {
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    const result = await this.service.remove(id);
-    return result;
+    return this.service.remove(id);
   }
 
   @Get(':id/export/pdf')
