@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -67,6 +67,7 @@ export default function CallSheetEditorPage() {
   const [hospitalOptions, setHospitalOptions] = useState<Array<{ id: string; name: string; address: string; phone: string; distance: number }>>([]);
   const [addressOptions, setAddressOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [addressSearching, setAddressSearching] = useState(false);
+  const [localAddress, setLocalAddress] = useState<string>('');
   const [castForm] = Form.useForm();
   const [crewForm] = Form.useForm();
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
@@ -111,6 +112,13 @@ export default function CallSheetEditorPage() {
     queryFn: () => callSheetsApi.getById(id!),
     enabled: !!id,
   });
+
+  // Sync local address state with callSheet data
+  useEffect(() => {
+    if (callSheet?.locationAddress) {
+      setLocalAddress(callSheet.locationAddress);
+    }
+  }, [callSheet?.locationAddress]);
 
   const updateMutation = useMutation({
     mutationFn: (dto: Partial<CallSheet>) => callSheetsApi.update(id!, dto),
@@ -535,12 +543,17 @@ export default function CallSheetEditorPage() {
               Address
             </div>
             <AutoComplete
-              value={callSheet.locationAddress || ''}
+              value={localAddress}
               options={addressOptions}
-              onSearch={handleAddressSearch}
+              onSearch={(value) => {
+                setLocalAddress(value);
+                handleAddressSearch(value);
+              }}
               onSelect={(value) => {
+                setLocalAddress(value);
+                setAddressOptions([]);
+                // Save to backend
                 updateMutation.mutate({ locationAddress: value });
-                setAddressOptions([]); // Clear suggestions after selection
                 // Auto-trigger weather/hospital auto-fill after address selection
                 setTimeout(() => {
                   if (!autoFillAllMutation.isPending) {
@@ -549,19 +562,21 @@ export default function CallSheetEditorPage() {
                 }, 500);
               }}
               onChange={(value) => {
-                if (typeof value === 'string') {
-                  updateMutation.mutate({ locationAddress: value });
+                // Only update local state - NO API CALL HERE
+                setLocalAddress(value);
+              }}
+              onBlur={() => {
+                // Save to backend when user clicks away (if changed)
+                if (localAddress !== callSheet?.locationAddress) {
+                  updateMutation.mutate({ locationAddress: localAddress });
                 }
               }}
               placeholder="Start typing address... (e.g., 'Jakarta', 'Bandung')"
               style={{ width: '100%', marginBottom: 12 }}
               notFoundContent={addressSearching ? 'Searching...' : 'Type at least 3 characters'}
-            >
-              <Input.TextArea
-                rows={2}
-                placeholder="Start typing address..."
-              />
-            </AutoComplete>
+              popupMatchSelectWidth={true}
+              dropdownStyle={{ maxHeight: 300, overflow: 'auto' }}
+            />
             <div style={{ fontSize: 10, color: theme.colors.text.tertiary, textTransform: 'uppercase', marginBottom: 8 }}>
               Parking Notes
             </div>
