@@ -19,6 +19,22 @@ export class SchedulesController {
     return this.service.findByProject(projectId);
   }
 
+  // More specific routes MUST come before generic :id routes
+  @Get(':id/export/pdf')
+  async exportPdf(@Param('id') id: string, @Res() res: Response) {
+    const pdf = await this.service.generatePdf(id);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="schedule-${id}.pdf"`,
+    });
+    res.send(pdf);
+  }
+
+  @Post(':id/auto-schedule')
+  async autoSchedule(@Param('id') id: string, @Body('groupBy') groupBy: string) {
+    return this.service.autoSchedule(id, groupBy as any);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.service.findOne(id);
@@ -32,20 +48,5 @@ export class SchedulesController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
-  }
-
-  @Post(':id/auto-schedule')
-  async autoSchedule(@Param('id') id: string, @Body('groupBy') groupBy: string) {
-    return this.service.autoSchedule(id, groupBy as any);
-  }
-
-  @Get(':id/export/pdf')
-  async exportPdf(@Param('id') id: string, @Res() res: Response) {
-    const pdf = await this.service.generatePdf(id);
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="schedule-${id}.pdf"`,
-    });
-    res.send(pdf);
   }
 }
