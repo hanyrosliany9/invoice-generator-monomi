@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -20,7 +20,6 @@ import {
   Tooltip,
   AutoComplete,
 } from 'antd';
-import { useDebouncedCallback } from 'use-debounce';
 import axios from 'axios';
 import {
   LeftOutlined,
@@ -73,39 +72,52 @@ export default function CallSheetEditorPage() {
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
 
   // Address autocomplete search using Nominatim (free API)
-  const handleAddressSearch = useDebouncedCallback(async (searchValue: string) => {
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleAddressSearch = (searchValue: string) => {
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
     if (!searchValue || searchValue.length < 3) {
       setAddressOptions([]);
+      setAddressSearching(false);
       return;
     }
 
     setAddressSearching(true);
-    try {
-      const response = await axios.get('https://nominatim.openstreetmap.org/search', {
-        params: {
-          q: searchValue,
-          format: 'json',
-          limit: 5,
-          addressdetails: 1,
-        },
-        headers: {
-          'User-Agent': 'invoice-generator-app/1.0 (Call Sheet Address Search)',
-        },
-      });
 
-      const options = response.data.map((item: any) => ({
-        value: item.display_name,
-        label: item.display_name,
-      }));
+    // Debounce: wait 500ms after user stops typing
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+          params: {
+            q: searchValue,
+            format: 'json',
+            limit: 5,
+            addressdetails: 1,
+          },
+          headers: {
+            'User-Agent': 'invoice-generator-app/1.0 (Call Sheet Address Search)',
+          },
+        });
 
-      setAddressOptions(options);
-    } catch (error) {
-      console.error('Address search failed:', error);
-      setAddressOptions([]);
-    } finally {
-      setAddressSearching(false);
-    }
-  }, 1000); // 1-second debounce to respect Nominatim rate limit (1 req/sec)
+        const options = response.data.map((item: any) => ({
+          value: item.display_name,
+          label: item.display_name,
+        }));
+
+        console.log('Address search results:', options); // Debug log
+        setAddressOptions(options);
+      } catch (error) {
+        console.error('Address search failed:', error);
+        setAddressOptions([]);
+      } finally {
+        setAddressSearching(false);
+      }
+    }, 500); // 500ms debounce
+  };
 
   const { data: callSheet, isLoading } = useQuery({
     queryKey: ['call-sheet', id],
@@ -542,40 +554,46 @@ export default function CallSheetEditorPage() {
             <div style={{ fontSize: 10, color: theme.colors.text.tertiary, textTransform: 'uppercase', marginBottom: 8 }}>
               Address
             </div>
-            <AutoComplete
-              value={localAddress}
-              options={addressOptions}
+            <Select
+              showSearch
+              value={localAddress || undefined}
+              placeholder="Start typing address... (e.g., 'Jakarta', 'Bandung')"
+              style={{ width: '100%', marginBottom: 12 }}
+              filterOption={false}
               onSearch={(value) => {
                 setLocalAddress(value);
-                handleAddressSearch(value);
-              }}
-              onSelect={(value) => {
-                setLocalAddress(value);
-                setAddressOptions([]);
-                // Save to backend
-                updateMutation.mutate({ locationAddress: value });
-                // Auto-trigger weather/hospital auto-fill after address selection
-                setTimeout(() => {
-                  if (!autoFillAllMutation.isPending) {
-                    autoFillAllMutation.mutate();
-                  }
-                }, 500);
+                if (value.length >= 3) {
+                  handleAddressSearch(value);
+                } else {
+                  setAddressOptions([]);
+                }
               }}
               onChange={(value) => {
-                // Only update local state - NO API CALL HERE
-                setLocalAddress(value);
+                if (value) {
+                  setLocalAddress(value);
+                  updateMutation.mutate({ locationAddress: value });
+                  setAddressOptions([]);
+                  // Auto-trigger weather/hospital auto-fill
+                  setTimeout(() => {
+                    if (!autoFillAllMutation.isPending) {
+                      autoFillAllMutation.mutate();
+                    }
+                  }, 500);
+                }
               }}
               onBlur={() => {
-                // Save to backend when user clicks away (if changed)
-                if (localAddress !== callSheet?.locationAddress) {
+                if (localAddress && localAddress !== callSheet?.locationAddress) {
                   updateMutation.mutate({ locationAddress: localAddress });
                 }
               }}
-              placeholder="Start typing address... (e.g., 'Jakarta', 'Bandung')"
-              style={{ width: '100%', marginBottom: 12 }}
-              notFoundContent={addressSearching ? 'Searching...' : 'Type at least 3 characters'}
-              popupMatchSelectWidth={true}
-              styles={{ popup: { root: { maxHeight: 300, overflow: 'auto' } } }}
+              notFoundContent={addressSearching ? <Spin size="small" /> : (localAddress && localAddress.length >= 3 ? 'No results found' : 'Type at least 3 characters')}
+              options={addressOptions}
+              allowClear
+              onClear={() => {
+                setLocalAddress('');
+                setAddressOptions([]);
+                updateMutation.mutate({ locationAddress: '' });
+              }}
             />
             <div style={{ fontSize: 10, color: theme.colors.text.tertiary, textTransform: 'uppercase', marginBottom: 8 }}>
               Parking Notes
