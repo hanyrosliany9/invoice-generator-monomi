@@ -93,9 +93,16 @@ export class CallSheetsService {
       where: { callSheetId: dto.callSheetId },
       _max: { order: true },
     });
-    return this.prisma.callSheetCast.create({
-      data: { ...dto, order: dto.order ?? (maxOrder._max.order ?? -1) + 1 },
-    });
+    const data: any = {
+      ...dto,
+      order: dto.order ?? (maxOrder._max.order ?? -1) + 1,
+    };
+    if (data.workStatus) {
+      data.workStatus = data.workStatus as any; // Cast to CastWorkStatus enum
+    } else {
+      data.workStatus = 'W'; // Default to 'W' if not provided
+    }
+    return this.prisma.callSheetCast.create({ data });
   }
 
   async updateCast(id: string, dto: UpdateCastCallDto) {
@@ -606,12 +613,26 @@ export class CallSheetsService {
       orderBy: { order: 'desc' },
     });
     return this.prisma.callSheetMeal.create({
-      data: { callSheetId, order: (lastMeal?.order || 0) + 1, ...dto },
+      data: {
+        callSheetId,
+        order: (lastMeal?.order || 0) + 1,
+        mealType: dto.mealType as any, // Cast to MealType enum
+        time: dto.time,
+        duration: dto.duration,
+        location: dto.location,
+        notes: dto.notes,
+      },
     });
   }
 
   async updateMeal(id: string, dto: UpdateMealDto) {
-    return this.prisma.callSheetMeal.update({ where: { id }, data: dto });
+    const data: any = {};
+    if (dto.mealType) data.mealType = dto.mealType;
+    if (dto.time) data.time = dto.time;
+    if (dto.duration !== undefined) data.duration = dto.duration;
+    if (dto.location !== undefined) data.location = dto.location;
+    if (dto.notes !== undefined) data.notes = dto.notes;
+    return this.prisma.callSheetMeal.update({ where: { id }, data });
   }
 
   async removeMeal(id: string) {
@@ -646,12 +667,28 @@ export class CallSheetsService {
       orderBy: { order: 'desc' },
     });
     return this.prisma.callSheetSpecialReq.create({
-      data: { callSheetId, order: (lastReq?.order || 0) + 1, ...dto },
+      data: {
+        callSheetId,
+        order: (lastReq?.order || 0) + 1,
+        reqType: dto.reqType as any, // Cast to SpecialReqType enum
+        description: dto.description,
+        contactName: dto.contactName,
+        contactPhone: dto.contactPhone,
+        safetyNotes: dto.safetyNotes,
+        scenes: dto.scenes,
+      },
     });
   }
 
   async updateSpecialReq(id: string, dto: UpdateSpecialReqDto) {
-    return this.prisma.callSheetSpecialReq.update({ where: { id }, data: dto });
+    const data: any = {};
+    if (dto.reqType) data.reqType = dto.reqType;
+    if (dto.description) data.description = dto.description;
+    if (dto.contactName !== undefined) data.contactName = dto.contactName;
+    if (dto.contactPhone !== undefined) data.contactPhone = dto.contactPhone;
+    if (dto.safetyNotes !== undefined) data.safetyNotes = dto.safetyNotes;
+    if (dto.scenes !== undefined) data.scenes = dto.scenes;
+    return this.prisma.callSheetSpecialReq.update({ where: { id }, data });
   }
 
   async removeSpecialReq(id: string) {

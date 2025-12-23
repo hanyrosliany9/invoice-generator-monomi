@@ -1,6 +1,7 @@
 /**
- * Call Sheet PDF Template
- * Production call sheet with cast, crew, and timing information
+ * Call Sheet PDF Template - Industry Standard
+ * Enhanced with time-based operational sections, meal management, company moves,
+ * special requirements, and background/extras tracking
  */
 
 export function generateCallSheetHTML(cs: any): string {
@@ -15,14 +16,19 @@ export function generateCallSheetHTML(cs: any): string {
     return acc;
   }, {});
 
+  // Enhanced Cast with all timing columns
   const castRowsHtml = cs.castCalls.map((cast: any) => `
     <tr>
       <td>${cast.castNumber || ''}</td>
       <td>${cast.actorName}</td>
       <td>${cast.character || ''}</td>
+      <td>${cast.workStatus || 'W'}</td>
       <td>${cast.pickupTime || '-'}</td>
+      <td>${cast.muCallTime || '-'}</td>
       <td><strong>${cast.callTime}</strong></td>
       <td>${cast.onSetTime || '-'}</td>
+      <td>${cast.wrapTime || '-'}</td>
+      <td>${cast.muDuration ? cast.muDuration + ' min' : '-'}</td>
     </tr>
   `).join('');
 
@@ -52,6 +58,81 @@ export function generateCallSheetHTML(cs: any): string {
       <td>${scene.castIds || ''}</td>
     </tr>
   `).join('');
+
+  // === NEW: Build Day Schedule Timeline ===
+  const timelineEvents: any[] = [];
+  if (cs.crewCallTime) timelineEvents.push({ time: cs.crewCallTime, label: 'GENERAL CREW CALL', type: 'crew' });
+  if (cs.firstShotTime) timelineEvents.push({ time: cs.firstShotTime, label: 'FIRST SHOT', type: 'shot' });
+  if (cs.mealBreaks) {
+    cs.mealBreaks.forEach((meal: any) => {
+      timelineEvents.push({ time: meal.time, label: `${meal.mealType} (${meal.duration} min)${meal.location ? ' @ ' + meal.location : ''}`, type: 'meal' });
+    });
+  }
+  if (cs.companyMoves) {
+    cs.companyMoves.forEach((move: any) => {
+      timelineEvents.push({ time: move.departTime, label: `Company Move → ${move.toLocation}${move.travelTime ? ' (' + move.travelTime + ' min)' : ''}`, type: 'move' });
+    });
+  }
+  if (cs.estimatedWrap) timelineEvents.push({ time: cs.estimatedWrap, label: 'ESTIMATED WRAP', type: 'wrap' });
+
+  // Sort by time
+  timelineEvents.sort((a, b) => a.time.localeCompare(b.time));
+
+  const timelineHtml = timelineEvents.map(event => `
+    <tr>
+      <td style="font-weight: bold; width: 80px;">${event.time}</td>
+      <td>${event.label}</td>
+    </tr>
+  `).join('');
+
+  // === NEW: Meal Breaks ===
+  const mealsHtml = cs.mealBreaks?.length > 0 ? cs.mealBreaks.map((meal: any) => `
+    <tr>
+      <td>${meal.mealType}</td>
+      <td>${meal.time}</td>
+      <td>${meal.duration} min</td>
+      <td>${meal.location || ''}</td>
+      <td>${meal.notes || ''}</td>
+    </tr>
+  `).join('') : '';
+
+  // === NEW: Company Moves ===
+  const movesHtml = cs.companyMoves?.length > 0 ? cs.companyMoves.map((move: any) => `
+    <tr>
+      <td>${move.departTime}</td>
+      <td>${move.fromLocation}</td>
+      <td>${move.toLocation}</td>
+      <td>${move.travelTime ? move.travelTime + ' min' : ''}</td>
+      <td>${move.notes || ''}</td>
+    </tr>
+  `).join('') : '';
+
+  // === NEW: Special Requirements ===
+  const reqTypeLabels: any = {
+    STUNTS: 'Stunts', MINORS: 'Minors', ANIMALS: 'Animals', VEHICLES: 'Vehicles',
+    SFX_PYRO: 'SFX/Pyro', WATER_WORK: 'Water Work', AERIAL_DRONE: 'Aerial/Drone',
+    WEAPONS: 'Weapons', NUDITY: 'Nudity', OTHER: 'Other'
+  };
+  const specialReqsHtml = cs.specialRequirements?.length > 0 ? cs.specialRequirements.map((req: any) => `
+    <tr>
+      <td>${reqTypeLabels[req.reqType] || req.reqType}</td>
+      <td>${req.description}</td>
+      <td>${req.contactName || ''}</td>
+      <td>${req.contactPhone || ''}</td>
+      <td>${req.scenes || ''}</td>
+    </tr>
+  `).join('') : '';
+
+  // === NEW: Background/Extras ===
+  const backgroundHtml = cs.backgroundCalls?.length > 0 ? cs.backgroundCalls.map((bg: any) => `
+    <tr>
+      <td>${bg.description}</td>
+      <td>${bg.quantity}</td>
+      <td>${bg.callTime}</td>
+      <td>${bg.reportLocation || ''}</td>
+      <td>${bg.wardrobeNotes || ''}</td>
+    </tr>
+  `).join('') : '';
 
   return `<!DOCTYPE html>
 <html>
@@ -113,12 +194,12 @@ export function generateCallSheetHTML(cs: any): string {
     </div>
   </div>
 
-  <div class="times-bar">
-    <div class="time-item"><label>General Call</label><span>${cs.generalCallTime || '-'}</span></div>
-    <div class="time-item"><label>First Shot</label><span>${cs.firstShotTime || '-'}</span></div>
-    <div class="time-item"><label>Est. Wrap</label><span>${cs.wrapTime || '-'}</span></div>
-    <div class="time-item"><label>Sunrise</label><span>${cs.sunrise || '-'}</span></div>
-    <div class="time-item"><label>Sunset</label><span>${cs.sunset || '-'}</span></div>
+  <!-- === KEY TIMES BAR (Enhanced) === -->
+  <div class="times-bar" style="background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%); color: #fff;">
+    <div class="time-item"><label style="color: #aaa;">Crew Call</label><span style="color: #faad14; font-size: 18px;">${cs.crewCallTime || cs.generalCallTime || '-'}</span></div>
+    <div class="time-item"><label style="color: #aaa;">First Shot</label><span style="color: #faad14; font-size: 18px;">${cs.firstShotTime || '-'}</span></div>
+    <div class="time-item"><label style="color: #aaa;">Lunch</label><span style="color: #faad14; font-size: 18px;">${cs.lunchTime || '-'}</span></div>
+    <div class="time-item"><label style="color: #aaa;">Est. Wrap</label><span style="color: #faad14; font-size: 18px;">${cs.estimatedWrap || cs.wrapTime || '-'}</span></div>
   </div>
 
   <div class="two-col">
@@ -162,31 +243,96 @@ export function generateCallSheetHTML(cs: any): string {
   </div>
   ` : ''}
 
+  <!-- === DAY SCHEDULE TIMELINE === -->
+  ${timelineHtml ? `
+  <div class="section">
+    <div class="section-title">DAY SCHEDULE TIMELINE</div>
+    <table>
+      <tbody>${timelineHtml}</tbody>
+    </table>
+  </div>
+  ` : ''}
+
+  <!-- === ENHANCED CAST WITH FULL TIMING === -->
   ${cs.castCalls.length > 0 ? `
   <div class="section">
-    <div class="section-title">CAST</div>
-    <table>
+    <div class="section-title">CAST (Enhanced Timing)</div>
+    <table style="font-size: 10px;">
       <thead>
-        <tr><th>#</th><th>Actor</th><th>Character</th><th>Pickup</th><th>Call</th><th>On Set</th></tr>
+        <tr><th>#</th><th>Actor</th><th>Char</th><th>Status</th><th>Pickup</th><th>H/MU</th><th>Call</th><th>On Set</th><th>Wrap</th><th>MU Time</th></tr>
       </thead>
       <tbody>${castRowsHtml}</tbody>
     </table>
   </div>
   ` : ''}
 
+  <!-- === BACKGROUND / EXTRAS === -->
+  ${backgroundHtml ? `
+  <div class="section">
+    <div class="section-title">BACKGROUND / EXTRAS</div>
+    <table style="font-size: 10px;">
+      <thead>
+        <tr><th>Description</th><th>Qty</th><th>Call Time</th><th>Report To</th><th>Wardrobe</th></tr>
+      </thead>
+      <tbody>${backgroundHtml}</tbody>
+    </table>
+  </div>
+  ` : ''}
+
   ${cs.crewCalls.length > 0 ? `
   <div class="section">
-    <div class="section-title">CREW</div>
+    <div class="section-title">CREW BY DEPARTMENT</div>
     ${crewHtml}
   </div>
   ` : ''}
 
-  ${cs.generalNotes ? `
+  <!-- === MEAL BREAKS === -->
+  ${mealsHtml ? `
   <div class="section">
-    <div class="section-title">NOTES</div>
-    <div style="padding: 8px; background: #fffbeb; border-left: 3px solid #f59e0b;">
-      ${cs.generalNotes}
-    </div>
+    <div class="section-title">MEAL BREAKS</div>
+    <table style="font-size: 10px;">
+      <thead>
+        <tr><th>Type</th><th>Time</th><th>Duration</th><th>Location</th><th>Notes</th></tr>
+      </thead>
+      <tbody>${mealsHtml}</tbody>
+    </table>
+  </div>
+  ` : ''}
+
+  <!-- === COMPANY MOVES === -->
+  ${movesHtml ? `
+  <div class="section">
+    <div class="section-title">COMPANY MOVES</div>
+    <table style="font-size: 10px;">
+      <thead>
+        <tr><th>Depart</th><th>From</th><th>To</th><th>Travel Time</th><th>Notes</th></tr>
+      </thead>
+      <tbody>${movesHtml}</tbody>
+    </table>
+  </div>
+  ` : ''}
+
+  <!-- === SPECIAL REQUIREMENTS === -->
+  ${specialReqsHtml ? `
+  <div class="section">
+    <div class="section-title">SPECIAL REQUIREMENTS</div>
+    <table style="font-size: 10px;">
+      <thead>
+        <tr><th>Type</th><th>Description</th><th>Contact</th><th>Phone</th><th>Scenes</th></tr>
+      </thead>
+      <tbody>${specialReqsHtml}</tbody>
+    </table>
+  </div>
+  ` : ''}
+
+  <!-- === PRODUCTION NOTES === -->
+  ${cs.generalNotes || cs.productionNotes || cs.safetyNotes || cs.announcements ? `
+  <div class="section">
+    <div class="section-title">PRODUCTION NOTES</div>
+    ${cs.generalNotes ? `<div style="padding: 8px; background: #fffbeb; border-left: 3px solid #f59e0b; margin-bottom: 8px;"><strong>General Notes:</strong> ${cs.generalNotes}</div>` : ''}
+    ${cs.safetyNotes ? `<div style="padding: 8px; background: #fee2e2; border-left: 3px solid #ef4444; margin-bottom: 8px;"><strong>Safety Notes:</strong> ${cs.safetyNotes}</div>` : ''}
+    ${cs.productionNotes ? `<div style="padding: 8px; background: #dbeafe; border-left: 3px solid #3b82f6; margin-bottom: 8px;"><strong>Production Notes:</strong> ${cs.productionNotes}</div>` : ''}
+    ${cs.announcements ? `<div style="padding: 8px; background: #d1fae5; border-left: 3px solid #10b981; margin-bottom: 8px;"><strong>Announcements:</strong> ${cs.announcements}</div>` : ''}
   </div>
   ` : ''}
 

@@ -4,6 +4,14 @@ import type {
   CreateCallSheetDto,
   CreateCastCallDto,
   CreateCrewCallDto,
+  CreateMealDto,
+  CreateCompanyMoveDto,
+  CreateSpecialReqDto,
+  CreateBackgroundDto,
+  MealBreak,
+  CompanyMove,
+  SpecialRequirement,
+  BackgroundCall,
 } from '../types/callSheet';
 
 export const callSheetsApi = {
@@ -143,5 +151,65 @@ export const callSheetsApi = {
 
   removeScene: async (id: string): Promise<void> => {
     await apiClient.delete(`/call-sheets/scenes/${id}`);
+  },
+
+  // === MEAL BREAKS ===
+  addMeal: async (callSheetId: string, dto: CreateMealDto): Promise<MealBreak> => {
+    const res = await apiClient.post(`/call-sheets/${callSheetId}/meals`, dto);
+    return res.data.data;
+  },
+
+  updateMeal: async (id: string, dto: Partial<CreateMealDto>): Promise<MealBreak> => {
+    const res = await apiClient.put(`/call-sheets/meals/${id}`, dto);
+    return res.data.data;
+  },
+
+  removeMeal: async (id: string): Promise<void> => {
+    await apiClient.delete(`/call-sheets/meals/${id}`);
+  },
+
+  // === COMPANY MOVES ===
+  addMove: async (callSheetId: string, dto: CreateCompanyMoveDto): Promise<CompanyMove> => {
+    const res = await apiClient.post(`/call-sheets/${callSheetId}/moves`, dto);
+    return res.data.data;
+  },
+
+  updateMove: async (id: string, dto: Partial<CreateCompanyMoveDto>): Promise<CompanyMove> => {
+    const res = await apiClient.put(`/call-sheets/moves/${id}`, dto);
+    return res.data.data;
+  },
+
+  removeMove: async (id: string): Promise<void> => {
+    await apiClient.delete(`/call-sheets/moves/${id}`);
+  },
+
+  // === SPECIAL REQUIREMENTS ===
+  addSpecialReq: async (callSheetId: string, dto: CreateSpecialReqDto): Promise<SpecialRequirement> => {
+    const res = await apiClient.post(`/call-sheets/${callSheetId}/special-reqs`, dto);
+    return res.data.data;
+  },
+
+  updateSpecialReq: async (id: string, dto: Partial<CreateSpecialReqDto>): Promise<SpecialRequirement> => {
+    const res = await apiClient.put(`/call-sheets/special-reqs/${id}`, dto);
+    return res.data.data;
+  },
+
+  removeSpecialReq: async (id: string): Promise<void> => {
+    await apiClient.delete(`/call-sheets/special-reqs/${id}`);
+  },
+
+  // === BACKGROUND/EXTRAS ===
+  addBackground: async (callSheetId: string, dto: CreateBackgroundDto): Promise<BackgroundCall> => {
+    const res = await apiClient.post(`/call-sheets/${callSheetId}/background`, dto);
+    return res.data.data;
+  },
+
+  updateBackground: async (id: string, dto: Partial<CreateBackgroundDto>): Promise<BackgroundCall> => {
+    const res = await apiClient.put(`/call-sheets/background/${id}`, dto);
+    return res.data.data;
+  },
+
+  removeBackground: async (id: string): Promise<void> => {
+    await apiClient.delete(`/call-sheets/background/${id}`);
   },
 };
