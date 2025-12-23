@@ -575,7 +575,7 @@ export default function CallSheetEditorPage() {
               style={{ width: '100%', marginBottom: 12 }}
               notFoundContent={addressSearching ? 'Searching...' : 'Type at least 3 characters'}
               popupMatchSelectWidth={true}
-              dropdownStyle={{ maxHeight: 300, overflow: 'auto' }}
+              styles={{ popup: { root: { maxHeight: 300, overflow: 'auto' } } }}
             />
             <div style={{ fontSize: 10, color: theme.colors.text.tertiary, textTransform: 'uppercase', marginBottom: 8 }}>
               Parking Notes
