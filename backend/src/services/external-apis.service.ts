@@ -489,25 +489,32 @@ export class ExternalApisService {
   }
 
   /**
-   * Search addresses using Nominatim API
+   * Search addresses using Nominatim API (Indonesia only)
    */
   async searchAddresses(query: string): Promise<Array<{ value: string; label: string }>> {
+    this.logger.log(`[searchAddresses] Querying Nominatim for: "${query}" (Indonesia only)`);
+
     try {
       const response = await this.httpClient.get('https://nominatim.openstreetmap.org/search', {
         params: {
           q: query,
           format: 'json',
-          limit: 5,
+          limit: 8,
           addressdetails: 1,
+          countrycodes: 'id',  // Limit to Indonesia only
         },
       });
 
-      return response.data.map((item: any) => ({
+      this.logger.log(`[searchAddresses] Nominatim returned ${response.data?.length || 0} Indonesian results`);
+
+      const results = response.data.map((item: any) => ({
         value: item.display_name,
         label: item.display_name,
       }));
+
+      return results;
     } catch (error) {
-      this.logger.error(`Address search failed for "${query}":`, error);
+      this.logger.error(`[searchAddresses] Failed for "${query}":`, error);
       return [];
     }
   }

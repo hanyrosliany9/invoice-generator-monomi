@@ -117,11 +117,31 @@ export const callSheetsApi = {
     return res.data.data;
   },
 
-  // Address search
+  // Address search via backend proxy (avoids CORS issues with Nominatim)
   searchAddresses: async (query: string): Promise<Array<{ value: string; label: string }>> => {
-    const res = await apiClient.get(`/call-sheets/search/addresses`, {
-      params: { q: query }
-    });
-    return res.data.data || res.data || [];
+    try {
+      const res = await apiClient.get(`/call-sheets/search/addresses`, {
+        params: { q: query }
+      });
+      // Backend wraps response in ApiResponse: { data: [...], message, status, timestamp }
+      const results = res.data?.data || res.data || [];
+      console.log('[callSheetsApi.searchAddresses] Raw response:', res.data);
+      return Array.isArray(results) ? results : [];
+    } catch (error) {
+      console.error('[callSheetsApi.searchAddresses] Error:', error);
+      return [];
+    }
+  },
+
+  // Scenes
+  addScene: async (
+    callSheetId: string,
+    dto: any
+  ): Promise<void> => {
+    await apiClient.post(`/call-sheets/${callSheetId}/scenes`, dto);
+  },
+
+  removeScene: async (id: string): Promise<void> => {
+    await apiClient.delete(`/call-sheets/scenes/${id}`);
   },
 };

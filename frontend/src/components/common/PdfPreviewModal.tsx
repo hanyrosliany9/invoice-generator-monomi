@@ -155,12 +155,15 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
             right: 0,
             bottom: 0,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: 'rgba(255, 255, 255, 0.9)',
             zIndex: 10,
+            gap: '12px',
           }}>
-            <Spin size="large" tip="Loading PDF..." />
+            <Spin size="large" />
+            <span style={{ fontSize: '14px', color: '#666' }}>Loading PDF...</span>
           </div>
         )}
 

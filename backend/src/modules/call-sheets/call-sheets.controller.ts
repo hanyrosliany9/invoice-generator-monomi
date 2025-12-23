@@ -6,6 +6,11 @@ import { CreateCallSheetDto } from './dto/create-call-sheet.dto';
 import { UpdateCallSheetDto } from './dto/update-call-sheet.dto';
 import { CreateCastCallDto, UpdateCastCallDto } from './dto/create-cast-call.dto';
 import { CreateCrewCallDto, UpdateCrewCallDto } from './dto/create-crew-call.dto';
+import { CreateCallSheetSceneDto } from './dto/create-scene.dto';
+import { CreateMealDto, UpdateMealDto } from './dto/create-meal.dto';
+import { CreateCompanyMoveDto, UpdateCompanyMoveDto } from './dto/create-company-move.dto';
+import { CreateSpecialReqDto, UpdateSpecialReqDto } from './dto/create-special-req.dto';
+import { CreateBackgroundDto, UpdateBackgroundDto } from './dto/create-background.dto';
 
 @Controller('call-sheets')
 @UseGuards(JwtAuthGuard)
@@ -80,6 +85,17 @@ export class CallSheetsController {
     return this.service.removeCrew(id);
   }
 
+  // Scene endpoints
+  @Post(':id/scenes')
+  async addScene(@Param('id') id: string, @Body() dto: CreateCallSheetSceneDto) {
+    return this.service.addScene(id, dto);
+  }
+
+  @Delete('scenes/:id')
+  async removeScene(@Param('id') id: string) {
+    return this.service.removeScene(id);
+  }
+
   // ============ AUTO-FILL ENDPOINTS ============
 
   /**
@@ -132,5 +148,69 @@ export class CallSheetsController {
       'Content-Disposition': `attachment; filename="call-sheet-${id}.pdf"`,
     });
     res.send(pdf);
+  }
+
+  // ============ MEAL BREAKS ============
+  @Post(':id/meals')
+  async addMeal(@Param('id') id: string, @Body() dto: CreateMealDto) {
+    return this.service.addMeal(id, dto);
+  }
+
+  @Put('meals/:id')
+  async updateMeal(@Param('id') id: string, @Body() dto: UpdateMealDto) {
+    return this.service.updateMeal(id, dto);
+  }
+
+  @Delete('meals/:id')
+  async removeMeal(@Param('id') id: string) {
+    return this.service.removeMeal(id);
+  }
+
+  // ============ COMPANY MOVES ============
+  @Post(':id/moves')
+  async addMove(@Param('id') id: string, @Body() dto: CreateCompanyMoveDto) {
+    return this.service.addMove(id, dto);
+  }
+
+  @Put('moves/:id')
+  async updateMove(@Param('id') id: string, @Body() dto: UpdateCompanyMoveDto) {
+    return this.service.updateMove(id, dto);
+  }
+
+  @Delete('moves/:id')
+  async removeMove(@Param('id') id: string) {
+    return this.service.removeMove(id);
+  }
+
+  // ============ SPECIAL REQUIREMENTS ============
+  @Post(':id/special-reqs')
+  async addSpecialReq(@Param('id') id: string, @Body() dto: CreateSpecialReqDto) {
+    return this.service.addSpecialReq(id, dto);
+  }
+
+  @Put('special-reqs/:id')
+  async updateSpecialReq(@Param('id') id: string, @Body() dto: UpdateSpecialReqDto) {
+    return this.service.updateSpecialReq(id, dto);
+  }
+
+  @Delete('special-reqs/:id')
+  async removeSpecialReq(@Param('id') id: string) {
+    return this.service.removeSpecialReq(id);
+  }
+
+  // ============ BACKGROUND/EXTRAS ============
+  @Post(':id/background')
+  async addBackground(@Param('id') id: string, @Body() dto: CreateBackgroundDto) {
+    return this.service.addBackground(id, dto);
+  }
+
+  @Put('background/:id')
+  async updateBackground(@Param('id') id: string, @Body() dto: UpdateBackgroundDto) {
+    return this.service.updateBackground(id, dto);
+  }
+
+  @Delete('background/:id')
+  async removeBackground(@Param('id') id: string) {
+    return this.service.removeBackground(id);
   }
 }

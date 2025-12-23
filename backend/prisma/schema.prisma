@@ -4832,11 +4832,18 @@ model CallSheet {
   director        String?
   producer        String?
 
+  // === NEW: Day Context ===
+  dayNumber         Int?              // Day 5
+  totalDays         Int?              // of 42
+
   // Date & Time
   shootDate       DateTime
-  generalCallTime String?        // e.g., "7:00 AM"
-  firstShotTime   String?        // e.g., "8:00 AM"
-  wrapTime        String?        // Estimated wrap
+  crewCallTime      String?           // "7:00 AM" - General crew call
+  generalCallTime   String?           // Deprecated, use crewCallTime - kept for backward compatibility
+  firstShotTime   String?        // e.g., "8:00 AM" / "9:15 AM"
+  estimatedWrap   String?        // "6:00 PM" - Expected wrap
+  wrapTime        String?        // Deprecated, use estimatedWrap
+  lunchTime       String?        // "12:00 PM" - Scheduled lunch
 
   // Location
   locationName    String?
@@ -4856,18 +4863,30 @@ model CallSheet {
   hospitalAddress String?
   hospitalPhone   String?
 
+  // === NEW: Production Details ===
+  advanceNotes      String?           // Tomorrow's preview notes
+  safetyNotes       String?           // Safety information
+  announcements     String?           // Important announcements
+  walkieChannels    String?           // "Ch1: Production, Ch2: Camera"
+
   // Notes
-  generalNotes    String?
+  generalNotes    String?           // Deprecated, kept for backward compatibility
   productionNotes String?
 
   // Status
   status          CallSheetStatus @default(DRAFT)
   sentAt          DateTime?
 
-  // Relations
-  castCalls       CallSheetCast[]
-  crewCalls       CallSheetCrew[]
-  scenes          CallSheetScene[]
+  // === Relations: NEW ===
+  mealBreaks        CallSheetMeal[]
+  companyMoves      CallSheetMove[]
+  specialRequirements CallSheetSpecialReq[]
+  backgroundCalls   CallSheetBackground[]
+
+  // Relations: Existing
+  castCalls         CallSheetCast[]
+  crewCalls         CallSheetCrew[]
+  scenes            CallSheetScene[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -4887,10 +4906,24 @@ model CallSheetCast {
   actorName   String
   character   String?
 
-  // Times
-  pickupTime  String?   // e.g., "5:30 AM"
-  callTime    String    // e.g., "6:00 AM"
-  onSetTime   String?   // e.g., "7:30 AM"
+  // === ENHANCED: Multiple Time Columns ===
+  pickupTime  String?   // "6:00 AM" - Transportation pickup
+  muCallTime  String?   // "6:30 AM" - Makeup/Hair call (renamed from callTime)
+  callTime    String    // e.g., "6:00 AM" - Legacy, kept for compatibility
+  onSetTime   String?   // "9:00 AM" - Must be camera-ready
+  wrapTime    String?   // "4:00 PM" - Expected wrap for this actor
+
+  // === NEW: Status Code ===
+  workStatus  CastWorkStatus @default(W)  // SW, W, WF, SWF, H
+
+  // === NEW: Enhanced Info ===
+  transportMode String?       // "Company Car" / "Own Transport" / "Hotel Shuttle"
+  muDuration    Int?          // Minutes needed for makeup (e.g., 120 = 2 hours)
+  wardrobeNotes String?       // Special wardrobe requirements
+
+  // === NEW: Flags ===
+  isMinor       Boolean       @default(false)  // Child actor
+  hasStunt      Boolean       @default(false)  // Performing stunts
 
   // Notes
   notes       String?
@@ -4916,6 +4949,10 @@ model CallSheetCrew {
 
   // Times
   callTime    String    // e.g., "6:30 AM"
+
+  // === NEW: Staggered Call Time ===
+  callTimeOffset  Int?        // Minutes relative to general call (-60 = 1hr early)
+  reportLocation  String?     // Where to report (may differ from set)
 
   // Contact
   phone       String?
@@ -4956,6 +4993,118 @@ model CallSheetScene {
 
   @@index([callSheetId])
   @@map("call_sheet_scenes")
+}
+
+// === NEW MODEL: Meal Breaks ===
+model CallSheetMeal {
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+
+  mealType    MealType  // BREAKFAST, LUNCH, DINNER, CRAFT_SERVICES
+  time        String    // "12:00 PM"
+  duration    Int       @default(30)  // Minutes
+  location    String?   // Where meal is served
+  notes       String?
+  order       Int       @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_meals")
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  SECOND_MEAL
+  CRAFT_SERVICES
+  CATERING
+}
+
+// === NEW MODEL: Company Moves ===
+model CallSheetMove {
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+
+  departTime  String    // "1:00 PM"
+  fromLocation String
+  toLocation  String
+  travelTime  Int?      // Estimated minutes
+  notes       String?
+  order       Int       @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_moves")
+}
+
+// === NEW MODEL: Special Requirements ===
+model CallSheetSpecialReq {
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+
+  reqType     SpecialReqType
+  description String
+  contactName String?
+  contactPhone String?
+  safetyNotes String?
+  scenes      String?   // Which scenes this applies to
+  order       Int       @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_special_reqs")
+}
+
+enum SpecialReqType {
+  STUNTS
+  MINORS
+  ANIMALS
+  VEHICLES
+  SFX_PYRO
+  WATER_WORK
+  AERIAL_DRONE
+  WEAPONS
+  NUDITY
+  OTHER
+}
+
+// === NEW MODEL: Background/Extras ===
+model CallSheetBackground {
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+
+  description String    // "20 Office Workers", "50 Crowd Extras"
+  quantity    Int       @default(1)
+  callTime    String
+  reportLocation String?
+  wardrobeNotes String? // "Business casual provided"
+  scenes      String?   // Which scenes
+  notes       String?
+  order       Int       @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_background")
+}
+
+enum CastWorkStatus {
+  SW    // Start Work - First day on set
+  W     // Work - Continuing work
+  WF    // Work Finish - Final day
+  SWF   // Start-Work-Finish - Day player (one day only)
+  H     // Hold - On standby, not working today
 }
 
 enum CallSheetStatus {

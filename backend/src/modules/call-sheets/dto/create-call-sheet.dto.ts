@@ -12,12 +12,20 @@ export class CreateCallSheetDto {
   @IsOptional() @IsString() director?: string;
   @IsOptional() @IsString() producer?: string;
 
+  // === NEW: Day Context ===
+  @IsOptional() @IsInt() dayNumber?: number;
+  @IsOptional() @IsInt() totalDays?: number;
+
   @IsDateString()
   shootDate: string;
 
-  @IsOptional() @IsString() generalCallTime?: string;
+  // === Key Times (both old and new names for backward compatibility) ===
+  @IsOptional() @IsString() generalCallTime?: string; // Deprecated, use crewCallTime
+  @IsOptional() @IsString() crewCallTime?: string;
   @IsOptional() @IsString() firstShotTime?: string;
-  @IsOptional() @IsString() wrapTime?: string;
+  @IsOptional() @IsString() wrapTime?: string; // Deprecated, use estimatedWrap
+  @IsOptional() @IsString() estimatedWrap?: string;
+  @IsOptional() @IsString() lunchTime?: string;
 
   @IsOptional() @IsString() locationName?: string;
   @IsOptional() @IsString() locationAddress?: string;
@@ -33,6 +41,12 @@ export class CreateCallSheetDto {
   @IsOptional() @IsString() nearestHospital?: string;
   @IsOptional() @IsString() hospitalAddress?: string;
   @IsOptional() @IsString() hospitalPhone?: string;
+
+  // === NEW: Production Details ===
+  @IsOptional() @IsString() advanceNotes?: string;
+  @IsOptional() @IsString() safetyNotes?: string;
+  @IsOptional() @IsString() announcements?: string;
+  @IsOptional() @IsString() walkieChannels?: string;
 
   @IsOptional() @IsString() generalNotes?: string;
   @IsOptional() @IsString() productionNotes?: string;

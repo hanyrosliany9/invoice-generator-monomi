@@ -18,7 +18,6 @@ import {
   Select,
   Dropdown,
   Tooltip,
-  AutoComplete,
 } from 'antd';
 import {
   LeftOutlined,
@@ -46,6 +45,7 @@ import { callSheetsApi } from '../services/callSheets';
 import { exportPdfWithAuth } from '../utils/exportPdfWithAuth';
 import { DEPARTMENTS, COMMON_POSITIONS, CALL_STATUS_COLORS } from '../constants/departments';
 import { PdfPreviewModal } from '../components/common/PdfPreviewModal';
+import { AddressAutocomplete } from '../components/common/AddressAutocomplete';
 import type { CallSheet, CastCall, CrewCall, CallSheetScene, CreateCastCallDto, CreateCrewCallDto } from '../types/callSheet';
 
 const { Header, Content } = Layout;
@@ -60,62 +60,20 @@ export default function CallSheetEditorPage() {
 
   const [addCastModalOpen, setAddCastModalOpen] = useState(false);
   const [addCrewModalOpen, setAddCrewModalOpen] = useState(false);
+  const [addSceneModalOpen, setAddSceneModalOpen] = useState(false);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [hospitalSearchModalOpen, setHospitalSearchModalOpen] = useState(false);
   const [hospitalOptions, setHospitalOptions] = useState<Array<{ id: string; name: string; address: string; phone: string; distance: number }>>([]);
-  const [addressOptions, setAddressOptions] = useState<Array<{ value: string; label: string }>>([]);
-  const [addressSearching, setAddressSearching] = useState(false);
-  const [localAddress, setLocalAddress] = useState<string>('');
   const [castForm] = Form.useForm();
   const [crewForm] = Form.useForm();
+  const [sceneForm] = Form.useForm();
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
-
-  // Address autocomplete search using Nominatim (free API)
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleAddressSearch = (searchValue: string) => {
-    // Clear previous timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    if (!searchValue || searchValue.length < 3) {
-      setAddressOptions([]);
-      setAddressSearching(false);
-      return;
-    }
-
-    setAddressSearching(true);
-    console.log('Starting address search for:', searchValue);
-
-    // Debounce: wait 500ms after user stops typing
-    searchTimeoutRef.current = setTimeout(async () => {
-      try {
-        console.log('Making API request via backend proxy...');
-        const options = await callSheetsApi.searchAddresses(searchValue);
-        console.log('Address search results:', options);
-        setAddressOptions(options);
-      } catch (error) {
-        console.error('Address search failed:', error);
-        setAddressOptions([]);
-      } finally {
-        setAddressSearching(false);
-      }
-    }, 500); // 500ms debounce
-  };
 
   const { data: callSheet, isLoading } = useQuery({
     queryKey: ['call-sheet', id],
     queryFn: () => callSheetsApi.getById(id!),
     enabled: !!id,
   });
-
-  // Sync local address state with callSheet data
-  useEffect(() => {
-    if (callSheet?.locationAddress) {
-      setLocalAddress(callSheet.locationAddress);
-    }
-  }, [callSheet?.locationAddress]);
 
   const updateMutation = useMutation({
     mutationFn: (dto: Partial<CallSheet>) => callSheetsApi.update(id!, dto),
@@ -184,6 +142,27 @@ export default function CallSheetEditorPage() {
       message.success('Crew member removed');
     },
     onError: () => message.error('Failed to delete'),
+  });
+
+  // Scene mutations
+  const addSceneMutation = useMutation({
+    mutationFn: (dto: any) => callSheetsApi.addScene(id!, dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Scene added successfully');
+      setAddSceneModalOpen(false);
+      sceneForm.resetFields();
+    },
+    onError: () => message.error('Failed to add scene'),
+  });
+
+  const deleteSceneMutation = useMutation({
+    mutationFn: callSheetsApi.removeScene,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Scene removed');
+    },
+    onError: () => message.error('Failed to delete scene'),
   });
 
   // Auto-fill mutations
@@ -274,6 +253,19 @@ export default function CallSheetEditorPage() {
       callTime: values.callTime?.format('h:mm A') || '7:00 AM',
       phone: values.phone,
       email: values.email,
+    });
+  };
+
+  const handleAddScene = (values: any) => {
+    addSceneMutation.mutate({
+      sceneNumber: values.sceneNumber,
+      sceneName: values.sceneName,
+      intExt: values.intExt,
+      dayNight: values.dayNight,
+      location: values.location,
+      pageCount: values.pageCount ? parseFloat(values.pageCount) : undefined,
+      castIds: values.castIds,
+      description: values.description,
     });
   };
 
@@ -526,96 +518,46 @@ export default function CallSheetEditorPage() {
             borderBottom: `1px solid ${theme.colors.border.default}`,
           }}
         >
-          <div style={{ background: theme.colors.background.primary, padding: 16, gridRow: 'span 2' }}>
+          <div style={{
+            background: theme.colors.background.primary,
+            padding: 16,
+            gridRow: 'span 2',
+            position: 'relative',  // Establishes stacking context
+            zIndex: 10,            // Higher than sibling grid cells
+          }}>
             <div style={{ fontSize: 10, color: theme.colors.text.tertiary, textTransform: 'uppercase', marginBottom: 8 }}>
               Location Name
             </div>
             <Input
-              value={callSheet.locationName || ''}
-              onChange={(e) => updateMutation.mutate({ locationName: e.target.value })}
+              defaultValue={callSheet.locationName || ''}
+              onBlur={(e) => {
+                if (e.target.value !== callSheet.locationName) {
+                  updateMutation.mutate({ locationName: e.target.value });
+                }
+              }}
               placeholder="Enter location name"
               style={{ marginBottom: 12 }}
             />
             <div style={{ fontSize: 10, color: theme.colors.text.tertiary, textTransform: 'uppercase', marginBottom: 8 }}>
-              Address
+              Address (Indonesia)
             </div>
-            <div style={{ position: 'relative' }}>
-              <Input
-                value={localAddress}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setLocalAddress(value);
-                  if (value.length >= 3) {
-                    handleAddressSearch(value);
-                  } else {
-                    setAddressOptions([]);
-                  }
-                }}
-                onBlur={() => {
-                  // Delay to allow click on dropdown option
+            <AddressAutocomplete
+              value={callSheet.locationAddress || ''}
+              onChange={(address, coords) => {
+                updateMutation.mutate({ locationAddress: address });
+                // If we got coordinates, could auto-fill weather/hospital
+                if (coords) {
+                  console.log('Address selected with coords:', coords);
+                  // Optionally trigger auto-fill after selection
                   setTimeout(() => {
-                    setAddressOptions([]);
-                    if (localAddress && localAddress !== callSheet?.locationAddress) {
-                      updateMutation.mutate({ locationAddress: localAddress });
+                    if (!autoFillAllMutation.isPending) {
+                      autoFillAllMutation.mutate();
                     }
-                  }, 200);
-                }}
-                placeholder="Start typing address... (e.g., 'Jakarta', 'Bandung')"
-                style={{ width: '100%' }}
-                suffix={addressSearching ? <Spin size="small" /> : null}
-              />
-              {/* Dropdown suggestions */}
-              {addressOptions.length > 0 && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    zIndex: 1000,
-                    background: theme.colors.background.primary,
-                    border: `1px solid ${theme.colors.border.default}`,
-                    borderRadius: 4,
-                    maxHeight: 200,
-                    overflowY: 'auto',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  }}
-                >
-                  {addressOptions.map((option, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        padding: '8px 12px',
-                        cursor: 'pointer',
-                        borderBottom: index < addressOptions.length - 1 ? `1px solid ${theme.colors.border.default}` : 'none',
-                        fontSize: 13,
-                        color: theme.colors.text.primary,
-                      }}
-                      onMouseDown={(e) => {
-                        e.preventDefault(); // Prevent blur from firing first
-                        setLocalAddress(option.value);
-                        setAddressOptions([]);
-                        updateMutation.mutate({ locationAddress: option.value });
-                        // Auto-trigger weather/hospital auto-fill
-                        setTimeout(() => {
-                          if (!autoFillAllMutation.isPending) {
-                            autoFillAllMutation.mutate();
-                          }
-                        }, 500);
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = theme.colors.background.tertiary;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent';
-                      }}
-                    >
-                      {option.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  }, 500);
+                }
+              }}
+              placeholder="Ketik alamat... (contoh: Jakarta, Bandung)"
+            />
             <div style={{ height: 12 }} /> {/* Spacer */}
             <div style={{ fontSize: 10, color: theme.colors.text.tertiary, textTransform: 'uppercase', marginBottom: 8 }}>
               Parking Notes
@@ -698,7 +640,22 @@ export default function CallSheetEditorPage() {
         </div>
 
         {/* SCENE SCHEDULE SECTION */}
-        <SectionHeader icon={<FileTextOutlined />} title="Scene Schedule" theme={theme} count={callSheet.scenes?.length || 0} />
+        <SectionHeader
+          icon={<FileTextOutlined />}
+          title="Scene Schedule"
+          theme={theme}
+          count={callSheet.scenes?.length || 0}
+          action={
+            <Button
+              type="primary"
+              size="small"
+              icon={<PlusOutlined />}
+              onClick={() => setAddSceneModalOpen(true)}
+            >
+              Add Scene
+            </Button>
+          }
+        />
         <div style={{ background: theme.colors.background.primary, borderBottom: `1px solid ${theme.colors.border.default}` }}>
           {/* Scene Table Header */}
           <div
@@ -722,6 +679,7 @@ export default function CallSheetEditorPage() {
             <div style={{ width: 150 }}>Location</div>
             <div style={{ width: 80, textAlign: 'center' }}>Pages</div>
             <div style={{ width: 100 }}>Cast</div>
+            <div style={{ width: 50, textAlign: 'center' }}>Action</div>
           </div>
 
           {/* Scene Rows */}
@@ -762,6 +720,11 @@ export default function CallSheetEditorPage() {
                 </div>
                 <div style={{ width: 100, color: theme.colors.text.tertiary, fontSize: 12 }}>
                   {scene.castIds || '—'}
+                </div>
+                <div style={{ width: 50, textAlign: 'center' }}>
+                  <Popconfirm title="Delete?" onConfirm={() => deleteSceneMutation.mutate(scene.id)}>
+                    <Button type="text" size="small" icon={<DeleteOutlined />} danger />
+                  </Popconfirm>
                 </div>
               </div>
             ))
@@ -1162,6 +1125,66 @@ export default function CallSheetEditorPage() {
               <Button onClick={() => setAddCrewModalOpen(false)}>Cancel</Button>
               <Button type="primary" htmlType="submit" loading={addCrewMutation.isPending}>
                 Add Crew Member
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Add Scene Modal */}
+      <Modal
+        title="Add Scene"
+        open={addSceneModalOpen}
+        onCancel={() => {
+          setAddSceneModalOpen(false);
+          sceneForm.resetFields();
+        }}
+        footer={null}
+      >
+        <Form form={sceneForm} layout="vertical" onFinish={handleAddScene}>
+          <Form.Item name="sceneNumber" label="Scene Number" rules={[{ required: true }]}>
+            <Input placeholder="e.g., 1, 1A, 2" />
+          </Form.Item>
+          <Form.Item name="sceneName" label="Scene Name">
+            <Input placeholder="Optional scene name or title" />
+          </Form.Item>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Form.Item name="intExt" label="Int/Ext">
+              <Select
+                placeholder="Select"
+                options={[
+                  { label: 'INT', value: 'INT' },
+                  { label: 'EXT', value: 'EXT' },
+                ]}
+              />
+            </Form.Item>
+            <Form.Item name="dayNight" label="Day/Night">
+              <Select
+                placeholder="Select"
+                options={[
+                  { label: 'DAY', value: 'DAY' },
+                  { label: 'NIGHT', value: 'NIGHT' },
+                ]}
+              />
+            </Form.Item>
+          </div>
+          <Form.Item name="location" label="Location">
+            <Input placeholder="Scene location" />
+          </Form.Item>
+          <Form.Item name="pageCount" label="Page Count">
+            <Input type="number" placeholder="e.g., 2.5" step="0.25" />
+          </Form.Item>
+          <Form.Item name="castIds" label="Cast Numbers">
+            <Input placeholder="Comma-separated cast numbers (e.g., 1,2,5)" />
+          </Form.Item>
+          <Form.Item name="description" label="Description">
+            <Input.TextArea placeholder="Scene description" rows={2} />
+          </Form.Item>
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+            <Space>
+              <Button onClick={() => setAddSceneModalOpen(false)}>Cancel</Button>
+              <Button type="primary" htmlType="submit" loading={addSceneMutation.isPending}>
+                Add Scene
               </Button>
             </Space>
           </Form.Item>

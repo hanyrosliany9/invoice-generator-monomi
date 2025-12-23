@@ -4,6 +4,10 @@ import { CreateCallSheetDto } from './dto/create-call-sheet.dto';
 import { UpdateCallSheetDto } from './dto/update-call-sheet.dto';
 import { CreateCastCallDto, UpdateCastCallDto } from './dto/create-cast-call.dto';
 import { CreateCrewCallDto, UpdateCrewCallDto } from './dto/create-crew-call.dto';
+import { CreateMealDto, UpdateMealDto } from './dto/create-meal.dto';
+import { CreateCompanyMoveDto, UpdateCompanyMoveDto } from './dto/create-company-move.dto';
+import { CreateSpecialReqDto, UpdateSpecialReqDto } from './dto/create-special-req.dto';
+import { CreateBackgroundDto, UpdateBackgroundDto } from './dto/create-background.dto';
 import { ExternalApisService } from '../../services/external-apis.service';
 import * as puppeteer from 'puppeteer';
 
@@ -54,11 +58,16 @@ export class CallSheetsService {
       where: { id },
       include: {
         schedule: { include: { project: true } },
-        shootDay: { include: { strips: true } },
+        shootDay: { include: { strips: { orderBy: { order: 'asc' } } } },
         createdBy: { select: { id: true, name: true } },
         castCalls: { orderBy: { order: 'asc' } },
         crewCalls: { orderBy: [{ department: 'asc' }, { order: 'asc' }] },
         scenes: { orderBy: { order: 'asc' } },
+        // === NEW RELATIONS ===
+        mealBreaks: { orderBy: { order: 'asc' } },
+        companyMoves: { orderBy: { order: 'asc' } },
+        specialRequirements: { orderBy: { order: 'asc' } },
+        backgroundCalls: { orderBy: { order: 'asc' } },
       },
     });
     if (!callSheet) throw new NotFoundException('Call sheet not found');
@@ -115,6 +124,30 @@ export class CallSheetsService {
 
   async removeCrew(id: string) {
     await this.prisma.callSheetCrew.delete({ where: { id } });
+    return { success: true };
+  }
+
+  // Scene methods
+  async addScene(callSheetId: string, dto: any) {
+    // Get the maximum order number to assign to new scene
+    const lastScene = await this.prisma.callSheetScene.findFirst({
+      where: { callSheetId },
+      orderBy: { order: 'desc' },
+    });
+
+    const nextOrder = (lastScene?.order || 0) + 1;
+
+    return this.prisma.callSheetScene.create({
+      data: {
+        callSheetId,
+        order: nextOrder,
+        ...dto,
+      },
+    });
+  }
+
+  async removeScene(id: string) {
+    await this.prisma.callSheetScene.delete({ where: { id } });
     return { success: true };
   }
 
@@ -546,19 +579,103 @@ export class CallSheetsService {
   }
 
   /**
-   * Search addresses using Nominatim API
+   * Search addresses using Nominatim API (via backend proxy)
    */
   async searchAddresses(query: string): Promise<Array<{ value: string; label: string }>> {
+    console.log('[CallSheetsService] searchAddresses called with query:', query);
+
     if (!query || query.length < 3) {
+      console.log('[CallSheetsService] Query too short, returning empty array');
       return [];
     }
 
     try {
       const response = await this.externalApisService.searchAddresses(query);
+      console.log('[CallSheetsService] Nominatim returned', response?.length || 0, 'results');
       return response;
     } catch (error) {
-      console.error('Address search failed:', error);
+      console.error('[CallSheetsService] Address search failed:', error);
       return [];
     }
+  }
+
+  // ============ MEAL BREAKS ============
+  async addMeal(callSheetId: string, dto: CreateMealDto) {
+    const lastMeal = await this.prisma.callSheetMeal.findFirst({
+      where: { callSheetId },
+      orderBy: { order: 'desc' },
+    });
+    return this.prisma.callSheetMeal.create({
+      data: { callSheetId, order: (lastMeal?.order || 0) + 1, ...dto },
+    });
+  }
+
+  async updateMeal(id: string, dto: UpdateMealDto) {
+    return this.prisma.callSheetMeal.update({ where: { id }, data: dto });
+  }
+
+  async removeMeal(id: string) {
+    await this.prisma.callSheetMeal.delete({ where: { id } });
+    return { success: true };
+  }
+
+  // ============ COMPANY MOVES ============
+  async addMove(callSheetId: string, dto: CreateCompanyMoveDto) {
+    const lastMove = await this.prisma.callSheetMove.findFirst({
+      where: { callSheetId },
+      orderBy: { order: 'desc' },
+    });
+    return this.prisma.callSheetMove.create({
+      data: { callSheetId, order: (lastMove?.order || 0) + 1, ...dto },
+    });
+  }
+
+  async updateMove(id: string, dto: UpdateCompanyMoveDto) {
+    return this.prisma.callSheetMove.update({ where: { id }, data: dto });
+  }
+
+  async removeMove(id: string) {
+    await this.prisma.callSheetMove.delete({ where: { id } });
+    return { success: true };
+  }
+
+  // ============ SPECIAL REQUIREMENTS ============
+  async addSpecialReq(callSheetId: string, dto: CreateSpecialReqDto) {
+    const lastReq = await this.prisma.callSheetSpecialReq.findFirst({
+      where: { callSheetId },
+      orderBy: { order: 'desc' },
+    });
+    return this.prisma.callSheetSpecialReq.create({
+      data: { callSheetId, order: (lastReq?.order || 0) + 1, ...dto },
+    });
+  }
+
+  async updateSpecialReq(id: string, dto: UpdateSpecialReqDto) {
+    return this.prisma.callSheetSpecialReq.update({ where: { id }, data: dto });
+  }
+
+  async removeSpecialReq(id: string) {
+    await this.prisma.callSheetSpecialReq.delete({ where: { id } });
+    return { success: true };
+  }
+
+  // ============ BACKGROUND/EXTRAS ============
+  async addBackground(callSheetId: string, dto: CreateBackgroundDto) {
+    const lastBg = await this.prisma.callSheetBackground.findFirst({
+      where: { callSheetId },
+      orderBy: { order: 'desc' },
+    });
+    return this.prisma.callSheetBackground.create({
+      data: { callSheetId, order: (lastBg?.order || 0) + 1, ...dto },
+    });
+  }
+
+  async updateBackground(id: string, dto: UpdateBackgroundDto) {
+    return this.prisma.callSheetBackground.update({ where: { id }, data: dto });
+  }
+
+  async removeBackground(id: string) {
+    await this.prisma.callSheetBackground.delete({ where: { id } });
+    return { success: true };
   }
 }
