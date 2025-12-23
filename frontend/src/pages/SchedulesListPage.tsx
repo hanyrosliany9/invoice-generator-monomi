@@ -6,6 +6,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, FilePdfOutlined } from '@an
 import dayjs from 'dayjs';
 import { useTheme } from '../theme';
 import { schedulesApi } from '../services/schedules';
+import { exportPdfWithAuth } from '../utils/exportPdfWithAuth';
 import { apiClient } from '../config/api';
 import type { ShootingSchedule, CreateScheduleDto } from '../types/schedule';
 
@@ -161,7 +162,7 @@ export default function SchedulesListPage() {
           <Button
             icon={<FilePdfOutlined />}
             size="small"
-            onClick={() => window.open(`/api/schedules/${record.id}/export/pdf`, '_blank')}
+            onClick={() => exportPdfWithAuth(`/schedules/${record.id}/export/pdf`, `schedule-${record.name || record.id}.pdf`)}
           />
           <Button
             icon={<DeleteOutlined />}

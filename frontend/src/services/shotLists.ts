@@ -66,4 +66,21 @@ export const shotListsApi = {
     const res = await apiClient.post(`/shots/${id}/duplicate`);
     return res.data.data;
   },
+
+  // PDF Export
+  generatePDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
+    const res = await apiClient.get(`/pdf/shot-list/${id}`, {
+      params: { continuous: continuous ? 'true' : 'false' },
+      responseType: 'blob',
+    });
+    return res.data;
+  },
+
+  previewPDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
+    const res = await apiClient.get(`/pdf/shot-list/${id}/preview`, {
+      params: { continuous: continuous ? 'true' : 'false' },
+      responseType: 'blob',
+    });
+    return res.data;
+  },
 };

@@ -8,6 +8,9 @@ import {
 import { InvoicesService } from '../../invoices/invoices.service';
 import { QuotationsService } from '../../quotations/quotations.service';
 import { ProjectsService } from '../../projects/projects.service';
+import { SchedulesService } from '../../schedules/schedules.service';
+import { CallSheetsService } from '../../call-sheets/call-sheets.service';
+import { ShotListsService } from '../../shot-lists/shot-lists.service';
 
 @Injectable()
 export class PdfAccessGuard implements CanActivate {
@@ -15,6 +18,9 @@ export class PdfAccessGuard implements CanActivate {
     private invoicesService: InvoicesService,
     private quotationsService: QuotationsService,
     private projectsService: ProjectsService,
+    private schedulesService: SchedulesService,
+    private callSheetsService: CallSheetsService,
+    private shotListsService: ShotListsService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -29,13 +35,19 @@ export class PdfAccessGuard implements CanActivate {
     }
 
     // Determine resource type from path
-    let resourceType: 'invoice' | 'quotation' | 'project' | null = null;
+    let resourceType: 'invoice' | 'quotation' | 'project' | 'schedule' | 'call-sheet' | 'shot-list' | null = null;
     if (path.includes('/pdf/invoice/')) {
       resourceType = 'invoice';
     } else if (path.includes('/pdf/quotation/')) {
       resourceType = 'quotation';
     } else if (path.includes('/pdf/project/')) {
       resourceType = 'project';
+    } else if (path.includes('/pdf/schedule/')) {
+      resourceType = 'schedule';
+    } else if (path.includes('/pdf/call-sheet/')) {
+      resourceType = 'call-sheet';
+    } else if (path.includes('/pdf/shot-list/')) {
+      resourceType = 'shot-list';
     }
 
     if (!resourceType) {
@@ -74,6 +86,39 @@ export class PdfAccessGuard implements CanActivate {
           }
           // Projects don't have createdBy field - allow all authenticated users
           // or check client relationship if client field exists
+          break;
+
+        case 'schedule':
+          const schedule = await this.schedulesService.findOne(resourceId);
+          if (!schedule) {
+            throw new NotFoundException('Schedule not found');
+          }
+          // Check if user is creator
+          if (schedule.createdBy !== user.userId) {
+            throw new ForbiddenException('You do not have access to this schedule');
+          }
+          break;
+
+        case 'call-sheet':
+          const callSheet = await this.callSheetsService.findOne(resourceId);
+          if (!callSheet) {
+            throw new NotFoundException('Call Sheet not found');
+          }
+          // Check if user is creator
+          if (callSheet.createdBy !== user.userId) {
+            throw new ForbiddenException('You do not have access to this call sheet');
+          }
+          break;
+
+        case 'shot-list':
+          const shotList = await this.shotListsService.findOne(resourceId);
+          if (!shotList) {
+            throw new NotFoundException('Shot List not found');
+          }
+          // Check if user is creator
+          if (shotList.createdBy !== user.userId) {
+            throw new ForbiddenException('You do not have access to this shot list');
+          }
           break;
       }
 

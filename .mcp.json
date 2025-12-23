@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "i18next-translation": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "i18next-mcp-server@latest"
+      ],
+      "env": {
+        "I18N_PROJECT_ROOT": "/mnt/dev-ssd/jeff/projects/monomi/internal/invoice-generator",
+        "I18N_LOCALES_PATH": "frontend/src/i18n/locales",
+        "I18N_DEFAULT_LANGUAGE": "id",
+        "I18N_SUPPORTED_LANGUAGES": "id,en"
+      }
+    },
+    "postgres": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@henkey/postgres-mcp-server",
+        "--connection-string",
+        "postgresql://invoiceuser:devpassword@localhost:5438/invoices"
+      ]
+    }
+  }
+}

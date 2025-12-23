@@ -7,9 +7,12 @@ import { QuotationsModule } from "../quotations/quotations.module";
 import { SettingsModule } from "../settings/settings.module";
 import { ProjectsModule } from "../projects/projects.module";
 import { ExpensesModule } from "../expenses/expenses.module";
+import { SchedulesModule } from "../schedules/schedules.module";
+import { CallSheetsModule } from "../call-sheets/call-sheets.module";
+import { ShotListsModule } from "../shot-lists/shot-lists.module";
 
 @Module({
-  imports: [InvoicesModule, QuotationsModule, SettingsModule, ProjectsModule, ExpensesModule],
+  imports: [InvoicesModule, QuotationsModule, SettingsModule, ProjectsModule, ExpensesModule, SchedulesModule, CallSheetsModule, ShotListsModule],
   controllers: [PdfController],
   providers: [PdfService, PdfAccessGuard],
   exports: [PdfService],

@@ -21,6 +21,9 @@ import { InvoicesService } from "../invoices/invoices.service";
 import { QuotationsService } from "../quotations/quotations.service";
 import { ProjectsService } from "../projects/projects.service";
 import { ExpensesService } from "../expenses/expenses.service";
+import { SchedulesService } from "../schedules/schedules.service";
+import { CallSheetsService } from "../call-sheets/call-sheets.service";
+import { ShotListsService } from "../shot-lists/shot-lists.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { PdfAccessGuard } from "./guards/pdf-access.guard";
 
@@ -37,6 +40,9 @@ export class PdfController {
     private readonly quotationsService: QuotationsService,
     private readonly projectsService: ProjectsService,
     private readonly expensesService: ExpensesService,
+    private readonly schedulesService: SchedulesService,
+    private readonly callSheetsService: CallSheetsService,
+    private readonly shotListsService: ShotListsService,
   ) {}
 
   @Get("invoice/:id")
@@ -553,6 +559,252 @@ export class PdfController {
         error instanceof Error ? error.stack : "",
       );
       throw new Error("Gagal membuat preview PDF proyek");
+    }
+  }
+
+  @Get("schedule/:id")
+  @ApiOperation({ summary: "Generate PDF for shooting schedule" })
+  @ApiResponse({
+    status: 200,
+    description: "PDF generated successfully",
+    schema: {
+      type: "string",
+      format: "binary",
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Schedule not found",
+  })
+  async generateSchedulePdf(
+    @Param("id") id: string,
+    @Query("continuous") continuous: string = "true",
+    @Res() res: Response
+  ) {
+    try {
+      const schedule = await this.schedulesService.findOne(id);
+
+      if (!schedule) {
+        throw new NotFoundException("Schedule not found");
+      }
+
+      const isContinuous = continuous === "true";
+      const pdfBuffer = await this.pdfService.generateSchedulePDF(schedule, isContinuous);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="Schedule-${schedule.name}.pdf"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
+
+      res.send(pdfBuffer);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error("Failed to generate schedule PDF");
+    }
+  }
+
+  @Get("schedule/:id/preview")
+  @ApiOperation({ summary: "Preview schedule PDF in browser" })
+  @ApiResponse({
+    status: 200,
+    description: "PDF preview generated successfully",
+  })
+  async previewSchedulePdf(
+    @Param("id") id: string,
+    @Query("continuous") continuous: string = "true",
+    @Res() res: Response
+  ) {
+    try {
+      const schedule = await this.schedulesService.findOne(id);
+
+      if (!schedule) {
+        throw new NotFoundException("Schedule not found");
+      }
+
+      const isContinuous = continuous === "true";
+      const pdfBuffer = await this.pdfService.generateSchedulePDF(schedule, isContinuous);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="Schedule-${schedule.name}.pdf"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
+
+      res.send(pdfBuffer);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error("Failed to generate schedule PDF preview");
+    }
+  }
+
+  @Get("call-sheet/:id")
+  @ApiOperation({ summary: "Generate PDF for call sheet" })
+  @ApiResponse({
+    status: 200,
+    description: "PDF generated successfully",
+    schema: {
+      type: "string",
+      format: "binary",
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Call Sheet not found",
+  })
+  async generateCallSheetPdf(
+    @Param("id") id: string,
+    @Query("continuous") continuous: string = "true",
+    @Res() res: Response
+  ) {
+    try {
+      const callSheet = await this.callSheetsService.findOne(id);
+
+      if (!callSheet) {
+        throw new NotFoundException("Call Sheet not found");
+      }
+
+      const isContinuous = continuous === "true";
+      const pdfBuffer = await this.pdfService.generateCallSheetPDF(callSheet, isContinuous);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="CallSheet-${callSheet.callSheetNumber}.pdf"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
+
+      res.send(pdfBuffer);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error("Failed to generate call sheet PDF");
+    }
+  }
+
+  @Get("call-sheet/:id/preview")
+  @ApiOperation({ summary: "Preview call sheet PDF in browser" })
+  @ApiResponse({
+    status: 200,
+    description: "PDF preview generated successfully",
+  })
+  async previewCallSheetPdf(
+    @Param("id") id: string,
+    @Query("continuous") continuous: string = "true",
+    @Res() res: Response
+  ) {
+    try {
+      const callSheet = await this.callSheetsService.findOne(id);
+
+      if (!callSheet) {
+        throw new NotFoundException("Call Sheet not found");
+      }
+
+      const isContinuous = continuous === "true";
+      const pdfBuffer = await this.pdfService.generateCallSheetPDF(callSheet, isContinuous);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="CallSheet-${callSheet.callSheetNumber}.pdf"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
+
+      res.send(pdfBuffer);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error("Failed to generate call sheet PDF preview");
+    }
+  }
+
+  @Get("shot-list/:id")
+  @ApiOperation({ summary: "Generate PDF for shot list" })
+  @ApiResponse({
+    status: 200,
+    description: "PDF generated successfully",
+    schema: {
+      type: "string",
+      format: "binary",
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Shot List not found",
+  })
+  async generateShotListPdf(
+    @Param("id") id: string,
+    @Query("continuous") continuous: string = "true",
+    @Res() res: Response
+  ) {
+    try {
+      const shotList = await this.shotListsService.findOne(id);
+
+      if (!shotList) {
+        throw new NotFoundException("Shot List not found");
+      }
+
+      const isContinuous = continuous === "true";
+      const pdfBuffer = await this.pdfService.generateShotListPDF(shotList, isContinuous);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="ShotList-${shotList.name}.pdf"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
+
+      res.send(pdfBuffer);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error("Failed to generate shot list PDF");
+    }
+  }
+
+  @Get("shot-list/:id/preview")
+  @ApiOperation({ summary: "Preview shot list PDF in browser" })
+  @ApiResponse({
+    status: 200,
+    description: "PDF preview generated successfully",
+  })
+  async previewShotListPdf(
+    @Param("id") id: string,
+    @Query("continuous") continuous: string = "true",
+    @Res() res: Response
+  ) {
+    try {
+      const shotList = await this.shotListsService.findOne(id);
+
+      if (!shotList) {
+        throw new NotFoundException("Shot List not found");
+      }
+
+      const isContinuous = continuous === "true";
+      const pdfBuffer = await this.pdfService.generateShotListPDF(shotList, isContinuous);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="ShotList-${shotList.name}.pdf"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
+
+      res.send(pdfBuffer);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error("Failed to generate shot list PDF preview");
     }
   }
 }

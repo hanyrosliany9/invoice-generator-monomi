@@ -6,6 +6,9 @@ import { SettingsService } from "../settings/settings.service";
 import { InvoicesService } from "../invoices/invoices.service";
 import { QuotationsService } from "../quotations/quotations.service";
 import { generateProjectHTML } from "./templates/project.html";
+import { generateScheduleHTML } from "./templates/schedule.html";
+import { generateCallSheetHTML } from "./templates/call-sheet.html";
+import { generateShotListHTML } from "./templates/shot-list.html";
 
 @Injectable()
 export class PdfService {
@@ -1936,6 +1939,146 @@ export class PdfService {
           this.logger.error(`Error closing browser: ${closeError}`);
         }
       }
+    }
+  }
+
+  async generateSchedulePDF(scheduleData: any, continuous: boolean = true): Promise<Buffer> {
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    try {
+      const page = await browser.newPage();
+      const htmlContent = generateScheduleHTML(scheduleData);
+
+      if (continuous) {
+        await page.emulateMediaType('screen');
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        const height = await page.evaluate('document.documentElement.offsetHeight');
+        this.logger.log(`Schedule PDF (continuous) dynamic height: ${height}px`);
+
+        const pdf = await page.pdf({
+          width: '297mm',  // A4 landscape width
+          height: `${height}px`,
+          printBackground: true,
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        });
+
+        return Buffer.from(pdf);
+      } else {
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        this.logger.log(`Schedule PDF (paginated) mode for printing`);
+
+        const pdf = await page.pdf({
+          format: "A4",
+          landscape: true,
+          printBackground: true,
+          margin: {
+            top: "0.5in",
+            right: "0.5in",
+            bottom: "0.5in",
+            left: "0.5in",
+          },
+        });
+
+        return Buffer.from(pdf);
+      }
+    } finally {
+      await browser.close();
+    }
+  }
+
+  async generateCallSheetPDF(callSheetData: any, continuous: boolean = true): Promise<Buffer> {
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    try {
+      const page = await browser.newPage();
+      const htmlContent = generateCallSheetHTML(callSheetData);
+
+      if (continuous) {
+        await page.emulateMediaType('screen');
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        const height = await page.evaluate('document.documentElement.offsetHeight');
+        this.logger.log(`Call Sheet PDF (continuous) dynamic height: ${height}px`);
+
+        const pdf = await page.pdf({
+          width: '216mm',  // LETTER width
+          height: `${height}px`,
+          printBackground: true,
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        });
+
+        return Buffer.from(pdf);
+      } else {
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        this.logger.log(`Call Sheet PDF (paginated) mode for printing`);
+
+        const pdf = await page.pdf({
+          format: "LETTER",
+          printBackground: true,
+          margin: {
+            top: "0.5in",
+            right: "0.5in",
+            bottom: "0.5in",
+            left: "0.5in",
+          },
+        });
+
+        return Buffer.from(pdf);
+      }
+    } finally {
+      await browser.close();
+    }
+  }
+
+  async generateShotListPDF(shotListData: any, continuous: boolean = true): Promise<Buffer> {
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    try {
+      const page = await browser.newPage();
+      const htmlContent = generateShotListHTML(shotListData);
+
+      if (continuous) {
+        await page.emulateMediaType('screen');
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        const height = await page.evaluate('document.documentElement.offsetHeight');
+        this.logger.log(`Shot List PDF (continuous) dynamic height: ${height}px`);
+
+        const pdf = await page.pdf({
+          width: '297mm',  // A4 landscape width
+          height: `${height}px`,
+          printBackground: true,
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        });
+
+        return Buffer.from(pdf);
+      } else {
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        this.logger.log(`Shot List PDF (paginated) mode for printing`);
+
+        const pdf = await page.pdf({
+          format: "A4",
+          landscape: true,
+          printBackground: true,
+          margin: {
+            top: "0.5in",
+            right: "0.5in",
+            bottom: "0.5in",
+            left: "0.5in",
+          },
+        });
+
+        return Buffer.from(pdf);
+      }
+    } finally {
+      await browser.close();
     }
   }
 }

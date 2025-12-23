@@ -36,7 +36,9 @@ import {
 import dayjs from 'dayjs';
 import { useTheme } from '../theme';
 import { callSheetsApi } from '../services/callSheets';
+import { exportPdfWithAuth } from '../utils/exportPdfWithAuth';
 import { DEPARTMENTS, COMMON_POSITIONS, CALL_STATUS_COLORS } from '../constants/departments';
+import { PdfPreviewModal } from '../components/common/PdfPreviewModal';
 import type { CallSheet, CastCall, CrewCall, CallSheetScene, CreateCastCallDto, CreateCrewCallDto } from '../types/callSheet';
 
 const { Header, Content } = Layout;
@@ -51,6 +53,7 @@ export default function CallSheetEditorPage() {
 
   const [addCastModalOpen, setAddCastModalOpen] = useState(false);
   const [addCrewModalOpen, setAddCrewModalOpen] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [castForm] = Form.useForm();
   const [crewForm] = Form.useForm();
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
@@ -182,7 +185,8 @@ export default function CallSheetEditorPage() {
       {/* Professional Header Bar */}
       <Header
         style={{
-          background: `linear-gradient(90deg, ${theme.colors.accent.primary} 0%, ${theme.colors.accent.secondary} 100%)`,
+          background: '#1e293b',
+          borderLeft: `4px solid ${theme.colors.accent.primary}`,
           padding: '0 24px',
           display: 'flex',
           alignItems: 'center',
@@ -235,7 +239,7 @@ export default function CallSheetEditorPage() {
           </Button>
           <Button
             icon={<FilePdfOutlined />}
-            onClick={() => window.open(`/api/call-sheets/${id}/export/pdf`, '_blank')}
+            onClick={() => setPdfModalOpen(true)}
             style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff' }}
           >
             Export PDF
@@ -810,6 +814,16 @@ export default function CallSheetEditorPage() {
         <div style={{ height: 60 }} />
       </Content>
 
+      {/* PDF Preview Modal */}
+      <PdfPreviewModal
+        open={pdfModalOpen}
+        onClose={() => setPdfModalOpen(false)}
+        title="Call Sheet PDF"
+        fetchPreview={(continuous) => callSheetsApi.previewPDF(id!, continuous)}
+        fetchDownload={(continuous) => callSheetsApi.generatePDF(id!, continuous)}
+        downloadFilename={`call-sheet-${callSheet.callSheetNumber || id}.pdf`}
+      />
+
       {/* Add Cast Modal */}
       <Modal
         title="Add Cast Member"
@@ -929,7 +943,8 @@ function SectionHeader({ icon, title, theme, count, action }: SectionHeaderProps
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '12px 16px',
-        background: `linear-gradient(90deg, ${theme.colors.accent.primary} 0%, ${theme.colors.accent.secondary} 100%)`,
+        background: '#1e293b',
+        borderLeft: `4px solid ${theme.colors.accent.primary}`,
         color: '#fff',
       }}
     >

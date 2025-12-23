@@ -68,4 +68,21 @@ export const schedulesApi = {
   reorderStrips: async (dto: ReorderStripsDto): Promise<void> => {
     await apiClient.post('/schedules/strips/reorder', dto);
   },
+
+  // PDF Export
+  generatePDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
+    const res = await apiClient.get(`/pdf/schedule/${id}`, {
+      params: { continuous: continuous ? 'true' : 'false' },
+      responseType: 'blob',
+    });
+    return res.data;
+  },
+
+  previewPDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
+    const res = await apiClient.get(`/pdf/schedule/${id}/preview`, {
+      params: { continuous: continuous ? 'true' : 'false' },
+      responseType: 'blob',
+    });
+    return res.data;
+  },
 };

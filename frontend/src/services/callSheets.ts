@@ -73,4 +73,21 @@ export const callSheetsApi = {
   removeCrew: async (id: string): Promise<void> => {
     await apiClient.delete(`/call-sheets/crew/${id}`);
   },
+
+  // PDF Export
+  generatePDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
+    const res = await apiClient.get(`/pdf/call-sheet/${id}`, {
+      params: { continuous: continuous ? 'true' : 'false' },
+      responseType: 'blob',
+    });
+    return res.data;
+  },
+
+  previewPDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
+    const res = await apiClient.get(`/pdf/call-sheet/${id}/preview`, {
+      params: { continuous: continuous ? 'true' : 'false' },
+      responseType: 'blob',
+    });
+    return res.data;
+  },
 };

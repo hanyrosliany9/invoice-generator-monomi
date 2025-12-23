@@ -74,19 +74,20 @@ export default function DayHeaderRow({ day, scheduleId, onAddStrip }: Props) {
           display: 'flex',
           alignItems: 'center',
           padding: '12px 16px',
-          background: `linear-gradient(90deg, ${theme.colors.accent.primary} 0%, ${theme.colors.accent.secondary} 100%)`,
+          background: '#1e293b',
           borderBottom: `1px solid ${theme.colors.border.strong}`,
+          borderLeft: `4px solid ${theme.colors.accent.primary}`,
         }}
       >
         {/* Day Badge */}
         <div
           style={{
-            background: 'rgba(0,0,0,0.3)',
+            background: theme.colors.accent.primary,
             color: '#fff',
             padding: '6px 16px',
             borderRadius: 4,
             fontWeight: 700,
-            fontSize: 14,
+            fontSize: 12,
             letterSpacing: 1,
             marginRight: 20,
           }}

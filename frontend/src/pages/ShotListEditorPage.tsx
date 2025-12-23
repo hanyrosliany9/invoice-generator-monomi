@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Layout, Button, Space, Spin, Typography, App, Empty } from 'antd';
-import { LeftOutlined, PlusOutlined } from '@ant-design/icons';
+import { LeftOutlined, PlusOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { useTheme } from '../theme';
 import { shotListsApi } from '../services/shotLists';
 import ShotListTable from '../components/shot-list/ShotListTable';
 import AddSceneModal from '../components/shot-list/AddSceneModal';
 import ShotListToolbar from '../components/shot-list/ShotListToolbar';
-import ExportPdfButton from '../components/shot-list/ExportPdfButton';
+import { PdfPreviewModal } from '../components/common/PdfPreviewModal';
 
 const { Header, Content } = Layout;
 const { Title } = Typography;
@@ -21,6 +21,7 @@ export default function ShotListEditorPage() {
   const { theme } = useTheme();
 
   const [addSceneOpen, setAddSceneOpen] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
     'shotNumber', 'storyboard', 'shotSize', 'shotType', 'cameraAngle', 'cameraMovement', 'lens', 'description', 'status'
   ]);
@@ -70,7 +71,12 @@ export default function ShotListEditorPage() {
           >
             Add Scene
           </Button>
-          <ExportPdfButton shotListId={id!} shotListName={shotList.name} />
+          <Button
+            icon={<FilePdfOutlined />}
+            onClick={() => setPdfModalOpen(true)}
+          >
+            Export PDF
+          </Button>
         </Space>
       </Header>
 
@@ -106,6 +112,15 @@ export default function ShotListEditorPage() {
         open={addSceneOpen}
         onClose={() => setAddSceneOpen(false)}
         onSubmit={(data) => addSceneMutation.mutate({ ...data, shotListId: id! })}
+      />
+
+      <PdfPreviewModal
+        open={pdfModalOpen}
+        onClose={() => setPdfModalOpen(false)}
+        title="Shot List PDF"
+        fetchPreview={(continuous) => shotListsApi.previewPDF(id!, continuous)}
+        fetchDownload={(continuous) => shotListsApi.generatePDF(id!, continuous)}
+        downloadFilename={`shot-list-${shotList.name}.pdf`}
       />
     </Layout>
   );

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Layout, Button, Space, Spin, Typography, App, Empty, Tooltip } from 'antd';
 import { LeftOutlined, PlusOutlined, FilePdfOutlined, ImportOutlined, CalendarOutlined } from '@ant-design/icons';
 import { schedulesApi } from '../services/schedules';
+import { PdfPreviewModal } from '../components/common/PdfPreviewModal';
 import ScheduleStripboard from '../components/schedule/ScheduleStripboard';
 import ScheduleToolbar from '../components/schedule/ScheduleToolbar';
 import AddStripModal from '../components/schedule/AddStripModal';
@@ -23,6 +24,7 @@ export default function ShootingSchedulePage() {
   const [addStripOpen, setAddStripOpen] = useState(false);
   const [editStripOpen, setEditStripOpen] = useState(false);
   const [importScenesOpen, setImportScenesOpen] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
   const [selectedStrip, setSelectedStrip] = useState<ScheduleStrip | null>(null);
 
@@ -135,7 +137,7 @@ export default function ShootingSchedulePage() {
             <Button
               icon={<FilePdfOutlined />}
               type="primary"
-              onClick={() => window.open(`/api/schedules/${id}/export/pdf`, '_blank')}
+              onClick={() => setPdfModalOpen(true)}
             >
               Export PDF
             </Button>
@@ -192,6 +194,15 @@ export default function ShootingSchedulePage() {
           queryClient.invalidateQueries({ queryKey: ['schedule', id] });
           setImportScenesOpen(false);
         }}
+      />
+
+      <PdfPreviewModal
+        open={pdfModalOpen}
+        onClose={() => setPdfModalOpen(false)}
+        title="Schedule PDF"
+        fetchPreview={(continuous) => schedulesApi.previewPDF(id!, continuous)}
+        fetchDownload={(continuous) => schedulesApi.generatePDF(id!, continuous)}
+        downloadFilename={`schedule-${schedule.name || id}.pdf`}
       />
     </Layout>
   );

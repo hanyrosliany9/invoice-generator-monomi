@@ -29,6 +29,7 @@ import dayjs from 'dayjs';
 import { useTheme } from '../theme';
 import { callSheetsApi } from '../services/callSheets';
 import { schedulesApi } from '../services/schedules';
+import { exportPdfWithAuth } from '../utils/exportPdfWithAuth';
 import type { CallSheet } from '../types/callSheet';
 import type { ShootingSchedule, ShootDay } from '../types/schedule';
 
@@ -324,7 +325,7 @@ export default function CallSheetsListPage() {
                     <Button
                       icon={<FilePdfOutlined />}
                       size="small"
-                      onClick={() => window.open(`/api/call-sheets/${callSheet.id}/export/pdf`, '_blank')}
+                      onClick={() => exportPdfWithAuth(`/call-sheets/${callSheet.id}/export/pdf`, `call-sheet-${callSheet.title || callSheet.id}.pdf`)}
                     />
                     <Popconfirm
                       title="Delete Call Sheet"
