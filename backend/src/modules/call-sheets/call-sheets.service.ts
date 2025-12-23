@@ -1,14 +1,18 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCallSheetDto } from './dto/create-call-sheet.dto';
 import { UpdateCallSheetDto } from './dto/update-call-sheet.dto';
 import { CreateCastCallDto, UpdateCastCallDto } from './dto/create-cast-call.dto';
 import { CreateCrewCallDto, UpdateCrewCallDto } from './dto/create-crew-call.dto';
+import { ExternalApisService } from '../../services/external-apis.service';
 import * as puppeteer from 'puppeteer';
 
 @Injectable()
 export class CallSheetsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly externalApisService: ExternalApisService,
+  ) {}
 
   async create(userId: string, dto: CreateCallSheetDto) {
     // Check if call sheet already exists for this shoot day
@@ -113,6 +117,214 @@ export class CallSheetsService {
     await this.prisma.callSheetCrew.delete({ where: { id } });
     return { success: true };
   }
+
+  // ============ AUTO-FILL METHODS ============
+
+  /**
+   * Auto-fill all external data for a call sheet
+   * Fetches weather, sun times, and hospital info
+   */
+  async autoFillCallSheet(id: string) {
+    const callSheet = await this.findOne(id);
+
+    if (!callSheet.locationAddress) {
+      throw new BadRequestException('Location address is required for auto-fill');
+    }
+
+    try {
+      // Geocode the location
+      const coords = await this.externalApisService.geocodeAddress(callSheet.locationAddress);
+      if (!coords) {
+        throw new Error('Could not geocode address');
+      }
+
+      // Fetch all data in parallel
+      const [weather, sunTimes, hospitals] = await Promise.allSettled([
+        this.externalApisService.getWeatherForecast(coords.lat, coords.lng, callSheet.shootDate),
+        this.externalApisService.getSunTimes(coords.lat, coords.lng, callSheet.shootDate),
+        this.externalApisService.findNearestHospitals(coords.lat, coords.lng, 1),
+      ]);
+
+      const weatherData = weather.status === 'fulfilled' ? weather.value : null;
+      const sunData = sunTimes.status === 'fulfilled' ? sunTimes.value : null;
+      const hospitalData = hospitals.status === 'fulfilled' ? hospitals.value : [];
+
+      // Generate map URL
+      const mapUrl = this.externalApisService.generateMapUrl(callSheet.locationAddress);
+
+      // Update call sheet with auto-filled data (only empty fields)
+      const updateData: any = {
+        mapUrl: mapUrl || callSheet.mapUrl,
+      };
+
+      if (weatherData) {
+        if (!callSheet.weatherHigh) updateData.weatherHigh = weatherData.tempHigh;
+        if (!callSheet.weatherLow) updateData.weatherLow = weatherData.tempLow;
+        if (!callSheet.weatherCondition) updateData.weatherCondition = weatherData.condition;
+      }
+
+      if (sunData) {
+        if (!callSheet.sunrise) updateData.sunrise = sunData.sunrise;
+        if (!callSheet.sunset) updateData.sunset = sunData.sunset;
+      }
+
+      if (hospitalData && hospitalData.length > 0) {
+        const hospital = hospitalData[0];
+        if (!callSheet.nearestHospital) updateData.nearestHospital = hospital.name;
+        if (!callSheet.hospitalAddress) updateData.hospitalAddress = hospital.address;
+        if (!callSheet.hospitalPhone) updateData.hospitalPhone = hospital.phone;
+      }
+
+      return this.update(id, updateData);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Auto-fill failed: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Auto-fill only weather data
+   */
+  async autoFillWeather(id: string) {
+    const callSheet = await this.findOne(id);
+
+    if (!callSheet.locationAddress) {
+      throw new BadRequestException('Location address is required for auto-fill');
+    }
+
+    try {
+      const coords = await this.externalApisService.geocodeAddress(callSheet.locationAddress);
+      if (!coords) {
+        throw new Error('Could not geocode address');
+      }
+
+      const weather = await this.externalApisService.getWeatherForecast(
+        coords.lat,
+        coords.lng,
+        callSheet.shootDate,
+      );
+
+      if (!weather) {
+        throw new Error('Weather data unavailable for this location/date');
+      }
+
+      const updateData: any = {};
+      if (!callSheet.weatherHigh) updateData.weatherHigh = weather.tempHigh;
+      if (!callSheet.weatherLow) updateData.weatherLow = weather.tempLow;
+      if (!callSheet.weatherCondition) updateData.weatherCondition = weather.condition;
+
+      return this.update(id, updateData);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Weather auto-fill failed: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Auto-fill only sun times
+   */
+  async autoFillSunTimes(id: string) {
+    const callSheet = await this.findOne(id);
+
+    if (!callSheet.locationAddress) {
+      throw new BadRequestException('Location address is required for auto-fill');
+    }
+
+    try {
+      const coords = await this.externalApisService.geocodeAddress(callSheet.locationAddress);
+      if (!coords) {
+        throw new Error('Could not geocode address');
+      }
+
+      const sunTimes = await this.externalApisService.getSunTimes(
+        coords.lat,
+        coords.lng,
+        callSheet.shootDate,
+      );
+
+      if (!sunTimes) {
+        throw new Error('Sun times unavailable for this location/date');
+      }
+
+      const updateData: any = {};
+      if (!callSheet.sunrise) updateData.sunrise = sunTimes.sunrise;
+      if (!callSheet.sunset) updateData.sunset = sunTimes.sunset;
+
+      return this.update(id, updateData);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Sun times auto-fill failed: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Auto-fill only hospital information
+   */
+  async autoFillHospital(id: string) {
+    const callSheet = await this.findOne(id);
+
+    if (!callSheet.locationAddress) {
+      throw new BadRequestException('Location address is required for auto-fill');
+    }
+
+    try {
+      const coords = await this.externalApisService.geocodeAddress(callSheet.locationAddress);
+      if (!coords) {
+        throw new Error('Could not geocode address');
+      }
+
+      const hospitals = await this.externalApisService.findNearestHospitals(coords.lat, coords.lng, 1);
+
+      if (!hospitals || hospitals.length === 0) {
+        throw new Error('No hospitals found in the area');
+      }
+
+      const hospital = hospitals[0];
+      const updateData: any = {};
+      if (!callSheet.nearestHospital) updateData.nearestHospital = hospital.name;
+      if (!callSheet.hospitalAddress) updateData.hospitalAddress = hospital.address;
+      if (!callSheet.hospitalPhone) updateData.hospitalPhone = hospital.phone;
+
+      return this.update(id, updateData);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Hospital auto-fill failed: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Search for hospitals without saving (preview mode)
+   */
+  async searchHospitals(id: string): Promise<any[]> {
+    const callSheet = await this.findOne(id);
+
+    if (!callSheet.locationAddress) {
+      throw new BadRequestException('Location address is required for hospital search');
+    }
+
+    try {
+      const coords = await this.externalApisService.geocodeAddress(callSheet.locationAddress);
+      if (!coords) {
+        throw new Error('Could not geocode address');
+      }
+
+      const hospitals = await this.externalApisService.findNearestHospitals(coords.lat, coords.lng, 3);
+      return hospitals;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Hospital search failed: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Generate map URL for the call sheet location
+   */
+  generateMapUrl(id: string) {
+    // Note: This is synchronous as it doesn't require API calls
+    // Call method will fetch the call sheet and pass address
+  }
+
+  // ============ END AUTO-FILL METHODS ============
 
   async generatePdf(id: string): Promise<Buffer> {
     const callSheet = await this.findOne(id);
@@ -331,5 +543,22 @@ export class CallSheetsService {
   </div>
 </body>
 </html>`;
+  }
+
+  /**
+   * Search addresses using Nominatim API
+   */
+  async searchAddresses(query: string): Promise<Array<{ value: string; label: string }>> {
+    if (!query || query.length < 3) {
+      return [];
+    }
+
+    try {
+      const response = await this.externalApisService.searchAddresses(query);
+      return response;
+    } catch (error) {
+      console.error('Address search failed:', error);
+      return [];
+    }
   }
 }

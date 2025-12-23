@@ -25,6 +25,14 @@ export class CallSheetsController {
     return this.service.findBySchedule(scheduleId);
   }
 
+  /**
+   * Search for addresses using Nominatim (proxy to avoid CORS)
+   */
+  @Get('search/addresses')
+  async searchAddresses(@Query('q') query: string) {
+    return this.service.searchAddresses(query);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.service.findOne(id);
@@ -71,6 +79,50 @@ export class CallSheetsController {
   async removeCrew(@Param('id') id: string) {
     return this.service.removeCrew(id);
   }
+
+  // ============ AUTO-FILL ENDPOINTS ============
+
+  /**
+   * Auto-fill all external data (weather, sun times, hospital)
+   */
+  @Post(':id/auto-fill')
+  async autoFillCallSheet(@Param('id') id: string) {
+    return this.service.autoFillCallSheet(id);
+  }
+
+  /**
+   * Auto-fill only weather data
+   */
+  @Post(':id/auto-fill/weather')
+  async autoFillWeather(@Param('id') id: string) {
+    return this.service.autoFillWeather(id);
+  }
+
+  /**
+   * Auto-fill only sun times
+   */
+  @Post(':id/auto-fill/sun-times')
+  async autoFillSunTimes(@Param('id') id: string) {
+    return this.service.autoFillSunTimes(id);
+  }
+
+  /**
+   * Auto-fill only hospital information
+   */
+  @Post(':id/auto-fill/hospital')
+  async autoFillHospital(@Param('id') id: string) {
+    return this.service.autoFillHospital(id);
+  }
+
+  /**
+   * Search for hospitals near the location (preview, no save)
+   */
+  @Get(':id/search-hospitals')
+  async searchHospitals(@Param('id') id: string) {
+    return this.service.searchHospitals(id);
+  }
+
+  // ============ END AUTO-FILL ENDPOINTS ============
 
   @Get(':id/export/pdf')
   async exportPdf(@Param('id') id: string, @Res() res: Response) {

@@ -20,7 +20,6 @@ import {
   Tooltip,
   AutoComplete,
 } from 'antd';
-import axios from 'axios';
 import {
   LeftOutlined,
   FilePdfOutlined,
@@ -92,24 +91,8 @@ export default function CallSheetEditorPage() {
     // Debounce: wait 500ms after user stops typing
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        console.log('Making API request to Nominatim...');
-        const response = await axios.get('https://nominatim.openstreetmap.org/search', {
-          params: {
-            q: searchValue,
-            format: 'json',
-            limit: 5,
-            addressdetails: 1,
-          },
-          headers: {
-            'User-Agent': 'invoice-generator-app/1.0 (Call Sheet Address Search)',
-          },
-        });
-
-        const options = response.data.map((item: any) => ({
-          value: item.display_name,
-          label: item.display_name,
-        }));
-
+        console.log('Making API request via backend proxy...');
+        const options = await callSheetsApi.searchAddresses(searchValue);
         console.log('Address search results:', options);
         setAddressOptions(options);
       } catch (error) {

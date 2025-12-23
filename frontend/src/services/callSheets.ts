@@ -90,4 +90,38 @@ export const callSheetsApi = {
     });
     return res.data;
   },
+
+  // Auto-fill endpoints
+  autoFillAll: async (id: string): Promise<CallSheet> => {
+    const res = await apiClient.post(`/call-sheets/${id}/auto-fill`);
+    return res.data.data;
+  },
+
+  autoFillWeather: async (id: string): Promise<CallSheet> => {
+    const res = await apiClient.post(`/call-sheets/${id}/auto-fill/weather`);
+    return res.data.data;
+  },
+
+  autoFillSunTimes: async (id: string): Promise<CallSheet> => {
+    const res = await apiClient.post(`/call-sheets/${id}/auto-fill/sun-times`);
+    return res.data.data;
+  },
+
+  autoFillHospital: async (id: string): Promise<CallSheet> => {
+    const res = await apiClient.post(`/call-sheets/${id}/auto-fill/hospital`);
+    return res.data.data;
+  },
+
+  searchHospitals: async (id: string): Promise<Array<{ id: string; name: string; address: string; phone: string; distance: number }>> => {
+    const res = await apiClient.get(`/call-sheets/${id}/search-hospitals`);
+    return res.data.data;
+  },
+
+  // Address search
+  searchAddresses: async (query: string): Promise<Array<{ value: string; label: string }>> => {
+    const res = await apiClient.get(`/call-sheets/search/addresses`, {
+      params: { q: query }
+    });
+    return res.data.data || res.data || [];
+  },
 };
