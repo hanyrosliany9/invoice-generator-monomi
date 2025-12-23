@@ -45,7 +45,7 @@ export function KeyTimesBar({
         border: '2px solid #faad14',
         marginBottom: 16,
       }}
-      bodyStyle={{ padding: '16px' }}
+      styles={{ body: { padding: '16px' } }}
     >
       <Space
         style={{
