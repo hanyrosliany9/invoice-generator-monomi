@@ -99,12 +99,14 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
       width="90%"
       style={{ maxWidth: '1200px' }}
       footer={null}
-      bodyStyle={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        height: '70vh',
-        padding: '16px',
+      styles={{
+        body: {
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          height: '70vh',
+          padding: '16px',
+        },
       }}
     >
       {/* Controls Bar */}

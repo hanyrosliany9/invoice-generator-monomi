@@ -16,7 +16,12 @@ import {
   Form,
   Modal,
   Select,
+  Dropdown,
+  Tooltip,
+  AutoComplete,
 } from 'antd';
+import { useDebouncedCallback } from 'use-debounce';
+import axios from 'axios';
 import {
   LeftOutlined,
   FilePdfOutlined,
@@ -32,6 +37,10 @@ import {
   FileTextOutlined,
   MedicineBoxOutlined,
   EditOutlined,
+  ThunderboltOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  DownOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../theme';
@@ -54,9 +63,48 @@ export default function CallSheetEditorPage() {
   const [addCastModalOpen, setAddCastModalOpen] = useState(false);
   const [addCrewModalOpen, setAddCrewModalOpen] = useState(false);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [hospitalSearchModalOpen, setHospitalSearchModalOpen] = useState(false);
+  const [hospitalOptions, setHospitalOptions] = useState<Array<{ id: string; name: string; address: string; phone: string; distance: number }>>([]);
+  const [addressOptions, setAddressOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [addressSearching, setAddressSearching] = useState(false);
   const [castForm] = Form.useForm();
   const [crewForm] = Form.useForm();
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
+
+  // Address autocomplete search using Nominatim (free API)
+  const handleAddressSearch = useDebouncedCallback(async (searchValue: string) => {
+    if (!searchValue || searchValue.length < 3) {
+      setAddressOptions([]);
+      return;
+    }
+
+    setAddressSearching(true);
+    try {
+      const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+        params: {
+          q: searchValue,
+          format: 'json',
+          limit: 5,
+          addressdetails: 1,
+        },
+        headers: {
+          'User-Agent': 'invoice-generator-app/1.0 (Call Sheet Address Search)',
+        },
+      });
+
+      const options = response.data.map((item: any) => ({
+        value: item.display_name,
+        label: item.display_name,
+      }));
+
+      setAddressOptions(options);
+    } catch (error) {
+      console.error('Address search failed:', error);
+      setAddressOptions([]);
+    } finally {
+      setAddressSearching(false);
+    }
+  }, 1000); // 1-second debounce to respect Nominatim rate limit (1 req/sec)
 
   const { data: callSheet, isLoading } = useQuery({
     queryKey: ['call-sheet', id],
@@ -132,6 +180,75 @@ export default function CallSheetEditorPage() {
     },
     onError: () => message.error('Failed to delete'),
   });
+
+  // Auto-fill mutations
+  const autoFillAllMutation = useMutation({
+    mutationFn: () => callSheetsApi.autoFillAll(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Call sheet auto-filled successfully!');
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Auto-fill failed');
+    },
+  });
+
+  const autoFillWeatherMutation = useMutation({
+    mutationFn: () => callSheetsApi.autoFillWeather(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Weather data updated');
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Weather fetch failed');
+    },
+  });
+
+  const autoFillSunTimesMutation = useMutation({
+    mutationFn: () => callSheetsApi.autoFillSunTimes(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Sun times updated');
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Sun times fetch failed');
+    },
+  });
+
+  const autoFillHospitalMutation = useMutation({
+    mutationFn: () => callSheetsApi.autoFillHospital(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Hospital information updated');
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Hospital search failed');
+    },
+  });
+
+  const searchHospitalsMutation = useMutation({
+    mutationFn: () => callSheetsApi.searchHospitals(id!),
+    onSuccess: (data) => {
+      setHospitalOptions(data);
+      if (data.length > 0) {
+        setHospitalSearchModalOpen(true);
+      } else {
+        message.warning('No hospitals found in this area');
+      }
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Hospital search failed');
+    },
+  });
+
+  const handleSelectHospital = (hospital: any) => {
+    updateMutation.mutate({
+      nearestHospital: hospital.name,
+      hospitalAddress: hospital.address,
+      hospitalPhone: hospital.phone,
+    });
+    setHospitalSearchModalOpen(false);
+  };
 
   const handleAddCast = (values: any) => {
     addCastMutation.mutate({
@@ -230,13 +347,6 @@ export default function CallSheetEditorPage() {
           </div>
         </Space>
         <Space>
-          <Button
-            icon={<EyeOutlined />}
-            onClick={() => navigate(`/call-sheets/${id}/view`)}
-            style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff' }}
-          >
-            Preview
-          </Button>
           <Button
             icon={<FilePdfOutlined />}
             onClick={() => setPdfModalOpen(true)}
@@ -343,6 +453,65 @@ export default function CallSheetEditorPage() {
 
         {/* LOCATION & WEATHER SECTION */}
         <SectionHeader icon={<EnvironmentOutlined />} title="Location & Weather" theme={theme} />
+
+        {/* Auto-Fill Button Area */}
+        <div
+          style={{
+            background: theme.colors.background.primary,
+            padding: 12,
+            borderBottom: `1px solid ${theme.colors.border.default}`,
+            display: 'flex',
+            gap: 8,
+            flexWrap: 'wrap',
+          }}
+        >
+          <Tooltip
+            title={!callSheet?.locationAddress
+              ? 'Enter a location address first'
+              : 'Auto-fill all weather, sun times, and hospital data'
+            }
+          >
+            <Button
+              type="primary"
+              icon={<ThunderboltOutlined />}
+              onClick={() => autoFillAllMutation.mutate()}
+              loading={autoFillAllMutation.isPending}
+              disabled={!callSheet?.locationAddress}
+            >
+              Auto-Fill All Data
+            </Button>
+          </Tooltip>
+          <Dropdown
+            menu={{
+              items: [
+                {
+                  key: 'weather',
+                  label: 'Fetch Weather',
+                  icon: <CloudOutlined />,
+                  onClick: () => autoFillWeatherMutation.mutate(),
+                },
+                {
+                  key: 'suntimes',
+                  label: 'Fetch Sun Times',
+                  icon: <ReloadOutlined />,
+                  onClick: () => autoFillSunTimesMutation.mutate(),
+                },
+                {
+                  key: 'hospital',
+                  label: 'Find Hospitals',
+                  icon: <SearchOutlined />,
+                  onClick: () => searchHospitalsMutation.mutate(),
+                },
+              ],
+            }}
+            disabled={!callSheet?.locationAddress}
+          >
+            <Button icon={<DownOutlined />}>
+              Auto-Fill Individual
+            </Button>
+          </Dropdown>
+        </div>
+
         <div
           style={{
             display: 'grid',
@@ -365,13 +534,34 @@ export default function CallSheetEditorPage() {
             <div style={{ fontSize: 10, color: theme.colors.text.tertiary, textTransform: 'uppercase', marginBottom: 8 }}>
               Address
             </div>
-            <Input.TextArea
+            <AutoComplete
               value={callSheet.locationAddress || ''}
-              onChange={(e) => updateMutation.mutate({ locationAddress: e.target.value })}
-              placeholder="Enter full address"
-              rows={2}
-              style={{ marginBottom: 12 }}
-            />
+              options={addressOptions}
+              onSearch={handleAddressSearch}
+              onSelect={(value) => {
+                updateMutation.mutate({ locationAddress: value });
+                setAddressOptions([]); // Clear suggestions after selection
+                // Auto-trigger weather/hospital auto-fill after address selection
+                setTimeout(() => {
+                  if (!autoFillAllMutation.isPending) {
+                    autoFillAllMutation.mutate();
+                  }
+                }, 500);
+              }}
+              onChange={(value) => {
+                if (typeof value === 'string') {
+                  updateMutation.mutate({ locationAddress: value });
+                }
+              }}
+              placeholder="Start typing address... (e.g., 'Jakarta', 'Bandung')"
+              style={{ width: '100%', marginBottom: 12 }}
+              notFoundContent={addressSearching ? 'Searching...' : 'Type at least 3 characters'}
+            >
+              <Input.TextArea
+                rows={2}
+                placeholder="Start typing address..."
+              />
+            </AutoComplete>
             <div style={{ fontSize: 10, color: theme.colors.text.tertiary, textTransform: 'uppercase', marginBottom: 8 }}>
               Parking Notes
             </div>
@@ -921,6 +1111,49 @@ export default function CallSheetEditorPage() {
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Hospital Selection Modal */}
+      <Modal
+        title="Select Hospital"
+        open={hospitalSearchModalOpen}
+        onCancel={() => setHospitalSearchModalOpen(false)}
+        footer={null}
+        width={600}
+      >
+        <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+          {hospitalOptions.map((hospital) => (
+            <div
+              key={hospital.id}
+              style={{
+                padding: 12,
+                marginBottom: 8,
+                border: `1px solid ${theme.colors.border.default}`,
+                borderRadius: 4,
+                cursor: 'pointer',
+                transition: 'all 0.3s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = theme.colors.background.tertiary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+              onClick={() => handleSelectHospital(hospital)}
+            >
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>{hospital.name}</div>
+              <div style={{ fontSize: 12, color: theme.colors.text.secondary, marginBottom: 2 }}>
+                📍 {hospital.address}
+              </div>
+              <div style={{ fontSize: 12, color: theme.colors.text.secondary, marginBottom: 4 }}>
+                📞 {hospital.phone}
+              </div>
+              <div style={{ fontSize: 11, color: theme.colors.accent.primary }}>
+                {hospital.distance.toFixed(1)} km away
+              </div>
+            </div>
+          ))}
+        </div>
       </Modal>
     </Layout>
   );
