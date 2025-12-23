@@ -87,10 +87,12 @@ export default function CallSheetEditorPage() {
     }
 
     setAddressSearching(true);
+    console.log('Starting address search for:', searchValue);
 
     // Debounce: wait 500ms after user stops typing
     searchTimeoutRef.current = setTimeout(async () => {
       try {
+        console.log('Making API request to Nominatim...');
         const response = await axios.get('https://nominatim.openstreetmap.org/search', {
           params: {
             q: searchValue,
@@ -108,7 +110,7 @@ export default function CallSheetEditorPage() {
           label: item.display_name,
         }));
 
-        console.log('Address search results:', options); // Debug log
+        console.log('Address search results:', options);
         setAddressOptions(options);
       } catch (error) {
         console.error('Address search failed:', error);
@@ -554,47 +556,84 @@ export default function CallSheetEditorPage() {
             <div style={{ fontSize: 10, color: theme.colors.text.tertiary, textTransform: 'uppercase', marginBottom: 8 }}>
               Address
             </div>
-            <Select
-              showSearch
-              value={localAddress || undefined}
-              placeholder="Start typing address... (e.g., 'Jakarta', 'Bandung')"
-              style={{ width: '100%', marginBottom: 12 }}
-              filterOption={false}
-              onSearch={(value) => {
-                setLocalAddress(value);
-                if (value.length >= 3) {
-                  handleAddressSearch(value);
-                } else {
-                  setAddressOptions([]);
-                }
-              }}
-              onChange={(value) => {
-                if (value) {
+            <div style={{ position: 'relative' }}>
+              <Input
+                value={localAddress}
+                onChange={(e) => {
+                  const value = e.target.value;
                   setLocalAddress(value);
-                  updateMutation.mutate({ locationAddress: value });
-                  setAddressOptions([]);
-                  // Auto-trigger weather/hospital auto-fill
+                  if (value.length >= 3) {
+                    handleAddressSearch(value);
+                  } else {
+                    setAddressOptions([]);
+                  }
+                }}
+                onBlur={() => {
+                  // Delay to allow click on dropdown option
                   setTimeout(() => {
-                    if (!autoFillAllMutation.isPending) {
-                      autoFillAllMutation.mutate();
+                    setAddressOptions([]);
+                    if (localAddress && localAddress !== callSheet?.locationAddress) {
+                      updateMutation.mutate({ locationAddress: localAddress });
                     }
-                  }, 500);
-                }
-              }}
-              onBlur={() => {
-                if (localAddress && localAddress !== callSheet?.locationAddress) {
-                  updateMutation.mutate({ locationAddress: localAddress });
-                }
-              }}
-              notFoundContent={addressSearching ? <Spin size="small" /> : (localAddress && localAddress.length >= 3 ? 'No results found' : 'Type at least 3 characters')}
-              options={addressOptions}
-              allowClear
-              onClear={() => {
-                setLocalAddress('');
-                setAddressOptions([]);
-                updateMutation.mutate({ locationAddress: '' });
-              }}
-            />
+                  }, 200);
+                }}
+                placeholder="Start typing address... (e.g., 'Jakarta', 'Bandung')"
+                style={{ width: '100%' }}
+                suffix={addressSearching ? <Spin size="small" /> : null}
+              />
+              {/* Dropdown suggestions */}
+              {addressOptions.length > 0 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 1000,
+                    background: theme.colors.background.primary,
+                    border: `1px solid ${theme.colors.border.default}`,
+                    borderRadius: 4,
+                    maxHeight: 200,
+                    overflowY: 'auto',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  {addressOptions.map((option, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        borderBottom: index < addressOptions.length - 1 ? `1px solid ${theme.colors.border.default}` : 'none',
+                        fontSize: 13,
+                        color: theme.colors.text.primary,
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // Prevent blur from firing first
+                        setLocalAddress(option.value);
+                        setAddressOptions([]);
+                        updateMutation.mutate({ locationAddress: option.value });
+                        // Auto-trigger weather/hospital auto-fill
+                        setTimeout(() => {
+                          if (!autoFillAllMutation.isPending) {
+                            autoFillAllMutation.mutate();
+                          }
+                        }, 500);
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = theme.colors.background.tertiary;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      {option.label}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div style={{ height: 12 }} /> {/* Spacer */}
             <div style={{ fontSize: 10, color: theme.colors.text.tertiary, textTransform: 'uppercase', marginBottom: 8 }}>
               Parking Notes
             </div>
