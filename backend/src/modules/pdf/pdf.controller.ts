@@ -24,6 +24,7 @@ import { ExpensesService } from "../expenses/expenses.service";
 import { SchedulesService } from "../schedules/schedules.service";
 import { CallSheetsService } from "../call-sheets/call-sheets.service";
 import { ShotListsService } from "../shot-lists/shot-lists.service";
+import { SettingsService } from "../settings/settings.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { PdfAccessGuard } from "./guards/pdf-access.guard";
 
@@ -43,6 +44,7 @@ export class PdfController {
     private readonly schedulesService: SchedulesService,
     private readonly callSheetsService: CallSheetsService,
     private readonly shotListsService: ShotListsService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   @Get("invoice/:id")
@@ -670,8 +672,16 @@ export class PdfController {
         throw new NotFoundException("Call Sheet not found");
       }
 
+      // Fetch company settings to populate company name if not set
+      const companySettings = await this.settingsService.getCompanySettings();
+      const callSheetForPDF = {
+        ...callSheet,
+        // Use call sheet's company name if set, otherwise use company settings
+        companyName: callSheet.companyName || companySettings?.companyName || 'Production',
+      };
+
       const isContinuous = continuous === "true";
-      const pdfBuffer = await this.pdfService.generateCallSheetPDF(callSheet, isContinuous);
+      const pdfBuffer = await this.pdfService.generateCallSheetPDF(callSheetForPDF, isContinuous);
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
@@ -707,8 +717,16 @@ export class PdfController {
         throw new NotFoundException("Call Sheet not found");
       }
 
+      // Fetch company settings to populate company name if not set
+      const companySettings = await this.settingsService.getCompanySettings();
+      const callSheetForPDF = {
+        ...callSheet,
+        // Use call sheet's company name if set, otherwise use company settings
+        companyName: callSheet.companyName || companySettings?.companyName || 'Production',
+      };
+
       const isContinuous = continuous === "true";
-      const pdfBuffer = await this.pdfService.generateCallSheetPDF(callSheet, isContinuous);
+      const pdfBuffer = await this.pdfService.generateCallSheetPDF(callSheetForPDF, isContinuous);
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(

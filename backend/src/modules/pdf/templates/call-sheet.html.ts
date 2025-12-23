@@ -1,343 +1,668 @@
 /**
- * Call Sheet PDF Template - Industry Standard
- * Enhanced with time-based operational sections, meal management, company moves,
- * special requirements, and background/extras tracking
+ * Professional Call Sheet PDF Template
+ * Industry-standard format with minimalist design
+ * Heavy use of borders and grid-based layout
  */
 
-export function generateCallSheetHTML(cs: any): string {
+const THEME_COLORS = {
+  primary: '#337EA9',
+  primaryDark: '#37352F',
+  success: '#448361',
+  warning: '#D9730D',
+  error: '#D44C47',
+  lightBg: '#F1F1EF',
+  mediumBg: '#E1E0DC',
+  textSecondary: '#787774',
+};
+
+/**
+ * Generates page-break property only for print mode
+ * In continuous/digital view mode, returns empty string to allow infinite scroll
+ */
+function getPageBreakStyle(continuous: boolean): string {
+  return continuous ? '' : 'page-break-inside: avoid;';
+}
+
+export function generateCallSheetHTML(cs: any, logoBase64?: string | null, continuous: boolean = true): string {
   const shootDate = new Date(cs.shootDate).toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    weekday: 'short', year: 'numeric', month: 'short', day: '2-digit'
   });
 
-  // Group crew by department
-  const crewByDept = cs.crewCalls.reduce((acc: any, crew: any) => {
+  // Build crew by department
+  const crewByDept = cs.crewCalls?.reduce((acc: any, crew: any) => {
     if (!acc[crew.department]) acc[crew.department] = [];
     acc[crew.department].push(crew);
     return acc;
   }, {});
 
-  // Enhanced Cast with all timing columns
-  const castRowsHtml = cs.castCalls.map((cast: any) => `
+  // Build scenes list
+  const castRowsHtml = cs.castCalls?.map((cast: any) => `
     <tr>
       <td>${cast.castNumber || ''}</td>
-      <td>${cast.actorName}</td>
       <td>${cast.character || ''}</td>
-      <td>${cast.workStatus || 'W'}</td>
-      <td>${cast.pickupTime || '-'}</td>
-      <td>${cast.muCallTime || '-'}</td>
-      <td><strong>${cast.callTime}</strong></td>
-      <td>${cast.onSetTime || '-'}</td>
-      <td>${cast.wrapTime || '-'}</td>
-      <td>${cast.muDuration ? cast.muDuration + ' min' : '-'}</td>
+      <td>${cast.actorName}</td>
+      <td style="text-align: center;">${cast.workStatus || 'W'}</td>
+      <td style="text-align: center;">${cast.pickupTime || '-'}</td>
+      <td style="text-align: center;">${cast.onSetTime || '-'}</td>
+      <td style="text-align: center;">${cast.muCallTime || '-'}</td>
+      <td>${cast.notes || ''}</td>
     </tr>
-  `).join('');
+  `).join('') || '';
 
-  const crewHtml = Object.entries(crewByDept).map(([dept, crew]: [string, any]) => `
-    <div class="dept-section">
-      <div class="dept-name">${dept}</div>
-      <table class="crew-table">
-        ${crew.map((c: any) => `
-          <tr>
-            <td width="30%">${c.position}</td>
-            <td width="35%">${c.name}</td>
-            <td width="20%">${c.callTime}</td>
-            <td width="15%">${c.phone || ''}</td>
-          </tr>
-        `).join('')}
-      </table>
-    </div>
-  `).join('');
+  // Build crew by department HTML
+  const crewHtml = crewByDept ? Object.entries(crewByDept).map(([dept, crew]: [string, any]) => {
+    const crewRows = (crew as any[]).map((c: any) => `
+      <tr>
+        <td><strong>${c.position}</strong></td>
+        <td>${c.name}</td>
+        <td>${c.callTime}</td>
+        <td>${c.phone || ''}</td>
+      </tr>
+    `).join('');
 
-  const scenesHtml = cs.scenes.map((scene: any) => `
-    <tr>
-      <td>${scene.sceneNumber}</td>
-      <td>${scene.intExt || ''} ${scene.dayNight || ''}</td>
-      <td>${scene.sceneName || ''}</td>
-      <td>${scene.location || ''}</td>
-      <td>${scene.pageCount?.toFixed(1) || ''}</td>
-      <td>${scene.castIds || ''}</td>
-    </tr>
-  `).join('');
+    return `
+      <tr>
+        <td colspan="4" style="background: ${THEME_COLORS.mediumBg}; font-weight: bold; padding: 4px 8px;"><strong>${dept}</strong></td>
+      </tr>
+      ${crewRows}
+    `;
+  }).join('') : '';
 
-  // === NEW: Build Day Schedule Timeline ===
-  const timelineEvents: any[] = [];
-  if (cs.crewCallTime) timelineEvents.push({ time: cs.crewCallTime, label: 'GENERAL CREW CALL', type: 'crew' });
-  if (cs.firstShotTime) timelineEvents.push({ time: cs.firstShotTime, label: 'FIRST SHOT', type: 'shot' });
-  if (cs.mealBreaks) {
-    cs.mealBreaks.forEach((meal: any) => {
-      timelineEvents.push({ time: meal.time, label: `${meal.mealType} (${meal.duration} min)${meal.location ? ' @ ' + meal.location : ''}`, type: 'meal' });
-    });
-  }
-  if (cs.companyMoves) {
-    cs.companyMoves.forEach((move: any) => {
-      timelineEvents.push({ time: move.departTime, label: `Company Move → ${move.toLocation}${move.travelTime ? ' (' + move.travelTime + ' min)' : ''}`, type: 'move' });
-    });
-  }
-  if (cs.estimatedWrap) timelineEvents.push({ time: cs.estimatedWrap, label: 'ESTIMATED WRAP', type: 'wrap' });
-
-  // Sort by time
-  timelineEvents.sort((a, b) => a.time.localeCompare(b.time));
-
-  const timelineHtml = timelineEvents.map(event => `
-    <tr>
-      <td style="font-weight: bold; width: 80px;">${event.time}</td>
-      <td>${event.label}</td>
-    </tr>
-  `).join('');
-
-  // === NEW: Meal Breaks ===
-  const mealsHtml = cs.mealBreaks?.length > 0 ? cs.mealBreaks.map((meal: any) => `
-    <tr>
-      <td>${meal.mealType}</td>
-      <td>${meal.time}</td>
-      <td>${meal.duration} min</td>
-      <td>${meal.location || ''}</td>
-      <td>${meal.notes || ''}</td>
-    </tr>
-  `).join('') : '';
-
-  // === NEW: Company Moves ===
-  const movesHtml = cs.companyMoves?.length > 0 ? cs.companyMoves.map((move: any) => `
-    <tr>
-      <td>${move.departTime}</td>
-      <td>${move.fromLocation}</td>
-      <td>${move.toLocation}</td>
-      <td>${move.travelTime ? move.travelTime + ' min' : ''}</td>
-      <td>${move.notes || ''}</td>
-    </tr>
-  `).join('') : '';
-
-  // === NEW: Special Requirements ===
-  const reqTypeLabels: any = {
-    STUNTS: 'Stunts', MINORS: 'Minors', ANIMALS: 'Animals', VEHICLES: 'Vehicles',
-    SFX_PYRO: 'SFX/Pyro', WATER_WORK: 'Water Work', AERIAL_DRONE: 'Aerial/Drone',
-    WEAPONS: 'Weapons', NUDITY: 'Nudity', OTHER: 'Other'
-  };
-  const specialReqsHtml = cs.specialRequirements?.length > 0 ? cs.specialRequirements.map((req: any) => `
-    <tr>
-      <td>${reqTypeLabels[req.reqType] || req.reqType}</td>
-      <td>${req.description}</td>
-      <td>${req.contactName || ''}</td>
-      <td>${req.contactPhone || ''}</td>
-      <td>${req.scenes || ''}</td>
-    </tr>
-  `).join('') : '';
-
-  // === NEW: Background/Extras ===
-  const backgroundHtml = cs.backgroundCalls?.length > 0 ? cs.backgroundCalls.map((bg: any) => `
-    <tr>
-      <td>${bg.description}</td>
-      <td>${bg.quantity}</td>
-      <td>${bg.callTime}</td>
-      <td>${bg.reportLocation || ''}</td>
-      <td>${bg.wardrobeNotes || ''}</td>
-    </tr>
-  `).join('') : '';
+  // Build CSS rules dynamically based on continuous mode
+  const pagebreakCSS = continuous ? '' : `
+    @page {
+      size: letter;
+      margin: 0.4in;
+    }
+  `;
 
   return `<!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-    .header { background: #1f2937; color: #fff; padding: 16px; margin-bottom: 16px; }
-    .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-    .production-name { font-size: 20px; font-weight: bold; }
-    .call-sheet-num { background: #fff; color: #1f2937; padding: 4px 12px; border-radius: 4px; font-weight: bold; }
-    .header-info { display: flex; gap: 24px; }
-    .header-info div { display: flex; flex-direction: column; }
-    .header-info label { font-size: 9px; opacity: 0.8; text-transform: uppercase; }
-    .header-info span { font-size: 14px; font-weight: bold; }
+    html, body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10px;
+      line-height: 1.3;
+      color: #000;
+    }
 
-    .times-bar { display: flex; background: #f5f5f5; padding: 12px; margin-bottom: 16px; gap: 24px; }
-    .time-item { text-align: center; }
-    .time-item label { font-size: 9px; color: #666; display: block; }
-    .time-item span { font-size: 16px; font-weight: bold; }
+    ${pagebreakCSS}
 
-    .section { margin-bottom: 16px; }
-    .section-title { background: #e5e7eb; padding: 6px 12px; font-weight: bold; font-size: 12px; margin-bottom: 8px; }
+    body {
+      padding: 8px;
+    }
 
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-    th { background: #f9fafb; font-weight: bold; font-size: 10px; text-transform: uppercase; }
+    /* Professional borders and boxes */
+    .page-container {
+      width: 100%;
+    }
 
-    .two-col { display: flex; gap: 24px; }
-    .two-col > div { flex: 1; }
+    /* HEADER SECTION */
+    .call-sheet-header {
+      width: 100%;
+      border: 3px solid #000;
+      margin-bottom: 8px;
+      ${getPageBreakStyle(continuous)}
+    }
 
-    .info-card { background: #f9fafb; padding: 12px; border-radius: 4px; margin-bottom: 12px; }
-    .info-card h4 { font-size: 11px; margin-bottom: 8px; color: #374151; }
-    .info-card p { margin-bottom: 4px; }
+    .header-top {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      gap: 0;
+      border-bottom: 2px solid #000;
+    }
 
-    .dept-section { margin-bottom: 12px; }
-    .dept-name { font-weight: bold; background: #f3f4f6; padding: 4px 8px; margin-bottom: 4px; }
-    .crew-table { font-size: 10px; }
-    .crew-table td { padding: 3px 8px; border-bottom: 1px solid #f3f4f6; }
+    .header-left {
+      border-right: 2px solid #000;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
 
-    .weather-row { display: flex; gap: 16px; }
-    .weather-item { text-align: center; }
+    .company-logo-small {
+      width: 80px;
+      height: auto;
+      margin-bottom: 8px;
+    }
 
-    .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 9px; color: #666; }
+    .production-info-box {
+      font-size: 9px;
+      line-height: 1.2;
+    }
+
+    .production-info-box div {
+      margin-bottom: 3px;
+    }
+
+    .production-info-label {
+      font-weight: bold;
+      display: inline-block;
+      width: 60px;
+    }
+
+    .header-center {
+      padding: 20px 12px;
+      text-align: center;
+      border-right: 2px solid #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .call-sheet-title {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+
+    .shoot-info {
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .shoot-info-line {
+      margin-bottom: 4px;
+    }
+
+    .header-right {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .key-times-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+
+    .key-times-table tr {
+      border-bottom: 1px solid #000;
+    }
+
+    .key-times-table td {
+      padding: 4px 6px;
+      border-right: 1px solid #000;
+    }
+
+    .key-times-table td:last-child {
+      border-right: none;
+    }
+
+    .key-times-label {
+      font-weight: bold;
+      width: 70%;
+    }
+
+    .key-times-value {
+      text-align: center;
+      font-weight: bold;
+      font-size: 11px;
+    }
+
+    /* LOGISTICS ROW */
+    .logistics-section {
+      width: 100%;
+      border: 2px solid #000;
+      margin-bottom: 8px;
+      ${getPageBreakStyle(continuous)}
+    }
+
+    .logistics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+    }
+
+    .logistics-box {
+      border-right: 1px solid #000;
+      border-bottom: 1px solid #000;
+      padding: 8px;
+      min-height: 40px;
+    }
+
+    .logistics-box:nth-child(4n) {
+      border-right: none;
+    }
+
+    .logistics-box:nth-last-child(-n+4) {
+      border-bottom: none;
+    }
+
+    .logistics-label {
+      font-weight: bold;
+      font-size: 9px;
+      margin-bottom: 4px;
+    }
+
+    .logistics-value {
+      font-size: 10px;
+      line-height: 1.3;
+    }
+
+    /* SAFETY NOTES */
+    .safety-section {
+      width: 100%;
+      border: 2px solid #000;
+      margin-bottom: 8px;
+      padding: 8px;
+      font-size: 10px;
+      ${getPageBreakStyle(continuous)}
+    }
+
+    .safety-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    /* SCENES TABLE */
+    .scenes-section {
+      width: 100%;
+      border: 2px solid #000;
+      margin-bottom: 8px;
+      ${getPageBreakStyle(continuous)}
+    }
+
+    .section-title {
+      background: #000;
+      color: white;
+      padding: 6px 8px;
+      font-weight: bold;
+      font-size: 11px;
+    }
+
+    .scenes-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9px;
+    }
+
+    .scenes-table th {
+      background: #000;
+      color: white;
+      padding: 6px 4px;
+      text-align: left;
+      font-weight: bold;
+      border: 1px solid #000;
+      font-size: 9px;
+    }
+
+    .scenes-table td {
+      padding: 6px 4px;
+      border: 1px solid #000;
+    }
+
+    .scenes-table tbody tr:nth-child(even) {
+      background: ${THEME_COLORS.lightBg};
+    }
+
+    /* CAST TABLE */
+    .cast-section {
+      width: 100%;
+      border: 2px solid #000;
+      margin-bottom: 8px;
+      ${getPageBreakStyle(continuous)}
+    }
+
+    .cast-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9px;
+    }
+
+    .cast-table th {
+      background: #000;
+      color: white;
+      padding: 6px 4px;
+      text-align: center;
+      font-weight: bold;
+      border: 1px solid #000;
+      font-size: 9px;
+    }
+
+    .cast-table td {
+      padding: 6px 4px;
+      border: 1px solid #000;
+      text-align: left;
+    }
+
+    .cast-table tbody tr:nth-child(even) {
+      background: ${THEME_COLORS.lightBg};
+    }
+
+    /* CREW DEPARTMENTS TABLE */
+    .crew-section {
+      width: 100%;
+      border: 2px solid #000;
+      margin-bottom: 8px;
+      ${getPageBreakStyle(continuous)}
+    }
+
+    .crew-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9px;
+    }
+
+    .crew-table th {
+      background: #000;
+      color: white;
+      padding: 6px 4px;
+      text-align: left;
+      font-weight: bold;
+      border: 1px solid #000;
+      font-size: 9px;
+    }
+
+    .crew-table td {
+      padding: 6px 4px;
+      border: 1px solid #000;
+    }
+
+    .crew-table tbody tr:nth-child(even) {
+      background: ${THEME_COLORS.lightBg};
+    }
+
+    .dept-row {
+      background: ${THEME_COLORS.mediumBg};
+      font-weight: bold;
+    }
+
+    /* NOTES SECTIONS */
+    .notes-section {
+      width: 100%;
+      border: 2px solid #000;
+      margin-bottom: 8px;
+      ${getPageBreakStyle(continuous)}
+    }
+
+    .notes-content {
+      padding: 8px;
+      min-height: 60px;
+      font-size: 10px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    /* FOOTER INFO */
+    .footer-section {
+      width: 100%;
+      border: 2px solid #000;
+      margin-bottom: 8px;
+      ${getPageBreakStyle(continuous)}
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0;
+    }
+
+    .footer-box {
+      border-right: 1px solid #000;
+      border-bottom: 1px solid #000;
+      padding: 8px;
+      min-height: 50px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .footer-box:nth-child(6n) {
+      border-right: none;
+    }
+
+    .footer-box:nth-last-child(-n+6) {
+      border-bottom: none;
+    }
+
+    .footer-label {
+      font-weight: bold;
+      font-size: 9px;
+      margin-bottom: 4px;
+    }
+
+    .footer-value {
+      font-size: 10px;
+    }
+
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="header-top">
-      <div class="production-name">${cs.productionName || 'Production'}</div>
-      <div class="call-sheet-num">Call Sheet #${cs.callSheetNumber}</div>
-    </div>
-    <div class="header-info">
-      <div><label>Date</label><span>${shootDate}</span></div>
-      <div><label>Day</label><span>${cs.shootDay?.dayNumber || ''}</span></div>
-      <div><label>Director</label><span>${cs.director || '-'}</span></div>
-      <div><label>Producer</label><span>${cs.producer || '-'}</span></div>
-    </div>
-  </div>
+  <div class="page-container">
+    <!-- HEADER SECTION -->
+    <div class="call-sheet-header">
+      <div class="header-top">
+        <!-- Left: Company Info -->
+        <div class="header-left">
+          ${logoBase64 ? `<img src="${logoBase64}" alt="Company Logo" class="company-logo-small" />` : ''}
+          <div class="production-info-box">
+            <div><span class="production-info-label">Company:</span> ${cs.companyName || 'Production'}</div>
+            <div><span class="production-info-label">Producer:</span> ${cs.producer || ''}</div>
+            <div><span class="production-info-label">Director:</span> ${cs.director || ''}</div>
+            <div><span class="production-info-label">1st AD:</span> ${cs.firstAd || ''}</div>
+          </div>
+        </div>
 
-  <!-- === KEY TIMES BAR (Enhanced) === -->
-  <div class="times-bar" style="background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%); color: #fff;">
-    <div class="time-item"><label style="color: #aaa;">Crew Call</label><span style="color: #faad14; font-size: 18px;">${cs.crewCallTime || cs.generalCallTime || '-'}</span></div>
-    <div class="time-item"><label style="color: #aaa;">First Shot</label><span style="color: #faad14; font-size: 18px;">${cs.firstShotTime || '-'}</span></div>
-    <div class="time-item"><label style="color: #aaa;">Lunch</label><span style="color: #faad14; font-size: 18px;">${cs.lunchTime || '-'}</span></div>
-    <div class="time-item"><label style="color: #aaa;">Est. Wrap</label><span style="color: #faad14; font-size: 18px;">${cs.estimatedWrap || cs.wrapTime || '-'}</span></div>
-  </div>
+        <!-- Center: Title -->
+        <div class="header-center">
+          <div class="call-sheet-title">${cs.productionName || 'CALL SHEET'}</div>
+          <div class="shoot-info">
+            <div class="shoot-info-line"><strong>${shootDate}</strong></div>
+            ${cs.dayNumber ? `<div class="shoot-info-line">DAY ${cs.dayNumber}${cs.totalDays ? ' of ' + cs.totalDays : ''}</div>` : ''}
+            <div class="shoot-info-line"><strong>GENERAL CREW CALL</strong></div>
+            <div style="font-size: 24px; font-weight: bold; color: ${THEME_COLORS.warning};">${cs.crewCallTime || cs.generalCallTime || '—'}</div>
+          </div>
+        </div>
 
-  <div class="two-col">
-    <div>
-      <div class="info-card">
-        <h4>📍 LOCATION</h4>
-        <p><strong>${cs.locationName || '-'}</strong></p>
-        <p>${cs.locationAddress || ''}</p>
-        ${cs.parkingNotes ? `<p style="margin-top: 8px;"><strong>Parking:</strong> ${cs.parkingNotes}</p>` : ''}
-      </div>
-    </div>
-    <div>
-      <div class="info-card">
-        <h4>🌤️ WEATHER</h4>
-        <div class="weather-row">
-          <div class="weather-item"><span style="font-size: 18px;">${cs.weatherHigh || '-'}°</span><br/>High</div>
-          <div class="weather-item"><span style="font-size: 18px;">${cs.weatherLow || '-'}°</span><br/>Low</div>
-          <div class="weather-item"><span>${cs.weatherCondition || '-'}</span></div>
+        <!-- Right: Key Times -->
+        <div class="header-right">
+          <table class="key-times-table">
+            <tr>
+              <td class="key-times-label">Shooting Call:</td>
+              <td class="key-times-value">${cs.firstShotTime || '—'}</td>
+            </tr>
+            <tr>
+              <td class="key-times-label">Lunch:</td>
+              <td class="key-times-value">${cs.lunchTime || '—'}</td>
+            </tr>
+            <tr>
+              <td class="key-times-label">Est. Wrap:</td>
+              <td class="key-times-value">${cs.estimatedWrap || cs.wrapTime || '—'}</td>
+            </tr>
+            <tr>
+              <td class="key-times-label">Sunrise:</td>
+              <td class="key-times-value">${cs.sunrise || '—'}</td>
+            </tr>
+            <tr>
+              <td class="key-times-label">Sunset:</td>
+              <td class="key-times-value">${cs.sunset || '—'}</td>
+            </tr>
+          </table>
         </div>
       </div>
-      ${cs.nearestHospital ? `
-      <div class="info-card">
-        <h4>🏥 NEAREST HOSPITAL</h4>
-        <p><strong>${cs.nearestHospital}</strong></p>
-        <p>${cs.hospitalAddress || ''}</p>
-        <p>${cs.hospitalPhone || ''}</p>
-      </div>
-      ` : ''}
     </div>
-  </div>
 
-  ${cs.scenes.length > 0 ? `
-  <div class="section">
-    <div class="section-title">SCHEDULE</div>
-    <table>
-      <thead>
-        <tr><th>Scene</th><th>I/E D/N</th><th>Description</th><th>Location</th><th>Pages</th><th>Cast</th></tr>
-      </thead>
-      <tbody>${scenesHtml}</tbody>
-    </table>
-  </div>
-  ` : ''}
+    <!-- LOGISTICS SECTION -->
+    <div class="logistics-section">
+      <div class="logistics-grid">
+        <div class="logistics-box">
+          <div class="logistics-label">BASECAMP</div>
+          <div class="logistics-value">${cs.basecamp || ''}</div>
+        </div>
+        <div class="logistics-box">
+          <div class="logistics-label">CREW PARKING</div>
+          <div class="logistics-value">${cs.crewParking || ''}</div>
+        </div>
+        <div class="logistics-box">
+          <div class="logistics-label">BATHROOMS</div>
+          <div class="logistics-value">${cs.bathrooms || ''}</div>
+        </div>
+        <div class="logistics-box">
+          <div class="logistics-label">LOCATION(S)</div>
+          <div class="logistics-value">${cs.locationName || cs.locationAddress || ''}</div>
+        </div>
+        <div class="logistics-box">
+          <div class="logistics-label">LUNCH LOCATION</div>
+          <div class="logistics-value">${cs.lunchLocation || ''}</div>
+        </div>
+        <div class="logistics-box">
+          <div class="logistics-label">WORKING TRUCKS</div>
+          <div class="logistics-value">${cs.workingTrucks || ''}</div>
+        </div>
+        <div class="logistics-box">
+          <div class="logistics-label">NEAREST HOSPITAL</div>
+          <div class="logistics-value">${cs.nearestHospital || ''}<br/><small>${cs.hospitalAddress || ''}</small></div>
+        </div>
+        <div class="logistics-box">
+          <div class="logistics-label">WEATHER</div>
+          <div class="logistics-value">H: ${cs.weatherHigh || '—'}° / L: ${cs.weatherLow || '—'}°<br/>${cs.weatherCondition || ''}</div>
+        </div>
+      </div>
+    </div>
 
-  <!-- === DAY SCHEDULE TIMELINE === -->
-  ${timelineHtml ? `
-  <div class="section">
-    <div class="section-title">DAY SCHEDULE TIMELINE</div>
-    <table>
-      <tbody>${timelineHtml}</tbody>
-    </table>
-  </div>
-  ` : ''}
+    <!-- SAFETY NOTES -->
+    ${cs.safetyNotes ? `
+    <div class="safety-section">
+      <div class="safety-title">⚠️ SAFETY NOTES</div>
+      <div>${cs.safetyNotes}</div>
+    </div>
+    ` : ''}
 
-  <!-- === ENHANCED CAST WITH FULL TIMING === -->
-  ${cs.castCalls.length > 0 ? `
-  <div class="section">
-    <div class="section-title">CAST (Enhanced Timing)</div>
-    <table style="font-size: 10px;">
-      <thead>
-        <tr><th>#</th><th>Actor</th><th>Char</th><th>Status</th><th>Pickup</th><th>H/MU</th><th>Call</th><th>On Set</th><th>Wrap</th><th>MU Time</th></tr>
-      </thead>
-      <tbody>${castRowsHtml}</tbody>
-    </table>
-  </div>
-  ` : ''}
+    <!-- SCENES TABLE -->
+    ${cs.scenes && cs.scenes.length > 0 ? `
+    <div class="scenes-section">
+      <div class="section-title">SCENE SCHEDULE</div>
+      <table class="scenes-table">
+        <thead>
+          <tr>
+            <th>SC#</th>
+            <th>INT/EXT</th>
+            <th>D/N</th>
+            <th>DESCRIPTION</th>
+            <th>CAST</th>
+            <th>PAGES</th>
+            <th>LOCATION</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cs.scenes.map((scene: any) => `
+            <tr>
+              <td><strong>${scene.sceneNumber}</strong></td>
+              <td>${scene.intExt || ''}</td>
+              <td>${scene.dayNight || ''}</td>
+              <td>${scene.sceneName || scene.description || ''}</td>
+              <td>${scene.castIds || ''}</td>
+              <td style="text-align: center;">${scene.pageCount?.toFixed(1) || ''}</td>
+              <td>${scene.location || ''}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    ` : ''}
 
-  <!-- === BACKGROUND / EXTRAS === -->
-  ${backgroundHtml ? `
-  <div class="section">
-    <div class="section-title">BACKGROUND / EXTRAS</div>
-    <table style="font-size: 10px;">
-      <thead>
-        <tr><th>Description</th><th>Qty</th><th>Call Time</th><th>Report To</th><th>Wardrobe</th></tr>
-      </thead>
-      <tbody>${backgroundHtml}</tbody>
-    </table>
-  </div>
-  ` : ''}
+    <!-- CAST TABLE -->
+    ${cs.castCalls && cs.castCalls.length > 0 ? `
+    <div class="cast-section">
+      <div class="section-title">CAST</div>
+      <table class="cast-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>CHARACTER</th>
+            <th>ACTOR</th>
+            <th>STATUS</th>
+            <th>PICKUP</th>
+            <th>ON SET</th>
+            <th>HAIR/MU</th>
+            <th>NOTES</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${castRowsHtml}
+        </tbody>
+      </table>
+    </div>
+    ` : ''}
 
-  ${cs.crewCalls.length > 0 ? `
-  <div class="section">
-    <div class="section-title">CREW BY DEPARTMENT</div>
-    ${crewHtml}
-  </div>
-  ` : ''}
+    <!-- CREW BY DEPARTMENT -->
+    ${crewByDept && Object.keys(crewByDept).length > 0 ? `
+    <div class="crew-section">
+      <div class="section-title">CREW</div>
+      <table class="crew-table">
+        <thead>
+          <tr>
+            <th>POSITION</th>
+            <th>NAME</th>
+            <th>CALL TIME</th>
+            <th>PHONE</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${crewHtml}
+        </tbody>
+      </table>
+    </div>
+    ` : ''}
 
-  <!-- === MEAL BREAKS === -->
-  ${mealsHtml ? `
-  <div class="section">
-    <div class="section-title">MEAL BREAKS</div>
-    <table style="font-size: 10px;">
-      <thead>
-        <tr><th>Type</th><th>Time</th><th>Duration</th><th>Location</th><th>Notes</th></tr>
-      </thead>
-      <tbody>${mealsHtml}</tbody>
-    </table>
-  </div>
-  ` : ''}
+    <!-- NOTES -->
+    ${cs.generalNotes ? `
+    <div class="notes-section">
+      <div class="section-title">GENERAL NOTES</div>
+      <div class="notes-content">${cs.generalNotes}</div>
+    </div>
+    ` : ''}
 
-  <!-- === COMPANY MOVES === -->
-  ${movesHtml ? `
-  <div class="section">
-    <div class="section-title">COMPANY MOVES</div>
-    <table style="font-size: 10px;">
-      <thead>
-        <tr><th>Depart</th><th>From</th><th>To</th><th>Travel Time</th><th>Notes</th></tr>
-      </thead>
-      <tbody>${movesHtml}</tbody>
-    </table>
-  </div>
-  ` : ''}
+    ${cs.productionNotes ? `
+    <div class="notes-section">
+      <div class="section-title">PRODUCTION NOTES</div>
+      <div class="notes-content">${cs.productionNotes}</div>
+    </div>
+    ` : ''}
 
-  <!-- === SPECIAL REQUIREMENTS === -->
-  ${specialReqsHtml ? `
-  <div class="section">
-    <div class="section-title">SPECIAL REQUIREMENTS</div>
-    <table style="font-size: 10px;">
-      <thead>
-        <tr><th>Type</th><th>Description</th><th>Contact</th><th>Phone</th><th>Scenes</th></tr>
-      </thead>
-      <tbody>${specialReqsHtml}</tbody>
-    </table>
-  </div>
-  ` : ''}
+    <!-- FOOTER INFO -->
+    <div class="footer-section">
+      <div class="footer-grid">
+        <div class="footer-box">
+          <div class="footer-label">UPM</div>
+          <div class="footer-value">${cs.upm || ''}</div>
+        </div>
+        <div class="footer-box">
+          <div class="footer-label">1st AD</div>
+          <div class="footer-value">${cs.firstAd || ''}</div>
+        </div>
+        <div class="footer-box">
+          <div class="footer-label">2nd AD</div>
+          <div class="footer-value">${cs.secondAd || ''}<br/><small>${cs.secondAdPhone || ''}</small></div>
+        </div>
+        <div class="footer-box">
+          <div class="footer-label">SET MEDIC</div>
+          <div class="footer-value">${cs.setMedic || ''}<br/><small>${cs.setMedicPhone || ''}</small></div>
+        </div>
+        <div class="footer-box">
+          <div class="footer-label">LOCATION MANAGER</div>
+          <div class="footer-value"></div>
+        </div>
+        <div class="footer-box">
+          <div class="footer-label">PRODUCTION OFFICE</div>
+          <div class="footer-value">${cs.productionOfficePhone || ''}</div>
+        </div>
+      </div>
+    </div>
 
-  <!-- === PRODUCTION NOTES === -->
-  ${cs.generalNotes || cs.productionNotes || cs.safetyNotes || cs.announcements ? `
-  <div class="section">
-    <div class="section-title">PRODUCTION NOTES</div>
-    ${cs.generalNotes ? `<div style="padding: 8px; background: #fffbeb; border-left: 3px solid #f59e0b; margin-bottom: 8px;"><strong>General Notes:</strong> ${cs.generalNotes}</div>` : ''}
-    ${cs.safetyNotes ? `<div style="padding: 8px; background: #fee2e2; border-left: 3px solid #ef4444; margin-bottom: 8px;"><strong>Safety Notes:</strong> ${cs.safetyNotes}</div>` : ''}
-    ${cs.productionNotes ? `<div style="padding: 8px; background: #dbeafe; border-left: 3px solid #3b82f6; margin-bottom: 8px;"><strong>Production Notes:</strong> ${cs.productionNotes}</div>` : ''}
-    ${cs.announcements ? `<div style="padding: 8px; background: #d1fae5; border-left: 3px solid #10b981; margin-bottom: 8px;"><strong>Announcements:</strong> ${cs.announcements}</div>` : ''}
-  </div>
-  ` : ''}
-
-  <div class="footer">
-    Generated on ${new Date().toLocaleString()} | Please contact production with any questions.
   </div>
 </body>
 </html>`;
