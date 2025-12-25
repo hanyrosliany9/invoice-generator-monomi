@@ -1,8 +1,8 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, App, Popconfirm } from 'antd';
-import { DeleteOutlined, EditOutlined, MenuOutlined } from '@ant-design/icons';
+import { Button, App, Popconfirm, Tag, Tooltip } from 'antd';
+import { DeleteOutlined, EditOutlined, MenuOutlined, WarningOutlined, TeamOutlined } from '@ant-design/icons';
 import { schedulesApi } from '../../services/schedules';
 import { getStripColor } from '../../constants/scheduleSpecs';
 import type { ScheduleStrip } from '../../types/schedule';
@@ -218,6 +218,61 @@ export default function ScheduleStripComponent({
             marginTop: 2,
           }}>
             📍 {strip.location}
+          </div>
+        )}
+
+        {/* Special Requirement Flags */}
+        {(strip.hasStunts || strip.hasMinors || strip.hasAnimals || strip.hasSfx || strip.hasWaterWork || strip.hasVehicles) && (
+          <div style={{ marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {strip.hasStunts && (
+              <Tooltip title="Stunts required">
+                <Tag color="red" style={{ fontSize: 10, margin: 0 }}>
+                  <WarningOutlined /> STUNTS
+                </Tag>
+              </Tooltip>
+            )}
+            {strip.hasMinors && (
+              <Tooltip title="Minors on set">
+                <Tag color="orange" style={{ fontSize: 10, margin: 0 }}>
+                  👶 MINOR
+                </Tag>
+              </Tooltip>
+            )}
+            {strip.hasAnimals && (
+              <Tooltip title="Animals on set">
+                <Tag color="cyan" style={{ fontSize: 10, margin: 0 }}>
+                  🐕 ANIMALS
+                </Tag>
+              </Tooltip>
+            )}
+            {strip.hasSfx && (
+              <Tooltip title="SFX/Pyro">
+                <Tag color="volcano" style={{ fontSize: 10, margin: 0 }}>
+                  💥 SFX
+                </Tag>
+              </Tooltip>
+            )}
+            {strip.hasWaterWork && (
+              <Tooltip title="Water work">
+                <Tag color="blue" style={{ fontSize: 10, margin: 0 }}>
+                  💧 WATER
+                </Tag>
+              </Tooltip>
+            )}
+            {strip.hasVehicles && (
+              <Tooltip title="Vehicles on set">
+                <Tag color="purple" style={{ fontSize: 10, margin: 0 }}>
+                  🚗 VEHICLES
+                </Tag>
+              </Tooltip>
+            )}
+          </div>
+        )}
+
+        {/* Background/Extras Count */}
+        {strip.backgroundQty && (
+          <div style={{ marginTop: 3, fontSize: 11, color: 'rgba(0,0,0,0.6)' }}>
+            <TeamOutlined /> {strip.backgroundQty} background {strip.backgroundDescription && `(${strip.backgroundDescription})`}
           </div>
         )}
       </div>

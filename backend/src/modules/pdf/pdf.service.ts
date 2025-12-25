@@ -1997,7 +1997,7 @@ export class PdfService {
 
     try {
       const page = await browser.newPage();
-      const htmlContent = generateCallSheetHTML(callSheetData);
+      const htmlContent = generateCallSheetHTML(callSheetData, this.logoBase64, continuous);
 
       if (continuous) {
         await page.emulateMediaType('screen');

@@ -10,6 +10,8 @@ import ScheduleToolbar from '../components/schedule/ScheduleToolbar';
 import AddStripModal from '../components/schedule/AddStripModal';
 import EditStripModal from '../components/schedule/EditStripModal';
 import ImportScenesModal from '../components/schedule/ImportScenesModal';
+import { InsertMealModal } from '../components/schedule/InsertMealModal';
+import { InsertCompanyMoveModal } from '../components/schedule/InsertCompanyMoveModal';
 import type { ScheduleStrip } from '../types/schedule';
 
 const { Header, Content } = Layout;
@@ -25,8 +27,12 @@ export default function ShootingSchedulePage() {
   const [editStripOpen, setEditStripOpen] = useState(false);
   const [importScenesOpen, setImportScenesOpen] = useState(false);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [insertMealOpen, setInsertMealOpen] = useState(false);
+  const [insertMoveOpen, setInsertMoveOpen] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
   const [selectedStrip, setSelectedStrip] = useState<ScheduleStrip | null>(null);
+  const [mealStripId, setMealStripId] = useState<string | null>(null);
+  const [moveStripId, setMoveStripId] = useState<string | null>(null);
 
   const { data: schedule, isLoading } = useQuery({
     queryKey: ['schedule', id],
@@ -45,6 +51,52 @@ export default function ShootingSchedulePage() {
     },
     onError: () => {
       message.error('Failed to add shoot day');
+    },
+  });
+
+  const insertMealMutation = useMutation({
+    mutationFn: (data: { stripId: string; mealType: string; mealTime: string; mealDuration?: number; mealLocation?: string }) =>
+      schedulesApi.insertMealBreak(data.stripId, {
+        mealType: data.mealType,
+        mealTime: data.mealTime,
+        mealDuration: data.mealDuration,
+        mealLocation: data.mealLocation,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedule', id] });
+      message.success('Meal break added');
+      setInsertMealOpen(false);
+      setMealStripId(null);
+    },
+    onError: () => {
+      message.error('Failed to add meal break');
+    },
+  });
+
+  const insertMoveMutation = useMutation({
+    mutationFn: (data: {
+      stripId: string;
+      moveTime: string;
+      moveFromLocation: string;
+      moveToLocation: string;
+      moveTravelTime?: number;
+      moveNotes?: string;
+    }) =>
+      schedulesApi.insertCompanyMove(data.stripId, {
+        moveTime: data.moveTime,
+        moveFromLocation: data.moveFromLocation,
+        moveToLocation: data.moveToLocation,
+        moveTravelTime: data.moveTravelTime,
+        moveNotes: data.moveNotes,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedule', id] });
+      message.success('Company move added');
+      setInsertMoveOpen(false);
+      setMoveStripId(null);
+    },
+    onError: () => {
+      message.error('Failed to add company move');
     },
   });
 
@@ -161,6 +213,14 @@ export default function ShootingSchedulePage() {
             setEditStripOpen(true);
           }}
           onAddDay={() => addDayMutation.mutate()}
+          onInsertMeal={(stripId) => {
+            setMealStripId(stripId);
+            setInsertMealOpen(true);
+          }}
+          onInsertMove={(stripId) => {
+            setMoveStripId(stripId);
+            setInsertMoveOpen(true);
+          }}
         />
       </Content>
 
@@ -203,6 +263,32 @@ export default function ShootingSchedulePage() {
         fetchPreview={(continuous) => schedulesApi.previewPDF(id!, continuous)}
         fetchDownload={(continuous) => schedulesApi.generatePDF(id!, continuous)}
         downloadFilename={`schedule-${schedule.name || id}.pdf`}
+      />
+
+      <InsertMealModal
+        open={insertMealOpen}
+        stripId={mealStripId}
+        onClose={() => {
+          setInsertMealOpen(false);
+          setMealStripId(null);
+        }}
+        onSubmit={async (data) => {
+          await insertMealMutation.mutateAsync({ stripId: mealStripId!, ...data });
+        }}
+        loading={insertMealMutation.isPending}
+      />
+
+      <InsertCompanyMoveModal
+        open={insertMoveOpen}
+        stripId={moveStripId}
+        onClose={() => {
+          setInsertMoveOpen(false);
+          setMoveStripId(null);
+        }}
+        onSubmit={async (data) => {
+          await insertMoveMutation.mutateAsync({ stripId: moveStripId!, ...data });
+        }}
+        loading={insertMoveMutation.isPending}
       />
     </Layout>
   );

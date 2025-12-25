@@ -32,7 +32,8 @@ export interface ScheduleStrip {
   shootDayId: string;
   order: number;
   stripType: StripType;
-  // Scene data
+
+  // === SCENE DATA ===
   sceneId?: string;
   sceneNumber?: string;
   sceneName?: string;
@@ -41,10 +42,41 @@ export interface ScheduleStrip {
   location?: string;
   pageCount?: number;
   estimatedTime?: number;
-  // Banner data
+
+  // Scene-specific flags
+  hasStunts?: boolean;
+  hasMinors?: boolean;
+  hasAnimals?: boolean;
+  hasVehicles?: boolean;
+  hasSfx?: boolean;
+  hasWaterWork?: boolean;
+  specialReqNotes?: string;
+  specialReqContact?: string;
+
+  // Background/Extras for this scene
+  backgroundDescription?: string;
+  backgroundQty?: number;
+  backgroundCallTime?: string;
+  backgroundWardrobe?: string;
+  backgroundNotes?: string;
+
+  // === BANNER DATA ===
   bannerType?: BannerType;
   bannerText?: string;
   bannerColor?: string;
+
+  // Meal break data
+  mealType?: string;
+  mealTime?: string;
+  mealDuration?: number;
+  mealLocation?: string;
+
+  // Company move data
+  moveTime?: string;
+  moveFromLocation?: string;
+  moveToLocation?: string;
+  moveTravelTime?: number;
+  moveNotes?: string;
 }
 
 export interface CreateScheduleDto {
@@ -68,6 +100,8 @@ export interface CreateShootDayDto {
 export interface CreateStripDto {
   shootDayId: string;
   stripType: StripType;
+
+  // Scene data
   sceneId?: string;
   sceneNumber?: string;
   sceneName?: string;
@@ -76,9 +110,42 @@ export interface CreateStripDto {
   location?: string;
   pageCount?: number;
   estimatedTime?: number;
+
+  // Scene flags
+  hasStunts?: boolean;
+  hasMinors?: boolean;
+  hasAnimals?: boolean;
+  hasVehicles?: boolean;
+  hasSfx?: boolean;
+  hasWaterWork?: boolean;
+  specialReqNotes?: string;
+  specialReqContact?: string;
+
+  // Background/Extras
+  backgroundDescription?: string;
+  backgroundQty?: number;
+  backgroundCallTime?: string;
+  backgroundWardrobe?: string;
+  backgroundNotes?: string;
+
+  // Banner data
   bannerType?: BannerType;
   bannerText?: string;
   bannerColor?: string;
+
+  // Meal data
+  mealType?: string;
+  mealTime?: string;
+  mealDuration?: number;
+  mealLocation?: string;
+
+  // Move data
+  moveTime?: string;
+  moveFromLocation?: string;
+  moveToLocation?: string;
+  moveTravelTime?: number;
+  moveNotes?: string;
+
   order?: number;
 }
 

@@ -4777,7 +4777,8 @@ model ScheduleStrip {
   // Strip type
   stripType   StripType @default(SCENE)
 
-  // Scene reference (if SCENE type)
+  // === SCENE DATA (when stripType = SCENE) ===
+  // Scene reference
   sceneId     String?   // Reference to ShotListScene
 
   // Scene data (denormalized for display)
@@ -4789,10 +4790,40 @@ model ScheduleStrip {
   pageCount   Float?    // 1/8 pages (e.g., 2.5 = 2 4/8)
   estimatedTime Int?    // Minutes
 
-  // Banner data (if BANNER type)
-  bannerType  BannerType?
-  bannerText  String?
-  bannerColor String?   // Hex color
+  // Scene-specific flags (for scenes only)
+  hasStunts       Boolean   @default(false)
+  hasMinors       Boolean   @default(false)
+  hasAnimals      Boolean   @default(false)
+  hasVehicles     Boolean   @default(false)
+  hasSfx          Boolean   @default(false)
+  hasWaterWork    Boolean   @default(false)
+  specialReqNotes String?   // Details about special requirements
+  specialReqContact String? // Contact person for special requirements
+
+  // Background/Extras for this scene
+  backgroundDescription String?  // "20 Office Workers"
+  backgroundQty         Int?
+  backgroundCallTime    String?
+  backgroundWardrobe    String?
+  backgroundNotes       String?
+
+  // === BANNER DATA (when stripType = BANNER) ===
+  bannerType    BannerType?
+  bannerText    String?
+  bannerColor   String?   // Hex color
+
+  // Meal Break data (when bannerType = MEAL_BREAK)
+  mealType      String?       // "BREAKFAST", "LUNCH", "SECOND_MEAL"
+  mealTime      String?       // "12:00 PM"
+  mealDuration  Int?          // 30 minutes
+  mealLocation  String?       // "Craft Services Tent"
+
+  // Company Move data (when bannerType = COMPANY_MOVE)
+  moveTime          String?   // "2:00 PM"
+  moveFromLocation  String?   // "Downtown Studio"
+  moveToLocation    String?   // "Warehouse Location"
+  moveTravelTime    Int?      // 45 minutes
+  moveNotes         String?   // "Shuttle buses provided"
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -4819,10 +4850,11 @@ enum BannerType {
 
 model CallSheet {
   id            String           @id @default(cuid())
-  scheduleId    String
-  schedule      ShootingSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-  shootDayId    String           @unique
-  shootDay      ShootDay         @relation(fields: [shootDayId], references: [id], onDelete: Cascade)
+  callSheetType CallSheetType    @default(FILM)
+  scheduleId    String?
+  schedule      ShootingSchedule? @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  shootDayId    String?          @unique
+  shootDay      ShootDay?        @relation(fields: [shootDayId], references: [id], onDelete: Cascade)
   createdById   String
   createdBy     User             @relation("CallSheetCreator", fields: [createdById], references: [id])
 
@@ -4831,6 +4863,21 @@ model CallSheet {
   productionName  String?
   director        String?
   producer        String?
+
+  // === NEW: Production Company/Personnel Info ===
+  companyName       String?
+  companyAddress    String?
+  upm               String?           // Unit Production Manager
+  firstAd           String?
+  secondAd          String?
+  secondAdPhone     String?
+  productionOfficePhone String?
+  setMedic          String?
+  setMedicPhone     String?
+
+  // === NEW: Version Tracking ===
+  scriptVersion     String?           // "WHITE", "BLUE", "PINK", etc.
+  scheduleVersion   String?
 
   // === NEW: Day Context ===
   dayNumber         Int?              // Day 5
@@ -4851,6 +4898,13 @@ model CallSheet {
   parkingNotes    String?
   mapUrl          String?
 
+  // === NEW: Logistics Row Fields ===
+  crewParking       String?           // "Lot A at 1808 Miller Rd"
+  basecamp          String?           // "Zeke's House"
+  bathrooms         String?           // "On Site" / "Porta-potties at Location B"
+  lunchLocation     String?           // "Craft Services Tent"
+  workingTrucks     String?           // "Back Lot" / "Truck Parking Area"
+
   // Weather (optional integration)
   weatherHigh     Int?
   weatherLow      Int?
@@ -4863,6 +4917,12 @@ model CallSheet {
   hospitalAddress String?
   hospitalPhone   String?
 
+  // === NEW: Department Notes ===
+  artNotes          String?           // Art Dept/Props notes
+  vehicleNotes      String?           // Vehicle/Picture Car notes
+  cameraGripNotes   String?           // Camera/Grip notes
+  stuntNotes        String?           // Stunt notes
+
   // === NEW: Production Details ===
   advanceNotes      String?           // Tomorrow's preview notes
   safetyNotes       String?           // Safety information
@@ -4873,15 +4933,39 @@ model CallSheet {
   generalNotes    String?           // Deprecated, kept for backward compatibility
   productionNotes String?
 
+  // === PHOTO-SPECIFIC FIELDS ===
+  photographer    String?           // Photo only: Photographer name
+  artDirector     String?           // Photo only: Art director
+  stylist         String?           // Photo only: Stylist
+  hmuLead         String?           // Photo only: Hair/Makeup lead
+  clientName      String?           // Photo only: Client name
+  clientContact   String?           // Photo only: Client contact person
+  clientPhone     String?           // Photo only: Client phone
+  agencyName      String?           // Photo only: Agency name
+  moodBoardUrl    String?           // Photo only: Mood board link
+  totalLooks      Int?              // Photo only: Number of looks
+  sessionType     String?           // Photo only: "Fashion", "Beauty", "Lifestyle", etc.
+  deliverables    String?           // Photo only: What client expects
+  wardrobeProvider String?          // Photo only: Who provides wardrobe
+  stylingNotes    String?           // Photo only: Overall styling notes
+
   // Status
   status          CallSheetStatus @default(DRAFT)
   sentAt          DateTime?
+
+  // === Relations: Photo-Specific ===
+  shots             CallSheetShot[]
+  models            CallSheetModel[]
+  wardrobe          CallSheetWardrobe[]
+  hmuSchedule       CallSheetHMU[]
 
   // === Relations: NEW ===
   mealBreaks        CallSheetMeal[]
   companyMoves      CallSheetMove[]
   specialRequirements CallSheetSpecialReq[]
   backgroundCalls   CallSheetBackground[]
+  standIns          CallSheetStandIn[]
+  advanceSchedule   CallSheetAdvanceDay[]
 
   // Relations: Existing
   castCalls         CallSheetCast[]
@@ -4909,6 +4993,7 @@ model CallSheetCast {
   // === ENHANCED: Multiple Time Columns ===
   pickupTime  String?   // "6:00 AM" - Transportation pickup
   muCallTime  String?   // "6:30 AM" - Makeup/Hair call (renamed from callTime)
+  fittingTime String?   // "6:45 AM" - Wardrobe fitting time
   callTime    String    // e.g., "6:00 AM" - Legacy, kept for compatibility
   onSetTime   String?   // "9:00 AM" - Must be camera-ready
   wrapTime    String?   // "4:00 PM" - Expected wrap for this actor
@@ -5099,6 +5184,66 @@ model CallSheetBackground {
   @@map("call_sheet_background")
 }
 
+// === NEW MODEL: Stand-Ins / Photo Doubles ===
+model CallSheetStandIn {
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+
+  name        String    // Name of stand-in
+  forActor    String    // Name or ID of actor they're standing in for
+  callTime    String    // "6:30 AM"
+  notes       String?   // Any special notes
+  order       Int       @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_standins")
+}
+
+// === NEW MODEL: Advance Schedule Days ===
+model CallSheetAdvanceDay {
+  id              String    @id @default(cuid())
+  callSheetId     String
+  callSheet       CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+
+  dayNumber       Int       // "2" for next day
+  date            DateTime  // Shoot date of this advance day
+  estCall         String?   // Estimated crew call time
+  order           Int       @default(0)
+
+  // Scenes for this advance day
+  scenes          CallSheetAdvanceScene[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_advance_days")
+}
+
+// === NEW MODEL: Scenes in Advance Schedule ===
+model CallSheetAdvanceScene {
+  id              String              @id @default(cuid())
+  advanceDayId    String
+  advanceDay      CallSheetAdvanceDay @relation(fields: [advanceDayId], references: [id], onDelete: Cascade)
+
+  sceneNumber     String
+  sceneName       String?
+  castIds         String?  // Comma-separated cast numbers
+  dayNight        String?  // "D" or "N"
+  location        String?
+  order           Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([advanceDayId])
+  @@map("call_sheet_advance_scenes")
+}
+
 enum CastWorkStatus {
   SW    // Start Work - First day on set
   W     // Work - Continuing work
@@ -5119,4 +5264,142 @@ enum CallStatus {
   CONFIRMED
   ON_SET
   WRAPPED
+}
+
+// === NEW ENUMS FOR PHOTO CALL SHEETS ===
+
+enum CallSheetType {
+  FILM    // Traditional film/TV call sheet
+  PHOTO   // Photography/fashion shoot call sheet
+}
+
+enum ModelArrivalType {
+  CAMERA_READY  // Model arrives camera-ready
+  STYLED        // Model arrives and gets styled on set
+}
+
+enum WardrobeStatus {
+  PENDING      // Wardrobe not yet confirmed
+  CONFIRMED    // Confirmed and ready
+  ON_SET       // Currently on set
+  IN_USE       // Being worn
+  WRAPPED      // Returned/finished
+}
+
+enum HMURole {
+  HAIR         // Hair only
+  MAKEUP       // Makeup only
+  BOTH         // Hair and makeup
+  KEY_STYLIST  // Key stylist
+}
+
+// === NEW MODELS FOR PHOTO CALL SHEETS ===
+
+model CallSheetShot {
+  id              String    @id @default(cuid())
+  callSheetId     String
+  callSheet       CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+
+  // Shot information
+  shotNumber      Int                       // 1, 2, 3...
+  shotName        String?                   // "Hero Shot", "Lifestyle", etc.
+  lookReference   String?                   // "Look A", "Look B"
+  description     String?
+  setupLocation   String?                   // Where shot takes place
+  estStartTime    String?                   // Estimated start time
+  estDuration     Int?                      // Duration in minutes
+  wardrobeNotes   String?                   // Wardrobe for this shot
+  hmuNotes        String?                   // Hair/makeup notes
+  modelIds        String?                   // Comma-separated model IDs
+
+  order           Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_shots")
+}
+
+model CallSheetModel {
+  id              String    @id @default(cuid())
+  callSheetId     String
+  callSheet       CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+
+  // Model information
+  modelName       String
+  modelNumber     String?                   // #1, #2 for reference
+  agencyName      String?                   // Model's agency
+
+  // Timing
+  arrivalType     ModelArrivalType
+  arrivalTime     String                    // When to arrive
+  hmuStartTime    String?                   // When HMU begins
+  cameraReadyTime String?                   // Must be camera-ready by
+
+  // HMU details
+  hmuArtist       String?                   // Assigned HMU artist
+  hmuDuration     Int?                      // Minutes for hair/makeup
+
+  // Details
+  wardrobeSizes   String?                   // Sizes (e.g., "XS/6")
+  shotNumbers     String?                   // Which shots they appear in (comma-separated)
+
+  order           Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_models")
+}
+
+model CallSheetWardrobe {
+  id              String    @id @default(cuid())
+  callSheetId     String
+  callSheet       CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+
+  // Item details
+  itemName        String                    // "Blue Dress", "Leather Jacket", etc.
+  brand           String?                   // Brand name
+  size            String?                   // Size
+  color           String?                   // Color
+
+  // Assignment
+  providedBy      String?                   // "Client", "Stylist", "Model"
+  forModel        String?                   // Which model
+  forShot         String?                   // Which shot/look
+
+  status          WardrobeStatus  @default(PENDING)
+
+  order           Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_wardrobe")
+}
+
+model CallSheetHMU {
+  id              String    @id @default(cuid())
+  callSheetId     String
+  callSheet       CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+
+  // Artist information
+  artistName      String
+  artistRole      HMURole
+  stationNumber   Int?                      // Station 1, 2, etc.
+
+  // Timing
+  callTime        String                    // When artist arrives
+  availableFrom   String?                   // When they start
+  availableUntil  String?                   // When they wrap
+
+  // Assignments
+  assignedModels  String?                   // Model assignments (comma-separated)
+
+  order           Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_hmu")
 }

@@ -12,6 +12,7 @@ export class CreateCastCallDto {
   // === ENHANCED: Multiple Time Columns ===
   @IsOptional() @IsString() pickupTime?: string;
   @IsOptional() @IsString() muCallTime?: string;  // Makeup/Hair call
+  @IsOptional() @IsString() fittingTime?: string;  // Wardrobe fitting time (PDF Export Upgrade)
   @IsString() callTime: string;  // Legacy, kept for compatibility
   @IsOptional() @IsString() onSetTime?: string;
   @IsOptional() @IsString() wrapTime?: string;
@@ -37,6 +38,7 @@ export class UpdateCastCallDto {
   @IsOptional() @IsString() character?: string;
   @IsOptional() @IsString() pickupTime?: string;
   @IsOptional() @IsString() muCallTime?: string;
+  @IsOptional() @IsString() fittingTime?: string;
   @IsOptional() @IsString() callTime?: string;
   @IsOptional() @IsString() onSetTime?: string;
   @IsOptional() @IsString() wrapTime?: string;

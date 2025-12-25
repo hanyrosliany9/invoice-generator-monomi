@@ -37,4 +37,88 @@ export class StripsService {
     await this.prisma.$transaction(updates);
     return { success: true };
   }
+
+  /**
+   * Insert a meal break banner after a specific strip
+   * Automatically reorders subsequent strips
+   */
+  async insertMealBreak(afterStripId: string, data: {
+    mealType: string;
+    mealTime: string;
+    mealDuration?: number;
+    mealLocation?: string;
+  }) {
+    const afterStrip = await this.prisma.scheduleStrip.findUnique({
+      where: { id: afterStripId },
+    });
+    if (!afterStrip) throw new NotFoundException('Strip not found');
+
+    // Increment order of all strips after this one
+    await this.prisma.scheduleStrip.updateMany({
+      where: {
+        shootDayId: afterStrip.shootDayId,
+        order: { gt: afterStrip.order },
+      },
+      data: { order: { increment: 1 } },
+    });
+
+    // Insert the meal break
+    return this.prisma.scheduleStrip.create({
+      data: {
+        shootDayId: afterStrip.shootDayId,
+        order: afterStrip.order + 1,
+        stripType: 'BANNER',
+        bannerType: 'MEAL_BREAK',
+        bannerText: `${data.mealType} - ${data.mealTime}`,
+        bannerColor: '#4CAF50', // Green for meals
+        mealType: data.mealType,
+        mealTime: data.mealTime,
+        mealDuration: data.mealDuration || 30,
+        mealLocation: data.mealLocation,
+      },
+    });
+  }
+
+  /**
+   * Insert a company move banner after a specific strip
+   * Automatically reorders subsequent strips
+   */
+  async insertCompanyMove(afterStripId: string, data: {
+    moveTime: string;
+    moveFromLocation: string;
+    moveToLocation: string;
+    moveTravelTime?: number;
+    moveNotes?: string;
+  }) {
+    const afterStrip = await this.prisma.scheduleStrip.findUnique({
+      where: { id: afterStripId },
+    });
+    if (!afterStrip) throw new NotFoundException('Strip not found');
+
+    // Increment order of all strips after this one
+    await this.prisma.scheduleStrip.updateMany({
+      where: {
+        shootDayId: afterStrip.shootDayId,
+        order: { gt: afterStrip.order },
+      },
+      data: { order: { increment: 1 } },
+    });
+
+    // Insert the company move
+    return this.prisma.scheduleStrip.create({
+      data: {
+        shootDayId: afterStrip.shootDayId,
+        order: afterStrip.order + 1,
+        stripType: 'BANNER',
+        bannerType: 'COMPANY_MOVE',
+        bannerText: `Move: ${data.moveFromLocation} → ${data.moveToLocation}`,
+        bannerColor: '#2196F3', // Blue for moves
+        moveTime: data.moveTime,
+        moveFromLocation: data.moveFromLocation,
+        moveToLocation: data.moveToLocation,
+        moveTravelTime: data.moveTravelTime,
+        moveNotes: data.moveNotes,
+      },
+    });
+  }
 }

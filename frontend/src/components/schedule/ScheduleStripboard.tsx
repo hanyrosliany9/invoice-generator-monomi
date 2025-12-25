@@ -26,9 +26,18 @@ interface Props {
   onAddStrip: (dayId: string) => void;
   onEditStrip?: (strip: ScheduleStrip) => void;
   onAddDay?: () => void;
+  onInsertMeal?: (stripId: string) => void;
+  onInsertMove?: (stripId: string) => void;
 }
 
-export default function ScheduleStripboard({ schedule, onAddStrip, onEditStrip, onAddDay }: Props) {
+export default function ScheduleStripboard({
+  schedule,
+  onAddStrip,
+  onEditStrip,
+  onAddDay,
+  onInsertMeal,
+  onInsertMove,
+}: Props) {
   const queryClient = useQueryClient();
   const { message } = App.useApp();
   const { theme } = useTheme();
@@ -165,6 +174,8 @@ export default function ScheduleStripboard({ schedule, onAddStrip, onEditStrip, 
                   scheduleId={schedule.id}
                   onAddStrip={() => onAddStrip(day.id)}
                   onEditStrip={onEditStrip}
+                  onInsertMeal={onInsertMeal}
+                  onInsertMove={onInsertMove}
                 />
               ))
             )}
@@ -205,9 +216,18 @@ interface DaySectionProps {
   scheduleId: string;
   onAddStrip: () => void;
   onEditStrip?: (strip: ScheduleStrip) => void;
+  onInsertMeal?: (stripId: string) => void;
+  onInsertMove?: (stripId: string) => void;
 }
 
-function DaySection({ day, scheduleId, onAddStrip, onEditStrip }: DaySectionProps) {
+function DaySection({
+  day,
+  scheduleId,
+  onAddStrip,
+  onEditStrip,
+  onInsertMeal,
+  onInsertMove,
+}: DaySectionProps) {
   const { theme } = useTheme();
   const strips = day.strips || [];
 
@@ -239,6 +259,8 @@ function DaySection({ day, scheduleId, onAddStrip, onEditStrip }: DaySectionProp
             strip={strip}
             scheduleId={scheduleId}
             onEdit={onEditStrip}
+            onInsertMeal={onInsertMeal}
+            onInsertMove={onInsertMove}
           />
         ))
       )}

@@ -8,10 +8,18 @@ import type {
   CreateCompanyMoveDto,
   CreateSpecialReqDto,
   CreateBackgroundDto,
+  CreateShotDto,
+  CreateModelDto,
+  CreateWardrobeDto,
+  CreateHmuDto,
   MealBreak,
   CompanyMove,
   SpecialRequirement,
   BackgroundCall,
+  CallSheetShot,
+  CallSheetModel,
+  CallSheetWardrobe,
+  CallSheetHMU,
 } from '../types/callSheet';
 
 export const callSheetsApi = {
@@ -211,5 +219,65 @@ export const callSheetsApi = {
 
   removeBackground: async (id: string): Promise<void> => {
     await apiClient.delete(`/call-sheets/background/${id}`);
+  },
+
+  // === PHOTO-SPECIFIC: SHOTS ===
+  addShot: async (callSheetId: string, dto: CreateShotDto): Promise<CallSheetShot> => {
+    const res = await apiClient.post(`/call-sheets/${callSheetId}/shots`, dto);
+    return res.data.data;
+  },
+
+  updateShot: async (id: string, dto: Partial<CreateShotDto>): Promise<CallSheetShot> => {
+    const res = await apiClient.put(`/call-sheets/shots/${id}`, dto);
+    return res.data.data;
+  },
+
+  removeShot: async (id: string): Promise<void> => {
+    await apiClient.delete(`/call-sheets/shots/${id}`);
+  },
+
+  // === PHOTO-SPECIFIC: MODELS ===
+  addModel: async (callSheetId: string, dto: CreateModelDto): Promise<CallSheetModel> => {
+    const res = await apiClient.post(`/call-sheets/${callSheetId}/models`, dto);
+    return res.data.data;
+  },
+
+  updateModel: async (id: string, dto: Partial<CreateModelDto>): Promise<CallSheetModel> => {
+    const res = await apiClient.put(`/call-sheets/models/${id}`, dto);
+    return res.data.data;
+  },
+
+  removeModel: async (id: string): Promise<void> => {
+    await apiClient.delete(`/call-sheets/models/${id}`);
+  },
+
+  // === PHOTO-SPECIFIC: WARDROBE ===
+  addWardrobe: async (callSheetId: string, dto: CreateWardrobeDto): Promise<CallSheetWardrobe> => {
+    const res = await apiClient.post(`/call-sheets/${callSheetId}/wardrobe`, dto);
+    return res.data.data;
+  },
+
+  updateWardrobe: async (id: string, dto: Partial<CreateWardrobeDto>): Promise<CallSheetWardrobe> => {
+    const res = await apiClient.put(`/call-sheets/wardrobe/${id}`, dto);
+    return res.data.data;
+  },
+
+  removeWardrobe: async (id: string): Promise<void> => {
+    await apiClient.delete(`/call-sheets/wardrobe/${id}`);
+  },
+
+  // === PHOTO-SPECIFIC: HMU SCHEDULE ===
+  addHmu: async (callSheetId: string, dto: CreateHmuDto): Promise<CallSheetHMU> => {
+    const res = await apiClient.post(`/call-sheets/${callSheetId}/hmu`, dto);
+    return res.data.data;
+  },
+
+  updateHmu: async (id: string, dto: Partial<CreateHmuDto>): Promise<CallSheetHMU> => {
+    const res = await apiClient.put(`/call-sheets/hmu/${id}`, dto);
+    return res.data.data;
+  },
+
+  removeHmu: async (id: string): Promise<void> => {
+    await apiClient.delete(`/call-sheets/hmu/${id}`);
   },
 };

@@ -4,10 +4,17 @@ export type CastWorkStatus = 'SW' | 'W' | 'WF' | 'SWF' | 'H';
 export type MealType = 'BREAKFAST' | 'LUNCH' | 'SECOND_MEAL' | 'CRAFT_SERVICES' | 'CATERING';
 export type SpecialReqType = 'STUNTS' | 'MINORS' | 'ANIMALS' | 'VEHICLES' | 'SFX_PYRO' | 'WATER_WORK' | 'AERIAL_DRONE' | 'WEAPONS' | 'NUDITY' | 'OTHER';
 
+// === PHOTO-SPECIFIC TYPES ===
+export type CallSheetType = 'FILM' | 'PHOTO';
+export type ModelArrivalType = 'CAMERA_READY' | 'STYLED';
+export type WardrobeStatus = 'PENDING' | 'CONFIRMED' | 'ON_SET' | 'IN_USE' | 'WRAPPED';
+export type HMURole = 'HAIR' | 'MAKEUP' | 'BOTH' | 'KEY_STYLIST';
+
 export interface CallSheet {
   id: string;
-  scheduleId: string;
-  shootDayId: string;
+  callSheetType?: CallSheetType;
+  scheduleId?: string;
+  shootDayId?: string;
   createdById: string;
   callSheetNumber: number;
   productionName?: string;
@@ -61,6 +68,28 @@ export interface CallSheet {
   companyMoves: CompanyMove[];
   specialRequirements: SpecialRequirement[];
   backgroundCalls: BackgroundCall[];
+
+  // === PHOTO-SPECIFIC RELATIONS ===
+  shots?: CallSheetShot[];
+  models?: CallSheetModel[];
+  wardrobe?: CallSheetWardrobe[];
+  hmuSchedule?: CallSheetHMU[];
+
+  // === PHOTO-SPECIFIC FIELDS ===
+  photographer?: string;
+  artDirector?: string;
+  stylist?: string;
+  hmuLead?: string;
+  clientName?: string;
+  clientContact?: string;
+  clientPhone?: string;
+  agencyName?: string;
+  moodBoardUrl?: string;
+  totalLooks?: number;
+  sessionType?: string;
+  deliverables?: string;
+  wardrobeProvider?: string;
+  stylingNotes?: string;
 
   schedule?: { id: string; project?: { name: string } };
   shootDay?: { dayNumber: number };
@@ -176,9 +205,74 @@ export interface BackgroundCall {
   order: number;
 }
 
+// === PHOTO-SPECIFIC: Shot/Looks ===
+export interface CallSheetShot {
+  id: string;
+  callSheetId: string;
+  shotNumber: number;
+  shotName?: string;
+  lookReference?: string;
+  description?: string;
+  setupLocation?: string;
+  estStartTime?: string;
+  estDuration?: number;
+  wardrobeNotes?: string;
+  hmuNotes?: string;
+  modelIds?: string;
+  order: number;
+}
+
+// === PHOTO-SPECIFIC: Models/Talent ===
+export interface CallSheetModel {
+  id: string;
+  callSheetId: string;
+  modelName: string;
+  modelNumber?: string;
+  agencyName?: string;
+  arrivalType: ModelArrivalType;
+  arrivalTime: string;
+  hmuStartTime?: string;
+  cameraReadyTime?: string;
+  hmuArtist?: string;
+  hmuDuration?: number;
+  wardrobeSizes?: string;
+  shotNumbers?: string;
+  order: number;
+}
+
+// === PHOTO-SPECIFIC: Wardrobe ===
+export interface CallSheetWardrobe {
+  id: string;
+  callSheetId: string;
+  itemName: string;
+  brand?: string;
+  size?: string;
+  color?: string;
+  providedBy?: string;
+  forModel?: string;
+  forShot?: string;
+  status: WardrobeStatus;
+  order: number;
+}
+
+// === PHOTO-SPECIFIC: HMU Schedule ===
+export interface CallSheetHMU {
+  id: string;
+  callSheetId: string;
+  artistName: string;
+  artistRole: HMURole;
+  stationNumber?: number;
+  callTime: string;
+  availableFrom?: string;
+  availableUntil?: string;
+  assignedModels?: string;
+  order: number;
+}
+
 export interface CreateCallSheetDto {
-  scheduleId: string;
-  shootDayId: string;
+  callSheetType?: CallSheetType;
+  scheduleId?: string;
+  shootDayId?: string;
   shootDate: string;
   productionName?: string;
   crewCallTime?: string;
@@ -187,6 +281,21 @@ export interface CreateCallSheetDto {
   lunchTime?: string;
   dayNumber?: number;
   totalDays?: number;
+  // === PHOTO-SPECIFIC FIELDS ===
+  photographer?: string;
+  artDirector?: string;
+  stylist?: string;
+  hmuLead?: string;
+  clientName?: string;
+  clientContact?: string;
+  clientPhone?: string;
+  agencyName?: string;
+  moodBoardUrl?: string;
+  totalLooks?: number;
+  sessionType?: string;
+  deliverables?: string;
+  wardrobeProvider?: string;
+  stylingNotes?: string;
 }
 
 export interface CreateCastCallDto {
@@ -253,4 +362,58 @@ export interface CreateBackgroundDto {
   wardrobeNotes?: string;
   scenes?: string;
   notes?: string;
+}
+
+// === PHOTO-SPECIFIC DTOs ===
+
+export interface CreateShotDto {
+  shotNumber: number;
+  shotName?: string;
+  lookReference?: string;
+  description?: string;
+  setupLocation?: string;
+  estStartTime?: string;
+  estDuration?: number;
+  wardrobeNotes?: string;
+  hmuNotes?: string;
+  modelIds?: string;
+  order?: number;
+}
+
+export interface CreateModelDto {
+  modelName: string;
+  modelNumber?: string;
+  agencyName?: string;
+  arrivalType: ModelArrivalType;
+  arrivalTime: string;
+  hmuStartTime?: string;
+  cameraReadyTime?: string;
+  hmuArtist?: string;
+  hmuDuration?: number;
+  wardrobeSizes?: string;
+  shotNumbers?: string;
+  order?: number;
+}
+
+export interface CreateWardrobeDto {
+  itemName: string;
+  brand?: string;
+  size?: string;
+  color?: string;
+  providedBy?: string;
+  forModel?: string;
+  forShot?: string;
+  status?: WardrobeStatus;
+  order?: number;
+}
+
+export interface CreateHmuDto {
+  artistName: string;
+  artistRole: HMURole;
+  stationNumber?: number;
+  callTime: string;
+  availableFrom?: string;
+  availableUntil?: string;
+  assignedModels?: string;
+  order?: number;
 }

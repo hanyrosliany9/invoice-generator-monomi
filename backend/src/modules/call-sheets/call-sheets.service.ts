@@ -8,7 +8,12 @@ import { CreateMealDto, UpdateMealDto } from './dto/create-meal.dto';
 import { CreateCompanyMoveDto, UpdateCompanyMoveDto } from './dto/create-company-move.dto';
 import { CreateSpecialReqDto, UpdateSpecialReqDto } from './dto/create-special-req.dto';
 import { CreateBackgroundDto, UpdateBackgroundDto } from './dto/create-background.dto';
+import { CreateShotDto, UpdateShotDto } from './dto/create-shot.dto';
+import { CreateModelDto, UpdateModelDto } from './dto/create-model.dto';
+import { CreateWardrobeDto, UpdateWardrobeDto } from './dto/create-wardrobe.dto';
+import { CreateHmuDto, UpdateHmuDto } from './dto/create-hmu.dto';
 import { ExternalApisService } from '../../services/external-apis.service';
+import { generateCallSheetHTML } from '../pdf/templates/call-sheet.html';
 import * as puppeteer from 'puppeteer';
 
 @Injectable()
@@ -19,15 +24,38 @@ export class CallSheetsService {
   ) {}
 
   async create(userId: string, dto: CreateCallSheetDto) {
-    // Check if call sheet already exists for this shoot day
-    const existing = await this.prisma.callSheet.findUnique({
-      where: { shootDayId: dto.shootDayId },
-    });
-    if (existing) throw new ConflictException('Call sheet already exists for this day');
+    const callSheetType = dto.callSheetType || 'FILM';
+
+    // Validate based on call sheet type
+    if (callSheetType === 'FILM') {
+      // Film call sheets require scheduleId and shootDayId
+      if (!dto.scheduleId || !dto.shootDayId) {
+        throw new BadRequestException('Film call sheets require scheduleId and shootDayId');
+      }
+
+      // Check if call sheet already exists for this shoot day
+      const existing = await this.prisma.callSheet.findUnique({
+        where: { shootDayId: dto.shootDayId },
+      });
+      if (existing) throw new ConflictException('Call sheet already exists for this day');
+    } else if (callSheetType === 'PHOTO') {
+      // Photo call sheets are standalone and don't require schedule/shootDay
+      if (!dto.shootDate) {
+        throw new BadRequestException('Photo call sheets require shootDate');
+      }
+    }
 
     return this.prisma.callSheet.create({
-      data: { ...dto, createdById: userId },
-      include: { castCalls: true, crewCalls: true, scenes: true },
+      data: { ...dto, createdById: userId, callSheetType },
+      include: {
+        castCalls: true,
+        crewCalls: true,
+        scenes: true,
+        shots: { orderBy: { order: 'asc' } },
+        models: { orderBy: { order: 'asc' } },
+        wardrobe: { orderBy: { order: 'asc' } },
+        hmuSchedule: { orderBy: { order: 'asc' } },
+      },
     });
   }
 
@@ -63,7 +91,12 @@ export class CallSheetsService {
         castCalls: { orderBy: { order: 'asc' } },
         crewCalls: { orderBy: [{ department: 'asc' }, { order: 'asc' }] },
         scenes: { orderBy: { order: 'asc' } },
-        // === NEW RELATIONS ===
+        // === Photo-specific relations ===
+        shots: { orderBy: { order: 'asc' } },
+        models: { orderBy: { order: 'asc' } },
+        wardrobe: { orderBy: { order: 'asc' } },
+        hmuSchedule: { orderBy: { order: 'asc' } },
+        // === Legacy relations (still included for backward compatibility) ===
         mealBreaks: { orderBy: { order: 'asc' } },
         companyMoves: { orderBy: { order: 'asc' } },
         specialRequirements: { orderBy: { order: 'asc' } },
@@ -71,7 +104,77 @@ export class CallSheetsService {
       },
     });
     if (!callSheet) throw new NotFoundException('Call sheet not found');
-    return callSheet;
+
+    // === DERIVE DATA FROM SCHEDULE STRIPS ===
+    // This is the new approach - get meals, moves, special reqs, and background from the stripboard
+    const strips = callSheet.shootDay?.strips || [];
+
+    // Extract meal breaks from BANNER strips with MEAL_BREAK type
+    const derivedMealBreaks = strips
+      .filter(s => s.stripType === 'BANNER' && s.bannerType === 'MEAL_BREAK')
+      .map(s => ({
+        id: s.id,
+        mealType: s.mealType || 'LUNCH',
+        time: s.mealTime || '',
+        duration: s.mealDuration || 30,
+        location: s.mealLocation || '',
+        notes: '',
+        order: s.order,
+      }));
+
+    // Extract company moves from BANNER strips with COMPANY_MOVE type
+    const derivedCompanyMoves = strips
+      .filter(s => s.stripType === 'BANNER' && s.bannerType === 'COMPANY_MOVE')
+      .map(s => ({
+        id: s.id,
+        departTime: s.moveTime || '',
+        fromLocation: s.moveFromLocation || '',
+        toLocation: s.moveToLocation || '',
+        travelTime: s.moveTravelTime || 0,
+        notes: s.moveNotes || '',
+        order: s.order,
+      }));
+
+    // Extract special requirements from SCENE strips
+    const derivedSpecialReqs = strips
+      .filter(s => s.stripType === 'SCENE' && (s.hasStunts || s.hasMinors || s.hasAnimals || s.hasSfx || s.hasWaterWork || s.hasVehicles))
+      .map(s => ({
+        id: s.id,
+        sceneNumber: s.sceneNumber || '',
+        hasStunts: s.hasStunts || false,
+        hasMinors: s.hasMinors || false,
+        hasAnimals: s.hasAnimals || false,
+        hasSfx: s.hasSfx || false,
+        hasWaterWork: s.hasWaterWork || false,
+        hasVehicles: s.hasVehicles || false,
+        notes: s.specialReqNotes || '',
+        contact: s.specialReqContact || '',
+        order: s.order,
+      }));
+
+    // Extract background/extras from SCENE strips
+    const derivedBackgroundCalls = strips
+      .filter(s => s.stripType === 'SCENE' && s.backgroundQty)
+      .map(s => ({
+        id: s.id,
+        sceneNumber: s.sceneNumber || '',
+        description: s.backgroundDescription || '',
+        quantity: s.backgroundQty || 0,
+        callTime: s.backgroundCallTime || '',
+        wardrobe: s.backgroundWardrobe || '',
+        notes: s.backgroundNotes || '',
+        order: s.order,
+      }));
+
+    // Return enriched call sheet with derived data
+    return {
+      ...callSheet,
+      // Prefer derived data if available, otherwise use legacy data
+      mealBreaks: derivedMealBreaks.length > 0 ? derivedMealBreaks : callSheet.mealBreaks,
+      companyMoves: derivedCompanyMoves.length > 0 ? derivedCompanyMoves : callSheet.companyMoves,
+      specialRequirements: derivedSpecialReqs.length > 0 ? derivedSpecialReqs : callSheet.specialRequirements,
+      backgroundCalls: derivedBackgroundCalls.length > 0 ? derivedBackgroundCalls : callSheet.backgroundCalls,
+    };
   }
 
   async update(id: string, dto: UpdateCallSheetDto) {
@@ -368,7 +471,8 @@ export class CallSheetsService {
 
   async generatePdf(id: string): Promise<Buffer> {
     const callSheet = await this.findOne(id);
-    const html = this.generateCallSheetHtml(callSheet);
+    // Use the new professional call sheet template (PDF Export Upgrade)
+    const html = generateCallSheetHTML(callSheet);
 
     const browser = await puppeteer.launch({
       headless: true,
@@ -389,200 +493,6 @@ export class CallSheetsService {
     } finally {
       await browser.close();
     }
-  }
-
-  private generateCallSheetHtml(cs: any): string {
-    const shootDate = new Date(cs.shootDate).toLocaleDateString('en-US', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    });
-
-    // Group crew by department
-    const crewByDept = cs.crewCalls.reduce((acc: any, crew: any) => {
-      if (!acc[crew.department]) acc[crew.department] = [];
-      acc[crew.department].push(crew);
-      return acc;
-    }, {});
-
-    const castRowsHtml = cs.castCalls.map((cast: any) => `
-      <tr>
-        <td>${cast.castNumber || ''}</td>
-        <td>${cast.actorName}</td>
-        <td>${cast.character || ''}</td>
-        <td>${cast.pickupTime || '-'}</td>
-        <td><strong>${cast.callTime}</strong></td>
-        <td>${cast.onSetTime || '-'}</td>
-      </tr>
-    `).join('');
-
-    const crewHtml = Object.entries(crewByDept).map(([dept, crew]: [string, any]) => `
-      <div class="dept-section">
-        <div class="dept-name">${dept}</div>
-        <table class="crew-table">
-          ${crew.map((c: any) => `
-            <tr>
-              <td width="30%">${c.position}</td>
-              <td width="35%">${c.name}</td>
-              <td width="20%">${c.callTime}</td>
-              <td width="15%">${c.phone || ''}</td>
-            </tr>
-          `).join('')}
-        </table>
-      </div>
-    `).join('');
-
-    const scenesHtml = cs.scenes.map((scene: any) => `
-      <tr>
-        <td>${scene.sceneNumber}</td>
-        <td>${scene.intExt || ''} ${scene.dayNight || ''}</td>
-        <td>${scene.sceneName || ''}</td>
-        <td>${scene.location || ''}</td>
-        <td>${scene.pageCount?.toFixed(1) || ''}</td>
-        <td>${scene.castIds || ''}</td>
-      </tr>
-    `).join('');
-
-    return `<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; }
-
-    .header { background: #1f2937; color: #fff; padding: 16px; margin-bottom: 16px; }
-    .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-    .production-name { font-size: 20px; font-weight: bold; }
-    .call-sheet-num { background: #fff; color: #1f2937; padding: 4px 12px; border-radius: 4px; font-weight: bold; }
-    .header-info { display: flex; gap: 24px; }
-    .header-info div { display: flex; flex-direction: column; }
-    .header-info label { font-size: 9px; opacity: 0.8; text-transform: uppercase; }
-    .header-info span { font-size: 14px; font-weight: bold; }
-
-    .times-bar { display: flex; background: #f5f5f5; padding: 12px; margin-bottom: 16px; gap: 24px; }
-    .time-item { text-align: center; }
-    .time-item label { font-size: 9px; color: #666; display: block; }
-    .time-item span { font-size: 16px; font-weight: bold; }
-
-    .section { margin-bottom: 16px; }
-    .section-title { background: #e5e7eb; padding: 6px 12px; font-weight: bold; font-size: 12px; margin-bottom: 8px; }
-
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-    th { background: #f9fafb; font-weight: bold; font-size: 10px; text-transform: uppercase; }
-
-    .two-col { display: flex; gap: 24px; }
-    .two-col > div { flex: 1; }
-
-    .info-card { background: #f9fafb; padding: 12px; border-radius: 4px; margin-bottom: 12px; }
-    .info-card h4 { font-size: 11px; margin-bottom: 8px; color: #374151; }
-    .info-card p { margin-bottom: 4px; }
-
-    .dept-section { margin-bottom: 12px; }
-    .dept-name { font-weight: bold; background: #f3f4f6; padding: 4px 8px; margin-bottom: 4px; }
-    .crew-table { font-size: 10px; }
-    .crew-table td { padding: 3px 8px; border-bottom: 1px solid #f3f4f6; }
-
-    .weather-row { display: flex; gap: 16px; }
-    .weather-item { text-align: center; }
-
-    .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 9px; color: #666; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="header-top">
-      <div class="production-name">${cs.productionName || 'Production'}</div>
-      <div class="call-sheet-num">Call Sheet #${cs.callSheetNumber}</div>
-    </div>
-    <div class="header-info">
-      <div><label>Date</label><span>${shootDate}</span></div>
-      <div><label>Day</label><span>${cs.shootDay?.dayNumber || ''}</span></div>
-      <div><label>Director</label><span>${cs.director || '-'}</span></div>
-      <div><label>Producer</label><span>${cs.producer || '-'}</span></div>
-    </div>
-  </div>
-
-  <div class="times-bar">
-    <div class="time-item"><label>General Call</label><span>${cs.generalCallTime || '-'}</span></div>
-    <div class="time-item"><label>First Shot</label><span>${cs.firstShotTime || '-'}</span></div>
-    <div class="time-item"><label>Est. Wrap</label><span>${cs.wrapTime || '-'}</span></div>
-    <div class="time-item"><label>Sunrise</label><span>${cs.sunrise || '-'}</span></div>
-    <div class="time-item"><label>Sunset</label><span>${cs.sunset || '-'}</span></div>
-  </div>
-
-  <div class="two-col">
-    <div>
-      <div class="info-card">
-        <h4>📍 LOCATION</h4>
-        <p><strong>${cs.locationName || '-'}</strong></p>
-        <p>${cs.locationAddress || ''}</p>
-        ${cs.parkingNotes ? `<p style="margin-top: 8px;"><strong>Parking:</strong> ${cs.parkingNotes}</p>` : ''}
-      </div>
-    </div>
-    <div>
-      <div class="info-card">
-        <h4>🌤️ WEATHER</h4>
-        <div class="weather-row">
-          <div class="weather-item"><span style="font-size: 18px;">${cs.weatherHigh || '-'}°</span><br/>High</div>
-          <div class="weather-item"><span style="font-size: 18px;">${cs.weatherLow || '-'}°</span><br/>Low</div>
-          <div class="weather-item"><span>${cs.weatherCondition || '-'}</span></div>
-        </div>
-      </div>
-      ${cs.nearestHospital ? `
-      <div class="info-card">
-        <h4>🏥 NEAREST HOSPITAL</h4>
-        <p><strong>${cs.nearestHospital}</strong></p>
-        <p>${cs.hospitalAddress || ''}</p>
-        <p>${cs.hospitalPhone || ''}</p>
-      </div>
-      ` : ''}
-    </div>
-  </div>
-
-  ${cs.scenes.length > 0 ? `
-  <div class="section">
-    <div class="section-title">SCHEDULE</div>
-    <table>
-      <thead>
-        <tr><th>Scene</th><th>I/E D/N</th><th>Description</th><th>Location</th><th>Pages</th><th>Cast</th></tr>
-      </thead>
-      <tbody>${scenesHtml}</tbody>
-    </table>
-  </div>
-  ` : ''}
-
-  ${cs.castCalls.length > 0 ? `
-  <div class="section">
-    <div class="section-title">CAST</div>
-    <table>
-      <thead>
-        <tr><th>#</th><th>Actor</th><th>Character</th><th>Pickup</th><th>Call</th><th>On Set</th></tr>
-      </thead>
-      <tbody>${castRowsHtml}</tbody>
-    </table>
-  </div>
-  ` : ''}
-
-  ${cs.crewCalls.length > 0 ? `
-  <div class="section">
-    <div class="section-title">CREW</div>
-    ${crewHtml}
-  </div>
-  ` : ''}
-
-  ${cs.generalNotes ? `
-  <div class="section">
-    <div class="section-title">NOTES</div>
-    <div style="padding: 8px; background: #fffbeb; border-left: 3px solid #f59e0b;">
-      ${cs.generalNotes}
-    </div>
-  </div>
-  ` : ''}
-
-  <div class="footer">
-    Generated on ${new Date().toLocaleString()} | Please contact production with any questions.
-  </div>
-</body>
-</html>`;
   }
 
   /**
@@ -713,6 +623,102 @@ export class CallSheetsService {
 
   async removeBackground(id: string) {
     await this.prisma.callSheetBackground.delete({ where: { id } });
+    return { success: true };
+  }
+
+  // ============ PHOTO-SPECIFIC: SHOTS ============
+  async addShot(callSheetId: string, dto: CreateShotDto) {
+    const lastShot = await this.prisma.callSheetShot.findFirst({
+      where: { callSheetId },
+      orderBy: { order: 'desc' },
+    });
+    return this.prisma.callSheetShot.create({
+      data: {
+        callSheetId,
+        order: (lastShot?.order || 0) + 1,
+        ...dto,
+      },
+    });
+  }
+
+  async updateShot(id: string, dto: UpdateShotDto) {
+    return this.prisma.callSheetShot.update({ where: { id }, data: dto });
+  }
+
+  async removeShot(id: string) {
+    await this.prisma.callSheetShot.delete({ where: { id } });
+    return { success: true };
+  }
+
+  // ============ PHOTO-SPECIFIC: MODELS ============
+  async addModel(callSheetId: string, dto: CreateModelDto) {
+    const lastModel = await this.prisma.callSheetModel.findFirst({
+      where: { callSheetId },
+      orderBy: { order: 'desc' },
+    });
+    return this.prisma.callSheetModel.create({
+      data: {
+        callSheetId,
+        order: (lastModel?.order || 0) + 1,
+        ...dto,
+      },
+    });
+  }
+
+  async updateModel(id: string, dto: UpdateModelDto) {
+    return this.prisma.callSheetModel.update({ where: { id }, data: dto });
+  }
+
+  async removeModel(id: string) {
+    await this.prisma.callSheetModel.delete({ where: { id } });
+    return { success: true };
+  }
+
+  // ============ PHOTO-SPECIFIC: WARDROBE ============
+  async addWardrobe(callSheetId: string, dto: CreateWardrobeDto) {
+    const lastItem = await this.prisma.callSheetWardrobe.findFirst({
+      where: { callSheetId },
+      orderBy: { order: 'desc' },
+    });
+    return this.prisma.callSheetWardrobe.create({
+      data: {
+        callSheetId,
+        order: (lastItem?.order || 0) + 1,
+        ...dto,
+      },
+    });
+  }
+
+  async updateWardrobe(id: string, dto: UpdateWardrobeDto) {
+    return this.prisma.callSheetWardrobe.update({ where: { id }, data: dto });
+  }
+
+  async removeWardrobe(id: string) {
+    await this.prisma.callSheetWardrobe.delete({ where: { id } });
+    return { success: true };
+  }
+
+  // ============ PHOTO-SPECIFIC: HMU SCHEDULE ============
+  async addHmu(callSheetId: string, dto: CreateHmuDto) {
+    const lastHmu = await this.prisma.callSheetHMU.findFirst({
+      where: { callSheetId },
+      orderBy: { order: 'desc' },
+    });
+    return this.prisma.callSheetHMU.create({
+      data: {
+        callSheetId,
+        order: (lastHmu?.order || 0) + 1,
+        ...dto,
+      },
+    });
+  }
+
+  async updateHmu(id: string, dto: UpdateHmuDto) {
+    return this.prisma.callSheetHMU.update({ where: { id }, data: dto });
+  }
+
+  async removeHmu(id: string) {
+    await this.prisma.callSheetHMU.delete({ where: { id } });
     return { success: true };
   }
 }

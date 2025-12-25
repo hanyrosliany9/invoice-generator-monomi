@@ -11,6 +11,10 @@ import { CreateMealDto, UpdateMealDto } from './dto/create-meal.dto';
 import { CreateCompanyMoveDto, UpdateCompanyMoveDto } from './dto/create-company-move.dto';
 import { CreateSpecialReqDto, UpdateSpecialReqDto } from './dto/create-special-req.dto';
 import { CreateBackgroundDto, UpdateBackgroundDto } from './dto/create-background.dto';
+import { CreateShotDto, UpdateShotDto } from './dto/create-shot.dto';
+import { CreateModelDto, UpdateModelDto } from './dto/create-model.dto';
+import { CreateWardrobeDto, UpdateWardrobeDto } from './dto/create-wardrobe.dto';
+import { CreateHmuDto, UpdateHmuDto } from './dto/create-hmu.dto';
 
 @Controller('call-sheets')
 @UseGuards(JwtAuthGuard)
@@ -212,5 +216,69 @@ export class CallSheetsController {
   @Delete('background/:id')
   async removeBackground(@Param('id') id: string) {
     return this.service.removeBackground(id);
+  }
+
+  // ============ PHOTO-SPECIFIC: SHOTS ============
+  @Post(':id/shots')
+  async addShot(@Param('id') id: string, @Body() dto: CreateShotDto) {
+    return this.service.addShot(id, dto);
+  }
+
+  @Put('shots/:id')
+  async updateShot(@Param('id') id: string, @Body() dto: UpdateShotDto) {
+    return this.service.updateShot(id, dto);
+  }
+
+  @Delete('shots/:id')
+  async removeShot(@Param('id') id: string) {
+    return this.service.removeShot(id);
+  }
+
+  // ============ PHOTO-SPECIFIC: MODELS ============
+  @Post(':id/models')
+  async addModel(@Param('id') id: string, @Body() dto: CreateModelDto) {
+    return this.service.addModel(id, dto);
+  }
+
+  @Put('models/:id')
+  async updateModel(@Param('id') id: string, @Body() dto: UpdateModelDto) {
+    return this.service.updateModel(id, dto);
+  }
+
+  @Delete('models/:id')
+  async removeModel(@Param('id') id: string) {
+    return this.service.removeModel(id);
+  }
+
+  // ============ PHOTO-SPECIFIC: WARDROBE ============
+  @Post(':id/wardrobe')
+  async addWardrobe(@Param('id') id: string, @Body() dto: CreateWardrobeDto) {
+    return this.service.addWardrobe(id, dto);
+  }
+
+  @Put('wardrobe/:id')
+  async updateWardrobe(@Param('id') id: string, @Body() dto: UpdateWardrobeDto) {
+    return this.service.updateWardrobe(id, dto);
+  }
+
+  @Delete('wardrobe/:id')
+  async removeWardrobe(@Param('id') id: string) {
+    return this.service.removeWardrobe(id);
+  }
+
+  // ============ PHOTO-SPECIFIC: HMU SCHEDULE ============
+  @Post(':id/hmu')
+  async addHmu(@Param('id') id: string, @Body() dto: CreateHmuDto) {
+    return this.service.addHmu(id, dto);
+  }
+
+  @Put('hmu/:id')
+  async updateHmu(@Param('id') id: string, @Body() dto: UpdateHmuDto) {
+    return this.service.updateHmu(id, dto);
+  }
+
+  @Delete('hmu/:id')
+  async removeHmu(@Param('id') id: string) {
+    return this.service.removeHmu(id);
   }
 }

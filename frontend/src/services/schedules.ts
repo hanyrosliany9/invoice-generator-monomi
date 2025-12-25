@@ -69,6 +69,22 @@ export const schedulesApi = {
     await apiClient.post('/schedules/strips/reorder', dto);
   },
 
+  insertMealBreak: async (
+    stripId: string,
+    data: { mealType: string; mealTime: string; mealDuration?: number; mealLocation?: string }
+  ): Promise<ScheduleStrip> => {
+    const res = await apiClient.post(`/schedules/strips/${stripId}/insert-meal`, data);
+    return res.data.data;
+  },
+
+  insertCompanyMove: async (
+    stripId: string,
+    data: { moveTime: string; moveFromLocation: string; moveToLocation: string; moveTravelTime?: number; moveNotes?: string }
+  ): Promise<ScheduleStrip> => {
+    const res = await apiClient.post(`/schedules/strips/${stripId}/insert-move`, data);
+    return res.data.data;
+  },
+
   // PDF Export
   generatePDF: async (id: string, continuous: boolean = true): Promise<Blob> => {
     const res = await apiClient.get(`/pdf/schedule/${id}`, {

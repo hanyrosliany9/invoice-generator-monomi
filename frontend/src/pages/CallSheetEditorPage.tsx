@@ -46,12 +46,6 @@ import { exportPdfWithAuth } from '../utils/exportPdfWithAuth';
 import { DEPARTMENTS, COMMON_POSITIONS, CALL_STATUS_COLORS } from '../constants/departments';
 import { PdfPreviewModal } from '../components/common/PdfPreviewModal';
 import { AddressAutocomplete } from '../components/common/AddressAutocomplete';
-import { KeyTimesBar } from '../components/callsheet/KeyTimesBar';
-import { DayScheduleTimeline } from '../components/callsheet/DayScheduleTimeline';
-import { MealBreaksSection } from '../components/callsheet/MealBreaksSection';
-import { CompanyMovesSection } from '../components/callsheet/CompanyMovesSection';
-import { SpecialRequirementsSection } from '../components/callsheet/SpecialRequirementsSection';
-import { BackgroundCallsSection } from '../components/callsheet/BackgroundCallsSection';
 import { CastStatusBadge } from '../components/callsheet/CastStatusBadge';
 import type {
   CallSheet,
@@ -60,10 +54,6 @@ import type {
   CallSheetScene,
   CreateCastCallDto,
   CreateCrewCallDto,
-  CreateMealDto,
-  CreateCompanyMoveDto,
-  CreateSpecialReqDto,
-  CreateBackgroundDto,
 } from '../types/callSheet';
 
 const { Header, Content } = Layout;
@@ -243,109 +233,6 @@ export default function CallSheetEditorPage() {
     },
   });
 
-  // === NEW: Meal Break Mutations ===
-  const addMealMutation = useMutation({
-    mutationFn: (dto: CreateMealDto) => callSheetsApi.addMeal(id!, dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
-    },
-    onError: () => message.error('Failed to add meal'),
-  });
-
-  const updateMealMutation = useMutation({
-    mutationFn: ({ mealId, dto }: { mealId: string; dto: Partial<CreateMealDto> }) =>
-      callSheetsApi.updateMeal(mealId, dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
-    },
-    onError: () => message.error('Failed to update meal'),
-  });
-
-  const deleteMealMutation = useMutation({
-    mutationFn: callSheetsApi.removeMeal,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
-    },
-    onError: () => message.error('Failed to delete meal'),
-  });
-
-  // === NEW: Company Move Mutations ===
-  const addMoveMutation = useMutation({
-    mutationFn: (dto: CreateCompanyMoveDto) => callSheetsApi.addMove(id!, dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
-    },
-    onError: () => message.error('Failed to add company move'),
-  });
-
-  const updateMoveMutation = useMutation({
-    mutationFn: ({ moveId, dto }: { moveId: string; dto: Partial<CreateCompanyMoveDto> }) =>
-      callSheetsApi.updateMove(moveId, dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
-    },
-    onError: () => message.error('Failed to update company move'),
-  });
-
-  const deleteMoveMutation = useMutation({
-    mutationFn: callSheetsApi.removeMove,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
-    },
-    onError: () => message.error('Failed to delete company move'),
-  });
-
-  // === NEW: Special Requirement Mutations ===
-  const addSpecialReqMutation = useMutation({
-    mutationFn: (dto: CreateSpecialReqDto) => callSheetsApi.addSpecialReq(id!, dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
-    },
-    onError: () => message.error('Failed to add special requirement'),
-  });
-
-  const updateSpecialReqMutation = useMutation({
-    mutationFn: ({ reqId, dto }: { reqId: string; dto: Partial<CreateSpecialReqDto> }) =>
-      callSheetsApi.updateSpecialReq(reqId, dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
-    },
-    onError: () => message.error('Failed to update special requirement'),
-  });
-
-  const deleteSpecialReqMutation = useMutation({
-    mutationFn: callSheetsApi.removeSpecialReq,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
-    },
-    onError: () => message.error('Failed to delete special requirement'),
-  });
-
-  // === NEW: Background Call Mutations ===
-  const addBackgroundMutation = useMutation({
-    mutationFn: (dto: CreateBackgroundDto) => callSheetsApi.addBackground(id!, dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
-    },
-    onError: () => message.error('Failed to add background call'),
-  });
-
-  const updateBackgroundMutation = useMutation({
-    mutationFn: ({ bgId, dto }: { bgId: string; dto: Partial<CreateBackgroundDto> }) =>
-      callSheetsApi.updateBackground(bgId, dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
-    },
-    onError: () => message.error('Failed to update background call'),
-  });
-
-  const deleteBackgroundMutation = useMutation({
-    mutationFn: callSheetsApi.removeBackground,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
-    },
-    onError: () => message.error('Failed to delete background call'),
-  });
 
   const handleSelectHospital = (hospital: any) => {
     updateMutation.mutate({
@@ -532,16 +419,16 @@ export default function CallSheetEditorPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
+            gridTemplateColumns: 'repeat(6, 1fr)',
             gap: 1,
             background: theme.colors.border.default,
             borderBottom: `1px solid ${theme.colors.border.default}`,
           }}
         >
           <TimeCell
-            label="General Call"
-            value={callSheet.generalCallTime}
-            onChange={(v) => updateMutation.mutate({ generalCallTime: v })}
+            label="Crew Call"
+            value={callSheet.crewCallTime || callSheet.generalCallTime}
+            onChange={(v) => updateMutation.mutate({ crewCallTime: v })}
             theme={theme}
           />
           <TimeCell
@@ -551,9 +438,15 @@ export default function CallSheetEditorPage() {
             theme={theme}
           />
           <TimeCell
+            label="Lunch"
+            value={callSheet.lunchTime}
+            onChange={(v) => updateMutation.mutate({ lunchTime: v })}
+            theme={theme}
+          />
+          <TimeCell
             label="Est. Wrap"
-            value={callSheet.wrapTime}
-            onChange={(v) => updateMutation.mutate({ wrapTime: v })}
+            value={callSheet.estimatedWrap || callSheet.wrapTime}
+            onChange={(v) => updateMutation.mutate({ estimatedWrap: v })}
             theme={theme}
           />
           <TimeCell
@@ -1105,78 +998,6 @@ export default function CallSheetEditorPage() {
           )}
         </div>
 
-        {/* === NEW: KEY TIMES BAR === */}
-        <div style={{ padding: '16px 24px' }}>
-          <KeyTimesBar
-            crewCallTime={callSheet.crewCallTime}
-            firstShotTime={callSheet.firstShotTime}
-            lunchTime={callSheet.lunchTime}
-            estimatedWrap={callSheet.estimatedWrap}
-            onUpdate={(field, value) => {
-              updateMutation.mutate({ [field]: value || undefined });
-            }}
-            editable={true}
-          />
-        </div>
-
-        {/* === NEW: DAY SCHEDULE TIMELINE === */}
-        <div style={{ padding: '0 24px' }}>
-          <DayScheduleTimeline
-            crewCallTime={callSheet.crewCallTime}
-            firstShotTime={callSheet.firstShotTime}
-            estimatedWrap={callSheet.estimatedWrap}
-            meals={callSheet.mealBreaks || []}
-            moves={callSheet.companyMoves || []}
-          />
-        </div>
-
-        {/* === NEW: MEAL BREAKS SECTION === */}
-        <div style={{ padding: '0 24px' }}>
-          <MealBreaksSection
-            meals={callSheet.mealBreaks || []}
-            callSheetId={id!}
-            onAdd={(dto) => addMealMutation.mutateAsync(dto)}
-            onUpdate={(mealId, dto) => updateMealMutation.mutateAsync({ mealId, dto })}
-            onDelete={(mealId) => deleteMealMutation.mutateAsync(mealId)}
-            loading={addMealMutation.isPending || updateMealMutation.isPending || deleteMealMutation.isPending}
-          />
-        </div>
-
-        {/* === NEW: COMPANY MOVES SECTION === */}
-        <div style={{ padding: '0 24px' }}>
-          <CompanyMovesSection
-            moves={callSheet.companyMoves || []}
-            callSheetId={id!}
-            onAdd={(dto) => addMoveMutation.mutateAsync(dto)}
-            onUpdate={(moveId, dto) => updateMoveMutation.mutateAsync({ moveId, dto })}
-            onDelete={(moveId) => deleteMoveMutation.mutateAsync(moveId)}
-            loading={addMoveMutation.isPending || updateMoveMutation.isPending || deleteMoveMutation.isPending}
-          />
-        </div>
-
-        {/* === NEW: SPECIAL REQUIREMENTS SECTION === */}
-        <div style={{ padding: '0 24px' }}>
-          <SpecialRequirementsSection
-            requirements={callSheet.specialRequirements || []}
-            callSheetId={id!}
-            onAdd={(dto) => addSpecialReqMutation.mutateAsync(dto)}
-            onUpdate={(reqId, dto) => updateSpecialReqMutation.mutateAsync({ reqId, dto })}
-            onDelete={(reqId) => deleteSpecialReqMutation.mutateAsync(reqId)}
-            loading={addSpecialReqMutation.isPending || updateSpecialReqMutation.isPending || deleteSpecialReqMutation.isPending}
-          />
-        </div>
-
-        {/* === NEW: BACKGROUND CALLS SECTION === */}
-        <div style={{ padding: '0 24px' }}>
-          <BackgroundCallsSection
-            backgroundCalls={callSheet.backgroundCalls || []}
-            callSheetId={id!}
-            onAdd={(dto) => addBackgroundMutation.mutateAsync(dto)}
-            onUpdate={(bgId, dto) => updateBackgroundMutation.mutateAsync({ bgId, dto })}
-            onDelete={(bgId) => deleteBackgroundMutation.mutateAsync(bgId)}
-            loading={addBackgroundMutation.isPending || updateBackgroundMutation.isPending || deleteBackgroundMutation.isPending}
-          />
-        </div>
 
         {/* NOTES SECTION */}
         <SectionHeader icon={<EditOutlined />} title="Notes" theme={theme} />

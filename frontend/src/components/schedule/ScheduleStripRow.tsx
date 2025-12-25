@@ -1,8 +1,8 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, App, Popconfirm } from 'antd';
-import { DeleteOutlined, EditOutlined, HolderOutlined } from '@ant-design/icons';
+import { Button, App, Popconfirm, Dropdown } from 'antd';
+import { DeleteOutlined, EditOutlined, HolderOutlined, PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { useTheme } from '../../theme';
 import { schedulesApi } from '../../services/schedules';
 import { getStripColor } from '../../constants/scheduleSpecs';
@@ -13,9 +13,18 @@ interface Props {
   scheduleId?: string;
   isDragging?: boolean;
   onEdit?: (strip: ScheduleStrip) => void;
+  onInsertMeal?: (stripId: string) => void;
+  onInsertMove?: (stripId: string) => void;
 }
 
-export default function ScheduleStripRow({ strip, scheduleId, isDragging, onEdit }: Props) {
+export default function ScheduleStripRow({
+  strip,
+  scheduleId,
+  isDragging,
+  onEdit,
+  onInsertMeal,
+  onInsertMove,
+}: Props) {
   const queryClient = useQueryClient();
   const { message } = App.useApp();
   const { theme } = useTheme();
@@ -351,6 +360,52 @@ export default function ScheduleStripRow({ strip, scheduleId, isDragging, onEdit
             style={{ color: 'rgba(0,0,0,0.5)' }}
           />
         )}
+
+        {/* Insert Meal/Move Dropdown */}
+        {(onInsertMeal || onInsertMove) && (
+          <Dropdown
+            menu={{
+              items: [
+                ...(onInsertMeal
+                  ? [
+                      {
+                        key: 'meal',
+                        icon: '🍽️',
+                        label: 'Insert Meal Break',
+                        onClick: (e) => {
+                          e.domEvent.stopPropagation();
+                          onInsertMeal(strip.id);
+                        },
+                      },
+                    ]
+                  : []),
+                ...(onInsertMove
+                  ? [
+                      {
+                        key: 'move',
+                        icon: '🚚',
+                        label: 'Insert Company Move',
+                        onClick: (e) => {
+                          e.domEvent.stopPropagation();
+                          onInsertMove(strip.id);
+                        },
+                      },
+                    ]
+                  : []),
+              ],
+            }}
+            trigger={['click']}
+          >
+            <Button
+              size="small"
+              type="text"
+              icon={<PlusOutlined style={{ fontSize: 13 }} />}
+              onClick={(e) => e.stopPropagation()}
+              style={{ color: 'rgba(0,0,0,0.5)' }}
+            />
+          </Dropdown>
+        )}
+
         <Popconfirm
           title="Delete?"
           onConfirm={() => deleteMutation.mutate()}

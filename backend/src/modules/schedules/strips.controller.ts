@@ -29,4 +29,20 @@ export class StripsController {
   async reorder(@Body() dto: ReorderStripsDto) {
     return this.service.reorder(dto);
   }
+
+  @Post(':stripId/insert-meal')
+  async insertMealBreak(
+    @Param('stripId') stripId: string,
+    @Body() data: { mealType: string; mealTime: string; mealDuration?: number; mealLocation?: string }
+  ) {
+    return this.service.insertMealBreak(stripId, data);
+  }
+
+  @Post(':stripId/insert-move')
+  async insertCompanyMove(
+    @Param('stripId') stripId: string,
+    @Body() data: { moveTime: string; moveFromLocation: string; moveToLocation: string; moveTravelTime?: number; moveNotes?: string }
+  ) {
+    return this.service.insertCompanyMove(stripId, data);
+  }
 }
