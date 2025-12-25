@@ -47,6 +47,10 @@ import { DEPARTMENTS, COMMON_POSITIONS, CALL_STATUS_COLORS } from '../constants/
 import { PdfPreviewModal } from '../components/common/PdfPreviewModal';
 import { AddressAutocomplete } from '../components/common/AddressAutocomplete';
 import { CastStatusBadge } from '../components/callsheet/CastStatusBadge';
+import { ShotListSection } from '../components/callsheet/ShotListSection';
+import { ModelsSection } from '../components/callsheet/ModelsSection';
+import { WardrobeSection } from '../components/callsheet/WardrobeSection';
+import { HMUScheduleSection } from '../components/callsheet/HMUScheduleSection';
 import type {
   CallSheet,
   CastCall,
@@ -54,6 +58,7 @@ import type {
   CallSheetScene,
   CreateCastCallDto,
   CreateCrewCallDto,
+  CallSheetType,
 } from '../types/callSheet';
 
 const { Header, Content } = Layout;
@@ -998,6 +1003,54 @@ export default function CallSheetEditorPage() {
           )}
         </div>
 
+        {/* PHOTO-SPECIFIC SECTIONS */}
+        {callSheet.callSheetType === 'PHOTO' && (
+          <>
+            {/* SHOT LIST SECTION */}
+            <SectionHeader icon={<VideoCameraOutlined />} title="Shot List / Looks" theme={theme} count={callSheet.shots?.length} />
+            <div style={{ background: theme.colors.background.primary, padding: 16, borderBottom: `1px solid ${theme.colors.border.default}` }}>
+              <ShotListSection
+                callSheetId={id!}
+                shots={callSheet.shots}
+                theme={theme}
+                onDataChange={() => queryClient.invalidateQueries({ queryKey: ['callSheet', id] })}
+              />
+            </div>
+
+            {/* MODELS SECTION */}
+            <SectionHeader icon={<TeamOutlined />} title="Models / Talent" theme={theme} count={callSheet.models?.length} />
+            <div style={{ background: theme.colors.background.primary, padding: 16, borderBottom: `1px solid ${theme.colors.border.default}` }}>
+              <ModelsSection
+                callSheetId={id!}
+                models={callSheet.models}
+                theme={theme}
+                onDataChange={() => queryClient.invalidateQueries({ queryKey: ['callSheet', id] })}
+              />
+            </div>
+
+            {/* WARDROBE SECTION */}
+            <SectionHeader icon={<EditOutlined />} title="Wardrobe Tracking" theme={theme} count={callSheet.wardrobe?.length} />
+            <div style={{ background: theme.colors.background.primary, padding: 16, borderBottom: `1px solid ${theme.colors.border.default}` }}>
+              <WardrobeSection
+                callSheetId={id!}
+                wardrobe={callSheet.wardrobe}
+                theme={theme}
+                onDataChange={() => queryClient.invalidateQueries({ queryKey: ['callSheet', id] })}
+              />
+            </div>
+
+            {/* HMU SCHEDULE SECTION */}
+            <SectionHeader icon={<TeamOutlined />} title="H&MU Schedule" theme={theme} count={callSheet.hmuSchedule?.length} />
+            <div style={{ background: theme.colors.background.primary, padding: 16, borderBottom: `1px solid ${theme.colors.border.default}` }}>
+              <HMUScheduleSection
+                callSheetId={id!}
+                hmuSchedule={callSheet.hmuSchedule}
+                theme={theme}
+                onDataChange={() => queryClient.invalidateQueries({ queryKey: ['callSheet', id] })}
+              />
+            </div>
+          </>
+        )}
 
         {/* NOTES SECTION */}
         <SectionHeader icon={<EditOutlined />} title="Notes" theme={theme} />

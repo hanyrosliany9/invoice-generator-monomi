@@ -8,6 +8,7 @@ import { QuotationsService } from "../quotations/quotations.service";
 import { generateProjectHTML } from "./templates/project.html";
 import { generateScheduleHTML } from "./templates/schedule.html";
 import { generateCallSheetHTML } from "./templates/call-sheet.html";
+import { generatePhotoCallSheetHTML } from "./templates/photo-call-sheet.html";
 import { generateShotListHTML } from "./templates/shot-list.html";
 
 @Injectable()
@@ -1997,7 +1998,10 @@ export class PdfService {
 
     try {
       const page = await browser.newPage();
-      const htmlContent = generateCallSheetHTML(callSheetData, this.logoBase64, continuous);
+      // Select template based on call sheet type (FILM or PHOTO)
+      const htmlContent = callSheetData.callSheetType === 'PHOTO'
+        ? generatePhotoCallSheetHTML(callSheetData, this.logoBase64, continuous)
+        : generateCallSheetHTML(callSheetData, this.logoBase64, continuous);
 
       if (continuous) {
         await page.emulateMediaType('screen');
