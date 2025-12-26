@@ -66,6 +66,22 @@ export const CalendarMain: React.FC<CalendarMainProps> = ({
     }))
   }, [events])
 
+  // Handle view changes
+  React.useEffect(() => {
+    if (calendarRef.current) {
+      const api = calendarRef.current.getApi()
+      api.changeView(VIEW_MAP[view])
+    }
+  }, [view])
+
+  // Handle date changes
+  React.useEffect(() => {
+    if (calendarRef.current) {
+      const api = calendarRef.current.getApi()
+      api.gotoDate(selectedDate.toDate())
+    }
+  }, [selectedDate])
+
   const handlePrevClick = () => {
     if (calendarRef.current) {
       calendarRef.current.getApi().prev()
@@ -95,6 +111,18 @@ export const CalendarMain: React.FC<CalendarMainProps> = ({
     onEventClick(eventData)
   }
 
+  // Handle event drop (reschedule)
+  const handleEventDrop = async (info: any) => {
+    const eventData = info.event.extendedProps.data as CalendarEvent
+    // Note: In a real app, you would call the API to update the event time
+    // For now, just show the event was moved
+    console.log('Event rescheduled:', {
+      id: eventData.id,
+      oldStart: info.oldEvent.startStr,
+      newStart: info.event.startStr,
+    })
+  }
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Toolbar */}
@@ -116,11 +144,13 @@ export const CalendarMain: React.FC<CalendarMainProps> = ({
           headerToolbar={false}
           events={calendarEvents}
           eventClick={handleEventClick}
+          eventDrop={handleEventDrop}
           dateClick={handleDateClick}
           editable={true}
           selectable={true}
           selectMirror={true}
-          dayMaxEvents={true}
+          dayMaxEvents={3}
+          dayMaxEventRows={true}
           weekends={true}
           slotMinTime="06:00:00"
           slotMaxTime="22:00:00"
@@ -132,6 +162,7 @@ export const CalendarMain: React.FC<CalendarMainProps> = ({
           contentHeight="auto"
           eventDisplay="block"
           moreLinkClick="popover"
+          nowIndicator={true}
           eventContent={(info) => (
             <div
               style={{
