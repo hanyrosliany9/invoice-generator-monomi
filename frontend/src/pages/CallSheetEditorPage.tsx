@@ -51,6 +51,13 @@ import { ShotListSection } from '../components/callsheet/ShotListSection';
 import { ModelsSection } from '../components/callsheet/ModelsSection';
 import { WardrobeSection } from '../components/callsheet/WardrobeSection';
 import { HMUScheduleSection } from '../components/callsheet/HMUScheduleSection';
+// FILM-specific sections (restored)
+import { KeyTimesBar } from '../components/callsheet/KeyTimesBar';
+import { DayScheduleTimeline } from '../components/callsheet/DayScheduleTimeline';
+import { MealBreaksSection } from '../components/callsheet/MealBreaksSection';
+import { CompanyMovesSection } from '../components/callsheet/CompanyMovesSection';
+import { BackgroundCallsSection } from '../components/callsheet/BackgroundCallsSection';
+import { SpecialRequirementsSection } from '../components/callsheet/SpecialRequirementsSection';
 import type {
   CallSheet,
   CastCall,
@@ -238,6 +245,119 @@ export default function CallSheetEditorPage() {
     },
   });
 
+  // === FILM-SPECIFIC MUTATIONS ===
+
+  // Meal mutations
+  const addMealMutation = useMutation({
+    mutationFn: (dto: any) => callSheetsApi.addMeal(id!, dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Meal added');
+    },
+    onError: () => message.error('Failed to add meal'),
+  });
+
+  const updateMealMutation = useMutation({
+    mutationFn: ({ mealId, dto }: { mealId: string; dto: any }) =>
+      callSheetsApi.updateMeal(mealId, dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+    },
+    onError: () => message.error('Failed to update meal'),
+  });
+
+  const deleteMealMutation = useMutation({
+    mutationFn: callSheetsApi.removeMeal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Meal removed');
+    },
+    onError: () => message.error('Failed to delete meal'),
+  });
+
+  // Company Move mutations
+  const addMoveMutation = useMutation({
+    mutationFn: (dto: any) => callSheetsApi.addMove(id!, dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Company move added');
+    },
+    onError: () => message.error('Failed to add company move'),
+  });
+
+  const updateMoveMutation = useMutation({
+    mutationFn: ({ moveId, dto }: { moveId: string; dto: any }) =>
+      callSheetsApi.updateMove(moveId, dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+    },
+    onError: () => message.error('Failed to update company move'),
+  });
+
+  const deleteMoveMutation = useMutation({
+    mutationFn: callSheetsApi.removeMove,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Company move removed');
+    },
+    onError: () => message.error('Failed to delete company move'),
+  });
+
+  // Background/Extras mutations
+  const addBackgroundMutation = useMutation({
+    mutationFn: (dto: any) => callSheetsApi.addBackground(id!, dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Background call added');
+    },
+    onError: () => message.error('Failed to add background call'),
+  });
+
+  const updateBackgroundMutation = useMutation({
+    mutationFn: ({ backgroundId, dto }: { backgroundId: string; dto: any }) =>
+      callSheetsApi.updateBackground(backgroundId, dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+    },
+    onError: () => message.error('Failed to update background call'),
+  });
+
+  const deleteBackgroundMutation = useMutation({
+    mutationFn: callSheetsApi.removeBackground,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Background call removed');
+    },
+    onError: () => message.error('Failed to delete background call'),
+  });
+
+  // Special Requirements mutations
+  const addSpecialReqMutation = useMutation({
+    mutationFn: (dto: any) => callSheetsApi.addSpecialReq(id!, dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Special requirement added');
+    },
+    onError: () => message.error('Failed to add special requirement'),
+  });
+
+  const updateSpecialReqMutation = useMutation({
+    mutationFn: ({ reqId, dto }: { reqId: string; dto: any }) =>
+      callSheetsApi.updateSpecialReq(reqId, dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+    },
+    onError: () => message.error('Failed to update special requirement'),
+  });
+
+  const deleteSpecialReqMutation = useMutation({
+    mutationFn: callSheetsApi.removeSpecialReq,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      message.success('Special requirement removed');
+    },
+    onError: () => message.error('Failed to delete special requirement'),
+  });
 
   const handleSelectHospital = (hospital: any) => {
     updateMutation.mutate({
@@ -1002,6 +1122,77 @@ export default function CallSheetEditorPage() {
             ))
           )}
         </div>
+
+        {/* FILM-SPECIFIC SECTIONS */}
+        {(!callSheet.callSheetType || callSheet.callSheetType === 'FILM') && (
+          <>
+            {/* KEY TIMES BAR */}
+            <KeyTimesBar
+              crewCallTime={callSheet.crewCallTime}
+              firstShotTime={callSheet.firstShotTime}
+              lunchTime={callSheet.lunchTime}
+              estimatedWrap={callSheet.estimatedWrap}
+              onUpdate={(field, value) => updateMutation.mutate({ [field]: value })}
+            />
+
+            {/* DAY SCHEDULE TIMELINE */}
+            <DayScheduleTimeline
+              crewCallTime={callSheet.crewCallTime}
+              firstShotTime={callSheet.firstShotTime}
+              estimatedWrap={callSheet.estimatedWrap}
+              meals={callSheet.mealBreaks}
+              moves={callSheet.companyMoves}
+            />
+
+            {/* MEAL BREAKS SECTION */}
+            <SectionHeader icon={<ClockCircleOutlined />} title="Meal Breaks" theme={theme} count={callSheet.mealBreaks?.length || 0} />
+            <div style={{ background: theme.colors.background.primary, padding: 16, borderBottom: `1px solid ${theme.colors.border.default}` }}>
+              <MealBreaksSection
+                meals={callSheet.mealBreaks || []}
+                callSheetId={id!}
+                onAdd={async (dto) => { await addMealMutation.mutateAsync(dto); }}
+                onUpdate={async (mealId, dto) => { await updateMealMutation.mutateAsync({ mealId, dto }); }}
+                onDelete={async (mealId) => { await deleteMealMutation.mutateAsync(mealId); }}
+              />
+            </div>
+
+            {/* COMPANY MOVES SECTION */}
+            <SectionHeader icon={<EnvironmentOutlined />} title="Company Moves" theme={theme} count={callSheet.companyMoves?.length || 0} />
+            <div style={{ background: theme.colors.background.primary, padding: 16, borderBottom: `1px solid ${theme.colors.border.default}` }}>
+              <CompanyMovesSection
+                moves={callSheet.companyMoves || []}
+                callSheetId={id!}
+                onAdd={async (dto) => { await addMoveMutation.mutateAsync(dto); }}
+                onUpdate={async (moveId, dto) => { await updateMoveMutation.mutateAsync({ moveId, dto }); }}
+                onDelete={async (moveId) => { await deleteMoveMutation.mutateAsync(moveId); }}
+              />
+            </div>
+
+            {/* BACKGROUND/EXTRAS SECTION */}
+            <SectionHeader icon={<TeamOutlined />} title="Background / Extras" theme={theme} count={callSheet.backgroundCalls?.length || 0} />
+            <div style={{ background: theme.colors.background.primary, padding: 16, borderBottom: `1px solid ${theme.colors.border.default}` }}>
+              <BackgroundCallsSection
+                backgroundCalls={callSheet.backgroundCalls || []}
+                callSheetId={id!}
+                onAdd={async (dto) => { await addBackgroundMutation.mutateAsync(dto); }}
+                onUpdate={async (backgroundId, dto) => { await updateBackgroundMutation.mutateAsync({ backgroundId, dto }); }}
+                onDelete={async (backgroundId) => { await deleteBackgroundMutation.mutateAsync(backgroundId); }}
+              />
+            </div>
+
+            {/* SPECIAL REQUIREMENTS SECTION */}
+            <SectionHeader icon={<ThunderboltOutlined />} title="Special Requirements" theme={theme} count={callSheet.specialRequirements?.length || 0} />
+            <div style={{ background: theme.colors.background.primary, padding: 16, borderBottom: `1px solid ${theme.colors.border.default}` }}>
+              <SpecialRequirementsSection
+                requirements={callSheet.specialRequirements || []}
+                callSheetId={id!}
+                onAdd={async (dto) => { await addSpecialReqMutation.mutateAsync(dto); }}
+                onUpdate={async (reqId, dto) => { await updateSpecialReqMutation.mutateAsync({ reqId, dto }); }}
+                onDelete={async (reqId) => { await deleteSpecialReqMutation.mutateAsync(reqId); }}
+              />
+            </div>
+          </>
+        )}
 
         {/* PHOTO-SPECIFIC SECTIONS */}
         {callSheet.callSheetType === 'PHOTO' && (
