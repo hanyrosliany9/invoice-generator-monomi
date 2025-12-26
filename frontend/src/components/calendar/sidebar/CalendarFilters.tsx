@@ -51,15 +51,12 @@ export const CalendarFilters: React.FC<CalendarFiltersProps> = ({
         <Select
           allowClear
           placeholder="All Projects"
-          value={selectedProjectId}
-          onChange={onProjectFilterChange}
-          options={[
-            { label: 'All Projects', value: null },
-            ...projects.map((p: any) => ({
-              label: p.number,
-              value: p.id,
-            })),
-          ]}
+          value={selectedProjectId || undefined}
+          onChange={(value) => onProjectFilterChange(value || null)}
+          options={projects.map((p: any) => ({
+            label: p.number,
+            value: p.id,
+          }))}
           style={{ width: '100%' }}
           size="small"
         />

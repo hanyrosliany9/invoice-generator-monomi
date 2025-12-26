@@ -6,8 +6,8 @@ import {
   IsEnum,
   IsArray,
   ValidateNested,
-  Type,
 } from 'class-validator'
+import { Type } from 'class-transformer'
 import { EventCategory, EventStatus } from '@prisma/client'
 
 export class CreateEventAttendeeDto {

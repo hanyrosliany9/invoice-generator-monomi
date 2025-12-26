@@ -1,4 +1,5 @@
-import { IsOptional, IsDateString, IsArray, IsString, Type } from 'class-validator'
+import { IsOptional, IsDateString, IsArray, IsString } from 'class-validator'
+import { Type } from 'class-transformer'
 import { EventCategory } from '@prisma/client'
 
 export class QueryEventsDto {
@@ -24,9 +25,9 @@ export class QueryEventsDto {
 
   @IsOptional()
   @Type(() => Number)
-  limit?: number = 100
+  limit?: number
 
   @IsOptional()
   @Type(() => Number)
-  offset?: number = 0
+  offset?: number
 }

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
-import { PrismaService } from '../../prisma/prisma.service'
+import { PrismaService } from '../prisma/prisma.service'
 import {
   CreateCalendarEventDto,
   UpdateCalendarEventDto,
@@ -32,7 +32,7 @@ export class CalendarEventsService {
               })),
             }
           : undefined,
-      },
+      } as any,
       include: {
         createdBy: { select: { id: true, name: true, email: true } },
         assignee: { select: { id: true, name: true, email: true } },
@@ -48,6 +48,8 @@ export class CalendarEventsService {
 
   async findAll(query: QueryEventsDto) {
     const where: any = {}
+    const limit = query.limit || 100
+    const offset = query.offset || 0
 
     if (query.startDate && query.endDate) {
       where.AND = [
@@ -88,8 +90,8 @@ export class CalendarEventsService {
         client: { select: { id: true, name: true } },
       },
       orderBy: { startTime: 'asc' },
-      take: query.limit,
-      skip: query.offset,
+      take: limit,
+      skip: offset,
     })
   }
 
@@ -127,13 +129,18 @@ export class CalendarEventsService {
       throw new NotFoundException(`Calendar event with ID ${id} not found`)
     }
 
+    // Delete existing attendees and reminders if updating
+    if (attendees !== undefined || reminders !== undefined) {
+      await this.prisma.eventAttendee.deleteMany({ where: { eventId: id } })
+      await this.prisma.eventReminder.deleteMany({ where: { eventId: id } })
+    }
+
     return this.prisma.calendarEvent.update({
       where: { id },
       data: {
         ...eventData,
         attendees: attendees
           ? {
-              deleteMany: {}, // Clear existing
               create: attendees.map((a) => ({
                 userId: a.userId,
                 status: a.status as any,
@@ -142,13 +149,12 @@ export class CalendarEventsService {
           : undefined,
         reminders: reminders
           ? {
-              deleteMany: {},
               create: reminders.map((r) => ({
                 minutes: r.minutes,
               })),
             }
           : undefined,
-      },
+      } as any,
       include: {
         createdBy: { select: { id: true, name: true, email: true } },
         assignee: { select: { id: true, name: true, email: true } },

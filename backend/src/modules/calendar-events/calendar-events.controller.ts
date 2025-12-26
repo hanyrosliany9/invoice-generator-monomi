@@ -8,9 +8,9 @@ import {
   Param,
   Query,
   UseGuards,
+  Request,
 } from '@nestjs/common'
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard'
-import { CurrentUser } from '../../auth/decorators/current-user.decorator'
+import { JwtAuthGuard } from '../../modules/auth/guards/jwt-auth.guard'
 import { CalendarEventsService } from './calendar-events.service'
 import {
   CreateCalendarEventDto,
@@ -26,22 +26,22 @@ export class CalendarEventsController {
   @Post()
   create(
     @Body() data: CreateCalendarEventDto,
-    @CurrentUser() user: { id: string }
+    @Request() req: any
   ) {
-    return this.service.create(data, user.id)
-  }
-
-  @Get()
-  findAll(@Query() query: QueryEventsDto) {
-    return this.service.findAll(query)
+    return this.service.create(data, req.user.id)
   }
 
   @Get('upcoming')
   getUpcoming(
     @Query('days') days: string = '7',
-    @CurrentUser() user: { id: string }
+    @Request() req: any
   ) {
-    return this.service.getUpcomingEvents(user.id, parseInt(days, 10))
+    return this.service.getUpcomingEvents(req.user.id, parseInt(days, 10))
+  }
+
+  @Get()
+  findAll(@Query() query: QueryEventsDto) {
+    return this.service.findAll(query)
   }
 
   @Get(':id')
