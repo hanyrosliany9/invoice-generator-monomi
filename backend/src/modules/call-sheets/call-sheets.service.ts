@@ -24,7 +24,7 @@ export class CallSheetsService {
   ) {}
 
   async create(userId: string, dto: CreateCallSheetDto) {
-    const callSheetType = dto.callSheetType || 'FILM';
+    const callSheetType = (dto.callSheetType || 'FILM') as 'FILM' | 'PHOTO';
 
     // Validate based on call sheet type
     if (callSheetType === 'FILM') {
@@ -656,17 +656,23 @@ export class CallSheetsService {
       where: { callSheetId },
       orderBy: { order: 'desc' },
     });
-    return this.prisma.callSheetModel.create({
-      data: {
-        callSheetId,
-        order: (lastModel?.order || 0) + 1,
-        ...dto,
-      },
-    });
+    const data: any = {
+      callSheetId,
+      order: (lastModel?.order || 0) + 1,
+      ...dto,
+    };
+    if (data.arrivalType) {
+      data.arrivalType = data.arrivalType as 'CAMERA_READY' | 'STYLED';
+    }
+    return this.prisma.callSheetModel.create({ data });
   }
 
   async updateModel(id: string, dto: UpdateModelDto) {
-    return this.prisma.callSheetModel.update({ where: { id }, data: dto });
+    const data: any = { ...dto };
+    if (data.arrivalType) {
+      data.arrivalType = data.arrivalType as 'CAMERA_READY' | 'STYLED';
+    }
+    return this.prisma.callSheetModel.update({ where: { id }, data });
   }
 
   async removeModel(id: string) {
@@ -680,17 +686,23 @@ export class CallSheetsService {
       where: { callSheetId },
       orderBy: { order: 'desc' },
     });
-    return this.prisma.callSheetWardrobe.create({
-      data: {
-        callSheetId,
-        order: (lastItem?.order || 0) + 1,
-        ...dto,
-      },
-    });
+    const data: any = {
+      callSheetId,
+      order: (lastItem?.order || 0) + 1,
+      ...dto,
+    };
+    if (data.status) {
+      data.status = data.status as 'PENDING' | 'CONFIRMED' | 'ON_SET' | 'IN_USE' | 'WRAPPED';
+    }
+    return this.prisma.callSheetWardrobe.create({ data });
   }
 
   async updateWardrobe(id: string, dto: UpdateWardrobeDto) {
-    return this.prisma.callSheetWardrobe.update({ where: { id }, data: dto });
+    const data: any = { ...dto };
+    if (data.status) {
+      data.status = data.status as 'PENDING' | 'CONFIRMED' | 'ON_SET' | 'IN_USE' | 'WRAPPED';
+    }
+    return this.prisma.callSheetWardrobe.update({ where: { id }, data });
   }
 
   async removeWardrobe(id: string) {
@@ -704,17 +716,23 @@ export class CallSheetsService {
       where: { callSheetId },
       orderBy: { order: 'desc' },
     });
-    return this.prisma.callSheetHMU.create({
-      data: {
-        callSheetId,
-        order: (lastHmu?.order || 0) + 1,
-        ...dto,
-      },
-    });
+    const data: any = {
+      callSheetId,
+      order: (lastHmu?.order || 0) + 1,
+      ...dto,
+    };
+    if (data.artistRole) {
+      data.artistRole = data.artistRole as 'HAIR' | 'MAKEUP' | 'BOTH' | 'KEY_STYLIST';
+    }
+    return this.prisma.callSheetHMU.create({ data });
   }
 
   async updateHmu(id: string, dto: UpdateHmuDto) {
-    return this.prisma.callSheetHMU.update({ where: { id }, data: dto });
+    const data: any = { ...dto };
+    if (data.artistRole) {
+      data.artistRole = data.artistRole as 'HAIR' | 'MAKEUP' | 'BOTH' | 'KEY_STYLIST';
+    }
+    return this.prisma.callSheetHMU.update({ where: { id }, data });
   }
 
   async removeHmu(id: string) {
