@@ -52,6 +52,15 @@ export interface ThemeColors {
     secondary: string
     tertiary: string
   }
+
+  // Calendar colors
+  calendar: {
+    todayBg: string
+    slotLabel: string
+    borderColor: string
+    highlightColor: string
+    eventText: string
+  }
 }
 
 export interface Theme {

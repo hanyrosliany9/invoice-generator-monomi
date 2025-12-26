@@ -10,6 +10,7 @@ import dayjs, { Dayjs } from 'dayjs'
 import { CalendarEvent } from '../../../services/calendar-events'
 import { getCategoryColor, getCategoryLabel } from '../../../utils/calendar-colors'
 import { CalendarToolbar } from './CalendarToolbar'
+import '../calendar.css'
 
 type ViewType = 'month' | 'week' | 'day' | 'list'
 
@@ -40,6 +41,7 @@ export const CalendarMain: React.FC<CalendarMainProps> = ({
   onViewChange,
 }) => {
   const calendarRef = React.useRef<FullCalendar>(null)
+  const [displayedDate, setDisplayedDate] = React.useState<Dayjs>(selectedDate)
 
   // Transform events for FullCalendar
   const calendarEvents = useMemo(() => {
@@ -95,20 +97,32 @@ export const CalendarMain: React.FC<CalendarMainProps> = ({
   const handlePrevClick = () => {
     if (calendarRef.current) {
       calendarRef.current.getApi().prev()
+      // Update displayed date after navigation
+      const newDate = calendarRef.current.getApi().getDate()
+      setDisplayedDate(dayjs(newDate))
     }
   }
 
   const handleNextClick = () => {
     if (calendarRef.current) {
       calendarRef.current.getApi().next()
+      // Update displayed date after navigation
+      const newDate = calendarRef.current.getApi().getDate()
+      setDisplayedDate(dayjs(newDate))
     }
   }
 
   const handleTodayClick = () => {
     if (calendarRef.current) {
       calendarRef.current.getApi().today()
+      setDisplayedDate(dayjs())
       onDateClick(dayjs())
     }
+  }
+
+  // Handle when calendar view changes dates
+  const handleDatesSet = (dateInfo: any) => {
+    setDisplayedDate(dayjs(dateInfo.start).add(7, 'day')) // Get middle of range
   }
 
   const handleDateClick = (info: any) => {
@@ -138,6 +152,7 @@ export const CalendarMain: React.FC<CalendarMainProps> = ({
       {/* Toolbar */}
       <CalendarToolbar
         view={view}
+        currentDate={displayedDate}
         onViewChange={onViewChange}
         onAddEvent={onAddEvent}
         onPrev={handlePrevClick}
@@ -156,6 +171,7 @@ export const CalendarMain: React.FC<CalendarMainProps> = ({
           eventClick={handleEventClick}
           eventDrop={handleEventDrop}
           dateClick={handleDateClick}
+          datesSet={handleDatesSet}
           editable={true}
           selectable={true}
           selectMirror={true}

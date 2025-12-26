@@ -46,6 +46,13 @@ const darkTheme: Theme = {
       secondary: '#9A6DD7',
       tertiary: '#E255A1',
     },
+    calendar: {
+      todayBg: 'rgba(82, 156, 202, 0.15)',
+      slotLabel: '#979A9B',
+      borderColor: 'rgba(151, 154, 155, 0.2)',
+      highlightColor: 'rgba(82, 156, 202, 0.1)',
+      eventText: '#ffffff',
+    },
   },
 }
 
@@ -89,6 +96,13 @@ const lightTheme: Theme = {
       primary: '#337EA9',
       secondary: '#9065B0',
       tertiary: '#C14C8A',
+    },
+    calendar: {
+      todayBg: 'rgba(51, 126, 169, 0.12)',
+      slotLabel: '#787774',
+      borderColor: '#E1E0DC',
+      highlightColor: 'rgba(51, 126, 169, 0.08)',
+      eventText: '#ffffff',
     },
   },
 }
@@ -175,6 +189,13 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     root.style.setProperty('--accent-primary', colors.accent.primary)
     root.style.setProperty('--accent-secondary', colors.accent.secondary)
     root.style.setProperty('--accent-tertiary', colors.accent.tertiary)
+
+    // Calendar colors
+    root.style.setProperty('--calendar-today-bg', colors.calendar.todayBg)
+    root.style.setProperty('--calendar-slot-label', colors.calendar.slotLabel)
+    root.style.setProperty('--calendar-border', colors.calendar.borderColor)
+    root.style.setProperty('--calendar-highlight', colors.calendar.highlightColor)
+    root.style.setProperty('--calendar-event-text', colors.calendar.eventText)
   }, [mode])
 
   const toggleTheme = () => {

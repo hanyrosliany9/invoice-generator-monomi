@@ -53,7 +53,7 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({ selectedDate, onDate
         value={displayDate}
         onChange={onDateSelect}
         headerRender={() => null} // Hide default header
-        cellRender={(date) => {
+        fullCellRender={(date) => {
           const isCurrentMonth = date.isSame(displayDate, 'month')
           const isToday = date.isSame(dayjs(), 'day')
           const isSelected = date.isSame(selectedDate, 'day')

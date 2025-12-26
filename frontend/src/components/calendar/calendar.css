@@ -1,7 +1,5 @@
-/* FullCalendar v6 Styles - Updated paths */
-@import '@fullcalendar/core/index.css';
-@import '@fullcalendar/daygrid/index.css';
-@import '@fullcalendar/timegrid/index.css';
+/* FullCalendar v6 Custom Theme */
+/* Note: FullCalendar v6 bundles CSS into JavaScript - no separate imports needed */
 
 /* Custom FullCalendar Theme */
 .fc {
@@ -57,10 +55,87 @@
   font-weight: 500;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .fc {
-    --fc-border-color: #434343;
-    --fc-neutral-bg-color: rgba(255, 255, 255, 0.08);
-  }
+/* Theme-aware FullCalendar styles using CSS variables from ThemeContext */
+.fc {
+  /* Text colors */
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: var(--bg-secondary);
+  --fc-neutral-text-color: var(--text-primary);
+
+  /* Border colors */
+  --fc-border-color: var(--calendar-border);
+
+  /* Button colors */
+  --fc-button-bg-color: var(--bg-tertiary);
+  --fc-button-border-color: var(--border-default);
+  --fc-button-text-color: var(--text-primary);
+  --fc-button-hover-bg-color: var(--bg-secondary);
+  --fc-button-hover-border-color: var(--border-strong);
+  --fc-button-active-bg-color: var(--accent-primary);
+  --fc-button-active-border-color: var(--accent-primary);
+
+  /* Today highlight - using calendar palette */
+  --fc-today-bg-color: var(--calendar-today-bg);
+
+  /* Event colors */
+  --fc-event-bg-color: var(--accent-primary);
+  --fc-event-border-color: var(--accent-primary);
+  --fc-event-text-color: var(--calendar-event-text);
+
+  /* Non-business hours */
+  --fc-non-business-color: var(--bg-secondary);
+
+  /* Highlight (hover) */
+  --fc-highlight-color: var(--calendar-highlight);
+}
+
+/* Day number text */
+.fc .fc-daygrid-day-number,
+.fc .fc-col-header-cell-cushion {
+  color: var(--text-primary);
+}
+
+/* Week/day numbers */
+.fc .fc-daygrid-week-number {
+  color: var(--text-tertiary);
+}
+
+/* Header text */
+.fc .fc-toolbar-title {
+  color: var(--text-primary);
+}
+
+/* TIME LABELS - CRITICAL FIX */
+.fc .fc-timegrid-slot-label,
+.fc .fc-timegrid-slot-label-cushion,
+.fc .fc-timegrid-axis-cushion {
+  color: var(--calendar-slot-label) !important;
+}
+
+/* All-day label */
+.fc .fc-timegrid-axis-frame {
+  color: var(--calendar-slot-label);
+}
+
+/* More events link */
+.fc .fc-daygrid-more-link {
+  color: var(--accent-primary);
+}
+
+/* List view */
+.fc .fc-list-day-cushion {
+  background: var(--bg-secondary);
+}
+
+.fc .fc-list-event:hover td {
+  background: var(--bg-tertiary);
+}
+
+/* Scrollbar styling */
+.fc ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.fc ::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
 }
