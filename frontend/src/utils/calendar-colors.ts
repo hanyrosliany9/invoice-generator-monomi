@@ -1,34 +1,79 @@
-// Category colors for calendar events
-export const CATEGORY_COLORS: Record<string, string> = {
-  MEETING: '#1890ff',      // Blue
-  PROJECT_WORK: '#52c41a', // Green
-  MILESTONE: '#722ed1',    // Purple
-  TASK: '#faad14',         // Orange
-  REMINDER: '#f5222d',     // Red
-  PHOTOSHOOT: '#13c2c2',   // Cyan
-  DELIVERY: '#eb2f96',     // Magenta
-  OTHER: '#bfbfbf',        // Gray
+// Category colors for calendar events - using theme colors
+// Dark mode: #529CCA (primary), #9A6DD7 (secondary), #E255A1 (tertiary), #FFA344 (warning), #FF7369 (error)
+// Light mode: #337EA9 (primary), #9065B0 (secondary), #C14C8A (tertiary), #D9730D (warning), #D44C47 (error)
+export const CATEGORY_COLORS_DARK: Record<string, string> = {
+  MEETING: '#529CCA',      // Theme Primary (Blue)
+  PROJECT_WORK: '#4DAB9A', // Theme Success (Teal)
+  MILESTONE: '#9A6DD7',    // Theme Secondary (Purple)
+  TASK: '#FFA344',         // Theme Warning (Orange)
+  REMINDER: '#FF7369',     // Theme Error (Red)
+  PHOTOSHOOT: '#E255A1',   // Theme Tertiary (Magenta)
+  DELIVERY: '#E255A1',     // Theme Tertiary (Magenta)
+  OTHER: '#979A9B',        // Theme Text Secondary (Gray)
 }
 
-export const PRIORITY_COLORS: Record<string, string> = {
-  LOW: '#52c41a',    // Green
-  MEDIUM: '#faad14', // Orange
-  HIGH: '#f5222d',   // Red
+export const CATEGORY_COLORS_LIGHT: Record<string, string> = {
+  MEETING: '#337EA9',      // Theme Primary (Blue)
+  PROJECT_WORK: '#448361', // Theme Success (Green)
+  MILESTONE: '#9065B0',    // Theme Secondary (Purple)
+  TASK: '#D9730D',         // Theme Warning (Orange)
+  REMINDER: '#D44C47',     // Theme Error (Red)
+  PHOTOSHOOT: '#C14C8A',   // Theme Tertiary (Magenta)
+  DELIVERY: '#C14C8A',     // Theme Tertiary (Magenta)
+  OTHER: '#787774',        // Theme Text Secondary (Gray)
 }
 
-export const STATUS_COLORS: Record<string, string> = {
-  SCHEDULED: '#1890ff',   // Blue
-  IN_PROGRESS: '#faad14', // Orange
-  COMPLETED: '#52c41a',   // Green
-  CANCELLED: '#bfbfbf',   // Gray
+export const PRIORITY_COLORS_DARK: Record<string, string> = {
+  LOW: '#4DAB9A',  // Theme Success (Teal)
+  MEDIUM: '#FFA344', // Theme Warning (Orange)
+  HIGH: '#FF7369',   // Theme Error (Red)
 }
 
-export const ATTENDEE_STATUS_COLORS: Record<string, string> = {
-  PENDING: '#faad14',    // Orange
-  ACCEPTED: '#52c41a',   // Green
-  DECLINED: '#f5222d',   // Red
-  TENTATIVE: '#1890ff',  // Blue
+export const PRIORITY_COLORS_LIGHT: Record<string, string> = {
+  LOW: '#448361',  // Theme Success (Green)
+  MEDIUM: '#D9730D', // Theme Warning (Orange)
+  HIGH: '#D44C47',   // Theme Error (Red)
 }
+
+export const STATUS_COLORS_DARK: Record<string, string> = {
+  SCHEDULED: '#529CCA',   // Theme Primary (Blue)
+  IN_PROGRESS: '#FFA344', // Theme Warning (Orange)
+  COMPLETED: '#4DAB9A',   // Theme Success (Teal)
+  CANCELLED: '#979A9B',   // Theme Text Secondary (Gray)
+}
+
+export const STATUS_COLORS_LIGHT: Record<string, string> = {
+  SCHEDULED: '#337EA9',   // Theme Primary (Blue)
+  IN_PROGRESS: '#D9730D', // Theme Warning (Orange)
+  COMPLETED: '#448361',   // Theme Success (Green)
+  CANCELLED: '#787774',   // Theme Text Secondary (Gray)
+}
+
+export const ATTENDEE_STATUS_COLORS_DARK: Record<string, string> = {
+  PENDING: '#FFA344',    // Theme Warning (Orange)
+  ACCEPTED: '#4DAB9A',   // Theme Success (Teal)
+  DECLINED: '#FF7369',   // Theme Error (Red)
+  TENTATIVE: '#529CCA',  // Theme Primary (Blue)
+}
+
+export const ATTENDEE_STATUS_COLORS_LIGHT: Record<string, string> = {
+  PENDING: '#D9730D',    // Theme Warning (Orange)
+  ACCEPTED: '#448361',   // Theme Success (Green)
+  DECLINED: '#D44C47',   // Theme Error (Red)
+  TENTATIVE: '#337EA9',  // Theme Primary (Blue)
+}
+
+// Get colors based on current theme mode
+function getThemeMode(): 'dark' | 'light' {
+  // Check CSS variable to detect theme mode
+  const isDark = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary') === '#191919'
+  return isDark ? 'dark' : 'light'
+}
+
+export const CATEGORY_COLORS: Record<string, string> = CATEGORY_COLORS_DARK
+export const PRIORITY_COLORS: Record<string, string> = PRIORITY_COLORS_DARK
+export const STATUS_COLORS: Record<string, string> = STATUS_COLORS_DARK
+export const ATTENDEE_STATUS_COLORS: Record<string, string> = ATTENDEE_STATUS_COLORS_DARK
 
 export function getCategoryColor(category?: string): string {
   return CATEGORY_COLORS[category || 'OTHER'] || CATEGORY_COLORS.OTHER
