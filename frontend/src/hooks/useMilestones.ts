@@ -66,10 +66,32 @@ export const useUpdateMilestone = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateMilestoneRequest }) =>
       milestonesService.updateMilestone(id, data),
+    onMutate: async ({ id, data }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: MILESTONES_QUERY_KEYS.byId(id) })
+
+      // Snapshot the previous value
+      const previousMilestone = queryClient.getQueryData(MILESTONES_QUERY_KEYS.byId(id))
+
+      // Optimistically update the cache
+      queryClient.setQueryData(MILESTONES_QUERY_KEYS.byId(id), (old: ProjectMilestone) => ({
+        ...old,
+        ...data,
+      }))
+
+      // Return a context object with the snapshotted value
+      return { previousMilestone }
+    },
+    onError: (_, { id }, context: any) => {
+      // Rollback on error
+      if (context?.previousMilestone) {
+        queryClient.setQueryData(MILESTONES_QUERY_KEYS.byId(id), context.previousMilestone)
+      }
+    },
     onSuccess: (data) => {
-      // Update cache
+      // Update cache with server response
       queryClient.setQueryData(MILESTONES_QUERY_KEYS.byId(data.id), data)
-      // Invalidate project milestones
+      // Invalidate project milestones to refetch
       queryClient.invalidateQueries({
         queryKey: MILESTONES_QUERY_KEYS.byProject(data.projectId),
       })

@@ -77,6 +77,11 @@ model User {
   shootingSchedules  ShootingSchedule[]  @relation("ScheduleCreator")
   callSheets         CallSheet[]         @relation("CallSheetCreator")
 
+  // Calendar Events Relations
+  createdEvents      CalendarEvent[]     @relation("CreatedEvents")
+  assignedEvents     CalendarEvent[]     @relation("AssignedEvents")
+  eventAttendances   EventAttendee[]
+
   // Authentication Relations
   refreshTokens RefreshToken[]
 
@@ -144,6 +149,7 @@ model Client {
   contentCalendarItems  ContentCalendarItem[]
   mediaProjects         MediaProject[] // Media collaboration projects
   decks                 Deck[]
+  calendarEvents        CalendarEvent[]
 
   @@index([name])
   @@index([email])
@@ -255,6 +261,9 @@ model Project {
 
   // Shooting Schedule Relations
   shootingSchedules    ShootingSchedule[]
+
+  // Calendar Events Relations
+  calendarEvents       CalendarEvent[]
 
   @@index([number])
   @@index([status])
@@ -2736,6 +2745,9 @@ model ProjectMilestone {
   // Phase 1 Enhancement: Indonesian Business Fields
   materaiRequired Boolean @default(false) // Does this milestone invoice need stamp duty?
   taxTreatment    String? // "PPN 11%", "PPh 23", etc.
+
+  // Calendar Events Relations
+  calendarEvents   CalendarEvent[]
 
   // Audit
   createdAt DateTime @default(now())
@@ -5402,4 +5414,116 @@ model CallSheetHMU {
 
   @@index([callSheetId])
   @@map("call_sheet_hmu")
+}
+
+// ============================================
+// CALENDAR EVENTS
+// ============================================
+
+enum EventCategory {
+  MEETING
+  PROJECT_WORK
+  MILESTONE
+  TASK
+  REMINDER
+  PHOTOSHOOT
+  DELIVERY
+  OTHER
+}
+
+enum EventStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendeeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  TENTATIVE
+}
+
+model CalendarEvent {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  location    String?
+
+  // Timing
+  startTime   DateTime
+  endTime     DateTime
+  allDay      Boolean       @default(false)
+  timezone    String        @default("Asia/Jakarta")
+
+  // Categorization
+  category    EventCategory @default(OTHER)
+  status      EventStatus   @default(SCHEDULED)
+  color       String?       // Custom color override
+  priority    MilestonePriority @default(MEDIUM)
+
+  // Relations
+  projectId   String?
+  project     Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  milestoneId String?
+  milestone   ProjectMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+
+  clientId    String?
+  client      Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  // Ownership
+  createdById String
+  createdBy   User          @relation("CreatedEvents", fields: [createdById], references: [id])
+
+  assigneeId  String?
+  assignee    User?         @relation("AssignedEvents", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  // Multiple attendees
+  attendees   EventAttendee[]
+
+  // Recurrence (future feature)
+  recurrence  String?       // RRULE format
+  parentId    String?       // For recurring event instances
+  parent      CalendarEvent? @relation("RecurringSeries", fields: [parentId], references: [id], onDelete: Cascade)
+  instances   CalendarEvent[] @relation("RecurringSeries")
+
+  // Reminders
+  reminders   EventReminder[]
+
+  // Metadata
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([startTime, endTime])
+  @@index([createdById])
+  @@index([assigneeId])
+  @@index([projectId])
+  @@index([category])
+  @@map("calendar_events")
+}
+
+model EventAttendee {
+  id        String        @id @default(cuid())
+  eventId   String
+  event     CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    AttendeeStatus @default(PENDING)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@map("event_attendees")
+}
+
+model EventReminder {
+  id        String        @id @default(cuid())
+  eventId   String
+  event     CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  minutes   Int           // Minutes before event
+  sent      Boolean       @default(false)
+
+  @@index([eventId])
+  @@map("event_reminders")
 }

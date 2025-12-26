@@ -10,6 +10,7 @@ export const useProjects = () => {
       return response?.data?.data || []
     },
     staleTime: 5 * 60 * 1000,
+    refetchOnMount: true,
   })
 }
 

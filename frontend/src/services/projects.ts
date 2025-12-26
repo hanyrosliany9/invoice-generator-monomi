@@ -20,6 +20,22 @@ export interface ProductItem {
   price: number
 }
 
+export interface ProjectMilestone {
+  id: string
+  projectId: string
+  milestoneNumber: number
+  name: string
+  description?: string
+  status: string
+  priority?: string
+  plannedStartDate?: string
+  plannedEndDate?: string
+  completedDate?: string
+  completionPercentage?: number
+  plannedRevenue?: number
+  estimatedCost?: number
+}
+
 export interface Project {
   id: string
   number: string
@@ -64,6 +80,7 @@ export interface Project {
   }
   quotations?: any[]
   invoices?: any[]
+  milestones?: ProjectMilestone[]
   _count?: {
     quotations: number
     invoices: number
