@@ -58,6 +58,11 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({ selectedDate, onDate
           const isToday = date.isSame(dayjs(), 'day')
           const isSelected = date.isSame(selectedDate, 'day')
 
+          // Don't render anything for dates outside the current month
+          if (!isCurrentMonth) {
+            return null
+          }
+
           return (
             <div
               onClick={() => onDateSelect(date)}
@@ -70,11 +75,7 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({ selectedDate, onDate
                   : isSelected
                     ? '#1890ff'
                     : 'transparent',
-                color: isSelected
-                  ? '#ffffff'
-                  : isCurrentMonth
-                    ? 'inherit'
-                    : '#d9d9d9',
+                color: isSelected ? '#ffffff' : 'inherit',
                 fontWeight: isToday || isSelected ? 600 : 400,
                 cursor: 'pointer',
               }}
