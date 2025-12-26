@@ -66,19 +66,29 @@ export const CalendarMain: React.FC<CalendarMainProps> = ({
     }))
   }, [events])
 
-  // Handle view changes
+  // Handle view changes using scheduler to avoid flushSync warnings
   React.useEffect(() => {
     if (calendarRef.current) {
-      const api = calendarRef.current.getApi()
-      api.changeView(VIEW_MAP[view])
+      // Schedule the view change to avoid React rendering conflicts
+      setTimeout(() => {
+        const api = calendarRef.current?.getApi()
+        if (api) {
+          api.changeView(VIEW_MAP[view])
+        }
+      }, 0)
     }
   }, [view])
 
-  // Handle date changes
+  // Handle date changes using scheduler to avoid flushSync warnings
   React.useEffect(() => {
     if (calendarRef.current) {
-      const api = calendarRef.current.getApi()
-      api.gotoDate(selectedDate.toDate())
+      // Schedule the date change to avoid React rendering conflicts
+      setTimeout(() => {
+        const api = calendarRef.current?.getApi()
+        if (api) {
+          api.gotoDate(selectedDate.toDate())
+        }
+      }, 0)
     }
   }, [selectedDate])
 
