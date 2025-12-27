@@ -19,13 +19,29 @@ export default function ImageProperties({ object }: ImagePropertiesProps) {
   const { openModal, setOnAssetSelect } = useAssetBrowserStore();
 
   const handleReplaceImage = useCallback(() => {
+    // Create the asset selection handler
     const handleAssetSelected = (asset: MediaAsset) => {
-      if (!canvas || !object) return;
+      if (!canvas || !object) {
+        console.error('Canvas or object not available for image replacement');
+        return;
+      }
+
+      console.log('Loading replacement image from URL:', asset.url);
 
       Image.fromURL(
         asset.url,
         (newImg) => {
-          if (!newImg || !canvas) return;
+          if (!newImg) {
+            console.error('Failed to load replacement image from:', asset.url);
+            return;
+          }
+
+          if (!canvas || !object) {
+            console.error('Canvas or object became unavailable during image load');
+            return;
+          }
+
+          console.log('Replacement image loaded successfully');
 
           // Preserve transform from old image
           newImg.set({
@@ -47,13 +63,16 @@ export default function ImageProperties({ object }: ImagePropertiesProps) {
           canvas.setActiveObject(newImg);
           canvas.renderAll();
           pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+
+          console.log('Replacement image added to canvas successfully');
         },
         { crossOrigin: 'anonymous' }
       );
     };
 
     setOnAssetSelect(handleAssetSelected);
-    openModal();
+    // Use setTimeout to ensure store is updated before modal opens
+    setTimeout(() => openModal(), 0);
   }, [canvas, object, pushHistory, setOnAssetSelect, openModal]);
 
   const handleCropToggle = useCallback(() => {

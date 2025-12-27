@@ -1,229 +1,192 @@
-import { useEffect, useCallback } from 'react';
-import { Modal, Input, Button, Breadcrumb, Upload, message } from 'antd';
-import {
-  SearchOutlined,
-  HomeOutlined,
-  UploadOutlined,
-  FolderOutlined,
-} from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAssetBrowserStore, MediaAsset, MediaFolder } from '../../stores/assetBrowserStore';
-import { fetchAssets, fetchFolders, fetchFolderPath, uploadAsset } from '../../services/assetBrowserApi';
-import AssetGrid from './AssetGrid';
+import { useCallback, useState } from 'react';
+import { Modal, Button, Upload, Empty, Space, App, Alert } from 'antd';
+import { UploadOutlined, CheckOutlined } from '@ant-design/icons';
+import { useMutation } from '@tanstack/react-query';
+import { useAssetBrowserStore, MediaAsset } from '../../stores/assetBrowserStore';
+import { uploadAsset } from '../../services/assetBrowserApi';
 
 interface AssetBrowserModalProps {
   projectId?: string; // Optional filter by project
 }
 
 export default function AssetBrowserModal({ projectId }: AssetBrowserModalProps) {
-  const queryClient = useQueryClient();
-
+  const { message } = App.useApp();
   const {
     isOpen,
     closeModal,
-    currentFolderId,
-    setCurrentFolder,
-    breadcrumbs,
-    setBreadcrumbs,
-    searchQuery,
-    setSearchQuery,
-    selectedAsset,
-    setSelectedAsset,
     onAssetSelect,
   } = useAssetBrowserStore();
 
-  // Fetch assets query
-  const {
-    data: assetsData,
-    isLoading: isLoadingAssets,
-  } = useQuery({
-    queryKey: ['deck-assets', currentFolderId, searchQuery],
-    queryFn: () => fetchAssets({
-      folderId: currentFolderId,
-      search: searchQuery,
-      mimeType: 'image/*', // Only images for deck
-    }),
-    enabled: isOpen,
-  });
-
-  // Fetch folders query
-  const {
-    data: foldersData,
-    isLoading: isLoadingFolders,
-  } = useQuery({
-    queryKey: ['deck-folders', currentFolderId],
-    queryFn: () => fetchFolders(currentFolderId),
-    enabled: isOpen,
-  });
-
-  // Fetch breadcrumb path when folder changes
-  useEffect(() => {
-    if (currentFolderId && isOpen) {
-      fetchFolderPath(currentFolderId)
-        .then(setBreadcrumbs)
-        .catch(() => setBreadcrumbs([]));
-    } else {
-      setBreadcrumbs([]);
-    }
-  }, [currentFolderId, isOpen, setBreadcrumbs]);
+  const [uploadedAsset, setUploadedAsset] = useState<MediaAsset | null>(null);
 
   // Upload mutation
   const uploadMutation = useMutation({
-    mutationFn: (file: File) => uploadAsset(file, currentFolderId || undefined),
-    onSuccess: () => {
+    mutationFn: (file: File) => uploadAsset(file, projectId),
+    onSuccess: (asset) => {
+      console.log('Upload successful, asset:', asset);
       message.success('Image uploaded successfully');
-      queryClient.invalidateQueries({ queryKey: ['deck-assets'] });
+      setUploadedAsset(asset);
+      // Auto-insert if there's a callback
+      if (onAssetSelect) {
+        console.log('Calling onAssetSelect callback with asset:', asset);
+        setTimeout(() => {
+          onAssetSelect(asset);
+          handleClose();
+        }, 800); // Brief delay so user sees success message
+      } else {
+        console.warn('No onAssetSelect callback available');
+      }
     },
-    onError: () => {
-      message.error('Failed to upload image');
+    onError: (error: any) => {
+      console.error('Upload error:', error);
+      message.error(error?.message || 'Failed to upload image');
     },
   });
 
-  // Handle folder navigation
-  const handleFolderClick = useCallback((folder: MediaFolder) => {
-    setCurrentFolder(folder.id);
-    setSelectedAsset(null);
-  }, [setCurrentFolder, setSelectedAsset]);
-
-  // Handle breadcrumb navigation
-  const handleBreadcrumbClick = useCallback((folderId: string | null) => {
-    setCurrentFolder(folderId);
-    setSelectedAsset(null);
-  }, [setCurrentFolder, setSelectedAsset]);
-
-  // Handle asset selection
-  const handleAssetClick = useCallback((asset: MediaAsset) => {
-    setSelectedAsset(asset);
-  }, [setSelectedAsset]);
-
-  // Handle asset double-click (immediate insert)
-  const handleAssetDoubleClick = useCallback((asset: MediaAsset) => {
-    if (onAssetSelect) {
-      onAssetSelect(asset);
-      closeModal();
-    }
-  }, [onAssetSelect, closeModal]);
-
-  // Handle insert button
-  const handleInsert = useCallback(() => {
-    if (selectedAsset && onAssetSelect) {
-      onAssetSelect(selectedAsset);
-      closeModal();
-    }
-  }, [selectedAsset, onAssetSelect, closeModal]);
-
-  // Handle modal close
-  const handleClose = useCallback(() => {
-    closeModal();
-    setSelectedAsset(null);
-    setSearchQuery('');
-    setCurrentFolder(null);
-  }, [closeModal, setSelectedAsset, setSearchQuery, setCurrentFolder]);
-
   // Handle file upload
   const handleUpload = useCallback((file: File) => {
-    if (!file.type.startsWith('image/')) {
-      message.error('Only image files are allowed');
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      message.error('Only image and video files are allowed');
+      return false;
+    }
+    if (file.size > 100 * 1024 * 1024) { // 100MB limit
+      message.error('File size must be less than 100MB');
       return false;
     }
     uploadMutation.mutate(file);
     return false; // Prevent default upload behavior
-  }, [uploadMutation]);
+  }, [uploadMutation, message]);
 
-  const isLoading = isLoadingAssets || isLoadingFolders;
+  // Handle modal close
+  const handleClose = useCallback(() => {
+    setUploadedAsset(null);
+    closeModal();
+  }, [closeModal]);
+
+  // Handle insert button
+  const handleInsert = useCallback(() => {
+    if (uploadedAsset && onAssetSelect) {
+      onAssetSelect(uploadedAsset);
+      handleClose();
+    }
+  }, [uploadedAsset, onAssetSelect, handleClose]);
 
   return (
     <Modal
-      title="Insert Image"
+      title="Upload Image or Video"
       open={isOpen}
       onCancel={handleClose}
-      width={900}
-      footer={[
-        <Button key="cancel" onClick={handleClose}>
-          Cancel
-        </Button>,
-        <Button
-          key="insert"
-          type="primary"
-          disabled={!selectedAsset}
-          onClick={handleInsert}
-        >
-          Insert Image
-        </Button>,
-      ]}
-      className="asset-browser-modal"
-      styles={{ body: { padding: 0 } }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', height: 500 }}>
-        {/* Toolbar */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 16,
-            padding: 16,
-            borderBottom: '1px solid #f0f0f0',
-          }}
-        >
-          {/* Search */}
-          <Input
-            placeholder="Search images..."
-            prefix={<SearchOutlined />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ flex: 1, maxWidth: 320 }}
-            allowClear
-          />
-
-          {/* Upload */}
-          <Upload
-            beforeUpload={handleUpload}
-            showUploadList={false}
-            accept="image/*"
+      width={600}
+      footer={
+        uploadedAsset ? [
+          <Button key="cancel" onClick={handleClose}>
+            Close
+          </Button>,
+          <Button
+            key="insert"
+            type="primary"
+            onClick={handleInsert}
+            icon={<CheckOutlined />}
           >
-            <Button
-              icon={<UploadOutlined />}
-              loading={uploadMutation.isPending}
+            Insert & Close
+          </Button>,
+        ] : [
+          <Button key="cancel" onClick={handleClose}>
+            Cancel
+          </Button>,
+        ]
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: 200 }}>
+        {/* Info Alert */}
+        <Alert
+          message="Simple Upload Mode"
+          description="Upload an image or video file directly. The file will be added to your canvas after upload."
+          type="info"
+          showIcon
+        />
+
+        {/* Upload Area */}
+        {!uploadedAsset && (
+          <div style={{ textAlign: 'center' }}>
+            <Upload
+              beforeUpload={handleUpload}
+              showUploadList={false}
+              accept="image/*,video/*"
+              multiple={false}
             >
-              Upload
-            </Button>
-          </Upload>
-        </div>
+              <div style={{ padding: '40px 20px' }}>
+                {uploadMutation.isPending ? (
+                  <div>
+                    <div style={{ fontSize: 24, marginBottom: 16 }}>⏳</div>
+                    <p>Uploading...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 48, marginBottom: 16 }}>📤</div>
+                    <Button
+                      type="primary"
+                      size="large"
+                      icon={<UploadOutlined />}
+                    >
+                      Click to Upload
+                    </Button>
+                    <p style={{ marginTop: 16, color: '#666' }}>
+                      or drag and drop your file here
+                    </p>
+                    <p style={{ fontSize: 12, color: '#999' }}>
+                      Supported: JPG, PNG, GIF, WebP, MP4, MOV, AVI, WebM (max 100MB)
+                    </p>
+                  </>
+                )}
+              </div>
+            </Upload>
+          </div>
+        )}
 
-        {/* Breadcrumbs */}
-        <div style={{ paddingLeft: 16, paddingRight: 16, paddingTop: 8, paddingBottom: 8, backgroundColor: '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
-          <Breadcrumb
-            items={[
-              {
-                title: (
-                  <a onClick={() => handleBreadcrumbClick(null)}>
-                    <HomeOutlined /> All Files
-                  </a>
-                ),
-              },
-              ...breadcrumbs.map((folder) => ({
-                title: (
-                  <a onClick={() => handleBreadcrumbClick(folder.id)}>
-                    <FolderOutlined /> {folder.name}
-                  </a>
-                ),
-              })),
-            ]}
-          />
-        </div>
-
-        {/* Asset Grid */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          <AssetGrid
-            assets={assetsData?.assets || []}
-            folders={foldersData?.folders || []}
-            isLoading={isLoading}
-            selectedAsset={selectedAsset}
-            onAssetClick={handleAssetClick}
-            onAssetDoubleClick={handleAssetDoubleClick}
-            onFolderClick={handleFolderClick}
-          />
-        </div>
+        {/* Success State */}
+        {uploadedAsset && (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+            <h3>Upload Successful!</h3>
+            <p style={{ color: '#666', marginBottom: 16 }}>
+              File: {uploadedAsset.filename}
+            </p>
+            {uploadedAsset.url && (
+              <div style={{
+                maxHeight: 200,
+                overflow: 'hidden',
+                borderRadius: 8,
+                marginBottom: 16,
+              }}>
+                {uploadedAsset.mimeType.startsWith('image/') ? (
+                  <img
+                    src={uploadedAsset.url}
+                    alt={uploadedAsset.filename}
+                    style={{ maxWidth: '100%', maxHeight: 200 }}
+                  />
+                ) : (
+                  <div style={{
+                    background: '#f0f0f0',
+                    padding: 20,
+                    borderRadius: 8,
+                    textAlign: 'center',
+                  }}>
+                    <p>🎬 Video uploaded successfully</p>
+                  </div>
+                )}
+              </div>
+            )}
+            <Space>
+              <Button onClick={() => setUploadedAsset(null)}>
+                Upload Another
+              </Button>
+              <Button type="primary" onClick={handleInsert}>
+                Insert to Canvas
+              </Button>
+            </Space>
+          </div>
+        )}
       </div>
     </Modal>
   );

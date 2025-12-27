@@ -63,7 +63,7 @@ export const useAssetBrowserStore = create<AssetBrowserState>((set) => ({
   // Modal state
   isOpen: false,
   openModal: () => set({ isOpen: true }),
-  closeModal: () => set({ isOpen: false, selectedAsset: null }),
+  closeModal: () => set({ isOpen: false, selectedAsset: null, onAssetSelect: null }),
 
   // Loading state
   isLoading: false,

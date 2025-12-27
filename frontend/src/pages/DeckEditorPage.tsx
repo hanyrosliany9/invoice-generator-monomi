@@ -41,6 +41,7 @@ import LineTool from '../components/deck/LineTool';
 import QuickShapeBar from '../components/deck/QuickShapeBar';
 import InsertImageButton from '../components/deck/InsertImageButton';
 import AssetBrowserModal from '../components/deck/AssetBrowserModal';
+import UploadHint from '../components/deck/UploadHint';
 import PropertiesPanel from '../components/deck/PropertiesPanel';
 import PropertiesPanelToggle from '../components/deck/PropertiesPanelToggle';
 import NewSlideButton from '../components/deck/NewSlideButton';
@@ -177,13 +178,36 @@ export default function DeckEditorPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deck', id] });
     },
+    onError: (error: any) => {
+      // Silently ignore 404 errors - they're expected for newly added elements that don't exist in DB yet
+      // These elements are saved as part of the canvas JSON state, not as individual database records
+      if (error?.response?.status !== 404) {
+        console.error('Error updating element:', error);
+        message.error('Failed to update element');
+      }
+    },
   });
 
   const createElementMutation = useMutation({
-    mutationFn: (data: any) => elementsApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['deck', id] });
+    mutationFn: (data: any) => {
+      console.log('[Mutation] Creating element with data:', data);
+      return elementsApi.create(data);
+    },
+    onSuccess: (result) => {
+      console.log('[Mutation] Element created successfully:', result);
+      console.log('[Mutation] Refetching deck data...');
+      // Use refetchQueries to force immediate refetch instead of invalidateQueries
+      queryClient.refetchQueries({ queryKey: ['deck', id] });
       message.success('Element added');
+    },
+    onError: (error: any) => {
+      console.error('[Mutation] Element creation failed:', error);
+      console.error('[Mutation] Error details:', {
+        status: error?.response?.status,
+        message: error?.message,
+        data: error?.response?.data,
+      });
+      message.error('Failed to save element: ' + (error?.message || 'Unknown error'));
     },
   });
 
@@ -507,6 +531,9 @@ export default function DeckEditorPage() {
                   onElementUpdate={(elementId, data) => {
                     updateElementMutation.mutate({ elementId, data });
                   }}
+                  onElementCreate={(element) => {
+                    createElementMutation.mutate(element);
+                  }}
                 />
                 {/* Collaboration overlays */}
                 <CollaboratorCursors currentSlideId={selectedSlide.id} />
@@ -540,6 +567,9 @@ export default function DeckEditorPage() {
 
       {/* Asset Browser Modal */}
       <AssetBrowserModal />
+
+      {/* Upload Hint */}
+      <UploadHint />
 
       {/* Presentation View */}
       {deck?.slides && (

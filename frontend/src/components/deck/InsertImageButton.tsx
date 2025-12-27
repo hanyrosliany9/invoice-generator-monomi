@@ -14,13 +14,28 @@ export default function InsertImageButton({ disabled }: InsertImageButtonProps) 
   const { canvas, pushHistory } = useDeckCanvasStore();
 
   const handleAssetSelected = useCallback((asset: MediaAsset) => {
-    if (!canvas) return;
+    if (!canvas) {
+      console.error('Canvas not available for image insertion');
+      return;
+    }
+
+    console.log('Loading image from URL:', asset.url);
 
     // Load image onto canvas
     FabricImage.fromURL(
       asset.url,
       (img) => {
-        if (!img || !canvas) return;
+        if (!img) {
+          console.error('Failed to load image from:', asset.url);
+          return;
+        }
+
+        if (!canvas) {
+          console.error('Canvas became unavailable during image load');
+          return;
+        }
+
+        console.log('Image loaded successfully, adding to canvas');
 
         // Scale image to fit canvas if too large
         const maxWidth = canvas.getWidth() * 0.8;
@@ -53,14 +68,18 @@ export default function InsertImageButton({ disabled }: InsertImageButtonProps) 
         canvas.setActiveObject(img);
         canvas.renderAll();
         pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+
+        console.log('Image added to canvas successfully');
       },
       { crossOrigin: 'anonymous' }
     );
   }, [canvas, pushHistory]);
 
   const handleClick = useCallback(() => {
+    // Set callback BEFORE opening modal to ensure it's available
     setOnAssetSelect(handleAssetSelected);
-    openModal();
+    // Use setTimeout to ensure store is updated before modal opens
+    setTimeout(() => openModal(), 0);
   }, [setOnAssetSelect, handleAssetSelected, openModal]);
 
   return (

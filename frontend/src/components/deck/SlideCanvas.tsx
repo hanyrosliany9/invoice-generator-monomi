@@ -33,10 +33,15 @@ export default function SlideCanvas({
 
   // Load elements when slide changes
   useEffect(() => {
-    if (!canvas || !slide) return;
+    if (!canvas || !slide) {
+      console.log('[SlideCanvas] Canvas or slide not ready:', { canvas: !!canvas, slide: !!slide });
+      return;
+    }
 
     const loadElements = async () => {
       setIsLoading(true);
+      console.log('[SlideCanvas] Loading elements for slide:', slide.id);
+      console.log('[SlideCanvas] Slide has', slide.elements?.length || 0, 'elements:', slide.elements);
 
       // Clear existing objects (except background)
       canvas.getObjects().forEach((obj) => {
@@ -45,22 +50,27 @@ export default function SlideCanvas({
 
       // Load elements
       for (const element of slide.elements || []) {
+        console.log('[SlideCanvas] Loading element:', element.id, 'type:', element.type);
         const fabricObj = await elementToFabricObject(
           element,
           canvasWidth,
           canvasHeight
         );
         if (fabricObj) {
+          console.log('[SlideCanvas] Successfully loaded element:', element.id);
           canvas.add(fabricObj);
+        } else {
+          console.warn('[SlideCanvas] Failed to load element:', element.id);
         }
       }
 
       canvas.renderAll();
+      console.log('[SlideCanvas] Finished loading elements. Canvas has', canvas.getObjects().length, 'objects');
       setIsLoading(false);
     };
 
     loadElements();
-  }, [canvas, slide?.id, canvasWidth, canvasHeight]);
+  }, [canvas, slide?.id, slide?.elements, canvasWidth, canvasHeight]);
 
   // Handle object modification
   const handleObjectModified = useCallback(
@@ -104,7 +114,9 @@ export default function SlideCanvas({
         height={canvasHeight}
         backgroundColor={slide?.backgroundColor || '#ffffff'}
         backgroundImage={slide?.backgroundImage}
+        slideId={slide?.id}
         onObjectModified={handleObjectModified}
+        onElementCreate={onElementCreate}
       />
     </div>
   );

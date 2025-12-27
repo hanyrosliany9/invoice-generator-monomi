@@ -141,12 +141,6 @@ export class MediaService {
     file: Express.Multer.File,
     folder: string = "content",
   ): Promise<UploadResult> {
-    if (!this.isR2Enabled()) {
-      throw new InternalServerErrorException(
-        "Media upload is not available. R2 storage is not configured.",
-      );
-    }
-
     // Validate file
     this.validateFile(file);
 
@@ -154,34 +148,57 @@ export class MediaService {
     const key = this.generateKey(file.originalname, folder);
 
     try {
-      // Upload to R2
-      const command = new PutObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-        // Optional: Add metadata
-        Metadata: {
-          originalName: file.originalname,
-          uploadedAt: new Date().toISOString(),
-        },
-      });
+      if (this.isR2Enabled()) {
+        // Use R2 if configured
+        const command = new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+          Metadata: {
+            originalName: file.originalname,
+            uploadedAt: new Date().toISOString(),
+          },
+        });
 
-      await this.s3Client.send(command);
+        await this.s3Client.send(command);
+        const url = `${this.publicUrl}/${key}`;
 
-      // Construct public URL
-      const url = `${this.publicUrl}/${key}`;
+        this.logger.log(`✅ File uploaded to R2: ${key}`);
 
-      this.logger.log(`✅ File uploaded successfully: ${key}`);
+        return {
+          url,
+          key,
+          size: file.size,
+          mimeType: file.mimetype,
+        };
+      } else {
+        // Fallback: Use local file storage for development
+        const fs = await import('fs').then(m => m.promises);
+        const path_module = await import('path');
 
-      return {
-        url,
-        key,
-        size: file.size,
-        mimeType: file.mimetype,
-      };
+        // Create local upload directory if it doesn't exist
+        const uploadDir = path_module.default.join(process.cwd(), 'uploads', folder);
+        await fs.mkdir(uploadDir, { recursive: true });
+
+        // Save file to local storage
+        const localPath = path_module.default.join(uploadDir, path_module.default.basename(key));
+        await fs.writeFile(localPath, file.buffer);
+
+        // Return URL for local file (accessible via /api/v1/media/proxy proxy in development)
+        const url = `/api/v1/media/proxy/${folder}/${path_module.default.basename(key)}`;
+
+        this.logger.log(`✅ File uploaded to local storage: ${localPath}`);
+
+        return {
+          url,
+          key: `${folder}/${path_module.default.basename(key)}`,
+          size: file.size,
+          mimeType: file.mimetype,
+        };
+      }
     } catch (error) {
-      this.logger.error(`❌ Failed to upload file to R2:`, error);
+      this.logger.error(`❌ Failed to upload file:`, error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new InternalServerErrorException(
         `Failed to upload file: ${errorMessage}`,
@@ -470,9 +487,9 @@ export class MediaService {
   }
 
   /**
-   * Get file stream from R2 for proxying
+   * Get file stream from R2 or local storage for proxying
    *
-   * @param key - R2 object key
+   * @param key - R2 object key or local file path (e.g., "content/filename.jpg")
    * @returns Stream, content type, content length, and original filename
    */
   async getFileStream(key: string): Promise<{
@@ -481,42 +498,103 @@ export class MediaService {
     contentLength: number;
     originalName?: string;
   }> {
-    if (!this.isR2Enabled()) {
-      throw new InternalServerErrorException(
-        "Media streaming is not available. R2 storage is not configured.",
-      );
-    }
-
     try {
-      // Get object from R2
-      const command = new GetObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
-      });
+      // Try R2 first if available
+      if (this.isR2Enabled()) {
+        try {
+          const command = new GetObjectCommand({
+            Bucket: this.bucketName,
+            Key: key,
+          });
 
-      const response = await this.s3Client.send(command);
+          const response = await this.s3Client.send(command);
 
-      if (!response.Body) {
-        throw new NotFoundException(`File not found: ${key}`);
+          if (!response.Body) {
+            throw new NotFoundException(`File not found in R2: ${key}`);
+          }
+
+          // Convert to Node.js Readable stream
+          const stream = response.Body as Readable;
+
+          // Extract original filename from metadata if available
+          const originalName = response.Metadata?.originalName || response.Metadata?.originalname;
+
+          return {
+            stream,
+            contentType: response.ContentType || "application/octet-stream",
+            contentLength: response.ContentLength || 0,
+            originalName,
+          };
+        } catch (r2Error) {
+          // If R2 fails, try local fallback
+          if (r2Error instanceof NotFoundException) {
+            this.logger.warn(`File not found in R2: ${key}, trying local storage fallback`);
+          } else {
+            this.logger.warn(`Failed to get from R2, trying local fallback:`, r2Error);
+          }
+        }
       }
 
-      // Convert to Node.js Readable stream
-      const stream = response.Body as Readable;
+      // Fallback: Try local file storage
+      const fs = await import('fs').then(m => m.promises);
+      const path_module = await import('path');
+      const fsSync = await import('fs');
 
-      // Extract original filename from metadata if available
-      const originalName = response.Metadata?.originalName || response.Metadata?.originalname;
+      // Construct local file path
+      // key format: "content/filename.jpg" or "content/2025-01-08/hash-filename.jpg"
+      const localFilePath = path_module.default.join(
+        process.cwd(),
+        'uploads',
+        key
+      );
+
+      this.logger.log(`Trying to load file from local storage: ${localFilePath}`);
+
+      // Check if file exists
+      if (!fsSync.existsSync(localFilePath)) {
+        throw new NotFoundException(
+          `File not found: ${key} (checked both R2 and local storage)`
+        );
+      }
+
+      // Get file stats
+      const stats = fsSync.statSync(localFilePath);
+
+      // Create read stream
+      const stream = fsSync.createReadStream(localFilePath);
+
+      // Determine MIME type from file extension
+      const ext = path_module.default.extname(localFilePath).toLowerCase();
+      const mimeTypes: Record<string, string> = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+        '.mp4': 'video/mp4',
+        '.mov': 'video/quicktime',
+        '.avi': 'video/x-msvideo',
+        '.webm': 'video/webm',
+        '.pdf': 'application/pdf',
+      };
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+      // Extract filename from path
+      const originalName = path_module.default.basename(localFilePath);
+
+      this.logger.log(`✅ File loaded from local storage: ${localFilePath}`);
 
       return {
         stream,
-        contentType: response.ContentType || "application/octet-stream",
-        contentLength: response.ContentLength || 0,
+        contentType,
+        contentLength: stats.size,
         originalName,
       };
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`❌ Failed to get file stream from R2:`, error);
+      this.logger.error(`❌ Failed to get file stream:`, error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new InternalServerErrorException(
         `Failed to get file stream: ${errorMessage}`,

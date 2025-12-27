@@ -325,7 +325,6 @@ export const fabricObjectToElement = (
   const angle = obj.angle || 0;
 
   const base = {
-    slideId,
     x: pixelToPercent(left, canvasWidth),
     y: pixelToPercent(top, canvasHeight),
     width: pixelToPercent(width, canvasWidth),
@@ -418,11 +417,21 @@ export const elementToFabricObject = async (
     return text;
   }
 
-  if (element.type === 'IMAGE') {
+  if (element.type === 'IMAGE' || element.type === 'image') {
     const content = element.content as any;
+
+    console.log('[elementToFabricObject] Loading IMAGE element:', {
+      elementId: element.id,
+      contentType: typeof content,
+      contentKeys: Object.keys(content || {}),
+      content: JSON.stringify(content),
+      hasUrl: !!content?.url,
+      hasPlaceholder: !!content?.placeholder,
+    });
 
     // Handle placeholder elements (saved as IMAGE type with placeholder content)
     if (content.placeholder) {
+      console.log('[elementToFabricObject] Loading placeholder element:', element.id);
       const rect = createRectObject({
         ...baseOptions,
         width,
@@ -440,14 +449,20 @@ export const elementToFabricObject = async (
     }
 
     if (content.url) {
+      console.log('[elementToFabricObject] Loading image from URL:', content.url);
       try {
         const img = await createImageObject(content.url, { id: element.id });
         img.set('left', left);
         img.set('top', top);
         img.scaleToWidth(width);
+        console.log('[elementToFabricObject] Successfully loaded image:', element.id);
         return img;
       } catch (e) {
-        console.error('Failed to load image:', e);
+        console.error('[elementToFabricObject] Failed to load image from URL:', {
+          elementId: element.id,
+          url: content.url,
+          error: e,
+        });
         // Return placeholder rect on error
         const placeholder = createRectObject({
           ...baseOptions,
@@ -460,6 +475,11 @@ export const elementToFabricObject = async (
         return placeholder;
       }
     }
+
+    console.log('[elementToFabricObject] IMAGE element has no url or placeholder, returning null:', {
+      elementId: element.id,
+      content: JSON.stringify(content),
+    });
     return null;
   }
 

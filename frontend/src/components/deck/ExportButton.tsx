@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Button, Dropdown, message } from 'antd';
+import { Button, Dropdown, App } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   ExportOutlined,
@@ -24,6 +24,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
   currentSlideIndex,
   disabled,
 }) => {
+  const { message } = App.useApp();
   const [exporting, setExporting] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
