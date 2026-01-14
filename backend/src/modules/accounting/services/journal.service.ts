@@ -567,11 +567,11 @@ export class JournalService {
   }
 
   /**
-   * Get current fiscal period
+   * Get current fiscal period, auto-creating if it doesn't exist
    */
   async getCurrentFiscalPeriod() {
     const now = new Date();
-    const period = await this.prisma.fiscalPeriod.findFirst({
+    let period = await this.prisma.fiscalPeriod.findFirst({
       where: {
         startDate: { lte: now },
         endDate: { gte: now },
@@ -580,9 +580,43 @@ export class JournalService {
     });
 
     if (!period) {
-      throw new NotFoundException(
-        "No open fiscal period found for current date",
-      );
+      // Auto-create fiscal period for current month
+      period = await this.getOrCreateFiscalPeriod(now);
+    }
+
+    return period;
+  }
+
+  /**
+   * Get or create fiscal period for a specific date
+   * Auto-creates monthly fiscal periods when they don't exist
+   */
+  async getOrCreateFiscalPeriod(date: Date) {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const code = `${year}-${month.toString().padStart(2, "0")}`;
+
+    let period = await this.prisma.fiscalPeriod.findUnique({
+      where: { code },
+    });
+
+    if (!period) {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+      period = await this.prisma.fiscalPeriod.create({
+        data: {
+          name: `${date.toLocaleString("en-US", { month: "long" })} ${year}`,
+          code,
+          periodType: "MONTHLY",
+          startDate,
+          endDate,
+          status: "OPEN",
+          isActive: true,
+        },
+      });
+
+      this.logger.log(`Auto-created fiscal period: ${period.name} (${code})`);
     }
 
     return period;
