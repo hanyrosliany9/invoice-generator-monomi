@@ -25,6 +25,10 @@ RUN apk add --no-cache \
     # FFmpeg for video processing and thumbnail generation
     ffmpeg
 
+# Install yt-dlp for media downloading (YouTube, Instagram, TikTok, Pinterest, etc.)
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
+    chmod a+rx /usr/local/bin/yt-dlp
+
 # Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
 # CXXFLAGS workaround for canvas package C++ compilation on Alpine (missing <cstdint> includes)
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \

@@ -1,7 +1,7 @@
 # Backend Development Dockerfile for E2E Testing
 FROM node:20-alpine
 
-# Install system dependencies including Chromium for Puppeteer
+# Install system dependencies including Chromium for Puppeteer and yt-dlp for media downloads
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -11,7 +11,13 @@ RUN apk add --no-cache \
     ttf-freefont \
     curl \
     git \
-    postgresql-client
+    postgresql-client \
+    python3 \
+    ffmpeg
+
+# Install yt-dlp for media downloading (YouTube, Instagram, TikTok, etc.)
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
+    chmod a+rx /usr/local/bin/yt-dlp
 
 # Tell Puppeteer to skip installing Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
