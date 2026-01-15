@@ -58,6 +58,7 @@ import ContentCalendarPage from './pages/ContentCalendarPage'
 import ProjectContentCalendarPage from './pages/ProjectContentCalendarPage'
 import MediaCollaborationPage from './pages/MediaCollaborationPage'
 import MediaProjectDetailPage from './pages/MediaProjectDetailPage'
+import MediaDownloaderPage from './pages/MediaDownloader'
 import DecksPage from './pages/DecksPage'
 import ShotListsPage from './pages/ShotListsPage'
 import ShotListEditorPage from './pages/ShotListEditorPage'
@@ -440,6 +441,10 @@ function App() {
                     {/* Media Collaboration Routes */}
                     <Route path='/media-collab' element={<MediaCollaborationPage />} />
                     <Route path='/media-collab/projects/:projectId' element={<MediaProjectDetailPage />} />
+
+                    {/* Media Downloader (unified - supports Pinterest, YouTube, Instagram, etc.) */}
+                    <Route path='/pinterest-downloader' element={<Navigate to='/media-downloader' replace />} />
+                    <Route path='/media-downloader' element={<MediaDownloaderPage />} />
 
                     {/* Deck Presentation Routes */}
                     <Route path='/decks' element={<DecksPage />} />

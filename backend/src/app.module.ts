@@ -38,6 +38,8 @@ import { ShotListsModule } from "./modules/shot-lists/shot-lists.module";
 import { SchedulesModule } from "./modules/schedules/schedules.module";
 import { CallSheetsModule } from "./modules/call-sheets/call-sheets.module";
 import { CalendarEventsModule } from "./modules/calendar-events/calendar-events.module";
+import { PinterestModule } from "./modules/pinterest/pinterest.module";
+import { MediaDownloaderModule } from "./modules/media-downloader/media-downloader.module";
 import { SecurityModule } from "./modules/security/security.module";
 import { SystemModule } from "./modules/system/system.module";
 import { PrismaModule } from "./modules/prisma/prisma.module";
@@ -99,6 +101,8 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     SchedulesModule,
     CallSheetsModule,
     CalendarEventsModule,
+    PinterestModule,
+    MediaDownloaderModule,
     SecurityModule,
     SystemModule,
     HealthModule,

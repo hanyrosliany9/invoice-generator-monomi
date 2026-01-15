@@ -85,6 +85,9 @@ model User {
   // Authentication Relations
   refreshTokens RefreshToken[]
 
+  // Pinterest Downloader Relations
+  pinterestDownloads PinterestDownload[]
+
   @@map("users")
 }
 
@@ -5526,4 +5529,63 @@ model EventReminder {
 
   @@index([eventId])
   @@map("event_reminders")
+}
+
+// =============================================
+// Pinterest Downloader
+// =============================================
+
+model PinterestDownload {
+  id             String    @id @default(cuid())
+  url            String    // Original Pinterest URL
+  type           String    // board, user, pin, section
+  username       String?   // Pinterest username
+  boardName      String?   // Board name if applicable
+  status         String    @default("pending") // pending, running, completed, failed
+  totalPins      Int       @default(0)
+  downloadedPins Int       @default(0)
+  failedPins     Int       @default(0)
+  skippedPins    Int       @default(0)
+  outputPath     String?   // Local storage path
+  error          String?   // Error message if failed
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pins   PinterestPin[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("pinterest_downloads")
+}
+
+model PinterestPin {
+  id          String   @id @default(cuid())
+  pinId       String   // Pinterest pin ID
+  title       String?
+  description String?
+  imageUrl    String?  // Original Pinterest image URL
+  videoUrl    String?  // Original Pinterest video URL
+  localPath   String?  // Local file path after download
+  mediaType   String   // image, video
+  width       Int?
+  height      Int?
+  fileSize    Int?     // File size in bytes
+  downloaded  Boolean  @default(false)
+  error       String?  // Error message if download failed
+  createdAt   DateTime @default(now())
+
+  // Relations
+  downloadId String
+  download   PinterestDownload @relation(fields: [downloadId], references: [id], onDelete: Cascade)
+
+  @@unique([pinId, downloadId])
+  @@index([downloadId])
+  @@index([downloaded])
+  @@map("pinterest_pins")
 }
