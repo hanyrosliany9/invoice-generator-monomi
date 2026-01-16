@@ -1,6 +1,6 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-const ExifParser = require('exif-parser');
+import { Injectable, BadRequestException, Logger } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+const ExifParser = require("exif-parser");
 
 /**
  * MetadataService
@@ -61,11 +61,12 @@ export class MetadataService {
       // Copyright
       if (tags.Copyright) exifData.copyright = tags.Copyright;
 
-      this.logger.log('EXIF data extracted:', Object.keys(exifData));
+      this.logger.log("EXIF data extracted:", Object.keys(exifData));
       return exifData;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.warn('EXIF extraction failed (non-critical):', errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.warn("EXIF extraction failed (non-critical):", errorMessage);
       return null;
     }
   }
@@ -121,7 +122,7 @@ export class MetadataService {
    */
   async updateStarRating(assetId: string, starRating: number, userId: string) {
     if (starRating < 0 || starRating > 5) {
-      throw new BadRequestException('Star rating must be between 0 and 5');
+      throw new BadRequestException("Star rating must be between 0 and 5");
     }
 
     return this.prisma.mediaAsset.update({
@@ -139,7 +140,7 @@ export class MetadataService {
     userId: string,
   ) {
     if (starRating < 0 || starRating > 5) {
-      throw new BadRequestException('Star rating must be between 0 and 5');
+      throw new BadRequestException("Star rating must be between 0 and 5");
     }
 
     await this.prisma.mediaAsset.updateMany({

@@ -1,6 +1,4 @@
-import { Injectable, UnauthorizedException ,
-  Logger,
-} from "@nestjs/common";
+import { Injectable, UnauthorizedException, Logger } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UsersService } from "../users/users.service";
 import * as bcrypt from "bcryptjs";
@@ -46,7 +44,7 @@ export class AuthService {
 
   async login(
     loginDto: LoginDto,
-    deviceInfo?: DeviceInfo
+    deviceInfo?: DeviceInfo,
   ): Promise<{
     access_token: string;
     refresh_token: string;
@@ -68,10 +66,8 @@ export class AuthService {
     const access_token = this.jwtService.sign(payload);
 
     // Generate refresh token (30 days)
-    const { token: refresh_token } = await this.refreshTokenService.generateRefreshToken(
-      user.id,
-      deviceInfo
-    );
+    const { token: refresh_token } =
+      await this.refreshTokenService.generateRefreshToken(user.id, deviceInfo);
 
     return {
       access_token,
@@ -119,23 +115,24 @@ export class AuthService {
 
   async refreshAccessToken(
     refreshToken: string,
-    deviceInfo?: DeviceInfo
+    deviceInfo?: DeviceInfo,
   ): Promise<{
     access_token: string;
     refresh_token: string;
     expires_in: number;
   }> {
     // Validate and rotate refresh token
-    const { token: new_refresh_token, userId } = await this.refreshTokenService.rotateRefreshToken(
-      refreshToken,
-      deviceInfo
-    );
+    const { token: new_refresh_token, userId } =
+      await this.refreshTokenService.rotateRefreshToken(
+        refreshToken,
+        deviceInfo,
+      );
 
     // Get user
     const user = await this.usersService.findById(userId);
 
     if (!user) {
-      throw new UnauthorizedException('User tidak ditemukan');
+      throw new UnauthorizedException("User tidak ditemukan");
     }
 
     // Generate new access token
@@ -152,10 +149,10 @@ export class AuthService {
   async logout(userId: string, refreshToken?: string): Promise<void> {
     if (refreshToken) {
       // Logout from this device only
-      await this.refreshTokenService.revokeToken(refreshToken, 'logout');
+      await this.refreshTokenService.revokeToken(refreshToken, "logout");
     } else {
       // Logout from all devices
-      await this.refreshTokenService.revokeAllUserTokens(userId, 'logout');
+      await this.refreshTokenService.revokeAllUserTokens(userId, "logout");
     }
   }
 }

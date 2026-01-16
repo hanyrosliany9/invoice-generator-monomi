@@ -1,11 +1,11 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateDeckDto } from './create-deck.dto';
-import { IsEnum, IsOptional } from 'class-validator';
+import { PartialType } from "@nestjs/swagger";
+import { CreateDeckDto } from "./create-deck.dto";
+import { IsEnum, IsOptional } from "class-validator";
 
 export enum DeckStatus {
-  DRAFT = 'DRAFT',
-  PUBLISHED = 'PUBLISHED',
-  ARCHIVED = 'ARCHIVED',
+  DRAFT = "DRAFT",
+  PUBLISHED = "PUBLISHED",
+  ARCHIVED = "ARCHIVED",
 }
 
 export class UpdateDeckDto extends PartialType(CreateDeckDto) {

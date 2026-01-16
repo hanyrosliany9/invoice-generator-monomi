@@ -1,7 +1,7 @@
-import { IsString, IsInt, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsEnum } from "class-validator";
 
 export class CreateMealDto {
-  @IsEnum(['BREAKFAST', 'LUNCH', 'SECOND_MEAL', 'CRAFT_SERVICES', 'CATERING'])
+  @IsEnum(["BREAKFAST", "LUNCH", "SECOND_MEAL", "CRAFT_SERVICES", "CATERING"])
   mealType: string;
 
   @IsString()
@@ -22,7 +22,7 @@ export class CreateMealDto {
 
 export class UpdateMealDto {
   @IsOptional()
-  @IsEnum(['BREAKFAST', 'LUNCH', 'SECOND_MEAL', 'CRAFT_SERVICES', 'CATERING'])
+  @IsEnum(["BREAKFAST", "LUNCH", "SECOND_MEAL", "CRAFT_SERVICES", "CATERING"])
   mealType?: string;
 
   @IsOptional()

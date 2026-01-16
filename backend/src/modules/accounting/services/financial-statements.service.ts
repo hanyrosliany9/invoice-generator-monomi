@@ -275,9 +275,12 @@ export class FinancialStatementsService {
         // ✅ FIX: Detect contra accounts and invert sign for Balance Sheet presentation
         // Contra accounts REDUCE the main account balance, so display as negative
         const isContraAccount =
-          (account.accountType === "ASSET" && account.normalBalance === "CREDIT") ||
-          (account.accountType === "LIABILITY" && account.normalBalance === "DEBIT") ||
-          (account.accountType === "EQUITY" && account.normalBalance === "DEBIT");
+          (account.accountType === "ASSET" &&
+            account.normalBalance === "CREDIT") ||
+          (account.accountType === "LIABILITY" &&
+            account.normalBalance === "DEBIT") ||
+          (account.accountType === "EQUITY" &&
+            account.normalBalance === "DEBIT");
 
         // Invert sign for contra accounts on Balance Sheet
         const displayBalance = isContraAccount ? -balance : balance;
@@ -701,7 +704,9 @@ export class FinancialStatementsService {
     const { endDate } = query;
 
     // Use ledger service for AR aging
-    const aging = await this.ledgerService.getAccountsReceivableAging(new Date(endDate));
+    const aging = await this.ledgerService.getAccountsReceivableAging(
+      new Date(endDate),
+    );
 
     // Get AR account
     const arAccount = await this.prisma.chartOfAccounts.findUnique({
@@ -785,7 +790,9 @@ export class FinancialStatementsService {
     const { endDate } = query;
 
     // Use ledger service for AP aging
-    const aging = await this.ledgerService.getAccountsPayableAging(new Date(endDate));
+    const aging = await this.ledgerService.getAccountsPayableAging(
+      new Date(endDate),
+    );
 
     // Get AP account
     const apAccount = await this.prisma.chartOfAccounts.findUnique({

@@ -109,14 +109,14 @@ export class ExpensesService {
         ...createExpenseDto,
         ppnAmount: createExpenseDto.ppnAmount ?? 0,
         ppnRate: createExpenseDto.ppnRate ?? 0,
-        ppnCategory: createExpenseDto.ppnCategory || 'NON_CREDITABLE',
+        ppnCategory: createExpenseDto.ppnCategory || "NON_CREDITABLE",
         expenseNumber,
         buktiPengeluaranNumber,
         userId,
         status: ExpenseStatus.PAID, // Automatically PAID
         paymentStatus: ExpensePaymentStatus.PAID, // Automatically PAID
         paidAt: new Date(), // Set payment timestamp
-        paymentMethod: 'Automatic', // System-generated payment
+        paymentMethod: "Automatic", // System-generated payment
         createdBy: userId,
       },
       include: {
@@ -133,7 +133,7 @@ export class ExpensesService {
         description: `Pembayaran Expense - ${expense.expenseNumber}`,
         entryDate: new Date(createExpenseDto.expenseDate),
         transactionId: expense.expenseNumber,
-        transactionType: 'EXPENSE_PAID',
+        transactionType: "EXPENSE_PAID",
         createdBy: userId,
         autoPost: true, // ✅ FIX: Auto-post to General Ledger
         lineItems: [
@@ -144,7 +144,7 @@ export class ExpensesService {
             description: `${expense.description} - ${expense.vendorName}`,
           },
           {
-            accountCode: '1-1010', // Default cash account (adjust as needed)
+            accountCode: "1-1010", // Default cash account (adjust as needed)
             debit: 0,
             credit: Number(createExpenseDto.totalAmount), // Reduce cash
             description: `Pembayaran untuk ${expense.vendorName}`,
@@ -162,7 +162,7 @@ export class ExpensesService {
         `✅ Created and posted journal entry for expense ${expense.expenseNumber}`,
       );
     } catch (error) {
-      this.logger.error('Error creating payment journal entry:', error);
+      this.logger.error("Error creating payment journal entry:", error);
       // Continue even if journal entry creation fails - expense was still created
     }
 
@@ -402,13 +402,20 @@ export class ExpensesService {
 
     // If expense is already PAID, return it as-is (auto-paid on creation)
     if (expense.status === ExpenseStatus.PAID) {
-      this.logger.log(`[EXPENSE_SUBMIT] Expense ${id} is already PAID, returning as-is`);
+      this.logger.log(
+        `[EXPENSE_SUBMIT] Expense ${id} is already PAID, returning as-is`,
+      );
       return expense;
     }
 
     // If expense is already SUBMITTED or APPROVED, return it as-is
-    if (expense.status === ExpenseStatus.SUBMITTED || expense.status === ExpenseStatus.APPROVED) {
-      this.logger.log(`[EXPENSE_SUBMIT] Expense ${id} is already ${expense.status}, returning as-is`);
+    if (
+      expense.status === ExpenseStatus.SUBMITTED ||
+      expense.status === ExpenseStatus.APPROVED
+    ) {
+      this.logger.log(
+        `[EXPENSE_SUBMIT] Expense ${id} is already ${expense.status}, returning as-is`,
+      );
       return expense;
     }
 
@@ -912,7 +919,7 @@ export class ExpensesService {
    */
   private validateIndonesianTaxCalculations(data: CreateExpenseDto | any) {
     // Debug logging
-    this.logger.log('[EXPENSE_VALIDATION] Received data:', {
+    this.logger.log("[EXPENSE_VALIDATION] Received data:", {
       grossAmount: data.grossAmount,
       ppnAmount: data.ppnAmount,
       withholdingAmount: data.withholdingAmount,
@@ -931,7 +938,7 @@ export class ExpensesService {
       );
 
       if (!isPPNValid) {
-        this.logger.error('[EXPENSE_VALIDATION] PPN validation failed');
+        this.logger.error("[EXPENSE_VALIDATION] PPN validation failed");
         throw new BadRequestException("Invalid PPN calculation");
       }
     }
@@ -947,7 +954,9 @@ export class ExpensesService {
         );
 
       if (!isWithholdingValid) {
-        this.logger.error('[EXPENSE_VALIDATION] Withholding tax validation failed');
+        this.logger.error(
+          "[EXPENSE_VALIDATION] Withholding tax validation failed",
+        );
         throw new BadRequestException("Invalid withholding tax calculation");
       }
     }
@@ -957,7 +966,7 @@ export class ExpensesService {
     const expectedTotal = data.grossAmount + ppnAmount;
     const totalDiff = Math.abs(expectedTotal - data.totalAmount);
 
-    this.logger.log('[EXPENSE_VALIDATION] Total amount check:', {
+    this.logger.log("[EXPENSE_VALIDATION] Total amount check:", {
       expectedTotal,
       actualTotal: data.totalAmount,
       difference: totalDiff,
@@ -966,7 +975,7 @@ export class ExpensesService {
     });
 
     if (totalDiff > 0.01) {
-      this.logger.error('[EXPENSE_VALIDATION] Total amount validation failed', {
+      this.logger.error("[EXPENSE_VALIDATION] Total amount validation failed", {
         expectedTotal,
         actualTotal: data.totalAmount,
         difference: totalDiff,
@@ -980,7 +989,7 @@ export class ExpensesService {
     const expectedNet = expectedTotal - (data.withholdingAmount || 0);
     const netDiff = Math.abs(expectedNet - data.netAmount);
 
-    this.logger.log('[EXPENSE_VALIDATION] Net amount check:', {
+    this.logger.log("[EXPENSE_VALIDATION] Net amount check:", {
       expectedNet,
       actualNet: data.netAmount,
       difference: netDiff,
@@ -989,7 +998,7 @@ export class ExpensesService {
     });
 
     if (netDiff > 0.01) {
-      this.logger.error('[EXPENSE_VALIDATION] Net amount validation failed', {
+      this.logger.error("[EXPENSE_VALIDATION] Net amount validation failed", {
         expectedNet,
         actualNet: data.netAmount,
         difference: netDiff,

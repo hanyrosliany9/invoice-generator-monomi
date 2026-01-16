@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { Decimal } from "@prisma/client/runtime/library";
 
 /**
  * PSAK 72 Compliance Reports Service
@@ -34,7 +34,7 @@ export class PSAK72ReportsService {
     const completedMilestones = await this.prisma.projectMilestone.findMany({
       where: {
         status: {
-          in: ['COMPLETED', 'ACCEPTED'],
+          in: ["COMPLETED", "ACCEPTED"],
         },
         updatedAt: {
           gte: startDate,
@@ -103,7 +103,7 @@ export class PSAK72ReportsService {
       where: {
         ...where,
         status: {
-          notIn: ['CANCELLED'],
+          notIn: ["CANCELLED"],
         },
       },
       include: {
@@ -115,10 +115,10 @@ export class PSAK72ReportsService {
       },
     });
 
-    const pending = allMilestones.filter((m) => m.status === 'PENDING');
-    const inProgress = allMilestones.filter((m) => m.status === 'IN_PROGRESS');
+    const pending = allMilestones.filter((m) => m.status === "PENDING");
+    const inProgress = allMilestones.filter((m) => m.status === "IN_PROGRESS");
     const satisfied = allMilestones.filter((m) =>
-      ['COMPLETED', 'ACCEPTED'].includes(m.status),
+      ["COMPLETED", "ACCEPTED"].includes(m.status),
     );
 
     const totalPlannedRevenue = allMilestones.reduce(
@@ -130,7 +130,7 @@ export class PSAK72ReportsService {
       0,
     );
     const totalUnsatisfied = allMilestones
-      .filter((m) => !['COMPLETED', 'ACCEPTED'].includes(m.status))
+      .filter((m) => !["COMPLETED", "ACCEPTED"].includes(m.status))
       .reduce((sum, m) => sum + Number(m.remainingRevenue), 0);
 
     return {
@@ -144,7 +144,9 @@ export class PSAK72ReportsService {
         totalUnsatisfied,
         satisfactionRate:
           allMilestones.length > 0
-            ? parseFloat(((satisfied.length / allMilestones.length) * 100).toFixed(2))
+            ? parseFloat(
+                ((satisfied.length / allMilestones.length) * 100).toFixed(2),
+              )
             : 0,
       },
       byStatus: {
@@ -167,7 +169,7 @@ export class PSAK72ReportsService {
     const deferredRevenues = await this.prisma.deferredRevenue.findMany({
       where: {
         status: {
-          in: ['DEFERRED', 'PARTIALLY_RECOGNIZED'],
+          in: ["DEFERRED", "PARTIALLY_RECOGNIZED"],
         },
       },
       include: {
@@ -208,7 +210,9 @@ export class PSAK72ReportsService {
         totalDeferred,
         count: deferredRevenues.length,
         averagePerInvoice:
-          deferredRevenues.length > 0 ? totalDeferred / deferredRevenues.length : 0,
+          deferredRevenues.length > 0
+            ? totalDeferred / deferredRevenues.length
+            : 0,
       },
       byAge: {
         lessThan30Days: {
@@ -263,7 +267,7 @@ export class PSAK72ReportsService {
       where: {
         ...where,
         status: {
-          notIn: ['CANCELLED'],
+          notIn: ["CANCELLED"],
         },
       },
       include: {
@@ -272,12 +276,14 @@ export class PSAK72ReportsService {
     });
 
     const analysis = milestones.map((m) => {
-      const plannedDuration = m.plannedEndDate && m.plannedStartDate
-        ? m.plannedEndDate.getTime() - m.plannedStartDate.getTime()
-        : null;
-      const actualDuration = m.actualEndDate && m.actualStartDate
-        ? m.actualEndDate.getTime() - m.actualStartDate.getTime()
-        : null;
+      const plannedDuration =
+        m.plannedEndDate && m.plannedStartDate
+          ? m.plannedEndDate.getTime() - m.plannedStartDate.getTime()
+          : null;
+      const actualDuration =
+        m.actualEndDate && m.actualStartDate
+          ? m.actualEndDate.getTime() - m.actualStartDate.getTime()
+          : null;
       const delay = m.delayDays || 0;
 
       return {
@@ -302,7 +308,10 @@ export class PSAK72ReportsService {
         durationVariancePercent:
           plannedDuration && actualDuration
             ? parseFloat(
-                (((actualDuration - plannedDuration) / plannedDuration) * 100).toFixed(2),
+                (
+                  ((actualDuration - plannedDuration) / plannedDuration) *
+                  100
+                ).toFixed(2),
               )
             : null,
       };
@@ -334,7 +343,10 @@ export class PSAK72ReportsService {
         revenueVariancePercent:
           totalPlanned > 0
             ? parseFloat(
-                (((totalRecognized - totalPlanned) / totalPlanned) * 100).toFixed(2),
+                (
+                  ((totalRecognized - totalPlanned) / totalPlanned) *
+                  100
+                ).toFixed(2),
               )
             : 0,
         totalPlannedCost,
@@ -366,7 +378,7 @@ export class PSAK72ReportsService {
         milestones: {
           where: {
             status: {
-              notIn: ['CANCELLED'],
+              notIn: ["CANCELLED"],
             },
           },
           include: {
@@ -376,7 +388,7 @@ export class PSAK72ReportsService {
         expenses: {
           where: {
             status: {
-              in: ['APPROVED', 'PAID'],
+              in: ["APPROVED", "PAID"],
             },
           },
         },
@@ -389,7 +401,9 @@ export class PSAK72ReportsService {
 
     const milestoneAnalysis = project.milestones.map((m) => {
       const revenue = Number(m.recognizedRevenue) || Number(m.plannedRevenue);
-      const cost = m.actualCost ? Number(m.actualCost) : Number(m.estimatedCost || 0);
+      const cost = m.actualCost
+        ? Number(m.actualCost)
+        : Number(m.estimatedCost || 0);
       const profit = revenue - cost;
       const margin =
         revenue > 0 ? parseFloat(((profit / revenue) * 100).toFixed(2)) : 0;

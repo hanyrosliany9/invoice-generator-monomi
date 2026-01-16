@@ -854,7 +854,10 @@ export class RevenueRecognitionService {
       .reduce((sum: number, m: any) => sum + Number(m.paymentAmount), 0);
 
     const totalPaid = milestones
-      .filter((m) => m.invoices && m.invoices.some((inv: any) => inv.status === "PAID"))
+      .filter(
+        (m) =>
+          m.invoices && m.invoices.some((inv: any) => inv.status === "PAID"),
+      )
       .reduce((sum: number, m: any) => sum + Number(m.paymentAmount), 0);
 
     return {
@@ -928,7 +931,8 @@ export class RevenueRecognitionService {
     if (!invoice.projectMilestoneId) {
       return {
         invoiceId,
-        message: "Invoice not linked to project milestone, revenue recognition skipped",
+        message:
+          "Invoice not linked to project milestone, revenue recognition skipped",
       };
     }
 
@@ -1054,10 +1058,7 @@ export class RevenueRecognitionService {
    * Calculate recognition rate percentage
    * @private
    */
-  private calculateRecognitionRate(
-    recognized: number,
-    total: number,
-  ): number {
+  private calculateRecognitionRate(recognized: number, total: number): number {
     if (total === 0) return 0;
     return parseFloat(((recognized / total) * 100).toFixed(2));
   }

@@ -1,8 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import * as Papa from 'papaparse';
-import * as XLSX from 'xlsx';
+import { Injectable, BadRequestException } from "@nestjs/common";
+import * as Papa from "papaparse";
+import * as XLSX from "xlsx";
 
-export type DataType = 'DATE' | 'NUMBER' | 'STRING';
+export type DataType = "DATE" | "NUMBER" | "STRING";
 
 export interface ColumnTypes {
   [columnName: string]: DataType;
@@ -16,13 +16,13 @@ export interface ParsedCSVData {
 }
 
 export interface VisualizationSuggestion {
-  type: 'line' | 'bar' | 'pie' | 'area' | 'table' | 'metric_card';
+  type: "line" | "bar" | "pie" | "area" | "table" | "metric_card";
   title: string;
   xAxis?: string;
   yAxis?: string | string[];
   nameKey?: string; // For pie charts
   valueKey?: string; // For pie charts and metric cards
-  aggregation?: 'sum' | 'average' | 'count' | 'min' | 'max';
+  aggregation?: "sum" | "average" | "count" | "min" | "max";
   precision?: number; // For metric cards
   color?: string;
 }
@@ -32,26 +32,23 @@ export class UniversalCSVParserService {
   /**
    * Parse uploaded file into structured data
    */
-  async parseFile(
-    file: Buffer,
-    filename: string,
-  ): Promise<ParsedCSVData> {
-    const extension = filename.split('.').pop()?.toLowerCase();
+  async parseFile(file: Buffer, filename: string): Promise<ParsedCSVData> {
+    const extension = filename.split(".").pop()?.toLowerCase();
 
     let data: any[];
 
-    if (extension === 'csv') {
+    if (extension === "csv") {
       data = await this.parseCSV(file);
-    } else if (extension === 'xlsx' || extension === 'xls') {
+    } else if (extension === "xlsx" || extension === "xls") {
       data = await this.parseExcel(file);
     } else {
       throw new BadRequestException(
-        'Unsupported file format. Please upload CSV or Excel files.',
+        "Unsupported file format. Please upload CSV or Excel files.",
       );
     }
 
     if (!data || data.length === 0) {
-      throw new BadRequestException('File is empty or invalid.');
+      throw new BadRequestException("File is empty or invalid.");
     }
 
     // CRITICAL FIX: Filter out completely empty rows
@@ -59,7 +56,7 @@ export class UniversalCSVParserService {
     const filteredData = this.filterEmptyRows(data);
 
     if (filteredData.length === 0) {
-      throw new BadRequestException('File contains no valid data rows.');
+      throw new BadRequestException("File contains no valid data rows.");
     }
 
     const headers = Object.keys(filteredData[0]);
@@ -86,7 +83,7 @@ export class UniversalCSVParserService {
       const hasValidData = values.some((value) => {
         if (value === null || value === undefined) return false;
         const str = String(value).trim();
-        return str !== '';
+        return str !== "";
       });
 
       return hasValidData;
@@ -98,7 +95,7 @@ export class UniversalCSVParserService {
    */
   private async parseCSV(buffer: Buffer): Promise<any[]> {
     return new Promise((resolve, reject) => {
-      const content = buffer.toString('utf-8');
+      const content = buffer.toString("utf-8");
 
       Papa.parse(content, {
         header: true,
@@ -116,7 +113,9 @@ export class UniversalCSVParserService {
           }
         },
         error: (error: Error) => {
-          reject(new BadRequestException(`CSV parsing failed: ${error.message}`));
+          reject(
+            new BadRequestException(`CSV parsing failed: ${error.message}`),
+          );
         },
       });
     });
@@ -127,13 +126,13 @@ export class UniversalCSVParserService {
    */
   private async parseExcel(buffer: Buffer): Promise<any[]> {
     try {
-      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      const workbook = XLSX.read(buffer, { type: "buffer" });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(worksheet);
 
       if (!data || data.length === 0) {
-        throw new BadRequestException('Excel file is empty.');
+        throw new BadRequestException("Excel file is empty.");
       }
 
       return data as any[];
@@ -168,13 +167,18 @@ export class UniversalCSVParserService {
    */
   private inferDataType(data: any[], columnName: string): DataType {
     // Adaptive sampling: use more samples for larger datasets
-    const sampleSize = Math.min(Math.max(100, Math.floor(data.length * 0.1)), 2048);
+    const sampleSize = Math.min(
+      Math.max(100, Math.floor(data.length * 0.1)),
+      2048,
+    );
     const samples = data.slice(0, sampleSize).map((row) => row[columnName]);
 
     // Remove nulls/undefined/empty strings
-    const validSamples = samples.filter((v) => v != null && String(v).trim() !== '');
+    const validSamples = samples.filter(
+      (v) => v != null && String(v).trim() !== "",
+    );
 
-    if (validSamples.length === 0) return 'STRING';
+    if (validSamples.length === 0) return "STRING";
 
     // Calculate confidence threshold (85% for strict typing, allows 15% nulls/errors)
     const confidenceThreshold = 0.85;
@@ -183,11 +187,13 @@ export class UniversalCSVParserService {
     // This prevents false positives (e.g., "1" being detected as date)
 
     // 1. NUMBER detection (BEFORE date to prevent "1" being detected as date)
-    const numberCount = validSamples.filter((v) => this.isValidNumber(v)).length;
+    const numberCount = validSamples.filter((v) =>
+      this.isValidNumber(v),
+    ).length;
     const numberConfidence = numberCount / validSamples.length;
 
     if (numberConfidence >= confidenceThreshold) {
-      return 'NUMBER';
+      return "NUMBER";
     }
 
     // 2. DATE detection (AFTER number, with strict pattern matching)
@@ -195,12 +201,12 @@ export class UniversalCSVParserService {
     const dateConfidence = dateCount / validSamples.length;
 
     if (dateConfidence >= confidenceThreshold) {
-      return 'DATE';
+      return "DATE";
     }
 
     // 3. STRING (default fallback)
     // If mixed types or low confidence, treat as STRING for safety
-    return 'STRING';
+    return "STRING";
   }
 
   /**
@@ -272,7 +278,7 @@ export class UniversalCSVParserService {
    */
   private isValidNumber(value: any): boolean {
     // Handle native numeric types
-    if (typeof value === 'number') return !isNaN(value) && isFinite(value);
+    if (typeof value === "number") return !isNaN(value) && isFinite(value);
 
     const str = String(value).trim();
     if (!str) return false;
@@ -283,9 +289,9 @@ export class UniversalCSVParserService {
     // - Percentage signs: %
     // - Parentheses for negatives: (42.50)
     let cleaned = str
-      .replace(/[$€£¥₹Rp%\s]/g, '') // Remove currency and % symbols
-      .replace(/,/g, '') // Remove commas (thousands separator)
-      .replace(/^\((.+)\)$/, '-$1'); // Convert (42) to -42
+      .replace(/[$€£¥₹Rp%\s]/g, "") // Remove currency and % symbols
+      .replace(/,/g, "") // Remove commas (thousands separator)
+      .replace(/^\((.+)\)$/, "-$1"); // Convert (42) to -42
 
     // Accept scientific notation (e.g., "1.5e10", "1.5E-3")
     if (/^[+-]?\d+\.?\d*[eE][+-]?\d+$/.test(cleaned)) {
@@ -316,13 +322,13 @@ export class UniversalCSVParserService {
 
     // Find columns by type
     const dateColumns = Object.keys(columnTypes).filter(
-      (k) => columnTypes[k] === 'DATE',
+      (k) => columnTypes[k] === "DATE",
     );
     const numberColumns = Object.keys(columnTypes).filter(
-      (k) => columnTypes[k] === 'NUMBER',
+      (k) => columnTypes[k] === "NUMBER",
     );
     const stringColumns = Object.keys(columnTypes).filter(
-      (k) => columnTypes[k] === 'STRING',
+      (k) => columnTypes[k] === "STRING",
     );
 
     // STRATEGY 1: Time series (if has date + numbers)
@@ -332,7 +338,7 @@ export class UniversalCSVParserService {
       // Create line chart for each numeric column (max 3)
       numberColumns.slice(0, 3).forEach((numCol) => {
         suggestions.push({
-          type: 'line',
+          type: "line",
           title: `${this.humanize(numCol)} Over Time`,
           xAxis: dateCol,
           yAxis: [numCol],
@@ -347,7 +353,7 @@ export class UniversalCSVParserService {
       const numCol = numberColumns[0];
 
       suggestions.push({
-        type: 'bar',
+        type: "bar",
         title: `${this.humanize(numCol)} by ${this.humanize(stringCol)}`,
         xAxis: stringCol,
         yAxis: [numCol],
@@ -357,7 +363,7 @@ export class UniversalCSVParserService {
       // Add pie chart for categorical data (top categories)
       if (data.length >= 3) {
         suggestions.push({
-          type: 'pie',
+          type: "pie",
           title: `Distribution of ${this.humanize(numCol)}`,
           nameKey: stringCol,
           valueKey: numCol,
@@ -368,13 +374,17 @@ export class UniversalCSVParserService {
 
     // STRATEGY 3: All numeric columns (e.g., Facebook Ads metrics)
     // When X-axis is also numeric (not date), use bar charts
-    if (numberColumns.length >= 2 && dateColumns.length === 0 && stringColumns.length === 0) {
+    if (
+      numberColumns.length >= 2 &&
+      dateColumns.length === 0 &&
+      stringColumns.length === 0
+    ) {
       // Use first numeric column as X-axis, rest as Y-axes
       const xCol = numberColumns[0];
 
       numberColumns.slice(1, 4).forEach((yCol) => {
         suggestions.push({
-          type: 'bar',
+          type: "bar",
           title: `${this.humanize(yCol)} vs ${this.humanize(xCol)}`,
           xAxis: xCol,
           yAxis: [yCol],
@@ -387,18 +397,18 @@ export class UniversalCSVParserService {
     // Show key metrics as cards
     numberColumns.slice(0, 4).forEach((numCol) => {
       suggestions.push({
-        type: 'metric_card',
+        type: "metric_card",
         title: `Total ${this.humanize(numCol)}`,
         valueKey: numCol,
-        aggregation: 'sum',
+        aggregation: "sum",
         precision: 2,
       });
     });
 
     // STRATEGY 5: Always include table view as fallback
     suggestions.push({
-      type: 'table',
-      title: 'Data Table',
+      type: "table",
+      title: "Data Table",
     });
 
     return suggestions;
@@ -410,8 +420,8 @@ export class UniversalCSVParserService {
    */
   private humanize(columnName: string): string {
     return columnName
-      .replace(/_/g, ' ')
-      .replace(/([A-Z])/g, ' $1')
+      .replace(/_/g, " ")
+      .replace(/([A-Z])/g, " $1")
       .replace(/\b\w/g, (c) => c.toUpperCase())
       .trim();
   }
@@ -421,14 +431,14 @@ export class UniversalCSVParserService {
    */
   private getRandomColor(): string {
     const colors = [
-      '#1890ff',
-      '#52c41a',
-      '#faad14',
-      '#eb2f96',
-      '#722ed1',
-      '#13c2c2',
-      '#fa8c16',
-      '#a0d911',
+      "#1890ff",
+      "#52c41a",
+      "#faad14",
+      "#eb2f96",
+      "#722ed1",
+      "#13c2c2",
+      "#fa8c16",
+      "#a0d911",
     ];
     return colors[Math.floor(Math.random() * colors.length)];
   }

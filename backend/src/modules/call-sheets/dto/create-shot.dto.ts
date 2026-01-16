@@ -1,71 +1,92 @@
-import { IsString, IsOptional, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsInt } from "class-validator";
 
 export class CreateShotDto {
   @IsInt()
   shotNumber: number;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   shotName?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   lookReference?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   description?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   setupLocation?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   estStartTime?: string;
 
-  @IsOptional() @IsInt()
+  @IsOptional()
+  @IsInt()
   estDuration?: number;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   wardrobeNotes?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   hmuNotes?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   modelIds?: string; // Comma-separated model IDs
 
-  @IsOptional() @IsInt()
+  @IsOptional()
+  @IsInt()
   order?: number;
 }
 
 export class UpdateShotDto {
-  @IsOptional() @IsInt()
+  @IsOptional()
+  @IsInt()
   shotNumber?: number;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   shotName?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   lookReference?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   description?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   setupLocation?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   estStartTime?: string;
 
-  @IsOptional() @IsInt()
+  @IsOptional()
+  @IsInt()
   estDuration?: number;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   wardrobeNotes?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   hmuNotes?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   modelIds?: string;
 
-  @IsOptional() @IsInt()
+  @IsOptional()
+  @IsInt()
   order?: number;
 }

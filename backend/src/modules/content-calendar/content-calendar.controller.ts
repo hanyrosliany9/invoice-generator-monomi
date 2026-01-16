@@ -49,7 +49,9 @@ import { UpdateContentDto } from "./dto/update-content.dto";
 export class ContentCalendarController {
   private readonly logger = new Logger(ContentCalendarController.name);
 
-  constructor(private readonly contentCalendarService: ContentCalendarService) {}
+  constructor(
+    private readonly contentCalendarService: ContentCalendarService,
+  ) {}
 
   /**
    * Create a new content calendar item
@@ -181,7 +183,11 @@ export class ContentCalendarController {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    const content = await this.contentCalendarService.publish(id, userId, userRole);
+    const content = await this.contentCalendarService.publish(
+      id,
+      userId,
+      userRole,
+    );
 
     return {
       success: true,
@@ -200,7 +206,11 @@ export class ContentCalendarController {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    const content = await this.contentCalendarService.archive(id, userId, userRole);
+    const content = await this.contentCalendarService.archive(
+      id,
+      userId,
+      userRole,
+    );
 
     return {
       success: true,

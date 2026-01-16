@@ -1,7 +1,15 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CollaboratorRole } from '@prisma/client';
-import { MediaAssetWithProject, MediaAssetWithVersions } from '../types/prisma-extended.types';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CollaboratorRole } from "@prisma/client";
+import {
+  MediaAssetWithProject,
+  MediaAssetWithVersions,
+} from "../types/prisma-extended.types";
 
 /**
  * ComparisonService
@@ -20,11 +28,11 @@ export class ComparisonService {
   async compareAssets(assetIds: string[], userId: string) {
     // Validate input
     if (assetIds.length < 2 || assetIds.length > 4) {
-      throw new BadRequestException('Can compare 2-4 assets at a time');
+      throw new BadRequestException("Can compare 2-4 assets at a time");
     }
 
     // Fetch assets with project and collaborator info
-    const assets = await this.prisma.mediaAsset.findMany({
+    const assets = (await this.prisma.mediaAsset.findMany({
       where: { id: { in: assetIds } },
       include: {
         project: {
@@ -43,11 +51,11 @@ export class ComparisonService {
         },
         metadata: true,
       },
-    }) as MediaAssetWithProject[];
+    })) as MediaAssetWithProject[];
 
     // Check if all assets were found
     if (assets.length !== assetIds.length) {
-      throw new NotFoundException('One or more assets not found');
+      throw new NotFoundException("One or more assets not found");
     }
 
     // Check user has access to all assets
@@ -57,7 +65,9 @@ export class ComparisonService {
         asset.project.collaborators.length > 0;
 
       if (!hasAccess) {
-        throw new ForbiddenException('You do not have access to one or more assets');
+        throw new ForbiddenException(
+          "You do not have access to one or more assets",
+        );
       }
     }
 
@@ -65,13 +75,17 @@ export class ComparisonService {
     const projectIds = [...new Set(assets.map((a) => a.projectId))];
     if (projectIds.length > 1) {
       // Just warn in logs, don't fail - users might want to compare across projects
-      console.warn(`Comparing assets from ${projectIds.length} different projects`);
+      console.warn(
+        `Comparing assets from ${projectIds.length} different projects`,
+      );
     }
 
     // Check if all assets are same media type
     const mediaTypes = [...new Set(assets.map((a) => a.mediaType))];
     if (mediaTypes.length > 1) {
-      throw new BadRequestException('All assets must be the same type (all photos or all videos)');
+      throw new BadRequestException(
+        "All assets must be the same type (all photos or all videos)",
+      );
     }
 
     return {
@@ -87,9 +101,13 @@ export class ComparisonService {
    * Compare multiple versions of the same asset
    * Useful for reviewing edits/iterations
    */
-  async compareVersions(assetId: string, versionNumbers: number[], userId: string) {
+  async compareVersions(
+    assetId: string,
+    versionNumbers: number[],
+    userId: string,
+  ) {
     // Fetch the asset with versions and access info
-    const asset = await this.prisma.mediaAsset.findUnique({
+    const asset = (await this.prisma.mediaAsset.findUnique({
       where: { id: assetId },
       include: {
         project: {
@@ -104,7 +122,7 @@ export class ComparisonService {
             versionNumber: { in: versionNumbers },
           },
           orderBy: {
-            versionNumber: 'asc',
+            versionNumber: "asc",
           },
           include: {
             uploader: {
@@ -117,10 +135,10 @@ export class ComparisonService {
           },
         },
       },
-    }) as MediaAssetWithVersions | null;
+    })) as MediaAssetWithVersions | null;
 
     if (!asset) {
-      throw new NotFoundException('Asset not found');
+      throw new NotFoundException("Asset not found");
     }
 
     // Check user has access
@@ -129,12 +147,12 @@ export class ComparisonService {
       asset.project.collaborators.length > 0;
 
     if (!hasAccess) {
-      throw new ForbiddenException('You do not have access to this asset');
+      throw new ForbiddenException("You do not have access to this asset");
     }
 
     // Validate versions were found
     if (asset.versions.length !== versionNumbers.length) {
-      throw new NotFoundException('One or more versions not found');
+      throw new NotFoundException("One or more versions not found");
     }
 
     return {
@@ -145,7 +163,7 @@ export class ComparisonService {
         mediaType: asset.mediaType,
       },
       versions: asset.versions,
-      comparisonType: 'versions',
+      comparisonType: "versions",
     };
   }
 }

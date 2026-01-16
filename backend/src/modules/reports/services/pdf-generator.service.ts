@@ -1,9 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { MediaService } from '../../media/media.service';
-import { PDFTemplateService } from './pdf-template.service';
-import * as puppeteer from 'puppeteer';
-import { SocialMediaReport, ReportSection } from '@prisma/client';
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { MediaService } from "../../media/media.service";
+import { PDFTemplateService } from "./pdf-template.service";
+import * as puppeteer from "puppeteer";
+import { SocialMediaReport, ReportSection } from "@prisma/client";
 
 interface ReportWithSections extends SocialMediaReport {
   sections: ReportSection[];
@@ -33,8 +33,13 @@ export class PDFGeneratorService {
    * Generate PDF from visual builder data using server-side templates
    * This is the RELIABLE approach that always produces correct widget sizes
    */
-  async generatePDFFromData(reportId: string, sectionId: string): Promise<Buffer> {
-    this.logger.log(`Generating PDF from data for section ${sectionId} in report ${reportId}`);
+  async generatePDFFromData(
+    reportId: string,
+    sectionId: string,
+  ): Promise<Buffer> {
+    this.logger.log(
+      `Generating PDF from data for section ${sectionId} in report ${reportId}`,
+    );
 
     // Fetch section with layout data
     const section = await this.prisma.reportSection.findUnique({
@@ -73,7 +78,11 @@ export class PDFGeneratorService {
     );
 
     // Add report header
-    const completeHTML = this.wrapHTMLWithReportHeader(html, section.report, section.title);
+    const completeHTML = this.wrapHTMLWithReportHeader(
+      html,
+      section.report,
+      section.title,
+    );
 
     // Generate PDF using Puppeteer
     let browser: puppeteer.Browser | null = null;
@@ -82,10 +91,10 @@ export class PDFGeneratorService {
       browser = await puppeteer.launch({
         headless: true,
         args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
         ],
       });
 
@@ -99,15 +108,15 @@ export class PDFGeneratorService {
       });
 
       // Emulate print media
-      await page.emulateMediaType('print');
+      await page.emulateMediaType("print");
 
       // Load HTML
       await page.setContent(completeHTML, {
-        waitUntil: 'networkidle0',
+        waitUntil: "networkidle0",
       });
 
       // Wait for rendering
-      this.logger.log('Waiting for content to render...');
+      this.logger.log("Waiting for content to render...");
       await page.evaluate(`() => {
         return new Promise((resolve) => {
           if (document.readyState === 'complete') {
@@ -119,31 +128,35 @@ export class PDFGeneratorService {
       }`);
 
       // Small buffer for layout stability
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Calculate content height
-      const contentHeight = (await page.evaluate('document.documentElement.scrollHeight')) as number;
+      const contentHeight = (await page.evaluate(
+        "document.documentElement.scrollHeight",
+      )) as number;
 
-      this.logger.log(`Generating PDF: content=${contentHeight}px, width=794px`);
+      this.logger.log(
+        `Generating PDF: content=${contentHeight}px, width=794px`,
+      );
 
       // Generate PDF
       const pdfBuffer = await page.pdf({
-        width: '794px',
+        width: "794px",
         height: `${contentHeight}px`,
         printBackground: true,
         margin: {
-          top: '10mm',
-          right: '10mm',
-          bottom: '10mm',
-          left: '10mm',
+          top: "10mm",
+          right: "10mm",
+          bottom: "10mm",
+          left: "10mm",
         },
       });
 
-      this.logger.log('PDF generated successfully from data');
+      this.logger.log("PDF generated successfully from data");
 
       return Buffer.from(pdfBuffer);
     } catch (error) {
-      this.logger.error('PDF generation from data failed', error);
+      this.logger.error("PDF generation from data failed", error);
       throw error;
     } finally {
       if (browser) {
@@ -155,9 +168,15 @@ export class PDFGeneratorService {
   /**
    * Wrap section HTML with report header and footer
    */
-  private wrapHTMLWithReportHeader(sectionHTML: string, report: any, sectionTitle: string): string {
+  private wrapHTMLWithReportHeader(
+    sectionHTML: string,
+    report: any,
+    sectionTitle: string,
+  ): string {
     // Extract just the canvas content from the section HTML
-    const canvasMatch = sectionHTML.match(/<div class="pdf-canvas"[^>]*>([\s\S]*)<\/div>\s*<\/body>/);
+    const canvasMatch = sectionHTML.match(
+      /<div class="pdf-canvas"[^>]*>([\s\S]*)<\/div>\s*<\/body>/,
+    );
     const canvasContent = canvasMatch ? canvasMatch[1] : sectionHTML;
 
     return `
@@ -165,7 +184,7 @@ export class PDFGeneratorService {
       <html>
         <head>
           <meta charset="UTF-8">
-          <title>${this.escapeHtml(report.title || 'Report')}</title>
+          <title>${this.escapeHtml(report.title || "Report")}</title>
           <style>
             * {
               margin: 0;
@@ -194,28 +213,40 @@ export class PDFGeneratorService {
           <!-- Report Header -->
           <div style="padding: 20px; border-bottom: 2px solid #e0e0e0; margin-bottom: 20px;">
             <h1 style="font-size: 24px; margin-bottom: 8px; color: #333;">
-              ${this.escapeHtml(report.title || 'Social Media Report')}
+              ${this.escapeHtml(report.title || "Social Media Report")}
             </h1>
-            ${sectionTitle ? `
+            ${
+              sectionTitle
+                ? `
               <h2 style="font-size: 18px; margin-bottom: 12px; color: #666;">
                 ${this.escapeHtml(sectionTitle)}
               </h2>
-            ` : ''}
-            ${report.project ? `
+            `
+                : ""
+            }
+            ${
+              report.project
+                ? `
               <p style="font-size: 14px; color: #666; margin-bottom: 4px;">
                 Project: ${this.escapeHtml(report.project.number)} - ${this.escapeHtml(report.project.description)}
               </p>
-            ` : ''}
-            ${report.project?.client ? `
+            `
+                : ""
+            }
+            ${
+              report.project?.client
+                ? `
               <p style="font-size: 14px; color: #666;">
                 Client: ${this.escapeHtml(report.project.client.name)}
               </p>
-            ` : ''}
+            `
+                : ""
+            }
             <p style="font-size: 12px; color: #999; margin-top: 8px;">
-              Generated: ${new Date().toLocaleDateString('id-ID', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
+              Generated: ${new Date().toLocaleDateString("id-ID", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
               })}
             </p>
           </div>
@@ -234,14 +265,16 @@ export class PDFGeneratorService {
    * This is the NEW RELIABLE approach for multi-section reports
    */
   async generateFullReportPDFFromData(reportId: string): Promise<Buffer> {
-    this.logger.log(`Generating full report PDF from data for report ${reportId}`);
+    this.logger.log(
+      `Generating full report PDF from data for report ${reportId}`,
+    );
 
     // Fetch report with all sections
     const report = await this.prisma.socialMediaReport.findUnique({
       where: { id: reportId },
       include: {
         sections: {
-          orderBy: { order: 'asc' },
+          orderBy: { order: "asc" },
         },
         project: {
           include: {
@@ -266,7 +299,9 @@ export class PDFGeneratorService {
           rows: (section.rawData as any) || [],
         };
 
-        this.logger.log(`  - Section "${section.title}": ${widgets.length} widgets`);
+        this.logger.log(
+          `  - Section "${section.title}": ${widgets.length} widgets`,
+        );
 
         // Generate section HTML (without wrapper) - await async
         const sectionHTML = await this.pdfTemplateService.generateSectionHTML(
@@ -276,14 +311,16 @@ export class PDFGeneratorService {
         );
 
         // Extract just the canvas content
-        const canvasMatch = sectionHTML.match(/<div class="pdf-canvas"[^>]*>([\s\S]*)<\/div>\s*<\/body>/);
+        const canvasMatch = sectionHTML.match(
+          /<div class="pdf-canvas"[^>]*>([\s\S]*)<\/div>\s*<\/body>/,
+        );
         const canvasContent = canvasMatch ? canvasMatch[1] : sectionHTML;
 
         return {
           title: section.title,
           content: canvasContent,
         };
-      })
+      }),
     );
 
     // Combine all sections into one HTML document
@@ -296,10 +333,10 @@ export class PDFGeneratorService {
       browser = await puppeteer.launch({
         headless: true,
         args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
         ],
       });
 
@@ -313,15 +350,15 @@ export class PDFGeneratorService {
       });
 
       // Emulate print media
-      await page.emulateMediaType('print');
+      await page.emulateMediaType("print");
 
       // Load HTML
       await page.setContent(completeHTML, {
-        waitUntil: 'networkidle0',
+        waitUntil: "networkidle0",
       });
 
       // Wait for rendering
-      this.logger.log('Waiting for content to render...');
+      this.logger.log("Waiting for content to render...");
       await page.evaluate(`() => {
         return new Promise((resolve) => {
           if (document.readyState === 'complete') {
@@ -333,31 +370,35 @@ export class PDFGeneratorService {
       }`);
 
       // Small buffer for layout stability
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Calculate content height
-      const contentHeight = (await page.evaluate('document.documentElement.scrollHeight')) as number;
+      const contentHeight = (await page.evaluate(
+        "document.documentElement.scrollHeight",
+      )) as number;
 
-      this.logger.log(`Generating PDF: content=${contentHeight}px, width=794px`);
+      this.logger.log(
+        `Generating PDF: content=${contentHeight}px, width=794px`,
+      );
 
       // Generate PDF
       const pdfBuffer = await page.pdf({
-        width: '794px',
+        width: "794px",
         height: `${contentHeight}px`,
         printBackground: true,
         margin: {
-          top: '10mm',
-          right: '10mm',
-          bottom: '10mm',
-          left: '10mm',
+          top: "10mm",
+          right: "10mm",
+          bottom: "10mm",
+          left: "10mm",
         },
       });
 
-      this.logger.log('Full report PDF generated successfully from data');
+      this.logger.log("Full report PDF generated successfully from data");
 
       return Buffer.from(pdfBuffer);
     } catch (error) {
-      this.logger.error('Full report PDF generation from data failed', error);
+      this.logger.error("Full report PDF generation from data failed", error);
       throw error;
     } finally {
       if (browser) {
@@ -369,8 +410,13 @@ export class PDFGeneratorService {
   /**
    * Wrap multiple sections into a single HTML document
    */
-  private wrapMultipleSectionsHTML(report: any, sections: Array<{ title: string; content: string }>): string {
-    const sectionsHTML = sections.map((section, index) => `
+  private wrapMultipleSectionsHTML(
+    report: any,
+    sections: Array<{ title: string; content: string }>,
+  ): string {
+    const sectionsHTML = sections
+      .map(
+        (section, index) => `
       <!-- Section ${index + 1} -->
       <div style="
         margin-bottom: 60px;
@@ -394,14 +440,16 @@ export class PDFGeneratorService {
           ${section.content}
         </div>
       </div>
-    `).join('\n');
+    `,
+      )
+      .join("\n");
 
     return `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="UTF-8">
-          <title>${this.escapeHtml(report.title || 'Report')}</title>
+          <title>${this.escapeHtml(report.title || "Report")}</title>
           <style>
             * {
               margin: 0;
@@ -441,24 +489,32 @@ export class PDFGeneratorService {
             <h1 style="font-size: 32px; color: #1a1a1a; margin-bottom: 12px;">
               ${this.escapeHtml(report.title)}
             </h1>
-            ${report.description ? `
+            ${
+              report.description
+                ? `
               <p style="font-size: 16px; color: #555; margin-bottom: 8px;">
                 ${this.escapeHtml(report.description)}
               </p>
-            ` : ''}
-            ${report.project ? `
+            `
+                : ""
+            }
+            ${
+              report.project
+                ? `
               <p style="font-size: 14px; color: #666; margin-bottom: 4px;">
                 Project: ${this.escapeHtml(report.project.number)} - ${this.escapeHtml(report.project.description)}
               </p>
               <p style="font-size: 14px; color: #666;">
                 Client: ${this.escapeHtml(report.project.client.name)}
               </p>
-            ` : ''}
+            `
+                : ""
+            }
             <p style="font-size: 12px; color: #999; margin-top: 12px;">
-              Generated: ${new Date().toLocaleDateString('id-ID', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
+              Generated: ${new Date().toLocaleDateString("id-ID", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
               })}
             </p>
           </div>
@@ -483,20 +539,23 @@ export class PDFGeneratorService {
     const fakeFile: Express.Multer.File = {
       buffer: pdfBuffer,
       originalname: `report-${reportId}.pdf`,
-      mimetype: 'application/pdf',
+      mimetype: "application/pdf",
       size: pdfBuffer.length,
-      fieldname: 'file',
-      encoding: '7bit',
+      fieldname: "file",
+      encoding: "7bit",
       stream: null as any,
-      destination: '',
+      destination: "",
       filename: `report-${reportId}.pdf`,
-      path: '',
+      path: "",
     };
 
     // Upload to R2
     if (this.mediaService.isR2Enabled()) {
       try {
-        const uploadResult = await this.mediaService.uploadFile(fakeFile, 'reports');
+        const uploadResult = await this.mediaService.uploadFile(
+          fakeFile,
+          "reports",
+        );
         this.logger.log(`PDF uploaded to R2: ${uploadResult.url}`);
 
         // Update report with PDF URL
@@ -511,21 +570,21 @@ export class PDFGeneratorService {
 
         return uploadResult.url;
       } catch (error) {
-        this.logger.error('Failed to upload PDF to R2', error);
+        this.logger.error("Failed to upload PDF to R2", error);
         throw error;
       }
     } else {
-      this.logger.warn('R2 is not enabled. PDF will not be uploaded.');
-      return '';
+      this.logger.warn("R2 is not enabled. PDF will not be uploaded.");
+      return "";
     }
   }
 
   /**
    * Get localized month name
    */
-  private getMonthName(month: number, locale: string = 'id-ID'): string {
+  private getMonthName(month: number, locale: string = "id-ID"): string {
     const date = new Date(2000, month - 1, 1);
-    return date.toLocaleDateString(locale, { month: 'long' });
+    return date.toLocaleDateString(locale, { month: "long" });
   }
 
   /**
@@ -533,7 +592,7 @@ export class PDFGeneratorService {
    */
   private generateHTML(report: ReportWithSections): string {
     // Detect locale from report settings or default to id-ID
-    const locale = 'id-ID'; // TODO: Get from report settings
+    const locale = "id-ID"; // TODO: Get from report settings
     const periodText = `${this.getMonthName(report.month, locale)} ${report.year}`;
 
     return `
@@ -961,16 +1020,12 @@ export class PDFGeneratorService {
     ${
       report.project?.client
         ? `<div class="client-info">${this.escapeHtml(report.project.client.name)}</div>`
-        : ''
+        : ""
     }
   </div>
 
   <!-- Sections (ONLY Visual Builder Content - No Wrapper) -->
-  ${report.sections
-    .map(
-      (section) => this.generateCharts(section)
-    )
-    .join('')}
+  ${report.sections.map((section) => this.generateCharts(section)).join("")}
 </body>
 </html>
     `;
@@ -983,7 +1038,7 @@ export class PDFGeneratorService {
   private generateCharts(section: ReportSection): string {
     const data = section.rawData as any[];
     if (!data || data.length === 0) {
-      return '';
+      return "";
     }
 
     // Generate section header
@@ -993,7 +1048,7 @@ export class PDFGeneratorService {
     const layout = section.layout as any;
     if (layout && layout.widgets && Array.isArray(layout.widgets)) {
       this.logger.log(
-        `Using WIDGET-BASED layout for section ${section.id} with ${layout.widgets.length} widgets`
+        `Using WIDGET-BASED layout for section ${section.id} with ${layout.widgets.length} widgets`,
       );
 
       const content = this.generateWidgetBasedLayout(layout, data, section.id);
@@ -1010,11 +1065,11 @@ export class PDFGeneratorService {
 
     // Fall back to legacy visualizations array
     this.logger.log(
-      `Using LEGACY visualizations for section ${section.id} (layout=${!!layout}, widgets=${layout?.widgets ? 'exists' : 'missing'})`
+      `Using LEGACY visualizations for section ${section.id} (layout=${!!layout}, widgets=${layout?.widgets ? "exists" : "missing"})`,
     );
     const visualizations = (section.visualizations as any[]) || [];
     if (visualizations.length === 0) {
-      return '';
+      return "";
     }
 
     const chartsHtml = visualizations
@@ -1022,18 +1077,18 @@ export class PDFGeneratorService {
         const chartId = `chart-${section.id}-${index}`;
 
         // Handle different visualization types
-        if (viz.type === 'metric_card') {
+        if (viz.type === "metric_card") {
           return this.generateMetricCard(viz, data);
-        } else if (viz.type === 'table') {
+        } else if (viz.type === "table") {
           // Table type will use the main data table, skip here
-          return '';
+          return "";
         } else {
           // Line, Bar, Area, Pie charts
           return this.generateChartCanvas(viz, data, chartId);
         }
       })
       .filter(Boolean)
-      .join('');
+      .join("");
 
     return `
       <div class="section">
@@ -1049,15 +1104,16 @@ export class PDFGeneratorService {
    * Generate section header HTML
    */
   private generateSectionHeader(section: ReportSection): string {
-    const title = section.title || 'Untitled Section';
-    const description = section.description || '';
-    const order = section.order !== undefined ? `Section ${section.order + 1}` : '';
+    const title = section.title || "Untitled Section";
+    const description = section.description || "";
+    const order =
+      section.order !== undefined ? `Section ${section.order + 1}` : "";
 
     return `
       <div class="section-header">
         <h2>${this.escapeHtml(title)}</h2>
-        <div class="meta">${order}${order && description ? ' • ' : ''}${section.rowCount || 0} data rows</div>
-        ${description ? `<div class="description">${this.escapeHtml(description)}</div>` : ''}
+        <div class="meta">${order}${order && description ? " • " : ""}${section.rowCount || 0} data rows</div>
+        ${description ? `<div class="description">${this.escapeHtml(description)}</div>` : ""}
       </div>
     `;
   }
@@ -1065,11 +1121,14 @@ export class PDFGeneratorService {
   /**
    * Calculate maximum grid dimensions from all widgets
    */
-  private calculateGridDimensions(widgets: any[]): { maxY: number; maxRows: number } {
+  private calculateGridDimensions(widgets: any[]): {
+    maxY: number;
+    maxRows: number;
+  } {
     let maxY = 0;
     let maxRowEnd = 0;
 
-    widgets.forEach(widget => {
+    widgets.forEach((widget) => {
       const y = widget.layout?.y || 0;
       const h = widget.layout?.h || 4;
       const rowEnd = y + h;
@@ -1086,20 +1145,28 @@ export class PDFGeneratorService {
    * Generate HTML from widget-based layout (new visual builder)
    * FIXED: Now uses SINGLE grid container matching react-grid-layout architecture
    */
-  private generateWidgetBasedLayout(layout: any, data: any[], sectionId: string): string {
+  private generateWidgetBasedLayout(
+    layout: any,
+    data: any[],
+    sectionId: string,
+  ): string {
     const widgets = layout?.widgets || [];
     if (!widgets || widgets.length === 0) {
-      return '';
+      return "";
     }
 
     // Extract rowHeight from layout (default to 30px if not specified)
     const rowHeight = layout?.rowHeight || 30;
 
-    this.logger.log(`Generating widget-based layout with ${widgets.length} widgets in SINGLE grid container`);
+    this.logger.log(
+      `Generating widget-based layout with ${widgets.length} widgets in SINGLE grid container`,
+    );
 
     // Calculate grid dimensions
     const { maxRows } = this.calculateGridDimensions(widgets);
-    this.logger.log(`Grid dimensions - maxRows: ${maxRows}, rowHeight: ${rowHeight}px`);
+    this.logger.log(
+      `Grid dimensions - maxRows: ${maxRows}, rowHeight: ${rowHeight}px`,
+    );
 
     // Sort widgets by Y then X for consistent rendering order
     const sortedWidgets = [...widgets].sort((a, b) => {
@@ -1110,49 +1177,59 @@ export class PDFGeneratorService {
     });
 
     // Generate ALL widgets in SINGLE grid container
-    const widgetHtml = sortedWidgets.map((widget, index) => {
-      const widgetId = `widget-${sectionId}-${index}`;
-      const x = widget.layout?.x || 0;
-      const y = widget.layout?.y || 0;
-      const w = widget.layout?.w || 12;
-      const h = widget.layout?.h || 4;
+    const widgetHtml = sortedWidgets
+      .map((widget, index) => {
+        const widgetId = `widget-${sectionId}-${index}`;
+        const x = widget.layout?.x || 0;
+        const y = widget.layout?.y || 0;
+        const w = widget.layout?.w || 12;
+        const h = widget.layout?.h || 4;
 
-      this.logger.log(`Processing widget type: ${widget.type}, id: ${widget.id}, position: (${x}, ${y}), size: ${w}x${h}`);
+        this.logger.log(
+          `Processing widget type: ${widget.type}, id: ${widget.id}, position: (${x}, ${y}), size: ${w}x${h}`,
+        );
 
-      let content = '';
-      switch (widget.type) {
-        case 'chart':
-          content = this.generateWidgetChart(widget, data, widgetId, rowHeight);
-          break;
-        case 'metric':
-          content = this.generateWidgetMetric(widget, data);
-          break;
-        case 'text':
-          content = this.generateWidgetText(widget);
-          break;
-        case 'callout':
-          content = this.generateWidgetCallout(widget);
-          break;
-        case 'divider':
-          content = this.generateWidgetDivider(widget);
-          break;
-        case 'table':
-          content = this.generateWidgetTable(widget, data);
-          break;
-        default:
-          this.logger.warn(`Unknown widget type: ${widget.type}`);
-          content = '';
-      }
+        let content = "";
+        switch (widget.type) {
+          case "chart":
+            content = this.generateWidgetChart(
+              widget,
+              data,
+              widgetId,
+              rowHeight,
+            );
+            break;
+          case "metric":
+            content = this.generateWidgetMetric(widget, data);
+            break;
+          case "text":
+            content = this.generateWidgetText(widget);
+            break;
+          case "callout":
+            content = this.generateWidgetCallout(widget);
+            break;
+          case "divider":
+            content = this.generateWidgetDivider(widget);
+            break;
+          case "table":
+            content = this.generateWidgetTable(widget, data);
+            break;
+          default:
+            this.logger.warn(`Unknown widget type: ${widget.type}`);
+            content = "";
+        }
 
-      if (!content) return '';
+        if (!content) return "";
 
-      // Simple block wrapper - no grid positioning needed
-      return `
+        // Simple block wrapper - no grid positioning needed
+        return `
         <div class="widget-item widget-item-${widget.type}">
           ${content}
         </div>
       `;
-    }).filter(Boolean).join('');
+      })
+      .filter(Boolean)
+      .join("");
 
     // Return SINGLE grid container with all widgets
     // CSS variable --max-rows defines grid-template-rows dynamically
@@ -1162,12 +1239,19 @@ export class PDFGeneratorService {
   /**
    * Generate chart widget HTML
    */
-  private generateWidgetChart(widget: any, data: any[], widgetId: string, rowHeight?: number): string {
+  private generateWidgetChart(
+    widget: any,
+    data: any[],
+    widgetId: string,
+    rowHeight?: number,
+  ): string {
     const config = widget.config || {};
 
     // Special case: if chartType is "table", render as table widget
-    if (config.chartType === 'table') {
-      this.logger.log(`Chart widget has chartType=table, rendering as table widget`);
+    if (config.chartType === "table") {
+      this.logger.log(
+        `Chart widget has chartType=table, rendering as table widget`,
+      );
       // Get all column names from the data
       const columns = data && data.length > 0 ? Object.keys(data[0]) : [];
       // Create a table widget config
@@ -1178,15 +1262,15 @@ export class PDFGeneratorService {
           columns: columns,
           showHeader: true,
           bordered: true,
-        }
+        },
       };
       return this.generateWidgetTable(tableWidget, data);
     }
 
     // Convert widget config to visualization format
     const viz: any = {
-      type: config.chartType || 'line',
-      title: config.title || 'Chart',
+      type: config.chartType || "line",
+      title: config.title || "Chart",
       xAxis: config.xAxis,
       yAxis: config.yAxis,
       nameKey: config.nameKey,
@@ -1194,7 +1278,13 @@ export class PDFGeneratorService {
     };
 
     // Generate chart with widget layout for dynamic sizing
-    return this.generateChartCanvas(viz, data, widgetId, widget.layout, rowHeight);
+    return this.generateChartCanvas(
+      viz,
+      data,
+      widgetId,
+      widget.layout,
+      rowHeight,
+    );
   }
 
   /**
@@ -1205,10 +1295,10 @@ export class PDFGeneratorService {
 
     // Convert widget config to metric card format
     const viz: any = {
-      type: 'metric_card',
-      title: config.title || 'Metric',
+      type: "metric_card",
+      title: config.title || "Metric",
       valueKey: config.valueKey,
-      aggregation: config.aggregation || 'sum',
+      aggregation: config.aggregation || "sum",
       precision: config.precision || 0,
     };
 
@@ -1219,40 +1309,42 @@ export class PDFGeneratorService {
    * Convert Slate.js content to HTML
    */
   private slateToHTML(nodes: any[]): string {
-    if (!Array.isArray(nodes)) return '';
+    if (!Array.isArray(nodes)) return "";
 
-    return nodes.map((node: any) => {
-      // Handle text nodes
-      if (node.text !== undefined) {
-        let text = this.escapeHtml(node.text);
-        if (node.bold) text = `<strong>${text}</strong>`;
-        if (node.italic) text = `<em>${text}</em>`;
-        if (node.underline) text = `<u>${text}</u>`;
-        return text;
-      }
+    return nodes
+      .map((node: any) => {
+        // Handle text nodes
+        if (node.text !== undefined) {
+          let text = this.escapeHtml(node.text);
+          if (node.bold) text = `<strong>${text}</strong>`;
+          if (node.italic) text = `<em>${text}</em>`;
+          if (node.underline) text = `<u>${text}</u>`;
+          return text;
+        }
 
-      // Handle element nodes
-      const align = node.align ? ` class="text-${node.align}"` : '';
-      const children = node.children ? this.slateToHTML(node.children) : '';
+        // Handle element nodes
+        const align = node.align ? ` class="text-${node.align}"` : "";
+        const children = node.children ? this.slateToHTML(node.children) : "";
 
-      switch (node.type) {
-        case 'heading-one':
-          return `<h1${align}>${children}</h1>`;
-        case 'heading-two':
-          return `<h2${align}>${children}</h2>`;
-        case 'heading-three':
-          return `<h3${align}>${children}</h3>`;
-        case 'bulleted-list':
-          return `<ul${align}>${children}</ul>`;
-        case 'numbered-list':
-          return `<ol${align}>${children}</ol>`;
-        case 'list-item':
-          return `<li${align}>${children}</li>`;
-        case 'paragraph':
-        default:
-          return `<p${align}>${children}</p>`;
-      }
-    }).join('');
+        switch (node.type) {
+          case "heading-one":
+            return `<h1${align}>${children}</h1>`;
+          case "heading-two":
+            return `<h2${align}>${children}</h2>`;
+          case "heading-three":
+            return `<h3${align}>${children}</h3>`;
+          case "bulleted-list":
+            return `<ul${align}>${children}</ul>`;
+          case "numbered-list":
+            return `<ol${align}>${children}</ol>`;
+          case "list-item":
+            return `<li${align}>${children}</li>`;
+          case "paragraph":
+          default:
+            return `<p${align}>${children}</p>`;
+        }
+      })
+      .join("");
   }
 
   /**
@@ -1266,8 +1358,8 @@ export class PDFGeneratorService {
       try {
         const html = this.slateToHTML(config.content);
         if (!html.trim()) {
-          this.logger.warn('Slate.js content rendered to empty HTML');
-          return '';
+          this.logger.warn("Slate.js content rendered to empty HTML");
+          return "";
         }
 
         return `
@@ -1276,21 +1368,22 @@ export class PDFGeneratorService {
           </div>
         `;
       } catch (error) {
-        this.logger.error('Failed to parse Slate.js content', error);
+        this.logger.error("Failed to parse Slate.js content", error);
         // Fall through to plainText handling
       }
     }
 
     // Fallback to plainText or string content
     const plainText = config.plainText;
-    const content = plainText || (typeof config.content === 'string' ? config.content : '');
+    const content =
+      plainText || (typeof config.content === "string" ? config.content : "");
 
     if (!content || !content.trim()) {
-      return '';
+      return "";
     }
 
     // Preserve line breaks for plain text
-    const formattedContent = this.escapeHtml(content).replace(/\n/g, '<br>');
+    const formattedContent = this.escapeHtml(content).replace(/\n/g, "<br>");
 
     return `
       <div class="chart-container">
@@ -1304,19 +1397,22 @@ export class PDFGeneratorService {
    */
   private generateWidgetCallout(widget: any): string {
     const config = widget.config || {};
-    const title = config.title || '';
-    const content = config.content || '';
-    const type = config.type || 'info';
+    const title = config.title || "";
+    const content = config.content || "";
+    const type = config.type || "info";
 
     if (!content.trim()) {
-      return '';
+      return "";
     }
 
-    const typeStyles: Record<string, { bg: string; border: string; color: string }> = {
-      info: { bg: '#e6f7ff', border: '#1890ff', color: '#0050b3' },
-      success: { bg: '#f6ffed', border: '#52c41a', color: '#389e0d' },
-      warning: { bg: '#fffbe6', border: '#faad14', color: '#d48806' },
-      error: { bg: '#fff1f0', border: '#f5222d', color: '#cf1322' },
+    const typeStyles: Record<
+      string,
+      { bg: string; border: string; color: string }
+    > = {
+      info: { bg: "#e6f7ff", border: "#1890ff", color: "#0050b3" },
+      success: { bg: "#f6ffed", border: "#52c41a", color: "#389e0d" },
+      warning: { bg: "#fffbe6", border: "#faad14", color: "#d48806" },
+      error: { bg: "#fff1f0", border: "#f5222d", color: "#cf1322" },
     };
 
     const style = typeStyles[type] || typeStyles.info;
@@ -1331,7 +1427,7 @@ export class PDFGeneratorService {
           border-radius: 4px;
           margin: 15px 0;
         ">
-          ${title ? `<div style="font-weight: 600; margin-bottom: 8px;">${this.escapeHtml(title)}</div>` : ''}
+          ${title ? `<div style="font-weight: 600; margin-bottom: 8px;">${this.escapeHtml(title)}</div>` : ""}
           <div>${this.escapeHtml(content)}</div>
         </div>
       </div>
@@ -1343,17 +1439,17 @@ export class PDFGeneratorService {
    */
   private generateWidgetDivider(widget: any): string {
     const config = widget.config || {};
-    const style = config.style || 'solid';
+    const style = config.style || "solid";
 
     const borderStyles: Record<string, string> = {
-      solid: 'solid',
-      dashed: 'dashed',
-      dotted: 'dotted',
+      solid: "solid",
+      dashed: "dashed",
+      dotted: "dotted",
     };
 
     return `
       <div style="
-        border-top: 2px ${borderStyles[style] || 'solid'} #d9d9d9;
+        border-top: 2px ${borderStyles[style] || "solid"} #d9d9d9;
         margin: 30px 0;
       "></div>
     `;
@@ -1371,7 +1467,7 @@ export class PDFGeneratorService {
       this.logger.warn(`Table widget ${widget.id} has no data`);
       return `
         <div class="chart-container" style="padding: 40px; text-align: center; background: #fafafa; border-radius: 8px;">
-          <p style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 8px;">📊 ${this.escapeHtml(config.title || 'Data Table')}</p>
+          <p style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 8px;">📊 ${this.escapeHtml(config.title || "Data Table")}</p>
           <p style="color: #999; font-size: 14px;">No data available</p>
         </div>
       `;
@@ -1380,12 +1476,16 @@ export class PDFGeneratorService {
     // Auto-detect columns from data if not specified
     if (!Array.isArray(columns) || columns.length === 0) {
       columns = Object.keys(data[0]);
-      this.logger.log(`Auto-detected ${columns.length} columns for table widget ${widget.id}`);
+      this.logger.log(
+        `Auto-detected ${columns.length} columns for table widget ${widget.id}`,
+      );
     }
 
     // If still no columns, return error
     if (columns.length === 0) {
-      this.logger.error(`Cannot determine columns for table widget ${widget.id}`);
+      this.logger.error(
+        `Cannot determine columns for table widget ${widget.id}`,
+      );
       return `
         <div class="chart-container" style="padding: 40px; text-align: center; background: #fff1f0; border: 2px solid #f5222d; border-radius: 8px;">
           <p style="font-size: 16px; font-weight: 600; color: #f5222d; margin-bottom: 8px;">⚠️ Table Error</p>
@@ -1395,19 +1495,25 @@ export class PDFGeneratorService {
     }
 
     // Generate table HTML
-    this.logger.log(`Generating table widget ${widget.id}: ${columns.length} columns × ${data.length} rows`);
+    this.logger.log(
+      `Generating table widget ${widget.id}: ${columns.length} columns × ${data.length} rows`,
+    );
 
     return `
       <div class="chart-container">
-        ${config.title ? `<div class="chart-title">${this.escapeHtml(config.title)}</div>` : ''}
+        ${config.title ? `<div class="chart-title">${this.escapeHtml(config.title)}</div>` : ""}
         <table class="data-table">
-          ${config.showHeader !== false ? `
+          ${
+            config.showHeader !== false
+              ? `
           <thead>
             <tr>
-              ${columns.map((col: string) => `<th>${this.escapeHtml(String(col))}</th>`).join('')}
+              ${columns.map((col: string) => `<th>${this.escapeHtml(String(col))}</th>`).join("")}
             </tr>
           </thead>
-          ` : ''}
+          `
+              : ""
+          }
           <tbody>
             ${data
               .map(
@@ -1416,14 +1522,17 @@ export class PDFGeneratorService {
                 ${columns
                   .map((col: string) => {
                     const value = row[col];
-                    const displayValue = value !== undefined && value !== null ? String(value) : '-';
+                    const displayValue =
+                      value !== undefined && value !== null
+                        ? String(value)
+                        : "-";
                     return `<td>${this.escapeHtml(displayValue)}</td>`;
                   })
-                  .join('')}
+                  .join("")}
               </tr>
             `,
               )
-              .join('')}
+              .join("")}
           </tbody>
         </table>
       </div>
@@ -1434,33 +1543,33 @@ export class PDFGeneratorService {
    * Generate metric card visualization (without hardcoded labels)
    */
   private generateMetricCard(viz: any, data: any[]): string {
-    if (!viz.valueKey) return '';
+    if (!viz.valueKey) return "";
 
     // FIXED: Use parseNumber helper to handle string numbers (matches ChartRenderer.tsx)
     const values = data
       .map((row) => this.parseNumber(row[viz.valueKey]))
       .filter((v) => v !== null) as number[];
 
-    if (values.length === 0) return '';
+    if (values.length === 0) return "";
 
     let metricValue = 0;
-    const prefix = viz.prefix || '';
-    const suffix = viz.suffix || '';
+    const prefix = viz.prefix || "";
+    const suffix = viz.suffix || "";
 
-    switch (viz.aggregation || 'sum') {
-      case 'sum':
+    switch (viz.aggregation || "sum") {
+      case "sum":
         metricValue = values.reduce((acc, val) => acc + val, 0);
         break;
-      case 'average':
+      case "average":
         metricValue = values.reduce((acc, val) => acc + val, 0) / values.length;
         break;
-      case 'count':
+      case "count":
         metricValue = data.length;
         break;
-      case 'max':
+      case "max":
         metricValue = Math.max(...values);
         break;
-      case 'min':
+      case "min":
         metricValue = Math.min(...values);
         break;
       default:
@@ -1468,19 +1577,19 @@ export class PDFGeneratorService {
     }
 
     const precision = viz.precision || 0;
-    const formattedValue = metricValue.toLocaleString('id-ID', {
+    const formattedValue = metricValue.toLocaleString("id-ID", {
       minimumFractionDigits: precision,
       maximumFractionDigits: precision,
     });
 
     return `
       <div class="chart-container">
-        ${viz.title ? `<div class="chart-title">${this.escapeHtml(viz.title)}</div>` : ''}
+        ${viz.title ? `<div class="chart-title">${this.escapeHtml(viz.title)}</div>` : ""}
         <div class="metric-card-chart">
           <div>
-            ${prefix ? `<span class="metric-prefix">${this.escapeHtml(prefix)}</span>` : ''}
+            ${prefix ? `<span class="metric-prefix">${this.escapeHtml(prefix)}</span>` : ""}
             <span class="metric-value">${formattedValue}</span>
-            ${suffix ? `<span class="metric-suffix">${this.escapeHtml(suffix)}</span>` : ''}
+            ${suffix ? `<span class="metric-suffix">${this.escapeHtml(suffix)}</span>` : ""}
           </div>
         </div>
       </div>
@@ -1492,11 +1601,11 @@ export class PDFGeneratorService {
    * Handles currency symbols, commas, spaces
    */
   private parseNumber(value: any): number | null {
-    if (value === null || value === undefined || value === '') return null;
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') {
+    if (value === null || value === undefined || value === "") return null;
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
       // Remove currency symbols, commas, spaces
-      const cleaned = value.replace(/[$,\s]/g, '');
+      const cleaned = value.replace(/[$,\s]/g, "");
       const parsed = parseFloat(cleaned);
       return isNaN(parsed) ? null : parsed;
     }
@@ -1508,9 +1617,9 @@ export class PDFGeneratorService {
    * Converts string numbers to actual numbers
    */
   private normalizeChartData(data: any[], numericColumns: string[]): any[] {
-    return data.map(row => {
+    return data.map((row) => {
       const normalized: any = { ...row };
-      numericColumns.forEach(col => {
+      numericColumns.forEach((col) => {
         if (col in row) {
           const parsed = this.parseNumber(row[col]);
           normalized[col] = parsed !== null ? parsed : 0;
@@ -1524,11 +1633,16 @@ export class PDFGeneratorService {
    * Aggregate pie chart data by name (matches ChartRenderer.tsx)
    * Groups duplicate names, sums values, limits to top N slices
    */
-  private aggregatePieData(data: any[], nameKey: string, valueKey: string, topN: number = 10): any[] {
+  private aggregatePieData(
+    data: any[],
+    nameKey: string,
+    valueKey: string,
+    topN: number = 10,
+  ): any[] {
     const aggregated = new Map<string, number>();
 
-    data.forEach(row => {
-      const name = String(row[nameKey] || 'Unknown');
+    data.forEach((row) => {
+      const name = String(row[nameKey] || "Unknown");
       const value = this.parseNumber(row[valueKey]) || 0;
       aggregated.set(name, (aggregated.get(name) || 0) + value);
     });
@@ -1541,9 +1655,11 @@ export class PDFGeneratorService {
     // If more than topN items, aggregate the rest into "Other"
     if (sorted.length > topN) {
       const topItems = sorted.slice(0, topN);
-      const otherValue = sorted.slice(topN).reduce((sum, item) => sum + (item[valueKey] as number), 0);
+      const otherValue = sorted
+        .slice(topN)
+        .reduce((sum, item) => sum + (item[valueKey] as number), 0);
       if (otherValue > 0) {
-        topItems.push({ [nameKey]: 'Other', [valueKey]: otherValue });
+        topItems.push({ [nameKey]: "Other", [valueKey]: otherValue });
       }
       return topItems;
     }
@@ -1560,7 +1676,10 @@ export class PDFGeneratorService {
    * Calculate chart container dimensions from widget layout (2025 RESPONSIVE APPROACH)
    * Returns container dimensions that Chart.js will use for responsive sizing
    */
-  private calculateChartContainerDimensions(layout: any, rowHeight?: number): { width: number; height: number } {
+  private calculateChartContainerDimensions(
+    layout: any,
+    rowHeight?: number,
+  ): { width: number; height: number } {
     const w = layout?.w || 12;
     const h = layout?.h || 12; // Default h=12 for adequate height
 
@@ -1568,7 +1687,7 @@ export class PDFGeneratorService {
     // Subtract body padding (40px * 2)
     const PAGE_WIDTH = 794;
     const BODY_PADDING = 40;
-    const CONTAINER_WIDTH = PAGE_WIDTH - (BODY_PADDING * 2);
+    const CONTAINER_WIDTH = PAGE_WIDTH - BODY_PADDING * 2;
 
     // Grid system (matching react-grid-layout)
     const COLS = 12;
@@ -1589,24 +1708,25 @@ export class PDFGeneratorService {
 
     // Final container dimensions (what Chart.js will see)
     const containerWidth = widgetWidth - WIDGET_PADDING * 2;
-    const containerHeight = widgetHeight - WIDGET_PADDING * 2 - CHART_TITLE_HEIGHT;
+    const containerHeight =
+      widgetHeight - WIDGET_PADDING * 2 - CHART_TITLE_HEIGHT;
 
     // Validate minimum size
     if (containerWidth <= 0 || containerHeight <= 0) {
       this.logger.warn(
-        `Widget ${w}×${h} results in invalid dimensions. Using minimum 300×200px.`
+        `Widget ${w}×${h} results in invalid dimensions. Using minimum 300×200px.`,
       );
       return { width: 300, height: 200 };
     }
 
     this.logger.log(
       `Chart container for widget ${w}×${h}: ${containerWidth.toFixed(0)}×${containerHeight.toFixed(0)}px ` +
-      `(widget: ${widgetWidth.toFixed(0)}×${widgetHeight.toFixed(0)}px)`
+        `(widget: ${widgetWidth.toFixed(0)}×${widgetHeight.toFixed(0)}px)`,
     );
 
     return {
       width: Math.round(containerWidth),
-      height: Math.round(containerHeight)
+      height: Math.round(containerHeight),
     };
   }
 
@@ -1614,30 +1734,39 @@ export class PDFGeneratorService {
    * Generate chart canvas with Chart.js (2025 RESPONSIVE APPROACH)
    * Uses container-based sizing where Chart.js auto-sizes canvas to fill container
    */
-  private generateChartCanvas(viz: any, data: any[], chartId: string, layout?: any, rowHeight?: number): string {
+  private generateChartCanvas(
+    viz: any,
+    data: any[],
+    chartId: string,
+    layout?: any,
+    rowHeight?: number,
+  ): string {
     // Calculate container dimensions (Chart.js will size canvas to fill this)
     let containerDimensions;
 
     if (layout) {
-      containerDimensions = this.calculateChartContainerDimensions(layout, rowHeight);
+      containerDimensions = this.calculateChartContainerDimensions(
+        layout,
+        rowHeight,
+      );
       this.logger.log(
         `Generating ${viz.type} chart "${viz.title}" with widget layout ${layout.w}×${layout.h}: ` +
-        `container ${containerDimensions.width}×${containerDimensions.height}px`
+          `container ${containerDimensions.width}×${containerDimensions.height}px`,
       );
     } else {
       // Default for legacy visualizations
       containerDimensions = { width: 750, height: 400 };
       this.logger.log(
-        `Generating ${viz.type} chart "${viz.title}" with default container: 750×400px`
+        `Generating ${viz.type} chart "${viz.title}" with default container: 750×400px`,
       );
     }
 
     // Prepare chart configuration based on type
     let chartConfig: any = {};
 
-    if (viz.type === 'line' || viz.type === 'bar' || viz.type === 'area') {
+    if (viz.type === "line" || viz.type === "bar" || viz.type === "area") {
       if (!viz.xAxis || !viz.yAxis || !Array.isArray(viz.yAxis)) {
-        return '';
+        return "";
       }
 
       // Normalize numeric data (matches ChartRenderer.tsx)
@@ -1647,8 +1776,16 @@ export class PDFGeneratorService {
       const datasets = viz.yAxis.map((yKey: string, index: number) => {
         // FIXED: Use Recharts color palette (matches ChartRenderer.tsx)
         const colors = [
-          '#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8',
-          '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d084d0',
+          "#0088FE",
+          "#00C49F",
+          "#FFBB28",
+          "#FF8042",
+          "#8884d8",
+          "#82ca9d",
+          "#ffc658",
+          "#ff7c7c",
+          "#8dd1e1",
+          "#d084d0",
         ];
         const color = colors[index % colors.length];
 
@@ -1656,41 +1793,41 @@ export class PDFGeneratorService {
           label: yKey,
           data: normalizedData.map((row) => row[yKey]),
           borderColor: color,
-          backgroundColor: viz.type === 'area' ? color + '40' : color,
-          fill: viz.type === 'area',
+          backgroundColor: viz.type === "area" ? color + "40" : color,
+          fill: viz.type === "area",
           tension: 0.4,
         };
       });
 
       chartConfig = {
-        type: viz.type === 'area' ? 'line' : viz.type,
+        type: viz.type === "area" ? "line" : viz.type,
         data: { labels, datasets },
         options: {
-          responsive: true,              // ✅ 2025: Use responsive with container
-          maintainAspectRatio: false,    // ✅ Fill container height
-          devicePixelRatio: 2,           // ✅ High resolution for PDF
+          responsive: true, // ✅ 2025: Use responsive with container
+          maintainAspectRatio: false, // ✅ Fill container height
+          devicePixelRatio: 2, // ✅ High resolution for PDF
           animation: {
-            duration: 0,                 // No animations
-            onComplete: null             // Will be set in HTML
+            duration: 0, // No animations
+            onComplete: null, // Will be set in HTML
           },
           layout: {
             padding: {
-              left: 40,   // ✅ DOUBLED: Prevent Y-axis label cropping
-              right: 40,  // ✅ DOUBLED: Prevent overflow
-              top: 60,    // ✅ TRIPLED: Room for legend
-              bottom: 40  // ✅ DOUBLED: X-axis labels
-            }
+              left: 40, // ✅ DOUBLED: Prevent Y-axis label cropping
+              right: 40, // ✅ DOUBLED: Prevent overflow
+              top: 60, // ✅ TRIPLED: Room for legend
+              bottom: 40, // ✅ DOUBLED: X-axis labels
+            },
           },
           plugins: {
             legend: {
               display: true,
-              position: 'top',
+              position: "top",
               labels: {
                 padding: 15,
-                boxWidth: 12
-              }
+                boxWidth: 12,
+              },
             },
-            title: { display: false }
+            title: { display: false },
           },
           scales: {
             y: {
@@ -1698,69 +1835,84 @@ export class PDFGeneratorService {
               ticks: {
                 padding: 10,
                 maxRotation: 0,
-                autoSkip: true
-              }
+                autoSkip: true,
+              },
             },
             x: {
               ticks: {
                 padding: 10,
                 maxRotation: 45,
                 minRotation: 0,
-                autoSkip: true
-              }
-            }
-          }
-        }
+                autoSkip: true,
+              },
+            },
+          },
+        },
       };
-    } else if (viz.type === 'pie') {
+    } else if (viz.type === "pie") {
       if (!viz.nameKey || !viz.valueKey) {
-        return '';
+        return "";
       }
 
       // FIXED: Aggregate and limit pie chart data to top 10 slices (matches ChartRenderer.tsx)
-      const aggregatedData = this.aggregatePieData(data, viz.nameKey, viz.valueKey, 10);
+      const aggregatedData = this.aggregatePieData(
+        data,
+        viz.nameKey,
+        viz.valueKey,
+        10,
+      );
       const labels = aggregatedData.map((row) => row[viz.nameKey]);
       const values = aggregatedData.map((row) => row[viz.valueKey]);
 
       // FIXED: Use Recharts color palette (matches ChartRenderer.tsx)
       const colors = [
-        '#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8',
-        '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d084d0',
+        "#0088FE",
+        "#00C49F",
+        "#FFBB28",
+        "#FF8042",
+        "#8884d8",
+        "#82ca9d",
+        "#ffc658",
+        "#ff7c7c",
+        "#8dd1e1",
+        "#d084d0",
       ];
 
       chartConfig = {
-        type: 'pie',
+        type: "pie",
         data: {
           labels,
-          datasets: [{
-            data: values,
-            backgroundColor: colors,
-          }],
+          datasets: [
+            {
+              data: values,
+              backgroundColor: colors,
+            },
+          ],
         },
         options: {
-          responsive: true,              // ✅ 2025: Use responsive with container
-          maintainAspectRatio: false,    // ✅ Fill container
-          devicePixelRatio: 2,           // ✅ High resolution
+          responsive: true, // ✅ 2025: Use responsive with container
+          maintainAspectRatio: false, // ✅ Fill container
+          devicePixelRatio: 2, // ✅ High resolution
           animation: {
             duration: 0,
-            onComplete: null
+            onComplete: null,
           },
           layout: {
             padding: {
               left: 40,
               right: 40,
               top: 60,
-              bottom: 40
-            }
+              bottom: 40,
+            },
           },
           plugins: {
             legend: {
               display: true,
-              position: 'right',
+              position: "right",
               labels: {
                 padding: 15,
-                boxWidth: 12
-              }
+                boxWidth: 12,
+              },
             },
           },
         },
@@ -1771,7 +1923,7 @@ export class PDFGeneratorService {
     // Chart.js responsive mode will auto-size canvas to fill this container
     return `
       <div class="chart-container">
-        <div class="chart-title">${this.escapeHtml(viz.title || 'Chart')}</div>
+        <div class="chart-title">${this.escapeHtml(viz.title || "Chart")}</div>
         <div class="chart-wrapper" style="position: relative; width: ${containerDimensions.width}px; height: ${containerDimensions.height}px;">
           <canvas id="${chartId}"></canvas>
         </div>
@@ -1818,7 +1970,7 @@ export class PDFGeneratorService {
       <table class="data-table">
         <thead>
           <tr>
-            ${columns.map((col) => `<th>${this.escapeHtml(col)}</th>`).join('')}
+            ${columns.map((col) => `<th>${this.escapeHtml(col)}</th>`).join("")}
           </tr>
         </thead>
         <tbody>
@@ -1830,14 +1982,14 @@ export class PDFGeneratorService {
                 .map((col) => {
                   const value = row[col];
                   const type = columnTypes[col];
-                  const className = type === 'NUMBER' ? 'number' : '';
+                  const className = type === "NUMBER" ? "number" : "";
                   return `<td class="${className}">${this.formatValue(value, type)}</td>`;
                 })
-                .join('')}
+                .join("")}
             </tr>
           `,
             )
-            .join('')}
+            .join("")}
         </tbody>
       </table>
     `;
@@ -1847,20 +1999,22 @@ export class PDFGeneratorService {
    * Format value based on type
    */
   private formatValue(value: any, type: string): string {
-    if (value === null || value === undefined || value === '') {
+    if (value === null || value === undefined || value === "") {
       return '<span style="color: #ccc;">-</span>';
     }
 
-    if (type === 'NUMBER') {
+    if (type === "NUMBER") {
       const num = parseFloat(value);
-      return isNaN(num) ? this.escapeHtml(String(value)) : num.toLocaleString('id-ID');
+      return isNaN(num)
+        ? this.escapeHtml(String(value))
+        : num.toLocaleString("id-ID");
     }
 
-    if (type === 'DATE') {
+    if (type === "DATE") {
       const date = new Date(value);
       return isNaN(date.getTime())
         ? this.escapeHtml(String(value))
-        : date.toLocaleDateString('id-ID');
+        : date.toLocaleDateString("id-ID");
     }
 
     return this.escapeHtml(String(value));
@@ -1871,11 +2025,11 @@ export class PDFGeneratorService {
    */
   private escapeHtml(text: string): string {
     const map: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;',
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
     };
     return text.replace(/[&<>"']/g, (m) => map[m]);
   }
@@ -1891,10 +2045,10 @@ export class PDFGeneratorService {
       browser = await puppeteer.launch({
         headless: true,
         args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
         ],
       });
 
@@ -1904,19 +2058,19 @@ export class PDFGeneratorService {
       await page.setViewport({
         width: 1280,
         height: 1024,
-        deviceScaleFactor: 2  // 2x resolution for crisp charts
+        deviceScaleFactor: 2, // 2x resolution for crisp charts
       });
 
       // ✅ 2025: Emulate print media
-      await page.emulateMediaType('print');
+      await page.emulateMediaType("print");
 
       // Set content and wait for network idle
       await page.setContent(html, {
-        waitUntil: 'networkidle0',
+        waitUntil: "networkidle0",
       });
 
       // ✅ 2025: Smart wait for all charts to render
-      this.logger.log('Waiting for charts to render...');
+      this.logger.log("Waiting for charts to render...");
       try {
         await page.waitForFunction(
           `() => {
@@ -1924,19 +2078,21 @@ export class PDFGeneratorService {
             if (canvases.length === 0) return true;
             return Array.from(canvases).every(canvas => canvas.dataset.chartReady === 'true');
           }`,
-          { timeout: 10000 }
+          { timeout: 10000 },
         );
 
-        this.logger.log('All charts rendered successfully');
+        this.logger.log("All charts rendered successfully");
       } catch (error) {
-        this.logger.warn('Chart render timeout - proceeding anyway');
+        this.logger.warn("Chart render timeout - proceeding anyway");
       }
 
       // Small buffer for layout stability
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Calculate actual content height for single-page PDF
-      const contentHeight = (await page.evaluate('document.documentElement.scrollHeight')) as number;
+      const contentHeight = (await page.evaluate(
+        "document.documentElement.scrollHeight",
+      )) as number;
 
       // A4 width in pixels at 96 DPI: 210mm = 794px
       const pageWidth = 794;
@@ -1944,7 +2100,9 @@ export class PDFGeneratorService {
       const marginBottom = 28;
       const totalHeight = contentHeight + marginTop + marginBottom;
 
-      this.logger.log(`Generating single-page PDF: content=${contentHeight}px, total=${totalHeight}px (${(totalHeight * 0.264583).toFixed(0)}mm)`);
+      this.logger.log(
+        `Generating single-page PDF: content=${contentHeight}px, total=${totalHeight}px (${(totalHeight * 0.264583).toFixed(0)}mm)`,
+      );
 
       // Generate PDF as single continuous page (no pagination)
       const pdfBuffer = await page.pdf({
@@ -1952,16 +2110,16 @@ export class PDFGeneratorService {
         height: totalHeight,
         printBackground: true,
         margin: {
-          top: '10mm',
-          right: '10mm',
-          bottom: '10mm',
-          left: '10mm',
+          top: "10mm",
+          right: "10mm",
+          bottom: "10mm",
+          left: "10mm",
         },
       });
 
       return Buffer.from(pdfBuffer);
     } catch (error) {
-      this.logger.error('PDF generation failed', error);
+      this.logger.error("PDF generation failed", error);
       throw error;
     } finally {
       if (browser) {

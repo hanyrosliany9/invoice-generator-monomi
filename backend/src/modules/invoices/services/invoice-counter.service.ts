@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class InvoiceCounterService {
@@ -19,11 +19,11 @@ export class InvoiceCounterService {
     const result = await this.prisma.$transaction(async (tx) => {
       // Get invoice prefix from system settings
       const settings = await tx.systemSettings.findUnique({
-        where: { id: 'default' },
+        where: { id: "default" },
         select: { invoicePrefix: true },
       });
 
-      const prefix = settings?.invoicePrefix || 'INV-';
+      const prefix = settings?.invoicePrefix || "INV-";
 
       // Get or create counter with exclusive lock
       const counter = await tx.invoiceCounter.upsert({
@@ -41,8 +41,8 @@ export class InvoiceCounterService {
       });
 
       // Format: {PREFIX}YYYY/MM/XXXX
-      const paddedSequence = counter.sequence.toString().padStart(4, '0');
-      const paddedMonth = month.toString().padStart(2, '0');
+      const paddedSequence = counter.sequence.toString().padStart(4, "0");
+      const paddedMonth = month.toString().padStart(2, "0");
 
       return `${prefix}${year}/${paddedMonth}/${paddedSequence}`;
     });
@@ -63,11 +63,11 @@ export class InvoiceCounterService {
     const result = await this.prisma.$transaction(async (tx) => {
       // Get quotation prefix from system settings
       const settings = await tx.systemSettings.findUnique({
-        where: { id: 'default' },
+        where: { id: "default" },
         select: { quotationPrefix: true },
       });
 
-      const prefix = settings?.quotationPrefix || 'QT-';
+      const prefix = settings?.quotationPrefix || "QT-";
 
       const counter = await tx.quotationCounter.upsert({
         where: {
@@ -83,8 +83,8 @@ export class InvoiceCounterService {
         },
       });
 
-      const paddedSequence = counter.sequence.toString().padStart(3, '0');
-      const paddedMonth = month.toString().padStart(2, '0');
+      const paddedSequence = counter.sequence.toString().padStart(3, "0");
+      const paddedMonth = month.toString().padStart(2, "0");
 
       return `${prefix}${year}${paddedMonth}-${paddedSequence}`;
     });

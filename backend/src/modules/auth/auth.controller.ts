@@ -62,7 +62,7 @@ export class AuthController {
   })
   async login(@Body() loginDto: LoginDto, @Request() req: any) {
     const deviceInfo = {
-      userAgent: req.headers['user-agent'],
+      userAgent: req.headers["user-agent"],
       ipAddress: req.ip,
     };
     return this.authService.login(loginDto, deviceInfo);
@@ -153,7 +153,7 @@ export class AuthController {
     @Request() req: any,
   ) {
     const deviceInfo = {
-      userAgent: req.headers['user-agent'],
+      userAgent: req.headers["user-agent"],
       ipAddress: req.ip,
     };
     return this.authService.refreshAccessToken(refreshToken, deviceInfo);
@@ -181,10 +181,12 @@ export class AuthController {
   ) {
     await this.authService.logout(
       req.user.id,
-      logoutAll ? undefined : refreshToken
+      logoutAll ? undefined : refreshToken,
     );
     return {
-      message: logoutAll ? "Logout dari semua perangkat berhasil" : "Logout berhasil",
+      message: logoutAll
+        ? "Logout dari semua perangkat berhasil"
+        : "Logout berhasil",
     };
   }
 
@@ -197,14 +199,18 @@ export class AuthController {
     description: "Daftar sesi aktif",
   })
   async getSessions(@Request() req: any) {
-    const sessions = await this.refreshTokenService.getUserActiveSessions(req.user.id);
+    const sessions = await this.refreshTokenService.getUserActiveSessions(
+      req.user.id,
+    );
     return { sessions };
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete("sessions/:sessionId")
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Hapus sesi tertentu (logout dari perangkat tertentu)" })
+  @ApiOperation({
+    summary: "Hapus sesi tertentu (logout dari perangkat tertentu)",
+  })
   @ApiResponse({
     status: 200,
     description: "Sesi berhasil dihapus",
@@ -213,7 +219,9 @@ export class AuthController {
     @Request() req: any,
     @Param("sessionId") sessionId: string,
   ) {
-    const session = await this.refreshTokenService['prisma'].refreshToken.findFirst({
+    const session = await this.refreshTokenService[
+      "prisma"
+    ].refreshToken.findFirst({
       where: { id: sessionId, userId: req.user.id },
     });
 

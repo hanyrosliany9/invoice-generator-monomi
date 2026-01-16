@@ -9,16 +9,16 @@ import {
   Request,
   UseGuards,
   BadRequestException,
-} from '@nestjs/common';
-import type { Request as ExpressRequest } from 'express';
+} from "@nestjs/common";
+import type { Request as ExpressRequest } from "express";
 
 interface AuthenticatedRequest extends ExpressRequest {
   user: { id: string };
 }
-import { PaymentMilestonesService } from '../services/payment-milestones.service';
-import { CreatePaymentMilestoneDto } from '../dto/create-payment-milestone.dto';
-import { UpdatePaymentMilestoneDto } from '../dto/update-payment-milestone.dto';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { PaymentMilestonesService } from "../services/payment-milestones.service";
+import { CreatePaymentMilestoneDto } from "../dto/create-payment-milestone.dto";
+import { UpdatePaymentMilestoneDto } from "../dto/update-payment-milestone.dto";
+import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 
 /**
  * PaymentMilestonesController
@@ -26,12 +26,10 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
  * REST API endpoints for managing payment milestones in quotations
  * Supports Indonesian "termin pembayaran" (payment terms) workflow
  */
-@Controller('quotations/:quotationId/payment-milestones')
+@Controller("quotations/:quotationId/payment-milestones")
 @UseGuards(JwtAuthGuard)
 export class PaymentMilestonesController {
-  constructor(
-    private paymentMilestonesService: PaymentMilestonesService,
-  ) {}
+  constructor(private paymentMilestonesService: PaymentMilestonesService) {}
 
   /**
    * POST /api/quotations/:quotationId/payment-milestones
@@ -39,7 +37,7 @@ export class PaymentMilestonesController {
    */
   @Post()
   async create(
-    @Param('quotationId') quotationId: string,
+    @Param("quotationId") quotationId: string,
     @Body() dto: CreatePaymentMilestoneDto,
     @Request() req: AuthenticatedRequest,
   ) {
@@ -51,9 +49,7 @@ export class PaymentMilestonesController {
    * Get all payment milestones for a quotation
    */
   @Get()
-  async findAll(
-    @Param('quotationId') quotationId: string,
-  ) {
+  async findAll(@Param("quotationId") quotationId: string) {
     return this.paymentMilestonesService.getQuotationMilestones(quotationId);
   }
 
@@ -61,10 +57,10 @@ export class PaymentMilestonesController {
    * GET /api/quotations/:quotationId/payment-milestones/:id
    * Get a specific payment milestone
    */
-  @Get(':id')
+  @Get(":id")
   async findOne(
-    @Param('quotationId') quotationId: string,
-    @Param('id') id: string,
+    @Param("quotationId") quotationId: string,
+    @Param("id") id: string,
   ) {
     // Get milestone and verify it belongs to the quotation
     const milestones =
@@ -73,7 +69,7 @@ export class PaymentMilestonesController {
 
     if (!milestone) {
       throw new BadRequestException(
-        'Payment milestone tidak ditemukan dalam quotation ini',
+        "Payment milestone tidak ditemukan dalam quotation ini",
       );
     }
 
@@ -84,10 +80,10 @@ export class PaymentMilestonesController {
    * PATCH /api/quotations/:quotationId/payment-milestones/:id
    * Update a payment milestone
    */
-  @Patch(':id')
+  @Patch(":id")
   async update(
-    @Param('quotationId') quotationId: string,
-    @Param('id') id: string,
+    @Param("quotationId") quotationId: string,
+    @Param("id") id: string,
     @Body() dto: UpdatePaymentMilestoneDto,
     @Request() req: AuthenticatedRequest,
   ) {
@@ -98,24 +94,24 @@ export class PaymentMilestonesController {
    * DELETE /api/quotations/:quotationId/payment-milestones/:id
    * Delete a payment milestone
    */
-  @Delete(':id')
+  @Delete(":id")
   async remove(
-    @Param('quotationId') quotationId: string,
-    @Param('id') id: string,
+    @Param("quotationId") quotationId: string,
+    @Param("id") id: string,
     @Request() req: AuthenticatedRequest,
   ) {
     await this.paymentMilestonesService.removePaymentMilestone(id);
-    return { message: 'Payment milestone berhasil dihapus' };
+    return { message: "Payment milestone berhasil dihapus" };
   }
 
   /**
    * POST /api/quotations/:quotationId/payment-milestones/:id/generate-invoice
    * Generate invoice for a specific payment milestone
    */
-  @Post(':id/generate-invoice')
+  @Post(":id/generate-invoice")
   async generateInvoice(
-    @Param('quotationId') quotationId: string,
-    @Param('id') id: string,
+    @Param("quotationId") quotationId: string,
+    @Param("id") id: string,
     @Request() req: AuthenticatedRequest,
   ) {
     return this.paymentMilestonesService.generateMilestoneInvoice(
@@ -128,10 +124,8 @@ export class PaymentMilestonesController {
    * POST /api/quotations/:quotationId/payment-milestones/validate
    * Validate that milestone percentages sum to 100%
    */
-  @Post('validate')
-  async validate(
-    @Param('quotationId') quotationId: string,
-  ) {
+  @Post("validate")
+  async validate(@Param("quotationId") quotationId: string) {
     const milestones =
       await this.paymentMilestonesService.getQuotationMilestones(quotationId);
     const totalPercentage = milestones.reduce(
@@ -150,7 +144,8 @@ export class PaymentMilestonesController {
         errors: [],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Validation failed';
+      const errorMessage =
+        error instanceof Error ? error.message : "Validation failed";
       return {
         valid: false,
         totalPercentage,
@@ -164,10 +159,8 @@ export class PaymentMilestonesController {
    * GET /api/quotations/:quotationId/payment-milestones/progress
    * Get progress of milestone-based quotation (which are invoiced, paid, etc.)
    */
-  @Get('progress')
-  async getProgress(
-    @Param('quotationId') quotationId: string,
-  ) {
+  @Get("progress")
+  async getProgress(@Param("quotationId") quotationId: string) {
     return this.paymentMilestonesService.getProgress(quotationId);
   }
 
@@ -175,15 +168,15 @@ export class PaymentMilestonesController {
    * PATCH /api/quotations/:quotationId/payment-milestones/:id/link-project-milestone
    * Link payment milestone to a project milestone
    */
-  @Patch(':id/link-project-milestone')
+  @Patch(":id/link-project-milestone")
   async linkProjectMilestone(
-    @Param('quotationId') quotationId: string,
-    @Param('id') id: string,
-    @Body('projectMilestoneId') projectMilestoneId: string,
+    @Param("quotationId") quotationId: string,
+    @Param("id") id: string,
+    @Body("projectMilestoneId") projectMilestoneId: string,
     @Request() req: AuthenticatedRequest,
   ) {
     if (!projectMilestoneId) {
-      throw new BadRequestException('projectMilestoneId tidak boleh kosong');
+      throw new BadRequestException("projectMilestoneId tidak boleh kosong");
     }
 
     await this.paymentMilestonesService.linkToProjectMilestone(
@@ -191,6 +184,8 @@ export class PaymentMilestonesController {
       projectMilestoneId,
     );
 
-    return { message: 'Payment milestone berhasil di-link ke project milestone' };
+    return {
+      message: "Payment milestone berhasil di-link ke project milestone",
+    };
   }
 }

@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsInt, IsNumber, IsEnum, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsInt,
+  IsNumber,
+  IsEnum,
+  IsBoolean,
+} from "class-validator";
 
 export class CreateStripDto {
   @IsString()
@@ -8,7 +15,7 @@ export class CreateStripDto {
   @IsInt()
   order?: number;
 
-  @IsEnum(['SCENE', 'BANNER'])
+  @IsEnum(["SCENE", "BANNER"])
   stripType: string;
 
   // === SCENE DATA (when stripType = SCENE) ===
@@ -40,7 +47,9 @@ export class CreateStripDto {
   @IsOptional() @IsString() backgroundNotes?: string;
 
   // === BANNER DATA (when stripType = BANNER) ===
-  @IsOptional() @IsEnum(['DAY_BREAK', 'MEAL_BREAK', 'COMPANY_MOVE', 'NOTE']) bannerType?: string;
+  @IsOptional()
+  @IsEnum(["DAY_BREAK", "MEAL_BREAK", "COMPANY_MOVE", "NOTE"])
+  bannerType?: string;
   @IsOptional() @IsString() bannerText?: string;
   @IsOptional() @IsString() bannerColor?: string;
 

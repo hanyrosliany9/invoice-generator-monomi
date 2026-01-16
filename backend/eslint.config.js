@@ -29,6 +29,9 @@ export default [
         clearInterval: 'readonly',
         require: 'readonly',
         module: 'readonly',
+        Express: 'readonly',
+        performance: 'readonly',
+        document: 'readonly',
       },
     },
     plugins: {
@@ -72,6 +75,9 @@ export default [
         afterAll: 'readonly',
         beforeEach: 'readonly',
         afterEach: 'readonly',
+        Express: 'readonly',
+        performance: 'readonly',
+        document: 'readonly',
       },
     },
     plugins: {

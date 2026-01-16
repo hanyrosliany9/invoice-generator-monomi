@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsDateString } from "class-validator";
 
 export class CreateShootDayDto {
   @IsString()

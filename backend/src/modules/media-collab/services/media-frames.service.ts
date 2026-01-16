@@ -1,7 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateFrameDrawingDto } from '../dto/create-frame-drawing.dto';
-import { UpdateFrameDrawingDto } from '../dto/update-frame-drawing.dto';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreateFrameDrawingDto } from "../dto/create-frame-drawing.dto";
+import { UpdateFrameDrawingDto } from "../dto/update-frame-drawing.dto";
 
 /**
  * MediaFramesService
@@ -59,7 +63,7 @@ export class MediaFramesService {
               },
             },
           },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: "asc" },
         },
         drawings: {
           include: {
@@ -67,11 +71,11 @@ export class MediaFramesService {
               select: { id: true, name: true, email: true },
             },
           },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: "asc" },
         },
       },
       orderBy: {
-        timestamp: 'asc',
+        timestamp: "asc",
       },
     });
   }
@@ -86,17 +90,21 @@ export class MediaFramesService {
     });
 
     if (!asset) {
-      throw new NotFoundException('Asset not found');
+      throw new NotFoundException("Asset not found");
     }
 
     // Get or create frame at timecode
-    const frame = await this.getOrCreateFrame(createDto.assetId, createDto.timecode, userId);
+    const frame = await this.getOrCreateFrame(
+      createDto.assetId,
+      createDto.timecode,
+      userId,
+    );
 
     // Create drawing
     return this.prisma.frameDrawing.create({
       data: {
         frameId: frame.id,
-        type: 'FREEHAND', // Default type, can be overridden
+        type: "FREEHAND", // Default type, can be overridden
         data: createDto.drawingData,
         createdBy: userId,
       },
@@ -106,18 +114,22 @@ export class MediaFramesService {
   /**
    * Update existing drawing
    */
-  async updateDrawing(drawingId: string, userId: string, updateDto: UpdateFrameDrawingDto) {
+  async updateDrawing(
+    drawingId: string,
+    userId: string,
+    updateDto: UpdateFrameDrawingDto,
+  ) {
     // Verify drawing exists and user owns it
     const drawing = await this.prisma.frameDrawing.findUnique({
       where: { id: drawingId },
     });
 
     if (!drawing) {
-      throw new NotFoundException('Drawing not found');
+      throw new NotFoundException("Drawing not found");
     }
 
     if (drawing.createdBy !== userId) {
-      throw new BadRequestException('You can only edit your own drawings');
+      throw new BadRequestException("You can only edit your own drawings");
     }
 
     // Update drawing
@@ -139,11 +151,11 @@ export class MediaFramesService {
     });
 
     if (!drawing) {
-      throw new NotFoundException('Drawing not found');
+      throw new NotFoundException("Drawing not found");
     }
 
     if (drawing.createdBy !== userId) {
-      throw new BadRequestException('You can only delete your own drawings');
+      throw new BadRequestException("You can only delete your own drawings");
     }
 
     await this.prisma.frameDrawing.delete({
@@ -172,7 +184,7 @@ export class MediaFramesService {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   }

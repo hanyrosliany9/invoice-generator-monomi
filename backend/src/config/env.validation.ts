@@ -1,10 +1,21 @@
-import { plainToInstance } from 'class-transformer';
-import { IsString, IsNumber, IsBoolean, IsUrl, IsEmail, IsOptional, IsEnum, validateSync, Min, Max } from 'class-validator';
+import { plainToInstance } from "class-transformer";
+import {
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsUrl,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  validateSync,
+  Min,
+  Max,
+} from "class-validator";
 
 enum Environment {
-  Development = 'development',
-  Production = 'production',
-  Test = 'test',
+  Development = "development",
+  Production = "production",
+  Test = "test",
 }
 
 export class EnvironmentVariables {
@@ -30,7 +41,7 @@ export class EnvironmentVariables {
   // Redis
   @IsString()
   @IsOptional()
-  REDIS_URL: string = 'redis://localhost:6379';
+  REDIS_URL: string = "redis://localhost:6379";
 
   // Security
   @IsString()
@@ -38,12 +49,12 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  JWT_EXPIRES_IN: string = '24h';
+  JWT_EXPIRES_IN: string = "24h";
 
   // Frontend
   @IsUrl({ require_tld: false })
   @IsOptional()
-  FRONTEND_URL: string = 'http://localhost:3000';
+  FRONTEND_URL: string = "http://localhost:3000";
 
   @IsUrl({ require_tld: false })
   @IsOptional()
@@ -96,11 +107,11 @@ export class EnvironmentVariables {
   // File Storage
   @IsString()
   @IsOptional()
-  UPLOAD_PATH: string = './uploads';
+  UPLOAD_PATH: string = "./uploads";
 
   @IsString()
   @IsOptional()
-  STORAGE_PATH: string = './storage';
+  STORAGE_PATH: string = "./storage";
 
   @IsNumber()
   @IsOptional()
@@ -127,7 +138,7 @@ export class EnvironmentVariables {
   // Logging
   @IsString()
   @IsOptional()
-  LOG_LEVEL: string = 'debug';
+  LOG_LEVEL: string = "debug";
 
   @IsBoolean()
   @IsOptional()
@@ -198,11 +209,11 @@ export function validate(config: Record<string, unknown>) {
     const errorMessages = errors
       .map((error) => {
         const constraints = error.constraints
-          ? Object.values(error.constraints).join(', ')
-          : 'Unknown error';
+          ? Object.values(error.constraints).join(", ")
+          : "Unknown error";
         return `${error.property}: ${constraints}`;
       })
-      .join('\n');
+      .join("\n");
 
     throw new Error(
       `❌ Environment validation failed:\n${errorMessages}\n\n` +

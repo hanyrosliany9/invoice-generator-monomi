@@ -39,7 +39,10 @@ export class SettingsController {
     @Request() req: any,
     @Body() updateUserSettingsDto: UpdateUserSettingsDto,
   ) {
-    this.logger.log("UPDATE USER SETTINGS - Request body:", JSON.stringify(updateUserSettingsDto, null, 2));
+    this.logger.log(
+      "UPDATE USER SETTINGS - Request body:",
+      JSON.stringify(updateUserSettingsDto, null, 2),
+    );
     return this.settingsService.updateUserSettings(
       req.user.id,
       updateUserSettingsDto,
@@ -59,7 +62,10 @@ export class SettingsController {
   async updateCompanySettings(
     @Body() updateCompanySettingsDto: UpdateCompanySettingsDto,
   ) {
-    this.logger.log("UPDATE COMPANY SETTINGS - Request body:", JSON.stringify(updateCompanySettingsDto, null, 2));
+    this.logger.log(
+      "UPDATE COMPANY SETTINGS - Request body:",
+      JSON.stringify(updateCompanySettingsDto, null, 2),
+    );
     return this.settingsService.updateCompanySettings(updateCompanySettingsDto);
   }
 
@@ -76,8 +82,14 @@ export class SettingsController {
   async updateSystemSettings(
     @Body() updateSystemSettingsDto: UpdateSystemSettingsDto,
   ) {
-    this.logger.log("UPDATE SYSTEM SETTINGS - Request body:", JSON.stringify(updateSystemSettingsDto, null, 2));
-    this.logger.log("UPDATE SYSTEM SETTINGS - Request body keys:", Object.keys(updateSystemSettingsDto));
+    this.logger.log(
+      "UPDATE SYSTEM SETTINGS - Request body:",
+      JSON.stringify(updateSystemSettingsDto, null, 2),
+    );
+    this.logger.log(
+      "UPDATE SYSTEM SETTINGS - Request body keys:",
+      Object.keys(updateSystemSettingsDto),
+    );
     return this.settingsService.updateSystemSettings(updateSystemSettingsDto);
   }
 

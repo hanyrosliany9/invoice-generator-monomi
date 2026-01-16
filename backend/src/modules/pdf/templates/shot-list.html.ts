@@ -5,21 +5,23 @@
 
 export function generateShotListHTML(shotList: any): string {
   const escapeHtml = (text: string): string => {
-    if (!text) return '';
+    if (!text) return "";
     return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   };
 
-  const scenesHtml = shotList.scenes.map((scene: any) => `
+  const scenesHtml = shotList.scenes
+    .map(
+      (scene: any) => `
     <div class="scene">
       <div class="scene-header">
         <strong>${scene.sceneNumber}</strong> - ${scene.name}
-        ${scene.intExt ? `(${scene.intExt})` : ''}
-        ${scene.dayNight ? `/ ${scene.dayNight}` : ''}
+        ${scene.intExt ? `(${scene.intExt})` : ""}
+        ${scene.dayNight ? `/ ${scene.dayNight}` : ""}
       </div>
       <table>
         <thead>
@@ -34,21 +36,27 @@ export function generateShotListHTML(shotList: any): string {
           </tr>
         </thead>
         <tbody>
-          ${scene.shots.map((shot: any) => `
+          ${scene.shots
+            .map(
+              (shot: any) => `
             <tr>
               <td>${shot.shotNumber}</td>
-              <td>${shot.shotSize || '-'}</td>
-              <td>${shot.shotType || '-'}</td>
-              <td>${shot.cameraMovement || '-'}</td>
-              <td>${shot.lens || '-'}</td>
-              <td>${shot.description || '-'}</td>
+              <td>${shot.shotSize || "-"}</td>
+              <td>${shot.shotType || "-"}</td>
+              <td>${shot.cameraMovement || "-"}</td>
+              <td>${shot.lens || "-"}</td>
+              <td>${shot.description || "-"}</td>
               <td>${shot.status}</td>
             </tr>
-          `).join('')}
+          `,
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
-  `).join('');
+  `,
+    )
+    .join("");
 
   return `
     <!DOCTYPE html>
@@ -72,7 +80,7 @@ export function generateShotListHTML(shotList: any): string {
     <body>
       <h1>${escapeHtml(shotList.name)}</h1>
       <div class="meta">
-        Project: ${escapeHtml(shotList.project?.name || 'N/A')} |
+        Project: ${escapeHtml(shotList.project?.name || "N/A")} |
         Created: ${new Date(shotList.createdAt).toLocaleDateString()}
       </div>
       ${scenesHtml}

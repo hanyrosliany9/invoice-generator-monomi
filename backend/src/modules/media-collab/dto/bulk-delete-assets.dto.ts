@@ -1,5 +1,5 @@
-import { IsArray, IsString, ArrayMaxSize, ArrayMinSize } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsString, ArrayMaxSize, ArrayMinSize } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
 /**
  * DTO for bulk delete assets operation
@@ -14,19 +14,19 @@ import { ApiProperty } from '@nestjs/swagger';
  */
 export class BulkDeleteAssetsDto {
   @ApiProperty({
-    description: 'Array of asset IDs to delete',
+    description: "Array of asset IDs to delete",
     example: [
-      'cmi65bkbh006xrlrp39n0rn0q',
-      'cmi65eq9p00a9rlrp38r72rwu',
-      'cmi65bn5v0071rlrpr8r20l5i'
+      "cmi65bkbh006xrlrp39n0rn0q",
+      "cmi65eq9p00a9rlrp38r72rwu",
+      "cmi65bn5v0071rlrpr8r20l5i",
     ],
     type: [String],
     minItems: 1,
     maxItems: 100,
   })
   @IsArray()
-  @ArrayMinSize(1, { message: 'At least one asset ID is required' })
-  @ArrayMaxSize(100, { message: 'Maximum 100 assets can be deleted at once' })
+  @ArrayMinSize(1, { message: "At least one asset ID is required" })
+  @ArrayMaxSize(100, { message: "Maximum 100 assets can be deleted at once" })
   @IsString({ each: true })
   assetIds: string[];
 }

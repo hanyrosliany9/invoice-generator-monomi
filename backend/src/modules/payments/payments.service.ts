@@ -182,12 +182,12 @@ export class PaymentsService {
             descriptionId: `Pembayaran Faktur ${invoice.invoiceNumber}`,
             entryDate: new Date(payment.paymentDate),
             transactionId: payment.id,
-            transactionType: 'PAYMENT_RECEIVED',
-            createdBy: 'system', // TODO: Get actual user ID from context
+            transactionType: "PAYMENT_RECEIVED",
+            createdBy: "system", // TODO: Get actual user ID from context
             autoPost: true, // Auto-post to General Ledger
             lineItems: [
               {
-                accountCode: '1-1020', // Bank Account (adjust based on payment method)
+                accountCode: "1-1020", // Bank Account (adjust based on payment method)
                 description: `Payment from ${invoice.client.name}`,
                 descriptionId: `Pembayaran dari ${invoice.client.name}`,
                 debit: Number(payment.amount),
@@ -195,7 +195,7 @@ export class PaymentsService {
                 clientId: invoice.clientId,
               },
               {
-                accountCode: '1-2010', // Accounts Receivable
+                accountCode: "1-2010", // Accounts Receivable
                 description: `Payment for Invoice ${invoice.invoiceNumber}`,
                 descriptionId: `Pembayaran Faktur ${invoice.invoiceNumber}`,
                 debit: 0,
@@ -229,7 +229,10 @@ export class PaymentsService {
           "system", // TODO: Get actual user ID from context
         );
       } catch (error) {
-        this.logger.error("Failed to process advance payment detection:", error);
+        this.logger.error(
+          "Failed to process advance payment detection:",
+          error,
+        );
         // Don't fail payment confirmation if advance payment detection fails
       }
     }

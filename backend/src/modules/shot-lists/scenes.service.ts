@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateSceneDto } from './dto/create-scene.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateSceneDto } from "./dto/create-scene.dto";
 
 @Injectable()
 export class ScenesService {
@@ -33,9 +33,9 @@ export class ScenesService {
   async findOne(id: string) {
     const scene = await this.prisma.shotListScene.findUnique({
       where: { id },
-      include: { shots: { orderBy: { order: 'asc' } } },
+      include: { shots: { orderBy: { order: "asc" } } },
     });
-    if (!scene) throw new NotFoundException('Scene not found');
+    if (!scene) throw new NotFoundException("Scene not found");
     return scene;
   }
 }

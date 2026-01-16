@@ -5,80 +5,109 @@
  */
 
 const THEME_COLORS = {
-  primary: '#337EA9',
-  primaryDark: '#37352F',
-  success: '#448361',
-  warning: '#D9730D',
-  error: '#D44C47',
-  lightBg: '#F1F1EF',
-  mediumBg: '#E1E0DC',
-  textSecondary: '#787774',
+  primary: "#337EA9",
+  primaryDark: "#37352F",
+  success: "#448361",
+  warning: "#D9730D",
+  error: "#D44C47",
+  lightBg: "#F1F1EF",
+  mediumBg: "#E1E0DC",
+  textSecondary: "#787774",
 };
 
 function getPageBreakStyle(continuous: boolean): string {
-  return continuous ? '' : 'page-break-inside: avoid;';
+  return continuous ? "" : "page-break-inside: avoid;";
 }
 
-export function generatePhotoCallSheetHTML(cs: any, logoBase64?: string | null, continuous: boolean = true): string {
-  const shootDate = new Date(cs.shootDate).toLocaleDateString('en-US', {
-    weekday: 'short', year: 'numeric', month: 'short', day: '2-digit'
+export function generatePhotoCallSheetHTML(
+  cs: any,
+  logoBase64?: string | null,
+  continuous: boolean = true,
+): string {
+  const shootDate = new Date(cs.shootDate).toLocaleDateString("en-US", {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
   });
 
   // Build shots HTML
-  const shotsHtml = cs.shots?.map((shot: any) => `
+  const shotsHtml =
+    cs.shots
+      ?.map(
+        (shot: any) => `
     <tr>
       <td style="text-align: center; font-weight: bold;">${shot.shotNumber}</td>
-      <td>${shot.shotName || ''}</td>
-      <td>${shot.lookReference || ''}</td>
-      <td>${shot.setupLocation || ''}</td>
-      <td style="text-align: center;">${shot.estStartTime || '-'}</td>
-      <td style="text-align: center;">${shot.estDuration || '-'}</td>
-      <td style="font-size: 9px;">${shot.wardrobeNotes || ''}</td>
+      <td>${shot.shotName || ""}</td>
+      <td>${shot.lookReference || ""}</td>
+      <td>${shot.setupLocation || ""}</td>
+      <td style="text-align: center;">${shot.estStartTime || "-"}</td>
+      <td style="text-align: center;">${shot.estDuration || "-"}</td>
+      <td style="font-size: 9px;">${shot.wardrobeNotes || ""}</td>
     </tr>
-  `).join('') || '';
+  `,
+      )
+      .join("") || "";
 
   // Build models HTML
-  const modelsHtml = cs.models?.map((model: any) => `
+  const modelsHtml =
+    cs.models
+      ?.map(
+        (model: any) => `
     <tr>
-      <td style="text-align: center;">${model.modelNumber || ''}</td>
+      <td style="text-align: center;">${model.modelNumber || ""}</td>
       <td style="font-weight: bold;">${model.modelName}</td>
-      <td>${model.agencyName || '-'}</td>
-      <td style="font-size: 9px;">${model.arrivalType === 'CAMERA_READY' ? 'Camera Ready' : 'Styled'}</td>
+      <td>${model.agencyName || "-"}</td>
+      <td style="font-size: 9px;">${model.arrivalType === "CAMERA_READY" ? "Camera Ready" : "Styled"}</td>
       <td style="text-align: center;">${model.arrivalTime}</td>
-      <td style="text-align: center;">${model.hmuStartTime || '-'}</td>
-      <td style="text-align: center;">${model.cameraReadyTime || '-'}</td>
-      <td>${model.hmuArtist || '-'}</td>
+      <td style="text-align: center;">${model.hmuStartTime || "-"}</td>
+      <td style="text-align: center;">${model.cameraReadyTime || "-"}</td>
+      <td>${model.hmuArtist || "-"}</td>
     </tr>
-  `).join('') || '';
+  `,
+      )
+      .join("") || "";
 
   // Build wardrobe HTML
-  const wardrobeHtml = cs.wardrobe?.map((item: any) => `
+  const wardrobeHtml =
+    cs.wardrobe
+      ?.map(
+        (item: any) => `
     <tr>
       <td style="font-weight: bold;">${item.itemName}</td>
-      <td>${item.brand || '-'}</td>
-      <td style="text-align: center;">${item.size || '-'}</td>
-      <td>${item.color || '-'}</td>
-      <td>${item.forModel || '-'}</td>
-      <td>${item.forShot || '-'}</td>
+      <td>${item.brand || "-"}</td>
+      <td style="text-align: center;">${item.size || "-"}</td>
+      <td>${item.color || "-"}</td>
+      <td>${item.forModel || "-"}</td>
+      <td>${item.forShot || "-"}</td>
       <td style="font-size: 9px;">${item.status}</td>
     </tr>
-  `).join('') || '';
+  `,
+      )
+      .join("") || "";
 
   // Build HMU HTML
-  const hmuHtml = cs.hmuSchedule?.map((hmu: any) => `
+  const hmuHtml =
+    cs.hmuSchedule
+      ?.map(
+        (hmu: any) => `
     <tr>
       <td>${hmu.artistName}</td>
-      <td style="font-size: 9px;">${hmu.artistRole === 'KEY_STYLIST' ? 'Key Stylist' : hmu.artistRole}</td>
-      <td style="text-align: center;">${hmu.stationNumber || '-'}</td>
+      <td style="font-size: 9px;">${hmu.artistRole === "KEY_STYLIST" ? "Key Stylist" : hmu.artistRole}</td>
+      <td style="text-align: center;">${hmu.stationNumber || "-"}</td>
       <td style="text-align: center;">${hmu.callTime}</td>
-      <td style="text-align: center;">${hmu.availableFrom || '-'}</td>
-      <td style="text-align: center;">${hmu.availableUntil || '-'}</td>
-      <td style="font-size: 9px;">${hmu.assignedModels || '-'}</td>
+      <td style="text-align: center;">${hmu.availableFrom || "-"}</td>
+      <td style="text-align: center;">${hmu.availableUntil || "-"}</td>
+      <td style="font-size: 9px;">${hmu.assignedModels || "-"}</td>
     </tr>
-  `).join('') || '';
+  `,
+      )
+      .join("") || "";
 
   // Build CSS
-  const pagebreakCSS = continuous ? '' : `
+  const pagebreakCSS = continuous
+    ? ""
+    : `
     @page {
       size: letter;
       margin: 0.4in;
@@ -208,7 +237,7 @@ export function generatePhotoCallSheetHTML(cs: any, logoBase64?: string | null, 
   <!-- Header -->
   <div class="header">
     <div class="header-left">
-      <h1>${cs.productionName || 'PHOTO CALL SHEET'}</h1>
+      <h1>${cs.productionName || "PHOTO CALL SHEET"}</h1>
     </div>
     <div class="header-right">
       <div><strong>${shootDate}</strong></div>
@@ -221,35 +250,35 @@ export function generatePhotoCallSheetHTML(cs: any, logoBase64?: string | null, 
   <div class="info-grid">
     <div class="info-cell">
       <div class="info-cell-label">Photographer</div>
-      <div>${cs.photographer || '-'}</div>
+      <div>${cs.photographer || "-"}</div>
     </div>
     <div class="info-cell">
       <div class="info-cell-label">Art Director</div>
-      <div>${cs.artDirector || '-'}</div>
+      <div>${cs.artDirector || "-"}</div>
     </div>
     <div class="info-cell">
       <div class="info-cell-label">Stylist</div>
-      <div>${cs.stylist || '-'}</div>
+      <div>${cs.stylist || "-"}</div>
     </div>
     <div class="info-cell">
       <div class="info-cell-label">H&MU Lead</div>
-      <div>${cs.hmuLead || '-'}</div>
+      <div>${cs.hmuLead || "-"}</div>
     </div>
     <div class="info-cell">
       <div class="info-cell-label">Client</div>
-      <div>${cs.clientName || '-'}</div>
+      <div>${cs.clientName || "-"}</div>
     </div>
     <div class="info-cell">
       <div class="info-cell-label">Contact</div>
-      <div>${cs.clientContact || '-'}</div>
+      <div>${cs.clientContact || "-"}</div>
     </div>
     <div class="info-cell">
       <div class="info-cell-label">Agency</div>
-      <div>${cs.agencyName || '-'}</div>
+      <div>${cs.agencyName || "-"}</div>
     </div>
     <div class="info-cell">
       <div class="info-cell-label">Session Type</div>
-      <div>${cs.sessionType || '-'}</div>
+      <div>${cs.sessionType || "-"}</div>
     </div>
   </div>
 
@@ -258,27 +287,27 @@ export function generatePhotoCallSheetHTML(cs: any, logoBase64?: string | null, 
   <div class="info-grid">
     <div class="info-cell">
       <div class="info-cell-label">Crew Call</div>
-      <div>${cs.crewCallTime || '-'}</div>
+      <div>${cs.crewCallTime || "-"}</div>
     </div>
     <div class="info-cell">
       <div class="info-cell-label">First Shot</div>
-      <div>${cs.firstShotTime || '-'}</div>
+      <div>${cs.firstShotTime || "-"}</div>
     </div>
     <div class="info-cell">
       <div class="info-cell-label">Lunch</div>
-      <div>${cs.lunchTime || '-'}</div>
+      <div>${cs.lunchTime || "-"}</div>
     </div>
     <div class="info-cell">
       <div class="info-cell-label">Est. Wrap</div>
-      <div>${cs.estimatedWrap || '-'}</div>
+      <div>${cs.estimatedWrap || "-"}</div>
     </div>
     <div class="info-cell">
       <div class="info-cell-label">Location</div>
-      <div>${cs.locationName || '-'}</div>
+      <div>${cs.locationName || "-"}</div>
     </div>
     <div class="info-cell">
       <div class="info-cell-label">Total Looks</div>
-      <div>${cs.totalLooks || '-'}</div>
+      <div>${cs.totalLooks || "-"}</div>
     </div>
   </div>
 
@@ -359,12 +388,16 @@ export function generatePhotoCallSheetHTML(cs: any, logoBase64?: string | null, 
     </tbody>
   </table>
 
-  ${cs.productionNotes ? `
+  ${
+    cs.productionNotes
+      ? `
     <div class="section-title">Notes</div>
     <div style="background: #f9f9f9; border: 1px solid #ddd; padding: 8px; margin-bottom: 12px; font-size: 9px;">
       ${cs.productionNotes}
     </div>
-  ` : ''}
+  `
+      : ""
+  }
 
   <div class="footer">
     Generated: ${new Date().toLocaleString()} | Call Sheet #${cs.callSheetNumber || 1}

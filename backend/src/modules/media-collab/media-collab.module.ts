@@ -1,33 +1,33 @@
-import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { PrismaModule } from '../prisma/prisma.module';
-import { MediaModule } from '../media/media.module';
-import { MediaProjectsService } from './services/media-projects.service';
-import { MediaAssetsService } from './services/media-assets.service';
-import { MetadataService } from './services/metadata.service';
-import { MediaFramesService } from './services/media-frames.service';
-import { MediaCommentsService } from './services/media-comments.service';
-import { MediaProcessingService } from './services/media-processing.service';
-import { CollectionsService } from './services/collections.service';
-import { ComparisonService } from './services/comparison.service';
-import { VersionControlService } from './services/version-control.service';
-import { MediaCollaboratorsService } from './services/media-collaborators.service';
-import { MediaFoldersService } from './services/folders.service';
-import { MediaProjectsController } from './controllers/media-projects.controller';
-import { MediaAssetsController } from './controllers/media-assets.controller';
-import { MediaFramesController } from './controllers/media-frames.controller';
-import { MediaCommentsController } from './controllers/media-comments.controller';
-import { MediaCollaboratorsController } from './controllers/media-collaborators.controller';
-import { CollectionsController } from './controllers/collections.controller';
-import { MetadataController } from './controllers/metadata.controller';
-import { ComparisonController } from './controllers/comparison.controller';
-import { GuestController } from './controllers/guest.controller';
-import { PublicController } from './controllers/public.controller';
-import { MediaFoldersController } from './controllers/folders.controller';
-import { MediaCollabGateway } from './gateways/media-collab.gateway';
-import { GuestAuthGuard } from './guards/guest-auth.guard';
-import { PublicViewGuard } from './guards/public-view.guard';
+import { Module } from "@nestjs/common";
+import { JwtModule } from "@nestjs/jwt";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { PrismaModule } from "../prisma/prisma.module";
+import { MediaModule } from "../media/media.module";
+import { MediaProjectsService } from "./services/media-projects.service";
+import { MediaAssetsService } from "./services/media-assets.service";
+import { MetadataService } from "./services/metadata.service";
+import { MediaFramesService } from "./services/media-frames.service";
+import { MediaCommentsService } from "./services/media-comments.service";
+import { MediaProcessingService } from "./services/media-processing.service";
+import { CollectionsService } from "./services/collections.service";
+import { ComparisonService } from "./services/comparison.service";
+import { VersionControlService } from "./services/version-control.service";
+import { MediaCollaboratorsService } from "./services/media-collaborators.service";
+import { MediaFoldersService } from "./services/folders.service";
+import { MediaProjectsController } from "./controllers/media-projects.controller";
+import { MediaAssetsController } from "./controllers/media-assets.controller";
+import { MediaFramesController } from "./controllers/media-frames.controller";
+import { MediaCommentsController } from "./controllers/media-comments.controller";
+import { MediaCollaboratorsController } from "./controllers/media-collaborators.controller";
+import { CollectionsController } from "./controllers/collections.controller";
+import { MetadataController } from "./controllers/metadata.controller";
+import { ComparisonController } from "./controllers/comparison.controller";
+import { GuestController } from "./controllers/guest.controller";
+import { PublicController } from "./controllers/public.controller";
+import { MediaFoldersController } from "./controllers/folders.controller";
+import { MediaCollabGateway } from "./gateways/media-collab.gateway";
+import { GuestAuthGuard } from "./guards/guest-auth.guard";
+import { PublicViewGuard } from "./guards/public-view.guard";
 
 /**
  * MediaCollabModule - Frame.io-like Media Collaboration Platform
@@ -76,8 +76,8 @@ import { PublicViewGuard } from './guards/public-view.guard';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '24h' },
+        secret: configService.get<string>("JWT_SECRET"),
+        signOptions: { expiresIn: "24h" },
       }),
     }),
   ],

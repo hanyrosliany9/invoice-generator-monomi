@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaService } from '../../prisma/prisma.service';
-import { MediaService } from '../media.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { PrismaService } from "../../prisma/prisma.service";
+import { MediaService } from "../media.service";
 
 /**
  * MediaCleanupService - Automated Thumbnail and Orphaned File Cleanup
@@ -29,11 +29,11 @@ export class MediaCleanupService {
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async cleanupOrphanedThumbnails(): Promise<void> {
     if (!this.mediaService.isR2Enabled()) {
-      this.logger.warn('R2 is not enabled. Skipping thumbnail cleanup.');
+      this.logger.warn("R2 is not enabled. Skipping thumbnail cleanup.");
       return;
     }
 
-    this.logger.log('🧹 Starting orphaned thumbnail cleanup...');
+    this.logger.log("🧹 Starting orphaned thumbnail cleanup...");
     const startTime = Date.now();
 
     try {
@@ -70,7 +70,8 @@ export class MediaCleanupService {
         `🧹 Thumbnail cleanup completed in ${duration}ms. Deleted: ${deletedCount}, Errors: ${errorCount}`,
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.logger.error(`❌ Thumbnail cleanup failed: ${errorMessage}`);
     }
   }
@@ -79,14 +80,14 @@ export class MediaCleanupService {
    * Clean up old temporary files (> 7 days)
    * Runs weekly on Sunday at 3 AM
    */
-  @Cron('0 3 * * 0') // Every Sunday at 3 AM
+  @Cron("0 3 * * 0") // Every Sunday at 3 AM
   async cleanupOldTemporaryFiles(): Promise<void> {
     if (!this.mediaService.isR2Enabled()) {
-      this.logger.warn('R2 is not enabled. Skipping temporary file cleanup.');
+      this.logger.warn("R2 is not enabled. Skipping temporary file cleanup.");
       return;
     }
 
-    this.logger.log('🧹 Starting old temporary file cleanup (7+ days old)...');
+    this.logger.log("🧹 Starting old temporary file cleanup (7+ days old)...");
     const startTime = Date.now();
 
     try {
@@ -97,14 +98,17 @@ export class MediaCleanupService {
 
       // Note: MediaAsset uses hard deletes (Cascade), not soft deletes
       // No old temporary files to clean up - files are deleted immediately
-      this.logger.log('MediaAsset uses hard deletes - no temporary files to clean up');
+      this.logger.log(
+        "MediaAsset uses hard deletes - no temporary files to clean up",
+      );
 
       const duration = Date.now() - startTime;
       this.logger.log(
         `🧹 Old file cleanup completed in ${duration}ms. Deleted: ${deletedCount} files`,
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.logger.error(`❌ Old file cleanup failed: ${errorMessage}`);
     }
   }
@@ -118,7 +122,7 @@ export class MediaCleanupService {
     deletedFiles: number;
     errors: number;
   }> {
-    this.logger.log('🧹 Manual cleanup triggered...');
+    this.logger.log("🧹 Manual cleanup triggered...");
 
     let deletedThumbnails = 0;
     let deletedFiles = 0;
@@ -138,7 +142,8 @@ export class MediaCleanupService {
       };
     } catch (error) {
       errors++;
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.logger.error(`❌ Manual cleanup failed: ${errorMessage}`);
       throw error;
     }

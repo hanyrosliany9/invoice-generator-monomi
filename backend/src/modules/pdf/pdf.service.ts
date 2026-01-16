@@ -26,12 +26,12 @@ export class PdfService {
       // Try SVG first (optimized, scalable), then fall back to PNG
       const logoFileNames = ["company-logo.svg", "company-logo.png"];
       const basePaths = [
-        join(__dirname, "assets"),                                               // Development (ts-node)
-        join(__dirname, "..", "..", "..", "modules", "pdf", "assets"),           // Production (compiled dist/src -> dist/modules)
-        join(__dirname, "..", "..", "..", "src", "modules", "pdf", "assets"),    // Development fallback
-        join(process.cwd(), "backend", "dist", "modules", "pdf", "assets"),      // Production explicit
-        join(process.cwd(), "backend", "src", "modules", "pdf", "assets"),       // Docker dev
-        join(process.cwd(), "src", "modules", "pdf", "assets"),                  // Alternative
+        join(__dirname, "assets"), // Development (ts-node)
+        join(__dirname, "..", "..", "..", "modules", "pdf", "assets"), // Production (compiled dist/src -> dist/modules)
+        join(__dirname, "..", "..", "..", "src", "modules", "pdf", "assets"), // Development fallback
+        join(process.cwd(), "backend", "dist", "modules", "pdf", "assets"), // Production explicit
+        join(process.cwd(), "backend", "src", "modules", "pdf", "assets"), // Docker dev
+        join(process.cwd(), "src", "modules", "pdf", "assets"), // Alternative
       ];
 
       let logoPath: string | null = null;
@@ -44,7 +44,9 @@ export class PdfService {
           if (existsSync(path)) {
             logoPath = path;
             logoType = fileName.endsWith(".svg") ? "svg" : "png";
-            this.logger.log(`Logo found at: ${path} (${logoType.toUpperCase()})`);
+            this.logger.log(
+              `Logo found at: ${path} (${logoType.toUpperCase()})`,
+            );
             break;
           }
         }
@@ -52,22 +54,31 @@ export class PdfService {
       }
 
       if (!logoPath || !logoType) {
-        throw new Error(`Logo file not found. Tried SVG and PNG in multiple paths`);
+        throw new Error(
+          `Logo file not found. Tried SVG and PNG in multiple paths`,
+        );
       }
 
       const logoBuffer = readFileSync(logoPath);
       const mimeType = logoType === "svg" ? "image/svg+xml" : "image/png";
       this.logoBase64 = `data:${mimeType};base64,${logoBuffer.toString("base64")}`;
-      this.logger.log(`Company logo loaded successfully (${logoType.toUpperCase()}, ${(logoBuffer.length / 1024).toFixed(2)} KB)`);
+      this.logger.log(
+        `Company logo loaded successfully (${logoType.toUpperCase()}, ${(logoBuffer.length / 1024).toFixed(2)} KB)`,
+      );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to load company logo: ${errorMessage}`);
       this.logger.warn("PDFs will render without logo");
       this.logoBase64 = null;
     }
   }
 
-  async generateInvoicePDF(invoiceData: any, continuous: boolean = true, showMaterai: boolean = true): Promise<Buffer> {
+  async generateInvoicePDF(
+    invoiceData: any,
+    continuous: boolean = true,
+    showMaterai: boolean = true,
+  ): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -77,21 +88,26 @@ export class PdfService {
       const page = await browser.newPage();
 
       // Generate HTML content
-      const htmlContent = await this.generateInvoiceHTML(invoiceData, showMaterai);
+      const htmlContent = await this.generateInvoiceHTML(
+        invoiceData,
+        showMaterai,
+      );
 
       if (continuous) {
         // CONTINUOUS MODE: For digital viewing (email, web, mobile)
         // Use 'screen' media type to prevent automatic pagination
-        await page.emulateMediaType('screen');
+        await page.emulateMediaType("screen");
         await page.setContent(htmlContent, { waitUntil: "networkidle0" });
 
         // Calculate dynamic height for continuous single-page PDF
-        const height = await page.evaluate('document.documentElement.offsetHeight');
+        const height = await page.evaluate(
+          "document.documentElement.offsetHeight",
+        );
         this.logger.log(`Invoice PDF (continuous) dynamic height: ${height}px`);
 
         const pdf = await page.pdf({
-          width: '210mm',  // A4 width maintained
-          height: `${height}px`,  // Dynamic height based on content
+          width: "210mm", // A4 width maintained
+          height: `${height}px`, // Dynamic height based on content
           printBackground: true,
           margin: { top: 0, right: 0, bottom: 0, left: 0 },
         });
@@ -122,7 +138,10 @@ export class PdfService {
     }
   }
 
-  async generateQuotationPDF(quotationData: any, continuous: boolean = true): Promise<Buffer> {
+  async generateQuotationPDF(
+    quotationData: any,
+    continuous: boolean = true,
+  ): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -137,16 +156,20 @@ export class PdfService {
       if (continuous) {
         // CONTINUOUS MODE: For digital viewing (email, web, mobile)
         // Use 'screen' media type to prevent automatic pagination
-        await page.emulateMediaType('screen');
+        await page.emulateMediaType("screen");
         await page.setContent(htmlContent, { waitUntil: "networkidle0" });
 
         // Calculate dynamic height for continuous single-page PDF
-        const height = await page.evaluate('document.documentElement.offsetHeight');
-        this.logger.log(`Quotation PDF (continuous) dynamic height: ${height}px`);
+        const height = await page.evaluate(
+          "document.documentElement.offsetHeight",
+        );
+        this.logger.log(
+          `Quotation PDF (continuous) dynamic height: ${height}px`,
+        );
 
         const pdf = await page.pdf({
-          width: '210mm',  // A4 width maintained
-          height: `${height}px`,  // Dynamic height based on content
+          width: "210mm", // A4 width maintained
+          height: `${height}px`, // Dynamic height based on content
           printBackground: true,
           margin: { top: 0, right: 0, bottom: 0, left: 0 },
         });
@@ -224,7 +247,10 @@ export class PdfService {
     return "Bank Transfer<br>Silakan hubungi kami untuk detail rekening pembayaran";
   }
 
-  private async generateInvoiceHTML(invoiceData: any, showMaterai: boolean = true): Promise<string> {
+  private async generateInvoiceHTML(
+    invoiceData: any,
+    showMaterai: boolean = true,
+  ): Promise<string> {
     const {
       invoiceNumber,
       creationDate,
@@ -255,19 +281,21 @@ export class PdfService {
     const placeholderTexts = [
       "Bank Transfer",
       "Bank Transfer - Lihat detail di company settings",
-      "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran"
+      "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran",
     ];
 
     // Check if payment info is a placeholder or suspiciously short
-    const hasPlaceholder = placeholderTexts.some(placeholder =>
-      finalPaymentInfo?.trim() === placeholder
+    const hasPlaceholder = placeholderTexts.some(
+      (placeholder) => finalPaymentInfo?.trim() === placeholder,
     );
     const isTooShort = finalPaymentInfo && finalPaymentInfo.trim().length < 20;
 
     if (hasPlaceholder || !finalPaymentInfo || isTooShort) {
       // Generate proper payment info from company settings
       finalPaymentInfo = await this.generateDynamicPaymentInfo(companyData);
-      this.logger.log(`Replaced placeholder payment info for invoice ${invoiceNumber}`);
+      this.logger.log(
+        `Replaced placeholder payment info for invoice ${invoiceNumber}`,
+      );
     }
 
     // Parse products from priceBreakdown if available
@@ -885,28 +913,44 @@ export class PdfService {
         <div class="detail-row">
           <span class="detail-value" style="flex: 1; text-align: left;">${client.name}</span>
         </div>
-        ${client.company ? `
+        ${
+          client.company
+            ? `
         <div class="detail-row">
           <span class="detail-value" style="flex: 1; text-align: left; color: #6b7280; font-size: 9px;">${client.company}</span>
         </div>
-        ` : ""}
-        ${client.address ? `
+        `
+            : ""
+        }
+        ${
+          client.address
+            ? `
         <div class="detail-row">
           <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.address}</span>
         </div>
-        ` : ""}
-        ${client.phone ? `
+        `
+            : ""
+        }
+        ${
+          client.phone
+            ? `
         <div class="detail-row">
           <span class="detail-label" style="min-width: auto;">Phone:</span>
           <span class="detail-value">${client.phone}</span>
         </div>
-        ` : ""}
-        ${client.email ? `
+        `
+            : ""
+        }
+        ${
+          client.email
+            ? `
         <div class="detail-row">
           <span class="detail-label" style="min-width: auto;">Email:</span>
           <span class="detail-value">${client.email}</span>
         </div>
-        ` : ""}
+        `
+            : ""
+        }
       </div>
 
       <div class="detail-card secondary">
@@ -972,7 +1016,9 @@ export class PdfService {
       <table class="summary-table">
 
         <!-- SCENARIO 1: Termin-based invoice -->
-        ${paymentMilestone && quotation ? `
+        ${
+          paymentMilestone && quotation
+            ? `
           <!-- Full Project Subtotal -->
           <tr>
             <td>Subtotal (Full Project)</td>
@@ -986,32 +1032,44 @@ export class PdfService {
           </tr>
 
           <!-- Tax if applicable -->
-          ${includeTax ? `
+          ${
+            includeTax
+              ? `
           <tr>
             <td>Tax (${taxLabel} ${Math.round(taxRate * 100)}%)</td>
             <td>${formatIDR(taxAmount)}</td>
           </tr>
-          ` : ""}
+          `
+              : ""
+          }
 
           <!-- Tax Exempt Reason if applicable -->
-          ${taxExemptReason ? `
+          ${
+            taxExemptReason
+              ? `
           <tr>
             <td colspan="2" style="font-size: 9px; color: #6b7280; text-align: center; padding: 3mm;">
               ${taxExemptReason}
             </td>
           </tr>
-          ` : ""}
+          `
+              : ""
+          }
 
           <!-- Calculate previous payments from other PAID invoices -->
           ${(() => {
-            const previousInvoices = quotation.invoices?.filter((inv: any) =>
-              inv.id !== invoiceData.id &&
-              inv.status === 'PAID' &&
-              inv.paymentMilestone?.milestoneNumber < paymentMilestone.milestoneNumber
-            ) || [];
+            const previousInvoices =
+              quotation.invoices?.filter(
+                (inv: any) =>
+                  inv.id !== invoiceData.id &&
+                  inv.status === "PAID" &&
+                  inv.paymentMilestone?.milestoneNumber <
+                    paymentMilestone.milestoneNumber,
+              ) || [];
 
-            const previousPaymentsTotal = previousInvoices.reduce((sum: number, inv: any) =>
-              sum + Number(inv.totalAmount), 0
+            const previousPaymentsTotal = previousInvoices.reduce(
+              (sum: number, inv: any) => sum + Number(inv.totalAmount),
+              0,
             );
 
             if (previousPaymentsTotal > 0) {
@@ -1020,15 +1078,19 @@ export class PdfService {
                 <td>Previous Payments</td>
                 <td>${formatIDR(previousPaymentsTotal)}</td>
               </tr>
-              ${previousInvoices.map((inv: any) => `
+              ${previousInvoices
+                .map(
+                  (inv: any) => `
               <tr style="font-size: 8px; color: #6b7280;">
                 <td>&nbsp;&nbsp;↳ ${inv.invoiceNumber} - Termin ${inv.paymentMilestone?.milestoneNumber}</td>
                 <td>${formatIDR(inv.totalAmount)}</td>
               </tr>
-              `).join('')}
+              `,
+                )
+                .join("")}
               `;
             }
-            return '';
+            return "";
           })()}
 
           <!-- Total Due for this invoice -->
@@ -1039,10 +1101,16 @@ export class PdfService {
 
           <!-- Remaining balance calculation -->
           ${(() => {
-            const paidInvoicesTotal = quotation.invoices?.reduce((sum: number, inv: any) =>
-              inv.status === 'PAID' ? sum + Number(inv.totalAmount) : sum, 0
-            ) || 0;
-            const remainingBalance = Number(quotation.totalAmount) - paidInvoicesTotal - Number(finalTotal);
+            const paidInvoicesTotal =
+              quotation.invoices?.reduce(
+                (sum: number, inv: any) =>
+                  inv.status === "PAID" ? sum + Number(inv.totalAmount) : sum,
+                0,
+              ) || 0;
+            const remainingBalance =
+              Number(quotation.totalAmount) -
+              paidInvoicesTotal -
+              Number(finalTotal);
 
             if (remainingBalance > 0) {
               return `
@@ -1052,33 +1120,43 @@ export class PdfService {
               </tr>
               `;
             }
-            return '';
+            return "";
           })()}
 
         <!-- SCENARIO 2: Non-termin invoice (fallback to current behavior) -->
-        ` : `
+        `
+            : `
           <tr>
             <td>Subtotal</td>
             <td>${formatIDR(subTotal)}</td>
           </tr>
-          ${includeTax ? `
+          ${
+            includeTax
+              ? `
           <tr>
             <td>Tax (${taxLabel} ${Math.round(taxRate * 100)}%)</td>
             <td>${formatIDR(taxAmount)}</td>
           </tr>
-          ` : ""}
-          ${taxExemptReason ? `
+          `
+              : ""
+          }
+          ${
+            taxExemptReason
+              ? `
           <tr>
             <td colspan="2" style="font-size: 9px; color: #6b7280; text-align: center; padding: 3mm;">
               ${taxExemptReason}
             </td>
           </tr>
-          ` : ""}
+          `
+              : ""
+          }
           <tr class="summary-total">
             <td>TOTAL</td>
             <td>${formatIDR(finalTotal)}</td>
           </tr>
-        `}
+        `
+        }
 
       </table>
     </div>
@@ -1110,26 +1188,32 @@ export class PdfService {
     </div>
 
     <!-- Materai Stamp Duty Section (Indonesian Compliance) -->
-    ${materaiRequired && showMaterai ? `
+    ${
+      materaiRequired && showMaterai
+        ? `
     <div class="materai-section">
-      <div class="materai-placeholder${materaiApplied ? ' applied' : ''}">
+      <div class="materai-placeholder${materaiApplied ? " applied" : ""}">
         <div class="materai-title">Materai</div>
         <div class="materai-amount">Rp 10.000</div>
-        <div class="materai-icon${materaiApplied ? ' applied' : ' required'}">
-          ${materaiApplied
-            ? '<span>✓</span>'
-            : '<span style="font-size: 20px; color: #d1d5db;">□</span>'
+        <div class="materai-icon${materaiApplied ? " applied" : " required"}">
+          ${
+            materaiApplied
+              ? "<span>✓</span>"
+              : '<span style="font-size: 20px; color: #d1d5db;">□</span>'
           }
         </div>
-        <div class="materai-status${materaiApplied ? ' applied' : ''}">
-          ${materaiApplied
-            ? `Applied${invoiceData.materaiAppliedAt ? ' • ' + formatDate(invoiceData.materaiAppliedAt) : ''}`
-            : 'Stamp Required'
+        <div class="materai-status${materaiApplied ? " applied" : ""}">
+          ${
+            materaiApplied
+              ? `Applied${invoiceData.materaiAppliedAt ? " • " + formatDate(invoiceData.materaiAppliedAt) : ""}`
+              : "Stamp Required"
           }
         </div>
       </div>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <!-- Contact Information Bar (inside invoice-container to prevent separation) -->
     <div class="contact-bar">
@@ -1707,28 +1791,44 @@ export class PdfService {
         <div class="detail-row">
           <span class="detail-value" style="flex: 1; text-align: left;">${client.name}</span>
         </div>
-        ${client.company ? `
+        ${
+          client.company
+            ? `
         <div class="detail-row">
           <span class="detail-value" style="flex: 1; text-align: left; color: #6b7280; font-size: 9px;">${client.company}</span>
         </div>
-        ` : ""}
-        ${client.address ? `
+        `
+            : ""
+        }
+        ${
+          client.address
+            ? `
         <div class="detail-row">
           <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.address}</span>
         </div>
-        ` : ""}
-        ${client.phone ? `
+        `
+            : ""
+        }
+        ${
+          client.phone
+            ? `
         <div class="detail-row">
           <span class="detail-label" style="min-width: auto;">Phone:</span>
           <span class="detail-value">${client.phone}</span>
         </div>
-        ` : ""}
-        ${client.email ? `
+        `
+            : ""
+        }
+        ${
+          client.email
+            ? `
         <div class="detail-row">
           <span class="detail-label" style="min-width: auto;">Email:</span>
           <span class="detail-value">${client.email}</span>
         </div>
-        ` : ""}
+        `
+            : ""
+        }
       </div>
 
       <div class="detail-card secondary">
@@ -1792,7 +1892,9 @@ export class PdfService {
     <!-- Summary Section -->
     <div class="summary-section">
       <table class="summary-table">
-        ${includeTax ? `
+        ${
+          includeTax
+            ? `
         <tr>
           <td>Subtotal</td>
           <td>${formatIDR(subtotalAmount || amountPerProject)}</td>
@@ -1801,12 +1903,14 @@ export class PdfService {
           <td>Tax (PPN ${Math.round((taxRate || 0.11) * 100)}%)</td>
           <td>${formatIDR(taxAmount || 0)}</td>
         </tr>
-        ` : `
+        `
+            : `
         <tr>
           <td>Subtotal</td>
           <td>${formatIDR(amountPerProject)}</td>
         </tr>
-        `}
+        `
+        }
         <tr class="summary-total">
           <td>TOTAL</td>
           <td>${formatIDR(totalAmount)}</td>
@@ -1845,7 +1949,10 @@ export class PdfService {
 </html>`;
   }
 
-  async generateProjectPDF(projectData: any, continuous: boolean = true): Promise<Buffer> {
+  async generateProjectPDF(
+    projectData: any,
+    continuous: boolean = true,
+  ): Promise<Buffer> {
     let browser: puppeteer.Browser | null = null;
     try {
       this.logger.debug("Launching Puppeteer browser...");
@@ -1863,7 +1970,9 @@ export class PdfService {
       // Generate HTML content using the new project template
       this.logger.debug("Generating project HTML...");
       const htmlContent = generateProjectHTML(projectData);
-      this.logger.debug(`HTML content length: ${htmlContent.length} characters`);
+      this.logger.debug(
+        `HTML content length: ${htmlContent.length} characters`,
+      );
 
       // Set content with timeout and fallback to loadEventFired
       this.logger.debug("Setting page content...");
@@ -1871,7 +1980,7 @@ export class PdfService {
       if (continuous) {
         // CONTINUOUS MODE: For digital viewing (email, web, mobile)
         // Use 'screen' media type to prevent automatic pagination
-        await page.emulateMediaType('screen');
+        await page.emulateMediaType("screen");
 
         try {
           await page.setContent(htmlContent, {
@@ -1879,21 +1988,29 @@ export class PdfService {
             timeout: 30000, // 30 second timeout
           });
         } catch (timeoutError) {
-          this.logger.warn(`Page load timeout, continuing with PDF generation: ${timeoutError}`);
+          this.logger.warn(
+            `Page load timeout, continuing with PDF generation: ${timeoutError}`,
+          );
         }
 
         // Calculate dynamic height for continuous single-page PDF
-        const height = await page.evaluate('document.documentElement.offsetHeight');
-        this.logger.debug(`Project PDF (continuous) dynamic height: ${height}px`);
+        const height = await page.evaluate(
+          "document.documentElement.offsetHeight",
+        );
+        this.logger.debug(
+          `Project PDF (continuous) dynamic height: ${height}px`,
+        );
 
         const pdf = await page.pdf({
-          width: '210mm',  // A4 width maintained
-          height: `${height}px`,  // Dynamic height based on content
+          width: "210mm", // A4 width maintained
+          height: `${height}px`, // Dynamic height based on content
           printBackground: true,
           margin: { top: 0, right: 0, bottom: 0, left: 0 },
         });
 
-        this.logger.debug(`PDF generated successfully, size: ${pdf.length} bytes`);
+        this.logger.debug(
+          `PDF generated successfully, size: ${pdf.length} bytes`,
+        );
         return Buffer.from(pdf);
       } else {
         // PAGINATED MODE: For printing on physical paper
@@ -1905,7 +2022,9 @@ export class PdfService {
             timeout: 30000,
           });
         } catch (timeoutError) {
-          this.logger.warn(`Page load timeout, continuing with PDF generation: ${timeoutError}`);
+          this.logger.warn(
+            `Page load timeout, continuing with PDF generation: ${timeoutError}`,
+          );
         }
 
         this.logger.debug(`Project PDF (paginated) mode for printing`);
@@ -1921,11 +2040,14 @@ export class PdfService {
           },
         });
 
-        this.logger.debug(`PDF generated successfully, size: ${pdf.length} bytes`);
+        this.logger.debug(
+          `PDF generated successfully, size: ${pdf.length} bytes`,
+        );
         return Buffer.from(pdf);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.logger.error(
         `Error generating project PDF: ${errorMessage}`,
         error instanceof Error ? error.stack : "",
@@ -1943,7 +2065,10 @@ export class PdfService {
     }
   }
 
-  async generateSchedulePDF(scheduleData: any, continuous: boolean = true): Promise<Buffer> {
+  async generateSchedulePDF(
+    scheduleData: any,
+    continuous: boolean = true,
+  ): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -1954,13 +2079,17 @@ export class PdfService {
       const htmlContent = generateScheduleHTML(scheduleData);
 
       if (continuous) {
-        await page.emulateMediaType('screen');
+        await page.emulateMediaType("screen");
         await page.setContent(htmlContent, { waitUntil: "networkidle0" });
-        const height = await page.evaluate('document.documentElement.offsetHeight');
-        this.logger.log(`Schedule PDF (continuous) dynamic height: ${height}px`);
+        const height = await page.evaluate(
+          "document.documentElement.offsetHeight",
+        );
+        this.logger.log(
+          `Schedule PDF (continuous) dynamic height: ${height}px`,
+        );
 
         const pdf = await page.pdf({
-          width: '297mm',  // A4 landscape width
+          width: "297mm", // A4 landscape width
           height: `${height}px`,
           printBackground: true,
           margin: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -1990,7 +2119,10 @@ export class PdfService {
     }
   }
 
-  async generateCallSheetPDF(callSheetData: any, continuous: boolean = true): Promise<Buffer> {
+  async generateCallSheetPDF(
+    callSheetData: any,
+    continuous: boolean = true,
+  ): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -1999,18 +2131,27 @@ export class PdfService {
     try {
       const page = await browser.newPage();
       // Select template based on call sheet type (FILM or PHOTO)
-      const htmlContent = callSheetData.callSheetType === 'PHOTO'
-        ? generatePhotoCallSheetHTML(callSheetData, this.logoBase64, continuous)
-        : generateCallSheetHTML(callSheetData, this.logoBase64, continuous);
+      const htmlContent =
+        callSheetData.callSheetType === "PHOTO"
+          ? generatePhotoCallSheetHTML(
+              callSheetData,
+              this.logoBase64,
+              continuous,
+            )
+          : generateCallSheetHTML(callSheetData, this.logoBase64, continuous);
 
       if (continuous) {
-        await page.emulateMediaType('screen');
+        await page.emulateMediaType("screen");
         await page.setContent(htmlContent, { waitUntil: "networkidle0" });
-        const height = await page.evaluate('document.documentElement.offsetHeight');
-        this.logger.log(`Call Sheet PDF (continuous) dynamic height: ${height}px`);
+        const height = await page.evaluate(
+          "document.documentElement.offsetHeight",
+        );
+        this.logger.log(
+          `Call Sheet PDF (continuous) dynamic height: ${height}px`,
+        );
 
         const pdf = await page.pdf({
-          width: '216mm',  // LETTER width
+          width: "216mm", // LETTER width
           height: `${height}px`,
           printBackground: true,
           margin: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -2039,7 +2180,10 @@ export class PdfService {
     }
   }
 
-  async generateShotListPDF(shotListData: any, continuous: boolean = true): Promise<Buffer> {
+  async generateShotListPDF(
+    shotListData: any,
+    continuous: boolean = true,
+  ): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -2050,13 +2194,17 @@ export class PdfService {
       const htmlContent = generateShotListHTML(shotListData);
 
       if (continuous) {
-        await page.emulateMediaType('screen');
+        await page.emulateMediaType("screen");
         await page.setContent(htmlContent, { waitUntil: "networkidle0" });
-        const height = await page.evaluate('document.documentElement.offsetHeight');
-        this.logger.log(`Shot List PDF (continuous) dynamic height: ${height}px`);
+        const height = await page.evaluate(
+          "document.documentElement.offsetHeight",
+        );
+        this.logger.log(
+          `Shot List PDF (continuous) dynamic height: ${height}px`,
+        );
 
         const pdf = await page.pdf({
-          width: '297mm',  // A4 landscape width
+          width: "297mm", // A4 landscape width
           height: `${height}px`,
           printBackground: true,
           margin: { top: 0, right: 0, bottom: 0, left: 0 },

@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
-import {  ChartConfiguration } from 'chart.js';
+import { Injectable, Logger } from "@nestjs/common";
+import { ChartJSNodeCanvas } from "chartjs-node-canvas";
+import { ChartConfiguration } from "chart.js";
 
 /**
  * PDF Template Service
@@ -25,7 +25,7 @@ interface BaseWidget {
 }
 
 interface ChartConfig {
-  chartType: 'line' | 'bar' | 'area' | 'pie';
+  chartType: "line" | "bar" | "area" | "pie";
   title: string;
   xAxis?: string;
   yAxis?: string[];
@@ -39,7 +39,7 @@ interface ChartConfig {
 interface TextConfig {
   content?: any;
   plainText?: string;
-  alignment?: 'left' | 'center' | 'right' | 'justify';
+  alignment?: "left" | "center" | "right" | "justify";
   fontSize?: number;
   fontWeight?: number;
 }
@@ -47,7 +47,7 @@ interface TextConfig {
 interface MetricConfig {
   title: string;
   valueKey: string;
-  aggregation: 'sum' | 'average' | 'count' | 'min' | 'max';
+  aggregation: "sum" | "average" | "count" | "min" | "max";
   precision: number;
   prefix?: string;
   suffix?: string;
@@ -83,7 +83,12 @@ export class PDFTemplateService {
   /**
    * Calculate pixel dimensions from grid units
    */
-  private calculateDimensions(layout: Layout): { width: number; height: number; left: number; top: number } {
+  private calculateDimensions(layout: Layout): {
+    width: number;
+    height: number;
+    left: number;
+    top: number;
+  } {
     return {
       width: layout.w * CELL_WIDTH - MARGIN,
       height: layout.h * ROW_HEIGHT - MARGIN,
@@ -97,31 +102,39 @@ export class PDFTemplateService {
    */
   private escapeHtml(text: string): string {
     const map: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;',
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
     };
-    return text?.toString().replace(/[&<>"']/g, (m) => map[m]) || '';
+    return text?.toString().replace(/[&<>"']/g, (m) => map[m]) || "";
   }
 
   /**
    * Calculate aggregation value from data
    */
-  private calculateAggregation(rows: any[], valueKey: string, aggregation: string): number {
-    const values = rows.map(row => parseFloat(row[valueKey])).filter(v => !isNaN(v));
+  private calculateAggregation(
+    rows: any[],
+    valueKey: string,
+    aggregation: string,
+  ): number {
+    const values = rows
+      .map((row) => parseFloat(row[valueKey]))
+      .filter((v) => !isNaN(v));
 
     switch (aggregation) {
-      case 'sum':
+      case "sum":
         return values.reduce((a, b) => a + b, 0);
-      case 'average':
-        return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-      case 'count':
+      case "average":
+        return values.length > 0
+          ? values.reduce((a, b) => a + b, 0) / values.length
+          : 0;
+      case "count":
         return values.length;
-      case 'min':
+      case "min":
         return Math.min(...values);
-      case 'max':
+      case "max":
         return Math.max(...values);
       default:
         return 0;
@@ -139,13 +152,21 @@ export class PDFTemplateService {
    * Render Chart Widget
    * Uses chartjs-node-canvas to generate actual charts as base64 images
    */
-  private async renderChartWidget(widget: BaseWidget, dataSource: DataSource): Promise<string> {
+  private async renderChartWidget(
+    widget: BaseWidget,
+    dataSource: DataSource,
+  ): Promise<string> {
     const config = widget.config as ChartConfig;
     const dim = this.calculateDimensions(widget.layout);
 
     try {
       // Generate chart image
-      const chartImage = await this.generateChartImage(config, dataSource, dim.width - 32, dim.height - 60);
+      const chartImage = await this.generateChartImage(
+        config,
+        dataSource,
+        dim.width - 32,
+        dim.height - 60,
+      );
 
       return `
         <div class="widget-container widget-chart" style="
@@ -161,7 +182,7 @@ export class PDFTemplateService {
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         ">
           <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; color: #333;">
-            ${this.escapeHtml(config.title || 'Chart')}
+            ${this.escapeHtml(config.title || "Chart")}
           </h3>
           <div style="width: 100%; height: calc(100% - 40px); display: flex; align-items: center; justify-content: center;">
             <img src="${chartImage}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
@@ -169,7 +190,10 @@ export class PDFTemplateService {
         </div>
       `;
     } catch (error) {
-      this.logger.error(`Failed to generate chart for widget ${widget.id}:`, error);
+      this.logger.error(
+        `Failed to generate chart for widget ${widget.id}:`,
+        error,
+      );
       // Fallback to placeholder if chart generation fails
       return `
         <div class="widget-container widget-chart" style="
@@ -185,7 +209,7 @@ export class PDFTemplateService {
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         ">
           <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; color: #333;">
-            ${this.escapeHtml(config.title || 'Chart')}
+            ${this.escapeHtml(config.title || "Chart")}
           </h3>
           <div style="
             width: 100%;
@@ -219,34 +243,39 @@ export class PDFTemplateService {
     const labels: string[] = [];
     const datasets: any[] = [];
 
-    if (config.chartType === 'pie') {
+    if (config.chartType === "pie") {
       // Pie charts use single yAxis value
-      const valueKey = config.yAxis?.[0] || config.valueKey || '';
-      const nameKey = config.nameKey || config.xAxis || '';
+      const valueKey = config.yAxis?.[0] || config.valueKey || "";
+      const nameKey = config.nameKey || config.xAxis || "";
 
       if (valueKey && nameKey) {
-        labels.push(...dataSource.rows.map(row => row[nameKey]?.toString() || ''));
+        labels.push(
+          ...dataSource.rows.map((row) => row[nameKey]?.toString() || ""),
+        );
         datasets.push({
           label: config.title,
-          data: dataSource.rows.map(row => parseFloat(row[valueKey]) || 0),
+          data: dataSource.rows.map((row) => parseFloat(row[valueKey]) || 0),
           backgroundColor: this.generateColors(dataSource.rows.length),
         });
       }
     } else {
       // Line, bar, area charts
-      const xAxisKey = config.xAxis || '';
+      const xAxisKey = config.xAxis || "";
       if (xAxisKey) {
-        labels.push(...dataSource.rows.map(row => row[xAxisKey]?.toString() || ''));
+        labels.push(
+          ...dataSource.rows.map((row) => row[xAxisKey]?.toString() || ""),
+        );
       }
 
       (config.yAxis || []).forEach((yKey, index) => {
         datasets.push({
           label: yKey,
-          data: dataSource.rows.map(row => parseFloat(row[yKey]) || 0),
-          backgroundColor: config.colors?.[index] || this.getDefaultColor(index),
+          data: dataSource.rows.map((row) => parseFloat(row[yKey]) || 0),
+          backgroundColor:
+            config.colors?.[index] || this.getDefaultColor(index),
           borderColor: config.colors?.[index] || this.getDefaultColor(index),
           borderWidth: 2,
-          fill: config.chartType === 'area',
+          fill: config.chartType === "area",
         });
       });
     }
@@ -260,63 +289,69 @@ export class PDFTemplateService {
         plugins: {
           legend: {
             display: config.showLegend !== false,
-            position: 'bottom',
+            position: "bottom",
           },
           title: {
             display: false, // Title is rendered separately
           },
         },
-        scales: config.chartType !== 'pie' ? {
-          y: {
-            beginAtZero: true,
-            grid: {
-              display: config.showGrid !== false,
-            },
-          },
-          x: {
-            grid: {
-              display: config.showGrid !== false,
-            },
-          },
-        } : undefined,
+        scales:
+          config.chartType !== "pie"
+            ? {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    display: config.showGrid !== false,
+                  },
+                },
+                x: {
+                  grid: {
+                    display: config.showGrid !== false,
+                  },
+                },
+              }
+            : undefined,
       },
-      plugins: [{
-        id: 'background',
-        beforeDraw: (chart) => {
-          const ctx = chart.ctx;
-          ctx.save();
-          ctx.fillStyle = 'white';
-          ctx.fillRect(0, 0, chart.width, chart.height);
-          ctx.restore();
+      plugins: [
+        {
+          id: "background",
+          beforeDraw: (chart) => {
+            const ctx = chart.ctx;
+            ctx.save();
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, chart.width, chart.height);
+            ctx.restore();
+          },
         },
-      }],
+      ],
     };
 
     // Create chart renderer
     const chartJSNodeCanvas = new ChartJSNodeCanvas({
       width: Math.floor(width),
       height: Math.floor(height),
-      backgroundColour: 'white',
+      backgroundColour: "white",
     });
 
     // Generate image
-    const imageBuffer = await chartJSNodeCanvas.renderToBuffer(chartConfiguration);
-    return `data:image/png;base64,${imageBuffer.toString('base64')}`;
+    const imageBuffer =
+      await chartJSNodeCanvas.renderToBuffer(chartConfiguration);
+    return `data:image/png;base64,${imageBuffer.toString("base64")}`;
   }
 
   /**
    * Map config chart type to ChartJS type
    */
-  private mapChartType(chartType: string): 'line' | 'bar' | 'pie' {
+  private mapChartType(chartType: string): "line" | "bar" | "pie" {
     switch (chartType) {
-      case 'area':
-        return 'line'; // Area is just a line chart with fill
-      case 'pie':
-        return 'pie';
-      case 'bar':
-        return 'bar';
+      case "area":
+        return "line"; // Area is just a line chart with fill
+      case "pie":
+        return "pie";
+      case "bar":
+        return "bar";
       default:
-        return 'line';
+        return "line";
     }
   }
 
@@ -325,8 +360,16 @@ export class PDFTemplateService {
    */
   private generateColors(count: number): string[] {
     const colors = [
-      '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-      '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
+      "#3b82f6",
+      "#ef4444",
+      "#10b981",
+      "#f59e0b",
+      "#8b5cf6",
+      "#ec4899",
+      "#14b8a6",
+      "#f97316",
+      "#6366f1",
+      "#84cc16",
     ];
     const result: string[] = [];
     for (let i = 0; i < count; i++) {
@@ -340,8 +383,16 @@ export class PDFTemplateService {
    */
   private getDefaultColor(index: number): string {
     const colors = [
-      '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-      '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
+      "#3b82f6",
+      "#ef4444",
+      "#10b981",
+      "#f59e0b",
+      "#8b5cf6",
+      "#ec4899",
+      "#14b8a6",
+      "#f97316",
+      "#6366f1",
+      "#84cc16",
     ];
     return colors[index % colors.length];
   }
@@ -353,8 +404,9 @@ export class PDFTemplateService {
     const config = widget.config as TextConfig;
     const dim = this.calculateDimensions(widget.layout);
 
-    const plainText = config.plainText || this.extractPlainTextFromSlate(config.content) || '';
-    const alignment = config.alignment || 'left';
+    const plainText =
+      config.plainText || this.extractPlainTextFromSlate(config.content) || "";
+    const alignment = config.alignment || "left";
     const fontSize = config.fontSize || 14;
     const fontWeight = config.fontWeight || 400;
 
@@ -386,31 +438,40 @@ export class PDFTemplateService {
    * Extract plain text from Slate.js content
    */
   private extractPlainTextFromSlate(content: any): string {
-    if (!content || !Array.isArray(content)) return '';
+    if (!content || !Array.isArray(content)) return "";
 
-    return content.map(node => {
-      if (node.children) {
-        return node.children.map((child: any) => child.text || '').join('');
-      }
-      return '';
-    }).join('\n');
+    return content
+      .map((node) => {
+        if (node.children) {
+          return node.children.map((child: any) => child.text || "").join("");
+        }
+        return "";
+      })
+      .join("\n");
   }
 
   /**
    * Render Metric Widget
    */
-  private renderMetricWidget(widget: BaseWidget, dataSource: DataSource): string {
+  private renderMetricWidget(
+    widget: BaseWidget,
+    dataSource: DataSource,
+  ): string {
     const config = widget.config as MetricConfig;
     const dim = this.calculateDimensions(widget.layout);
 
     // Use defaults if not provided (visual builder may not have all fields)
-    const aggregation = config.aggregation || 'sum';
+    const aggregation = config.aggregation || "sum";
     const precision = config.precision ?? 2;
-    const value = this.calculateAggregation(dataSource.rows, config.valueKey, aggregation);
+    const value = this.calculateAggregation(
+      dataSource.rows,
+      config.valueKey,
+      aggregation,
+    );
     const formattedValue = this.formatNumber(value, precision);
-    const displayValue = `${config.prefix || ''}${formattedValue}${config.suffix || ''}`;
-    const bgColor = config.backgroundColor || '#f0f9ff';
-    const textColor = config.textColor || '#0369a1';
+    const displayValue = `${config.prefix || ""}${formattedValue}${config.suffix || ""}`;
+    const bgColor = config.backgroundColor || "#f0f9ff";
+    const textColor = config.textColor || "#0369a1";
 
     return `
       <div class="widget-container widget-metric" style="
@@ -454,7 +515,10 @@ export class PDFTemplateService {
    * Render Table Widget
    * ✅ FIXED: Shows ALL rows with auto height (no overflow clipping)
    */
-  private renderTableWidget(widget: BaseWidget, dataSource: DataSource): string {
+  private renderTableWidget(
+    widget: BaseWidget,
+    dataSource: DataSource,
+  ): string {
     const config = widget.config as TableConfig;
     const dim = this.calculateDimensions(widget.layout);
 
@@ -463,7 +527,7 @@ export class PDFTemplateService {
     if (config.columns) {
       columnNames = config.columns;
     } else if (Array.isArray(dataSource.columns)) {
-      columnNames = dataSource.columns.map(c => c.name);
+      columnNames = dataSource.columns.map((c) => c.name);
     } else {
       // dataSource.columns is an object like { "Day": "DATE", "Results": "NUMBER" }
       columnNames = Object.keys(dataSource.columns);
@@ -474,7 +538,7 @@ export class PDFTemplateService {
 
     this.logger.log(
       `Rendering table widget: ${columnNames.length} columns × ${rows.length} rows ` +
-      `(width: ${dim.width}px, position: ${dim.left}px, ${dim.top}px)`
+        `(width: ${dim.width}px, position: ${dim.left}px, ${dim.top}px)`,
     );
 
     return `
@@ -495,10 +559,14 @@ export class PDFTemplateService {
           border-collapse: collapse;
           font-size: 12px;
         ">
-          ${config.showHeader !== false ? `
+          ${
+            config.showHeader !== false
+              ? `
             <thead>
               <tr style="background: #f5f5f5;">
-                ${columnNames.map(col => `
+                ${columnNames
+                  .map(
+                    (col) => `
                   <th style="
                     padding: 8px 12px;
                     text-align: left;
@@ -508,26 +576,38 @@ export class PDFTemplateService {
                   ">
                     ${this.escapeHtml(col)}
                   </th>
-                `).join('')}
+                `,
+                  )
+                  .join("")}
               </tr>
             </thead>
-          ` : ''}
+          `
+              : ""
+          }
           <tbody>
-            ${rows.map((row, idx) => `
+            ${rows
+              .map(
+                (row, idx) => `
               <tr style="
-                ${config.striped && idx % 2 === 1 ? 'background: #fafafa;' : ''}
-                ${config.bordered ? 'border-bottom: 1px solid #e0e0e0;' : ''}
+                ${config.striped && idx % 2 === 1 ? "background: #fafafa;" : ""}
+                ${config.bordered ? "border-bottom: 1px solid #e0e0e0;" : ""}
               ">
-                ${columnNames.map(col => `
+                ${columnNames
+                  .map(
+                    (col) => `
                   <td style="
                     padding: 8px 12px;
                     color: #666;
                   ">
-                    ${this.escapeHtml(row[col]?.toString() || '')}
+                    ${this.escapeHtml(row[col]?.toString() || "")}
                   </td>
-                `).join('')}
+                `,
+                  )
+                  .join("")}
               </tr>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </tbody>
         </table>
       </div>
@@ -541,8 +621,8 @@ export class PDFTemplateService {
     const dim = this.calculateDimensions(widget.layout);
     const config = widget.config || {};
     const thickness = config.thickness || 1;
-    const color = config.color || '#e0e0e0';
-    const style = config.style || 'solid';
+    const color = config.color || "#e0e0e0";
+    const style = config.style || "solid";
 
     return `
       <div class="widget-container widget-divider" style="
@@ -570,17 +650,21 @@ export class PDFTemplateService {
   private renderCalloutWidget(widget: BaseWidget): string {
     const dim = this.calculateDimensions(widget.layout);
     const config = widget.config || {};
-    const type = config.type || 'info';
+    const type = config.type || "info";
 
-    const typeStyles: Record<string, { bg: string; border: string; icon: string }> = {
-      info: { bg: '#eff6ff', border: '#3b82f6', icon: 'ℹ️' },
-      warning: { bg: '#fffbeb', border: '#f59e0b', icon: '⚠️' },
-      success: { bg: '#f0fdf4', border: '#22c55e', icon: '✓' },
-      error: { bg: '#fef2f2', border: '#ef4444', icon: '✕' },
+    const typeStyles: Record<
+      string,
+      { bg: string; border: string; icon: string }
+    > = {
+      info: { bg: "#eff6ff", border: "#3b82f6", icon: "ℹ️" },
+      warning: { bg: "#fffbeb", border: "#f59e0b", icon: "⚠️" },
+      success: { bg: "#f0fdf4", border: "#22c55e", icon: "✓" },
+      error: { bg: "#fef2f2", border: "#ef4444", icon: "✕" },
     };
 
     const styles = typeStyles[type] || typeStyles.info;
-    const plainText = config.plainText || this.extractPlainTextFromSlate(config.content) || '';
+    const plainText =
+      config.plainText || this.extractPlainTextFromSlate(config.content) || "";
 
     return `
       <div class="widget-container widget-callout" style="
@@ -596,16 +680,22 @@ export class PDFTemplateService {
         display: flex;
         gap: 12px;
       ">
-        ${config.showIcon !== false ? `
+        ${
+          config.showIcon !== false
+            ? `
           <div style="
             font-size: 20px;
             flex-shrink: 0;
           ">
             ${styles.icon}
           </div>
-        ` : ''}
+        `
+            : ""
+        }
         <div style="flex: 1;">
-          ${config.title ? `
+          ${
+            config.title
+              ? `
             <div style="
               font-weight: 600;
               margin-bottom: 8px;
@@ -613,7 +703,9 @@ export class PDFTemplateService {
             ">
               ${this.escapeHtml(config.title)}
             </div>
-          ` : ''}
+          `
+              : ""
+          }
           <div style="
             color: #666;
             font-size: 14px;
@@ -630,22 +722,25 @@ export class PDFTemplateService {
    * Render a single widget based on its type
    * Note: In visual builder, all widgets have type='chart' but config.chartType determines actual type
    */
-  private async renderWidget(widget: BaseWidget, dataSource: DataSource): Promise<string> {
+  private async renderWidget(
+    widget: BaseWidget,
+    dataSource: DataSource,
+  ): Promise<string> {
     try {
       // Determine actual widget type from config.chartType (visual builder pattern)
       const chartType = widget.config?.chartType;
 
       // Handle visual builder widgets (type='chart' with chartType in config)
-      if (widget.type === 'chart' && chartType) {
+      if (widget.type === "chart" && chartType) {
         switch (chartType) {
-          case 'metric_card':
+          case "metric_card":
             return this.renderMetricWidget(widget, dataSource);
-          case 'table':
+          case "table":
             return this.renderTableWidget(widget, dataSource);
-          case 'line':
-          case 'bar':
-          case 'area':
-          case 'pie':
+          case "line":
+          case "bar":
+          case "area":
+          case "pie":
             return await this.renderChartWidget(widget, dataSource); // await async chart rendering
           default:
             this.logger.warn(`Unknown chart type: ${chartType}`);
@@ -655,21 +750,21 @@ export class PDFTemplateService {
 
       // Handle direct widget types (old pattern)
       switch (widget.type) {
-        case 'chart':
+        case "chart":
           return await this.renderChartWidget(widget, dataSource);
-        case 'text':
+        case "text":
           return this.renderTextWidget(widget);
-        case 'metric':
+        case "metric":
           return this.renderMetricWidget(widget, dataSource);
-        case 'table':
+        case "table":
           return this.renderTableWidget(widget, dataSource);
-        case 'divider':
+        case "divider":
           return this.renderDividerWidget(widget);
-        case 'callout':
+        case "callout":
           return this.renderCalloutWidget(widget);
         default:
           this.logger.warn(`Unknown widget type: ${widget.type}`);
-          return '';
+          return "";
       }
     } catch (error) {
       this.logger.error(`Error rendering widget ${widget.id}:`, error);
@@ -698,7 +793,7 @@ export class PDFTemplateService {
   private calculateCanvasHeight(widgets: BaseWidget[]): number {
     if (widgets.length === 0) return 1123; // A4 height minimum
 
-    const maxY = Math.max(...widgets.map(w => w.layout.y + w.layout.h));
+    const maxY = Math.max(...widgets.map((w) => w.layout.y + w.layout.h));
 
     // Standard padding for all widgets (tables auto-size to content)
     const extraPadding = 100;
@@ -718,7 +813,7 @@ export class PDFTemplateService {
 
     // Render all widgets (await async chart rendering)
     const renderedWidgets = await Promise.all(
-      widgets.map(widget => this.renderWidget(widget, dataSource))
+      widgets.map((widget) => this.renderWidget(widget, dataSource)),
     );
 
     return `
@@ -726,7 +821,7 @@ export class PDFTemplateService {
       <html>
         <head>
           <meta charset="UTF-8">
-          <title>${this.escapeHtml(sectionTitle || 'Report Section')}</title>
+          <title>${this.escapeHtml(sectionTitle || "Report Section")}</title>
           <style>
             * {
               margin: 0;
@@ -761,7 +856,7 @@ export class PDFTemplateService {
         </head>
         <body>
           <div class="pdf-canvas">
-            ${renderedWidgets.join('\n')}
+            ${renderedWidgets.join("\n")}
           </div>
         </body>
       </html>

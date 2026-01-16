@@ -1,48 +1,50 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards } from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
-} from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { SecurityMetricsService } from './security-metrics.service';
+} from "@nestjs/swagger";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { SecurityMetricsService } from "./security-metrics.service";
 import {
   SecurityMetricsResponseDto,
   SecurityAlertsResponseDto,
-} from './dto/security-metrics.dto';
+} from "./dto/security-metrics.dto";
 
-@ApiTags('Security & Compliance')
+@ApiTags("Security & Compliance")
 @ApiBearerAuth()
-@Controller('security')
+@Controller("security")
 @UseGuards(JwtAuthGuard)
 export class SecurityMetricsController {
-  constructor(private readonly securityMetricsService: SecurityMetricsService) {}
+  constructor(
+    private readonly securityMetricsService: SecurityMetricsService,
+  ) {}
 
-  @Get('metrics')
+  @Get("metrics")
   @ApiOperation({
-    summary: 'Get comprehensive security metrics',
+    summary: "Get comprehensive security metrics",
     description:
-      'Returns security scores, compliance metrics, and monitoring status for the system',
+      "Returns security scores, compliance metrics, and monitoring status for the system",
   })
   @ApiResponse({
     status: 200,
-    description: 'Security metrics retrieved successfully',
+    description: "Security metrics retrieved successfully",
     type: SecurityMetricsResponseDto,
   })
   async getSecurityMetrics(): Promise<SecurityMetricsResponseDto> {
     return this.securityMetricsService.getSecurityMetrics();
   }
 
-  @Get('alerts')
+  @Get("alerts")
   @ApiOperation({
-    summary: 'Get security and compliance alerts',
+    summary: "Get security and compliance alerts",
     description:
-      'Returns active security alerts, compliance warnings, and recommendations',
+      "Returns active security alerts, compliance warnings, and recommendations",
   })
   @ApiResponse({
     status: 200,
-    description: 'Security alerts retrieved successfully',
+    description: "Security alerts retrieved successfully",
     type: SecurityAlertsResponseDto,
   })
   async getSecurityAlerts(): Promise<SecurityAlertsResponseDto> {

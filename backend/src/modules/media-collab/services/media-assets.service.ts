@@ -3,11 +3,11 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { MediaService } from '../../media/media.service';
-import { MediaProcessingService } from './media-processing.service';
-import { MetadataService } from './metadata.service';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { MediaService } from "../../media/media.service";
+import { MediaProcessingService } from "./media-processing.service";
+import { MetadataService } from "./metadata.service";
 
 /**
  * MediaAssetsService
@@ -36,7 +36,7 @@ export class MediaAssetsService {
     // Verify project access
     const hasAccess = await this.verifyProjectAccess(userId, projectId);
     if (!hasAccess) {
-      throw new ForbiddenException('Access denied to this project');
+      throw new ForbiddenException("Access denied to this project");
     }
 
     // Find existing assets with matching filenames
@@ -91,19 +91,19 @@ export class MediaAssetsService {
     file: Express.Multer.File,
     description?: string,
     folderId?: string,
-    conflictResolution?: 'skip' | 'replace' | 'keep-both',
+    conflictResolution?: "skip" | "replace" | "keep-both",
   ) {
     try {
-      console.log('[MediaAssetsService] Upload called:', {
+      console.log("[MediaAssetsService] Upload called:", {
         projectId,
         userId,
         filename: file?.originalname,
         size: file?.size,
-        conflictResolution
+        conflictResolution,
       });
 
       if (!file) {
-        throw new BadRequestException('No file provided');
+        throw new BadRequestException("No file provided");
       }
 
       // Check for duplicates and handle conflict resolution
@@ -116,23 +116,36 @@ export class MediaAssetsService {
         });
 
         if (existingAsset) {
-          if (conflictResolution === 'skip') {
+          if (conflictResolution === "skip") {
             // Skip upload, return existing asset
-            console.log('[MediaAssetsService] Skipping duplicate file:', file.originalname);
+            console.log(
+              "[MediaAssetsService] Skipping duplicate file:",
+              file.originalname,
+            );
             return await this.findOne(existingAsset.id, userId);
-          } else if (conflictResolution === 'replace') {
+          } else if (conflictResolution === "replace") {
             // Delete existing asset and its R2 files
-            console.log('[MediaAssetsService] Replacing existing file:', file.originalname);
+            console.log(
+              "[MediaAssetsService] Replacing existing file:",
+              file.originalname,
+            );
             await this.remove(existingAsset.id, userId);
             // Continue with upload below
-          } else if (conflictResolution === 'keep-both') {
+          } else if (conflictResolution === "keep-both") {
             // Rename file with timestamp
-            const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '_');
-            const nameParts = file.originalname.split('.');
+            const timestamp = new Date()
+              .toISOString()
+              .replace(/[-:]/g, "")
+              .replace(/\..+/, "")
+              .replace("T", "_");
+            const nameParts = file.originalname.split(".");
             const extension = nameParts.pop();
-            const baseName = nameParts.join('.');
+            const baseName = nameParts.join(".");
             file.originalname = `${baseName}_${timestamp}.${extension}`;
-            console.log('[MediaAssetsService] Renaming duplicate to:', file.originalname);
+            console.log(
+              "[MediaAssetsService] Renaming duplicate to:",
+              file.originalname,
+            );
           }
         }
       }
@@ -146,7 +159,7 @@ export class MediaAssetsService {
       });
 
       if (!project) {
-        throw new NotFoundException('Project not found');
+        throw new NotFoundException("Project not found");
       }
 
       const hasAccess = project.collaborators.some(
@@ -154,7 +167,7 @@ export class MediaAssetsService {
       );
 
       if (!hasAccess) {
-        throw new ForbiddenException('Access denied to this project');
+        throw new ForbiddenException("Access denied to this project");
       }
 
       // Check user role (OWNER, EDITOR can upload)
@@ -163,20 +176,19 @@ export class MediaAssetsService {
       );
 
       if (!collaborator) {
-        throw new ForbiddenException('You are not a collaborator on this project');
+        throw new ForbiddenException(
+          "You are not a collaborator on this project",
+        );
       }
 
-      if (
-        collaborator.role === 'VIEWER' ||
-        collaborator.role === 'COMMENTER'
-      ) {
-        throw new ForbiddenException('Only OWNER or EDITOR can upload assets');
+      if (collaborator.role === "VIEWER" || collaborator.role === "COMMENTER") {
+        throw new ForbiddenException("Only OWNER or EDITOR can upload assets");
       }
 
-      console.log('[MediaAssetsService] Uploading file to R2...');
+      console.log("[MediaAssetsService] Uploading file to R2...");
       // Upload to R2
       const uploadResult = await this.mediaService.uploadFile(file);
-      console.log('[MediaAssetsService] R2 upload complete:', uploadResult.key);
+      console.log("[MediaAssetsService] R2 upload complete:", uploadResult.key);
 
       // Determine media type
       const mediaType = this.determineMediaType(file.mimetype);
@@ -185,67 +197,85 @@ export class MediaAssetsService {
       let processedData: any = {};
       let thumbnailUrl: string | undefined = undefined;
 
-      if (mediaType === 'VIDEO') {
-        console.log('[MediaAssetsService] Processing video...');
+      if (mediaType === "VIDEO") {
+        console.log("[MediaAssetsService] Processing video...");
 
         // FFmpeg needs access to the actual video file, not a proxy URL
         // Solution: Use the uploaded file buffer directly or write to temp file
-        const fs = require('fs');
-        const path = require('path');
-        const os = require('os');
+        const fs = require("fs");
+        const path = require("path");
+        const os = require("os");
 
         // Write video to temporary file
         const tempDir = os.tmpdir();
-        const tempFilePath = path.join(tempDir, `temp-${Date.now()}-${file.originalname}`);
+        const tempFilePath = path.join(
+          tempDir,
+          `temp-${Date.now()}-${file.originalname}`,
+        );
 
         try {
           // Write buffer to temp file
           fs.writeFileSync(tempFilePath, file.buffer);
-          console.log('[MediaAssetsService] Video written to temp file:', tempFilePath);
+          console.log(
+            "[MediaAssetsService] Video written to temp file:",
+            tempFilePath,
+          );
 
           // Extract video metadata (duration, fps, codec, bitrate)
-          processedData = await this.processingService.extractVideoMetadata(tempFilePath);
+          processedData =
+            await this.processingService.extractVideoMetadata(tempFilePath);
 
           // Generate video thumbnail at 1 second
-          console.log('[MediaAssetsService] Generating video thumbnail...');
-          const thumbnailBuffer = await this.processingService.generateVideoThumbnail(
-            tempFilePath,
-            1, // Extract frame at 1 second
-          );
+          console.log("[MediaAssetsService] Generating video thumbnail...");
+          const thumbnailBuffer =
+            await this.processingService.generateVideoThumbnail(
+              tempFilePath,
+              1, // Extract frame at 1 second
+            );
 
           // Upload thumbnail to R2
           const thumbnailUpload = await this.mediaService.uploadFile(
             {
               buffer: thumbnailBuffer,
               originalname: `thumb-${file.originalname}.jpg`,
-              mimetype: 'image/jpeg',
+              mimetype: "image/jpeg",
               size: thumbnailBuffer.length,
             } as Express.Multer.File,
-            'thumbnails',
+            "thumbnails",
           );
 
           thumbnailUrl = thumbnailUpload.url;
-          console.log('[MediaAssetsService] Video thumbnail generated:', thumbnailUpload.key);
+          console.log(
+            "[MediaAssetsService] Video thumbnail generated:",
+            thumbnailUpload.key,
+          );
         } catch (error) {
-          console.error('[MediaAssetsService] Failed to process video:', error);
+          console.error("[MediaAssetsService] Failed to process video:", error);
           // Continue without thumbnail/metadata - video will still work
         } finally {
           // Clean up temp file
           try {
             if (fs.existsSync(tempFilePath)) {
               fs.unlinkSync(tempFilePath);
-              console.log('[MediaAssetsService] Temp file cleaned up');
+              console.log("[MediaAssetsService] Temp file cleaned up");
             }
           } catch (cleanupError) {
-            console.error('[MediaAssetsService] Failed to cleanup temp file:', cleanupError);
+            console.error(
+              "[MediaAssetsService] Failed to cleanup temp file:",
+              cleanupError,
+            );
           }
         }
-      } else if (mediaType === 'IMAGE' || mediaType === 'RAW_IMAGE') {
-        console.log('[MediaAssetsService] Processing image and generating thumbnails...');
+      } else if (mediaType === "IMAGE" || mediaType === "RAW_IMAGE") {
+        console.log(
+          "[MediaAssetsService] Processing image and generating thumbnails...",
+        );
 
         // Process photo to generate thumbnails and get dimensions
         try {
-          const photoResult = await this.processingService.processPhoto(file.buffer);
+          const photoResult = await this.processingService.processPhoto(
+            file.buffer,
+          );
           processedData.width = photoResult.width;
           processedData.height = photoResult.height;
 
@@ -255,16 +285,22 @@ export class MediaAssetsService {
             {
               buffer: thumbnailBuffer,
               originalname: `thumb-${file.originalname}`,
-              mimetype: 'image/jpeg',
+              mimetype: "image/jpeg",
               size: thumbnailBuffer.length,
             } as Express.Multer.File,
-            'thumbnails',
+            "thumbnails",
           );
 
           thumbnailUrl = thumbnailUpload.url;
-          console.log('[MediaAssetsService] Thumbnail generated:', thumbnailUpload.key);
+          console.log(
+            "[MediaAssetsService] Thumbnail generated:",
+            thumbnailUpload.key,
+          );
         } catch (error) {
-          console.error('[MediaAssetsService] Failed to generate thumbnail:', error);
+          console.error(
+            "[MediaAssetsService] Failed to generate thumbnail:",
+            error,
+          );
           // Continue without thumbnail
         }
 
@@ -273,7 +309,7 @@ export class MediaAssetsService {
         processedData.exifData = exifData;
       }
 
-      console.log('[MediaAssetsService] Creating database record...');
+      console.log("[MediaAssetsService] Creating database record...");
       // Create media asset record
       const asset = await this.prisma.mediaAsset.create({
         data: {
@@ -314,10 +350,10 @@ export class MediaAssetsService {
         });
       }
 
-      console.log('[MediaAssetsService] Upload complete:', asset.id);
+      console.log("[MediaAssetsService] Upload complete:", asset.id);
       return asset;
     } catch (error) {
-      console.error('[MediaAssetsService] Upload error:', error);
+      console.error("[MediaAssetsService] Upload error:", error);
       throw error;
     }
   }
@@ -329,7 +365,7 @@ export class MediaAssetsService {
     // Verify access
     const hasAccess = await this.verifyProjectAccess(userId, projectId);
     if (!hasAccess) {
-      throw new ForbiddenException('Access denied to this project');
+      throw new ForbiddenException("Access denied to this project");
     }
 
     // Build where clause
@@ -351,18 +387,18 @@ export class MediaAssetsService {
 
     if (filters?.search) {
       where.OR = [
-        { originalName: { contains: filters.search, mode: 'insensitive' } },
-        { filename: { contains: filters.search, mode: 'insensitive' } },
-        { description: { contains: filters.search, mode: 'insensitive' } },
+        { originalName: { contains: filters.search, mode: "insensitive" } },
+        { filename: { contains: filters.search, mode: "insensitive" } },
+        { description: { contains: filters.search, mode: "insensitive" } },
       ];
     }
 
     // Build orderBy clause
     const orderBy: any = {};
     if (filters?.sortBy) {
-      orderBy[filters.sortBy] = filters.sortOrder || 'desc';
+      orderBy[filters.sortBy] = filters.sortOrder || "desc";
     } else {
-      orderBy.uploadedAt = 'desc'; // Default sort
+      orderBy.uploadedAt = "desc"; // Default sort
     }
 
     const assets = await this.prisma.mediaAsset.findMany({
@@ -411,7 +447,7 @@ export class MediaAssetsService {
         metadata: true,
         versions: {
           orderBy: {
-            versionNumber: 'desc',
+            versionNumber: "desc",
           },
         },
         frames: {
@@ -429,7 +465,7 @@ export class MediaAssetsService {
             },
           },
           orderBy: {
-            timestamp: 'asc',
+            timestamp: "asc",
           },
         },
         _count: {
@@ -442,7 +478,7 @@ export class MediaAssetsService {
     });
 
     if (!asset) {
-      throw new NotFoundException('Asset not found');
+      throw new NotFoundException("Asset not found");
     }
 
     // Verify access
@@ -451,7 +487,7 @@ export class MediaAssetsService {
     );
 
     if (!hasAccess) {
-      throw new ForbiddenException('Access denied to this asset');
+      throw new ForbiddenException("Access denied to this asset");
     }
 
     return asset;
@@ -495,14 +531,13 @@ export class MediaAssetsService {
     );
 
     if (!collaborator) {
-      throw new ForbiddenException('You are not a collaborator on this project');
+      throw new ForbiddenException(
+        "You are not a collaborator on this project",
+      );
     }
 
-    if (
-      collaborator.role === 'VIEWER' ||
-      collaborator.role === 'COMMENTER'
-    ) {
-      throw new ForbiddenException('Only OWNER or EDITOR can delete assets');
+    if (collaborator.role === "VIEWER" || collaborator.role === "COMMENTER") {
+      throw new ForbiddenException("Only OWNER or EDITOR can delete assets");
     }
 
     // Step 1: Get all versions before deleting asset
@@ -525,14 +560,20 @@ export class MediaAssetsService {
 
         // Delete version thumbnail if it exists
         if (version.thumbnailUrl) {
-          const thumbnailKey = version.thumbnailUrl.replace(/^https?:\/\/[^\/]+\/api\/v1\/media\/proxy\//, '');
+          const thumbnailKey = version.thumbnailUrl.replace(
+            /^https?:\/\/[^\/]+\/api\/v1\/media\/proxy\//,
+            "",
+          );
           if (thumbnailKey) {
             await this.mediaService.deleteFile(thumbnailKey);
             deletedVersionFiles++;
           }
         }
       } catch (error) {
-        console.error(`Failed to delete R2 files for version ${version.id}:`, error);
+        console.error(
+          `Failed to delete R2 files for version ${version.id}:`,
+          error,
+        );
         // Continue with other deletions even if one fails
       }
     }
@@ -543,7 +584,10 @@ export class MediaAssetsService {
     // Step 4: Delete asset thumbnail if it exists
     if (asset.thumbnailUrl) {
       // Extract thumbnail key from URL (format: http://localhost:5000/api/v1/media/proxy/{key})
-      const thumbnailKey = asset.thumbnailUrl.replace(/^https?:\/\/[^\/]+\/api\/v1\/media\/proxy\//, '');
+      const thumbnailKey = asset.thumbnailUrl.replace(
+        /^https?:\/\/[^\/]+\/api\/v1\/media\/proxy\//,
+        "",
+      );
       if (thumbnailKey) {
         await this.mediaService.deleteFile(thumbnailKey);
       }
@@ -555,7 +599,7 @@ export class MediaAssetsService {
     });
 
     return {
-      message: 'Asset deleted successfully',
+      message: "Asset deleted successfully",
       deletedVersions: versions.length,
       deletedVersionFiles,
     };
@@ -572,66 +616,80 @@ export class MediaAssetsService {
    * @param userId User performing the delete
    * @returns Summary of deletion results with per-asset status
    */
-  async bulkDeleteAssets(assetIds: string[], userId: string): Promise<{
+  async bulkDeleteAssets(
+    assetIds: string[],
+    userId: string,
+  ): Promise<{
     total: number;
     deleted: number;
     failed: number;
     results: Array<{ assetId: string; success: boolean; error?: string }>;
   }> {
-    console.log(`[MediaAssetsService] Bulk delete started: ${assetIds.length} assets`);
+    console.log(
+      `[MediaAssetsService] Bulk delete started: ${assetIds.length} assets`,
+    );
     const results = [];
 
     for (const assetId of assetIds) {
       try {
         await this.remove(assetId, userId);
         results.push({ assetId, success: true });
-        console.log(`[MediaAssetsService] Successfully deleted asset: ${assetId}`);
+        console.log(
+          `[MediaAssetsService] Successfully deleted asset: ${assetId}`,
+        );
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`[MediaAssetsService] Failed to delete asset ${assetId}: ${errorMessage}`);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        console.error(
+          `[MediaAssetsService] Failed to delete asset ${assetId}: ${errorMessage}`,
+        );
         results.push({ assetId, success: false, error: errorMessage });
       }
     }
 
-    const deleted = results.filter(r => r.success).length;
-    const failed = results.filter(r => !r.success).length;
+    const deleted = results.filter((r) => r.success).length;
+    const failed = results.filter((r) => !r.success).length;
 
-    console.log(`[MediaAssetsService] Bulk delete completed: ${deleted}/${assetIds.length} successful, ${failed} failed`);
+    console.log(
+      `[MediaAssetsService] Bulk delete completed: ${deleted}/${assetIds.length} successful, ${failed} failed`,
+    );
 
     return {
       total: assetIds.length,
       deleted,
       failed,
-      results: results.filter(r => !r.success), // Only return failures for debugging
+      results: results.filter((r) => !r.success), // Only return failures for debugging
     };
   }
 
   /**
    * Determine media type from MIME type
    */
-  private determineMediaType(mimeType: string): 'VIDEO' | 'IMAGE' | 'RAW_IMAGE' {
-    if (mimeType.startsWith('video/')) {
-      return 'VIDEO';
+  private determineMediaType(
+    mimeType: string,
+  ): "VIDEO" | "IMAGE" | "RAW_IMAGE" {
+    if (mimeType.startsWith("video/")) {
+      return "VIDEO";
     }
 
     // RAW image formats
     const rawFormats = [
-      'image/x-canon-cr2',
-      'image/x-canon-cr3',
-      'image/x-nikon-nef',
-      'image/x-sony-arw',
-      'image/x-fuji-raf',
-      'image/x-olympus-orf',
-      'image/x-panasonic-rw2',
-      'image/x-pentax-pef',
-      'image/x-adobe-dng',
+      "image/x-canon-cr2",
+      "image/x-canon-cr3",
+      "image/x-nikon-nef",
+      "image/x-sony-arw",
+      "image/x-fuji-raf",
+      "image/x-olympus-orf",
+      "image/x-panasonic-rw2",
+      "image/x-pentax-pef",
+      "image/x-adobe-dng",
     ];
 
     if (rawFormats.includes(mimeType)) {
-      return 'RAW_IMAGE';
+      return "RAW_IMAGE";
     }
 
-    return 'IMAGE';
+    return "IMAGE";
   }
 
   /**

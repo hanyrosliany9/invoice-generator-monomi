@@ -12,7 +12,16 @@ import { CallSheetsModule } from "../call-sheets/call-sheets.module";
 import { ShotListsModule } from "../shot-lists/shot-lists.module";
 
 @Module({
-  imports: [InvoicesModule, QuotationsModule, SettingsModule, ProjectsModule, ExpensesModule, SchedulesModule, CallSheetsModule, ShotListsModule],
+  imports: [
+    InvoicesModule,
+    QuotationsModule,
+    SettingsModule,
+    ProjectsModule,
+    ExpensesModule,
+    SchedulesModule,
+    CallSheetsModule,
+    ShotListsModule,
+  ],
   controllers: [PdfController],
   providers: [PdfService, PdfAccessGuard],
   exports: [PdfService],

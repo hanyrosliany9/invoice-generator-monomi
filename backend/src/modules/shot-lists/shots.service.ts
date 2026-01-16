@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateShotDto } from './dto/create-shot.dto';
-import { UpdateShotDto } from './dto/update-shot.dto';
-import { ReorderShotsDto } from './dto/reorder-shots.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateShotDto } from "./dto/create-shot.dto";
+import { UpdateShotDto } from "./dto/update-shot.dto";
+import { ReorderShotsDto } from "./dto/reorder-shots.dto";
 
 @Injectable()
 export class ShotsService {
@@ -29,22 +29,26 @@ export class ShotsService {
 
   async reorder(sceneId: string, dto: ReorderShotsDto) {
     const updates = dto.shotIds.map((id, index) =>
-      this.prisma.shot.update({ where: { id }, data: { order: index } })
+      this.prisma.shot.update({ where: { id }, data: { order: index } }),
     );
     await this.prisma.$transaction(updates);
     return this.prisma.shot.findMany({
       where: { sceneId },
-      orderBy: { order: 'asc' },
+      orderBy: { order: "asc" },
     });
   }
 
   async duplicate(id: string) {
     const shot = await this.prisma.shot.findUnique({ where: { id } });
-    if (!shot) throw new NotFoundException('Shot not found');
+    if (!shot) throw new NotFoundException("Shot not found");
 
     const { id: _, createdAt, updatedAt, ...data } = shot;
     return this.prisma.shot.create({
-      data: { ...data, shotNumber: `${shot.shotNumber}-copy`, order: shot.order + 1 },
+      data: {
+        ...data,
+        shotNumber: `${shot.shotNumber}-copy`,
+        order: shot.order + 1,
+      },
     });
   }
 }

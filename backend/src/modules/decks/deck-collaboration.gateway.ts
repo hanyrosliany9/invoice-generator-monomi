@@ -6,9 +6,9 @@ import {
   OnGatewayDisconnect,
   ConnectedSocket,
   MessageBody,
-} from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+} from "@nestjs/websockets";
+import { Server, Socket } from "socket.io";
+import { Logger } from "@nestjs/common";
 
 interface CollaboratorInfo {
   id: string;
@@ -21,9 +21,9 @@ interface CollaboratorInfo {
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.SOCKET_IO_CORS_ORIGIN || 'http://localhost:3001',
+    origin: process.env.SOCKET_IO_CORS_ORIGIN || "http://localhost:3001",
   },
-  namespace: '/decks',
+  namespace: "/decks",
 })
 export class DeckCollaborationGateway
   implements OnGatewayConnection, OnGatewayDisconnect
@@ -31,7 +31,7 @@ export class DeckCollaborationGateway
   @WebSocketServer()
   server: Server;
 
-  private logger = new Logger('DeckCollaborationGateway');
+  private logger = new Logger("DeckCollaborationGateway");
   private collaborators = new Map<string, CollaboratorInfo>();
   private deckRooms = new Map<string, Set<string>>(); // deckId -> Set<socketId>
 
@@ -40,7 +40,7 @@ export class DeckCollaborationGateway
     const userId = client.handshake.query.userId as string;
 
     if (!deckId || !userId) {
-      this.logger.warn('Connection rejected: missing deckId or userId');
+      this.logger.warn("Connection rejected: missing deckId or userId");
       client.disconnect();
       return;
     }
@@ -67,7 +67,7 @@ export class DeckCollaborationGateway
     this.deckRooms.get(deckId)!.add(client.id);
 
     // Notify others in the room
-    client.to(`deck:${deckId}`).emit('collaborator:join', {
+    client.to(`deck:${deckId}`).emit("collaborator:join", {
       id: userId,
       name: collaboratorInfo.name,
       email: collaboratorInfo.email,
@@ -81,7 +81,7 @@ export class DeckCollaborationGateway
         .map((socketId) => this.collaborators.get(socketId))
         .filter((c) => c);
 
-      client.emit('collaborators:list', currentCollaborators);
+      client.emit("collaborators:list", currentCollaborators);
     }
 
     this.logger.log(`User ${userId} joined deck ${deckId}`);
@@ -92,7 +92,9 @@ export class DeckCollaborationGateway
 
     if (collaborator) {
       // Notify others
-      client.to(`deck:${collaborator.deckId}`).emit('collaborator:leave', collaborator.id);
+      client
+        .to(`deck:${collaborator.deckId}`)
+        .emit("collaborator:leave", collaborator.id);
 
       // Remove from tracking
       const roomMembers = this.deckRooms.get(collaborator.deckId);
@@ -104,11 +106,13 @@ export class DeckCollaborationGateway
       }
 
       this.collaborators.delete(client.id);
-      this.logger.log(`User ${collaborator.id} left deck ${collaborator.deckId}`);
+      this.logger.log(
+        `User ${collaborator.id} left deck ${collaborator.deckId}`,
+      );
     }
   }
 
-  @SubscribeMessage('cursor:move')
+  @SubscribeMessage("cursor:move")
   handleCursorMove(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { x: number; y: number; slideId: string },
@@ -116,7 +120,7 @@ export class DeckCollaborationGateway
     const collaborator = this.collaborators.get(client.id);
     if (!collaborator) return;
 
-    client.to(`deck:${collaborator.deckId}`).emit('collaborator:cursor', {
+    client.to(`deck:${collaborator.deckId}`).emit("collaborator:cursor", {
       userId: collaborator.id,
       x: data.x,
       y: data.y,
@@ -124,7 +128,7 @@ export class DeckCollaborationGateway
     });
   }
 
-  @SubscribeMessage('canvas:change')
+  @SubscribeMessage("canvas:change")
   handleCanvasChange(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { slideId: string; canvasData: any },
@@ -133,14 +137,14 @@ export class DeckCollaborationGateway
     if (!collaborator) return;
 
     // Broadcast to others in the room
-    client.to(`deck:${collaborator.deckId}`).emit('canvas:update', {
+    client.to(`deck:${collaborator.deckId}`).emit("canvas:update", {
       slideId: data.slideId,
       canvasData: data.canvasData,
       userId: collaborator.id,
     });
   }
 
-  @SubscribeMessage('comment:add')
+  @SubscribeMessage("comment:add")
   handleCommentAdd(
     @ConnectedSocket() client: Socket,
     @MessageBody() comment: any,
@@ -149,10 +153,10 @@ export class DeckCollaborationGateway
     if (!collaborator) return;
 
     // Broadcast to all in room (including sender for confirmation)
-    this.server.to(`deck:${collaborator.deckId}`).emit('comment:add', comment);
+    this.server.to(`deck:${collaborator.deckId}`).emit("comment:add", comment);
   }
 
-  @SubscribeMessage('comment:update')
+  @SubscribeMessage("comment:update")
   handleCommentUpdate(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { id: string; updates: any },
@@ -160,10 +164,10 @@ export class DeckCollaborationGateway
     const collaborator = this.collaborators.get(client.id);
     if (!collaborator) return;
 
-    this.server.to(`deck:${collaborator.deckId}`).emit('comment:update', data);
+    this.server.to(`deck:${collaborator.deckId}`).emit("comment:update", data);
   }
 
-  @SubscribeMessage('comment:delete')
+  @SubscribeMessage("comment:delete")
   handleCommentDelete(
     @ConnectedSocket() client: Socket,
     @MessageBody() commentId: string,
@@ -171,6 +175,8 @@ export class DeckCollaborationGateway
     const collaborator = this.collaborators.get(client.id);
     if (!collaborator) return;
 
-    this.server.to(`deck:${collaborator.deckId}`).emit('comment:delete', commentId);
+    this.server
+      .to(`deck:${collaborator.deckId}`)
+      .emit("comment:delete", commentId);
   }
 }

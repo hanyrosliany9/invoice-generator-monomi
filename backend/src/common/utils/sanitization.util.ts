@@ -1,4 +1,4 @@
-import sanitizeHtml from 'sanitize-html';
+import sanitizeHtml from "sanitize-html";
 
 /**
  * Sanitization utility for protecting against XSS and injection attacks
@@ -10,12 +10,12 @@ import sanitizeHtml from 'sanitize-html';
  * Use for: User-generated text that should not contain any HTML
  */
 export function sanitizeText(input: string | null | undefined): string {
-  if (!input) return '';
+  if (!input) return "";
 
   return sanitizeHtml(input, {
     allowedTags: [], // Remove all HTML tags
     allowedAttributes: {},
-    disallowedTagsMode: 'discard',
+    disallowedTagsMode: "discard",
   }).trim();
 }
 
@@ -24,31 +24,52 @@ export function sanitizeText(input: string | null | undefined): string {
  * Use for: Content that needs basic formatting (invoices, quotations)
  */
 export function sanitizeRichText(input: string | null | undefined): string {
-  if (!input) return '';
+  if (!input) return "";
 
   return sanitizeHtml(input, {
     allowedTags: [
-      'b', 'i', 'em', 'strong', 'u', 'p', 'br',
-      'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'blockquote', 'pre', 'code', 'span', 'div',
+      "b",
+      "i",
+      "em",
+      "strong",
+      "u",
+      "p",
+      "br",
+      "ul",
+      "ol",
+      "li",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "blockquote",
+      "pre",
+      "code",
+      "span",
+      "div",
     ],
     allowedAttributes: {
-      'span': ['style'],
-      'div': ['style'],
+      span: ["style"],
+      div: ["style"],
     },
     allowedStyles: {
-      '*': {
-        'color': [/^#(0x)?[0-9a-f]+$/i, /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/],
-        'text-align': [/^left$/, /^right$/, /^center$/],
-        'font-weight': [/^bold$/, /^normal$/],
+      "*": {
+        color: [
+          /^#(0x)?[0-9a-f]+$/i,
+          /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/,
+        ],
+        "text-align": [/^left$/, /^right$/, /^center$/],
+        "font-weight": [/^bold$/, /^normal$/],
       },
     },
-    disallowedTagsMode: 'discard',
+    disallowedTagsMode: "discard",
     transformTags: {
-      'script': 'p', // Convert dangerous tags to safe ones
-      'iframe': 'p',
-      'object': 'p',
-      'embed': 'p',
+      script: "p", // Convert dangerous tags to safe ones
+      iframe: "p",
+      object: "p",
+      embed: "p",
     },
   }).trim();
 }
@@ -57,7 +78,7 @@ export function sanitizeRichText(input: string | null | undefined): string {
  * Sanitize email addresses
  */
 export function sanitizeEmail(email: string | null | undefined): string {
-  if (!email) return '';
+  if (!email) return "";
 
   // Remove any HTML and trim
   const cleaned = sanitizeText(email);
@@ -65,7 +86,7 @@ export function sanitizeEmail(email: string | null | undefined): string {
   // Basic email format validation (simple check)
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(cleaned)) {
-    throw new Error('Invalid email format');
+    throw new Error("Invalid email format");
   }
 
   return cleaned.toLowerCase();
@@ -75,31 +96,33 @@ export function sanitizeEmail(email: string | null | undefined): string {
  * Sanitize phone numbers - removes non-numeric characters except + and -
  */
 export function sanitizePhoneNumber(phone: string | null | undefined): string {
-  if (!phone) return '';
+  if (!phone) return "";
 
   // Remove HTML first
   const cleaned = sanitizeText(phone);
 
   // Keep only digits, +, -, and spaces
-  return cleaned.replace(/[^\d+\-\s]/g, '').trim();
+  return cleaned.replace(/[^\d+\-\s]/g, "").trim();
 }
 
 /**
  * Sanitize URL - ensures URL is safe and valid
  */
 export function sanitizeUrl(url: string | null | undefined): string {
-  if (!url) return '';
+  if (!url) return "";
 
   const cleaned = sanitizeText(url).trim();
 
   // Only allow http, https, and mailto protocols
   if (!cleaned.match(/^(https?:\/\/|mailto:)/i)) {
-    throw new Error('Invalid URL protocol - only http, https, and mailto are allowed');
+    throw new Error(
+      "Invalid URL protocol - only http, https, and mailto are allowed",
+    );
   }
 
   // Block javascript: protocol and other dangerous schemes
   if (cleaned.match(/^(javascript|data|vbscript|file|about):/i)) {
-    throw new Error('Dangerous URL protocol detected');
+    throw new Error("Dangerous URL protocol detected");
   }
 
   return cleaned;
@@ -114,11 +137,11 @@ export function sanitizeJsonObject(obj: any): any {
     return obj;
   }
 
-  if (typeof obj === 'string') {
+  if (typeof obj === "string") {
     return sanitizeText(obj);
   }
 
-  if (typeof obj === 'number' || typeof obj === 'boolean') {
+  if (typeof obj === "number" || typeof obj === "boolean") {
     return obj;
   }
 
@@ -126,7 +149,7 @@ export function sanitizeJsonObject(obj: any): any {
     return obj.map((item) => sanitizeJsonObject(item));
   }
 
-  if (typeof obj === 'object') {
+  if (typeof obj === "object") {
     const sanitized: any = {};
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
@@ -146,7 +169,7 @@ export function sanitizeJsonObject(obj: any): any {
  * Allows Indonesian characters and common business symbols
  */
 export function sanitizeBusinessText(input: string | null | undefined): string {
-  if (!input) return '';
+  if (!input) return "";
 
   // Remove HTML but keep Indonesian characters
   const cleaned = sanitizeHtml(input, {
@@ -156,14 +179,16 @@ export function sanitizeBusinessText(input: string | null | undefined): string {
 
   // Remove any remaining dangerous characters but keep Indonesian chars
   // Allow: letters (including Indonesian), numbers, spaces, common punctuation
-  return cleaned.replace(/[<>{}\\]/g, '');
+  return cleaned.replace(/[<>{}\\]/g, "");
 }
 
 /**
  * Sanitize decimal/numeric input
  */
-export function sanitizeNumeric(input: string | number | null | undefined): string {
-  if (input === null || input === undefined) return '0';
+export function sanitizeNumeric(
+  input: string | number | null | undefined,
+): string {
+  if (input === null || input === undefined) return "0";
 
   const str = String(input);
 
@@ -171,11 +196,11 @@ export function sanitizeNumeric(input: string | number | null | undefined): stri
   const cleaned = sanitizeText(str);
 
   // Keep only digits, decimal point, and minus sign
-  const numeric = cleaned.replace(/[^\d.-]/g, '');
+  const numeric = cleaned.replace(/[^\d.-]/g, "");
 
   // Validate it's a valid number
   if (isNaN(Number(numeric))) {
-    throw new Error('Invalid numeric value');
+    throw new Error("Invalid numeric value");
   }
 
   return numeric;
@@ -185,20 +210,22 @@ export function sanitizeNumeric(input: string | number | null | undefined): stri
  * Sanitize SQL LIKE pattern (for search queries)
  * Escapes special characters to prevent SQL injection in LIKE queries
  */
-export function sanitizeLikePattern(pattern: string | null | undefined): string {
-  if (!pattern) return '';
+export function sanitizeLikePattern(
+  pattern: string | null | undefined,
+): string {
+  if (!pattern) return "";
 
   // Remove HTML first
   const cleaned = sanitizeText(pattern);
 
   // Escape special SQL LIKE characters: % _ [ ] ^
   return cleaned
-    .replace(/\\/g, '\\\\')
-    .replace(/%/g, '\\%')
-    .replace(/_/g, '\\_')
-    .replace(/\[/g, '\\[')
-    .replace(/]/g, '\\]')
-    .replace(/\^/g, '\\^');
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_")
+    .replace(/\[/g, "\\[")
+    .replace(/]/g, "\\]")
+    .replace(/\^/g, "\\^");
 }
 
 /**
@@ -216,7 +243,7 @@ export function sanitizeDto<T extends Record<string, any>>(
     json?: string[];
     business?: string[];
     numeric?: string[];
-  }
+  },
 ): T {
   const sanitized: any = { ...dto };
 

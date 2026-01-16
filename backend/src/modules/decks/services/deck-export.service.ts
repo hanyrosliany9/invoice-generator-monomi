@@ -1,15 +1,20 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import * as puppeteer from 'puppeteer';
-import * as fs from 'fs';
-import * as path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-import { PrismaService } from '../../prisma/prisma.service';
-import { PDFDocument } from 'pdf-lib';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from "@nestjs/common";
+import * as puppeteer from "puppeteer";
+import * as fs from "fs";
+import * as path from "path";
+import { v4 as uuidv4 } from "uuid";
+import { PrismaService } from "../../prisma/prisma.service";
+import { PDFDocument } from "pdf-lib";
 
 export interface ExportJob {
   id: string;
   deckId: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: "pending" | "processing" | "completed" | "failed";
   progress: number;
   totalSlides: number;
   currentSlide: number;
@@ -23,7 +28,7 @@ export interface ExportJob {
 export class DeckExportService {
   private readonly logger = new Logger(DeckExportService.name);
   private jobs: Map<string, ExportJob> = new Map();
-  private readonly tempDir = path.join(process.cwd(), 'temp', 'exports');
+  private readonly tempDir = path.join(process.cwd(), "temp", "exports");
 
   constructor(private prisma: PrismaService) {
     // Ensure temp directory exists
@@ -37,27 +42,27 @@ export class DeckExportService {
 
   async startPdfGeneration(
     deckId: string,
-    quality: 'draft' | 'standard' | 'high' = 'standard',
+    quality: "draft" | "standard" | "high" = "standard",
   ): Promise<string> {
     // Verify deck exists
     const deck = await this.prisma.deck.findUnique({
       where: { id: deckId },
       include: {
         slides: {
-          orderBy: { order: 'asc' },
+          orderBy: { order: "asc" },
         },
       },
     });
 
     if (!deck) {
-      throw new NotFoundException('Deck not found');
+      throw new NotFoundException("Deck not found");
     }
 
     const jobId = uuidv4();
     const job: ExportJob = {
       id: jobId,
       deckId,
-      status: 'pending',
+      status: "pending",
       progress: 0,
       totalSlides: deck.slides.length,
       currentSlide: 0,
@@ -77,9 +82,9 @@ export class DeckExportService {
   private async generatePdfAsync(
     job: ExportJob,
     deck: any,
-    quality: 'draft' | 'standard' | 'high',
+    quality: "draft" | "standard" | "high",
   ) {
-    job.status = 'processing';
+    job.status = "processing";
 
     const qualitySettings = {
       draft: { scale: 1, quality: 80 },
@@ -94,7 +99,7 @@ export class DeckExportService {
     try {
       browser = await puppeteer.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
       });
 
       const page = await browser.newPage();
@@ -102,7 +107,10 @@ export class DeckExportService {
       // Set viewport to slide dimensions (16:9)
       const width = 1920 * settings.scale;
       const height = 1080 * settings.scale;
-      await page.setViewport({ width: Math.round(width), height: Math.round(height) });
+      await page.setViewport({
+        width: Math.round(width),
+        height: Math.round(height),
+      });
 
       const pdfPages: Uint8Array[] = [];
 
@@ -111,15 +119,16 @@ export class DeckExportService {
         job.currentSlide = i + 1;
         job.progress = Math.round((i / deck.slides.length) * 100);
 
-        this.logger.debug(`Rendering slide ${i + 1} of ${deck.slides.length} (job: ${job.id})`);
+        this.logger.debug(
+          `Rendering slide ${i + 1} of ${deck.slides.length} (job: ${job.id})`,
+        );
 
         // Create HTML for this slide
         const html = this.generateSlideHtml(slide, width, height);
-        await page.setContent(html, { waitUntil: 'networkidle0' });
+        await page.setContent(html, { waitUntil: "networkidle0" });
 
         // Wait for fonts and images to load
         try {
-          // eslint-disable-next-line no-eval
           await page.evaluate(() => {
             // @ts-ignore - document is available in browser context
             const doc = document as any;
@@ -138,7 +147,7 @@ export class DeckExportService {
           width: `${width}px`,
           height: `${height}px`,
           printBackground: true,
-          pageRanges: '1',
+          pageRanges: "1",
         });
 
         pdfPages.push(new Uint8Array(slideBuffer));
@@ -156,21 +165,25 @@ export class DeckExportService {
       const finalPdfBuffer = await mergedPdf.save();
 
       // Save to file
-      const sanitizedTitle = deck.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const sanitizedTitle = deck.title
+        .replace(/[^a-z0-9]/gi, "_")
+        .toLowerCase();
       const filename = `${sanitizedTitle}_${Date.now()}.pdf`;
       const filePath = path.join(this.tempDir, filename);
       fs.writeFileSync(filePath, finalPdfBuffer);
 
-      job.status = 'completed';
+      job.status = "completed";
       job.progress = 100;
       job.filePath = filePath;
       job.filename = filename;
 
-      this.logger.log(`PDF generation completed for job ${job.id}: ${filename}`);
+      this.logger.log(
+        `PDF generation completed for job ${job.id}: ${filename}`,
+      );
     } catch (error) {
       this.logger.error(`PDF generation error for job ${job.id}:`, error);
-      job.status = 'failed';
-      job.error = error instanceof Error ? error.message : 'Unknown error';
+      job.status = "failed";
+      job.error = error instanceof Error ? error.message : "Unknown error";
     } finally {
       if (browser) {
         await browser.close();
@@ -182,9 +195,9 @@ export class DeckExportService {
     // Parse the canvas JSON data
     let canvasData = {};
     try {
-      canvasData = JSON.parse(slide.data || '{}');
+      canvasData = JSON.parse(slide.data || "{}");
     } catch (e) {
-      this.logger.error('Failed to parse canvas data:', e);
+      this.logger.error("Failed to parse canvas data:", e);
     }
 
     // Generate HTML that renders the fabric.js canvas data
@@ -203,7 +216,7 @@ export class DeckExportService {
           #canvas-container {
             width: ${width}px;
             height: ${height}px;
-            background: ${(canvasData as any).background || '#ffffff'};
+            background: ${(canvasData as any).background || "#ffffff"};
           }
           canvas {
             display: block;
@@ -234,22 +247,26 @@ export class DeckExportService {
     `;
   }
 
-  async exportSlideAsPng(deckId: string, slideIndex: number, scale: number): Promise<Buffer> {
+  async exportSlideAsPng(
+    deckId: string,
+    slideIndex: number,
+    scale: number,
+  ): Promise<Buffer> {
     const deck = await this.prisma.deck.findUnique({
       where: { id: deckId },
       include: {
         slides: {
-          orderBy: { order: 'asc' },
+          orderBy: { order: "asc" },
         },
       },
     });
 
     if (!deck) {
-      throw new NotFoundException('Deck not found');
+      throw new NotFoundException("Deck not found");
     }
 
     if (slideIndex < 0 || slideIndex >= deck.slides.length) {
-      throw new BadRequestException('Invalid slide index');
+      throw new BadRequestException("Invalid slide index");
     }
 
     const slide = deck.slides[slideIndex];
@@ -261,17 +278,19 @@ export class DeckExportService {
     try {
       browser = await puppeteer.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
       });
 
       const page = await browser.newPage();
-      await page.setViewport({ width: Math.round(width), height: Math.round(height) });
+      await page.setViewport({
+        width: Math.round(width),
+        height: Math.round(height),
+      });
 
       const html = this.generateSlideHtml(slide, width, height);
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { waitUntil: "networkidle0" });
 
       try {
-        // eslint-disable-next-line no-eval
         await page.evaluate(() => {
           // @ts-ignore - document is available in browser context
           const doc = document as any;
@@ -286,7 +305,7 @@ export class DeckExportService {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       const screenshot = await page.screenshot({
-        type: 'png',
+        type: "png",
         fullPage: false,
       });
 

@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
-import { SecurityMetricsController } from './security-metrics.controller';
-import { SecurityMetricsService } from './security-metrics.service';
-import { PrismaModule } from '../prisma/prisma.module';
+import { Module } from "@nestjs/common";
+import { SecurityMetricsController } from "./security-metrics.controller";
+import { SecurityMetricsService } from "./security-metrics.service";
+import { PrismaModule } from "../prisma/prisma.module";
 
 @Module({
   imports: [PrismaModule],

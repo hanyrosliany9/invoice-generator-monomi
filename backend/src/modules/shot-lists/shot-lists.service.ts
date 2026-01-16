@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import * as puppeteer from 'puppeteer';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateShotListDto } from './dto/create-shot-list.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import * as puppeteer from "puppeteer";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateShotListDto } from "./dto/create-shot-list.dto";
 
 @Injectable()
 export class ShotListsService {
@@ -18,10 +18,13 @@ export class ShotListsService {
     return this.prisma.shotList.findMany({
       where: { projectId },
       include: {
-        scenes: { orderBy: { order: 'asc' }, include: { shots: { orderBy: { order: 'asc' } } } },
+        scenes: {
+          orderBy: { order: "asc" },
+          include: { shots: { orderBy: { order: "asc" } } },
+        },
         _count: { select: { scenes: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -32,26 +35,29 @@ export class ShotListsService {
         project: true,
         createdBy: { select: { id: true, name: true } },
         scenes: {
-          orderBy: { order: 'asc' },
-          include: { shots: { orderBy: { order: 'asc' } } },
+          orderBy: { order: "asc" },
+          include: { shots: { orderBy: { order: "asc" } } },
         },
       },
     });
-    if (!list) throw new NotFoundException('Shot list not found');
+    if (!list) throw new NotFoundException("Shot list not found");
     return list;
   }
 
-  async update(id: string, dto: Partial<{ name: string; description: string }>) {
+  async update(
+    id: string,
+    dto: Partial<{ name: string; description: string }>,
+  ) {
     const existing = await this.prisma.shotList.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Shot list not found');
+    if (!existing) throw new NotFoundException("Shot list not found");
 
     return this.prisma.shotList.update({
       where: { id },
       data: dto,
       include: {
         scenes: {
-          orderBy: { order: 'asc' },
-          include: { shots: { orderBy: { order: 'asc' } } },
+          orderBy: { order: "asc" },
+          include: { shots: { orderBy: { order: "asc" } } },
         },
       },
     });
@@ -68,18 +74,18 @@ export class ShotListsService {
 
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
     try {
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { waitUntil: "networkidle0" });
 
       const pdf = await page.pdf({
-        format: 'A4',
+        format: "A4",
         landscape: true,
         printBackground: true,
-        margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' },
+        margin: { top: "20px", bottom: "20px", left: "20px", right: "20px" },
       });
 
       return Buffer.from(pdf);
@@ -89,12 +95,14 @@ export class ShotListsService {
   }
 
   private generateHtml(shotList: any): string {
-    const scenesHtml = shotList.scenes.map((scene: any) => `
+    const scenesHtml = shotList.scenes
+      .map(
+        (scene: any) => `
       <div class="scene">
         <div class="scene-header">
           <strong>${scene.sceneNumber}</strong> - ${scene.name}
-          ${scene.intExt ? `(${scene.intExt})` : ''}
-          ${scene.dayNight ? `/ ${scene.dayNight}` : ''}
+          ${scene.intExt ? `(${scene.intExt})` : ""}
+          ${scene.dayNight ? `/ ${scene.dayNight}` : ""}
         </div>
         <table>
           <thead>
@@ -109,21 +117,27 @@ export class ShotListsService {
             </tr>
           </thead>
           <tbody>
-            ${scene.shots.map((shot: any) => `
+            ${scene.shots
+              .map(
+                (shot: any) => `
               <tr>
                 <td>${shot.shotNumber}</td>
-                <td>${shot.shotSize || '-'}</td>
-                <td>${shot.shotType || '-'}</td>
-                <td>${shot.cameraMovement || '-'}</td>
-                <td>${shot.lens || '-'}</td>
-                <td>${shot.description || '-'}</td>
+                <td>${shot.shotSize || "-"}</td>
+                <td>${shot.shotType || "-"}</td>
+                <td>${shot.cameraMovement || "-"}</td>
+                <td>${shot.lens || "-"}</td>
+                <td>${shot.description || "-"}</td>
                 <td>${shot.status}</td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </tbody>
         </table>
       </div>
-    `).join('');
+    `,
+      )
+      .join("");
 
     return `
       <!DOCTYPE html>
@@ -147,7 +161,7 @@ export class ShotListsService {
       <body>
         <h1>${this.escapeHtml(shotList.name)}</h1>
         <div class="meta">
-          Project: ${this.escapeHtml(shotList.project?.name || 'N/A')} |
+          Project: ${this.escapeHtml(shotList.project?.name || "N/A")} |
           Created: ${new Date(shotList.createdAt).toLocaleDateString()}
         </div>
         ${scenesHtml}
@@ -157,12 +171,12 @@ export class ShotListsService {
   }
 
   private escapeHtml(text: string): string {
-    if (!text) return '';
+    if (!text) return "";
     return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 }

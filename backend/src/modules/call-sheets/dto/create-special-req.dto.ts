@@ -1,7 +1,18 @@
-import { IsString, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsEnum } from "class-validator";
 
 export class CreateSpecialReqDto {
-  @IsEnum(['STUNTS', 'MINORS', 'ANIMALS', 'VEHICLES', 'SFX_PYRO', 'WATER_WORK', 'AERIAL_DRONE', 'WEAPONS', 'NUDITY', 'OTHER'])
+  @IsEnum([
+    "STUNTS",
+    "MINORS",
+    "ANIMALS",
+    "VEHICLES",
+    "SFX_PYRO",
+    "WATER_WORK",
+    "AERIAL_DRONE",
+    "WEAPONS",
+    "NUDITY",
+    "OTHER",
+  ])
   reqType: string;
 
   @IsString()
@@ -26,7 +37,18 @@ export class CreateSpecialReqDto {
 
 export class UpdateSpecialReqDto {
   @IsOptional()
-  @IsEnum(['STUNTS', 'MINORS', 'ANIMALS', 'VEHICLES', 'SFX_PYRO', 'WATER_WORK', 'AERIAL_DRONE', 'WEAPONS', 'NUDITY', 'OTHER'])
+  @IsEnum([
+    "STUNTS",
+    "MINORS",
+    "ANIMALS",
+    "VEHICLES",
+    "SFX_PYRO",
+    "WATER_WORK",
+    "AERIAL_DRONE",
+    "WEAPONS",
+    "NUDITY",
+    "OTHER",
+  ])
   reqType?: string;
 
   @IsOptional()

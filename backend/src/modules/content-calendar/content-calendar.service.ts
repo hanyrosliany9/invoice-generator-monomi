@@ -58,8 +58,16 @@ export class ContentCalendarService {
     userId: string,
   ): Promise<ContentWithRelations> {
     // Validate media count against platform limits
-    if (createDto.platforms && createDto.platforms.length > 0 && createDto.media && createDto.media.length > 0) {
-      const validation = validateMediaForPlatforms(createDto.platforms, createDto.media.length);
+    if (
+      createDto.platforms &&
+      createDto.platforms.length > 0 &&
+      createDto.media &&
+      createDto.media.length > 0
+    ) {
+      const validation = validateMediaForPlatforms(
+        createDto.platforms,
+        createDto.media.length,
+      );
       if (!validation.valid) {
         throw new BadRequestException(validation.error);
       }
@@ -71,7 +79,9 @@ export class ContentCalendarService {
         where: { id: createDto.clientId },
       });
       if (!client) {
-        throw new BadRequestException(`Client with ID ${createDto.clientId} not found`);
+        throw new BadRequestException(
+          `Client with ID ${createDto.clientId} not found`,
+        );
       }
     }
 
@@ -110,7 +120,9 @@ export class ContentCalendarService {
     const content = await this.prisma.contentCalendarItem.create({
       data: {
         caption: createDto.caption,
-        scheduledAt: createDto.scheduledAt ? new Date(createDto.scheduledAt) : null,
+        scheduledAt: createDto.scheduledAt
+          ? new Date(createDto.scheduledAt)
+          : null,
         status: createDto.status || ContentStatus.DRAFT,
         platforms: createDto.platforms || [],
         clientId: createDto.clientId,
@@ -136,7 +148,7 @@ export class ContentCalendarService {
       },
       include: {
         media: {
-          orderBy: { order: 'asc' }, // Order media by carousel order
+          orderBy: { order: "asc" }, // Order media by carousel order
         },
         client: true,
         project: true,
@@ -152,7 +164,9 @@ export class ContentCalendarService {
       },
     });
 
-    this.logger.log(`✅ Content created: ${content.id} - ${content.caption.substring(0, 50)}...`);
+    this.logger.log(
+      `✅ Content created: ${content.id} - ${content.caption.substring(0, 50)}...`,
+    );
 
     return content;
   }
@@ -209,7 +223,7 @@ export class ContentCalendarService {
       where,
       include: {
         media: {
-          orderBy: { order: 'asc' }, // Order media by carousel order
+          orderBy: { order: "asc" }, // Order media by carousel order
         },
         client: {
           select: {
@@ -249,7 +263,7 @@ export class ContentCalendarService {
       where: { id },
       include: {
         media: {
-          orderBy: { order: 'asc' }, // Order media by carousel order
+          orderBy: { order: "asc" }, // Order media by carousel order
         },
         client: true,
         project: true,
@@ -308,7 +322,10 @@ export class ContentCalendarService {
         );
       }
 
-      const clientId = updateDto.clientId !== undefined ? updateDto.clientId : existing.clientId;
+      const clientId =
+        updateDto.clientId !== undefined
+          ? updateDto.clientId
+          : existing.clientId;
       if (clientId && project.clientId !== clientId) {
         throw new BadRequestException(
           `Project "${project.description}" belongs to client "${project.client.name}", not the selected client. Please select a matching project.`,
@@ -344,11 +361,17 @@ export class ContentCalendarService {
       where: { id },
       data: {
         ...(updateDto.caption && { caption: updateDto.caption }),
-        ...(updateDto.scheduledAt && { scheduledAt: new Date(updateDto.scheduledAt) }),
+        ...(updateDto.scheduledAt && {
+          scheduledAt: new Date(updateDto.scheduledAt),
+        }),
         ...(updateDto.status && { status: updateDto.status }),
         ...(updateDto.platforms && { platforms: updateDto.platforms }),
-        ...(updateDto.clientId !== undefined && { clientId: updateDto.clientId }),
-        ...(updateDto.projectId !== undefined && { projectId: updateDto.projectId }),
+        ...(updateDto.clientId !== undefined && {
+          clientId: updateDto.clientId,
+        }),
+        ...(updateDto.projectId !== undefined && {
+          projectId: updateDto.projectId,
+        }),
         // DELETED: campaignId - 2025-11-09
         // Handle media updates if provided
         ...(updateDto.media && {
@@ -373,7 +396,7 @@ export class ContentCalendarService {
       },
       include: {
         media: {
-          orderBy: { order: 'asc' }, // Order media by carousel order
+          orderBy: { order: "asc" }, // Order media by carousel order
         },
         client: true,
         project: true,
@@ -416,7 +439,9 @@ export class ContentCalendarService {
 
       try {
         await this.mediaService.deleteMultipleFiles(keys);
-        this.logger.log(`✅ Deleted ${keys.length} media files (including thumbnails) from R2`);
+        this.logger.log(
+          `✅ Deleted ${keys.length} media files (including thumbnails) from R2`,
+        );
       } catch (error) {
         this.logger.error(`⚠️  Failed to delete media from R2:`, error);
         // Continue with database deletion even if R2 deletion fails
@@ -434,7 +459,11 @@ export class ContentCalendarService {
   /**
    * Publish a scheduled content (mark as PUBLISHED)
    */
-  async publish(id: string, userId: string, userRole: UserRole): Promise<ContentWithRelations> {
+  async publish(
+    id: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<ContentWithRelations> {
     const content = await this.findOne(id);
     this.checkPermission(content, userId, userRole);
 
@@ -450,7 +479,7 @@ export class ContentCalendarService {
       },
       include: {
         media: {
-          orderBy: { order: 'asc' }, // Order media by carousel order
+          orderBy: { order: "asc" }, // Order media by carousel order
         },
         client: true,
         project: true,
@@ -474,7 +503,11 @@ export class ContentCalendarService {
   /**
    * Archive a content item
    */
-  async archive(id: string, userId: string, userRole: UserRole): Promise<ContentWithRelations> {
+  async archive(
+    id: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<ContentWithRelations> {
     const content = await this.findOne(id);
     this.checkPermission(content, userId, userRole);
 
@@ -485,7 +518,7 @@ export class ContentCalendarService {
       },
       include: {
         media: {
-          orderBy: { order: 'asc' }, // Order media by carousel order
+          orderBy: { order: "asc" }, // Order media by carousel order
         },
         client: true,
         project: true,

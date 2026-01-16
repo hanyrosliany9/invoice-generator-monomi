@@ -3,8 +3,8 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 /**
  * Guard to authenticate guest collaborators via invite token
@@ -20,11 +20,11 @@ export class GuestAuthGuard implements CanActivate {
     // Get token from query parameter or header
     const token =
       request.query.token ||
-      request.headers['x-guest-token'] ||
-      request.headers['authorization']?.replace('Bearer ', '');
+      request.headers["x-guest-token"] ||
+      request.headers["authorization"]?.replace("Bearer ", "");
 
     if (!token) {
-      throw new UnauthorizedException('Guest token required');
+      throw new UnauthorizedException("Guest token required");
     }
 
     // Validate guest token
@@ -43,21 +43,21 @@ export class GuestAuthGuard implements CanActivate {
     });
 
     if (!collaborator) {
-      throw new UnauthorizedException('Invalid guest token');
+      throw new UnauthorizedException("Invalid guest token");
     }
 
     // Check if expired
     if (collaborator.expiresAt && collaborator.expiresAt < new Date()) {
       await this.prisma.mediaCollaborator.update({
         where: { id: collaborator.id },
-        data: { status: 'EXPIRED' },
+        data: { status: "EXPIRED" },
       });
-      throw new UnauthorizedException('Guest token expired');
+      throw new UnauthorizedException("Guest token expired");
     }
 
     // Check if revoked
-    if (collaborator.status === 'REVOKED') {
-      throw new UnauthorizedException('Guest access revoked');
+    if (collaborator.status === "REVOKED") {
+      throw new UnauthorizedException("Guest access revoked");
     }
 
     // Update last access time and mark as accepted on first use
@@ -65,7 +65,8 @@ export class GuestAuthGuard implements CanActivate {
       where: { id: collaborator.id },
       data: {
         lastAccessAt: new Date(),
-        status: collaborator.status === 'PENDING' ? 'ACCEPTED' : collaborator.status,
+        status:
+          collaborator.status === "PENDING" ? "ACCEPTED" : collaborator.status,
       },
     });
 

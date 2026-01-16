@@ -1,59 +1,76 @@
-import { IsString, IsOptional, IsInt, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsEnum } from "class-validator";
 
 export class CreateWardrobeDto {
   @IsString()
   itemName: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   brand?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   size?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   color?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   providedBy?: string; // "Client", "Stylist", "Model"
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   forModel?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   forShot?: string;
 
-  @IsOptional() @IsEnum(['PENDING', 'CONFIRMED', 'ON_SET', 'IN_USE', 'WRAPPED'])
+  @IsOptional()
+  @IsEnum(["PENDING", "CONFIRMED", "ON_SET", "IN_USE", "WRAPPED"])
   status?: string;
 
-  @IsOptional() @IsInt()
+  @IsOptional()
+  @IsInt()
   order?: number;
 }
 
 export class UpdateWardrobeDto {
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   itemName?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   brand?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   size?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   color?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   providedBy?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   forModel?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   forShot?: string;
 
-  @IsOptional() @IsEnum(['PENDING', 'CONFIRMED', 'ON_SET', 'IN_USE', 'WRAPPED'])
+  @IsOptional()
+  @IsEnum(["PENDING", "CONFIRMED", "ON_SET", "IN_USE", "WRAPPED"])
   status?: string;
 
-  @IsOptional() @IsInt()
+  @IsOptional()
+  @IsInt()
   order?: number;
 }

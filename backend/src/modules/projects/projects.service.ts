@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { DocumentsService } from "../documents/documents.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
@@ -180,7 +184,7 @@ export class ProjectsService {
           projectType: true,
           milestones: {
             orderBy: {
-              milestoneNumber: 'asc',
+              milestoneNumber: "asc",
             },
           },
           _count: {
@@ -381,7 +385,8 @@ export class ProjectsService {
         const grossProfit = currentBasePrice - totalDirect;
         const netProfit = currentBasePrice - totalEstimated;
 
-        updateData.projectedGrossMargin = (grossProfit / currentBasePrice) * 100;
+        updateData.projectedGrossMargin =
+          (grossProfit / currentBasePrice) * 100;
         updateData.projectedNetMargin = (netProfit / currentBasePrice) * 100;
         updateData.projectedProfit = netProfit;
       }
@@ -465,7 +470,7 @@ export class ProjectsService {
     const result = await this.prisma.$queryRaw<Array<{ number: string }>>`
       SELECT number
       FROM projects
-      WHERE number LIKE ${prefix + '%'}
+      WHERE number LIKE ${prefix + "%"}
       ORDER BY number DESC
       LIMIT 1
       FOR UPDATE
@@ -475,7 +480,7 @@ export class ProjectsService {
     if (result.length > 0) {
       // Extract sequence from last number (e.g., "PRJ-PH-202511-002" -> 2)
       const lastNumber = result[0].number;
-      const lastSequence = parseInt(lastNumber.split('-').pop() || '0', 10);
+      const lastSequence = parseInt(lastNumber.split("-").pop() || "0", 10);
       sequence = lastSequence + 1;
     }
 

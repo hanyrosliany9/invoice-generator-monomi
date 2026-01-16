@@ -3,11 +3,11 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateMilestoneDto } from './dto/create-milestone.dto';
-import { UpdateMilestoneDto } from './dto/update-milestone.dto';
-import { ProjectMilestone, MilestoneStatus, Prisma } from '@prisma/client';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateMilestoneDto } from "./dto/create-milestone.dto";
+import { UpdateMilestoneDto } from "./dto/update-milestone.dto";
+import { ProjectMilestone, MilestoneStatus, Prisma } from "@prisma/client";
 
 @Injectable()
 export class MilestonesService {
@@ -38,7 +38,7 @@ export class MilestonesService {
 
     if (existingMilestone) {
       throw new ConflictException(
-        `Milestone number ${dto.milestoneNumber} already exists for this project`
+        `Milestone number ${dto.milestoneNumber} already exists for this project`,
       );
     }
 
@@ -50,13 +50,13 @@ export class MilestonesService {
 
       if (!predecessor) {
         throw new NotFoundException(
-          `Predecessor milestone with ID ${dto.predecessorId} not found`
+          `Predecessor milestone with ID ${dto.predecessorId} not found`,
         );
       }
 
       if (predecessor.projectId !== dto.projectId) {
         throw new BadRequestException(
-          'Predecessor milestone must be from the same project'
+          "Predecessor milestone must be from the same project",
         );
       }
     }
@@ -67,14 +67,14 @@ export class MilestonesService {
 
     if (plannedEnd <= plannedStart) {
       throw new BadRequestException(
-        'Planned end date must be after planned start date'
+        "Planned end date must be after planned start date",
       );
     }
 
     // AUTO-CALCULATE REVENUE if not provided
     const plannedRevenue = await this.calculatePlannedRevenue(
       dto.projectId,
-      dto.plannedRevenue
+      dto.plannedRevenue,
     );
 
     // Create milestone
@@ -95,12 +95,12 @@ export class MilestonesService {
           ? new Prisma.Decimal(dto.estimatedCost)
           : null,
         actualCost: new Prisma.Decimal(0),
-        priority: dto.priority || 'MEDIUM',
+        priority: dto.priority || "MEDIUM",
         predecessorId: dto.predecessorId,
         deliverables: dto.deliverables || null,
         notes: dto.notes,
         notesId: dto.notesId,
-        status: 'PENDING',
+        status: "PENDING",
       },
       include: {
         project: {
@@ -138,7 +138,7 @@ export class MilestonesService {
           },
         },
       },
-      orderBy: { milestoneNumber: 'asc' },
+      orderBy: { milestoneNumber: "asc" },
     });
   }
 
@@ -193,10 +193,7 @@ export class MilestonesService {
   /**
    * Update milestone
    */
-  async update(
-    id: string,
-    dto: UpdateMilestoneDto
-  ): Promise<ProjectMilestone> {
+  async update(id: string, dto: UpdateMilestoneDto): Promise<ProjectMilestone> {
     const milestone = await this.findOne(id);
 
     // Validate predecessor if changed
@@ -207,20 +204,20 @@ export class MilestonesService {
 
       if (!predecessor) {
         throw new NotFoundException(
-          `Predecessor milestone with ID ${dto.predecessorId} not found`
+          `Predecessor milestone with ID ${dto.predecessorId} not found`,
         );
       }
 
       if (predecessor.projectId !== milestone.projectId) {
         throw new BadRequestException(
-          'Predecessor milestone must be from the same project'
+          "Predecessor milestone must be from the same project",
         );
       }
 
       // Check for circular dependencies
       if (await this.wouldCreateCircularDependency(id, dto.predecessorId)) {
         throw new BadRequestException(
-          'Cannot set predecessor: would create circular dependency'
+          "Cannot set predecessor: would create circular dependency",
         );
       }
     }
@@ -235,7 +232,7 @@ export class MilestonesService {
         : milestone.plannedEndDate;
 
       if (endDate && startDate && endDate <= startDate) {
-        throw new BadRequestException('End date must be after start date');
+        throw new BadRequestException("End date must be after start date");
       }
     }
 
@@ -267,7 +264,7 @@ export class MilestonesService {
     }
     if (dto.completionPercentage !== undefined) {
       updateData.completionPercentage = new Prisma.Decimal(
-        dto.completionPercentage
+        dto.completionPercentage,
       );
     }
 
@@ -316,7 +313,7 @@ export class MilestonesService {
 
     if (successorCount > 0) {
       throw new BadRequestException(
-        'Cannot delete milestone: it is a predecessor to other milestones. Remove dependencies first.'
+        "Cannot delete milestone: it is a predecessor to other milestones. Remove dependencies first.",
       );
     }
 
@@ -330,22 +327,22 @@ export class MilestonesService {
    */
   async updateProgress(
     id: string,
-    percentage: number
+    percentage: number,
   ): Promise<ProjectMilestone> {
     if (percentage < 0 || percentage > 100) {
       throw new BadRequestException(
-        'Completion percentage must be between 0 and 100'
+        "Completion percentage must be between 0 and 100",
       );
     }
 
     // Auto-update status based on percentage
     let status: MilestoneStatus;
     if (percentage === 0) {
-      status = 'PENDING';
+      status = "PENDING";
     } else if (percentage < 100) {
-      status = 'IN_PROGRESS';
+      status = "IN_PROGRESS";
     } else {
-      status = 'COMPLETED';
+      status = "COMPLETED";
     }
 
     return this.prisma.projectMilestone.update({
@@ -373,11 +370,11 @@ export class MilestonesService {
 
       if (
         predecessor &&
-        predecessor.status !== 'COMPLETED' &&
-        predecessor.status !== 'ACCEPTED'
+        predecessor.status !== "COMPLETED" &&
+        predecessor.status !== "ACCEPTED"
       ) {
         throw new BadRequestException(
-          `Cannot complete milestone: predecessor milestone ${predecessor.milestoneNumber} is not completed`
+          `Cannot complete milestone: predecessor milestone ${predecessor.milestoneNumber} is not completed`,
         );
       }
     }
@@ -385,7 +382,7 @@ export class MilestonesService {
     return this.prisma.projectMilestone.update({
       where: { id },
       data: {
-        status: 'COMPLETED',
+        status: "COMPLETED",
         completionPercentage: new Prisma.Decimal(100),
         actualEndDate: new Date(),
       },
@@ -421,13 +418,13 @@ export class MilestonesService {
         };
 
         if (
-          predecessor.status !== 'COMPLETED' &&
-          predecessor.status !== 'ACCEPTED' &&
-          predecessor.status !== 'BILLED'
+          predecessor.status !== "COMPLETED" &&
+          predecessor.status !== "ACCEPTED" &&
+          predecessor.status !== "BILLED"
         ) {
           canStart = false;
           reasons.push(
-            `Predecessor milestone ${predecessor.milestoneNumber} (${predecessor.name}) is not completed yet`
+            `Predecessor milestone ${predecessor.milestoneNumber} (${predecessor.name}) is not completed yet`,
           );
         }
       }
@@ -445,7 +442,7 @@ export class MilestonesService {
    */
   private async wouldCreateCircularDependency(
     milestoneId: string,
-    predecessorId: string
+    predecessorId: string,
   ): Promise<boolean> {
     // A circular dependency exists if the predecessor (or any of its predecessors)
     // eventually depends on the current milestone
@@ -489,7 +486,7 @@ export class MilestonesService {
    */
   private async calculatePlannedRevenue(
     projectId: string,
-    providedRevenue?: number | null
+    providedRevenue?: number | null,
   ): Promise<number> {
     // If revenue explicitly provided, use it
     if (providedRevenue !== undefined && providedRevenue !== null) {
@@ -508,7 +505,7 @@ export class MilestonesService {
     if (!project?.estimatedBudget) {
       // No budget = zero revenue allocation
       console.warn(
-        `Project ${projectId} has no estimatedBudget. Setting milestone revenue to 0.`
+        `Project ${projectId} has no estimatedBudget. Setting milestone revenue to 0.`,
       );
       return 0;
     }
@@ -525,7 +522,7 @@ export class MilestonesService {
 
     console.log(
       `Auto-calculated milestone revenue: ${revenuePerMilestone} ` +
-        `(Project budget: ${budgetNumber} / ${totalMilestones} milestones)`
+        `(Project budget: ${budgetNumber} / ${totalMilestones} milestones)`,
     );
 
     return Math.round(revenuePerMilestone);

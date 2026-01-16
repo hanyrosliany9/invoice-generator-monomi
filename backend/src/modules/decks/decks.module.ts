@@ -1,28 +1,28 @@
-import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { PrismaModule } from '../prisma/prisma.module';
-import { MediaModule } from '../media/media.module';
+import { Module } from "@nestjs/common";
+import { JwtModule } from "@nestjs/jwt";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { PrismaModule } from "../prisma/prisma.module";
+import { MediaModule } from "../media/media.module";
 
 // Services
-import { DecksService } from './services/decks.service';
-import { DeckSlidesService } from './services/deck-slides.service';
-import { DeckElementsService } from './services/deck-elements.service';
-import { DeckCommentsService } from './services/deck-comments.service';
-import { DeckCollaboratorsService } from './services/deck-collaborators.service';
-import { DeckExportService } from './services/deck-export.service';
+import { DecksService } from "./services/decks.service";
+import { DeckSlidesService } from "./services/deck-slides.service";
+import { DeckElementsService } from "./services/deck-elements.service";
+import { DeckCommentsService } from "./services/deck-comments.service";
+import { DeckCollaboratorsService } from "./services/deck-collaborators.service";
+import { DeckExportService } from "./services/deck-export.service";
 
 // Controllers
-import { DecksController } from './controllers/decks.controller';
-import { DeckSlidesController } from './controllers/deck-slides.controller';
-import { DeckElementsController } from './controllers/deck-elements.controller';
-import { DeckCommentsController } from './controllers/deck-comments.controller';
-import { DeckCollaboratorsController } from './controllers/deck-collaborators.controller';
-import { DeckPublicController } from './controllers/deck-public.controller';
-import { DeckExportController } from './controllers/deck-export.controller';
+import { DecksController } from "./controllers/decks.controller";
+import { DeckSlidesController } from "./controllers/deck-slides.controller";
+import { DeckElementsController } from "./controllers/deck-elements.controller";
+import { DeckCommentsController } from "./controllers/deck-comments.controller";
+import { DeckCollaboratorsController } from "./controllers/deck-collaborators.controller";
+import { DeckPublicController } from "./controllers/deck-public.controller";
+import { DeckExportController } from "./controllers/deck-export.controller";
 
 // Gateway
-import { DeckCollaborationGateway } from './deck-collaboration.gateway';
+import { DeckCollaborationGateway } from "./deck-collaboration.gateway";
 
 /**
  * DecksModule - Presentation Deck Builder
@@ -58,8 +58,8 @@ import { DeckCollaborationGateway } from './deck-collaboration.gateway';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '24h' },
+        secret: configService.get<string>("JWT_SECRET"),
+        signOptions: { expiresIn: "24h" },
       }),
     }),
   ],

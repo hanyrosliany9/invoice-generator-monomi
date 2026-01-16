@@ -4,13 +4,16 @@ import { ContentPlatform } from "@prisma/client";
  * Platform-specific media limits for carousels
  * Based on each platform's API and UX guidelines (2025)
  */
-export const PLATFORM_MEDIA_LIMITS: Record<ContentPlatform, {
-  maxMedia: number;
-  allowsMultipleMedia: boolean;
-  allowsImages: boolean;
-  allowsVideos: boolean;
-  description: string;
-}> = {
+export const PLATFORM_MEDIA_LIMITS: Record<
+  ContentPlatform,
+  {
+    maxMedia: number;
+    allowsMultipleMedia: boolean;
+    allowsImages: boolean;
+    allowsVideos: boolean;
+    description: string;
+  }
+> = {
   [ContentPlatform.INSTAGRAM]: {
     maxMedia: 10,
     allowsMultipleMedia: true,
@@ -58,7 +61,9 @@ export const PLATFORM_MEDIA_LIMITS: Record<ContentPlatform, {
 /**
  * Get the most restrictive media limit across all selected platforms
  */
-export function getMediaLimitForPlatforms(platforms: ContentPlatform[]): number {
+export function getMediaLimitForPlatforms(
+  platforms: ContentPlatform[],
+): number {
   if (!platforms || platforms.length === 0) {
     return 10; // Default safe limit
   }

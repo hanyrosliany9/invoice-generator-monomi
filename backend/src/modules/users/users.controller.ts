@@ -25,7 +25,6 @@ import { CreateUserDto, UpdateUserDto, UserResponseDto } from "./dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RequireSuperAdmin } from "../auth/decorators/auth.decorators";
 import { ApiResponse as ApiResponseDto } from "../../common/dto/api-response.dto";
-import { getErrorMessage } from "../../common/utils/error-handling.util";
 import * as bcrypt from "bcrypt";
 
 @ApiTags("Users")
@@ -101,15 +100,22 @@ export class UsersController {
       const filters = { page, limit, search, role, isActive };
       const users = await this.usersService.findAll(filters);
       return ApiResponseDto.success(users, "Daftar pengguna berhasil diambil");
-    } catch (error) {
+    } catch {
       return ApiResponseDto.error("Gagal mengambil daftar pengguna", []);
     }
   }
 
   @Get("lookup-by-email")
   @UseGuards(JwtAuthGuard) // Only authenticated users, no SuperAdmin required
-  @ApiOperation({ summary: "Find user by email address (for collaborator invites)" })
-  @ApiQuery({ name: "email", required: true, type: String, description: "Email address to lookup" })
+  @ApiOperation({
+    summary: "Find user by email address (for collaborator invites)",
+  })
+  @ApiQuery({
+    name: "email",
+    required: true,
+    type: String,
+    description: "Email address to lookup",
+  })
   @ApiResponse({
     status: 200,
     description: "User found successfully",
@@ -120,10 +126,12 @@ export class UsersController {
   })
   async findByEmail(
     @Query("email") email: string,
-  ): Promise<ApiResponseDto<{ id: string; name: string; email: string } | null>> {
+  ): Promise<
+    ApiResponseDto<{ id: string; name: string; email: string } | null>
+  > {
     try {
-      if (!email || !email.includes('@')) {
-        throw new BadRequestException('Valid email address is required');
+      if (!email || !email.includes("@")) {
+        throw new BadRequestException("Valid email address is required");
       }
 
       const user = await this.usersService.findByEmail(email);
@@ -159,7 +167,7 @@ export class UsersController {
         stats,
         "Statistik pengguna berhasil diambil",
       );
-    } catch (error) {
+    } catch {
       return ApiResponseDto.error("Gagal mengambil statistik pengguna", null);
     }
   }
@@ -183,7 +191,7 @@ export class UsersController {
         return ApiResponseDto.error("Pengguna tidak ditemukan", null);
       }
       return ApiResponseDto.success(user, "Pengguna berhasil ditemukan");
-    } catch (error) {
+    } catch {
       return ApiResponseDto.error("Gagal mengambil pengguna", null);
     }
   }
@@ -239,7 +247,7 @@ export class UsersController {
     try {
       const user = await this.usersService.update(id, { isActive: true });
       return ApiResponseDto.success(user, "Pengguna berhasil diaktifkan");
-    } catch (error) {
+    } catch {
       return ApiResponseDto.error("Gagal mengaktifkan pengguna", null);
     }
   }
@@ -256,7 +264,7 @@ export class UsersController {
     try {
       const user = await this.usersService.update(id, { isActive: false });
       return ApiResponseDto.success(user, "Pengguna berhasil dinonaktifkan");
-    } catch (error) {
+    } catch {
       return ApiResponseDto.error("Gagal menonaktifkan pengguna", null);
     }
   }
@@ -276,7 +284,7 @@ export class UsersController {
     try {
       await this.usersService.remove(id);
       return ApiResponseDto.success(null, "Pengguna berhasil dihapus");
-    } catch (error) {
+    } catch {
       return ApiResponseDto.error("Gagal menghapus pengguna", null);
     }
   }

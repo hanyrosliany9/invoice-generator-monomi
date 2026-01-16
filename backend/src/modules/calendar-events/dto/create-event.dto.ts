@@ -6,95 +6,95 @@ import {
   IsEnum,
   IsArray,
   ValidateNested,
-} from 'class-validator'
-import { Type } from 'class-transformer'
-import { EventCategory, EventStatus } from '@prisma/client'
+} from "class-validator";
+import { Type } from "class-transformer";
+import { EventCategory, EventStatus } from "@prisma/client";
 
 export class CreateEventAttendeeDto {
   @IsString()
-  userId: string
+  userId: string;
 
-  @IsEnum(['PENDING', 'ACCEPTED', 'DECLINED', 'TENTATIVE'])
+  @IsEnum(["PENDING", "ACCEPTED", "DECLINED", "TENTATIVE"])
   @IsOptional()
-  status?: string = 'PENDING'
+  status?: string = "PENDING";
 }
 
 export class CreateEventReminderDto {
   @Type(() => Number)
-  minutes: number
+  minutes: number;
 }
 
 export class CreateCalendarEventDto {
   @IsString()
-  title: string
+  title: string;
 
   @IsOptional()
   @IsString()
-  description?: string
+  description?: string;
 
   @IsOptional()
   @IsString()
-  location?: string
+  location?: string;
 
   @IsDateString()
-  startTime: string
+  startTime: string;
 
   @IsDateString()
-  endTime: string
+  endTime: string;
 
   @IsBoolean()
   @IsOptional()
-  allDay?: boolean = false
+  allDay?: boolean = false;
 
   @IsOptional()
   @IsString()
-  timezone?: string = 'Asia/Jakarta'
+  timezone?: string = "Asia/Jakarta";
 
   @IsEnum(EventCategory)
   @IsOptional()
-  category?: EventCategory = 'OTHER'
+  category?: EventCategory = "OTHER";
 
   @IsEnum(EventStatus)
   @IsOptional()
-  status?: EventStatus = 'SCHEDULED'
+  status?: EventStatus = "SCHEDULED";
 
   @IsOptional()
   @IsString()
-  color?: string
+  color?: string;
 
-  @IsEnum(['LOW', 'MEDIUM', 'HIGH'])
+  @IsEnum(["LOW", "MEDIUM", "HIGH"])
   @IsOptional()
-  priority?: string = 'MEDIUM'
-
-  @IsOptional()
-  @IsString()
-  projectId?: string
+  priority?: string = "MEDIUM";
 
   @IsOptional()
   @IsString()
-  milestoneId?: string
+  projectId?: string;
 
   @IsOptional()
   @IsString()
-  clientId?: string
+  milestoneId?: string;
 
   @IsOptional()
   @IsString()
-  assigneeId?: string
+  clientId?: string;
+
+  @IsOptional()
+  @IsString()
+  assigneeId?: string;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateEventAttendeeDto)
   @IsOptional()
-  attendees?: CreateEventAttendeeDto[]
+  attendees?: CreateEventAttendeeDto[];
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateEventReminderDto)
   @IsOptional()
-  reminders?: CreateEventReminderDto[]
+  reminders?: CreateEventReminderDto[];
 
   @IsOptional()
   @IsString()
-  recurrence?: string
+  recurrence?: string;
 }

@@ -1,9 +1,13 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { UniversalCSVParserService } from './csv-parser.service';
-import { CreateReportDto } from '../dto/create-report.dto';
-import { AddSectionDto } from '../dto/add-section.dto';
-import { UpdateVisualizationsDto } from '../dto/update-visualizations.dto';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { UniversalCSVParserService } from "./csv-parser.service";
+import { CreateReportDto } from "../dto/create-report.dto";
+import { AddSectionDto } from "../dto/add-section.dto";
+import { UpdateVisualizationsDto } from "../dto/update-visualizations.dto";
 
 @Injectable()
 export class SocialMediaReportService {
@@ -40,7 +44,7 @@ export class SocialMediaReportService {
         description: dto.description,
         month: dto.month,
         year: dto.year,
-        status: 'DRAFT',
+        status: "DRAFT",
       },
       include: {
         project: true,
@@ -68,10 +72,10 @@ export class SocialMediaReportService {
       include: {
         project: true,
         sections: {
-          orderBy: { order: 'asc' },
+          orderBy: { order: "asc" },
         },
       },
-      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+      orderBy: [{ year: "desc" }, { month: "desc" }],
     });
   }
 
@@ -88,7 +92,7 @@ export class SocialMediaReportService {
           },
         },
         sections: {
-          orderBy: { order: 'asc' },
+          orderBy: { order: "asc" },
         },
       },
     });
@@ -123,23 +127,23 @@ export class SocialMediaReportService {
     // 3. Get next order number
     const lastSection = await this.prisma.reportSection.findFirst({
       where: { reportId },
-      orderBy: { order: 'desc' },
+      orderBy: { order: "desc" },
     });
     const nextOrder = (lastSection?.order || 0) + 1;
 
     // 4. Create section (sanitize strings to remove null bytes that PostgreSQL can't handle)
     const sanitizeString = (str: string | null | undefined): string | null => {
       if (!str) return null;
-      return str.replace(/\u0000/g, ''); // Remove null bytes
+      return str.replace(/\u0000/g, ""); // Remove null bytes
     };
 
     return this.prisma.reportSection.create({
       data: {
         reportId,
         order: nextOrder,
-        title: sanitizeString(dto.title) || 'Untitled Section',
+        title: sanitizeString(dto.title) || "Untitled Section",
         description: sanitizeString(dto.description),
-        csvFileName: sanitizeString(file.originalname) || 'data.csv',
+        csvFileName: sanitizeString(file.originalname) || "data.csv",
         csvFilePath: null, // TODO: Upload to R2 storage
         columnTypes: parsedData.columnTypes as any,
         rawData: parsedData.rows as any,
@@ -152,10 +156,7 @@ export class SocialMediaReportService {
   /**
    * Update visualizations for a section
    */
-  async updateVisualizations(
-    sectionId: string,
-    dto: UpdateVisualizationsDto,
-  ) {
+  async updateVisualizations(sectionId: string, dto: UpdateVisualizationsDto) {
     return this.prisma.reportSection.update({
       where: { id: sectionId },
       data: {
@@ -206,7 +207,7 @@ export class SocialMediaReportService {
   /**
    * Update report status
    */
-  async updateStatus(id: string, status: 'DRAFT' | 'COMPLETED' | 'SENT') {
+  async updateStatus(id: string, status: "DRAFT" | "COMPLETED" | "SENT") {
     return this.prisma.socialMediaReport.update({
       where: { id },
       data: { status },

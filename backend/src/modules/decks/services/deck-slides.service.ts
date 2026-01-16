@@ -3,12 +3,12 @@ import {
   NotFoundException,
   ForbiddenException,
   Logger,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { MediaService } from '../../media/media.service';
-import { CreateSlideDto } from '../dto/create-slide.dto';
-import { UpdateSlideDto } from '../dto/update-slide.dto';
-import { ReorderSlidesDto } from '../dto/reorder-slides.dto';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { MediaService } from "../../media/media.service";
+import { CreateSlideDto } from "../dto/create-slide.dto";
+import { UpdateSlideDto } from "../dto/update-slide.dto";
+import { ReorderSlidesDto } from "../dto/reorder-slides.dto";
 
 @Injectable()
 export class DeckSlidesService {
@@ -24,7 +24,10 @@ export class DeckSlidesService {
    */
   async create(userId: string, dto: CreateSlideDto) {
     // Verify deck access
-    const deck = await this.verifyDeckAccess(dto.deckId, userId, ['OWNER', 'EDITOR']);
+    const deck = await this.verifyDeckAccess(dto.deckId, userId, [
+      "OWNER",
+      "EDITOR",
+    ]);
 
     // Get max order
     const maxOrder = await this.prisma.deckSlide.aggregate({
@@ -45,7 +48,7 @@ export class DeckSlidesService {
       data: {
         deckId: dto.deckId,
         order,
-        template: dto.template || 'BLANK',
+        template: dto.template || "BLANK",
         title: dto.title,
         subtitle: dto.subtitle,
         content: dto.content || {},
@@ -68,12 +71,14 @@ export class DeckSlidesService {
       include: { deck: { include: { collaborators: true } } },
     });
 
-    if (!slide) throw new NotFoundException('Slide not found');
+    if (!slide) throw new NotFoundException("Slide not found");
 
     // Verify edit permission
-    const collaborator = slide.deck.collaborators.find(c => c.userId === userId);
-    if (!collaborator || !['OWNER', 'EDITOR'].includes(collaborator.role)) {
-      throw new ForbiddenException('Edit permission required');
+    const collaborator = slide.deck.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
+      throw new ForbiddenException("Edit permission required");
     }
 
     return this.prisma.deckSlide.update({
@@ -102,11 +107,13 @@ export class DeckSlidesService {
       include: { deck: { include: { collaborators: true } } },
     });
 
-    if (!slide) throw new NotFoundException('Slide not found');
+    if (!slide) throw new NotFoundException("Slide not found");
 
-    const collaborator = slide.deck.collaborators.find(c => c.userId === userId);
-    if (!collaborator || !['OWNER', 'EDITOR'].includes(collaborator.role)) {
-      throw new ForbiddenException('Edit permission required');
+    const collaborator = slide.deck.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
+      throw new ForbiddenException("Edit permission required");
     }
 
     await this.prisma.deckSlide.delete({ where: { id: slideId } });
@@ -125,21 +132,21 @@ export class DeckSlidesService {
    * Reorder slides
    */
   async reorder(deckId: string, userId: string, dto: ReorderSlidesDto) {
-    await this.verifyDeckAccess(deckId, userId, ['OWNER', 'EDITOR']);
+    await this.verifyDeckAccess(deckId, userId, ["OWNER", "EDITOR"]);
 
     // Update each slide's order
     const updates = dto.slideIds.map((slideId, index) =>
       this.prisma.deckSlide.update({
         where: { id: slideId },
         data: { order: index },
-      })
+      }),
     );
 
     await this.prisma.$transaction(updates);
 
     return this.prisma.deckSlide.findMany({
       where: { deckId },
-      orderBy: { order: 'asc' },
+      orderBy: { order: "asc" },
       include: { elements: true },
     });
   }
@@ -153,11 +160,13 @@ export class DeckSlidesService {
       include: { elements: true, deck: { include: { collaborators: true } } },
     });
 
-    if (!original) throw new NotFoundException('Slide not found');
+    if (!original) throw new NotFoundException("Slide not found");
 
-    const collaborator = original.deck.collaborators.find(c => c.userId === userId);
-    if (!collaborator || !['OWNER', 'EDITOR'].includes(collaborator.role)) {
-      throw new ForbiddenException('Edit permission required');
+    const collaborator = original.deck.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
+      throw new ForbiddenException("Edit permission required");
     }
 
     // Shift slides after original
@@ -182,7 +191,7 @@ export class DeckSlidesService {
         transition: original.transition,
         transitionDuration: original.transitionDuration,
         elements: {
-          create: original.elements.map(el => ({
+          create: original.elements.map((el) => ({
             type: el.type,
             x: el.x,
             y: el.y,
@@ -202,17 +211,24 @@ export class DeckSlidesService {
   /**
    * Set slide background image
    */
-  async setBackgroundImage(slideId: string, userId: string, url: string, key: string) {
+  async setBackgroundImage(
+    slideId: string,
+    userId: string,
+    url: string,
+    key: string,
+  ) {
     const slide = await this.prisma.deckSlide.findUnique({
       where: { id: slideId },
       include: { deck: { include: { collaborators: true } } },
     });
 
-    if (!slide) throw new NotFoundException('Slide not found');
+    if (!slide) throw new NotFoundException("Slide not found");
 
-    const collaborator = slide.deck.collaborators.find(c => c.userId === userId);
-    if (!collaborator || !['OWNER', 'EDITOR'].includes(collaborator.role)) {
-      throw new ForbiddenException('Edit permission required');
+    const collaborator = slide.deck.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
+      throw new ForbiddenException("Edit permission required");
     }
 
     return this.prisma.deckSlide.update({
@@ -221,17 +237,21 @@ export class DeckSlidesService {
     });
   }
 
-  private async verifyDeckAccess(deckId: string, userId: string, allowedRoles: string[]) {
+  private async verifyDeckAccess(
+    deckId: string,
+    userId: string,
+    allowedRoles: string[],
+  ) {
     const deck = await this.prisma.deck.findUnique({
       where: { id: deckId },
       include: { collaborators: { where: { userId } } },
     });
 
-    if (!deck) throw new NotFoundException('Deck not found');
+    if (!deck) throw new NotFoundException("Deck not found");
 
     const collaborator = deck.collaborators[0];
     if (!collaborator || !allowedRoles.includes(collaborator.role)) {
-      throw new ForbiddenException('Permission denied');
+      throw new ForbiddenException("Permission denied");
     }
 
     return deck;

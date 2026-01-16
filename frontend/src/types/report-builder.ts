@@ -3,7 +3,7 @@
  * Inspired by Google Looker Studio + Google Slides + Notion
  */
 
-import { Layout } from 'react-grid-layout';
+import { LayoutItem } from 'react-grid-layout';
 
 // ==================== Widget Types ====================
 
@@ -16,7 +16,7 @@ export type ChartType = 'line' | 'bar' | 'area' | 'pie';
 export interface BaseWidget {
   id: string;
   type: WidgetType;
-  layout: Layout;
+  layout: LayoutItem;
   sectionId?: string; // Track which section this widget belongs to (for multi-section mode)
 }
 
@@ -205,7 +205,7 @@ export const DEFAULT_ROW_HEIGHT = 30;
 export const MIN_WIDGET_WIDTH = 2;
 export const MIN_WIDGET_HEIGHT = 2;
 
-export const WIDGET_DEFAULTS: Record<WidgetType, Partial<Layout>> = {
+export const WIDGET_DEFAULTS: Record<WidgetType, Partial<LayoutItem>> = {
   chart: { w: 6, h: 8, minW: 4, minH: 6 },
   text: { w: 12, h: 4, minW: 2, minH: 2 },
   metric: { w: 3, h: 4, minW: 2, minH: 3 },

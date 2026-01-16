@@ -1,17 +1,21 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 import {
   CreateCalendarEventDto,
   UpdateCalendarEventDto,
   QueryEventsDto,
-} from './dto'
+} from "./dto";
 
 @Injectable()
 export class CalendarEventsService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: CreateCalendarEventDto, userId: string) {
-    const { attendees, reminders, ...eventData } = data
+    const { attendees, reminders, ...eventData } = data;
 
     return this.prisma.calendarEvent.create({
       data: {
@@ -43,35 +47,35 @@ export class CalendarEventsService {
         },
         reminders: true,
       },
-    })
+    });
   }
 
   async findAll(query: QueryEventsDto) {
-    const where: any = {}
-    const limit = query.limit || 100
-    const offset = query.offset || 0
+    const where: any = {};
+    const limit = query.limit || 100;
+    const offset = query.offset || 0;
 
     if (query.startDate && query.endDate) {
       where.AND = [
         { startTime: { gte: new Date(query.startDate) } },
         { endTime: { lte: new Date(query.endDate) } },
-      ]
+      ];
     } else if (query.startDate) {
-      where.startTime = { gte: new Date(query.startDate) }
+      where.startTime = { gte: new Date(query.startDate) };
     } else if (query.endDate) {
-      where.endTime = { lte: new Date(query.endDate) }
+      where.endTime = { lte: new Date(query.endDate) };
     }
 
     if (query.categories && query.categories.length > 0) {
-      where.category = { in: query.categories }
+      where.category = { in: query.categories };
     }
 
     if (query.projectId) {
-      where.projectId = query.projectId
+      where.projectId = query.projectId;
     }
 
     if (query.assigneeId) {
-      where.assigneeId = query.assigneeId
+      where.assigneeId = query.assigneeId;
     }
 
     return this.prisma.calendarEvent.findMany({
@@ -89,10 +93,10 @@ export class CalendarEventsService {
         milestone: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
       },
-      orderBy: { startTime: 'asc' },
+      orderBy: { startTime: "asc" },
       take: limit,
       skip: offset,
-    })
+    });
   }
 
   async findById(id: string) {
@@ -111,28 +115,28 @@ export class CalendarEventsService {
         milestone: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
       },
-    })
+    });
 
     if (!event) {
-      throw new NotFoundException(`Calendar event with ID ${id} not found`)
+      throw new NotFoundException(`Calendar event with ID ${id} not found`);
     }
 
-    return event
+    return event;
   }
 
   async update(id: string, data: UpdateCalendarEventDto) {
-    const { attendees, reminders, ...eventData } = data
+    const { attendees, reminders, ...eventData } = data;
 
     // Check if event exists
-    const event = await this.prisma.calendarEvent.findUnique({ where: { id } })
+    const event = await this.prisma.calendarEvent.findUnique({ where: { id } });
     if (!event) {
-      throw new NotFoundException(`Calendar event with ID ${id} not found`)
+      throw new NotFoundException(`Calendar event with ID ${id} not found`);
     }
 
     // Delete existing attendees and reminders if updating
     if (attendees !== undefined || reminders !== undefined) {
-      await this.prisma.eventAttendee.deleteMany({ where: { eventId: id } })
-      await this.prisma.eventReminder.deleteMany({ where: { eventId: id } })
+      await this.prisma.eventAttendee.deleteMany({ where: { eventId: id } });
+      await this.prisma.eventReminder.deleteMany({ where: { eventId: id } });
     }
 
     return this.prisma.calendarEvent.update({
@@ -165,22 +169,22 @@ export class CalendarEventsService {
         },
         reminders: true,
       },
-    })
+    });
   }
 
   async delete(id: string) {
-    const event = await this.prisma.calendarEvent.findUnique({ where: { id } })
+    const event = await this.prisma.calendarEvent.findUnique({ where: { id } });
     if (!event) {
-      throw new NotFoundException(`Calendar event with ID ${id} not found`)
+      throw new NotFoundException(`Calendar event with ID ${id} not found`);
     }
 
-    return this.prisma.calendarEvent.delete({ where: { id } })
+    return this.prisma.calendarEvent.delete({ where: { id } });
   }
 
   async reschedule(id: string, startTime: string, endTime: string) {
-    const event = await this.prisma.calendarEvent.findUnique({ where: { id } })
+    const event = await this.prisma.calendarEvent.findUnique({ where: { id } });
     if (!event) {
-      throw new NotFoundException(`Calendar event with ID ${id} not found`)
+      throw new NotFoundException(`Calendar event with ID ${id} not found`);
     }
 
     return this.prisma.calendarEvent.update({
@@ -198,12 +202,12 @@ export class CalendarEventsService {
           },
         },
       },
-    })
+    });
   }
 
   async getUpcomingEvents(userId: string, days: number = 7) {
-    const now = new Date()
-    const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
+    const now = new Date();
+    const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 
     return this.prisma.calendarEvent.findMany({
       where: {
@@ -228,8 +232,8 @@ export class CalendarEventsService {
           },
         },
       },
-      orderBy: { startTime: 'asc' },
+      orderBy: { startTime: "asc" },
       take: 10,
-    })
+    });
   }
 }

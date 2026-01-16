@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import ffmpeg = require('fluent-ffmpeg');
-import sharp = require('sharp');
-import { promisify } from 'util';
+import { Injectable, Logger } from "@nestjs/common";
+import ffmpeg = require("fluent-ffmpeg");
+import sharp = require("sharp");
+import { promisify } from "util";
 
 /**
  * MediaProcessingService
@@ -29,13 +29,13 @@ export class MediaProcessingService {
     return new Promise((resolve, reject) => {
       ffmpeg.ffprobe(videoUrl, (err: any, metadata: any) => {
         if (err) {
-          this.logger.error('FFmpeg metadata extraction failed:', err);
+          this.logger.error("FFmpeg metadata extraction failed:", err);
           resolve({}); // Return empty object on failure
           return;
         }
 
         const videoStream = metadata.streams.find(
-          (stream: any) => stream.codec_type === 'video',
+          (stream: any) => stream.codec_type === "video",
         );
 
         if (!videoStream) {
@@ -45,7 +45,7 @@ export class MediaProcessingService {
 
         const result = {
           duration: metadata.format.duration,
-          fps: this.parseFps(videoStream.r_frame_rate || ''),
+          fps: this.parseFps(videoStream.r_frame_rate || ""),
           codec: videoStream.codec_name,
           bitrate: metadata.format.bit_rate
             ? Math.round(metadata.format.bit_rate / 1000)
@@ -54,7 +54,7 @@ export class MediaProcessingService {
           height: videoStream.height,
         };
 
-        this.logger.log('Video metadata extracted:', result);
+        this.logger.log("Video metadata extracted:", result);
         resolve(result);
       });
     });
@@ -66,7 +66,7 @@ export class MediaProcessingService {
   private parseFps(fpsString: string): number | undefined {
     if (!fpsString) return undefined;
 
-    const parts = fpsString.split('/');
+    const parts = fpsString.split("/");
     if (parts.length !== 2) return undefined;
 
     const fps = parseInt(parts[0], 10) / parseInt(parts[1], 10);
@@ -90,19 +90,19 @@ export class MediaProcessingService {
       ffmpeg(videoUrl)
         .seekInput(timestamp)
         .frames(1)
-        .format('image2')
-        .size('640x?')
-        .on('error', (err: Error) => {
-          this.logger.error('Thumbnail generation failed:', err);
+        .format("image2")
+        .size("640x?")
+        .on("error", (err: Error) => {
+          this.logger.error("Thumbnail generation failed:", err);
           reject(err);
         })
-        .on('end', () => {
+        .on("end", () => {
           const buffer = Buffer.concat(chunks);
-          this.logger.log('Thumbnail generated successfully');
+          this.logger.log("Thumbnail generated successfully");
           resolve(buffer);
         })
         .pipe()
-        .on('data', (chunk: Buffer) => chunks.push(chunk));
+        .on("data", (chunk: Buffer) => chunks.push(chunk));
     });
   }
 
@@ -115,7 +115,7 @@ export class MediaProcessingService {
     width: number;
     height: number;
   }> {
-    this.logger.log('Processing photo with Sharp');
+    this.logger.log("Processing photo with Sharp");
 
     try {
       // Get original dimensions
@@ -124,7 +124,7 @@ export class MediaProcessingService {
       // Generate thumbnail (300x300 max, maintain aspect ratio)
       const thumbnail = await sharp(buffer)
         .resize(300, 300, {
-          fit: 'inside',
+          fit: "inside",
           withoutEnlargement: true,
         })
         .jpeg({ quality: 80 })
@@ -133,7 +133,7 @@ export class MediaProcessingService {
       // Generate preview (1920x1920 max, maintain aspect ratio)
       const preview = await sharp(buffer)
         .resize(1920, 1920, {
-          fit: 'inside',
+          fit: "inside",
           withoutEnlargement: true,
         })
         .jpeg({ quality: 90 })
@@ -146,7 +146,7 @@ export class MediaProcessingService {
         height: metadata.height || 0,
       };
     } catch (error) {
-      this.logger.error('Photo processing failed:', error);
+      this.logger.error("Photo processing failed:", error);
       throw error;
     }
   }
@@ -164,7 +164,7 @@ export class MediaProcessingService {
         height: metadata.height || 0,
       };
     } catch (error) {
-      this.logger.error('Failed to get image dimensions:', error);
+      this.logger.error("Failed to get image dimensions:", error);
       return { width: 0, height: 0 };
     }
   }

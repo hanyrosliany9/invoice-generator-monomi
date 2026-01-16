@@ -6,10 +6,10 @@ import {
   ConnectedSocket,
   OnGatewayConnection,
   OnGatewayDisconnect,
-} from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { Logger, UseGuards } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+} from "@nestjs/websockets";
+import { Server, Socket } from "socket.io";
+import { Logger, UseGuards } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
 
 /**
  * MediaCollabGateway
@@ -27,13 +27,18 @@ import { JwtService } from '@nestjs/jwt';
  */
 @WebSocketGateway({
   cors: {
-    origin: process.env.NODE_ENV === 'production'
-      ? [process.env.FRONTEND_URL, process.env.PUBLIC_URL, process.env.WEBSOCKET_CORS_ORIGIN].filter(Boolean)
-      : ['http://localhost:3001', 'http://localhost:3000'],
+    origin:
+      process.env.NODE_ENV === "production"
+        ? [
+            process.env.FRONTEND_URL,
+            process.env.PUBLIC_URL,
+            process.env.WEBSOCKET_CORS_ORIGIN,
+          ].filter(Boolean)
+        : ["http://localhost:3001", "http://localhost:3000"],
     credentials: true,
   },
-  namespace: '/media-collab',
-  transports: ['websocket', 'polling'],
+  namespace: "/media-collab",
+  transports: ["websocket", "polling"],
 })
 export class MediaCollabGateway
   implements OnGatewayConnection, OnGatewayDisconnect
@@ -42,7 +47,10 @@ export class MediaCollabGateway
   server: Server;
 
   private readonly logger = new Logger(MediaCollabGateway.name);
-  private userSessions = new Map<string, { userId: string; userName: string; projectId: string }>();
+  private userSessions = new Map<
+    string,
+    { userId: string; userName: string; projectId: string }
+  >();
 
   constructor(private readonly jwtService: JwtService) {}
 
@@ -52,7 +60,9 @@ export class MediaCollabGateway
   async handleConnection(client: Socket) {
     try {
       // Extract JWT token from handshake
-      const token = client.handshake.auth.token || client.handshake.headers.authorization?.split(' ')[1];
+      const token =
+        client.handshake.auth.token ||
+        client.handshake.headers.authorization?.split(" ")[1];
 
       if (!token) {
         this.logger.warn(`Client ${client.id} connection rejected: No token`);
@@ -71,11 +81,15 @@ export class MediaCollabGateway
       this.userSessions.set(client.id, {
         userId,
         userName,
-        projectId: '', // Will be set when joining a project room
+        projectId: "", // Will be set when joining a project room
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Authentication failed for client ${client.id}:`, errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(
+        `Authentication failed for client ${client.id}:`,
+        errorMessage,
+      );
       client.disconnect();
     }
   }
@@ -88,7 +102,7 @@ export class MediaCollabGateway
 
     if (session?.projectId) {
       // Notify other users in the project
-      client.to(`project:${session.projectId}`).emit('user:left', {
+      client.to(`project:${session.projectId}`).emit("user:left", {
         userId: session.userId,
         userName: session.userName,
       });
@@ -101,7 +115,7 @@ export class MediaCollabGateway
   /**
    * Join a project room
    */
-  @SubscribeMessage('project:join')
+  @SubscribeMessage("project:join")
   async handleJoinProject(
     @MessageBody() data: { projectId: string },
     @ConnectedSocket() client: Socket,
@@ -120,10 +134,12 @@ export class MediaCollabGateway
     client.join(roomName);
     session.projectId = data.projectId;
 
-    this.logger.log(`User ${session.userName} joined project ${data.projectId}`);
+    this.logger.log(
+      `User ${session.userName} joined project ${data.projectId}`,
+    );
 
     // Notify others in the room
-    client.to(roomName).emit('user:joined', {
+    client.to(roomName).emit("user:joined", {
       userId: session.userId,
       userName: session.userName,
     });
@@ -133,13 +149,13 @@ export class MediaCollabGateway
       .filter(([_, s]) => s.projectId === data.projectId)
       .map(([_, s]) => ({ userId: s.userId, userName: s.userName }));
 
-    client.emit('project:users', usersInRoom);
+    client.emit("project:users", usersInRoom);
   }
 
   /**
    * Leave a project room
    */
-  @SubscribeMessage('project:leave')
+  @SubscribeMessage("project:leave")
   handleLeaveProject(
     @MessageBody() data: { projectId: string },
     @ConnectedSocket() client: Socket,
@@ -151,19 +167,19 @@ export class MediaCollabGateway
     client.leave(roomName);
 
     // Notify others
-    client.to(roomName).emit('user:left', {
+    client.to(roomName).emit("user:left", {
       userId: session.userId,
       userName: session.userName,
     });
 
-    session.projectId = '';
+    session.projectId = "";
     this.logger.log(`User ${session.userName} left project ${data.projectId}`);
   }
 
   /**
    * Broadcast cursor position
    */
-  @SubscribeMessage('cursor:move')
+  @SubscribeMessage("cursor:move")
   handleCursorMove(
     @MessageBody() data: { assetId: string; x: number; y: number },
     @ConnectedSocket() client: Socket,
@@ -171,7 +187,7 @@ export class MediaCollabGateway
     const session = this.userSessions.get(client.id);
     if (!session?.projectId) return;
 
-    client.to(`project:${session.projectId}`).emit('cursor:update', {
+    client.to(`project:${session.projectId}`).emit("cursor:update", {
       userId: session.userId,
       userName: session.userName,
       assetId: data.assetId,
@@ -183,15 +199,16 @@ export class MediaCollabGateway
   /**
    * Broadcast drawing actions in real-time
    */
-  @SubscribeMessage('drawing:add')
+  @SubscribeMessage("drawing:add")
   handleDrawingAdd(
-    @MessageBody() data: { assetId: string; timecode: number; drawingData: any },
+    @MessageBody()
+    data: { assetId: string; timecode: number; drawingData: any },
     @ConnectedSocket() client: Socket,
   ) {
     const session = this.userSessions.get(client.id);
     if (!session?.projectId) return;
 
-    client.to(`project:${session.projectId}`).emit('drawing:added', {
+    client.to(`project:${session.projectId}`).emit("drawing:added", {
       userId: session.userId,
       userName: session.userName,
       assetId: data.assetId,
@@ -203,7 +220,7 @@ export class MediaCollabGateway
   /**
    * Broadcast drawing updates
    */
-  @SubscribeMessage('drawing:update')
+  @SubscribeMessage("drawing:update")
   handleDrawingUpdate(
     @MessageBody() data: { drawingId: string; drawingData: any },
     @ConnectedSocket() client: Socket,
@@ -211,7 +228,7 @@ export class MediaCollabGateway
     const session = this.userSessions.get(client.id);
     if (!session?.projectId) return;
 
-    client.to(`project:${session.projectId}`).emit('drawing:updated', {
+    client.to(`project:${session.projectId}`).emit("drawing:updated", {
       userId: session.userId,
       drawingId: data.drawingId,
       drawingData: data.drawingData,
@@ -221,7 +238,7 @@ export class MediaCollabGateway
   /**
    * Broadcast drawing deletion
    */
-  @SubscribeMessage('drawing:delete')
+  @SubscribeMessage("drawing:delete")
   handleDrawingDelete(
     @MessageBody() data: { drawingId: string },
     @ConnectedSocket() client: Socket,
@@ -229,7 +246,7 @@ export class MediaCollabGateway
     const session = this.userSessions.get(client.id);
     if (!session?.projectId) return;
 
-    client.to(`project:${session.projectId}`).emit('drawing:deleted', {
+    client.to(`project:${session.projectId}`).emit("drawing:deleted", {
       userId: session.userId,
       drawingId: data.drawingId,
     });
@@ -238,15 +255,21 @@ export class MediaCollabGateway
   /**
    * Broadcast new comment
    */
-  @SubscribeMessage('comment:add')
+  @SubscribeMessage("comment:add")
   handleCommentAdd(
-    @MessageBody() data: { assetId: string; commentId: string; content: string; timecode?: number },
+    @MessageBody()
+    data: {
+      assetId: string;
+      commentId: string;
+      content: string;
+      timecode?: number;
+    },
     @ConnectedSocket() client: Socket,
   ) {
     const session = this.userSessions.get(client.id);
     if (!session?.projectId) return;
 
-    client.to(`project:${session.projectId}`).emit('comment:added', {
+    client.to(`project:${session.projectId}`).emit("comment:added", {
       userId: session.userId,
       userName: session.userName,
       assetId: data.assetId,
@@ -259,7 +282,7 @@ export class MediaCollabGateway
   /**
    * Broadcast comment resolution
    */
-  @SubscribeMessage('comment:resolve')
+  @SubscribeMessage("comment:resolve")
   handleCommentResolve(
     @MessageBody() data: { commentId: string },
     @ConnectedSocket() client: Socket,
@@ -267,7 +290,7 @@ export class MediaCollabGateway
     const session = this.userSessions.get(client.id);
     if (!session?.projectId) return;
 
-    client.to(`project:${session.projectId}`).emit('comment:resolved', {
+    client.to(`project:${session.projectId}`).emit("comment:resolved", {
       userId: session.userId,
       userName: session.userName,
       commentId: data.commentId,
@@ -277,15 +300,16 @@ export class MediaCollabGateway
   /**
    * Synchronize video playhead position
    */
-  @SubscribeMessage('playhead:sync')
+  @SubscribeMessage("playhead:sync")
   handlePlayheadSync(
-    @MessageBody() data: { assetId: string; timecode: number; isPlaying: boolean },
+    @MessageBody()
+    data: { assetId: string; timecode: number; isPlaying: boolean },
     @ConnectedSocket() client: Socket,
   ) {
     const session = this.userSessions.get(client.id);
     if (!session?.projectId) return;
 
-    client.to(`project:${session.projectId}`).emit('playhead:update', {
+    client.to(`project:${session.projectId}`).emit("playhead:update", {
       userId: session.userId,
       userName: session.userName,
       assetId: data.assetId,
@@ -297,7 +321,7 @@ export class MediaCollabGateway
   /**
    * Broadcast when user starts viewing an asset
    */
-  @SubscribeMessage('asset:viewing')
+  @SubscribeMessage("asset:viewing")
   handleAssetViewing(
     @MessageBody() data: { assetId: string },
     @ConnectedSocket() client: Socket,
@@ -305,7 +329,7 @@ export class MediaCollabGateway
     const session = this.userSessions.get(client.id);
     if (!session?.projectId) return;
 
-    client.to(`project:${session.projectId}`).emit('asset:viewer-joined', {
+    client.to(`project:${session.projectId}`).emit("asset:viewer-joined", {
       userId: session.userId,
       userName: session.userName,
       assetId: data.assetId,
@@ -315,7 +339,7 @@ export class MediaCollabGateway
   /**
    * Broadcast when user stops viewing an asset
    */
-  @SubscribeMessage('asset:stop-viewing')
+  @SubscribeMessage("asset:stop-viewing")
   handleAssetStopViewing(
     @MessageBody() data: { assetId: string },
     @ConnectedSocket() client: Socket,
@@ -323,7 +347,7 @@ export class MediaCollabGateway
     const session = this.userSessions.get(client.id);
     if (!session?.projectId) return;
 
-    client.to(`project:${session.projectId}`).emit('asset:viewer-left', {
+    client.to(`project:${session.projectId}`).emit("asset:viewer-left", {
       userId: session.userId,
       userName: session.userName,
       assetId: data.assetId,

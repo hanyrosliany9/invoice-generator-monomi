@@ -223,7 +223,10 @@ export class QuotationsController {
       "Quotation approved, invoice generated untuk milestone pertama jika applicable",
   })
   async approveWithMilestones(@Param("id") id: string, @Request() req: any) {
-    return this.quotationsService.approveQuotationWithMilestones(id, req.user.id);
+    return this.quotationsService.approveQuotationWithMilestones(
+      id,
+      req.user.id,
+    );
   }
 
   /**

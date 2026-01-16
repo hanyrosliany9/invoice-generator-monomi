@@ -41,8 +41,8 @@ import { PrismaService } from "../prisma/prisma.service";
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '24h' }, // Media tokens valid for 24 hours
+        secret: configService.get<string>("JWT_SECRET"),
+        signOptions: { expiresIn: "24h" }, // Media tokens valid for 24 hours
       }),
     }),
   ],

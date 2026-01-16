@@ -3,9 +3,9 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
-} from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+} from "@nestjs/common";
+import { Observable } from "rxjs";
+import { map } from "rxjs/operators";
 
 /**
  * Standard API Response format
@@ -23,9 +23,10 @@ export interface StandardApiResponse<T> {
  * Standardizes all API responses to a consistent format
  */
 @Injectable()
-export class ApiResponseInterceptor<T>
-  implements NestInterceptor<T, StandardApiResponse<T>>
-{
+export class ApiResponseInterceptor<T> implements NestInterceptor<
+  T,
+  StandardApiResponse<T>
+> {
   intercept(
     context: ExecutionContext,
     next: CallHandler,
@@ -34,7 +35,7 @@ export class ApiResponseInterceptor<T>
     const path = request.url;
 
     return next.handle().pipe(
-      map(data => ({
+      map((data) => ({
         success: true,
         data,
         timestamp: new Date().toISOString(),

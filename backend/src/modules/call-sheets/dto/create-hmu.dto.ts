@@ -1,53 +1,66 @@
-import { IsString, IsOptional, IsInt, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsEnum } from "class-validator";
 
 export class CreateHmuDto {
   @IsString()
   artistName: string;
 
-  @IsEnum(['HAIR', 'MAKEUP', 'BOTH', 'KEY_STYLIST'])
+  @IsEnum(["HAIR", "MAKEUP", "BOTH", "KEY_STYLIST"])
   artistRole: string;
 
-  @IsOptional() @IsInt()
+  @IsOptional()
+  @IsInt()
   stationNumber?: number;
 
   @IsString()
   callTime: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   availableFrom?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   availableUntil?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   assignedModels?: string; // Comma-separated model names/IDs
 
-  @IsOptional() @IsInt()
+  @IsOptional()
+  @IsInt()
   order?: number;
 }
 
 export class UpdateHmuDto {
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   artistName?: string;
 
-  @IsOptional() @IsEnum(['HAIR', 'MAKEUP', 'BOTH', 'KEY_STYLIST'])
+  @IsOptional()
+  @IsEnum(["HAIR", "MAKEUP", "BOTH", "KEY_STYLIST"])
   artistRole?: string;
 
-  @IsOptional() @IsInt()
+  @IsOptional()
+  @IsInt()
   stationNumber?: number;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   callTime?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   availableFrom?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   availableUntil?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   assignedModels?: string;
 
-  @IsOptional() @IsInt()
+  @IsOptional()
+  @IsInt()
   order?: number;
 }

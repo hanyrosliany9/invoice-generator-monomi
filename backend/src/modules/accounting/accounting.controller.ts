@@ -1378,7 +1378,9 @@ export class AccountingController {
   @Get("revenue/milestones/:projectId")
   @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async getProjectMilestonesRevenue(@Param("projectId") projectId: string) {
-    return this.revenueRecognitionService.getPaymentMilestonesSummary(projectId);
+    return this.revenueRecognitionService.getPaymentMilestonesSummary(
+      projectId,
+    );
   }
 
   /**

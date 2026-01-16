@@ -79,10 +79,16 @@ export function generateProjectHTML(projectData: any): string {
   };
 
   // Parse products from priceBreakdown
-  const products = Array.isArray(priceBreakdown) ? priceBreakdown : (priceBreakdown.products || []);
+  const products = Array.isArray(priceBreakdown)
+    ? priceBreakdown
+    : priceBreakdown.products || [];
 
   // Calculate expense totals - ensure estimatedExpenses is an array
-  const expenses = estimatedExpenses ? (Array.isArray(estimatedExpenses) ? estimatedExpenses : []) : [];
+  const expenses = estimatedExpenses
+    ? Array.isArray(estimatedExpenses)
+      ? estimatedExpenses
+      : []
+    : [];
   const directCosts = expenses
     .filter((e: any) => e.costType === "direct")
     .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
@@ -607,13 +613,17 @@ export function generateProjectHTML(projectData: any): string {
             <td style="text-align: center;">${product.quantity || 1}</td>
             <td class="table-amount">${formatIDR((product.price || 0) * (product.quantity || 1))}</td>
           </tr>
-            `
+            `,
             )
             .join("")}
           <tr class="table-total">
             <td colspan="4" style="text-align: right; padding-right: 3mm;">TOTAL</td>
             <td class="table-amount">${formatIDR(
-              products.reduce((sum: number, p: any) => sum + (p.price || 0) * (p.quantity || 1), 0)
+              products.reduce(
+                (sum: number, p: any) =>
+                  sum + (p.price || 0) * (p.quantity || 1),
+                0,
+              ),
             )}</td>
           </tr>
         </tbody>
@@ -664,8 +674,8 @@ export function generateProjectHTML(projectData: any): string {
     ${
       profitMargin &&
       (profitMargin.projectedGrossMargin !== null ||
-       profitMargin.projectedNetMargin !== null ||
-       profitMargin.estimatedTotalCosts > 0)
+        profitMargin.projectedNetMargin !== null ||
+        profitMargin.estimatedTotalCosts > 0)
         ? `
     <div class="card section">
       <div class="card-header">
@@ -780,7 +790,7 @@ export function generateProjectHTML(projectData: any): string {
               <td class="table-amount">${formatIDR(expense.amount)}</td>
               <td style="font-size: 7px; color: #666;">${expense.notes || "-"}</td>
             </tr>
-            `
+            `,
               )
               .join("")}
 
@@ -850,7 +860,10 @@ export function generateProjectHTML(projectData: any): string {
             ${formatIDR(
               actualExpenses
                 .filter((e: any) => e.status === "DRAFT")
-                .reduce((sum: number, e: any) => sum + parseFloat(e.totalAmount), 0)
+                .reduce(
+                  (sum: number, e: any) => sum + parseFloat(e.totalAmount),
+                  0,
+                ),
             )}
           </div>
         </div>
@@ -860,7 +873,10 @@ export function generateProjectHTML(projectData: any): string {
             ${formatIDR(
               actualExpenses
                 .filter((e: any) => e.status === "APPROVED")
-                .reduce((sum: number, e: any) => sum + parseFloat(e.totalAmount), 0)
+                .reduce(
+                  (sum: number, e: any) => sum + parseFloat(e.totalAmount),
+                  0,
+                ),
             )}
           </div>
         </div>
@@ -870,7 +886,10 @@ export function generateProjectHTML(projectData: any): string {
             ${formatIDR(
               actualExpenses
                 .filter((e: any) => e.paymentStatus === "PAID")
-                .reduce((sum: number, e: any) => sum + parseFloat(e.totalAmount), 0)
+                .reduce(
+                  (sum: number, e: any) => sum + parseFloat(e.totalAmount),
+                  0,
+                ),
             )}
           </div>
         </div>
@@ -892,37 +911,46 @@ export function generateProjectHTML(projectData: any): string {
         </thead>
         <tbody>
           ${actualExpenses
-            .map(
-              (expense: any) => {
-                // Status badge styling
-                const statusColorMap: { [key: string]: { bg: string; text: string } } = {
-                  DRAFT: { bg: "#f5f5f5", text: "#8c8c8c" },
-                  SUBMITTED: { bg: "#e6f7ff", text: "#1890ff" },
-                  APPROVED: { bg: "#f6ffed", text: "#52c41a" },
-                  REJECTED: { bg: "#fff2e8", text: "#fa8c16" },
-                  CANCELLED: { bg: "#fff1f0", text: "#ff4d4f" },
-                };
-                const statusLabelMap: { [key: string]: string } = {
-                  DRAFT: "Draft",
-                  SUBMITTED: "Diajukan",
-                  APPROVED: "Disetujui",
-                  REJECTED: "Ditolak",
-                  CANCELLED: "Batal",
-                };
-                const paymentColorMap: { [key: string]: { bg: string; text: string } } = {
-                  UNPAID: { bg: "#fff1f0", text: "#ff4d4f" },
-                  PARTIALLY_PAID: { bg: "#fff7e6", text: "#fa8c16" },
-                  PAID: { bg: "#f6ffed", text: "#52c41a" },
-                };
-                const paymentLabelMap: { [key: string]: string } = {
-                  UNPAID: "Belum",
-                  PARTIALLY_PAID: "Sebagian",
-                  PAID: "Lunas",
-                };
-                const statusStyle = statusColorMap[expense.status] || { bg: "#f5f5f5", text: "#8c8c8c" };
-                const paymentStyle = paymentColorMap[expense.paymentStatus] || { bg: "#f5f5f5", text: "#8c8c8c" };
+            .map((expense: any) => {
+              // Status badge styling
+              const statusColorMap: {
+                [key: string]: { bg: string; text: string };
+              } = {
+                DRAFT: { bg: "#f5f5f5", text: "#8c8c8c" },
+                SUBMITTED: { bg: "#e6f7ff", text: "#1890ff" },
+                APPROVED: { bg: "#f6ffed", text: "#52c41a" },
+                REJECTED: { bg: "#fff2e8", text: "#fa8c16" },
+                CANCELLED: { bg: "#fff1f0", text: "#ff4d4f" },
+              };
+              const statusLabelMap: { [key: string]: string } = {
+                DRAFT: "Draft",
+                SUBMITTED: "Diajukan",
+                APPROVED: "Disetujui",
+                REJECTED: "Ditolak",
+                CANCELLED: "Batal",
+              };
+              const paymentColorMap: {
+                [key: string]: { bg: string; text: string };
+              } = {
+                UNPAID: { bg: "#fff1f0", text: "#ff4d4f" },
+                PARTIALLY_PAID: { bg: "#fff7e6", text: "#fa8c16" },
+                PAID: { bg: "#f6ffed", text: "#52c41a" },
+              };
+              const paymentLabelMap: { [key: string]: string } = {
+                UNPAID: "Belum",
+                PARTIALLY_PAID: "Sebagian",
+                PAID: "Lunas",
+              };
+              const statusStyle = statusColorMap[expense.status] || {
+                bg: "#f5f5f5",
+                text: "#8c8c8c",
+              };
+              const paymentStyle = paymentColorMap[expense.paymentStatus] || {
+                bg: "#f5f5f5",
+                text: "#8c8c8c",
+              };
 
-                return `
+              return `
           <tr>
             <td style="font-size: 8px;">
               ${formatDate(expense.expenseDate)}
@@ -971,8 +999,7 @@ export function generateProjectHTML(projectData: any): string {
             </td>
           </tr>
             `;
-              }
-            )
+            })
             .join("")}
 
           <!-- Grand Total Row -->
@@ -983,7 +1010,10 @@ export function generateProjectHTML(projectData: any): string {
             <td class="table-amount">
               <strong style="font-size: 10px;">
                 ${formatIDR(
-                  actualExpenses.reduce((sum: number, e: any) => sum + parseFloat(e.totalAmount), 0)
+                  actualExpenses.reduce(
+                    (sum: number, e: any) => sum + parseFloat(e.totalAmount),
+                    0,
+                  ),
                 )}
               </strong>
             </td>
@@ -998,7 +1028,8 @@ export function generateProjectHTML(projectData: any): string {
 
     <!-- COMPREHENSIVE PROFIT MARGIN ANALYSIS -->
     ${
-      profitMargin && (profitMargin.grossMargin !== 0 || profitMargin.netMargin !== 0)
+      profitMargin &&
+      (profitMargin.grossMargin !== 0 || profitMargin.netMargin !== 0)
         ? `
     <div class="card section">
       <div class="card-header">
@@ -1088,7 +1119,8 @@ export function generateProjectHTML(projectData: any): string {
 
       <!-- Budget Variance Analysis -->
       ${
-        profitMargin.budgetVariance !== 0 || profitMargin.budgetVariancePercent !== 0
+        profitMargin.budgetVariance !== 0 ||
+        profitMargin.budgetVariancePercent !== 0
           ? `
       <div style="margin-bottom: 4mm;">
         <div style="font-weight: 700; font-size: 10px; margin-bottom: 2mm; color: #1f2937;">
@@ -1137,23 +1169,23 @@ export function generateProjectHTML(projectData: any): string {
               <td>Margin Bruto</td>
               <td style="text-align: right;">${profitMargin.projectedGrossMargin?.toFixed(2) || 0}%</td>
               <td style="text-align: right;">${profitMargin.grossMargin.toFixed(2)}%</td>
-              <td style="text-align: right; color: ${(profitMargin.grossMargin - (profitMargin.projectedGrossMargin || 0)) >= 0 ? "#22c55e" : "#ef4444"};">
-                ${(profitMargin.grossMargin - (profitMargin.projectedGrossMargin || 0)) >= 0 ? "+" : ""}${(profitMargin.grossMargin - (profitMargin.projectedGrossMargin || 0)).toFixed(2)}%
+              <td style="text-align: right; color: ${profitMargin.grossMargin - (profitMargin.projectedGrossMargin || 0) >= 0 ? "#22c55e" : "#ef4444"};">
+                ${profitMargin.grossMargin - (profitMargin.projectedGrossMargin || 0) >= 0 ? "+" : ""}${(profitMargin.grossMargin - (profitMargin.projectedGrossMargin || 0)).toFixed(2)}%
               </td>
             </tr>
             <tr>
               <td>Margin Netto</td>
               <td style="text-align: right;">${profitMargin.projectedNetMargin?.toFixed(2) || 0}%</td>
               <td style="text-align: right;">${profitMargin.netMargin.toFixed(2)}%</td>
-              <td style="text-align: right; color: ${(profitMargin.netMargin - (profitMargin.projectedNetMargin || 0)) >= 0 ? "#22c55e" : "#ef4444"};">
-                ${(profitMargin.netMargin - (profitMargin.projectedNetMargin || 0)) >= 0 ? "+" : ""}${(profitMargin.netMargin - (profitMargin.projectedNetMargin || 0)).toFixed(2)}%
+              <td style="text-align: right; color: ${profitMargin.netMargin - (profitMargin.projectedNetMargin || 0) >= 0 ? "#22c55e" : "#ef4444"};">
+                ${profitMargin.netMargin - (profitMargin.projectedNetMargin || 0) >= 0 ? "+" : ""}${(profitMargin.netMargin - (profitMargin.projectedNetMargin || 0)).toFixed(2)}%
               </td>
             </tr>
             <tr style="font-weight: 700; background-color: #f3f4f6;">
               <td>Profit</td>
               <td style="text-align: right;">${formatIDR(profitMargin.projectedProfit || 0)}</td>
               <td style="text-align: right;">${formatIDR(profitMargin.profit)}</td>
-              <td style="text-align: right; color: ${(profitMargin.profit - (profitMargin.projectedProfit || 0)) >= 0 ? "#22c55e" : "#ef4444"};">
+              <td style="text-align: right; color: ${profitMargin.profit - (profitMargin.projectedProfit || 0) >= 0 ? "#22c55e" : "#ef4444"};">
                 ${formatIDR(profitMargin.profit - (profitMargin.projectedProfit || 0))}
               </td>
             </tr>

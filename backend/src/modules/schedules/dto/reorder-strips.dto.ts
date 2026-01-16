@@ -1,5 +1,5 @@
-import { IsArray, IsString, ValidateNested, IsInt } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsArray, IsString, ValidateNested, IsInt } from "class-validator";
+import { Type } from "class-transformer";
 
 class StripPosition {
   @IsString()

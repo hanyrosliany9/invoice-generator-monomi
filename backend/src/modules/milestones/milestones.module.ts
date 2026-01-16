@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
-import { MilestonesService } from './milestones.service';
-import { MilestoneAnalyticsService } from './milestone-analytics.service';
-import { MilestonesController } from './milestones.controller';
-import { PrismaModule } from '../prisma/prisma.module';
+import { Module } from "@nestjs/common";
+import { MilestonesService } from "./milestones.service";
+import { MilestoneAnalyticsService } from "./milestone-analytics.service";
+import { MilestonesController } from "./milestones.controller";
+import { PrismaModule } from "../prisma/prisma.module";
 
 @Module({
   imports: [PrismaModule],

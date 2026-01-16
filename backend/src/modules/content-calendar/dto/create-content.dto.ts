@@ -60,7 +60,10 @@ export class ContentMediaDto {
   @IsString()
   thumbnailKey?: string;
 
-  @ApiPropertyOptional({ description: "Carousel order (0 = first, 1 = second, etc.)", default: 0 })
+  @ApiPropertyOptional({
+    description: "Carousel order (0 = first, 1 = second, etc.)",
+    default: 0,
+  })
   @IsOptional()
   order?: number;
 }
@@ -71,7 +74,8 @@ export class ContentMediaDto {
 export class CreateContentDto {
   @ApiProperty({
     description: "Social media caption/post text",
-    example: "Check out our summer sale! 🌞\n\nUp to 50% off on selected items.\n\n#SummerSale #Shopping"
+    example:
+      "Check out our summer sale! 🌞\n\nUp to 50% off on selected items.\n\n#SummerSale #Shopping",
   })
   @IsString()
   @IsNotEmpty()
@@ -117,7 +121,10 @@ export class CreateContentDto {
 
   // DELETED: campaignId - 2025-11-09
 
-  @ApiPropertyOptional({ description: "Media attachments", type: [ContentMediaDto] })
+  @ApiPropertyOptional({
+    description: "Media attachments",
+    type: [ContentMediaDto],
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ContentMediaDto)

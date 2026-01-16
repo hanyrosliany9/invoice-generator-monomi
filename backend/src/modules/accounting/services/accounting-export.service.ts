@@ -636,7 +636,9 @@ export class AccountingExportService {
         item.invoiceNumber,
         item.client?.name || "Unknown",
         this.formatDate(item.invoiceDate),
-        item.daysOverdue >= 0 ? `${item.daysOverdue} hari` : "Belum jatuh tempo",
+        item.daysOverdue >= 0
+          ? `${item.daysOverdue} hari`
+          : "Belum jatuh tempo",
         item.amount,
         item.netReceivable,
       ]);
@@ -719,7 +721,9 @@ export class AccountingExportService {
       tableData.push([
         item.category?.nameId || item.description || "N/A",
         this.formatDate(item.expenseDate),
-        item.daysOverdue >= 0 ? `${item.daysOverdue} hari` : "Belum jatuh tempo",
+        item.daysOverdue >= 0
+          ? `${item.daysOverdue} hari`
+          : "Belum jatuh tempo",
         item.amount,
         item.amount, // Outstanding = Amount for unpaid expenses
       ]);

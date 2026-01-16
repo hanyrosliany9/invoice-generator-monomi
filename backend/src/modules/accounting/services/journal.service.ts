@@ -78,11 +78,11 @@ export class JournalService {
     });
 
     // AUTO-CREATE ExpenseCategory if this is an EXPENSE type account
-    if (account.accountType === 'EXPENSE') {
+    if (account.accountType === "EXPENSE") {
       try {
         const expenseClass = this.deriveExpenseClass(account.code);
         const categoryCode = account.code
-          .replace('-', '_')
+          .replace("-", "_")
           .toUpperCase()
           .substring(0, 50); // Ensure it's not too long
 
@@ -103,7 +103,7 @@ export class JournalService {
               descriptionId: account.descriptionId || null,
               isActive: account.isActive,
               // Set sensible defaults for expense configuration
-              withholdingTaxType: 'NONE',
+              withholdingTaxType: "NONE",
               defaultPPNRate: 0.12, // Default to 12% VAT
               isLuxuryGoods: false,
               isBillable: false,
@@ -111,8 +111,8 @@ export class JournalService {
               requiresEFaktur: true,
               approvalRequired: true,
               sortOrder: 100, // Default sort order
-              color: '#1890ff', // Ant Design blue
-              icon: 'shopping', // Default icon
+              color: "#1890ff", // Ant Design blue
+              icon: "shopping", // Default icon
             },
           });
 
@@ -140,21 +140,21 @@ export class JournalService {
    */
   private deriveExpenseClass(
     accountCode: string,
-  ): 'SELLING' | 'GENERAL_ADMIN' | 'OTHER' {
-    if (!accountCode) return 'GENERAL_ADMIN';
+  ): "SELLING" | "GENERAL_ADMIN" | "OTHER" {
+    if (!accountCode) return "GENERAL_ADMIN";
 
     const prefix = accountCode.substring(0, 3); // Get first 3 chars (e.g., "6-1", "6-2", "8-")
 
-    if (prefix === '6-1') {
-      return 'SELLING';
-    } else if (prefix === '6-2') {
-      return 'GENERAL_ADMIN';
-    } else if (prefix.startsWith('8-')) {
-      return 'OTHER';
+    if (prefix === "6-1") {
+      return "SELLING";
+    } else if (prefix === "6-2") {
+      return "GENERAL_ADMIN";
+    } else if (prefix.startsWith("8-")) {
+      return "OTHER";
     }
 
     // Default to GENERAL_ADMIN for any expense account
-    return 'GENERAL_ADMIN';
+    return "GENERAL_ADMIN";
   }
 
   /**
@@ -252,9 +252,7 @@ export class JournalService {
 
     // CASCADE CASE 2: Changing TO EXPENSE type (create new category)
     if (isChangingType && !wasExpense && willBeExpense) {
-      const expenseClass = this.deriveExpenseClass(
-        data.code || account.code,
-      );
+      const expenseClass = this.deriveExpenseClass(data.code || account.code);
       const categoryCode = (data.code || account.code)
         .replace("-", "_")
         .toUpperCase()
@@ -269,8 +267,7 @@ export class JournalService {
             name: data.name || account.name,
             nameId: data.nameId || account.nameId,
             description: data.description || account.description || null,
-            descriptionId:
-              data.descriptionId || account.descriptionId || null,
+            descriptionId: data.descriptionId || account.descriptionId || null,
             isActive: data.isActive !== undefined ? data.isActive : true,
             withholdingTaxType: "NONE",
             defaultPPNRate: 0.12,
@@ -340,10 +337,7 @@ export class JournalService {
         }
 
         // Sync status change
-        if (
-          data.isActive !== undefined &&
-          data.isActive !== account.isActive
-        ) {
+        if (data.isActive !== undefined && data.isActive !== account.isActive) {
           categoryUpdates.isActive = data.isActive;
         }
 
@@ -678,7 +672,7 @@ export class JournalService {
         fiscalPeriodId: fiscalPeriodId || undefined,
         isReversing: createDto.isReversing || false,
         reversedEntryId: createDto.reversedEntryId || undefined,
-        createdBy: createDto.createdBy || 'unknown-user',
+        createdBy: createDto.createdBy || "unknown-user",
         lineItems: {
           create: createDto.lineItems.map((item, index) => ({
             lineNumber: index + 1,
@@ -1312,7 +1306,9 @@ export class JournalService {
       errors: [] as string[],
     };
 
-    this.logger.log("🔄 Starting backfill of missing invoice journal entries...");
+    this.logger.log(
+      "🔄 Starting backfill of missing invoice journal entries...",
+    );
 
     try {
       // 1. Find invoices with SENT/OVERDUE/PAID status but NO SENT journal entry
@@ -1365,15 +1361,16 @@ export class JournalService {
       }
 
       // 2. Find PAID invoices without payment journal entries
-      const paidInvoicesWithoutPaymentJournal = await this.prisma.invoice.findMany({
-        where: {
-          status: "PAID",
-          paymentJournalId: null,
-        },
-        include: {
-          client: { select: { id: true, name: true } },
-        },
-      });
+      const paidInvoicesWithoutPaymentJournal =
+        await this.prisma.invoice.findMany({
+          where: {
+            status: "PAID",
+            paymentJournalId: null,
+          },
+          include: {
+            client: { select: { id: true, name: true } },
+          },
+        });
 
       this.logger.log(
         `Found ${paidInvoicesWithoutPaymentJournal.length} PAID invoices without payment journal entries`,
@@ -1433,9 +1430,7 @@ export class JournalService {
           await this.postJournalEntry(journal.id, userId);
 
           results.posted++;
-          this.logger.log(
-            `✅ Posted journal entry ${journal.entryNumber}`,
-          );
+          this.logger.log(`✅ Posted journal entry ${journal.entryNumber}`);
         } catch (error) {
           const errorMsg = `Failed to post journal ${journal.entryNumber}: ${error instanceof Error ? error.message : String(error)}`;
           this.logger.error(errorMsg);

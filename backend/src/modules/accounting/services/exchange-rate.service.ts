@@ -2,11 +2,11 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateExchangeRateDto } from '../dto/create-exchange-rate.dto';
-import { UpdateExchangeRateDto } from '../dto/update-exchange-rate.dto';
-import { Currency } from '@prisma/client';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreateExchangeRateDto } from "../dto/create-exchange-rate.dto";
+import { UpdateExchangeRateDto } from "../dto/update-exchange-rate.dto";
+import { Currency } from "@prisma/client";
 
 @Injectable()
 export class ExchangeRateService {
@@ -39,7 +39,7 @@ export class ExchangeRateService {
         OR: [{ expiryDate: null }, { expiryDate: { gte: new Date() } }],
       },
       orderBy: {
-        effectiveDate: 'desc',
+        effectiveDate: "desc",
       },
     });
 
@@ -95,7 +95,7 @@ export class ExchangeRateService {
     // Validate: cannot create rate for same currency
     if (createDto.fromCurrency === createDto.toCurrency) {
       throw new BadRequestException(
-        'Cannot create exchange rate for the same currency',
+        "Cannot create exchange rate for the same currency",
       );
     }
 
@@ -110,7 +110,7 @@ export class ExchangeRateService {
 
     if (existingRate) {
       throw new BadRequestException(
-        `Exchange rate for ${createDto.fromCurrency} to ${createDto.toCurrency || Currency.IDR} already exists for ${createDto.effectiveDate.toISOString().split('T')[0]}`,
+        `Exchange rate for ${createDto.fromCurrency} to ${createDto.toCurrency || Currency.IDR} already exists for ${createDto.effectiveDate.toISOString().split("T")[0]}`,
       );
     }
 
@@ -170,7 +170,7 @@ export class ExchangeRateService {
 
     return this.prisma.exchangeRate.findMany({
       where,
-      orderBy: [{ fromCurrency: 'asc' }, { effectiveDate: 'desc' }],
+      orderBy: [{ fromCurrency: "asc" }, { effectiveDate: "desc" }],
     });
   }
 
@@ -250,7 +250,7 @@ export class ExchangeRateService {
         toCurrency,
       },
       orderBy: {
-        effectiveDate: 'desc',
+        effectiveDate: "desc",
       },
       take: limit,
     });

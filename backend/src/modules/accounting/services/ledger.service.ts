@@ -531,10 +531,7 @@ export class LedgerService {
         },
       });
 
-      const totalDebit = glEntries.reduce(
-        (sum, e) => sum + Number(e.debit),
-        0,
-      );
+      const totalDebit = glEntries.reduce((sum, e) => sum + Number(e.debit), 0);
       const totalCredit = glEntries.reduce(
         (sum, e) => sum + Number(e.credit),
         0,

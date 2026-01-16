@@ -100,8 +100,8 @@ export class MediaService {
     // In development, still use proxy for Vite dev server compatibility
     const isProduction = process.env.NODE_ENV === "production";
     this.publicUrl = isProduction
-      ? (r2Config.endpoint || "https://media.monomiagency.com")  // Use Worker domain in production
-      : `/api/v1/media/proxy`;  // Dev: use proxy through Vite
+      ? r2Config.endpoint || "https://media.monomiagency.com" // Use Worker domain in production
+      : `/api/v1/media/proxy`; // Dev: use proxy through Vite
     this.maxFileSizeMB = r2Config.maxFileSizeMB;
 
     // Initialize S3 client for R2
@@ -114,7 +114,9 @@ export class MediaService {
           secretAccessKey: r2Config.secretAccessKey,
         },
       });
-      this.logger.log(`✅ R2 client initialized for bucket: ${this.bucketName}`);
+      this.logger.log(
+        `✅ R2 client initialized for bucket: ${this.bucketName}`,
+      );
       this.logger.log(`✅ Media proxy URL: ${this.publicUrl}`);
     } else {
       this.logger.warn(
@@ -174,15 +176,22 @@ export class MediaService {
         };
       } else {
         // Fallback: Use local file storage for development
-        const fs = await import('fs').then(m => m.promises);
-        const path_module = await import('path');
+        const fs = await import("fs").then((m) => m.promises);
+        const path_module = await import("path");
 
         // Create local upload directory if it doesn't exist
-        const uploadDir = path_module.default.join(process.cwd(), 'uploads', folder);
+        const uploadDir = path_module.default.join(
+          process.cwd(),
+          "uploads",
+          folder,
+        );
         await fs.mkdir(uploadDir, { recursive: true });
 
         // Save file to local storage
-        const localPath = path_module.default.join(uploadDir, path_module.default.basename(key));
+        const localPath = path_module.default.join(
+          uploadDir,
+          path_module.default.basename(key),
+        );
         await fs.writeFile(localPath, file.buffer);
 
         // Return URL for local file (accessible via /api/v1/media/proxy proxy in development)
@@ -199,7 +208,8 @@ export class MediaService {
       }
     } catch (error) {
       this.logger.error(`❌ Failed to upload file:`, error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       throw new InternalServerErrorException(
         `Failed to upload file: ${errorMessage}`,
       );
@@ -237,7 +247,10 @@ export class MediaService {
       // Generate unique key for thumbnail
       const hash = crypto.randomBytes(4).toString("hex");
       const date = new Date().toISOString().split("T")[0];
-      const videoBasename = path.basename(originalVideoName, path.extname(originalVideoName));
+      const videoBasename = path.basename(
+        originalVideoName,
+        path.extname(originalVideoName),
+      );
       const key = `${folder}/${date}/${hash}-${videoBasename}-thumb.jpg`;
 
       // Upload to R2
@@ -261,7 +274,8 @@ export class MediaService {
       return { url, key };
     } catch (error) {
       this.logger.error(`❌ Failed to upload thumbnail to R2:`, error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       throw new InternalServerErrorException(
         `Failed to upload thumbnail: ${errorMessage}`,
       );
@@ -312,7 +326,8 @@ export class MediaService {
       this.logger.log(`✅ File deleted successfully: ${key}`);
     } catch (error) {
       this.logger.error(`❌ Failed to delete file from R2:`, error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       throw new InternalServerErrorException(
         `Failed to delete file: ${errorMessage}`,
       );
@@ -336,7 +351,10 @@ export class MediaService {
    * @param key - Primary file R2 object key
    * @param thumbnailUrl - Optional thumbnail URL to delete
    */
-  async deleteFileWithThumbnail(key: string, thumbnailUrl?: string): Promise<void> {
+  async deleteFileWithThumbnail(
+    key: string,
+    thumbnailUrl?: string,
+  ): Promise<void> {
     // Delete main file
     await this.deleteFile(key);
 
@@ -348,8 +366,11 @@ export class MediaService {
           await this.deleteFile(thumbnailKey);
           this.logger.log(`✅ Thumbnail deleted: ${thumbnailKey}`);
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          this.logger.warn(`⚠️  Failed to delete thumbnail ${thumbnailKey}: ${errorMessage}`);
+          const errorMessage =
+            error instanceof Error ? error.message : "Unknown error";
+          this.logger.warn(
+            `⚠️  Failed to delete thumbnail ${thumbnailKey}: ${errorMessage}`,
+          );
           // Don't throw - main file deletion succeeded
         }
       }
@@ -389,14 +410,14 @@ export class MediaService {
   async generateMediaAccessToken(userId: string): Promise<string> {
     if (!this.jwtService) {
       throw new InternalServerErrorException(
-        'JwtService not available. Media token generation is not configured.',
+        "JwtService not available. Media token generation is not configured.",
       );
     }
 
     try {
       const payload = {
         sub: userId,
-        purpose: 'media-access',
+        purpose: "media-access",
         iat: Math.floor(Date.now() / 1000),
       };
 
@@ -408,7 +429,8 @@ export class MediaService {
       return token;
     } catch (error) {
       this.logger.error(`❌ Failed to generate media access token:`, error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       throw new InternalServerErrorException(
         `Failed to generate media access token: ${errorMessage}`,
       );
@@ -428,23 +450,26 @@ export class MediaService {
   async validateMediaAccessToken(token: string): Promise<string> {
     if (!this.jwtService) {
       throw new InternalServerErrorException(
-        'JwtService not available. Media token validation is not configured.',
+        "JwtService not available. Media token validation is not configured.",
       );
     }
 
     try {
       const payload = this.jwtService.verify(token);
 
-      if (payload.purpose !== 'media-access') {
-        throw new Error('Invalid token purpose');
+      if (payload.purpose !== "media-access") {
+        throw new Error("Invalid token purpose");
       }
 
-      this.logger.debug(`✅ Validated media access token for user: ${payload.sub}`);
+      this.logger.debug(
+        `✅ Validated media access token for user: ${payload.sub}`,
+      );
 
       return payload.sub;
     } catch (error) {
       this.logger.error(`❌ Failed to validate media access token:`, error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       throw new InternalServerErrorException(
         `Failed to validate media access token: ${errorMessage}`,
       );
@@ -458,7 +483,10 @@ export class MediaService {
    * @param expiresIn - URL expiration time in seconds (default: 3600 = 1 hour)
    * @returns Presigned URL that expires after specified time
    */
-  async getPresignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+  async getPresignedUrl(
+    key: string,
+    expiresIn: number = 3600,
+  ): Promise<string> {
     if (!this.isR2Enabled()) {
       throw new InternalServerErrorException(
         "Presigned URLs are not available. R2 storage is not configured.",
@@ -472,14 +500,22 @@ export class MediaService {
       });
 
       // Generate presigned URL (AWS SDK compatible)
-      const presignedUrl = await getSignedUrl(this.s3Client, command, { expiresIn });
+      const presignedUrl = await getSignedUrl(this.s3Client, command, {
+        expiresIn,
+      });
 
-      this.logger.debug(`✅ Generated presigned URL for: ${key} (expires in ${expiresIn}s)`);
+      this.logger.debug(
+        `✅ Generated presigned URL for: ${key} (expires in ${expiresIn}s)`,
+      );
 
       return presignedUrl;
     } catch (error) {
-      this.logger.error(`❌ Failed to generate presigned URL for ${key}:`, error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `❌ Failed to generate presigned URL for ${key}:`,
+        error,
+      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       throw new InternalServerErrorException(
         `Failed to generate presigned URL: ${errorMessage}`,
       );
@@ -517,7 +553,8 @@ export class MediaService {
           const stream = response.Body as Readable;
 
           // Extract original filename from metadata if available
-          const originalName = response.Metadata?.originalName || response.Metadata?.originalname;
+          const originalName =
+            response.Metadata?.originalName || response.Metadata?.originalname;
 
           return {
             stream,
@@ -528,32 +565,39 @@ export class MediaService {
         } catch (r2Error) {
           // If R2 fails, try local fallback
           if (r2Error instanceof NotFoundException) {
-            this.logger.warn(`File not found in R2: ${key}, trying local storage fallback`);
+            this.logger.warn(
+              `File not found in R2: ${key}, trying local storage fallback`,
+            );
           } else {
-            this.logger.warn(`Failed to get from R2, trying local fallback:`, r2Error);
+            this.logger.warn(
+              `Failed to get from R2, trying local fallback:`,
+              r2Error,
+            );
           }
         }
       }
 
       // Fallback: Try local file storage
-      const fs = await import('fs').then(m => m.promises);
-      const path_module = await import('path');
-      const fsSync = await import('fs');
+      const fs = await import("fs").then((m) => m.promises);
+      const path_module = await import("path");
+      const fsSync = await import("fs");
 
       // Construct local file path
       // key format: "content/filename.jpg" or "content/2025-01-08/hash-filename.jpg"
       const localFilePath = path_module.default.join(
         process.cwd(),
-        'uploads',
-        key
+        "uploads",
+        key,
       );
 
-      this.logger.log(`Trying to load file from local storage: ${localFilePath}`);
+      this.logger.log(
+        `Trying to load file from local storage: ${localFilePath}`,
+      );
 
       // Check if file exists
       if (!fsSync.existsSync(localFilePath)) {
         throw new NotFoundException(
-          `File not found: ${key} (checked both R2 and local storage)`
+          `File not found: ${key} (checked both R2 and local storage)`,
         );
       }
 
@@ -566,18 +610,18 @@ export class MediaService {
       // Determine MIME type from file extension
       const ext = path_module.default.extname(localFilePath).toLowerCase();
       const mimeTypes: Record<string, string> = {
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.png': 'image/png',
-        '.gif': 'image/gif',
-        '.webp': 'image/webp',
-        '.mp4': 'video/mp4',
-        '.mov': 'video/quicktime',
-        '.avi': 'video/x-msvideo',
-        '.webm': 'video/webm',
-        '.pdf': 'application/pdf',
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".mp4": "video/mp4",
+        ".mov": "video/quicktime",
+        ".avi": "video/x-msvideo",
+        ".webm": "video/webm",
+        ".pdf": "application/pdf",
       };
-      const contentType = mimeTypes[ext] || 'application/octet-stream';
+      const contentType = mimeTypes[ext] || "application/octet-stream";
 
       // Extract filename from path
       const originalName = path_module.default.basename(localFilePath);
@@ -595,7 +639,8 @@ export class MediaService {
         throw error;
       }
       this.logger.error(`❌ Failed to get file stream:`, error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       throw new InternalServerErrorException(
         `Failed to get file stream: ${errorMessage}`,
       );

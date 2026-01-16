@@ -400,9 +400,10 @@ export class CashTransactionService {
     const amountForJournal = Number(transaction.idrAmount);
 
     // Add currency information to description if foreign currency
-    const currencyNote = transaction.currency !== 'IDR'
-      ? ` (${transaction.currency} ${Number(transaction.originalAmount).toLocaleString()} @ ${Number(transaction.exchangeRate).toLocaleString()})`
-      : '';
+    const currencyNote =
+      transaction.currency !== "IDR"
+        ? ` (${transaction.currency} ${Number(transaction.originalAmount).toLocaleString()} @ ${Number(transaction.exchangeRate).toLocaleString()})`
+        : "";
 
     const lineItems =
       transaction.transactionType === CashTransactionType.RECEIPT

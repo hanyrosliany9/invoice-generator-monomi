@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { MediaService } from '../../media/media.service';
-import { CreateFolderDto } from '../dto/create-folder.dto';
-import { UpdateFolderDto } from '../dto/update-folder.dto';
-import { MoveAssetsDto } from '../dto/move-assets.dto';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { MediaService } from "../../media/media.service";
+import { CreateFolderDto } from "../dto/create-folder.dto";
+import { UpdateFolderDto } from "../dto/update-folder.dto";
+import { MoveAssetsDto } from "../dto/move-assets.dto";
 
 @Injectable()
 export class MediaFoldersService {
@@ -22,15 +27,12 @@ export class MediaFoldersService {
     const project = await this.prisma.mediaProject.findFirst({
       where: {
         id: projectId,
-        OR: [
-          { createdBy: userId },
-          { collaborators: { some: { userId } } },
-        ],
+        OR: [{ createdBy: userId }, { collaborators: { some: { userId } } }],
       },
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found or access denied');
+      throw new NotFoundException("Project not found or access denied");
     }
 
     // If parentId is provided, verify it exists and belongs to the same project
@@ -43,7 +45,7 @@ export class MediaFoldersService {
       });
 
       if (!parentFolder) {
-        throw new NotFoundException('Parent folder not found');
+        throw new NotFoundException("Parent folder not found");
       }
     }
 
@@ -57,7 +59,9 @@ export class MediaFoldersService {
     });
 
     if (existingFolder) {
-      throw new BadRequestException('A folder with this name already exists at this level');
+      throw new BadRequestException(
+        "A folder with this name already exists at this level",
+      );
     }
 
     // Create the folder
@@ -112,7 +116,7 @@ export class MediaFoldersService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found or access denied');
+      throw new NotFoundException("Project not found or access denied");
     }
 
     // Get all folders for the project with their hierarchy
@@ -133,9 +137,7 @@ export class MediaFoldersService {
           },
         },
       },
-      orderBy: [
-        { name: 'asc' },
-      ],
+      orderBy: [{ name: "asc" }],
     });
 
     // Build tree structure
@@ -181,7 +183,7 @@ export class MediaFoldersService {
               },
             },
           },
-          orderBy: { name: 'asc' },
+          orderBy: { name: "asc" },
         },
         assets: {
           include: {
@@ -199,7 +201,7 @@ export class MediaFoldersService {
               },
             },
           },
-          orderBy: { uploadedAt: 'desc' },
+          orderBy: { uploadedAt: "desc" },
         },
         parent: {
           select: {
@@ -224,7 +226,7 @@ export class MediaFoldersService {
     });
 
     if (!folder) {
-      throw new NotFoundException('Folder not found or access denied');
+      throw new NotFoundException("Folder not found or access denied");
     }
 
     return folder;
@@ -256,7 +258,7 @@ export class MediaFoldersService {
     });
 
     if (!folder) {
-      throw new NotFoundException('Folder not found or access denied');
+      throw new NotFoundException("Folder not found or access denied");
     }
 
     // Build path from root to current folder
@@ -287,7 +289,11 @@ export class MediaFoldersService {
   /**
    * Update folder
    */
-  async updateFolder(userId: string, folderId: string, updateFolderDto: UpdateFolderDto) {
+  async updateFolder(
+    userId: string,
+    folderId: string,
+    updateFolderDto: UpdateFolderDto,
+  ) {
     // Get folder with access check
     const folder = await this.prisma.mediaFolder.findFirst({
       where: {
@@ -295,28 +301,37 @@ export class MediaFoldersService {
         project: {
           OR: [
             { createdBy: userId },
-            { collaborators: { some: { userId, role: { in: ['OWNER', 'EDITOR'] } } } },
+            {
+              collaborators: {
+                some: { userId, role: { in: ["OWNER", "EDITOR"] } },
+              },
+            },
           ],
         },
       },
     });
 
     if (!folder) {
-      throw new NotFoundException('Folder not found or access denied');
+      throw new NotFoundException("Folder not found or access denied");
     }
 
     // If moving to a new parent, validate
     if (updateFolderDto.parentId !== undefined) {
       // Cannot move folder into itself
       if (updateFolderDto.parentId === folderId) {
-        throw new BadRequestException('Cannot move folder into itself');
+        throw new BadRequestException("Cannot move folder into itself");
       }
 
       // Cannot move folder into its own descendant
       if (updateFolderDto.parentId) {
-        const isDescendant = await this.isDescendant(folderId, updateFolderDto.parentId);
+        const isDescendant = await this.isDescendant(
+          folderId,
+          updateFolderDto.parentId,
+        );
         if (isDescendant) {
-          throw new BadRequestException('Cannot move folder into its own descendant');
+          throw new BadRequestException(
+            "Cannot move folder into its own descendant",
+          );
         }
 
         // Verify parent exists in same project
@@ -328,7 +343,7 @@ export class MediaFoldersService {
         });
 
         if (!parentFolder) {
-          throw new NotFoundException('Parent folder not found');
+          throw new NotFoundException("Parent folder not found");
         }
       }
 
@@ -347,7 +362,9 @@ export class MediaFoldersService {
         });
 
         if (existingFolder) {
-          throw new BadRequestException('A folder with this name already exists at the target location');
+          throw new BadRequestException(
+            "A folder with this name already exists at the target location",
+          );
         }
       }
     }
@@ -357,8 +374,12 @@ export class MediaFoldersService {
       where: { id: folderId },
       data: {
         ...(updateFolderDto.name && { name: updateFolderDto.name }),
-        ...(updateFolderDto.description !== undefined && { description: updateFolderDto.description }),
-        ...(updateFolderDto.parentId !== undefined && { parentId: updateFolderDto.parentId }),
+        ...(updateFolderDto.description !== undefined && {
+          description: updateFolderDto.description,
+        }),
+        ...(updateFolderDto.parentId !== undefined && {
+          parentId: updateFolderDto.parentId,
+        }),
       },
       include: {
         createdBy: {
@@ -401,14 +422,18 @@ export class MediaFoldersService {
         project: {
           OR: [
             { createdBy: userId },
-            { collaborators: { some: { userId, role: { in: ['OWNER', 'EDITOR'] } } } },
+            {
+              collaborators: {
+                some: { userId, role: { in: ["OWNER", "EDITOR"] } },
+              },
+            },
           ],
         },
       },
     });
 
     if (!folder) {
-      throw new NotFoundException('Folder not found or access denied');
+      throw new NotFoundException("Folder not found or access denied");
     }
 
     // Get all folder IDs recursively (current folder + all descendants)
@@ -437,7 +462,10 @@ export class MediaFoldersService {
         // Delete thumbnail if it exists
         if (asset.thumbnailUrl) {
           // Extract thumbnail key from URL (format: http://localhost:5000/api/v1/media/proxy/{key})
-          const thumbnailKey = asset.thumbnailUrl.replace(/^https?:\/\/[^\/]+\/api\/v1\/media\/proxy\//, '');
+          const thumbnailKey = asset.thumbnailUrl.replace(
+            /^https?:\/\/[^\/]+\/api\/v1\/media\/proxy\//,
+            "",
+          );
           if (thumbnailKey && thumbnailKey !== asset.thumbnailUrl) {
             await this.mediaService.deleteFile(thumbnailKey);
             deletedR2FilesCount++;
@@ -454,7 +482,7 @@ export class MediaFoldersService {
     if (assetsToDelete.length > 0) {
       await this.prisma.mediaAsset.deleteMany({
         where: {
-          id: { in: assetsToDelete.map(a => a.id) },
+          id: { in: assetsToDelete.map((a) => a.id) },
         },
       });
     }
@@ -469,7 +497,7 @@ export class MediaFoldersService {
     });
 
     return {
-      message: 'Folder deleted successfully',
+      message: "Folder deleted successfully",
       deletedFolderId: folderId,
       deletedChildFolders: childrenCount,
       deletedAssets: assetsCount,
@@ -501,7 +529,11 @@ export class MediaFoldersService {
   /**
    * Move assets to a folder
    */
-  async moveAssets(userId: string, projectId: string, moveAssetsDto: MoveAssetsDto) {
+  async moveAssets(
+    userId: string,
+    projectId: string,
+    moveAssetsDto: MoveAssetsDto,
+  ) {
     const { assetIds, folderId } = moveAssetsDto;
 
     // Verify user has access to the project
@@ -510,13 +542,17 @@ export class MediaFoldersService {
         id: projectId,
         OR: [
           { createdBy: userId },
-          { collaborators: { some: { userId, role: { in: ['OWNER', 'EDITOR'] } } } },
+          {
+            collaborators: {
+              some: { userId, role: { in: ["OWNER", "EDITOR"] } },
+            },
+          },
         ],
       },
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found or access denied');
+      throw new NotFoundException("Project not found or access denied");
     }
 
     // If folderId is provided, verify it exists in the project
@@ -529,7 +565,7 @@ export class MediaFoldersService {
       });
 
       if (!folder) {
-        throw new NotFoundException('Target folder not found');
+        throw new NotFoundException("Target folder not found");
       }
     }
 
@@ -542,7 +578,9 @@ export class MediaFoldersService {
     });
 
     if (assets.length !== assetIds.length) {
-      throw new BadRequestException('One or more assets not found or do not belong to this project');
+      throw new BadRequestException(
+        "One or more assets not found or do not belong to this project",
+      );
     }
 
     // Move assets
@@ -556,7 +594,7 @@ export class MediaFoldersService {
     });
 
     return {
-      message: 'Assets moved successfully',
+      message: "Assets moved successfully",
       movedCount: assetIds.length,
       targetFolderId: folderId || null,
     };
@@ -565,7 +603,10 @@ export class MediaFoldersService {
   /**
    * Helper: Check if targetId is a descendant of folderId
    */
-  private async isDescendant(folderId: string, targetId: string): Promise<boolean> {
+  private async isDescendant(
+    folderId: string,
+    targetId: string,
+  ): Promise<boolean> {
     let current = await this.prisma.mediaFolder.findUnique({
       where: { id: targetId },
     });
@@ -590,12 +631,12 @@ export class MediaFoldersService {
     const rootFolders: any[] = [];
 
     // First pass: create map
-    folders.forEach(folder => {
+    folders.forEach((folder) => {
       folderMap.set(folder.id, { ...folder, children: [] });
     });
 
     // Second pass: build tree
-    folders.forEach(folder => {
+    folders.forEach((folder) => {
       const node = folderMap.get(folder.id);
       if (folder.parentId) {
         const parent = folderMap.get(folder.parentId);

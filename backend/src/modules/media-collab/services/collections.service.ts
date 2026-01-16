@@ -1,7 +1,11 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateCollectionDto } from '../dto/create-collection.dto';
-import { UpdateCollectionDto } from '../dto/update-collection.dto';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreateCollectionDto } from "../dto/create-collection.dto";
+import { UpdateCollectionDto } from "../dto/update-collection.dto";
 
 /**
  * CollectionsService
@@ -17,7 +21,11 @@ export class CollectionsService {
   /**
    * Create a new collection
    */
-  async create(projectId: string, createDto: CreateCollectionDto, userId: string) {
+  async create(
+    projectId: string,
+    createDto: CreateCollectionDto,
+    userId: string,
+  ) {
     // Verify project exists and user has access
     const project = await this.prisma.mediaProject.findFirst({
       where: {
@@ -31,7 +39,7 @@ export class CollectionsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found or access denied');
+      throw new NotFoundException("Project not found or access denied");
     }
 
     // Create collection
@@ -46,7 +54,11 @@ export class CollectionsService {
 
     // Add initial assets if provided
     if (createDto.assetIds && createDto.assetIds.length > 0) {
-      await this.addAssetsToCollection(collection.id, createDto.assetIds, userId);
+      await this.addAssetsToCollection(
+        collection.id,
+        createDto.assetIds,
+        userId,
+      );
     }
 
     return collection;
@@ -67,7 +79,7 @@ export class CollectionsService {
         },
       },
       orderBy: {
-        updatedAt: 'desc',
+        updatedAt: "desc",
       },
     });
   }
@@ -89,7 +101,7 @@ export class CollectionsService {
     });
 
     if (!collection) {
-      throw new NotFoundException('Collection not found');
+      throw new NotFoundException("Collection not found");
     }
 
     return collection;
@@ -98,17 +110,23 @@ export class CollectionsService {
   /**
    * Update collection
    */
-  async update(collectionId: string, updateDto: UpdateCollectionDto, userId: string) {
+  async update(
+    collectionId: string,
+    updateDto: UpdateCollectionDto,
+    userId: string,
+  ) {
     const collection = await this.prisma.collection.findUnique({
       where: { id: collectionId },
     });
 
     if (!collection) {
-      throw new NotFoundException('Collection not found');
+      throw new NotFoundException("Collection not found");
     }
 
     if (collection.createdBy !== userId) {
-      throw new ForbiddenException('Only the creator can update this collection');
+      throw new ForbiddenException(
+        "Only the creator can update this collection",
+      );
     }
 
     return this.prisma.collection.update({
@@ -129,11 +147,13 @@ export class CollectionsService {
     });
 
     if (!collection) {
-      throw new NotFoundException('Collection not found');
+      throw new NotFoundException("Collection not found");
     }
 
     if (collection.createdBy !== userId) {
-      throw new ForbiddenException('Only the creator can delete this collection');
+      throw new ForbiddenException(
+        "Only the creator can delete this collection",
+      );
     }
 
     await this.prisma.collection.delete({
@@ -162,14 +182,14 @@ export class CollectionsService {
             },
           },
           orderBy: {
-            addedAt: 'desc',
+            addedAt: "desc",
           },
         },
       },
     });
 
     if (!collection) {
-      throw new NotFoundException('Collection not found');
+      throw new NotFoundException("Collection not found");
     }
 
     return collection.items.map((item) => item.asset);
@@ -178,14 +198,18 @@ export class CollectionsService {
   /**
    * Add assets to collection
    */
-  async addAssetsToCollection(collectionId: string, assetIds: string[], userId: string) {
+  async addAssetsToCollection(
+    collectionId: string,
+    assetIds: string[],
+    userId: string,
+  ) {
     // Verify collection exists
     const collection = await this.prisma.collection.findUnique({
       where: { id: collectionId },
     });
 
     if (!collection) {
-      throw new NotFoundException('Collection not found');
+      throw new NotFoundException("Collection not found");
     }
 
     // Create collection items
@@ -212,13 +236,17 @@ export class CollectionsService {
   /**
    * Remove assets from collection
    */
-  async removeAssetsFromCollection(collectionId: string, assetIds: string[], userId: string) {
+  async removeAssetsFromCollection(
+    collectionId: string,
+    assetIds: string[],
+    userId: string,
+  ) {
     const collection = await this.prisma.collection.findUnique({
       where: { id: collectionId },
     });
 
     if (!collection) {
-      throw new NotFoundException('Collection not found');
+      throw new NotFoundException("Collection not found");
     }
 
     await this.prisma.collectionItem.deleteMany({
@@ -255,7 +283,7 @@ export class CollectionsService {
         },
       },
       orderBy: {
-        starRating: 'desc',
+        starRating: "desc",
       },
     });
   }
@@ -276,7 +304,7 @@ export class CollectionsService {
         },
       },
       orderBy: {
-        uploadedAt: 'desc',
+        uploadedAt: "desc",
       },
     });
   }
@@ -305,7 +333,7 @@ export class CollectionsService {
         },
       },
       orderBy: {
-        updatedAt: 'desc',
+        updatedAt: "desc",
       },
     });
   }

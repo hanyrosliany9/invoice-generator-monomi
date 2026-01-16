@@ -1,17 +1,21 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException } from "@nestjs/common";
 
 export enum QuotationStatus {
-  DRAFT = 'DRAFT',
-  SENT = 'SENT',
-  APPROVED = 'APPROVED',
-  DECLINED = 'DECLINED',
-  EXPIRED = 'EXPIRED',
-  CANCELLED = 'CANCELLED',
+  DRAFT = "DRAFT",
+  SENT = "SENT",
+  APPROVED = "APPROVED",
+  DECLINED = "DECLINED",
+  EXPIRED = "EXPIRED",
+  CANCELLED = "CANCELLED",
 }
 
 const VALID_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
   [QuotationStatus.DRAFT]: [QuotationStatus.SENT, QuotationStatus.CANCELLED],
-  [QuotationStatus.SENT]: [QuotationStatus.APPROVED, QuotationStatus.DECLINED, QuotationStatus.EXPIRED],
+  [QuotationStatus.SENT]: [
+    QuotationStatus.APPROVED,
+    QuotationStatus.DECLINED,
+    QuotationStatus.EXPIRED,
+  ],
   [QuotationStatus.APPROVED]: [], // Terminal state
   [QuotationStatus.DECLINED]: [QuotationStatus.DRAFT], // Allow revision
   [QuotationStatus.EXPIRED]: [QuotationStatus.DRAFT], // Allow renewal
@@ -33,7 +37,7 @@ export function validateStatusTransition(
   if (!allowedTransitions.includes(newStatus)) {
     throw new BadRequestException(
       `Invalid status transition: ${currentStatus} → ${newStatus}. ` +
-      `Allowed transitions: ${allowedTransitions.length > 0 ? allowedTransitions.join(', ') : 'None (terminal state)'}`,
+        `Allowed transitions: ${allowedTransitions.length > 0 ? allowedTransitions.join(", ") : "None (terminal state)"}`,
     );
   }
 }

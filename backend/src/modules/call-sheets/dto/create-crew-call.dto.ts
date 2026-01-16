@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsInt } from "class-validator";
 
 export class CreateCrewCallDto {
   @IsString()
@@ -11,8 +11,8 @@ export class CreateCrewCallDto {
   @IsString() callTime: string;
 
   // === NEW: Staggered Call Time ===
-  @IsOptional() @IsInt() callTimeOffset?: number;     // Minutes relative to general call
-  @IsOptional() @IsString() reportLocation?: string;  // Where to report
+  @IsOptional() @IsInt() callTimeOffset?: number; // Minutes relative to general call
+  @IsOptional() @IsString() reportLocation?: string; // Where to report
 
   @IsOptional() @IsString() phone?: string;
   @IsOptional() @IsString() email?: string;

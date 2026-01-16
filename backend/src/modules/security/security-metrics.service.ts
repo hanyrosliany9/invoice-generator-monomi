@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 import {
   SecurityMetricsResponseDto,
   SecurityAlertsResponseDto,
   ComplianceAlertDto,
-} from './dto/security-metrics.dto';
-import { ConfigService } from '@nestjs/config';
+} from "./dto/security-metrics.dto";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class SecurityMetricsService {
@@ -38,7 +38,7 @@ export class SecurityMetricsService {
         materaiMetrics.complianceRate +
         privacyMetrics.dataProtectionScore +
         authMetrics.sessionSecurity) /
-        4
+        4,
     );
 
     const overallStatus = this.getSecurityStatus(overallScore);
@@ -77,7 +77,7 @@ export class SecurityMetricsService {
 
     const unresolvedCount = alerts.filter((a) => !a.resolved).length;
     const criticalCount = alerts.filter(
-      (a) => !a.resolved && a.severity === 'critical'
+      (a) => !a.resolved && a.severity === "critical",
     ).length;
 
     return {
@@ -138,12 +138,12 @@ export class SecurityMetricsService {
 
     // Count compliant invoices (materaiRequired = true AND materaiApplied = true)
     const compliantInvoices = allInvoices.filter(
-      (inv) => inv.materaiRequired && inv.materaiApplied
+      (inv) => inv.materaiRequired && inv.materaiApplied,
     ).length;
 
     // Count exemptions (materaiRequired = false for invoices > 5M)
     const exemptionsUsed = allInvoices.filter(
-      (inv) => !inv.materaiRequired
+      (inv) => !inv.materaiRequired,
     ).length;
 
     // Calculate savings from exemptions (materai is 10,000 IDR per document)
@@ -203,7 +203,7 @@ export class SecurityMetricsService {
    */
   private async calculateAuthenticationMetrics() {
     // Check system configuration
-    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const jwtSecret = this.configService.get<string>("JWT_SECRET");
     const hasStrongAuth = !!(jwtSecret && jwtSecret.length > 32);
 
     // Check user password policies (in production, check actual password requirements)
@@ -264,16 +264,16 @@ export class SecurityMetricsService {
     if (pendingMateraiInvoices > 0) {
       alerts.push({
         id: `materai_alert_${Date.now()}`,
-        type: 'materai',
-        severity: pendingMateraiInvoices > 10 ? 'high' : 'medium',
-        title: 'Materai Compliance Check Required',
+        type: "materai",
+        severity: pendingMateraiInvoices > 10 ? "high" : "medium",
+        title: "Materai Compliance Check Required",
         description: `${pendingMateraiInvoices} transaksi memerlukan validasi materai dalam 24 jam terakhir`,
         recommendation:
-          'Review dan validasi perhitungan materai untuk transaksi di atas Rp 5 juta',
+          "Review dan validasi perhitungan materai untuk transaksi di atas Rp 5 juta",
         timestamp: new Date(),
         indonesianSpecific: true,
         resolved: false,
-        affectedSystems: ['quotation', 'invoice'],
+        affectedSystems: ["quotation", "invoice"],
       });
     }
 
@@ -296,16 +296,16 @@ export class SecurityMetricsService {
     if (clientsWithoutEmail > 5) {
       alerts.push({
         id: `privacy_alert_${Date.now()}`,
-        type: 'privacy',
-        severity: 'low',
-        title: 'Incomplete Client Information',
+        type: "privacy",
+        severity: "low",
+        title: "Incomplete Client Information",
         description: `${clientsWithoutEmail} klien belum memiliki email terdaftar`,
         recommendation:
-          'Update informasi kontak klien untuk komunikasi yang lebih baik',
+          "Update informasi kontak klien untuk komunikasi yang lebih baik",
         timestamp: new Date(),
         indonesianSpecific: false,
         resolved: false,
-        affectedSystems: ['clients', 'invoicing'],
+        affectedSystems: ["clients", "invoicing"],
       });
     }
 
@@ -328,16 +328,15 @@ export class SecurityMetricsService {
     if (inactiveUsers > 0) {
       alerts.push({
         id: `auth_alert_${Date.now()}`,
-        type: 'security',
-        severity: 'low',
-        title: 'Inactive User Accounts',
+        type: "security",
+        severity: "low",
+        title: "Inactive User Accounts",
         description: `${inactiveUsers} akun pengguna tidak aktif`,
-        recommendation:
-          'Review akun yang tidak aktif untuk keamanan sistem',
+        recommendation: "Review akun yang tidak aktif untuk keamanan sistem",
         timestamp: new Date(),
         indonesianSpecific: false,
         resolved: false,
-        affectedSystems: ['authentication', 'user-management'],
+        affectedSystems: ["authentication", "user-management"],
       });
     }
 
@@ -348,11 +347,11 @@ export class SecurityMetricsService {
    * Get security status based on score
    */
   private getSecurityStatus(
-    score: number
-  ): 'excellent' | 'good' | 'warning' | 'critical' {
-    if (score >= 95) return 'excellent';
-    if (score >= 85) return 'good';
-    if (score >= 70) return 'warning';
-    return 'critical';
+    score: number,
+  ): "excellent" | "good" | "warning" | "critical" {
+    if (score >= 95) return "excellent";
+    if (score >= 85) return "good";
+    if (score >= 70) return "warning";
+    return "critical";
   }
 }

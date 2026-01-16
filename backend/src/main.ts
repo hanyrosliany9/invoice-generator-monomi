@@ -60,16 +60,16 @@ async function bootstrap() {
     );
 
     // CORS configuration with environment-based origin validation
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = process.env.NODE_ENV === "production";
     const allowedOrigins = isProduction
       ? [process.env.FRONTEND_URL, process.env.PUBLIC_URL].filter(Boolean) // Production: FRONTEND_URL + PUBLIC_URL for public share
       : [
-          process.env.FRONTEND_URL || 'http://localhost:3001',
-          process.env.PUBLIC_URL || 'http://localhost:3000',
-          'http://localhost:3001', // Dev frontend port
-          'http://localhost:3000',
-          'http://127.0.0.1:3001',
-          'http://127.0.0.1:3000',
+          process.env.FRONTEND_URL || "http://localhost:3001",
+          process.env.PUBLIC_URL || "http://localhost:3000",
+          "http://localhost:3001", // Dev frontend port
+          "http://localhost:3000",
+          "http://127.0.0.1:3001",
+          "http://127.0.0.1:3000",
         ]; // Development: Include localhost variants
 
     app.enableCors({
@@ -80,19 +80,22 @@ async function bootstrap() {
         }
 
         // In development, allow any origin from Tailscale network (100.x.x.x)
-        const isTailscale = !isProduction && origin && /^https?:\/\/100\.\d+\.\d+\.\d+:\d+$/.test(origin);
+        const isTailscale =
+          !isProduction &&
+          origin &&
+          /^https?:\/\/100\.\d+\.\d+\.\d+:\d+$/.test(origin);
 
         if (allowedOrigins.includes(origin) || isTailscale) {
           callback(null, true);
         } else {
           logger.warn(`🚫 CORS blocked origin: ${origin}`);
-          callback(new Error('Not allowed by CORS'));
+          callback(new Error("Not allowed by CORS"));
         }
       },
       credentials: true,
-      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-      exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
+      methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      exposedHeaders: ["X-Total-Count", "X-Page-Count"],
       maxAge: 86400, // 24 hours
     });
 

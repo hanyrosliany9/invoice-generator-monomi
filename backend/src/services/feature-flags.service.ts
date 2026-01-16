@@ -5,10 +5,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../modules/prisma/prisma.service";
 import {
   INDONESIAN_BUSINESS_FEATURE_FLAGS,
-  ENVIRONMENT_CONFIG,
   SAFETY_CHECKS_CONFIG,
-  INDONESIAN_REGION_ROLLOUT_STRATEGIES,
-  BUSINESS_SIZE_ROLLOUT_CONFIG,
 } from "../config/feature-flags.config";
 
 export interface FeatureFlagUser {
@@ -639,7 +636,7 @@ export class FeatureFlagsService {
 
   private async blueGreenRollout(
     flagId: string,
-    config: RolloutConfig,
+    _config: RolloutConfig,
   ): Promise<void> {
     // Blue-green deployment simulation
     this.logger.log(`🔄 Blue-Green deployment: ${flagId}`);
@@ -654,7 +651,7 @@ export class FeatureFlagsService {
 
   private async scheduleHealthMonitoring(
     flagId: string,
-    percentage: number,
+    _percentage: number,
   ): Promise<void> {
     // Schedule background health monitoring
     setTimeout(
@@ -698,7 +695,7 @@ export class FeatureFlagsService {
 
   private async monitorCanaryHealth(
     flagId: string,
-    durationMinutes: number,
+    _durationMinutes: number,
   ): Promise<boolean> {
     // Simulate canary monitoring
     await new Promise((resolve) => setTimeout(resolve, 60000)); // 1 minute simulation
@@ -751,17 +748,17 @@ export class FeatureFlagsService {
     return false;
   }
 
-  private async getCulturalValidationScore(flagId: string): Promise<number> {
+  private async getCulturalValidationScore(_flagId: string): Promise<number> {
     // Mock cultural validation score - would integrate with CulturalValidationHelper
     return 85;
   }
 
-  private async checkMateraiCompliance(flagId: string): Promise<boolean> {
+  private async checkMateraiCompliance(_flagId: string): Promise<boolean> {
     // Mock materai compliance check - would validate against Indonesian tax regulations
     return true;
   }
 
-  private async getUsageMetrics(flagId: string): Promise<any> {
+  private async getUsageMetrics(_flagId: string): Promise<any> {
     // Mock usage metrics - would query actual analytics database
     return {
       totalUsers: 1000,
@@ -785,7 +782,7 @@ export class FeatureFlagsService {
     };
   }
 
-  private async getPerformanceMetrics(flagId: string): Promise<any> {
+  private async getPerformanceMetrics(_flagId: string): Promise<any> {
     // Mock performance metrics - would integrate with performance monitoring
     return {
       lcp: 2800,
@@ -794,7 +791,7 @@ export class FeatureFlagsService {
     };
   }
 
-  async getAllFeatureFlags(query: any): Promise<any[]> {
+  async getAllFeatureFlags(_query: any): Promise<any[]> {
     return await this.prisma.featureFlag.findMany({
       orderBy: { updatedAt: "desc" },
     });
@@ -832,7 +829,7 @@ export class FeatureFlagsService {
   }
 
   async validateIndonesianBusinessContext(
-    createDto: any,
+    _createDto: any,
   ): Promise<{ valid: boolean; reason?: string }> {
     // Validate Indonesian business context for new feature flags
     return { valid: true };
@@ -902,7 +899,7 @@ export class FeatureFlagsService {
     return { events, total };
   }
 
-  async testFeatureFlag(flagId: string, testConfig: any): Promise<any> {
+  async testFeatureFlag(flagId: string, _testConfig: any): Promise<any> {
     // Simulate feature flag testing
     return {
       flagId,

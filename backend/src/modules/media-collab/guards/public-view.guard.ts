@@ -3,8 +3,8 @@ import {
   CanActivate,
   ExecutionContext,
   NotFoundException,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 /**
  * Guard to validate public share tokens
@@ -21,7 +21,7 @@ export class PublicViewGuard implements CanActivate {
     const token = request.params.token || request.query.token;
 
     if (!token) {
-      throw new NotFoundException('Public share token required');
+      throw new NotFoundException("Public share token required");
     }
 
     // Find project by public share token
@@ -44,12 +44,14 @@ export class PublicViewGuard implements CanActivate {
     });
 
     if (!project) {
-      throw new NotFoundException('Public share link not found');
+      throw new NotFoundException("Public share link not found");
     }
 
     // Check if public sharing is enabled
     if (!project.isPublic) {
-      throw new NotFoundException('Public sharing is disabled for this project');
+      throw new NotFoundException(
+        "Public sharing is disabled for this project",
+      );
     }
 
     // Increment view count (async, don't wait)

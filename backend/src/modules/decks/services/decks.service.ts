@@ -3,12 +3,15 @@ import {
   NotFoundException,
   ForbiddenException,
   Logger,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { MediaService } from '../../media/media.service';
-import { CreateDeckDto } from '../dto/create-deck.dto';
-import { UpdateDeckDto } from '../dto/update-deck.dto';
-import { generateDeckShareToken, generateDeckShareUrl } from '../utils/deck-share.util';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { MediaService } from "../../media/media.service";
+import { CreateDeckDto } from "../dto/create-deck.dto";
+import { UpdateDeckDto } from "../dto/update-deck.dto";
+import {
+  generateDeckShareToken,
+  generateDeckShareUrl,
+} from "../utils/deck-share.util";
 
 @Injectable()
 export class DecksService {
@@ -25,18 +28,24 @@ export class DecksService {
   async create(userId: string, dto: CreateDeckDto) {
     // Verify linked entities exist
     if (dto.clientId) {
-      const client = await this.prisma.client.findUnique({ where: { id: dto.clientId } });
-      if (!client) throw new NotFoundException('Client not found');
+      const client = await this.prisma.client.findUnique({
+        where: { id: dto.clientId },
+      });
+      if (!client) throw new NotFoundException("Client not found");
     }
 
     if (dto.projectId) {
-      const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-      if (!project) throw new NotFoundException('Project not found');
+      const project = await this.prisma.project.findUnique({
+        where: { id: dto.projectId },
+      });
+      if (!project) throw new NotFoundException("Project not found");
     }
 
     if (dto.mediaProjectId) {
-      const mediaProject = await this.prisma.mediaProject.findUnique({ where: { id: dto.mediaProjectId } });
-      if (!mediaProject) throw new NotFoundException('Media project not found');
+      const mediaProject = await this.prisma.mediaProject.findUnique({
+        where: { id: dto.mediaProjectId },
+      });
+      if (!mediaProject) throw new NotFoundException("Media project not found");
     }
 
     // Create deck with creator as OWNER collaborator
@@ -54,9 +63,9 @@ export class DecksService {
         collaborators: {
           create: {
             userId: userId,
-            role: 'OWNER',
+            role: "OWNER",
             invitedBy: userId,
-            status: 'ACCEPTED',
+            status: "ACCEPTED",
             acceptedAt: new Date(),
           },
         },
@@ -64,9 +73,9 @@ export class DecksService {
         slides: {
           create: {
             order: 0,
-            template: 'TITLE',
+            template: "TITLE",
             title: dto.title,
-            subtitle: dto.description || '',
+            subtitle: dto.description || "",
             content: {},
           },
         },
@@ -76,7 +85,7 @@ export class DecksService {
         project: true,
         mediaProject: true,
         createdBy: { select: { id: true, name: true, email: true } },
-        slides: { orderBy: { order: 'asc' } },
+        slides: { orderBy: { order: "asc" } },
         _count: { select: { slides: true, collaborators: true } },
       },
     });
@@ -87,9 +96,12 @@ export class DecksService {
   /**
    * Get all decks for a user (owned + collaborated)
    */
-  async findAll(userId: string, filters?: { status?: string; clientId?: string; projectId?: string }) {
+  async findAll(
+    userId: string,
+    filters?: { status?: string; clientId?: string; projectId?: string },
+  ) {
     const where: any = {
-      collaborators: { some: { userId, status: 'ACCEPTED' } },
+      collaborators: { some: { userId, status: "ACCEPTED" } },
     };
 
     if (filters?.status) where.status = filters.status;
@@ -102,10 +114,10 @@ export class DecksService {
         client: { select: { id: true, name: true } },
         project: { select: { id: true, number: true } },
         createdBy: { select: { id: true, name: true } },
-        slides: { take: 1, orderBy: { order: 'asc' } },
+        slides: { take: 1, orderBy: { order: "asc" } },
         _count: { select: { slides: true, collaborators: true } },
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { updatedAt: "desc" },
     });
   }
 
@@ -116,15 +128,19 @@ export class DecksService {
     const deck = await this.prisma.deck.findUnique({
       where: { id: deckId },
       include: {
-        collaborators: { include: { user: { select: { id: true, name: true, email: true } } } },
+        collaborators: {
+          include: { user: { select: { id: true, name: true, email: true } } },
+        },
       },
     });
 
-    if (!deck) throw new NotFoundException('Deck not found');
+    if (!deck) throw new NotFoundException("Deck not found");
 
     // Check access
-    const hasAccess = deck.collaborators.some(c => c.userId === userId && c.status === 'ACCEPTED');
-    if (!hasAccess) throw new ForbiddenException('Access denied');
+    const hasAccess = deck.collaborators.some(
+      (c) => c.userId === userId && c.status === "ACCEPTED",
+    );
+    if (!hasAccess) throw new ForbiddenException("Access denied");
 
     // Now fetch the full deck with all relations
     return (await this.prisma.deck.findUnique({
@@ -135,9 +151,9 @@ export class DecksService {
         mediaProject: true,
         createdBy: { select: { id: true, name: true, email: true } },
         slides: {
-          orderBy: { order: 'asc' },
+          orderBy: { order: "asc" },
           include: {
-            elements: { orderBy: { zIndex: 'asc' } },
+            elements: { orderBy: { zIndex: "asc" } },
             _count: { select: { comments: true } },
           },
         },
@@ -157,9 +173,9 @@ export class DecksService {
     const deck = await this.findOne(deckId, userId);
 
     // Check edit permission
-    const collaborator = deck.collaborators.find(c => c.userId === userId);
-    if (!collaborator || !['OWNER', 'EDITOR'].includes(collaborator.role)) {
-      throw new ForbiddenException('Edit permission required');
+    const collaborator = deck.collaborators.find((c) => c.userId === userId);
+    if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
+      throw new ForbiddenException("Edit permission required");
     }
 
     return this.prisma.deck.update({
@@ -191,9 +207,9 @@ export class DecksService {
     const deck = await this.findOne(deckId, userId);
 
     // Only OWNER can delete
-    const collaborator = deck?.collaborators.find(c => c.userId === userId);
-    if (!collaborator || collaborator.role !== 'OWNER') {
-      throw new ForbiddenException('Only owner can delete deck');
+    const collaborator = deck?.collaborators.find((c) => c.userId === userId);
+    if (!collaborator || collaborator.role !== "OWNER") {
+      throw new ForbiddenException("Only owner can delete deck");
     }
 
     await this.prisma.deck.delete({ where: { id: deckId } });
@@ -207,14 +223,14 @@ export class DecksService {
     const original = await this.findOne(deckId, userId);
 
     if (!original) {
-      throw new NotFoundException('Original deck not found');
+      throw new NotFoundException("Original deck not found");
     }
 
     // Create new deck with all slides
     const newDeck = await this.prisma.deck.create({
       data: {
         title: newTitle || `${original.title} (Copy)`,
-        description: original.description || '',
+        description: original.description || "",
         theme: original.theme as any,
         slideWidth: original.slideWidth,
         slideHeight: original.slideHeight,
@@ -225,25 +241,25 @@ export class DecksService {
         collaborators: {
           create: {
             userId: userId,
-            role: 'OWNER',
+            role: "OWNER",
             invitedBy: userId,
-            status: 'ACCEPTED',
+            status: "ACCEPTED",
             acceptedAt: new Date(),
           },
         },
         slides: {
-          create: original.slides.map(slide => ({
+          create: original.slides.map((slide) => ({
             order: slide.order,
             template: slide.template,
-            title: slide.title || '',
-            subtitle: slide.subtitle || '',
+            title: slide.title || "",
+            subtitle: slide.subtitle || "",
             content: slide.content as any,
             backgroundColor: slide.backgroundColor,
             backgroundImage: slide.backgroundImage,
             backgroundImageKey: slide.backgroundImageKey,
             notes: slide.notes,
             elements: {
-              create: slide.elements.map(el => ({
+              create: slide.elements.map((el) => ({
                 type: el.type,
                 x: el.x,
                 y: el.y,
@@ -270,16 +286,20 @@ export class DecksService {
   /**
    * Enable public sharing
    */
-  async enablePublicSharing(deckId: string, userId: string, accessLevel?: string) {
+  async enablePublicSharing(
+    deckId: string,
+    userId: string,
+    accessLevel?: string,
+  ) {
     const deck = await this.findOne(deckId, userId);
 
     if (!deck) {
-      throw new NotFoundException('Deck not found');
+      throw new NotFoundException("Deck not found");
     }
 
-    const collaborator = deck.collaborators.find(c => c.userId === userId);
-    if (!collaborator || !['OWNER', 'EDITOR'].includes(collaborator.role)) {
-      throw new ForbiddenException('Edit permission required');
+    const collaborator = deck.collaborators.find((c) => c.userId === userId);
+    if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
+      throw new ForbiddenException("Edit permission required");
     }
 
     const token = generateDeckShareToken();
@@ -292,7 +312,7 @@ export class DecksService {
         publicShareToken: token,
         publicShareUrl: url,
         publicSharedAt: new Date(),
-        publicAccessLevel: (accessLevel as any) || 'VIEW_ONLY',
+        publicAccessLevel: (accessLevel as any) || "VIEW_ONLY",
       },
     });
   }
@@ -304,12 +324,12 @@ export class DecksService {
     const deck = await this.findOne(deckId, userId);
 
     if (!deck) {
-      throw new NotFoundException('Deck not found');
+      throw new NotFoundException("Deck not found");
     }
 
-    const collaborator = deck.collaborators.find(c => c.userId === userId);
-    if (!collaborator || !['OWNER', 'EDITOR'].includes(collaborator.role)) {
-      throw new ForbiddenException('Edit permission required');
+    const collaborator = deck.collaborators.find((c) => c.userId === userId);
+    if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
+      throw new ForbiddenException("Edit permission required");
     }
 
     return this.prisma.deck.update({
@@ -333,14 +353,14 @@ export class DecksService {
         project: { select: { id: true, number: true } },
         createdBy: { select: { id: true, name: true } },
         slides: {
-          orderBy: { order: 'asc' },
-          include: { elements: { orderBy: { zIndex: 'asc' } } },
+          orderBy: { order: "asc" },
+          include: { elements: { orderBy: { zIndex: "asc" } } },
         },
       },
     });
 
     if (!deck || !deck.isPublic) {
-      throw new NotFoundException('Deck not found or not publicly shared');
+      throw new NotFoundException("Deck not found or not publicly shared");
     }
 
     // Increment view count

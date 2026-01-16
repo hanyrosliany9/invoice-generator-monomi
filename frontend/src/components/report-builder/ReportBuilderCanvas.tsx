@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import GridLayout, { Layout } from 'react-grid-layout';
+import GridLayout, { Layout, LayoutItem } from 'react-grid-layout';
 import { theme, Empty } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useSelectionContainer } from '@air/react-drag-to-select';
@@ -30,7 +30,7 @@ interface ReportBuilderCanvasProps {
   onToggleProperties?: () => void;
   onWidgetUpdate: (widgetId: string, updates: Partial<Widget>) => void;
   onWidgetDelete: (widgetId: string) => void;
-  onLayoutChange: (layout: Layout[]) => void;
+  onLayoutChange: (layout: Layout) => void;
   onDragStart?: (widgetId: string) => void;  // Pass dragged widget ID
   onDragStop?: (widgetId: string) => void;   // Pass dragged widget ID
   onResizeStart?: () => void;
@@ -183,7 +183,7 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
   });
 
   const handleLayoutChange = useCallback(
-    (newLayout: Layout[]) => {
+    (newLayout: Layout) => {
       if (readonly) return;
       onLayoutChange(newLayout);
     },
@@ -247,7 +247,7 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
     }
   }, [readonly, onWidgetSelect]);
 
-  const handleDragStart = useCallback((layout: Layout[], oldItem: Layout, newItem: Layout) => {
+  const handleDragStart = useCallback((layout: Layout, oldItem: LayoutItem, newItem: LayoutItem) => {
     setIsDragging(true);
     setDraggedWidgetId(newItem.i);
     dragStartPositionRef.current = { x: oldItem.x, y: oldItem.y };
@@ -256,13 +256,13 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
 
   // Throttle drag updates to ~30 FPS instead of 60 FPS for better performance
   const throttledLayoutChange = useCallback(
-    throttle((layout: Layout[]) => {
+    throttle((layout: Layout) => {
       onLayoutChange(layout);
     }, 32, { leading: true, trailing: true }), // 32ms ≈ 30 FPS
     [onLayoutChange]
   );
 
-  const handleDrag = useCallback((layout: Layout[], oldItem: Layout, newItem: Layout, placeholder: Layout) => {
+  const handleDrag = useCallback((layout: Layout, oldItem: LayoutItem, newItem: LayoutItem, placeholder: LayoutItem) => {
     // Calculate real-time delta for multi-drag visual feedback
     if (dragStartPositionRef.current && selectedWidgetIds.length > 1) {
       const deltaX = newItem.x - dragStartPositionRef.current.x;
@@ -274,7 +274,7 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
     throttledLayoutChange(layout);
   }, [throttledLayoutChange, selectedWidgetIds.length]);
 
-  const handleDragStop = useCallback((layout: Layout[], oldItem: Layout, newItem: Layout) => {
+  const handleDragStop = useCallback((layout: Layout, oldItem: LayoutItem, newItem: LayoutItem) => {
     setIsDragging(false);
     setDraggedWidgetId(null);
     setActiveDragDelta(null);

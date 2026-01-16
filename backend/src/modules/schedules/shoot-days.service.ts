@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateShootDayDto } from './dto/create-shoot-day.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateShootDayDto } from "./dto/create-shoot-day.dto";
 
 @Injectable()
 export class ShootDaysService {

@@ -1,12 +1,20 @@
-import { IsString, IsOptional, IsInt, IsDateString, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsInt,
+  IsDateString,
+  IsEnum,
+} from "class-validator";
 
 export class CreateCallSheetDto {
-  @IsOptional() @IsEnum(['FILM', 'PHOTO']) callSheetType?: string;
+  @IsOptional() @IsEnum(["FILM", "PHOTO"]) callSheetType?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   scheduleId?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   shootDayId?: string;
 
   @IsOptional() @IsInt() callSheetNumber?: number;
@@ -17,7 +25,7 @@ export class CreateCallSheetDto {
   // === NEW: Production Company/Personnel Info (PDF Export Upgrade) ===
   @IsOptional() @IsString() companyName?: string;
   @IsOptional() @IsString() companyAddress?: string;
-  @IsOptional() @IsString() upm?: string;           // Unit Production Manager
+  @IsOptional() @IsString() upm?: string; // Unit Production Manager
   @IsOptional() @IsString() firstAd?: string;
   @IsOptional() @IsString() secondAd?: string;
   @IsOptional() @IsString() secondAdPhone?: string;
@@ -26,7 +34,7 @@ export class CreateCallSheetDto {
   @IsOptional() @IsString() setMedicPhone?: string;
 
   // === NEW: Version Tracking (PDF Export Upgrade) ===
-  @IsOptional() @IsString() scriptVersion?: string;     // "WHITE", "BLUE", "PINK", etc.
+  @IsOptional() @IsString() scriptVersion?: string; // "WHITE", "BLUE", "PINK", etc.
   @IsOptional() @IsString() scheduleVersion?: string;
 
   // === NEW: Day Context ===
@@ -50,11 +58,11 @@ export class CreateCallSheetDto {
   @IsOptional() @IsString() mapUrl?: string;
 
   // === NEW: Logistics Row Fields (PDF Export Upgrade) ===
-  @IsOptional() @IsString() crewParking?: string;       // "Lot A at 1808 Miller Rd"
-  @IsOptional() @IsString() basecamp?: string;          // "Zeke's House"
-  @IsOptional() @IsString() bathrooms?: string;         // "On Site" / "Porta-potties at Location B"
-  @IsOptional() @IsString() lunchLocation?: string;     // "Craft Services Tent"
-  @IsOptional() @IsString() workingTrucks?: string;     // "Back Lot" / "Truck Parking Area"
+  @IsOptional() @IsString() crewParking?: string; // "Lot A at 1808 Miller Rd"
+  @IsOptional() @IsString() basecamp?: string; // "Zeke's House"
+  @IsOptional() @IsString() bathrooms?: string; // "On Site" / "Porta-potties at Location B"
+  @IsOptional() @IsString() lunchLocation?: string; // "Craft Services Tent"
+  @IsOptional() @IsString() workingTrucks?: string; // "Back Lot" / "Truck Parking Area"
 
   @IsOptional() @IsInt() weatherHigh?: number;
   @IsOptional() @IsInt() weatherLow?: number;
@@ -67,10 +75,10 @@ export class CreateCallSheetDto {
   @IsOptional() @IsString() hospitalPhone?: string;
 
   // === NEW: Department Notes (PDF Export Upgrade) ===
-  @IsOptional() @IsString() artNotes?: string;          // Art Dept/Props notes
-  @IsOptional() @IsString() vehicleNotes?: string;      // Vehicle/Picture Car notes
-  @IsOptional() @IsString() cameraGripNotes?: string;   // Camera/Grip notes
-  @IsOptional() @IsString() stuntNotes?: string;        // Stunt notes
+  @IsOptional() @IsString() artNotes?: string; // Art Dept/Props notes
+  @IsOptional() @IsString() vehicleNotes?: string; // Vehicle/Picture Car notes
+  @IsOptional() @IsString() cameraGripNotes?: string; // Camera/Grip notes
+  @IsOptional() @IsString() stuntNotes?: string; // Stunt notes
 
   // === NEW: Production Details ===
   @IsOptional() @IsString() advanceNotes?: string;

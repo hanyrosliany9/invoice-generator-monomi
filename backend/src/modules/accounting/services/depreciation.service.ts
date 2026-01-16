@@ -268,8 +268,10 @@ export class DepreciationService {
     // Ensure book value doesn't go below residual value
     if (bookValue < Number(schedule.residualValue)) {
       // Adjust depreciation to not go below residual value
-      const purchasePrice = Number(schedule.depreciableAmount) + Number(schedule.residualValue);
-      depreciationAmount = purchasePrice - Number(schedule.residualValue) - previousAccumulated;
+      const purchasePrice =
+        Number(schedule.depreciableAmount) + Number(schedule.residualValue);
+      depreciationAmount =
+        purchasePrice - Number(schedule.residualValue) - previousAccumulated;
       newAccumulatedDepreciation = previousAccumulated + depreciationAmount;
       bookValue = Number(schedule.residualValue);
 
@@ -412,10 +414,12 @@ export class DepreciationService {
     try {
       const backfillResult = await this.backfillDepreciationSchedules();
       if (backfillResult.created > 0) {
-        console.log(`Auto-created ${backfillResult.created} depreciation schedules`);
+        console.log(
+          `Auto-created ${backfillResult.created} depreciation schedules`,
+        );
       }
     } catch (error: any) {
-      console.warn('Failed to backfill depreciation schedules:', error.message);
+      console.warn("Failed to backfill depreciation schedules:", error.message);
     }
 
     // Get all assets with active depreciation schedules
@@ -487,7 +491,7 @@ export class DepreciationService {
       (asset) =>
         asset.purchasePrice &&
         asset.purchaseDate &&
-        asset.depreciationSchedules.length === 0
+        asset.depreciationSchedules.length === 0,
     );
 
     const results = {
@@ -511,7 +515,9 @@ export class DepreciationService {
 
         // Validate depreciable amount
         if (purchasePrice <= residualValue) {
-          results.errors.push(`Asset ${asset.assetCode}: Purchase price must be greater than residual value`);
+          results.errors.push(
+            `Asset ${asset.assetCode}: Purchase price must be greater than residual value`,
+          );
           continue;
         }
 
@@ -523,14 +529,16 @@ export class DepreciationService {
             residualValue: residualValue,
             usefulLifeMonths: usefulLifeMonths,
             usefulLifeYears: usefulLifeYears,
-            depreciationPerMonth: (purchasePrice - residualValue) / usefulLifeMonths,
-            depreciationPerYear: (purchasePrice - residualValue) / usefulLifeYears,
+            depreciationPerMonth:
+              (purchasePrice - residualValue) / usefulLifeMonths,
+            depreciationPerYear:
+              (purchasePrice - residualValue) / usefulLifeYears,
             annualRate: 1 / usefulLifeYears,
             startDate: asset.purchaseDate,
             endDate: new Date(
               new Date(asset.purchaseDate).setMonth(
-                new Date(asset.purchaseDate).getMonth() + usefulLifeMonths
-              )
+                new Date(asset.purchaseDate).getMonth() + usefulLifeMonths,
+              ),
             ),
             isActive: true,
             isFulfilled: false,
@@ -636,7 +644,9 @@ export class DepreciationService {
           };
         }
         acc[assetCode].depreciationAmount += Number(entry.depreciationAmount);
-        acc[assetCode].accumulatedDepreciation = Number(entry.accumulatedDepreciation);
+        acc[assetCode].accumulatedDepreciation = Number(
+          entry.accumulatedDepreciation,
+        );
         acc[assetCode].netBookValue = Number(entry.bookValue);
         acc[assetCode].entryCount++;
         return acc;

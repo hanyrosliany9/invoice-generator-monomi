@@ -1,4 +1,7 @@
-import { Injectable, NotFoundException, InternalServerErrorException ,
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
   Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
@@ -226,7 +229,14 @@ export class SettingsService {
 
   async createBackup(userId: string) {
     try {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + new Date().toISOString().replace(/[:.]/g, '-').split('T')[1].split('.')[0];
+      const timestamp =
+        new Date().toISOString().replace(/[:.]/g, "-").split("T")[0] +
+        "_" +
+        new Date()
+          .toISOString()
+          .replace(/[:.]/g, "-")
+          .split("T")[1]
+          .split(".")[0];
       const filename = `invoices_backup_${timestamp}.sql`;
       const backupPath = `/tmp/${filename}`;
 
@@ -237,7 +247,9 @@ export class SettingsService {
       }
 
       // Parse DATABASE_URL: postgresql://user:password@host:port/database
-      const dbMatch = databaseUrl.match(/postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
+      const dbMatch = databaseUrl.match(
+        /postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/,
+      );
       if (!dbMatch) {
         throw new InternalServerErrorException("Invalid database URL format");
       }
@@ -267,19 +279,22 @@ export class SettingsService {
       fs.unlinkSync(backupPath);
 
       // Log backup activity
-      this.logger.log(`Database backup created by user ${userId} at ${new Date().toISOString()}`);
+      this.logger.log(
+        `Database backup created by user ${userId} at ${new Date().toISOString()}`,
+      );
 
       return {
         filename,
-        content: fileBuffer.toString('base64'),
+        content: fileBuffer.toString("base64"),
         size: stats.size,
         createdAt: new Date().toISOString(),
       };
     } catch (error) {
       this.logger.error("Backup creation error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       throw new InternalServerErrorException(
-        `Failed to create backup: ${errorMessage}`
+        `Failed to create backup: ${errorMessage}`,
       );
     }
   }

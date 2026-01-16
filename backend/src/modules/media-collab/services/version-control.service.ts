@@ -1,8 +1,12 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { MediaService } from '../../media/media.service';
-import { MediaProcessingService } from './media-processing.service';
-import { MetadataService } from './metadata.service';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { MediaService } from "../../media/media.service";
+import { MediaProcessingService } from "./media-processing.service";
+import { MetadataService } from "./metadata.service";
 
 /**
  * VersionControlService
@@ -38,24 +42,32 @@ export class VersionControlService {
           },
         },
         versions: {
-          orderBy: { versionNumber: 'desc' },
+          orderBy: { versionNumber: "desc" },
           take: 1,
         },
       },
     });
 
     if (!asset) {
-      throw new NotFoundException('Asset not found');
+      throw new NotFoundException("Asset not found");
     }
 
     // Check user has EDITOR or OWNER role
-    const collaborator = asset.project.collaborators.find((c) => c.userId === userId);
-    if (!collaborator || (collaborator.role !== 'EDITOR' && collaborator.role !== 'OWNER')) {
-      throw new ForbiddenException('Only editors can upload new versions');
+    const collaborator = asset.project.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (
+      !collaborator ||
+      (collaborator.role !== "EDITOR" && collaborator.role !== "OWNER")
+    ) {
+      throw new ForbiddenException("Only editors can upload new versions");
     }
 
     // Upload new file to R2
-    const uploadResult = await this.mediaService.uploadFile(file, 'media-collab');
+    const uploadResult = await this.mediaService.uploadFile(
+      file,
+      "media-collab",
+    );
 
     // Determine version number
     const latestVersion = asset.versions[0];
@@ -67,27 +79,30 @@ export class VersionControlService {
     let height: number | undefined;
     let thumbnailUrl: string | undefined;
 
-    if (asset.mediaType === 'VIDEO') {
-      const metadata = await this.processingService.extractVideoMetadata(uploadResult.url);
+    if (asset.mediaType === "VIDEO") {
+      const metadata = await this.processingService.extractVideoMetadata(
+        uploadResult.url,
+      );
       duration = metadata.duration;
       width = metadata.width;
       height = metadata.height;
 
       // Generate thumbnail
-      const thumbnailBuffer = await this.processingService.generateVideoThumbnail(
-        uploadResult.url,
-        0,
-      );
+      const thumbnailBuffer =
+        await this.processingService.generateVideoThumbnail(
+          uploadResult.url,
+          0,
+        );
       const thumbnailUpload = await this.mediaService.uploadFile(
         {
           buffer: thumbnailBuffer,
           originalname: `${uploadResult.key}_thumb.jpg`,
-          mimetype: 'image/jpeg',
+          mimetype: "image/jpeg",
         } as any,
-        'media-collab/thumbnails',
+        "media-collab/thumbnails",
       );
       thumbnailUrl = thumbnailUpload.url;
-    } else if (asset.mediaType === 'IMAGE' || asset.mediaType === 'RAW_IMAGE') {
+    } else if (asset.mediaType === "IMAGE" || asset.mediaType === "RAW_IMAGE") {
       const processed = await this.processingService.processPhoto(file.buffer);
       width = processed.width;
       height = processed.height;
@@ -97,9 +112,9 @@ export class VersionControlService {
         {
           buffer: processed.thumbnail,
           originalname: `${uploadResult.key}_thumb.jpg`,
-          mimetype: 'image/jpeg',
+          mimetype: "image/jpeg",
         } as any,
-        'media-collab/thumbnails',
+        "media-collab/thumbnails",
       );
       thumbnailUrl = thumbnailUpload.url;
     }
@@ -156,7 +171,7 @@ export class VersionControlService {
         },
       },
       orderBy: {
-        versionNumber: 'desc',
+        versionNumber: "desc",
       },
     });
 
@@ -182,7 +197,7 @@ export class VersionControlService {
     });
 
     if (!version) {
-      throw new NotFoundException('Version not found');
+      throw new NotFoundException("Version not found");
     }
 
     return version;
@@ -205,13 +220,18 @@ export class VersionControlService {
     });
 
     if (!asset) {
-      throw new NotFoundException('Asset not found');
+      throw new NotFoundException("Asset not found");
     }
 
     // Check user has EDITOR or OWNER role
-    const collaborator = asset.project.collaborators.find((c) => c.userId === userId);
-    if (!collaborator || (collaborator.role !== 'EDITOR' && collaborator.role !== 'OWNER')) {
-      throw new ForbiddenException('Only editors can rollback versions');
+    const collaborator = asset.project.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (
+      !collaborator ||
+      (collaborator.role !== "EDITOR" && collaborator.role !== "OWNER")
+    ) {
+      throw new ForbiddenException("Only editors can rollback versions");
     }
 
     // Get target version
@@ -220,7 +240,7 @@ export class VersionControlService {
     });
 
     if (!targetVersion || targetVersion.assetId !== assetId) {
-      throw new NotFoundException('Version not found');
+      throw new NotFoundException("Version not found");
     }
 
     // Update asset to use this version's file
@@ -260,24 +280,26 @@ export class VersionControlService {
     });
 
     if (!version) {
-      throw new NotFoundException('Version not found');
+      throw new NotFoundException("Version not found");
     }
 
     // Check user has OWNER role
-    const collaborator = version.asset.project.collaborators.find((c) => c.userId === userId);
-    if (!collaborator || collaborator.role !== 'OWNER') {
-      throw new ForbiddenException('Only project owners can delete versions');
+    const collaborator = version.asset.project.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (!collaborator || collaborator.role !== "OWNER") {
+      throw new ForbiddenException("Only project owners can delete versions");
     }
 
     // Don't allow deleting if it's the current active version
     if (version.asset.url === version.url) {
-      throw new ForbiddenException('Cannot delete the current active version');
+      throw new ForbiddenException("Cannot delete the current active version");
     }
 
     // Delete from R2
     await this.mediaService.deleteFile(version.key);
     if (version.thumbnailUrl) {
-      const thumbnailKey = version.key + '_thumb.jpg';
+      const thumbnailKey = version.key + "_thumb.jpg";
       await this.mediaService.deleteFile(thumbnailKey);
     }
 
@@ -300,7 +322,7 @@ export class VersionControlService {
 
     // Ensure both versions belong to the same asset
     if (version1.assetId !== version2.assetId) {
-      throw new ForbiddenException('Versions must belong to the same asset');
+      throw new ForbiddenException("Versions must belong to the same asset");
     }
 
     return {
@@ -316,10 +338,13 @@ export class VersionControlService {
       },
       differences: {
         sizeChange: Number(version2.size) - Number(version1.size),
-        durationChange: version2.duration && version1.duration
-          ? Number(version2.duration) - Number(version1.duration)
-          : null,
-        resolutionChanged: version1.width !== version2.width || version1.height !== version2.height,
+        durationChange:
+          version2.duration && version1.duration
+            ? Number(version2.duration) - Number(version1.duration)
+            : null,
+        resolutionChanged:
+          version1.width !== version2.width ||
+          version1.height !== version2.height,
       },
     };
   }

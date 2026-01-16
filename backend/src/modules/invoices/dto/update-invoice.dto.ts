@@ -12,5 +12,5 @@ import { CreateInvoiceDto } from "./create-invoice.dto";
  * This prevents bypassing accounting logic (payment journal entries, AR updates, etc.)
  */
 export class UpdateInvoiceDto extends PartialType(
-  OmitType(CreateInvoiceDto, ['status', 'createdBy'] as const)
+  OmitType(CreateInvoiceDto, ["status", "createdBy"] as const),
 ) {}

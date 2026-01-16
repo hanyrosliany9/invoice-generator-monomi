@@ -14,7 +14,10 @@ import { CreateQuotationDto } from "./dto/create-quotation.dto";
 import { UpdateQuotationDto } from "./dto/update-quotation.dto";
 import { QuotationStatus, Prisma } from "@prisma/client";
 import { getErrorMessage } from "../../common/utils/error-handling.util";
-import { validateStatusTransition, QuotationStatus as ValidatorQuotationStatus } from "./validators/status-transition.validator";
+import {
+  validateStatusTransition,
+  QuotationStatus as ValidatorQuotationStatus,
+} from "./validators/status-transition.validator";
 
 @Injectable()
 export class QuotationsService {
@@ -91,7 +94,11 @@ export class QuotationsService {
     });
 
     // Create payment milestones if provided
-    if (paymentMilestones && Array.isArray(paymentMilestones) && paymentMilestones.length > 0) {
+    if (
+      paymentMilestones &&
+      Array.isArray(paymentMilestones) &&
+      paymentMilestones.length > 0
+    ) {
       for (const milestone of paymentMilestones) {
         await this.paymentMilestonesService.addPaymentMilestone(quotation.id, {
           milestoneNumber: milestone.milestoneNumber,
@@ -227,22 +234,25 @@ export class QuotationsService {
 
     if (invoicedMilestones) {
       // Block changes to financial fields
-      const financialFields: (keyof UpdateQuotationDto)[] = ['totalAmount', 'amountPerProject'];
+      const financialFields: (keyof UpdateQuotationDto)[] = [
+        "totalAmount",
+        "amountPerProject",
+      ];
       const hasFinancialChanges = financialFields.some(
         (field) => updateQuotationDto[field] !== undefined,
       );
 
       if (hasFinancialChanges) {
         throw new BadRequestException(
-          'Tidak dapat mengubah jumlah quotation karena sudah ada milestone yang di-invoice. ' +
-          'Silakan batalkan invoice terlebih dahulu atau buat quotation baru.',
+          "Tidak dapat mengubah jumlah quotation karena sudah ada milestone yang di-invoice. " +
+            "Silakan batalkan invoice terlebih dahulu atau buat quotation baru.",
         );
       }
 
       // Also block milestone changes (check if the DTO has this field)
       if ((updateQuotationDto as any).paymentMilestones) {
         throw new BadRequestException(
-          'Tidak dapat mengubah payment milestone karena sudah ada yang di-invoice.',
+          "Tidak dapat mengubah payment milestone karena sudah ada yang di-invoice.",
         );
       }
     }
@@ -300,7 +310,10 @@ export class QuotationsService {
     );
 
     // Validate milestones before approval (only for MILESTONE payment type)
-    if (status === QuotationStatus.APPROVED && quotation.paymentType === 'MILESTONE') {
+    if (
+      status === QuotationStatus.APPROVED &&
+      quotation.paymentType === "MILESTONE"
+    ) {
       await this.paymentMilestonesService.validateQuotationMilestones(id);
     }
 
@@ -472,7 +485,10 @@ export class QuotationsService {
       // Fallback if no bank accounts configured
       return "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran";
     } catch (error) {
-      this.logger.error("Error fetching company settings for payment info", error);
+      this.logger.error(
+        "Error fetching company settings for payment info",
+        error,
+      );
       // Safe fallback
       return "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran";
     }

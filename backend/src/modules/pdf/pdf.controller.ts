@@ -65,7 +65,7 @@ export class PdfController {
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
     @Query("showMaterai") showMaterai: string = "true",
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       // Get invoice data
@@ -85,7 +85,11 @@ export class PdfController {
       const shouldShowMaterai = showMaterai === "true";
 
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateInvoicePDF(invoice, isContinuous, shouldShowMaterai);
+      const pdfBuffer = await this.pdfService.generateInvoicePDF(
+        invoice,
+        isContinuous,
+        shouldShowMaterai,
+      );
 
       // Set response headers
       res.setHeader("Content-Type", "application/pdf");
@@ -122,7 +126,7 @@ export class PdfController {
   async generateQuotationPdf(
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       // Get quotation data
@@ -141,7 +145,10 @@ export class PdfController {
       const isContinuous = continuous === "true";
 
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateQuotationPDF(quotation, isContinuous);
+      const pdfBuffer = await this.pdfService.generateQuotationPDF(
+        quotation,
+        isContinuous,
+      );
 
       // Set response headers
       res.setHeader("Content-Type", "application/pdf");
@@ -171,7 +178,7 @@ export class PdfController {
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
     @Query("showMaterai") showMaterai: string = "true",
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       // Get invoice data
@@ -191,7 +198,11 @@ export class PdfController {
       const shouldShowMaterai = showMaterai === "true";
 
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateInvoicePDF(invoice, isContinuous, shouldShowMaterai);
+      const pdfBuffer = await this.pdfService.generateInvoicePDF(
+        invoice,
+        isContinuous,
+        shouldShowMaterai,
+      );
 
       // Set response headers for preview
       res.setHeader("Content-Type", "application/pdf");
@@ -220,7 +231,7 @@ export class PdfController {
   async previewQuotationPdf(
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       // Get quotation data
@@ -239,7 +250,10 @@ export class PdfController {
       const isContinuous = continuous === "true";
 
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateQuotationPDF(quotation, isContinuous);
+      const pdfBuffer = await this.pdfService.generateQuotationPDF(
+        quotation,
+        isContinuous,
+      );
 
       // Set response headers for preview
       res.setHeader("Content-Type", "application/pdf");
@@ -277,7 +291,7 @@ export class PdfController {
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
     @Res() res: Response,
-    @Request() req: any
+    @Request() req: any,
   ) {
     try {
       // Get project data
@@ -291,7 +305,7 @@ export class PdfController {
       const expensesResponse = await this.expensesService.findAll(
         req.user.userId,
         { projectId: id, limit: 1000 }, // Get all expenses for the project
-        req.user.role
+        req.user.role,
       );
       const actualExpenses = expensesResponse.data || [];
 
@@ -305,21 +319,22 @@ export class PdfController {
 
       if (project.estimatedExpenses) {
         try {
-          const expensesData = typeof project.estimatedExpenses === 'string'
-            ? JSON.parse(project.estimatedExpenses)
-            : project.estimatedExpenses;
+          const expensesData =
+            typeof project.estimatedExpenses === "string"
+              ? JSON.parse(project.estimatedExpenses)
+              : project.estimatedExpenses;
 
           // Extract expenses from the nested structure
           if (expensesData.direct && expensesData.indirect) {
             parsedEstimatedExpenses = [
               ...expensesData.direct.map((exp: any, idx: number) => ({
                 ...exp,
-                costType: 'direct',
+                costType: "direct",
                 _uniqueKey: `direct-${exp.categoryId}-${exp.amount}-${idx}`,
               })),
               ...expensesData.indirect.map((exp: any, idx: number) => ({
                 ...exp,
-                costType: 'indirect',
+                costType: "indirect",
                 _uniqueKey: `indirect-${exp.categoryId}-${exp.amount}-${idx}`,
               })),
             ];
@@ -327,7 +342,10 @@ export class PdfController {
             estimatedIndirectTotal = expensesData.totalIndirect || 0;
           }
         } catch (error) {
-          this.logger.warn(`Failed to parse estimatedExpenses for project ${id}:`, error);
+          this.logger.warn(
+            `Failed to parse estimatedExpenses for project ${id}:`,
+            error,
+          );
         }
       }
 
@@ -344,29 +362,44 @@ export class PdfController {
         // Map profit margin data to expected structure
         profitMargin: {
           // Actual margins (from real data)
-          grossMargin: parseFloat(project.grossMarginPercent?.toString() || "0") || 0,
-          netMargin: parseFloat(project.netMarginPercent?.toString() || "0") || 0,
+          grossMargin:
+            parseFloat(project.grossMarginPercent?.toString() || "0") || 0,
+          netMargin:
+            parseFloat(project.netMarginPercent?.toString() || "0") || 0,
           profit: parseFloat(project.netProfit?.toString() || "0") || 0,
 
           // Revenue & Cost breakdown
-          totalRevenue: parseFloat(project.totalPaidAmount?.toString() || "0") || 0,
-          totalInvoiced: parseFloat(project.totalInvoicedAmount?.toString() || "0") || 0,
-          totalCosts: parseFloat(project.totalAllocatedCosts?.toString() || "0") || 0,
-          directCosts: parseFloat(project.totalDirectCosts?.toString() || "0") || 0,
-          indirectCosts: parseFloat(project.totalIndirectCosts?.toString() || "0") || 0,
+          totalRevenue:
+            parseFloat(project.totalPaidAmount?.toString() || "0") || 0,
+          totalInvoiced:
+            parseFloat(project.totalInvoicedAmount?.toString() || "0") || 0,
+          totalCosts:
+            parseFloat(project.totalAllocatedCosts?.toString() || "0") || 0,
+          directCosts:
+            parseFloat(project.totalDirectCosts?.toString() || "0") || 0,
+          indirectCosts:
+            parseFloat(project.totalIndirectCosts?.toString() || "0") || 0,
 
           // Profit breakdown
           grossProfit: parseFloat(project.grossProfit?.toString() || "0") || 0,
           netProfit: parseFloat(project.netProfit?.toString() || "0") || 0,
 
           // Budget variance
-          budgetVariance: parseFloat(project.budgetVariance?.toString() || "0") || 0,
-          budgetVariancePercent: parseFloat(project.budgetVariancePercent?.toString() || "0") || 0,
+          budgetVariance:
+            parseFloat(project.budgetVariance?.toString() || "0") || 0,
+          budgetVariancePercent:
+            parseFloat(project.budgetVariancePercent?.toString() || "0") || 0,
 
           // Projected margins (from planning phase)
-          projectedGrossMargin: project.projectedGrossMargin ? parseFloat(project.projectedGrossMargin.toString()) : null,
-          projectedNetMargin: project.projectedNetMargin ? parseFloat(project.projectedNetMargin.toString()) : null,
-          projectedProfit: project.projectedProfit ? parseFloat(project.projectedProfit.toString()) : null,
+          projectedGrossMargin: project.projectedGrossMargin
+            ? parseFloat(project.projectedGrossMargin.toString())
+            : null,
+          projectedNetMargin: project.projectedNetMargin
+            ? parseFloat(project.projectedNetMargin.toString())
+            : null,
+          projectedProfit: project.projectedProfit
+            ? parseFloat(project.projectedProfit.toString())
+            : null,
 
           // Estimated costs totals (from planning phase)
           estimatedDirectCosts: estimatedDirectTotal,
@@ -388,7 +421,10 @@ export class PdfController {
       };
 
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateProjectPDF(projectForPDF, isContinuous);
+      const pdfBuffer = await this.pdfService.generateProjectPDF(
+        projectForPDF,
+        isContinuous,
+      );
 
       // Set response headers
       res.setHeader("Content-Type", "application/pdf");
@@ -404,7 +440,8 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.logger.error(
         `Failed to generate project PDF for project ${id}: ${errorMessage}`,
         error instanceof Error ? error.stack : "",
@@ -423,7 +460,7 @@ export class PdfController {
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
     @Res() res: Response,
-    @Request() req: any
+    @Request() req: any,
   ) {
     try {
       // Get project data
@@ -437,7 +474,7 @@ export class PdfController {
       const expensesResponse = await this.expensesService.findAll(
         req.user.userId,
         { projectId: id, limit: 1000 }, // Get all expenses for the project
-        req.user.role
+        req.user.role,
       );
       const actualExpenses = expensesResponse.data || [];
 
@@ -451,21 +488,22 @@ export class PdfController {
 
       if (project.estimatedExpenses) {
         try {
-          const expensesData = typeof project.estimatedExpenses === 'string'
-            ? JSON.parse(project.estimatedExpenses)
-            : project.estimatedExpenses;
+          const expensesData =
+            typeof project.estimatedExpenses === "string"
+              ? JSON.parse(project.estimatedExpenses)
+              : project.estimatedExpenses;
 
           // Extract expenses from the nested structure
           if (expensesData.direct && expensesData.indirect) {
             parsedEstimatedExpenses = [
               ...expensesData.direct.map((exp: any, idx: number) => ({
                 ...exp,
-                costType: 'direct',
+                costType: "direct",
                 _uniqueKey: `direct-${exp.categoryId}-${exp.amount}-${idx}`,
               })),
               ...expensesData.indirect.map((exp: any, idx: number) => ({
                 ...exp,
-                costType: 'indirect',
+                costType: "indirect",
                 _uniqueKey: `indirect-${exp.categoryId}-${exp.amount}-${idx}`,
               })),
             ];
@@ -473,7 +511,10 @@ export class PdfController {
             estimatedIndirectTotal = expensesData.totalIndirect || 0;
           }
         } catch (error) {
-          this.logger.warn(`Failed to parse estimatedExpenses for project ${id}:`, error);
+          this.logger.warn(
+            `Failed to parse estimatedExpenses for project ${id}:`,
+            error,
+          );
         }
       }
 
@@ -490,29 +531,44 @@ export class PdfController {
         // Map profit margin data to expected structure
         profitMargin: {
           // Actual margins (from real data)
-          grossMargin: parseFloat(project.grossMarginPercent?.toString() || "0") || 0,
-          netMargin: parseFloat(project.netMarginPercent?.toString() || "0") || 0,
+          grossMargin:
+            parseFloat(project.grossMarginPercent?.toString() || "0") || 0,
+          netMargin:
+            parseFloat(project.netMarginPercent?.toString() || "0") || 0,
           profit: parseFloat(project.netProfit?.toString() || "0") || 0,
 
           // Revenue & Cost breakdown
-          totalRevenue: parseFloat(project.totalPaidAmount?.toString() || "0") || 0,
-          totalInvoiced: parseFloat(project.totalInvoicedAmount?.toString() || "0") || 0,
-          totalCosts: parseFloat(project.totalAllocatedCosts?.toString() || "0") || 0,
-          directCosts: parseFloat(project.totalDirectCosts?.toString() || "0") || 0,
-          indirectCosts: parseFloat(project.totalIndirectCosts?.toString() || "0") || 0,
+          totalRevenue:
+            parseFloat(project.totalPaidAmount?.toString() || "0") || 0,
+          totalInvoiced:
+            parseFloat(project.totalInvoicedAmount?.toString() || "0") || 0,
+          totalCosts:
+            parseFloat(project.totalAllocatedCosts?.toString() || "0") || 0,
+          directCosts:
+            parseFloat(project.totalDirectCosts?.toString() || "0") || 0,
+          indirectCosts:
+            parseFloat(project.totalIndirectCosts?.toString() || "0") || 0,
 
           // Profit breakdown
           grossProfit: parseFloat(project.grossProfit?.toString() || "0") || 0,
           netProfit: parseFloat(project.netProfit?.toString() || "0") || 0,
 
           // Budget variance
-          budgetVariance: parseFloat(project.budgetVariance?.toString() || "0") || 0,
-          budgetVariancePercent: parseFloat(project.budgetVariancePercent?.toString() || "0") || 0,
+          budgetVariance:
+            parseFloat(project.budgetVariance?.toString() || "0") || 0,
+          budgetVariancePercent:
+            parseFloat(project.budgetVariancePercent?.toString() || "0") || 0,
 
           // Projected margins (from planning phase)
-          projectedGrossMargin: project.projectedGrossMargin ? parseFloat(project.projectedGrossMargin.toString()) : null,
-          projectedNetMargin: project.projectedNetMargin ? parseFloat(project.projectedNetMargin.toString()) : null,
-          projectedProfit: project.projectedProfit ? parseFloat(project.projectedProfit.toString()) : null,
+          projectedGrossMargin: project.projectedGrossMargin
+            ? parseFloat(project.projectedGrossMargin.toString())
+            : null,
+          projectedNetMargin: project.projectedNetMargin
+            ? parseFloat(project.projectedNetMargin.toString())
+            : null,
+          projectedProfit: project.projectedProfit
+            ? parseFloat(project.projectedProfit.toString())
+            : null,
 
           // Estimated costs totals (from planning phase)
           estimatedDirectCosts: estimatedDirectTotal,
@@ -535,11 +591,14 @@ export class PdfController {
 
       // Log the profitMargin data being sent to PDF
       this.logger.debug(
-        `Profit margin data for PDF preview: projectedGrossMargin=${projectForPDF.profitMargin.projectedGrossMargin}, projectedNetMargin=${projectForPDF.profitMargin.projectedNetMargin}, projectedProfit=${projectForPDF.profitMargin.projectedProfit}, estimatedTotalCosts=${projectForPDF.profitMargin.estimatedTotalCosts}`
+        `Profit margin data for PDF preview: projectedGrossMargin=${projectForPDF.profitMargin.projectedGrossMargin}, projectedNetMargin=${projectForPDF.profitMargin.projectedNetMargin}, projectedProfit=${projectForPDF.profitMargin.projectedProfit}, estimatedTotalCosts=${projectForPDF.profitMargin.estimatedTotalCosts}`,
       );
 
       // Generate PDF
-      const pdfBuffer = await this.pdfService.generateProjectPDF(projectForPDF, isContinuous);
+      const pdfBuffer = await this.pdfService.generateProjectPDF(
+        projectForPDF,
+        isContinuous,
+      );
 
       // Set response headers for preview
       res.setHeader("Content-Type", "application/pdf");
@@ -555,7 +614,8 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.logger.error(
         `Failed to generate project PDF preview for project ${id}: ${errorMessage}`,
         error instanceof Error ? error.stack : "",
@@ -581,7 +641,7 @@ export class PdfController {
   async generateSchedulePdf(
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       const schedule = await this.schedulesService.findOne(id);
@@ -591,7 +651,10 @@ export class PdfController {
       }
 
       const isContinuous = continuous === "true";
-      const pdfBuffer = await this.pdfService.generateSchedulePDF(schedule, isContinuous);
+      const pdfBuffer = await this.pdfService.generateSchedulePDF(
+        schedule,
+        isContinuous,
+      );
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
@@ -618,7 +681,7 @@ export class PdfController {
   async previewSchedulePdf(
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       const schedule = await this.schedulesService.findOne(id);
@@ -628,7 +691,10 @@ export class PdfController {
       }
 
       const isContinuous = continuous === "true";
-      const pdfBuffer = await this.pdfService.generateSchedulePDF(schedule, isContinuous);
+      const pdfBuffer = await this.pdfService.generateSchedulePDF(
+        schedule,
+        isContinuous,
+      );
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
@@ -663,7 +729,7 @@ export class PdfController {
   async generateCallSheetPdf(
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       const callSheet = await this.callSheetsService.findOne(id);
@@ -677,11 +743,15 @@ export class PdfController {
       const callSheetForPDF = {
         ...callSheet,
         // Use call sheet's company name if set, otherwise use company settings
-        companyName: callSheet.companyName || companySettings?.companyName || 'Production',
+        companyName:
+          callSheet.companyName || companySettings?.companyName || "Production",
       };
 
       const isContinuous = continuous === "true";
-      const pdfBuffer = await this.pdfService.generateCallSheetPDF(callSheetForPDF, isContinuous);
+      const pdfBuffer = await this.pdfService.generateCallSheetPDF(
+        callSheetForPDF,
+        isContinuous,
+      );
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
@@ -708,7 +778,7 @@ export class PdfController {
   async previewCallSheetPdf(
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       const callSheet = await this.callSheetsService.findOne(id);
@@ -722,11 +792,15 @@ export class PdfController {
       const callSheetForPDF = {
         ...callSheet,
         // Use call sheet's company name if set, otherwise use company settings
-        companyName: callSheet.companyName || companySettings?.companyName || 'Production',
+        companyName:
+          callSheet.companyName || companySettings?.companyName || "Production",
       };
 
       const isContinuous = continuous === "true";
-      const pdfBuffer = await this.pdfService.generateCallSheetPDF(callSheetForPDF, isContinuous);
+      const pdfBuffer = await this.pdfService.generateCallSheetPDF(
+        callSheetForPDF,
+        isContinuous,
+      );
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
@@ -761,7 +835,7 @@ export class PdfController {
   async generateShotListPdf(
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       const shotList = await this.shotListsService.findOne(id);
@@ -771,7 +845,10 @@ export class PdfController {
       }
 
       const isContinuous = continuous === "true";
-      const pdfBuffer = await this.pdfService.generateShotListPDF(shotList, isContinuous);
+      const pdfBuffer = await this.pdfService.generateShotListPDF(
+        shotList,
+        isContinuous,
+      );
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
@@ -798,7 +875,7 @@ export class PdfController {
   async previewShotListPdf(
     @Param("id") id: string,
     @Query("continuous") continuous: string = "true",
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       const shotList = await this.shotListsService.findOne(id);
@@ -808,7 +885,10 @@ export class PdfController {
       }
 
       const isContinuous = continuous === "true";
-      const pdfBuffer = await this.pdfService.generateShotListPDF(shotList, isContinuous);
+      const pdfBuffer = await this.pdfService.generateShotListPDF(
+        shotList,
+        isContinuous,
+      );
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(

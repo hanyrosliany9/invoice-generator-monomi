@@ -4,15 +4,15 @@ import {
   ForbiddenException,
   BadRequestException,
   Logger,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { MediaService } from '../../media/media.service';
-import { CreateMediaProjectDto } from '../dto/create-media-project.dto';
-import { UpdateMediaProjectDto } from '../dto/update-media-project.dto';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { MediaService } from "../../media/media.service";
+import { CreateMediaProjectDto } from "../dto/create-media-project.dto";
+import { UpdateMediaProjectDto } from "../dto/update-media-project.dto";
 import {
   generatePublicShareToken,
   generatePublicShareUrl,
-} from '../utils/public-share.util';
+} from "../utils/public-share.util";
 
 /**
  * MediaProjectsService
@@ -39,7 +39,7 @@ export class MediaProjectsService {
         where: { id: createDto.clientId },
       });
       if (!client) {
-        throw new NotFoundException('Client not found');
+        throw new NotFoundException("Client not found");
       }
     }
 
@@ -49,7 +49,7 @@ export class MediaProjectsService {
         where: { id: createDto.projectId },
       });
       if (!project) {
-        throw new NotFoundException('Project not found');
+        throw new NotFoundException("Project not found");
       }
     }
 
@@ -59,7 +59,7 @@ export class MediaProjectsService {
         where: { id: createDto.folderId },
       });
       if (!folder) {
-        throw new NotFoundException('Folder not found');
+        throw new NotFoundException("Folder not found");
       }
     }
 
@@ -92,7 +92,7 @@ export class MediaProjectsService {
       data: {
         projectId: mediaProject.id,
         userId: userId,
-        role: 'OWNER',
+        role: "OWNER",
         invitedBy: userId,
       },
     });
@@ -132,7 +132,7 @@ export class MediaProjectsService {
         },
       },
       orderBy: {
-        updatedAt: 'desc',
+        updatedAt: "desc",
       },
     });
 
@@ -177,7 +177,7 @@ export class MediaProjectsService {
         assets: {
           take: 10,
           orderBy: {
-            uploadedAt: 'desc',
+            uploadedAt: "desc",
           },
           include: {
             uploader: {
@@ -193,7 +193,7 @@ export class MediaProjectsService {
         collections: {
           take: 5,
           orderBy: {
-            updatedAt: 'desc',
+            updatedAt: "desc",
           },
         },
         _count: {
@@ -207,7 +207,7 @@ export class MediaProjectsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Media project not found');
+      throw new NotFoundException("Media project not found");
     }
 
     // Verify user has access
@@ -216,7 +216,7 @@ export class MediaProjectsService {
     );
 
     if (!hasAccess) {
-      throw new ForbiddenException('Access denied to this project');
+      throw new ForbiddenException("Access denied to this project");
     }
 
     return project;
@@ -241,12 +241,12 @@ export class MediaProjectsService {
     });
 
     if (!collaborator) {
-      throw new ForbiddenException('Access denied to this project');
+      throw new ForbiddenException("Access denied to this project");
     }
 
-    if (collaborator.role === 'VIEWER' || collaborator.role === 'COMMENTER') {
+    if (collaborator.role === "VIEWER" || collaborator.role === "COMMENTER") {
       throw new ForbiddenException(
-        'Only OWNER or EDITOR can update project details',
+        "Only OWNER or EDITOR can update project details",
       );
     }
 
@@ -256,7 +256,7 @@ export class MediaProjectsService {
         where: { id: updateDto.clientId },
       });
       if (!client) {
-        throw new NotFoundException('Client not found');
+        throw new NotFoundException("Client not found");
       }
     }
 
@@ -265,7 +265,7 @@ export class MediaProjectsService {
         where: { id: updateDto.projectId },
       });
       if (!project) {
-        throw new NotFoundException('Project not found');
+        throw new NotFoundException("Project not found");
       }
     }
 
@@ -274,7 +274,7 @@ export class MediaProjectsService {
         where: { id: updateDto.folderId },
       });
       if (!folder) {
-        throw new NotFoundException('Folder not found');
+        throw new NotFoundException("Folder not found");
       }
     }
 
@@ -314,14 +314,16 @@ export class MediaProjectsService {
     });
 
     if (!collaborator) {
-      throw new ForbiddenException('Access denied to this project');
+      throw new ForbiddenException("Access denied to this project");
     }
 
-    if (collaborator.role !== 'OWNER') {
-      throw new ForbiddenException('Only OWNER can delete the project');
+    if (collaborator.role !== "OWNER") {
+      throw new ForbiddenException("Only OWNER can delete the project");
     }
 
-    this.logger.log(`Starting project deletion with R2 cleanup for project: ${projectId}`);
+    this.logger.log(
+      `Starting project deletion with R2 cleanup for project: ${projectId}`,
+    );
 
     // Step 1: Get all assets in this project
     const assets = await this.prisma.mediaAsset.findMany({
@@ -345,7 +347,9 @@ export class MediaProjectsService {
       },
     });
 
-    this.logger.log(`Found ${assets.length} assets and ${versions.length} versions to delete`);
+    this.logger.log(
+      `Found ${assets.length} assets and ${versions.length} versions to delete`,
+    );
 
     // Step 3: Delete R2 files for all assets
     let deletedAssetFiles = 0;
@@ -364,7 +368,10 @@ export class MediaProjectsService {
           }
         }
       } catch (error) {
-        this.logger.error(`Failed to delete R2 files for asset ${asset.id}:`, error);
+        this.logger.error(
+          `Failed to delete R2 files for asset ${asset.id}:`,
+          error,
+        );
         // Continue with other deletions even if one fails
       }
     }
@@ -386,7 +393,10 @@ export class MediaProjectsService {
           }
         }
       } catch (error) {
-        this.logger.error(`Failed to delete R2 files for version ${version.id}:`, error);
+        this.logger.error(
+          `Failed to delete R2 files for version ${version.id}:`,
+          error,
+        );
         // Continue with other deletions even if one fails
       }
     }
@@ -397,10 +407,12 @@ export class MediaProjectsService {
       where: { id: projectId },
     });
 
-    this.logger.log(`Project ${projectId} deleted successfully. Removed ${deletedAssetFiles} asset files and ${deletedVersionFiles} version files from R2`);
+    this.logger.log(
+      `Project ${projectId} deleted successfully. Removed ${deletedAssetFiles} asset files and ${deletedVersionFiles} version files from R2`,
+    );
 
     return {
-      message: 'Project deleted successfully',
+      message: "Project deleted successfully",
       deletedAssets: assets.length,
       deletedVersions: versions.length,
       deletedR2Files: deletedAssetFiles + deletedVersionFiles,
@@ -421,7 +433,7 @@ export class MediaProjectsService {
     }
 
     // If no match, might already be a key
-    if (!url.startsWith('http')) {
+    if (!url.startsWith("http")) {
       return url;
     }
 
@@ -431,7 +443,10 @@ export class MediaProjectsService {
   /**
    * Verify if user has access to a project
    */
-  async verifyProjectAccess(userId: string, projectId: string): Promise<boolean> {
+  async verifyProjectAccess(
+    userId: string,
+    projectId: string,
+  ): Promise<boolean> {
     const collaborator = await this.prisma.mediaCollaborator.findUnique({
       where: {
         projectId_userId: {
@@ -470,15 +485,18 @@ export class MediaProjectsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     if (project.createdBy !== userId) {
-      throw new ForbiddenException('Only project owner can enable public sharing');
+      throw new ForbiddenException(
+        "Only project owner can enable public sharing",
+      );
     }
 
     // Generate token if not exists
-    const publicShareToken = project.publicShareToken || generatePublicShareToken();
+    const publicShareToken =
+      project.publicShareToken || generatePublicShareToken();
     const publicShareUrl = generatePublicShareUrl(publicShareToken);
 
     return this.prisma.mediaProject.update({
@@ -502,11 +520,13 @@ export class MediaProjectsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     if (project.createdBy !== userId) {
-      throw new ForbiddenException('Only project owner can disable public sharing');
+      throw new ForbiddenException(
+        "Only project owner can disable public sharing",
+      );
     }
 
     return this.prisma.mediaProject.update({
@@ -528,11 +548,11 @@ export class MediaProjectsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     if (project.createdBy !== userId) {
-      throw new ForbiddenException('Only project owner can regenerate link');
+      throw new ForbiddenException("Only project owner can regenerate link");
     }
 
     const publicShareToken = generatePublicShareToken();
@@ -576,7 +596,7 @@ export class MediaProjectsService {
     });
 
     if (!project || !project.isPublic) {
-      throw new NotFoundException('Public share link not found or disabled');
+      throw new NotFoundException("Public share link not found or disabled");
     }
 
     // Increment view count
@@ -597,7 +617,7 @@ export class MediaProjectsService {
     });
 
     if (!project || !project.isPublic) {
-      throw new NotFoundException('Public share link not found or disabled');
+      throw new NotFoundException("Public share link not found or disabled");
     }
 
     return this.prisma.mediaAsset.findMany({
@@ -640,12 +660,12 @@ export class MediaProjectsService {
           },
         },
         versions: {
-          orderBy: { versionNumber: 'desc' },
+          orderBy: { versionNumber: "desc" },
           take: 1,
         },
         metadata: true,
       },
-      orderBy: { uploadedAt: 'desc' },
+      orderBy: { uploadedAt: "desc" },
     });
   }
 
@@ -658,7 +678,7 @@ export class MediaProjectsService {
     });
 
     if (!project || !project.isPublic) {
-      throw new NotFoundException('Public share link not found or disabled');
+      throw new NotFoundException("Public share link not found or disabled");
     }
 
     return this.prisma.mediaFolder.findMany({
@@ -671,7 +691,7 @@ export class MediaProjectsService {
           },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   }
 }

@@ -13,7 +13,7 @@ export default function InsertImageButton({ disabled }: InsertImageButtonProps) 
   const { openModal, setOnAssetSelect } = useAssetBrowserStore();
   const { canvas, pushHistory } = useDeckCanvasStore();
 
-  const handleAssetSelected = useCallback((asset: MediaAsset) => {
+  const handleAssetSelected = useCallback(async (asset: MediaAsset) => {
     if (!canvas) {
       console.error('Canvas not available for image insertion');
       return;
@@ -21,58 +21,58 @@ export default function InsertImageButton({ disabled }: InsertImageButtonProps) 
 
     console.log('Loading image from URL:', asset.url);
 
-    // Load image onto canvas
-    FabricImage.fromURL(
-      asset.url,
-      (img) => {
-        if (!img) {
-          console.error('Failed to load image from:', asset.url);
-          return;
-        }
+    try {
+      // Load image onto canvas (Fabric.js 6.x uses Promise API)
+      const img = await FabricImage.fromURL(asset.url, { crossOrigin: 'anonymous' });
 
-        if (!canvas) {
-          console.error('Canvas became unavailable during image load');
-          return;
-        }
+      if (!img) {
+        console.error('Failed to load image from:', asset.url);
+        return;
+      }
 
-        console.log('Image loaded successfully, adding to canvas');
+      if (!canvas) {
+        console.error('Canvas became unavailable during image load');
+        return;
+      }
 
-        // Scale image to fit canvas if too large
-        const maxWidth = canvas.getWidth() * 0.8;
-        const maxHeight = canvas.getHeight() * 0.8;
+      console.log('Image loaded successfully, adding to canvas');
 
-        let scale = 1;
-        if (img.width && img.height) {
-          const scaleX = maxWidth / img.width;
-          const scaleY = maxHeight / img.height;
-          scale = Math.min(scaleX, scaleY, 1);
-        }
+      // Scale image to fit canvas if too large
+      const maxWidth = canvas.getWidth() * 0.8;
+      const maxHeight = canvas.getHeight() * 0.8;
 
-        const center = canvas.getCenter();
-        img.set({
-          left: center.left,
-          top: center.top,
-          originX: 'center',
-          originY: 'center',
-          scaleX: scale,
-          scaleY: scale,
-        });
+      let scale = 1;
+      if (img.width && img.height) {
+        const scaleX = maxWidth / img.width;
+        const scaleY = maxHeight / img.height;
+        scale = Math.min(scaleX, scaleY, 1);
+      }
 
-        // Add custom properties for serialization
-        (img as any).elementType = 'image';
-        (img as any).assetId = asset.id;
-        (img as any).assetUrl = asset.url;
-        img.set('id', `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+      const center = canvas.getCenter();
+      img.set({
+        left: center.left,
+        top: center.top,
+        originX: 'center',
+        originY: 'center',
+        scaleX: scale,
+        scaleY: scale,
+      });
 
-        canvas.add(img);
-        canvas.setActiveObject(img);
-        canvas.renderAll();
-        pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+      // Add custom properties for serialization
+      (img as any).elementType = 'image';
+      (img as any).assetId = asset.id;
+      (img as any).assetUrl = asset.url;
+      img.set('id', `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
-        console.log('Image added to canvas successfully');
-      },
-      { crossOrigin: 'anonymous' }
-    );
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.renderAll();
+      pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+
+      console.log('Image added to canvas successfully');
+    } catch (error) {
+      console.error('Failed to load image:', error);
+    }
   }, [canvas, pushHistory]);
 
   const handleClick = useCallback(() => {

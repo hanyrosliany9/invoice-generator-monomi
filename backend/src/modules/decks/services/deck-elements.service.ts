@@ -2,11 +2,11 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { MediaService } from '../../media/media.service';
-import { CreateElementDto } from '../dto/create-element.dto';
-import { UpdateElementDto } from '../dto/update-element.dto';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { MediaService } from "../../media/media.service";
+import { CreateElementDto } from "../dto/create-element.dto";
+import { UpdateElementDto } from "../dto/update-element.dto";
 
 @Injectable()
 export class DeckElementsService {
@@ -16,7 +16,7 @@ export class DeckElementsService {
   ) {}
 
   async create(userId: string, dto: CreateElementDto) {
-    await this.verifySlideAccess(dto.slideId, userId, ['OWNER', 'EDITOR']);
+    await this.verifySlideAccess(dto.slideId, userId, ["OWNER", "EDITOR"]);
 
     // Get max zIndex
     const maxZ = await this.prisma.deckSlideElement.aggregate({
@@ -43,20 +43,24 @@ export class DeckElementsService {
   async update(elementId: string, userId: string, dto: UpdateElementDto) {
     const element = await this.prisma.deckSlideElement.findUnique({
       where: { id: elementId },
-      include: { slide: { include: { deck: { include: { collaborators: true } } } } },
+      include: {
+        slide: { include: { deck: { include: { collaborators: true } } } },
+      },
     });
 
-    if (!element) throw new NotFoundException('Element not found');
+    if (!element) throw new NotFoundException("Element not found");
 
-    const collaborator = element.slide.deck.collaborators.find(c => c.userId === userId);
-    if (!collaborator || !['OWNER', 'EDITOR'].includes(collaborator.role)) {
-      throw new ForbiddenException('Edit permission required');
+    const collaborator = element.slide.deck.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
+      throw new ForbiddenException("Edit permission required");
     }
 
     if (element.isLocked && !dto.isLocked) {
       // Only owner can unlock
-      if (collaborator.role !== 'OWNER') {
-        throw new ForbiddenException('Only owner can unlock elements');
+      if (collaborator.role !== "OWNER") {
+        throw new ForbiddenException("Only owner can unlock elements");
       }
     }
 
@@ -79,14 +83,18 @@ export class DeckElementsService {
   async remove(elementId: string, userId: string) {
     const element = await this.prisma.deckSlideElement.findUnique({
       where: { id: elementId },
-      include: { slide: { include: { deck: { include: { collaborators: true } } } } },
+      include: {
+        slide: { include: { deck: { include: { collaborators: true } } } },
+      },
     });
 
-    if (!element) throw new NotFoundException('Element not found');
+    if (!element) throw new NotFoundException("Element not found");
 
-    const collaborator = element.slide.deck.collaborators.find(c => c.userId === userId);
-    if (!collaborator || !['OWNER', 'EDITOR'].includes(collaborator.role)) {
-      throw new ForbiddenException('Edit permission required');
+    const collaborator = element.slide.deck.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
+      throw new ForbiddenException("Edit permission required");
     }
 
     await this.prisma.deckSlideElement.delete({ where: { id: elementId } });
@@ -96,14 +104,18 @@ export class DeckElementsService {
   async bringToFront(elementId: string, userId: string) {
     const element = await this.prisma.deckSlideElement.findUnique({
       where: { id: elementId },
-      include: { slide: { include: { deck: { include: { collaborators: true } } } } },
+      include: {
+        slide: { include: { deck: { include: { collaborators: true } } } },
+      },
     });
 
-    if (!element) throw new NotFoundException('Element not found');
+    if (!element) throw new NotFoundException("Element not found");
 
-    const collaborator = element.slide.deck.collaborators.find(c => c.userId === userId);
-    if (!collaborator || !['OWNER', 'EDITOR'].includes(collaborator.role)) {
-      throw new ForbiddenException('Edit permission required');
+    const collaborator = element.slide.deck.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
+      throw new ForbiddenException("Edit permission required");
     }
 
     const maxZ = await this.prisma.deckSlideElement.aggregate({
@@ -120,14 +132,18 @@ export class DeckElementsService {
   async sendToBack(elementId: string, userId: string) {
     const element = await this.prisma.deckSlideElement.findUnique({
       where: { id: elementId },
-      include: { slide: { include: { deck: { include: { collaborators: true } } } } },
+      include: {
+        slide: { include: { deck: { include: { collaborators: true } } } },
+      },
     });
 
-    if (!element) throw new NotFoundException('Element not found');
+    if (!element) throw new NotFoundException("Element not found");
 
-    const collaborator = element.slide.deck.collaborators.find(c => c.userId === userId);
-    if (!collaborator || !['OWNER', 'EDITOR'].includes(collaborator.role)) {
-      throw new ForbiddenException('Edit permission required');
+    const collaborator = element.slide.deck.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
+      throw new ForbiddenException("Edit permission required");
     }
 
     // Shift all elements up
@@ -142,17 +158,21 @@ export class DeckElementsService {
     });
   }
 
-  private async verifySlideAccess(slideId: string, userId: string, allowedRoles: string[]) {
+  private async verifySlideAccess(
+    slideId: string,
+    userId: string,
+    allowedRoles: string[],
+  ) {
     const slide = await this.prisma.deckSlide.findUnique({
       where: { id: slideId },
       include: { deck: { include: { collaborators: { where: { userId } } } } },
     });
 
-    if (!slide) throw new NotFoundException('Slide not found');
+    if (!slide) throw new NotFoundException("Slide not found");
 
     const collaborator = slide.deck.collaborators[0];
     if (!collaborator || !allowedRoles.includes(collaborator.role)) {
-      throw new ForbiddenException('Permission denied');
+      throw new ForbiddenException("Permission denied");
     }
 
     return slide;

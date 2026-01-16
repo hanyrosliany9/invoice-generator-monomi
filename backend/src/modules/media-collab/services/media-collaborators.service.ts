@@ -1,11 +1,19 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateCollaboratorDto } from '../dto/create-collaborator.dto';
-import { UpdateCollaboratorDto } from '../dto/update-collaborator.dto';
-import { InviteGuestDto } from '../dto/invite-guest.dto';
-import { CollaboratorRole } from '@prisma/client';
-import { generateSecureToken, generateGuestInviteLink } from '../utils/token.util';
-import { addDays } from 'date-fns';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreateCollaboratorDto } from "../dto/create-collaborator.dto";
+import { UpdateCollaboratorDto } from "../dto/update-collaborator.dto";
+import { InviteGuestDto } from "../dto/invite-guest.dto";
+import { CollaboratorRole } from "@prisma/client";
+import {
+  generateSecureToken,
+  generateGuestInviteLink,
+} from "../utils/token.util";
+import { addDays } from "date-fns";
 
 /**
  * MediaCollaboratorsService
@@ -25,7 +33,7 @@ export class MediaCollaboratorsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     return this.prisma.mediaCollaborator.findMany({
@@ -46,7 +54,7 @@ export class MediaCollaboratorsService {
           },
         },
       },
-      orderBy: { addedAt: 'desc' },
+      orderBy: { addedAt: "desc" },
     });
   }
 
@@ -69,17 +77,22 @@ export class MediaCollaboratorsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     // Check if inviter has permission (must be OWNER or EDITOR)
     const inviterCollaborator = project.collaborators[0];
-    const allowedRoles: CollaboratorRole[] = [CollaboratorRole.OWNER, CollaboratorRole.EDITOR];
+    const allowedRoles: CollaboratorRole[] = [
+      CollaboratorRole.OWNER,
+      CollaboratorRole.EDITOR,
+    ];
     if (
       project.createdBy !== invitedBy &&
       (!inviterCollaborator || !allowedRoles.includes(inviterCollaborator.role))
     ) {
-      throw new ForbiddenException('You do not have permission to add collaborators');
+      throw new ForbiddenException(
+        "You do not have permission to add collaborators",
+      );
     }
 
     // Check if user exists
@@ -88,21 +101,23 @@ export class MediaCollaboratorsService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     // Check if user is already a collaborator
-    const existingCollaborator = await this.prisma.mediaCollaborator.findUnique({
-      where: {
-        projectId_userId: {
-          projectId,
-          userId: dto.userId,
+    const existingCollaborator = await this.prisma.mediaCollaborator.findUnique(
+      {
+        where: {
+          projectId_userId: {
+            projectId,
+            userId: dto.userId,
+          },
         },
       },
-    });
+    );
 
     if (existingCollaborator) {
-      throw new BadRequestException('User is already a collaborator');
+      throw new BadRequestException("User is already a collaborator");
     }
 
     return this.prisma.mediaCollaborator.create({
@@ -151,7 +166,7 @@ export class MediaCollaboratorsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     // Check if user has permission (must be OWNER or project creator)
@@ -160,7 +175,9 @@ export class MediaCollaboratorsService {
       project.createdBy !== userId &&
       (!userCollaborator || userCollaborator.role !== CollaboratorRole.OWNER)
     ) {
-      throw new ForbiddenException('You do not have permission to update collaborator roles');
+      throw new ForbiddenException(
+        "You do not have permission to update collaborator roles",
+      );
     }
 
     // Find the collaborator to update
@@ -169,12 +186,12 @@ export class MediaCollaboratorsService {
     });
 
     if (!collaborator || collaborator.projectId !== projectId) {
-      throw new NotFoundException('Collaborator not found');
+      throw new NotFoundException("Collaborator not found");
     }
 
     // Prevent changing the project creator's role
     if (collaborator.userId === project.createdBy) {
-      throw new BadRequestException('Cannot change the project creator\'s role');
+      throw new BadRequestException("Cannot change the project creator's role");
     }
 
     return this.prisma.mediaCollaborator.update({
@@ -218,7 +235,7 @@ export class MediaCollaboratorsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     // Find the collaborator to remove
@@ -227,12 +244,12 @@ export class MediaCollaboratorsService {
     });
 
     if (!collaborator || collaborator.projectId !== projectId) {
-      throw new NotFoundException('Collaborator not found');
+      throw new NotFoundException("Collaborator not found");
     }
 
     // Prevent removing the project creator
     if (collaborator.userId === project.createdBy) {
-      throw new BadRequestException('Cannot remove the project creator');
+      throw new BadRequestException("Cannot remove the project creator");
     }
 
     // Check if user has permission (must be OWNER, project creator, or removing themselves)
@@ -242,26 +259,27 @@ export class MediaCollaboratorsService {
       collaborator.userId !== userId &&
       (!userCollaborator || userCollaborator.role !== CollaboratorRole.OWNER)
     ) {
-      throw new ForbiddenException('You do not have permission to remove collaborators');
+      throw new ForbiddenException(
+        "You do not have permission to remove collaborators",
+      );
     }
 
     await this.prisma.mediaCollaborator.delete({
       where: { id: collaboratorId },
     });
 
-    return { message: 'Collaborator removed successfully' };
+    return { message: "Collaborator removed successfully" };
   }
 
   /**
    * Invite a guest collaborator (external user without system account)
    */
-  async inviteGuest(
-    projectId: string,
-    userId: string,
-    dto: InviteGuestDto,
-  ) {
+  async inviteGuest(projectId: string, userId: string, dto: InviteGuestDto) {
     // Verify user has OWNER or EDITOR role on project
-    await this.verifyProjectAccess(projectId, userId, [CollaboratorRole.OWNER, CollaboratorRole.EDITOR]);
+    await this.verifyProjectAccess(projectId, userId, [
+      CollaboratorRole.OWNER,
+      CollaboratorRole.EDITOR,
+    ]);
 
     // Check if guest already invited
     const existing = await this.prisma.mediaCollaborator.findFirst({
@@ -272,7 +290,7 @@ export class MediaCollaboratorsService {
     });
 
     if (existing) {
-      throw new BadRequestException('Guest already invited to this project');
+      throw new BadRequestException("Guest already invited to this project");
     }
 
     // Generate secure invite token
@@ -287,7 +305,7 @@ export class MediaCollaboratorsService {
         guestName: dto.name,
         role: dto.role,
         inviteToken,
-        status: 'PENDING',
+        status: "PENDING",
         expiresAt,
         invitedBy: userId,
       },
@@ -340,22 +358,22 @@ export class MediaCollaboratorsService {
     });
 
     if (!collaborator) {
-      throw new NotFoundException('Invalid invite token');
+      throw new NotFoundException("Invalid invite token");
     }
 
     if (collaborator.expiresAt && collaborator.expiresAt < new Date()) {
-      throw new BadRequestException('Invite has expired');
+      throw new BadRequestException("Invite has expired");
     }
 
-    if (collaborator.status === 'REVOKED') {
-      throw new ForbiddenException('Invite has been revoked');
+    if (collaborator.status === "REVOKED") {
+      throw new ForbiddenException("Invite has been revoked");
     }
 
     // Mark as accepted
     const updated = await this.prisma.mediaCollaborator.update({
       where: { id: collaborator.id },
       data: {
-        status: 'ACCEPTED',
+        status: "ACCEPTED",
         lastAccessAt: new Date(),
       },
       include: {
@@ -375,7 +393,11 @@ export class MediaCollaboratorsService {
   /**
    * Revoke guest access
    */
-  async revokeGuestAccess(projectId: string, collaboratorId: string, userId: string) {
+  async revokeGuestAccess(
+    projectId: string,
+    collaboratorId: string,
+    userId: string,
+  ) {
     await this.verifyProjectAccess(projectId, userId, [CollaboratorRole.OWNER]);
 
     const collaborator = await this.prisma.mediaCollaborator.findUnique({
@@ -383,25 +405,31 @@ export class MediaCollaboratorsService {
     });
 
     if (!collaborator || collaborator.projectId !== projectId) {
-      throw new NotFoundException('Collaborator not found');
+      throw new NotFoundException("Collaborator not found");
     }
 
     if (collaborator.userId) {
-      throw new BadRequestException('Cannot revoke internal user access through this endpoint');
+      throw new BadRequestException(
+        "Cannot revoke internal user access through this endpoint",
+      );
     }
 
     await this.prisma.mediaCollaborator.update({
       where: { id: collaboratorId },
-      data: { status: 'REVOKED' },
+      data: { status: "REVOKED" },
     });
 
-    return { message: 'Guest access revoked' };
+    return { message: "Guest access revoked" };
   }
 
   /**
    * Regenerate guest invite link
    */
-  async regenerateGuestInvite(projectId: string, collaboratorId: string, userId: string) {
+  async regenerateGuestInvite(
+    projectId: string,
+    collaboratorId: string,
+    userId: string,
+  ) {
     await this.verifyProjectAccess(projectId, userId, [CollaboratorRole.OWNER]);
 
     const collaborator = await this.prisma.mediaCollaborator.findUnique({
@@ -409,11 +437,13 @@ export class MediaCollaboratorsService {
     });
 
     if (!collaborator || collaborator.projectId !== projectId) {
-      throw new NotFoundException('Collaborator not found');
+      throw new NotFoundException("Collaborator not found");
     }
 
     if (collaborator.userId) {
-      throw new BadRequestException('Cannot regenerate link for internal users');
+      throw new BadRequestException(
+        "Cannot regenerate link for internal users",
+      );
     }
 
     const newToken = generateSecureToken();
@@ -423,7 +453,7 @@ export class MediaCollaboratorsService {
       where: { id: collaboratorId },
       data: {
         inviteToken: newToken,
-        status: 'PENDING',
+        status: "PENDING",
         expiresAt,
       },
     });
@@ -452,7 +482,7 @@ export class MediaCollaboratorsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     const userCollaborator = project.collaborators[0];
@@ -460,7 +490,9 @@ export class MediaCollaboratorsService {
       project.createdBy !== userId &&
       (!userCollaborator || !allowedRoles.includes(userCollaborator.role))
     ) {
-      throw new ForbiddenException('You do not have permission to perform this action');
+      throw new ForbiddenException(
+        "You do not have permission to perform this action",
+      );
     }
 
     return project;

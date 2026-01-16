@@ -1,5 +1,13 @@
-import { IsString, IsNumber, IsOptional, IsDate, IsArray, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsDate,
+  IsArray,
+  Min,
+  Max,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 /**
  * DTO for creating a payment milestone for a quotation

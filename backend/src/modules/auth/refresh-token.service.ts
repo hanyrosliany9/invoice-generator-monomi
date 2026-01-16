@@ -1,7 +1,7 @@
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
-import { randomBytes } from 'crypto';
+import { Injectable, UnauthorizedException, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { ConfigService } from "@nestjs/config";
+import { randomBytes } from "crypto";
 
 interface DeviceInfo {
   userAgent?: string;
@@ -25,10 +25,10 @@ export class RefreshTokenService {
    */
   async generateRefreshToken(
     userId: string,
-    deviceInfo?: DeviceInfo
+    deviceInfo?: DeviceInfo,
   ): Promise<{ token: string; expiresAt: Date }> {
     // Generate cryptographically secure random token
-    const token = randomBytes(64).toString('hex');
+    const token = randomBytes(64).toString("hex");
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + this.REFRESH_TOKEN_EXPIRY_DAYS);
 
@@ -59,25 +59,27 @@ export class RefreshTokenService {
     });
 
     if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token tidak valid');
+      throw new UnauthorizedException("Refresh token tidak valid");
     }
 
     // Check if revoked
     if (refreshToken.isRevoked) {
-      this.logger.warn(`Attempted use of revoked refresh token: ${token.slice(0, 10)}...`);
-      throw new UnauthorizedException('Refresh token telah dibatalkan');
+      this.logger.warn(
+        `Attempted use of revoked refresh token: ${token.slice(0, 10)}...`,
+      );
+      throw new UnauthorizedException("Refresh token telah dibatalkan");
     }
 
     // Check if expired
     if (refreshToken.expiresAt < new Date()) {
       // Auto-revoke expired token
-      await this.revokeToken(token, 'expired');
-      throw new UnauthorizedException('Refresh token telah kedaluwarsa');
+      await this.revokeToken(token, "expired");
+      throw new UnauthorizedException("Refresh token telah kedaluwarsa");
     }
 
     // Check if user is still active
     if (!refreshToken.user.isActive) {
-      throw new UnauthorizedException('Akun Anda telah dinonaktifkan');
+      throw new UnauthorizedException("Akun Anda telah dinonaktifkan");
     }
 
     // Update last used timestamp
@@ -116,7 +118,9 @@ export class RefreshTokenService {
         revokedReason: reason,
       },
     });
-    this.logger.log(`Revoked ${result.count} refresh tokens for user ${userId}`);
+    this.logger.log(
+      `Revoked ${result.count} refresh tokens for user ${userId}`,
+    );
     return result.count;
   }
 
@@ -126,7 +130,7 @@ export class RefreshTokenService {
    */
   async rotateRefreshToken(
     oldToken: string,
-    deviceInfo?: DeviceInfo
+    deviceInfo?: DeviceInfo,
   ): Promise<{ token: string; expiresAt: Date; userId: string }> {
     // Validate old token first
     const userId = await this.validateRefreshToken(oldToken);
@@ -140,7 +144,7 @@ export class RefreshTokenService {
       data: {
         isRevoked: true,
         revokedAt: new Date(),
-        revokedReason: 'replaced',
+        revokedReason: "replaced",
         replacedBy: newTokenData.token,
       },
     });
@@ -158,7 +162,7 @@ export class RefreshTokenService {
           { expiresAt: { lt: new Date() } },
           {
             isRevoked: true,
-            revokedAt: { lt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) }
+            revokedAt: { lt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
           }, // 90 days old
         ],
       },
@@ -186,7 +190,7 @@ export class RefreshTokenService {
         ipAddress: true,
         deviceId: true,
       },
-      orderBy: { lastUsedAt: 'desc' },
+      orderBy: { lastUsedAt: "desc" },
     });
   }
 }

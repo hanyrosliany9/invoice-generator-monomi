@@ -17,8 +17,8 @@ describe("AuthController", () => {
   };
 
   const mockRequest = {
-    headers: { 'user-agent': 'test-agent' },
-    ip: '127.0.0.1',
+    headers: { "user-agent": "test-agent" },
+    ip: "127.0.0.1",
   };
 
   const mockUsersService = {
@@ -92,8 +92,8 @@ describe("AuthController", () => {
 
       expect(result).toEqual(expectedResult);
       expect(mockAuthService.login).toHaveBeenCalledWith(loginDto, {
-        userAgent: 'test-agent',
-        ipAddress: '127.0.0.1',
+        userAgent: "test-agent",
+        ipAddress: "127.0.0.1",
       });
     });
 

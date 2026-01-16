@@ -1,4 +1,4 @@
-import { AssetStatus, MediaType } from '@prisma/client';
+import { AssetStatus, MediaType } from "@prisma/client";
 
 /**
  * Asset Filter Interface
@@ -10,6 +10,6 @@ export interface AssetFilters {
   status?: AssetStatus;
   starRating?: number;
   search?: string;
-  sortBy?: 'uploadedAt' | 'filename' | 'size' | 'starRating';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "uploadedAt" | "filename" | "size" | "starRating";
+  sortOrder?: "asc" | "desc";
 }

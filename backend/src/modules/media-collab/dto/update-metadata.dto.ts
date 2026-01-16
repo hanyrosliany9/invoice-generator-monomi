@@ -1,33 +1,33 @@
-import { IsOptional, IsString, IsInt, IsNumber } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, IsInt, IsNumber } from "class-validator";
+import { ApiPropertyOptional } from "@nestjs/swagger";
 
 export class UpdateMetadataDto {
   @ApiPropertyOptional({
-    description: 'Camera make (e.g., Canon, Nikon)',
-    example: 'Canon',
+    description: "Camera make (e.g., Canon, Nikon)",
+    example: "Canon",
   })
   @IsOptional()
   @IsString()
   cameraMake?: string;
 
   @ApiPropertyOptional({
-    description: 'Camera model',
-    example: 'EOS 5D Mark IV',
+    description: "Camera model",
+    example: "EOS 5D Mark IV",
   })
   @IsOptional()
   @IsString()
   cameraModel?: string;
 
   @ApiPropertyOptional({
-    description: 'Lens model',
-    example: 'EF 24-70mm f/2.8L II USM',
+    description: "Lens model",
+    example: "EF 24-70mm f/2.8L II USM",
   })
   @IsOptional()
   @IsString()
   lens?: string;
 
   @ApiPropertyOptional({
-    description: 'ISO sensitivity',
+    description: "ISO sensitivity",
     example: 800,
   })
   @IsOptional()
@@ -35,7 +35,7 @@ export class UpdateMetadataDto {
   iso?: number;
 
   @ApiPropertyOptional({
-    description: 'Aperture (f-number)',
+    description: "Aperture (f-number)",
     example: 2.8,
   })
   @IsOptional()
@@ -43,15 +43,15 @@ export class UpdateMetadataDto {
   aperture?: number;
 
   @ApiPropertyOptional({
-    description: 'Shutter speed',
-    example: '1/250',
+    description: "Shutter speed",
+    example: "1/250",
   })
   @IsOptional()
   @IsString()
   shutterSpeed?: string;
 
   @ApiPropertyOptional({
-    description: 'Focal length in mm',
+    description: "Focal length in mm",
     example: 50,
   })
   @IsOptional()
@@ -59,15 +59,15 @@ export class UpdateMetadataDto {
   focalLength?: number;
 
   @ApiPropertyOptional({
-    description: 'Copyright information',
-    example: '© 2025 Photography Studio',
+    description: "Copyright information",
+    example: "© 2025 Photography Studio",
   })
   @IsOptional()
   @IsString()
   copyright?: string;
 
   @ApiPropertyOptional({
-    description: 'GPS latitude',
+    description: "GPS latitude",
     example: -6.2088,
   })
   @IsOptional()
@@ -75,7 +75,7 @@ export class UpdateMetadataDto {
   gpsLatitude?: number;
 
   @ApiPropertyOptional({
-    description: 'GPS longitude',
+    description: "GPS longitude",
     example: 106.8456,
   })
   @IsOptional()

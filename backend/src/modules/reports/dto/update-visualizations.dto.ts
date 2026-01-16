@@ -1,7 +1,7 @@
-import { IsArray, IsEnum, IsString, IsOptional } from 'class-validator';
+import { IsArray, IsEnum, IsString, IsOptional } from "class-validator";
 
 export class VisualizationConfig {
-  @IsEnum(['line', 'bar', 'pie', 'area', 'table', 'metric_card'])
+  @IsEnum(["line", "bar", "pie", "area", "table", "metric_card"])
   type: string;
 
   @IsString()
@@ -23,7 +23,7 @@ export class VisualizationConfig {
   metric?: string;
 
   @IsOptional()
-  @IsEnum(['sum', 'avg', 'count', 'min', 'max'])
+  @IsEnum(["sum", "avg", "count", "min", "max"])
   aggregation?: string;
 
   @IsOptional()

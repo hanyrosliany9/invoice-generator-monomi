@@ -4,13 +4,13 @@ import {
   NotFoundException,
   Inject,
   forwardRef,
-} from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { PaymentMilestone, Quotation } from '@prisma/client';
-import { CreatePaymentMilestoneDto } from '../dto/create-payment-milestone.dto';
-import { UpdatePaymentMilestoneDto } from '../dto/update-payment-milestone.dto';
-import { Decimal } from '@prisma/client/runtime/library';
-import { InvoicesService } from '../../invoices/invoices.service';
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { PaymentMilestone, Quotation } from "@prisma/client";
+import { CreatePaymentMilestoneDto } from "../dto/create-payment-milestone.dto";
+import { UpdatePaymentMilestoneDto } from "../dto/update-payment-milestone.dto";
+import { Decimal } from "@prisma/client/runtime/library";
+import { InvoicesService } from "../../invoices/invoices.service";
 
 /**
  * PaymentMilestonesService
@@ -46,7 +46,7 @@ export class PaymentMilestonesService {
     });
 
     if (!quotation) {
-      throw new NotFoundException('Quotation tidak ditemukan');
+      throw new NotFoundException("Quotation tidak ditemukan");
     }
 
     // Validate milestone number uniqueness
@@ -107,7 +107,7 @@ export class PaymentMilestonesService {
     });
 
     if (!milestone) {
-      throw new NotFoundException('Payment milestone tidak ditemukan');
+      throw new NotFoundException("Payment milestone tidak ditemukan");
     }
 
     // If percentage is being updated, validate new total
@@ -133,9 +133,7 @@ export class PaymentMilestonesService {
     // Recalculate amount if percentage changed
     const paymentAmount =
       dto.paymentPercentage !== undefined
-        ? milestone.quotation.totalAmount
-            .mul(dto.paymentPercentage)
-            .div(100)
+        ? milestone.quotation.totalAmount.mul(dto.paymentPercentage).div(100)
         : milestone.paymentAmount;
 
     return this.prisma.paymentMilestone.update({
@@ -160,12 +158,12 @@ export class PaymentMilestonesService {
     });
 
     if (!milestone) {
-      throw new NotFoundException('Payment milestone tidak ditemukan');
+      throw new NotFoundException("Payment milestone tidak ditemukan");
     }
 
     if (milestone.isInvoiced) {
       throw new BadRequestException(
-        'Tidak dapat menghapus milestone yang sudah memiliki invoice',
+        "Tidak dapat menghapus milestone yang sudah memiliki invoice",
       );
     }
 
@@ -185,7 +183,7 @@ export class PaymentMilestonesService {
 
     if (milestones.length === 0) {
       throw new BadRequestException(
-        'Quotation must have at least one payment milestone',
+        "Quotation must have at least one payment milestone",
       );
     }
 
@@ -211,7 +209,7 @@ export class PaymentMilestonesService {
     });
 
     if (!quotation) {
-      throw new NotFoundException('Quotation tidak ditemukan');
+      throw new NotFoundException("Quotation tidak ditemukan");
     }
 
     for (const milestone of quotation.paymentMilestones) {
@@ -229,10 +227,12 @@ export class PaymentMilestonesService {
   /**
    * Get all milestones for a quotation
    */
-  async getQuotationMilestones(quotationId: string): Promise<PaymentMilestone[]> {
+  async getQuotationMilestones(
+    quotationId: string,
+  ): Promise<PaymentMilestone[]> {
     return this.prisma.paymentMilestone.findMany({
       where: { quotationId },
-      orderBy: { milestoneNumber: 'asc' },
+      orderBy: { milestoneNumber: "asc" },
     });
   }
 
@@ -268,11 +268,11 @@ export class PaymentMilestonesService {
     });
 
     if (!milestone) {
-      throw new NotFoundException('Payment milestone tidak ditemukan');
+      throw new NotFoundException("Payment milestone tidak ditemukan");
     }
 
     if (milestone.isInvoiced) {
-      throw new BadRequestException('Milestone sudah memiliki invoice');
+      throw new BadRequestException("Milestone sudah memiliki invoice");
     }
 
     const quotation = milestone.quotation;
@@ -312,7 +312,7 @@ export class PaymentMilestonesService {
         amountPerProject: Number(milestone.paymentAmount),
         totalAmount: Number(milestone.paymentAmount),
         dueDate: dueDate.toISOString(),
-        paymentInfo: 'Bank Transfer', // Default, can be customized
+        paymentInfo: "Bank Transfer", // Default, can be customized
         terms: quotation.terms || undefined,
         scopeOfWork: quotation.scopeOfWork || undefined,
         priceBreakdown: quotation.priceBreakdown as any,
@@ -333,7 +333,7 @@ export class PaymentMilestonesService {
     });
 
     if (!quotation) {
-      throw new NotFoundException('Quotation tidak ditemukan');
+      throw new NotFoundException("Quotation tidak ditemukan");
     }
 
     const milestones = quotation.paymentMilestones;
@@ -342,13 +342,18 @@ export class PaymentMilestonesService {
       .reduce((sum: number, m: any) => sum + Number(m.paymentAmount), 0);
 
     const invoicedPercentage = milestones.length
-      ? (milestones.filter((m: any) => m.invoices && m.invoices.length > 0).length / milestones.length) * 100
+      ? (milestones.filter((m: any) => m.invoices && m.invoices.length > 0)
+          .length /
+          milestones.length) *
+        100
       : 0;
 
     return {
       quotationId,
       totalMilestones: milestones.length,
-      milestonesInvoiced: milestones.filter((m: any) => m.invoices && m.invoices.length > 0).length,
+      milestonesInvoiced: milestones.filter(
+        (m: any) => m.invoices && m.invoices.length > 0,
+      ).length,
       invoicedPercentage: Math.round(invoicedPercentage),
       totalAmount: Number(quotation.totalAmount),
       totalInvoiced,
@@ -365,5 +370,4 @@ export class PaymentMilestonesService {
       })),
     };
   }
-
 }

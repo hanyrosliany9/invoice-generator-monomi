@@ -1,5 +1,5 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreatePaymentMilestoneDto } from './create-payment-milestone.dto';
+import { PartialType } from "@nestjs/mapped-types";
+import { CreatePaymentMilestoneDto } from "./create-payment-milestone.dto";
 
 /**
  * DTO for updating a payment milestone

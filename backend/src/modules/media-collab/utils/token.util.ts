@@ -1,5 +1,5 @@
-import * as crypto from 'crypto';
-import { getPublicUrl } from '../../../config/url.config';
+import * as crypto from "crypto";
+import { getPublicUrl } from "../../../config/url.config";
 
 /**
  * Generate a cryptographically secure random token for guest invites
@@ -9,10 +9,10 @@ export function generateSecureToken(): string {
   // Generate 32-byte random token, encode as base64url
   return crypto
     .randomBytes(32)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
 }
 
 /**

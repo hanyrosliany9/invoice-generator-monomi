@@ -44,7 +44,10 @@ export class CreateExpenseDto {
   @Min(0)
   grossAmount: number;
 
-  @ApiPropertyOptional({ description: "PPN amount (optional if not included)", example: 110000 })
+  @ApiPropertyOptional({
+    description: "PPN amount (optional if not included)",
+    example: 110000,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -101,13 +104,19 @@ export class CreateExpenseDto {
 
   // ===== TAX INFORMATION =====
 
-  @ApiPropertyOptional({ description: "PPN rate (0.11 or 0.12, optional if not included)", example: 0.11 })
+  @ApiPropertyOptional({
+    description: "PPN rate (0.11 or 0.12, optional if not included)",
+    example: 0.11,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
   ppnRate?: number;
 
-  @ApiPropertyOptional({ description: "PPN category (optional if not included)", enum: PPNCategory })
+  @ApiPropertyOptional({
+    description: "PPN category (optional if not included)",
+    enum: PPNCategory,
+  })
   @IsOptional()
   @IsEnum(PPNCategory)
   ppnCategory?: PPNCategory;

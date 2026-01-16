@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateClientDto } from "./dto/create-client.dto";
 import { UpdateClientDto } from "./dto/update-client.dto";
@@ -33,7 +37,7 @@ export class ClientsService {
           ? sanitizeIndonesianInput(createClientDto.contactPerson)
           : null,
         paymentTerms: createClientDto.paymentTerms,
-        status: createClientDto.status || 'active',
+        status: createClientDto.status || "active",
         taxNumber: createClientDto.taxNumber || null,
         bankAccount: createClientDto.bankAccount || null,
         notes: createClientDto.notes || null,

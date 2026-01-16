@@ -6,9 +6,9 @@ import {
   IsString,
   IsBoolean,
   Min,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { Currency } from '@prisma/client';
+} from "class-validator";
+import { Type } from "class-transformer";
+import { Currency } from "@prisma/client";
 
 export class CreateExchangeRateDto {
   @IsEnum(Currency)

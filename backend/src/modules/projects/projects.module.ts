@@ -14,6 +14,10 @@ import { DocumentsModule } from "../documents/documents.module";
     ProfitCalculationService,
     ProjectProjectionService,
   ],
-  exports: [ProjectsService, ProfitCalculationService, ProjectProjectionService],
+  exports: [
+    ProjectsService,
+    ProfitCalculationService,
+    ProjectProjectionService,
+  ],
 })
 export class ProjectsModule {}

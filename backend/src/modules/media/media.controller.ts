@@ -18,7 +18,13 @@ import {
 } from "@nestjs/common";
 import { Response } from "express";
 import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express";
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiConsumes,
+  ApiBody,
+  ApiBearerAuth,
+} from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -65,7 +71,9 @@ export class MediaController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN, UserRole.PROJECT_MANAGER, UserRole.STAFF)
   @UseInterceptors(FileInterceptor("file"))
-  @ApiOperation({ summary: "Upload a single file to R2 with optional thumbnail" })
+  @ApiOperation({
+    summary: "Upload a single file to R2 with optional thumbnail",
+  })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
@@ -83,15 +91,14 @@ export class MediaController {
       },
     },
   })
-  async uploadFile(
-    @UploadedFile() file: Express.Multer.File,
-    @Req() req: any,
-  ) {
+  async uploadFile(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
     if (!file) {
       throw new BadRequestException("No file provided");
     }
 
-    this.logger.log(`Uploading file: ${file.originalname} (${file.size} bytes)`);
+    this.logger.log(
+      `Uploading file: ${file.originalname} (${file.size} bytes)`,
+    );
 
     const result = await this.mediaService.uploadFile(file, "content");
 
@@ -105,12 +112,13 @@ export class MediaController {
         const thumbnailResult = await this.mediaService.uploadThumbnail(
           thumbnailBase64,
           file.originalname,
-          "thumbnails"
+          "thumbnails",
         );
         result.thumbnailUrl = thumbnailResult.url;
         result.thumbnailKey = thumbnailResult.key;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
         this.logger.warn(`Failed to upload thumbnail: ${errorMessage}`);
         // Continue without thumbnail
       }
@@ -161,7 +169,10 @@ export class MediaController {
 
     this.logger.log(`Uploading ${files.length} files`);
 
-    const results = await this.mediaService.uploadMultipleFiles(files, "content");
+    const results = await this.mediaService.uploadMultipleFiles(
+      files,
+      "content",
+    );
 
     return {
       success: true,
@@ -187,7 +198,9 @@ export class MediaController {
    */
   @Post("access-token")
   @SkipThrottle() // Exempt from rate limiting
-  @ApiOperation({ summary: "Generate media access token for Cloudflare Workers" })
+  @ApiOperation({
+    summary: "Generate media access token for Cloudflare Workers",
+  })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async generateMediaAccessToken(@Req() req: any) {
@@ -251,7 +264,9 @@ export class MediaController {
    * Use /media/access-token instead for better performance and caching.
    */
   @Get("presigned-url")
-  @ApiOperation({ summary: "Generate presigned URL for private R2 access (DEPRECATED)" })
+  @ApiOperation({
+    summary: "Generate presigned URL for private R2 access (DEPRECATED)",
+  })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async getPresignedUrl(
@@ -265,7 +280,9 @@ export class MediaController {
     const expiry = expiresIn ? parseInt(expiresIn, 10) : 3600; // Default: 1 hour
 
     if (expiry < 60 || expiry > 604800) {
-      throw new BadRequestException("expiresIn must be between 60 (1 min) and 604800 (7 days)");
+      throw new BadRequestException(
+        "expiresIn must be between 60 (1 min) and 604800 (7 days)",
+      );
     }
 
     const url = await this.mediaService.getPresignedUrl(key, expiry);
@@ -295,7 +312,8 @@ export class MediaController {
 
     this.logger.log(`Proxying file: ${key}`);
 
-    const { stream, contentType, contentLength, originalName} = await this.mediaService.getFileStream(key);
+    const { stream, contentType, contentLength, originalName } =
+      await this.mediaService.getFileStream(key);
 
     // Set appropriate headers
     res.setHeader("Content-Type", contentType);
@@ -311,7 +329,10 @@ export class MediaController {
     if (originalName) {
       // Encode filename for proper handling of special characters and non-ASCII characters
       const encodedFilename = encodeURIComponent(originalName);
-      res.setHeader("Content-Disposition", `inline; filename="${originalName}"; filename*=UTF-8''${encodedFilename}`);
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${originalName}"; filename*=UTF-8''${encodedFilename}`,
+      );
       this.logger.log(`Setting original filename: ${originalName}`);
     }
 

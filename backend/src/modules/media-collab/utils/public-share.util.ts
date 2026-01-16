@@ -1,5 +1,5 @@
-import * as crypto from 'crypto';
-import { getPublicUrl } from '../../../config/url.config';
+import * as crypto from "crypto";
+import { getPublicUrl } from "../../../config/url.config";
 
 /**
  * Generate a URL-safe public share token
@@ -9,10 +9,10 @@ export function generatePublicShareToken(): string {
   // Generate 16-byte token (shorter for public URLs)
   return crypto
     .randomBytes(16)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
 }
 
 /**

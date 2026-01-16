@@ -12,7 +12,7 @@
  * Used for: Internal links, admin redirects, CORS
  */
 export function getAdminUrl(): string {
-  return process.env.FRONTEND_URL || 'http://localhost:3001';
+  return process.env.FRONTEND_URL || "http://localhost:3001";
 }
 
 /**
@@ -22,7 +22,11 @@ export function getAdminUrl(): string {
  * Falls back to FRONTEND_URL for backward compatibility
  */
 export function getPublicUrl(): string {
-  return process.env.PUBLIC_URL || process.env.FRONTEND_URL || 'http://localhost:3001';
+  return (
+    process.env.PUBLIC_URL ||
+    process.env.FRONTEND_URL ||
+    "http://localhost:3001"
+  );
 }
 
 /**
@@ -30,7 +34,7 @@ export function getPublicUrl(): string {
  * Used for: Media URLs served via Cloudflare Worker
  */
 export function getMediaUrl(): string {
-  return process.env.MEDIA_URL || 'https://media.monomiagency.com';
+  return process.env.MEDIA_URL || "https://media.monomiagency.com";
 }
 
 /**
@@ -43,33 +47,45 @@ export function validateUrls(): void {
   const adminUrl = getAdminUrl();
   const mediaUrl = getMediaUrl();
 
-  if (nodeEnv === 'production') {
+  if (nodeEnv === "production") {
     let hasErrors = false;
 
-    if (publicUrl.includes('localhost')) {
-      console.error('[URL_CONFIG] ❌ PUBLIC_URL contains localhost in production!');
-      console.error('[URL_CONFIG]    Set: PUBLIC_URL=https://share.monomiagency.com');
+    if (publicUrl.includes("localhost")) {
+      console.error(
+        "[URL_CONFIG] ❌ PUBLIC_URL contains localhost in production!",
+      );
+      console.error(
+        "[URL_CONFIG]    Set: PUBLIC_URL=https://share.monomiagency.com",
+      );
       hasErrors = true;
     }
 
-    if (adminUrl.includes('localhost')) {
-      console.error('[URL_CONFIG] ❌ FRONTEND_URL contains localhost in production!');
-      console.error('[URL_CONFIG]    Set: FRONTEND_URL=https://admin.monomiagency.com');
+    if (adminUrl.includes("localhost")) {
+      console.error(
+        "[URL_CONFIG] ❌ FRONTEND_URL contains localhost in production!",
+      );
+      console.error(
+        "[URL_CONFIG]    Set: FRONTEND_URL=https://admin.monomiagency.com",
+      );
       hasErrors = true;
     }
 
-    if (mediaUrl.includes('localhost')) {
-      console.error('[URL_CONFIG] ⚠️  MEDIA_URL contains localhost in production');
-      console.error('[URL_CONFIG]    Set: MEDIA_URL=https://media.monomiagency.com');
+    if (mediaUrl.includes("localhost")) {
+      console.error(
+        "[URL_CONFIG] ⚠️  MEDIA_URL contains localhost in production",
+      );
+      console.error(
+        "[URL_CONFIG]    Set: MEDIA_URL=https://media.monomiagency.com",
+      );
     }
 
     if (!hasErrors) {
-      console.log('[URL_CONFIG] ✅ URLs configured correctly:');
+      console.log("[URL_CONFIG] ✅ URLs configured correctly:");
       console.log(`[URL_CONFIG]    Admin:  ${adminUrl}`);
       console.log(`[URL_CONFIG]    Public: ${publicUrl}`);
       console.log(`[URL_CONFIG]    Media:  ${mediaUrl}`);
     } else {
-      console.error('[URL_CONFIG] ❌ Fix URL configuration before deploying!');
+      console.error("[URL_CONFIG] ❌ Fix URL configuration before deploying!");
     }
   } else {
     console.log(`[URL_CONFIG] 🔧 Development URLs:`);

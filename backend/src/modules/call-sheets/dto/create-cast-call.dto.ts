@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsInt, IsEnum, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsInt,
+  IsEnum,
+  IsBoolean,
+} from "class-validator";
 
 export class CreateCastCallDto {
   @IsString()
@@ -11,14 +17,14 @@ export class CreateCastCallDto {
 
   // === ENHANCED: Multiple Time Columns ===
   @IsOptional() @IsString() pickupTime?: string;
-  @IsOptional() @IsString() muCallTime?: string;  // Makeup/Hair call
-  @IsOptional() @IsString() fittingTime?: string;  // Wardrobe fitting time (PDF Export Upgrade)
-  @IsString() callTime: string;  // Legacy, kept for compatibility
+  @IsOptional() @IsString() muCallTime?: string; // Makeup/Hair call
+  @IsOptional() @IsString() fittingTime?: string; // Wardrobe fitting time (PDF Export Upgrade)
+  @IsString() callTime: string; // Legacy, kept for compatibility
   @IsOptional() @IsString() onSetTime?: string;
   @IsOptional() @IsString() wrapTime?: string;
 
   // === NEW: Status Code ===
-  @IsOptional() @IsEnum(['SW', 'W', 'WF', 'SWF', 'H']) workStatus?: string;
+  @IsOptional() @IsEnum(["SW", "W", "WF", "SWF", "H"]) workStatus?: string;
 
   // === NEW: Enhanced Info ===
   @IsOptional() @IsString() transportMode?: string;
@@ -42,12 +48,14 @@ export class UpdateCastCallDto {
   @IsOptional() @IsString() callTime?: string;
   @IsOptional() @IsString() onSetTime?: string;
   @IsOptional() @IsString() wrapTime?: string;
-  @IsOptional() @IsEnum(['SW', 'W', 'WF', 'SWF', 'H']) workStatus?: string;
+  @IsOptional() @IsEnum(["SW", "W", "WF", "SWF", "H"]) workStatus?: string;
   @IsOptional() @IsString() transportMode?: string;
   @IsOptional() @IsInt() muDuration?: number;
   @IsOptional() @IsString() wardrobeNotes?: string;
   @IsOptional() @IsBoolean() isMinor?: boolean;
   @IsOptional() @IsBoolean() hasStunt?: boolean;
   @IsOptional() @IsString() notes?: string;
-  @IsOptional() @IsEnum(['PENDING', 'CONFIRMED', 'ON_SET', 'WRAPPED']) status?: string;
+  @IsOptional()
+  @IsEnum(["PENDING", "CONFIRMED", "ON_SET", "WRAPPED"])
+  status?: string;
 }

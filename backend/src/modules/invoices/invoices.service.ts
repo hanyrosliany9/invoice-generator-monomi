@@ -26,7 +26,11 @@ import {
 } from "@prisma/client";
 import { PaginatedResponse } from "../../common/dto/api-response.dto";
 import { handleServiceError } from "../../common/utils/error-handling.util";
-import { sanitizeText, sanitizeRichText, sanitizeJsonObject } from "../../common/utils/sanitization.util";
+import {
+  sanitizeText,
+  sanitizeRichText,
+  sanitizeJsonObject,
+} from "../../common/utils/sanitization.util";
 
 @Injectable()
 export class InvoicesService {
@@ -89,9 +93,7 @@ export class InvoicesService {
       });
 
       if (!paymentMilestone) {
-        throw new NotFoundException(
-          "Payment milestone tidak ditemukan",
-        );
+        throw new NotFoundException("Payment milestone tidak ditemukan");
       }
 
       // CRITICAL: Prevent duplicate milestone invoices
@@ -117,7 +119,9 @@ export class InvoicesService {
 
       // Override amounts with milestone data (prevent manual tampering)
       createInvoiceDto.totalAmount = Number(paymentMilestone.paymentAmount);
-      createInvoiceDto.amountPerProject = Number(paymentMilestone.paymentAmount);
+      createInvoiceDto.amountPerProject = Number(
+        paymentMilestone.paymentAmount,
+      );
       createInvoiceDto.quotationId = paymentMilestone.quotationId;
     }
 
@@ -210,7 +214,10 @@ export class InvoicesService {
       });
     } catch (error: any) {
       // Handle concurrent invoice creation (Prisma unique constraint violation)
-      if (error.code === "P2002" && error.meta?.target?.includes("paymentMilestoneId")) {
+      if (
+        error.code === "P2002" &&
+        error.meta?.target?.includes("paymentMilestoneId")
+      ) {
         throw new ConflictException(
           "Invoice untuk milestone ini sedang dibuat oleh user lain. Silakan refresh halaman.",
         );
@@ -349,7 +356,10 @@ export class InvoicesService {
         );
       } catch (error) {
         // Log error but don't fail the invoice creation
-        this.logger.error("Failed to send invoice generation notification:", error);
+        this.logger.error(
+          "Failed to send invoice generation notification:",
+          error,
+        );
       }
 
       return {
@@ -422,7 +432,7 @@ export class InvoicesService {
             paymentMilestones: true,
             invoices: {
               where: {
-                status: 'PAID',
+                status: "PAID",
               },
               select: {
                 id: true,
@@ -810,7 +820,9 @@ export class InvoicesService {
       });
 
       if (existingDeferred) {
-        this.logger.log(`Invoice ${invoiceId}: Deferred revenue already exists`);
+        this.logger.log(
+          `Invoice ${invoiceId}: Deferred revenue already exists`,
+        );
         return;
       }
 
@@ -949,7 +961,7 @@ export class InvoicesService {
     });
 
     if (!invoice) {
-      throw new NotFoundException('Invoice tidak ditemukan');
+      throw new NotFoundException("Invoice tidak ditemukan");
     }
 
     // CRITICAL: Delete document files from filesystem BEFORE database deletion
@@ -1164,7 +1176,7 @@ export class InvoicesService {
         quotation: {
           include: {
             paymentMilestones: {
-              orderBy: { milestoneNumber: 'asc' },
+              orderBy: { milestoneNumber: "asc" },
             },
           },
         },
@@ -1185,25 +1197,25 @@ export class InvoicesService {
       // Log warning but don't block
       this.logger.warn(
         `⚠️ Milestone ${milestone.milestoneNumber} invoiced out of sequence. ` +
-        `Previous milestone(s) ${unInvoicedPrev.map((m) => m.milestoneNumber).join(', ')} not invoiced.`,
+          `Previous milestone(s) ${unInvoicedPrev.map((m) => m.milestoneNumber).join(", ")} not invoiced.`,
         { quotationId: milestone.quotationId, milestoneId },
       );
 
       // Track business journey event for analytics
       try {
         await this.trackBusinessJourneyEvent(
-          'MILESTONE_OUT_OF_SEQUENCE' as BusinessJourneyEventType,
+          "MILESTONE_OUT_OF_SEQUENCE" as BusinessJourneyEventType,
           {
             milestoneId,
             milestoneNumber: milestone.milestoneNumber,
             unInvoicedPrev: unInvoicedPrev.map((m) => m.milestoneNumber),
             quotationId: milestone.quotationId,
           },
-          'system',
+          "system",
         );
       } catch (error) {
         // Don't fail if event tracking fails
-        this.logger.error('Failed to track out-of-sequence event:', error);
+        this.logger.error("Failed to track out-of-sequence event:", error);
       }
     }
   }

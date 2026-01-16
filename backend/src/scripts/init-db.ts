@@ -16,17 +16,17 @@ async function initDatabase() {
 
     // Check if database schema exists, create if not
     console.log("📋 Checking database schema...");
-    let schemaExists = false;
+    let _schemaExists = false;
     try {
       const result =
         await prisma.$queryRaw`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'`;
       if (Array.isArray(result) && result.length > 0) {
         console.log("✅ Database schema verified");
-        schemaExists = true;
+        _schemaExists = true;
       } else {
         throw new Error("Users table not found");
       }
-    } catch (schemaError) {
+    } catch {
       console.log("📋 Database schema not found, creating tables...");
       try {
         // Automatically run prisma db push to create schema
@@ -49,7 +49,7 @@ async function initDatabase() {
           await prisma.$queryRaw`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'`;
         if (Array.isArray(verifyResult) && verifyResult.length > 0) {
           console.log("✅ Database schema created and verified successfully");
-          schemaExists = true;
+          _schemaExists = true;
         } else {
           throw new Error(
             "Schema creation failed - users table still not found",
@@ -70,7 +70,7 @@ async function initDatabase() {
       existingAdmin = await prisma.user.findFirst({
         where: { email: "admin@monomi.id" },
       });
-    } catch (userCheckError) {
+    } catch {
       console.log("⚠️  Users table not found, assuming first-time setup");
       existingAdmin = null;
     }
@@ -82,7 +82,7 @@ async function initDatabase() {
       let hashedPassword;
       try {
         hashedPassword = await bcrypt.hash("password123", 10);
-      } catch (error) {
+      } catch {
         console.warn("bcrypt failed, using fallback hash");
         hashedPassword = "$2b$10$dummy.hash.for.development.password123";
       }

@@ -5,14 +5,14 @@
  */
 
 const THEME_COLORS = {
-  primary: '#337EA9',
-  primaryDark: '#37352F',
-  success: '#448361',
-  warning: '#D9730D',
-  error: '#D44C47',
-  lightBg: '#F1F1EF',
-  mediumBg: '#E1E0DC',
-  textSecondary: '#787774',
+  primary: "#337EA9",
+  primaryDark: "#37352F",
+  success: "#448361",
+  warning: "#D9730D",
+  error: "#D44C47",
+  lightBg: "#F1F1EF",
+  mediumBg: "#E1E0DC",
+  textSecondary: "#787774",
 };
 
 /**
@@ -20,12 +20,19 @@ const THEME_COLORS = {
  * In continuous/digital view mode, returns empty string to allow infinite scroll
  */
 function getPageBreakStyle(continuous: boolean): string {
-  return continuous ? '' : 'page-break-inside: avoid;';
+  return continuous ? "" : "page-break-inside: avoid;";
 }
 
-export function generateCallSheetHTML(cs: any, logoBase64?: string | null, continuous: boolean = true): string {
-  const shootDate = new Date(cs.shootDate).toLocaleDateString('en-US', {
-    weekday: 'short', year: 'numeric', month: 'short', day: '2-digit'
+export function generateCallSheetHTML(
+  cs: any,
+  logoBase64?: string | null,
+  continuous: boolean = true,
+): string {
+  const shootDate = new Date(cs.shootDate).toLocaleDateString("en-US", {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
   });
 
   // Build crew by department
@@ -36,40 +43,55 @@ export function generateCallSheetHTML(cs: any, logoBase64?: string | null, conti
   }, {});
 
   // Build scenes list
-  const castRowsHtml = cs.castCalls?.map((cast: any) => `
+  const castRowsHtml =
+    cs.castCalls
+      ?.map(
+        (cast: any) => `
     <tr>
-      <td>${cast.castNumber || ''}</td>
-      <td>${cast.character || ''}</td>
+      <td>${cast.castNumber || ""}</td>
+      <td>${cast.character || ""}</td>
       <td>${cast.actorName}</td>
-      <td style="text-align: center;">${cast.workStatus || 'W'}</td>
-      <td style="text-align: center;">${cast.pickupTime || '-'}</td>
-      <td style="text-align: center;">${cast.onSetTime || '-'}</td>
-      <td style="text-align: center;">${cast.muCallTime || '-'}</td>
-      <td>${cast.notes || ''}</td>
+      <td style="text-align: center;">${cast.workStatus || "W"}</td>
+      <td style="text-align: center;">${cast.pickupTime || "-"}</td>
+      <td style="text-align: center;">${cast.onSetTime || "-"}</td>
+      <td style="text-align: center;">${cast.muCallTime || "-"}</td>
+      <td>${cast.notes || ""}</td>
     </tr>
-  `).join('') || '';
+  `,
+      )
+      .join("") || "";
 
   // Build crew by department HTML
-  const crewHtml = crewByDept ? Object.entries(crewByDept).map(([dept, crew]: [string, any]) => {
-    const crewRows = (crew as any[]).map((c: any) => `
+  const crewHtml = crewByDept
+    ? Object.entries(crewByDept)
+        .map(([dept, crew]: [string, any]) => {
+          const crewRows = (crew as any[])
+            .map(
+              (c: any) => `
       <tr>
         <td><strong>${c.position}</strong></td>
         <td>${c.name}</td>
         <td>${c.callTime}</td>
-        <td>${c.phone || ''}</td>
+        <td>${c.phone || ""}</td>
       </tr>
-    `).join('');
+    `,
+            )
+            .join("");
 
-    return `
+          return `
       <tr>
         <td colspan="4" style="background: ${THEME_COLORS.mediumBg}; font-weight: bold; padding: 4px 8px;"><strong>${dept}</strong></td>
       </tr>
       ${crewRows}
     `;
-  }).join('') : '';
+        })
+        .join("")
+    : "";
 
   // Build CSS rules dynamically based on continuous mode
-  const pagebreakCSS = continuous ? '' : `
+  const pagebreakCSS = continuous
+    ? ""
+    : `
     @page {
       size: letter;
       margin: 0.4in;
@@ -447,23 +469,23 @@ export function generateCallSheetHTML(cs: any, logoBase64?: string | null, conti
       <div class="header-top">
         <!-- Left: Company Info -->
         <div class="header-left">
-          ${logoBase64 ? `<img src="${logoBase64}" alt="Company Logo" class="company-logo-small" />` : ''}
+          ${logoBase64 ? `<img src="${logoBase64}" alt="Company Logo" class="company-logo-small" />` : ""}
           <div class="production-info-box">
-            <div><span class="production-info-label">Company:</span> ${cs.companyName || 'Production'}</div>
-            <div><span class="production-info-label">Producer:</span> ${cs.producer || ''}</div>
-            <div><span class="production-info-label">Director:</span> ${cs.director || ''}</div>
-            <div><span class="production-info-label">1st AD:</span> ${cs.firstAd || ''}</div>
+            <div><span class="production-info-label">Company:</span> ${cs.companyName || "Production"}</div>
+            <div><span class="production-info-label">Producer:</span> ${cs.producer || ""}</div>
+            <div><span class="production-info-label">Director:</span> ${cs.director || ""}</div>
+            <div><span class="production-info-label">1st AD:</span> ${cs.firstAd || ""}</div>
           </div>
         </div>
 
         <!-- Center: Title -->
         <div class="header-center">
-          <div class="call-sheet-title">${cs.productionName || 'CALL SHEET'}</div>
+          <div class="call-sheet-title">${cs.productionName || "CALL SHEET"}</div>
           <div class="shoot-info">
             <div class="shoot-info-line"><strong>${shootDate}</strong></div>
-            ${cs.dayNumber ? `<div class="shoot-info-line">DAY ${cs.dayNumber}${cs.totalDays ? ' of ' + cs.totalDays : ''}</div>` : ''}
+            ${cs.dayNumber ? `<div class="shoot-info-line">DAY ${cs.dayNumber}${cs.totalDays ? " of " + cs.totalDays : ""}</div>` : ""}
             <div class="shoot-info-line"><strong>GENERAL CREW CALL</strong></div>
-            <div style="font-size: 24px; font-weight: bold; color: ${THEME_COLORS.warning};">${cs.crewCallTime || cs.generalCallTime || '—'}</div>
+            <div style="font-size: 24px; font-weight: bold; color: ${THEME_COLORS.warning};">${cs.crewCallTime || cs.generalCallTime || "—"}</div>
           </div>
         </div>
 
@@ -472,23 +494,23 @@ export function generateCallSheetHTML(cs: any, logoBase64?: string | null, conti
           <table class="key-times-table">
             <tr>
               <td class="key-times-label">Shooting Call:</td>
-              <td class="key-times-value">${cs.firstShotTime || '—'}</td>
+              <td class="key-times-value">${cs.firstShotTime || "—"}</td>
             </tr>
             <tr>
               <td class="key-times-label">Lunch:</td>
-              <td class="key-times-value">${cs.lunchTime || '—'}</td>
+              <td class="key-times-value">${cs.lunchTime || "—"}</td>
             </tr>
             <tr>
               <td class="key-times-label">Est. Wrap:</td>
-              <td class="key-times-value">${cs.estimatedWrap || cs.wrapTime || '—'}</td>
+              <td class="key-times-value">${cs.estimatedWrap || cs.wrapTime || "—"}</td>
             </tr>
             <tr>
               <td class="key-times-label">Sunrise:</td>
-              <td class="key-times-value">${cs.sunrise || '—'}</td>
+              <td class="key-times-value">${cs.sunrise || "—"}</td>
             </tr>
             <tr>
               <td class="key-times-label">Sunset:</td>
-              <td class="key-times-value">${cs.sunset || '—'}</td>
+              <td class="key-times-value">${cs.sunset || "—"}</td>
             </tr>
           </table>
         </div>
@@ -500,49 +522,55 @@ export function generateCallSheetHTML(cs: any, logoBase64?: string | null, conti
       <div class="logistics-grid">
         <div class="logistics-box">
           <div class="logistics-label">BASECAMP</div>
-          <div class="logistics-value">${cs.basecamp || ''}</div>
+          <div class="logistics-value">${cs.basecamp || ""}</div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">CREW PARKING</div>
-          <div class="logistics-value">${cs.crewParking || ''}</div>
+          <div class="logistics-value">${cs.crewParking || ""}</div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">BATHROOMS</div>
-          <div class="logistics-value">${cs.bathrooms || ''}</div>
+          <div class="logistics-value">${cs.bathrooms || ""}</div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">LOCATION(S)</div>
-          <div class="logistics-value">${cs.locationName || cs.locationAddress || ''}</div>
+          <div class="logistics-value">${cs.locationName || cs.locationAddress || ""}</div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">LUNCH LOCATION</div>
-          <div class="logistics-value">${cs.lunchLocation || ''}</div>
+          <div class="logistics-value">${cs.lunchLocation || ""}</div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">WORKING TRUCKS</div>
-          <div class="logistics-value">${cs.workingTrucks || ''}</div>
+          <div class="logistics-value">${cs.workingTrucks || ""}</div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">NEAREST HOSPITAL</div>
-          <div class="logistics-value">${cs.nearestHospital || ''}<br/><small>${cs.hospitalAddress || ''}</small></div>
+          <div class="logistics-value">${cs.nearestHospital || ""}<br/><small>${cs.hospitalAddress || ""}</small></div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">WEATHER</div>
-          <div class="logistics-value">H: ${cs.weatherHigh || '—'}° / L: ${cs.weatherLow || '—'}°<br/>${cs.weatherCondition || ''}</div>
+          <div class="logistics-value">H: ${cs.weatherHigh || "—"}° / L: ${cs.weatherLow || "—"}°<br/>${cs.weatherCondition || ""}</div>
         </div>
       </div>
     </div>
 
     <!-- SAFETY NOTES -->
-    ${cs.safetyNotes ? `
+    ${
+      cs.safetyNotes
+        ? `
     <div class="safety-section">
       <div class="safety-title">⚠️ SAFETY NOTES</div>
       <div>${cs.safetyNotes}</div>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <!-- SCENES TABLE -->
-    ${cs.scenes && cs.scenes.length > 0 ? `
+    ${
+      cs.scenes && cs.scenes.length > 0
+        ? `
     <div class="scenes-section">
       <div class="section-title">SCENE SCHEDULE</div>
       <table class="scenes-table">
@@ -558,24 +586,32 @@ export function generateCallSheetHTML(cs: any, logoBase64?: string | null, conti
           </tr>
         </thead>
         <tbody>
-          ${cs.scenes.map((scene: any) => `
+          ${cs.scenes
+            .map(
+              (scene: any) => `
             <tr>
               <td><strong>${scene.sceneNumber}</strong></td>
-              <td>${scene.intExt || ''}</td>
-              <td>${scene.dayNight || ''}</td>
-              <td>${scene.sceneName || scene.description || ''}</td>
-              <td>${scene.castIds || ''}</td>
-              <td style="text-align: center;">${scene.pageCount?.toFixed(1) || ''}</td>
-              <td>${scene.location || ''}</td>
+              <td>${scene.intExt || ""}</td>
+              <td>${scene.dayNight || ""}</td>
+              <td>${scene.sceneName || scene.description || ""}</td>
+              <td>${scene.castIds || ""}</td>
+              <td style="text-align: center;">${scene.pageCount?.toFixed(1) || ""}</td>
+              <td>${scene.location || ""}</td>
             </tr>
-          `).join('')}
+          `,
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <!-- CAST TABLE -->
-    ${cs.castCalls && cs.castCalls.length > 0 ? `
+    ${
+      cs.castCalls && cs.castCalls.length > 0
+        ? `
     <div class="cast-section">
       <div class="section-title">CAST</div>
       <table class="cast-table">
@@ -596,10 +632,14 @@ export function generateCallSheetHTML(cs: any, logoBase64?: string | null, conti
         </tbody>
       </table>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <!-- CREW BY DEPARTMENT -->
-    ${crewByDept && Object.keys(crewByDept).length > 0 ? `
+    ${
+      crewByDept && Object.keys(crewByDept).length > 0
+        ? `
     <div class="crew-section">
       <div class="section-title">CREW</div>
       <table class="crew-table">
@@ -616,41 +656,51 @@ export function generateCallSheetHTML(cs: any, logoBase64?: string | null, conti
         </tbody>
       </table>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <!-- NOTES -->
-    ${cs.generalNotes ? `
+    ${
+      cs.generalNotes
+        ? `
     <div class="notes-section">
       <div class="section-title">GENERAL NOTES</div>
       <div class="notes-content">${cs.generalNotes}</div>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
-    ${cs.productionNotes ? `
+    ${
+      cs.productionNotes
+        ? `
     <div class="notes-section">
       <div class="section-title">PRODUCTION NOTES</div>
       <div class="notes-content">${cs.productionNotes}</div>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <!-- FOOTER INFO -->
     <div class="footer-section">
       <div class="footer-grid">
         <div class="footer-box">
           <div class="footer-label">UPM</div>
-          <div class="footer-value">${cs.upm || ''}</div>
+          <div class="footer-value">${cs.upm || ""}</div>
         </div>
         <div class="footer-box">
           <div class="footer-label">1st AD</div>
-          <div class="footer-value">${cs.firstAd || ''}</div>
+          <div class="footer-value">${cs.firstAd || ""}</div>
         </div>
         <div class="footer-box">
           <div class="footer-label">2nd AD</div>
-          <div class="footer-value">${cs.secondAd || ''}<br/><small>${cs.secondAdPhone || ''}</small></div>
+          <div class="footer-value">${cs.secondAd || ""}<br/><small>${cs.secondAdPhone || ""}</small></div>
         </div>
         <div class="footer-box">
           <div class="footer-label">SET MEDIC</div>
-          <div class="footer-value">${cs.setMedic || ''}<br/><small>${cs.setMedicPhone || ''}</small></div>
+          <div class="footer-value">${cs.setMedic || ""}<br/><small>${cs.setMedicPhone || ""}</small></div>
         </div>
         <div class="footer-box">
           <div class="footer-label">LOCATION MANAGER</div>
@@ -658,7 +708,7 @@ export function generateCallSheetHTML(cs: any, logoBase64?: string | null, conti
         </div>
         <div class="footer-box">
           <div class="footer-label">PRODUCTION OFFICE</div>
-          <div class="footer-value">${cs.productionOfficePhone || ''}</div>
+          <div class="footer-value">${cs.productionOfficePhone || ""}</div>
         </div>
       </div>
     </div>

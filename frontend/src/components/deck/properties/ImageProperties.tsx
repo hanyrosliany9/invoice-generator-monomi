@@ -20,7 +20,7 @@ export default function ImageProperties({ object }: ImagePropertiesProps) {
 
   const handleReplaceImage = useCallback(() => {
     // Create the asset selection handler
-    const handleAssetSelected = (asset: MediaAsset) => {
+    const handleAssetSelected = async (asset: MediaAsset) => {
       if (!canvas || !object) {
         console.error('Canvas or object not available for image replacement');
         return;
@@ -28,46 +28,47 @@ export default function ImageProperties({ object }: ImagePropertiesProps) {
 
       console.log('Loading replacement image from URL:', asset.url);
 
-      Image.fromURL(
-        asset.url,
-        (newImg) => {
-          if (!newImg) {
-            console.error('Failed to load replacement image from:', asset.url);
-            return;
-          }
+      try {
+        // Fabric.js 6.x uses Promise API
+        const newImg = await Image.fromURL(asset.url, { crossOrigin: 'anonymous' });
 
-          if (!canvas || !object) {
-            console.error('Canvas or object became unavailable during image load');
-            return;
-          }
+        if (!newImg) {
+          console.error('Failed to load replacement image from:', asset.url);
+          return;
+        }
 
-          console.log('Replacement image loaded successfully');
+        if (!canvas || !object) {
+          console.error('Canvas or object became unavailable during image load');
+          return;
+        }
 
-          // Preserve transform from old image
-          newImg.set({
-            left: object.left,
-            top: object.top,
-            scaleX: object.scaleX,
-            scaleY: object.scaleY,
-            angle: object.angle,
-            opacity: object.opacity,
-          });
+        console.log('Replacement image loaded successfully');
 
-          (newImg as any).elementType = 'image';
-          (newImg as any).assetId = asset.id;
-          (newImg as any).assetUrl = asset.url;
-          newImg.set('id', `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+        // Preserve transform from old image
+        newImg.set({
+          left: object.left,
+          top: object.top,
+          scaleX: object.scaleX,
+          scaleY: object.scaleY,
+          angle: object.angle,
+          opacity: object.opacity,
+        });
 
-          canvas.remove(object);
-          canvas.add(newImg);
-          canvas.setActiveObject(newImg);
-          canvas.renderAll();
-          pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+        (newImg as any).elementType = 'image';
+        (newImg as any).assetId = asset.id;
+        (newImg as any).assetUrl = asset.url;
+        newImg.set('id', `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
-          console.log('Replacement image added to canvas successfully');
-        },
-        { crossOrigin: 'anonymous' }
-      );
+        canvas.remove(object);
+        canvas.add(newImg);
+        canvas.setActiveObject(newImg);
+        canvas.renderAll();
+        pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+
+        console.log('Replacement image added to canvas successfully');
+      } catch (error) {
+        console.error('Failed to load replacement image:', error);
+      }
     };
 
     setOnAssetSelect(handleAssetSelected);

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException ,
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
   Logger,
   Inject,
   forwardRef,
@@ -42,30 +46,30 @@ export class AssetsService {
 
         // Map asset category to fixed asset account code
         const assetAccountMap: Record<string, string> = {
-          'Camera': '1-4510', // Camera & Photography Equipment
-          'Lens': '1-4510', // Camera & Photography Equipment
-          'Lighting': '1-4550', // Lighting Equipment
-          'Video Equipment': '1-4530', // Video & Audio Production Equipment
-          'Audio Equipment': '1-4530', // Video & Audio Production Equipment
-          'Computer': '1-4570', // Editing Workstations & Computers
-          'Vehicle': '1-4310', // Vehicles
-          'Furniture': '1-4410', // Furniture & Fixtures
-          'Building': '1-4210', // Buildings
-          'Land': '1-4110', // Land
+          Camera: "1-4510", // Camera & Photography Equipment
+          Lens: "1-4510", // Camera & Photography Equipment
+          Lighting: "1-4550", // Lighting Equipment
+          "Video Equipment": "1-4530", // Video & Audio Production Equipment
+          "Audio Equipment": "1-4530", // Video & Audio Production Equipment
+          Computer: "1-4570", // Editing Workstations & Computers
+          Vehicle: "1-4310", // Vehicles
+          Furniture: "1-4410", // Furniture & Fixtures
+          Building: "1-4210", // Buildings
+          Land: "1-4110", // Land
         };
 
-        const assetAccount = assetAccountMap[asset.category] || '1-4010'; // Default to Equipment
+        const assetAccount = assetAccountMap[asset.category] || "1-4010"; // Default to Equipment
 
         // Create and auto-post journal entry for asset purchase
         const journalEntry = await this.journalService.createJournalEntry({
           entryDate: asset.purchaseDate,
           description: `Asset Purchase - ${asset.name}`,
           descriptionId: `Pembelian Aset - ${asset.name}`,
-          transactionType: 'ASSET_PURCHASE' as any,
+          transactionType: "ASSET_PURCHASE" as any,
           transactionId: asset.id,
           documentNumber: asset.assetCode,
           documentDate: asset.purchaseDate,
-          createdBy: createAssetDto.createdById || 'system',
+          createdBy: createAssetDto.createdById || "system",
           autoPost: true, // ✅ Auto-post to General Ledger
           lineItems: [
             {
@@ -76,7 +80,7 @@ export class AssetsService {
               credit: 0,
             },
             {
-              accountCode: '1-1010', // Credit: Cash (assume cash purchase)
+              accountCode: "1-1010", // Credit: Cash (assume cash purchase)
               description: `Payment for ${asset.name}`,
               descriptionId: `Pembayaran ${asset.name}`,
               debit: 0,
@@ -86,7 +90,7 @@ export class AssetsService {
         });
 
         this.logger.log(
-          `✅ Created and posted asset purchase journal entry ${journalEntry.entryNumber} for ${asset.assetCode}`
+          `✅ Created and posted asset purchase journal entry ${journalEntry.entryNumber} for ${asset.assetCode}`,
         );
 
         // Auto-create default depreciation schedule for the asset
@@ -102,24 +106,28 @@ export class AssetsService {
             residualValue: residualValue,
             usefulLifeMonths: usefulLifeMonths,
             usefulLifeYears: usefulLifeYears,
-            depreciationPerMonth: (purchasePrice - residualValue) / usefulLifeMonths,
-            depreciationPerYear: (purchasePrice - residualValue) / usefulLifeYears,
+            depreciationPerMonth:
+              (purchasePrice - residualValue) / usefulLifeMonths,
+            depreciationPerYear:
+              (purchasePrice - residualValue) / usefulLifeYears,
             annualRate: 1 / usefulLifeYears,
             startDate: asset.purchaseDate,
             endDate: new Date(
               new Date(asset.purchaseDate).setMonth(
-                new Date(asset.purchaseDate).getMonth() + usefulLifeMonths
-              )
+                new Date(asset.purchaseDate).getMonth() + usefulLifeMonths,
+              ),
             ),
             isActive: true,
             isFulfilled: false,
           },
         });
 
-        this.logger.log(`Auto-created depreciation schedule for asset ${asset.assetCode}`);
+        this.logger.log(
+          `Auto-created depreciation schedule for asset ${asset.assetCode}`,
+        );
       } catch (error: any) {
         this.logger.warn(
-          `Failed to auto-create journal/schedule for asset ${asset.assetCode}: ${error.message}`
+          `Failed to auto-create journal/schedule for asset ${asset.assetCode}: ${error.message}`,
         );
         // Don't fail asset creation if journal/schedule creation fails
       }
@@ -236,7 +244,9 @@ export class AssetsService {
     });
 
     if (activeReservations > 0) {
-      throw new ConflictException("Tidak dapat menghapus asset dengan reservasi aktif");
+      throw new ConflictException(
+        "Tidak dapat menghapus asset dengan reservasi aktif",
+      );
     }
 
     return this.prisma.asset.delete({
@@ -340,7 +350,9 @@ export class AssetsService {
     });
 
     if (!activeUsage) {
-      throw new BadRequestException("Tidak ada catatan check-out aktif untuk asset ini");
+      throw new BadRequestException(
+        "Tidak ada catatan check-out aktif untuk asset ini",
+      );
     }
 
     return this.prisma.$transaction([
@@ -403,7 +415,7 @@ export class AssetsService {
    * Creates asset purchase journal entries for assets that don't have them yet
    */
   async backfillAssetJournalEntries(userId: string) {
-    this.logger.log('Starting backfill of asset purchase journal entries...');
+    this.logger.log("Starting backfill of asset purchase journal entries...");
 
     // Get all assets
     const assets = await this.prisma.asset.findMany({
@@ -422,33 +434,35 @@ export class AssetsService {
 
     // Map asset category to fixed asset account code
     const assetAccountMap: Record<string, string> = {
-      'Camera': '1-4510',
-      'Lens': '1-4510',
-      'Lighting': '1-4550',
-      'Video Equipment': '1-4530',
-      'Audio Equipment': '1-4530',
-      'Computer': '1-4570',
-      'Vehicle': '1-4310',
-      'Furniture': '1-4410',
-      'Building': '1-4210',
-      'Land': '1-4110',
+      Camera: "1-4510",
+      Lens: "1-4510",
+      Lighting: "1-4550",
+      "Video Equipment": "1-4530",
+      "Audio Equipment": "1-4530",
+      Computer: "1-4570",
+      Vehicle: "1-4310",
+      Furniture: "1-4410",
+      Building: "1-4210",
+      Land: "1-4110",
     };
 
     for (const asset of assets) {
       try {
         const purchasePrice = parseFloat(asset.purchasePrice.toString());
-        const assetAccount = assetAccountMap[asset.category] || '1-4010';
+        const assetAccount = assetAccountMap[asset.category] || "1-4010";
 
         // Check if journal entry already exists for this asset
         const existingJournal = await this.prisma.journalEntry.findFirst({
           where: {
             transactionId: asset.id,
-            transactionType: 'ASSET_PURCHASE' as any,
+            transactionType: "ASSET_PURCHASE" as any,
           },
         });
 
         if (existingJournal) {
-          this.logger.log(`Asset ${asset.assetCode} already has journal entry, skipping`);
+          this.logger.log(
+            `Asset ${asset.assetCode} already has journal entry, skipping`,
+          );
           continue;
         }
 
@@ -457,7 +471,7 @@ export class AssetsService {
           entryDate: asset.purchaseDate,
           description: `Asset Purchase - ${asset.name} (Backfill)`,
           descriptionId: `Pembelian Aset - ${asset.name} (Backfill)`,
-          transactionType: 'ASSET_PURCHASE' as any,
+          transactionType: "ASSET_PURCHASE" as any,
           transactionId: asset.id,
           documentNumber: asset.assetCode,
           documentDate: asset.purchaseDate,
@@ -472,7 +486,7 @@ export class AssetsService {
               credit: 0,
             },
             {
-              accountCode: '1-1010', // Cash
+              accountCode: "1-1010", // Cash
               description: `Payment for ${asset.name}`,
               descriptionId: `Pembayaran ${asset.name}`,
               debit: 0,
@@ -482,18 +496,20 @@ export class AssetsService {
         });
 
         this.logger.log(
-          `✅ Created journal entry ${journalEntry.entryNumber} for asset ${asset.assetCode}`
+          `✅ Created journal entry ${journalEntry.entryNumber} for asset ${asset.assetCode}`,
         );
         results.success++;
       } catch (error: any) {
-        this.logger.error(`Failed to create journal entry for asset ${asset.assetCode}: ${error.message}`);
+        this.logger.error(
+          `Failed to create journal entry for asset ${asset.assetCode}: ${error.message}`,
+        );
         results.failed++;
         results.errors.push(`${asset.assetCode}: ${error.message}`);
       }
     }
 
     this.logger.log(
-      `Backfill completed: ${results.success} success, ${results.failed} failed out of ${results.total} total`
+      `Backfill completed: ${results.success} success, ${results.failed} failed out of ${results.total} total`,
     );
 
     return results;

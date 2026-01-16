@@ -1,4 +1,6 @@
-import { PartialType } from '@nestjs/mapped-types'
-import { CreateCalendarEventDto } from './create-event.dto'
+import { PartialType } from "@nestjs/mapped-types";
+import { CreateCalendarEventDto } from "./create-event.dto";
 
-export class UpdateCalendarEventDto extends PartialType(CreateCalendarEventDto) {}
+export class UpdateCalendarEventDto extends PartialType(
+  CreateCalendarEventDto,
+) {}

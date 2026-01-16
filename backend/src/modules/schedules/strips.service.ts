@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateStripDto } from './dto/create-strip.dto';
-import { UpdateStripDto } from './dto/update-strip.dto';
-import { ReorderStripsDto } from './dto/reorder-strips.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateStripDto } from "./dto/create-strip.dto";
+import { UpdateStripDto } from "./dto/update-strip.dto";
+import { ReorderStripsDto } from "./dto/reorder-strips.dto";
 
 @Injectable()
 export class StripsService {
@@ -14,12 +14,18 @@ export class StripsService {
       _max: { order: true },
     });
     return this.prisma.scheduleStrip.create({
-      data: { ...dto, order: dto.order ?? (maxOrder._max.order ?? -1) + 1 } as any,
+      data: {
+        ...dto,
+        order: dto.order ?? (maxOrder._max.order ?? -1) + 1,
+      } as any,
     });
   }
 
   async update(id: string, dto: UpdateStripDto) {
-    return this.prisma.scheduleStrip.update({ where: { id }, data: dto as any });
+    return this.prisma.scheduleStrip.update({
+      where: { id },
+      data: dto as any,
+    });
   }
 
   async remove(id: string) {
@@ -28,11 +34,11 @@ export class StripsService {
   }
 
   async reorder(dto: ReorderStripsDto) {
-    const updates = dto.strips.map(s =>
+    const updates = dto.strips.map((s) =>
       this.prisma.scheduleStrip.update({
         where: { id: s.stripId },
         data: { shootDayId: s.shootDayId, order: s.order },
-      })
+      }),
     );
     await this.prisma.$transaction(updates);
     return { success: true };
@@ -42,16 +48,19 @@ export class StripsService {
    * Insert a meal break banner after a specific strip
    * Automatically reorders subsequent strips
    */
-  async insertMealBreak(afterStripId: string, data: {
-    mealType: string;
-    mealTime: string;
-    mealDuration?: number;
-    mealLocation?: string;
-  }) {
+  async insertMealBreak(
+    afterStripId: string,
+    data: {
+      mealType: string;
+      mealTime: string;
+      mealDuration?: number;
+      mealLocation?: string;
+    },
+  ) {
     const afterStrip = await this.prisma.scheduleStrip.findUnique({
       where: { id: afterStripId },
     });
-    if (!afterStrip) throw new NotFoundException('Strip not found');
+    if (!afterStrip) throw new NotFoundException("Strip not found");
 
     // Increment order of all strips after this one
     await this.prisma.scheduleStrip.updateMany({
@@ -67,10 +76,10 @@ export class StripsService {
       data: {
         shootDayId: afterStrip.shootDayId,
         order: afterStrip.order + 1,
-        stripType: 'BANNER',
-        bannerType: 'MEAL_BREAK',
+        stripType: "BANNER",
+        bannerType: "MEAL_BREAK",
         bannerText: `${data.mealType} - ${data.mealTime}`,
-        bannerColor: '#4CAF50', // Green for meals
+        bannerColor: "#4CAF50", // Green for meals
         mealType: data.mealType,
         mealTime: data.mealTime,
         mealDuration: data.mealDuration || 30,
@@ -83,17 +92,20 @@ export class StripsService {
    * Insert a company move banner after a specific strip
    * Automatically reorders subsequent strips
    */
-  async insertCompanyMove(afterStripId: string, data: {
-    moveTime: string;
-    moveFromLocation: string;
-    moveToLocation: string;
-    moveTravelTime?: number;
-    moveNotes?: string;
-  }) {
+  async insertCompanyMove(
+    afterStripId: string,
+    data: {
+      moveTime: string;
+      moveFromLocation: string;
+      moveToLocation: string;
+      moveTravelTime?: number;
+      moveNotes?: string;
+    },
+  ) {
     const afterStrip = await this.prisma.scheduleStrip.findUnique({
       where: { id: afterStripId },
     });
-    if (!afterStrip) throw new NotFoundException('Strip not found');
+    if (!afterStrip) throw new NotFoundException("Strip not found");
 
     // Increment order of all strips after this one
     await this.prisma.scheduleStrip.updateMany({
@@ -109,10 +121,10 @@ export class StripsService {
       data: {
         shootDayId: afterStrip.shootDayId,
         order: afterStrip.order + 1,
-        stripType: 'BANNER',
-        bannerType: 'COMPANY_MOVE',
+        stripType: "BANNER",
+        bannerType: "COMPANY_MOVE",
         bannerText: `Move: ${data.moveFromLocation} → ${data.moveToLocation}`,
-        bannerColor: '#2196F3', // Blue for moves
+        bannerColor: "#2196F3", // Blue for moves
         moveTime: data.moveTime,
         moveFromLocation: data.moveFromLocation,
         moveToLocation: data.moveToLocation,

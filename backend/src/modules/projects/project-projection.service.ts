@@ -129,7 +129,9 @@ export class ProjectProjectionService {
     const projectedNetProfit = estimatedRevenue - estimatedTotalCosts;
 
     const projectedGrossMargin =
-      estimatedRevenue > 0 ? (projectedGrossProfit / estimatedRevenue) * 100 : 0;
+      estimatedRevenue > 0
+        ? (projectedGrossProfit / estimatedRevenue) * 100
+        : 0;
 
     const projectedNetMargin =
       estimatedRevenue > 0 ? (projectedNetProfit / estimatedRevenue) * 100 : 0;

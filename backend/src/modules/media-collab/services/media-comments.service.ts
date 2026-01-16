@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 /**
  * MediaCommentsService
@@ -37,7 +37,7 @@ export class MediaCommentsService {
         },
       },
       orderBy: {
-        createdAt: 'asc',
+        createdAt: "asc",
       },
     });
   }
@@ -65,7 +65,7 @@ export class MediaCommentsService {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   }
