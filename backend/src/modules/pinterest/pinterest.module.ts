@@ -1,10 +1,10 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
-import { PinterestController } from './pinterest.controller';
-import { PinterestService } from './pinterest.service';
-import { PinterestGateway } from './pinterest.gateway';
-import { PrismaService } from '../prisma/prisma.service';
+import { Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { JwtModule } from "@nestjs/jwt";
+import { PinterestController } from "./pinterest.controller";
+import { PinterestService } from "./pinterest.service";
+import { PinterestGateway } from "./pinterest.gateway";
+import { PrismaService } from "../prisma/prisma.service";
 
 /**
  * PinterestModule - Pinterest Media Downloader
@@ -42,8 +42,8 @@ import { PrismaService } from '../prisma/prisma.service';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '24h' },
+        secret: configService.get<string>("JWT_SECRET"),
+        signOptions: { expiresIn: "24h" },
       }),
     }),
   ],

@@ -1,17 +1,17 @@
-import { IsString, IsUrl, IsOptional, IsBoolean } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsUrl, IsOptional, IsBoolean } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class StartDownloadDto {
   @ApiProperty({
-    description: 'Pinterest URL (board, user profile, or single pin)',
-    example: 'https://pinterest.com/username/board-name',
+    description: "Pinterest URL (board, user profile, or single pin)",
+    example: "https://pinterest.com/username/board-name",
   })
   @IsString()
   @IsUrl()
   url: string;
 
   @ApiPropertyOptional({
-    description: 'Download images',
+    description: "Download images",
     default: true,
   })
   @IsOptional()
@@ -19,7 +19,7 @@ export class StartDownloadDto {
   downloadImages?: boolean = true;
 
   @ApiPropertyOptional({
-    description: 'Download videos',
+    description: "Download videos",
     default: true,
   })
   @IsOptional()

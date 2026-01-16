@@ -1,26 +1,26 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsUrl, IsOptional, IsEnum, IsBoolean } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsUrl, IsOptional, IsEnum, IsBoolean } from "class-validator";
 
 export enum VideoQuality {
-  BEST = 'best',
-  HD_1080 = '1080p',
-  HD_720 = '720p',
-  SD_480 = '480p',
-  SD_360 = '360p',
-  WORST = 'worst',
-  AUDIO_ONLY = 'audio',
+  BEST = "best",
+  HD_1080 = "1080p",
+  HD_720 = "720p",
+  SD_480 = "480p",
+  SD_360 = "360p",
+  WORST = "worst",
+  AUDIO_ONLY = "audio",
 }
 
 export class QuickDownloadDto {
   @ApiProperty({
-    description: 'URL of the media to download',
-    example: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    description: "URL of the media to download",
+    example: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
   })
   @IsUrl()
   url: string;
 
   @ApiPropertyOptional({
-    description: 'Video quality to download',
+    description: "Video quality to download",
     enum: VideoQuality,
     default: VideoQuality.BEST,
   })
@@ -29,7 +29,7 @@ export class QuickDownloadDto {
   quality?: VideoQuality;
 
   @ApiPropertyOptional({
-    description: 'Download audio only (MP3)',
+    description: "Download audio only (MP3)",
     default: false,
   })
   @IsOptional()
@@ -38,67 +38,69 @@ export class QuickDownloadDto {
 }
 
 export class MediaInfoDto {
-  @ApiProperty({ description: 'Media ID from the platform' })
+  @ApiProperty({ description: "Media ID from the platform" })
   id: string;
 
-  @ApiProperty({ description: 'Title of the media' })
+  @ApiProperty({ description: "Title of the media" })
   title: string;
 
-  @ApiPropertyOptional({ description: 'Description' })
+  @ApiPropertyOptional({ description: "Description" })
   description?: string;
 
-  @ApiPropertyOptional({ description: 'Thumbnail URL' })
+  @ApiPropertyOptional({ description: "Thumbnail URL" })
   thumbnail?: string;
 
-  @ApiPropertyOptional({ description: 'Duration in seconds' })
+  @ApiPropertyOptional({ description: "Duration in seconds" })
   duration?: number;
 
-  @ApiPropertyOptional({ description: 'Uploader name' })
+  @ApiPropertyOptional({ description: "Uploader name" })
   uploader?: string;
 
-  @ApiPropertyOptional({ description: 'View count' })
+  @ApiPropertyOptional({ description: "View count" })
   viewCount?: number;
 
-  @ApiProperty({ description: 'Platform/extractor name' })
+  @ApiProperty({ description: "Platform/extractor name" })
   platform: string;
 
-  @ApiProperty({ description: 'Original URL' })
+  @ApiProperty({ description: "Original URL" })
   url: string;
 
-  @ApiPropertyOptional({ description: 'Video width' })
+  @ApiPropertyOptional({ description: "Video width" })
   width?: number;
 
-  @ApiPropertyOptional({ description: 'Video height' })
+  @ApiPropertyOptional({ description: "Video height" })
   height?: number;
 
-  @ApiPropertyOptional({ description: 'File size in bytes' })
+  @ApiPropertyOptional({ description: "File size in bytes" })
   filesize?: number;
 
-  @ApiPropertyOptional({ description: 'Available quality options' })
+  @ApiPropertyOptional({ description: "Available quality options" })
   availableQualities?: string[];
 }
 
 export class MediaInfoRequestDto {
   @ApiProperty({
-    description: 'URL to get info for',
-    example: 'https://www.instagram.com/reel/ABC123/',
+    description: "URL to get info for",
+    example: "https://www.instagram.com/reel/ABC123/",
   })
   @IsUrl()
   url: string;
 }
 
 export class SupportedPlatformsDto {
-  @ApiProperty({ description: 'List of supported platforms' })
+  @ApiProperty({ description: "List of supported platforms" })
   platforms: string[];
 }
 
 export class PlatformDetectionDto {
-  @ApiProperty({ description: 'Detected platform name' })
+  @ApiProperty({ description: "Detected platform name" })
   platform: string;
 
-  @ApiProperty({ description: 'Whether the URL is supported' })
+  @ApiProperty({ description: "Whether the URL is supported" })
   isSupported: boolean;
 
-  @ApiPropertyOptional({ description: 'Content type (video, reel, short, etc.)' })
+  @ApiPropertyOptional({
+    description: "Content type (video, reel, short, etc.)",
+  })
   contentType?: string;
 }

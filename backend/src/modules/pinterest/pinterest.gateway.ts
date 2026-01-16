@@ -6,32 +6,36 @@ import {
   OnGatewayDisconnect,
   ConnectedSocket,
   MessageBody,
-} from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { Logger, UseGuards } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { DownloadProgressDto } from './dto/download.dto';
+} from "@nestjs/websockets";
+import { Server, Socket } from "socket.io";
+import { Logger } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { DownloadProgressDto } from "./dto/download.dto";
 
 @WebSocketGateway({
-  namespace: 'pinterest',
+  namespace: "pinterest",
   cors: {
-    origin: '*',
+    origin: "*",
     credentials: true,
   },
 })
-export class PinterestGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class PinterestGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
   private readonly logger = new Logger(PinterestGateway.name);
-  private connectedClients: Map<string, { socket: Socket; userId: string }> = new Map();
+  private connectedClients: Map<string, { socket: Socket; userId: string }> =
+    new Map();
 
   constructor(private readonly jwtService: JwtService) {}
 
   async handleConnection(client: Socket) {
     try {
       // Extract token from handshake
-      const token = client.handshake.auth?.token || client.handshake.query?.token;
+      const token =
+        client.handshake.auth?.token || client.handshake.query?.token;
 
       if (!token) {
         this.logger.warn(`Client ${client.id} connected without token`);
@@ -57,8 +61,11 @@ export class PinterestGateway implements OnGatewayConnection, OnGatewayDisconnec
 
       this.logger.log(`Client ${client.id} connected (user: ${userId})`);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.warn(`Client ${client.id} authentication failed: ${errorMessage}`);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.warn(
+        `Client ${client.id} authentication failed: ${errorMessage}`,
+      );
       client.disconnect();
     }
   }
@@ -66,7 +73,9 @@ export class PinterestGateway implements OnGatewayConnection, OnGatewayDisconnec
   handleDisconnect(client: Socket) {
     const clientData = this.connectedClients.get(client.id);
     if (clientData) {
-      this.logger.log(`Client ${client.id} disconnected (user: ${clientData.userId})`);
+      this.logger.log(
+        `Client ${client.id} disconnected (user: ${clientData.userId})`,
+      );
       this.connectedClients.delete(client.id);
     }
   }
@@ -74,7 +83,7 @@ export class PinterestGateway implements OnGatewayConnection, OnGatewayDisconnec
   /**
    * Subscribe to download progress for a specific job
    */
-  @SubscribeMessage('subscribe:job')
+  @SubscribeMessage("subscribe:job")
   handleSubscribeJob(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { jobId: string },
@@ -89,7 +98,7 @@ export class PinterestGateway implements OnGatewayConnection, OnGatewayDisconnec
   /**
    * Unsubscribe from download progress
    */
-  @SubscribeMessage('unsubscribe:job')
+  @SubscribeMessage("unsubscribe:job")
   handleUnsubscribeJob(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { jobId: string },
@@ -102,29 +111,37 @@ export class PinterestGateway implements OnGatewayConnection, OnGatewayDisconnec
    * Emit progress update to a specific user
    */
   emitProgress(userId: string, progress: DownloadProgressDto) {
-    this.server.to(`user:${userId}`).emit('download:progress', progress);
-    this.server.to(`job:${progress.jobId}`).emit('download:progress', progress);
+    this.server.to(`user:${userId}`).emit("download:progress", progress);
+    this.server.to(`job:${progress.jobId}`).emit("download:progress", progress);
   }
 
   /**
    * Emit completion notification to a specific user
    */
-  emitCompleted(userId: string, jobId: string, result: {
-    status: string;
-    totalPins: number;
-    downloadedPins: number;
-    failedPins: number;
-    skippedPins: number;
-  }) {
-    this.server.to(`user:${userId}`).emit('download:completed', { jobId, ...result });
-    this.server.to(`job:${jobId}`).emit('download:completed', { jobId, ...result });
+  emitCompleted(
+    userId: string,
+    jobId: string,
+    result: {
+      status: string;
+      totalPins: number;
+      downloadedPins: number;
+      failedPins: number;
+      skippedPins: number;
+    },
+  ) {
+    this.server
+      .to(`user:${userId}`)
+      .emit("download:completed", { jobId, ...result });
+    this.server
+      .to(`job:${jobId}`)
+      .emit("download:completed", { jobId, ...result });
   }
 
   /**
    * Emit error notification to a specific user
    */
   emitError(userId: string, jobId: string, error: string) {
-    this.server.to(`user:${userId}`).emit('download:error', { jobId, error });
-    this.server.to(`job:${jobId}`).emit('download:error', { jobId, error });
+    this.server.to(`user:${userId}`).emit("download:error", { jobId, error });
+    this.server.to(`job:${jobId}`).emit("download:error", { jobId, error });
   }
 }

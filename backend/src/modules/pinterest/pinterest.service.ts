@@ -1,13 +1,18 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
-import { StartDownloadDto, DownloadProgressDto } from './dto/download.dto';
-import { PinterestJobDto } from './dto/job.dto';
-import { PinterestPinDto } from './dto/pin.dto';
-import * as fs from 'fs';
-import * as path from 'path';
-import axios, { AxiosInstance } from 'axios';
-import * as archiver from 'archiver';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { PrismaService } from "../prisma/prisma.service";
+import { StartDownloadDto, DownloadProgressDto } from "./dto/download.dto";
+import { PinterestJobDto } from "./dto/job.dto";
+import { PinterestPinDto } from "./dto/pin.dto";
+import * as fs from "fs";
+import * as path from "path";
+import axios, { AxiosInstance } from "axios";
+import * as archiver from "archiver";
 
 interface PinterestPinData {
   pinId: string;
@@ -15,13 +20,13 @@ interface PinterestPinData {
   description?: string;
   imageUrl?: string;
   videoUrl?: string;
-  mediaType: 'image' | 'video';
+  mediaType: "image" | "video";
   width?: number;
   height?: number;
 }
 
 interface ParsedUrl {
-  type: 'board' | 'user' | 'pin' | 'section';
+  type: "board" | "user" | "pin" | "section";
   username?: string;
   boardName?: string;
   pinId?: string;
@@ -30,10 +35,11 @@ interface ParsedUrl {
 
 // Pinterest API endpoints (reverse-engineered)
 const PINTEREST_API = {
-  BOARD_FEED: 'https://www.pinterest.com/resource/BoardFeedResource/get/',
-  BOARD_SECTION_PINS: 'https://www.pinterest.com/resource/BoardSectionPinsResource/get/',
-  USER_PINS: 'https://www.pinterest.com/resource/UserPinsResource/get/',
-  PIN_RESOURCE: 'https://www.pinterest.com/resource/PinResource/get/',
+  BOARD_FEED: "https://www.pinterest.com/resource/BoardFeedResource/get/",
+  BOARD_SECTION_PINS:
+    "https://www.pinterest.com/resource/BoardSectionPinsResource/get/",
+  USER_PINS: "https://www.pinterest.com/resource/UserPinsResource/get/",
+  PIN_RESOURCE: "https://www.pinterest.com/resource/PinResource/get/",
 };
 
 @Injectable()
@@ -47,20 +53,21 @@ export class PinterestService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {
-    this.uploadPath = this.configService.get('UPLOAD_PATH', './uploads');
+    this.uploadPath = this.configService.get("UPLOAD_PATH", "./uploads");
 
     // Create axios instance with Pinterest headers
     this.apiClient = axios.create({
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/javascript, */*, q=0.01',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-Pinterest-AppState': 'active',
-        'X-Pinterest-Source-Url': '/',
-        'X-Pinterest-PWS-Handler': 'www/[username]/[slug].js',
-        'Referer': 'https://www.pinterest.com/',
-        'Origin': 'https://www.pinterest.com',
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "application/json, text/javascript, */*, q=0.01",
+        "Accept-Language": "en-US,en;q=0.9",
+        "X-Requested-With": "XMLHttpRequest",
+        "X-Pinterest-AppState": "active",
+        "X-Pinterest-Source-Url": "/",
+        "X-Pinterest-PWS-Handler": "www/[username]/[slug].js",
+        Referer: "https://www.pinterest.com/",
+        Origin: "https://www.pinterest.com",
       },
       timeout: 30000,
     });
@@ -79,32 +86,46 @@ export class PinterestService {
       const urlObj = new URL(url);
 
       // Remove trailing slashes and query parameters from pathname
-      const pathname = urlObj.pathname.replace(/\/+$/, '').replace(/^\/+/, '');
-      const parts = pathname.split('/').filter(Boolean);
+      const pathname = urlObj.pathname.replace(/\/+$/, "").replace(/^\/+/, "");
+      const parts = pathname.split("/").filter(Boolean);
 
-      this.logger.log(`Parsing URL: ${url}, pathname: ${pathname}, parts: ${JSON.stringify(parts)}`);
+      this.logger.log(
+        `Parsing URL: ${url}, pathname: ${pathname}, parts: ${JSON.stringify(parts)}`,
+      );
 
       // Handle pin.it shortlinks
-      if (urlObj.hostname === 'pin.it') {
+      if (urlObj.hostname === "pin.it") {
         // pin.it links need to be resolved, but treat as pin type for now
-        return { type: 'pin', pinId: parts[0] };
+        return { type: "pin", pinId: parts[0] };
       }
 
       // Single pin: /pin/{pinId} or /pin/{pinId}/anything
-      if (parts[0] === 'pin' && parts[1]) {
-        const pinId = parts[1].replace(/\D/g, ''); // Extract numeric ID
-        return { type: 'pin', pinId };
+      if (parts[0] === "pin" && parts[1]) {
+        const pinId = parts[1].replace(/\D/g, ""); // Extract numeric ID
+        return { type: "pin", pinId };
       }
 
       // Skip common non-content paths
-      const skipPaths = ['search', 'today', 'ideas', 'explore', 'settings', 'business'];
+      const skipPaths = [
+        "search",
+        "today",
+        "ideas",
+        "explore",
+        "settings",
+        "business",
+      ];
       if (skipPaths.includes(parts[0]?.toLowerCase())) {
-        throw new BadRequestException('This Pinterest URL type is not supported. Please use a board, user, or pin URL.');
+        throw new BadRequestException(
+          "This Pinterest URL type is not supported. Please use a board, user, or pin URL.",
+        );
       }
 
       // User profile: /{username} or /{username}/_saved or /{username}/_created
-      if (parts.length === 1 || (parts.length === 2 && parts[1].startsWith('_'))) {
-        return { type: 'user', username: parts[0] };
+      if (
+        parts.length === 1 ||
+        (parts.length === 2 && parts[1].startsWith("_"))
+      ) {
+        return { type: "user", username: parts[0] };
       }
 
       // Board: /{username}/{boardName}
@@ -117,23 +138,29 @@ export class PinterestService {
         boardName = decodeURIComponent(boardName);
 
         // Check if this is a section
-        if (parts.length >= 3 && !parts[2].startsWith('_') && parts[2] !== 'more-ideas') {
+        if (
+          parts.length >= 3 &&
+          !parts[2].startsWith("_") &&
+          parts[2] !== "more-ideas"
+        ) {
           return {
-            type: 'section',
+            type: "section",
             username,
             boardName,
             sectionName: decodeURIComponent(parts[2]),
           };
         }
 
-        return { type: 'board', username, boardName };
+        return { type: "board", username, boardName };
       }
 
-      throw new BadRequestException('Invalid Pinterest URL format');
+      throw new BadRequestException("Invalid Pinterest URL format");
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
       this.logger.error(`Failed to parse URL: ${url}`);
-      throw new BadRequestException('Invalid Pinterest URL. Please provide a valid Pinterest board, user, or pin URL.');
+      throw new BadRequestException(
+        "Invalid Pinterest URL. Please provide a valid Pinterest board, user, or pin URL.",
+      );
     }
   }
 
@@ -155,30 +182,42 @@ export class PinterestService {
       const pageData = await this.fetchPageData(url);
 
       if (pageData.pins && Object.keys(pageData.pins).length > 0) {
-        this.logger.log(`Found ${Object.keys(pageData.pins).length} pins in page data`);
+        this.logger.log(
+          `Found ${Object.keys(pageData.pins).length} pins in page data`,
+        );
         pins = this.extractPinsFromReduxState(pageData, options);
       }
 
       // If no pins found from page, try API endpoints
       if (pins.length === 0) {
-        this.logger.log('No pins in page data, trying API endpoints...');
+        this.logger.log("No pins in page data, trying API endpoints...");
 
-        if (parsed.type === 'board') {
-          pins = await this.fetchBoardPins(parsed.username!, parsed.boardName!, options);
-        } else if (parsed.type === 'user') {
+        if (parsed.type === "board") {
+          pins = await this.fetchBoardPins(
+            parsed.username!,
+            parsed.boardName!,
+            options,
+          );
+        } else if (parsed.type === "user") {
           pins = await this.fetchUserPins(parsed.username!, options);
-        } else if (parsed.type === 'pin' && parsed.pinId) {
+        } else if (parsed.type === "pin" && parsed.pinId) {
           const pin = await this.fetchSinglePinData(parsed.pinId, options);
           if (pin) pins = [pin];
-        } else if (parsed.type === 'section') {
-          pins = await this.fetchSectionPins(parsed.username!, parsed.boardName!, parsed.sectionName!, options);
+        } else if (parsed.type === "section") {
+          pins = await this.fetchSectionPins(
+            parsed.username!,
+            parsed.boardName!,
+            parsed.sectionName!,
+            options,
+          );
         }
       }
 
       this.logger.log(`Total extracted ${pins.length} pins from ${url}`);
       return pins;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.logger.error(`Failed to fetch pins from ${url}: ${errorMessage}`);
       throw new BadRequestException(`Failed to fetch pins: ${errorMessage}`);
     }
@@ -190,9 +229,11 @@ export class PinterestService {
   private async fetchPageData(url: string): Promise<any> {
     const response = await axios.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
       },
       timeout: 30000,
     });
@@ -201,38 +242,44 @@ export class PinterestService {
 
     // Try multiple extraction methods
     // Method 1: __PWS_DATA__ (newer Pinterest)
-    const pwsMatch = html.match(/<script[^>]*id="__PWS_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    const pwsMatch = html.match(
+      /<script[^>]*id="__PWS_DATA__"[^>]*>([\s\S]*?)<\/script>/,
+    );
     if (pwsMatch) {
       try {
         const data = JSON.parse(pwsMatch[1]);
         // Navigate to props.initialReduxState
         if (data?.props?.initialReduxState) {
-          this.logger.log('Found initialReduxState in PWS_DATA');
+          this.logger.log("Found initialReduxState in PWS_DATA");
           return data.props.initialReduxState;
         }
         return data;
-      } catch (e) {
-        this.logger.warn('Failed to parse PWS_DATA');
+      } catch {
+        this.logger.warn("Failed to parse PWS_DATA");
       }
     }
 
     // Method 2: Look for initialReduxState directly in scripts
-    const reduxMatch = html.match(/initialReduxState['"]\s*:\s*({[\s\S]*?})\s*,\s*['"]/);
+    const reduxMatch = html.match(
+      /initialReduxState['"]\s*:\s*({[\s\S]*?})\s*,\s*['"]/,
+    );
     if (reduxMatch) {
       try {
         return JSON.parse(reduxMatch[1]);
-      } catch (e) {
-        this.logger.warn('Failed to parse initialReduxState');
+      } catch {
+        this.logger.warn("Failed to parse initialReduxState");
       }
     }
 
     // Method 3: Look for pins object in any script
-    const pinsMatch = html.match(/"pins"\s*:\s*(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/);
+    const pinsMatch = html.match(
+      /"pins"\s*:\s*(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/,
+    );
     if (pinsMatch) {
       try {
         return { pins: JSON.parse(pinsMatch[1]) };
-      } catch (e) {
-        this.logger.warn('Failed to parse pins object');
+      } catch {
+        this.logger.warn("Failed to parse pins object");
       }
     }
 
@@ -269,7 +316,7 @@ export class PinterestService {
     options: { downloadImages: boolean; downloadVideos: boolean },
   ): Promise<PinterestPinData[]> {
     const pins: PinterestPinData[] = [];
-    let bookmark = '';
+    let bookmark = "";
     let pageCount = 0;
     const maxPages = 20;
 
@@ -278,7 +325,7 @@ export class PinterestService {
         const requestOptions: any = {
           board_url: `/${username}/${boardName}/`,
           page_size: 25,
-          field_set_key: 'react_grid_pin',
+          field_set_key: "react_grid_pin",
         };
         if (bookmark) {
           requestOptions.bookmarks = [bookmark];
@@ -289,11 +336,13 @@ export class PinterestService {
           data: JSON.stringify({ options: requestOptions, context: {} }),
         });
 
-        const response = await this.apiClient.get(`${PINTEREST_API.BOARD_FEED}?${params.toString()}`);
+        const response = await this.apiClient.get(
+          `${PINTEREST_API.BOARD_FEED}?${params.toString()}`,
+        );
         const data = response.data;
 
         if (!data?.resource_response?.data) {
-          this.logger.warn('No data in board feed response');
+          this.logger.warn("No data in board feed response");
           break;
         }
 
@@ -307,18 +356,20 @@ export class PinterestService {
           }
         }
 
-        this.logger.log(`Fetched page ${pageCount + 1}: ${boardPins.length} pins (total: ${pins.length})`);
+        this.logger.log(
+          `Fetched page ${pageCount + 1}: ${boardPins.length} pins (total: ${pins.length})`,
+        );
 
         // Get next page bookmark
         bookmark = data.resource_response.bookmark;
-        if (!bookmark || bookmark === '-end-') break;
+        if (!bookmark || bookmark === "-end-") break;
 
         pageCount++;
 
         // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (error) {
-        const msg = error instanceof Error ? error.message : 'Unknown';
+        const msg = error instanceof Error ? error.message : "Unknown";
         this.logger.error(`Board API error on page ${pageCount}: ${msg}`);
         break;
       }
@@ -335,7 +386,7 @@ export class PinterestService {
     options: { downloadImages: boolean; downloadVideos: boolean },
   ): Promise<PinterestPinData[]> {
     const pins: PinterestPinData[] = [];
-    let bookmark = '';
+    let bookmark = "";
     let pageCount = 0;
     const maxPages = 20;
 
@@ -344,7 +395,7 @@ export class PinterestService {
         const requestOptions: any = {
           username,
           page_size: 25,
-          field_set_key: 'grid_item',
+          field_set_key: "grid_item",
         };
         if (bookmark) {
           requestOptions.bookmarks = [bookmark];
@@ -355,7 +406,9 @@ export class PinterestService {
           data: JSON.stringify({ options: requestOptions, context: {} }),
         });
 
-        const response = await this.apiClient.get(`${PINTEREST_API.USER_PINS}?${params.toString()}`);
+        const response = await this.apiClient.get(
+          `${PINTEREST_API.USER_PINS}?${params.toString()}`,
+        );
         const data = response.data;
 
         if (!data?.resource_response?.data) break;
@@ -371,12 +424,14 @@ export class PinterestService {
         }
 
         bookmark = data.resource_response.bookmark;
-        if (!bookmark || bookmark === '-end-') break;
+        if (!bookmark || bookmark === "-end-") break;
 
         pageCount++;
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (error) {
-        this.logger.error(`User pins API error: ${error instanceof Error ? error.message : 'Unknown'}`);
+        this.logger.error(
+          `User pins API error: ${error instanceof Error ? error.message : "Unknown"}`,
+        );
         break;
       }
     }
@@ -394,7 +449,7 @@ export class PinterestService {
     options: { downloadImages: boolean; downloadVideos: boolean },
   ): Promise<PinterestPinData[]> {
     const pins: PinterestPinData[] = [];
-    let bookmark = '';
+    let bookmark = "";
     let pageCount = 0;
     const maxPages = 20;
 
@@ -413,7 +468,9 @@ export class PinterestService {
           data: JSON.stringify({ options: requestOptions, context: {} }),
         });
 
-        const response = await this.apiClient.get(`${PINTEREST_API.BOARD_SECTION_PINS}?${params.toString()}`);
+        const response = await this.apiClient.get(
+          `${PINTEREST_API.BOARD_SECTION_PINS}?${params.toString()}`,
+        );
         const data = response.data;
 
         if (!data?.resource_response?.data) break;
@@ -429,12 +486,14 @@ export class PinterestService {
         }
 
         bookmark = data.resource_response.bookmark;
-        if (!bookmark || bookmark === '-end-') break;
+        if (!bookmark || bookmark === "-end-") break;
 
         pageCount++;
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (error) {
-        this.logger.error(`Section pins API error: ${error instanceof Error ? error.message : 'Unknown'}`);
+        this.logger.error(
+          `Section pins API error: ${error instanceof Error ? error.message : "Unknown"}`,
+        );
         break;
       }
     }
@@ -456,10 +515,12 @@ export class PinterestService {
       const pinUrl = `https://www.pinterest.com/pin/${pinId}/`;
       const response = await axios.get(pinUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Accept-Encoding': 'gzip, deflate, br',
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Accept-Encoding": "gzip, deflate, br",
         },
         timeout: 30000,
         decompress: true,
@@ -469,7 +530,9 @@ export class PinterestService {
       this.logger.log(`Got HTML response, length: ${html.length}`);
 
       // Extract PWS_DATA JSON
-      const pwsMatch = html.match(/<script[^>]*id="__PWS_DATA__"[^>]*>([^<]+)<\/script>/);
+      const pwsMatch = html.match(
+        /<script[^>]*id="__PWS_DATA__"[^>]*>([^<]+)<\/script>/,
+      );
       if (pwsMatch) {
         try {
           const data = JSON.parse(pwsMatch[1]);
@@ -485,8 +548,10 @@ export class PinterestService {
                   const videoUrl = this.extractVideoUrlFromHtml(html);
                   if (videoUrl) {
                     pin.videoUrl = videoUrl;
-                    pin.mediaType = 'video';
-                    this.logger.log(`Found video URL via HTML extraction: ${videoUrl}`);
+                    pin.mediaType = "video";
+                    this.logger.log(
+                      `Found video URL via HTML extraction: ${videoUrl}`,
+                    );
                   }
                 }
                 return pin;
@@ -502,10 +567,12 @@ export class PinterestService {
       if (options.downloadVideos) {
         const videoUrl = this.extractVideoUrlFromHtml(html);
         if (videoUrl) {
-          this.logger.log(`Found video URL via direct HTML extraction: ${videoUrl}`);
+          this.logger.log(
+            `Found video URL via direct HTML extraction: ${videoUrl}`,
+          );
           return {
             pinId,
-            mediaType: 'video',
+            mediaType: "video",
             videoUrl,
           };
         }
@@ -513,17 +580,21 @@ export class PinterestService {
 
       // Try to extract image URL from HTML
       if (options.downloadImages) {
-        const imageMatch = html.match(/https:\/\/i\.pinimg\.com\/originals\/[^"]+\.(jpg|png|gif|webp)/);
+        const imageMatch = html.match(
+          /https:\/\/i\.pinimg\.com\/originals\/[^"]+\.(jpg|png|gif|webp)/,
+        );
         if (imageMatch) {
           return {
             pinId,
-            mediaType: 'image',
+            mediaType: "image",
             imageUrl: imageMatch[0],
           };
         }
       }
     } catch (error) {
-      this.logger.warn(`Page scrape failed for pin ${pinId}: ${error instanceof Error ? error.message : 'Unknown'}`);
+      this.logger.warn(
+        `Page scrape failed for pin ${pinId}: ${error instanceof Error ? error.message : "Unknown"}`,
+      );
     }
 
     // Fallback to API endpoint
@@ -531,19 +602,23 @@ export class PinterestService {
       const params = new URLSearchParams({
         source_url: `/pin/${pinId}/`,
         data: JSON.stringify({
-          options: { id: pinId, field_set_key: 'detailed' },
+          options: { id: pinId, field_set_key: "detailed" },
           context: {},
         }),
       });
 
-      const response = await this.apiClient.get(`${PINTEREST_API.PIN_RESOURCE}?${params.toString()}`);
+      const response = await this.apiClient.get(
+        `${PINTEREST_API.PIN_RESOURCE}?${params.toString()}`,
+      );
       const data = response.data;
 
       if (data?.resource_response?.data) {
         return this.extractPinFromObject(data.resource_response.data, options);
       }
     } catch (error) {
-      this.logger.warn(`Pin API failed for ${pinId}: ${error instanceof Error ? error.message : 'Unknown'}`);
+      this.logger.warn(
+        `Pin API failed for ${pinId}: ${error instanceof Error ? error.message : "Unknown"}`,
+      );
     }
 
     return null;
@@ -560,9 +635,15 @@ export class PinterestService {
 
     const pin: PinterestPinData = {
       pinId: obj.id?.toString(),
-      title: obj.grid_title || obj.title || obj.closeup_unified_description?.substring(0, 100),
-      description: obj.description || obj.closeup_unified_description || obj.closeup_description,
-      mediaType: 'image',
+      title:
+        obj.grid_title ||
+        obj.title ||
+        obj.closeup_unified_description?.substring(0, 100),
+      description:
+        obj.description ||
+        obj.closeup_unified_description ||
+        obj.closeup_description,
+      mediaType: "image",
     };
 
     // Get image URL - try multiple paths
@@ -580,7 +661,7 @@ export class PinterestService {
       if (videoList) {
         pin.videoUrl = this.getBestVideoUrl(videoList);
         if (pin.videoUrl) {
-          pin.mediaType = 'video';
+          pin.mediaType = "video";
         }
       }
 
@@ -592,7 +673,7 @@ export class PinterestService {
               if (block.video?.video_list) {
                 pin.videoUrl = this.getBestVideoUrl(block.video.video_list);
                 if (pin.videoUrl) {
-                  pin.mediaType = 'video';
+                  pin.mediaType = "video";
                   break;
                 }
               }
@@ -619,15 +700,15 @@ export class PinterestService {
     const pins: PinterestPinData[] = [];
 
     const traverse = (obj: any) => {
-      if (!obj || typeof obj !== 'object') return;
+      if (!obj || typeof obj !== "object") return;
 
       // Check if this is a pin object
-      if (obj.type === 'pin' || obj.ptype === 'pin') {
+      if (obj.type === "pin" || obj.ptype === "pin") {
         const pin: PinterestPinData = {
           pinId: obj.id?.toString(),
           title: obj.title || obj.grid_title,
           description: obj.description || obj.closeup_description,
-          mediaType: 'image',
+          mediaType: "image",
         };
 
         // Get image URL
@@ -643,7 +724,7 @@ export class PinterestService {
         if (obj.videos?.video_list && options.downloadVideos) {
           pin.videoUrl = this.getBestVideoUrl(obj.videos.video_list);
           if (pin.videoUrl) {
-            pin.mediaType = 'video';
+            pin.mediaType = "video";
           }
         }
 
@@ -669,7 +750,7 @@ export class PinterestService {
    */
   private getBestImageUrl(images: any): string | undefined {
     // Pinterest image sizes in order of preference
-    const sizes = ['orig', '1200x', '736x', '564x', '474x', '236x', '170x'];
+    const sizes = ["orig", "1200x", "736x", "564x", "474x", "236x", "170x"];
 
     for (const size of sizes) {
       if (images[size]?.url) {
@@ -685,13 +766,22 @@ export class PinterestService {
    */
   private getBestVideoUrl(videoList: any): string | undefined {
     // Video qualities in order of preference (prefer MP4 over HLS for direct download)
-    const qualities = ['V_720P', 'V_480P', 'V_360P', 'V_EXP7', 'V_EXP6', 'V_EXP5', 'V_EXP4', 'V_EXP3'];
+    const qualities = [
+      "V_720P",
+      "V_480P",
+      "V_360P",
+      "V_EXP7",
+      "V_EXP6",
+      "V_EXP5",
+      "V_EXP4",
+      "V_EXP3",
+    ];
 
     for (const quality of qualities) {
       if (videoList[quality]?.url) {
         const url = videoList[quality].url;
         // Skip HLS streams, prefer direct MP4
-        if (!url.includes('.m3u8')) {
+        if (!url.includes(".m3u8")) {
           return url;
         }
       }
@@ -700,7 +790,7 @@ export class PinterestService {
     // Try to find any MP4 URL
     for (const key of Object.keys(videoList)) {
       const video = videoList[key];
-      if (video?.url && video.url.includes('.mp4')) {
+      if (video?.url && video.url.includes(".mp4")) {
         return video.url;
       }
     }
@@ -745,7 +835,8 @@ export class PinterestService {
 
     try {
       // Determine file extension
-      const ext = pin.mediaType === 'video' ? '.mp4' : this.getExtensionFromUrl(mediaUrl);
+      const ext =
+        pin.mediaType === "video" ? ".mp4" : this.getExtensionFromUrl(mediaUrl);
       const filename = `${pin.pinId}${ext}`;
       const localPath = path.join(outputDir, filename);
 
@@ -767,7 +858,8 @@ export class PinterestService {
       const stats = fs.statSync(localPath);
       return { localPath, fileSize: stats.size };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.logger.warn(`Failed to download pin ${pin.pinId}: ${errorMessage}`);
       return null;
     }
@@ -776,24 +868,29 @@ export class PinterestService {
   /**
    * Download with exponential backoff retry
    */
-  private async downloadWithRetry(url: string, maxRetries: number): Promise<any> {
-    let lastError: Error = new Error('Download failed');
+  private async downloadWithRetry(
+    url: string,
+    maxRetries: number,
+  ): Promise<any> {
+    let lastError: Error = new Error("Download failed");
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const response = await axios.get(url, {
-          responseType: 'arraybuffer',
+          responseType: "arraybuffer",
           timeout: 60000,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
           },
         });
         return response;
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Download failed');
+        lastError =
+          error instanceof Error ? error : new Error("Download failed");
         if (attempt < maxRetries - 1) {
           const delay = Math.pow(2, attempt) * 1000;
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
@@ -808,9 +905,9 @@ export class PinterestService {
     try {
       const pathname = new URL(url).pathname;
       const ext = path.extname(pathname);
-      return ext || '.jpg';
+      return ext || ".jpg";
     } catch {
-      return '.jpg';
+      return ".jpg";
     }
   }
 
@@ -831,13 +928,13 @@ export class PinterestService {
         type: parsed.type,
         username: parsed.username,
         boardName: parsed.boardName,
-        status: 'pending',
+        status: "pending",
         userId,
       },
     });
 
     // Start download in background
-    this.processDownload(job.id, dto, onProgress).catch(error => {
+    this.processDownload(job.id, dto, onProgress).catch((error) => {
       this.logger.error(`Download job ${job.id} failed: ${error.message}`);
     });
 
@@ -858,15 +955,15 @@ export class PinterestService {
       // Update status to running
       const job = await this.prisma.pinterestDownload.update({
         where: { id: jobId },
-        data: { status: 'running', startedAt: new Date() },
+        data: { status: "running", startedAt: new Date() },
       });
 
       // Create output directory
       const outputDir = path.join(
         this.uploadPath,
-        'pinterest',
-        job.username || 'unknown',
-        job.boardName || 'pins',
+        "pinterest",
+        job.username || "unknown",
+        job.boardName || "pins",
       );
       fs.mkdirSync(outputDir, { recursive: true });
 
@@ -935,7 +1032,8 @@ export class PinterestService {
           }
         } catch (error) {
           failed++;
-          const errorMessage = error instanceof Error ? error.message : 'Download failed';
+          const errorMessage =
+            error instanceof Error ? error.message : "Download failed";
           await this.prisma.pinterestPin.update({
             where: {
               pinId_downloadId: { pinId: pin.pinId, downloadId: jobId },
@@ -950,19 +1048,25 @@ export class PinterestService {
         // Update progress
         await this.prisma.pinterestDownload.update({
           where: { id: jobId },
-          data: { downloadedPins: downloaded, failedPins: failed, skippedPins: skipped },
+          data: {
+            downloadedPins: downloaded,
+            failedPins: failed,
+            skippedPins: skipped,
+          },
         });
 
         // Emit progress
         if (onProgress) {
           onProgress({
             jobId,
-            status: 'running',
+            status: "running",
             totalPins: pins.length,
             downloadedPins: downloaded,
             failedPins: failed,
             skippedPins: skipped,
-            percentage: Math.round(((downloaded + failed + skipped) / pins.length) * 100),
+            percentage: Math.round(
+              ((downloaded + failed + skipped) / pins.length) * 100,
+            ),
             currentPin: pin.pinId,
           });
         }
@@ -972,7 +1076,7 @@ export class PinterestService {
       await this.prisma.pinterestDownload.update({
         where: { id: jobId },
         data: {
-          status: 'completed',
+          status: "completed",
           completedAt: new Date(),
         },
       });
@@ -981,7 +1085,7 @@ export class PinterestService {
       if (onProgress) {
         onProgress({
           jobId,
-          status: 'completed',
+          status: "completed",
           totalPins: pins.length,
           downloadedPins: downloaded,
           failedPins: failed,
@@ -990,12 +1094,13 @@ export class PinterestService {
         });
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.logger.error(`Download job ${jobId} failed: ${errorMessage}`);
       await this.prisma.pinterestDownload.update({
         where: { id: jobId },
         data: {
-          status: 'failed',
+          status: "failed",
           error: errorMessage,
           completedAt: new Date(),
         },
@@ -1004,7 +1109,7 @@ export class PinterestService {
       if (onProgress) {
         onProgress({
           jobId,
-          status: 'failed',
+          status: "failed",
           totalPins: 0,
           downloadedPins: 0,
           failedPins: 0,
@@ -1024,11 +1129,16 @@ export class PinterestService {
     userId: string,
     page: number = 1,
     limit: number = 20,
-  ): Promise<{ data: PinterestJobDto[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    data: PinterestJobDto[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const [jobs, total] = await Promise.all([
       this.prisma.pinterestDownload.findMany({
         where: { userId },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -1052,7 +1162,7 @@ export class PinterestService {
     });
 
     if (!job) {
-      throw new NotFoundException('Download job not found');
+      throw new NotFoundException("Download job not found");
     }
 
     return this.mapJobToDto(job);
@@ -1067,11 +1177,11 @@ export class PinterestService {
     });
 
     if (!job) {
-      throw new NotFoundException('Download job not found');
+      throw new NotFoundException("Download job not found");
     }
 
-    if (job.status !== 'running' && job.status !== 'pending') {
-      throw new BadRequestException('Job is not running');
+    if (job.status !== "running" && job.status !== "pending") {
+      throw new BadRequestException("Job is not running");
     }
 
     // Signal cancellation
@@ -1080,8 +1190,8 @@ export class PinterestService {
     await this.prisma.pinterestDownload.update({
       where: { id: jobId },
       data: {
-        status: 'failed',
-        error: 'Cancelled by user',
+        status: "failed",
+        error: "Cancelled by user",
         completedAt: new Date(),
       },
     });
@@ -1096,7 +1206,7 @@ export class PinterestService {
     });
 
     if (!job) {
-      throw new NotFoundException('Download job not found');
+      throw new NotFoundException("Download job not found");
     }
 
     // Delete the job (cascade will delete pins)
@@ -1109,8 +1219,11 @@ export class PinterestService {
       try {
         fs.rmSync(job.outputPath, { recursive: true, force: true });
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        this.logger.warn(`Failed to delete files at ${job.outputPath}: ${errorMessage}`);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        this.logger.warn(
+          `Failed to delete files at ${job.outputPath}: ${errorMessage}`,
+        );
       }
     }
   }
@@ -1128,13 +1241,13 @@ export class PinterestService {
     });
 
     if (!job) {
-      throw new NotFoundException('Download job not found');
+      throw new NotFoundException("Download job not found");
     }
 
     const [pins, total] = await Promise.all([
       this.prisma.pinterestPin.findMany({
         where: { downloadId },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       this.prisma.pinterestPin.count({ where: { downloadId } }),
     ]);
@@ -1155,11 +1268,11 @@ export class PinterestService {
     });
 
     if (!pin || pin.download.userId !== userId) {
-      throw new NotFoundException('Pin not found');
+      throw new NotFoundException("Pin not found");
     }
 
     if (!pin.localPath || !fs.existsSync(pin.localPath)) {
-      throw new NotFoundException('File not found');
+      throw new NotFoundException("File not found");
     }
 
     return pin.localPath;
@@ -1168,13 +1281,16 @@ export class PinterestService {
   /**
    * Create a ZIP archive of all downloaded pins for a job
    */
-  async createJobZip(jobId: string, userId: string): Promise<{ stream: archiver.Archiver; filename: string }> {
+  async createJobZip(
+    jobId: string,
+    userId: string,
+  ): Promise<{ stream: archiver.Archiver; filename: string }> {
     const job = await this.prisma.pinterestDownload.findFirst({
       where: { id: jobId, userId },
     });
 
     if (!job) {
-      throw new NotFoundException('Download job not found');
+      throw new NotFoundException("Download job not found");
     }
 
     const pins = await this.prisma.pinterestPin.findMany({
@@ -1182,11 +1298,11 @@ export class PinterestService {
     });
 
     if (pins.length === 0) {
-      throw new BadRequestException('No downloaded files available');
+      throw new BadRequestException("No downloaded files available");
     }
 
     // Create archive
-    const archive = archiver.default('zip', {
+    const archive = archiver.default("zip", {
       zlib: { level: 5 }, // Medium compression for balance of speed and size
     });
 
@@ -1199,8 +1315,8 @@ export class PinterestService {
     }
 
     // Generate filename
-    const boardName = job.boardName || job.username || 'pinterest';
-    const sanitizedName = boardName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const boardName = job.boardName || job.username || "pinterest";
+    const sanitizedName = boardName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
     const filename = `${sanitizedName}_${job.id.slice(0, 8)}.zip`;
 
     return { stream: archive, filename };
@@ -1215,11 +1331,11 @@ export class PinterestService {
     });
 
     if (!job) {
-      throw new NotFoundException('Download job not found');
+      throw new NotFoundException("Download job not found");
     }
 
     if (!job.outputPath || !fs.existsSync(job.outputPath)) {
-      throw new NotFoundException('Output folder not found');
+      throw new NotFoundException("Output folder not found");
     }
 
     return job.outputPath;
@@ -1234,8 +1350,10 @@ export class PinterestService {
   ): Promise<{ data: Buffer; filename: string; contentType: string }> {
     const parsed = this.parseUrl(url);
 
-    if (parsed.type !== 'pin') {
-      throw new BadRequestException('Quick download only works with single pin URLs. For boards/users, use the batch download feature.');
+    if (parsed.type !== "pin") {
+      throw new BadRequestException(
+        "Quick download only works with single pin URLs. For boards/users, use the batch download feature.",
+      );
     }
 
     this.logger.log(`Quick downloading pin: ${parsed.pinId}`);
@@ -1247,12 +1365,16 @@ export class PinterestService {
     });
 
     if (!pin) {
-      throw new BadRequestException('Could not fetch pin data. The pin might be private or deleted.');
+      throw new BadRequestException(
+        "Could not fetch pin data. The pin might be private or deleted.",
+      );
     }
 
     const mediaUrl = pin.videoUrl || pin.imageUrl;
     if (!mediaUrl) {
-      throw new BadRequestException('No downloadable media found for this pin.');
+      throw new BadRequestException(
+        "No downloadable media found for this pin.",
+      );
     }
 
     this.logger.log(`Downloading media from: ${mediaUrl}`);
@@ -1261,21 +1383,21 @@ export class PinterestService {
     const response = await this.downloadWithRetry(mediaUrl, 3);
 
     // Determine filename and content type
-    let ext = '.jpg';
-    let contentType = 'image/jpeg';
+    let ext = ".jpg";
+    let contentType = "image/jpeg";
 
-    if (pin.mediaType === 'video' || mediaUrl.includes('.mp4')) {
-      ext = '.mp4';
-      contentType = 'video/mp4';
-    } else if (mediaUrl.includes('.png')) {
-      ext = '.png';
-      contentType = 'image/png';
-    } else if (mediaUrl.includes('.gif')) {
-      ext = '.gif';
-      contentType = 'image/gif';
-    } else if (mediaUrl.includes('.webp')) {
-      ext = '.webp';
-      contentType = 'image/webp';
+    if (pin.mediaType === "video" || mediaUrl.includes(".mp4")) {
+      ext = ".mp4";
+      contentType = "video/mp4";
+    } else if (mediaUrl.includes(".png")) {
+      ext = ".png";
+      contentType = "image/png";
+    } else if (mediaUrl.includes(".gif")) {
+      ext = ".gif";
+      contentType = "image/gif";
+    } else if (mediaUrl.includes(".webp")) {
+      ext = ".webp";
+      contentType = "image/webp";
     }
 
     const filename = `pinterest_${pin.pinId}${ext}`;
@@ -1294,13 +1416,15 @@ export class PinterestService {
     pinId: string;
     title?: string;
     description?: string;
-    mediaType: 'image' | 'video';
+    mediaType: "image" | "video";
     previewUrl?: string;
   }> {
     const parsed = this.parseUrl(url);
 
-    if (parsed.type !== 'pin') {
-      throw new BadRequestException('This URL is not a single pin. It appears to be a ' + parsed.type);
+    if (parsed.type !== "pin") {
+      throw new BadRequestException(
+        "This URL is not a single pin. It appears to be a " + parsed.type,
+      );
     }
 
     const pin = await this.fetchSinglePinData(parsed.pinId!, {
@@ -1309,7 +1433,9 @@ export class PinterestService {
     });
 
     if (!pin) {
-      throw new BadRequestException('Could not fetch pin data. The pin might be private or deleted.');
+      throw new BadRequestException(
+        "Could not fetch pin data. The pin might be private or deleted.",
+      );
     }
 
     return {

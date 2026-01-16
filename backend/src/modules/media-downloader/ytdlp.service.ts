@@ -1,9 +1,9 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { exec, spawn, execFile } from 'child_process';
-import { promisify } from 'util';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as os from 'os';
+import { Injectable, Logger, BadRequestException } from "@nestjs/common";
+import { exec, execFile } from "child_process";
+import { promisify } from "util";
+import * as path from "path";
+import * as fs from "fs";
+import * as os from "os";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -49,7 +49,7 @@ export interface FormatInfo {
 
 export interface DownloadOptions {
   format?: string; // yt-dlp format string
-  quality?: 'best' | 'worst' | '1080p' | '720p' | '480p' | '360p' | 'audio';
+  quality?: "best" | "worst" | "1080p" | "720p" | "480p" | "360p" | "audio";
   audioOnly?: boolean;
   outputPath?: string;
   filename?: string;
@@ -71,10 +71,10 @@ export class YtdlpService {
   constructor() {
     // Try to find yt-dlp in common locations
     const possiblePaths = [
-      path.join(os.homedir(), '.local', 'bin', 'yt-dlp'),
-      '/usr/local/bin/yt-dlp',
-      '/usr/bin/yt-dlp',
-      'yt-dlp', // System PATH
+      path.join(os.homedir(), ".local", "bin", "yt-dlp"),
+      "/usr/local/bin/yt-dlp",
+      "/usr/bin/yt-dlp",
+      "yt-dlp", // System PATH
     ];
 
     for (const p of possiblePaths) {
@@ -100,16 +100,16 @@ export class YtdlpService {
    */
   getSupportedPlatforms(): string[] {
     return [
-      'youtube',
-      'instagram',
-      'tiktok',
-      'twitter',
-      'facebook',
-      'vimeo',
-      'dailymotion',
-      'twitch',
-      'reddit',
-      'soundcloud',
+      "youtube",
+      "instagram",
+      "tiktok",
+      "twitter",
+      "facebook",
+      "vimeo",
+      "dailymotion",
+      "twitch",
+      "reddit",
+      "soundcloud",
     ];
   }
 
@@ -133,29 +133,29 @@ export class YtdlpService {
   detectPlatform(url: string): string {
     const urlLower = url.toLowerCase();
 
-    if (urlLower.includes('youtube.com') || urlLower.includes('youtu.be')) {
-      return 'youtube';
+    if (urlLower.includes("youtube.com") || urlLower.includes("youtu.be")) {
+      return "youtube";
     }
-    if (urlLower.includes('instagram.com')) {
-      return 'instagram';
+    if (urlLower.includes("instagram.com")) {
+      return "instagram";
     }
-    if (urlLower.includes('tiktok.com')) {
-      return 'tiktok';
+    if (urlLower.includes("tiktok.com")) {
+      return "tiktok";
     }
-    if (urlLower.includes('twitter.com') || urlLower.includes('x.com')) {
-      return 'twitter';
+    if (urlLower.includes("twitter.com") || urlLower.includes("x.com")) {
+      return "twitter";
     }
-    if (urlLower.includes('facebook.com') || urlLower.includes('fb.watch')) {
-      return 'facebook';
+    if (urlLower.includes("facebook.com") || urlLower.includes("fb.watch")) {
+      return "facebook";
     }
-    if (urlLower.includes('vimeo.com')) {
-      return 'vimeo';
+    if (urlLower.includes("vimeo.com")) {
+      return "vimeo";
     }
-    if (urlLower.includes('pinterest.com') || urlLower.includes('pin.it')) {
-      return 'pinterest';
+    if (urlLower.includes("pinterest.com") || urlLower.includes("pin.it")) {
+      return "pinterest";
     }
 
-    return 'unknown';
+    return "unknown";
   }
 
   /**
@@ -167,13 +167,13 @@ export class YtdlpService {
     try {
       const { stdout } = await execAsync(
         `${this.ytdlpPath} --dump-json --no-download --no-warnings "${url}"`,
-        { timeout: 30000, maxBuffer: 10 * 1024 * 1024 }
+        { timeout: 30000, maxBuffer: 10 * 1024 * 1024 },
       );
 
       const info = JSON.parse(stdout);
       return this.normalizeMediaInfo(info);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
+      const message = error instanceof Error ? error.message : "Unknown error";
       this.logger.error(`Failed to get info: ${message}`);
       throw new BadRequestException(`Failed to get media info: ${message}`);
     }
@@ -190,14 +190,17 @@ export class YtdlpService {
   /**
    * Quick download - streams directly to buffer for browser download
    */
-  async quickDownload(url: string, options: DownloadOptions = {}): Promise<DownloadResult> {
+  async quickDownload(
+    url: string,
+    options: DownloadOptions = {},
+  ): Promise<DownloadResult> {
     this.logger.log(`Quick download: ${url}`);
 
     // First get info to determine filename and content type
     const info = await this.getInfo(url);
 
     // Create temp file for download (yt-dlp works better with files than stdout for complex formats)
-    const tempDir = path.join(os.tmpdir(), 'ytdlp-downloads');
+    const tempDir = path.join(os.tmpdir(), "ytdlp-downloads");
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
     }
@@ -206,27 +209,23 @@ export class YtdlpService {
     const tempFile = path.join(tempDir, `${safeTitle}_${Date.now()}.%(ext)s`);
 
     // Build args array (no shell interpretation)
-    const args: string[] = [
-      '--no-warnings',
-      '--no-progress',
-      '-o', tempFile,
-    ];
+    const args: string[] = ["--no-warnings", "--no-progress", "-o", tempFile];
 
     // Add format argument
     const formatString = this.getFormatString(options);
     if (formatString) {
-      args.push('-f', formatString);
+      args.push("-f", formatString);
     }
 
     // Add audio-only options
     if (options.audioOnly) {
-      args.push('-x', '--audio-format', 'mp3');
+      args.push("-x", "--audio-format", "mp3");
     }
 
     // Add URL (no quotes needed with execFile)
     args.push(url);
 
-    this.logger.debug(`Running: ${this.ytdlpPath} ${args.join(' ')}`);
+    this.logger.debug(`Running: ${this.ytdlpPath} ${args.join(" ")}`);
 
     try {
       await execFileAsync(this.ytdlpPath, args, {
@@ -235,16 +234,20 @@ export class YtdlpService {
       });
 
       // Find the downloaded file
-      const downloadedFiles = fs.readdirSync(tempDir).filter(f =>
-        f.startsWith(safeTitle) && f.includes(String(Date.now()).slice(0, -3))
-      );
+      const downloadedFiles = fs
+        .readdirSync(tempDir)
+        .filter(
+          (f) =>
+            f.startsWith(safeTitle) &&
+            f.includes(String(Date.now()).slice(0, -3)),
+        );
 
       if (downloadedFiles.length === 0) {
         // Try finding by pattern
         const files = fs.readdirSync(tempDir);
         const recentFile = files
-          .map(f => ({ name: f, stat: fs.statSync(path.join(tempDir, f)) }))
-          .filter(f => Date.now() - f.stat.mtimeMs < 60000) // Within last minute
+          .map((f) => ({ name: f, stat: fs.statSync(path.join(tempDir, f)) }))
+          .filter((f) => Date.now() - f.stat.mtimeMs < 60000) // Within last minute
           .sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs)[0];
 
         if (recentFile) {
@@ -253,7 +256,7 @@ export class YtdlpService {
       }
 
       if (downloadedFiles.length === 0) {
-        throw new Error('Downloaded file not found');
+        throw new Error("Downloaded file not found");
       }
 
       const downloadedPath = path.join(tempDir, downloadedFiles[0]);
@@ -277,7 +280,7 @@ export class YtdlpService {
         info,
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
+      const message = error instanceof Error ? error.message : "Unknown error";
       this.logger.error(`Download failed: ${message}`);
       throw new BadRequestException(`Download failed: ${message}`);
     }
@@ -289,18 +292,21 @@ export class YtdlpService {
   async downloadToPath(
     url: string,
     outputDir: string,
-    options: DownloadOptions = {}
+    options: DownloadOptions = {},
   ): Promise<string> {
     const formatArg = this.buildFormatArg(options);
-    const outputTemplate = path.join(outputDir, '%(title)s.%(ext)s');
+    const outputTemplate = path.join(outputDir, "%(title)s.%(ext)s");
 
     const args = [
-      '--no-warnings',
-      '-o', `"${outputTemplate}"`,
+      "--no-warnings",
+      "-o",
+      `"${outputTemplate}"`,
       formatArg,
-      options.audioOnly ? '-x --audio-format mp3' : '',
+      options.audioOnly ? "-x --audio-format mp3" : "",
       `"${url}"`,
-    ].filter(Boolean).join(' ');
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     await execAsync(`${this.ytdlpPath} ${args}`, {
       timeout: 600000, // 10 minutes
@@ -320,25 +326,25 @@ export class YtdlpService {
     }
 
     if (options.audioOnly) {
-      return 'bestaudio';
+      return "bestaudio";
     }
 
     switch (options.quality) {
-      case '1080p':
-        return 'bestvideo[height<=1080]+bestaudio/best[height<=1080]';
-      case '720p':
-        return 'bestvideo[height<=720]+bestaudio/best[height<=720]';
-      case '480p':
-        return 'bestvideo[height<=480]+bestaudio/best[height<=480]';
-      case '360p':
-        return 'bestvideo[height<=360]+bestaudio/best[height<=360]';
-      case 'worst':
-        return 'worst';
-      case 'audio':
-        return 'bestaudio';
-      case 'best':
+      case "1080p":
+        return "bestvideo[height<=1080]+bestaudio/best[height<=1080]";
+      case "720p":
+        return "bestvideo[height<=720]+bestaudio/best[height<=720]";
+      case "480p":
+        return "bestvideo[height<=480]+bestaudio/best[height<=480]";
+      case "360p":
+        return "bestvideo[height<=360]+bestaudio/best[height<=360]";
+      case "worst":
+        return "worst";
+      case "audio":
+        return "bestaudio";
+      case "best":
       default:
-        return 'bestvideo+bestaudio/best';
+        return "bestvideo+bestaudio/best";
     }
   }
 
@@ -348,7 +354,7 @@ export class YtdlpService {
    */
   private buildFormatArg(options: DownloadOptions): string {
     const formatString = this.getFormatString(options);
-    if (!formatString) return '';
+    if (!formatString) return "";
     return `-f "${formatString}"`;
   }
 
@@ -367,7 +373,8 @@ export class YtdlpService {
       viewCount: raw.view_count,
       likeCount: raw.like_count,
       uploadDate: raw.upload_date,
-      extractor: raw.extractor_key?.toLowerCase() || raw.extractor?.toLowerCase(),
+      extractor:
+        raw.extractor_key?.toLowerCase() || raw.extractor?.toLowerCase(),
       webpageUrl: raw.webpage_url || raw.url,
       formats: raw.formats?.map((f: any) => ({
         formatId: f.format_id,
@@ -398,8 +405,8 @@ export class YtdlpService {
    */
   private sanitizeFilename(name: string): string {
     return name
-      .replace(/[<>:"/\\|?*]/g, '')
-      .replace(/\s+/g, '_')
+      .replace(/[<>:"/\\|?*]/g, "")
+      .replace(/\s+/g, "_")
       .slice(0, 100);
   }
 
@@ -408,23 +415,23 @@ export class YtdlpService {
    */
   private getContentType(ext: string): string {
     const types: Record<string, string> = {
-      '.mp4': 'video/mp4',
-      '.webm': 'video/webm',
-      '.mkv': 'video/x-matroska',
-      '.mov': 'video/quicktime',
-      '.avi': 'video/x-msvideo',
-      '.mp3': 'audio/mpeg',
-      '.m4a': 'audio/mp4',
-      '.wav': 'audio/wav',
-      '.ogg': 'audio/ogg',
-      '.flac': 'audio/flac',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp',
+      ".mp4": "video/mp4",
+      ".webm": "video/webm",
+      ".mkv": "video/x-matroska",
+      ".mov": "video/quicktime",
+      ".avi": "video/x-msvideo",
+      ".mp3": "audio/mpeg",
+      ".m4a": "audio/mp4",
+      ".wav": "audio/wav",
+      ".ogg": "audio/ogg",
+      ".flac": "audio/flac",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".png": "image/png",
+      ".gif": "image/gif",
+      ".webp": "image/webp",
     };
 
-    return types[ext] || 'application/octet-stream';
+    return types[ext] || "application/octet-stream";
   }
 }
