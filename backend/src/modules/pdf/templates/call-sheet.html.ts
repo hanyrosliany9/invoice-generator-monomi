@@ -40,16 +40,14 @@ export function generateCallSheetHTML(
   logoBase64?: string | null,
   continuous: boolean = true,
 ): string {
-  // Parse date correctly to avoid timezone shift
-  // shootDate comes as "2026-01-21" - treat as local date, not UTC
-  const [year, month, day] = cs.shootDate.split('T')[0].split('-').map(Number);
-  const shootDateObj = new Date(year, month - 1, day); // month is 0-indexed
-  const shootDate = shootDateObj.toLocaleDateString("en-US", {
+  // Format date with Indonesian timezone to show correct local date
+  // The date is stored as UTC (e.g., Jan 20 17:00 UTC = Jan 21 00:00 Jakarta)
+  const shootDate = new Date(cs.shootDate).toLocaleDateString("en-US", {
     weekday: "short",
     year: "numeric",
     month: "short",
     day: "2-digit",
-    timeZone: "Asia/Jakarta", // Indonesian timezone
+    timeZone: "Asia/Jakarta", // Indonesian timezone (UTC+7)
   });
 
   // Build crew by department

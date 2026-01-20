@@ -101,19 +101,16 @@ export function generateScheduleHTML(schedule: any): string {
         })
         .join("");
 
-      // Parse date correctly to avoid timezone shift
-      let shootDate = "No date set";
-      if (day.shootDate) {
-        const [year, month, dayNum] = day.shootDate.split('T')[0].split('-').map(Number);
-        const dateObj = new Date(year, month - 1, dayNum);
-        shootDate = dateObj.toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          timeZone: "Asia/Jakarta",
-        });
-      }
+      // Format date with Indonesian timezone to show correct local date
+      const shootDate = day.shootDate
+        ? new Date(day.shootDate).toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            timeZone: "Asia/Jakarta", // Indonesian timezone (UTC+7)
+          })
+        : "No date set";
 
       return `
       <!-- Day Header -->
