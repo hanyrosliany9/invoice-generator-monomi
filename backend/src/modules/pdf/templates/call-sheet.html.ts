@@ -57,7 +57,7 @@ export function generateCallSheetHTML(
     return acc;
   }, {});
 
-  // Build scenes list
+  // Build cast rows for the cast table
   const castRowsHtml =
     cs.castCalls
       ?.map(
@@ -68,6 +68,7 @@ export function generateCallSheetHTML(
       <td>${cast.actorName}</td>
       <td style="text-align: center;">${cast.workStatus || "W"}</td>
       <td style="text-align: center;">${cast.pickupTime || "-"}</td>
+      <td style="text-align: center;">${cast.callTime || "-"}</td>
       <td style="text-align: center;">${cast.onSetTime || "-"}</td>
       <td style="text-align: center;">${cast.muCallTime || "-"}</td>
       <td>${cast.notes || ""}</td>
@@ -742,6 +743,7 @@ export function generateCallSheetHTML(
             <th>ACTOR</th>
             <th>STATUS</th>
             <th>PICKUP</th>
+            <th>CALL TIME</th>
             <th>ON SET</th>
             <th>HAIR/MU</th>
             <th>NOTES</th>
