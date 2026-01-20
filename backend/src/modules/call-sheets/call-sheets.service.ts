@@ -361,10 +361,10 @@ export class CallSheetsService {
       const hospitalData =
         hospitals.status === "fulfilled" ? hospitals.value : [];
 
-      // Generate map URL
-      const mapUrl = this.externalApisService.generateMapUrl(
-        callSheet.locationAddress,
-      );
+      // Generate map URL (prefer coordinates for accuracy)
+      const mapUrl = coords
+        ? this.externalApisService.generateMapUrlFromCoords(coords.lat, coords.lng)
+        : this.externalApisService.generateMapUrl(callSheet.locationAddress || '');
 
       // Update call sheet with auto-filled data (only empty fields)
       const updateData: any = {

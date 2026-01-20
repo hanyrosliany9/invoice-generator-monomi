@@ -277,6 +277,13 @@ export class ExternalApisService {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   }
 
+  /**
+   * Generate a Google Maps URL from coordinates (more accurate than address)
+   */
+  generateMapUrlFromCoords(lat: number, lng: number): string {
+    return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  }
+
   // ============ PRIVATE HELPER METHODS ============
 
   /**
