@@ -51,9 +51,7 @@ import { ShotListSection } from '../components/callsheet/ShotListSection';
 import { ModelsSection } from '../components/callsheet/ModelsSection';
 import { WardrobeSection } from '../components/callsheet/WardrobeSection';
 import { HMUScheduleSection } from '../components/callsheet/HMUScheduleSection';
-// FILM-specific sections (restored)
-import { KeyTimesBar } from '../components/callsheet/KeyTimesBar';
-import { DayScheduleTimeline } from '../components/callsheet/DayScheduleTimeline';
+// FILM-specific sections
 import { MealBreaksSection } from '../components/callsheet/MealBreaksSection';
 import { CompanyMovesSection } from '../components/callsheet/CompanyMovesSection';
 import { BackgroundCallsSection } from '../components/callsheet/BackgroundCallsSection';
@@ -1142,24 +1140,6 @@ export default function CallSheetEditorPage() {
         {/* FILM-SPECIFIC SECTIONS */}
         {(!callSheet.callSheetType || callSheet.callSheetType === 'FILM') && (
           <>
-            {/* KEY TIMES BAR */}
-            <KeyTimesBar
-              crewCallTime={callSheet.crewCallTime}
-              firstShotTime={callSheet.firstShotTime}
-              lunchTime={callSheet.lunchTime}
-              estimatedWrap={callSheet.estimatedWrap}
-              onUpdate={(field, value) => updateMutation.mutate({ [field]: value })}
-            />
-
-            {/* DAY SCHEDULE TIMELINE */}
-            <DayScheduleTimeline
-              crewCallTime={callSheet.crewCallTime}
-              firstShotTime={callSheet.firstShotTime}
-              estimatedWrap={callSheet.estimatedWrap}
-              meals={callSheet.mealBreaks}
-              moves={callSheet.companyMoves}
-            />
-
             {/* MEAL BREAKS SECTION */}
             <SectionHeader icon={<ClockCircleOutlined />} title="Meal Breaks" theme={theme} count={callSheet.mealBreaks?.length || 0} />
             <div style={{ background: theme.colors.background.primary, padding: 16, borderBottom: `1px solid ${theme.colors.border.default}` }}>
