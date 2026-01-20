@@ -218,3 +218,4 @@ frontend/public/*
 !frontend/public/logo.png
 !backend/src/modules/pdf/assets/company-logo.png
 .aider*
+backups/
