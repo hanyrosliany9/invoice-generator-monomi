@@ -26,8 +26,9 @@ declare global {
         places?: {
           AutocompleteSessionToken: new () => any;
           AutocompleteService: new () => any;
-          PlacesService: new (map: any) => any;
+          PlacesService: new (attrContainer: HTMLElement) => any;
         };
+        Geocoder: new () => any;
       };
     };
   }
@@ -136,13 +137,32 @@ export function AddressAutocomplete({
     setShowDropdown(false);
 
     try {
-      // Try to get place details using the PlacesService for coordinates
-      // Note: This requires Geocoding API to be enabled
-      // For now, just use the address from the suggestion
-      onChange?.(suggestion.description);
+      // Use PlacesService to get place details including coordinates
+      const placesService = new window.google!.maps!.places!.PlacesService(
+        document.createElement('div') // Attribution container (required but not displayed)
+      );
 
-      // Consume the session token and generate a new one
-      sessionTokenRef.current = new window.google!.maps!.places!.AutocompleteSessionToken();
+      placesService.getDetails(
+        {
+          placeId: suggestion.place_id,
+          fields: ['geometry', 'formatted_address'],
+          sessionToken: sessionTokenRef.current,
+        },
+        (place: any, status: any) => {
+          if (status === 'OK' && place?.geometry?.location) {
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+            onChange?.(suggestion.description, { lat, lng });
+          } else {
+            // Fallback: pass address without coordinates
+            console.warn('Could not get place details, using address only');
+            onChange?.(suggestion.description);
+          }
+
+          // Consume the session token and generate a new one
+          sessionTokenRef.current = new window.google!.maps!.places!.AutocompleteSessionToken();
+        }
+      );
     } catch (err) {
       console.error('Error selecting place:', err);
       onChange?.(suggestion.description);

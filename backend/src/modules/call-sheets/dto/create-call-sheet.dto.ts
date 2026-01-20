@@ -2,6 +2,7 @@ import {
   IsString,
   IsOptional,
   IsInt,
+  IsNumber,
   IsDateString,
   IsEnum,
 } from "class-validator";
@@ -54,6 +55,8 @@ export class CreateCallSheetDto {
 
   @IsOptional() @IsString() locationName?: string;
   @IsOptional() @IsString() locationAddress?: string;
+  @IsOptional() @IsNumber() locationLat?: number; // Latitude from Google Places
+  @IsOptional() @IsNumber() locationLng?: number; // Longitude from Google Places
   @IsOptional() @IsString() parkingNotes?: string;
   @IsOptional() @IsString() mapUrl?: string;
 

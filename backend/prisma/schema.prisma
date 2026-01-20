@@ -4910,6 +4910,8 @@ model CallSheet {
   // Location
   locationName    String?
   locationAddress String?
+  locationLat     Float?            // Latitude from Google Places
+  locationLng     Float?            // Longitude from Google Places
   parkingNotes    String?
   mapUrl          String?
 

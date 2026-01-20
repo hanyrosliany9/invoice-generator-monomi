@@ -683,11 +683,14 @@ export default function CallSheetEditorPage() {
             <AddressAutocomplete
               value={callSheet.locationAddress || ''}
               onChange={(address, coords) => {
-                updateMutation.mutate({ locationAddress: address });
-                // If we got coordinates, could auto-fill weather/hospital
+                // Save address and coordinates (if available) to the call sheet
+                updateMutation.mutate({
+                  locationAddress: address,
+                  ...(coords && { locationLat: coords.lat, locationLng: coords.lng }),
+                });
+                // If we got coordinates, auto-fill weather/hospital after a delay
                 if (coords) {
                   console.log('Address selected with coords:', coords);
-                  // Optionally trigger auto-fill after selection
                   setTimeout(() => {
                     if (!autoFillAllMutation.isPending) {
                       autoFillAllMutation.mutate();
