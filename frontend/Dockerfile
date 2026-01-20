@@ -42,6 +42,10 @@ FROM base AS build
 
 WORKDIR /app
 
+# Build arguments for Vite (must be available at build time)
+ARG VITE_GOOGLE_MAPS_API_KEY
+ENV VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
+
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 

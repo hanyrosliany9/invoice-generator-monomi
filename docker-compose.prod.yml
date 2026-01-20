@@ -7,6 +7,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: production-node
+      args:
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
     container_name: invoice-frontend-prod
     # Command is defined in Dockerfile CMD
     environment:
