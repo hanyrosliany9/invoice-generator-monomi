@@ -2123,6 +2123,13 @@ export class PdfService {
     callSheetData: any,
     continuous: boolean = true,
   ): Promise<Buffer> {
+    // Debug logging to track date values
+    this.logger.log(`[PDF DEBUG] Call Sheet ID: ${callSheetData.id}`);
+    this.logger.log(`[PDF DEBUG] shootDate from callSheet: ${callSheetData.shootDate}`);
+    if (callSheetData.shootDay) {
+      this.logger.log(`[PDF DEBUG] shootDay.shootDate: ${callSheetData.shootDay?.shootDate}`);
+    }
+
     const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
