@@ -15,6 +15,18 @@ const THEME_COLORS = {
   textSecondary: "#787774",
 };
 
+// Activity type colors matching frontend ActivitiesSection.tsx
+const ACTIVITY_TYPE_COLORS: Record<string, string> = {
+  GENERAL: '#8c8c8c',
+  PREPARATION: '#1890ff',
+  STANDBY: '#faad14',
+  BRIEFING: '#52c41a',
+  REHEARSAL: '#722ed1',
+  TRANSPORT: '#13c2c2',
+  TECHNICAL: '#eb2f96',
+  CUSTOM: '#595959',
+};
+
 /**
  * Generates page-break property only for print mode
  * In continuous/digital view mode, returns empty string to allow infinite scroll
@@ -329,6 +341,52 @@ export function generateCallSheetHTML(
       background: ${THEME_COLORS.lightBg};
     }
 
+    /* ACTIVITIES TABLE (Run of Show) */
+    .activities-section {
+      width: 100%;
+      border: 2px solid #000;
+      margin-bottom: 8px;
+      ${getPageBreakStyle(continuous)}
+    }
+
+    .activities-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9px;
+    }
+
+    .activities-table th {
+      background: #000;
+      color: white;
+      padding: 6px 4px;
+      text-align: left;
+      font-weight: bold;
+      border: 1px solid #000;
+      font-size: 9px;
+    }
+
+    .activities-table td {
+      padding: 6px 4px;
+      border: 1px solid #000;
+    }
+
+    .activities-table tbody tr:nth-child(even) {
+      background: ${THEME_COLORS.lightBg};
+    }
+
+    .activity-type-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 8px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .activity-highlighted {
+      background: rgba(255, 193, 7, 0.15) !important;
+    }
+
     /* CAST TABLE */
     .cast-section {
       width: 100%;
@@ -562,6 +620,65 @@ export function generateCallSheetHTML(
     <div class="safety-section">
       <div class="safety-title">⚠️ SAFETY NOTES</div>
       <div>${cs.safetyNotes}</div>
+    </div>
+    `
+        : ""
+    }
+
+    <!-- ACTIVITIES / RUN OF SHOW -->
+    ${
+      cs.activities && cs.activities.length > 0
+        ? `
+    <div class="activities-section">
+      <div class="section-title">SCHEDULE / RUN OF SHOW</div>
+      <table class="activities-table">
+        <thead>
+          <tr>
+            <th style="width: 70px;">TIME</th>
+            <th style="width: 90px;">TYPE</th>
+            <th>ACTIVITY</th>
+            <th style="width: 120px;">LOCATION</th>
+            <th style="width: 120px;">PERSONNEL</th>
+            <th>NOTES</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cs.activities
+            .sort((a: any, b: any) => {
+              // Sort by startTime, then by order
+              if (a.startTime && b.startTime) {
+                const timeCompare = a.startTime.localeCompare(b.startTime);
+                if (timeCompare !== 0) return timeCompare;
+              }
+              return (a.order || 0) - (b.order || 0);
+            })
+            .map(
+              (activity: any) => `
+            <tr class="${activity.isHighlighted ? 'activity-highlighted' : ''}">
+              <td style="font-weight: bold; white-space: nowrap;">
+                ${activity.startTime || ''}${activity.endTime ? ' - ' + activity.endTime : ''}
+                ${activity.duration ? '<br/><small>(' + activity.duration + ' min)</small>' : ''}
+              </td>
+              <td style="font-weight: bold;">${activity.activityType || 'GENERAL'}</td>
+              <td>
+                <strong>${activity.activityName || ''}</strong>
+                ${activity.description ? '<br/><small>' + activity.description + '</small>' : ''}
+              </td>
+              <td>${activity.location || ''}</td>
+              <td>
+                ${activity.personnel || ''}
+                ${activity.responsibleParty ? '<br/><small><em>In charge: ' + activity.responsibleParty + '</em></small>' : ''}
+              </td>
+              <td>
+                ${activity.notes || ''}
+                ${activity.technicalNotes ? '<br/><small><em>Tech: ' + activity.technicalNotes + '</em></small>' : ''}
+              </td>
+            </tr>
+          `,
+            )
+            .join("")}
+        </tbody>
+      </table>
     </div>
     `
         : ""

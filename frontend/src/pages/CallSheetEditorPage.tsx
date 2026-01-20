@@ -58,6 +58,7 @@ import { MealBreaksSection } from '../components/callsheet/MealBreaksSection';
 import { CompanyMovesSection } from '../components/callsheet/CompanyMovesSection';
 import { BackgroundCallsSection } from '../components/callsheet/BackgroundCallsSection';
 import { SpecialRequirementsSection } from '../components/callsheet/SpecialRequirementsSection';
+import { ActivitiesSection } from '../components/callsheet/ActivitiesSection';
 import type {
   CallSheet,
   CastCall,
@@ -825,7 +826,7 @@ export default function CallSheetEditorPage() {
           {/* Scene Rows */}
           {(!callSheet.scenes || callSheet.scenes.length === 0) ? (
             <div style={{ padding: 40, textAlign: 'center', color: theme.colors.text.tertiary }}>
-              No scenes scheduled. Scenes are imported from the shooting schedule.
+              No scenes added yet. Add scenes using the + button above.
             </div>
           ) : (
             callSheet.scenes.map((scene) => (
@@ -869,6 +870,21 @@ export default function CallSheetEditorPage() {
               </div>
             ))
           )}
+        </div>
+
+        {/* ACTIVITIES SECTION (Run of Show) */}
+        <SectionHeader
+          icon={<ClockCircleOutlined />}
+          title="Schedule / Activities"
+          theme={theme}
+          count={callSheet.activities?.length || 0}
+        />
+        <div style={{ background: theme.colors.background.primary, padding: 16, borderBottom: `1px solid ${theme.colors.border.default}` }}>
+          <ActivitiesSection
+            activities={callSheet.activities || []}
+            callSheetId={id!}
+            theme={theme}
+          />
         </div>
 
         {/* CAST SECTION */}

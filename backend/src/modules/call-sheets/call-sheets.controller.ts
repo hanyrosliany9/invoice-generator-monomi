@@ -45,6 +45,10 @@ import {
   UpdateWardrobeDto,
 } from "./dto/create-wardrobe.dto";
 import { CreateHmuDto, UpdateHmuDto } from "./dto/create-hmu.dto";
+import {
+  CreateActivityDto,
+  UpdateActivityDto,
+} from "./dto/create-activity.dto";
 
 @Controller("call-sheets")
 @UseGuards(JwtAuthGuard)
@@ -334,5 +338,32 @@ export class CallSheetsController {
   @Delete("hmu/:id")
   async removeHmu(@Param("id") id: string) {
     return this.service.removeHmu(id);
+  }
+
+  // ============ GENERAL ACTIVITIES (Run of Show) ============
+  @Post(":id/activities")
+  async addActivity(@Param("id") id: string, @Body() dto: CreateActivityDto) {
+    return this.service.addActivity(id, dto);
+  }
+
+  @Put("activities/:id")
+  async updateActivity(
+    @Param("id") id: string,
+    @Body() dto: UpdateActivityDto,
+  ) {
+    return this.service.updateActivity(id, dto);
+  }
+
+  @Delete("activities/:id")
+  async removeActivity(@Param("id") id: string) {
+    return this.service.removeActivity(id);
+  }
+
+  @Post(":id/activities/reorder")
+  async reorderActivities(
+    @Param("id") id: string,
+    @Body() dto: { activities: { id: string; order: number }[] },
+  ) {
+    return this.service.reorderActivities(id, dto.activities);
   }
 }

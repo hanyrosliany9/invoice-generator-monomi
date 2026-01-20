@@ -62,8 +62,6 @@ import MediaDownloaderPage from './pages/MediaDownloader'
 import DecksPage from './pages/DecksPage'
 import ShotListsPage from './pages/ShotListsPage'
 import ShotListEditorPage from './pages/ShotListEditorPage'
-import ShootingSchedulePage from './pages/ShootingSchedulePage'
-import SchedulesListPage from './pages/SchedulesListPage'
 import CallSheetEditorPage from './pages/CallSheetEditorPage'
 import CallSheetsListPage from './pages/CallSheetsListPage'
 
@@ -468,10 +466,6 @@ function App() {
                     {/* Shot List Routes */}
                     <Route path='/shot-lists' element={<ShotListsPage />} />
                     <Route path='/shot-lists/:id' element={<ShotListEditorPage />} />
-
-                    {/* Shooting Schedule Routes */}
-                    <Route path='/schedules' element={<SchedulesListPage />} />
-                    <Route path='/schedules/:id' element={<ShootingSchedulePage />} />
 
                     {/* Call Sheet Routes */}
                     <Route path='/call-sheets' element={<CallSheetsListPage />} />

@@ -35,6 +35,10 @@ import {
   UpdateWardrobeDto,
 } from "./dto/create-wardrobe.dto";
 import { CreateHmuDto, UpdateHmuDto } from "./dto/create-hmu.dto";
+import {
+  CreateActivityDto,
+  UpdateActivityDto,
+} from "./dto/create-activity.dto";
 import { ExternalApisService } from "../../services/external-apis.service";
 import { generateCallSheetHTML } from "../pdf/templates/call-sheet.html";
 import * as puppeteer from "puppeteer";
@@ -47,28 +51,11 @@ export class CallSheetsService {
   ) {}
 
   async create(userId: string, dto: CreateCallSheetDto) {
-    const callSheetType = (dto.callSheetType || "FILM") as "FILM" | "PHOTO";
+    const callSheetType = (dto.callSheetType || "PHOTO") as "FILM" | "PHOTO";
 
-    // Validate based on call sheet type
-    if (callSheetType === "FILM") {
-      // Film call sheets require scheduleId and shootDayId
-      if (!dto.scheduleId || !dto.shootDayId) {
-        throw new BadRequestException(
-          "Film call sheets require scheduleId and shootDayId",
-        );
-      }
-
-      // Check if call sheet already exists for this shoot day
-      const existing = await this.prisma.callSheet.findUnique({
-        where: { shootDayId: dto.shootDayId },
-      });
-      if (existing)
-        throw new ConflictException("Call sheet already exists for this day");
-    } else if (callSheetType === "PHOTO") {
-      // Photo call sheets are standalone and don't require schedule/shootDay
-      if (!dto.shootDate) {
-        throw new BadRequestException("Photo call sheets require shootDate");
-      }
+    // All call sheets are now standalone - just require shootDate
+    if (!dto.shootDate) {
+      throw new BadRequestException("Call sheets require shootDate");
     }
 
     return this.prisma.callSheet.create({
@@ -81,6 +68,7 @@ export class CallSheetsService {
         models: { orderBy: { order: "asc" } },
         wardrobe: { orderBy: { order: "asc" } },
         hmuSchedule: { orderBy: { order: "asc" } },
+        activities: { orderBy: { order: "asc" } },
       },
     });
   }
@@ -127,6 +115,8 @@ export class CallSheetsService {
         companyMoves: { orderBy: { order: "asc" } },
         specialRequirements: { orderBy: { order: "asc" } },
         backgroundCalls: { orderBy: { order: "asc" } },
+        // === General schedule activities (run of show) ===
+        activities: { orderBy: { order: "asc" } },
       },
     });
     if (!callSheet) throw new NotFoundException("Call sheet not found");
@@ -870,5 +860,76 @@ export class CallSheetsService {
   async removeHmu(id: string) {
     await this.prisma.callSheetHMU.delete({ where: { id } });
     return { success: true };
+  }
+
+  // ============ GENERAL ACTIVITIES (Run of Show) ============
+  async addActivity(callSheetId: string, dto: CreateActivityDto) {
+    const lastActivity = await this.prisma.callSheetActivity.findFirst({
+      where: { callSheetId },
+      orderBy: { order: "desc" },
+    });
+    return this.prisma.callSheetActivity.create({
+      data: {
+        callSheetId,
+        order: (lastActivity?.order || 0) + 1,
+        activityType: (dto.activityType as any) || "GENERAL",
+        activityName: dto.activityName,
+        description: dto.description,
+        startTime: dto.startTime,
+        endTime: dto.endTime,
+        duration: dto.duration,
+        location: dto.location,
+        personnel: dto.personnel,
+        responsibleParty: dto.responsibleParty,
+        technicalNotes: dto.technicalNotes,
+        notes: dto.notes,
+        color: dto.color,
+        isHighlighted: dto.isHighlighted,
+      },
+    });
+  }
+
+  async updateActivity(id: string, dto: UpdateActivityDto) {
+    const data: any = {};
+    if (dto.activityType) data.activityType = dto.activityType;
+    if (dto.activityName !== undefined) data.activityName = dto.activityName;
+    if (dto.description !== undefined) data.description = dto.description;
+    if (dto.startTime !== undefined) data.startTime = dto.startTime;
+    if (dto.endTime !== undefined) data.endTime = dto.endTime;
+    if (dto.duration !== undefined) data.duration = dto.duration;
+    if (dto.location !== undefined) data.location = dto.location;
+    if (dto.personnel !== undefined) data.personnel = dto.personnel;
+    if (dto.responsibleParty !== undefined)
+      data.responsibleParty = dto.responsibleParty;
+    if (dto.technicalNotes !== undefined)
+      data.technicalNotes = dto.technicalNotes;
+    if (dto.notes !== undefined) data.notes = dto.notes;
+    if (dto.color !== undefined) data.color = dto.color;
+    if (dto.isHighlighted !== undefined)
+      data.isHighlighted = dto.isHighlighted;
+    if (dto.order !== undefined) data.order = dto.order;
+    return this.prisma.callSheetActivity.update({ where: { id }, data });
+  }
+
+  async removeActivity(id: string) {
+    await this.prisma.callSheetActivity.delete({ where: { id } });
+    return { success: true };
+  }
+
+  async reorderActivities(
+    callSheetId: string,
+    activities: { id: string; order: number }[],
+  ) {
+    const updates = activities.map((activity) =>
+      this.prisma.callSheetActivity.update({
+        where: { id: activity.id },
+        data: { order: activity.order },
+      }),
+    );
+    await this.prisma.$transaction(updates);
+    return this.prisma.callSheetActivity.findMany({
+      where: { callSheetId },
+      orderBy: { order: "asc" },
+    });
   }
 }

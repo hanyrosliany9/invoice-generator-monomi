@@ -4981,6 +4981,7 @@ model CallSheet {
   backgroundCalls   CallSheetBackground[]
   standIns          CallSheetStandIn[]
   advanceSchedule   CallSheetAdvanceDay[]
+  activities        CallSheetActivity[]     // General schedule items (prep, standby, etc.)
 
   // Relations: Existing
   castCalls         CallSheetCast[]
@@ -5175,6 +5176,56 @@ enum SpecialReqType {
   WEAPONS
   NUDITY
   OTHER
+}
+
+// === NEW ENUM: Activity Types for general schedule items ===
+enum ActivityType {
+  GENERAL       // Generic activity
+  PREPARATION   // Setup, prep work
+  STANDBY       // Waiting/ready position
+  BRIEFING      // Team briefings, safety talks
+  REHEARSAL     // Run-throughs
+  TRANSPORT     // Travel, pickup
+  TECHNICAL     // AV setup, equipment check
+  CUSTOM        // User-defined
+}
+
+// === NEW MODEL: General Schedule Activities ===
+// For plain schedule items like "Preparation | 03:00 | At location | who"
+model CallSheetActivity {
+  id            String       @id @default(cuid())
+  callSheetId   String
+  callSheet     CallSheet    @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+
+  // Core fields (based on run-of-show standards)
+  activityType  ActivityType @default(GENERAL)
+  activityName  String                        // "Preparation", "Model Standby"
+  description   String?                       // Detailed instructions
+
+  // Timing
+  startTime     String                        // "03:00", "15:30"
+  endTime       String?                       // Optional end time
+  duration      Int?                          // Minutes (can be calculated or explicit)
+
+  // Location & Personnel
+  location      String?                       // "At location", "Backstage"
+  personnel     String?                       // "Model A, Model B" - comma separated
+  responsibleParty String?                    // Primary person in charge
+
+  // Additional details
+  technicalNotes String?                      // AV, equipment requirements
+  notes         String?                       // General notes
+
+  // Display
+  order         Int          @default(0)
+  color         String?                       // Hex color for UI display
+  isHighlighted Boolean      @default(false)  // Mark critical activities
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([callSheetId])
+  @@map("call_sheet_activities")
 }
 
 // === NEW MODEL: Background/Extras ===

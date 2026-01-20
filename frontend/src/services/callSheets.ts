@@ -12,6 +12,8 @@ import type {
   CreateModelDto,
   CreateWardrobeDto,
   CreateHmuDto,
+  CreateActivityDto,
+  UpdateActivityDto,
   MealBreak,
   CompanyMove,
   SpecialRequirement,
@@ -20,6 +22,7 @@ import type {
   CallSheetModel,
   CallSheetWardrobe,
   CallSheetHMU,
+  CallSheetActivity,
 } from '../types/callSheet';
 
 export const callSheetsApi = {
@@ -279,5 +282,28 @@ export const callSheetsApi = {
 
   removeHmu: async (id: string): Promise<void> => {
     await apiClient.delete(`/call-sheets/hmu/${id}`);
+  },
+
+  // === GENERAL ACTIVITIES (Run of Show) ===
+  addActivity: async (callSheetId: string, dto: CreateActivityDto): Promise<CallSheetActivity> => {
+    const res = await apiClient.post(`/call-sheets/${callSheetId}/activities`, dto);
+    return res.data.data;
+  },
+
+  updateActivity: async (id: string, dto: UpdateActivityDto): Promise<CallSheetActivity> => {
+    const res = await apiClient.put(`/call-sheets/activities/${id}`, dto);
+    return res.data.data;
+  },
+
+  removeActivity: async (id: string): Promise<void> => {
+    await apiClient.delete(`/call-sheets/activities/${id}`);
+  },
+
+  reorderActivities: async (
+    callSheetId: string,
+    activities: { id: string; order: number }[]
+  ): Promise<CallSheetActivity[]> => {
+    const res = await apiClient.post(`/call-sheets/${callSheetId}/activities/reorder`, { activities });
+    return res.data.data;
   },
 };

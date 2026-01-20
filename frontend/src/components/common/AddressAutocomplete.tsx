@@ -25,6 +25,7 @@ declare global {
       maps?: {
         places?: {
           AutocompleteSessionToken: new () => any;
+          AutocompleteService: new () => any;
           PlacesService: new (map: any) => any;
         };
       };
@@ -74,28 +75,38 @@ export function AddressAutocomplete({
       try {
         setIsSearching(true);
 
-        // Use the new AutocompleteSuggestion API from Google Maps (recommended as of March 2025)
-        // @ts-ignore - This is the new recommended API
-        const predictions = await window.google!.maps!.places!.AutocompleteSuggestion({
+        // Use the AutocompleteService API from Google Maps
+        const autocompleteService = new window.google!.maps!.places!.AutocompleteService();
+
+        const request = {
           input: query,
           componentRestrictions: { country: 'id' }, // Indonesia only
           sessionToken: sessionTokenRef.current,
+        };
+
+        autocompleteService.getPlacePredictions(request, (predictions: any, status: any) => {
+          setIsSearching(false);
+
+          if (status !== 'OK' || !predictions) {
+            console.log('AutocompleteService status:', status);
+            setSuggestions([]);
+            return;
+          }
+
+          const formattedSuggestions: Suggestion[] = predictions.map(
+            (prediction: any) => ({
+              place_id: prediction.place_id || '',
+              description: prediction.description || '',
+              main_text: prediction.structured_formatting?.main_text || prediction.description || '',
+              secondary_text: prediction.structured_formatting?.secondary_text || '',
+            })
+          );
+
+          setSuggestions(formattedSuggestions);
         });
-
-        const formattedSuggestions: Suggestion[] = predictions.suggestions.map(
-          (suggestion: any) => ({
-            place_id: suggestion.placePrediction?.placeId || suggestion.place_id || '',
-            description: suggestion.placePrediction?.description || suggestion.description || '',
-            main_text: suggestion.placePrediction?.mainText?.text || suggestion.main_text || suggestion.description || '',
-            secondary_text: suggestion.placePrediction?.secondaryText?.text || suggestion.secondary_text || '',
-          })
-        );
-
-        setSuggestions(formattedSuggestions);
       } catch (err) {
         console.error('Error fetching suggestions:', err);
         setSuggestions([]);
-      } finally {
         setIsSearching(false);
       }
     },

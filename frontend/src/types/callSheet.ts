@@ -10,6 +10,9 @@ export type ModelArrivalType = 'CAMERA_READY' | 'STYLED';
 export type WardrobeStatus = 'PENDING' | 'CONFIRMED' | 'ON_SET' | 'IN_USE' | 'WRAPPED';
 export type HMURole = 'HAIR' | 'MAKEUP' | 'BOTH' | 'KEY_STYLIST';
 
+// === GENERAL ACTIVITY TYPES (Run of Show) ===
+export type ActivityType = 'GENERAL' | 'PREPARATION' | 'STANDBY' | 'BRIEFING' | 'REHEARSAL' | 'TRANSPORT' | 'TECHNICAL' | 'CUSTOM';
+
 export interface CallSheet {
   id: string;
   callSheetType?: CallSheetType;
@@ -74,6 +77,9 @@ export interface CallSheet {
   models?: CallSheetModel[];
   wardrobe?: CallSheetWardrobe[];
   hmuSchedule?: CallSheetHMU[];
+
+  // === GENERAL ACTIVITIES (Run of Show) ===
+  activities?: CallSheetActivity[];
 
   // === PHOTO-SPECIFIC FIELDS ===
   photographer?: string;
@@ -269,6 +275,28 @@ export interface CallSheetHMU {
   order: number;
 }
 
+// === GENERAL ACTIVITIES (Run of Show) ===
+export interface CallSheetActivity {
+  id: string;
+  callSheetId: string;
+  activityType: ActivityType;
+  activityName: string;
+  description?: string;
+  startTime: string;
+  endTime?: string;
+  duration?: number;
+  location?: string;
+  personnel?: string;
+  responsibleParty?: string;
+  technicalNotes?: string;
+  notes?: string;
+  order: number;
+  color?: string;
+  isHighlighted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface CreateCallSheetDto {
   callSheetType?: CallSheetType;
   scheduleId?: string;
@@ -415,5 +443,39 @@ export interface CreateHmuDto {
   availableFrom?: string;
   availableUntil?: string;
   assignedModels?: string;
+  order?: number;
+}
+
+// === GENERAL ACTIVITY DTOs ===
+export interface CreateActivityDto {
+  activityType?: ActivityType;
+  activityName: string;
+  description?: string;
+  startTime: string;
+  endTime?: string;
+  duration?: number;
+  location?: string;
+  personnel?: string;
+  responsibleParty?: string;
+  technicalNotes?: string;
+  notes?: string;
+  color?: string;
+  isHighlighted?: boolean;
+}
+
+export interface UpdateActivityDto {
+  activityType?: ActivityType;
+  activityName?: string;
+  description?: string;
+  startTime?: string;
+  endTime?: string;
+  duration?: number;
+  location?: string;
+  personnel?: string;
+  responsibleParty?: string;
+  technicalNotes?: string;
+  notes?: string;
+  color?: string;
+  isHighlighted?: boolean;
   order?: number;
 }
