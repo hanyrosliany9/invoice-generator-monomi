@@ -36,11 +36,16 @@ export function generatePhotoCallSheetHTML(
   logoBase64?: string | null,
   continuous: boolean = true,
 ): string {
-  const shootDate = new Date(cs.shootDate).toLocaleDateString("en-US", {
+  // Parse date correctly to avoid timezone shift
+  // shootDate comes as "2026-01-21" - treat as local date, not UTC
+  const [year, month, day] = cs.shootDate.split('T')[0].split('-').map(Number);
+  const shootDateObj = new Date(year, month - 1, day); // month is 0-indexed
+  const shootDate = shootDateObj.toLocaleDateString("en-US", {
     weekday: "short",
     year: "numeric",
     month: "short",
     day: "2-digit",
+    timeZone: "Asia/Jakarta", // Indonesian timezone
   });
 
   // Build shots HTML
