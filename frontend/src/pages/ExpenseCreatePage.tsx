@@ -155,6 +155,7 @@ export const ExpenseCreatePage: React.FC = () => {
       totalAmount: total,
       withholdingTaxRate: values.withholdingTaxRate || 0,
       isLuxuryGoods: includePPN ? isLuxuryGoods : false,
+      currency: 'IDR', // Default to Indonesian Rupiah
       isTaxDeductible: true,
     };
 

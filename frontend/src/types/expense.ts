@@ -371,6 +371,9 @@ export interface CreateExpenseFormData {
   // Date
   expenseDate: string;
 
+  // Currency
+  currency?: string;
+
   // Optional fields
   isTaxDeductible?: boolean;
 }

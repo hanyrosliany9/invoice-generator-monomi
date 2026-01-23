@@ -117,6 +117,8 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       isBillable: true, // Auto-set as billable
       projectId, // Pre-filled from parent
       clientId, // Pre-filled from parent
+      currency: 'IDR', // Default to Indonesian Rupiah
+      isTaxDeductible: true, // Default to tax deductible
     };
 
     createMutation.mutate(expenseData);
