@@ -7,6 +7,7 @@ import { QuotationsModule } from "../quotations/quotations.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { AccountingModule } from "../accounting/accounting.module";
 import { DocumentsModule } from "../documents/documents.module";
+import { ProjectsModule } from "../projects/projects.module";
 // import { InvoicePaymentListener } from "./listeners/invoice-payment.listener";
 
 @Module({
@@ -16,6 +17,7 @@ import { DocumentsModule } from "../documents/documents.module";
     NotificationsModule,
     AccountingModule,
     DocumentsModule,
+    forwardRef(() => ProjectsModule), // For ProfitCalculationService
   ],
   controllers: [InvoicesController],
   providers: [InvoicesService, InvoiceCounterService], // InvoicePaymentListener temporarily disabled

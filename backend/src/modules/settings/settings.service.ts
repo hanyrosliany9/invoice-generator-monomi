@@ -109,9 +109,8 @@ export class SettingsService {
           website: "https://teknologi.co.id",
           taxNumber: "01.234.567.8-901.000",
           currency: "IDR",
-          bankBCA: "1234567890",
-          bankMandiri: "0987654321",
-          bankBNI: "1122334455",
+          bank1Name: "Bank BCA",
+          bank1Number: "1234567890",
         },
       });
     }

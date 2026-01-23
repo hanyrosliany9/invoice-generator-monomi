@@ -776,9 +776,13 @@ model CompanySettings {
   currency    String  @default("IDR")
 
   // Bank accounts
-  bankBCA     String?
-  bankMandiri String?
-  bankBNI     String?
+  bankAccountName String? // Name on bank account (Rekening atas nama)
+  bank1Name       String? // Custom bank name (e.g., "Bank BCA Digital (Blu)")
+  bank1Number     String? // Bank account number
+  bank2Name       String?
+  bank2Number     String?
+  bank3Name       String?
+  bank3Number     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

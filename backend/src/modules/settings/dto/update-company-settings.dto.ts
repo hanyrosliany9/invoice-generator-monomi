@@ -37,18 +37,40 @@ export class UpdateCompanySettingsDto {
   @IsString()
   currency?: string;
 
-  @ApiPropertyOptional({ description: "Bank BCA account" })
+  @ApiPropertyOptional({
+    description: "Bank account holder name (Rekening atas nama)",
+  })
   @IsOptional()
   @IsString()
-  bankBCA?: string;
+  bankAccountName?: string;
 
-  @ApiPropertyOptional({ description: "Bank Mandiri account" })
+  @ApiPropertyOptional({ description: "Bank 1 name (e.g., Bank BCA Digital)" })
   @IsOptional()
   @IsString()
-  bankMandiri?: string;
+  bank1Name?: string;
 
-  @ApiPropertyOptional({ description: "Bank BNI account" })
+  @ApiPropertyOptional({ description: "Bank 1 account number" })
   @IsOptional()
   @IsString()
-  bankBNI?: string;
+  bank1Number?: string;
+
+  @ApiPropertyOptional({ description: "Bank 2 name" })
+  @IsOptional()
+  @IsString()
+  bank2Name?: string;
+
+  @ApiPropertyOptional({ description: "Bank 2 account number" })
+  @IsOptional()
+  @IsString()
+  bank2Number?: string;
+
+  @ApiPropertyOptional({ description: "Bank 3 name" })
+  @IsOptional()
+  @IsString()
+  bank3Name?: string;
+
+  @ApiPropertyOptional({ description: "Bank 3 account number" })
+  @IsOptional()
+  @IsString()
+  bank3Number?: string;
 }

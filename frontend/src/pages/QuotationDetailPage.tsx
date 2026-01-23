@@ -1116,7 +1116,15 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
-                a.download = `${quotation?.quotationNumber || 'quotation'}.pdf`
+                // Build filename with client name and project type
+                const sanitize = (str: string) => str?.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-') || ''
+                const quotationNum = (quotation?.quotationNumber || 'quotation').replace(/\//g, '-')
+                const clientName = sanitize(quotation?.client?.name || '')
+                const projectType = sanitize(quotation?.project?.projectType?.name || '')
+                const filenameParts = ['Quotation', quotationNum]
+                if (clientName) filenameParts.push(clientName)
+                if (projectType) filenameParts.push(projectType)
+                a.download = `${filenameParts.join('-')}.pdf`
                 document.body.appendChild(a)
                 a.click()
                 document.body.removeChild(a)

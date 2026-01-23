@@ -310,21 +310,18 @@ export class CallSheetsService {
   async autoFillCallSheet(id: string) {
     const callSheet = await this.findOne(id);
 
-    if (!callSheet.locationAddress && !callSheet.locationLat) {
+    if (!callSheet.locationAddress) {
       throw new BadRequestException(
-        "Location address or coordinates are required for auto-fill",
+        "Location address is required for auto-fill",
       );
     }
 
     try {
-      // Use stored coordinates if available, otherwise geocode
+      // Geocode the address to get coordinates
       let coords: { lat: number; lng: number } | null = null;
 
-      if (callSheet.locationLat && callSheet.locationLng) {
-        // Use coordinates from Google Places (stored in call sheet)
-        coords = { lat: callSheet.locationLat, lng: callSheet.locationLng };
-      } else if (callSheet.locationAddress) {
-        // Fallback: geocode the address using Nominatim
+      if (callSheet.locationAddress) {
+        // Geocode the address using Nominatim
         const geocoded = await this.externalApisService.geocodeAddress(
           callSheet.locationAddress,
         );

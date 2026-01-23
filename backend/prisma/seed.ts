@@ -178,9 +178,9 @@ async function main() {
       website: '',
       taxNumber: '000000000000000', // NPWP
       currency: 'IDR',
-      bankBCA: '3462676350',
-      bankMandiri: '',
-      bankBNI: '',
+      bankAccountName: 'Monomi Agency',
+      bank1Name: 'Bank BCA Digital (Blu)',
+      bank1Number: '3462676350',
     },
   });
 

@@ -99,15 +99,34 @@ export class PdfService {
         await page.emulateMediaType("screen");
         await page.setContent(htmlContent, { waitUntil: "networkidle0" });
 
-        // Calculate dynamic height for continuous single-page PDF
-        const height = await page.evaluate(
-          "document.documentElement.offsetHeight",
+        // Wait for fonts to load for accurate height calculation
+        await page.evaluate(() =>
+          document.fonts ? document.fonts.ready : Promise.resolve(),
         );
-        this.logger.log(`Invoice PDF (continuous) dynamic height: ${height}px`);
+
+        // Calculate dynamic height using multiple methods for accuracy
+        // Use the maximum of scrollHeight and offsetHeight to ensure full content is captured
+        const height = await page.evaluate(() => {
+          const body = document.body;
+          const html = document.documentElement;
+          return Math.max(
+            body.scrollHeight,
+            body.offsetHeight,
+            html.clientHeight,
+            html.scrollHeight,
+            html.offsetHeight,
+          );
+        });
+
+        // Add small buffer (10px) to prevent edge-case page breaks
+        const finalHeight = height + 10;
+        this.logger.log(
+          `Invoice PDF (continuous) dynamic height: ${height}px (with buffer: ${finalHeight}px)`,
+        );
 
         const pdf = await page.pdf({
           width: "210mm", // A4 width maintained
-          height: `${height}px`, // Dynamic height based on content
+          height: `${finalHeight}px`, // Dynamic height based on content + buffer
           printBackground: true,
           margin: { top: 0, right: 0, bottom: 0, left: 0 },
         });
@@ -159,17 +178,34 @@ export class PdfService {
         await page.emulateMediaType("screen");
         await page.setContent(htmlContent, { waitUntil: "networkidle0" });
 
-        // Calculate dynamic height for continuous single-page PDF
-        const height = await page.evaluate(
-          "document.documentElement.offsetHeight",
+        // Wait for fonts to load for accurate height calculation
+        await page.evaluate(() =>
+          document.fonts ? document.fonts.ready : Promise.resolve(),
         );
+
+        // Calculate dynamic height using multiple methods for accuracy
+        // Use the maximum of scrollHeight and offsetHeight to ensure full content is captured
+        const height = await page.evaluate(() => {
+          const body = document.body;
+          const html = document.documentElement;
+          return Math.max(
+            body.scrollHeight,
+            body.offsetHeight,
+            html.clientHeight,
+            html.scrollHeight,
+            html.offsetHeight,
+          );
+        });
+
+        // Add small buffer (10px) to prevent edge-case page breaks
+        const finalHeight = height + 10;
         this.logger.log(
-          `Quotation PDF (continuous) dynamic height: ${height}px`,
+          `Quotation PDF (continuous) dynamic height: ${height}px (with buffer: ${finalHeight}px)`,
         );
 
         const pdf = await page.pdf({
           width: "210mm", // A4 width maintained
-          height: `${height}px`, // Dynamic height based on content
+          height: `${finalHeight}px`, // Dynamic height based on content + buffer
           printBackground: true,
           margin: { top: 0, right: 0, bottom: 0, left: 0 },
         });
@@ -212,9 +248,13 @@ export class PdfService {
         email: "",
         website: "",
         taxNumber: "",
-        bankBCA: "",
-        bankMandiri: "",
-        bankBNI: "",
+        bankAccountName: "",
+        bank1Name: "",
+        bank1Number: "",
+        bank2Name: "",
+        bank2Number: "",
+        bank3Name: "",
+        bank3Number: "",
       };
     }
   }
@@ -226,21 +266,23 @@ export class PdfService {
   private async generateDynamicPaymentInfo(companyData: any): Promise<string> {
     const bankAccounts: string[] = [];
 
-    // Build bank account list
-    if (companyData.bankBCA) {
-      bankAccounts.push(`BCA: ${companyData.bankBCA}`);
+    // Build bank account list from new flexible fields
+    if (companyData.bank1Name && companyData.bank1Number) {
+      bankAccounts.push(`${companyData.bank1Name}: ${companyData.bank1Number}`);
     }
-    if (companyData.bankMandiri) {
-      bankAccounts.push(`Mandiri: ${companyData.bankMandiri}`);
+    if (companyData.bank2Name && companyData.bank2Number) {
+      bankAccounts.push(`${companyData.bank2Name}: ${companyData.bank2Number}`);
     }
-    if (companyData.bankBNI) {
-      bankAccounts.push(`BNI: ${companyData.bankBNI}`);
+    if (companyData.bank3Name && companyData.bank3Number) {
+      bankAccounts.push(`${companyData.bank3Name}: ${companyData.bank3Number}`);
     }
 
     // Format payment info based on available bank accounts
     if (bankAccounts.length > 0) {
-      const companyName = companyData.companyName || "Company";
-      return `Bank Transfer<br>Rekening atas nama: ${companyName}<br>${bankAccounts.join("<br>")}`;
+      // Use bankAccountName if set, otherwise fall back to companyName
+      const accountName =
+        companyData.bankAccountName || companyData.companyName || "Company";
+      return `Bank Transfer<br>Rekening atas nama: ${accountName}<br>${bankAccounts.join("<br>")}`;
     }
 
     // Ultimate fallback if no bank accounts configured
@@ -276,27 +318,13 @@ export class PdfService {
     // Get company settings
     const companyData = await this.getCompanySettings();
 
-    // Runtime override: Detect and replace placeholder payment info
-    let finalPaymentInfo = paymentInfo;
-    const placeholderTexts = [
-      "Bank Transfer",
-      "Bank Transfer - Lihat detail di company settings",
-      "Bank Transfer - Silakan hubungi kami untuk detail rekening pembayaran",
-    ];
-
-    // Check if payment info is a placeholder or suspiciously short
-    const hasPlaceholder = placeholderTexts.some(
-      (placeholder) => finalPaymentInfo?.trim() === placeholder,
+    // Always generate payment info from company settings for consistency
+    // This ensures changes to bankAccountName immediately reflect in all PDFs
+    const finalPaymentInfo =
+      await this.generateDynamicPaymentInfo(companyData);
+    this.logger.log(
+      `Generated payment info from company settings for invoice ${invoiceNumber}`,
     );
-    const isTooShort = finalPaymentInfo && finalPaymentInfo.trim().length < 20;
-
-    if (hasPlaceholder || !finalPaymentInfo || isTooShort) {
-      // Generate proper payment info from company settings
-      finalPaymentInfo = await this.generateDynamicPaymentInfo(companyData);
-      this.logger.log(
-        `Replaced placeholder payment info for invoice ${invoiceNumber}`,
-      );
-    }
 
     // Parse products from priceBreakdown if available
     const products = priceBreakdown?.products || [];
@@ -935,8 +963,7 @@ export class PdfService {
           client.phone
             ? `
         <div class="detail-row">
-          <span class="detail-label" style="min-width: auto;">Phone:</span>
-          <span class="detail-value">${client.phone}</span>
+          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.phone}</span>
         </div>
         `
             : ""
@@ -945,8 +972,7 @@ export class PdfService {
           client.email
             ? `
         <div class="detail-row">
-          <span class="detail-label" style="min-width: auto;">Email:</span>
-          <span class="detail-value">${client.email}</span>
+          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.email}</span>
         </div>
         `
             : ""
@@ -1813,8 +1839,7 @@ export class PdfService {
           client.phone
             ? `
         <div class="detail-row">
-          <span class="detail-label" style="min-width: auto;">Phone:</span>
-          <span class="detail-value">${client.phone}</span>
+          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.phone}</span>
         </div>
         `
             : ""
@@ -1823,8 +1848,7 @@ export class PdfService {
           client.email
             ? `
         <div class="detail-row">
-          <span class="detail-label" style="min-width: auto;">Email:</span>
-          <span class="detail-value">${client.email}</span>
+          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.email}</span>
         </div>
         `
             : ""
@@ -1993,17 +2017,34 @@ export class PdfService {
           );
         }
 
-        // Calculate dynamic height for continuous single-page PDF
-        const height = await page.evaluate(
-          "document.documentElement.offsetHeight",
+        // Wait for fonts to load for accurate height calculation
+        await page.evaluate(() =>
+          document.fonts ? document.fonts.ready : Promise.resolve(),
         );
+
+        // Calculate dynamic height using multiple methods for accuracy
+        // Use the maximum of scrollHeight and offsetHeight to ensure full content is captured
+        const height = await page.evaluate(() => {
+          const body = document.body;
+          const html = document.documentElement;
+          return Math.max(
+            body.scrollHeight,
+            body.offsetHeight,
+            html.clientHeight,
+            html.scrollHeight,
+            html.offsetHeight,
+          );
+        });
+
+        // Add small buffer (10px) to prevent edge-case page breaks
+        const finalHeight = height + 10;
         this.logger.debug(
-          `Project PDF (continuous) dynamic height: ${height}px`,
+          `Project PDF (continuous) dynamic height: ${height}px (with buffer: ${finalHeight}px)`,
         );
 
         const pdf = await page.pdf({
           width: "210mm", // A4 width maintained
-          height: `${height}px`, // Dynamic height based on content
+          height: `${finalHeight}px`, // Dynamic height based on content + buffer
           printBackground: true,
           margin: { top: 0, right: 0, bottom: 0, left: 0 },
         });

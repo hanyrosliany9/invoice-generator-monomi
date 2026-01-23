@@ -14,6 +14,7 @@ import { JournalService } from "../accounting/services/journal.service";
 import { RevenueRecognitionService } from "../accounting/services/revenue-recognition.service";
 import { InvoiceCounterService } from "./services/invoice-counter.service";
 import { DocumentsService } from "../documents/documents.service";
+import { ProfitCalculationService } from "../projects/profit-calculation.service";
 import { CreateInvoiceDto } from "./dto/create-invoice.dto";
 import { UpdateInvoiceDto } from "./dto/update-invoice.dto";
 import {
@@ -45,6 +46,7 @@ export class InvoicesService {
     private revenueRecognitionService: RevenueRecognitionService,
     private invoiceCounterService: InvoiceCounterService,
     private documentsService: DocumentsService,
+    private profitCalculationService: ProfitCalculationService,
   ) {}
 
   async create(
@@ -294,12 +296,6 @@ export class InvoicesService {
       // Generate smart payment info
       const paymentInfo = this.generateSmartPaymentInfo(companySettings);
 
-      // Inherit and enhance terms
-      const enhancedTerms = this.enhanceTermsForInvoice(
-        quotation.terms,
-        quotation.client,
-      );
-
       // Calculate total amount with proper conversion
       const totalAmount = parseFloat(quotation.totalAmount.toString());
 
@@ -316,7 +312,12 @@ export class InvoicesService {
         totalAmount,
         dueDate: dueDate.toISOString(),
         paymentInfo,
-        terms: enhancedTerms,
+        // Inherit terms directly from quotation (no enhancement/modification)
+        terms: quotation.terms,
+        // Inherit scopeOfWork from quotation (cascade: quotation > project)
+        scopeOfWork: quotation.scopeOfWork || quotation.project?.scopeOfWork,
+        // Inherit priceBreakdown from quotation (for line items)
+        priceBreakdown: quotation.priceBreakdown || quotation.project?.priceBreakdown,
       };
 
       // Create invoice with full automation
@@ -426,7 +427,11 @@ export class InvoicesService {
       where: { id },
       include: {
         client: true,
-        project: true,
+        project: {
+          include: {
+            projectType: true, // Include project type for PDF filename
+          },
+        },
         quotation: {
           include: {
             paymentMilestones: true,
@@ -767,6 +772,25 @@ export class InvoicesService {
         Number(payment.amount),
         userId || "system",
       );
+    }
+
+    // ✅ FIX: Recalculate project's totalPaidAmount after marking invoice as paid
+    // This ensures the project's "Dibayar" (paid amount) is updated in real-time
+    if (invoice.projectId) {
+      try {
+        await this.profitCalculationService.calculateProjectProfitMargin(
+          invoice.projectId,
+          userId || "system",
+        );
+        this.logger.log(
+          `✅ Recalculated profit metrics for project ${invoice.projectId} after invoice payment`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to recalculate project profit metrics: ${error}`,
+        );
+        // Don't fail the payment - just log the error
+      }
     }
 
     return updatedInvoice;

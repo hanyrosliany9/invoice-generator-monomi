@@ -1091,7 +1091,15 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
-                a.download = `${invoice?.invoiceNumber || 'invoice'}.pdf`
+                // Build filename with client name and project type
+                const sanitize = (str: string) => str?.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-') || ''
+                const invoiceNum = (invoice?.invoiceNumber || 'invoice').replace(/\//g, '-')
+                const clientName = sanitize(invoice?.client?.name || '')
+                const projectType = sanitize(invoice?.project?.projectType?.name || '')
+                const filenameParts = ['Invoice', invoiceNum]
+                if (clientName) filenameParts.push(clientName)
+                if (projectType) filenameParts.push(projectType)
+                a.download = `${filenameParts.join('-')}.pdf`
                 document.body.appendChild(a)
                 a.click()
                 document.body.removeChild(a)

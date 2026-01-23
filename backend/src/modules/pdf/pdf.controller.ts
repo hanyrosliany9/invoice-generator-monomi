@@ -28,6 +28,39 @@ import { SettingsService } from "../settings/settings.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { PdfAccessGuard } from "./guards/pdf-access.guard";
 
+// Helper function to sanitize filename (remove special characters)
+function sanitizeFilename(name: string): string {
+  if (!name) return "";
+  return name
+    .replace(/[^\w\s-]/g, "") // Remove special characters except spaces and hyphens
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Replace multiple hyphens with single
+    .trim();
+}
+
+// Helper function to build PDF filename with client and project type
+// Example output: Invoice-INV-202601-002-ClientName-Production.pdf
+function buildPdfFilename(
+  type: "Invoice" | "Quotation",
+  number: string,
+  clientName?: string,
+  projectTypeName?: string,
+): string {
+  // Sanitize the number (replace slashes with dashes)
+  const safeNumber = number.replace(/\//g, "-");
+  const parts = [type, safeNumber];
+
+  if (clientName) {
+    parts.push(sanitizeFilename(clientName));
+  }
+
+  if (projectTypeName) {
+    parts.push(sanitizeFilename(projectTypeName));
+  }
+
+  return parts.join("-") + ".pdf";
+}
+
 @ApiTags("PDF")
 @Controller("pdf")
 @UseGuards(JwtAuthGuard, PdfAccessGuard)
@@ -91,11 +124,19 @@ export class PdfController {
         shouldShowMaterai,
       );
 
+      // Build filename with client name and project type
+      const filename = buildPdfFilename(
+        "Invoice",
+        invoice.invoiceNumber,
+        invoice.client?.name,
+        invoice.project?.projectType?.name,
+      );
+
       // Set response headers
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="Invoice-${invoice.invoiceNumber}.pdf"`,
+        `attachment; filename="${filename}"`,
       );
       res.setHeader("Content-Length", pdfBuffer.length);
 
@@ -150,11 +191,19 @@ export class PdfController {
         isContinuous,
       );
 
+      // Build filename with client name and project type
+      const filename = buildPdfFilename(
+        "Quotation",
+        quotation.quotationNumber,
+        quotation.client?.name,
+        quotation.project?.projectType?.name,
+      );
+
       // Set response headers
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="Quotation-${quotation.quotationNumber}.pdf"`,
+        `attachment; filename="${filename}"`,
       );
       res.setHeader("Content-Length", pdfBuffer.length);
 
@@ -204,12 +253,17 @@ export class PdfController {
         shouldShowMaterai,
       );
 
+      // Build filename with client name and project type
+      const filename = buildPdfFilename(
+        "Invoice",
+        invoice.invoiceNumber,
+        invoice.client?.name,
+        invoice.project?.projectType?.name,
+      );
+
       // Set response headers for preview
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        `inline; filename="Invoice-${invoice.invoiceNumber}.pdf"`,
-      );
+      res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
       res.setHeader("Content-Length", pdfBuffer.length);
 
       // Send PDF
@@ -218,7 +272,11 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error("Gagal membuat preview PDF invoice");
+      // Log the actual error for debugging
+      console.error("PDF Preview Error:", error);
+      throw new Error(
+        `Gagal membuat preview PDF invoice: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -255,12 +313,17 @@ export class PdfController {
         isContinuous,
       );
 
+      // Build filename with client name and project type
+      const filename = buildPdfFilename(
+        "Quotation",
+        quotation.quotationNumber,
+        quotation.client?.name,
+        quotation.project?.projectType?.name,
+      );
+
       // Set response headers for preview
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        `inline; filename="Quotation-${quotation.quotationNumber}.pdf"`,
-      );
+      res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
       res.setHeader("Content-Length", pdfBuffer.length);
 
       // Send PDF

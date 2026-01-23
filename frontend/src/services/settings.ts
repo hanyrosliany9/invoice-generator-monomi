@@ -30,9 +30,13 @@ export interface CompanySettings {
   website: string
   taxNumber: string
   currency: string
-  bankBCA: string
-  bankMandiri: string
-  bankBNI: string
+  bankAccountName?: string
+  bank1Name?: string
+  bank1Number?: string
+  bank2Name?: string
+  bank2Number?: string
+  bank3Name?: string
+  bank3Number?: string
 }
 
 export interface SystemSettings {
@@ -71,9 +75,13 @@ export interface UpdateCompanySettingsDto {
   website?: string
   taxNumber?: string
   currency?: string
-  bankBCA?: string
-  bankMandiri?: string
-  bankBNI?: string
+  bankAccountName?: string
+  bank1Name?: string
+  bank1Number?: string
+  bank2Name?: string
+  bank2Number?: string
+  bank3Name?: string
+  bank3Number?: string
 }
 
 export interface UpdateSystemSettingsDto {

@@ -198,7 +198,11 @@ export class QuotationsService {
       where: { id },
       include: {
         client: true,
-        project: true,
+        project: {
+          include: {
+            projectType: true, // Include project type for PDF filename
+          },
+        },
         user: {
           select: {
             id: true,
@@ -465,21 +469,31 @@ export class QuotationsService {
       const companySettings = await this.settingsService.getCompanySettings();
       const bankAccounts: string[] = [];
 
-      // Build bank account list
-      if (companySettings.bankBCA) {
-        bankAccounts.push(`BCA: ${companySettings.bankBCA}`);
+      // Build bank account list from new flexible fields
+      if (companySettings.bank1Name && companySettings.bank1Number) {
+        bankAccounts.push(
+          `${companySettings.bank1Name}: ${companySettings.bank1Number}`,
+        );
       }
-      if (companySettings.bankMandiri) {
-        bankAccounts.push(`Mandiri: ${companySettings.bankMandiri}`);
+      if (companySettings.bank2Name && companySettings.bank2Number) {
+        bankAccounts.push(
+          `${companySettings.bank2Name}: ${companySettings.bank2Number}`,
+        );
       }
-      if (companySettings.bankBNI) {
-        bankAccounts.push(`BNI: ${companySettings.bankBNI}`);
+      if (companySettings.bank3Name && companySettings.bank3Number) {
+        bankAccounts.push(
+          `${companySettings.bank3Name}: ${companySettings.bank3Number}`,
+        );
       }
 
       // Format payment info based on available bank accounts
       if (bankAccounts.length > 0) {
-        const companyName = companySettings.companyName || "Company";
-        return `Bank Transfer\nRekening atas nama: ${companyName}\n${bankAccounts.join(" | ")}`;
+        // Use bankAccountName if set, otherwise fall back to companyName
+        const accountName =
+          companySettings.bankAccountName ||
+          companySettings.companyName ||
+          "Company";
+        return `Bank Transfer\nRekening atas nama: ${accountName}\n${bankAccounts.join(" | ")}`;
       }
 
       // Fallback if no bank accounts configured

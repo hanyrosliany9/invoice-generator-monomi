@@ -452,13 +452,14 @@ export const ProjectsPage: React.FC = () => {
       (sum, p) => sum + safeNumber(p?.basePrice || 0),
       0
     ),
+    // Use totalPaidAmount from profit calculation (updated when invoices are marked as paid)
     totalRevenue: safeProjects.reduce(
-      (sum, p) => sum + safeNumber(p?.totalRevenue || 0),
+      (sum, p) => sum + safeNumber(p?.totalPaidAmount || 0),
       0
     ),
     totalPending: safeProjects.reduce(
       (sum, p) => sum + Math.max(
-        safeNumber(p?.basePrice || 0) - safeNumber(p?.totalRevenue || 0),
+        safeNumber(p?.basePrice || 0) - safeNumber(p?.totalPaidAmount || 0),
         0
       ),
       0
@@ -791,8 +792,9 @@ export const ProjectsPage: React.FC = () => {
       render: (_: unknown, project: Project) => {
         const budget = safeNumber(project.estimatedBudget || project.basePrice || 0)
         const actualPrice = safeNumber(project.basePrice || 0)
-        const totalRevenue = safeNumber(project.totalRevenue || 0)
-        const pendingAmount = Math.max(actualPrice - totalRevenue, 0)
+        // Use totalPaidAmount from profit calculation (updated when invoices are marked as paid)
+        const totalPaid = safeNumber(project.totalPaidAmount || 0)
+        const pendingAmount = Math.max(actualPrice - totalPaid, 0)
 
         return (
           <div className='text-sm'>
@@ -803,7 +805,7 @@ export const ProjectsPage: React.FC = () => {
               Aktual: <Text strong>{formatIDR(actualPrice)}</Text>
             </div>
             <div className='mt-1'>
-              <Text type='success'>Dibayar: {formatIDR(totalRevenue)}</Text>
+              <Text type='success'>Dibayar: {formatIDR(totalPaid)}</Text>
             </div>
             {pendingAmount > 0 && (
               <div>

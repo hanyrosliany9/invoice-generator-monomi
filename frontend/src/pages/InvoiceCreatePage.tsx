@@ -194,20 +194,25 @@ export const InvoiceCreatePage: React.FC = () => {
   }, [selectedQuotation, prefilledClientId, form])
 
   // Generate default payment info from company settings
+  // Matches the format used in PDF template (pdf.service.ts generateDynamicPaymentInfo)
   const generateDefaultPaymentInfo = (quotation?: ServiceQuotation) => {
     if (!companySettings) return ''
 
     const bankAccounts: string[] = []
 
-    if (companySettings.bankBCA) {
-      bankAccounts.push(`Bank BCA: ${companySettings.bankBCA} a.n. ${companySettings.companyName}`)
+    // Build bank account list from new flexible fields
+    if (companySettings.bank1Name && companySettings.bank1Number) {
+      bankAccounts.push(`${companySettings.bank1Name}: ${companySettings.bank1Number}`)
     }
-    if (companySettings.bankMandiri) {
-      bankAccounts.push(`Bank Mandiri: ${companySettings.bankMandiri} a.n. ${companySettings.companyName}`)
+    if (companySettings.bank2Name && companySettings.bank2Number) {
+      bankAccounts.push(`${companySettings.bank2Name}: ${companySettings.bank2Number}`)
     }
-    if (companySettings.bankBNI) {
-      bankAccounts.push(`Bank BNI: ${companySettings.bankBNI} a.n. ${companySettings.companyName}`)
+    if (companySettings.bank3Name && companySettings.bank3Number) {
+      bankAccounts.push(`${companySettings.bank3Name}: ${companySettings.bank3Number}`)
     }
+
+    // Use bankAccountName if set, otherwise fall back to companyName
+    const accountName = companySettings.bankAccountName || companySettings.companyName || 'Company'
 
     if (bankAccounts.length === 0) {
       return `INFORMASI PEMBAYARAN:\n\nSilakan hubungi ${companySettings.email || 'kami'} untuk informasi rekening pembayaran.${quotation ? `\n\nReferensi: Quotation ${quotation.quotationNumber}` : ''}`
@@ -215,13 +220,11 @@ export const InvoiceCreatePage: React.FC = () => {
 
     return `INFORMASI PEMBAYARAN:
 
+Bank Transfer
+Rekening atas nama: ${accountName}
 ${bankAccounts.join('\n')}
 
-Silakan transfer ke salah satu rekening di atas dan kirim bukti pembayaran ke ${companySettings.email || 'email kami'}.
-
-Untuk pertanyaan pembayaran, hubungi:
-${companySettings.phone ? `Telepon: ${companySettings.phone}` : ''}
-${companySettings.email ? `Email: ${companySettings.email}` : ''}${quotation ? `\n\nReferensi: Quotation ${quotation.quotationNumber}` : ''}`
+Silakan transfer ke salah satu rekening di atas dan kirim bukti pembayaran ke ${companySettings.email || 'email kami'}.${quotation ? `\n\nReferensi: Quotation ${quotation.quotationNumber}` : ''}`
   }
 
   // Generate default invoice terms

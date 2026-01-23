@@ -72,9 +72,13 @@ interface CompanyFormValues {
   website?: string
   taxNumber: string
   currency: string
-  bankBCA?: string
-  bankMandiri?: string
-  bankBNI?: string
+  bankAccountName?: string
+  bank1Name?: string
+  bank1Number?: string
+  bank2Name?: string
+  bank2Number?: string
+  bank3Name?: string
+  bank3Number?: string
 }
 
 interface SystemFormValues {
@@ -523,9 +527,13 @@ export const SettingsPage: React.FC = () => {
           website: companySettings?.website || 'https://teknologi.co.id',
           taxNumber: companySettings?.taxNumber || '01.234.567.8-901.000',
           currency: companySettings?.currency || 'IDR',
-          bankBCA: companySettings?.bankBCA || '',
-          bankMandiri: companySettings?.bankMandiri || '',
-          bankBNI: companySettings?.bankBNI || '',
+          bankAccountName: companySettings?.bankAccountName || '',
+          bank1Name: companySettings?.bank1Name || '',
+          bank1Number: companySettings?.bank1Number || '',
+          bank2Name: companySettings?.bank2Name || '',
+          bank2Number: companySettings?.bank2Number || '',
+          bank3Name: companySettings?.bank3Name || '',
+          bank3Number: companySettings?.bank3Number || '',
         }}
       >
         <Row gutter={24}>
@@ -592,20 +600,56 @@ export const SettingsPage: React.FC = () => {
 
         <Divider>{t('settings.bankAccounts')}</Divider>
 
-        <Row gutter={24}>
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item label='Bank BCA Digital (Blu)' name='bankBCA'>
-              <Input size='large' placeholder='1234567890' autoComplete='off' />
+        <Form.Item
+          label='Rekening Atas Nama (Bank Account Holder Name)'
+          name='bankAccountName'
+          tooltip='Name that appears on bank account. If empty, Company Name will be used.'
+        >
+          <Input
+            size='large'
+            placeholder='e.g., PT Monomi Agency or John Doe'
+            autoComplete='off'
+          />
+        </Form.Item>
+
+        {/* Bank Account 1 */}
+        <Row gutter={16}>
+          <Col xs={24} sm={12}>
+            <Form.Item label='Bank 1 Name' name='bank1Name'>
+              <Input size='large' placeholder='e.g., Bank BCA Digital (Blu)' autoComplete='off' />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item label='Bank Mandiri' name='bankMandiri'>
-              <Input size='large' placeholder='0987654321' autoComplete='off' />
+          <Col xs={24} sm={12}>
+            <Form.Item label='Bank 1 Account Number' name='bank1Number'>
+              <Input size='large' placeholder='e.g., 0901 5881 7935' autoComplete='off' />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item label='Bank BNI' name='bankBNI'>
-              <Input size='large' placeholder='1122334455' autoComplete='off' />
+        </Row>
+
+        {/* Bank Account 2 */}
+        <Row gutter={16}>
+          <Col xs={24} sm={12}>
+            <Form.Item label='Bank 2 Name' name='bank2Name'>
+              <Input size='large' placeholder='e.g., Bank Mandiri' autoComplete='off' />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item label='Bank 2 Account Number' name='bank2Number'>
+              <Input size='large' placeholder='Account number' autoComplete='off' />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        {/* Bank Account 3 */}
+        <Row gutter={16}>
+          <Col xs={24} sm={12}>
+            <Form.Item label='Bank 3 Name' name='bank3Name'>
+              <Input size='large' placeholder='e.g., Bank BNI' autoComplete='off' />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item label='Bank 3 Account Number' name='bank3Number'>
+              <Input size='large' placeholder='Account number' autoComplete='off' />
             </Form.Item>
           </Col>
         </Row>
