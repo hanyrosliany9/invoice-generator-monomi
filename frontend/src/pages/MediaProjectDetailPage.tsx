@@ -1012,6 +1012,7 @@ export const MediaProjectDetailPage: React.FC = () => {
                   <MediaLibrary
                     projectId={undefined}
                     assets={assetsToShow}
+                    allProjectAssets={allAssets}
                     folders={foldersToShow}
                     onAssetClick={handleAssetClick}
                     onCompare={(assetIds) => setComparisonAssetIds(assetIds)}

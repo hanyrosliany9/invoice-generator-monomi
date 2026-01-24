@@ -63,6 +63,8 @@ interface Folder {
 interface MediaLibraryProps {
   projectId?: string;
   assets?: MediaAsset[];
+  /** All assets in the project (for "Select All" to download everything, not just visible) */
+  allProjectAssets?: MediaAsset[];
   folders?: Folder[];
   onAssetClick?: (asset: MediaAsset) => void;
   onRemove?: (assetId: string) => void;
@@ -379,6 +381,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   mediaToken,
   projectId,
   assets: propAssets,
+  allProjectAssets,
   folders = [],
   onAssetClick,
   onRemove,
@@ -726,8 +729,11 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   };
 
   const selectAll = () => {
-    if (assets) {
-      setSelectedAssets(assets.map((asset) => asset.id));
+    // Use allProjectAssets if available (selects ALL assets in project, including those in folders)
+    // Otherwise fall back to visible assets only
+    const assetsToSelect = allProjectAssets || assets;
+    if (assetsToSelect) {
+      setSelectedAssets(assetsToSelect.map((asset) => asset.id));
     }
   };
 
@@ -978,29 +984,37 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
 
           {/* Quick Selection Actions */}
           <Space size={4}>
-            {selectedAssets.length < (assets?.length || 0) && (
-              <Button
-                type="link"
-                onClick={selectAll}
-                size="small"
-                style={{ padding: '0 8px' }}
-              >
-                Select All
-              </Button>
-            )}
-            {selectedAssets.length > 0 && selectedAssets.length < (assets?.length || 0) && (
-              <>
-                <span style={{ color: token.colorTextTertiary }}>•</span>
-                <Button
-                  type="link"
-                  onClick={invertSelection}
-                  size="small"
-                  style={{ padding: '0 8px' }}
-                >
-                  Invert
-                </Button>
-              </>
-            )}
+            {(() => {
+              const totalAssets = allProjectAssets?.length || assets?.length || 0;
+              const allSelected = selectedAssets.length >= totalAssets && totalAssets > 0;
+              return (
+                <>
+                  {!allSelected && totalAssets > 0 && (
+                    <Button
+                      type="link"
+                      onClick={selectAll}
+                      size="small"
+                      style={{ padding: '0 8px' }}
+                    >
+                      {allProjectAssets ? `Select All (${totalAssets})` : 'Select All'}
+                    </Button>
+                  )}
+                  {selectedAssets.length > 0 && !allSelected && (
+                    <>
+                      <span style={{ color: token.colorTextTertiary }}>•</span>
+                      <Button
+                        type="link"
+                        onClick={invertSelection}
+                        size="small"
+                        style={{ padding: '0 8px' }}
+                      >
+                        Invert
+                      </Button>
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </Space>
 
           {/* Divider */}
