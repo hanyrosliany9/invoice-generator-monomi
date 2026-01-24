@@ -3,11 +3,14 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { MediaService } from "../../media/media.service";
 import { MediaProcessingService } from "./media-processing.service";
 import { MetadataService } from "./metadata.service";
+import archiver from "archiver";
+import { PassThrough } from "stream";
 
 /**
  * MediaAssetsService
@@ -17,6 +20,8 @@ import { MetadataService } from "./metadata.service";
  */
 @Injectable()
 export class MediaAssetsService {
+  private readonly logger = new Logger(MediaAssetsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly mediaService: MediaService,
@@ -659,6 +664,134 @@ export class MediaAssetsService {
       deleted,
       failed,
       results: results.filter((r) => !r.success), // Only return failures for debugging
+    };
+  }
+
+  /**
+   * Bulk download multiple assets as a ZIP archive
+   * Streams the ZIP directly to the response to avoid memory issues
+   *
+   * @param assetIds Array of asset IDs to download (max 500)
+   * @param userId User performing the download
+   * @returns PassThrough stream containing the ZIP archive
+   */
+  async bulkDownloadAssets(
+    assetIds: string[],
+    userId: string,
+  ): Promise<{
+    stream: PassThrough;
+    filename: string;
+    assetCount: number;
+  }> {
+    this.logger.log(
+      `[MediaAssetsService] Bulk download started: ${assetIds.length} assets`,
+    );
+
+    // 1. Fetch all asset records to validate access and get metadata
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: {
+        id: { in: assetIds },
+      },
+      select: {
+        id: true,
+        key: true,
+        originalName: true,
+        filename: true,
+        projectId: true,
+        mimeType: true,
+      },
+    });
+
+    if (assets.length === 0) {
+      throw new NotFoundException("No assets found");
+    }
+
+    // 2. Verify user has access to all projects (assets may span multiple projects)
+    const projectIds = [...new Set(assets.map((a) => a.projectId))];
+    for (const projectId of projectIds) {
+      const hasAccess = await this.verifyProjectAccess(userId, projectId);
+      if (!hasAccess) {
+        throw new ForbiddenException(
+          `Access denied to project containing some assets`,
+        );
+      }
+    }
+
+    // 3. Create ZIP archive stream
+    const passThrough = new PassThrough();
+    const archive = archiver("zip", {
+      zlib: { level: 6 }, // Balance between speed and compression
+    });
+
+    // Handle archive errors
+    archive.on("error", (err: Error) => {
+      this.logger.error(`Archive error: ${err.message}`, err.stack);
+      passThrough.destroy(err);
+    });
+
+    archive.on("warning", (err: archiver.ArchiverError) => {
+      if (err.code === "ENOENT") {
+        this.logger.warn(`Archive warning: ${err.message}`);
+      } else {
+        passThrough.destroy(err);
+      }
+    });
+
+    // Pipe archive to passthrough stream
+    archive.pipe(passThrough);
+
+    // 4. Add files to archive asynchronously
+    const addFilesToArchive = async () => {
+      let addedCount = 0;
+      const usedNames = new Map<string, number>();
+
+      for (const asset of assets) {
+        try {
+          const fileStream = await this.mediaService.getFileStream(asset.key);
+
+          // Handle duplicate filenames by appending a number
+          let fileName = asset.originalName || asset.filename;
+          const existingCount = usedNames.get(fileName) || 0;
+          if (existingCount > 0) {
+            const ext = fileName.lastIndexOf(".");
+            if (ext > 0) {
+              fileName = `${fileName.substring(0, ext)}_${existingCount}${fileName.substring(ext)}`;
+            } else {
+              fileName = `${fileName}_${existingCount}`;
+            }
+          }
+          usedNames.set(asset.originalName || asset.filename, existingCount + 1);
+
+          archive.append(fileStream.stream, { name: fileName });
+          addedCount++;
+          this.logger.debug(`Added to archive: ${fileName}`);
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Unknown error";
+          this.logger.error(
+            `Failed to add ${asset.originalName} to archive: ${errorMessage}`,
+          );
+          // Continue with other files
+        }
+      }
+
+      // Finalize the archive
+      await archive.finalize();
+      this.logger.log(
+        `[MediaAssetsService] Bulk download completed: ${addedCount}/${assets.length} files added to archive`,
+      );
+    };
+
+    // Start adding files (don't await - let it stream)
+    addFilesToArchive().catch((err) => {
+      this.logger.error(`Failed to create archive: ${err.message}`, err.stack);
+      passThrough.destroy(err);
+    });
+
+    return {
+      stream: passThrough,
+      filename: `media-download-${Date.now()}.zip`,
+      assetCount: assets.length,
     };
   }
 

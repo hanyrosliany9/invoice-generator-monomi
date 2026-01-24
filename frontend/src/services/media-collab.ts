@@ -359,6 +359,45 @@ class MediaCollabService {
     return response.data.data;
   }
 
+  /**
+   * Bulk download multiple assets as a ZIP archive
+   * Server-side ZIP generation avoids CORS issues and handles large files reliably
+   *
+   * @param assetIds Array of asset IDs to download
+   * @param zipFilename Optional custom filename for the ZIP (without .zip extension)
+   * @returns Promise that resolves when download completes
+   */
+  async bulkDownloadAssets(
+    assetIds: string[],
+    zipFilename?: string,
+  ): Promise<void> {
+    const response = await apiClient.post(
+      '/media-collab/assets/bulk-download',
+      { assetIds, zipFilename },
+      { responseType: 'blob' },
+    );
+
+    // Get filename from Content-Disposition header or use default
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = zipFilename ? `${zipFilename}.zip` : 'media-download.zip';
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
+      if (match) {
+        filename = match[1];
+      }
+    }
+
+    // Create download link and trigger download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }
+
   // ============================================
   // STAR RATING (placeholder - will implement when backend is ready)
   // ============================================

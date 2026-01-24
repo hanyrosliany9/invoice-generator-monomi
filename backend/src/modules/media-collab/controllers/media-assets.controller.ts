@@ -11,7 +11,10 @@ import {
   UploadedFile,
   Body,
   Put,
+  Res,
+  StreamableFile,
 } from "@nestjs/common";
+import { Response } from "express";
 import { FileInterceptor } from "@nestjs/platform-express";
 import {
   ApiTags,
@@ -20,6 +23,7 @@ import {
   ApiBearerAuth,
   ApiConsumes,
   ApiBody,
+  ApiProduces,
 } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
 import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
@@ -27,6 +31,7 @@ import { MediaAssetsService } from "../services/media-assets.service";
 import { AuthenticatedRequest } from "../interfaces/authenticated-request.interface";
 import { AssetFilters } from "../types/asset-filters.interface";
 import { BulkDeleteAssetsDto } from "../dto/bulk-delete-assets.dto";
+import { BulkDownloadAssetsDto } from "../dto/bulk-download-assets.dto";
 
 @ApiTags("Media Collaboration - Assets")
 @ApiBearerAuth()
@@ -197,5 +202,54 @@ export class MediaAssetsController {
       success: true,
       data: result,
     };
+  }
+
+  @Post("bulk-download")
+  @SkipThrottle() // Exempt from rate limiting - handles bulk operations
+  @ApiOperation({
+    summary: "Bulk download multiple assets as ZIP",
+    description:
+      "Downloads selected assets as a ZIP archive. Server-side ZIP generation " +
+      "avoids CORS issues and handles large files reliably. Maximum 500 assets per request.",
+  })
+  @ApiProduces("application/zip")
+  @ApiResponse({
+    status: 200,
+    description: "ZIP archive containing requested assets",
+    content: {
+      "application/zip": {
+        schema: {
+          type: "string",
+          format: "binary",
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: "Invalid request (empty array, exceeds limit)" })
+  @ApiResponse({ status: 403, description: "Access denied to one or more assets" })
+  @ApiResponse({ status: 404, description: "No assets found" })
+  async bulkDownload(
+    @Request() req: AuthenticatedRequest,
+    @Body() bulkDownloadDto: BulkDownloadAssetsDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const { stream, filename, assetCount } =
+      await this.assetsService.bulkDownloadAssets(
+        bulkDownloadDto.assetIds,
+        req.user.id,
+      );
+
+    // Use custom filename if provided
+    const finalFilename = bulkDownloadDto.zipFilename
+      ? `${bulkDownloadDto.zipFilename}.zip`
+      : filename;
+
+    res.set({
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${finalFilename}"`,
+      "X-Asset-Count": assetCount.toString(),
+    });
+
+    return new StreamableFile(stream);
   }
 }

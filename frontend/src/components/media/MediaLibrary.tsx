@@ -28,7 +28,6 @@ import { MediaPreviewCard } from './MediaPreviewCard';
 import { getErrorMessage } from '../../utils/errorHandlers';
 import { useImageWithFallback } from '../../hooks/useImageWithFallback';
 import { useSelectionContainer } from '@air/react-drag-to-select';
-import { downloadMediaAsZip } from '../../utils/zipDownload';
 import { getProxyUrl } from '../../utils/mediaProxy';
 import {
   DndContext,
@@ -779,38 +778,44 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   };
 
   const handleBulkDownload = async () => {
-    const selectedAssetData = assets?.filter((asset) =>
-      selectedAssets.includes(asset.id)
-    );
-
-    if (!selectedAssetData || selectedAssetData.length === 0) {
+    if (!selectedAssets || selectedAssets.length === 0) {
       message.warning('No files selected');
       return;
     }
 
     // If only one file, download directly
-    if (selectedAssetData.length === 1) {
-      handleDownload(selectedAssetData[0]);
+    if (selectedAssets.length === 1) {
+      const asset = assets?.find((a) => a.id === selectedAssets[0]);
+      if (asset) {
+        handleDownload(asset);
+      }
       return;
     }
 
-    // Multiple files: create ZIP
+    // Multiple files: use server-side ZIP generation
     try {
-      message.loading({ content: `Preparing ${selectedAssetData.length} file(s) for download...`, key: 'bulk-download', duration: 0 });
+      message.loading({
+        content: `Preparing ${selectedAssets.length} file(s) for download...`,
+        key: 'bulk-download',
+        duration: 0,
+      });
 
-      await downloadMediaAsZip(
-        selectedAssetData.map(asset => ({
-          url: getProxyUrl(asset.url, mediaToken),
-          originalName: asset.originalName,
-          id: asset.id
-        })),
-        `media-assets-${new Date().getTime()}.zip`
+      // Server generates ZIP and streams it back - no CORS issues, handles any file count
+      await mediaCollabService.bulkDownloadAssets(
+        selectedAssets,
+        `media-assets-${new Date().getTime()}`,
       );
 
-      message.success({ content: `Downloaded ${selectedAssetData.length} file(s) as ZIP`, key: 'bulk-download' });
+      message.success({
+        content: `Downloaded ${selectedAssets.length} file(s) as ZIP`,
+        key: 'bulk-download',
+      });
     } catch (error) {
       console.error('Failed to download files:', error);
-      message.error({ content: 'Failed to download files. Please try again.', key: 'bulk-download' });
+      message.error({
+        content: 'Failed to download files. Please try again.',
+        key: 'bulk-download',
+      });
     }
   };
 
