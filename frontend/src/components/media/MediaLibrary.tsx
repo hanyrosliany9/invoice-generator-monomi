@@ -800,7 +800,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
 
       await downloadMediaAsZip(
         selectedAssetData.map(asset => ({
-          url: asset.url,
+          url: getProxyUrl(asset.url, mediaToken),
           originalName: asset.originalName,
           id: asset.id
         })),
