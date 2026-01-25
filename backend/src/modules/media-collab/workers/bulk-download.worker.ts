@@ -122,9 +122,34 @@ export class BulkDownloadWorker implements OnModuleInit, OnModuleDestroy {
 
       const passThrough = new PassThrough();
 
-      // Collect ZIP data into buffer
-      passThrough.on("data", (chunk: Buffer) => {
-        zipChunks.push(chunk);
+      // Set up ALL event listeners BEFORE piping/finalizing (race condition fix)
+      // The 'end' promise must be created before archive.finalize() is called
+      const streamComplete = new Promise<void>((resolve, reject) => {
+        passThrough.on("data", (chunk: Buffer) => {
+          zipChunks.push(chunk);
+        });
+        passThrough.on("end", () => {
+          this.logger.debug("PassThrough stream ended");
+          resolve();
+        });
+        passThrough.on("error", (err) => {
+          this.logger.error(`PassThrough stream error: ${err.message}`);
+          reject(err);
+        });
+      });
+
+      // Handle archiver errors
+      archive.on("error", (err) => {
+        this.logger.error(`Archiver error: ${err.message}`);
+        throw err;
+      });
+
+      archive.on("warning", (err) => {
+        if (err.code === "ENOENT") {
+          this.logger.warn(`Archiver warning: ${err.message}`);
+        } else {
+          throw err;
+        }
       });
 
       archive.pipe(passThrough);
@@ -197,13 +222,13 @@ export class BulkDownloadWorker implements OnModuleInit, OnModuleDestroy {
         }
       }
 
-      // 4. Finalize archive
+      // 4. Finalize archive and wait for stream to complete
+      this.logger.debug("Finalizing archive...");
       await archive.finalize();
 
-      // Wait for all data to be collected
-      await new Promise<void>((resolve) => {
-        passThrough.on("end", resolve);
-      });
+      // Wait for all data to be collected (listener was set up before finalize)
+      this.logger.debug("Waiting for stream to complete...");
+      await streamComplete;
 
       // Create buffer from chunks
       const zipBuffer = Buffer.concat(zipChunks);
