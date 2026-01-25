@@ -150,14 +150,11 @@ export class BulkDownloadWorker implements OnModuleInit, OnModuleDestroy {
         return fileName;
       };
 
-      // Helper to fetch file with timeout
+      // Helper to fetch file with timeout using AbortController
+      // This properly cancels the S3 request rather than just racing promises
       const fetchWithTimeout = async (asset: typeof assets[0], timeoutMs = 30000) => {
-        return Promise.race([
-          this.mediaService.getFileStream(asset.key).then(({ stream }) => ({ asset, stream })),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error(`Timeout fetching ${asset.key}`)), timeoutMs),
-          ),
-        ]);
+        const { stream } = await this.mediaService.getFileStream(asset.key, { timeoutMs });
+        return { asset, stream };
       };
 
       // Process assets in batches

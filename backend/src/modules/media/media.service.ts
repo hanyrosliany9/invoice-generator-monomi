@@ -526,9 +526,14 @@ export class MediaService {
    * Get file stream from R2 or local storage for proxying
    *
    * @param key - R2 object key or local file path (e.g., "content/filename.jpg")
+   * @param options.abortSignal - Optional AbortSignal for cancellation
+   * @param options.timeoutMs - Timeout in milliseconds (default: 30000)
    * @returns Stream, content type, content length, and original filename
    */
-  async getFileStream(key: string): Promise<{
+  async getFileStream(
+    key: string,
+    options?: { abortSignal?: AbortSignal; timeoutMs?: number },
+  ): Promise<{
     stream: Readable;
     contentType: string;
     contentLength: number;
@@ -537,13 +542,27 @@ export class MediaService {
     try {
       // Try R2 first if available
       if (this.isR2Enabled()) {
-        try {
-          const command = new GetObjectCommand({
-            Bucket: this.bucketName,
-            Key: key,
-          });
+        const command = new GetObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+        });
 
-          const response = await this.s3Client.send(command);
+        // Support AbortController for timeouts (prevents worker from hanging indefinitely)
+        const timeoutMs = options?.timeoutMs || 30000; // Default 30s timeout
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => {
+          this.logger.warn(`Timeout fetching file from R2: ${key} (${timeoutMs}ms)`);
+          abortController.abort();
+        }, timeoutMs);
+
+        // Use provided signal or our timeout signal
+        const signal = options?.abortSignal || abortController.signal;
+
+        try {
+          const response = await this.s3Client.send(command, { abortSignal: signal });
+
+          // Clear timeout on success
+          clearTimeout(timeoutId);
 
           if (!response.Body) {
             throw new NotFoundException(`File not found in R2: ${key}`);
@@ -562,8 +581,18 @@ export class MediaService {
             contentLength: response.ContentLength || 0,
             originalName,
           };
-        } catch (r2Error) {
-          // If R2 fails, try local fallback
+        } catch (r2Error: any) {
+          // Clear timeout on error too
+          clearTimeout(timeoutId);
+
+          // Handle abort/timeout error specifically - don't fall through to local storage
+          if (r2Error.name === "AbortError" || signal.aborted) {
+            throw new InternalServerErrorException(
+              `Timeout fetching file from R2: ${key} (exceeded ${timeoutMs}ms)`,
+            );
+          }
+
+          // If R2 fails for other reasons, try local fallback
           if (r2Error instanceof NotFoundException) {
             this.logger.warn(
               `File not found in R2: ${key}, trying local storage fallback`,
