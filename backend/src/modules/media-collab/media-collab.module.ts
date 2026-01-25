@@ -3,6 +3,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { PrismaModule } from "../prisma/prisma.module";
 import { MediaModule } from "../media/media.module";
+import { QueueModule } from "../queue/queue.module";
 import { MediaProjectsService } from "./services/media-projects.service";
 import { MediaAssetsService } from "./services/media-assets.service";
 import { MetadataService } from "./services/metadata.service";
@@ -25,9 +26,12 @@ import { ComparisonController } from "./controllers/comparison.controller";
 import { GuestController } from "./controllers/guest.controller";
 import { PublicController } from "./controllers/public.controller";
 import { MediaFoldersController } from "./controllers/folders.controller";
+import { BulkDownloadController } from "./controllers/bulk-download.controller";
 import { MediaCollabGateway } from "./gateways/media-collab.gateway";
 import { GuestAuthGuard } from "./guards/guest-auth.guard";
 import { PublicViewGuard } from "./guards/public-view.guard";
+import { BulkDownloadService } from "./services/bulk-download.service";
+import { BulkDownloadWorker } from "./workers/bulk-download.worker";
 
 /**
  * MediaCollabModule - Frame.io-like Media Collaboration Platform
@@ -72,6 +76,7 @@ import { PublicViewGuard } from "./guards/public-view.guard";
   imports: [
     PrismaModule,
     MediaModule,
+    QueueModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -93,6 +98,7 @@ import { PublicViewGuard } from "./guards/public-view.guard";
     ComparisonController,
     GuestController,
     PublicController,
+    BulkDownloadController,
   ],
   providers: [
     MediaProjectsService,
@@ -109,6 +115,8 @@ import { PublicViewGuard } from "./guards/public-view.guard";
     MediaCollabGateway,
     GuestAuthGuard,
     PublicViewGuard,
+    BulkDownloadService,
+    BulkDownloadWorker,
   ],
   exports: [
     MediaProjectsService,

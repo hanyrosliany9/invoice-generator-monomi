@@ -360,8 +360,11 @@ class MediaCollabService {
   }
 
   /**
-   * Bulk download multiple assets as a ZIP archive
+   * Bulk download multiple assets as a ZIP archive (synchronous streaming)
    * Server-side ZIP generation avoids CORS issues and handles large files reliably
+   *
+   * NOTE: This method may timeout for very large downloads (>100 files).
+   * For large downloads, use createBulkDownloadJob() instead.
    *
    * @param assetIds Array of asset IDs to download
    * @param zipFilename Optional custom filename for the ZIP (without .zip extension)
@@ -403,6 +406,57 @@ class MediaCollabService {
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
+  }
+
+  // ============================================
+  // ASYNC BULK DOWNLOAD (for large file counts)
+  // ============================================
+
+  /**
+   * Create an async bulk download job
+   * Progress is reported via WebSocket events
+   *
+   * @param assetIds Array of asset IDs to download
+   * @param projectId Project ID for access validation
+   * @param zipFilename Optional custom filename for the ZIP
+   * @returns Job info including jobId
+   */
+  async createBulkDownloadJob(
+    assetIds: string[],
+    projectId: string,
+    zipFilename?: string,
+  ): Promise<BulkDownloadJobCreated> {
+    console.log('[createBulkDownloadJob] Creating job for', assetIds.length, 'assets');
+
+    const response = await apiClient.post('/media-collab/bulk-download/jobs', {
+      assetIds,
+      projectId,
+      zipFilename,
+    });
+
+    return response.data;
+  }
+
+  /**
+   * Get status of a bulk download job
+   *
+   * @param jobId Job identifier
+   * @returns Job status including progress and download URL if complete
+   */
+  async getBulkDownloadJobStatus(jobId: string): Promise<BulkDownloadJobStatus> {
+    const response = await apiClient.get(`/media-collab/bulk-download/jobs/${jobId}`);
+    return response.data;
+  }
+
+  /**
+   * Cancel a bulk download job
+   *
+   * @param jobId Job identifier
+   * @returns Success/failure response
+   */
+  async cancelBulkDownloadJob(jobId: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.delete(`/media-collab/bulk-download/jobs/${jobId}`);
+    return response.data;
   }
 
   // ============================================
@@ -936,6 +990,54 @@ export interface MediaAssetVersion {
     email: string;
   };
   isActive: boolean;
+}
+
+// ============================================
+// ASYNC BULK DOWNLOAD TYPES
+// ============================================
+
+export type BulkDownloadJobStatusEnum = 'pending' | 'active' | 'completed' | 'failed' | 'cancelled';
+
+export interface BulkDownloadJobCreated {
+  jobId: string;
+  status: BulkDownloadJobStatusEnum;
+  totalFiles: number;
+  message: string;
+}
+
+export interface BulkDownloadJobStatus {
+  jobId: string;
+  status: BulkDownloadJobStatusEnum;
+  processedFiles: number;
+  totalFiles: number;
+  progress: number;
+  downloadUrl?: string;
+  expiresAt?: string;
+  error?: string;
+  createdAt?: string;
+  completedAt?: string;
+}
+
+export interface BulkDownloadProgressEvent {
+  jobId: string;
+  current: number;
+  total: number;
+  percent: number;
+  currentFile?: string;
+}
+
+export interface BulkDownloadCompleteEvent {
+  jobId: string;
+  downloadUrl: string;
+  expiresAt: string;
+  fileCount: number;
+  zipSize: number;
+}
+
+export interface BulkDownloadFailedEvent {
+  jobId: string;
+  error: string;
+  failedAt: string;
 }
 
 export const mediaCollabService = new MediaCollabService();

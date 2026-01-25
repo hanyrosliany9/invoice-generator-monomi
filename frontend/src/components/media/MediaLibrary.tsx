@@ -25,7 +25,9 @@ import { useQuery } from '@tanstack/react-query';
 import { mediaCollabService, MediaAsset, MediaAssetFilters } from '../../services/media-collab';
 import { StarRating } from './StarRating';
 import { MediaPreviewCard } from './MediaPreviewCard';
+import { BulkDownloadModal } from './BulkDownloadModal';
 import { getErrorMessage } from '../../utils/errorHandlers';
+import { useBulkDownload } from '../../hooks/useBulkDownload';
 import { useImageWithFallback } from '../../hooks/useImageWithFallback';
 import { useSelectionContainer } from '@air/react-drag-to-select';
 import { getProxyUrl } from '../../utils/mediaProxy';
@@ -402,6 +404,10 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   const { token } = theme.useToken();
   const { message } = App.useApp();
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const [showBulkDownloadModal, setShowBulkDownloadModal] = useState(false);
+
+  // Async bulk download hook
+  const bulkDownload = useBulkDownload();
 
   // Notify parent of selection changes
   React.useEffect(() => {
@@ -798,36 +804,54 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
       return;
     }
 
-    // Multiple files: use server-side ZIP generation
-    try {
-      message.loading({
-        content: `Preparing ${selectedAssets.length} file(s) for download...`,
-        key: 'bulk-download',
-        duration: 0,
-      });
+    // Multiple files: use bulk download (async for large counts, sync for small)
+    const ASYNC_THRESHOLD = 50; // Use async download for 50+ files
 
-      // Server generates ZIP and streams it back - no CORS issues, handles any file count
-      await mediaCollabService.bulkDownloadAssets(
-        selectedAssets,
-        `media-assets-${new Date().getTime()}`,
-      );
+    if (selectedAssets.length < ASYNC_THRESHOLD) {
+      // Small download: use synchronous streaming (faster for small file counts)
+      try {
+        message.loading({
+          content: `Preparing ${selectedAssets.length} file(s) for download...`,
+          key: 'bulk-download',
+          duration: 0,
+        });
 
-      message.success({
-        content: `Downloaded ${selectedAssets.length} file(s) as ZIP`,
-        key: 'bulk-download',
-      });
-    } catch (error: any) {
-      console.error('Failed to download files:', error);
-      // Log more details for debugging
-      if (error?.response) {
-        console.error('Response status:', error.response.status);
-        console.error('Response data:', error.response.data);
+        await mediaCollabService.bulkDownloadAssets(
+          selectedAssets,
+          `media-assets-${new Date().getTime()}`,
+        );
+
+        message.success({
+          content: `Downloaded ${selectedAssets.length} file(s) as ZIP`,
+          key: 'bulk-download',
+        });
+      } catch (error: any) {
+        console.error('Failed to download files:', error);
+        const errorMsg = error?.response?.data?.message || error?.message || 'Unknown error';
+        message.error({
+          content: `Failed to download files: ${errorMsg}`,
+          key: 'bulk-download',
+        });
       }
-      const errorMsg = error?.response?.data?.message || error?.message || 'Unknown error';
-      message.error({
-        content: `Failed to download files: ${errorMsg}`,
-        key: 'bulk-download',
-      });
+    } else {
+      // Large download: use async job queue with progress modal
+      if (!projectId) {
+        message.error('Project ID is required for bulk download');
+        return;
+      }
+
+      try {
+        setShowBulkDownloadModal(true);
+        await bulkDownload.startDownload(
+          selectedAssets,
+          projectId,
+          `media-assets-${new Date().getTime()}`,
+        );
+      } catch (error: any) {
+        console.error('Failed to start bulk download:', error);
+        const errorMsg = error?.response?.data?.message || error?.message || 'Unknown error';
+        message.error(`Failed to start download: ${errorMsg}`);
+      }
     }
   };
 
@@ -2236,6 +2260,30 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
         )}
         </>
       )}
+
+      {/* Bulk Download Modal */}
+      <BulkDownloadModal
+        open={showBulkDownloadModal}
+        onClose={() => {
+          setShowBulkDownloadModal(false);
+          bulkDownload.reset();
+        }}
+        state={bulkDownload}
+        onCancel={async () => {
+          await bulkDownload.cancelDownload();
+          setShowBulkDownloadModal(false);
+        }}
+        onRetry={() => {
+          if (projectId) {
+            bulkDownload.startDownload(
+              selectedAssets,
+              projectId,
+              `media-assets-${new Date().getTime()}`,
+            );
+          }
+        }}
+        onDownload={bulkDownload.triggerDownload}
+      />
     </>
   );
 };

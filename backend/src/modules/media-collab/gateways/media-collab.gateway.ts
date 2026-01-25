@@ -83,6 +83,10 @@ export class MediaCollabGateway
         userName,
         projectId: "", // Will be set when joining a project room
       });
+
+      // Join user-specific room for direct notifications (e.g., bulk download progress)
+      client.join(`user:${userId}`);
+      this.logger.debug(`Client ${client.id} joined user room: user:${userId}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
@@ -352,5 +356,22 @@ export class MediaCollabGateway
       userName: session.userName,
       assetId: data.assetId,
     });
+  }
+
+  /**
+   * Emit event to a specific user by userId
+   * Used for user-specific notifications like bulk download progress
+   */
+  emitToUser(userId: string, event: string, data: any) {
+    this.server.to(`user:${userId}`).emit(event, data);
+    this.logger.debug(`Emitted ${event} to user:${userId}`);
+  }
+
+  /**
+   * Emit event to all users in a project
+   */
+  emitToProject(projectId: string, event: string, data: any) {
+    this.server.to(`project:${projectId}`).emit(event, data);
+    this.logger.debug(`Emitted ${event} to project:${projectId}`);
   }
 }
