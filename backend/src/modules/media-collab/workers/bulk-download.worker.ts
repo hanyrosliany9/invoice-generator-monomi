@@ -150,16 +150,23 @@ export class BulkDownloadWorker implements OnModuleInit, OnModuleDestroy {
         return fileName;
       };
 
+      // Helper to fetch file with timeout
+      const fetchWithTimeout = async (asset: typeof assets[0], timeoutMs = 30000) => {
+        return Promise.race([
+          this.mediaService.getFileStream(asset.key).then(({ stream }) => ({ asset, stream })),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(`Timeout fetching ${asset.key}`)), timeoutMs),
+          ),
+        ]);
+      };
+
       // Process assets in batches
       for (let i = 0; i < assets.length; i += BATCH_SIZE) {
         const batch = assets.slice(i, i + BATCH_SIZE);
 
-        // Fetch files in parallel
+        // Fetch files in parallel with timeout
         const results = await Promise.allSettled(
-          batch.map(async (asset) => {
-            const { stream } = await this.mediaService.getFileStream(asset.key);
-            return { asset, stream };
-          }),
+          batch.map((asset) => fetchWithTimeout(asset, 30000)),
         );
 
         // Add successfully fetched files to archive
