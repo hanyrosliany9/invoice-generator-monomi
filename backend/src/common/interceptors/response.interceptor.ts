@@ -3,6 +3,7 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
+  StreamableFile,
 } from "@nestjs/common";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
@@ -22,10 +23,17 @@ export class ResponseInterceptor<T> implements NestInterceptor<
 
     return next.handle().pipe(
       map((data) => {
-        // Skip transformation for certain routes
+        // Skip transformation for StreamableFile (binary downloads like ZIP, PDF, images)
+        if (data instanceof StreamableFile) {
+          return data;
+        }
+
+        // Skip transformation for certain routes (binary downloads, health checks)
         if (
           request.url?.includes("/pdf/") ||
-          request.url?.includes("/health")
+          request.url?.includes("/health") ||
+          request.url?.includes("/bulk-download") ||
+          request.url?.includes("/proxy/")
         ) {
           return data;
         }
