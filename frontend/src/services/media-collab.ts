@@ -428,11 +428,17 @@ class MediaCollabService {
   ): Promise<BulkDownloadJobCreated> {
     console.log('[createBulkDownloadJob] Creating job for', assetIds.length, 'assets');
 
-    const response = await apiClient.post('/media-collab/bulk-download/jobs', {
-      assetIds,
-      projectId,
-      zipFilename,
-    });
+    const response = await apiClient.post(
+      '/media-collab/bulk-download/jobs',
+      {
+        assetIds,
+        projectId,
+        zipFilename,
+      },
+      {
+        timeout: 30000, // 30 second timeout for job creation
+      },
+    );
 
     return response.data;
   }
