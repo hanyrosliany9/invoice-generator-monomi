@@ -299,6 +299,57 @@ class WebSocketService {
   }
 
   /**
+   * Subscribe to bulk download progress events
+   */
+  onBulkDownloadProgress(
+    callback: (data: {
+      jobId: string;
+      current: number;
+      total: number;
+      percent: number;
+      currentFile?: string;
+    }) => void,
+  ): void {
+    this.socket?.on('bulk-download:progress', callback);
+  }
+
+  /**
+   * Subscribe to bulk download complete events
+   */
+  onBulkDownloadComplete(
+    callback: (data: {
+      jobId: string;
+      downloadUrl: string;
+      expiresAt: string;
+      fileCount: number;
+      zipSize: number;
+    }) => void,
+  ): void {
+    this.socket?.on('bulk-download:complete', callback);
+  }
+
+  /**
+   * Subscribe to bulk download failed events
+   */
+  onBulkDownloadFailed(
+    callback: (data: {
+      jobId: string;
+      error: string;
+      failedAt: string;
+    }) => void,
+  ): void {
+    this.socket?.on('bulk-download:failed', callback);
+  }
+
+  /**
+   * Generic on method for custom events
+   * Use this when you need to subscribe to events that don't have a dedicated method
+   */
+  on(event: string, callback: (...args: any[]) => void): void {
+    this.socket?.on(event, callback);
+  }
+
+  /**
    * Remove all event listeners
    */
   removeAllListeners(): void {
@@ -317,6 +368,14 @@ class WebSocketService {
    */
   isConnected(): boolean {
     return this.socket?.connected ?? false;
+  }
+
+  /**
+   * Get the socket instance (for advanced use cases)
+   * Note: Prefer using the dedicated methods instead
+   */
+  getSocket(): Socket | null {
+    return this.socket;
   }
 }
 

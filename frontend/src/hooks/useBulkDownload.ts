@@ -129,26 +129,48 @@ export const useBulkDownload = (): UseBulkDownloadReturn => {
   }, []);
 
   /**
-   * Setup WebSocket listeners
+   * Setup WebSocket connection and listeners
+   * Ensures connection is established before subscribing to events
    */
   useEffect(() => {
-    // Subscribe to bulk download events
-    const socket = (websocketService as any).socket;
-    if (socket) {
+    // Only set up listeners when we have a job in progress
+    if (!state.isDownloading || !state.jobId) {
+      return;
+    }
+
+    // Ensure WebSocket is connected
+    const token = localStorage.getItem('access_token');
+    if (token && !websocketService.isConnected()) {
+      websocketService.connect(token);
+    }
+
+    // Small delay to ensure connection is established
+    const setupListeners = () => {
+      const socket = websocketService.getSocket();
+      if (!socket) {
+        console.warn('[useBulkDownload] Socket not available, retrying...');
+        setTimeout(setupListeners, 500);
+        return;
+      }
+
+      console.log('[useBulkDownload] Setting up WebSocket listeners for job:', state.jobId);
       socket.on('bulk-download:progress', handleProgress);
       socket.on('bulk-download:complete', handleComplete);
       socket.on('bulk-download:failed', handleFailed);
-    }
+    };
+
+    setupListeners();
 
     return () => {
       // Cleanup listeners
+      const socket = websocketService.getSocket();
       if (socket) {
         socket.off('bulk-download:progress', handleProgress);
         socket.off('bulk-download:complete', handleComplete);
         socket.off('bulk-download:failed', handleFailed);
       }
     };
-  }, [handleProgress, handleComplete, handleFailed]);
+  }, [state.isDownloading, state.jobId, handleProgress, handleComplete, handleFailed]);
 
   /**
    * Start a bulk download
