@@ -816,10 +816,16 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
         content: `Downloaded ${selectedAssets.length} file(s) as ZIP`,
         key: 'bulk-download',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to download files:', error);
+      // Log more details for debugging
+      if (error?.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      const errorMsg = error?.response?.data?.message || error?.message || 'Unknown error';
       message.error({
-        content: 'Failed to download files. Please try again.',
+        content: `Failed to download files: ${errorMsg}`,
         key: 'bulk-download',
       });
     }

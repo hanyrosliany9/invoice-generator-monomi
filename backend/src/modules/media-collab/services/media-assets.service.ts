@@ -740,38 +740,56 @@ export class MediaAssetsService {
     // Pipe archive to passthrough stream
     archive.pipe(passThrough);
 
-    // 4. Add files to archive asynchronously
+    // 4. Add files to archive with parallel fetching (limited concurrency)
     const addFilesToArchive = async () => {
       let addedCount = 0;
       const usedNames = new Map<string, number>();
+      const CONCURRENCY_LIMIT = 10; // Fetch 10 files at a time
 
-      for (const asset of assets) {
-        try {
-          const fileStream = await this.mediaService.getFileStream(asset.key);
-
-          // Handle duplicate filenames by appending a number
-          let fileName = asset.originalName || asset.filename;
-          const existingCount = usedNames.get(fileName) || 0;
-          if (existingCount > 0) {
-            const ext = fileName.lastIndexOf(".");
-            if (ext > 0) {
-              fileName = `${fileName.substring(0, ext)}_${existingCount}${fileName.substring(ext)}`;
-            } else {
-              fileName = `${fileName}_${existingCount}`;
-            }
+      // Helper to get unique filename
+      const getUniqueFilename = (originalName: string): string => {
+        const existingCount = usedNames.get(originalName) || 0;
+        let fileName = originalName;
+        if (existingCount > 0) {
+          const ext = originalName.lastIndexOf(".");
+          if (ext > 0) {
+            fileName = `${originalName.substring(0, ext)}_${existingCount}${originalName.substring(ext)}`;
+          } else {
+            fileName = `${originalName}_${existingCount}`;
           }
-          usedNames.set(asset.originalName || asset.filename, existingCount + 1);
+        }
+        usedNames.set(originalName, existingCount + 1);
+        return fileName;
+      };
 
-          archive.append(fileStream.stream, { name: fileName });
-          addedCount++;
-          this.logger.debug(`Added to archive: ${fileName}`);
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : "Unknown error";
-          this.logger.error(
-            `Failed to add ${asset.originalName} to archive: ${errorMessage}`,
-          );
-          // Continue with other files
+      // Process files in batches for parallel fetching
+      for (let i = 0; i < assets.length; i += CONCURRENCY_LIMIT) {
+        const batch = assets.slice(i, i + CONCURRENCY_LIMIT);
+
+        // Fetch all files in batch concurrently
+        const results = await Promise.allSettled(
+          batch.map(async (asset) => {
+            const fileStream = await this.mediaService.getFileStream(asset.key);
+            return {
+              asset,
+              stream: fileStream.stream,
+            };
+          }),
+        );
+
+        // Add successfully fetched files to archive
+        for (const result of results) {
+          if (result.status === "fulfilled") {
+            const { asset, stream } = result.value;
+            const fileName = getUniqueFilename(
+              asset.originalName || asset.filename,
+            );
+            archive.append(stream, { name: fileName });
+            addedCount++;
+            this.logger.debug(`Added to archive: ${fileName}`);
+          } else {
+            this.logger.error(`Failed to fetch file: ${result.reason}`);
+          }
         }
       }
 

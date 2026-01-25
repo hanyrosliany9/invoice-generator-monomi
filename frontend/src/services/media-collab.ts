@@ -371,11 +371,18 @@ class MediaCollabService {
     assetIds: string[],
     zipFilename?: string,
   ): Promise<void> {
+    console.log('[bulkDownloadAssets] Starting download for', assetIds.length, 'assets');
+
     const response = await apiClient.post(
       '/media-collab/assets/bulk-download',
       { assetIds, zipFilename },
-      { responseType: 'blob' },
+      {
+        responseType: 'blob',
+        timeout: 10 * 60 * 1000, // 10 minutes timeout for large downloads
+      },
     );
+
+    console.log('[bulkDownloadAssets] Response received, size:', response.data?.size);
 
     // Get filename from Content-Disposition header or use default
     const contentDisposition = response.headers['content-disposition'];
