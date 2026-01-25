@@ -1010,7 +1010,7 @@ export const MediaProjectDetailPage: React.FC = () => {
 
                 return (
                   <MediaLibrary
-                    projectId={undefined}
+                    projectId={projectId}
                     assets={assetsToShow}
                     allProjectAssets={allAssets}
                     folders={foldersToShow}
