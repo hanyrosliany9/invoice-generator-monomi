@@ -138,6 +138,12 @@ export const useBulkDownload = (): UseBulkDownloadReturn => {
       return;
     }
 
+    // Track if effect is still active (for cleanup)
+    let isActive = true;
+    let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 10;
+
     // Ensure WebSocket is connected
     const token = localStorage.getItem('access_token');
     if (token && !websocketService.isConnected()) {
@@ -146,10 +152,22 @@ export const useBulkDownload = (): UseBulkDownloadReturn => {
 
     // Small delay to ensure connection is established
     const setupListeners = () => {
+      // Stop if effect was cleaned up or max retries reached
+      if (!isActive) {
+        console.log('[useBulkDownload] Effect cleaned up, stopping retry');
+        return;
+      }
+
+      if (retryCount >= MAX_RETRIES) {
+        console.error('[useBulkDownload] Max retries reached, WebSocket not available');
+        return;
+      }
+
       const socket = websocketService.getSocket();
       if (!socket) {
-        console.warn('[useBulkDownload] Socket not available, retrying...');
-        setTimeout(setupListeners, 500);
+        retryCount++;
+        console.warn(`[useBulkDownload] Socket not available, retry ${retryCount}/${MAX_RETRIES}...`);
+        retryTimeoutId = setTimeout(setupListeners, 500);
         return;
       }
 
@@ -162,6 +180,14 @@ export const useBulkDownload = (): UseBulkDownloadReturn => {
     setupListeners();
 
     return () => {
+      // Mark effect as inactive to stop retry loop
+      isActive = false;
+
+      // Clear any pending retry timeout
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+      }
+
       // Cleanup listeners
       const socket = websocketService.getSocket();
       if (socket) {
