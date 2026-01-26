@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { websocketService } from '../services/websocket';
+import { useAuthStore } from '../store/auth';
 import {
   mediaCollabService,
   BulkDownloadJobCreated,
@@ -138,7 +139,8 @@ export const useBulkDownload = (): UseBulkDownloadReturn => {
       return;
     }
 
-    const token = localStorage.getItem('access_token');
+    // Get token from Zustand auth store (persisted in localStorage as 'auth-storage')
+    const token = useAuthStore.getState().getAccessToken();
     if (!token) {
       console.error('[useBulkDownload] No access token available');
       return;
