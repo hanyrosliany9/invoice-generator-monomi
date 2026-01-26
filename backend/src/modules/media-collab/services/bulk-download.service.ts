@@ -10,7 +10,7 @@ import { Queue, Job } from "bullmq";
 import { Redis } from "ioredis";
 import * as crypto from "crypto";
 import { PrismaService } from "../../prisma/prisma.service";
-import { QUEUE_NAMES, BULLMQ_CONNECTION } from "../../queue/queue.module";
+import { QUEUE_NAMES, REDIS_CLIENT } from "../../queue/queue.module";
 import { CreateBulkDownloadJobDto } from "../dto/create-bulk-download-job.dto";
 import {
   BulkDownloadJobCreatedDto,
@@ -65,9 +65,9 @@ export class BulkDownloadService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(QUEUE_NAMES.BULK_DOWNLOAD) private readonly downloadQueue: Queue,
-    @Inject(BULLMQ_CONNECTION) private readonly redisConnection: Redis,
+    @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
   ) {
-    this.redis = redisConnection;
+    this.redis = redisClient;
   }
 
   /**
