@@ -130,7 +130,7 @@ export const useBulkDownload = (): UseBulkDownloadReturn => {
 
   /**
    * Setup WebSocket connection and listeners
-   * Ensures connection is established before subscribing to events
+   * Socket.IO queues events until connected, so we can set up listeners immediately
    */
   useEffect(() => {
     // Only set up listeners when we have a job in progress
@@ -138,63 +138,27 @@ export const useBulkDownload = (): UseBulkDownloadReturn => {
       return;
     }
 
-    // Track if effect is still active (for cleanup)
-    let isActive = true;
-    let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
-    let retryCount = 0;
-    const MAX_RETRIES = 10;
-
-    // Ensure WebSocket is connected
     const token = localStorage.getItem('access_token');
-    if (token && !websocketService.isConnected()) {
-      websocketService.connect(token);
+    if (!token) {
+      console.error('[useBulkDownload] No access token available');
+      return;
     }
 
-    // Small delay to ensure connection is established
-    const setupListeners = () => {
-      // Stop if effect was cleaned up or max retries reached
-      if (!isActive) {
-        console.log('[useBulkDownload] Effect cleaned up, stopping retry');
-        return;
-      }
+    // Connect and get socket instance - connect() now returns the socket directly
+    // Socket.IO will queue events until connected, so we can set up listeners immediately
+    const socket = websocketService.connect(token);
 
-      if (retryCount >= MAX_RETRIES) {
-        console.error('[useBulkDownload] Max retries reached, WebSocket not available');
-        return;
-      }
-
-      const socket = websocketService.getSocket();
-      if (!socket) {
-        retryCount++;
-        console.warn(`[useBulkDownload] Socket not available, retry ${retryCount}/${MAX_RETRIES}...`);
-        retryTimeoutId = setTimeout(setupListeners, 500);
-        return;
-      }
-
-      console.log('[useBulkDownload] Setting up WebSocket listeners for job:', state.jobId);
-      socket.on('bulk-download:progress', handleProgress);
-      socket.on('bulk-download:complete', handleComplete);
-      socket.on('bulk-download:failed', handleFailed);
-    };
-
-    setupListeners();
+    console.log('[useBulkDownload] Setting up WebSocket listeners for job:', state.jobId);
+    socket.on('bulk-download:progress', handleProgress);
+    socket.on('bulk-download:complete', handleComplete);
+    socket.on('bulk-download:failed', handleFailed);
 
     return () => {
-      // Mark effect as inactive to stop retry loop
-      isActive = false;
-
-      // Clear any pending retry timeout
-      if (retryTimeoutId) {
-        clearTimeout(retryTimeoutId);
-      }
-
-      // Cleanup listeners
-      const socket = websocketService.getSocket();
-      if (socket) {
-        socket.off('bulk-download:progress', handleProgress);
-        socket.off('bulk-download:complete', handleComplete);
-        socket.off('bulk-download:failed', handleFailed);
-      }
+      // Cleanup listeners (but don't disconnect - other components may use it)
+      console.log('[useBulkDownload] Cleaning up WebSocket listeners');
+      socket.off('bulk-download:progress', handleProgress);
+      socket.off('bulk-download:complete', handleComplete);
+      socket.off('bulk-download:failed', handleFailed);
     };
   }, [state.isDownloading, state.jobId, handleProgress, handleComplete, handleFailed]);
 
@@ -236,13 +200,7 @@ export const useBulkDownload = (): UseBulkDownloadReturn => {
         // For large downloads, use async job queue
         console.log('[useBulkDownload] Using async download for', assetIds.length, 'files');
 
-        // Ensure WebSocket is connected
-        const token = localStorage.getItem('access_token');
-        if (token && !websocketService.isConnected()) {
-          websocketService.connect(token);
-        }
-
-        // Create async job
+        // Create async job (WebSocket connection is handled by useEffect when jobId is set)
         const result: BulkDownloadJobCreated = await mediaCollabService.createBulkDownloadJob(
           assetIds,
           projectId,

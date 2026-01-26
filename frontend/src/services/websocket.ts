@@ -17,10 +17,20 @@ class WebSocketService {
 
   /**
    * Initialize WebSocket connection
+   * Returns the socket instance for immediate use (events will be queued until connected)
    */
-  connect(token: string): void {
-    if (this.socket?.connected) {
-      return; // Already connected
+  connect(token: string): Socket {
+    // If already connected with same token, return existing socket
+    if (this.socket?.connected && this.token === token) {
+      console.log('[WebSocket] Already connected, reusing socket');
+      return this.socket;
+    }
+
+    // Disconnect existing socket if any (handles stale/disconnected sockets)
+    if (this.socket) {
+      console.log('[WebSocket] Disconnecting existing socket');
+      this.socket.disconnect();
+      this.socket = null;
     }
 
     this.token = token;
@@ -30,25 +40,32 @@ class WebSocketService {
       ? 'https://ws.monomiagency.com/media-collab'  // Production: Dedicated WebSocket subdomain via Cloudflare Tunnel #2
       : 'http://localhost:5000/media-collab';        // Development: Same port as main app
 
+    console.log('[WebSocket] Connecting to:', wsUrl);
+
     // Connect to WebSocket - Socket.IO will upgrade HTTP/HTTPS to WebSocket
     this.socket = io(wsUrl, {
       auth: {
         token,
       },
       transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     this.socket.on('connect', () => {
       console.log('[WebSocket] Connected to media collaboration server');
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('[WebSocket] Disconnected from media collaboration server');
+    this.socket.on('disconnect', (reason) => {
+      console.log('[WebSocket] Disconnected:', reason);
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('[WebSocket] Connection error:', error);
+      console.error('[WebSocket] Connection error:', error.message);
     });
+
+    return this.socket;
   }
 
   /**
