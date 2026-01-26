@@ -209,6 +209,26 @@ export const useBulkDownload = (): UseBulkDownloadReturn => {
           zipFilename,
         );
 
+        // Check if we got a cached result (already completed with downloadUrl)
+        if (result.status === 'completed' && result.downloadUrl) {
+          console.log('[useBulkDownload] Cache hit! Download ready immediately');
+          setState((prev) => ({
+            ...prev,
+            isDownloading: false,
+            jobId: result.jobId,
+            progress: 100,
+            processedFiles: result.totalFiles,
+            totalFiles: result.totalFiles,
+            downloadUrl: result.downloadUrl,
+            expiresAt: result.expiresAt || null,
+            status: 'completed',
+          }));
+          // Auto-trigger download for cached result
+          window.open(result.downloadUrl, '_blank');
+          return;
+        }
+
+        // Not cached - job is queued for processing
         setState((prev) => ({
           ...prev,
           jobId: result.jobId,
