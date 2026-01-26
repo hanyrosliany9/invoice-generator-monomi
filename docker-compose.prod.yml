@@ -85,6 +85,8 @@ services:
       - R2_BUCKET_NAME=${R2_BUCKET_NAME:-monomi-finance}
       - R2_PUBLIC_URL=${R2_PUBLIC_URL}
       - R2_ENDPOINT=${R2_ENDPOINT}
+      # File size limit for uploads (500MB for bulk download ZIPs)
+      - MAX_FILE_SIZE_MB=500
     networks:
       - invoice-network
     volumes:
