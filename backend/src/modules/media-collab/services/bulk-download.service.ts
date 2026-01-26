@@ -191,34 +191,55 @@ export class BulkDownloadService {
    * Cancel a job
    */
   async cancelJob(jobId: string, userId: string): Promise<{ success: boolean; message: string }> {
-    const job = await this.downloadQueue.getJob(jobId);
+    try {
+      const job = await this.downloadQueue.getJob(jobId);
 
-    if (!job) {
-      throw new NotFoundException(`Job ${jobId} not found`);
+      if (!job) {
+        // Job might have been removed or never existed - don't throw, return success
+        this.logger.warn(`Cancel requested for non-existent job: ${jobId}`);
+        return {
+          success: true,
+          message: `Job ${jobId} not found (may have already completed or been cancelled)`,
+        };
+      }
+
+      // Verify user owns the job
+      const jobData = job.data as BulkDownloadJobData;
+      if (jobData.userId !== userId) {
+        throw new ForbiddenException("Access denied to this job");
+      }
+
+      const state = await job.getState();
+
+      // Can only cancel pending or active jobs
+      if (state === "completed" || state === "failed") {
+        this.logger.log(`Cannot cancel ${state} job ${jobId}`);
+        return {
+          success: false,
+          message: `Cannot cancel a ${state} job`,
+        };
+      }
+
+      // Remove the job
+      await job.remove();
+
+      this.logger.log(`Job ${jobId} cancelled by user ${userId}`);
+
+      return {
+        success: true,
+        message: `Job ${jobId} has been cancelled`,
+      };
+    } catch (error) {
+      // Handle BullMQ errors gracefully (don't throw 500 for internal errors)
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+      this.logger.error(`Error cancelling job ${jobId}:`, error);
+      return {
+        success: false,
+        message: `Failed to cancel job: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
     }
-
-    // Verify user owns the job
-    const jobData = job.data as BulkDownloadJobData;
-    if (jobData.userId !== userId) {
-      throw new ForbiddenException("Access denied to this job");
-    }
-
-    const state = await job.getState();
-
-    // Can only cancel pending or active jobs
-    if (state === "completed" || state === "failed") {
-      throw new BadRequestException(`Cannot cancel a ${state} job`);
-    }
-
-    // Remove the job
-    await job.remove();
-
-    this.logger.log(`Job ${jobId} cancelled by user ${userId}`);
-
-    return {
-      success: true,
-      message: `Job ${jobId} has been cancelled`,
-    };
   }
 
   /**
