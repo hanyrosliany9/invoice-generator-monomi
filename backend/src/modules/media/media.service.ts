@@ -137,14 +137,17 @@ export class MediaService {
    *
    * @param file - Multer file object
    * @param folder - Folder path in R2 (e.g., 'content', 'avatars')
+   * @param options - Upload options
+   * @param options.skipMimeValidation - Skip MIME type validation (for internal use like bulk download ZIPs)
    * @returns Upload result with URL, key, and metadata
    */
   async uploadFile(
     file: Express.Multer.File,
     folder: string = "content",
+    options: { skipMimeValidation?: boolean } = {},
   ): Promise<UploadResult> {
-    // Validate file
-    this.validateFile(file);
+    // Validate file (optionally skip MIME validation for internal uploads)
+    this.validateFile(file, options.skipMimeValidation);
 
     // Generate unique key
     const key = this.generateKey(file.originalname, folder);
@@ -682,7 +685,7 @@ export class MediaService {
    * @param file - Multer file object
    * @throws BadRequestException if validation fails
    */
-  private validateFile(file: Express.Multer.File): void {
+  private validateFile(file: Express.Multer.File, skipMimeValidation = false): void {
     // Check if file exists
     if (!file) {
       throw new BadRequestException("No file provided");
@@ -696,8 +699,8 @@ export class MediaService {
       );
     }
 
-    // Check MIME type
-    if (!this.allowedMimeTypes.includes(file.mimetype)) {
+    // Check MIME type (can be skipped for internal uploads like bulk download ZIPs)
+    if (!skipMimeValidation && !this.allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
         `File type ${file.mimetype} is not allowed. Allowed types: ${this.allowedMimeTypes.join(", ")}`,
       );

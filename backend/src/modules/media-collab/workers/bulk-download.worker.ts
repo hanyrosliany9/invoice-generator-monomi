@@ -239,7 +239,7 @@ export class BulkDownloadWorker implements OnModuleInit, OnModuleDestroy {
 
       this.logger.log(`ZIP created: ${zipSize} bytes`);
 
-      // 5. Upload ZIP to R2
+      // 5. Upload ZIP to R2 (skip MIME validation since application/zip is internal-only)
       const zipKey = `downloads/${zipFilename}.zip`;
       const uploadResult = await this.mediaService.uploadFile(
         {
@@ -249,6 +249,7 @@ export class BulkDownloadWorker implements OnModuleInit, OnModuleDestroy {
           size: zipSize,
         } as Express.Multer.File,
         "downloads",
+        { skipMimeValidation: true },
       );
 
       this.logger.log(`ZIP uploaded to R2: ${uploadResult.key}`);
