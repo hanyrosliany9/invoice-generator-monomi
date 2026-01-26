@@ -39,6 +39,18 @@ export class BulkDownloadJobCreatedDto {
     example: "Download job created. You will be notified via WebSocket when ready.",
   })
   message: string;
+
+  @ApiPropertyOptional({
+    description: "Presigned URL for downloading the ZIP (only when returning cached result)",
+    example: "https://r2.example.com/downloads/job-abc123.zip?signature=...",
+  })
+  downloadUrl?: string;
+
+  @ApiPropertyOptional({
+    description: "URL expiration timestamp (only when returning cached result)",
+    example: "2025-01-25T12:00:00.000Z",
+  })
+  expiresAt?: string;
 }
 
 /**

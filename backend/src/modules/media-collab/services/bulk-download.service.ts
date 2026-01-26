@@ -7,14 +7,32 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { Queue, Job } from "bullmq";
+import { Redis } from "ioredis";
+import * as crypto from "crypto";
 import { PrismaService } from "../../prisma/prisma.service";
-import { QUEUE_NAMES } from "../../queue/queue.module";
+import { QUEUE_NAMES, BULLMQ_CONNECTION } from "../../queue/queue.module";
 import { CreateBulkDownloadJobDto } from "../dto/create-bulk-download-job.dto";
 import {
   BulkDownloadJobCreatedDto,
   BulkDownloadJobStatusDto,
   BulkDownloadJobStatus,
 } from "../dto/bulk-download-job.dto";
+
+/**
+ * Cache entry for a bulk download ZIP
+ */
+interface ZipCacheEntry {
+  contentHash: string;
+  zipKey: string;
+  downloadUrl: string;
+  expiresAt: string;
+  createdAt: string;
+  fileCount: number;
+  zipSize: number;
+}
+
+const ZIP_CACHE_PREFIX = "bulk-download:cache:";
+const ZIP_CACHE_TTL = 23 * 60 * 60; // 23 hours (slightly less than presigned URL expiry)
 
 /**
  * Job data structure for bulk download queue
@@ -24,6 +42,7 @@ export interface BulkDownloadJobData {
   userId: string;
   projectId: string;
   zipFilename: string;
+  contentHash?: string; // Hash of asset IDs for caching
 }
 
 /**
@@ -41,11 +60,62 @@ export interface BulkDownloadJobData {
 @Injectable()
 export class BulkDownloadService {
   private readonly logger = new Logger(BulkDownloadService.name);
+  private readonly redis: Redis;
 
   constructor(
     private readonly prisma: PrismaService,
     @Inject(QUEUE_NAMES.BULK_DOWNLOAD) private readonly downloadQueue: Queue,
-  ) {}
+    @Inject(BULLMQ_CONNECTION) private readonly redisConnection: Redis,
+  ) {
+    this.redis = redisConnection;
+  }
+
+  /**
+   * Generate a content hash from asset IDs
+   * Same assets in any order = same hash
+   */
+  generateContentHash(assetIds: string[]): string {
+    const sorted = [...assetIds].sort();
+    return crypto.createHash("md5").update(sorted.join(",")).digest("hex");
+  }
+
+  /**
+   * Get cached ZIP if exists and not expired
+   */
+  async getCachedZip(contentHash: string): Promise<ZipCacheEntry | null> {
+    const key = `${ZIP_CACHE_PREFIX}${contentHash}`;
+    const cached = await this.redis.get(key);
+
+    if (!cached) {
+      return null;
+    }
+
+    try {
+      const entry = JSON.parse(cached) as ZipCacheEntry;
+
+      // Double-check expiry (Redis TTL should handle this, but be safe)
+      if (new Date(entry.expiresAt) < new Date()) {
+        this.logger.debug(`Cached ZIP expired: ${contentHash}`);
+        await this.redis.del(key);
+        return null;
+      }
+
+      this.logger.log(`Cache hit for content hash: ${contentHash}`);
+      return entry;
+    } catch (error) {
+      this.logger.error(`Failed to parse cache entry: ${error}`);
+      return null;
+    }
+  }
+
+  /**
+   * Save ZIP to cache
+   */
+  async saveZipToCache(entry: ZipCacheEntry): Promise<void> {
+    const key = `${ZIP_CACHE_PREFIX}${entry.contentHash}`;
+    await this.redis.setex(key, ZIP_CACHE_TTL, JSON.stringify(entry));
+    this.logger.log(`Saved ZIP to cache: ${entry.contentHash} (${entry.fileCount} files, ${entry.zipSize} bytes)`);
+  }
 
   /**
    * Create a new bulk download job
@@ -85,16 +155,33 @@ export class BulkDownloadService {
       );
     }
 
-    // Generate unique job ID
-    const jobId = `download-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    // Check cache for existing ZIP with same content
+    const contentHash = this.generateContentHash(validAssetIds);
+    const cachedZip = await this.getCachedZip(contentHash);
+
+    if (cachedZip) {
+      this.logger.log(`Returning cached ZIP for ${validAssetIds.length} assets (hash: ${contentHash})`);
+      return {
+        jobId: `cached-${contentHash}`,
+        status: BulkDownloadJobStatus.COMPLETED,
+        totalFiles: cachedZip.fileCount,
+        message: "Download ready (cached)",
+        downloadUrl: cachedZip.downloadUrl,
+        expiresAt: cachedZip.expiresAt,
+      };
+    }
+
+    // Generate unique job ID (include content hash for traceability)
+    const jobId = `download-${Date.now()}-${contentHash.substring(0, 8)}`;
 
     // Create job data
     const jobData: BulkDownloadJobData = {
       assetIds: validAssetIds,
       userId,
       projectId,
-      zipFilename: zipFilename || `media-download-${Date.now()}`,
-    };
+      zipFilename: zipFilename || `media-download-${contentHash}`,
+      contentHash, // Include hash for cache storage after completion
+    } as BulkDownloadJobData;
 
     // Add job to queue
     await this.downloadQueue.add(jobId, jobData, {

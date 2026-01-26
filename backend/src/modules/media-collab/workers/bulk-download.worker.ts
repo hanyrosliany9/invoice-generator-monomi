@@ -4,6 +4,7 @@ import {
   OnModuleInit,
   OnModuleDestroy,
   Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { Worker, Job } from "bullmq";
 import archiver from "archiver";
@@ -12,7 +13,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { MediaService } from "../../media/media.service";
 import { MediaCollabGateway } from "../gateways/media-collab.gateway";
 import { QUEUE_NAMES } from "../../queue/queue.module";
-import { BulkDownloadJobData } from "../services/bulk-download.service";
+import { BulkDownloadJobData, BulkDownloadService } from "../services/bulk-download.service";
 import {
   BulkDownloadProgressEvent,
   BulkDownloadCompleteEvent,
@@ -44,6 +45,8 @@ export class BulkDownloadWorker implements OnModuleInit, OnModuleDestroy {
     private readonly mediaService: MediaService,
     private readonly gateway: MediaCollabGateway,
     @Inject("BULLMQ_CONNECTION") private readonly redisConnection: any,
+    @Inject(forwardRef(() => BulkDownloadService))
+    private readonly bulkDownloadService: BulkDownloadService,
   ) {}
 
   async onModuleInit() {
@@ -272,6 +275,26 @@ export class BulkDownloadWorker implements OnModuleInit, OnModuleDestroy {
       this.emitToUser(userId, "bulk-download:complete", completeEvent);
 
       this.logger.log(`Job ${jobId} completed: ${processed} files, ${zipSize} bytes`);
+
+      // 8. Save to cache for future requests with same assets
+      const { contentHash } = job.data;
+      if (contentHash) {
+        try {
+          await this.bulkDownloadService.saveZipToCache({
+            contentHash,
+            zipKey: uploadResult.key,
+            downloadUrl,
+            expiresAt,
+            createdAt: new Date().toISOString(),
+            fileCount: processed,
+            zipSize,
+          });
+          this.logger.log(`Cached ZIP for content hash: ${contentHash}`);
+        } catch (cacheError) {
+          // Don't fail the job if caching fails - just log the error
+          this.logger.error(`Failed to cache ZIP: ${cacheError}`);
+        }
+      }
 
       // Return result (stored in job.returnvalue)
       return {
