@@ -10,6 +10,11 @@ export const QUEUE_NAMES = {
 } as const;
 
 /**
+ * Injection token for the BullMQ Redis connection
+ */
+export const BULLMQ_CONNECTION = "BULLMQ_CONNECTION";
+
+/**
  * QueueModule - BullMQ Integration for Background Job Processing
  *
  * Provides queue infrastructure for async tasks like:
@@ -23,7 +28,7 @@ export const QUEUE_NAMES = {
 @Module({
   providers: [
     {
-      provide: "BULLMQ_CONNECTION",
+      provide: BULLMQ_CONNECTION,
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const redisUrl = configService.get<string>("REDIS_URL");
@@ -45,7 +50,7 @@ export const QUEUE_NAMES = {
     },
     {
       provide: QUEUE_NAMES.BULK_DOWNLOAD,
-      inject: ["BULLMQ_CONNECTION"],
+      inject: [BULLMQ_CONNECTION],
       useFactory: (connection: any) => {
         const logger = new Logger("BulkDownloadQueue");
         const queue = new Queue(QUEUE_NAMES.BULK_DOWNLOAD, { connection });
@@ -56,6 +61,6 @@ export const QUEUE_NAMES = {
       },
     },
   ],
-  exports: ["BULLMQ_CONNECTION", QUEUE_NAMES.BULK_DOWNLOAD],
+  exports: [BULLMQ_CONNECTION, QUEUE_NAMES.BULK_DOWNLOAD],
 })
 export class QueueModule {}

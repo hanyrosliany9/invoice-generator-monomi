@@ -12,7 +12,7 @@ import { PassThrough } from "stream";
 import { PrismaService } from "../../prisma/prisma.service";
 import { MediaService } from "../../media/media.service";
 import { MediaCollabGateway } from "../gateways/media-collab.gateway";
-import { QUEUE_NAMES } from "../../queue/queue.module";
+import { QUEUE_NAMES, BULLMQ_CONNECTION } from "../../queue/queue.module";
 import { BulkDownloadJobData, BulkDownloadService } from "../services/bulk-download.service";
 import {
   BulkDownloadProgressEvent,
@@ -44,7 +44,7 @@ export class BulkDownloadWorker implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly mediaService: MediaService,
     private readonly gateway: MediaCollabGateway,
-    @Inject("BULLMQ_CONNECTION") private readonly redisConnection: any,
+    @Inject(BULLMQ_CONNECTION) private readonly redisConnection: any,
     @Inject(forwardRef(() => BulkDownloadService))
     private readonly bulkDownloadService: BulkDownloadService,
   ) {}
