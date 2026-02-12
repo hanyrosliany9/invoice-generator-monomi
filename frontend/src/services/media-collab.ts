@@ -940,6 +940,7 @@ export interface CreateCommentDto {
   parentId?: string;
   x?: number;
   y?: number;
+  timestamp?: number; // Timecode in seconds for video comments
 }
 
 export enum CollaboratorRole {

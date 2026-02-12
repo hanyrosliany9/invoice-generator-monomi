@@ -63,7 +63,7 @@ export const FolderTreeDnD: React.FC<FolderTreeDnDProps> = ({
             {folder.name}
           </span>
           <span style={{ marginLeft: 8, color: token.colorTextSecondary, fontSize: 12 }}>
-            {folder._count?.assets || 0}
+            {(folder._count?.assets || 0) + (folder._count?.children || 0)}
           </span>
           <Dropdown
             menu={{

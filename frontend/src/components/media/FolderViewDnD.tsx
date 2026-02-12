@@ -312,7 +312,7 @@ export const FolderViewDnD: React.FC<FolderViewDnDProps> = ({
                                 {folder.name}
                               </div>
                               <div style={{ fontSize: 12, color: token.colorTextSecondary }}>
-                                {folder._count?.assets || 0} items
+                                {(folder._count?.assets || 0) + (folder._count?.children || 0)} items
                               </div>
                             </div>
                           </div>

@@ -84,6 +84,7 @@ interface MediaLibraryProps {
   onDragEnd?: (assetId: string, selectedAssets: string[]) => void;
   onSelectionChange?: (selectedAssets: string[]) => void;
   mediaToken?: string | null;
+  selectedAssetId?: string;
 }
 
 /**
@@ -310,7 +311,7 @@ const FolderDropZone: React.FC<FolderDropZoneProps> = ({
           <div>
             <div style={{ fontWeight: 600, fontSize: 14 }}>{folder.name}</div>
             <div style={{ fontSize: 12, color: token.colorTextTertiary, marginTop: 4 }}>
-              {folder._count?.assets || 0} items
+              {(folder._count?.assets || 0) + (folder._count?.children || 0)} items
             </div>
             {isOver && (
               <div style={{ fontSize: 11, color: token.colorPrimary, marginTop: 4, fontWeight: 500 }}>
@@ -323,7 +324,7 @@ const FolderDropZone: React.FC<FolderDropZoneProps> = ({
       {(onRename || onDelete || onDownload) && !isOver && (
         <div style={{ marginTop: 12, paddingTop: 8, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
           <Space size={4}>
-            {onDownload && (folder._count?.assets || 0) > 0 && (
+            {onDownload && ((folder._count?.assets || 0) + (folder._count?.children || 0)) > 0 && (
               <Tooltip title="Download all files in folder">
                 <Button
                   type="text"
@@ -400,6 +401,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   onDragStart: onDragStartProp,
   onDragEnd: onDragEndProp,
   onSelectionChange,
+  selectedAssetId,
 }) => {
   const { token } = theme.useToken();
   const { message } = App.useApp();
@@ -1340,6 +1342,8 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
             border: selectedAssets.includes(asset.id)
               ? `2px solid ${token.colorPrimary}`
               : undefined,
+            outline: asset.id === selectedAssetId ? `3px solid ${token.colorPrimary}` : 'none',
+            outlineOffset: '2px',
           }}
           styles={{ body: { padding: 8 } }}
           onClick={() => {
@@ -1685,6 +1689,8 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
             border: selectedAssets.includes(asset.id)
               ? `2px solid ${token.colorPrimary}`
               : undefined,
+            outline: asset.id === selectedAssetId ? `3px solid ${token.colorPrimary}` : 'none',
+            outlineOffset: '2px',
           }}
           styles={{ body: { padding: 8 } }}
           onClick={() => {
@@ -2044,12 +2050,12 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                     title={
                       <Space>
                         <Text strong>{folder.name}</Text>
-                        <Badge count={folder._count?.assets || 0} showZero style={{ backgroundColor: token.colorWarning }} />
+                        <Badge count={(folder._count?.assets || 0) + (folder._count?.children || 0)} showZero style={{ backgroundColor: token.colorWarning }} />
                       </Space>
                     }
                     description={
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        {folder._count?.assets || 0} {folder._count?.assets === 1 ? 'item' : 'items'}
+                        {(folder._count?.assets || 0) + (folder._count?.children || 0)} {((folder._count?.assets || 0) + (folder._count?.children || 0)) === 1 ? 'item' : 'items'}
                       </Text>
                     }
                   />
@@ -2099,6 +2105,8 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               style: {
                 cursor: 'pointer',
                 background: selectedAssets.includes(record.id) ? token.colorPrimaryBg : 'transparent',
+                outline: record.id === selectedAssetId ? `2px solid ${token.colorPrimary}` : 'none',
+                outlineOffset: '-2px',
               },
             };
           }}

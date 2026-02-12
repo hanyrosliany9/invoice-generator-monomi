@@ -13,6 +13,7 @@ import {
   QuestionCircleOutlined,
   FolderOutlined,
   EditOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mediaCollabService, MediaAsset, MediaAssetFilters } from '../services/media-collab';
@@ -20,7 +21,7 @@ import { MediaLibrary } from '../components/media/MediaLibrary';
 import { FilterBar } from '../components/media/FilterBar';
 import { UploadMediaModal } from '../components/media/UploadMediaModal';
 import { PhotoLightbox } from '../components/media/PhotoLightbox';
-import { VideoPlayer } from '../components/media/VideoPlayer';
+import { VideoReviewModal } from '../components/media/VideoReviewModal';
 import { CommentPanel } from '../components/media/CommentPanel';
 import { CollaboratorManagement } from '../components/media/CollaboratorManagement';
 import { MetadataPanel } from '../components/media/MetadataPanel';
@@ -30,6 +31,8 @@ import { FolderTreeDnD } from '../components/media/FolderTreeDnD';
 import { FolderBreadcrumb } from '../components/media/FolderBreadcrumb';
 import { FolderViewDnD } from '../components/media/FolderViewDnD';
 import { CreateFolderModal } from '../components/media/CreateFolderModal';
+import { CollectionsPanel } from '../components/media/CollectionsPanel';
+import { CollectionView } from '../components/media/CollectionView';
 // Import @dnd-kit for page-level DndContext
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { useImageWithFallback } from '../hooks/useImageWithFallback';
@@ -64,6 +67,8 @@ export const MediaProjectDetailPage: React.FC = () => {
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [collaboratorsModalVisible, setCollaboratorsModalVisible] = useState(false);
   const [shareLinkModalVisible, setShareLinkModalVisible] = useState(false);
+  const [collectionsVisible, setCollectionsVisible] = useState(false);
+  const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
   const [comparisonAssetIds, setComparisonAssetIds] = useState<string[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
   const [lightboxVisible, setLightboxVisible] = useState(false);
@@ -623,16 +628,60 @@ export const MediaProjectDetailPage: React.FC = () => {
       }
 
       switch (event.key) {
+        case 'ArrowUp':
+        case 'ArrowDown':
+          if (!lightboxVisible && !videoPlayerVisible && assets?.length) {
+            event.preventDefault();
+            // Navigate through assets in the grid
+            const currentIdx = selectedAsset
+              ? (currentFolderId ? folderContents?.assets || [] : assets?.filter(a => !a.folderId) || []).findIndex(a => a.id === selectedAsset.id)
+              : -1;
+            const allAssetsList = currentFolderId ? folderContents?.assets || [] : assets?.filter(a => !a.folderId) || [];
+            if (event.key === 'ArrowDown') {
+              const nextIdx = currentIdx + 1;
+              if (nextIdx < allAssetsList.length) {
+                setSelectedAsset(allAssetsList[nextIdx]);
+              }
+            } else {
+              const prevIdx = currentIdx - 1;
+              if (prevIdx >= 0) {
+                setSelectedAsset(allAssetsList[prevIdx]);
+              }
+            }
+          }
+          break;
         case 'ArrowLeft':
-          if (lightboxVisible && selectedAsset) {
+          if (!lightboxVisible && !videoPlayerVisible && assets?.length) {
+            event.preventDefault();
+            const allAssetsForNav = currentFolderId ? folderContents?.assets || [] : assets?.filter(a => !a.folderId) || [];
+            const curIdx = selectedAsset ? allAssetsForNav.findIndex(a => a.id === selectedAsset.id) : -1;
+            const prevI = curIdx - 1;
+            if (prevI >= 0) {
+              setSelectedAsset(allAssetsForNav[prevI]);
+            }
+          } else if (lightboxVisible && selectedAsset) {
             event.preventDefault();
             navigateToAsset('prev');
           }
           break;
         case 'ArrowRight':
-          if (lightboxVisible && selectedAsset) {
+          if (!lightboxVisible && !videoPlayerVisible && assets?.length) {
+            event.preventDefault();
+            const allAssetsForNav2 = currentFolderId ? folderContents?.assets || [] : assets?.filter(a => !a.folderId) || [];
+            const curIdx2 = selectedAsset ? allAssetsForNav2.findIndex(a => a.id === selectedAsset.id) : -1;
+            const nextI = curIdx2 + 1;
+            if (nextI < allAssetsForNav2.length) {
+              setSelectedAsset(allAssetsForNav2[nextI]);
+            }
+          } else if (lightboxVisible && selectedAsset) {
             event.preventDefault();
             navigateToAsset('next');
+          }
+          break;
+        case 'Enter':
+          if (selectedAsset && !lightboxVisible && !videoPlayerVisible) {
+            event.preventDefault();
+            handleAssetClick(selectedAsset);
           }
           break;
         case 'Escape':
@@ -678,6 +727,8 @@ export const MediaProjectDetailPage: React.FC = () => {
       videoPlayerVisible,
       selectedAsset,
       assets,
+      currentFolderId,
+      folderContents,
       uploadModalVisible,
       settingsModalVisible,
       collaboratorsModalVisible,
@@ -685,6 +736,8 @@ export const MediaProjectDetailPage: React.FC = () => {
       createFolderModalVisible,
       message,
       refetch,
+      navigateToAsset,
+      handleAssetClick,
     ]
   );
 
@@ -855,6 +908,13 @@ export const MediaProjectDetailPage: React.FC = () => {
                   Collaborators ({project._count?.collaborators || 0})
                 </Button>
                 <Button
+                  icon={<AppstoreOutlined />}
+                  onClick={() => setCollectionsVisible(true)}
+                  size="middle"
+                >
+                  Collections ({project._count?.collections || 0})
+                </Button>
+                <Button
                   icon={<FolderOutlined />}
                   size="middle"
                   onClick={() => handleCreateFolder(currentFolderId)}
@@ -872,13 +932,15 @@ export const MediaProjectDetailPage: React.FC = () => {
                   title={
                     <div style={{ fontSize: 11 }}>
                       <strong>Keyboard Shortcuts:</strong>
-                      <div style={{ marginTop: 6, lineHeight: 1.6 }}>
-                        <div>← / → : Navigate assets</div>
-                        <div>1-5 : Rate asset</div>
-                        <div>Space : Preview</div>
-                        <div>R : Rotate image</div>
-                        <div>I : Toggle info</div>
-                        <div>Esc : Close</div>
+                      <div style={{ marginTop: 6, lineHeight: 1.8 }}>
+                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>Arrow Keys</kbd> Navigate assets</div>
+                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>Enter</kbd> Open selected</div>
+                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>1-5</kbd> Rate asset</div>
+                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>Space</kbd> Toggle preview</div>
+                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>J/K/L</kbd> Video: Rew/Pause/Fwd</div>
+                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>R</kbd> Rotate image</div>
+                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>I</kbd> Toggle info panel</div>
+                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>Esc</kbd> Close viewer</div>
                       </div>
                     </div>
                   }
@@ -926,26 +988,36 @@ export const MediaProjectDetailPage: React.FC = () => {
             loading={assetsLoading}
             styles={{ body: { padding: '20px' } }}
           >
-              {/* Breadcrumb if in folder - Now with drag-and-drop support! */}
-              {currentFolderId && folderPath && (
-                <div style={{
-                  marginBottom: 16,
-                  padding: '12px 16px',
-                  background: token.colorBgLayout,
-                  borderRadius: '8px',
-                  border: `1px solid ${token.colorBorderSecondary}`,
-                }}>
-                  <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: 8 }}>
-                    📍 Current Location • Drag assets onto breadcrumbs to move
+              {/* Breadcrumb - Always visible, shows "Project Root" when at top level */}
+              <div style={{
+                marginBottom: 16,
+                padding: '12px 16px',
+                background: token.colorBgLayout,
+                borderRadius: '8px',
+                border: `1px solid ${token.colorBorderSecondary}`,
+              }}>
+                {currentFolderId && folderPath ? (
+                  <>
+                    <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: 8 }}>
+                      Current Location - Drag assets onto breadcrumbs to move
+                    </div>
+                    <FolderBreadcrumb
+                      folderPath={folderPath}
+                      onNavigate={handleSelectFolder}
+                      loading={pathLoading}
+                      dragCount={draggedSelectedAssets.length > 0 ? draggedSelectedAssets.length : 1}
+                    />
+                  </>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FolderOutlined style={{ color: token.colorPrimary }} />
+                    <span style={{ fontWeight: 500 }}>Project Root</span>
+                    <span style={{ color: token.colorTextTertiary, fontSize: 12 }}>
+                      ({assets?.filter(a => !a.folderId).length || 0} files, {folderTree?.length || 0} folders)
+                    </span>
                   </div>
-                  <FolderBreadcrumb
-                    folderPath={folderPath}
-                    onNavigate={handleSelectFolder}
-                    loading={pathLoading}
-                    dragCount={draggedSelectedAssets.length > 0 ? draggedSelectedAssets.length : 1}
-                  />
-                </div>
-              )}
+                )}
+              </div>
               {/* MediaLibrary with built-in drag-and-drop and folder display */}
               {(() => {
                 // At root level, show root folders from folderTree
@@ -1026,6 +1098,7 @@ export const MediaProjectDetailPage: React.FC = () => {
                     disableDndContext={true}
                     onSelectionChange={setMediaLibrarySelectedAssets}
                     mediaToken={mediaToken}
+                    selectedAssetId={selectedAsset?.id}
                   />
                 );
               })()}
@@ -1055,28 +1128,17 @@ export const MediaProjectDetailPage: React.FC = () => {
           />
         )}
 
-        {/* Video Player Modal */}
+        {/* Video Review Modal */}
         {selectedAsset && selectedAsset.mediaType === 'VIDEO' && (
-          <Modal
-            title={selectedAsset.originalName}
-            open={videoPlayerVisible}
-            onCancel={() => {
+          <VideoReviewModal
+            visible={videoPlayerVisible}
+            asset={selectedAsset}
+            mediaToken={mediaToken}
+            onClose={() => {
               setVideoPlayerVisible(false);
-              // Force remount to stop video playback
               videoPlayerKey.current += 1;
             }}
-            footer={null}
-            width={Math.min(selectedAsset.width || 1920, window.innerWidth * 0.9)}
-            centered
-            styles={{ body: { padding: 0 } }}
-            destroyOnHidden
-            afterClose={() => {
-              // Additional cleanup after modal animation completes
-              videoPlayerKey.current += 1;
-            }}
-          >
-            <VideoPlayer key={videoPlayerKey.current} url={getProxyUrl(selectedAsset.url, mediaToken)} />
-          </Modal>
+          />
         )}
 
         {/* Settings Modal */}
@@ -1239,6 +1301,27 @@ export const MediaProjectDetailPage: React.FC = () => {
             </div>
           </Space>
         </Modal>
+
+        {/* Collections Panel */}
+        <CollectionsPanel
+          projectId={projectId!}
+          visible={collectionsVisible}
+          onClose={() => setCollectionsVisible(false)}
+          onViewCollection={(id) => {
+            setActiveCollectionId(id);
+            setCollectionsVisible(false);
+          }}
+        />
+
+        {/* Collection View */}
+        {activeCollectionId && (
+          <CollectionView
+            collectionId={activeCollectionId}
+            projectId={projectId!}
+            onBack={() => setActiveCollectionId(null)}
+            mediaToken={mediaToken}
+          />
+        )}
       </Content>
     </Layout>
   </DndContext>
