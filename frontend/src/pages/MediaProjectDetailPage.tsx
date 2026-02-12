@@ -63,6 +63,9 @@ export const MediaProjectDetailPage: React.FC = () => {
   const { user } = useAuthStore();
   const { mediaToken } = useMediaToken();
 
+  // Detect mobile device
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [collaboratorsModalVisible, setCollaboratorsModalVisible] = useState(false);
@@ -873,108 +876,162 @@ export const MediaProjectDetailPage: React.FC = () => {
                   </Space>
                 </div>
 
-                {/* Primary Actions - Top Right */}
-                <Space className="mobile-full-width" size="small" style={{ width: 'auto' }}>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => setUploadModalVisible(true)}
-                    size="large"
-                    block
-                    style={{ minWidth: '100px' }}
-                  >
-                    <span className="mobile-hide">Upload</span>
-                    <span className="mobile-show" style={{ display: 'none' }}>Upload</span>
-                  </Button>
-                  <Button
-                    icon={<ShareAltOutlined />}
-                    onClick={() => setShareLinkModalVisible(true)}
-                    size="large"
-                  >
-                    <span className="mobile-hide">Share</span>
-                  </Button>
-                </Space>
+                {/* Primary Actions - Top Right (hide on mobile, use FAB instead) */}
+                {!isMobile && (
+                  <Space className="mobile-full-width" size="small" style={{ width: 'auto' }}>
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={() => setUploadModalVisible(true)}
+                      size="large"
+                      block
+                      style={{ minWidth: '100px' }}
+                    >
+                      Upload
+                    </Button>
+                    <Button
+                      icon={<ShareAltOutlined />}
+                      onClick={() => setShareLinkModalVisible(true)}
+                      size="large"
+                    >
+                      Share
+                    </Button>
+                  </Space>
+                )}
               </div>
             </div>
 
             {/* Bottom Row: Secondary Actions */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, paddingTop: 16, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
-              <Space size="small" wrap>
-                <Button
-                  icon={<TeamOutlined />}
-                  onClick={() => setCollaboratorsModalVisible(true)}
-                  size="middle"
-                >
-                  Collaborators ({project._count?.collaborators || 0})
-                </Button>
-                <Button
-                  icon={<AppstoreOutlined />}
-                  onClick={() => setCollectionsVisible(true)}
-                  size="middle"
-                >
-                  Collections ({project._count?.collections || 0})
-                </Button>
-                <Button
-                  icon={<FolderOutlined />}
-                  size="middle"
-                  onClick={() => handleCreateFolder(currentFolderId)}
-                >
-                  New Folder
-                </Button>
-                <Button
-                  icon={<SettingOutlined />}
-                  onClick={() => setSettingsModalVisible(true)}
-                  size="middle"
-                >
-                  Settings
-                </Button>
-                <Tooltip
-                  title={
-                    <div style={{ fontSize: 11 }}>
-                      <strong>Keyboard Shortcuts:</strong>
-                      <div style={{ marginTop: 6, lineHeight: 1.8 }}>
-                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>Arrow Keys</kbd> Navigate assets</div>
-                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>Enter</kbd> Open selected</div>
-                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>1-5</kbd> Rate asset</div>
-                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>Space</kbd> Toggle preview</div>
-                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>J/K/L</kbd> Video: Rew/Pause/Fwd</div>
-                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>R</kbd> Rotate image</div>
-                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>I</kbd> Toggle info panel</div>
-                        <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>Esc</kbd> Close viewer</div>
-                      </div>
-                    </div>
-                  }
-                  placement="bottomLeft"
-                >
-                  <Button icon={<QuestionCircleOutlined />} size="middle">
-                    Shortcuts
+              {isMobile ? (
+                /* Mobile: Single menu button for all actions */
+                <Space size="small" wrap style={{ width: '100%' }}>
+                  <Button
+                    icon={<TeamOutlined />}
+                    onClick={() => setCollaboratorsModalVisible(true)}
+                    size="middle"
+                    style={{ flex: 1 }}
+                  >
+                    Collaborators
                   </Button>
-                </Tooltip>
-              </Space>
+                  <Button
+                    icon={<FolderOutlined />}
+                    size="middle"
+                    onClick={() => handleCreateFolder(currentFolderId)}
+                    style={{ flex: 1 }}
+                  >
+                    New Folder
+                  </Button>
+                  <Button
+                    icon={<AppstoreOutlined />}
+                    onClick={() => setCollectionsVisible(true)}
+                    size="middle"
+                    style={{ flex: 1 }}
+                  >
+                    Collections
+                  </Button>
+                  <Button
+                    icon={<SettingOutlined />}
+                    onClick={() => setSettingsModalVisible(true)}
+                    size="middle"
+                  />
+                  <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={handleDeleteProject}
+                    loading={deleteProjectMutation.isPending}
+                    size="middle"
+                    type="text"
+                  />
+                </Space>
+              ) : (
+                /* Desktop: Original layout */
+                <>
+                  <Space size="small" wrap>
+                    <Button
+                      icon={<TeamOutlined />}
+                      onClick={() => setCollaboratorsModalVisible(true)}
+                      size="middle"
+                    >
+                      Collaborators ({project._count?.collaborators || 0})
+                    </Button>
+                    <Button
+                      icon={<AppstoreOutlined />}
+                      onClick={() => setCollectionsVisible(true)}
+                      size="middle"
+                    >
+                      Collections ({project._count?.collections || 0})
+                    </Button>
+                    <Button
+                      icon={<FolderOutlined />}
+                      size="middle"
+                      onClick={() => handleCreateFolder(currentFolderId)}
+                    >
+                      New Folder
+                    </Button>
+                    <Button
+                      icon={<SettingOutlined />}
+                      onClick={() => setSettingsModalVisible(true)}
+                      size="middle"
+                    >
+                      Settings
+                    </Button>
+                    <Tooltip
+                      title={
+                        <div style={{ fontSize: 11 }}>
+                          <strong>Keyboard Shortcuts:</strong>
+                          <div style={{ marginTop: 6, lineHeight: 1.8 }}>
+                            <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>Arrow Keys</kbd> Navigate assets</div>
+                            <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>Enter</kbd> Open selected</div>
+                            <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>1-5</kbd> Rate asset</div>
+                            <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>Space</kbd> Toggle preview</div>
+                            <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>J/K/L</kbd> Video: Rew/Pause/Fwd</div>
+                            <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>R</kbd> Rotate image</div>
+                            <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>I</kbd> Toggle info panel</div>
+                            <div><kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 4px', borderRadius: 3 }}>Esc</kbd> Close viewer</div>
+                          </div>
+                        </div>
+                      }
+                      placement="bottomLeft"
+                    >
+                      <Button icon={<QuestionCircleOutlined />} size="middle">
+                        Shortcuts
+                      </Button>
+                    </Tooltip>
+                  </Space>
 
-              <Space size="small">
-                <Button
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={handleDeleteProject}
-                  loading={deleteProjectMutation.isPending}
-                  size="middle"
-                  type="text"
-                >
-                  Delete Project
-                </Button>
-              </Space>
+                  <Space size="small">
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={handleDeleteProject}
+                      loading={deleteProjectMutation.isPending}
+                      size="middle"
+                      type="text"
+                    >
+                      Delete Project
+                    </Button>
+                  </Space>
+                </>
+              )}
             </div>
           </Card>
 
-          {/* Filter Bar */}
-          <FilterBar
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            activeFilterCount={activeFilterCount}
-            resultCount={assets?.length || 0}
-            totalCount={allAssets?.length || 0}
-          />
+          {/* Filter Bar - Sticky on mobile */}
+          <div style={{
+            position: isMobile ? 'sticky' : 'relative',
+            top: isMobile ? 0 : 'auto',
+            zIndex: isMobile ? 10 : 'auto',
+            background: token.colorBgLayout,
+          }}>
+            <FilterBar
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              activeFilterCount={activeFilterCount}
+              resultCount={assets?.length || 0}
+              totalCount={allAssets?.length || 0}
+            />
+          </div>
 
           {/* Media Assets */}
           <Card
@@ -1320,6 +1377,30 @@ export const MediaProjectDetailPage: React.FC = () => {
             projectId={projectId!}
             onBack={() => setActiveCollectionId(null)}
             mediaToken={mediaToken}
+          />
+        )}
+
+        {/* Mobile FAB for upload */}
+        {isMobile && (
+          <Button
+            type="primary"
+            shape="circle"
+            size="large"
+            icon={<PlusOutlined />}
+            onClick={() => setUploadModalVisible(true)}
+            style={{
+              position: 'fixed',
+              bottom: 24,
+              right: 24,
+              width: 56,
+              height: 56,
+              fontSize: 24,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              zIndex: 100,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           />
         )}
       </Content>

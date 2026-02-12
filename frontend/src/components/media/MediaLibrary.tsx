@@ -20,6 +20,7 @@ import {
   DragOutlined,
   FolderOutlined,
   EditOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { mediaCollabService, MediaAsset, MediaAssetFilters } from '../../services/media-collab';
@@ -59,7 +60,7 @@ const { Text } = Typography;
 interface Folder {
   id: string;
   name: string;
-  _count?: { assets?: number };
+  _count?: { assets?: number; children?: number };
 }
 
 interface MediaLibraryProps {
@@ -425,6 +426,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   const [activeId, setActiveId] = useState<string | null>(null); // Currently dragging item
   const [localAssets, setLocalAssets] = useState<MediaAsset[]>([]); // Local reordered assets
   const gridContainerRef = useRef<HTMLDivElement | null>(null); // Ref for drag-to-select container
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Detect mobile device for simplified interactions
   const isMobile = React.useMemo(() => {
@@ -736,6 +738,20 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
     );
   };
 
+  const handleTouchStart = (assetId: string) => {
+    longPressTimerRef.current = setTimeout(() => {
+      // Enter selection mode and select this asset
+      setIsSelecting(true);
+      toggleSelection(assetId);
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
+  };
+
   const selectAll = () => {
     // Use allProjectAssets if available (selects ALL assets in project, including those in folders)
     // Otherwise fall back to visible assets only
@@ -901,10 +917,10 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   // Get grid template based on density with mobile responsiveness
   const getGridTemplate = () => {
     // Mobile: 2 columns, Tablet: 3-4 columns, Desktop: based on density
-    const isMobile = window.innerWidth < 768;
+    const isMobileWidth = window.innerWidth < 768;
     const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
 
-    if (isMobile) {
+    if (isMobileWidth) {
       // Mobile: always 2 columns regardless of density
       return 'repeat(2, 1fr)';
     }
@@ -969,14 +985,26 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
           .media-library-bulk-bar {
             padding: 8px 12px !important;
             flex-wrap: wrap !important;
+            max-width: 100vw !important;
+            overflow-x: auto !important;
           }
 
           .media-library-bulk-bar .ant-space {
             font-size: 12px !important;
           }
 
+          .media-library-bulk-bar .ant-btn {
+            font-size: 12px !important;
+            padding: 4px 8px !important;
+            height: auto !important;
+          }
+
           .media-library-card .ant-card-body {
-            padding: 6px !important;
+            padding: 4px !important;
+          }
+
+          .media-library-card .ant-typography {
+            font-size: 11px !important;
           }
         }
 
@@ -1398,7 +1426,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                   <Checkbox
                     checked={selectedAssets.includes(asset.id)}
                     style={{
-                      transform: 'scale(1.5)',
+                      transform: isMobile ? 'scale(1.8)' : 'scale(1.5)',
                       backgroundColor: 'white',
                       borderRadius: '4px',
                       padding: '2px',
@@ -1416,10 +1444,10 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                   background: token.colorBgContainer,
                   padding: '1px 6px',
                   borderRadius: 3,
-                  fontSize: 10,
+                  fontSize: isMobile ? 12 : 10,
                   border: `1px solid ${token.colorBorder}`,
                   boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08)',
-                  lineHeight: '14px',
+                  lineHeight: isMobile ? '16px' : '14px',
                 }}
               >
                 <Badge
@@ -1433,12 +1461,46 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                       : 'default'
                   }
                   text={
-                    <span style={{ fontSize: 9, lineHeight: '12px' }}>
+                    <span style={{ fontSize: isMobile ? 11 : 9, lineHeight: isMobile ? '14px' : '12px' }}>
                       {asset.status}
                     </span>
                   }
                 />
               </div>
+
+              {/* Mobile: 3-dot menu button */}
+              {isMobile && !isSelecting && selectedAssets.length === 0 && (
+                <Dropdown
+                  menu={{
+                    items: [
+                      { key: 'view', label: 'View', icon: <EyeOutlined />, onClick: () => onAssetClick && onAssetClick(asset) },
+                      { key: 'download', label: 'Download', icon: <DownloadOutlined />, onClick: () => handleDownload(asset) },
+                      { key: 'delete', label: 'Delete', icon: <DeleteOutlined />, danger: true, onClick: () => handleDelete(asset.id, asset.originalName) },
+                    ],
+                  }}
+                  trigger={['click']}
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<MoreOutlined />}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      position: 'absolute',
+                      bottom: 4,
+                      right: 4,
+                      background: 'rgba(0, 0, 0, 0.6)',
+                      color: 'white',
+                      border: 'none',
+                      minWidth: 32,
+                      minHeight: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  />
+                </Dropdown>
+              )}
 
               {/* Action Buttons Overlay - Only show on desktop when NOT in selection mode */}
               {!isSelecting && selectedAssets.length === 0 && !isMobile && (
@@ -1566,14 +1628,14 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
           {/* Compact info - Frame.io style */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
             <Tooltip title={asset.originalName}>
-              <Text strong ellipsis style={{ flex: 1, fontSize: 12 }}>
+              <Text strong ellipsis style={{ flex: 1, fontSize: isMobile ? 11 : 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {asset.originalName}
               </Text>
             </Tooltip>
             <StarRating
               value={asset.starRating}
               onChange={(rating) => handleStarRatingChange(asset.id, rating)}
-              size={12}
+              size={isMobile ? 16 : 12}
             />
           </div>
         </Card>
@@ -1683,6 +1745,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                       overlayStyle={{ maxWidth: 400 }}
                     >
                       <Card
+          className="media-library-card"
           hoverable
           style={{
             overflow: 'hidden',
@@ -1692,7 +1755,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
             outline: asset.id === selectedAssetId ? `3px solid ${token.colorPrimary}` : 'none',
             outlineOffset: '2px',
           }}
-          styles={{ body: { padding: 8 } }}
+          styles={{ body: { padding: isMobile ? 4 : 8 } }}
           onClick={() => {
             if (isSelecting || selectedAssets.length > 0) {
               toggleSelection(asset.id);
@@ -1701,12 +1764,14 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               onAssetClick(asset);
             }
           }}
+          onTouchStart={() => handleTouchStart(asset.id)}
+          onTouchEnd={handleTouchEnd}
           cover={
             <div
               style={{
                 position: 'relative',
                 width: '100%',
-                aspectRatio: '1 / 1',
+                aspectRatio: isMobile ? '4 / 3' : '1 / 1',
                 background: token.colorBgContainer,
                 overflow: 'hidden',
                 borderRadius: '8px 8px 0 0',
@@ -1745,7 +1810,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                   <Checkbox
                     checked={selectedAssets.includes(asset.id)}
                     style={{
-                      transform: 'scale(1.5)',
+                      transform: isMobile ? 'scale(1.8)' : 'scale(1.5)',
                       backgroundColor: 'white',
                       borderRadius: '4px',
                       padding: '2px',
@@ -1763,10 +1828,10 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                   background: token.colorBgContainer,
                   padding: '1px 6px',
                   borderRadius: 3,
-                  fontSize: 10,
+                  fontSize: isMobile ? 12 : 10,
                   border: `1px solid ${token.colorBorder}`,
                   boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08)',
-                  lineHeight: '14px',
+                  lineHeight: isMobile ? '16px' : '14px',
                 }}
               >
                 <Badge
@@ -1780,12 +1845,46 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                       : 'default'
                   }
                   text={
-                    <span style={{ fontSize: 9, lineHeight: '12px' }}>
+                    <span style={{ fontSize: isMobile ? 11 : 9, lineHeight: isMobile ? '14px' : '12px' }}>
                       {asset.status}
                     </span>
                   }
                 />
               </div>
+
+              {/* Mobile: 3-dot menu button */}
+              {isMobile && !isSelecting && selectedAssets.length === 0 && (
+                <Dropdown
+                  menu={{
+                    items: [
+                      { key: 'view', label: 'View', icon: <EyeOutlined />, onClick: () => onAssetClick && onAssetClick(asset) },
+                      { key: 'download', label: 'Download', icon: <DownloadOutlined />, onClick: () => handleDownload(asset) },
+                      { key: 'delete', label: 'Delete', icon: <DeleteOutlined />, danger: true, onClick: () => handleDelete(asset.id, asset.originalName) },
+                    ],
+                  }}
+                  trigger={['click']}
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<MoreOutlined />}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      position: 'absolute',
+                      bottom: 4,
+                      right: 4,
+                      background: 'rgba(0, 0, 0, 0.6)',
+                      color: 'white',
+                      border: 'none',
+                      minWidth: 32,
+                      minHeight: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  />
+                </Dropdown>
+              )}
 
               {/* Action Buttons Overlay - Only show on desktop when NOT in selection mode */}
               {!isSelecting && selectedAssets.length === 0 && !isMobile && (
@@ -1913,14 +2012,14 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
           {/* Compact info - Frame.io style */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
             <Tooltip title={asset.originalName}>
-              <Text strong ellipsis style={{ flex: 1, fontSize: 12 }}>
+              <Text strong ellipsis style={{ flex: 1, fontSize: isMobile ? 11 : 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {asset.originalName}
               </Text>
             </Tooltip>
             <StarRating
               value={asset.starRating}
               onChange={(rating) => handleStarRatingChange(asset.id, rating)}
-              size={12}
+              size={isMobile ? 16 : 12}
             />
           </div>
         </Card>

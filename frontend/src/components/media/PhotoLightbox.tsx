@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Modal, Button, Space, Slider, Typography, theme, Tooltip, Divider } from 'antd';
+import { Modal, Button, Space, Slider, Typography, theme, Tooltip, Divider, Drawer } from 'antd';
 import {
   ZoomInOutlined,
   ZoomOutOutlined,
@@ -29,6 +29,39 @@ spinnerStyle.textContent = `
 if (!document.head.querySelector('style[data-spinner-animation]')) {
   spinnerStyle.setAttribute('data-spinner-animation', 'true');
   document.head.appendChild(spinnerStyle);
+}
+
+// Add mobile-specific styles
+const mobileStyles = document.createElement('style');
+mobileStyles.textContent = `
+  @media (max-width: 767px) {
+    .lightbox-image-container {
+      padding: 0 !important;
+    }
+    .lightbox-nav-btn {
+      min-width: 48px !important;
+      min-height: 48px !important;
+    }
+    .lightbox-controls {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+`;
+if (!document.head.querySelector('style[data-mobile-lightbox]')) {
+  mobileStyles.setAttribute('data-mobile-lightbox', 'true');
+  document.head.appendChild(mobileStyles);
 }
 
 interface PhotoLightboxProps {
@@ -84,6 +117,43 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
 
   // Progressive loading state
   const [fullSizeLoaded, setFullSizeLoaded] = useState(false);
+
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Touch gesture state
+  const touchStartRef = useRef<{ x: number; y: number; distance?: number; time: number } | null>(null);
+  const [touchDelta, setTouchDelta] = useState({ x: 0, y: 0 });
+  const lastTapRef = useRef<number | null>(null);
+
+  // Mobile controls visibility
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Auto-hide controls on mobile
+  const showControls = () => {
+    setControlsVisible(true);
+    if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    if (isMobile) {
+      controlsTimerRef.current = setTimeout(() => {
+        setControlsVisible(false);
+      }, 3000);
+    }
+  };
+
+  useEffect(() => {
+    if (visible && isMobile) showControls();
+  }, [visible, isMobile]);
 
   useEffect(() => {
     if (!visible) {
@@ -244,6 +314,95 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
     setPosition({ x: 0, y: 0 });
   };
 
+  // Calculate distance between two touch points (for pinch)
+  const getTouchDistance = (touches: React.TouchList) => {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    showControls(); // Show controls on any touch
+    if (e.touches.length === 1) {
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now(),
+      };
+    } else if (e.touches.length === 2) {
+      // Pinch start
+      touchStartRef.current = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+        distance: getTouchDistance(e.touches),
+        time: Date.now(),
+      };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+
+    if (e.touches.length === 2 && touchStartRef.current.distance) {
+      // Pinch zoom
+      e.preventDefault();
+      const newDist = getTouchDistance(e.touches);
+      const scale = newDist / touchStartRef.current.distance;
+      const newZoom = Math.min(300, Math.max(50, zoom * scale));
+      setZoom(Math.round(newZoom / 10) * 10); // Round to nearest 10
+      touchStartRef.current.distance = newDist;
+    } else if (e.touches.length === 1 && zoom <= 100) {
+      // Track swipe delta for visual feedback
+      const dx = e.touches[0].clientX - touchStartRef.current.x;
+      const dy = e.touches[0].clientY - touchStartRef.current.y;
+      setTouchDelta({ x: dx, y: dy });
+    } else if (e.touches.length === 1 && zoom > 100) {
+      // Pan when zoomed
+      const dx = e.touches[0].clientX - touchStartRef.current.x;
+      const dy = e.touches[0].clientY - touchStartRef.current.y;
+      setPosition({ x: dx, y: dy });
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    const dt = Date.now() - touchStartRef.current.time;
+
+    setTouchDelta({ x: 0, y: 0 });
+
+    // Double-tap detection
+    if (dt < 300 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+      // Check for double tap
+      if (lastTapRef.current && Date.now() - lastTapRef.current < 300) {
+        setZoom(zoom > 100 ? 100 : 200);
+        setPosition({ x: 0, y: 0 });
+        lastTapRef.current = null;
+      } else {
+        lastTapRef.current = Date.now();
+      }
+      touchStartRef.current = null;
+      return;
+    }
+
+    if (zoom <= 100) {
+      // Horizontal swipe to navigate (threshold: 50px within 500ms)
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 500) {
+        if (dx > 0 && hasPrevious && onPrevious) onPrevious();
+        else if (dx < 0 && hasNext && onNext) onNext();
+      }
+      // Vertical swipe down to dismiss (threshold: 100px)
+      else if (dy > 100 && Math.abs(dy) > Math.abs(dx) * 1.5) {
+        onClose();
+      }
+    }
+
+    touchStartRef.current = null;
+  };
+
   return (
     <Modal
       open={visible}
@@ -265,7 +424,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
       {/* Header */}
       <div
         style={{
-          padding: '12px 24px',
+          padding: isMobile ? '8px 16px' : '12px 24px',
           background: 'rgba(0, 0, 0, 0.9)',
           backdropFilter: 'blur(10px)',
           color: 'white',
@@ -273,6 +432,10 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
           justifyContent: 'space-between',
           alignItems: 'center',
           borderBottom: `1px solid rgba(255, 255, 255, 0.1)`,
+          transition: 'opacity 0.3s ease, transform 0.3s ease',
+          opacity: isMobile && !controlsVisible ? 0 : 1,
+          transform: isMobile && !controlsVisible ? 'translateY(-100%)' : 'translateY(0)',
+          pointerEvents: isMobile && !controlsVisible ? 'none' : 'auto',
         }}
       >
         <div style={{ flex: 1 }}>
@@ -347,7 +510,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
         {/* Main Image Area */}
         <div
           style={{
-            flex: showInfo ? '0 0 calc(100% - 320px)' : '1',
+            flex: (showInfo && !isMobile) ? '0 0 calc(100% - 320px)' : '1',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -356,12 +519,20 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
             cursor: zoom > 100 ? (isDragging ? 'grabbing' : 'grab') : 'default',
             transition: 'flex 0.3s ease',
             minHeight: 0, // Critical: allows flex child to shrink below content size
+            touchAction: 'none', // Prevent browser default touch gestures
+            padding: isMobile ? 0 : undefined,
+            transform: `translateX(${touchDelta.x}px) translateY(${touchDelta.y}px)`,
+            transitionProperty: touchDelta.x !== 0 || touchDelta.y !== 0 ? 'none' : 'transform',
           }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          onMouseEnter={() => setShowLoupe(true)}
+          onMouseEnter={() => !isMobile && setShowLoupe(true)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onClick={isMobile ? showControls : undefined}
         >
           {/* Progressive Loading: Thumbnail Layer (instant visibility) */}
           {thumbnailUrl && !fullSizeLoaded && (
@@ -370,8 +541,8 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
               alt={imageName}
               style={{
                 position: 'absolute',
-                maxWidth: zoom > 100 ? 'none' : showInfo ? 'calc(100vw - 320px - 80px)' : 'calc(100vw - 80px)',
-                maxHeight: zoom > 100 ? 'none' : 'calc(100vh - 140px)',
+                maxWidth: zoom > 100 ? 'none' : (isMobile ? '100vw' : (showInfo ? 'calc(100vw - 320px - 80px)' : 'calc(100vw - 80px)')),
+                maxHeight: zoom > 100 ? 'none' : (isMobile ? '100vh' : 'calc(100vh - 140px)'),
                 width: 'auto',
                 height: 'auto',
                 objectFit: 'contain',
@@ -395,8 +566,8 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
             alt={imageName}
             onLoad={() => setFullSizeLoaded(true)}
             style={{
-              maxWidth: zoom > 100 ? 'none' : showInfo ? 'calc(100vw - 320px - 80px)' : 'calc(100vw - 80px)',
-              maxHeight: zoom > 100 ? 'none' : 'calc(100vh - 140px)', // Direct viewport constraint for both portrait & landscape
+              maxWidth: zoom > 100 ? 'none' : (isMobile ? '100vw' : (showInfo ? 'calc(100vw - 320px - 80px)' : 'calc(100vw - 80px)')),
+              maxHeight: zoom > 100 ? 'none' : (isMobile ? '100vh' : 'calc(100vh - 140px)'), // Direct viewport constraint for both portrait & landscape
               width: 'auto',
               height: 'auto',
               objectFit: 'contain',
@@ -433,8 +604,56 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
             </div>
           )}
 
-        {/* Loupe (Magnifying Glass) - Only show when zoomed in above 110% */}
-        {showLoupe && zoom > 110 && (
+          {/* Swipe Indicators - Mobile only, show when controls visible and not zoomed */}
+          {isMobile && controlsVisible && zoom <= 100 && (
+            <>
+              {hasPrevious && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 60,
+                    height: 120,
+                    background: 'linear-gradient(to right, rgba(255,255,255,0.1), transparent)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    paddingLeft: 8,
+                    pointerEvents: 'none',
+                    opacity: 0.6,
+                  }}
+                >
+                  <LeftOutlined style={{ fontSize: 20, color: 'white' }} />
+                </div>
+              )}
+              {hasNext && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 60,
+                    height: 120,
+                    background: 'linear-gradient(to left, rgba(255,255,255,0.1), transparent)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    paddingRight: 8,
+                    pointerEvents: 'none',
+                    opacity: 0.6,
+                  }}
+                >
+                  <RightOutlined style={{ fontSize: 20, color: 'white' }} />
+                </div>
+              )}
+            </>
+          )}
+
+        {/* Loupe (Magnifying Glass) - Only show on desktop when zoomed in above 110% */}
+        {!isMobile && showLoupe && zoom > 110 && (
           <div
             style={{
               position: 'absolute',
@@ -462,11 +681,16 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
               onClick={onPrevious}
               style={{
                 position: 'absolute',
-                left: 24,
+                left: isMobile ? 8 : 24,
                 top: '50%',
                 transform: 'translateY(-50%)',
+                minWidth: isMobile ? 48 : undefined,
+                minHeight: isMobile ? 48 : undefined,
+                transition: 'opacity 0.3s ease',
+                opacity: isMobile && !controlsVisible ? 0 : 1,
+                pointerEvents: isMobile && !controlsVisible ? 'none' : 'auto',
               }}
-              size="large"
+              size={isMobile ? 'large' : 'large'}
             />
           )}
           {hasNext && (
@@ -476,17 +700,22 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
               onClick={onNext}
               style={{
                 position: 'absolute',
-                right: 24,
+                right: isMobile ? 8 : 24,
                 top: '50%',
                 transform: 'translateY(-50%)',
+                minWidth: isMobile ? 48 : undefined,
+                minHeight: isMobile ? 48 : undefined,
+                transition: 'opacity 0.3s ease',
+                opacity: isMobile && !controlsVisible ? 0 : 1,
+                pointerEvents: isMobile && !controlsVisible ? 'none' : 'auto',
               }}
-              size="large"
+              size={isMobile ? 'large' : 'large'}
             />
           )}
         </div>
 
-        {/* Info Sidebar - Slides in from right */}
-        {showInfo && (
+        {/* Info Sidebar - Desktop: Right sidebar, Mobile: Bottom drawer */}
+        {!isMobile && showInfo && (
           <div
             style={{
               width: 320,
@@ -546,27 +775,99 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
             </Space>
           </div>
         )}
+
+        {/* Mobile Info Drawer - Bottom sheet */}
+        {isMobile && (
+          <Drawer
+            open={showInfo}
+            onClose={() => setShowInfo(false)}
+            placement="bottom"
+            height="50vh"
+            styles={{
+              body: {
+                background: 'rgba(0, 0, 0, 0.95)',
+                color: 'white',
+              },
+              header: {
+                background: 'rgba(0, 0, 0, 0.95)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              },
+            }}
+            title={
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: 600 }}>
+                Image Details
+              </Text>
+            }
+          >
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              <div>
+                <Text style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }}>Filename</Text>
+                <Text style={{ color: 'white', fontSize: 14, display: 'block', wordBreak: 'break-all' }}>
+                  {imageName || 'Untitled'}
+                </Text>
+              </div>
+              <Divider style={{ background: 'rgba(255, 255, 255, 0.1)', margin: '8px 0' }} />
+              <div>
+                <Text style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }}>Current Zoom</Text>
+                <Text style={{ color: 'white', fontSize: 14, display: 'block' }}>
+                  {zoom}%
+                </Text>
+              </div>
+              <div>
+                <Text style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }}>Rotation</Text>
+                <Text style={{ color: 'white', fontSize: 14, display: 'block' }}>
+                  {rotation}°
+                </Text>
+              </div>
+              <Divider style={{ background: 'rgba(255, 255, 255, 0.1)', margin: '8px 0' }} />
+              <div>
+                <Text style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12, display: 'block', marginBottom: 8 }}>
+                  Quick Actions
+                </Text>
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <Button
+                    block
+                    icon={<DownloadOutlined />}
+                    onClick={handleDownload}
+                  >
+                    Download Image
+                  </Button>
+                  <Button
+                    block
+                    onClick={handleReset}
+                  >
+                    Reset View
+                  </Button>
+                </Space>
+              </div>
+            </Space>
+          </Drawer>
+        )}
       </div>
 
       {/* Controls Footer */}
       <div
         style={{
-          padding: '12px 24px',
+          padding: isMobile ? '8px 12px' : '12px 24px',
           background: 'rgba(0, 0, 0, 0.9)',
           backdropFilter: 'blur(10px)',
           color: 'white',
           borderTop: `1px solid rgba(255, 255, 255, 0.1)`,
+          transition: 'opacity 0.3s ease, transform 0.3s ease',
+          opacity: isMobile && !controlsVisible ? 0 : 1,
+          transform: isMobile && !controlsVisible ? 'translateY(100%)' : 'translateY(0)',
+          pointerEvents: isMobile && !controlsVisible ? 'none' : 'auto',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: isMobile ? 'center' : 'space-between', flexWrap: 'wrap', gap: isMobile ? 8 : 16 }}>
           {/* Zoom Controls */}
-          <Space size="middle">
+          <Space size={isMobile ? 'small' : 'middle'}>
             <Tooltip title="Zoom Out (-)">
               <Button
                 type="text"
                 icon={<ZoomOutOutlined />}
                 onClick={() => handleZoomChange(Math.max(zoom - 10, 50))}
-                style={{ color: 'white' }}
+                style={{ color: 'white', minWidth: isMobile ? 40 : undefined, minHeight: isMobile ? 40 : undefined }}
                 size="small"
               />
             </Tooltip>
@@ -576,7 +877,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
               max={300}
               step={10}
               onChange={handleZoomChange}
-              style={{ width: 160, margin: 0 }}
+              style={{ width: isMobile ? 120 : 160, margin: 0 }}
               tooltip={{
                 formatter: (value) => `${value}%`,
               }}
@@ -586,40 +887,44 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
                 type="text"
                 icon={<ZoomInOutlined />}
                 onClick={() => handleZoomChange(Math.min(zoom + 10, 300))}
-                style={{ color: 'white' }}
+                style={{ color: 'white', minWidth: isMobile ? 40 : undefined, minHeight: isMobile ? 40 : undefined }}
                 size="small"
               />
             </Tooltip>
             <Text style={{ color: 'white', minWidth: 45, fontSize: 13 }}>{zoom}%</Text>
           </Space>
 
-          {/* Rotation Controls */}
-          <Space size="small">
-            <Tooltip title="Rotate Left">
-              <Button
-                type="text"
-                icon={<RotateLeftOutlined />}
-                onClick={() => setRotation((prev) => (prev - 90 + 360) % 360)}
-                style={{ color: 'white' }}
-                size="small"
-              />
-            </Tooltip>
-            <Text style={{ color: 'white', fontSize: 13, minWidth: 35 }}>{rotation}°</Text>
-            <Tooltip title="Rotate Right (R)">
-              <Button
-                type="text"
-                icon={<RotateRightOutlined />}
-                onClick={() => setRotation((prev) => (prev + 90) % 360)}
-                style={{ color: 'white' }}
-                size="small"
-              />
-            </Tooltip>
-          </Space>
+          {/* Rotation Controls - Hide on mobile to save space */}
+          {!isMobile && (
+            <Space size="small">
+              <Tooltip title="Rotate Left">
+                <Button
+                  type="text"
+                  icon={<RotateLeftOutlined />}
+                  onClick={() => setRotation((prev) => (prev - 90 + 360) % 360)}
+                  style={{ color: 'white' }}
+                  size="small"
+                />
+              </Tooltip>
+              <Text style={{ color: 'white', fontSize: 13, minWidth: 35 }}>{rotation}°</Text>
+              <Tooltip title="Rotate Right (R)">
+                <Button
+                  type="text"
+                  icon={<RotateRightOutlined />}
+                  onClick={() => setRotation((prev) => (prev + 90) % 360)}
+                  style={{ color: 'white' }}
+                  size="small"
+                />
+              </Tooltip>
+            </Space>
+          )}
 
-          {/* Keyboard Shortcuts Hint */}
-          <Text type="secondary" style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 11 }}>
-            ← → (navigate) • 1-5 (rate) • +/- (zoom) • R (rotate) • I (info) • 0 (reset) • Esc (close)
-          </Text>
+          {/* Keyboard Shortcuts Hint - Hide on mobile */}
+          {!isMobile && (
+            <Text type="secondary" style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 11 }}>
+              ← → (navigate) • 1-5 (rate) • +/- (zoom) • R (rotate) • I (info) • 0 (reset) • Esc (close)
+            </Text>
+          )}
         </div>
       </div>
     </Modal>

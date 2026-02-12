@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Space, Typography, Spin, Badge, theme, App } from 'antd';
 import {
   PlayCircleOutlined,
@@ -12,6 +12,8 @@ import {
   CloseOutlined,
   FullscreenOutlined,
   SoundOutlined,
+  CommentOutlined,
+  LeftOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Timeline } from './Timeline';
@@ -62,6 +64,14 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   // Video refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const lastTapRef = useRef<number>(0);
+
+  // Detect mobile
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' && window.innerWidth < 768
+  );
 
   // Video state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -73,10 +83,22 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   const [drawMode, setDrawMode] = useState(false);
   const [showInfo, setShowInfo] = useState(true);
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const [showCommentsSheet, setShowCommentsSheet] = useState(false);
 
   // FPS for frame stepping (default to 30fps if not available)
   const fps = asset.fps || 30;
   const frameTime = 1 / fps;
+
+  // Handle window resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Fetch frames for timeline markers
   const { data: frames = [] } = useQuery({
@@ -157,8 +179,17 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${frames}`;
   };
 
+  // Auto-hide controls on mobile
+  const showControls = useCallback(() => {
+    setControlsVisible(true);
+    if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    if (isMobile && isPlaying) {
+      controlsTimerRef.current = setTimeout(() => setControlsVisible(false), 3000);
+    }
+  }, [isMobile, isPlaying]);
+
   // Video controls
-  const handlePlayPause = () => {
+  const handlePlayPause = useCallback(() => {
     if (!videoRef.current) return;
 
     if (isPlaying) {
@@ -168,15 +199,17 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
       videoRef.current.play();
       setIsPlaying(true);
     }
-  };
+    showControls();
+  }, [isPlaying, showControls]);
 
-  const handleSeek = (timecode: number) => {
+  const handleSeek = useCallback((timecode: number) => {
     if (!videoRef.current) return;
     videoRef.current.currentTime = Math.max(0, Math.min(duration, timecode));
     setCurrentTime(timecode);
-  };
+    showControls();
+  }, [duration, showControls]);
 
-  const handleFrameStep = (direction: 'forward' | 'backward') => {
+  const handleFrameStep = useCallback((direction: 'forward' | 'backward') => {
     if (!videoRef.current) return;
 
     const newTime = direction === 'forward'
@@ -184,18 +217,85 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
       : currentTime - frameTime;
 
     handleSeek(newTime);
-  };
+  }, [currentTime, frameTime, handleSeek]);
 
-  const handleJumpSeconds = (seconds: number) => {
+  const handleJumpSeconds = useCallback((seconds: number) => {
     if (!videoRef.current) return;
     handleSeek(currentTime + seconds);
-  };
+  }, [currentTime, handleSeek]);
 
   const handleFullscreen = () => {
     if (containerRef.current?.requestFullscreen) {
       containerRef.current.requestFullscreen();
     }
   };
+
+  // Touch handlers for mobile
+  const handleVideoTap = useCallback(() => {
+    if (isMobile) {
+      handlePlayPause();
+    }
+  }, [isMobile, handlePlayPause]);
+
+  const handleVideoDoubleTap = useCallback((e: React.TouchEvent) => {
+    if (!isMobile) return;
+
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTapRef.current;
+
+    if (timeSinceLastTap < 300) {
+      // Double tap detected
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const tapX = e.changedTouches[0].clientX - rect.left;
+      const isLeftHalf = tapX < rect.width / 2;
+
+      if (isLeftHalf) {
+        handleSeek(Math.max(0, currentTime - 10));
+      } else {
+        handleSeek(Math.min(duration, currentTime + 10));
+      }
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  }, [isMobile, currentTime, duration, handleSeek]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!isMobile || e.touches.length !== 1) return;
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      time: Date.now(),
+    };
+  }, [isMobile]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isMobile || !touchStartRef.current || e.touches.length !== 1) return;
+
+    const dx = e.touches[0].clientX - touchStartRef.current.x;
+    const dy = Math.abs(e.touches[0].clientY - touchStartRef.current.y);
+
+    // Only handle horizontal swipes (ignore vertical)
+    if (dy < 30 && Math.abs(dx) > 10) {
+      showControls();
+    }
+  }, [isMobile, showControls]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!isMobile || !touchStartRef.current) return;
+
+    const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartRef.current.y);
+    const dt = Date.now() - touchStartRef.current.time;
+
+    // Horizontal swipe for seeking (ignore vertical swipes)
+    if (dy < 30 && Math.abs(dx) > 50 && dt < 500) {
+      const seekAmount = (dx / window.innerWidth) * duration * 0.3;
+      handleSeek(Math.max(0, Math.min(duration, currentTime + seekAmount)));
+    }
+
+    touchStartRef.current = null;
+  }, [isMobile, currentTime, duration, handleSeek]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -245,7 +345,12 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [visible, isPlaying, currentTime, duration]);
+  }, [visible, handlePlayPause, handleJumpSeconds, handleFrameStep]);
+
+  // Auto-hide controls effect
+  useEffect(() => {
+    showControls();
+  }, [isPlaying, showControls]);
 
   // Video event handlers
   const handleTimeUpdate = () => {
@@ -346,23 +451,45 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
       if (videoRef.current) {
         videoRef.current.pause();
       }
+      if (controlsTimerRef.current) {
+        clearTimeout(controlsTimerRef.current);
+      }
     };
   }, []);
 
   if (!visible) return null;
 
   return (
+    <>
+      {/* CSS for mobile animations */}
+      <style>
+        {`
+          @keyframes slideUp {
+            from {
+              transform: translateY(100%);
+            }
+            to {
+              transform: translateY(0);
+            }
+          }
+        `}
+      </style>
+
     <Modal
       open={visible}
       onCancel={onClose}
       footer={null}
-      width="95vw"
-      style={{ top: 20, maxWidth: '1920px' }}
+      width={isMobile ? '100vw' : '95vw'}
+      style={isMobile ? { top: 0, padding: 0, maxWidth: '100vw' } : { top: 20, maxWidth: '1920px' }}
       styles={{
-        body: { padding: 0, height: 'calc(95vh - 55px)', overflow: 'hidden' },
+        body: {
+          padding: 0,
+          height: isMobile ? '100vh' : 'calc(95vh - 55px)',
+          overflow: 'hidden'
+        },
       }}
       destroyOnClose
-      closeIcon={<CloseOutlined style={{ fontSize: 20, color: 'white' }} />}
+      closeIcon={isMobile ? null : <CloseOutlined style={{ fontSize: 20, color: 'white' }} />}
     >
       <div
         ref={containerRef}
@@ -377,7 +504,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
         {/* Header */}
         <div
           style={{
-            padding: '12px 16px',
+            padding: isMobile ? '8px 12px' : '12px 16px',
             background: antToken.colorBgElevated,
             borderBottom: `1px solid ${antToken.colorBorder}`,
             display: 'flex',
@@ -385,40 +512,72 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
             alignItems: 'center',
           }}
         >
-          <Text strong style={{ fontSize: 16 }}>
-            {asset.originalName}
-          </Text>
-          <Space>
-            <Button
-              type={drawMode ? 'primary' : 'default'}
-              icon={<EditOutlined />}
-              onClick={() => {
-                if (!isPlaying) {
-                  setDrawMode(!drawMode);
-                } else {
-                  message.info('Pause the video to enable drawing mode');
-                }
-              }}
-              disabled={isPlaying}
-            >
-              Draw
-            </Button>
-            <Button
-              type={showInfo ? 'primary' : 'default'}
-              icon={<InfoCircleOutlined />}
-              onClick={() => setShowInfo(!showInfo)}
-            >
-              Info
-            </Button>
-          </Space>
+          {isMobile ? (
+            <>
+              <Space size="small">
+                <Button
+                  type="text"
+                  icon={<LeftOutlined />}
+                  onClick={onClose}
+                  style={{ padding: '4px 8px' }}
+                />
+                <Text strong style={{ fontSize: 14 }} ellipsis>
+                  {asset.originalName}
+                </Text>
+              </Space>
+              <Space size="small">
+                <Button
+                  type="text"
+                  icon={<CommentOutlined />}
+                  onClick={() => setShowCommentsSheet(!showCommentsSheet)}
+                  style={{ padding: '4px 8px' }}
+                />
+                <Button
+                  type="text"
+                  icon={<CloseOutlined />}
+                  onClick={onClose}
+                  style={{ padding: '4px 8px' }}
+                />
+              </Space>
+            </>
+          ) : (
+            <>
+              <Text strong style={{ fontSize: 16 }}>
+                {asset.originalName}
+              </Text>
+              <Space>
+                <Button
+                  type={drawMode ? 'primary' : 'default'}
+                  icon={<EditOutlined />}
+                  onClick={() => {
+                    if (!isPlaying) {
+                      setDrawMode(!drawMode);
+                    } else {
+                      message.info('Pause the video to enable drawing mode');
+                    }
+                  }}
+                  disabled={isPlaying}
+                >
+                  Draw
+                </Button>
+                <Button
+                  type={showInfo ? 'primary' : 'default'}
+                  icon={<InfoCircleOutlined />}
+                  onClick={() => setShowInfo(!showInfo)}
+                >
+                  Info
+                </Button>
+              </Space>
+            </>
+          )}
         </div>
 
         {/* Main content area */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: 'hidden' }}>
           {/* Video + Timeline section */}
           <div
             style={{
-              flex: showInfo ? '0 0 calc(100% - 400px)' : '1',
+              flex: isMobile ? '1' : (showInfo ? '0 0 calc(100% - 400px)' : '1'),
               display: 'flex',
               flexDirection: 'column',
               background: '#000',
@@ -426,7 +585,12 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
             }}
           >
             {/* Video player with optional drawing overlay */}
-            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+              style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               <video
                 ref={videoRef}
                 src={getProxyUrl(asset.url, mediaToken)}
@@ -439,6 +603,8 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
                 onEnded={() => setIsPlaying(false)}
+                onClick={handleVideoTap}
+                onTouchEnd={handleVideoDoubleTap}
               />
 
               {/* Drawing overlay (only when paused and draw mode active) */}
@@ -468,142 +634,273 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
             {/* Video controls */}
             <div
               style={{
-                padding: '16px',
+                padding: isMobile ? '12px' : '16px',
                 background: antToken.colorBgElevated,
+                opacity: isMobile && !controlsVisible ? 0 : 1,
+                transition: 'opacity 0.3s ease',
+                pointerEvents: isMobile && !controlsVisible ? 'none' : 'auto',
               }}
+              onMouseMove={isMobile ? showControls : undefined}
+              onTouchStart={isMobile ? showControls : undefined}
             >
-              <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              <Space direction="vertical" size={isMobile ? 16 : 12} style={{ width: '100%' }}>
                 {/* Playback controls */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Space size={4}>
-                    {/* Frame backward */}
-                    <Button
-                      type="text"
-                      icon={<StepBackwardOutlined />}
-                      onClick={() => handleFrameStep('backward')}
-                      style={{ color: 'white' }}
-                      title="Previous frame (← or ,)"
-                    />
+                  <Space size={isMobile ? 8 : 4}>
+                    {!isMobile && (
+                      <>
+                        {/* Frame backward */}
+                        <Button
+                          type="text"
+                          icon={<StepBackwardOutlined />}
+                          onClick={() => handleFrameStep('backward')}
+                          style={{ color: 'white' }}
+                          title="Previous frame (← or ,)"
+                        />
 
-                    {/* Jump back 1 second */}
-                    <Button
-                      type="text"
-                      icon={<FastBackwardOutlined />}
-                      onClick={() => handleJumpSeconds(-1)}
-                      style={{ color: 'white' }}
-                      title="Rewind 1s (J)"
-                    />
+                        {/* Jump back 1 second */}
+                        <Button
+                          type="text"
+                          icon={<FastBackwardOutlined />}
+                          onClick={() => handleJumpSeconds(-1)}
+                          style={{ color: 'white' }}
+                          title="Rewind 1s (J)"
+                        />
+                      </>
+                    )}
 
                     {/* Play/Pause */}
                     <Button
                       type="text"
                       icon={isPlaying ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
                       onClick={handlePlayPause}
-                      style={{ color: 'white', fontSize: 28 }}
+                      style={{
+                        color: 'white',
+                        fontSize: isMobile ? 40 : 28,
+                        width: isMobile ? 48 : 'auto',
+                        height: isMobile ? 48 : 'auto',
+                      }}
                       title="Play/Pause (Space or K)"
                     />
 
-                    {/* Jump forward 1 second */}
-                    <Button
-                      type="text"
-                      icon={<FastForwardOutlined />}
-                      onClick={() => handleJumpSeconds(1)}
-                      style={{ color: 'white' }}
-                      title="Forward 1s (L)"
-                    />
+                    {!isMobile && (
+                      <>
+                        {/* Jump forward 1 second */}
+                        <Button
+                          type="text"
+                          icon={<FastForwardOutlined />}
+                          onClick={() => handleJumpSeconds(1)}
+                          style={{ color: 'white' }}
+                          title="Forward 1s (L)"
+                        />
 
-                    {/* Frame forward */}
-                    <Button
-                      type="text"
-                      icon={<StepForwardOutlined />}
-                      onClick={() => handleFrameStep('forward')}
-                      style={{ color: 'white' }}
-                      title="Next frame (→ or .)"
-                    />
+                        {/* Frame forward */}
+                        <Button
+                          type="text"
+                          icon={<StepForwardOutlined />}
+                          onClick={() => handleFrameStep('forward')}
+                          style={{ color: 'white' }}
+                          title="Next frame (→ or .)"
+                        />
+                      </>
+                    )}
 
                     {/* Time display */}
-                    <Text style={{ color: 'white', marginLeft: 16, fontFamily: 'monospace', fontSize: 14 }}>
+                    <Text
+                      style={{
+                        color: 'white',
+                        marginLeft: isMobile ? 8 : 16,
+                        fontFamily: 'monospace',
+                        fontSize: isMobile ? 12 : 14,
+                      }}
+                    >
                       {formatTime(currentTime)} / {formatTime(duration)}
                     </Text>
                   </Space>
 
-                  <Space>
-                    {/* Volume */}
-                    <SoundOutlined style={{ color: 'white' }} />
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={volume}
-                      onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                      style={{ width: 100 }}
-                    />
+                  {!isMobile && (
+                    <Space>
+                      {/* Volume */}
+                      <SoundOutlined style={{ color: 'white' }} />
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={volume}
+                        onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                        style={{ width: 100 }}
+                      />
 
-                    {/* Fullscreen */}
-                    <Button
-                      type="text"
-                      icon={<FullscreenOutlined />}
-                      onClick={handleFullscreen}
-                      style={{ color: 'white' }}
-                      title="Fullscreen"
-                    />
-                  </Space>
+                      {/* Fullscreen */}
+                      <Button
+                        type="text"
+                        icon={<FullscreenOutlined />}
+                        onClick={handleFullscreen}
+                        style={{ color: 'white' }}
+                        title="Fullscreen"
+                      />
+                    </Space>
+                  )}
                 </div>
 
                 {/* Timeline with markers */}
-                <Timeline
-                  duration={duration}
-                  currentTime={currentTime}
-                  markers={timelineMarkers}
-                  onSeek={handleSeek}
-                  onMarkerClick={handleMarkerClick}
-                />
+                <div style={{ marginTop: isMobile ? 4 : 0 }}>
+                  <Timeline
+                    duration={duration}
+                    currentTime={currentTime}
+                    markers={timelineMarkers}
+                    onSeek={handleSeek}
+                    onMarkerClick={handleMarkerClick}
+                  />
+                </div>
               </Space>
             </div>
           </div>
 
-          {/* Comments panel */}
-          {showInfo && (
-            <div
-              style={{
-                width: '400px',
-                borderLeft: `1px solid ${antToken.colorBorder}`,
-                background: antToken.colorBgContainer,
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-              }}
-            >
-              <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-                {commentsLoading ? (
-                  <div style={{ textAlign: 'center', padding: '50px 0' }}>
-                    <Spin size="large" />
-                  </div>
-                ) : (
-                  <TimecodeCommentPanel
-                    comments={transformedComments}
-                    currentUserId={user?.id || ''}
-                    currentTimecode={currentTime}
-                    onAddComment={async (text) => {
-                      await createCommentMutation.mutateAsync({ content: text });
+          {/* Comments panel - Desktop sidebar or Mobile bottom sheet */}
+          {isMobile ? (
+            // Mobile bottom sheet
+            showCommentsSheet && (
+              <div
+                style={{
+                  position: 'fixed',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  maxHeight: '70vh',
+                  background: antToken.colorBgContainer,
+                  borderRadius: '16px 16px 0 0',
+                  zIndex: 1001,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.15)',
+                  animation: 'slideUp 0.3s ease-out',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Drag handle */}
+                <div
+                  style={{
+                    padding: '12px 0 8px',
+                    textAlign: 'center',
+                    cursor: 'grab',
+                  }}
+                  onTouchStart={(e) => {
+                    const startY = e.touches[0].clientY;
+                    const handleTouchMove = (moveEvent: TouchEvent) => {
+                      const deltaY = moveEvent.touches[0].clientY - startY;
+                      if (deltaY > 50) {
+                        setShowCommentsSheet(false);
+                        document.removeEventListener('touchmove', handleTouchMove);
+                      }
+                    };
+                    document.addEventListener('touchmove', handleTouchMove);
+                    document.addEventListener('touchend', () => {
+                      document.removeEventListener('touchmove', handleTouchMove);
+                    }, { once: true });
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 40,
+                      height: 4,
+                      borderRadius: 2,
+                      background: antToken.colorBorderSecondary,
+                      margin: '0 auto',
                     }}
-                    onDeleteComment={async (commentId) => {
-                      await deleteCommentMutation.mutateAsync(commentId);
-                    }}
-                    onResolveComment={async (commentId) => {
-                      await resolveCommentMutation.mutateAsync(commentId);
-                    }}
-                    onSeekToTimecode={handleSeek}
-                    selectedCommentId={selectedCommentId}
-                    onSelectComment={setSelectedCommentId}
                   />
-                )}
+                </div>
+
+                {/* Comments content */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 16px' }}>
+                  {commentsLoading ? (
+                    <div style={{ textAlign: 'center', padding: '50px 0' }}>
+                      <Spin size="large" />
+                    </div>
+                  ) : (
+                    <TimecodeCommentPanel
+                      comments={transformedComments}
+                      currentUserId={user?.id || ''}
+                      currentTimecode={currentTime}
+                      onAddComment={async (text) => {
+                        await createCommentMutation.mutateAsync({ content: text });
+                      }}
+                      onDeleteComment={async (commentId) => {
+                        await deleteCommentMutation.mutateAsync(commentId);
+                      }}
+                      onResolveComment={async (commentId) => {
+                        await resolveCommentMutation.mutateAsync(commentId);
+                      }}
+                      onSeekToTimecode={handleSeek}
+                      selectedCommentId={selectedCommentId}
+                      onSelectComment={setSelectedCommentId}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
+            )
+          ) : (
+            // Desktop sidebar
+            showInfo && (
+              <div
+                style={{
+                  width: '400px',
+                  borderLeft: `1px solid ${antToken.colorBorder}`,
+                  background: antToken.colorBgContainer,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}
+              >
+                <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+                  {commentsLoading ? (
+                    <div style={{ textAlign: 'center', padding: '50px 0' }}>
+                      <Spin size="large" />
+                    </div>
+                  ) : (
+                    <TimecodeCommentPanel
+                      comments={transformedComments}
+                      currentUserId={user?.id || ''}
+                      currentTimecode={currentTime}
+                      onAddComment={async (text) => {
+                        await createCommentMutation.mutateAsync({ content: text });
+                      }}
+                      onDeleteComment={async (commentId) => {
+                        await deleteCommentMutation.mutateAsync(commentId);
+                      }}
+                      onResolveComment={async (commentId) => {
+                        await resolveCommentMutation.mutateAsync(commentId);
+                      }}
+                      onSeekToTimecode={handleSeek}
+                      selectedCommentId={selectedCommentId}
+                      onSelectComment={setSelectedCommentId}
+                    />
+                  )}
+                </div>
+              </div>
+            )
           )}
         </div>
+
+        {/* Backdrop for mobile bottom sheet */}
+        {isMobile && showCommentsSheet && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 1000,
+            }}
+            onClick={() => setShowCommentsSheet(false)}
+          />
+        )}
       </div>
     </Modal>
+    </>
   );
 };
 
