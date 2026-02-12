@@ -23,7 +23,7 @@ const getBaseURL = () => {
 
 export const API_CONFIG = {
   BASE_URL: getBaseURL(),
-  TIMEOUT: 10000, // 10 seconds (reduced for better UX on failed uploads)
+  TIMEOUT: 30000, // 30 seconds for general API calls
 }
 
 // Default headers for API requests

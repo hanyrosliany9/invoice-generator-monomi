@@ -844,6 +844,209 @@ export class MediaAssetsService {
   }
 
   /**
+   * Generate presigned upload URLs for batch upload
+   * Allows clients to upload files directly to R2 without going through the backend
+   *
+   * @param projectId Project ID
+   * @param userId User performing the upload
+   * @param files Array of file metadata (max 100)
+   * @returns Array of presigned upload URLs with keys
+   */
+  async generatePresignedUploadUrls(
+    projectId: string,
+    userId: string,
+    files: Array<{ filename: string; mimeType: string; size: number }>,
+  ): Promise<{
+    urls: Array<{
+      filename: string;
+      key: string;
+      uploadUrl: string;
+      expiresIn: number;
+    }>;
+  }> {
+    // Validate batch size
+    if (!files || files.length === 0) {
+      throw new BadRequestException("Files array cannot be empty");
+    }
+
+    if (files.length > 100) {
+      throw new BadRequestException(
+        "Maximum 100 files per batch. Please split into smaller batches.",
+      );
+    }
+
+    // Verify project access and permissions
+    const project = await this.prisma.mediaProject.findUnique({
+      where: { id: projectId },
+      include: {
+        collaborators: true,
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException("Project not found");
+    }
+
+    const collaborator = project.collaborators.find(
+      (collab) => collab.userId === userId,
+    );
+
+    if (!collaborator) {
+      throw new ForbiddenException(
+        "You are not a collaborator on this project",
+      );
+    }
+
+    if (collaborator.role === "VIEWER" || collaborator.role === "COMMENTER") {
+      throw new ForbiddenException("Only OWNER or EDITOR can upload assets");
+    }
+
+    // Generate presigned URLs for each file
+    const expiresIn = 3600; // 1 hour expiration
+    const urls = await Promise.all(
+      files.map(async (file) => {
+        const { url, key } =
+          await this.mediaService.generatePresignedUploadUrl(
+            file.filename,
+            file.mimeType,
+            "content",
+            expiresIn,
+          );
+
+        return {
+          filename: file.filename,
+          key,
+          uploadUrl: url,
+          expiresIn,
+        };
+      }),
+    );
+
+    this.logger.log(
+      `Generated ${urls.length} presigned upload URLs for project ${projectId}`,
+    );
+
+    return { urls };
+  }
+
+  /**
+   * Register batch assets in database after direct R2 upload
+   * Called after client has uploaded files directly to R2 using presigned URLs
+   *
+   * @param projectId Project ID
+   * @param userId User who uploaded the files
+   * @param assets Array of asset metadata to register (max 100)
+   * @returns Summary of registration results
+   */
+  async registerBatchAssets(
+    projectId: string,
+    userId: string,
+    assets: Array<{
+      key: string;
+      filename: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+      folderId?: string;
+      description?: string;
+    }>,
+  ): Promise<{
+    total: number;
+    registered: number;
+    failed: number;
+    assets: Array<{ id: string; key: string; originalName: string }>;
+  }> {
+    // Validate batch size
+    if (!assets || assets.length === 0) {
+      throw new BadRequestException("Assets array cannot be empty");
+    }
+
+    if (assets.length > 100) {
+      throw new BadRequestException(
+        "Maximum 100 assets per batch. Please split into smaller batches.",
+      );
+    }
+
+    // Verify project access and permissions
+    const project = await this.prisma.mediaProject.findUnique({
+      where: { id: projectId },
+      include: {
+        collaborators: true,
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException("Project not found");
+    }
+
+    const collaborator = project.collaborators.find(
+      (collab) => collab.userId === userId,
+    );
+
+    if (!collaborator) {
+      throw new ForbiddenException(
+        "You are not a collaborator on this project",
+      );
+    }
+
+    if (collaborator.role === "VIEWER" || collaborator.role === "COMMENTER") {
+      throw new ForbiddenException("Only OWNER or EDITOR can upload assets");
+    }
+
+    // Register each asset in the database
+    const registeredAssets = [];
+    let failedCount = 0;
+
+    for (const asset of assets) {
+      try {
+        const mediaType = this.determineMediaType(asset.mimeType);
+        const url = this.mediaService.getPublicUrl(asset.key);
+
+        const createdAsset = await this.prisma.mediaAsset.create({
+          data: {
+            projectId,
+            folderId: asset.folderId || null,
+            filename: asset.filename,
+            originalName: asset.originalName,
+            description: asset.description || null,
+            url,
+            key: asset.key,
+            mediaType,
+            mimeType: asset.mimeType,
+            size: BigInt(asset.size),
+            uploadedBy: userId,
+            status: "DRAFT",
+          },
+          select: {
+            id: true,
+            key: true,
+            originalName: true,
+          },
+        });
+
+        registeredAssets.push(createdAsset);
+      } catch (error) {
+        this.logger.error(
+          `Failed to register asset ${asset.originalName}:`,
+          error,
+        );
+        failedCount++;
+      }
+    }
+
+    this.logger.log(
+      `Registered ${registeredAssets.length}/${assets.length} assets for project ${projectId}`,
+    );
+
+    return {
+      total: assets.length,
+      registered: registeredAssets.length,
+      failed: failedCount,
+      assets: registeredAssets,
+    };
+  }
+
+  /**
    * Verify if user has access to project
    */
   private async verifyProjectAccess(

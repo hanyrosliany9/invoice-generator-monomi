@@ -5,6 +5,7 @@ import { InboxOutlined, CheckCircleOutlined, LoadingOutlined, CloseCircleOutline
 import { mediaCollabService } from '../../services/media-collab';
 import { DuplicateFileModal, ConflictResolution, DuplicateFile } from './DuplicateFileModal';
 import pLimit from 'p-limit';
+import axios from 'axios';
 
 const { Dragger } = Upload;
 const { TextArea } = Input;
@@ -35,6 +36,8 @@ interface UploadQueueItem {
   eta: number; // seconds remaining
   error?: string;
   startTime?: number;
+  uploadUrl?: string; // Presigned URL for direct R2 upload
+  r2Key?: string; // R2 object key for registered assets
 }
 
 /**
@@ -109,108 +112,227 @@ export const UploadMediaModal: React.FC<UploadMediaModalProps> = ({
   const uploadSingleFile = async (
     queueItem: UploadQueueItem,
     description?: string
-  ): Promise<void> => {
-    const { file, resolution, id } = queueItem;
+  ): Promise<{ key: string; filename: string; originalName: string; mimeType: string; size: number }> => {
+    const { file, resolution, id, uploadUrl } = queueItem;
 
     // Skip if resolution is 'skip'
     if (resolution === 'skip') {
       updateQueueItem(id, { status: 'completed', progress: 100 });
-      return;
+      return { key: '', filename: '', originalName: file.name, mimeType: file.type, size: file.size };
     }
 
     const startTime = Date.now();
     updateQueueItem(id, { status: 'uploading', startTime });
 
-    try {
-      await mediaCollabService.uploadAsset(
-        projectId,
-        file,
-        description,
-        folderId || undefined,
-        resolution,
-        (progressEvent) => {
-          const { loaded, total } = progressEvent;
-          const totalBytes = total || file.size;
-          const progress = totalBytes ? Math.round((loaded / totalBytes) * 100) : 0;
-          const elapsed = (Date.now() - startTime) / 1000; // seconds
-          const speed = elapsed > 0 ? loaded / elapsed : 0;
-          const eta = speed > 0 && totalBytes ? Math.round((totalBytes - loaded) / speed) : 0;
+    // Retry with exponential backoff
+    const MAX_RETRIES = 3;
+    let lastError: Error | null = null;
 
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) {
+          // Exponential backoff with jitter: 1s, 2s, 4s + random 0-500ms
+          const delay = Math.pow(2, attempt - 1) * 1000 + Math.random() * 500;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          updateQueueItem(id, { status: 'uploading', error: undefined });
+        }
+
+        if (uploadUrl) {
+          // Direct R2 upload via presigned URL (bypasses backend entirely)
+          await axios.put(uploadUrl, file, {
+            headers: {
+              'Content-Type': file.type,
+            },
+            timeout: 5 * 60 * 1000, // 5 minutes per file
+            onUploadProgress: (progressEvent) => {
+              const { loaded, total } = progressEvent;
+              const totalBytes = total || file.size;
+              const progress = totalBytes ? Math.round((loaded / totalBytes) * 100) : 0;
+              const elapsed = (Date.now() - startTime) / 1000;
+              const speed = elapsed > 0 ? loaded / elapsed : 0;
+              const eta = speed > 0 && totalBytes ? Math.round((totalBytes - loaded) / speed) : 0;
+
+              updateQueueItem(id, {
+                progress,
+                uploadedBytes: loaded,
+                totalBytes,
+                speed,
+                eta,
+              });
+            },
+          });
+        } else {
+          // Fallback: upload through backend (for dev/non-R2 environments)
+          await mediaCollabService.uploadAsset(
+            projectId,
+            file,
+            description,
+            folderId || undefined,
+            resolution,
+            (progressEvent) => {
+              const { loaded, total } = progressEvent;
+              const totalBytes = total || file.size;
+              const progress = totalBytes ? Math.round((loaded / totalBytes) * 100) : 0;
+              const elapsed = (Date.now() - startTime) / 1000;
+              const speed = elapsed > 0 ? loaded / elapsed : 0;
+              const eta = speed > 0 && totalBytes ? Math.round((totalBytes - loaded) / speed) : 0;
+
+              updateQueueItem(id, {
+                progress,
+                uploadedBytes: loaded,
+                totalBytes,
+                speed,
+                eta,
+              });
+            }
+          );
+        }
+
+        updateQueueItem(id, {
+          status: 'completed',
+          progress: 100,
+          uploadedBytes: file.size,
+          eta: 0,
+        });
+
+        return {
+          key: queueItem.r2Key || '',
+          filename: file.name,
+          originalName: file.name,
+          mimeType: file.type,
+          size: file.size,
+        };
+      } catch (error: unknown) {
+        lastError = error as Error;
+        if (attempt < MAX_RETRIES) {
           updateQueueItem(id, {
-            progress,
-            uploadedBytes: loaded,
-            totalBytes,
-            speed,
-            eta,
+            error: `Retry ${attempt + 1}/${MAX_RETRIES}...`,
           });
         }
-      );
-
-      updateQueueItem(id, {
-        status: 'completed',
-        progress: 100,
-        uploadedBytes: file.size,
-        eta: 0,
-      });
-    } catch (error: unknown) {
-      const errorMessage = (error as Error).message || 'Upload failed';
-      updateQueueItem(id, {
-        status: 'failed',
-        error: errorMessage,
-      });
-      throw error;
+      }
     }
+
+    const errorMessage = lastError?.message || 'Upload failed';
+    updateQueueItem(id, {
+      status: 'failed',
+      error: errorMessage,
+    });
+    throw lastError;
   };
 
   const performUpload = async (filesWithRes: FileWithResolution[], description?: string) => {
     setUploading(true);
 
-    // Initialize upload queue
-    const queue: UploadQueueItem[] = filesWithRes.map((item, index) => ({
-      id: `upload-${Date.now()}-${index}`,
-      file: item.file,
-      resolution: item.resolution,
-      status: 'waiting' as const,
-      progress: 0,
-      uploadedBytes: 0,
-      totalBytes: item.file.size,
-      speed: 0,
-      eta: 0,
-    }));
-
-    setUploadQueue(queue);
-
-    // Parallel upload with concurrency limit (4 concurrent uploads)
-    const CONCURRENT_UPLOADS = 4;
-    const limit = pLimit(CONCURRENT_UPLOADS);
-
-    const uploadPromises = queue
-      .filter(item => item.resolution !== 'skip')
-      .map(queueItem =>
-        limit(() => uploadSingleFile(queueItem, description))
-      );
-
     try {
+      // Step 1: Get presigned URLs for all non-skipped files
+      const filesToUpload = filesWithRes.filter(f => f.resolution !== 'skip');
+
+      let presignedData: Array<{ filename: string; key: string; uploadUrl: string; expiresIn: number }> = [];
+
+      if (filesToUpload.length > 0) {
+        try {
+          // Request presigned URLs in batches of 100
+          const BATCH_SIZE = 100;
+          for (let i = 0; i < filesToUpload.length; i += BATCH_SIZE) {
+            const batch = filesToUpload.slice(i, i + BATCH_SIZE);
+            const result = await mediaCollabService.getPresignedUploadUrls(
+              projectId,
+              batch.map(f => ({
+                filename: f.file.name,
+                mimeType: f.file.type,
+                size: f.file.size,
+              })),
+            );
+            presignedData.push(...result.uploads);
+          }
+        } catch (err) {
+          console.warn('[UploadMediaModal] Presigned URLs not available, falling back to proxy upload:', err);
+          // Fallback: presignedData stays empty, will use backend proxy
+        }
+      }
+
+      // Step 2: Build upload queue with presigned URLs mapped to files
+      let presignedIndex = 0;
+      const queue: UploadQueueItem[] = filesWithRes.map((item, index) => {
+        let uploadUrl: string | undefined;
+        let r2Key: string | undefined;
+
+        if (item.resolution !== 'skip' && presignedIndex < presignedData.length) {
+          uploadUrl = presignedData[presignedIndex].uploadUrl;
+          r2Key = presignedData[presignedIndex].key;
+          presignedIndex++;
+        }
+
+        return {
+          id: `upload-${Date.now()}-${index}`,
+          file: item.file,
+          resolution: item.resolution,
+          status: 'waiting' as const,
+          progress: 0,
+          uploadedBytes: 0,
+          totalBytes: item.file.size,
+          speed: 0,
+          eta: 0,
+          uploadUrl,
+          r2Key,
+        };
+      });
+
+      setUploadQueue(queue);
+
+      // Step 3: Upload files with concurrency limit (6 concurrent - Frame.io inspired)
+      const CONCURRENT_UPLOADS = 6;
+      const limit = pLimit(CONCURRENT_UPLOADS);
+
+      const uploadResults: Array<{ key: string; filename: string; originalName: string; mimeType: string; size: number }> = [];
+
+      const uploadPromises = queue
+        .filter(item => item.resolution !== 'skip')
+        .map(queueItem =>
+          limit(async () => {
+            const result = await uploadSingleFile(queueItem, description);
+            if (result.key) {
+              uploadResults.push(result);
+            }
+            return result;
+          })
+        );
+
       const results = await Promise.allSettled(uploadPromises);
 
-      // Count successes and failures
+      // Step 4: Register successfully uploaded assets in database (batch)
+      if (uploadResults.length > 0) {
+        try {
+          // Register in batches of 100
+          const REG_BATCH_SIZE = 100;
+          for (let i = 0; i < uploadResults.length; i += REG_BATCH_SIZE) {
+            const batch = uploadResults.slice(i, i + REG_BATCH_SIZE);
+            await mediaCollabService.registerBatchAssets(projectId, batch.map(r => ({
+              key: r.key,
+              filename: r.filename,
+              originalName: r.originalName,
+              mimeType: r.mimeType,
+              size: r.size,
+              folderId: folderId || undefined,
+              description,
+            })));
+          }
+        } catch (regError) {
+          console.error('[UploadMediaModal] Failed to register assets:', regError);
+          message.error('Files uploaded but failed to register in database. Please refresh.');
+        }
+      }
+
+      // Step 5: Show summary
       const succeeded = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
       const skipped = queue.filter(item => item.resolution === 'skip').length;
 
-      // Show summary message
-      const messages = [];
-      if (succeeded > 0) {
-        messages.push(`${succeeded} file${succeeded > 1 ? 's' : ''} uploaded`);
-      }
-      if (skipped > 0) {
-        messages.push(`${skipped} skipped`);
-      }
-      if (failed > 0) {
-        messages.push(`${failed} failed`);
-      }
+      const messages: string[] = [];
+      if (succeeded > 0) messages.push(`${succeeded} file${succeeded > 1 ? 's' : ''} uploaded`);
+      if (skipped > 0) messages.push(`${skipped} skipped`);
+      if (failed > 0) messages.push(`${failed} failed`);
 
-      // Always show result message
       if (failed === 0) {
         message.success(messages.join(', '));
       } else if (succeeded > 0) {
@@ -219,11 +341,9 @@ export const UploadMediaModal: React.FC<UploadMediaModalProps> = ({
         message.error('All uploads failed - You can retry');
       }
 
-      // If all uploads completed (no failures), auto-close
       if (failed === 0) {
         onSuccess && onSuccess();
         setTimeout(() => {
-          // Cleanup and close
           form.resetFields();
           setSelectedFiles([]);
           setFilesWithResolutions([]);
@@ -231,7 +351,7 @@ export const UploadMediaModal: React.FC<UploadMediaModalProps> = ({
           setGlobalResolution(null);
           setUploadQueue([]);
           onClose();
-        }, 1500); // Small delay to show completion
+        }, 1500);
       }
     } catch (error: unknown) {
       message.error((error as Error).message || 'Upload failed');

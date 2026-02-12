@@ -252,4 +252,59 @@ export class MediaAssetsController {
 
     return new StreamableFile(stream);
   }
+
+  @Post("presigned-upload/:projectId")
+  @ApiOperation({ summary: "Get presigned URLs for direct R2 upload (batch)" })
+  @ApiResponse({ status: 200, description: "Presigned upload URLs generated" })
+  @ApiResponse({
+    status: 400,
+    description: "Invalid request (empty array, exceeds 100 limit)",
+  })
+  @ApiResponse({ status: 403, description: "Access denied (not OWNER/EDITOR)" })
+  async getPresignedUploadUrls(
+    @Request() req: AuthenticatedRequest,
+    @Param("projectId") projectId: string,
+    @Body()
+    body: {
+      files: Array<{ filename: string; mimeType: string; size: number }>;
+    },
+  ) {
+    return this.assetsService.generatePresignedUploadUrls(
+      projectId,
+      req.user.id,
+      body.files,
+    );
+  }
+
+  @Post("register-batch/:projectId")
+  @SkipThrottle()
+  @ApiOperation({ summary: "Register assets after direct R2 upload (batch)" })
+  @ApiResponse({ status: 201, description: "Assets registered in database" })
+  @ApiResponse({
+    status: 400,
+    description: "Invalid request (empty array, exceeds 100 limit)",
+  })
+  @ApiResponse({ status: 403, description: "Access denied (not OWNER/EDITOR)" })
+  async registerBatch(
+    @Request() req: AuthenticatedRequest,
+    @Param("projectId") projectId: string,
+    @Body()
+    body: {
+      assets: Array<{
+        key: string;
+        filename: string;
+        originalName: string;
+        mimeType: string;
+        size: number;
+        folderId?: string;
+        description?: string;
+      }>;
+    },
+  ) {
+    return this.assetsService.registerBatchAssets(
+      projectId,
+      req.user.id,
+      body.assets,
+    );
+  }
 }

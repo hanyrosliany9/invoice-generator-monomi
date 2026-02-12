@@ -823,6 +823,60 @@ class MediaCollabService {
     console.log('[mediaCollabService] moveAssets response:', response.data);
     return response.data.data;
   }
+
+  // ============================================
+  // PRESIGNED URL BULK UPLOAD
+  // ============================================
+
+  /**
+   * Get presigned URLs for direct R2 upload (batch)
+   * Files will be uploaded directly to R2 without going through the backend
+   */
+  async getPresignedUploadUrls(
+    projectId: string,
+    files: Array<{ filename: string; mimeType: string; size: number }>,
+  ): Promise<{
+    uploads: Array<{
+      filename: string;
+      key: string;
+      uploadUrl: string;
+      expiresIn: number;
+    }>;
+  }> {
+    const response = await apiClient.post(
+      `/media-collab/assets/presigned-upload/${projectId}`,
+      { files },
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Register assets in database after direct R2 upload
+   */
+  async registerBatchAssets(
+    projectId: string,
+    assets: Array<{
+      key: string;
+      filename: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+      folderId?: string;
+      description?: string;
+    }>,
+  ): Promise<{
+    total: number;
+    registered: number;
+    failed: number;
+    assets: MediaAsset[];
+  }> {
+    const response = await apiClient.post(
+      `/media-collab/assets/register-batch/${projectId}`,
+      { assets },
+      { timeout: 60000 }, // 60s for batch DB registration
+    );
+    return response.data.data;
+  }
 }
 
 export interface MediaCollection {

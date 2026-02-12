@@ -708,6 +708,57 @@ export class MediaService {
   }
 
   /**
+   * Generate a presigned URL for direct upload to R2
+   *
+   * Allows clients to upload files directly to R2 without going through the backend.
+   * Useful for bulk uploads to avoid backend timeout issues.
+   *
+   * @param filename - Original filename
+   * @param mimeType - MIME type of the file
+   * @param folder - Folder path in R2 (default: 'content')
+   * @param expiresIn - URL expiration time in seconds (default: 3600 = 1 hour)
+   * @returns Object with presigned upload URL and the key that will be used
+   */
+  async generatePresignedUploadUrl(
+    filename: string,
+    mimeType: string,
+    folder: string = "content",
+    expiresIn: number = 3600,
+  ): Promise<{ url: string; key: string }> {
+    if (!this.isR2Enabled()) {
+      throw new InternalServerErrorException(
+        "Presigned uploads not available. R2 not configured.",
+      );
+    }
+
+    const key = this.generateKey(filename, folder);
+
+    const command = new PutObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+      ContentType: mimeType,
+    });
+
+    const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+
+    this.logger.debug(
+      `✅ Generated presigned upload URL for: ${key} (expires in ${expiresIn}s)`,
+    );
+
+    return { url, key };
+  }
+
+  /**
+   * Get public URL for an R2 object key
+   *
+   * @param key - R2 object key
+   * @returns Public URL for accessing the file
+   */
+  getPublicUrl(key: string): string {
+    return `${this.publicUrl}/${key}`;
+  }
+
+  /**
    * Generate unique file key for R2
    *
    * Format: {folder}/{date}/{randomHash}-{filename}
