@@ -47,7 +47,7 @@ export interface ShotList {
   name: string;
   description?: string;
   projectId: string;
-  project?: { id: string; name: string };
+  project?: { id: string; name: string; description?: string };
   createdById: string;
   createdBy?: { id: string; name: string };
   scenes: ShotListScene[];

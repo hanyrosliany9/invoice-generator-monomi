@@ -53,14 +53,16 @@ export const PresentButton: React.FC<PresentButtonProps> = ({ disabled }) => {
     {
       key: 'transition',
       label: 'Transition',
-      children: transitionItems.map((item) =>
-        item.type === 'divider'
+      children: transitionItems?.map((item) =>
+        item && 'type' in item && item.type === 'divider'
           ? item
-          : {
-              ...item,
-              onClick: () => setTransition((item as any).key as TransitionType),
-              icon: transition === (item as any).key ? '✓' : null,
-            }
+          : item
+            ? {
+                ...item,
+                onClick: () => setTransition((item as any).key as TransitionType),
+                icon: transition === (item as any).key ? '✓' : undefined,
+              }
+            : item
       ),
     },
   ];

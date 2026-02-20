@@ -86,7 +86,7 @@ export default function DeckCanvas({
 
         const canvas = fabricRef.current;
         console.log('Canvas dimensions:', canvas.getWidth(), 'x', canvas.getHeight());
-        console.log('Image natural size:', img.naturalWidth, 'x', img.naturalHeight);
+        console.log('Image natural size:', (img as any).naturalWidth, 'x', (img as any).naturalHeight);
         console.log('Image scaled size:', img.width, 'x', img.height);
 
         // Scale image to fit canvas
@@ -138,7 +138,7 @@ export default function DeckCanvas({
           opacity: img.opacity,
         });
 
-        pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+        pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
 
         // Save image as element to database so it persists after refresh
         if (slideId && onElementCreate) {

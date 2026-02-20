@@ -7,7 +7,7 @@ const jsonpatch = require('fast-json-patch');
 const { compare, applyPatch } = jsonpatch;
 type Operation = any; // Using any for now due to import complexity
 import { Widget } from '../types/report-builder';
-import { Layout as GridLayout } from 'react-grid-layout';
+import type { LayoutItem as GridLayout } from 'react-grid-layout';
 
 // History entry type for undo/redo with compressed patches
 interface HistoryEntry {

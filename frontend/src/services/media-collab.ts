@@ -1064,6 +1064,8 @@ export interface BulkDownloadJobCreated {
   status: BulkDownloadJobStatusEnum;
   totalFiles: number;
   message: string;
+  downloadUrl?: string;
+  expiresAt?: string;
 }
 
 export interface BulkDownloadJobStatus {

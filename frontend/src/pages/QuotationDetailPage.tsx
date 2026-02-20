@@ -1120,7 +1120,7 @@ export const QuotationDetailPage: React.FC<QuotationDetailPageProps> = () => {
                 const sanitize = (str: string) => str?.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-') || ''
                 const quotationNum = (quotation?.quotationNumber || 'quotation').replace(/\//g, '-')
                 const clientName = sanitize(quotation?.client?.name || '')
-                const projectType = sanitize(quotation?.project?.projectType?.name || '')
+                const projectType = sanitize(quotation?.project?.type || '')
                 const filenameParts = ['Quotation', quotationNum]
                 if (clientName) filenameParts.push(clientName)
                 if (projectType) filenameParts.push(projectType)

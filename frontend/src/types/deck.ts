@@ -8,7 +8,14 @@ export type SlideTemplate =
   | 'SHOT_LIST'
   | 'SCHEDULE'
   | 'COMPARISON'
-  | 'BLANK';
+  | 'BLANK'
+  | 'STORYBOARD'
+  | 'LOCATION'
+  | 'SCRIPT_BREAKDOWN'
+  | 'CALL_SHEET'
+  | 'GRID_4'
+  | 'GRID_6'
+  | 'TIMELINE';
 
 export type DeckStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 export type CollaboratorRole = 'OWNER' | 'EDITOR' | 'COMMENTER' | 'VIEWER';

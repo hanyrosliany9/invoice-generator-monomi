@@ -19,6 +19,8 @@ export interface ProjectMilestone {
   actualCost: number
   completionPercentage?: number
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'ACCEPTED' | 'BILLED'
+  completedDate?: string
+  progress?: number
   priority: 'LOW' | 'MEDIUM' | 'HIGH'
   predecessorId?: string
   deliverables?: string

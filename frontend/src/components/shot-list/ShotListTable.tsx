@@ -3,7 +3,7 @@ import { Table, Button, Tag, Input, Select, App, Popconfirm, Image, Space } from
 import { PlusOutlined, DeleteOutlined, CopyOutlined, HolderOutlined } from '@ant-design/icons';
 import { shotListsApi } from '../../services/shotLists';
 import { SHOT_SIZES, SHOT_TYPES, CAMERA_MOVEMENTS, CAMERA_ANGLES, LENSES, FRAME_RATES, CAMERAS, SHOT_STATUSES } from '../../constants/shotSpecs';
-import type { ShotList, Shot } from '../../types/shotList';
+import type { ShotList, Shot, ShotStatus } from '../../types/shotList';
 import type { Theme } from '../../theme/types';
 
 interface Props {
@@ -293,7 +293,7 @@ export default function ShotListTable({ shotList, visibleColumns, theme }: Props
           size="small"
           value={v}
           options={SHOT_STATUSES.map(s => ({ value: s.value, label: <Tag color={s.color}>{s.label}</Tag> }))}
-          onChange={(val) => updateMutation.mutate({ id: r.id, data: { status: val } })}
+          onChange={(val) => updateMutation.mutate({ id: r.id, data: { status: val as ShotStatus } })}
           style={{ width: 100 }}
         />
       ),

@@ -106,7 +106,7 @@ export default function DeckEditorPage() {
   // Mutations
   const addSlideMutation = useMutation({
     mutationFn: (templateType: SlideTemplateType) =>
-      slidesApi.create({ deckId: id!, template: templateType }),
+      slidesApi.create({ deckId: id!, template: templateType as SlideTemplate }),
     onSuccess: async (res, templateType) => {
       // Apply template elements if not BLANK
       if (templateType !== 'BLANK') {

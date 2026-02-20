@@ -69,7 +69,7 @@ export function useDeckKeyboardShortcuts({
             canvas.setActiveObject(selection);
           }
           canvas.renderAll();
-          pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+          pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
         }
       });
     });
@@ -83,7 +83,7 @@ export function useDeckKeyboardShortcuts({
       activeObjects.forEach((obj) => canvas.remove(obj));
       canvas.discardActiveObject();
       canvas.renderAll();
-      pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+      pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
     }
   }, [canvas, handleCopy, pushHistory]);
 
@@ -115,7 +115,7 @@ export function useDeckKeyboardShortcuts({
             canvas.setActiveObject(selection);
           }
           canvas.renderAll();
-          pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+          pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
         }
       });
     });
@@ -176,7 +176,7 @@ export function useDeckKeyboardShortcuts({
     if (activeObject) {
       canvas.bringObjectToFront(activeObject);
       canvas.renderAll();
-      pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+      pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
     }
   }, [canvas, pushHistory]);
 
@@ -187,7 +187,7 @@ export function useDeckKeyboardShortcuts({
     if (activeObject) {
       canvas.sendObjectToBack(activeObject);
       canvas.renderAll();
-      pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+      pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
     }
   }, [canvas, pushHistory]);
 
@@ -329,7 +329,7 @@ export function useDeckKeyboardShortcuts({
           canvas?.add(rect);
           canvas?.setActiveObject(rect);
           canvas?.renderAll();
-          pushHistory(JSON.stringify(canvas?.toJSON(['id', 'elementId', 'elementType'])));
+          pushHistory(JSON.stringify((canvas as any)?.toJSON(['id', 'elementId', 'elementType'])));
         }
         return;
       }
@@ -354,7 +354,7 @@ export function useDeckKeyboardShortcuts({
           canvas?.add(circle);
           canvas?.setActiveObject(circle);
           canvas?.renderAll();
-          pushHistory(JSON.stringify(canvas?.toJSON(['id', 'elementId', 'elementType'])));
+          pushHistory(JSON.stringify((canvas as any)?.toJSON(['id', 'elementId', 'elementType'])));
         }
         return;
       }
@@ -378,7 +378,7 @@ export function useDeckKeyboardShortcuts({
           canvas?.add(text);
           canvas?.setActiveObject(text);
           canvas?.renderAll();
-          pushHistory(JSON.stringify(canvas?.toJSON(['id', 'elementId', 'elementType'])));
+          pushHistory(JSON.stringify((canvas as any)?.toJSON(['id', 'elementId', 'elementType'])));
         }
         return;
       }
@@ -400,7 +400,7 @@ export function useDeckKeyboardShortcuts({
           canvas?.add(line);
           canvas?.setActiveObject(line);
           canvas?.renderAll();
-          pushHistory(JSON.stringify(canvas?.toJSON(['id', 'elementId', 'elementType'])));
+          pushHistory(JSON.stringify((canvas as any)?.toJSON(['id', 'elementId', 'elementType'])));
         }
         return;
       }

@@ -14,7 +14,7 @@ interface UpcomingEventsProps {
 
 export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onEventClick }) => {
   if (events.length === 0) {
-    return <Empty description="No upcoming events" size="small" />
+    return <Empty description="No upcoming events" />
   }
 
   return (

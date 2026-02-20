@@ -10,9 +10,8 @@ export const renderTemplateToCanvas = (
 
   // Set background color
   if (template.backgroundColor) {
-    canvas.setBackgroundColor(template.backgroundColor, () => {
-      canvas.renderAll();
-    });
+    canvas.backgroundColor = template.backgroundColor;
+    canvas.renderAll();
   }
 
   // Render each element
@@ -145,9 +144,7 @@ export const replacePlaceholder = (
       return;
     }
 
-    Image.fromURL(
-      imageUrl,
-      (img) => {
+    Image.fromURL(imageUrl, { crossOrigin: 'anonymous' }).then((img) => {
         if (!img) {
           reject(new Error('Failed to load image'));
           return;
@@ -173,8 +170,6 @@ export const replacePlaceholder = (
         canvas.add(img);
         canvas.renderAll();
         resolve();
-      },
-      { crossOrigin: 'anonymous' }
-    );
+      }).catch(reject);
   });
 };

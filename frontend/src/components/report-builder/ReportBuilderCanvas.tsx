@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import GridLayout, { Layout, LayoutItem } from 'react-grid-layout';
+import GridLayout, { Layout, LayoutItem } from 'react-grid-layout/legacy';
 import { theme, Empty } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useSelectionContainer } from '@air/react-drag-to-select';
@@ -247,11 +247,11 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
     }
   }, [readonly, onWidgetSelect]);
 
-  const handleDragStart = useCallback((layout: Layout, oldItem: LayoutItem, newItem: LayoutItem) => {
+  const handleDragStart = useCallback((layout: Layout, oldItem: LayoutItem | null, newItem: LayoutItem | null) => {
     setIsDragging(true);
-    setDraggedWidgetId(newItem.i);
-    dragStartPositionRef.current = { x: oldItem.x, y: oldItem.y };
-    onDragStart?.(newItem.i);  // Pass the dragged widget ID
+    if (newItem) setDraggedWidgetId(newItem.i);
+    if (oldItem) dragStartPositionRef.current = { x: oldItem.x, y: oldItem.y };
+    if (newItem) onDragStart?.(newItem.i);  // Pass the dragged widget ID
   }, [onDragStart]);
 
   // Throttle drag updates to ~30 FPS instead of 60 FPS for better performance
@@ -262,9 +262,9 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
     [onLayoutChange]
   );
 
-  const handleDrag = useCallback((layout: Layout, oldItem: LayoutItem, newItem: LayoutItem, placeholder: LayoutItem) => {
+  const handleDrag = useCallback((layout: Layout, oldItem: LayoutItem | null, newItem: LayoutItem | null, placeholder: LayoutItem | null) => {
     // Calculate real-time delta for multi-drag visual feedback
-    if (dragStartPositionRef.current && selectedWidgetIds.length > 1) {
+    if (newItem && dragStartPositionRef.current && selectedWidgetIds.length > 1) {
       const deltaX = newItem.x - dragStartPositionRef.current.x;
       const deltaY = newItem.y - dragStartPositionRef.current.y;
       setActiveDragDelta({ deltaX, deltaY });
@@ -274,12 +274,12 @@ export const ReportBuilderCanvas: React.FC<ReportBuilderCanvasProps> = ({
     throttledLayoutChange(layout);
   }, [throttledLayoutChange, selectedWidgetIds.length]);
 
-  const handleDragStop = useCallback((layout: Layout, oldItem: LayoutItem, newItem: LayoutItem) => {
+  const handleDragStop = useCallback((layout: Layout, oldItem: LayoutItem | null, newItem: LayoutItem | null) => {
     setIsDragging(false);
     setDraggedWidgetId(null);
     setActiveDragDelta(null);
     dragStartPositionRef.current = null;
-    onDragStop?.(newItem.i);  // Pass the dragged widget ID
+    if (newItem) onDragStop?.(newItem.i);  // Pass the dragged widget ID
   }, [onDragStop]);
 
   const handleResizeStart = useCallback(() => {

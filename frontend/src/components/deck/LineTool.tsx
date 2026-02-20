@@ -119,7 +119,7 @@ export default function LineTool({ canvas, disabled }: LineToolProps) {
 
       canvas.setActiveObject(line);
       canvas.renderAll();
-      pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+      pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
 
       // Reset
       startPoint = null;

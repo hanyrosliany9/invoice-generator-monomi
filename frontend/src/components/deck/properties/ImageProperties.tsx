@@ -63,7 +63,7 @@ export default function ImageProperties({ object }: ImagePropertiesProps) {
         canvas.add(newImg);
         canvas.setActiveObject(newImg);
         canvas.renderAll();
-        pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+        pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
 
         console.log('Replacement image added to canvas successfully');
       } catch (error) {

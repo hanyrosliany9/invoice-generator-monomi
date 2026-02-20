@@ -70,7 +70,7 @@ export default function QuickShapeBar({ canvas, disabled }: QuickShapeBarProps) 
     canvas.add(obj);
     canvas.setActiveObject(obj);
     canvas.renderAll();
-    pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+    pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
   };
 
   return (

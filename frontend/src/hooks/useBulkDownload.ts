@@ -219,8 +219,8 @@ export const useBulkDownload = (): UseBulkDownloadReturn => {
             progress: 100,
             processedFiles: result.totalFiles,
             totalFiles: result.totalFiles,
-            downloadUrl: result.downloadUrl,
-            expiresAt: result.expiresAt || null,
+            downloadUrl: result.downloadUrl ?? null,
+            expiresAt: result.expiresAt ?? null,
             status: 'completed',
           }));
           // Auto-trigger download for cached result

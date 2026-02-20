@@ -19,7 +19,7 @@ import {
 } from '@ant-design/icons';
 import html2canvas from 'html2canvas';
 import { produce } from 'immer';
-import { Layout as GridLayout } from 'react-grid-layout';
+import type { LayoutItem as GridLayout } from 'react-grid-layout';
 import ReportBuilderCanvas from '../components/report-builder/ReportBuilderCanvas';
 import ComponentPalette from '../components/report-builder/ComponentPalette';
 import PropertiesPanel from '../components/report-builder/PropertiesPanel';
@@ -454,7 +454,7 @@ export const ReportBuilderPage: React.FC = () => {
   );
 
   const handleLayoutChange = useCallback(
-    (layout: GridLayout[]) => {
+    (layout: readonly GridLayout[]) => {
       const isDragging = isDraggingRef.current;
       const draggedWidgetId = draggedWidgetIdRef.current;
       const dragStartPositions = dragStartPositionsRef.current;

@@ -67,7 +67,7 @@ export default function InsertImageButton({ disabled }: InsertImageButtonProps) 
       canvas.add(img);
       canvas.setActiveObject(img);
       canvas.renderAll();
-      pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+      pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
 
       console.log('Image added to canvas successfully');
     } catch (error) {

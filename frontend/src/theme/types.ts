@@ -6,6 +6,7 @@ export interface ThemeColors {
     primary: string
     secondary: string
     tertiary: string
+    inverse: string
   }
 
   // Glassmorphism effects

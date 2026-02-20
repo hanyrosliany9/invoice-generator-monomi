@@ -12,6 +12,7 @@ const darkTheme: Theme = {
       primary: '#191919',
       secondary: '#2F3438',
       tertiary: '#3F4448',
+      inverse: '#FFFFFF',
     },
     glass: {
       background: 'rgba(47, 52, 56, 0.7)',
@@ -63,6 +64,7 @@ const lightTheme: Theme = {
       primary: '#FFFFFF',
       secondary: '#F7F6F3',
       tertiary: '#F1F1EF',
+      inverse: '#191919',
     },
     glass: {
       background: 'rgba(247, 246, 243, 0.85)',

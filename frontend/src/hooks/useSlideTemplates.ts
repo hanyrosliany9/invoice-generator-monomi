@@ -15,14 +15,14 @@ export const useSlideTemplates = () => {
 
     const template = getTemplate(templateType);
     renderTemplateToCanvas(canvas, template);
-    pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+    pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
   }, [canvas, pushHistory]);
 
   const fillPlaceholder = useCallback((placeholderId: string, imageUrl: string) => {
     if (!canvas) return;
 
     replacePlaceholder(canvas, placeholderId, imageUrl)
-      .then(() => pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType']))))
+      .then(() => pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType']))))
       .catch(console.error);
   }, [canvas, pushHistory]);
 

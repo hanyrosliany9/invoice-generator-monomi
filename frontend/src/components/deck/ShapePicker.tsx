@@ -49,7 +49,7 @@ export default function ShapePicker({ canvas, onShapeAdd, disabled }: ShapePicke
     canvas.add(obj);
     canvas.setActiveObject(obj);
     canvas.renderAll();
-    pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+    pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
 
     onShapeAdd?.(shapeId);
     setOpen(false);

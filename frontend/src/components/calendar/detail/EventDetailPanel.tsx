@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button, Space, Tag, Avatar, Divider, Modal, message } from 'antd'
+import { Button, Space, Tag, Avatar, Divider, Modal, message, Tooltip } from 'antd'
 import { EditOutlined, DeleteOutlined, CloseOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { CalendarEvent } from '../../../services/calendar-events'
@@ -164,13 +164,13 @@ export const EventDetailPanel: React.FC<EventDetailPanelProps> = ({
             <div className="event-detail-label">Attendees ({event.attendees.length})</div>
             <Space wrap>
               {event.attendees.map((attendee) => (
-                <Avatar
-                  key={attendee.userId}
-                  title={`${attendee.user.name} - ${attendee.status}`}
-                  style={{ backgroundColor: '#1890ff' }}
-                >
-                  {attendee.user.name[0]?.toUpperCase()}
-                </Avatar>
+                <Tooltip key={attendee.userId} title={`${attendee.user.name} - ${attendee.status}`}>
+                  <Avatar
+                    style={{ backgroundColor: '#1890ff' }}
+                  >
+                    {attendee.user.name[0]?.toUpperCase()}
+                  </Avatar>
+                </Tooltip>
               ))}
             </Space>
           </div>

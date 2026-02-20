@@ -57,7 +57,7 @@ export default function TransformProperties({ object }: TransformPropertiesProps
     if (!object || !canvas) return;
     object.set(changes);
     canvas.renderAll();
-    pushHistory(JSON.stringify(canvas.toJSON(['id', 'elementId', 'elementType'])));
+    pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
   };
 
   const handlePositionChange = (axis: 'x' | 'y', value: number | null) => {

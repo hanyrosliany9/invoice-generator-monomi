@@ -25,7 +25,7 @@ export function useGoogleMapsLoader() {
       loadPromise = (async () => {
         try {
           // Set API options first (must be before any library import)
-          setOptions({ key: apiKey, version: 'weekly' });
+          setOptions({ key: apiKey } as any);
           // Import the places library to make it available globally
           await importLibrary('places');
           isLoaded = true;

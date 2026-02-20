@@ -417,7 +417,7 @@ export const elementToFabricObject = async (
     return text;
   }
 
-  if (element.type === 'IMAGE' || element.type === 'image') {
+  if (element.type === 'IMAGE' || (element.type as string) === 'image') {
     const content = element.content as any;
 
     console.log('[elementToFabricObject] Loading IMAGE element:', {

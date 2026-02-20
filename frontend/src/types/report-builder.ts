@@ -3,7 +3,7 @@
  * Inspired by Google Looker Studio + Google Slides + Notion
  */
 
-import { LayoutItem } from 'react-grid-layout';
+import type { Layout, LayoutItem } from 'react-grid-layout';
 
 // ==================== Widget Types ====================
 
