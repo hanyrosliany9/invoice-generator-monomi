@@ -113,6 +113,10 @@ export class MediaService {
           accessKeyId: r2Config.accessKeyId,
           secretAccessKey: r2Config.secretAccessKey,
         },
+        // Disable automatic checksum calculation so presigned URLs work from browser
+        // Without this, SDK adds x-amz-checksum-crc32 which browsers can't provide
+        requestChecksumCalculation: "when_required",
+        responseChecksumValidation: "when_required",
       });
       this.logger.log(
         `✅ R2 client initialized for bucket: ${this.bucketName}`,
