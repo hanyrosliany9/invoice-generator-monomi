@@ -491,9 +491,25 @@ export const FolderViewDnD: React.FC<FolderViewDnDProps> = ({
                                           type="text"
                                           size="small"
                                           icon={<DownloadOutlined />}
-                                          onClick={(e) => {
+                                          onClick={async (e) => {
                                             e.stopPropagation();
-                                            window.open(getProxyUrl(asset.url, mediaToken), '_blank');
+                                            try {
+                                              const proxyUrl = getProxyUrl(asset.url);
+                                              const response = await fetch(proxyUrl);
+                                              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                                              const blob = await response.blob();
+                                              const blobUrl = URL.createObjectURL(blob);
+                                              const link = document.createElement('a');
+                                              link.href = blobUrl;
+                                              link.download = asset.originalName;
+                                              document.body.appendChild(link);
+                                              link.click();
+                                              document.body.removeChild(link);
+                                              setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+                                            } catch {
+                                              // fallback: open in new tab
+                                              window.open(getProxyUrl(asset.url), '_blank');
+                                            }
                                           }}
                                         />
                                         <Button

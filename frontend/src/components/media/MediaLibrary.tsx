@@ -723,11 +723,28 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
     }
   };
 
-  const handleDownload = (asset: MediaAsset) => {
-    const link = document.createElement('a');
-    link.href = asset.url;
-    link.download = asset.originalName;
-    link.click();
+  const handleDownload = async (asset: MediaAsset) => {
+    const loadingKey = `download-${asset.id}`;
+    message.loading({ content: `Downloading ${asset.originalName}...`, key: loadingKey, duration: 0 });
+    try {
+      // Use backend proxy URL (relative/same-origin) to avoid R2 auth errors
+      const proxyUrl = getProxyUrl(asset.url);
+      const response = await fetch(proxyUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = asset.originalName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      message.destroy(loadingKey);
+    } catch (error) {
+      message.destroy(loadingKey);
+      message.error('Download failed. Please try again.');
+    }
   };
 
   const toggleSelection = (assetId: string) => {

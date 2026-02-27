@@ -582,11 +582,13 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
               flexDirection: 'column',
               background: '#000',
               position: 'relative',
+              minHeight: 0,
+              overflow: 'hidden',
             }}
           >
             {/* Video player with optional drawing overlay */}
             <div
-              style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0, overflow: 'hidden' }}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}

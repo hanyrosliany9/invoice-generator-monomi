@@ -539,12 +539,14 @@ export class MediaService {
    */
   async getFileStream(
     key: string,
-    options?: { abortSignal?: AbortSignal; timeoutMs?: number },
+    options?: { abortSignal?: AbortSignal; timeoutMs?: number; range?: string },
   ): Promise<{
     stream: Readable;
     contentType: string;
     contentLength: number;
     originalName?: string;
+    statusCode?: number;
+    contentRange?: string;
   }> {
     try {
       // Try R2 first if available
@@ -552,6 +554,7 @@ export class MediaService {
         const command = new GetObjectCommand({
           Bucket: this.bucketName,
           Key: key,
+          ...(options?.range && { Range: options.range }),
         });
 
         // Support AbortController for timeouts (prevents worker from hanging indefinitely)
@@ -587,6 +590,8 @@ export class MediaService {
             contentType: response.ContentType || "application/octet-stream",
             contentLength: response.ContentLength || 0,
             originalName,
+            statusCode: options?.range ? 206 : 200,
+            contentRange: response.ContentRange,
           };
         } catch (r2Error: any) {
           // Clear timeout on error too

@@ -16,7 +16,7 @@ import {
   Res,
   StreamableFile,
 } from "@nestjs/common";
-import { Response } from "express";
+import { Request, Response } from "express";
 import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express";
 import {
   ApiTags,
@@ -305,17 +305,23 @@ export class MediaController {
    */
   @Get("proxy/:key(*)")
   @ApiOperation({ summary: "Proxy R2 file to avoid CORS" })
-  async proxyFile(@Param("key") key: string, @Res() res: Response) {
+  async proxyFile(
+    @Param("key") key: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     if (!key) {
       throw new BadRequestException("No file key provided");
     }
 
-    this.logger.log(`Proxying file: ${key}`);
+    const rangeHeader = req.headers["range"] as string | undefined;
+    this.logger.log(`Proxying file: ${key}${rangeHeader ? ` [Range: ${rangeHeader}]` : ""}`);
 
-    const { stream, contentType, contentLength, originalName } =
-      await this.mediaService.getFileStream(key);
+    const { stream, contentType, contentLength, originalName, statusCode, contentRange } =
+      await this.mediaService.getFileStream(key, { range: rangeHeader });
 
-    // Set appropriate headers
+    // Always advertise Range support for video streaming
+    res.setHeader("Accept-Ranges", "bytes");
     res.setHeader("Content-Type", contentType);
     res.setHeader("Content-Length", contentLength);
     // ✅ CORS FIX: Use shorter cache with revalidation to prevent caching 404 errors
@@ -324,6 +330,11 @@ export class MediaController {
     res.setHeader("Cache-Control", "public, max-age=86400, must-revalidate"); // Cache for 1 day with revalidation
     res.setHeader("Access-Control-Allow-Origin", "*"); // Allow CORS
     res.setHeader("Cross-Origin-Resource-Policy", "cross-origin"); // Allow cross-origin resource loading
+
+    // Set Content-Range header for partial content responses
+    if (contentRange) {
+      res.setHeader("Content-Range", contentRange);
+    }
 
     // Set Content-Disposition header with original filename to preserve filename on download
     if (originalName) {
@@ -335,6 +346,9 @@ export class MediaController {
       );
       this.logger.log(`Setting original filename: ${originalName}`);
     }
+
+    // Return 206 for partial content, 200 for full content
+    res.status(statusCode || 200);
 
     // Stream the file
     stream.pipe(res);
