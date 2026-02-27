@@ -100,7 +100,7 @@ export class MediaService {
     // In development, still use proxy for Vite dev server compatibility
     const isProduction = process.env.NODE_ENV === "production";
     this.publicUrl = isProduction
-      ? r2Config.endpoint || "https://media.monomiagency.com" // Use Worker domain in production
+      ? r2Config.publicUrl || "https://media.monomiagency.com" // Use R2_PUBLIC_URL (Worker/CDN domain), NOT R2_ENDPOINT (S3 API)
       : `/api/v1/media/proxy`; // Dev: use proxy through Vite
     this.maxFileSizeMB = r2Config.maxFileSizeMB;
 

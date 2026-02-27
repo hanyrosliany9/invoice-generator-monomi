@@ -1038,12 +1038,137 @@ export class MediaAssetsService {
       `Registered ${registeredAssets.length}/${assets.length} assets for project ${projectId}`,
     );
 
+    // Trigger async thumbnail generation in background (fire-and-forget)
+    // Files are already in R2 from presigned upload — fetch and process each one
+    const assetMap = new Map(assets.map((a) => [a.key, a]));
+    setImmediate(async () => {
+      for (const { id, key } of registeredAssets) {
+        const meta = assetMap.get(key);
+        if (!meta) continue;
+        await this.generateThumbnailForRegisteredAsset(
+          id,
+          key,
+          meta.mimeType,
+          meta.originalName,
+        );
+      }
+    });
+
     return {
       total: assets.length,
       registered: registeredAssets.length,
       failed: failedCount,
       assets: registeredAssets,
     };
+  }
+
+  /**
+   * Background thumbnail generation for assets uploaded via presigned URL.
+   * Fetches the file from R2, generates a thumbnail (and video metadata),
+   * uploads the thumbnail, then updates the DB record.
+   */
+  private async generateThumbnailForRegisteredAsset(
+    assetId: string,
+    key: string,
+    mimeType: string,
+    originalName: string,
+  ): Promise<void> {
+    const fs = require("fs");
+    const path = require("path");
+    const os = require("os");
+    const mediaType = this.determineMediaType(mimeType);
+
+    try {
+      if (mediaType === "VIDEO") {
+        const { stream } = await this.mediaService.getFileStream(key, {
+          timeoutMs: 120000,
+        });
+
+        // Stream to buffer
+        const chunks: Buffer[] = [];
+        for await (const chunk of stream) {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+        const buffer = Buffer.concat(chunks);
+
+        const tempPath = path.join(
+          os.tmpdir(),
+          `thumb-${Date.now()}-${originalName}`,
+        );
+        try {
+          fs.writeFileSync(tempPath, buffer);
+
+          const processedData =
+            await this.processingService.extractVideoMetadata(tempPath);
+          const thumbnailBuffer =
+            await this.processingService.generateVideoThumbnail(tempPath, 1);
+
+          const thumbnailUpload = await this.mediaService.uploadFile(
+            {
+              buffer: thumbnailBuffer,
+              originalname: `thumb-${originalName}.jpg`,
+              mimetype: "image/jpeg",
+              size: thumbnailBuffer.length,
+            } as Express.Multer.File,
+            "thumbnails",
+          );
+
+          await this.prisma.mediaAsset.update({
+            where: { id: assetId },
+            data: {
+              thumbnailUrl: thumbnailUpload.url,
+              duration: processedData.duration,
+              fps: processedData.fps,
+              codec: processedData.codec,
+              bitrate: processedData.bitrate,
+            },
+          });
+
+          this.logger.log(`Thumbnail generated for video asset ${assetId}`);
+        } finally {
+          if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+        }
+      } else if (mediaType === "IMAGE" || mediaType === "RAW_IMAGE") {
+        const { stream } = await this.mediaService.getFileStream(key, {
+          timeoutMs: 60000,
+        });
+
+        const chunks: Buffer[] = [];
+        for await (const chunk of stream) {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+        const buffer = Buffer.concat(chunks);
+
+        const photoResult = await this.processingService.processPhoto(buffer);
+
+        const thumbnailUpload = await this.mediaService.uploadFile(
+          {
+            buffer: photoResult.thumbnail,
+            originalname: `thumb-${originalName}`,
+            mimetype: "image/jpeg",
+            size: photoResult.thumbnail.length,
+          } as Express.Multer.File,
+          "thumbnails",
+        );
+
+        await this.prisma.mediaAsset.update({
+          where: { id: assetId },
+          data: {
+            thumbnailUrl: thumbnailUpload.url,
+            width: photoResult.width,
+            height: photoResult.height,
+          },
+        });
+
+        this.logger.log(`Thumbnail generated for image asset ${assetId}`);
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed to generate thumbnail for asset ${assetId} (${key}):`,
+        err,
+      );
+      // Non-fatal: asset is still accessible, just without thumbnail
+    }
   }
 
   /**
