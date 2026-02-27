@@ -84,6 +84,8 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(100);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
 
   // UI state
   const [drawMode, setDrawMode] = useState(false);
@@ -369,6 +371,13 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
     setDuration(videoRef.current.duration);
   };
 
+  const handleLoadStart = () => setIsVideoLoading(true);
+  const handleCanPlay = () => setIsVideoLoading(false);
+  const handleWaiting = () => setIsBuffering(true);
+  const handlePlaying = () => { setIsBuffering(false); setIsVideoLoading(false); };
+  const handleSeeking = () => setIsBuffering(true);
+  const handleSeeked = () => setIsBuffering(false);
+
   const handleVolumeChange = (value: number) => {
     if (!videoRef.current) return;
     videoRef.current.volume = value / 100;
@@ -611,10 +620,61 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                 }}
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
-                onEnded={() => setIsPlaying(false)}
+                onLoadStart={handleLoadStart}
+                onCanPlay={handleCanPlay}
+                onWaiting={handleWaiting}
+                onPlaying={handlePlaying}
+                onSeeking={handleSeeking}
+                onSeeked={handleSeeked}
+                onEnded={() => { setIsPlaying(false); setIsBuffering(false); }}
                 onClick={handleVideoTap}
                 onTouchEnd={handleVideoDoubleTap}
               />
+
+              {/* Loading / buffering overlay */}
+              {(isVideoLoading || isBuffering) && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(0, 0, 0, 0.65)',
+                    zIndex: 10,
+                  }}
+                >
+                  {/* Thumbnail preview shown while initial video loads */}
+                  {isVideoLoading && asset.thumbnailUrl && (
+                    <img
+                      src={getProxyUrl(asset.thumbnailUrl)}
+                      alt=""
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        opacity: 0.35,
+                      }}
+                    />
+                  )}
+                  <Spin size="large" />
+                  <Text
+                    style={{
+                      color: 'rgba(255,255,255,0.9)',
+                      marginTop: 14,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      position: 'relative',
+                      zIndex: 1,
+                    }}
+                  >
+                    {isVideoLoading ? 'Loading video…' : 'Buffering…'}
+                  </Text>
+                </div>
+              )}
 
               {/* Drawing overlay (only when paused and draw mode active) */}
               {drawMode && !isPlaying && (
