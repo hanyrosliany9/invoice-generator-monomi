@@ -68,26 +68,11 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const lastTapRef = useRef<number>(0);
 
-  // Stabilize the video URL: set once when mediaToken first becomes available,
-  // never change after that to prevent video from reloading and seeking from breaking.
-  const srcSetRef = useRef(false);
-  const [videoSrc, setVideoSrc] = useState<string>(() => {
-    // If token already available on mount, use Worker URL (fast CDN path)
-    if (mediaToken) {
-      srcSetRef.current = true;
-      return getProxyUrl(asset.url, mediaToken);
-    }
-    // Otherwise use backend proxy as temporary fallback
-    return getProxyUrl(asset.url);
-  });
-
-  useEffect(() => {
-    // Upgrade to Worker URL once mediaToken becomes available (only once)
-    if (mediaToken && !srcSetRef.current) {
-      srcSetRef.current = true;
-      setVideoSrc(getProxyUrl(asset.url, mediaToken));
-    }
-  }, [mediaToken, asset.url]);
+  // Always use backend proxy URL for video — it supports HTTP Range requests (seeking).
+  // The Cloudflare Worker URL does NOT forward Range headers to R2, causing seeks to
+  // always reset to the beginning of the video. The backend proxy correctly handles
+  // 206 Partial Content responses, enabling frame-accurate seeking.
+  const videoSrc = getProxyUrl(asset.url);
 
   // Detect mobile
   const [isMobile, setIsMobile] = useState(
@@ -617,6 +602,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
               <video
                 ref={videoRef}
                 src={videoSrc}
+                preload="metadata"
                 style={{
                   maxWidth: '100%',
                   maxHeight: '100%',
