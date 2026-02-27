@@ -115,8 +115,8 @@ export class MediaService {
         },
         // Disable automatic checksum calculation so presigned URLs work from browser
         // Without this, SDK adds x-amz-checksum-crc32 which browsers can't provide
-        requestChecksumCalculation: "when_required",
-        responseChecksumValidation: "when_required",
+        requestChecksumCalculation: "WHEN_REQUIRED",
+        responseChecksumValidation: "WHEN_REQUIRED",
       });
       this.logger.log(
         `✅ R2 client initialized for bucket: ${this.bucketName}`,
