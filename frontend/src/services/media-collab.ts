@@ -541,15 +541,14 @@ class MediaCollabService {
   // ============================================
 
   async getProjectCollaborators(projectId: string): Promise<MediaCollaborator[]> {
-    const response = await apiClient.get<MediaCollaborator[]>(`/media-collab/collaborators/project/${projectId}`);
-    // Ensure we always return an array
-    const data = response.data;
+    const response = await apiClient.get(`/media-collab/collaborators/project/${projectId}`);
+    const data = response.data.data;
     return Array.isArray(data) ? data : [];
   }
 
   async addCollaborator(projectId: string, data: AddCollaboratorDto): Promise<MediaCollaborator> {
     const response = await apiClient.post(`/media-collab/collaborators/project/${projectId}`, data);
-    return response.data;
+    return response.data.data;
   }
 
   async updateCollaboratorRole(
@@ -561,14 +560,14 @@ class MediaCollabService {
       `/media-collab/collaborators/project/${projectId}/${collaboratorId}`,
       { role },
     );
-    return response.data;
+    return response.data.data;
   }
 
   async removeCollaborator(projectId: string, collaboratorId: string): Promise<{ message: string }> {
     const response = await apiClient.delete(
       `/media-collab/collaborators/project/${projectId}/${collaboratorId}`,
     );
-    return response.data;
+    return response.data.data;
   }
 
   // ============================================
@@ -744,17 +743,17 @@ class MediaCollabService {
 
   async enablePublicSharing(projectId: string): Promise<MediaProject> {
     const response = await apiClient.post(`/media-collab/projects/${projectId}/enable-public-sharing`);
-    return response.data;
+    return response.data.data;
   }
 
   async disablePublicSharing(projectId: string): Promise<MediaProject> {
     const response = await apiClient.post(`/media-collab/projects/${projectId}/disable-public-sharing`);
-    return response.data;
+    return response.data.data;
   }
 
   async regeneratePublicLink(projectId: string): Promise<MediaProject> {
     const response = await apiClient.post(`/media-collab/projects/${projectId}/regenerate-public-link`);
-    return response.data;
+    return response.data.data;
   }
 
   async getPublicProject(token: string): Promise<MediaProject> {

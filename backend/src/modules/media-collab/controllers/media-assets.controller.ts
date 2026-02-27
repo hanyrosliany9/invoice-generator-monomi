@@ -63,10 +63,7 @@ export class MediaAssetsController {
       duplicates[key] = value;
     });
 
-    return {
-      success: true,
-      data: duplicates,
-    };
+    return duplicates;
   }
 
   @Post("upload/:projectId")
@@ -198,10 +195,7 @@ export class MediaAssetsController {
       req.user.id,
     );
 
-    return {
-      success: true,
-      data: result,
-    };
+    return result;
   }
 
   @Post("bulk-download")
