@@ -836,7 +836,7 @@ class MediaCollabService {
     projectId: string,
     files: Array<{ filename: string; mimeType: string; size: number }>,
   ): Promise<{
-    uploads: Array<{
+    urls: Array<{
       filename: string;
       key: string;
       uploadUrl: string;

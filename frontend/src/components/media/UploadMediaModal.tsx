@@ -243,7 +243,7 @@ export const UploadMediaModal: React.FC<UploadMediaModalProps> = ({
                 size: f.file.size,
               })),
             );
-            presignedData.push(...result.uploads);
+            presignedData.push(...result.urls);
           }
         } catch (err) {
           console.warn('[UploadMediaModal] Presigned URLs not available, falling back to proxy upload:', err);
