@@ -6,15 +6,13 @@ main = "media-worker.js"
 compatibility_date = "2025-01-15"
 account_id = "209896b6231b1f8246620be3ab526b3f"
 
+# Custom domain is configured in Cloudflare dashboard (Worker > Triggers > Custom Domains)
+# Do not define routes here — custom_domain = true doesn't accept wildcards or paths.
+
 # R2 bucket binding
 [[r2_buckets]]
 binding = "MY_BUCKET"
 bucket_name = "monomi-finance"
-
-# Custom domain configuration
-routes = [
-  { pattern = "media.monomiagency.com/*", custom_domain = true }
-]
 
 # Environment variables (secrets, set via CLI)
 # wrangler secret put BACKEND_URL
