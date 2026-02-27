@@ -1,202 +1,177 @@
 /**
- * Cloudflare Worker - Authenticated Media Delivery from R2
+ * Cloudflare Worker — Authenticated Media Delivery from R2
  *
- * Purpose: Serve media files from private R2 bucket with token authentication
- * Architecture: User → Worker (Edge) → R2 → CDN Cache → User
+ * Serves media files from private R2 with full HTTP Range request support
+ * (RFC 7233), enabling video seeking, fast initial load, and progressive
+ * buffering without routing bytes through the VPS.
  *
- * Flow:
- * 1. User requests: https://media.monomiagency.com/view/TOKEN/content/file.jpg
- * 2. Worker validates token (checks against backend API or Redis)
- * 3. If valid, fetch from R2 and return with cache headers
- * 4. CDN caches response for 24 hours
+ * Key fixes in this version:
+ *  1. Range header forwarded to R2 → 206 Partial Content returned for seeks
+ *  2. Accept-Ranges: bytes on every response → browser knows seeking works
+ *  3. Content-Range set correctly for partial responses
+ *  4. CORS preflight allows Range header and exposes Content-Range
+ *  5. HEAD request support for Safari's Accept-Ranges probe
+ *  6. Cache-Control: private → prevents Cloudflare CDN from interfering
+ *     with range-request handling (known CDN+range stalling bug)
  *
- * Environment Variables Required:
- * - R2_BUCKET (binding): R2 bucket binding named MY_BUCKET
- * - BACKEND_URL (secret): Backend API URL for token validation
- * - TOKEN_SECRET (secret): JWT secret for local token validation (optional)
+ * URL format: https://media.monomiagency.com/view/TOKEN/path/to/file.ext
  */
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Handle CORS preflight
+    // CORS preflight — MUST allow Range so browsers send it cross-origin
     if (request.method === 'OPTIONS') {
-      return handleCORS();
+      return new Response(null, { status: 204, headers: corsHeaders() });
     }
 
-    // Parse URL: /view/TOKEN/key/path/to/file.jpg
-    const pathParts = url.pathname.split('/').filter(p => p);
-
-    if (pathParts.length < 3 || pathParts[0] !== 'view') {
-      return new Response('Invalid URL format. Expected: /view/TOKEN/key/path/to/file.jpg', {
-        status: 400
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return new Response('Method Not Allowed', {
+        status: 405,
+        headers: corsHeaders(),
       });
+    }
+
+    // Parse /view/TOKEN/path/to/file.ext
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    if (pathParts.length < 3 || pathParts[0] !== 'view') {
+      return new Response(
+        'Invalid URL format. Expected: /view/TOKEN/path/to/file.ext',
+        { status: 400, headers: corsHeaders() },
+      );
     }
 
     const token = pathParts[1];
-    const key = pathParts.slice(2).join('/'); // Reconstruct full key path
+    const key = pathParts.slice(2).join('/');
 
-    try {
-      // Validate token
-      const isValid = await validateToken(token, env);
-
-      if (!isValid) {
-        return new Response('Unauthorized: Invalid or expired token', {
-          status: 401,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-          }
-        });
-      }
-
-      // Fetch from R2
-      const object = await env.MY_BUCKET.get(key);
-
-      if (!object) {
-        return new Response('File not found', {
-          status: 404,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-          }
-        });
-      }
-
-      // Return file with cache headers
-      const headers = new Headers();
-      headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream');
-      headers.set('Cache-Control', 'public, max-age=86400, must-revalidate'); // 24h cache
-      headers.set('Access-Control-Allow-Origin', '*');
-      headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
-      headers.set('ETag', object.httpEtag);
-
-      // Add original filename if available
-      if (object.customMetadata?.originalName) {
-        const encodedFilename = encodeURIComponent(object.customMetadata.originalName);
-        headers.set('Content-Disposition', `inline; filename="${object.customMetadata.originalName}"; filename*=UTF-8''${encodedFilename}`);
-      }
-
-      return new Response(object.body, { headers });
-
-    } catch (error) {
-      console.error('Worker error:', error);
-      return new Response('Internal server error: ' + error.message, {
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-        }
+    // Validate token (edge-cached for 15 min to reduce backend API load)
+    const valid = await validateToken(token, env);
+    if (!valid) {
+      return new Response('Unauthorized: Invalid or expired token', {
+        status: 401,
+        headers: corsHeaders(),
       });
     }
+
+    // HEAD — Safari and some players probe for Accept-Ranges before seeking
+    if (request.method === 'HEAD') {
+      const meta = await env.MY_BUCKET.head(key);
+      if (!meta) {
+        return new Response('Not Found', { status: 404, headers: corsHeaders() });
+      }
+      const h = new Headers(corsHeaders());
+      meta.writeHttpMetadata(h);
+      h.set('Accept-Ranges', 'bytes');
+      h.set('Content-Length', String(meta.size));
+      h.set('ETag', meta.httpEtag);
+      h.set('Cache-Control', 'private, max-age=3600');
+      return new Response(null, { status: 200, headers: h });
+    }
+
+    // GET — forward Range header to R2 for partial content requests
+    const rangeHeader = request.headers.get('Range');
+    let object;
+    try {
+      object = rangeHeader
+        ? await env.MY_BUCKET.get(key, { range: request.headers })
+        : await env.MY_BUCKET.get(key);
+    } catch (err) {
+      return new Response('Error fetching from R2: ' + err.message, {
+        status: 500,
+        headers: corsHeaders(),
+      });
+    }
+
+    if (!object) {
+      return new Response('Not Found', { status: 404, headers: corsHeaders() });
+    }
+
+    const headers = new Headers(corsHeaders());
+    object.writeHttpMetadata(headers); // sets Content-Type from R2 metadata
+    headers.set('ETag', object.httpEtag);
+    headers.set('Accept-Ranges', 'bytes'); // tells browser seeking is supported
+
+    let status = 200;
+
+    if (rangeHeader && object.range) {
+      // R2 sets object.range = { offset, end, length } for the chunk it served
+      const { offset, end, length } = object.range;
+      headers.set('Content-Range', `bytes ${offset}-${end}/${object.size}`);
+      headers.set('Content-Length', String(length));
+      status = 206;
+    } else {
+      headers.set('Content-Length', String(object.size));
+    }
+
+    // Preserve original filename for inline display / downloads
+    const originalName = object.customMetadata?.originalName;
+    if (originalName) {
+      const encoded = encodeURIComponent(originalName);
+      headers.set(
+        'Content-Disposition',
+        `inline; filename="${originalName}"; filename*=UTF-8''${encoded}`,
+      );
+    }
+
+    // private  → Cloudflare CDN won't cache (avoids CDN+range stalling bug)
+    // max-age  → browser caches the chunk for 1 hour
+    headers.set('Cache-Control', 'private, max-age=3600');
+
+    return new Response(object.body, { status, headers });
   },
 };
 
 /**
- * Validate media access token or public share token
- *
- * Tries to validate token in this order:
- * 1. Media access token (authenticated users)
- * 2. Public share token (public project links)
- *
- * @param token - Token to validate
- * @param env - Worker environment variables
- * @returns true if token is valid, false otherwise
+ * CORS headers required for cross-origin video streaming:
+ *  - Allow-Headers: Range       → browser sends Range request across origins
+ *  - Expose-Headers: Content-Range, Accept-Ranges → browser reads seek metadata
  */
-async function validateToken(token, env) {
-  try {
-    // Basic token format check
-    if (!token || token.length < 10) {
-      return false;
-    }
-
-    const backendUrl = env.BACKEND_URL || 'https://admin.monomiagency.com';
-
-    // Try 1: Validate as media access token (authenticated user)
-    try {
-      const mediaValidationUrl = `${backendUrl}/api/v1/media/validate-token?token=${encodeURIComponent(token)}`;
-
-      const mediaResponse = await fetch(mediaValidationUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Cache validation results for 15 minutes to reduce backend load (consistent with public token caching)
-        cf: {
-          cacheTtl: 900, // 15 minutes (was 5 minutes)
-          cacheEverything: true,
-        },
-      });
-
-      if (mediaResponse.ok) {
-        const data = await mediaResponse.json();
-        // Backend returns: { data: { success: true, data: { userId, valid: true } } }
-        if (data.data && data.data.success && data.data.data && data.data.data.valid) {
-          console.log('Token validated as media access token');
-          return true;
-        }
-      }
-    } catch (error) {
-      console.log('Not a media access token, trying public token...', error.message);
-    }
-
-    // Try 2: Validate as public share token (public project)
-    try {
-      const publicValidationUrl = `${backendUrl}/api/v1/media-collab/public/validate-token?token=${encodeURIComponent(token)}`;
-      console.log('[Worker] Validating public token:', publicValidationUrl);
-
-      const publicResponse = await fetch(publicValidationUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Cache public token validation for 15 minutes (aggressive caching for performance)
-        // Public share tokens don't change frequently, and caching eliminates 95%+ of backend API calls
-        cf: {
-          cacheTtl: 900, // 15 minutes (was 0 - caused 100% backend API calls!)
-          cacheEverything: true,
-        },
-      });
-
-      console.log('[Worker] Public validation response status:', publicResponse.status);
-
-      if (publicResponse.ok) {
-        const data = await publicResponse.json();
-        console.log('[Worker] Public validation data:', JSON.stringify(data));
-
-        // Backend returns: { data: { success: true, data: { projectId, valid: true, isPublic: true } } }
-        if (data.data && data.data.success && data.data.data && data.data.data.valid && data.data.data.isPublic) {
-          console.log('[Worker] ✅ Token validated as public share token');
-          return true;
-        } else {
-          console.log('[Worker] ❌ Public token validation failed - invalid data structure');
-        }
-      } else {
-        console.log('[Worker] ❌ Public token validation HTTP error:', publicResponse.status);
-      }
-    } catch (error) {
-      console.log('[Worker] ❌ Public token validation error:', error.message);
-    }
-
-    // Both validation attempts failed
-    console.error('Token validation failed: not a media token or public token');
-    return false;
-
-  } catch (error) {
-    console.error('Token validation error:', error);
-    return false;
-  }
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+    'Access-Control-Allow-Headers': 'Range, Content-Type, Authorization',
+    'Access-Control-Expose-Headers':
+      'Content-Range, Accept-Ranges, Content-Length, ETag',
+    'Access-Control-Max-Age': '86400',
+    'Cross-Origin-Resource-Policy': 'cross-origin',
+  };
 }
 
 /**
- * Handle CORS preflight requests
+ * Validate token — tries media access token first, then public share token.
+ * Validation responses are edge-cached for 15 minutes to reduce backend load.
  */
-function handleCORS() {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400',
-    },
-  });
+async function validateToken(token, env) {
+  if (!token || token.length < 10) return false;
+
+  const backendUrl = env.BACKEND_URL || 'https://admin.monomiagency.com';
+
+  // 1. Media access token (authenticated users)
+  try {
+    const res = await fetch(
+      `${backendUrl}/api/v1/media/validate-token?token=${encodeURIComponent(token)}`,
+      { cf: { cacheTtl: 900, cacheEverything: true } },
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.data?.success && data?.data?.data?.valid) return true;
+    }
+  } catch (_) {}
+
+  // 2. Public share token (public project links)
+  try {
+    const res = await fetch(
+      `${backendUrl}/api/v1/media-collab/public/validate-token?token=${encodeURIComponent(token)}`,
+      { cf: { cacheTtl: 900, cacheEverything: true } },
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.data?.success && data?.data?.data?.valid && data?.data?.data?.isPublic)
+        return true;
+    }
+  } catch (_) {}
+
+  return false;
 }

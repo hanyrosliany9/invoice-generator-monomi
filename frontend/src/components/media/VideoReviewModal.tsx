@@ -68,11 +68,11 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const lastTapRef = useRef<number>(0);
 
-  // Always use backend proxy URL for video — it supports HTTP Range requests (seeking).
-  // The Cloudflare Worker URL does NOT forward Range headers to R2, causing seeks to
-  // always reset to the beginning of the video. The backend proxy correctly handles
-  // 206 Partial Content responses, enabling frame-accurate seeking.
-  const videoSrc = getProxyUrl(asset.url);
+  // Pick the video URL once at mount and never change it.
+  // - If mediaToken is already in localStorage → Worker URL (fast CDN, Range-aware)
+  // - Otherwise → backend proxy fallback (Range-aware, slightly slower)
+  // Keeping the URL stable prevents src changes that reload the video and break seeking.
+  const [videoSrc] = useState<string>(() => getProxyUrl(asset.url, mediaToken));
 
   // Detect mobile
   const [isMobile, setIsMobile] = useState(
