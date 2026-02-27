@@ -31,9 +31,12 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 
 # Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
 # CXXFLAGS workaround for canvas package C++ compilation on Alpine (missing <cstdint> includes)
+# npm_config_nodedir: use headers already in the image instead of downloading from unofficial-builds.nodejs.org
+# Without this, node-gyp tries to download musl Node headers at build time and times out
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
-    CXXFLAGS="-include cstdint"
+    CXXFLAGS="-include cstdint" \
+    npm_config_nodedir=/usr/local
 
 # Create app user
 RUN addgroup -g 1001 -S appuser && \
