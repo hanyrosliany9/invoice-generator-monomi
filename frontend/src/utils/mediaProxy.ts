@@ -12,24 +12,20 @@
  */
 export function extractR2Key(url: string): string | null {
   try {
-    // Handle backend proxy URLs: /api/v1/media/proxy/content/2025-11-11/file.jpg
-    if (url.startsWith('/api/v1/media/proxy/')) {
-      return url.replace('/api/v1/media/proxy/', '');
+    // Handle proxy URLs in any form:
+    //   /api/v1/media/proxy/content/file.mp4  (relative)
+    //   http://localhost:5000/api/v1/media/proxy/content/file.mp4  (full dev URL)
+    //   https://admin.monomiagency.com/api/v1/media/proxy/content/file.mp4  (full prod URL)
+    const proxyMatch = url.match(/\/api\/v1\/media\/proxy\/(.+)/);
+    if (proxyMatch) {
+      return proxyMatch[1];
     }
 
-    // Handle full URLs: https://account-id.r2.cloudflarestorage.com/content/...
+    // Handle full R2 storage URLs: https://account-id.r2.cloudflarestorage.com/content/...
     const urlObj = new URL(url);
     // Remove leading slash from pathname
     return urlObj.pathname.substring(1);
   } catch (error) {
-    // If URL parsing fails, it might be a relative path already
-    if (url.startsWith('/')) {
-      // Try to extract key from relative path
-      const match = url.match(/\/api\/v1\/media\/proxy\/(.+)/);
-      if (match) {
-        return match[1];
-      }
-    }
     console.error('Failed to extract R2 key from URL:', url, error);
     return null;
   }
@@ -57,13 +53,13 @@ export function getWorkerUrl(url: string, mediaToken: string): string {
     return url;
   }
 
-  // Handle backend proxy URLs: /api/v1/media/proxy/content/...
-  if (url.startsWith('/api/v1/media/proxy/')) {
-    const key = url.replace('/api/v1/media/proxy/', '');
-    return `https://media.monomiagency.com/view/${mediaToken}/${key}`;
+  // Handle proxy URLs in any form (relative or full URL with any host)
+  const proxyMatch = url.match(/\/api\/v1\/media\/proxy\/(.+)/);
+  if (proxyMatch) {
+    return `https://media.monomiagency.com/view/${mediaToken}/${proxyMatch[1]}`;
   }
 
-  // Extract R2 key from full URL
+  // Extract R2 key from full R2 storage URL
   const key = extractR2Key(url);
   if (!key) {
     // If extraction fails, return original URL

@@ -136,8 +136,8 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
     // Group comments by timestamp
     const commentsByTime = new Map<number, FrameComment[]>();
     comments.forEach((comment) => {
-      // Check if comment has timestamp in metadata or was added to a frame
-      const timestamp = (comment as any).timestamp || 0;
+      // frame.timestamp is the Decimal from the DB; fall back to legacy .timestamp
+      const timestamp = parseFloat((comment as any).frame?.timestamp) || (comment as any).timestamp || 0;
       if (timestamp > 0) {
         const existing = commentsByTime.get(timestamp) || [];
         existing.push(comment);
@@ -377,6 +377,15 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   const handlePlaying = () => { setIsBuffering(false); setIsVideoLoading(false); };
   const handleSeeking = () => setIsBuffering(true);
   const handleSeeked = () => setIsBuffering(false);
+  const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    setIsVideoLoading(false);
+    setIsBuffering(false);
+    const code = (e.currentTarget as HTMLVideoElement).error?.code;
+    // code 4 = MEDIA_ERR_SRC_NOT_SUPPORTED (401/404/wrong type)
+    const msg = code === 4 ? 'Video could not be loaded (access denied or unsupported format)' : 'Video failed to load';
+    console.error('[VideoReviewModal] video error code', code, 'src:', videoSrc);
+    message.error(msg);
+  };
 
   const handleVolumeChange = (value: number) => {
     if (!videoRef.current) return;
@@ -432,7 +441,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
 
     if (marker.type === 'comment') {
       // Find the first comment at this timecode
-      const comment = comments.find((c: any) => c.timestamp === marker.timecode);
+      const comment = comments.find((c: any) => (parseFloat(c.frame?.timestamp) || c.timestamp) === marker.timecode);
       if (comment) {
         setSelectedCommentId(comment.id);
       }
@@ -440,23 +449,24 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   };
 
   // Transform comments for CommentPanel
+  // Backend returns: { text, resolved: boolean, frame: { timestamp } }
   const transformedComments = React.useMemo(() => {
-    return comments.map((comment) => ({
+    return comments.map((comment: any) => ({
       id: comment.id,
-      text: comment.content,
+      text: comment.text,
       authorId: comment.authorId,
       author: comment.author,
       createdAt: comment.createdAt,
-      resolved: comment.status === 'RESOLVED',
-      replies: comment.replies?.map((reply) => ({
+      resolved: comment.resolved ?? false,
+      replies: comment.replies?.map((reply: any) => ({
         id: reply.id,
-        text: reply.content,
+        text: reply.text,
         authorId: reply.authorId,
         author: reply.author,
         createdAt: reply.createdAt,
-        resolved: reply.status === 'RESOLVED',
+        resolved: reply.resolved ?? false,
       })) || [],
-      timestamp: (comment as any).timestamp,
+      timestamp: parseFloat(comment.frame?.timestamp) || comment.timestamp,
     }));
   }, [comments]);
 
@@ -626,6 +636,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                 onPlaying={handlePlaying}
                 onSeeking={handleSeeking}
                 onSeeked={handleSeeked}
+                onError={handleVideoError}
                 onEnded={() => { setIsPlaying(false); setIsBuffering(false); }}
                 onClick={handleVideoTap}
                 onTouchEnd={handleVideoDoubleTap}

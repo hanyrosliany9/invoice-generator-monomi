@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, IsInt, Min } from "class-validator";
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  Min,
+} from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CreateFrameCommentDto {
@@ -10,13 +16,15 @@ export class CreateFrameCommentDto {
   @IsNotEmpty()
   assetId: string;
 
-  @ApiProperty({
-    description: "Timecode in seconds for video comments",
+  @ApiPropertyOptional({
+    description:
+      "Timecode in seconds for video comments (omit for image/photo assets)",
     example: 45.5,
   })
-  @IsInt()
+  @IsOptional()
+  @IsNumber()
   @Min(0)
-  timecode: number;
+  timestamp?: number;
 
   @ApiProperty({
     description: "Comment content/text",
@@ -31,18 +39,18 @@ export class CreateFrameCommentDto {
     example: 50,
   })
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   @Min(0)
-  markerX?: number;
+  x?: number;
 
   @ApiPropertyOptional({
     description: "Y coordinate for marker position (percentage 0-100)",
     example: 30,
   })
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   @Min(0)
-  markerY?: number;
+  y?: number;
 
   @ApiPropertyOptional({
     description: "Parent comment ID for replies",
@@ -50,5 +58,5 @@ export class CreateFrameCommentDto {
   })
   @IsOptional()
   @IsString()
-  parentCommentId?: string;
+  parentId?: string;
 }
