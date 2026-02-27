@@ -5,14 +5,10 @@
  * (RFC 7233), enabling video seeking, fast initial load, and progressive
  * buffering without routing bytes through the VPS.
  *
- * Key fixes in this version:
- *  1. Range header forwarded to R2 → 206 Partial Content returned for seeks
- *  2. Accept-Ranges: bytes on every response → browser knows seeking works
- *  3. Content-Range set correctly for partial responses
- *  4. CORS preflight allows Range header and exposes Content-Range
- *  5. HEAD request support for Safari's Accept-Ranges probe
- *  6. Cache-Control: private → prevents Cloudflare CDN from interfering
- *     with range-request handling (known CDN+range stalling bug)
+ * Token validation:
+ *   Validates JWT tokens at the edge using crypto.subtle (HS256) with the
+ *   same JWT_SECRET used by the NestJS backend. No backend round-trip needed.
+ *   Requires TOKEN_SECRET worker secret: `wrangler secret put TOKEN_SECRET`
  *
  * URL format: https://media.monomiagency.com/view/TOKEN/path/to/file.ext
  */
@@ -45,7 +41,7 @@ export default {
     const token = pathParts[1];
     const key = pathParts.slice(2).join('/');
 
-    // Validate token (edge-cached for 15 min to reduce backend API load)
+    // Validate token at the edge (no backend round-trip)
     const valid = await validateToken(token, env);
     if (!valid) {
       return new Response('Unauthorized: Invalid or expired token', {
@@ -140,38 +136,74 @@ function corsHeaders() {
 }
 
 /**
- * Validate token — tries media access token first, then public share token.
- * Validation responses are edge-cached for 15 minutes to reduce backend load.
+ * Decode base64url string to Uint8Array
+ */
+function base64UrlDecode(b64url) {
+  // Convert base64url → standard base64, then decode
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+}
+
+/**
+ * Validate a JWT token at the edge using crypto.subtle (HS256).
+ *
+ * Accepts:
+ *   - Media access tokens:  { purpose: 'media-access', sub, exp }
+ *   - Public share tokens:  { purpose: 'public-share', isPublic: true, exp }
+ *
+ * Requires env.TOKEN_SECRET (same value as backend JWT_SECRET).
+ * Set it with: wrangler secret put TOKEN_SECRET
  */
 async function validateToken(token, env) {
   if (!token || token.length < 10) return false;
 
-  const backendUrl = env.BACKEND_URL || 'https://admin.monomiagency.com';
+  const secret = env.TOKEN_SECRET;
+  if (!secret) {
+    // TOKEN_SECRET not configured — deny all requests
+    console.error('[Worker] TOKEN_SECRET is not set. Run: wrangler secret put TOKEN_SECRET');
+    return false;
+  }
 
-  // 1. Media access token (authenticated users)
   try {
-    const res = await fetch(
-      `${backendUrl}/api/v1/media/validate-token?token=${encodeURIComponent(token)}`,
-      { cf: { cacheTtl: 900, cacheEverything: true } },
-    );
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.data?.success && data?.data?.data?.valid) return true;
-    }
-  } catch (_) {}
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
 
-  // 2. Public share token (public project links)
-  try {
-    const res = await fetch(
-      `${backendUrl}/api/v1/media-collab/public/validate-token?token=${encodeURIComponent(token)}`,
-      { cf: { cacheTtl: 900, cacheEverything: true } },
-    );
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.data?.success && data?.data?.data?.valid && data?.data?.data?.isPublic)
-        return true;
-    }
-  } catch (_) {}
+    const [headerB64, payloadB64, signatureB64] = parts;
 
-  return false;
+    // Import the HMAC-SHA256 key
+    const keyData = new TextEncoder().encode(secret);
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify'],
+    );
+
+    // Verify signature: HMAC-SHA256(header.payload) === signature
+    const signingInput = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
+    const signature = base64UrlDecode(signatureB64);
+    const valid = await crypto.subtle.verify('HMAC', cryptoKey, signature, signingInput);
+    if (!valid) return false;
+
+    // Decode and check payload
+    const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(payloadB64)));
+
+    // Check expiry
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && now > payload.exp) return false;
+
+    // Accept media-access tokens (authenticated users)
+    if (payload.purpose === 'media-access') return true;
+
+    // Accept public-share tokens (public project links)
+    if (payload.purpose === 'public-share' && payload.isPublic === true) return true;
+
+    return false;
+  } catch (e) {
+    console.error('[Worker] JWT validation error:', e.message);
+    return false;
+  }
 }
