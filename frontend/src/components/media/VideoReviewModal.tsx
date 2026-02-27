@@ -68,6 +68,27 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const lastTapRef = useRef<number>(0);
 
+  // Stabilize the video URL: set once when mediaToken first becomes available,
+  // never change after that to prevent video from reloading and seeking from breaking.
+  const srcSetRef = useRef(false);
+  const [videoSrc, setVideoSrc] = useState<string>(() => {
+    // If token already available on mount, use Worker URL (fast CDN path)
+    if (mediaToken) {
+      srcSetRef.current = true;
+      return getProxyUrl(asset.url, mediaToken);
+    }
+    // Otherwise use backend proxy as temporary fallback
+    return getProxyUrl(asset.url);
+  });
+
+  useEffect(() => {
+    // Upgrade to Worker URL once mediaToken becomes available (only once)
+    if (mediaToken && !srcSetRef.current) {
+      srcSetRef.current = true;
+      setVideoSrc(getProxyUrl(asset.url, mediaToken));
+    }
+  }, [mediaToken, asset.url]);
+
   // Detect mobile
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' && window.innerWidth < 768
@@ -595,7 +616,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
             >
               <video
                 ref={videoRef}
-                src={getProxyUrl(asset.url, mediaToken)}
+                src={videoSrc}
                 style={{
                   maxWidth: '100%',
                   maxHeight: '100%',

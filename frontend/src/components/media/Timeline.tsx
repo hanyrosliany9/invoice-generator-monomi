@@ -47,14 +47,14 @@ export const Timeline: React.FC<TimelineProps> = ({
   };
 
   const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!timelineRef.current) return;
+    if (!timelineRef.current || duration <= 0) return;
 
     const rect = timelineRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const percentage = x / rect.width;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
     const timecode = percentage * duration;
 
-    onSeek(Math.max(0, Math.min(duration, timecode)));
+    onSeek(timecode);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -62,13 +62,13 @@ export const Timeline: React.FC<TimelineProps> = ({
 
     const rect = timelineRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const percentage = x / rect.width;
-    const timecode = percentage * duration;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    const timecode = duration > 0 ? percentage * duration : 0;
 
-    setHoverTime(timecode);
+    setHoverTime(duration > 0 ? timecode : null);
 
-    if (isDragging) {
-      onSeek(Math.max(0, Math.min(duration, timecode)));
+    if (isDragging && duration > 0) {
+      onSeek(timecode);
     }
   };
 
@@ -87,7 +87,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     }
   }, [isDragging]);
 
-  const playheadPosition = (currentTime / duration) * 100;
+  const playheadPosition = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <div style={{ width: '100%', userSelect: 'none' }}>
@@ -118,7 +118,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           height: '40px',
           backgroundColor: token.colorBgElevated,
           borderRadius: token.borderRadius,
-          cursor: 'pointer',
+          cursor: duration > 0 ? 'pointer' : 'default',
           overflow: 'visible',
         }}
       >
@@ -216,7 +216,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         </div>
 
         {/* Hover time indicator */}
-        {hoverTime !== null && (
+        {hoverTime !== null && duration > 0 && (
           <div
             style={{
               position: 'absolute',
