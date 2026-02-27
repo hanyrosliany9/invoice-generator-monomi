@@ -994,7 +994,7 @@ export class MediaAssetsService {
     }
 
     // Register each asset in the database
-    const registeredAssets = [];
+    const registeredAssets: { id: string; key: string; originalName: string }[] = [];
     let failedCount = 0;
 
     for (const asset of assets) {
