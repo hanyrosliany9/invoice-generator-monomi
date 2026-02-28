@@ -42,6 +42,13 @@ export default {
     const key = pathParts.slice(2).join('/');
 
     // Validate token at the edge (no backend round-trip)
+    if (!env.TOKEN_SECRET) {
+      console.error('[Worker] TOKEN_SECRET secret is not configured. Run: wrangler secret put TOKEN_SECRET');
+      return new Response('Worker misconfigured: TOKEN_SECRET not set', {
+        status: 503,
+        headers: corsHeaders(),
+      });
+    }
     const valid = await validateToken(token, env);
     if (!valid) {
       return new Response('Unauthorized: Invalid or expired token', {
@@ -58,6 +65,11 @@ export default {
       }
       const h = new Headers(corsHeaders());
       meta.writeHttpMetadata(h);
+      if (!h.get('Content-Type')) {
+        const ext = key.split('.').pop()?.toLowerCase();
+        const mimeMap = { mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', avi: 'video/x-msvideo', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', pdf: 'application/pdf' };
+        h.set('Content-Type', mimeMap[ext] || 'application/octet-stream');
+      }
       h.set('Accept-Ranges', 'bytes');
       h.set('Content-Length', String(meta.size));
       h.set('ETag', meta.httpEtag);
@@ -85,14 +97,30 @@ export default {
 
     const headers = new Headers(corsHeaders());
     object.writeHttpMetadata(headers); // sets Content-Type from R2 metadata
+
+    // Fallback: if R2 metadata has no Content-Type, infer from file extension.
+    // Browsers reject video elements with a missing or wrong Content-Type (error code 4).
+    if (!headers.get('Content-Type')) {
+      const ext = key.split('.').pop()?.toLowerCase();
+      const mimeMap = {
+        mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm',
+        avi: 'video/x-msvideo', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+        png: 'image/png', gif: 'image/gif', webp: 'image/webp', pdf: 'application/pdf',
+      };
+      const fallback = mimeMap[ext] || 'application/octet-stream';
+      headers.set('Content-Type', fallback);
+    }
+
     headers.set('ETag', object.httpEtag);
     headers.set('Accept-Ranges', 'bytes'); // tells browser seeking is supported
 
     let status = 200;
 
     if (rangeHeader && object.range) {
-      // R2 sets object.range = { offset, end, length } for the chunk it served
-      const { offset, end, length } = object.range;
+      // R2 returns object.range = { offset, length } — it does NOT include `end`.
+      // Calculate end from offset + length - 1 per RFC 7233.
+      const { offset, length } = object.range;
+      const end = offset + length - 1;
       headers.set('Content-Range', `bytes ${offset}-${end}/${object.size}`);
       headers.set('Content-Length', String(length));
       status = 206;

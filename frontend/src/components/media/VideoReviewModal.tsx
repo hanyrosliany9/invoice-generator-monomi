@@ -68,11 +68,26 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const lastTapRef = useRef<number>(0);
 
-  // Pick the video URL once at mount and never change it.
-  // - If mediaToken is already in localStorage → Worker URL (fast CDN, Range-aware)
-  // - Otherwise → backend proxy fallback (Range-aware, slightly slower)
-  // Keeping the URL stable prevents src changes that reload the video and break seeking.
-  const [videoSrc] = useState<string>(() => getProxyUrl(asset.url, mediaToken));
+  // Build video URL. Prefer the worker URL (CDN, Range-aware) when a token is available.
+  // If the token was null at mount (still loading from store), we upgrade to the worker
+  // URL as soon as it arrives so the video can actually play.
+  const [videoSrc, setVideoSrc] = useState<string>(() => getProxyUrl(asset.url, mediaToken));
+
+  // Upgrade from proxy fallback → worker URL once the token loads (or if it changes).
+  // We also reload the video element so it picks up the new source immediately.
+  useEffect(() => {
+    if (!mediaToken) return;
+    const workerUrl = getProxyUrl(asset.url, mediaToken);
+    if (workerUrl !== videoSrc) {
+      setVideoSrc(workerUrl);
+      // Reset player state so the video reloads cleanly
+      setCurrentTime(0);
+      setIsPlaying(false);
+      setIsVideoLoading(true);
+      setIsBuffering(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediaToken, asset.url]);
 
   // Detect mobile
   const [isMobile, setIsMobile] = useState(
@@ -659,7 +674,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                   {/* Thumbnail preview shown while initial video loads */}
                   {isVideoLoading && asset.thumbnailUrl && (
                     <img
-                      src={getProxyUrl(asset.thumbnailUrl)}
+                      src={getProxyUrl(asset.thumbnailUrl, mediaToken)}
                       alt=""
                       style={{
                         position: 'absolute',

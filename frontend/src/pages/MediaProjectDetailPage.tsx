@@ -80,7 +80,7 @@ export const MediaProjectDetailPage: React.FC = () => {
     sortBy: 'uploadedAt',
     sortOrder: 'desc',
   });
-  const videoPlayerKey = React.useRef(0);
+  const [videoPlayerKey, setVideoPlayerKey] = useState(0);
 
   // DndKit sensors for drag-and-drop
   const sensors = useSensors(
@@ -101,10 +101,15 @@ export const MediaProjectDetailPage: React.FC = () => {
   const [draggedAssetId, setDraggedAssetId] = useState<string | null>(null);
   const [draggedSelectedAssets, setDraggedSelectedAssets] = useState<string[]>([]);
 
-  // Use fallback hook for selected asset thumbnail in preview panel
+  // Use fallback hook for selected asset thumbnail in preview panel.
+  // Pass proxied URLs so the worker token is included — raw URLs return 400 from the worker.
   const { imgSrc, loading, error, handleError, handleLoad } = useImageWithFallback(
-    selectedAsset?.thumbnailUrl || selectedAsset?.url || '',
-    selectedAsset?.url,
+    selectedAsset?.thumbnailUrl
+      ? getProxyUrl(selectedAsset.thumbnailUrl, mediaToken)
+      : selectedAsset?.url
+        ? getProxyUrl(selectedAsset.url, mediaToken)
+        : '',
+    selectedAsset?.url ? getProxyUrl(selectedAsset.url, mediaToken) : undefined,
     3 // Retry 3 times
   );
 
@@ -1188,12 +1193,13 @@ export const MediaProjectDetailPage: React.FC = () => {
         {/* Video Review Modal */}
         {selectedAsset && selectedAsset.mediaType === 'VIDEO' && (
           <VideoReviewModal
+            key={videoPlayerKey}
             visible={videoPlayerVisible}
             asset={selectedAsset}
             mediaToken={mediaToken}
             onClose={() => {
               setVideoPlayerVisible(false);
-              videoPlayerKey.current += 1;
+              setVideoPlayerKey(k => k + 1);
             }}
           />
         )}
