@@ -32,8 +32,8 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
 }) => {
   return (
     <Layout.Sider
-      width={280}
-      style={{ height: '100vh', overflow: 'auto' }}
+      width={268}
+      style={{ height: '100vh', overflow: 'auto', flexShrink: 0 }}
       className="calendar-sidebar"
     >
       {/* Add Event Button */}
@@ -47,16 +47,14 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
         New Event
       </Button>
 
-      <Divider style={{ margin: '12px 0' }} />
-
       {/* Mini Calendar */}
       <div className="calendar-sidebar-section">
-        <div className="mini-calendar-wrapper">
+        <div className="mini-cal-wrapper">
           <MiniCalendar selectedDate={selectedDate} onDateSelect={onDateSelect} />
         </div>
       </div>
 
-      <Divider style={{ margin: '12px 0' }} />
+      <Divider style={{ margin: '4px 0 16px' }} />
 
       {/* Upcoming Events */}
       <div className="calendar-sidebar-section">
@@ -64,7 +62,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
         <UpcomingEvents events={upcomingEvents} onEventClick={onEventClick} />
       </div>
 
-      <Divider style={{ margin: '12px 0' }} />
+      <Divider style={{ margin: '4px 0 16px' }} />
 
       {/* Filters */}
       <div className="calendar-sidebar-section">

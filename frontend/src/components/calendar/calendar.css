@@ -1,45 +1,61 @@
-/* FullCalendar v6 Custom Theme */
-/* Note: FullCalendar v6 bundles CSS into JavaScript - no separate imports needed */
+/* FullCalendar v6 — theme variables aligned with app design tokens */
+/* Note: FullCalendar v6 bundles CSS via JavaScript — no separate CSS import needed */
 
-/* Custom FullCalendar Theme */
 .fc {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: inherit;
+
+  /* Page background */
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: var(--bg-secondary, #fafafa);
+  --fc-neutral-text-color: var(--text-primary, #262626);
+
+  /* Grid borders */
+  --fc-border-color: var(--border-default, #f0f0f0);
+
+  /* Built-in toolbar buttons (hidden — we use custom toolbar) */
+  --fc-button-bg-color: var(--bg-secondary, #fafafa);
+  --fc-button-border-color: var(--border-default, #f0f0f0);
+  --fc-button-text-color: var(--text-primary, #262626);
+  --fc-button-hover-bg-color: var(--bg-tertiary, #f5f5f5);
+  --fc-button-hover-border-color: var(--border-strong, #d9d9d9);
+  --fc-button-active-bg-color: var(--accent-primary, #1890ff);
+  --fc-button-active-border-color: var(--accent-primary, #1890ff);
+
+  /* Today highlight */
+  --fc-today-bg-color: rgba(24, 144, 255, 0.04);
+
+  /* Default event colors */
+  --fc-event-bg-color: var(--accent-primary, #1890ff);
+  --fc-event-border-color: transparent;
+  --fc-event-text-color: #ffffff;
+
+  /* Non-business hours */
+  --fc-non-business-color: rgba(250, 250, 250, 0.6);
+
+  /* Cell hover highlight */
+  --fc-highlight-color: rgba(24, 144, 255, 0.05);
+
+  /* List view */
+  --fc-list-event-hover-bg-color: var(--bg-secondary, #fafafa);
 }
 
 .fc-theme-standard td,
 .fc-theme-standard th {
-  border-color: #e8e8e8;
+  border-color: var(--border-default, #f0f0f0);
 }
 
 .fc-theme-standard .fc-scrollgrid {
-  border-color: #e8e8e8;
-}
-
-.fc .fc-button-primary {
-  background-color: #1890ff;
-  border-color: #1890ff;
-}
-
-.fc .fc-button-primary:hover {
-  background-color: #40a9ff;
-  border-color: #40a9ff;
-}
-
-.fc .fc-button-primary:disabled {
-  background-color: #f5f5f5;
-  border-color: #d9d9d9;
-  color: rgba(0, 0, 0, 0.25);
+  border-color: var(--border-default, #f0f0f0);
 }
 
 .fc-event {
   cursor: pointer;
   border-radius: 4px;
+  border: none;
 }
 
 .fc-event:hover {
-  opacity: 0.8;
+  opacity: 0.88;
 }
 
 .fc-daygrid-event {
@@ -47,95 +63,6 @@
   align-items: normal !important;
 }
 
-.fc-daygrid-event-dot {
-  margin: 0 4px;
-}
-
 .fc-h-event .fc-event-title {
   font-weight: 500;
-}
-
-/* Theme-aware FullCalendar styles using CSS variables from ThemeContext */
-.fc {
-  /* Text colors */
-  --fc-page-bg-color: transparent;
-  --fc-neutral-bg-color: var(--bg-secondary);
-  --fc-neutral-text-color: var(--text-primary);
-
-  /* Border colors */
-  --fc-border-color: var(--calendar-border);
-
-  /* Button colors */
-  --fc-button-bg-color: var(--bg-tertiary);
-  --fc-button-border-color: var(--border-default);
-  --fc-button-text-color: var(--text-primary);
-  --fc-button-hover-bg-color: var(--bg-secondary);
-  --fc-button-hover-border-color: var(--border-strong);
-  --fc-button-active-bg-color: var(--accent-primary);
-  --fc-button-active-border-color: var(--accent-primary);
-
-  /* Today highlight - using calendar palette */
-  --fc-today-bg-color: var(--calendar-today-bg);
-
-  /* Event colors */
-  --fc-event-bg-color: var(--accent-primary);
-  --fc-event-border-color: var(--accent-primary);
-  --fc-event-text-color: var(--calendar-event-text);
-
-  /* Non-business hours */
-  --fc-non-business-color: var(--bg-secondary);
-
-  /* Highlight (hover) */
-  --fc-highlight-color: var(--calendar-highlight);
-}
-
-/* Day number text */
-.fc .fc-daygrid-day-number,
-.fc .fc-col-header-cell-cushion {
-  color: var(--text-primary);
-}
-
-/* Week/day numbers */
-.fc .fc-daygrid-week-number {
-  color: var(--text-tertiary);
-}
-
-/* Header text */
-.fc .fc-toolbar-title {
-  color: var(--text-primary);
-}
-
-/* TIME LABELS - CRITICAL FIX */
-.fc .fc-timegrid-slot-label,
-.fc .fc-timegrid-slot-label-cushion,
-.fc .fc-timegrid-axis-cushion {
-  color: var(--calendar-slot-label) !important;
-}
-
-/* All-day label */
-.fc .fc-timegrid-axis-frame {
-  color: var(--calendar-slot-label);
-}
-
-/* More events link */
-.fc .fc-daygrid-more-link {
-  color: var(--accent-primary);
-}
-
-/* List view */
-.fc .fc-list-day-cushion {
-  background: var(--bg-secondary);
-}
-
-.fc .fc-list-event:hover td {
-  background: var(--bg-tertiary);
-}
-
-/* Scrollbar styling */
-.fc ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-}
-
-.fc ::-webkit-scrollbar-thumb {
-  background: var(--bg-tertiary);
 }

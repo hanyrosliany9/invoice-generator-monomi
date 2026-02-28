@@ -4,7 +4,6 @@ import {
   FolderOutlined,
   FileImageOutlined,
   VideoCameraOutlined,
-  DownloadOutlined,
   DeleteOutlined,
   FolderOpenOutlined,
   ExclamationCircleOutlined,
@@ -295,6 +294,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
                 <Col key={asset.id} xs={24} sm={12} md={8} lg={6}>
                   <Card
                     hoverable
+                    onClick={() => onAssetClick(asset)}
                     style={{
                       cursor: 'pointer',
                       border: isSelected ? `2px solid ${token.colorPrimary}` : undefined,
@@ -404,49 +404,9 @@ export const FolderView: React.FC<FolderViewProps> = ({
                         style={{
                           fontSize: 12,
                           color: token.colorTextSecondary,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
                         }}
                       >
-                        <span>{formatFileSize(asset.size)}</span>
-                        <Space size={4}>
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<DownloadOutlined />}
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              try {
-                                const proxyUrl = getProxyUrl(asset.url);
-                                const response = await fetch(proxyUrl);
-                                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                                const blob = await response.blob();
-                                const blobUrl = URL.createObjectURL(blob);
-                                const link = document.createElement('a');
-                                link.href = blobUrl;
-                                link.download = asset.originalName;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                                setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-                              } catch {
-                                // fallback: open in new tab
-                                window.open(getProxyUrl(asset.url), '_blank');
-                              }
-                            }}
-                          />
-                          <Button
-                            type="text"
-                            size="small"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteAsset(asset.id, asset.originalName);
-                            }}
-                          />
-                        </Space>
+                        {formatFileSize(asset.size)}
                       </div>
                     </div>
                   </Card>

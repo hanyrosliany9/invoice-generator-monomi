@@ -32,6 +32,9 @@ export const StarRating: React.FC<StarRatingProps> = ({
     if (!enableKeyboard || disabled) return;
 
     const handleKeyPress = (e: KeyboardEvent) => {
+      // Don't fire when the user is typing in an input or textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
       // Only handle number keys 0-5
       const key = e.key;
       if (!/^[0-5]$/.test(key)) return;

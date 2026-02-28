@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { Layout, Spin, Button } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { Layout, Spin } from 'antd'
 import dayjs from 'dayjs'
 import { useIsMobile } from '../../hooks/useMediaQuery'
 import { useCalendarEvents, useUpcomingEvents } from '../../hooks/useCalendarEvents'
@@ -111,14 +110,7 @@ export const CalendarLayout: React.FC = () => {
 
         {/* Main Content */}
         <Layout style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Top toolbar with add button */}
-          <div style={{ padding: '16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end' }}>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddEvent}>
-              Add Event
-            </Button>
-          </div>
-
-          {/* Calendar area - always show calendar regardless of events */}
+          {/* Calendar area */}
           <Layout.Content style={{ flex: 1, overflow: 'auto' }}>
             <CalendarMain
               events={events}

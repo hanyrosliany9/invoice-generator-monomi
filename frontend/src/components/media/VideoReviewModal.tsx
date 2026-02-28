@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Modal, Button, Space, Typography, Spin, Badge, theme, App } from 'antd';
+import { Modal, Button, Space, Typography, Spin, Select, theme, App } from 'antd';
 import {
   PlayCircleOutlined,
   PauseCircleOutlined,
@@ -14,7 +14,9 @@ import {
   SoundOutlined,
   CommentOutlined,
   LeftOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
+import { StarRating } from './StarRating';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Timeline } from './Timeline';
 import { DrawingCanvasContainer } from './DrawingCanvasContainer';
@@ -108,6 +110,54 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [showCommentsSheet, setShowCommentsSheet] = useState(false);
+
+  // Asset metadata state (status + rating)
+  const [currentStatus, setCurrentStatus] = useState<string>(asset.status);
+  const [currentRating, setCurrentRating] = useState<number | null>(asset.starRating ?? null);
+
+  // Update status mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: (status: string) => mediaCollabService.updateAssetStatus(asset.id, status),
+    onSuccess: (updated) => {
+      setCurrentStatus(updated.status);
+      queryClient.invalidateQueries({ queryKey: ['assets', asset.projectId] });
+    },
+    onError: (err) => {
+      message.error(getErrorMessage(err));
+    },
+  });
+
+  // Update rating mutation
+  const updateRatingMutation = useMutation({
+    mutationFn: (rating: number) => mediaCollabService.updateStarRating(asset.id, rating),
+    onSuccess: (updated) => {
+      setCurrentRating(updated.starRating ?? null);
+      queryClient.invalidateQueries({ queryKey: ['assets', asset.projectId] });
+    },
+    onError: (err) => {
+      message.error(getErrorMessage(err));
+    },
+  });
+
+  // Download handler
+  const handleDownload = async () => {
+    try {
+      const proxyUrl = getProxyUrl(asset.url, mediaToken);
+      const response = await fetch(proxyUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = asset.originalName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+    } catch {
+      window.open(getProxyUrl(asset.url, mediaToken), '_blank');
+    }
+  };
 
   // FPS for frame stepping (default to 30fps if not available)
   const fps = asset.fps || 30;
@@ -224,6 +274,14 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
     }
     showControls();
   }, [isPlaying, showControls]);
+
+  // Pause-only (used by comment textarea focus to auto-pause)
+  const handlePause = useCallback(() => {
+    if (videoRef.current && isPlaying) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, [isPlaying]);
 
   const handleSeek = useCallback((timecode: number) => {
     if (!videoRef.current) return;
@@ -568,6 +626,12 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
               <Space size="small">
                 <Button
                   type="text"
+                  icon={<DownloadOutlined />}
+                  onClick={handleDownload}
+                  style={{ padding: '4px 8px' }}
+                />
+                <Button
+                  type="text"
                   icon={<CommentOutlined />}
                   onClick={() => setShowCommentsSheet(!showCommentsSheet)}
                   style={{ padding: '4px 8px' }}
@@ -582,10 +646,57 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
             </>
           ) : (
             <>
-              <Text strong style={{ fontSize: 16 }}>
-                {asset.originalName}
-              </Text>
+              {/* Left: filename + status + rating */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, flex: 1, marginRight: 16 }}>
+                <Text strong style={{ fontSize: 15, lineHeight: '1.2' }} ellipsis>
+                  {asset.originalName}
+                </Text>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Select
+                    value={currentStatus}
+                    size="small"
+                    style={{ width: 148 }}
+                    loading={updateStatusMutation.isPending}
+                    onChange={(val) => updateStatusMutation.mutate(val)}
+                    options={[
+                      { value: 'DRAFT', label: 'Draft' },
+                      { value: 'IN_REVIEW', label: 'In Review' },
+                      { value: 'NEEDS_CHANGES', label: 'Needs Changes' },
+                      { value: 'APPROVED', label: 'Approved' },
+                      { value: 'ARCHIVED', label: 'Archived' },
+                    ]}
+                    optionRender={(option) => {
+                      const colorMap: Record<string, string> = {
+                        DRAFT: '#8c8c8c',
+                        IN_REVIEW: '#1890ff',
+                        NEEDS_CHANGES: '#fa8c16',
+                        APPROVED: '#52c41a',
+                        ARCHIVED: '#595959',
+                      };
+                      return (
+                        <span style={{ color: colorMap[option.value as string] }}>
+                          {option.label}
+                        </span>
+                      );
+                    }}
+                  />
+                  <StarRating
+                    value={currentRating}
+                    size={16}
+                    enableKeyboard={false}
+                    onChange={(rating) => updateRatingMutation.mutate(rating)}
+                  />
+                </div>
+              </div>
+
+              {/* Right: actions */}
               <Space>
+                <Button
+                  icon={<DownloadOutlined />}
+                  onClick={handleDownload}
+                >
+                  Download
+                </Button>
                 <Button
                   type={drawMode ? 'primary' : 'default'}
                   icon={<EditOutlined />}
@@ -928,6 +1039,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                         await resolveCommentMutation.mutateAsync(commentId);
                       }}
                       onSeekToTimecode={handleSeek}
+                      onPauseVideo={handlePause}
                       selectedCommentId={selectedCommentId}
                       onSelectComment={setSelectedCommentId}
                     />
@@ -968,6 +1080,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                         await resolveCommentMutation.mutateAsync(commentId);
                       }}
                       onSeekToTimecode={handleSeek}
+                      onPauseVideo={handlePause}
                       selectedCommentId={selectedCommentId}
                       onSelectComment={setSelectedCommentId}
                     />
@@ -1027,6 +1140,7 @@ interface TimecodeCommentPanelProps {
   onDeleteComment: (commentId: string) => Promise<void>;
   onResolveComment: (commentId: string) => Promise<void>;
   onSeekToTimecode: (timecode: number) => void;
+  onPauseVideo?: () => void;
   selectedCommentId: string | null;
   onSelectComment: (commentId: string | null) => void;
 }
@@ -1039,6 +1153,7 @@ const TimecodeCommentPanel: React.FC<TimecodeCommentPanelProps> = ({
   onDeleteComment,
   onResolveComment,
   onSeekToTimecode,
+  onPauseVideo,
   selectedCommentId,
   onSelectComment,
 }) => {
@@ -1084,210 +1199,315 @@ const TimecodeCommentPanel: React.FC<TimecodeCommentPanelProps> = ({
     }
   };
 
+  const activeComments = comments.filter((c) => !c.resolved);
+  const resolvedComments = comments.filter((c) => c.resolved);
+
+  const textareaStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '8px 10px',
+    border: 'none',
+    background: 'transparent',
+    fontFamily: 'inherit',
+    fontSize: 13,
+    resize: 'vertical',
+    outline: 'none',
+    color: token.colorText,
+    boxSizing: 'border-box',
+    lineHeight: 1.5,
+  };
+
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      {/* New comment input with timecode display */}
-      <div>
-        <div style={{ marginBottom: 8 }}>
-          <Badge
-            count={`@ ${formatTime(currentTimecode)}`}
-            style={{ background: token.colorPrimary }}
+    <Space direction="vertical" size={14} style={{ width: '100%' }}>
+      {/* ── Comment input box ── */}
+      <div
+        style={{
+          borderRadius: token.borderRadius,
+          border: `1px solid ${token.colorBorder}`,
+          overflow: 'hidden',
+          background: token.colorBgElevated,
+        }}
+      >
+        {/* Timecode chip header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '7px 10px',
+            background: token.colorBgContainer,
+            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+          }}
+        >
+          <div
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: '#52c41a',
+              flexShrink: 0,
+            }}
           />
+          <Text style={{ fontSize: 11, color: token.colorTextSecondary }}>
+            Commenting at
+          </Text>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '1px 8px',
+              background: token.colorPrimaryBg,
+              color: token.colorPrimary,
+              borderRadius: 10,
+              fontSize: 11,
+              fontWeight: 600,
+              fontFamily: 'monospace',
+              letterSpacing: '0.02em',
+            }}
+          >
+            {formatTime(currentTimecode)}
+          </span>
         </div>
+
+        {/* Textarea — auto-pauses video on focus */}
         <textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Add a comment at current timecode..."
-          style={{
-            width: '100%',
-            minHeight: 80,
-            padding: 8,
-            borderRadius: token.borderRadius,
-            border: `1px solid ${token.colorBorder}`,
-            marginBottom: 8,
-            fontFamily: 'inherit',
-            fontSize: 14,
-            resize: 'vertical',
+          onFocus={() => onPauseVideo?.()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              handleAddComment();
+            }
           }}
+          placeholder="Add a comment… (Ctrl+Enter to submit)"
+          style={{ ...textareaStyle, minHeight: 72 }}
         />
-        <Button
-          type="primary"
-          onClick={handleAddComment}
-          loading={submitting}
-          disabled={!newComment.trim()}
+
+        {/* Submit row */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            padding: '6px 10px',
+            borderTop: `1px solid ${token.colorBorderSecondary}`,
+          }}
         >
-          Add Comment
-        </Button>
+          <Button
+            type="primary"
+            size="small"
+            onClick={handleAddComment}
+            loading={submitting}
+            disabled={!newComment.trim()}
+          >
+            Add Comment
+          </Button>
+        </div>
       </div>
 
-      {/* Comments list with timecode badges */}
-      <div>
-        {comments.length === 0 ? (
-          <Text type="secondary">No comments yet. Be the first to comment!</Text>
-        ) : (
-          <Space direction="vertical" size={12} style={{ width: '100%' }}>
-            {comments
-              .filter((c) => !c.resolved)
-              .map((comment) => (
+      {/* ── Active comments ── */}
+      {activeComments.length === 0 ? (
+        <Text type="secondary" style={{ fontSize: 12, display: 'block', textAlign: 'center', padding: '12px 0' }}>
+          No comments yet. Pause the video and type to comment at a timestamp.
+        </Text>
+      ) : (
+        <Space direction="vertical" size={8} style={{ width: '100%' }}>
+          {activeComments.map((comment) => {
+            const isSelected = selectedCommentId === comment.id;
+            return (
+              <div
+                key={comment.id}
+                style={{
+                  borderRadius: token.borderRadius,
+                  border: `1px solid ${isSelected ? token.colorPrimary : token.colorBorder}`,
+                  background: isSelected ? token.colorPrimaryBg : token.colorBgElevated,
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.15s, background 0.15s',
+                }}
+                onClick={() => onSelectComment(comment.id)}
+              >
+                {/* Comment header: avatar + name + timestamp chip */}
                 <div
-                  key={comment.id}
                   style={{
-                    padding: 12,
-                    background: selectedCommentId === comment.id ? token.colorPrimaryBg : token.colorBgElevated,
-                    borderRadius: token.borderRadius,
-                    border: `1px solid ${selectedCommentId === comment.id ? token.colorPrimary : token.colorBorder}`,
-                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 10px 6px',
+                    gap: 8,
                   }}
-                  onClick={() => onSelectComment(comment.id)}
                 >
-                  <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                    {/* Author and timecode */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text strong>{comment.author.name}</Text>
-                      {comment.timestamp !== undefined && (
-                        <Badge
-                          count={formatTime(comment.timestamp)}
-                          style={{
-                            background: token.colorSuccess,
-                            cursor: 'pointer',
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSeekToTimecode(comment.timestamp!);
-                          }}
-                        />
-                      )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                    <div
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: token.colorPrimary,
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {comment.author.name.charAt(0).toUpperCase()}
                     </div>
-
-                    {/* Comment text */}
-                    <Text>{comment.text}</Text>
-
-                    {/* Actions */}
-                    <Space size="small">
-                      {comment.authorId === currentUserId && (
-                        <Button
-                          type="link"
-                          size="small"
-                          danger
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteComment(comment.id);
-                          }}
-                        >
-                          Delete
-                        </Button>
-                      )}
-                      <Button
-                        type="link"
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onResolveComment(comment.id);
-                        }}
-                      >
-                        Resolve
-                      </Button>
-                      <Button
-                        type="link"
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setReplyingTo(comment.id);
-                        }}
-                      >
-                        Reply
-                      </Button>
-                    </Space>
-
-                    {/* Reply input */}
-                    {replyingTo === comment.id && (
-                      <div style={{ marginTop: 8 }}>
-                        <textarea
-                          value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
-                          placeholder="Write a reply..."
-                          style={{
-                            width: '100%',
-                            minHeight: 60,
-                            padding: 8,
-                            borderRadius: token.borderRadius,
-                            border: `1px solid ${token.colorBorder}`,
-                            marginBottom: 8,
-                            fontFamily: 'inherit',
-                            fontSize: 14,
-                          }}
-                        />
-                        <Space>
-                          <Button
-                            type="primary"
-                            size="small"
-                            onClick={() => handleAddReply(comment.id)}
-                            loading={submitting}
-                          >
-                            Reply
-                          </Button>
-                          <Button size="small" onClick={() => setReplyingTo(null)}>
-                            Cancel
-                          </Button>
-                        </Space>
-                      </div>
-                    )}
-
-                    {/* Replies */}
-                    {comment.replies && comment.replies.length > 0 && (
-                      <div style={{ marginLeft: 24, marginTop: 8 }}>
-                        <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                          {comment.replies.map((reply) => (
-                            <div
-                              key={reply.id}
-                              style={{
-                                padding: 8,
-                                background: token.colorBgContainer,
-                                borderRadius: token.borderRadius,
-                                border: `1px solid ${token.colorBorder}`,
-                              }}
-                            >
-                              <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                                <Text strong style={{ fontSize: 12 }}>{reply.author.name}</Text>
-                                <Text style={{ fontSize: 13 }}>{reply.text}</Text>
-                              </Space>
-                            </div>
-                          ))}
-                        </Space>
-                      </div>
-                    )}
-                  </Space>
-                </div>
-              ))}
-          </Space>
-        )}
-
-        {/* Resolved comments section */}
-        {comments.filter((c) => c.resolved).length > 0 && (
-          <div style={{ marginTop: 24 }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              Resolved Comments ({comments.filter((c) => c.resolved).length})
-            </Text>
-            <Space direction="vertical" size={8} style={{ width: '100%', marginTop: 12 }}>
-              {comments
-                .filter((c) => c.resolved)
-                .map((comment) => (
-                  <div
-                    key={comment.id}
-                    style={{
-                      padding: 8,
-                      background: token.colorBgElevated,
-                      borderRadius: token.borderRadius,
-                      opacity: 0.6,
-                    }}
-                  >
-                    <Text>{comment.text}</Text>
+                    <Text strong style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {comment.author.name}
+                    </Text>
                   </div>
-                ))}
-            </Space>
-          </div>
-        )}
-      </div>
+
+                  {/* Frame.io-style green timestamp chip */}
+                  {comment.timestamp !== undefined && (
+                    <button
+                      title={`Jump to ${formatTime(comment.timestamp)}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSeekToTimecode(comment.timestamp!);
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '2px 8px',
+                        background: 'rgba(82, 196, 26, 0.1)',
+                        color: '#389e0d',
+                        border: '1px solid rgba(82, 196, 26, 0.3)',
+                        borderRadius: 10,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        fontFamily: 'monospace',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        letterSpacing: '0.02em',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(82, 196, 26, 0.2)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(82, 196, 26, 0.1)')}
+                    >
+                      ▶ {formatTime(comment.timestamp)}
+                    </button>
+                  )}
+                </div>
+
+                {/* Comment text */}
+                <div style={{ padding: '0 10px 8px' }}>
+                  <Text style={{ fontSize: 13, lineHeight: 1.5 }}>{comment.text}</Text>
+                </div>
+
+                {/* Action bar */}
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 2,
+                    padding: '3px 6px',
+                    borderTop: `1px solid ${token.colorBorderSecondary}`,
+                  }}
+                >
+                  <Button
+                    type="link" size="small"
+                    style={{ fontSize: 11, padding: '0 6px', height: 24 }}
+                    onClick={(e) => { e.stopPropagation(); setReplyingTo(replyingTo === comment.id ? null : comment.id); }}
+                  >
+                    Reply
+                  </Button>
+                  <Button
+                    type="link" size="small"
+                    style={{ fontSize: 11, padding: '0 6px', height: 24 }}
+                    onClick={(e) => { e.stopPropagation(); onResolveComment(comment.id); }}
+                  >
+                    Resolve
+                  </Button>
+                  {comment.authorId === currentUserId && (
+                    <Button
+                      type="link" size="small" danger
+                      style={{ fontSize: 11, padding: '0 6px', height: 24 }}
+                      onClick={(e) => { e.stopPropagation(); onDeleteComment(comment.id); }}
+                    >
+                      Delete
+                    </Button>
+                  )}
+                </div>
+
+                {/* Reply input */}
+                {replyingTo === comment.id && (
+                  <div style={{ padding: '8px 10px', borderTop: `1px solid ${token.colorBorderSecondary}`, background: token.colorBgContainer }}>
+                    <textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      onFocus={() => onPauseVideo?.()}
+                      placeholder="Write a reply…"
+                      style={{
+                        ...textareaStyle,
+                        minHeight: 52,
+                        border: `1px solid ${token.colorBorder}`,
+                        borderRadius: token.borderRadius,
+                        marginBottom: 8,
+                        background: token.colorBgElevated,
+                        padding: '6px 8px',
+                      }}
+                    />
+                    <Space size={6}>
+                      <Button type="primary" size="small" onClick={() => handleAddReply(comment.id)} loading={submitting}>Reply</Button>
+                      <Button size="small" onClick={() => setReplyingTo(null)}>Cancel</Button>
+                    </Space>
+                  </div>
+                )}
+
+                {/* Threaded replies */}
+                {comment.replies && comment.replies.length > 0 && (
+                  <div style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}>
+                    {comment.replies.map((reply) => (
+                      <div
+                        key={reply.id}
+                        style={{ padding: '7px 10px 7px 22px', borderBottom: `1px solid ${token.colorBorderSecondary}`, position: 'relative' }}
+                      >
+                        <div style={{ position: 'absolute', left: 12, top: 8, bottom: 8, width: 2, background: token.colorBorderSecondary, borderRadius: 1 }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+                          <div style={{ width: 18, height: 18, borderRadius: '50%', background: token.colorTextSecondary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, flexShrink: 0 }}>
+                            {reply.author.name.charAt(0).toUpperCase()}
+                          </div>
+                          <Text strong style={{ fontSize: 11 }}>{reply.author.name}</Text>
+                        </div>
+                        <Text style={{ fontSize: 12, lineHeight: 1.5 }}>{reply.text}</Text>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </Space>
+      )}
+
+      {/* ── Resolved comments ── */}
+      {resolvedComments.length > 0 && (
+        <div>
+          <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 8 }}>
+            Resolved ({resolvedComments.length})
+          </Text>
+          <Space direction="vertical" size={6} style={{ width: '100%' }}>
+            {resolvedComments.map((comment) => (
+              <div
+                key={comment.id}
+                style={{ padding: '8px 10px', background: token.colorBgElevated, borderRadius: token.borderRadius, border: `1px solid ${token.colorBorder}`, opacity: 0.55 }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                  <Text strong style={{ fontSize: 11 }}>{comment.author.name}</Text>
+                  {comment.timestamp !== undefined && (
+                    <Text style={{ fontSize: 10, fontFamily: 'monospace', color: token.colorTextSecondary }}>
+                      {formatTime(comment.timestamp)}
+                    </Text>
+                  )}
+                </div>
+                <Text style={{ fontSize: 12 }}>{comment.text}</Text>
+              </div>
+            ))}
+          </Space>
+        </div>
+      )}
     </Space>
   );
 };
