@@ -2,13 +2,12 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Layout, Card, Typography, Spin, Result, Tag, Tooltip, theme,
-  Button, Space, App, Modal, Input, Form, Drawer,
+  ConfigProvider, Typography, Spin, App, Modal, Input, Drawer, theme,
+  Button, Tooltip,
 } from 'antd';
 import {
-  EyeOutlined, GlobalOutlined, QuestionCircleOutlined,
-  HomeOutlined, FolderOutlined, CommentOutlined, UserOutlined,
-  SendOutlined,
+  QuestionCircleOutlined, UserOutlined, SendOutlined, CommentOutlined,
+  HomeOutlined, FolderOutlined, EyeOutlined, GlobalOutlined,
 } from '@ant-design/icons';
 import { mediaCollabService, MediaAsset, MediaAssetFilters, FrameComment } from '../services/media-collab';
 import { MediaLibrary } from '../components/media/MediaLibrary';
@@ -20,13 +19,532 @@ import { MetadataPanel } from '../components/media/MetadataPanel';
 import { getProxyUrl } from '../utils/mediaProxy';
 import { formatDistanceToNow } from 'date-fns';
 
-const { Header, Content } = Layout;
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 
 const GUEST_NAME_KEY = 'media-public-guest-name';
 
+// ─── Injected styles ──────────────────────────────────────────────────────────
+const PAGE_STYLES = `
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body, html {
+  overflow-x: hidden !important;
+  scroll-behavior: smooth;
+}
+
+.pub-page {
+  min-height: 100vh;
+  background: #04050a;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: rgba(255,255,255,0.88);
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── Aurora orbs ── */
+.pub-orb {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+.pub-orb-1 {
+  width: 700px; height: 700px;
+  background: radial-gradient(circle at 50% 50%, rgba(34,211,238,0.18), transparent 65%);
+  top: -280px; left: -220px;
+  animation: pubFloat1 24s ease-in-out infinite;
+}
+.pub-orb-2 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle at 50% 50%, rgba(167,139,250,0.15), transparent 65%);
+  bottom: -160px; right: -180px;
+  animation: pubFloat2 30s ease-in-out infinite;
+}
+.pub-orb-3 {
+  width: 440px; height: 440px;
+  background: radial-gradient(circle at 50% 50%, rgba(52,211,153,0.10), transparent 65%);
+  top: 42%; left: 55%;
+  animation: pubFloat3 20s ease-in-out infinite;
+}
+@keyframes pubFloat1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  40% { transform: translate(40px,-50px) scale(1.06); }
+  70% { transform: translate(-25px,30px) scale(0.94); }
+}
+@keyframes pubFloat2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  35% { transform: translate(-35px,40px) scale(1.04); }
+  65% { transform: translate(20px,-25px) scale(0.96); }
+}
+@keyframes pubFloat3 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(-40px,-30px) scale(1.08); }
+}
+
+/* ── Glass panel ── */
+.pub-glass {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+}
+.pub-glass-strong {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 16px;
+}
+
+/* ── Navigation ── */
+.pub-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 32px;
+  height: 68px;
+  background: rgba(4,5,10,0.75);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.pub-nav-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+.pub-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.pub-logo-text {
+  font-family: 'Syne', sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: rgba(255,255,255,0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+.pub-logo-sub {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 1px;
+}
+
+/* ── Badges & chips ── */
+.pub-badge-views {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(34,211,238,0.08);
+  border: 1px solid rgba(34,211,238,0.18);
+  color: rgba(34,211,238,0.85);
+  font-family: 'DM Sans', sans-serif;
+}
+.pub-guest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(167,139,250,0.08);
+  border: 1px solid rgba(167,139,250,0.2);
+  color: rgba(167,139,250,0.9);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+}
+.pub-guest-chip:hover {
+  background: rgba(167,139,250,0.16);
+  border-color: rgba(167,139,250,0.35);
+}
+.pub-guest-chip-x {
+  opacity: 0.5;
+  font-size: 10px;
+  margin-left: 2px;
+}
+
+/* ── Content layout ── */
+.pub-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px 32px 64px;
+}
+
+/* ── Description card ── */
+.pub-desc-card {
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  border-left: 2px solid rgba(34,211,238,0.35);
+  border-radius: 0 12px 12px 0;
+  background: rgba(34,211,238,0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(34,211,238,0.12);
+  border-left-width: 2px;
+}
+.pub-desc-text {
+  color: rgba(255,255,255,0.65);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ── Gallery card ── */
+.pub-gallery-card {
+  padding: 0;
+  overflow: hidden;
+}
+.pub-gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.pub-gallery-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: -0.2px;
+}
+.pub-gallery-meta {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+  font-family: 'DM Sans', sans-serif;
+}
+.pub-gallery-body {
+  padding: 20px 24px 24px;
+}
+
+/* ── Breadcrumb ── */
+.pub-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+}
+.pub-breadcrumb-sep {
+  color: rgba(255,255,255,0.2);
+  font-size: 13px;
+  margin: 0 2px;
+}
+.pub-breadcrumb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.55);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.pub-breadcrumb-btn:hover {
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.85);
+}
+
+/* ── Feedback button ── */
+.pub-feedback-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(52,211,153,0.9);
+  background: rgba(52,211,153,0.08);
+  border: 1px solid rgba(52,211,153,0.2);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+.pub-feedback-btn:hover, .pub-feedback-btn.active {
+  background: rgba(52,211,153,0.16);
+  border-color: rgba(52,211,153,0.4);
+}
+
+/* ── Shortcuts button ── */
+.pub-shortcuts-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+.pub-shortcuts-btn:hover {
+  background: rgba(255,255,255,0.09);
+  color: rgba(255,255,255,0.8);
+}
+
+/* ── Loading & error states ── */
+.pub-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 16px;
+}
+.pub-error-card {
+  text-align: center;
+  padding: 48px 40px;
+  max-width: 400px;
+}
+.pub-error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+.pub-error-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.8);
+  margin-bottom: 8px;
+}
+.pub-error-sub {
+  font-size: 14px;
+  color: rgba(255,255,255,0.35);
+  line-height: 1.6;
+}
+
+/* ── Comment panel (drawer) ── */
+.pub-comment-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+.pub-comment-input-area {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.3);
+}
+.pub-comment-bubble {
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+.pub-comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.pub-comment-avatar {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22d3ee, #a78bfa);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.pub-comment-author {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+}
+.pub-comment-time {
+  font-size: 11px;
+  color: rgba(255,255,255,0.28);
+  margin-left: auto;
+}
+.pub-comment-text {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.55;
+}
+.pub-comment-empty {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.25);
+}
+
+/* ── Footer ── */
+.pub-footer {
+  text-align: center;
+  padding: 24px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.2);
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.3px;
+}
+
+/* ── Scrollbar ── */
+.pub-page ::-webkit-scrollbar { width: 4px; height: 4px; }
+.pub-page ::-webkit-scrollbar-track { background: transparent; }
+.pub-page ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+/* ── Ant Design overrides for dark glass ── */
+.pub-page .ant-drawer-content-wrapper { box-shadow: -8px 0 40px rgba(0,0,0,0.6) !important; }
+.pub-page .ant-drawer-content {
+  background: rgba(6,7,14,0.92) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+}
+.pub-page .ant-drawer-header {
+  background: rgba(6,7,14,0.5) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  padding: 14px 20px !important;
+}
+.pub-page .ant-drawer-title {
+  font-family: 'Syne', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+.pub-page .ant-modal-content {
+  background: rgba(8,9,18,0.94) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7) !important;
+}
+.pub-page .ant-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  padding-bottom: 14px !important;
+}
+.pub-page .ant-modal-title {
+  font-family: 'Syne', sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: rgba(255,255,255,0.9) !important;
+}
+.pub-page .ant-modal-close {
+  color: rgba(255,255,255,0.35) !important;
+}
+.pub-page .ant-modal-close:hover {
+  color: rgba(255,255,255,0.7) !important;
+  background: rgba(255,255,255,0.07) !important;
+}
+
+/* Tooltip */
+.pub-shortcut-tip { font-size: 11px; line-height: 1.7; }
+
+/* ── Animations ── */
+@keyframes pubFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pub-fade-1 { animation: pubFadeUp 0.5s ease 0.05s both; }
+.pub-fade-2 { animation: pubFadeUp 0.5s ease 0.15s both; }
+.pub-fade-3 { animation: pubFadeUp 0.5s ease 0.25s both; }
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  .pub-nav {
+    height: auto;
+    min-height: 56px;
+    padding: 10px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pub-logo-text { font-size: 16px; }
+  .pub-content { padding: 12px 12px 48px; }
+  .pub-gallery-header { padding: 14px 16px; flex-wrap: wrap; }
+  .pub-gallery-body { padding: 14px 16px 16px; }
+  .pub-glass { border-radius: 12px; }
+  .pub-hide-mobile { display: none !important; }
+  .pub-badge-views { display: none; }
+  .pub-desc-card { padding: 14px 16px; margin-bottom: 14px; }
+}
+@media (max-width: 480px) {
+  .pub-nav-right { gap: 6px; }
+  .pub-logo-text { font-size: 15px; max-width: 180px; }
+}
+`;
+
+// ── Dark ConfigProvider theme ─────────────────────────────────────────────────
+const DARK_THEME = {
+  algorithm: theme.darkAlgorithm,
+  token: {
+    colorBgBase: '#060710',
+    colorBgContainer: 'rgba(255,255,255,0.04)',
+    colorBgElevated: 'rgba(255,255,255,0.06)',
+    colorBorder: 'rgba(255,255,255,0.08)',
+    colorBorderSecondary: 'rgba(255,255,255,0.05)',
+    colorText: 'rgba(255,255,255,0.85)',
+    colorTextSecondary: 'rgba(255,255,255,0.45)',
+    colorPrimary: '#22d3ee',
+    colorPrimaryHover: '#38e1f5',
+    borderRadius: 10,
+    fontFamily: "'DM Sans', system-ui, sans-serif",
+  },
+  components: {
+    Modal: {
+      contentBg: 'rgba(8,9,18,0.94)',
+      headerBg: 'transparent',
+    },
+    Drawer: {
+      colorBgContainer: 'rgba(6,7,14,0.92)',
+    },
+    Input: {
+      colorBgContainer: 'rgba(255,255,255,0.05)',
+      activeBorderColor: '#22d3ee',
+      hoverBorderColor: 'rgba(34,211,238,0.4)',
+    },
+    Button: {
+      defaultBg: 'rgba(255,255,255,0.06)',
+      defaultBorderColor: 'rgba(255,255,255,0.1)',
+      defaultColor: 'rgba(255,255,255,0.75)',
+    },
+  },
+};
+
 // ── GuestNameModal ────────────────────────────────────────────────────────────
-// Prompts the guest for their name before they can post a comment.
 interface GuestNameModalProps {
   open: boolean;
   onConfirm: (name: string) => void;
@@ -36,39 +554,39 @@ const GuestNameModal: React.FC<GuestNameModalProps> = ({ open, onConfirm, onCanc
   const [name, setName] = useState('');
   return (
     <Modal
-      title="Enter your name"
+      title="Who's giving feedback?"
       open={open}
       onOk={() => { if (name.trim()) onConfirm(name.trim()); }}
       onCancel={onCancel}
       okText="Continue"
-      okButtonProps={{ disabled: !name.trim() }}
-      width={360}
+      okButtonProps={{ disabled: !name.trim(), style: { background: '#22d3ee', borderColor: '#22d3ee', color: '#04050a', fontWeight: 600 } }}
+      cancelButtonProps={{ style: { background: 'transparent', borderColor: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.5)' } }}
+      width={380}
     >
-      <Paragraph type="secondary" style={{ marginBottom: 12 }}>
-        Please enter your name so reviewers can attribute your feedback.
-      </Paragraph>
+      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: '0 0 16px', lineHeight: 1.6 }}>
+        Enter your name so reviewers can attribute your feedback.
+      </p>
       <Input
         autoFocus
         placeholder="Your name"
-        prefix={<UserOutlined />}
+        prefix={<UserOutlined style={{ color: 'rgba(255,255,255,0.25)' }} />}
         value={name}
         onChange={(e) => setName(e.target.value)}
         onPressEnter={() => { if (name.trim()) onConfirm(name.trim()); }}
         maxLength={60}
+        size="large"
       />
     </Modal>
   );
 };
 
 // ── ImageCommentPanel ─────────────────────────────────────────────────────────
-// Simple comment panel for photos (used as a Drawer or inline card)
 interface ImageCommentPanelProps {
   asset: MediaAsset;
   shareToken: string;
   guestName: string;
 }
 const ImageCommentPanel: React.FC<ImageCommentPanelProps> = ({ asset, shareToken, guestName }) => {
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [text, setText] = useState('');
@@ -88,70 +606,48 @@ const ImageCommentPanel: React.FC<ImageCommentPanelProps> = ({ asset, shareToken
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['public-comments', asset.id, shareToken] });
       setText('');
-      message.success('Comment added');
+      message.success('Feedback added');
     },
-    onError: () => message.error('Failed to add comment'),
+    onError: () => message.error('Failed to send feedback'),
   });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Comment list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', minHeight: 0 }}>
+      <div className="pub-comment-list">
         {isLoading ? (
-          <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>
-        ) : comments.length === 0 ? (
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            No comments yet. Be the first to add feedback!
-          </Text>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
+            <Spin />
+          </div>
+        ) : (comments as any[]).length === 0 ? (
+          <div className="pub-comment-empty">
+            <div style={{ fontSize: 28, marginBottom: 10 }}>💬</div>
+            No feedback yet.<br />Be the first!
+          </div>
         ) : (
-          <Space direction="vertical" size={12} style={{ width: '100%' }}>
-            {(comments as any[]).map((c) => (
-              <div
-                key={c.id}
-                style={{
-                  padding: '10px 12px',
-                  background: token.colorBgElevated,
-                  borderRadius: token.borderRadius,
-                  border: `1px solid ${token.colorBorder}`,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <div
-                    style={{
-                      width: 24, height: 24, borderRadius: '50%',
-                      background: token.colorPrimary, color: '#fff',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, fontWeight: 700, flexShrink: 0,
-                    }}
-                  >
-                    {(c.author?.name || 'A').charAt(0).toUpperCase()}
-                  </div>
-                  <Text strong style={{ fontSize: 12 }}>{c.author?.name || 'Anonymous'}</Text>
-                  <Text type="secondary" style={{ fontSize: 11 }}>
-                    {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true })}
-                  </Text>
+          (comments as any[]).map((c) => (
+            <div key={c.id} className="pub-comment-bubble">
+              <div className="pub-comment-meta">
+                <div className="pub-comment-avatar">
+                  {(c.author?.name || 'A').charAt(0).toUpperCase()}
                 </div>
-                <Text style={{ fontSize: 13, lineHeight: 1.5 }}>{c.text}</Text>
+                <span className="pub-comment-author">{c.author?.name || 'Anonymous'}</span>
+                <span className="pub-comment-time">
+                  {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true })}
+                </span>
               </div>
-            ))}
-          </Space>
+              <p className="pub-comment-text">{c.text}</p>
+            </div>
+          ))
         )}
       </div>
 
-      {/* Input */}
-      <div
-        style={{
-          padding: '12px 16px',
-          borderTop: `1px solid ${token.colorBorder}`,
-          background: token.colorBgContainer,
-        }}
-      >
+      <div className="pub-comment-input-area">
         <Input.TextArea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Add feedback…"
+          placeholder="Add your feedback…"
           autoSize={{ minRows: 2, maxRows: 5 }}
-          style={{ marginBottom: 8 }}
+          style={{ marginBottom: 8, fontSize: 13 }}
         />
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button
@@ -161,6 +657,7 @@ const ImageCommentPanel: React.FC<ImageCommentPanelProps> = ({ asset, shareToken
             disabled={!text.trim()}
             loading={addMutation.isPending}
             onClick={() => { if (text.trim()) addMutation.mutate(text.trim()); }}
+            style={{ background: '#22d3ee', borderColor: '#22d3ee', color: '#04050a', fontWeight: 600 }}
           >
             Send
           </Button>
@@ -173,18 +670,15 @@ const ImageCommentPanel: React.FC<ImageCommentPanelProps> = ({ asset, shareToken
 // ── PublicProjectViewPage ─────────────────────────────────────────────────────
 export const PublicProjectViewPage: React.FC = () => {
   const { token: shareToken } = useParams<{ token: string }>();
-  const { token: themeToken } = theme.useToken();
   const { message } = App.useApp();
 
-  // Guest identity — persisted in localStorage so they don't re-enter on every visit
+  // Guest identity — persisted in localStorage
   const [guestName, setGuestName] = useState<string>(() => {
     try { return localStorage.getItem(GUEST_NAME_KEY) || ''; } catch { return ''; }
   });
   const [guestNameModalOpen, setGuestNameModalOpen] = useState(false);
-  // Pending comment action — resumed after guest name is confirmed
   const pendingCommentRef = useRef<(() => void) | null>(null);
 
-  // Ask for guest name before allowing comments; once confirmed, resume the pending action
   const requireGuestName = useCallback((onConfirmed: () => void) => {
     if (guestName) {
       onConfirmed();
@@ -220,7 +714,7 @@ export const PublicProjectViewPage: React.FC = () => {
   const [metadataPanelVisible, setMetadataPanelVisible] = useState(false);
   const [imageCommentDrawerOpen, setImageCommentDrawerOpen] = useState(false);
 
-  // ── Data fetching ──────────────────────────────────────────────────────────
+  // ── Data fetching ────────────────────────────────────────────────────────
   const { data: project, isLoading: projectLoading, error: projectError } = useQuery({
     queryKey: ['public-project', shareToken],
     queryFn: () => mediaCollabService.getPublicProject(shareToken!),
@@ -239,8 +733,7 @@ export const PublicProjectViewPage: React.FC = () => {
     enabled: !!shareToken,
   });
 
-  // Signed JWT for Cloudflare Worker — valid 24 h, same secret as backend.
-  // The raw shareToken is NOT a JWT and will be rejected by the worker with 401.
+  // Signed JWT for Cloudflare Worker — valid 24h
   const { data: mediaToken } = useQuery({
     queryKey: ['public-media-token', shareToken],
     queryFn: () => mediaCollabService.getPublicMediaToken(shareToken!),
@@ -248,7 +741,7 @@ export const PublicProjectViewPage: React.FC = () => {
     staleTime: 23 * 60 * 60 * 1000,
   });
 
-  // ── Derived data ───────────────────────────────────────────────────────────
+  // ── Derived data ─────────────────────────────────────────────────────────
   const currentFolderAssets = useMemo(() => {
     if (!assets) return [];
     return assets.filter(asset => asset.folderId === currentFolderId);
@@ -272,7 +765,6 @@ export const PublicProjectViewPage: React.FC = () => {
     return path;
   }, [currentFolderId, folders]);
 
-  // Image assets for lightbox prev/next navigation
   const navigableAssets = useMemo(() => {
     let base = currentFolderAssets.filter(
       a => a.mediaType === 'IMAGE' || a.mediaType === 'RAW_IMAGE'
@@ -301,7 +793,7 @@ export const PublicProjectViewPage: React.FC = () => {
     return base;
   }, [currentFolderAssets, filters]);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
+  // ── Handlers ─────────────────────────────────────────────────────────────
   const handleAssetClick = (asset: MediaAsset) => {
     setSelectedAsset(asset);
     if (asset.mediaType === 'IMAGE' || asset.mediaType === 'RAW_IMAGE') {
@@ -321,7 +813,6 @@ export const PublicProjectViewPage: React.FC = () => {
     }
   };
 
-  // Rating — uses public API
   const handleStarRatingChange = async (assetId: string, rating: number) => {
     if (selectedAsset && selectedAsset.id === assetId) {
       setSelectedAsset({ ...selectedAsset, starRating: rating });
@@ -334,7 +825,6 @@ export const PublicProjectViewPage: React.FC = () => {
     }
   };
 
-  // Status — uses public API
   const handleStatusChange = async (assetId: string, status: string) => {
     try {
       await mediaCollabService.updatePublicAssetStatus(shareToken!, assetId, status);
@@ -344,7 +834,7 @@ export const PublicProjectViewPage: React.FC = () => {
     }
   };
 
-  // ── Keyboard shortcuts ─────────────────────────────────────────────────────
+  // ── Keyboard shortcuts ────────────────────────────────────────────────────
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
@@ -398,330 +888,342 @@ export const PublicProjectViewPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  // ── Early returns ──────────────────────────────────────────────────────────
-  if (!shareToken) {
-    return (
-      <Layout className="min-h-screen">
-        <Content className="flex items-center justify-center p-4">
-          <Result status="error" title="Invalid Link" />
-        </Content>
-      </Layout>
-    );
-  }
-
-  if (projectLoading || assetsLoading) {
-    return (
-      <Layout className="min-h-screen">
-        <Content className="flex items-center justify-center">
-          <Spin size="large" tip="Loading project...">
-            <div style={{ minHeight: '200px' }} />
-          </Spin>
-        </Content>
-      </Layout>
-    );
-  }
-
-  if (projectError) {
-    return (
-      <Layout className="min-h-screen">
-        <Content className="flex items-center justify-center p-4">
-          <Result
-            status="404"
-            title="Link Not Found"
-            subTitle="This public link is invalid or has been disabled."
-          />
-        </Content>
-      </Layout>
-    );
-  }
-
-  // ── Lightbox navigation helpers ────────────────────────────────────────────
+  // ── Lightbox helpers ──────────────────────────────────────────────────────
   const selectedIndex = selectedAsset
     ? navigableAssets.findIndex(a => a.id === selectedAsset.id)
     : -1;
   const prevAsset = selectedIndex > 0 ? navigableAssets[selectedIndex - 1] : null;
   const nextAsset = selectedIndex < navigableAssets.length - 1 ? navigableAssets[selectedIndex + 1] : null;
-
   const isImageAsset = selectedAsset &&
     (selectedAsset.mediaType === 'IMAGE' || selectedAsset.mediaType === 'RAW_IMAGE');
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Early returns ─────────────────────────────────────────────────────────
+  if (!shareToken) {
+    return (
+      <ConfigProvider theme={DARK_THEME}>
+        <div className="pub-page">
+          <style>{PAGE_STYLES}</style>
+          <div className="pub-orb pub-orb-1" /><div className="pub-orb pub-orb-2" />
+          <div className="pub-center">
+            <div className="pub-glass pub-glass-strong pub-error-card">
+              <div className="pub-error-icon">🔗</div>
+              <div className="pub-error-title">Invalid Link</div>
+              <div className="pub-error-sub">This share link appears to be broken or missing.</div>
+            </div>
+          </div>
+        </div>
+      </ConfigProvider>
+    );
+  }
+
+  if (projectLoading || assetsLoading) {
+    return (
+      <ConfigProvider theme={DARK_THEME}>
+        <div className="pub-page">
+          <style>{PAGE_STYLES}</style>
+          <div className="pub-orb pub-orb-1" /><div className="pub-orb pub-orb-2" /><div className="pub-orb pub-orb-3" />
+          <div className="pub-center">
+            <Spin size="large" />
+            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+              Loading gallery…
+            </span>
+          </div>
+        </div>
+      </ConfigProvider>
+    );
+  }
+
+  if (projectError) {
+    return (
+      <ConfigProvider theme={DARK_THEME}>
+        <div className="pub-page">
+          <style>{PAGE_STYLES}</style>
+          <div className="pub-orb pub-orb-1" /><div className="pub-orb pub-orb-2" />
+          <div className="pub-center">
+            <div className="pub-glass pub-glass-strong pub-error-card">
+              <div className="pub-error-icon">🚫</div>
+              <div className="pub-error-title">Link Not Found</div>
+              <div className="pub-error-sub">This public link is invalid or has been disabled by the owner.</div>
+            </div>
+          </div>
+        </div>
+      </ConfigProvider>
+    );
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <Layout className="min-h-screen h-auto bg-gray-50">
-      <style>{`
-        body, html { overflow-x: hidden !important; }
-        .ant-layout { overflow-x: hidden !important; }
+    <ConfigProvider theme={DARK_THEME}>
+      <div className="pub-page">
+        <style>{PAGE_STYLES}</style>
 
-        @media (max-width: 767px) {
-          * { box-sizing: border-box; }
-          .ant-layout-content { overflow-x: hidden !important; width: 100vw !important; max-width: 100vw !important; }
-          .public-header { padding-left: 12px !important; padding-right: 12px !important; flex-wrap: wrap !important; gap: 8px; }
-          .public-header .ant-typography { font-size: 16px !important; }
-          .public-content { padding: 12px !important; width: 100% !important; }
-          .ant-card { width: 100% !important; }
-          .ant-modal { max-width: 95vw !important; margin: 8px !important; }
-          .mobile-hide { display: none !important; }
-        }
-      `}</style>
+        {/* Aurora background orbs */}
+        <div className="pub-orb pub-orb-1" />
+        <div className="pub-orb pub-orb-2" />
+        <div className="pub-orb pub-orb-3" />
 
-      {/* ── Header ── */}
-      <Header className="public-header bg-white shadow-sm px-6 flex items-center justify-between">
-        <div>
-          <Title level={4} className="m-0">{project?.name}</Title>
-          <Text type="secondary" className="text-sm flex items-center gap-2">
-            <GlobalOutlined /> Public Gallery
-          </Text>
-        </div>
-        <div className="flex items-center gap-2">
-          <Tag icon={<EyeOutlined />} color="blue">
-            {project?.publicViewCount || 0} views
-          </Tag>
-          {guestName && (
-            <Tag
-              icon={<UserOutlined />}
-              style={{ cursor: 'pointer' }}
-              onClick={() => {
-                try { localStorage.removeItem(GUEST_NAME_KEY); } catch { /* noop */ }
-                setGuestName('');
-              }}
-            >
-              {guestName} ✕
-            </Tag>
-          )}
-          <Tooltip
-            title={
-              <div style={{ fontSize: 11 }}>
-                <strong>Keyboard Shortcuts:</strong>
-                <div style={{ marginTop: 6, lineHeight: 1.6 }}>
-                  <div>← / → : Navigate assets</div>
-                  <div>1-5 : Rate asset</div>
-                  <div>Space : Preview</div>
-                  <div>I : Toggle info</div>
-                  <div>C : Toggle comments (images)</div>
-                  <div>Esc : Close</div>
-                </div>
-              </div>
-            }
-            placement="bottomLeft"
-          >
-            <Button icon={<QuestionCircleOutlined />} size="small">Shortcuts</Button>
-          </Tooltip>
-        </div>
-      </Header>
-
-      {/* ── Content ── */}
-      <Content className="public-content p-6">
-        {project?.description && (
-          <Card className="mb-6">
-            <Text>{project.description}</Text>
-          </Card>
-        )}
-
-        <Card
-          title={
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>Media Gallery</span>
-              <Space>
-                {selectedAsset && isImageAsset && (
-                  <Button
-                    icon={<CommentOutlined />}
-                    size="small"
-                    type={imageCommentDrawerOpen ? 'primary' : 'default'}
-                    onClick={() => requireGuestName(() => setImageCommentDrawerOpen(true))}
-                  >
-                    Feedback
-                  </Button>
-                )}
-                <Text type="secondary">
-                  {currentFolderAssets.length} assets
-                  {currentSubfolders.length > 0 && `, ${currentSubfolders.length} folders`}
-                </Text>
-              </Space>
+        {/* ── Navigation ── */}
+        <nav className="pub-nav">
+          <div className="pub-nav-left">
+            <div className="pub-logo-text">{project?.name}</div>
+            <div className="pub-logo-sub">
+              <GlobalOutlined style={{ fontSize: 9 }} />
+              Public Gallery
             </div>
-          }
-        >
-          {/* Breadcrumb */}
-          {(currentFolderId || currentFolderPath.length > 0) && (
-            <div style={{
-              marginBottom: 16, padding: '8px 12px',
-              background: themeToken.colorBgContainer,
-              borderRadius: 6, border: `1px solid ${themeToken.colorBorder}`,
-            }}>
-              <Space split="/">
-                <Button
-                  type="link" size="small"
-                  icon={<HomeOutlined />}
-                  onClick={() => setCurrentFolderId(null)}
-                  style={{ padding: '4px 8px' }}
-                >
-                  Root
-                </Button>
-                {currentFolderPath.map(folder => (
-                  <Button
-                    key={folder.id}
-                    type="link" size="small"
-                    icon={<FolderOutlined />}
-                    onClick={() => setCurrentFolderId(folder.id)}
-                    style={{ padding: '4px 8px' }}
-                  >
-                    {folder.name}
-                  </Button>
-                ))}
-              </Space>
-            </div>
-          )}
-
-          {/* Filter bar */}
-          <div style={{ marginBottom: 16 }}>
-            <FilterBar
-              filters={filters}
-              onFilterChange={setFilters}
-              resultCount={currentFolderAssets.length}
-              totalCount={assets?.length}
-            />
           </div>
 
-          {/* Media grid — read-only, all interaction via public API */}
-          <MediaLibrary
-            assets={currentFolderAssets}
-            folders={currentSubfolders}
-            onAssetClick={handleAssetClick}
-            onCompare={(assetIds) => setComparisonAssetIds(assetIds)}
-            onFolderDoubleClick={(folderId) => setCurrentFolderId(folderId)}
-            filters={filters}
-            disableDndContext={true}
-            mediaToken={mediaToken ?? null}
-            readOnly={true}
-            onRatingChange={handleStarRatingChange}
-            onStatusChange={handleStatusChange}
-          />
-        </Card>
+          <div className="pub-nav-right">
+            <div className="pub-badge-views">
+              <EyeOutlined style={{ fontSize: 11 }} />
+              {project?.publicViewCount ?? 0} views
+            </div>
 
-        <div className="text-center mt-8">
-          <Text type="secondary" className="text-sm">
+            {guestName ? (
+              <div
+                className="pub-guest-chip"
+                onClick={() => {
+                  try { localStorage.removeItem(GUEST_NAME_KEY); } catch { /* noop */ }
+                  setGuestName('');
+                }}
+              >
+                <UserOutlined style={{ fontSize: 11 }} />
+                {guestName}
+                <span className="pub-guest-chip-x">✕</span>
+              </div>
+            ) : (
+              <div
+                className="pub-guest-chip"
+                onClick={() => { pendingCommentRef.current = null; setGuestNameModalOpen(true); }}
+              >
+                <UserOutlined style={{ fontSize: 11 }} />
+                Set name
+              </div>
+            )}
+
+            <Tooltip
+              title={
+                <div className="pub-shortcut-tip">
+                  <strong>Shortcuts</strong>
+                  <div>← / → — Navigate</div>
+                  <div>1–5 — Rate</div>
+                  <div>Space — Preview</div>
+                  <div>I — Info</div>
+                  <div>C — Comments</div>
+                  <div>Esc — Close</div>
+                </div>
+              }
+              placement="bottomRight"
+            >
+              <div className="pub-shortcuts-btn">
+                <QuestionCircleOutlined />
+              </div>
+            </Tooltip>
+          </div>
+        </nav>
+
+        {/* ── Main content ── */}
+        <main className="pub-content">
+
+          {/* Description */}
+          {project?.description && (
+            <div className="pub-desc-card pub-fade-1">
+              <p className="pub-desc-text">{project.description}</p>
+            </div>
+          )}
+
+          {/* Gallery card */}
+          <div className="pub-glass pub-gallery-card pub-fade-2">
+            <div className="pub-gallery-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span className="pub-gallery-title">Media Gallery</span>
+                <span className="pub-gallery-meta">
+                  {currentFolderAssets.length} asset{currentFolderAssets.length !== 1 ? 's' : ''}
+                  {currentSubfolders.length > 0 && ` · ${currentSubfolders.length} folder${currentSubfolders.length !== 1 ? 's' : ''}`}
+                </span>
+              </div>
+
+              {selectedAsset && isImageAsset && (
+                <button
+                  className={`pub-feedback-btn${imageCommentDrawerOpen ? ' active' : ''}`}
+                  onClick={() => requireGuestName(() => setImageCommentDrawerOpen(true))}
+                >
+                  <CommentOutlined style={{ fontSize: 13 }} />
+                  Feedback
+                </button>
+              )}
+            </div>
+
+            <div className="pub-gallery-body">
+              {/* Breadcrumb */}
+              {(currentFolderId || currentFolderPath.length > 0) && (
+                <div className="pub-breadcrumb">
+                  <button className="pub-breadcrumb-btn" onClick={() => setCurrentFolderId(null)}>
+                    <HomeOutlined style={{ fontSize: 11 }} />
+                    Root
+                  </button>
+                  {currentFolderPath.map(folder => (
+                    <React.Fragment key={folder.id}>
+                      <span className="pub-breadcrumb-sep">/</span>
+                      <button className="pub-breadcrumb-btn" onClick={() => setCurrentFolderId(folder.id)}>
+                        <FolderOutlined style={{ fontSize: 11 }} />
+                        {folder.name}
+                      </button>
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+
+              {/* Filter bar */}
+              <div style={{ marginBottom: 16 }}>
+                <FilterBar
+                  filters={filters}
+                  onFilterChange={setFilters}
+                  resultCount={currentFolderAssets.length}
+                  totalCount={assets?.length}
+                />
+              </div>
+
+              {/* Media grid */}
+              <MediaLibrary
+                assets={currentFolderAssets}
+                folders={currentSubfolders}
+                onAssetClick={handleAssetClick}
+                onCompare={(assetIds) => setComparisonAssetIds(assetIds)}
+                onFolderDoubleClick={(folderId) => setCurrentFolderId(folderId)}
+                filters={filters}
+                disableDndContext={true}
+                mediaToken={mediaToken ?? null}
+                readOnly={true}
+                onRatingChange={handleStarRatingChange}
+                onStatusChange={handleStatusChange}
+              />
+            </div>
+          </div>
+
+          <div className="pub-footer pub-fade-3">
             Powered by Monomi Media Collaboration
-          </Text>
-        </div>
-      </Content>
+          </div>
+        </main>
 
-      {/* ── Photo Lightbox ── */}
-      {selectedAsset && isImageAsset && (
-        <PhotoLightbox
-          visible={lightboxVisible}
-          imageUrl={getProxyUrl(selectedAsset.url, mediaToken)}
-          thumbnailUrl={selectedAsset.thumbnailUrl ? getProxyUrl(selectedAsset.thumbnailUrl, mediaToken) : undefined}
-          imageName={selectedAsset.originalName}
-          onClose={() => setLightboxVisible(false)}
-          onPrevious={() => navigateToAsset('prev')}
-          onNext={() => navigateToAsset('next')}
-          hasPrevious={selectedIndex > 0}
-          hasNext={selectedIndex < navigableAssets.length - 1}
-          nextImageUrl={nextAsset ? getProxyUrl(nextAsset.url, mediaToken) : undefined}
-          previousImageUrl={prevAsset ? getProxyUrl(prevAsset.url, mediaToken) : undefined}
-          currentRating={selectedAsset.starRating}
-          onRatingChange={(rating) => handleStarRatingChange(selectedAsset.id, rating)}
-        />
-      )}
+        {/* ── Photo Lightbox ── */}
+        {selectedAsset && isImageAsset && (
+          <PhotoLightbox
+            visible={lightboxVisible}
+            imageUrl={getProxyUrl(selectedAsset.url, mediaToken)}
+            thumbnailUrl={selectedAsset.thumbnailUrl ? getProxyUrl(selectedAsset.thumbnailUrl, mediaToken) : undefined}
+            imageName={selectedAsset.originalName}
+            onClose={() => setLightboxVisible(false)}
+            onPrevious={() => navigateToAsset('prev')}
+            onNext={() => navigateToAsset('next')}
+            hasPrevious={selectedIndex > 0}
+            hasNext={selectedIndex < navigableAssets.length - 1}
+            nextImageUrl={nextAsset ? getProxyUrl(nextAsset.url, mediaToken) : undefined}
+            previousImageUrl={prevAsset ? getProxyUrl(prevAsset.url, mediaToken) : undefined}
+            currentRating={selectedAsset.starRating}
+            onRatingChange={(rating) => handleStarRatingChange(selectedAsset.id, rating)}
+          />
+        )}
 
-      {/* ── Video Review Modal — public mode: comments on, draw off ── */}
-      {selectedAsset && selectedAsset.mediaType === 'VIDEO' && (
-        <VideoReviewModal
-          key={videoPlayerKey}
-          visible={videoPlayerVisible}
-          asset={selectedAsset}
-          mediaToken={mediaToken ?? null}
-          publicShareToken={shareToken ?? null}
-          guestName={guestName}
-          onPublicRatingChange={(rating) => handleStarRatingChange(selectedAsset.id, rating)}
-          onPublicStatusChange={(status) => handleStatusChange(selectedAsset.id, status)}
-          onClose={() => {
-            setVideoPlayerVisible(false);
-            setVideoPlayerKey(k => k + 1);
-          }}
-        />
-      )}
-
-      {/* ── Image Comment Drawer ── */}
-      <Drawer
-        title={
-          <Space>
-            <CommentOutlined />
-            <span>Feedback — {selectedAsset?.originalName}</span>
-          </Space>
-        }
-        open={imageCommentDrawerOpen && !!selectedAsset && !!isImageAsset}
-        onClose={() => setImageCommentDrawerOpen(false)}
-        width={380}
-        styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column', height: '100%' } }}
-      >
-        {selectedAsset && isImageAsset && shareToken && (
-          <ImageCommentPanel
+        {/* ── Video Review Modal ── */}
+        {selectedAsset && selectedAsset.mediaType === 'VIDEO' && (
+          <VideoReviewModal
+            key={videoPlayerKey}
+            visible={videoPlayerVisible}
             asset={selectedAsset}
-            shareToken={shareToken}
+            mediaToken={mediaToken ?? null}
+            publicShareToken={shareToken ?? null}
             guestName={guestName}
-          />
-        )}
-      </Drawer>
-
-      {/* ── Comparison View ── */}
-      <Modal
-        title={`Compare Assets (${comparisonAssetIds.length})`}
-        open={comparisonAssetIds.length > 0}
-        onCancel={() => setComparisonAssetIds([])}
-        footer={null}
-        width="90%"
-        style={{ top: 20 }}
-        styles={{ body: { height: '80vh', overflow: 'auto' } }}
-      >
-        {comparisonAssetIds.length > 0 && (
-          <ComparisonView
-            assetIds={comparisonAssetIds}
-            onClose={() => setComparisonAssetIds([])}
-            mediaToken={mediaToken ?? undefined}
-          />
-        )}
-      </Modal>
-
-      {/* ── Metadata Panel ── */}
-      {selectedAsset && (
-        <Modal
-          title="Asset Details"
-          open={metadataPanelVisible}
-          onCancel={() => setMetadataPanelVisible(false)}
-          footer={null}
-          width={500}
-        >
-          <MetadataPanel
-            asset={{
-              id: selectedAsset.id,
-              filename: selectedAsset.originalName,
-              mediaType: selectedAsset.mediaType,
-              size: typeof selectedAsset.size === 'string'
-                ? parseInt(selectedAsset.size, 10)
-                : selectedAsset.size,
-              duration: selectedAsset.duration,
-              width: selectedAsset.width,
-              height: selectedAsset.height,
-              fps: selectedAsset.fps,
-              codec: selectedAsset.codec,
-              bitrate: selectedAsset.bitrate,
-              createdAt: selectedAsset.uploadedAt,
-              metadata: selectedAsset.metadata,
+            onPublicRatingChange={(rating) => handleStarRatingChange(selectedAsset.id, rating)}
+            onPublicStatusChange={(status) => handleStatusChange(selectedAsset.id, status)}
+            onClose={() => {
+              setVideoPlayerVisible(false);
+              setVideoPlayerKey(k => k + 1);
             }}
           />
-        </Modal>
-      )}
+        )}
 
-      {/* ── Guest Name Modal ── */}
-      <GuestNameModal
-        open={guestNameModalOpen}
-        onConfirm={handleGuestNameConfirm}
-        onCancel={() => {
-          setGuestNameModalOpen(false);
-          pendingCommentRef.current = null;
-        }}
-      />
-    </Layout>
+        {/* ── Image Comment Drawer ── */}
+        <Drawer
+          title={
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <CommentOutlined style={{ color: '#22d3ee' }} />
+              {selectedAsset?.originalName}
+            </span>
+          }
+          open={imageCommentDrawerOpen && !!selectedAsset && !!isImageAsset}
+          onClose={() => setImageCommentDrawerOpen(false)}
+          width={380}
+          styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column', height: '100%' } }}
+        >
+          {selectedAsset && isImageAsset && shareToken && (
+            <ImageCommentPanel
+              asset={selectedAsset}
+              shareToken={shareToken}
+              guestName={guestName}
+            />
+          )}
+        </Drawer>
+
+        {/* ── Comparison View ── */}
+        <Modal
+          title={`Compare (${comparisonAssetIds.length} assets)`}
+          open={comparisonAssetIds.length > 0}
+          onCancel={() => setComparisonAssetIds([])}
+          footer={null}
+          width="90%"
+          style={{ top: 20 }}
+          styles={{ body: { height: '80vh', overflow: 'auto' } }}
+        >
+          {comparisonAssetIds.length > 0 && (
+            <ComparisonView
+              assetIds={comparisonAssetIds}
+              onClose={() => setComparisonAssetIds([])}
+              mediaToken={mediaToken ?? undefined}
+            />
+          )}
+        </Modal>
+
+        {/* ── Metadata Panel ── */}
+        {selectedAsset && (
+          <Modal
+            title="Asset Details"
+            open={metadataPanelVisible}
+            onCancel={() => setMetadataPanelVisible(false)}
+            footer={null}
+            width={500}
+          >
+            <MetadataPanel
+              asset={{
+                id: selectedAsset.id,
+                filename: selectedAsset.originalName,
+                mediaType: selectedAsset.mediaType,
+                size: typeof selectedAsset.size === 'string'
+                  ? parseInt(selectedAsset.size, 10)
+                  : selectedAsset.size,
+                duration: selectedAsset.duration,
+                width: selectedAsset.width,
+                height: selectedAsset.height,
+                fps: selectedAsset.fps,
+                codec: selectedAsset.codec,
+                bitrate: selectedAsset.bitrate,
+                createdAt: selectedAsset.uploadedAt,
+                metadata: selectedAsset.metadata,
+              }}
+            />
+          </Modal>
+        )}
+
+        {/* ── Guest Name Modal ── */}
+        <GuestNameModal
+          open={guestNameModalOpen}
+          onConfirm={handleGuestNameConfirm}
+          onCancel={() => {
+            setGuestNameModalOpen(false);
+            pendingCommentRef.current = null;
+          }}
+        />
+      </div>
+    </ConfigProvider>
   );
 };
 
