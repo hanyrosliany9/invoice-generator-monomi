@@ -91,6 +91,7 @@ body, html {
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 16px;
+  /* NO overflow:hidden — it clips Ant Design dropdowns and internal controls */
 }
 .pub-glass-strong {
   background: rgba(255,255,255,0.05);
@@ -483,6 +484,75 @@ body, html {
 .pub-fade-2 { animation: pubFadeUp 0.5s ease 0.15s both; }
 .pub-fade-3 { animation: pubFadeUp 0.5s ease 0.25s both; }
 
+/* ── FilterBar visibility fix ── */
+/* Ant Design components inside the dark glass need explicit contrast */
+.pub-page .ant-input-affix-wrapper,
+.pub-page .ant-input,
+.pub-page .ant-select-selector {
+  background: rgba(255,255,255,0.08) !important;
+  border-color: rgba(255,255,255,0.14) !important;
+  color: rgba(255,255,255,0.88) !important;
+}
+.pub-page .ant-input-affix-wrapper:hover,
+.pub-page .ant-select-selector:hover {
+  border-color: rgba(34,211,238,0.4) !important;
+}
+.pub-page .ant-input-prefix,
+.pub-page .ant-input-suffix,
+.pub-page .ant-select-arrow {
+  color: rgba(255,255,255,0.35) !important;
+}
+.pub-page .ant-select-selection-placeholder {
+  color: rgba(255,255,255,0.28) !important;
+}
+.pub-page .ant-select-selection-item {
+  color: rgba(255,255,255,0.88) !important;
+}
+.pub-page .ant-radio-button-wrapper {
+  background: rgba(255,255,255,0.07) !important;
+  border-color: rgba(255,255,255,0.14) !important;
+  color: rgba(255,255,255,0.65) !important;
+}
+.pub-page .ant-radio-button-wrapper-checked {
+  background: #22d3ee !important;
+  border-color: #22d3ee !important;
+  color: #04050a !important;
+}
+.pub-page .ant-collapse-header {
+  color: rgba(255,255,255,0.75) !important;
+}
+.pub-page .ant-tag {
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+/* ── MediaLibrary toolbar ── */
+/* The view toggle + density controls sit inside MediaLibrary */
+.pub-page .ant-btn-compact-item {
+  border-color: rgba(255,255,255,0.14) !important;
+}
+.pub-page .ant-space-item .ant-btn-primary {
+  background: #22d3ee !important;
+  border-color: #22d3ee !important;
+  color: #04050a !important;
+}
+
+/* ── Select dropdown menu ── */
+.pub-page .ant-select-dropdown {
+  background: #0d0f1e !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6) !important;
+}
+.pub-page .ant-select-item {
+  color: rgba(255,255,255,0.75) !important;
+}
+.pub-page .ant-select-item-option-active {
+  background: rgba(34,211,238,0.1) !important;
+}
+.pub-page .ant-select-item-option-selected {
+  background: rgba(34,211,238,0.15) !important;
+  color: #22d3ee !important;
+}
+
 /* ── Mobile ── */
 @media (max-width: 767px) {
   .pub-nav {
@@ -512,34 +582,65 @@ const DARK_THEME = {
   algorithm: theme.darkAlgorithm,
   token: {
     colorBgBase: '#060710',
-    colorBgContainer: 'rgba(255,255,255,0.04)',
-    colorBgElevated: 'rgba(255,255,255,0.06)',
-    colorBorder: 'rgba(255,255,255,0.08)',
-    colorBorderSecondary: 'rgba(255,255,255,0.05)',
-    colorText: 'rgba(255,255,255,0.85)',
-    colorTextSecondary: 'rgba(255,255,255,0.45)',
+    colorBgContainer: 'rgba(255,255,255,0.08)',
+    colorBgElevated: '#0d0f1e',
+    colorBgSpotlight: '#0d0f1e',
+    colorBorder: 'rgba(255,255,255,0.15)',
+    colorBorderSecondary: 'rgba(255,255,255,0.10)',
+    colorText: 'rgba(255,255,255,0.88)',
+    colorTextSecondary: 'rgba(255,255,255,0.52)',
+    colorTextTertiary: 'rgba(255,255,255,0.35)',
+    colorTextPlaceholder: 'rgba(255,255,255,0.28)',
     colorPrimary: '#22d3ee',
     colorPrimaryHover: '#38e1f5',
-    borderRadius: 10,
+    colorPrimaryActive: '#06b6d4',
+    borderRadius: 8,
     fontFamily: "'DM Sans', system-ui, sans-serif",
   },
   components: {
     Modal: {
-      contentBg: 'rgba(8,9,18,0.94)',
+      contentBg: 'rgba(8,9,18,0.96)',
       headerBg: 'transparent',
     },
     Drawer: {
-      colorBgContainer: 'rgba(6,7,14,0.92)',
+      colorBgContainer: 'rgba(6,7,14,0.95)',
     },
     Input: {
-      colorBgContainer: 'rgba(255,255,255,0.05)',
+      colorBgContainer: 'rgba(255,255,255,0.08)',
       activeBorderColor: '#22d3ee',
       hoverBorderColor: 'rgba(34,211,238,0.4)',
     },
+    Select: {
+      colorBgContainer: 'rgba(255,255,255,0.08)',
+      colorBgElevated: '#0d0f1e',
+      optionActiveBg: 'rgba(34,211,238,0.1)',
+      optionSelectedBg: 'rgba(34,211,238,0.15)',
+    },
     Button: {
-      defaultBg: 'rgba(255,255,255,0.06)',
-      defaultBorderColor: 'rgba(255,255,255,0.1)',
-      defaultColor: 'rgba(255,255,255,0.75)',
+      defaultBg: 'rgba(255,255,255,0.09)',
+      defaultBorderColor: 'rgba(255,255,255,0.16)',
+      defaultColor: 'rgba(255,255,255,0.82)',
+      defaultHoverBg: 'rgba(255,255,255,0.14)',
+      defaultHoverBorderColor: 'rgba(255,255,255,0.25)',
+      defaultHoverColor: 'rgba(255,255,255,0.96)',
+    },
+    Radio: {
+      buttonBg: 'rgba(255,255,255,0.07)',
+      buttonColor: 'rgba(255,255,255,0.65)',
+      buttonSolidCheckedBg: '#22d3ee',
+      buttonSolidCheckedColor: '#04050a',
+      colorBorder: 'rgba(255,255,255,0.15)',
+    },
+    Tag: {
+      defaultBg: 'rgba(255,255,255,0.09)',
+      defaultColor: 'rgba(255,255,255,0.72)',
+    },
+    Collapse: {
+      contentBg: 'rgba(255,255,255,0.05)',
+      headerBg: 'rgba(255,255,255,0.07)',
+    },
+    Badge: {
+      colorBgContainer: 'rgba(255,255,255,0.08)',
     },
   },
 };
