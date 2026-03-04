@@ -1,11 +1,11 @@
-import { Controller, UseGuards, Post, Body, Request } from "@nestjs/common";
+import { Controller, Post, Body, Request } from "@nestjs/common";
 import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { RequireMediaRole } from "../../auth/decorators/auth.decorators";
 import { ComparisonService } from "../services/comparison.service";
 import { AuthenticatedRequest } from "../types/authenticated-request.interface";
 
@@ -17,7 +17,7 @@ import { AuthenticatedRequest } from "../types/authenticated-request.interface";
  */
 @ApiTags("Media Collaboration - Comparison")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@RequireMediaRole()
 @Controller("media-collab/compare")
 export class ComparisonController {
   constructor(private readonly comparisonService: ComparisonService) {}

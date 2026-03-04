@@ -9,7 +9,6 @@ import { Reflector } from "@nestjs/core";
 import { UserRole } from "@prisma/client";
 import {
   UserRole as PermissionUserRole,
-  LEGACY_ROLE_MAPPING,
   hasPermission,
   getRoleDisplayName,
 } from "../../../common/constants/permissions.constants";

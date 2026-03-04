@@ -6,7 +6,6 @@ import {
   Delete,
   Body,
   Param,
-  UseGuards,
   Request,
 } from "@nestjs/common";
 import {
@@ -16,7 +15,7 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { RequireMediaRole } from "../../auth/decorators/auth.decorators";
 import { MediaFoldersService } from "../services/folders.service";
 import { CreateFolderDto } from "../dto/create-folder.dto";
 import { UpdateFolderDto } from "../dto/update-folder.dto";
@@ -25,7 +24,7 @@ import { AuthenticatedRequest } from "../interfaces/authenticated-request.interf
 
 @ApiTags("Media Collaboration - Folders")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@RequireMediaRole()
 @Controller("media-collab/folders")
 export class MediaFoldersController {
   constructor(private readonly foldersService: MediaFoldersService) {}

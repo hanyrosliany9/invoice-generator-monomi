@@ -5,7 +5,6 @@ import {
   Delete,
   Param,
   Query,
-  UseGuards,
   Request,
   UseInterceptors,
   UploadedFile,
@@ -26,7 +25,7 @@ import {
   ApiProduces,
 } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { RequireMediaRole } from "../../auth/decorators/auth.decorators";
 import { MediaAssetsService } from "../services/media-assets.service";
 import { AuthenticatedRequest } from "../interfaces/authenticated-request.interface";
 import { AssetFilters } from "../types/asset-filters.interface";
@@ -35,7 +34,7 @@ import { BulkDownloadAssetsDto } from "../dto/bulk-download-assets.dto";
 
 @ApiTags("Media Collaboration - Assets")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@RequireMediaRole()
 @Controller("media-collab/assets")
 export class MediaAssetsController {
   constructor(private readonly assetsService: MediaAssetsService) {}

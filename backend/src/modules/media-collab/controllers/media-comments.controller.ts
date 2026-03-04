@@ -1,6 +1,5 @@
 import {
   Controller,
-  UseGuards,
   Post,
   Get,
   Put,
@@ -10,7 +9,7 @@ import {
   Req,
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { RequireMediaRole } from "../../auth/decorators/auth.decorators";
 import { MediaCommentsService } from "../services/media-comments.service";
 import { CreateFrameCommentDto } from "../dto/create-frame-comment.dto";
 import { UpdateFrameCommentDto } from "../dto/update-frame-comment.dto";
@@ -18,7 +17,7 @@ import { AuthenticatedRequest } from "../types/authenticated-request.interface";
 
 @ApiTags("Media Collaboration - Comments")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@RequireMediaRole()
 @Controller("media-collab/comments")
 export class MediaCommentsController {
   constructor(private readonly commentsService: MediaCommentsService) {}

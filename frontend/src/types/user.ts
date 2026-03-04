@@ -1,29 +1,11 @@
 /**
  * User Role Enum - Matches backend Prisma schema
  *
- * Production Roles:
- * - SUPER_ADMIN: Owner/IT Admin - Full system access
- * - FINANCE_MANAGER: Financial Controller - Approve transactions
- * - ACCOUNTANT: Bookkeeper - Accounting ops, no approvals
- * - PROJECT_MANAGER: Operations - CRUD ops, submit for approval
- * - STAFF: Basic User - Create drafts, own data only
- * - VIEWER: Read-Only - View data only
- *
- * Legacy Roles (backward compatibility):
- * - ADMIN: Maps to SUPER_ADMIN
- * - USER: Maps to STAFF
+ * - SUPER_ADMIN: Full system access (users, settings, content, media)
+ * - ADMIN: Content access (invoices, projects, clients, accounting, media)
+ * - VIDEOGRAPHER: Media-collab only (upload and edit assets)
  */
-export type UserRole =
-  // New production roles
-  | 'SUPER_ADMIN'
-  | 'FINANCE_MANAGER'
-  | 'ACCOUNTANT'
-  | 'PROJECT_MANAGER'
-  | 'STAFF'
-  | 'VIEWER'
-  // Legacy roles (backward compatibility)
-  | 'ADMIN'
-  | 'USER';
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'VIDEOGRAPHER';
 
 export interface User {
   id: string

@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
   Request,
   HttpCode,
   HttpStatus,
@@ -22,12 +21,7 @@ import {
 } from "@nestjs/swagger";
 import { VendorsService } from "./vendors.service";
 import { CreateVendorDto, UpdateVendorDto, VendorQueryDto } from "./dto";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import {
-  RequireSuperAdmin,
-  RequireFinancialApprover,
-} from "../auth/decorators/auth.decorators";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 
 /**
  * Vendors Controller
@@ -43,7 +37,7 @@ import {
  */
 @ApiTags("vendors")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireAdmin()
 @Controller("vendors")
 export class VendorsController {
   constructor(private readonly vendorsService: VendorsService) {}
@@ -64,7 +58,6 @@ export class VendorsController {
    * @returns Created vendor
    */
   @Post()
-  @RequireSuperAdmin() // Only SUPER_ADMIN can create vendors
   @ApiOperation({
     summary: "Create a new vendor",
     description:
@@ -214,7 +207,6 @@ export class VendorsController {
    * @returns Updated vendor
    */
   @Patch(":id")
-  @RequireFinancialApprover() // SUPER_ADMIN or FINANCE_MANAGER can update vendors
   @ApiOperation({
     summary: "Update vendor",
     description:
@@ -260,7 +252,6 @@ export class VendorsController {
    * @returns Success message
    */
   @Delete(":id")
-  @RequireSuperAdmin() // Only SUPER_ADMIN can delete vendors
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: "Delete vendor",

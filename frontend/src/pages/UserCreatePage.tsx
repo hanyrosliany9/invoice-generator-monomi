@@ -54,7 +54,7 @@ export const UserCreatePage: React.FC = () => {
   React.useEffect(() => {
     form.setFieldsValue({
       isActive: true,
-      role: 'STAFF' as UserRole,
+      role: 'VIDEOGRAPHER' as UserRole,
     })
   }, [form])
 

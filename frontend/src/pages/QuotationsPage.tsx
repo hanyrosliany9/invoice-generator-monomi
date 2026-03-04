@@ -119,7 +119,7 @@ export const QuotationsPage: React.FC = () => {
   const [form] = Form.useForm()
   const [statusForm] = Form.useForm()
   const { message } = App.useApp()
-  const { canApproveFinancial } = usePermissions()
+  const { isAdmin } = usePermissions()
   const { user } = useAuthStore()
 
   // Export functionality
@@ -411,14 +411,14 @@ export const QuotationsPage: React.FC = () => {
         color: theme.colors.status.success,
         onClick: (record) => {
           const quotation = quotations.find(q => q.id === record.id)
-          if (quotation && canApproveFinancial()) {
+          if (quotation && isAdmin()) {
             handleStatusChange(quotation, 'APPROVED')
           }
         },
         visible: (record) => {
           const quotation = quotations.find(q => q.id === record.id)
           return record.status === 'sent' &&
-                 canApproveFinancial() &&
+                 isAdmin() &&
                  quotation?.createdBy !== user?.id
         },
       },
@@ -429,14 +429,14 @@ export const QuotationsPage: React.FC = () => {
         danger: true,
         onClick: (record) => {
           const quotation = quotations.find(q => q.id === record.id)
-          if (quotation && canApproveFinancial()) {
+          if (quotation && isAdmin()) {
             handleStatusChange(quotation, 'DECLINED')
           }
         },
         visible: (record) => {
           const quotation = quotations.find(q => q.id === record.id)
           return record.status === 'sent' &&
-                 canApproveFinancial() &&
+                 isAdmin() &&
                  quotation?.createdBy !== user?.id
         },
       },
@@ -481,7 +481,7 @@ export const QuotationsPage: React.FC = () => {
       handleGenerateInvoice,
       handlePrintQuotation,
       handleDelete,
-      canApproveFinancial,
+      isAdmin,
       user,
     ]
   )
@@ -851,7 +851,7 @@ export const QuotationsPage: React.FC = () => {
       })
     }
 
-    if (quotation.status === 'SENT' && canApproveFinancial() && quotation.createdBy !== user?.id) {
+    if (quotation.status === 'SENT' && isAdmin() && quotation.createdBy !== user?.id) {
       items.push(
         {
           key: 'approve',
@@ -903,7 +903,7 @@ export const QuotationsPage: React.FC = () => {
     })
 
     return items
-  }, [handleEdit, handlePrintQuotation, handlePreviewPDF, navigate, handleStatusChange, canApproveFinancial, handleGenerateInvoice, handleDelete, user])
+  }, [handleEdit, handlePrintQuotation, handlePreviewPDF, navigate, handleStatusChange, isAdmin, handleGenerateInvoice, handleDelete, user])
 
   const columns = useMemo(() => [
     {
@@ -1370,7 +1370,7 @@ export const QuotationsPage: React.FC = () => {
                 >
                   Kirim
                 </Button>
-                {canApproveFinancial() && (
+                {isAdmin() && (
                   <>
                     <Button
                       size='small'

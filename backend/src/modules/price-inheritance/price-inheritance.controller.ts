@@ -9,7 +9,6 @@ import {
   Body,
   Param,
   Query,
-  UseGuards,
   HttpStatus,
   HttpCode,
   ParseUUIDPipe,
@@ -30,10 +29,7 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import { Roles } from "../auth/decorators/roles.decorator";
-import { Role } from "../auth/enums/role.enum";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 
 import { PriceInheritanceService } from "./price-inheritance.service";
 import {
@@ -51,8 +47,8 @@ import {
 
 @ApiTags("Price Inheritance")
 @Controller("price-inheritance")
-@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
+@RequireAdmin()
 export class PriceInheritanceController {
   private readonly logger = new Logger(PriceInheritanceController.name);
 
@@ -90,7 +86,6 @@ export class PriceInheritanceController {
     description: "Insufficient permissions to access entity",
     type: PriceInheritanceErrorDto,
   })
-  @Roles(Role.USER, Role.ADMIN)
   async getAvailableSources(
     @Query(ValidationPipe) query: GetPriceSourcesQueryDto,
     @Request() req: any,
@@ -140,7 +135,6 @@ export class PriceInheritanceController {
     description: "Invalid price inheritance configuration",
     type: PriceInheritanceErrorDto,
   })
-  @Roles(Role.USER, Role.ADMIN)
   async validatePriceInheritance(
     @Body(ValidationPipe) dto: ValidatePriceInheritanceDto,
     @Request() req: any,
@@ -197,7 +191,6 @@ export class PriceInheritanceController {
     description: "Insufficient permissions to create configuration",
     type: PriceInheritanceErrorDto,
   })
-  @Roles(Role.USER, Role.ADMIN)
   async createPriceInheritance(
     @Body(ValidationPipe) dto: CreatePriceInheritanceDto,
     @Request() req: any,
@@ -259,7 +252,6 @@ export class PriceInheritanceController {
     description: "Insufficient permissions to update configuration",
     type: PriceInheritanceErrorDto,
   })
-  @Roles(Role.USER, Role.ADMIN)
   async updatePriceInheritance(
     @Param("id", ParseUUIDPipe) id: string,
     @Body(ValidationPipe) dto: UpdatePriceInheritanceDto,
@@ -320,7 +312,6 @@ export class PriceInheritanceController {
     description: "Insufficient permissions to access analytics",
     type: PriceInheritanceErrorDto,
   })
-  @Roles(Role.ADMIN)
   async getPriceInheritanceAnalytics(
     @Request() req: any,
     @Query("dateFrom") dateFrom?: string,
@@ -446,7 +437,6 @@ export class PriceInheritanceController {
       },
     },
   })
-  @Roles(Role.USER, Role.ADMIN)
   async calculateMaterai(@Body("amount") amount: number, @Request() req: any) {
     this.logger.log(
       `Calculating materai for amount ${amount} IDR by user ${req.user.sub}`,
@@ -504,7 +494,6 @@ export class PriceInheritanceController {
       },
     },
   })
-  @Roles(Role.USER, Role.ADMIN)
   async getBusinessEtiquette(
     @Param("amount") amount: number,
     @Request() req: any,

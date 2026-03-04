@@ -1,6 +1,5 @@
 import {
   Controller,
-  UseGuards,
   Post,
   Get,
   Put,
@@ -11,7 +10,7 @@ import {
   Req,
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { RequireMediaRole } from "../../auth/decorators/auth.decorators";
 import { MediaFramesService } from "../services/media-frames.service";
 import { CreateFrameDrawingDto } from "../dto/create-frame-drawing.dto";
 import { UpdateFrameDrawingDto } from "../dto/update-frame-drawing.dto";
@@ -19,7 +18,7 @@ import { AuthenticatedRequest } from "../types/authenticated-request.interface";
 
 @ApiTags("Media Collaboration - Frames & Drawings")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@RequireMediaRole()
 @Controller("media-collab/frames")
 export class MediaFramesController {
   constructor(private readonly framesService: MediaFramesService) {}

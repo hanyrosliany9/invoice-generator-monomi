@@ -6,7 +6,6 @@ import {
   Delete,
   Body,
   Param,
-  UseGuards,
   Request,
 } from "@nestjs/common";
 import {
@@ -15,7 +14,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { RequireMediaRole } from "../../auth/decorators/auth.decorators";
 import { MediaProjectsService } from "../services/media-projects.service";
 import { CreateMediaProjectDto } from "../dto/create-media-project.dto";
 import { UpdateMediaProjectDto } from "../dto/update-media-project.dto";
@@ -23,7 +22,7 @@ import { AuthenticatedRequest } from "../interfaces/authenticated-request.interf
 
 @ApiTags("Media Collaboration - Projects")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@RequireMediaRole()
 @Controller("media-collab/projects")
 export class MediaProjectsController {
   constructor(private readonly mediaProjectsService: MediaProjectsService) {}

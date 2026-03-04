@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
   Request,
   Res,
 } from "@nestjs/common";
@@ -18,9 +17,7 @@ import type { Request as ExpressRequest } from "express";
 interface AuthenticatedRequest extends ExpressRequest {
   user: { id: string };
 }
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import { Roles } from "../auth/decorators/roles.decorator";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import { JournalService } from "./services/journal.service";
 import { LedgerService } from "./services/ledger.service";
 import { FinancialStatementsService } from "./services/financial-statements.service";
@@ -58,7 +55,7 @@ import {
 } from "./dto/financial-statement-query.dto";
 
 @Controller("accounting")
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireAdmin()
 export class AccountingController {
   constructor(
     private readonly journalService: JournalService,
@@ -87,32 +84,27 @@ export class AccountingController {
   }
 
   @Post("chart-of-accounts")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async createChartOfAccount(@Body() data: any) {
     return this.journalService.createChartOfAccount(data);
   }
 
   @Patch("chart-of-accounts/:code")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async updateChartOfAccount(@Param("code") code: string, @Body() data: any) {
     return this.journalService.updateChartOfAccount(code, data);
   }
 
   @Delete("chart-of-accounts/:code")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER")
   async deleteChartOfAccount(@Param("code") code: string) {
     return this.journalService.deleteChartOfAccount(code);
   }
 
   @Patch("chart-of-accounts/:code/toggle-status")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async toggleAccountStatus(@Param("code") code: string) {
     return this.journalService.toggleAccountStatus(code);
   }
 
   // ============ JOURNAL ENTRIES ============
   @Post("journal-entries")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT", "ADMIN", "USER")
   async createJournalEntry(
     @Body() createJournalEntryDto: CreateJournalEntryDto,
     @Request() req: any,
@@ -141,7 +133,6 @@ export class AccountingController {
   }
 
   @Patch("journal-entries/:id")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT", "ADMIN", "USER")
   async updateJournalEntry(
     @Param("id") id: string,
     @Body() updateJournalEntryDto: UpdateJournalEntryDto,
@@ -154,19 +145,16 @@ export class AccountingController {
   }
 
   @Post("journal-entries/:id/post")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ADMIN")
   async postJournalEntry(@Param("id") id: string, @Request() req: any) {
     return this.journalService.postJournalEntry(id, req.user.userId);
   }
 
   @Post("journal-entries/:id/reverse")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ADMIN")
   async reverseJournalEntry(@Param("id") id: string, @Request() req: any) {
     return this.journalService.reverseJournalEntry(id, req.user.userId);
   }
 
   @Delete("journal-entries/:id")
-  @Roles("SUPER_ADMIN", "ADMIN")
   async deleteJournalEntry(@Param("id") id: string) {
     return this.journalService.deleteJournalEntry(id);
   }
@@ -204,7 +192,6 @@ export class AccountingController {
 
   // ============ CASH TRANSACTIONS ============
   @Post("cash-transactions")
-  @Roles("ADMIN", "USER")
   async createCashTransaction(
     @Body() createCashTransactionDto: CreateCashTransactionDto,
     @Request() req: any,
@@ -226,7 +213,6 @@ export class AccountingController {
   }
 
   @Patch("cash-transactions/:id")
-  @Roles("ADMIN", "USER")
   async updateCashTransaction(
     @Param("id") id: string,
     @Body() updateCashTransactionDto: UpdateCashTransactionDto,
@@ -239,7 +225,6 @@ export class AccountingController {
   }
 
   @Post("cash-transactions/:id/submit")
-  @Roles("ADMIN", "USER")
   async submitCashTransaction(@Param("id") id: string, @Request() req: any) {
     return this.cashTransactionService.submitCashTransaction(
       id,
@@ -248,7 +233,6 @@ export class AccountingController {
   }
 
   @Post("cash-transactions/:id/approve")
-  @Roles("ADMIN")
   async approveCashTransaction(@Param("id") id: string, @Request() req: any) {
     return this.cashTransactionService.approveCashTransaction(
       id,
@@ -257,7 +241,6 @@ export class AccountingController {
   }
 
   @Post("cash-transactions/:id/reject")
-  @Roles("ADMIN")
   async rejectCashTransaction(
     @Param("id") id: string,
     @Body() data: { reason: string },
@@ -271,20 +254,17 @@ export class AccountingController {
   }
 
   @Post("cash-transactions/:id/void")
-  @Roles("ADMIN")
   async voidCashTransaction(@Param("id") id: string, @Request() req: any) {
     return this.cashTransactionService.voidCashTransaction(id, req.user.userId);
   }
 
   @Delete("cash-transactions/:id")
-  @Roles("ADMIN")
   async deleteCashTransaction(@Param("id") id: string) {
     return this.cashTransactionService.deleteCashTransaction(id);
   }
 
   // ============ CASH/BANK BALANCES ============
   @Post("cash-bank-balances")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async createCashBankBalance(
     @Body() dto: CreateCashBankBalanceDto,
     @Request() req: AuthenticatedRequest,
@@ -315,7 +295,6 @@ export class AccountingController {
   }
 
   @Patch("cash-bank-balances/:id")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async updateCashBankBalance(
     @Param("id") id: string,
     @Body() dto: UpdateCashBankBalanceDto,
@@ -326,7 +305,6 @@ export class AccountingController {
   }
 
   @Post("cash-bank-balances/:id/recalculate")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async recalculateCashBankBalance(
     @Param("id") id: string,
     @Request() req: AuthenticatedRequest,
@@ -335,14 +313,12 @@ export class AccountingController {
   }
 
   @Delete("cash-bank-balances/:id")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER")
   async deleteCashBankBalance(@Param("id") id: string) {
     return this.cashBankBalanceService.remove(id);
   }
 
   // ============ BANK TRANSFERS ============
   @Post("bank-transfers")
-  @Roles("ADMIN", "USER")
   async createBankTransfer(
     @Body() createBankTransferDto: CreateBankTransferDto,
     @Request() req: any,
@@ -364,7 +340,6 @@ export class AccountingController {
   }
 
   @Patch("bank-transfers/:id")
-  @Roles("ADMIN", "USER")
   async updateBankTransfer(
     @Param("id") id: string,
     @Body() updateBankTransferDto: UpdateBankTransferDto,
@@ -377,13 +352,11 @@ export class AccountingController {
   }
 
   @Post("bank-transfers/:id/approve")
-  @Roles("ADMIN")
   async approveBankTransfer(@Param("id") id: string, @Request() req: any) {
     return this.bankTransferService.approveBankTransfer(id, req.user.userId);
   }
 
   @Post("bank-transfers/:id/reject")
-  @Roles("ADMIN")
   async rejectBankTransfer(
     @Param("id") id: string,
     @Body() data: { reason: string },
@@ -397,20 +370,17 @@ export class AccountingController {
   }
 
   @Post("bank-transfers/:id/cancel")
-  @Roles("ADMIN", "USER")
   async cancelBankTransfer(@Param("id") id: string, @Request() req: any) {
     return this.bankTransferService.cancelBankTransfer(id, req.user.userId);
   }
 
   @Delete("bank-transfers/:id")
-  @Roles("ADMIN")
   async deleteBankTransfer(@Param("id") id: string) {
     return this.bankTransferService.deleteBankTransfer(id);
   }
 
   // ============ BANK RECONCILIATIONS ============
   @Post("bank-reconciliations")
-  @Roles("ADMIN", "USER")
   async createBankReconciliation(
     @Body() createBankReconciliationDto: CreateBankReconciliationDto,
     @Request() req: any,
@@ -432,7 +402,6 @@ export class AccountingController {
   }
 
   @Patch("bank-reconciliations/:id")
-  @Roles("ADMIN", "USER")
   async updateBankReconciliation(
     @Param("id") id: string,
     @Body() updateBankReconciliationDto: UpdateBankReconciliationDto,
@@ -445,7 +414,6 @@ export class AccountingController {
   }
 
   @Post("bank-reconciliations/:id/items")
-  @Roles("ADMIN", "USER")
   async addReconciliationItem(
     @Param("id") id: string,
     @Body() itemDto: CreateBankReconciliationItemDto,
@@ -459,7 +427,6 @@ export class AccountingController {
   }
 
   @Post("bank-reconciliations/items/:itemId/match")
-  @Roles("ADMIN", "USER")
   async matchReconciliationItem(
     @Param("itemId") itemId: string,
     @Body() data: { transactionId: string },
@@ -473,7 +440,6 @@ export class AccountingController {
   }
 
   @Post("bank-reconciliations/:id/review")
-  @Roles("ADMIN", "USER")
   async reviewBankReconciliation(@Param("id") id: string, @Request() req: any) {
     return this.bankReconciliationService.reviewBankReconciliation(
       id,
@@ -482,7 +448,6 @@ export class AccountingController {
   }
 
   @Post("bank-reconciliations/:id/approve")
-  @Roles("ADMIN")
   async approveBankReconciliation(
     @Param("id") id: string,
     @Request() req: any,
@@ -494,7 +459,6 @@ export class AccountingController {
   }
 
   @Post("bank-reconciliations/:id/reject")
-  @Roles("ADMIN")
   async rejectBankReconciliation(
     @Param("id") id: string,
     @Body() data: { reason: string },
@@ -508,7 +472,6 @@ export class AccountingController {
   }
 
   @Delete("bank-reconciliations/:id")
-  @Roles("ADMIN")
   async deleteBankReconciliation(@Param("id") id: string) {
     return this.bankReconciliationService.deleteBankReconciliation(id);
   }
@@ -553,7 +516,6 @@ export class AccountingController {
   }
 
   @Post("fiscal-periods/:id/close")
-  @Roles("ADMIN")
   async closeFiscalPeriod(@Param("id") id: string, @Request() req: any) {
     return this.journalService.closeFiscalPeriod(id, req.user.userId);
   }
@@ -570,7 +532,6 @@ export class AccountingController {
    * Required: ADMIN role
    */
   @Post("year-end-closing")
-  @Roles("ADMIN")
   @ApiOperation({
     summary: "Perform year-end closing",
     description:
@@ -597,13 +558,11 @@ export class AccountingController {
 
   // ============ DEPRECIATION (PSAK 16) ============
   @Post("depreciation/calculate")
-  @Roles("ADMIN", "USER")
   async calculatePeriodDepreciation(@Body() data: any) {
     return this.depreciationService.calculatePeriodDepreciation(data);
   }
 
   @Post("depreciation/post")
-  @Roles("ADMIN")
   async postDepreciationEntry(
     @Body() data: { entryId: string },
     @Request() req: any,
@@ -615,7 +574,6 @@ export class AccountingController {
   }
 
   @Post("depreciation/process-monthly")
-  @Roles("ADMIN")
   async processMonthlyDepreciation(
     @Body()
     data: {
@@ -657,19 +615,16 @@ export class AccountingController {
   }
 
   @Post("depreciation/schedule")
-  @Roles("ADMIN", "USER")
   async createDepreciationSchedule(@Body() data: any) {
     return this.depreciationService.createDepreciationSchedule(data);
   }
 
   @Post("depreciation/backfill-schedules")
-  @Roles("ADMIN")
   async backfillDepreciationSchedules() {
     return this.depreciationService.backfillDepreciationSchedules();
   }
 
   @Delete("depreciation/schedule/:scheduleId")
-  @Roles("ADMIN")
   async deactivateDepreciationSchedule(
     @Param("scheduleId") scheduleId: string,
   ) {
@@ -678,7 +633,6 @@ export class AccountingController {
 
   // ============ ECL PROVISIONS (PSAK 71) ============
   @Post("ecl/calculate")
-  @Roles("ADMIN", "USER")
   async calculateECL(
     @Body()
     data: {
@@ -696,13 +650,11 @@ export class AccountingController {
   }
 
   @Post("ecl/post")
-  @Roles("ADMIN")
   async postECL(@Body() data: { provisionId: string }, @Request() req: any) {
     return this.eclService.postECLProvision(data.provisionId, req.user.userId);
   }
 
   @Post("ecl/process-monthly")
-  @Roles("ADMIN")
   async processMonthlyECL(
     @Body()
     data: {
@@ -723,7 +675,6 @@ export class AccountingController {
   }
 
   @Post("ecl/write-off")
-  @Roles("ADMIN")
   async writeOffBadDebt(
     @Body()
     data: {
@@ -740,7 +691,6 @@ export class AccountingController {
   }
 
   @Post("ecl/recovery")
-  @Roles("ADMIN")
   async recordBadDebtRecovery(
     @Body()
     data: {
@@ -1320,7 +1270,6 @@ export class AccountingController {
    * Returns recognized, deferred, and pending revenue metrics
    */
   @Get("revenue/dashboard")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async getRevenueDashboard(
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
@@ -1338,7 +1287,6 @@ export class AccountingController {
    * Returns revenue recognized during specified period
    */
   @Get("revenue/recognized")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async getRecognizedRevenue(
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
@@ -1356,7 +1304,6 @@ export class AccountingController {
    * Returns revenue received in advance but not yet earned
    */
   @Get("revenue/deferred")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async getDeferredRevenue() {
     return this.revenueRecognitionService.getRevenueDashboardSummary();
   }
@@ -1366,7 +1313,6 @@ export class AccountingController {
    * Returns revenue breakdown by project
    */
   @Get("revenue/by-project")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async getRevenueByProject() {
     return this.revenueRecognitionService.getRevenueDashboardSummary();
   }
@@ -1376,7 +1322,6 @@ export class AccountingController {
    * Returns revenue recognition status for specific project's milestones
    */
   @Get("revenue/milestones/:projectId")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async getProjectMilestonesRevenue(@Param("projectId") projectId: string) {
     return this.revenueRecognitionService.getPaymentMilestonesSummary(
       projectId,
@@ -1388,7 +1333,6 @@ export class AccountingController {
    * Used for invoice payments outside the automatic listener
    */
   @Post("revenue/recognize/:invoiceId")
-  @Roles("SUPER_ADMIN", "FINANCE_MANAGER", "ACCOUNTANT")
   async recognizeInvoiceRevenue(
     @Param("invoiceId") invoiceId: string,
     @Request() req: AuthenticatedRequest,
@@ -1415,7 +1359,6 @@ export class AccountingController {
    * Safe to run multiple times - idempotent operation
    */
   @Post("admin/backfill-invoice-journals")
-  @Roles("SUPER_ADMIN", "ADMIN")
   async backfillMissingInvoiceJournals(@Request() req: any) {
     return this.journalService.backfillMissingInvoiceJournals(req.user.userId);
   }

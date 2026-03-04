@@ -65,31 +65,28 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
   hideFromViewers = false,
 }) => {
   const {
-    canApproveFinancial,
-    canAccessAccounting,
-    canManageOperations,
-    canEditContent,
     isAdmin,
     canManageUsers,
     canManageSettings,
-    isReadOnly,
     hasAnyRole,
   } = usePermissions();
 
   // Check specific requirements
-  if (requireFinancialApprover && !canApproveFinancial()) {
+  // requireFinancialApprover, requireAccountingAccess, requireOperationsManagement
+  // → simplified to requireAdmin (SUPER_ADMIN + ADMIN handle all content)
+  if (requireFinancialApprover && !isAdmin()) {
     return <>{fallback}</>;
   }
 
-  if (requireAccountingAccess && !canAccessAccounting()) {
+  if (requireAccountingAccess && !isAdmin()) {
     return <>{fallback}</>;
   }
 
-  if (requireOperationsManagement && !canManageOperations()) {
+  if (requireOperationsManagement && !isAdmin()) {
     return <>{fallback}</>;
   }
 
-  if (requireEdit && !canEditContent()) {
+  if (requireEdit && !isAdmin()) {
     return <>{fallback}</>;
   }
 
@@ -110,8 +107,8 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
     return <>{fallback}</>;
   }
 
-  // Hide from viewers
-  if (hideFromViewers && isReadOnly()) {
+  // hideFromViewers: VIDEOGRAPHER is effectively read-only for content
+  if (hideFromViewers && !isAdmin()) {
     return <>{fallback}</>;
   }
 

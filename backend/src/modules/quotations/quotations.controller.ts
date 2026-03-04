@@ -15,14 +15,7 @@ import { QuotationsService } from "./quotations.service";
 import { CreateQuotationDto } from "./dto/create-quotation.dto";
 import { UpdateQuotationDto } from "./dto/update-quotation.dto";
 import { UpdateQuotationStatusDto } from "./dto/update-quotation-status.dto";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import {
-  RequireAuth,
-  RequireFinancialApprover,
-  RequireSuperAdmin,
-  RequireEditorRole,
-  RequireOperationsRole,
-} from "../auth/decorators/auth.decorators";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import {
   ApiBearerAuth,
   ApiTags,
@@ -36,6 +29,7 @@ import { canApproveOwnSubmission } from "../../common/constants/permissions.cons
 
 @ApiTags("quotations")
 @ApiBearerAuth()
+@RequireAdmin()
 @Controller("quotations")
 export class QuotationsController {
   constructor(
@@ -44,14 +38,12 @@ export class QuotationsController {
   ) {}
 
   @Post()
-  @RequireEditorRole() // All users except VIEWER can create quotations
   @ApiOperation({ summary: "Buat quotation baru" })
   create(@Body() createQuotationDto: CreateQuotationDto, @Request() req: any) {
     return this.quotationsService.create(createQuotationDto, req.user.id);
   }
 
   @Get()
-  @RequireAuth() // All authenticated users can view quotations
   @ApiOperation({ summary: "Dapatkan daftar quotation" })
   @ApiQuery({ name: "page", required: false, type: Number })
   @ApiQuery({ name: "limit", required: false, type: Number })
@@ -89,14 +81,12 @@ export class QuotationsController {
   }
 
   @Get("stats")
-  @RequireAuth() // All authenticated users can view stats
   @ApiOperation({ summary: "Dapatkan statistik quotation" })
   getStats() {
     return this.quotationsService.getQuotationStats();
   }
 
   @Get("recent")
-  @RequireAuth() // All authenticated users can view recent quotations
   @ApiOperation({ summary: "Dapatkan quotation terbaru" })
   @ApiQuery({ name: "limit", required: false, type: Number })
   getRecent(@Query("limit") limit?: string) {
@@ -105,14 +95,12 @@ export class QuotationsController {
   }
 
   @Get(":id")
-  @RequireAuth() // All authenticated users can view quotation details
   @ApiOperation({ summary: "Dapatkan detail quotation" })
   findOne(@Param("id") id: string) {
     return this.quotationsService.findOne(id);
   }
 
   @Patch(":id")
-  @RequireEditorRole() // Only editors can update quotations
   @ApiOperation({ summary: "Update quotation" })
   update(
     @Param("id") id: string,
@@ -122,7 +110,6 @@ export class QuotationsController {
   }
 
   @Patch(":id/status")
-  @RequireFinancialApprover() // CRITICAL: Only financial approvers can change status (approve/decline)
   @ApiOperation({ summary: "Update status quotation (approve/decline)" })
   async updateStatus(
     @Param("id") id: string,
@@ -155,7 +142,6 @@ export class QuotationsController {
   }
 
   @Post(":id/generate-invoice")
-  @RequireOperationsRole() // Operations roles can generate invoices
   @ApiOperation({ summary: "Generate invoice dari quotation yang disetujui" })
   @ApiResponse({
     status: 201,
@@ -203,7 +189,6 @@ export class QuotationsController {
   }
 
   @Delete(":id")
-  @RequireSuperAdmin() // Only SUPER_ADMIN can delete quotations
   @ApiOperation({ summary: "Hapus quotation (hanya draft)" })
   remove(@Param("id") id: string) {
     return this.quotationsService.remove(id);
@@ -215,7 +200,6 @@ export class QuotationsController {
    * If quotation is milestone-based, handles milestone invoice generation
    */
   @Post(":id/approve-with-milestones")
-  @RequireFinancialApprover()
   @ApiOperation({ summary: "Approve quotation dengan dukungan milestone" })
   @ApiResponse({
     status: 200,
@@ -235,7 +219,6 @@ export class QuotationsController {
    * Called when client is ready for next phase payment
    */
   @Post(":id/generate-next-milestone-invoice")
-  @RequireFinancialApprover()
   @ApiOperation({ summary: "Generate invoice untuk milestone berikutnya" })
   @ApiResponse({
     status: 200,
@@ -254,7 +237,6 @@ export class QuotationsController {
    * Shows which milestones are invoiced, paid, etc.
    */
   @Get(":id/milestone-progress")
-  @RequireAuth()
   @ApiOperation({ summary: "Get progress pembayaran milestone" })
   @ApiResponse({
     status: 200,

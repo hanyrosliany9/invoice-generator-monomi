@@ -64,13 +64,48 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const location = useLocation()
   const { t } = useTranslation()
   const { user, logout } = useAuthStore()
-  const { canManageUsers } = usePermissions()
+  const { canManageUsers, hasRole } = usePermissions()
   const { theme } = useTheme()
 
   // Mobile detection using centralized hook
   const isMobile = useIsMobile()
 
-  // Build menu items dynamically based on permissions
+  const isVideographer = hasRole('VIDEOGRAPHER')
+
+  // Videographer-only menu: media-collab + production tools
+  const videographerMenuItems = [
+    {
+      key: '/media-collab',
+      icon: <VideoCameraOutlined />,
+      label: 'Media Collaboration',
+    },
+    {
+      key: 'production',
+      icon: <CameraOutlined />,
+      label: 'Production',
+      children: [
+        {
+          key: '/shot-lists',
+          icon: <PlayCircleOutlined />,
+          label: 'Shot Lists',
+          title: 'Film Production Shot Lists',
+        },
+        {
+          key: '/call-sheets',
+          icon: <FileTextOutlined />,
+          label: 'Call Sheets',
+          title: 'Daily Production Call Sheets',
+        },
+      ],
+    },
+    {
+      key: '/media-downloader',
+      icon: <DownloadOutlined />,
+      label: 'Media Downloader',
+    },
+  ]
+
+  // Full menu for SUPER_ADMIN and ADMIN
   const baseMenuItems = [
     {
       key: '/dashboard',
@@ -233,25 +268,27 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     },
   ]
 
-  // Add User Management menu item (admin only)
-  const menuItems = [
-    ...baseMenuItems,
-    ...(canManageUsers()
-      ? [
-          {
-            key: '/users',
-            icon: <TeamOutlined />,
-            label: 'User Management',
-          },
-        ]
-      : []),
-    {
-      key: '/settings',
-      icon: <SettingOutlined />,
-      label: t('navigation.settings'),
-      'data-testid': 'nav-settings',
-    },
-  ]
+  // Build final menu based on role
+  const menuItems = isVideographer
+    ? videographerMenuItems
+    : [
+        ...baseMenuItems,
+        ...(canManageUsers()
+          ? [
+              {
+                key: '/users',
+                icon: <TeamOutlined />,
+                label: 'User Management',
+              },
+            ]
+          : []),
+        {
+          key: '/settings',
+          icon: <SettingOutlined />,
+          label: t('navigation.settings'),
+          'data-testid': 'nav-settings',
+        },
+      ]
 
   const userMenuItems = [
     {

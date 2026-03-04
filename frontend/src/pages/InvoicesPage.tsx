@@ -122,7 +122,7 @@ export const InvoicesPage: React.FC = () => {
   const { theme } = useTheme()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const { canApproveFinancial } = usePermissions()
+  const { isAdmin } = usePermissions()
   const isMobile = useIsMobile()
 
   const [searchText, setSearchText] = useState('')
@@ -598,11 +598,11 @@ export const InvoicesPage: React.FC = () => {
         color: theme.colors.status.success,
         onClick: (record) => {
           const invoice = invoices.find(inv => inv.id === record.id)
-          if (invoice && canApproveFinancial()) {
+          if (invoice && isAdmin()) {
             handleStatusChange(invoice, 'PAID')
           }
         },
-        visible: (record) => (record.status === 'sent' || record.status === 'overdue') && canApproveFinancial(),
+        visible: (record) => (record.status === 'sent' || record.status === 'overdue') && isAdmin(),
       },
       {
         key: 'print',
@@ -624,7 +624,7 @@ export const InvoicesPage: React.FC = () => {
         // No visibility restriction - matches desktop behavior
       },
     ],
-    [invoices, canApproveFinancial, theme, handleStatusChange, handlePrintInvoice, handleDelete]
+    [invoices, isAdmin, theme, handleStatusChange, handlePrintInvoice, handleDelete]
   )
 
   // Mobile filters configuration
@@ -776,7 +776,7 @@ export const InvoicesPage: React.FC = () => {
   // Batch operation handlers
   const handleBatchSend = async () => {
     // Add permission check at the start
-    if (!canApproveFinancial()) {
+    if (!isAdmin()) {
       message.warning('Anda tidak memiliki izin untuk mengirim invoice')
       return
     }
@@ -932,7 +932,7 @@ export const InvoicesPage: React.FC = () => {
     }
 
     // Add mark as paid for both SENT and OVERDUE statuses
-    if ((invoice.status === 'SENT' || invoice.status === 'OVERDUE') && canApproveFinancial()) {
+    if ((invoice.status === 'SENT' || invoice.status === 'OVERDUE') && isAdmin()) {
       items.push({
         key: 'mark-paid',
         icon: <CheckCircleOutlined />,
@@ -942,7 +942,7 @@ export const InvoicesPage: React.FC = () => {
     }
 
     // Add general status change option (similar to quotation page)
-    if (canApproveFinancial()) {
+    if (isAdmin()) {
       items.push({
         key: 'change-status',
         icon: <EditOutlined />,

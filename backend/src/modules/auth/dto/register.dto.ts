@@ -35,7 +35,7 @@ export class RegisterDto {
   @ApiProperty({
     description: "Role pengguna",
     enum: UserRole,
-    example: UserRole.USER,
+    example: UserRole.VIDEOGRAPHER,
     required: false,
   })
   @IsOptional()

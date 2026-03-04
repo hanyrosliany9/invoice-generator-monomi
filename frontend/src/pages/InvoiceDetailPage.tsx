@@ -72,7 +72,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
   const { t } = useTranslation()
   const { theme } = useTheme()
   const isMobile = useIsMobile()
-  const { canApproveFinancial } = usePermissions()
+  const { isAdmin } = usePermissions()
   const queryClient = useQueryClient()
   const [pdfModalVisible, setPdfModalVisible] = useState(false)
   const [paymentModalVisible, setPaymentModalVisible] = useState(false)
@@ -479,7 +479,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
                 </Button>
 
                 {(invoice.status === 'SENT' || invoice.status === 'OVERDUE') &&
-                 canApproveFinancial() && (
+                 isAdmin() && (
                   <Button
                     icon={<DollarOutlined />}
                     size='large'
@@ -1176,7 +1176,7 @@ export const InvoiceDetailPage: React.FC<InvoiceDetailPageProps> = () => {
             aria-label='Send via email'
           />
           {(invoice.status === 'SENT' || invoice.status === 'OVERDUE') &&
-           canApproveFinancial() && (
+           isAdmin() && (
             <FloatButton
               icon={<DollarOutlined />}
               tooltip='Mark as Paid'

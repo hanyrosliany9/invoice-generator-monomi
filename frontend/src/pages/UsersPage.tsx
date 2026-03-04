@@ -337,11 +337,8 @@ export const UsersPage: React.FC = () => {
       ),
       filters: [
         { text: 'Super Admin', value: 'SUPER_ADMIN' },
-        { text: 'Finance Manager', value: 'FINANCE_MANAGER' },
-        { text: 'Accountant', value: 'ACCOUNTANT' },
-        { text: 'Project Manager', value: 'PROJECT_MANAGER' },
-        { text: 'Staff', value: 'STAFF' },
-        { text: 'Viewer', value: 'VIEWER' },
+        { text: 'Admin', value: 'ADMIN' },
+        { text: 'Videographer', value: 'VIDEOGRAPHER' },
       ],
       onFilter: (value: any, record: User) => record.role === value,
     },
@@ -529,11 +526,8 @@ export const UsersPage: React.FC = () => {
                 allowClear
               >
                 <Option value='SUPER_ADMIN'>Super Admin</Option>
-                <Option value='FINANCE_MANAGER'>Finance Manager</Option>
-                <Option value='ACCOUNTANT'>Accountant</Option>
-                <Option value='PROJECT_MANAGER'>Project Manager</Option>
-                <Option value='STAFF'>Staff</Option>
-                <Option value='VIEWER'>Viewer</Option>
+                <Option value='ADMIN'>Admin</Option>
+                <Option value='VIDEOGRAPHER'>Videographer</Option>
               </Select>
             </Col>
             <Col xs={24} sm={12} md={6}>

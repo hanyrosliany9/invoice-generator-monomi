@@ -50,7 +50,7 @@ describe("RolesGuard", () => {
     it("should allow access when no roles are required", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.STAFF,
+        role: UserRole.VIDEOGRAPHER,
       });
       jest.spyOn(reflector, "getAllAndOverride").mockReturnValue(undefined);
 
@@ -62,7 +62,7 @@ describe("RolesGuard", () => {
     it("should allow access when roles array is empty", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.STAFF,
+        role: UserRole.VIDEOGRAPHER,
       });
       jest.spyOn(reflector, "getAllAndOverride").mockReturnValue([]);
 
@@ -120,10 +120,10 @@ describe("RolesGuard", () => {
         id: "1",
         role: UserRole.SUPER_ADMIN,
       });
-      // In real endpoints, both roles are listed: @Roles(UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER)
+      // In real endpoints, both roles are listed: @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
       jest
         .spyOn(reflector, "getAllAndOverride")
-        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER]);
+        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.ADMIN]);
 
       const result = guard.canActivate(mockContext);
 
@@ -135,12 +135,12 @@ describe("RolesGuard", () => {
     it("should allow FINANCE_MANAGER to access financial approval endpoints", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.FINANCE_MANAGER,
+        role: UserRole.ADMIN,
         email: "finance.manager@monomi.id",
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
-        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER]);
+        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.ADMIN]);
 
       const result = guard.canActivate(mockContext);
 
@@ -150,7 +150,7 @@ describe("RolesGuard", () => {
     it("should deny FINANCE_MANAGER access to SUPER_ADMIN only endpoints", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.FINANCE_MANAGER,
+        role: UserRole.ADMIN,
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
@@ -165,15 +165,15 @@ describe("RolesGuard", () => {
     it("should allow ACCOUNTANT to access accounting endpoints", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.ACCOUNTANT,
+        role: UserRole.ADMIN,
         email: "accountant@monomi.id",
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
         .mockReturnValue([
           UserRole.SUPER_ADMIN,
-          UserRole.FINANCE_MANAGER,
-          UserRole.ACCOUNTANT,
+          UserRole.ADMIN,
+          UserRole.ADMIN,
         ]);
 
       const result = guard.canActivate(mockContext);
@@ -184,11 +184,11 @@ describe("RolesGuard", () => {
     it("should deny ACCOUNTANT access to financial approval endpoints", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.ACCOUNTANT,
+        role: UserRole.ADMIN,
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
-        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER]);
+        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.ADMIN]);
 
       expect(() => guard.canActivate(mockContext)).toThrow(ForbiddenException);
       expect(() => guard.canActivate(mockContext)).toThrow(/Accountant/);
@@ -199,12 +199,12 @@ describe("RolesGuard", () => {
     it("should allow PROJECT_MANAGER to access operations endpoints", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.PROJECT_MANAGER,
+        role: UserRole.ADMIN,
         email: "project.manager@monomi.id",
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
-        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.PROJECT_MANAGER]);
+        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.ADMIN]);
 
       const result = guard.canActivate(mockContext);
 
@@ -214,11 +214,11 @@ describe("RolesGuard", () => {
     it("should deny PROJECT_MANAGER access to financial approval endpoints", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.PROJECT_MANAGER,
+        role: UserRole.ADMIN,
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
-        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER]);
+        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.ADMIN]);
 
       expect(() => guard.canActivate(mockContext)).toThrow(ForbiddenException);
     });
@@ -228,17 +228,17 @@ describe("RolesGuard", () => {
     it("should allow STAFF to access editor endpoints", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.STAFF,
+        role: UserRole.VIDEOGRAPHER,
         email: "staff@monomi.id",
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
         .mockReturnValue([
           UserRole.SUPER_ADMIN,
-          UserRole.FINANCE_MANAGER,
-          UserRole.PROJECT_MANAGER,
-          UserRole.ACCOUNTANT,
-          UserRole.STAFF,
+          UserRole.ADMIN,
+          UserRole.ADMIN,
+          UserRole.ADMIN,
+          UserRole.VIDEOGRAPHER,
         ]);
 
       const result = guard.canActivate(mockContext);
@@ -249,11 +249,11 @@ describe("RolesGuard", () => {
     it("should deny STAFF access to financial approval endpoints", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.STAFF,
+        role: UserRole.VIDEOGRAPHER,
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
-        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER]);
+        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.ADMIN]);
 
       expect(() => guard.canActivate(mockContext)).toThrow(ForbiddenException);
       expect(() => guard.canActivate(mockContext)).toThrow(/Staff/);
@@ -262,7 +262,7 @@ describe("RolesGuard", () => {
     it("should deny STAFF access to user management endpoints", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.STAFF,
+        role: UserRole.VIDEOGRAPHER,
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
@@ -276,12 +276,12 @@ describe("RolesGuard", () => {
     it("should deny VIEWER access to editor endpoints", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.VIEWER,
+        role: UserRole.VIDEOGRAPHER,
         email: "viewer@monomi.id",
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
-        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.STAFF]);
+        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.VIDEOGRAPHER]);
 
       expect(() => guard.canActivate(mockContext)).toThrow(ForbiddenException);
       expect(() => guard.canActivate(mockContext)).toThrow(/Viewer/);
@@ -290,11 +290,11 @@ describe("RolesGuard", () => {
     it("should deny VIEWER access to financial approval endpoints", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.VIEWER,
+        role: UserRole.VIDEOGRAPHER,
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
-        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER]);
+        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.ADMIN]);
 
       expect(() => guard.canActivate(mockContext)).toThrow(ForbiddenException);
     });
@@ -324,7 +324,7 @@ describe("RolesGuard", () => {
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
-        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.STAFF]);
+        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.VIDEOGRAPHER]);
 
       const result = guard.canActivate(mockContext);
 
@@ -348,14 +348,14 @@ describe("RolesGuard", () => {
     it("should allow access when user has one of multiple required roles", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.ACCOUNTANT,
+        role: UserRole.ADMIN,
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
         .mockReturnValue([
           UserRole.SUPER_ADMIN,
-          UserRole.FINANCE_MANAGER,
-          UserRole.ACCOUNTANT,
+          UserRole.ADMIN,
+          UserRole.ADMIN,
         ]);
 
       const result = guard.canActivate(mockContext);
@@ -366,14 +366,14 @@ describe("RolesGuard", () => {
     it("should deny access when user does not have any of the required roles", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.VIEWER,
+        role: UserRole.VIDEOGRAPHER,
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
         .mockReturnValue([
           UserRole.SUPER_ADMIN,
-          UserRole.FINANCE_MANAGER,
-          UserRole.ACCOUNTANT,
+          UserRole.ADMIN,
+          UserRole.ADMIN,
         ]);
 
       expect(() => guard.canActivate(mockContext)).toThrow(ForbiddenException);
@@ -384,11 +384,11 @@ describe("RolesGuard", () => {
     it("should include required roles in error message", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.STAFF,
+        role: UserRole.VIDEOGRAPHER,
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
-        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER]);
+        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.ADMIN]);
 
       expect(() => guard.canActivate(mockContext)).toThrow(
         /Super Admin, Finance Manager/,
@@ -398,7 +398,7 @@ describe("RolesGuard", () => {
     it("should include current role in error message", () => {
       const mockContext = createMockExecutionContext({
         id: "1",
-        role: UserRole.STAFF,
+        role: UserRole.VIDEOGRAPHER,
       });
       jest
         .spyOn(reflector, "getAllAndOverride")
@@ -414,13 +414,13 @@ describe("RolesGuard", () => {
     it("should allow FINANCE_MANAGER to approve quotations", () => {
       const mockContext = createMockExecutionContext({
         id: "fm-123",
-        role: UserRole.FINANCE_MANAGER,
+        role: UserRole.ADMIN,
         email: "finance.manager@monomi.id",
       });
-      // Simulating @Roles(UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER) on approveQuotation endpoint
+      // Simulating @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN) on approveQuotation endpoint
       jest
         .spyOn(reflector, "getAllAndOverride")
-        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER]);
+        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.ADMIN]);
 
       const result = guard.canActivate(mockContext);
 
@@ -430,13 +430,13 @@ describe("RolesGuard", () => {
     it("should deny ACCOUNTANT from approving quotations", () => {
       const mockContext = createMockExecutionContext({
         id: "acc-456",
-        role: UserRole.ACCOUNTANT,
+        role: UserRole.ADMIN,
         email: "accountant@monomi.id",
       });
-      // Simulating @Roles(UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER) on approveQuotation endpoint
+      // Simulating @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN) on approveQuotation endpoint
       jest
         .spyOn(reflector, "getAllAndOverride")
-        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER]);
+        .mockReturnValue([UserRole.SUPER_ADMIN, UserRole.ADMIN]);
 
       expect(() => guard.canActivate(mockContext)).toThrow(ForbiddenException);
       expect(() => guard.canActivate(mockContext)).toThrow(
@@ -466,7 +466,7 @@ describe("RolesGuard", () => {
     it("should deny PROJECT_MANAGER from managing users", () => {
       const mockContext = createMockExecutionContext({
         id: "pm-321",
-        role: UserRole.PROJECT_MANAGER,
+        role: UserRole.ADMIN,
         email: "project.manager@monomi.id",
       });
       // Simulating @Roles(UserRole.SUPER_ADMIN) on user management endpoints

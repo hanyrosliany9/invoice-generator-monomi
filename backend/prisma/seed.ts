@@ -46,123 +46,60 @@ async function main() {
   }
 
   // Hash passwords for test users
-  const hashedPasswordLegacy = await bcrypt.hash('password123', 10);
-  const hashedPasswordNew = await bcrypt.hash('Test1234', 10);
+  const hashedPasswordAdmin = await bcrypt.hash('password123', 10);
+  const hashedPasswordTest = await bcrypt.hash('Test1234', 10);
 
-  // Create legacy admin user (backward compatibility)
-  const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@monomi.id' },
-    update: {},
-    create: {
-      email: 'admin@monomi.id',
-      password: hashedPasswordLegacy,
-      name: 'Admin Sistem (Legacy)',
-      role: 'ADMIN',
-      isActive: true,
-    },
-  });
-
-  // Create legacy regular user (backward compatibility)
-  const regularUser = await prisma.user.upsert({
-    where: { email: 'user@bisnis.co.id' },
-    update: {},
-    create: {
-      email: 'user@bisnis.co.id',
-      password: hashedPasswordLegacy,
-      name: 'User Bisnis (Legacy)',
-      role: 'USER',
-      isActive: true,
-    },
-  });
-
-  console.log('👤 Legacy users created:', {
-    admin: adminUser.email,
-    user: regularUser.email
-  });
-
-  // Create production role users (NEW RBAC SYSTEM)
-  console.log('🔐 Creating RBAC test users...');
+  // Create 3 test users matching the simplified role system
+  console.log('🔐 Creating test users...');
 
   const superAdminUser = await prisma.user.upsert({
-    where: { email: 'super.admin@monomi.id' },
+    where: { email: 'superadmin@monomi.id' },
     update: {},
     create: {
-      email: 'super.admin@monomi.id',
-      password: hashedPasswordNew,
+      email: 'superadmin@monomi.id',
+      password: hashedPasswordAdmin,
       name: 'Super Admin',
       role: 'SUPER_ADMIN',
       isActive: true,
     },
   });
 
-  const financeManagerUser = await prisma.user.upsert({
-    where: { email: 'finance.manager@monomi.id' },
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@monomi.id' },
     update: {},
     create: {
-      email: 'finance.manager@monomi.id',
-      password: hashedPasswordNew,
-      name: 'Finance Manager',
-      role: 'FINANCE_MANAGER',
+      email: 'admin@monomi.id',
+      password: hashedPasswordAdmin,
+      name: 'Admin',
+      role: 'ADMIN',
       isActive: true,
     },
   });
 
-  const accountantUser = await prisma.user.upsert({
-    where: { email: 'accountant@monomi.id' },
+  const videographerUser = await prisma.user.upsert({
+    where: { email: 'videographer@monomi.id' },
     update: {},
     create: {
-      email: 'accountant@monomi.id',
-      password: hashedPasswordNew,
-      name: 'Accountant',
-      role: 'ACCOUNTANT',
+      email: 'videographer@monomi.id',
+      password: hashedPasswordTest,
+      name: 'Videographer',
+      role: 'VIDEOGRAPHER',
       isActive: true,
     },
   });
 
-  const projectManagerUser = await prisma.user.upsert({
-    where: { email: 'project.manager@monomi.id' },
-    update: {},
-    create: {
-      email: 'project.manager@monomi.id',
-      password: hashedPasswordNew,
-      name: 'Project Manager',
-      role: 'PROJECT_MANAGER',
-      isActive: true,
-    },
-  });
-
-  const staffUser = await prisma.user.upsert({
-    where: { email: 'staff@monomi.id' },
-    update: {},
-    create: {
-      email: 'staff@monomi.id',
-      password: hashedPasswordNew,
-      name: 'Staff User',
-      role: 'STAFF',
-      isActive: true,
-    },
-  });
-
-  const viewerUser = await prisma.user.upsert({
-    where: { email: 'viewer@monomi.id' },
-    update: {},
-    create: {
-      email: 'viewer@monomi.id',
-      password: hashedPasswordNew,
-      name: 'Viewer',
-      role: 'VIEWER',
-      isActive: true,
-    },
-  });
-
-  console.log('🔐 RBAC users created:', {
+  console.log('🔐 Test users created:', {
     superAdmin: superAdminUser.email,
-    financeManager: financeManagerUser.email,
-    accountant: accountantUser.email,
-    projectManager: projectManagerUser.email,
-    staff: staffUser.email,
-    viewer: viewerUser.email,
+    admin: adminUser.email,
+    videographer: videographerUser.email,
   });
+
+  // Compatibility aliases for seed data references below
+  const regularUser = adminUser;
+  const financeManagerUser = superAdminUser;
+  const accountantUser = adminUser;
+  const projectManagerUser = adminUser;
+  const staffUser = videographerUser;
 
   // Create company settings
   console.log('🏢 Creating company settings...');

@@ -360,9 +360,8 @@ function mapExpenseStatus(status: Expense['status']): BusinessEntity['status'] {
  * Map user role to priority level
  */
 function mapUserPriority(role: User['role']): 'low' | 'medium' | 'high' {
-  if (role === 'SUPER_ADMIN' || role === 'ADMIN') return 'high'
-  if (role === 'FINANCE_MANAGER' || role === 'ACCOUNTANT') return 'high'
-  if (role === 'PROJECT_MANAGER') return 'medium'
+  if (role === 'SUPER_ADMIN') return 'high'
+  if (role === 'ADMIN') return 'medium'
   return 'low'
 }
 

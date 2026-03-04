@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
   Request,
 } from "@nestjs/common";
 import {
@@ -27,19 +26,16 @@ import {
   PostVendorInvoiceDto,
   CancelVendorInvoiceDto,
 } from "./dto";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import { Roles } from "../auth/decorators/roles.decorator";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 
 @ApiTags("Vendor Invoices")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireAdmin()
 @Controller("vendor-invoices")
 export class VendorInvoicesController {
   constructor(private readonly vendorInvoicesService: VendorInvoicesService) {}
 
   @Post()
-  @Roles("ADMIN", "ACCOUNTANT", "FINANCE_MANAGER")
   @ApiOperation({ summary: "Create new vendor invoice" })
   @ApiResponse({ status: 201, description: "VI created successfully" })
   @ApiResponse({
@@ -58,7 +54,6 @@ export class VendorInvoicesController {
   }
 
   @Get()
-  @Roles("ADMIN", "ACCOUNTANT", "FINANCE_MANAGER", "PROJECT_MANAGER")
   @ApiOperation({ summary: "Get all vendor invoices with filtering" })
   @ApiResponse({ status: 200, description: "List of vendor invoices" })
   findAll(@Query() query: VendorInvoiceQueryDto) {
@@ -66,7 +61,6 @@ export class VendorInvoicesController {
   }
 
   @Get("statistics")
-  @Roles("ADMIN", "FINANCE_MANAGER")
   @ApiOperation({ summary: "Get vendor invoice statistics" })
   @ApiResponse({ status: 200, description: "VI statistics" })
   getStatistics(
@@ -84,7 +78,6 @@ export class VendorInvoicesController {
   }
 
   @Get(":id")
-  @Roles("ADMIN", "ACCOUNTANT", "FINANCE_MANAGER", "PROJECT_MANAGER")
   @ApiOperation({ summary: "Get vendor invoice by ID" })
   @ApiResponse({ status: 200, description: "Vendor invoice details" })
   @ApiResponse({ status: 404, description: "VI not found" })
@@ -93,7 +86,6 @@ export class VendorInvoicesController {
   }
 
   @Patch(":id")
-  @Roles("ADMIN", "ACCOUNTANT", "FINANCE_MANAGER")
   @ApiOperation({ summary: "Update vendor invoice (DRAFT only)" })
   @ApiResponse({ status: 200, description: "VI updated successfully" })
   @ApiResponse({ status: 400, description: "Cannot update non-DRAFT VI" })
@@ -111,7 +103,6 @@ export class VendorInvoicesController {
   }
 
   @Delete(":id")
-  @Roles("ADMIN", "FINANCE_MANAGER")
   @ApiOperation({ summary: "Delete vendor invoice (DRAFT only)" })
   @ApiResponse({ status: 200, description: "VI deleted successfully" })
   @ApiResponse({ status: 400, description: "Cannot delete non-DRAFT VI" })
@@ -121,7 +112,6 @@ export class VendorInvoicesController {
   }
 
   @Post(":id/match")
-  @Roles("ADMIN", "ACCOUNTANT", "FINANCE_MANAGER")
   @ApiOperation({ summary: "Perform three-way matching (PO-GR-VI)" })
   @ApiResponse({ status: 200, description: "Matching completed successfully" })
   @ApiResponse({
@@ -138,7 +128,6 @@ export class VendorInvoicesController {
   }
 
   @Post(":id/approve")
-  @Roles("ADMIN", "FINANCE_MANAGER")
   @ApiOperation({ summary: "Approve vendor invoice" })
   @ApiResponse({ status: 200, description: "VI approved successfully" })
   @ApiResponse({
@@ -155,7 +144,6 @@ export class VendorInvoicesController {
   }
 
   @Post(":id/reject")
-  @Roles("ADMIN", "FINANCE_MANAGER")
   @ApiOperation({ summary: "Reject vendor invoice" })
   @ApiResponse({ status: 200, description: "VI rejected successfully" })
   @ApiResponse({ status: 400, description: "Cannot reject posted/paid VI" })
@@ -169,7 +157,6 @@ export class VendorInvoicesController {
   }
 
   @Post(":id/post")
-  @Roles("ADMIN", "FINANCE_MANAGER")
   @ApiOperation({
     summary: "Post vendor invoice (creates AP and journal entry)",
   })
@@ -185,7 +172,6 @@ export class VendorInvoicesController {
   }
 
   @Post(":id/cancel")
-  @Roles("ADMIN", "FINANCE_MANAGER")
   @ApiOperation({ summary: "Cancel vendor invoice" })
   @ApiResponse({ status: 200, description: "VI cancelled successfully" })
   @ApiResponse({ status: 400, description: "Cannot cancel posted/paid VI" })

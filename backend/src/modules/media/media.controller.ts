@@ -10,7 +10,6 @@ import {
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
-  UseGuards,
   Logger,
   BadRequestException,
   Res,
@@ -26,10 +25,11 @@ import {
   ApiBearerAuth,
 } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import { Roles } from "../auth/decorators/roles.decorator";
-import { UserRole } from "@prisma/client";
+import {
+  RequireMediaRole,
+  RequireAdmin,
+  RequireSuperAdmin,
+} from "../auth/decorators/auth.decorators";
 import { MediaService } from "./media.service";
 import { MediaCleanupService } from "./services/media-cleanup.service";
 
@@ -68,8 +68,7 @@ export class MediaController {
    * Returns: { url, key, size, mimeType, thumbnailUrl?, thumbnailKey? }
    */
   @Post("upload")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.PROJECT_MANAGER, UserRole.STAFF)
+  @RequireMediaRole()
   @UseInterceptors(FileInterceptor("file"))
   @ApiOperation({
     summary: "Upload a single file to R2 with optional thumbnail",
@@ -138,8 +137,7 @@ export class MediaController {
    * Returns: { urls: [...] }
    */
   @Post("upload-multiple")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.PROJECT_MANAGER, UserRole.STAFF)
+  @RequireMediaRole()
   @UseInterceptors(FilesInterceptor("files", 10)) // Max 10 files at once
   @ApiOperation({ summary: "Upload multiple files to R2" })
   @ApiConsumes("multipart/form-data")
@@ -202,7 +200,7 @@ export class MediaController {
     summary: "Generate media access token for Cloudflare Workers",
   })
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @RequireMediaRole()
   async generateMediaAccessToken(@Req() req: any) {
     const userId = req.user.id;
 
@@ -268,7 +266,7 @@ export class MediaController {
     summary: "Generate presigned URL for private R2 access (DEPRECATED)",
   })
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @RequireMediaRole()
   async getPresignedUrl(
     @Query("key") key: string,
     @Query("expiresIn") expiresIn?: string,
@@ -364,8 +362,7 @@ export class MediaController {
    * Example: content/2025-01-08/abc123-image.jpg → content%2F2025-01-08%2Fabc123-image.jpg
    */
   @Delete(":key(*)")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.PROJECT_MANAGER)
+  @RequireAdmin()
   @ApiOperation({ summary: "Delete a file from R2" })
   async deleteFile(@Param("key") key: string) {
     if (!key) {
@@ -392,8 +389,7 @@ export class MediaController {
    * Useful for testing or immediate cleanup needs.
    */
   @Post("cleanup")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @RequireSuperAdmin()
   @ApiOperation({ summary: "Manually trigger thumbnail and file cleanup" })
   async manualCleanup() {
     this.logger.log("Manual cleanup triggered by admin");

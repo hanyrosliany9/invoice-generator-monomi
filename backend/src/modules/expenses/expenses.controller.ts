@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
   Request,
   HttpCode,
   HttpStatus,
@@ -32,13 +31,7 @@ import {
   CreateExpenseCategoryDto,
   UpdateExpenseCategoryDto,
 } from "./dto";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import { Roles } from "../auth/decorators/roles.decorator";
-import {
-  RequireSuperAdmin,
-  RequireFinancialApprover,
-} from "../auth/decorators/auth.decorators";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 
 /**
  * Expenses Controller
@@ -55,7 +48,7 @@ import {
  */
 @ApiTags("expenses")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireAdmin()
 @Controller("expenses")
 export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
@@ -129,7 +122,6 @@ export class ExpensesController {
    * @returns Created category
    */
   @Post("categories")
-  @RequireSuperAdmin() // Only SUPER_ADMIN can create categories
   @ApiOperation({
     summary: "Create expense category",
     description:
@@ -182,7 +174,6 @@ export class ExpensesController {
    * @returns Updated category
    */
   @Patch("categories/:id")
-  @RequireSuperAdmin() // Only SUPER_ADMIN can update categories
   @ApiOperation({
     summary: "Update expense category",
     description: "Update expense category (requires SUPER_ADMIN role)",
@@ -213,7 +204,6 @@ export class ExpensesController {
    * @returns Success message
    */
   @Delete("categories/:id")
-  @RequireSuperAdmin() // Only SUPER_ADMIN can delete categories
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: "Delete expense category",
@@ -527,7 +517,6 @@ export class ExpensesController {
    * @returns Updated expense
    */
   @Post(":id/approve")
-  @RequireFinancialApprover() // Only SUPER_ADMIN or FINANCE_MANAGER can approve expenses
   @ApiOperation({
     summary: "Approve expense",
     description:
@@ -574,7 +563,6 @@ export class ExpensesController {
    * @returns Updated expense
    */
   @Post(":id/reject")
-  @RequireFinancialApprover() // Only SUPER_ADMIN or FINANCE_MANAGER can reject expenses
   @ApiOperation({
     summary: "Reject expense",
     description:
@@ -621,7 +609,6 @@ export class ExpensesController {
    * @returns Updated expense
    */
   @Post(":id/mark-paid")
-  @RequireFinancialApprover() // Only SUPER_ADMIN or FINANCE_MANAGER can mark expenses as paid
   @ApiOperation({
     summary: "Mark expense as paid",
     description:

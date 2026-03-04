@@ -17,7 +17,7 @@ model User {
   email     String   @unique
   password  String
   name      String
-  role      UserRole @default(STAFF)
+  role      UserRole @default(VIDEOGRAPHER)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -621,17 +621,9 @@ model AuditLog {
 
 // Enums
 enum UserRole {
-  // New roles (production-ready RBAC)
   SUPER_ADMIN // Owner/IT Admin - Full system access
-  FINANCE_MANAGER // Financial Controller - Approve transactions
-  ACCOUNTANT // Bookkeeper - Accounting ops, no approvals
-  PROJECT_MANAGER // Operations - CRUD ops, submit for approval
-  STAFF // Basic User - Create drafts, own data only
-  VIEWER // Read-Only - View data only
-
-  // Legacy roles (backward compatibility)
-  ADMIN // Maps to SUPER_ADMIN
-  USER // Maps to STAFF
+  ADMIN // Content management - invoices, projects, clients, accounting, media
+  VIDEOGRAPHER // Media-collab only - upload and edit assets
 }
 
 // Dynamic Project Type Configuration

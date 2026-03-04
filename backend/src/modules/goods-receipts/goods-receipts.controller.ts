@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
   Request,
 } from "@nestjs/common";
 import {
@@ -25,19 +24,16 @@ import {
   PostGoodsReceiptDto,
   CancelGoodsReceiptDto,
 } from "./dto";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import { Roles } from "../auth/decorators/roles.decorator";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 
 @ApiTags("Goods Receipts")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireAdmin()
 @Controller("goods-receipts")
 export class GoodsReceiptsController {
   constructor(private readonly goodsReceiptsService: GoodsReceiptsService) {}
 
   @Post()
-  @Roles("ADMIN", "PROJECT_MANAGER", "STAFF")
   @ApiOperation({ summary: "Create new goods receipt from PO" })
   @ApiResponse({ status: 201, description: "GR created successfully" })
   @ApiResponse({
@@ -56,7 +52,6 @@ export class GoodsReceiptsController {
   }
 
   @Get()
-  @Roles("ADMIN", "PROJECT_MANAGER", "STAFF", "ACCOUNTANT", "FINANCE_MANAGER")
   @ApiOperation({ summary: "Get all goods receipts with filtering" })
   @ApiResponse({ status: 200, description: "List of goods receipts" })
   findAll(@Query() query: GoodsReceiptQueryDto) {
@@ -64,7 +59,6 @@ export class GoodsReceiptsController {
   }
 
   @Get("statistics")
-  @Roles("ADMIN", "PROJECT_MANAGER", "FINANCE_MANAGER")
   @ApiOperation({ summary: "Get goods receipt statistics" })
   @ApiResponse({ status: 200, description: "GR statistics" })
   getStatistics(
@@ -76,7 +70,6 @@ export class GoodsReceiptsController {
   }
 
   @Get(":id")
-  @Roles("ADMIN", "PROJECT_MANAGER", "STAFF", "ACCOUNTANT", "FINANCE_MANAGER")
   @ApiOperation({ summary: "Get goods receipt by ID" })
   @ApiResponse({ status: 200, description: "Goods receipt details" })
   @ApiResponse({ status: 404, description: "GR not found" })
@@ -85,7 +78,6 @@ export class GoodsReceiptsController {
   }
 
   @Patch(":id")
-  @Roles("ADMIN", "PROJECT_MANAGER", "STAFF")
   @ApiOperation({ summary: "Update goods receipt (DRAFT only)" })
   @ApiResponse({ status: 200, description: "GR updated successfully" })
   @ApiResponse({ status: 400, description: "Cannot update non-DRAFT GR" })
@@ -103,7 +95,6 @@ export class GoodsReceiptsController {
   }
 
   @Delete(":id")
-  @Roles("ADMIN", "PROJECT_MANAGER")
   @ApiOperation({ summary: "Delete goods receipt (DRAFT only)" })
   @ApiResponse({ status: 200, description: "GR deleted successfully" })
   @ApiResponse({ status: 400, description: "Cannot delete non-DRAFT GR" })
@@ -113,7 +104,6 @@ export class GoodsReceiptsController {
   }
 
   @Post(":id/inspect")
-  @Roles("ADMIN", "PROJECT_MANAGER", "STAFF")
   @ApiOperation({ summary: "Record inspection results" })
   @ApiResponse({ status: 200, description: "Inspection recorded successfully" })
   @ApiResponse({
@@ -130,7 +120,6 @@ export class GoodsReceiptsController {
   }
 
   @Post(":id/post")
-  @Roles("ADMIN", "PROJECT_MANAGER", "FINANCE_MANAGER")
   @ApiOperation({
     summary: "Post goods receipt (updates PO, creates journal entry)",
   })
@@ -149,7 +138,6 @@ export class GoodsReceiptsController {
   }
 
   @Post(":id/cancel")
-  @Roles("ADMIN", "PROJECT_MANAGER")
   @ApiOperation({ summary: "Cancel goods receipt" })
   @ApiResponse({ status: 200, description: "GR cancelled successfully" })
   @ApiResponse({ status: 400, description: "Cannot cancel posted GR" })

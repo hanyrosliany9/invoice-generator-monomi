@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
   Request,
   HttpCode,
   HttpStatus,
@@ -28,12 +27,7 @@ import {
   RejectPurchaseOrderDto,
   CancelPurchaseOrderDto,
 } from "./dto";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import {
-  RequireSuperAdmin,
-  RequireFinancialApprover,
-} from "../auth/decorators/auth.decorators";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 
 /**
  * Purchase Orders Controller
@@ -50,7 +44,7 @@ import {
  */
 @ApiTags("purchase-orders")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireAdmin()
 @Controller("purchase-orders")
 export class PurchaseOrdersController {
   constructor(private readonly purchaseOrdersService: PurchaseOrdersService) {}
@@ -284,7 +278,6 @@ export class PurchaseOrdersController {
    * @returns Updated purchase order
    */
   @Post(":id/approve")
-  @RequireFinancialApprover() // SUPER_ADMIN or FINANCE_MANAGER
   @ApiOperation({
     summary: "Approve purchase order",
     description:
@@ -331,7 +324,6 @@ export class PurchaseOrdersController {
    * @returns Updated purchase order
    */
   @Post(":id/reject")
-  @RequireFinancialApprover() // SUPER_ADMIN or FINANCE_MANAGER
   @ApiOperation({
     summary: "Reject purchase order",
     description: "Change status from DRAFT to REJECTED",
@@ -379,7 +371,6 @@ export class PurchaseOrdersController {
    * @returns Updated purchase order
    */
   @Post(":id/cancel")
-  @RequireFinancialApprover() // SUPER_ADMIN or FINANCE_MANAGER
   @ApiOperation({
     summary: "Cancel purchase order",
     description:
@@ -426,7 +417,6 @@ export class PurchaseOrdersController {
    * @returns Updated purchase order
    */
   @Post(":id/close")
-  @RequireFinancialApprover() // SUPER_ADMIN or FINANCE_MANAGER
   @ApiOperation({
     summary: "Close purchase order",
     description: "Force close partially received PO (changes status to CLOSED)",

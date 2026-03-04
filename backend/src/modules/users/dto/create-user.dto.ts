@@ -36,11 +36,11 @@ export class CreateUserDto {
   @ApiProperty({
     description: "Role pengguna",
     enum: UserRole,
-    example: UserRole.USER,
+    example: UserRole.VIDEOGRAPHER,
     required: false,
   })
   @IsOptional()
-  @IsEnum(UserRole, { message: "Role tidak valid" })
+  @IsEnum(UserRole, { message: "Role tidak valid. Pilih: SUPER_ADMIN, ADMIN, atau VIDEOGRAPHER" })
   role?: UserRole;
 
   @ApiProperty({

@@ -5,7 +5,6 @@ import {
   Delete,
   Body,
   Param,
-  UseGuards,
   Request,
 } from "@nestjs/common";
 import {
@@ -15,7 +14,7 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { RequireMediaRole } from "../../auth/decorators/auth.decorators";
 import { BulkDownloadService } from "../services/bulk-download.service";
 import { CreateBulkDownloadJobDto } from "../dto/create-bulk-download-job.dto";
 import {
@@ -40,7 +39,7 @@ import {
  */
 @ApiTags("Media Collab - Bulk Download")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@RequireMediaRole()
 @Controller("media-collab/bulk-download")
 export class BulkDownloadController {
   constructor(private readonly bulkDownloadService: BulkDownloadService) {}

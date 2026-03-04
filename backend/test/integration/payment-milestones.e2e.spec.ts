@@ -49,7 +49,7 @@ describe('Payment Milestones (E2E)', () => {
         email: `test-milestone-${Date.now()}@test.com`,
         password: 'hashed_password',
         name: 'Test User',
-        role: 'PROJECT_MANAGER',
+        role: 'ADMIN',
       },
     });
 

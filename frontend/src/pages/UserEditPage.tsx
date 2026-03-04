@@ -102,7 +102,7 @@ export const UserEditPage: React.FC = () => {
       const formData: UserFormData = {
         name: user.name || '',
         email: user.email || '',
-        role: user.role || 'STAFF',
+        role: user.role || 'VIDEOGRAPHER',
         isActive: user.isActive ?? true, // Default to true if undefined
       }
       // Use setTimeout to ensure form is mounted before setting values

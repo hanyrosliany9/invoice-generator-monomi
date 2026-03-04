@@ -1,6 +1,5 @@
 import {
   Controller,
-  UseGuards,
   Post,
   Get,
   Put,
@@ -11,7 +10,7 @@ import {
   Req,
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { RequireMediaRole } from "../../auth/decorators/auth.decorators";
 import { CollectionsService } from "../services/collections.service";
 import { CreateCollectionDto } from "../dto/create-collection.dto";
 import { UpdateCollectionDto } from "../dto/update-collection.dto";
@@ -19,7 +18,7 @@ import { AuthenticatedRequest } from "../interfaces/authenticated-request.interf
 
 @ApiTags("Media Collaboration - Collections")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@RequireMediaRole()
 @Controller("media-collab/collections")
 export class CollectionsController {
   constructor(private readonly collectionsService: CollectionsService) {}

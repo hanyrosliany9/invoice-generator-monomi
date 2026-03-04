@@ -67,7 +67,7 @@ describe("BusinessJourneyController (e2e)", () => {
         email: "test@monomi.id",
         password: "hashedpassword",
         name: "Test User",
-        role: "USER",
+        role: "VIDEOGRAPHER",
       },
     });
 

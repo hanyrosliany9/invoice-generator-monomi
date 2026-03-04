@@ -1,7 +1,8 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { App as AntApp, Layout, Spin } from 'antd'
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, type ReactNode } from 'react'
 import { useAuthStore } from './store/auth'
+import { usePermissions } from './hooks/usePermissions'
 import { useMediaTokenStore } from './stores/mediaTokenStore'
 import { dateTimeSync } from './services/dateTimeSync'
 import { tokenRefreshService } from './services/token-refresh.service'
@@ -191,6 +192,19 @@ const PageLoader = () => (
   </div>
 )
 
+// Redirects VIDEOGRAPHER away from admin-only routes
+function AdminRoute({ children }: { children?: ReactNode }) {
+  const { isAdmin } = usePermissions()
+  if (!isAdmin()) return <Navigate to='/media-collab' replace />
+  return children ? <>{children}</> : <Outlet />
+}
+
+// Role-aware default redirect
+function DefaultRedirect() {
+  const { isAdmin } = usePermissions()
+  return <Navigate to={isAdmin() ? '/dashboard' : '/media-collab'} replace />
+}
+
 function App() {
   const { isAuthenticated } = useAuthStore()
   const { token: mediaToken, fetchToken } = useMediaTokenStore()
@@ -261,285 +275,252 @@ function App() {
               <MainLayout>
                 <ErrorBoundary level='page'>
                   <Routes>
-                    <Route path='/dashboard' element={<DashboardPage />} />
-                    <Route path='/quotations' element={<QuotationsPage />} />
-                    <Route
-                      path='/quotations/new'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <QuotationCreatePage />
-                        </Suspense>
-                      }
-                    />
-                    <Route
-                      path='/quotations/:id'
-                      element={<QuotationDetailPage />}
-                    />
-                    <Route
-                      path='/quotations/:id/edit'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <QuotationEditPage />
-                        </Suspense>
-                      }
-                    />
-                    <Route path='/invoices' element={<InvoicesPage />} />
-                    <Route
-                      path='/invoices/new'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <InvoiceCreatePage />
-                        </Suspense>
-                      }
-                    />
-                    <Route
-                      path='/invoices/:id'
-                      element={<InvoiceDetailPage />}
-                    />
-                    <Route
-                      path='/invoices/:id/edit'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <InvoiceEditPage />
-                        </Suspense>
-                      }
-                    />
-                    <Route path='/clients' element={<ClientsPage />} />
-                    <Route
-                      path='/clients/new'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <ClientCreatePage />
-                        </Suspense>
-                      }
-                    />
-                    <Route path='/clients/:id' element={<ClientDetailPage />} />
-                    <Route
-                      path='/clients/:id/edit'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <ClientEditPage />
-                        </Suspense>
-                      }
-                    />
-                    <Route path='/assets' element={<AssetsPage />} />
-                    <Route
-                      path='/assets/new'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <AssetCreatePage />
-                        </Suspense>
-                      }
-                    />
-                    <Route path='/assets/:id' element={<AssetDetailPage />} />
-                    <Route
-                      path='/assets/:id/edit'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <AssetEditPage />
-                        </Suspense>
-                      }
-                    />
-                    <Route path='/calendar' element={<CalendarPage />} />
-                    <Route path='/projects' element={<ProjectsPage />} />
-                    <Route
-                      path='/projects/new'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <ProjectCreatePage />
-                        </Suspense>
-                      }
-                    />
-                    <Route
-                      path='/projects/:id'
-                      element={<ProjectDetailPage />}
-                    />
-                    <Route
-                      path='/projects/:id/edit'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <ProjectEditPage />
-                        </Suspense>
-                      }
-                    />
-                    <Route
-                      path='/projects/:projectId/calendar'
-                      element={<ProjectCalendarPage />}
-                    />
-                    <Route path='/expenses' element={<ExpensesPage />} />
-                    <Route
-                      path='/expenses/new'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <ExpenseCreatePage />
-                        </Suspense>
-                      }
-                    />
-                    <Route path='/expenses/:id' element={<ExpenseDetailPage />} />
-                    <Route
-                      path='/expenses/:id/edit'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <ExpenseEditPage />
-                        </Suspense>
-                      }
-                    />
-                    <Route path='/expense-categories' element={<ExpenseCategoriesPage />} />
-
-                    {/* Vendor Management Routes */}
-                    <Route path='/vendors' element={<VendorsPage />} />
-                    <Route
-                      path='/vendors/create'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <VendorCreatePage />
-                        </Suspense>
-                      }
-                    />
-                    <Route path='/vendors/:id' element={<VendorDetailPage />} />
-                    <Route
-                      path='/vendors/:id/edit'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <VendorEditPage />
-                        </Suspense>
-                      }
-                    />
-
-                    {/* DELETED: Campaign Management Routes - replaced with Universal Social Media Reports */}
-
-                    {/* Social Media Reports Routes (NEW - Universal System) */}
-                    <Route path='/social-media-reports' element={<SocialMediaReportsPage />} />
-                    <Route path='/social-media-reports/:id' element={<ReportDetailPage />} />
-                    {/* Report-level visual builder (all sections on one canvas) */}
-                    <Route
-                      path='/social-media-reports/:id/builder'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <ReportBuilderPage />
-                        </Suspense>
-                      }
-                    />
-                    {/* Section-level visual builder (single section) - DEPRECATED */}
-                    <Route
-                      path='/social-media-reports/:id/sections/:sectionId/builder'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <ReportBuilderPage />
-                        </Suspense>
-                      }
-                    />
-
-                    {/* Content Calendar Routes */}
-                    <Route path='/content-calendar'>
-                      <Route index element={<ContentCalendarPage />} />
-                      <Route path='project/:projectId' element={<ProjectContentCalendarPage />} />
-                    </Route>
-
-                    {/* Media Collaboration Routes */}
+                    {/* Routes accessible by all authenticated roles (VIDEOGRAPHER included) */}
                     <Route path='/media-collab' element={<MediaCollaborationPage />} />
                     <Route path='/media-collab/projects/:projectId' element={<MediaProjectDetailPage />} />
-
-                    {/* Media Downloader (unified - supports Pinterest, YouTube, Instagram, etc.) */}
                     <Route path='/pinterest-downloader' element={<Navigate to='/media-downloader' replace />} />
                     <Route path='/media-downloader' element={<MediaDownloaderPage />} />
-
-                    {/* Deck Presentation Routes */}
-                    <Route path='/decks' element={<DecksPage />} />
-                    <Route
-                      path='/decks/:id'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <DeckEditorPage />
-                        </Suspense>
-                      }
-                    />
-                    <Route
-                      path='/decks/:id/edit'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <DeckEditorPage />
-                        </Suspense>
-                      }
-                    />
-
-                    {/* Shot List Routes */}
                     <Route path='/shot-lists' element={<ShotListsPage />} />
                     <Route path='/shot-lists/:id' element={<ShotListEditorPage />} />
-
-                    {/* Call Sheet Routes */}
                     <Route path='/call-sheets' element={<CallSheetsListPage />} />
                     <Route path='/call-sheets/:id' element={<CallSheetEditorPage />} />
 
-                    {/* User Management Routes */}
-                    <Route path='/users' element={<UsersPage />} />
-                    <Route
-                      path='/users/new'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <UserCreatePage />
-                        </Suspense>
-                      }
-                    />
-                    <Route
-                      path='/users/:id/edit'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <UserEditPage />
-                        </Suspense>
-                      }
-                    />
+                    {/* Admin-only routes (SUPER_ADMIN + ADMIN) — VIDEOGRAPHER redirected to /media-collab */}
+                    <Route element={<AdminRoute />}>
+                      <Route path='/dashboard' element={<DashboardPage />} />
+                      <Route path='/quotations' element={<QuotationsPage />} />
+                      <Route
+                        path='/quotations/new'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <QuotationCreatePage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/quotations/:id' element={<QuotationDetailPage />} />
+                      <Route
+                        path='/quotations/:id/edit'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <QuotationEditPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/invoices' element={<InvoicesPage />} />
+                      <Route
+                        path='/invoices/new'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <InvoiceCreatePage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/invoices/:id' element={<InvoiceDetailPage />} />
+                      <Route
+                        path='/invoices/:id/edit'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <InvoiceEditPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/clients' element={<ClientsPage />} />
+                      <Route
+                        path='/clients/new'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <ClientCreatePage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/clients/:id' element={<ClientDetailPage />} />
+                      <Route
+                        path='/clients/:id/edit'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <ClientEditPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/assets' element={<AssetsPage />} />
+                      <Route
+                        path='/assets/new'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <AssetCreatePage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/assets/:id' element={<AssetDetailPage />} />
+                      <Route
+                        path='/assets/:id/edit'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <AssetEditPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/calendar' element={<CalendarPage />} />
+                      <Route path='/projects' element={<ProjectsPage />} />
+                      <Route
+                        path='/projects/new'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <ProjectCreatePage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/projects/:id' element={<ProjectDetailPage />} />
+                      <Route
+                        path='/projects/:id/edit'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <ProjectEditPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/projects/:projectId/calendar' element={<ProjectCalendarPage />} />
+                      <Route path='/expenses' element={<ExpensesPage />} />
+                      <Route
+                        path='/expenses/new'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <ExpenseCreatePage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/expenses/:id' element={<ExpenseDetailPage />} />
+                      <Route
+                        path='/expenses/:id/edit'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <ExpenseEditPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/expense-categories' element={<ExpenseCategoriesPage />} />
+                      <Route path='/vendors' element={<VendorsPage />} />
+                      <Route
+                        path='/vendors/create'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <VendorCreatePage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/vendors/:id' element={<VendorDetailPage />} />
+                      <Route
+                        path='/vendors/:id/edit'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <VendorEditPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/social-media-reports' element={<SocialMediaReportsPage />} />
+                      <Route path='/social-media-reports/:id' element={<ReportDetailPage />} />
+                      <Route
+                        path='/social-media-reports/:id/builder'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <ReportBuilderPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route
+                        path='/social-media-reports/:id/sections/:sectionId/builder'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <ReportBuilderPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/content-calendar'>
+                        <Route index element={<ContentCalendarPage />} />
+                        <Route path='project/:projectId' element={<ProjectContentCalendarPage />} />
+                      </Route>
+                      <Route path='/decks' element={<DecksPage />} />
+                      <Route
+                        path='/decks/:id'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <DeckEditorPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route
+                        path='/decks/:id/edit'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <DeckEditorPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/users' element={<UsersPage />} />
+                      <Route
+                        path='/users/new'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <UserCreatePage />
+                          </Suspense>
+                        }
+                      />
+                      <Route
+                        path='/users/:id/edit'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <UserEditPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/accounting/chart-of-accounts' element={<ChartOfAccountsPage />} />
+                      <Route path='/accounting/cash-bank-balance' element={<CashBankBalancePage />} />
+                      <Route path='/accounting/journal-entries' element={<JournalEntriesPage />} />
+                      <Route
+                        path='/accounting/adjusting-entries'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <AdjustingEntryWizard />
+                          </Suspense>
+                        }
+                      />
+                      <Route
+                        path='/accounting/journal-entries/create'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <JournalEntryFormPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route
+                        path='/accounting/journal-entries/:id/edit'
+                        element={
+                          <Suspense fallback={<PageLoader />}>
+                            <JournalEntryFormPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path='/accounting/trial-balance' element={<TrialBalancePage />} />
+                      <Route path='/accounting/general-ledger' element={<GeneralLedgerPage />} />
+                      <Route path='/accounting/income-statement' element={<IncomeStatementPage />} />
+                      <Route path='/accounting/balance-sheet' element={<BalanceSheetPage />} />
+                      <Route path='/accounting/cash-flow' element={<CashFlowStatementPage />} />
+                      <Route path='/accounting/accounts-receivable' element={<AccountsReceivablePage />} />
+                      <Route path='/accounting/accounts-payable' element={<AccountsPayablePage />} />
+                      <Route path='/accounting/ar-aging' element={<ARAgingPage />} />
+                      <Route path='/accounting/ap-aging' element={<APAgingPage />} />
+                      <Route path='/accounting/depreciation' element={<DepreciationPage />} />
+                      <Route path='/accounting/ecl-provisions' element={<ECLProvisionPage />} />
+                      <Route path='/accounting/cash-receipts' element={<CashReceiptsPage />} />
+                      <Route path='/accounting/cash-disbursements' element={<CashDisbursementsPage />} />
+                      <Route path='/accounting/bank-transfers' element={<BankTransfersPage />} />
+                      <Route path='/accounting/bank-reconciliations' element={<BankReconciliationsPage />} />
+                      <Route path='/reports' element={<ReportsPage />} />
+                      <Route path='/settings' element={<SettingsPage />} />
+                    </Route>
 
-                    {/* Accounting Routes */}
-                    <Route path='/accounting/chart-of-accounts' element={<ChartOfAccountsPage />} />
-                    <Route path='/accounting/cash-bank-balance' element={<CashBankBalancePage />} />
-                    <Route path='/accounting/journal-entries' element={<JournalEntriesPage />} />
-                    <Route
-                      path='/accounting/adjusting-entries'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <AdjustingEntryWizard />
-                        </Suspense>
-                      }
-                    />
-                    <Route
-                      path='/accounting/journal-entries/create'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <JournalEntryFormPage />
-                        </Suspense>
-                      }
-                    />
-                    <Route
-                      path='/accounting/journal-entries/:id/edit'
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <JournalEntryFormPage />
-                        </Suspense>
-                      }
-                    />
-                    <Route path='/accounting/trial-balance' element={<TrialBalancePage />} />
-                    <Route path='/accounting/general-ledger' element={<GeneralLedgerPage />} />
-                    <Route path='/accounting/income-statement' element={<IncomeStatementPage />} />
-                    <Route path='/accounting/balance-sheet' element={<BalanceSheetPage />} />
-                    <Route path='/accounting/cash-flow' element={<CashFlowStatementPage />} />
-                    <Route path='/accounting/accounts-receivable' element={<AccountsReceivablePage />} />
-                    <Route path='/accounting/accounts-payable' element={<AccountsPayablePage />} />
-                    <Route path='/accounting/ar-aging' element={<ARAgingPage />} />
-                    <Route path='/accounting/ap-aging' element={<APAgingPage />} />
-                    <Route path='/accounting/depreciation' element={<DepreciationPage />} />
-                    <Route path='/accounting/ecl-provisions' element={<ECLProvisionPage />} />
-                    <Route path='/accounting/cash-receipts' element={<CashReceiptsPage />} />
-                    <Route path='/accounting/cash-disbursements' element={<CashDisbursementsPage />} />
-                    <Route path='/accounting/bank-transfers' element={<BankTransfersPage />} />
-                    <Route path='/accounting/bank-reconciliations' element={<BankReconciliationsPage />} />
-
-                    <Route path='/reports' element={<ReportsPage />} />
-                    <Route path='/settings' element={<SettingsPage />} />
-                    <Route
-                      path='/'
-                      element={<Navigate to='/dashboard' replace />}
-                    />
+                    {/* Default redirect — role-aware */}
+                    <Route path='/' element={<DefaultRedirect />} />
                   </Routes>
                 </ErrorBoundary>
               </MainLayout>

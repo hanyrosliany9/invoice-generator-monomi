@@ -126,12 +126,12 @@ export const usersService = {
   // Helper functions
   getRoleColor: (role: string): string => {
     switch (role) {
-      case 'ADMIN':
+      case 'SUPER_ADMIN':
         return 'text-red-600 bg-red-50'
-      case 'USER':
+      case 'ADMIN':
         return 'text-blue-600 bg-blue-50'
-      case 'VIEWER':
-        return 'text-gray-600 bg-gray-50'
+      case 'VIDEOGRAPHER':
+        return 'text-purple-600 bg-purple-50'
       default:
         return 'text-gray-600 bg-gray-50'
     }
@@ -139,12 +139,12 @@ export const usersService = {
 
   getRoleLabel: (role: string): string => {
     switch (role) {
+      case 'SUPER_ADMIN':
+        return 'Super Admin'
       case 'ADMIN':
-        return 'Administrator'
-      case 'USER':
-        return 'User'
-      case 'VIEWER':
-        return 'Viewer'
+        return 'Admin'
+      case 'VIDEOGRAPHER':
+        return 'Videographer'
       default:
         return role
     }

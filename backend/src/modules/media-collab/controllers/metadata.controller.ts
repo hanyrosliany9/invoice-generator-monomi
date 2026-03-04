@@ -1,6 +1,5 @@
 import {
   Controller,
-  UseGuards,
   Put,
   Post,
   Body,
@@ -8,7 +7,7 @@ import {
   Req,
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { RequireMediaRole } from "../../auth/decorators/auth.decorators";
 import { MetadataService } from "../services/metadata.service";
 import { UpdateMetadataDto } from "../dto/update-metadata.dto";
 import { UpdateStarRatingDto } from "../dto/update-star-rating.dto";
@@ -17,7 +16,7 @@ import { AuthenticatedRequest } from "../types/authenticated-request.interface";
 
 @ApiTags("Media Collaboration - Metadata")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@RequireMediaRole()
 @Controller("media-collab/metadata")
 export class MetadataController {
   constructor(private readonly metadataService: MetadataService) {}
