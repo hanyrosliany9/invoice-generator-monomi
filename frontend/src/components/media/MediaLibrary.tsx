@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Card, Empty, Spin, Badge, Space, Typography, Tooltip, theme, Button, App, Popconfirm, Checkbox, List, Dropdown, Popover, Skeleton, Radio, Table } from 'antd';
+import { Card, Empty, Spin, Badge, Space, Typography, Tooltip, theme, Button, App, Popconfirm, Checkbox, List, Dropdown, Skeleton, Radio, Table } from 'antd';
 const { Compact } = Space;
 import {
   VideoCameraOutlined,
@@ -25,7 +25,6 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { mediaCollabService, MediaAsset, MediaAssetFilters } from '../../services/media-collab';
 import { StarRating } from './StarRating';
-import { MediaPreviewCard } from './MediaPreviewCard';
 import { BulkDownloadModal } from './BulkDownloadModal';
 import { getErrorMessage } from '../../utils/errorHandlers';
 import { useBulkDownload } from '../../hooks/useBulkDownload';
@@ -1386,13 +1385,6 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
             >
               {displayedAssets.map((asset) => (
                 <SortableMediaCard key={asset.id} id={asset.id} isDraggable={isDraggable} hasFolders={folders.length > 0} dataAssetId={asset.id}>
-                  <Popover
-                    content={<MediaPreviewCard asset={asset} />}
-                    mouseEnterDelay={0.5}
-                    placement="right"
-                    trigger={isDraggable ? [] : ['hover']} // Disable popover in drag mode
-                    overlayStyle={{ maxWidth: 400 }}
-                  >
                     <Card
           hoverable
           style={{
@@ -1669,7 +1661,6 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
             />
           </div>
         </Card>
-                  </Popover>
                 </SortableMediaCard>
               ))}
 
@@ -1767,13 +1758,6 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               >
                 {displayedAssets.map((asset) => (
                   <SortableMediaCard key={asset.id} id={asset.id} isDraggable={isDraggable} hasFolders={folders.length > 0} dataAssetId={asset.id}>
-                    <Popover
-                      content={<MediaPreviewCard asset={asset} />}
-                      mouseEnterDelay={0.5}
-                      placement="right"
-                      trigger={isDraggable ? [] : ['hover']} // Disable popover in drag mode
-                      overlayStyle={{ maxWidth: 400 }}
-                    >
                       <Card
           className="media-library-card"
           hoverable
@@ -2053,7 +2037,6 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
             />
           </div>
         </Card>
-                    </Popover>
                   </SortableMediaCard>
                 ))}
 
