@@ -1,15 +1,16 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Layout, Card, Typography, Spin, Result, Tag, Tooltip, theme,
-  Button, Space, App, Modal,
+  Button, Space, App, Modal, Input, Form, Drawer,
 } from 'antd';
 import {
   EyeOutlined, GlobalOutlined, QuestionCircleOutlined,
-  HomeOutlined, FolderOutlined,
+  HomeOutlined, FolderOutlined, CommentOutlined, UserOutlined,
+  SendOutlined,
 } from '@ant-design/icons';
-import { mediaCollabService, MediaAsset, MediaAssetFilters } from '../services/media-collab';
+import { mediaCollabService, MediaAsset, MediaAssetFilters, FrameComment } from '../services/media-collab';
 import { MediaLibrary } from '../components/media/MediaLibrary';
 import { FilterBar } from '../components/media/FilterBar';
 import { PhotoLightbox } from '../components/media/PhotoLightbox';
@@ -17,16 +18,191 @@ import { VideoReviewModal } from '../components/media/VideoReviewModal';
 import { ComparisonView } from '../components/media/ComparisonView';
 import { MetadataPanel } from '../components/media/MetadataPanel';
 import { getProxyUrl } from '../utils/mediaProxy';
+import { formatDistanceToNow } from 'date-fns';
 
 const { Header, Content } = Layout;
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
+const GUEST_NAME_KEY = 'media-public-guest-name';
+
+// ── GuestNameModal ────────────────────────────────────────────────────────────
+// Prompts the guest for their name before they can post a comment.
+interface GuestNameModalProps {
+  open: boolean;
+  onConfirm: (name: string) => void;
+  onCancel: () => void;
+}
+const GuestNameModal: React.FC<GuestNameModalProps> = ({ open, onConfirm, onCancel }) => {
+  const [name, setName] = useState('');
+  return (
+    <Modal
+      title="Enter your name"
+      open={open}
+      onOk={() => { if (name.trim()) onConfirm(name.trim()); }}
+      onCancel={onCancel}
+      okText="Continue"
+      okButtonProps={{ disabled: !name.trim() }}
+      width={360}
+    >
+      <Paragraph type="secondary" style={{ marginBottom: 12 }}>
+        Please enter your name so reviewers can attribute your feedback.
+      </Paragraph>
+      <Input
+        autoFocus
+        placeholder="Your name"
+        prefix={<UserOutlined />}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onPressEnter={() => { if (name.trim()) onConfirm(name.trim()); }}
+        maxLength={60}
+      />
+    </Modal>
+  );
+};
+
+// ── ImageCommentPanel ─────────────────────────────────────────────────────────
+// Simple comment panel for photos (used as a Drawer or inline card)
+interface ImageCommentPanelProps {
+  asset: MediaAsset;
+  shareToken: string;
+  guestName: string;
+}
+const ImageCommentPanel: React.FC<ImageCommentPanelProps> = ({ asset, shareToken, guestName }) => {
+  const { token } = theme.useToken();
+  const { message } = App.useApp();
+  const queryClient = useQueryClient();
+  const [text, setText] = useState('');
+
+  const { data: comments = [], isLoading } = useQuery({
+    queryKey: ['public-comments', asset.id, shareToken],
+    queryFn: () => mediaCollabService.getPublicAssetComments(shareToken, asset.id),
+    enabled: !!asset.id,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: (content: string) =>
+      mediaCollabService.createPublicComment(shareToken, asset.id, {
+        content,
+        guestName: guestName || 'Anonymous',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['public-comments', asset.id, shareToken] });
+      setText('');
+      message.success('Comment added');
+    },
+    onError: () => message.error('Failed to add comment'),
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Comment list */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', minHeight: 0 }}>
+        {isLoading ? (
+          <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>
+        ) : comments.length === 0 ? (
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            No comments yet. Be the first to add feedback!
+          </Text>
+        ) : (
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            {(comments as any[]).map((c) => (
+              <div
+                key={c.id}
+                style={{
+                  padding: '10px 12px',
+                  background: token.colorBgElevated,
+                  borderRadius: token.borderRadius,
+                  border: `1px solid ${token.colorBorder}`,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <div
+                    style={{
+                      width: 24, height: 24, borderRadius: '50%',
+                      background: token.colorPrimary, color: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, fontWeight: 700, flexShrink: 0,
+                    }}
+                  >
+                    {(c.author?.name || 'A').charAt(0).toUpperCase()}
+                  </div>
+                  <Text strong style={{ fontSize: 12 }}>{c.author?.name || 'Anonymous'}</Text>
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true })}
+                  </Text>
+                </div>
+                <Text style={{ fontSize: 13, lineHeight: 1.5 }}>{c.text}</Text>
+              </div>
+            ))}
+          </Space>
+        )}
+      </div>
+
+      {/* Input */}
+      <div
+        style={{
+          padding: '12px 16px',
+          borderTop: `1px solid ${token.colorBorder}`,
+          background: token.colorBgContainer,
+        }}
+      >
+        <Input.TextArea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Add feedback…"
+          autoSize={{ minRows: 2, maxRows: 5 }}
+          style={{ marginBottom: 8 }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            type="primary"
+            icon={<SendOutlined />}
+            size="small"
+            disabled={!text.trim()}
+            loading={addMutation.isPending}
+            onClick={() => { if (text.trim()) addMutation.mutate(text.trim()); }}
+          >
+            Send
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── PublicProjectViewPage ─────────────────────────────────────────────────────
 export const PublicProjectViewPage: React.FC = () => {
   const { token: shareToken } = useParams<{ token: string }>();
   const { token: themeToken } = theme.useToken();
   const { message } = App.useApp();
 
-  // Filter state — matches MediaAssetFilters so FilterBar + MediaLibrary share the same object
+  // Guest identity — persisted in localStorage so they don't re-enter on every visit
+  const [guestName, setGuestName] = useState<string>(() => {
+    try { return localStorage.getItem(GUEST_NAME_KEY) || ''; } catch { return ''; }
+  });
+  const [guestNameModalOpen, setGuestNameModalOpen] = useState(false);
+  // Pending comment action — resumed after guest name is confirmed
+  const pendingCommentRef = useRef<(() => void) | null>(null);
+
+  // Ask for guest name before allowing comments; once confirmed, resume the pending action
+  const requireGuestName = useCallback((onConfirmed: () => void) => {
+    if (guestName) {
+      onConfirmed();
+    } else {
+      pendingCommentRef.current = onConfirmed;
+      setGuestNameModalOpen(true);
+    }
+  }, [guestName]);
+
+  const handleGuestNameConfirm = (name: string) => {
+    try { localStorage.setItem(GUEST_NAME_KEY, name); } catch { /* noop */ }
+    setGuestName(name);
+    setGuestNameModalOpen(false);
+    pendingCommentRef.current?.();
+    pendingCommentRef.current = null;
+  };
+
+  // Filter state
   const [filters, setFilters] = useState<MediaAssetFilters>({
     sortBy: 'uploadedAt',
     sortOrder: 'desc',
@@ -42,6 +218,7 @@ export const PublicProjectViewPage: React.FC = () => {
   const [videoPlayerKey, setVideoPlayerKey] = useState(0);
   const [comparisonAssetIds, setComparisonAssetIds] = useState<string[]>([]);
   const [metadataPanelVisible, setMetadataPanelVisible] = useState(false);
+  const [imageCommentDrawerOpen, setImageCommentDrawerOpen] = useState(false);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const { data: project, isLoading: projectLoading, error: projectError } = useQuery({
@@ -68,23 +245,20 @@ export const PublicProjectViewPage: React.FC = () => {
     queryKey: ['public-media-token', shareToken],
     queryFn: () => mediaCollabService.getPublicMediaToken(shareToken!),
     enabled: !!shareToken,
-    staleTime: 23 * 60 * 60 * 1000, // treat as fresh for 23h
+    staleTime: 23 * 60 * 60 * 1000,
   });
 
   // ── Derived data ───────────────────────────────────────────────────────────
-  // Assets in the current folder — MediaLibrary handles search/filter/sort internally
   const currentFolderAssets = useMemo(() => {
     if (!assets) return [];
     return assets.filter(asset => asset.folderId === currentFolderId);
   }, [assets, currentFolderId]);
 
-  // Direct children of the current folder
   const currentSubfolders = useMemo(() => {
     if (!folders) return [];
     return folders.filter(f => f.parentId === currentFolderId);
   }, [folders, currentFolderId]);
 
-  // Breadcrumb path from root → current folder
   const currentFolderPath = useMemo(() => {
     if (!currentFolderId || !folders) return [];
     const path: typeof folders = [];
@@ -98,8 +272,7 @@ export const PublicProjectViewPage: React.FC = () => {
     return path;
   }, [currentFolderId, folders]);
 
-  // Image assets visible with current filters — used for lightbox prev/next navigation.
-  // Must mirror MediaLibrary's internal filter logic so navigation stays in sync.
+  // Image assets for lightbox prev/next navigation
   const navigableAssets = useMemo(() => {
     let base = currentFolderAssets.filter(
       a => a.mediaType === 'IMAGE' || a.mediaType === 'RAW_IMAGE'
@@ -111,28 +284,16 @@ export const PublicProjectViewPage: React.FC = () => {
         a.description?.toLowerCase().includes(q)
       );
     }
-    if (filters.mediaType) {
-      base = base.filter(a => a.mediaType === filters.mediaType);
-    }
-    if (filters.status) {
-      base = base.filter(a => a.status === filters.status);
-    }
-    if (filters.starRating) {
-      base = base.filter(a => a.starRating && a.starRating >= filters.starRating!);
-    }
+    if (filters.mediaType) base = base.filter(a => a.mediaType === filters.mediaType);
+    if (filters.status) base = base.filter(a => a.status === filters.status);
+    if (filters.starRating) base = base.filter(a => a.starRating && a.starRating >= filters.starRating!);
     if (filters.sortBy) {
       base = [...base].sort((a, b) => {
         let comparison = 0;
         switch (filters.sortBy) {
-          case 'uploadedAt':
-            comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
-            break;
-          case 'originalName':
-            comparison = a.originalName.localeCompare(b.originalName);
-            break;
-          case 'starRating':
-            comparison = (a.starRating || 0) - (b.starRating || 0);
-            break;
+          case 'uploadedAt': comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime(); break;
+          case 'originalName': comparison = a.originalName.localeCompare(b.originalName); break;
+          case 'starRating': comparison = (a.starRating || 0) - (b.starRating || 0); break;
         }
         return filters.sortOrder === 'asc' ? comparison : -comparison;
       });
@@ -160,7 +321,7 @@ export const PublicProjectViewPage: React.FC = () => {
     }
   };
 
-  // Rating — uses public API (shareToken), not authenticated endpoint
+  // Rating — uses public API
   const handleStarRatingChange = async (assetId: string, rating: number) => {
     if (selectedAsset && selectedAsset.id === assetId) {
       setSelectedAsset({ ...selectedAsset, starRating: rating });
@@ -221,6 +382,12 @@ export const PublicProjectViewPage: React.FC = () => {
         case 'i': case 'I':
           if (selectedAsset) { event.preventDefault(); setMetadataPanelVisible(v => !v); }
           break;
+        case 'c': case 'C':
+          if (selectedAsset && (selectedAsset.mediaType === 'IMAGE' || selectedAsset.mediaType === 'RAW_IMAGE')) {
+            event.preventDefault();
+            setImageCommentDrawerOpen(v => !v);
+          }
+          break;
       }
     },
     [lightboxVisible, videoPlayerVisible, selectedAsset, metadataPanelVisible, comparisonAssetIds]
@@ -275,6 +442,9 @@ export const PublicProjectViewPage: React.FC = () => {
   const prevAsset = selectedIndex > 0 ? navigableAssets[selectedIndex - 1] : null;
   const nextAsset = selectedIndex < navigableAssets.length - 1 ? navigableAssets[selectedIndex + 1] : null;
 
+  const isImageAsset = selectedAsset &&
+    (selectedAsset.mediaType === 'IMAGE' || selectedAsset.mediaType === 'RAW_IMAGE');
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <Layout className="min-h-screen h-auto bg-gray-50">
@@ -306,6 +476,18 @@ export const PublicProjectViewPage: React.FC = () => {
           <Tag icon={<EyeOutlined />} color="blue">
             {project?.publicViewCount || 0} views
           </Tag>
+          {guestName && (
+            <Tag
+              icon={<UserOutlined />}
+              style={{ cursor: 'pointer' }}
+              onClick={() => {
+                try { localStorage.removeItem(GUEST_NAME_KEY); } catch { /* noop */ }
+                setGuestName('');
+              }}
+            >
+              {guestName} ✕
+            </Tag>
+          )}
           <Tooltip
             title={
               <div style={{ fontSize: 11 }}>
@@ -315,6 +497,7 @@ export const PublicProjectViewPage: React.FC = () => {
                   <div>1-5 : Rate asset</div>
                   <div>Space : Preview</div>
                   <div>I : Toggle info</div>
+                  <div>C : Toggle comments (images)</div>
                   <div>Esc : Close</div>
                 </div>
               </div>
@@ -338,10 +521,22 @@ export const PublicProjectViewPage: React.FC = () => {
           title={
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span>Media Gallery</span>
-              <Text type="secondary">
-                {currentFolderAssets.length} assets
-                {currentSubfolders.length > 0 && `, ${currentSubfolders.length} folders`}
-              </Text>
+              <Space>
+                {selectedAsset && isImageAsset && (
+                  <Button
+                    icon={<CommentOutlined />}
+                    size="small"
+                    type={imageCommentDrawerOpen ? 'primary' : 'default'}
+                    onClick={() => requireGuestName(() => setImageCommentDrawerOpen(true))}
+                  >
+                    Feedback
+                  </Button>
+                )}
+                <Text type="secondary">
+                  {currentFolderAssets.length} assets
+                  {currentSubfolders.length > 0 && `, ${currentSubfolders.length} folders`}
+                </Text>
+              </Space>
             </div>
           }
         >
@@ -376,7 +571,7 @@ export const PublicProjectViewPage: React.FC = () => {
             </div>
           )}
 
-          {/* Filter bar — same component as internal page */}
+          {/* Filter bar */}
           <div style={{ marginBottom: 16 }}>
             <FilterBar
               filters={filters}
@@ -386,7 +581,7 @@ export const PublicProjectViewPage: React.FC = () => {
             />
           </div>
 
-          {/* Media grid — same MediaLibrary as internal page, read-only */}
+          {/* Media grid — read-only, all interaction via public API */}
           <MediaLibrary
             assets={currentFolderAssets}
             folders={currentSubfolders}
@@ -410,7 +605,7 @@ export const PublicProjectViewPage: React.FC = () => {
       </Content>
 
       {/* ── Photo Lightbox ── */}
-      {selectedAsset && (selectedAsset.mediaType === 'IMAGE' || selectedAsset.mediaType === 'RAW_IMAGE') && (
+      {selectedAsset && isImageAsset && (
         <PhotoLightbox
           visible={lightboxVisible}
           imageUrl={getProxyUrl(selectedAsset.url, mediaToken)}
@@ -428,20 +623,45 @@ export const PublicProjectViewPage: React.FC = () => {
         />
       )}
 
-      {/* ── Video Review Modal — same as internal page, read-only (no draw/comments) ── */}
+      {/* ── Video Review Modal — public mode: comments on, draw off ── */}
       {selectedAsset && selectedAsset.mediaType === 'VIDEO' && (
         <VideoReviewModal
           key={videoPlayerKey}
           visible={videoPlayerVisible}
           asset={selectedAsset}
           mediaToken={mediaToken ?? null}
-          readOnly={true}
+          publicShareToken={shareToken ?? null}
+          guestName={guestName}
+          onPublicRatingChange={(rating) => handleStarRatingChange(selectedAsset.id, rating)}
+          onPublicStatusChange={(status) => handleStatusChange(selectedAsset.id, status)}
           onClose={() => {
             setVideoPlayerVisible(false);
             setVideoPlayerKey(k => k + 1);
           }}
         />
       )}
+
+      {/* ── Image Comment Drawer ── */}
+      <Drawer
+        title={
+          <Space>
+            <CommentOutlined />
+            <span>Feedback — {selectedAsset?.originalName}</span>
+          </Space>
+        }
+        open={imageCommentDrawerOpen && !!selectedAsset && !!isImageAsset}
+        onClose={() => setImageCommentDrawerOpen(false)}
+        width={380}
+        styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column', height: '100%' } }}
+      >
+        {selectedAsset && isImageAsset && shareToken && (
+          <ImageCommentPanel
+            asset={selectedAsset}
+            shareToken={shareToken}
+            guestName={guestName}
+          />
+        )}
+      </Drawer>
 
       {/* ── Comparison View ── */}
       <Modal
@@ -491,6 +711,16 @@ export const PublicProjectViewPage: React.FC = () => {
           />
         </Modal>
       )}
+
+      {/* ── Guest Name Modal ── */}
+      <GuestNameModal
+        open={guestNameModalOpen}
+        onConfirm={handleGuestNameConfirm}
+        onCancel={() => {
+          setGuestNameModalOpen(false);
+          pendingCommentRef.current = null;
+        }}
+      />
     </Layout>
   );
 };

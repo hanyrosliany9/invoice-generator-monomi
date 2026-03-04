@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
   Put,
   Body,
@@ -18,6 +19,7 @@ import { JwtService } from "@nestjs/jwt";
 import { MediaProjectsService } from "../services/media-projects.service";
 import { MediaAssetsService } from "../services/media-assets.service";
 import { MetadataService } from "../services/metadata.service";
+import { MediaCommentsService } from "../services/media-comments.service";
 
 /**
  * Public API Controller
@@ -31,6 +33,7 @@ export class PublicController {
     private readonly assetsService: MediaAssetsService,
     private readonly metadataService: MetadataService,
     private readonly jwtService: JwtService,
+    private readonly commentsService: MediaCommentsService,
   ) {}
 
   /**
@@ -134,6 +137,70 @@ export class PublicController {
     const mediaToken = this.jwtService.sign(payload, { expiresIn: "24h" });
 
     return { mediaToken };
+  }
+
+  /**
+   * Get comments for a specific asset (public - no auth required)
+   *
+   * GET /media-collab/public/:token/assets/:assetId/comments
+   */
+  @Get(":token/assets/:assetId/comments")
+  @ApiOperation({ summary: "Get asset comments via public link (no auth required)" })
+  @ApiResponse({ status: 200, description: "Comments retrieved successfully" })
+  @ApiResponse({ status: 404, description: "Link not found or disabled" })
+  async getPublicAssetComments(
+    @Param("token") token: string,
+    @Param("assetId") assetId: string,
+  ) {
+    // Validate public link is active
+    await this.projectsService.getPublicProject(token);
+    return await this.commentsService.findByAsset(assetId);
+  }
+
+  /**
+   * Add a comment on an asset as a public guest (no auth required)
+   *
+   * POST /media-collab/public/:token/assets/:assetId/comments
+   * Body: { content, guestName, timecode?, parentId? }
+   *
+   * Uses the project creator's userId as authorId (DB constraint).
+   * The comment text is prefixed with "[GuestName]: " so internal
+   * reviewers know who left the feedback.
+   */
+  @Post(":token/assets/:assetId/comments")
+  @ApiOperation({ summary: "Add a guest comment via public link (no auth required)" })
+  @ApiResponse({ status: 201, description: "Comment created successfully" })
+  @ApiResponse({ status: 404, description: "Link not found or disabled" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        content: { type: "string", description: "Comment text" },
+        guestName: { type: "string", description: "Reviewer's display name" },
+        timecode: { type: "number", description: "Video timecode in seconds (optional)" },
+        parentId: { type: "string", description: "Parent comment ID for replies (optional)" },
+      },
+      required: ["content", "guestName"],
+    },
+  })
+  async createPublicComment(
+    @Param("token") token: string,
+    @Param("assetId") assetId: string,
+    @Body() body: { content: string; guestName: string; timecode?: number; parentId?: string },
+  ) {
+    // Validate public link and get project creator's userId
+    const project = await this.projectsService.getPublicProject(token);
+
+    const guestName = (body.guestName || "Anonymous").trim();
+    const prefixedContent = `[${guestName}]: ${body.content}`;
+
+    return await this.commentsService.create({
+      assetId,
+      content: prefixedContent,
+      authorId: project.createdBy,
+      timestamp: body.timecode,
+      parentId: body.parentId,
+    });
   }
 
   /**

@@ -777,6 +777,22 @@ class MediaCollabService {
     return response.data.data.mediaToken;
   }
 
+  // Get comments for a public asset (no auth required)
+  async getPublicAssetComments(shareToken: string, assetId: string): Promise<FrameComment[]> {
+    const response = await apiClient.get(`/media-collab/public/${shareToken}/assets/${assetId}/comments`);
+    return response.data.data;
+  }
+
+  // Add a guest comment on a public asset (no auth required)
+  async createPublicComment(
+    shareToken: string,
+    assetId: string,
+    data: { content: string; guestName: string; timecode?: number; parentId?: string },
+  ): Promise<FrameComment> {
+    const response = await apiClient.post(`/media-collab/public/${shareToken}/assets/${assetId}/comments`, data);
+    return response.data.data;
+  }
+
   // Public asset updates (no authentication required)
   async updatePublicAssetStatus(token: string, assetId: string, status: string): Promise<MediaAsset> {
     const response = await apiClient.put(`/media-collab/public/${token}/assets/${assetId}/status`, { status });

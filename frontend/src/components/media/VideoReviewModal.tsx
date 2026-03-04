@@ -33,6 +33,14 @@ interface VideoReviewModalProps {
   asset: MediaAsset;
   mediaToken: string | null;
   readOnly?: boolean;
+  /** When provided, enables public comment mode using the share token. No auth required. */
+  publicShareToken?: string | null;
+  /** Guest display name used to attribute public comments. */
+  guestName?: string;
+  /** Called when a public user changes the rating (bypasses authenticated mutation). */
+  onPublicRatingChange?: (rating: number) => void;
+  /** Called when a public user changes the status (bypasses authenticated mutation). */
+  onPublicStatusChange?: (status: string) => void;
   onClose: () => void;
 }
 
@@ -58,8 +66,14 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   asset,
   mediaToken,
   readOnly = false,
+  publicShareToken = null,
+  guestName = '',
+  onPublicRatingChange,
+  onPublicStatusChange,
   onClose,
 }) => {
+  // publicMode = true means: show comments panel using public API, no draw, no delete/resolve
+  const publicMode = !!publicShareToken;
   const { token: antToken } = theme.useToken();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
@@ -108,7 +122,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
 
   // UI state
   const [drawMode, setDrawMode] = useState(false);
-  const [showInfo, setShowInfo] = useState(!readOnly);
+  const [showInfo, setShowInfo] = useState(!readOnly || publicMode);
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [showCommentsSheet, setShowCommentsSheet] = useState(false);
@@ -117,7 +131,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   const [currentStatus, setCurrentStatus] = useState<string>(asset.status);
   const [currentRating, setCurrentRating] = useState<number | null>(asset.starRating ?? null);
 
-  // Update status mutation
+  // Update status mutation (authenticated mode only)
   const updateStatusMutation = useMutation({
     mutationFn: (status: string) => mediaCollabService.updateAssetStatus(asset.id, status),
     onSuccess: (updated) => {
@@ -129,7 +143,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
     },
   });
 
-  // Update rating mutation
+  // Update rating mutation (authenticated mode only)
   const updateRatingMutation = useMutation({
     mutationFn: (rating: number) => mediaCollabService.updateStarRating(asset.id, rating),
     onSuccess: (updated) => {
@@ -140,6 +154,25 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
       message.error(getErrorMessage(err));
     },
   });
+
+  // Public-mode wrappers for status and rating changes
+  const handleStatusChange = (status: string) => {
+    setCurrentStatus(status);
+    if (publicMode && onPublicStatusChange) {
+      onPublicStatusChange(status);
+    } else if (!publicMode) {
+      updateStatusMutation.mutate(status);
+    }
+  };
+
+  const handleRatingChange = (rating: number) => {
+    setCurrentRating(rating);
+    if (publicMode && onPublicRatingChange) {
+      onPublicRatingChange(rating);
+    } else if (!publicMode) {
+      updateRatingMutation.mutate(rating);
+    }
+  };
 
   // Download handler
   const handleDownload = async () => {
@@ -175,25 +208,27 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch frames for timeline markers
+  // Fetch frames for timeline markers (authenticated mode only — public mode has no frames)
   const { data: frames = [] } = useQuery({
     queryKey: ['frames', asset.id],
     queryFn: () => mediaCollabService.getFramesByAsset(asset.id),
-    enabled: !readOnly && visible && !!asset.id,
+    enabled: !readOnly && !publicMode && visible && !!asset.id,
   });
 
-  // Fetch comments with timecode
-  const { data: comments = [], isLoading: commentsLoading } = useQuery({
-    queryKey: ['comments', asset.id],
-    queryFn: () => mediaCollabService.getCommentsByAsset(asset.id),
-    enabled: !readOnly && visible && !!asset.id,
+  // Fetch comments — use public API in publicMode, authenticated API otherwise
+  const { data: comments = [], isLoading: commentsLoading, refetch: refetchComments } = useQuery({
+    queryKey: publicMode ? ['public-comments', asset.id, publicShareToken] : ['comments', asset.id],
+    queryFn: () => publicMode
+      ? mediaCollabService.getPublicAssetComments(publicShareToken!, asset.id)
+      : mediaCollabService.getCommentsByAsset(asset.id),
+    enabled: (!readOnly || publicMode) && visible && !!asset.id,
   });
 
-  // Fetch drawings
+  // Fetch drawings (authenticated mode only — draw is disabled in public mode)
   const { data: drawings = [] } = useQuery({
     queryKey: ['drawings', asset.id],
     queryFn: () => mediaCollabService.getDrawingsByAsset(asset.id),
-    enabled: !readOnly && visible && !!asset.id,
+    enabled: !readOnly && !publicMode && visible && !!asset.id,
   });
 
   // Create timeline markers from frames, comments, and drawings
@@ -471,6 +506,14 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   // Comment handlers
   const createCommentMutation = useMutation({
     mutationFn: async (data: { content: string; parentId?: string }) => {
+      if (publicMode) {
+        return mediaCollabService.createPublicComment(publicShareToken!, asset.id, {
+          content: data.content,
+          guestName: guestName || 'Anonymous',
+          timecode: currentTime > 0 ? currentTime : undefined,
+          parentId: data.parentId,
+        });
+      }
       return mediaCollabService.createComment({
         assetId: asset.id,
         content: data.content,
@@ -480,7 +523,11 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', asset.id] });
+      if (publicMode) {
+        refetchComments();
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['comments', asset.id] });
+      }
       message.success('Comment added');
     },
     onError: (error: unknown) => {
@@ -632,7 +679,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                   onClick={handleDownload}
                   style={{ padding: '4px 8px' }}
                 />
-                {!readOnly && <Button
+                {(!readOnly || publicMode) && <Button
                   type="text"
                   icon={<CommentOutlined />}
                   onClick={() => setShowCommentsSheet(!showCommentsSheet)}
@@ -659,7 +706,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                     size="small"
                     style={{ width: 148 }}
                     loading={updateStatusMutation.isPending}
-                    onChange={(val) => updateStatusMutation.mutate(val)}
+                    onChange={handleStatusChange}
                     options={[
                       { value: 'DRAFT', label: 'Draft' },
                       { value: 'IN_REVIEW', label: 'In Review' },
@@ -686,7 +733,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                     value={currentRating}
                     size={16}
                     enableKeyboard={false}
-                    onChange={(rating) => updateRatingMutation.mutate(rating)}
+                    onChange={handleRatingChange}
                   />
                 </div>
               </div>
@@ -699,7 +746,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                 >
                   Download
                 </Button>
-                {!readOnly && <Button
+                {!readOnly && !publicMode && <Button
                   type={drawMode ? 'primary' : 'default'}
                   icon={<EditOutlined />}
                   onClick={() => {
@@ -713,12 +760,12 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                 >
                   Draw
                 </Button>}
-                {!readOnly && <Button
+                {(!readOnly || publicMode) && <Button
                   type={showInfo ? 'primary' : 'default'}
                   icon={<InfoCircleOutlined />}
                   onClick={() => setShowInfo(!showInfo)}
                 >
-                  Info
+                  {publicMode ? 'Comments' : 'Info'}
                 </Button>}
               </Space>
             </>
@@ -1044,6 +1091,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                       onPauseVideo={handlePause}
                       selectedCommentId={selectedCommentId}
                       onSelectComment={setSelectedCommentId}
+                      disableActions={publicMode}
                     />
                   )}
                 </div>
@@ -1085,6 +1133,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                       onPauseVideo={handlePause}
                       selectedCommentId={selectedCommentId}
                       onSelectComment={setSelectedCommentId}
+                      disableActions={publicMode}
                     />
                   )}
                 </div>
@@ -1145,6 +1194,8 @@ interface TimecodeCommentPanelProps {
   onPauseVideo?: () => void;
   selectedCommentId: string | null;
   onSelectComment: (commentId: string | null) => void;
+  /** When true, hides Resolve and Delete buttons (public/guest mode) */
+  disableActions?: boolean;
 }
 
 const TimecodeCommentPanel: React.FC<TimecodeCommentPanelProps> = ({
@@ -1158,6 +1209,7 @@ const TimecodeCommentPanel: React.FC<TimecodeCommentPanelProps> = ({
   onPauseVideo,
   selectedCommentId,
   onSelectComment,
+  disableActions = false,
 }) => {
   const { token } = theme.useToken();
   const [newComment, setNewComment] = useState('');
@@ -1415,14 +1467,14 @@ const TimecodeCommentPanel: React.FC<TimecodeCommentPanelProps> = ({
                   >
                     Reply
                   </Button>
-                  <Button
+                  {!disableActions && <Button
                     type="link" size="small"
                     style={{ fontSize: 11, padding: '0 6px', height: 24 }}
                     onClick={(e) => { e.stopPropagation(); onResolveComment(comment.id); }}
                   >
                     Resolve
-                  </Button>
-                  {comment.authorId === currentUserId && (
+                  </Button>}
+                  {!disableActions && comment.authorId === currentUserId && (
                     <Button
                       type="link" size="small" danger
                       style={{ fontSize: 11, padding: '0 6px', height: 24 }}
