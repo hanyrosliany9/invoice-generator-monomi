@@ -43,6 +43,7 @@ export interface BulkDownloadJobData {
   projectId: string;
   zipFilename: string;
   contentHash?: string; // Hash of asset IDs for caching
+  shareToken?: string;  // Set for public jobs — used to verify status requests
 }
 
 /**
@@ -327,6 +328,145 @@ export class BulkDownloadService {
         message: `Failed to cancel job: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
+  }
+
+  /**
+   * Create a bulk download job for a public share link (no auth required)
+   * Validates via shareToken; uses project creator's userId for R2 access.
+   */
+  async createPublicJob(
+    shareToken: string,
+    assetIds: string[],
+    zipFilename?: string,
+  ): Promise<BulkDownloadJobCreatedDto> {
+    // Validate share token and get project
+    const project = await this.prisma.mediaProject.findUnique({
+      where: { publicShareToken: shareToken },
+      select: { id: true, isPublic: true, createdBy: true },
+    });
+
+    if (!project || !project.isPublic) {
+      throw new NotFoundException("Public share link not found or disabled");
+    }
+
+    // Security: filter to only assets that belong to this public project
+    const validAssets = await this.prisma.mediaAsset.findMany({
+      where: {
+        id: { in: assetIds },
+        projectId: project.id,
+      },
+      select: { id: true },
+    });
+
+    if (validAssets.length === 0) {
+      throw new NotFoundException("No valid assets found");
+    }
+
+    const validAssetIds = validAssets.map((a) => a.id);
+
+    // Check cache first
+    const contentHash = this.generateContentHash(validAssetIds);
+    const cachedZip = await this.getCachedZip(contentHash);
+    if (cachedZip) {
+      this.logger.log(`[Public] Cache hit for ${validAssetIds.length} assets`);
+      return {
+        jobId: `cached-${contentHash}`,
+        status: BulkDownloadJobStatus.COMPLETED,
+        totalFiles: cachedZip.fileCount,
+        message: "Download ready (cached)",
+        downloadUrl: cachedZip.downloadUrl,
+        expiresAt: cachedZip.expiresAt,
+      };
+    }
+
+    const jobId = `public-download-${Date.now()}-${contentHash.substring(0, 8)}`;
+    const jobData: BulkDownloadJobData = {
+      assetIds: validAssetIds,
+      userId: project.createdBy, // Use project owner's userId for R2 access checks
+      projectId: project.id,
+      zipFilename: zipFilename || `media-download-${Date.now()}`,
+      contentHash,
+      shareToken, // Store so getPublicJobStatus can verify ownership
+    };
+
+    await this.downloadQueue.add(jobId, jobData, {
+      jobId,
+      attempts: 3,
+      backoff: { type: "exponential", delay: 5000 },
+      removeOnComplete: { age: 3600, count: 100 },
+      removeOnFail: { age: 86400 },
+    });
+
+    this.logger.log(`[Public] Job ${jobId} created for ${validAssetIds.length} assets`);
+
+    return {
+      jobId,
+      status: BulkDownloadJobStatus.PENDING,
+      totalFiles: validAssetIds.length,
+      message: "Download job created. Poll for status updates.",
+    };
+  }
+
+  /**
+   * Get job status for a public share link (no auth required)
+   * Validates that the job was created for this shareToken.
+   */
+  async getPublicJobStatus(jobId: string, shareToken: string): Promise<BulkDownloadJobStatusDto> {
+    const job = await this.downloadQueue.getJob(jobId);
+
+    if (!job) {
+      throw new NotFoundException(`Job ${jobId} not found`);
+    }
+
+    // Verify this job belongs to this public share link
+    const jobData = job.data as BulkDownloadJobData;
+    if (jobData.shareToken !== shareToken) {
+      throw new ForbiddenException("Access denied to this job");
+    }
+
+    const state = await job.getState();
+    const progress = (job.progress as any) || { current: 0, total: 0, percent: 0 };
+
+    let status: BulkDownloadJobStatus;
+    switch (state) {
+      case "waiting":
+      case "delayed":
+        status = BulkDownloadJobStatus.PENDING;
+        break;
+      case "active":
+        status = BulkDownloadJobStatus.ACTIVE;
+        break;
+      case "completed":
+        status = BulkDownloadJobStatus.COMPLETED;
+        break;
+      case "failed":
+        status = BulkDownloadJobStatus.FAILED;
+        break;
+      default:
+        status = BulkDownloadJobStatus.PENDING;
+    }
+
+    const response: BulkDownloadJobStatusDto = {
+      jobId,
+      status,
+      processedFiles: progress.current || 0,
+      totalFiles: jobData.assetIds.length,
+      progress: progress.percent || 0,
+      createdAt: new Date(job.timestamp).toISOString(),
+    };
+
+    if (state === "completed" && job.returnvalue) {
+      const result = job.returnvalue as any;
+      response.downloadUrl = result.downloadUrl;
+      response.expiresAt = result.expiresAt;
+      response.completedAt = result.completedAt;
+    }
+
+    if (state === "failed") {
+      response.error = job.failedReason || "Unknown error";
+    }
+
+    return response;
   }
 
   /**

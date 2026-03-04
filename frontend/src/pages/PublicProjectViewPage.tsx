@@ -16,6 +16,8 @@ import { PhotoLightbox } from '../components/media/PhotoLightbox';
 import { VideoReviewModal } from '../components/media/VideoReviewModal';
 import { ComparisonView } from '../components/media/ComparisonView';
 import { MetadataPanel } from '../components/media/MetadataPanel';
+import { BulkDownloadModal } from '../components/media/BulkDownloadModal';
+import { usePublicBulkDownload } from '../hooks/usePublicBulkDownload';
 import { getProxyUrl } from '../utils/mediaProxy';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -672,6 +674,10 @@ export const PublicProjectViewPage: React.FC = () => {
   const { token: shareToken } = useParams<{ token: string }>();
   const { message } = App.useApp();
 
+  // Async bulk download with progress modal (polling-based, no auth needed)
+  const publicBulkDownload = usePublicBulkDownload(shareToken ?? '');
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+
   // Guest identity — persisted in localStorage
   const [guestName, setGuestName] = useState<string>(() => {
     try { return localStorage.getItem(GUEST_NAME_KEY) || ''; } catch { return ''; }
@@ -821,10 +827,19 @@ export const PublicProjectViewPage: React.FC = () => {
     }
   };
 
-  // ── Download handlers (public — no auth token, uses shareToken) ──────────
+  // ── Download handlers (public — async job with progress modal) ───────────
+  const startPublicDownload = async (assetIds: string[], zipFilename: string) => {
+    setShowDownloadModal(true);
+    publicBulkDownload.reset();
+    await publicBulkDownload.startDownload(
+      assetIds,
+      '', // projectId not needed for public hook
+      zipFilename,
+    );
+  };
+
   const handlePublicBulkDownload = async (assetIds: string[]) => {
-    await mediaCollabService.publicBulkDownloadAssets(
-      shareToken!,
+    await startPublicDownload(
       assetIds,
       `media-${project?.name ?? 'download'}-${Date.now()}`,
     );
@@ -832,7 +847,7 @@ export const PublicProjectViewPage: React.FC = () => {
 
   const handlePublicFolderDownload = async (folderId: string, folderName: string) => {
     if (!assets) return;
-    // Collect all assets in this folder and all descendant folders
+    // Collect assets in this folder and all descendant folders
     const getAllFolderIds = (id: string): string[] => {
       const children = folders?.filter(f => f.parentId === id).map(f => f.id) ?? [];
       return [id, ...children.flatMap(getAllFolderIds)];
@@ -843,17 +858,7 @@ export const PublicProjectViewPage: React.FC = () => {
       message.warning('No files in this folder');
       return;
     }
-    message.loading({ content: `Preparing ${folderAssets.length} file(s) for download...`, key: 'folder-dl', duration: 0 });
-    try {
-      await mediaCollabService.publicBulkDownloadAssets(
-        shareToken!,
-        folderAssets.map(a => a.id),
-        `${folderName}-${Date.now()}`,
-      );
-      message.success({ content: `Downloaded ${folderAssets.length} file(s)`, key: 'folder-dl' });
-    } catch (error: any) {
-      message.error({ content: `Download failed: ${error?.message ?? 'Unknown error'}`, key: 'folder-dl' });
-    }
+    await startPublicDownload(folderAssets.map(a => a.id), `${folderName}-${Date.now()}`);
   };
 
   const handleStarRatingChange = async (assetId: string, rating: number) => {
@@ -1257,6 +1262,21 @@ export const PublicProjectViewPage: React.FC = () => {
             />
           </Modal>
         )}
+
+        {/* ── Bulk Download Progress Modal ── */}
+        <BulkDownloadModal
+          open={showDownloadModal}
+          state={publicBulkDownload}
+          onClose={() => {
+            setShowDownloadModal(false);
+            if (publicBulkDownload.status === 'completed' || publicBulkDownload.status === 'cancelled') {
+              publicBulkDownload.reset();
+            }
+          }}
+          onCancel={() => publicBulkDownload.cancelDownload()}
+          onRetry={() => {/* no-op: user can re-select files */}}
+          onDownload={() => publicBulkDownload.triggerDownload()}
+        />
 
         {/* ── Guest Name Modal ── */}
         <GuestNameModal

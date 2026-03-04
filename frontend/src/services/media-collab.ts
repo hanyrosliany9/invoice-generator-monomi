@@ -804,36 +804,28 @@ class MediaCollabService {
     return response.data.data;
   }
 
-  // Bulk download assets via public share link (no auth required)
-  async publicBulkDownloadAssets(
+  // Create async bulk download job via public share link (no auth required)
+  async createPublicBulkDownloadJob(
     shareToken: string,
     assetIds: string[],
     zipFilename?: string,
-  ): Promise<void> {
+  ): Promise<BulkDownloadJobCreated> {
     const response = await apiClient.post(
-      `/media-collab/public/${shareToken}/bulk-download`,
+      `/media-collab/public/${shareToken}/async-bulk-download`,
       { assetIds, zipFilename },
-      {
-        responseType: 'blob',
-        timeout: 10 * 60 * 1000,
-      },
     );
+    return response.data.data ?? response.data;
+  }
 
-    const contentDisposition = response.headers['content-disposition'];
-    let filename = zipFilename ? `${zipFilename}.zip` : 'media-download.zip';
-    if (contentDisposition) {
-      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-      if (match) filename = match[1];
-    }
-
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+  // Poll async bulk download job status via public share link (no auth required)
+  async getPublicBulkDownloadJobStatus(
+    shareToken: string,
+    jobId: string,
+  ): Promise<BulkDownloadJobStatus> {
+    const response = await apiClient.get(
+      `/media-collab/public/${shareToken}/async-bulk-download/${jobId}`,
+    );
+    return response.data.data ?? response.data;
   }
 
   // ============================================

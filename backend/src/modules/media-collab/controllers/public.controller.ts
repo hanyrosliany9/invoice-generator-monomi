@@ -7,8 +7,6 @@ import {
   Body,
   Query,
   BadRequestException,
-  Res,
-  StreamableFile,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -16,14 +14,13 @@ import {
   ApiResponse,
   ApiBody,
   ApiQuery,
-  ApiProduces,
 } from "@nestjs/swagger";
-import { Response } from "express";
 import { JwtService } from "@nestjs/jwt";
 import { MediaProjectsService } from "../services/media-projects.service";
 import { MediaAssetsService } from "../services/media-assets.service";
 import { MetadataService } from "../services/metadata.service";
 import { MediaCommentsService } from "../services/media-comments.service";
+import { BulkDownloadService } from "../services/bulk-download.service";
 
 /**
  * Public API Controller
@@ -38,6 +35,7 @@ export class PublicController {
     private readonly metadataService: MetadataService,
     private readonly jwtService: JwtService,
     private readonly commentsService: MediaCommentsService,
+    private readonly bulkDownloadService: BulkDownloadService,
   ) {}
 
   /**
@@ -291,53 +289,50 @@ export class PublicController {
   }
 
   /**
-   * Bulk download assets as ZIP (public - no auth required)
+   * Create an async bulk download job via public link (no auth required)
    *
-   * POST /media-collab/public/:token/bulk-download
+   * POST /media-collab/public/:token/async-bulk-download
    * Body: { assetIds: string[], zipFilename?: string }
+   * Returns: { jobId, status, totalFiles }
    */
-  @Post(":token/bulk-download")
+  @Post(":token/async-bulk-download")
   @ApiOperation({
-    summary: "Bulk download assets as ZIP via public link (no auth required)",
+    summary: "Create async bulk download job via public link (no auth required)",
   })
-  @ApiProduces("application/zip")
   @ApiBody({
     schema: {
       type: "object",
       properties: {
-        assetIds: {
-          type: "array",
-          items: { type: "string" },
-          description: "Array of asset IDs to download",
-        },
-        zipFilename: {
-          type: "string",
-          description: "Optional custom filename for ZIP (without .zip)",
-        },
+        assetIds: { type: "array", items: { type: "string" } },
+        zipFilename: { type: "string" },
       },
       required: ["assetIds"],
     },
   })
-  @ApiResponse({ status: 200, description: "ZIP archive containing requested assets" })
-  @ApiResponse({ status: 404, description: "Link not found or no assets found" })
-  async publicBulkDownload(
+  @ApiResponse({ status: 201, description: "Job created, poll for status" })
+  @ApiResponse({ status: 404, description: "Share link not found or no assets" })
+  async createPublicBulkDownloadJob(
     @Param("token") token: string,
     @Body() body: { assetIds: string[]; zipFilename?: string },
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<StreamableFile> {
-    const { stream, filename, assetCount } =
-      await this.assetsService.bulkDownloadPublicAssets(token, body.assetIds);
+  ) {
+    return this.bulkDownloadService.createPublicJob(token, body.assetIds, body.zipFilename);
+  }
 
-    const finalFilename = body.zipFilename
-      ? `${body.zipFilename}.zip`
-      : filename;
-
-    res.set({
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${finalFilename}"`,
-      "X-Asset-Count": assetCount.toString(),
-    });
-
-    return new StreamableFile(stream);
+  /**
+   * Poll async bulk download job status via public link (no auth required)
+   *
+   * GET /media-collab/public/:token/async-bulk-download/:jobId
+   */
+  @Get(":token/async-bulk-download/:jobId")
+  @ApiOperation({
+    summary: "Poll bulk download job status via public link (no auth required)",
+  })
+  @ApiResponse({ status: 200, description: "Job status returned" })
+  @ApiResponse({ status: 404, description: "Job not found" })
+  async getPublicBulkDownloadJobStatus(
+    @Param("token") token: string,
+    @Param("jobId") jobId: string,
+  ) {
+    return this.bulkDownloadService.getPublicJobStatus(jobId, token);
   }
 }
