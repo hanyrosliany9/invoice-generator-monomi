@@ -88,6 +88,8 @@ interface MediaLibraryProps {
   readOnly?: boolean;
   onRatingChange?: (assetId: string, rating: number) => void;
   onStatusChange?: (assetId: string, status: string) => void;
+  /** Override bulk download handler (e.g. for public pages that can't use auth endpoints) */
+  onBulkDownload?: (assetIds: string[]) => Promise<void>;
 }
 
 /**
@@ -408,6 +410,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   readOnly = false,
   onRatingChange,
   onStatusChange,
+  onBulkDownload,
 }) => {
   const { token } = theme.useToken();
   const { message } = App.useApp();
@@ -739,8 +742,8 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
     const loadingKey = `download-${asset.id}`;
     message.loading({ content: `Downloading ${asset.originalName}...`, key: loadingKey, duration: 0 });
     try {
-      // Use backend proxy URL (relative/same-origin) to avoid R2 auth errors
-      const proxyUrl = getProxyUrl(asset.url);
+      // Use proxy URL with media token (Cloudflare Worker) or backend proxy fallback
+      const proxyUrl = getProxyUrl(asset.url, mediaToken);
       const response = await fetch(proxyUrl);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const blob = await response.blob();
@@ -847,6 +850,26 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
       const asset = assets?.find((a) => a.id === selectedAssets[0]);
       if (asset) {
         handleDownload(asset);
+      }
+      return;
+    }
+
+    // If a custom download handler is provided (e.g. public page), use it
+    if (onBulkDownload) {
+      try {
+        message.loading({
+          content: `Preparing ${selectedAssets.length} file(s) for download...`,
+          key: 'bulk-download',
+          duration: 0,
+        });
+        await onBulkDownload(selectedAssets);
+        message.success({
+          content: `Downloaded ${selectedAssets.length} file(s) as ZIP`,
+          key: 'bulk-download',
+        });
+      } catch (error: any) {
+        const errorMsg = error?.response?.data?.message || error?.message || 'Unknown error';
+        message.error({ content: `Download failed: ${errorMsg}`, key: 'bulk-download' });
       }
       return;
     }

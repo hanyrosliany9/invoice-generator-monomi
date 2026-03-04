@@ -814,6 +814,139 @@ export class MediaAssetsService {
   }
 
   /**
+   * Bulk download multiple assets as a ZIP archive (for public share links)
+   * No userId auth — validates via shareToken instead
+   *
+   * @param shareToken Public share token
+   * @param assetIds Array of asset IDs to download
+   * @returns PassThrough stream containing the ZIP archive
+   */
+  async bulkDownloadPublicAssets(
+    shareToken: string,
+    assetIds: string[],
+  ): Promise<{
+    stream: PassThrough;
+    filename: string;
+    assetCount: number;
+  }> {
+    this.logger.log(
+      `[MediaAssetsService] Public bulk download started: ${assetIds.length} assets for token ${shareToken}`,
+    );
+
+    // 1. Validate share token and get project
+    const project = await this.prisma.mediaProject.findUnique({
+      where: { publicShareToken: shareToken },
+      select: { id: true, isPublic: true },
+    });
+
+    if (!project || !project.isPublic) {
+      throw new NotFoundException("Public share link not found or disabled");
+    }
+
+    // 2. Fetch only assets that belong to this public project (security filter)
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: {
+        id: { in: assetIds },
+        projectId: project.id,
+      },
+      select: {
+        id: true,
+        key: true,
+        originalName: true,
+        filename: true,
+        projectId: true,
+        mimeType: true,
+      },
+    });
+
+    if (assets.length === 0) {
+      throw new NotFoundException("No assets found");
+    }
+
+    // 3. Create ZIP archive stream (same logic as bulkDownloadAssets)
+    const passThrough = new PassThrough();
+    const archive = archiver("zip", {
+      zlib: { level: 6 },
+    });
+
+    archive.on("error", (err: Error) => {
+      this.logger.error(`Archive error: ${err.message}`, err.stack);
+      passThrough.destroy(err);
+    });
+
+    archive.on("warning", (err: archiver.ArchiverError) => {
+      if (err.code === "ENOENT") {
+        this.logger.warn(`Archive warning: ${err.message}`);
+      } else {
+        passThrough.destroy(err);
+      }
+    });
+
+    archive.pipe(passThrough);
+
+    const addFilesToArchive = async () => {
+      let addedCount = 0;
+      const usedNames = new Map<string, number>();
+      const CONCURRENCY_LIMIT = 10;
+
+      const getUniqueFilename = (originalName: string): string => {
+        const existingCount = usedNames.get(originalName) || 0;
+        let fileName = originalName;
+        if (existingCount > 0) {
+          const ext = originalName.lastIndexOf(".");
+          if (ext > 0) {
+            fileName = `${originalName.substring(0, ext)}_${existingCount}${originalName.substring(ext)}`;
+          } else {
+            fileName = `${originalName}_${existingCount}`;
+          }
+        }
+        usedNames.set(originalName, existingCount + 1);
+        return fileName;
+      };
+
+      for (let i = 0; i < assets.length; i += CONCURRENCY_LIMIT) {
+        const batch = assets.slice(i, i + CONCURRENCY_LIMIT);
+
+        const results = await Promise.allSettled(
+          batch.map(async (asset) => {
+            const fileStream = await this.mediaService.getFileStream(asset.key);
+            return { asset, stream: fileStream.stream };
+          }),
+        );
+
+        for (const result of results) {
+          if (result.status === "fulfilled") {
+            const { asset, stream } = result.value;
+            const fileName = getUniqueFilename(
+              asset.originalName || asset.filename,
+            );
+            archive.append(stream, { name: fileName });
+            addedCount++;
+          } else {
+            this.logger.error(`Failed to fetch file: ${result.reason}`);
+          }
+        }
+      }
+
+      await archive.finalize();
+      this.logger.log(
+        `[MediaAssetsService] Public bulk download completed: ${addedCount}/${assets.length} files`,
+      );
+    };
+
+    addFilesToArchive().catch((err) => {
+      this.logger.error(`Failed to create archive: ${err.message}`, err.stack);
+      passThrough.destroy(err);
+    });
+
+    return {
+      stream: passThrough,
+      filename: `media-download-${Date.now()}.zip`,
+      assetCount: assets.length,
+    };
+  }
+
+  /**
    * Determine media type from MIME type
    */
   private determineMediaType(

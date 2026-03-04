@@ -7,6 +7,8 @@ import {
   Body,
   Query,
   BadRequestException,
+  Res,
+  StreamableFile,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -14,7 +16,9 @@ import {
   ApiResponse,
   ApiBody,
   ApiQuery,
+  ApiProduces,
 } from "@nestjs/swagger";
+import { Response } from "express";
 import { JwtService } from "@nestjs/jwt";
 import { MediaProjectsService } from "../services/media-projects.service";
 import { MediaAssetsService } from "../services/media-assets.service";
@@ -284,5 +288,56 @@ export class PublicController {
       starRating,
       project.createdBy,
     );
+  }
+
+  /**
+   * Bulk download assets as ZIP (public - no auth required)
+   *
+   * POST /media-collab/public/:token/bulk-download
+   * Body: { assetIds: string[], zipFilename?: string }
+   */
+  @Post(":token/bulk-download")
+  @ApiOperation({
+    summary: "Bulk download assets as ZIP via public link (no auth required)",
+  })
+  @ApiProduces("application/zip")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        assetIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "Array of asset IDs to download",
+        },
+        zipFilename: {
+          type: "string",
+          description: "Optional custom filename for ZIP (without .zip)",
+        },
+      },
+      required: ["assetIds"],
+    },
+  })
+  @ApiResponse({ status: 200, description: "ZIP archive containing requested assets" })
+  @ApiResponse({ status: 404, description: "Link not found or no assets found" })
+  async publicBulkDownload(
+    @Param("token") token: string,
+    @Body() body: { assetIds: string[]; zipFilename?: string },
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const { stream, filename, assetCount } =
+      await this.assetsService.bulkDownloadPublicAssets(token, body.assetIds);
+
+    const finalFilename = body.zipFilename
+      ? `${body.zipFilename}.zip`
+      : filename;
+
+    res.set({
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${finalFilename}"`,
+      "X-Asset-Count": assetCount.toString(),
+    });
+
+    return new StreamableFile(stream);
   }
 }

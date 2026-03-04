@@ -821,6 +821,41 @@ export const PublicProjectViewPage: React.FC = () => {
     }
   };
 
+  // ── Download handlers (public — no auth token, uses shareToken) ──────────
+  const handlePublicBulkDownload = async (assetIds: string[]) => {
+    await mediaCollabService.publicBulkDownloadAssets(
+      shareToken!,
+      assetIds,
+      `media-${project?.name ?? 'download'}-${Date.now()}`,
+    );
+  };
+
+  const handlePublicFolderDownload = async (folderId: string, folderName: string) => {
+    if (!assets) return;
+    // Collect all assets in this folder and all descendant folders
+    const getAllFolderIds = (id: string): string[] => {
+      const children = folders?.filter(f => f.parentId === id).map(f => f.id) ?? [];
+      return [id, ...children.flatMap(getAllFolderIds)];
+    };
+    const folderIds = getAllFolderIds(folderId);
+    const folderAssets = assets.filter(a => a.folderId && folderIds.includes(a.folderId));
+    if (folderAssets.length === 0) {
+      message.warning('No files in this folder');
+      return;
+    }
+    message.loading({ content: `Preparing ${folderAssets.length} file(s) for download...`, key: 'folder-dl', duration: 0 });
+    try {
+      await mediaCollabService.publicBulkDownloadAssets(
+        shareToken!,
+        folderAssets.map(a => a.id),
+        `${folderName}-${Date.now()}`,
+      );
+      message.success({ content: `Downloaded ${folderAssets.length} file(s)`, key: 'folder-dl' });
+    } catch (error: any) {
+      message.error({ content: `Download failed: ${error?.message ?? 'Unknown error'}`, key: 'folder-dl' });
+    }
+  };
+
   const handleStarRatingChange = async (assetId: string, rating: number) => {
     if (selectedAsset && selectedAsset.id === assetId) {
       setSelectedAsset({ ...selectedAsset, starRating: rating });
@@ -1098,6 +1133,8 @@ export const PublicProjectViewPage: React.FC = () => {
                 onAssetClick={handleAssetClick}
                 onCompare={(assetIds) => setComparisonAssetIds(assetIds)}
                 onFolderDoubleClick={(folderId) => setCurrentFolderId(folderId)}
+                onFolderDownload={handlePublicFolderDownload}
+                onBulkDownload={handlePublicBulkDownload}
                 filters={filters}
                 disableDndContext={true}
                 mediaToken={mediaToken ?? null}

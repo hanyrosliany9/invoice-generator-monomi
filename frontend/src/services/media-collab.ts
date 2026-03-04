@@ -804,6 +804,38 @@ class MediaCollabService {
     return response.data.data;
   }
 
+  // Bulk download assets via public share link (no auth required)
+  async publicBulkDownloadAssets(
+    shareToken: string,
+    assetIds: string[],
+    zipFilename?: string,
+  ): Promise<void> {
+    const response = await apiClient.post(
+      `/media-collab/public/${shareToken}/bulk-download`,
+      { assetIds, zipFilename },
+      {
+        responseType: 'blob',
+        timeout: 10 * 60 * 1000,
+      },
+    );
+
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = zipFilename ? `${zipFilename}.zip` : 'media-download.zip';
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
+      if (match) filename = match[1];
+    }
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }
+
   // ============================================
   // FOLDERS
   // ============================================
