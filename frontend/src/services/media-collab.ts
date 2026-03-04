@@ -771,6 +771,12 @@ class MediaCollabService {
     return response.data.data;
   }
 
+  // Get a signed Cloudflare Worker JWT for public media access
+  async getPublicMediaToken(token: string): Promise<string> {
+    const response = await apiClient.get(`/media-collab/public/${token}/media-token`);
+    return response.data.data.mediaToken;
+  }
+
   // Public asset updates (no authentication required)
   async updatePublicAssetStatus(token: string, assetId: string, status: string): Promise<MediaAsset> {
     const response = await apiClient.put(`/media-collab/public/${token}/assets/${assetId}/status`, { status });

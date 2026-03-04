@@ -14,6 +14,7 @@ import {
   ApiBody,
   ApiQuery,
 } from "@nestjs/swagger";
+import { JwtService } from "@nestjs/jwt";
 import { MediaProjectsService } from "../services/media-projects.service";
 import { MediaAssetsService } from "../services/media-assets.service";
 import { MetadataService } from "../services/metadata.service";
@@ -29,6 +30,7 @@ export class PublicController {
     private readonly projectsService: MediaProjectsService,
     private readonly assetsService: MediaAssetsService,
     private readonly metadataService: MetadataService,
+    private readonly jwtService: JwtService,
   ) {}
 
   /**
@@ -105,6 +107,33 @@ export class PublicController {
   async getPublicFolders(@Param("token") token: string) {
     // Return data directly - ResponseInterceptor will wrap it
     return await this.projectsService.getPublicProjectFolders(token);
+  }
+
+  /**
+   * Get a short-lived media JWT for public project access
+   *
+   * GET /media-collab/public/:token/media-token
+   *
+   * Validates the share token and returns a signed JWT that the Cloudflare Worker
+   * accepts (purpose: 'public-share'). Allows the public page to load media via
+   * the worker CDN without exposing private R2 credentials.
+   */
+  @Get(":token/media-token")
+  @ApiOperation({ summary: "Get Cloudflare Worker media JWT for public project" })
+  @ApiResponse({ status: 200, description: "Media token returned" })
+  @ApiResponse({ status: 404, description: "Share link not found or disabled" })
+  async getPublicMediaToken(@Param("token") token: string) {
+    // Validates token — throws 404 if not found/disabled
+    await this.projectsService.getPublicProject(token);
+
+    const payload = {
+      purpose: "public-share",
+      isPublic: true,
+      shareToken: token,
+    };
+    const mediaToken = this.jwtService.sign(payload, { expiresIn: "24h" });
+
+    return { mediaToken };
   }
 
   /**

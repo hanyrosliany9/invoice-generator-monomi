@@ -62,6 +62,15 @@ export const PublicProjectViewPage: React.FC = () => {
     enabled: !!shareToken,
   });
 
+  // Signed JWT for Cloudflare Worker — valid 24 h, same secret as backend.
+  // The raw shareToken is NOT a JWT and will be rejected by the worker with 401.
+  const { data: mediaToken } = useQuery({
+    queryKey: ['public-media-token', shareToken],
+    queryFn: () => mediaCollabService.getPublicMediaToken(shareToken!),
+    enabled: !!shareToken,
+    staleTime: 23 * 60 * 60 * 1000, // treat as fresh for 23h
+  });
+
   // ── Derived data ───────────────────────────────────────────────────────────
   // Assets in the current folder — MediaLibrary handles search/filter/sort internally
   const currentFolderAssets = useMemo(() => {
@@ -386,7 +395,7 @@ export const PublicProjectViewPage: React.FC = () => {
             onFolderDoubleClick={(folderId) => setCurrentFolderId(folderId)}
             filters={filters}
             disableDndContext={true}
-            mediaToken={shareToken}
+            mediaToken={mediaToken ?? null}
             readOnly={true}
             onRatingChange={handleStarRatingChange}
             onStatusChange={handleStatusChange}
@@ -404,16 +413,16 @@ export const PublicProjectViewPage: React.FC = () => {
       {selectedAsset && (selectedAsset.mediaType === 'IMAGE' || selectedAsset.mediaType === 'RAW_IMAGE') && (
         <PhotoLightbox
           visible={lightboxVisible}
-          imageUrl={getProxyUrl(selectedAsset.url, shareToken)}
-          thumbnailUrl={selectedAsset.thumbnailUrl ? getProxyUrl(selectedAsset.thumbnailUrl, shareToken) : undefined}
+          imageUrl={getProxyUrl(selectedAsset.url, mediaToken)}
+          thumbnailUrl={selectedAsset.thumbnailUrl ? getProxyUrl(selectedAsset.thumbnailUrl, mediaToken) : undefined}
           imageName={selectedAsset.originalName}
           onClose={() => setLightboxVisible(false)}
           onPrevious={() => navigateToAsset('prev')}
           onNext={() => navigateToAsset('next')}
           hasPrevious={selectedIndex > 0}
           hasNext={selectedIndex < navigableAssets.length - 1}
-          nextImageUrl={nextAsset ? getProxyUrl(nextAsset.url, shareToken) : undefined}
-          previousImageUrl={prevAsset ? getProxyUrl(prevAsset.url, shareToken) : undefined}
+          nextImageUrl={nextAsset ? getProxyUrl(nextAsset.url, mediaToken) : undefined}
+          previousImageUrl={prevAsset ? getProxyUrl(prevAsset.url, mediaToken) : undefined}
           currentRating={selectedAsset.starRating}
           onRatingChange={(rating) => handleStarRatingChange(selectedAsset.id, rating)}
         />
@@ -425,7 +434,7 @@ export const PublicProjectViewPage: React.FC = () => {
           key={videoPlayerKey}
           visible={videoPlayerVisible}
           asset={selectedAsset}
-          mediaToken={shareToken ?? null}
+          mediaToken={mediaToken ?? null}
           readOnly={true}
           onClose={() => {
             setVideoPlayerVisible(false);
@@ -448,7 +457,7 @@ export const PublicProjectViewPage: React.FC = () => {
           <ComparisonView
             assetIds={comparisonAssetIds}
             onClose={() => setComparisonAssetIds([])}
-            mediaToken={shareToken}
+            mediaToken={mediaToken ?? undefined}
           />
         )}
       </Modal>
