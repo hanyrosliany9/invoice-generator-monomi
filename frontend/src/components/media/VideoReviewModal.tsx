@@ -32,6 +32,7 @@ interface VideoReviewModalProps {
   visible: boolean;
   asset: MediaAsset;
   mediaToken: string | null;
+  readOnly?: boolean;
   onClose: () => void;
 }
 
@@ -56,6 +57,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   visible,
   asset,
   mediaToken,
+  readOnly = false,
   onClose,
 }) => {
   const { token: antToken } = theme.useToken();
@@ -106,7 +108,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
 
   // UI state
   const [drawMode, setDrawMode] = useState(false);
-  const [showInfo, setShowInfo] = useState(true);
+  const [showInfo, setShowInfo] = useState(!readOnly);
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [showCommentsSheet, setShowCommentsSheet] = useState(false);
@@ -177,21 +179,21 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   const { data: frames = [] } = useQuery({
     queryKey: ['frames', asset.id],
     queryFn: () => mediaCollabService.getFramesByAsset(asset.id),
-    enabled: visible && !!asset.id,
+    enabled: !readOnly && visible && !!asset.id,
   });
 
   // Fetch comments with timecode
   const { data: comments = [], isLoading: commentsLoading } = useQuery({
     queryKey: ['comments', asset.id],
     queryFn: () => mediaCollabService.getCommentsByAsset(asset.id),
-    enabled: visible && !!asset.id,
+    enabled: !readOnly && visible && !!asset.id,
   });
 
   // Fetch drawings
   const { data: drawings = [] } = useQuery({
     queryKey: ['drawings', asset.id],
     queryFn: () => mediaCollabService.getDrawingsByAsset(asset.id),
-    enabled: visible && !!asset.id,
+    enabled: !readOnly && visible && !!asset.id,
   });
 
   // Create timeline markers from frames, comments, and drawings
@@ -630,12 +632,12 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                   onClick={handleDownload}
                   style={{ padding: '4px 8px' }}
                 />
-                <Button
+                {!readOnly && <Button
                   type="text"
                   icon={<CommentOutlined />}
                   onClick={() => setShowCommentsSheet(!showCommentsSheet)}
                   style={{ padding: '4px 8px' }}
-                />
+                />}
                 <Button
                   type="text"
                   icon={<CloseOutlined />}
@@ -697,7 +699,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                 >
                   Download
                 </Button>
-                <Button
+                {!readOnly && <Button
                   type={drawMode ? 'primary' : 'default'}
                   icon={<EditOutlined />}
                   onClick={() => {
@@ -710,14 +712,14 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                   disabled={isPlaying}
                 >
                   Draw
-                </Button>
-                <Button
+                </Button>}
+                {!readOnly && <Button
                   type={showInfo ? 'primary' : 'default'}
                   icon={<InfoCircleOutlined />}
                   onClick={() => setShowInfo(!showInfo)}
                 >
                   Info
-                </Button>
+                </Button>}
               </Space>
             </>
           )}

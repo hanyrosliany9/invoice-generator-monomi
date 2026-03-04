@@ -86,6 +86,9 @@ interface MediaLibraryProps {
   onSelectionChange?: (selectedAssets: string[]) => void;
   mediaToken?: string | null;
   selectedAssetId?: string;
+  readOnly?: boolean;
+  onRatingChange?: (assetId: string, rating: number) => void;
+  onStatusChange?: (assetId: string, status: string) => void;
 }
 
 /**
@@ -403,6 +406,9 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   onDragEnd: onDragEndProp,
   onSelectionChange,
   selectedAssetId,
+  readOnly = false,
+  onRatingChange,
+  onStatusChange,
 }) => {
   const { token } = theme.useToken();
   const { message } = App.useApp();
@@ -678,11 +684,14 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
         )
       );
 
-      await mediaCollabService.updateStarRating(assetId, rating);
-
-      // Only refetch if we're managing our own data (projectId is provided)
-      if (projectId) {
-        refetch();
+      if (onRatingChange) {
+        await onRatingChange(assetId, rating);
+      } else {
+        await mediaCollabService.updateStarRating(assetId, rating);
+        // Only refetch if we're managing our own data (projectId is provided)
+        if (projectId) {
+          refetch();
+        }
       }
     } catch (error) {
       console.error('Failed to update star rating:', error);
@@ -695,7 +704,11 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
 
   const handleStatusChange = async (assetId: string, status: string) => {
     try {
-      await mediaCollabService.updateAssetStatus(assetId, status);
+      if (onStatusChange) {
+        await onStatusChange(assetId, status);
+      } else {
+        await mediaCollabService.updateAssetStatus(assetId, status);
+      }
       message.success(`Status updated to ${status}`);
       if (projectId) {
         refetch();
@@ -893,7 +906,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   const handleBulkStatusChange = async (status: string) => {
     try {
       const statusPromises = selectedAssets.map((id) =>
-        mediaCollabService.updateAssetStatus(id, status)
+        onStatusChange ? onStatusChange(id, status) : mediaCollabService.updateAssetStatus(id, status)
       );
       await Promise.all(statusPromises);
       message.success(`Updated ${selectedAssets.length} asset(s) to ${status}`);
@@ -909,7 +922,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   const handleBulkStarRating = async (rating: number) => {
     try {
       const ratingPromises = selectedAssets.map((id) =>
-        mediaCollabService.updateStarRating(id, rating)
+        onRatingChange ? onRatingChange(id, rating) : mediaCollabService.updateStarRating(id, rating)
       );
       await Promise.all(ratingPromises);
       message.success(`Rated ${selectedAssets.length} asset(s) with ${rating} star${rating !== 1 ? 's' : ''}`);
@@ -1208,7 +1221,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               Download
             </Button>
 
-            <Popconfirm
+            {!readOnly && <Popconfirm
               title={`${removeButtonText} ${selectedAssets.length} asset(s)?`}
               description="This action cannot be undone."
               onConfirm={handleBulkDelete}
@@ -1219,7 +1232,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               <Button danger icon={<DeleteOutlined />} size="middle">
                 {removeButtonText}
               </Button>
-            </Popconfirm>
+            </Popconfirm>}
           </Space>
 
           {/* Divider */}
@@ -1492,7 +1505,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                     items: [
                       { key: 'view', label: 'View', icon: <EyeOutlined />, onClick: () => onAssetClick && onAssetClick(asset) },
                       { key: 'download', label: 'Download', icon: <DownloadOutlined />, onClick: () => handleDownload(asset) },
-                      { key: 'delete', label: 'Delete', icon: <DeleteOutlined />, danger: true, onClick: () => handleDelete(asset.id, asset.originalName) },
+                      ...(!readOnly ? [{ key: 'delete', label: 'Delete', icon: <DeleteOutlined />, danger: true, onClick: () => handleDelete(asset.id, asset.originalName) }] : []),
                     ],
                   }}
                   trigger={['click']}
@@ -1615,7 +1628,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                     }}
                   />
                 </Tooltip>
-                <Popconfirm
+                {!readOnly && <Popconfirm
                   title={`${removeButtonText} asset`}
                   description={`Are you sure you want to ${removeButtonText.toLowerCase()} "${asset.originalName}"?`}
                   onConfirm={(e) => {
@@ -1635,7 +1648,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                       onClick={(e) => e.stopPropagation()}
                     />
                   </Tooltip>
-                </Popconfirm>
+                </Popconfirm>}
                 </div>
               )}
               </div>
@@ -1876,7 +1889,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                     items: [
                       { key: 'view', label: 'View', icon: <EyeOutlined />, onClick: () => onAssetClick && onAssetClick(asset) },
                       { key: 'download', label: 'Download', icon: <DownloadOutlined />, onClick: () => handleDownload(asset) },
-                      { key: 'delete', label: 'Delete', icon: <DeleteOutlined />, danger: true, onClick: () => handleDelete(asset.id, asset.originalName) },
+                      ...(!readOnly ? [{ key: 'delete', label: 'Delete', icon: <DeleteOutlined />, danger: true, onClick: () => handleDelete(asset.id, asset.originalName) }] : []),
                     ],
                   }}
                   trigger={['click']}
@@ -1999,7 +2012,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                     }}
                   />
                 </Tooltip>
-                <Popconfirm
+                {!readOnly && <Popconfirm
                   title={`${removeButtonText} asset`}
                   description={`Are you sure you want to ${removeButtonText.toLowerCase()} "${asset.originalName}"?`}
                   onConfirm={(e) => {
@@ -2019,7 +2032,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                       onClick={(e) => e.stopPropagation()}
                     />
                   </Tooltip>
-                </Popconfirm>
+                </Popconfirm>}
                 </div>
               )}
               </div>
@@ -2341,7 +2354,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                         }}
                       />
                     </Tooltip>
-                    <Popconfirm
+                    {!readOnly && <Popconfirm
                       title={`${removeButtonText} asset`}
                       description={`Are you sure you want to ${removeButtonText.toLowerCase()} "${asset.originalName}"?`}
                       onConfirm={(e) => {
@@ -2361,7 +2374,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                           onClick={(e) => e.stopPropagation()}
                         />
                       </Tooltip>
-                    </Popconfirm>
+                    </Popconfirm>}
                   </Space>
                 ) : null,
             },

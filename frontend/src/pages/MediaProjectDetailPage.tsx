@@ -606,6 +606,18 @@ export const MediaProjectDetailPage: React.FC = () => {
     }
   };
 
+  const handleLightboxRatingChange = async (assetId: string, rating: number) => {
+    if (selectedAsset && selectedAsset.id === assetId) {
+      setSelectedAsset({ ...selectedAsset, starRating: rating });
+    }
+    try {
+      await mediaCollabService.updateStarRating(assetId, rating);
+      queryClient.invalidateQueries({ queryKey: ['media-assets', projectId] });
+    } catch {
+      message.error('Failed to update rating');
+    }
+  };
+
   const handleCopyShareLink = () => {
     const shareLink = `${window.location.origin}/media/project/${projectId}`;
     navigator.clipboard.writeText(shareLink).then(() => {
@@ -1177,18 +1189,28 @@ export const MediaProjectDetailPage: React.FC = () => {
         />
 
         {/* Photo Lightbox */}
-        {selectedAsset && (selectedAsset.mediaType === 'IMAGE' || selectedAsset.mediaType === 'RAW_IMAGE') && (
-          <PhotoLightbox
-            visible={lightboxVisible}
-            imageUrl={getProxyUrl(selectedAsset.url, mediaToken)}
-            imageName={selectedAsset.originalName}
-            onClose={() => setLightboxVisible(false)}
-            onPrevious={() => navigateToAsset('prev')}
-            onNext={() => navigateToAsset('next')}
-            hasPrevious={navigableAssets.findIndex((a) => a.id === selectedAsset.id) > 0}
-            hasNext={navigableAssets.findIndex((a) => a.id === selectedAsset.id) < navigableAssets.length - 1}
-          />
-        )}
+        {selectedAsset && (selectedAsset.mediaType === 'IMAGE' || selectedAsset.mediaType === 'RAW_IMAGE') && (() => {
+          const currentIndex = navigableAssets.findIndex((a) => a.id === selectedAsset.id);
+          const prevAsset = currentIndex > 0 ? navigableAssets[currentIndex - 1] : null;
+          const nextAsset = currentIndex < navigableAssets.length - 1 ? navigableAssets[currentIndex + 1] : null;
+          return (
+            <PhotoLightbox
+              visible={lightboxVisible}
+              imageUrl={getProxyUrl(selectedAsset.url, mediaToken)}
+              thumbnailUrl={selectedAsset.thumbnailUrl ? getProxyUrl(selectedAsset.thumbnailUrl, mediaToken) : undefined}
+              imageName={selectedAsset.originalName}
+              onClose={() => setLightboxVisible(false)}
+              onPrevious={() => navigateToAsset('prev')}
+              onNext={() => navigateToAsset('next')}
+              hasPrevious={currentIndex > 0}
+              hasNext={currentIndex < navigableAssets.length - 1}
+              nextImageUrl={nextAsset ? getProxyUrl(nextAsset.url, mediaToken) : undefined}
+              previousImageUrl={prevAsset ? getProxyUrl(prevAsset.url, mediaToken) : undefined}
+              currentRating={selectedAsset.starRating}
+              onRatingChange={(rating) => handleLightboxRatingChange(selectedAsset.id, rating)}
+            />
+          );
+        })()}
 
         {/* Video Review Modal */}
         {selectedAsset && selectedAsset.mediaType === 'VIDEO' && (
