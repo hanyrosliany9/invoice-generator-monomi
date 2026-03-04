@@ -484,7 +484,7 @@ export const MediaProjectDetailPage: React.FC = () => {
   };
 
   const activeFilterCount = Object.keys(filters).filter(
-    (key) => filters[key as keyof MediaAssetFilters] !== undefined
+    (key) => key !== 'sortBy' && key !== 'sortOrder' && filters[key as keyof MediaAssetFilters] !== undefined
   ).length;
 
   // Delete project mutation

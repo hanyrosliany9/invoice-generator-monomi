@@ -765,10 +765,10 @@ export const PublicProjectViewPage: React.FC = () => {
     return path;
   }, [currentFolderId, folders]);
 
-  const navigableAssets = useMemo(() => {
-    let base = currentFolderAssets.filter(
-      a => a.mediaType === 'IMAGE' || a.mediaType === 'RAW_IMAGE'
-    );
+  // All assets with filters + sort applied — drives the MediaLibrary grid
+  const displayedAssets = useMemo(() => {
+    if (!currentFolderAssets.length) return [];
+    let base = [...currentFolderAssets];
     if (filters.search) {
       const q = filters.search.toLowerCase();
       base = base.filter(a =>
@@ -780,11 +780,12 @@ export const PublicProjectViewPage: React.FC = () => {
     if (filters.status) base = base.filter(a => a.status === filters.status);
     if (filters.starRating) base = base.filter(a => a.starRating && a.starRating >= filters.starRating!);
     if (filters.sortBy) {
-      base = [...base].sort((a, b) => {
+      base.sort((a, b) => {
         let comparison = 0;
         switch (filters.sortBy) {
           case 'uploadedAt': comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime(); break;
           case 'originalName': comparison = a.originalName.localeCompare(b.originalName); break;
+          case 'size': comparison = (Number(a.size) || 0) - (Number(b.size) || 0); break;
           case 'starRating': comparison = (a.starRating || 0) - (b.starRating || 0); break;
         }
         return filters.sortOrder === 'asc' ? comparison : -comparison;
@@ -792,6 +793,13 @@ export const PublicProjectViewPage: React.FC = () => {
     }
     return base;
   }, [currentFolderAssets, filters]);
+
+  // Images only — for lightbox prev/next navigation
+  const navigableAssets = useMemo(() => {
+    return displayedAssets.filter(
+      a => a.mediaType === 'IMAGE' || a.mediaType === 'RAW_IMAGE'
+    );
+  }, [displayedAssets]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleAssetClick = (asset: MediaAsset) => {
@@ -1078,14 +1086,14 @@ export const PublicProjectViewPage: React.FC = () => {
                 <FilterBar
                   filters={filters}
                   onFilterChange={setFilters}
-                  resultCount={currentFolderAssets.length}
-                  totalCount={assets?.length}
+                  resultCount={displayedAssets.length}
+                  totalCount={currentFolderAssets.length}
                 />
               </div>
 
               {/* Media grid */}
               <MediaLibrary
-                assets={currentFolderAssets}
+                assets={displayedAssets}
                 folders={currentSubfolders}
                 onAssetClick={handleAssetClick}
                 onCompare={(assetIds) => setComparisonAssetIds(assetIds)}
