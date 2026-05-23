@@ -70,6 +70,9 @@ services:
       - FRONTEND_URL=https://admin.monomiagency.com
       - PUBLIC_URL=https://share.monomiagency.com
       - MEDIA_URL=https://media.monomiagency.com
+      # MCP custom connector — Claude.ai users connect via the admin hostname
+      # (NOT share/media). All OAuth callbacks and consent pages live here.
+      - MCP_PUBLIC_URL=https://admin.monomiagency.com
       - LOG_LEVEL=info
       - SKIP_DB_INIT=true
       - WEBSOCKET_PORT=${WEBSOCKET_PORT}
