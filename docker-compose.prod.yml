@@ -12,6 +12,7 @@ services:
     container_name: invoice-frontend-prod
     # Command is defined in Dockerfile CMD
     environment:
+      - TZ=Asia/Jakarta
       - NODE_ENV=production
       - FRONTEND_PORT=3000
       - BACKEND_URL=http://app:5000
@@ -53,6 +54,7 @@ services:
     # Note: Port 8081 is NOT exposed to host (only internal Docker network)
     # Cloudflare Tunnel #2 connects directly to app:8081 inside Docker network
     environment:
+      - TZ=Asia/Jakarta
       - NODE_ENV=production
       - DATABASE_URL=postgresql://invoiceuser:${DB_PASSWORD}@db:5432/invoices
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
@@ -115,6 +117,8 @@ services:
     image: postgres:15-alpine
     container_name: invoice-db-prod
     environment:
+      - TZ=Asia/Jakarta
+      - PGTZ=Asia/Jakarta
       - POSTGRES_DB=invoices
       - POSTGRES_USER=invoiceuser
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -159,6 +163,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: invoice-redis-prod
+    environment:
+      - TZ=Asia/Jakarta
     command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD}"
     volumes:
       - redis_prod_data:/data
@@ -183,6 +189,8 @@ services:
   nginx:
     image: nginx:alpine
     container_name: invoice-nginx-prod
+    environment:
+      - TZ=Asia/Jakarta
     depends_on:
       app:
         condition: service_healthy
@@ -214,6 +222,8 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: invoice-cloudflared-prod
+    environment:
+      - TZ=Asia/Jakarta
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       nginx:
@@ -231,6 +241,8 @@ services:
   cloudflared-ws:
     image: cloudflare/cloudflared:latest
     container_name: invoice-cloudflared-ws-prod
+    environment:
+      - TZ=Asia/Jakarta
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_WS_TUNNEL_TOKEN}
     depends_on:
       app:
@@ -255,6 +267,8 @@ services:
       db:
         condition: service_healthy
     environment:
+      - TZ=Asia/Jakarta
+      - PGTZ=Asia/Jakarta
       - POSTGRES_DB=invoices
       - POSTGRES_USER=invoiceuser
       - POSTGRES_PASSWORD=${DB_PASSWORD}
