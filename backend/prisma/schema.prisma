@@ -51,36 +51,36 @@ model User {
   contentCalendarItems ContentCalendarItem[]
 
   // Media Collaboration Relations
-  mediaProjects          MediaProject[]      @relation("MediaProjectCreator")
-  mediaFolders           MediaFolder[]       @relation("MediaFolderCreator")
-  mediaAssetsUploaded    MediaAsset[]        @relation("MediaAssetUploader")
-  mediaVersionsUploaded  MediaVersion[]      @relation("MediaVersionUploader")
-  mediaFramesCreated     MediaFrame[]        @relation("MediaFrameCreator")
-  frameCommentsAuthored  FrameComment[]      @relation("FrameCommentAuthor")
-  frameCommentsResolved  FrameComment[]      @relation("FrameCommentResolver")
-  frameDrawingsCreated   FrameDrawing[]      @relation("FrameDrawingCreator")
-  mediaCollaborations    MediaCollaborator[] @relation("MediaCollaboratorUser")
+  mediaProjects                MediaProject[]      @relation("MediaProjectCreator")
+  mediaFolders                 MediaFolder[]       @relation("MediaFolderCreator")
+  mediaAssetsUploaded          MediaAsset[]        @relation("MediaAssetUploader")
+  mediaVersionsUploaded        MediaVersion[]      @relation("MediaVersionUploader")
+  mediaFramesCreated           MediaFrame[]        @relation("MediaFrameCreator")
+  frameCommentsAuthored        FrameComment[]      @relation("FrameCommentAuthor")
+  frameCommentsResolved        FrameComment[]      @relation("FrameCommentResolver")
+  frameDrawingsCreated         FrameDrawing[]      @relation("FrameDrawingCreator")
+  mediaCollaborations          MediaCollaborator[] @relation("MediaCollaboratorUser")
   mediaCollaboratorInvitations MediaCollaborator[] @relation("MediaCollaboratorInviter")
-  collectionsCreated     Collection[]        @relation("CollectionCreator")
-  assetMetadataAssignee  AssetMetadata[]     @relation("AssetAssignee")
+  collectionsCreated           Collection[]        @relation("CollectionCreator")
+  assetMetadataAssignee        AssetMetadata[]     @relation("AssetAssignee")
 
   // Deck Presentation Relations
-  decksCreated       Deck[]              @relation("DeckCreator")
-  deckCollaborations DeckCollaborator[]  @relation("DeckCollaboratorUser")
-  deckInvitesSent    DeckCollaborator[]  @relation("DeckInviter")
-  deckSlideComments  DeckSlideComment[]  @relation("DeckSlideCommentAuthor")
+  decksCreated       Deck[]             @relation("DeckCreator")
+  deckCollaborations DeckCollaborator[] @relation("DeckCollaboratorUser")
+  deckInvitesSent    DeckCollaborator[] @relation("DeckInviter")
+  deckSlideComments  DeckSlideComment[] @relation("DeckSlideCommentAuthor")
 
   // Shot List Relations
-  shotLists          ShotList[]          @relation("ShotListCreator")
+  shotLists ShotList[] @relation("ShotListCreator")
 
   // Shooting Schedule & Call Sheet Relations
-  shootingSchedules  ShootingSchedule[]  @relation("ScheduleCreator")
-  callSheets         CallSheet[]         @relation("CallSheetCreator")
+  shootingSchedules ShootingSchedule[] @relation("ScheduleCreator")
+  callSheets        CallSheet[]        @relation("CallSheetCreator")
 
   // Calendar Events Relations
-  createdEvents      CalendarEvent[]     @relation("CreatedEvents")
-  assignedEvents     CalendarEvent[]     @relation("AssignedEvents")
-  eventAttendances   EventAttendee[]
+  createdEvents    CalendarEvent[] @relation("CreatedEvents")
+  assignedEvents   CalendarEvent[] @relation("AssignedEvents")
+  eventAttendances EventAttendee[]
 
   // Authentication Relations
   refreshTokens RefreshToken[]
@@ -88,15 +88,20 @@ model User {
   // Pinterest Downloader Relations
   pinterestDownloads PinterestDownload[]
 
+  // MCP (Claude integration) Relations
+  mcpAuthCodes    McpAuthCode[]    @relation("McpAuthCodeUser")
+  mcpAccessTokens McpAccessToken[] @relation("McpAccessTokenUser")
+  mcpAuditLogs    McpAuditLog[]    @relation("McpAuditLogUser")
+
   @@map("users")
 }
 
 // Refresh Token Management (OAuth2 Pattern)
 model RefreshToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  token  String @unique
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Token metadata
   expiresAt  DateTime
@@ -104,9 +109,9 @@ model RefreshToken {
   lastUsedAt DateTime @default(now())
 
   // Security fields
-  isRevoked      Boolean  @default(false)
-  revokedAt      DateTime?
-  revokedReason  String?  // "logout", "security", "expired", "replaced"
+  isRevoked     Boolean   @default(false)
+  revokedAt     DateTime?
+  revokedReason String? // "logout", "security", "expired", "replaced"
 
   // Device tracking (for multi-device support)
   userAgent String?
@@ -260,13 +265,13 @@ model Project {
   decks                Deck[]
 
   // Shot List Relations
-  shotLists            ShotList[]
+  shotLists ShotList[]
 
   // Shooting Schedule Relations
-  shootingSchedules    ShootingSchedule[]
+  shootingSchedules ShootingSchedule[]
 
   // Calendar Events Relations
-  calendarEvents       CalendarEvent[]
+  calendarEvents CalendarEvent[]
 
   @@index([number])
   @@index([status])
@@ -906,10 +911,10 @@ model Asset {
   warrantyExpiration DateTime?
 
   // Future depreciation fields (kept for compatibility)
-  currentValue     Decimal? @db.Decimal(15, 2)
-  residualValue    Decimal? @db.Decimal(15, 2)
-  usefulLifeYears  Int?
-  notesFinancial   String?  @db.Text
+  currentValue    Decimal? @db.Decimal(15, 2)
+  residualValue   Decimal? @db.Decimal(15, 2)
+  usefulLifeYears Int?
+  notesFinancial  String?  @db.Text
 
   // Status and condition
   status    AssetStatus    @default(AVAILABLE)
@@ -2746,7 +2751,7 @@ model ProjectMilestone {
   taxTreatment    String? // "PPN 11%", "PPh 23", etc.
 
   // Calendar Events Relations
-  calendarEvents   CalendarEvent[]
+  calendarEvents CalendarEvent[]
 
   // Audit
   createdAt DateTime @default(now())
@@ -3800,23 +3805,23 @@ enum HolidayType {
 // ==========================================
 
 model CashBankBalance {
-  id              String    @id @default(cuid())
-  period          String    @db.VarChar(100)
-  periodDate      DateTime
-  year            Int
-  month           Int
-  openingBalance  Decimal   @db.Decimal(15, 2)
-  closingBalance  Decimal   @db.Decimal(15, 2)
-  totalInflow     Decimal   @db.Decimal(15, 2)
-  totalOutflow    Decimal   @db.Decimal(15, 2)
-  netChange       Decimal   @db.Decimal(15, 2)
-  calculatedAt    DateTime?
-  calculatedBy    String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  createdBy       String?
-  updatedBy       String?
-  notes           String?
+  id             String    @id @default(cuid())
+  period         String    @db.VarChar(100)
+  periodDate     DateTime
+  year           Int
+  month          Int
+  openingBalance Decimal   @db.Decimal(15, 2)
+  closingBalance Decimal   @db.Decimal(15, 2)
+  totalInflow    Decimal   @db.Decimal(15, 2)
+  totalOutflow   Decimal   @db.Decimal(15, 2)
+  netChange      Decimal   @db.Decimal(15, 2)
+  calculatedAt   DateTime?
+  calculatedBy   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdBy      String?
+  updatedBy      String?
+  notes          String?
 
   @@unique([year, month])
   @@index([periodDate])
@@ -3826,24 +3831,24 @@ model CashBankBalance {
 }
 
 model SocialMediaReport {
-  id              String          @id @default(cuid())
-  projectId       String
-  title           String
-  description     String?
-  month           Int
-  year            Int
-  status          ReportStatus    @default(DRAFT)
-  pdfUrl          String?
-  pdfGeneratedAt  DateTime?
-  pdfVersion      Int             @default(1)
-  emailedAt       DateTime?
-  emailedTo       String[]
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  createdBy       String?
-  updatedBy       String?
-  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  sections        ReportSection[]
+  id             String          @id @default(cuid())
+  projectId      String
+  title          String
+  description    String?
+  month          Int
+  year           Int
+  status         ReportStatus    @default(DRAFT)
+  pdfUrl         String?
+  pdfGeneratedAt DateTime?
+  pdfVersion     Int             @default(1)
+  emailedAt      DateTime?
+  emailedTo      String[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  createdBy      String?
+  updatedBy      String?
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sections       ReportSection[]
 
   @@unique([projectId, year, month])
   @@index([projectId])
@@ -3853,23 +3858,23 @@ model SocialMediaReport {
 }
 
 model ReportSection {
-  id              String            @id @default(cuid())
-  reportId        String
-  order           Int
-  title           String
-  description     String?
-  csvFileName     String
-  csvFilePath     String?
-  importedAt      DateTime          @default(now())
-  columnTypes     Json
-  rawData         Json
-  rowCount        Int
-  visualizations  Json
-  layout          Json?
-  layoutVersion   Int               @default(1)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  report          SocialMediaReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  id             String            @id @default(cuid())
+  reportId       String
+  order          Int
+  title          String
+  description    String?
+  csvFileName    String
+  csvFilePath    String?
+  importedAt     DateTime          @default(now())
+  columnTypes    Json
+  rawData        Json
+  rowCount       Int
+  visualizations Json
+  layout         Json?
+  layoutVersion  Int               @default(1)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  report         SocialMediaReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@index([reportId, order])
   @@map("report_sections")
@@ -3882,21 +3887,21 @@ enum ReportStatus {
 }
 
 model ContentCalendarItem {
-  id          String            @id @default(cuid())
-  caption     String            @db.Text // Social media caption (replaces title & description)
-  scheduledAt DateTime?
-  publishedAt DateTime?
-  status      ContentStatus     @default(DRAFT)
-  platforms   ContentPlatform[]
-  clientId    String?
-  projectId   String?
-  createdBy   String
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  client      Client?           @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  project     Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdByUser User            @relation(fields: [createdBy], references: [id])
-  media       ContentMedia[]
+  id            String            @id @default(cuid())
+  caption       String            @db.Text // Social media caption (replaces title & description)
+  scheduledAt   DateTime?
+  publishedAt   DateTime?
+  status        ContentStatus     @default(DRAFT)
+  platforms     ContentPlatform[]
+  clientId      String?
+  projectId     String?
+  createdBy     String
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  client        Client?           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project       Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdByUser User              @relation(fields: [createdBy], references: [id])
+  media         ContentMedia[]
 
   @@index([status])
   @@index([scheduledAt])
@@ -3908,22 +3913,22 @@ model ContentCalendarItem {
 }
 
 model ContentMedia {
-  id            String              @id @default(cuid())
-  url           String
-  key           String
-  type          MediaType
-  mimeType      String
-  size          Int
-  width         Int?
-  height        Int?
-  duration      Int?
-  thumbnailUrl  String?             // Thumbnail URL for video previews
-  thumbnailKey  String?             // Thumbnail R2 key for deletion
-  originalName  String?
-  order         Int                 @default(0) // Carousel order (0 = first, 1 = second, etc.)
-  contentId     String
-  uploadedAt    DateTime            @default(now())
-  content       ContentCalendarItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  id           String              @id @default(cuid())
+  url          String
+  key          String
+  type         MediaType
+  mimeType     String
+  size         Int
+  width        Int?
+  height       Int?
+  duration     Int?
+  thumbnailUrl String? // Thumbnail URL for video previews
+  thumbnailKey String? // Thumbnail R2 key for deletion
+  originalName String?
+  order        Int                 @default(0) // Carousel order (0 = first, 1 = second, etc.)
+  contentId    String
+  uploadedAt   DateTime            @default(now())
+  content      ContentCalendarItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
   @@index([contentId])
   @@index([type])
@@ -3961,41 +3966,41 @@ enum ContentPlatform {
 
 // Media projects group related assets (videos + photos)
 model MediaProject {
-  id              String            @id @default(cuid())
-  name            String
-  description     String?           @db.Text
+  id          String  @id @default(cuid())
+  name        String
+  description String? @db.Text
 
   // Link to business entities
-  clientId        String?
-  client          Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  projectId       String?
-  project         Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   // Organization (for organizing projects themselves)
-  folderId        String?
-  parentFolder    MediaFolder?      @relation("MediaProjectParentFolder", fields: [folderId], references: [id], onDelete: SetNull)
+  folderId     String?
+  parentFolder MediaFolder? @relation("MediaProjectParentFolder", fields: [folderId], references: [id], onDelete: SetNull)
 
   // Ownership
-  createdBy       String
-  creator         User              @relation("MediaProjectCreator", fields: [createdBy], references: [id])
+  createdBy String
+  creator   User   @relation("MediaProjectCreator", fields: [createdBy], references: [id])
 
   // PUBLIC SHARING FIELDS
-  isPublic           Boolean            @default(false)  // Enable/disable public access
-  publicShareToken   String?            @unique          // Unique token for public link
-  publicShareUrl     String?                             // Full URL for sharing
-  publicViewCount    Int                @default(0)      // Track how many times viewed
-  publicSharedAt     DateTime?                           // When sharing was enabled
-  publicAccessLevel  PublicAccessLevel  @default(VIEW_ONLY)  // Future: allow downloads, comments
+  isPublic          Boolean           @default(false) // Enable/disable public access
+  publicShareToken  String?           @unique // Unique token for public link
+  publicShareUrl    String? // Full URL for sharing
+  publicViewCount   Int               @default(0) // Track how many times viewed
+  publicSharedAt    DateTime? // When sharing was enabled
+  publicAccessLevel PublicAccessLevel @default(VIEW_ONLY) // Future: allow downloads, comments
 
   // Relations
-  assets          MediaAsset[]
-  collaborators   MediaCollaborator[]
-  collections     Collection[]
-  folders         MediaFolder[]     @relation("MediaProjectFolders")
-  decks           Deck[]
+  assets        MediaAsset[]
+  collaborators MediaCollaborator[]
+  collections   Collection[]
+  folders       MediaFolder[]       @relation("MediaProjectFolders")
+  decks         Deck[]
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([clientId])
   @@index([projectId])
@@ -4007,24 +4012,24 @@ model MediaProject {
 
 // Folder structure for organizing assets within a project
 model MediaFolder {
-  id              String            @id @default(cuid())
-  name            String
-  description     String?           @db.Text
-  projectId       String
-  project         MediaProject      @relation("MediaProjectFolders", fields: [projectId], references: [id], onDelete: Cascade)
+  id          String       @id @default(cuid())
+  name        String
+  description String?      @db.Text
+  projectId   String
+  project     MediaProject @relation("MediaProjectFolders", fields: [projectId], references: [id], onDelete: Cascade)
 
-  parentId        String?
-  parent          MediaFolder?      @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children        MediaFolder[]     @relation("FolderHierarchy")
+  parentId String?
+  parent   MediaFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children MediaFolder[] @relation("FolderHierarchy")
 
-  assets          MediaAsset[]      @relation("MediaAssetFolder")
-  projectsInFolder MediaProject[]   @relation("MediaProjectParentFolder")
+  assets           MediaAsset[]   @relation("MediaAssetFolder")
+  projectsInFolder MediaProject[] @relation("MediaProjectParentFolder")
 
-  createdById     String
-  createdBy       User              @relation("MediaFolderCreator", fields: [createdById], references: [id])
+  createdById String
+  createdBy   User   @relation("MediaFolderCreator", fields: [createdById], references: [id])
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([projectId])
   @@index([parentId])
@@ -4034,55 +4039,55 @@ model MediaFolder {
 
 // Individual media assets (videos + photos unified)
 model MediaAsset {
-  id              String            @id @default(cuid())
-  projectId       String
-  project         MediaProject      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String       @id @default(cuid())
+  projectId String
+  project   MediaProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   // Folder organization
-  folderId        String?
-  folder          MediaFolder?      @relation("MediaAssetFolder", fields: [folderId], references: [id], onDelete: SetNull)
+  folderId String?
+  folder   MediaFolder? @relation("MediaAssetFolder", fields: [folderId], references: [id], onDelete: SetNull)
 
   // File metadata
-  filename        String
-  originalName    String
-  description     String?           @db.Text
+  filename     String
+  originalName String
+  description  String? @db.Text
 
   // Storage
-  url             String            // R2 public URL
-  key             String            // R2 storage key
-  thumbnailUrl    String?           // Generated thumbnail
+  url          String // R2 public URL
+  key          String // R2 storage key
+  thumbnailUrl String? // Generated thumbnail
 
   // Media type and properties
-  mediaType       MediaAssetType    // VIDEO, IMAGE, RAW_IMAGE
-  mimeType        String            // video/mp4, image/jpeg, image/x-canon-cr2, etc.
-  size            BigInt            // File size in bytes
+  mediaType MediaAssetType // VIDEO, IMAGE, RAW_IMAGE
+  mimeType  String // video/mp4, image/jpeg, image/x-canon-cr2, etc.
+  size      BigInt // File size in bytes
 
   // Video-specific properties
-  duration        Decimal?          @db.Decimal(10, 3)  // Duration in seconds (video only)
-  fps             Decimal?          @db.Decimal(6, 2)   // Frames per second (video only)
-  codec           String?           // h264, vp9, etc. (video only)
-  bitrate         Int?              // Bitrate in kbps (video only)
+  duration Decimal? @db.Decimal(10, 3) // Duration in seconds (video only)
+  fps      Decimal? @db.Decimal(6, 2) // Frames per second (video only)
+  codec    String? // h264, vp9, etc. (video only)
+  bitrate  Int? // Bitrate in kbps (video only)
 
   // Image/Video dimensions
-  width           Int?              // Width in pixels
-  height          Int?              // Height in pixels
+  width  Int? // Width in pixels
+  height Int? // Height in pixels
 
   // Review status and rating
-  status          MediaReviewStatus @default(DRAFT)
-  starRating      Int?              // 1-5 stars (nullable, 0 = no rating)
+  status     MediaReviewStatus @default(DRAFT)
+  starRating Int? // 1-5 stars (nullable, 0 = no rating)
 
   // Ownership
-  uploadedBy      String
-  uploader        User              @relation("MediaAssetUploader", fields: [uploadedBy], references: [id])
+  uploadedBy String
+  uploader   User   @relation("MediaAssetUploader", fields: [uploadedBy], references: [id])
 
   // Relations
   versions        MediaVersion[]
-  frames          MediaFrame[]      // For video frames OR photo annotations
-  metadata        AssetMetadata?    // Extended metadata
-  collectionItems CollectionItem[]  // Membership in collections
+  frames          MediaFrame[] // For video frames OR photo annotations
+  metadata        AssetMetadata? // Extended metadata
+  collectionItems CollectionItem[] // Membership in collections
 
-  uploadedAt      DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  uploadedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([projectId])
   @@index([folderId])
@@ -4096,37 +4101,37 @@ model MediaAsset {
 
 // Extended metadata for assets
 model AssetMetadata {
-  id              String            @id @default(cuid())
-  assetId         String            @unique
-  asset           MediaAsset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  id      String     @id @default(cuid())
+  assetId String     @unique
+  asset   MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
   // Assignment and workflow
-  assigneeId      String?
-  assignee        User?             @relation("AssetAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
-  dueDate         DateTime?
+  assigneeId String?
+  assignee   User?     @relation("AssetAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  dueDate    DateTime?
 
   // Social media context (reusing ContentPlatform enum)
-  platforms       ContentPlatform[]
+  platforms ContentPlatform[]
 
   // Tags and custom fields
-  tags            String[]          // Hashtags for organization
-  customFields    Json?             // User-defined metadata
+  tags         String[] // Hashtags for organization
+  customFields Json? // User-defined metadata
 
   // EXIF data (for photos)
-  cameraModel     String?
-  cameraMake      String?
-  lens            String?
-  iso             Int?
-  aperture        Decimal?          @db.Decimal(4, 2)  // f/2.8
-  shutterSpeed    String?           // "1/1000"
-  focalLength     Int?              // mm
-  capturedAt      DateTime?         // Photo capture date (not upload date)
-  gpsLatitude     Decimal?          @db.Decimal(10, 8)
-  gpsLongitude    Decimal?          @db.Decimal(11, 8)
-  copyright       String?
+  cameraModel  String?
+  cameraMake   String?
+  lens         String?
+  iso          Int?
+  aperture     Decimal?  @db.Decimal(4, 2) // f/2.8
+  shutterSpeed String? // "1/1000"
+  focalLength  Int? // mm
+  capturedAt   DateTime? // Photo capture date (not upload date)
+  gpsLatitude  Decimal?  @db.Decimal(10, 8)
+  gpsLongitude Decimal?  @db.Decimal(11, 8)
+  copyright    String?
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([assigneeId])
   @@index([dueDate])
@@ -4136,38 +4141,38 @@ model AssetMetadata {
 
 // Smart Collections
 model Collection {
-  id              String            @id @default(cuid())
-  projectId       String
-  project         MediaProject      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String       @id @default(cuid())
+  projectId String
+  project   MediaProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  name            String
-  description     String?           @db.Text
+  name        String
+  description String? @db.Text
 
   // Collection behavior
-  isDynamic       Boolean           @default(true)  // Smart folder vs manual folder
+  isDynamic Boolean @default(true) // Smart folder vs manual folder
 
   // Filters for dynamic collections (stored as JSON)
-  filters         Json?             // { starRating: [5], status: ["APPROVED"], mediaType: ["IMAGE"] }
+  filters Json? // { starRating: [5], status: ["APPROVED"], mediaType: ["IMAGE"] }
 
   // Grouping and sorting
-  groupBy         String?           // "starRating", "status", "uploadedBy", etc.
-  sortBy          String            @default("uploadedAt")
-  sortOrder       SortOrder         @default(DESC)
+  groupBy   String? // "starRating", "status", "uploadedBy", etc.
+  sortBy    String    @default("uploadedAt")
+  sortOrder SortOrder @default(DESC)
 
   // Sharing
-  isShared        Boolean           @default(false)
-  shareToken      String?           @unique  // For public/client access
-  sharePassword   String?           // Optional password protection
+  isShared      Boolean @default(false)
+  shareToken    String? @unique // For public/client access
+  sharePassword String? // Optional password protection
 
   // Ownership
-  createdBy       String
-  creator         User              @relation("CollectionCreator", fields: [createdBy], references: [id])
+  createdBy String
+  creator   User   @relation("CollectionCreator", fields: [createdBy], references: [id])
 
   // Relations
-  items           CollectionItem[]  // Manual items (if not dynamic)
+  items CollectionItem[] // Manual items (if not dynamic)
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([projectId])
   @@index([isDynamic])
@@ -4177,15 +4182,15 @@ model Collection {
 
 // Collection items (for manual collections)
 model CollectionItem {
-  id              String            @id @default(cuid())
-  collectionId    String
-  collection      Collection        @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  id           String     @id @default(cuid())
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
-  assetId         String
-  asset           MediaAsset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  assetId String
+  asset   MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
-  order           Int               @default(0)  // Manual ordering
-  addedAt         DateTime          @default(now())
+  order   Int      @default(0) // Manual ordering
+  addedAt DateTime @default(now())
 
   @@unique([collectionId, assetId])
   @@index([collectionId, order])
@@ -4194,32 +4199,32 @@ model CollectionItem {
 
 // Version control for media
 model MediaVersion {
-  id              String            @id @default(cuid())
-  assetId         String
-  asset           MediaAsset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  id      String     @id @default(cuid())
+  assetId String
+  asset   MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
-  versionNumber   Int               // 1, 2, 3, etc.
+  versionNumber Int // 1, 2, 3, etc.
 
   // File metadata
-  filename        String
-  url             String
-  key             String
-  thumbnailUrl    String?
+  filename     String
+  url          String
+  key          String
+  thumbnailUrl String?
 
   // Media properties
-  size            BigInt
-  duration        Decimal?          @db.Decimal(10, 3)  // Video only
-  width           Int?
-  height          Int?
+  size     BigInt
+  duration Decimal? @db.Decimal(10, 3) // Video only
+  width    Int?
+  height   Int?
 
   // Change notes
-  changeNotes     String?           @db.Text
+  changeNotes String? @db.Text
 
   // Ownership
-  uploadedBy      String
-  uploader        User              @relation("MediaVersionUploader", fields: [uploadedBy], references: [id])
+  uploadedBy String
+  uploader   User   @relation("MediaVersionUploader", fields: [uploadedBy], references: [id])
 
-  uploadedAt      DateTime          @default(now())
+  uploadedAt DateTime @default(now())
 
   @@unique([assetId, versionNumber])
   @@index([assetId])
@@ -4228,31 +4233,31 @@ model MediaVersion {
 
 // Frame annotations (video frames OR photo regions)
 model MediaFrame {
-  id              String            @id @default(cuid())
-  assetId         String
-  asset           MediaAsset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  id      String     @id @default(cuid())
+  assetId String
+  asset   MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
   // Frame position (for videos) OR region (for photos)
-  timestamp       Decimal?          @db.Decimal(10, 3)  // Seconds from start (video only)
-  frameNumber     Int?              // Calculated frame number (video only)
+  timestamp   Decimal? @db.Decimal(10, 3) // Seconds from start (video only)
+  frameNumber Int? // Calculated frame number (video only)
 
   // Region on photo (for photo annotations)
-  x               Decimal?          @db.Decimal(5, 2)   // X position (% of width)
-  y               Decimal?          @db.Decimal(5, 2)   // Y position (% of height)
+  x Decimal? @db.Decimal(5, 2) // X position (% of width)
+  y Decimal? @db.Decimal(5, 2) // Y position (% of height)
 
   // Thumbnail
-  thumbnailUrl    String?           // Screenshot at this timestamp/region
+  thumbnailUrl String? // Screenshot at this timestamp/region
 
   // Ownership
-  createdBy       String
-  creator         User              @relation("MediaFrameCreator", fields: [createdBy], references: [id])
+  createdBy String
+  creator   User   @relation("MediaFrameCreator", fields: [createdBy], references: [id])
 
   // Relations
-  comments        FrameComment[]
-  drawings        FrameDrawing[]
+  comments FrameComment[]
+  drawings FrameDrawing[]
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([assetId, timestamp])
   @@index([assetId, x, y])
@@ -4262,35 +4267,35 @@ model MediaFrame {
 
 // Comments on specific frames
 model FrameComment {
-  id              String            @id @default(cuid())
-  frameId         String
-  frame           MediaFrame        @relation(fields: [frameId], references: [id], onDelete: Cascade)
+  id      String     @id @default(cuid())
+  frameId String
+  frame   MediaFrame @relation(fields: [frameId], references: [id], onDelete: Cascade)
 
   // Comment content
-  text            String            @db.Text
+  text String @db.Text
 
   // Canvas position (optional - for pin-point comments)
-  x               Decimal?          @db.Decimal(5, 2)  // X position (% of media width)
-  y               Decimal?          @db.Decimal(5, 2)  // Y position (% of media height)
+  x Decimal? @db.Decimal(5, 2) // X position (% of media width)
+  y Decimal? @db.Decimal(5, 2) // Y position (% of media height)
 
   // Threading
-  parentId        String?
-  parent          FrameComment?     @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies         FrameComment[]    @relation("CommentReplies")
+  parentId String?
+  parent   FrameComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  FrameComment[] @relation("CommentReplies")
 
   // Collaboration
-  authorId        String
-  author          User              @relation("FrameCommentAuthor", fields: [authorId], references: [id])
-  mentions        String[]          // Array of user IDs mentioned
+  authorId String
+  author   User     @relation("FrameCommentAuthor", fields: [authorId], references: [id])
+  mentions String[] // Array of user IDs mentioned
 
   // Status
-  resolved        Boolean           @default(false)
-  resolvedBy      String?
-  resolver        User?             @relation("FrameCommentResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
-  resolvedAt      DateTime?
+  resolved   Boolean   @default(false)
+  resolvedBy String?
+  resolver   User?     @relation("FrameCommentResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  resolvedAt DateTime?
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([frameId])
   @@index([parentId])
@@ -4301,21 +4306,21 @@ model FrameComment {
 
 // Drawing/markup data on frames
 model FrameDrawing {
-  id              String            @id @default(cuid())
-  frameId         String
-  frame           MediaFrame        @relation(fields: [frameId], references: [id], onDelete: Cascade)
+  id      String     @id @default(cuid())
+  frameId String
+  frame   MediaFrame @relation(fields: [frameId], references: [id], onDelete: Cascade)
 
   // Drawing type
-  type            DrawingType       // ARROW, CIRCLE, RECTANGLE, FREEHAND, TEXT
+  type DrawingType // ARROW, CIRCLE, RECTANGLE, FREEHAND, TEXT
 
   // Drawing data (stored as JSON)
-  data            Json              // Contains coordinates, colors, stroke width, etc.
+  data Json // Contains coordinates, colors, stroke width, etc.
 
   // Creator
-  createdBy       String
-  creator         User              @relation("FrameDrawingCreator", fields: [createdBy], references: [id])
+  createdBy String
+  creator   User   @relation("FrameDrawingCreator", fields: [createdBy], references: [id])
 
-  createdAt       DateTime          @default(now())
+  createdAt DateTime @default(now())
 
   @@index([frameId])
   @@map("frame_drawings")
@@ -4323,31 +4328,31 @@ model FrameDrawing {
 
 // Collaborators on media projects (supports both internal users and guest collaborators)
 model MediaCollaborator {
-  id              String            @id @default(cuid())
-  projectId       String
-  project         MediaProject      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String       @id @default(cuid())
+  projectId String
+  project   MediaProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   // EITHER linked to internal user OR guest email (one must be set, not both)
-  userId          String?           // NULL for guests
-  user            User?             @relation("MediaCollaboratorUser", fields: [userId], references: [id], onDelete: Cascade)
+  userId String? // NULL for guests
+  user   User?   @relation("MediaCollaboratorUser", fields: [userId], references: [id], onDelete: Cascade)
 
-  guestEmail      String?           // NULL for internal users
-  guestName       String?           // Guest's display name
+  guestEmail String? // NULL for internal users
+  guestName  String? // Guest's display name
 
-  role            CollaboratorRole  @default(VIEWER)
+  role CollaboratorRole @default(VIEWER)
 
   // Invited by
-  invitedBy       String
-  inviter         User              @relation("MediaCollaboratorInviter", fields: [invitedBy], references: [id])
+  invitedBy String
+  inviter   User   @relation("MediaCollaboratorInviter", fields: [invitedBy], references: [id])
 
   // Guest-specific fields
-  inviteToken     String?   @unique // Secure token for guest access
-  status          InviteStatus @default(PENDING)
-  lastAccessAt    DateTime?         // Track when guest last accessed
-  expiresAt       DateTime?         // Optional expiration (30 days default for guests)
+  inviteToken  String?      @unique // Secure token for guest access
+  status       InviteStatus @default(PENDING)
+  lastAccessAt DateTime? // Track when guest last accessed
+  expiresAt    DateTime? // Optional expiration (30 days default for guests)
 
-  addedAt         DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  addedAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([projectId, userId])
   @@unique([projectId, guestEmail])
@@ -4364,37 +4369,37 @@ model MediaCollaborator {
 // ============================================
 
 enum MediaAssetType {
-  VIDEO           // MP4, WebM, MOV, etc.
-  IMAGE           // JPEG, PNG, GIF, WebP, etc.
-  RAW_IMAGE       // CR2, NEF, ARW, DNG, etc.
+  VIDEO // MP4, WebM, MOV, etc.
+  IMAGE // JPEG, PNG, GIF, WebP, etc.
+  RAW_IMAGE // CR2, NEF, ARW, DNG, etc.
 }
 
 enum MediaReviewStatus {
-  DRAFT           // Not ready for review
-  IN_REVIEW       // Actively being reviewed
-  NEEDS_CHANGES   // Revisions requested
-  APPROVED        // Final approval
-  ARCHIVED        // Old/inactive
+  DRAFT // Not ready for review
+  IN_REVIEW // Actively being reviewed
+  NEEDS_CHANGES // Revisions requested
+  APPROVED // Final approval
+  ARCHIVED // Old/inactive
 }
 
 enum CollaboratorRole {
-  OWNER           // Full control (delete, manage collaborators)
-  EDITOR          // Upload versions, manage comments
-  COMMENTER       // Add comments and drawings
-  VIEWER          // View only, no interaction
+  OWNER // Full control (delete, manage collaborators)
+  EDITOR // Upload versions, manage comments
+  COMMENTER // Add comments and drawings
+  VIEWER // View only, no interaction
 }
 
 enum PublicAccessLevel {
-  VIEW_ONLY       // Can only view assets
-  DOWNLOAD        // Can view and download
-  COMMENT         // Can view and comment (future)
+  VIEW_ONLY // Can only view assets
+  DOWNLOAD // Can view and download
+  COMMENT // Can view and comment (future)
 }
 
 enum InviteStatus {
-  PENDING         // Invite sent, not accepted yet
-  ACCEPTED        // Guest has accessed the project
-  EXPIRED         // Invite expired
-  REVOKED         // Access revoked by owner
+  PENDING // Invite sent, not accepted yet
+  ACCEPTED // Guest has accessed the project
+  EXPIRED // Invite expired
+  REVOKED // Access revoked by owner
 }
 
 enum DrawingType {
@@ -4415,16 +4420,16 @@ enum SortOrder {
 // ============================================
 
 enum SlideTemplate {
-  TITLE           // Large title + subtitle
-  TITLE_CONTENT   // Title with content area
-  TWO_COLUMN      // Two equal columns
-  FULL_MEDIA      // Full-bleed image/video
-  MOOD_BOARD      // Grid of images (2x2, 3x3)
-  CHARACTER       // Character profile (image + attributes)
-  SHOT_LIST       // Tabular shot breakdown
-  SCHEDULE        // Timeline/stripboard view
-  COMPARISON      // Side-by-side comparison
-  BLANK           // Empty canvas
+  TITLE // Large title + subtitle
+  TITLE_CONTENT // Title with content area
+  TWO_COLUMN // Two equal columns
+  FULL_MEDIA // Full-bleed image/video
+  MOOD_BOARD // Grid of images (2x2, 3x3)
+  CHARACTER // Character profile (image + attributes)
+  SHOT_LIST // Tabular shot breakdown
+  SCHEDULE // Timeline/stripboard view
+  COMPARISON // Side-by-side comparison
+  BLANK // Empty canvas
 }
 
 enum DeckStatus {
@@ -4439,44 +4444,44 @@ enum DeckStatus {
 
 // Main deck container
 model Deck {
-  id              String            @id @default(cuid())
-  title           String
-  description     String?           @db.Text
-  status          DeckStatus        @default(DRAFT)
+  id          String     @id @default(cuid())
+  title       String
+  description String?    @db.Text
+  status      DeckStatus @default(DRAFT)
 
   // Theme settings (JSON for flexibility)
-  theme           Json?             // { primaryColor, fontFamily, logoUrl, etc. }
+  theme Json? // { primaryColor, fontFamily, logoUrl, etc. }
 
   // Ownership
-  createdById     String
-  createdBy       User              @relation("DeckCreator", fields: [createdById], references: [id])
+  createdById String
+  createdBy   User   @relation("DeckCreator", fields: [createdById], references: [id])
 
   // Optional business entity links
-  clientId        String?
-  client          Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  projectId       String?
-  project         Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  mediaProjectId  String?
-  mediaProject    MediaProject?     @relation(fields: [mediaProjectId], references: [id], onDelete: SetNull)
+  clientId       String?
+  client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId      String?
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  mediaProjectId String?
+  mediaProject   MediaProject? @relation(fields: [mediaProjectId], references: [id], onDelete: SetNull)
 
   // PUBLIC SHARING (follows MediaProject pattern)
-  isPublic           Boolean            @default(false)
-  publicShareToken   String?            @unique
-  publicShareUrl     String?
-  publicViewCount    Int                @default(0)
-  publicSharedAt     DateTime?
-  publicAccessLevel  PublicAccessLevel  @default(VIEW_ONLY)
+  isPublic          Boolean           @default(false)
+  publicShareToken  String?           @unique
+  publicShareUrl    String?
+  publicViewCount   Int               @default(0)
+  publicSharedAt    DateTime?
+  publicAccessLevel PublicAccessLevel @default(VIEW_ONLY)
 
   // Presentation settings
-  slideWidth      Int               @default(1920)  // Default 16:9
-  slideHeight     Int               @default(1080)
+  slideWidth  Int @default(1920) // Default 16:9
+  slideHeight Int @default(1080)
 
   // Relations
-  slides          DeckSlide[]
-  collaborators   DeckCollaborator[]
+  slides        DeckSlide[]
+  collaborators DeckCollaborator[]
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([createdById])
   @@index([clientId])
@@ -4489,43 +4494,43 @@ model Deck {
 
 // Individual slides
 model DeckSlide {
-  id              String            @id @default(cuid())
-  deckId          String
-  deck            Deck              @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  deckId String
+  deck   Deck   @relation(fields: [deckId], references: [id], onDelete: Cascade)
 
   // Ordering
-  order           Int               @default(0)
+  order Int @default(0)
 
   // Template and content
-  template        SlideTemplate     @default(BLANK)
-  title           String?
-  subtitle        String?
+  template SlideTemplate @default(BLANK)
+  title    String?
+  subtitle String?
 
   // Flexible content storage (JSON)
   // Structure depends on template, e.g.:
   // MOOD_BOARD: { images: [{ url, caption, order }], columns: 3 }
   // SHOT_LIST: { shots: [{ number, size, angle, description }] }
   // TWO_COLUMN: { left: { type, content }, right: { type, content } }
-  content         Json              @default("{}")
+  content Json @default("{}")
 
   // Background settings
-  backgroundColor String?           @default("#FFFFFF")
-  backgroundImage String?           // R2 URL
-  backgroundImageKey String?        // R2 key for deletion
+  backgroundColor    String? @default("#FFFFFF")
+  backgroundImage    String? // R2 URL
+  backgroundImageKey String? // R2 key for deletion
 
   // Speaker notes
-  notes           String?           @db.Text
+  notes String? @db.Text
 
   // Transition settings
-  transition      String?           @default("fade")  // fade, slide, zoom, none
-  transitionDuration Int            @default(500)     // milliseconds
+  transition         String? @default("fade") // fade, slide, zoom, none
+  transitionDuration Int     @default(500) // milliseconds
 
   // Relations
-  elements        DeckSlideElement[]
-  comments        DeckSlideComment[]
+  elements DeckSlideElement[]
+  comments DeckSlideComment[]
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([deckId])
   @@index([deckId, order])
@@ -4534,33 +4539,33 @@ model DeckSlide {
 
 // Flexible elements on slides (text boxes, images, shapes, etc.)
 model DeckSlideElement {
-  id              String            @id @default(cuid())
-  slideId         String
-  slide           DeckSlide         @relation(fields: [slideId], references: [id], onDelete: Cascade)
+  id      String    @id @default(cuid())
+  slideId String
+  slide   DeckSlide @relation(fields: [slideId], references: [id], onDelete: Cascade)
 
   // Element type
-  type            String            // TEXT, IMAGE, VIDEO, SHAPE, ICON
+  type String // TEXT, IMAGE, VIDEO, SHAPE, ICON
 
   // Position and size (percentage-based for responsiveness)
-  x               Float             @default(0)      // % from left
-  y               Float             @default(0)      // % from top
-  width           Float             @default(100)    // % of slide width
-  height          Float             @default(100)    // % of slide height
-  rotation        Float             @default(0)      // degrees
-  zIndex          Int               @default(0)
+  x        Float @default(0) // % from left
+  y        Float @default(0) // % from top
+  width    Float @default(100) // % of slide width
+  height   Float @default(100) // % of slide height
+  rotation Float @default(0) // degrees
+  zIndex   Int   @default(0)
 
   // Content (type-specific JSON)
   // TEXT: { text, fontSize, fontFamily, fontWeight, color, align }
   // IMAGE: { url, key, alt, objectFit }
   // VIDEO: { url, key, autoplay, loop, muted }
   // SHAPE: { shape, fill, stroke, strokeWidth }
-  content         Json              @default("{}")
+  content Json @default("{}")
 
   // Locking (prevent accidental edits)
-  isLocked        Boolean           @default(false)
+  isLocked Boolean @default(false)
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([slideId])
   @@index([slideId, zIndex])
@@ -4569,33 +4574,33 @@ model DeckSlideElement {
 
 // Slide-level comments (follows FrameComment pattern)
 model DeckSlideComment {
-  id              String            @id @default(cuid())
-  slideId         String
-  slide           DeckSlide         @relation(fields: [slideId], references: [id], onDelete: Cascade)
+  id      String    @id @default(cuid())
+  slideId String
+  slide   DeckSlide @relation(fields: [slideId], references: [id], onDelete: Cascade)
 
   // Author (user or guest)
-  userId          String?
-  user            User?             @relation("DeckSlideCommentAuthor", fields: [userId], references: [id], onDelete: SetNull)
-  guestName       String?
-  guestEmail      String?
+  userId     String?
+  user       User?   @relation("DeckSlideCommentAuthor", fields: [userId], references: [id], onDelete: SetNull)
+  guestName  String?
+  guestEmail String?
 
   // Comment content
-  content         String            @db.Text
+  content String @db.Text
 
   // Position on slide (optional - for positioned comments)
-  positionX       Float?            // % from left
-  positionY       Float?            // % from top
+  positionX Float? // % from left
+  positionY Float? // % from top
 
   // Threading
-  parentId        String?
-  parent          DeckSlideComment? @relation("CommentThread", fields: [parentId], references: [id], onDelete: Cascade)
-  replies         DeckSlideComment[] @relation("CommentThread")
+  parentId String?
+  parent   DeckSlideComment?  @relation("CommentThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  DeckSlideComment[] @relation("CommentThread")
 
   // Status
-  isResolved      Boolean           @default(false)
+  isResolved Boolean @default(false)
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([slideId])
   @@index([parentId])
@@ -4605,29 +4610,29 @@ model DeckSlideComment {
 
 // Deck collaborators (follows MediaCollaborator pattern)
 model DeckCollaborator {
-  id              String            @id @default(cuid())
-  deckId          String
-  deck            Deck              @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  deckId String
+  deck   Deck   @relation(fields: [deckId], references: [id], onDelete: Cascade)
 
   // Internal user OR guest
-  userId          String?
-  user            User?             @relation("DeckCollaboratorUser", fields: [userId], references: [id], onDelete: Cascade)
-  guestEmail      String?
-  guestName       String?
+  userId     String?
+  user       User?   @relation("DeckCollaboratorUser", fields: [userId], references: [id], onDelete: Cascade)
+  guestEmail String?
+  guestName  String?
 
   // Role (reuse CollaboratorRole enum)
-  role            CollaboratorRole  @default(VIEWER)
+  role CollaboratorRole @default(VIEWER)
 
   // Invite tracking
-  inviteToken     String?           @unique
-  invitedBy       String
-  inviter         User              @relation("DeckInviter", fields: [invitedBy], references: [id])
-  status          InviteStatus      @default(PENDING)
-  expiresAt       DateTime?
-  acceptedAt      DateTime?
+  inviteToken String?      @unique
+  invitedBy   String
+  inviter     User         @relation("DeckInviter", fields: [invitedBy], references: [id])
+  status      InviteStatus @default(PENDING)
+  expiresAt   DateTime?
+  acceptedAt  DateTime?
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([deckId, userId])
   @@unique([deckId, guestEmail])
@@ -4643,18 +4648,18 @@ model DeckCollaborator {
 // ============================================
 
 model ShotList {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String?
   projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdById String
-  createdBy   User     @relation("ShotListCreator", fields: [createdById], references: [id])
+  createdBy   User    @relation("ShotListCreator", fields: [createdById], references: [id])
 
-  scenes      ShotListScene[]
+  scenes ShotListScene[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([projectId])
   @@map("shot_lists")
@@ -4667,57 +4672,57 @@ model ShotListScene {
   sceneNumber String
   name        String
   location    String?
-  intExt      String?  // INT / EXT
-  dayNight    String?  // DAY / NIGHT
+  intExt      String? // INT / EXT
+  dayNight    String? // DAY / NIGHT
   description String?
   order       Int      @default(0)
 
-  shots       Shot[]
+  shots Shot[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([shotListId])
   @@map("shot_list_scenes")
 }
 
 model Shot {
-  id              String         @id @default(cuid())
-  sceneId         String
-  scene           ShotListScene  @relation(fields: [sceneId], references: [id], onDelete: Cascade)
-  shotNumber      String
-  order           Int            @default(0)
+  id         String        @id @default(cuid())
+  sceneId    String
+  scene      ShotListScene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  shotNumber String
+  order      Int           @default(0)
 
   // Shot Specs
-  shotSize        String?        // EWS, WS, FS, MWS, MS, MCU, CU, ECU
-  shotType        String?        // MASTER, SINGLE, TWO_SHOT, OTS, POV, INSERT
-  cameraAngle     String?        // EYE_LEVEL, LOW_ANGLE, HIGH_ANGLE, DUTCH, BIRD'S_EYE
-  cameraMovement  String?        // STATIC, PAN, TILT, DOLLY, TRACK, CRANE, HANDHELD, STEADICAM
-  lens            String?        // 14mm - 200mm
-  frameRate       String?        // 24fps, 30fps, 60fps, 120fps
-  camera          String?        // A CAM, B CAM, C CAM, DRONE
+  shotSize       String? // EWS, WS, FS, MWS, MS, MCU, CU, ECU
+  shotType       String? // MASTER, SINGLE, TWO_SHOT, OTS, POV, INSERT
+  cameraAngle    String? // EYE_LEVEL, LOW_ANGLE, HIGH_ANGLE, DUTCH, BIRD'S_EYE
+  cameraMovement String? // STATIC, PAN, TILT, DOLLY, TRACK, CRANE, HANDHELD, STEADICAM
+  lens           String? // 14mm - 200mm
+  frameRate      String? // 24fps, 30fps, 60fps, 120fps
+  camera         String? // A CAM, B CAM, C CAM, DRONE
 
   // Content
-  description     String?
-  action          String?
-  dialogue        String?
-  notes           String?
+  description String?
+  action      String?
+  dialogue    String?
+  notes       String?
 
   // Storyboard
-  storyboardUrl   String?
-  storyboardKey   String?
+  storyboardUrl String?
+  storyboardKey String?
 
   // Production
-  setupNumber     Int?           // Camera/lighting setup group
-  estimatedTime   Int?           // Seconds
-  status          ShotStatus     @default(PLANNED)
+  setupNumber   Int? // Camera/lighting setup group
+  estimatedTime Int? // Seconds
+  status        ShotStatus @default(PLANNED)
 
   // VFX/SFX
-  vfx             String?
-  sfx             String?
+  vfx String?
+  sfx String?
 
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([sceneId])
   @@map("shots")
@@ -4736,108 +4741,108 @@ enum ShotStatus {
 // ============================================
 
 model ShootingSchedule {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String?
   projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  shotListId  String?  // Optional link to shot list
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  shotListId  String? // Optional link to shot list
   createdById String
-  createdBy   User     @relation("ScheduleCreator", fields: [createdById], references: [id])
+  createdBy   User    @relation("ScheduleCreator", fields: [createdById], references: [id])
 
   // Settings
   startDate   DateTime?
-  pagesPerDay Float    @default(5)  // Estimated pages per day
+  pagesPerDay Float     @default(5) // Estimated pages per day
 
-  shootDays   ShootDay[]
-  callSheets  CallSheet[]
+  shootDays  ShootDay[]
+  callSheets CallSheet[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([projectId])
   @@map("shooting_schedules")
 }
 
 model ShootDay {
-  id          String           @id @default(cuid())
-  scheduleId  String
-  schedule    ShootingSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-  dayNumber   Int              // Day 1, Day 2, etc.
-  shootDate   DateTime?        // Actual date if set
-  location    String?          // Main location for the day
-  notes       String?
-  order       Int              @default(0)
+  id         String           @id @default(cuid())
+  scheduleId String
+  schedule   ShootingSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  dayNumber  Int // Day 1, Day 2, etc.
+  shootDate  DateTime? // Actual date if set
+  location   String? // Main location for the day
+  notes      String?
+  order      Int              @default(0)
 
-  strips      ScheduleStrip[]
-  callSheet   CallSheet?
+  strips    ScheduleStrip[]
+  callSheet CallSheet?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([scheduleId])
   @@map("shoot_days")
 }
 
 model ScheduleStrip {
-  id          String    @id @default(cuid())
-  shootDayId  String
-  shootDay    ShootDay  @relation(fields: [shootDayId], references: [id], onDelete: Cascade)
-  order       Int       @default(0)
+  id         String   @id @default(cuid())
+  shootDayId String
+  shootDay   ShootDay @relation(fields: [shootDayId], references: [id], onDelete: Cascade)
+  order      Int      @default(0)
 
   // Strip type
-  stripType   StripType @default(SCENE)
+  stripType StripType @default(SCENE)
 
   // === SCENE DATA (when stripType = SCENE) ===
   // Scene reference
-  sceneId     String?   // Reference to ShotListScene
+  sceneId String? // Reference to ShotListScene
 
   // Scene data (denormalized for display)
-  sceneNumber String?
-  sceneName   String?
-  intExt      String?   // INT / EXT
-  dayNight    String?   // DAY / NIGHT
-  location    String?
-  pageCount   Float?    // 1/8 pages (e.g., 2.5 = 2 4/8)
-  estimatedTime Int?    // Minutes
+  sceneNumber   String?
+  sceneName     String?
+  intExt        String? // INT / EXT
+  dayNight      String? // DAY / NIGHT
+  location      String?
+  pageCount     Float? // 1/8 pages (e.g., 2.5 = 2 4/8)
+  estimatedTime Int? // Minutes
 
   // Scene-specific flags (for scenes only)
-  hasStunts       Boolean   @default(false)
-  hasMinors       Boolean   @default(false)
-  hasAnimals      Boolean   @default(false)
-  hasVehicles     Boolean   @default(false)
-  hasSfx          Boolean   @default(false)
-  hasWaterWork    Boolean   @default(false)
-  specialReqNotes String?   // Details about special requirements
+  hasStunts         Boolean @default(false)
+  hasMinors         Boolean @default(false)
+  hasAnimals        Boolean @default(false)
+  hasVehicles       Boolean @default(false)
+  hasSfx            Boolean @default(false)
+  hasWaterWork      Boolean @default(false)
+  specialReqNotes   String? // Details about special requirements
   specialReqContact String? // Contact person for special requirements
 
   // Background/Extras for this scene
-  backgroundDescription String?  // "20 Office Workers"
+  backgroundDescription String? // "20 Office Workers"
   backgroundQty         Int?
   backgroundCallTime    String?
   backgroundWardrobe    String?
   backgroundNotes       String?
 
   // === BANNER DATA (when stripType = BANNER) ===
-  bannerType    BannerType?
-  bannerText    String?
-  bannerColor   String?   // Hex color
+  bannerType  BannerType?
+  bannerText  String?
+  bannerColor String? // Hex color
 
   // Meal Break data (when bannerType = MEAL_BREAK)
-  mealType      String?       // "BREAKFAST", "LUNCH", "SECOND_MEAL"
-  mealTime      String?       // "12:00 PM"
-  mealDuration  Int?          // 30 minutes
-  mealLocation  String?       // "Craft Services Tent"
+  mealType     String? // "BREAKFAST", "LUNCH", "SECOND_MEAL"
+  mealTime     String? // "12:00 PM"
+  mealDuration Int? // 30 minutes
+  mealLocation String? // "Craft Services Tent"
 
   // Company Move data (when bannerType = COMPANY_MOVE)
-  moveTime          String?   // "2:00 PM"
-  moveFromLocation  String?   // "Downtown Studio"
-  moveToLocation    String?   // "Warehouse Location"
-  moveTravelTime    Int?      // 45 minutes
-  moveNotes         String?   // "Shuttle buses provided"
+  moveTime         String? // "2:00 PM"
+  moveFromLocation String? // "Downtown Studio"
+  moveToLocation   String? // "Warehouse Location"
+  moveTravelTime   Int? // 45 minutes
+  moveNotes        String? // "Shuttle buses provided"
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([shootDayId])
   @@map("schedule_strips")
@@ -4860,70 +4865,70 @@ enum BannerType {
 // ============================================
 
 model CallSheet {
-  id            String           @id @default(cuid())
-  callSheetType CallSheetType    @default(FILM)
+  id            String            @id @default(cuid())
+  callSheetType CallSheetType     @default(FILM)
   scheduleId    String?
   schedule      ShootingSchedule? @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-  shootDayId    String?          @unique
-  shootDay      ShootDay?        @relation(fields: [shootDayId], references: [id], onDelete: Cascade)
+  shootDayId    String?           @unique
+  shootDay      ShootDay?         @relation(fields: [shootDayId], references: [id], onDelete: Cascade)
   createdById   String
-  createdBy     User             @relation("CallSheetCreator", fields: [createdById], references: [id])
+  createdBy     User              @relation("CallSheetCreator", fields: [createdById], references: [id])
 
   // Header Info
-  callSheetNumber Int            @default(1)
+  callSheetNumber Int     @default(1)
   productionName  String?
   director        String?
   producer        String?
 
   // === NEW: Production Company/Personnel Info ===
-  companyName       String?
-  companyAddress    String?
-  upm               String?           // Unit Production Manager
-  firstAd           String?
-  secondAd          String?
-  secondAdPhone     String?
+  companyName           String?
+  companyAddress        String?
+  upm                   String? // Unit Production Manager
+  firstAd               String?
+  secondAd              String?
+  secondAdPhone         String?
   productionOfficePhone String?
-  setMedic          String?
-  setMedicPhone     String?
+  setMedic              String?
+  setMedicPhone         String?
 
   // === NEW: Version Tracking ===
-  scriptVersion     String?           // "WHITE", "BLUE", "PINK", etc.
-  scheduleVersion   String?
+  scriptVersion   String? // "WHITE", "BLUE", "PINK", etc.
+  scheduleVersion String?
 
   // === NEW: Day Context ===
-  dayNumber         Int?              // Day 5
-  totalDays         Int?              // of 42
+  dayNumber Int? // Day 5
+  totalDays Int? // of 42
 
   // Date & Time
   shootDate       DateTime
-  crewCallTime      String?           // "7:00 AM" - General crew call
-  generalCallTime   String?           // Deprecated, use crewCallTime - kept for backward compatibility
-  firstShotTime   String?        // e.g., "8:00 AM" / "9:15 AM"
-  estimatedWrap   String?        // "6:00 PM" - Expected wrap
-  wrapTime        String?        // Deprecated, use estimatedWrap
-  lunchTime       String?        // "12:00 PM" - Scheduled lunch
+  crewCallTime    String? // "7:00 AM" - General crew call
+  generalCallTime String? // Deprecated, use crewCallTime - kept for backward compatibility
+  firstShotTime   String? // e.g., "8:00 AM" / "9:15 AM"
+  estimatedWrap   String? // "6:00 PM" - Expected wrap
+  wrapTime        String? // Deprecated, use estimatedWrap
+  lunchTime       String? // "12:00 PM" - Scheduled lunch
 
   // Location
   locationName    String?
   locationAddress String?
-  locationLat     Float?            // Latitude from Google Places
-  locationLng     Float?            // Longitude from Google Places
+  locationLat     Float? // Latitude from Google Places
+  locationLng     Float? // Longitude from Google Places
   parkingNotes    String?
   mapUrl          String?
 
   // === NEW: Logistics Row Fields ===
-  crewParking       String?           // "Lot A at 1808 Miller Rd"
-  basecamp          String?           // "Zeke's House"
-  bathrooms         String?           // "On Site" / "Porta-potties at Location B"
-  lunchLocation     String?           // "Craft Services Tent"
-  workingTrucks     String?           // "Back Lot" / "Truck Parking Area"
+  crewParking   String? // "Lot A at 1808 Miller Rd"
+  basecamp      String? // "Zeke's House"
+  bathrooms     String? // "On Site" / "Porta-potties at Location B"
+  lunchLocation String? // "Craft Services Tent"
+  workingTrucks String? // "Back Lot" / "Truck Parking Area"
 
   // Weather (optional integration)
-  weatherHigh     Int?
-  weatherLow      Int?
+  weatherHigh      Int?
+  weatherLow       Int?
   weatherCondition String?
-  sunrise         String?
-  sunset          String?
+  sunrise          String?
+  sunset           String?
 
   // Emergency
   nearestHospital String?
@@ -4931,63 +4936,63 @@ model CallSheet {
   hospitalPhone   String?
 
   // === NEW: Department Notes ===
-  artNotes          String?           // Art Dept/Props notes
-  vehicleNotes      String?           // Vehicle/Picture Car notes
-  cameraGripNotes   String?           // Camera/Grip notes
-  stuntNotes        String?           // Stunt notes
+  artNotes        String? // Art Dept/Props notes
+  vehicleNotes    String? // Vehicle/Picture Car notes
+  cameraGripNotes String? // Camera/Grip notes
+  stuntNotes      String? // Stunt notes
 
   // === NEW: Production Details ===
-  advanceNotes      String?           // Tomorrow's preview notes
-  safetyNotes       String?           // Safety information
-  announcements     String?           // Important announcements
-  walkieChannels    String?           // "Ch1: Production, Ch2: Camera"
+  advanceNotes   String? // Tomorrow's preview notes
+  safetyNotes    String? // Safety information
+  announcements  String? // Important announcements
+  walkieChannels String? // "Ch1: Production, Ch2: Camera"
 
   // Notes
-  generalNotes    String?           // Deprecated, kept for backward compatibility
+  generalNotes    String? // Deprecated, kept for backward compatibility
   productionNotes String?
 
   // === PHOTO-SPECIFIC FIELDS ===
-  photographer    String?           // Photo only: Photographer name
-  artDirector     String?           // Photo only: Art director
-  stylist         String?           // Photo only: Stylist
-  hmuLead         String?           // Photo only: Hair/Makeup lead
-  clientName      String?           // Photo only: Client name
-  clientContact   String?           // Photo only: Client contact person
-  clientPhone     String?           // Photo only: Client phone
-  agencyName      String?           // Photo only: Agency name
-  moodBoardUrl    String?           // Photo only: Mood board link
-  totalLooks      Int?              // Photo only: Number of looks
-  sessionType     String?           // Photo only: "Fashion", "Beauty", "Lifestyle", etc.
-  deliverables    String?           // Photo only: What client expects
-  wardrobeProvider String?          // Photo only: Who provides wardrobe
-  stylingNotes    String?           // Photo only: Overall styling notes
+  photographer     String? // Photo only: Photographer name
+  artDirector      String? // Photo only: Art director
+  stylist          String? // Photo only: Stylist
+  hmuLead          String? // Photo only: Hair/Makeup lead
+  clientName       String? // Photo only: Client name
+  clientContact    String? // Photo only: Client contact person
+  clientPhone      String? // Photo only: Client phone
+  agencyName       String? // Photo only: Agency name
+  moodBoardUrl     String? // Photo only: Mood board link
+  totalLooks       Int? // Photo only: Number of looks
+  sessionType      String? // Photo only: "Fashion", "Beauty", "Lifestyle", etc.
+  deliverables     String? // Photo only: What client expects
+  wardrobeProvider String? // Photo only: Who provides wardrobe
+  stylingNotes     String? // Photo only: Overall styling notes
 
   // Status
-  status          CallSheetStatus @default(DRAFT)
-  sentAt          DateTime?
+  status CallSheetStatus @default(DRAFT)
+  sentAt DateTime?
 
   // === Relations: Photo-Specific ===
-  shots             CallSheetShot[]
-  models            CallSheetModel[]
-  wardrobe          CallSheetWardrobe[]
-  hmuSchedule       CallSheetHMU[]
+  shots       CallSheetShot[]
+  models      CallSheetModel[]
+  wardrobe    CallSheetWardrobe[]
+  hmuSchedule CallSheetHMU[]
 
   // === Relations: NEW ===
-  mealBreaks        CallSheetMeal[]
-  companyMoves      CallSheetMove[]
+  mealBreaks          CallSheetMeal[]
+  companyMoves        CallSheetMove[]
   specialRequirements CallSheetSpecialReq[]
-  backgroundCalls   CallSheetBackground[]
-  standIns          CallSheetStandIn[]
-  advanceSchedule   CallSheetAdvanceDay[]
-  activities        CallSheetActivity[]     // General schedule items (prep, standby, etc.)
+  backgroundCalls     CallSheetBackground[]
+  standIns            CallSheetStandIn[]
+  advanceSchedule     CallSheetAdvanceDay[]
+  activities          CallSheetActivity[] // General schedule items (prep, standby, etc.)
 
   // Relations: Existing
-  castCalls         CallSheetCast[]
-  crewCalls         CallSheetCrew[]
-  scenes            CallSheetScene[]
+  castCalls CallSheetCast[]
+  crewCalls CallSheetCrew[]
+  scenes    CallSheetScene[]
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([scheduleId])
   @@map("call_sheets")
@@ -5000,36 +5005,36 @@ model CallSheetCast {
   order       Int       @default(0)
 
   // Cast info
-  castNumber  String?   // #1, #2, etc.
-  actorName   String
-  character   String?
+  castNumber String? // #1, #2, etc.
+  actorName  String
+  character  String?
 
   // === ENHANCED: Multiple Time Columns ===
-  pickupTime  String?   // "6:00 AM" - Transportation pickup
-  muCallTime  String?   // "6:30 AM" - Makeup/Hair call (renamed from callTime)
-  fittingTime String?   // "6:45 AM" - Wardrobe fitting time
-  callTime    String    // e.g., "6:00 AM" - Legacy, kept for compatibility
-  onSetTime   String?   // "9:00 AM" - Must be camera-ready
-  wrapTime    String?   // "4:00 PM" - Expected wrap for this actor
+  pickupTime  String? // "6:00 AM" - Transportation pickup
+  muCallTime  String? // "6:30 AM" - Makeup/Hair call (renamed from callTime)
+  fittingTime String? // "6:45 AM" - Wardrobe fitting time
+  callTime    String // e.g., "6:00 AM" - Legacy, kept for compatibility
+  onSetTime   String? // "9:00 AM" - Must be camera-ready
+  wrapTime    String? // "4:00 PM" - Expected wrap for this actor
 
   // === NEW: Status Code ===
-  workStatus  CastWorkStatus @default(W)  // SW, W, WF, SWF, H
+  workStatus CastWorkStatus @default(W) // SW, W, WF, SWF, H
 
   // === NEW: Enhanced Info ===
-  transportMode String?       // "Company Car" / "Own Transport" / "Hotel Shuttle"
-  muDuration    Int?          // Minutes needed for makeup (e.g., 120 = 2 hours)
-  wardrobeNotes String?       // Special wardrobe requirements
+  transportMode String? // "Company Car" / "Own Transport" / "Hotel Shuttle"
+  muDuration    Int? // Minutes needed for makeup (e.g., 120 = 2 hours)
+  wardrobeNotes String? // Special wardrobe requirements
 
   // === NEW: Flags ===
-  isMinor       Boolean       @default(false)  // Child actor
-  hasStunt      Boolean       @default(false)  // Performing stunts
+  isMinor  Boolean @default(false) // Child actor
+  hasStunt Boolean @default(false) // Performing stunts
 
   // Notes
-  notes       String?
-  status      CallStatus @default(PENDING)
+  notes  String?
+  status CallStatus @default(PENDING)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_cast")
@@ -5042,26 +5047,26 @@ model CallSheetCrew {
   order       Int       @default(0)
 
   // Crew info
-  department  String    // e.g., "Camera", "Grip", "Art"
-  position    String    // e.g., "DP", "1st AC", "Gaffer"
-  name        String
+  department String // e.g., "Camera", "Grip", "Art"
+  position   String // e.g., "DP", "1st AC", "Gaffer"
+  name       String
 
   // Times
-  callTime    String    // e.g., "6:30 AM"
+  callTime String // e.g., "6:30 AM"
 
   // === NEW: Staggered Call Time ===
-  callTimeOffset  Int?        // Minutes relative to general call (-60 = 1hr early)
-  reportLocation  String?     // Where to report (may differ from set)
+  callTimeOffset Int? // Minutes relative to general call (-60 = 1hr early)
+  reportLocation String? // Where to report (may differ from set)
 
   // Contact
-  phone       String?
-  email       String?
+  phone String?
+  email String?
 
   // Notes
-  notes       String?
+  notes String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_crew")
@@ -5082,13 +5087,13 @@ model CallSheetScene {
   pageCount   Float?
 
   // Cast in scene
-  castIds     String?   // Comma-separated cast numbers: "1,2,5"
+  castIds String? // Comma-separated cast numbers: "1,2,5"
 
   // Notes
   description String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_scenes")
@@ -5100,15 +5105,15 @@ model CallSheetMeal {
   callSheetId String
   callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
 
-  mealType    MealType  // BREAKFAST, LUNCH, DINNER, CRAFT_SERVICES
-  time        String    // "12:00 PM"
-  duration    Int       @default(30)  // Minutes
-  location    String?   // Where meal is served
-  notes       String?
-  order       Int       @default(0)
+  mealType MealType // BREAKFAST, LUNCH, DINNER, CRAFT_SERVICES
+  time     String // "12:00 PM"
+  duration Int      @default(30) // Minutes
+  location String? // Where meal is served
+  notes    String?
+  order    Int      @default(0)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_meals")
@@ -5128,15 +5133,15 @@ model CallSheetMove {
   callSheetId String
   callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
 
-  departTime  String    // "1:00 PM"
+  departTime   String // "1:00 PM"
   fromLocation String
-  toLocation  String
-  travelTime  Int?      // Estimated minutes
-  notes       String?
-  order       Int       @default(0)
+  toLocation   String
+  travelTime   Int? // Estimated minutes
+  notes        String?
+  order        Int     @default(0)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_moves")
@@ -5148,16 +5153,16 @@ model CallSheetSpecialReq {
   callSheetId String
   callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
 
-  reqType     SpecialReqType
-  description String
-  contactName String?
+  reqType      SpecialReqType
+  description  String
+  contactName  String?
   contactPhone String?
-  safetyNotes String?
-  scenes      String?   // Which scenes this applies to
-  order       Int       @default(0)
+  safetyNotes  String?
+  scenes       String? // Which scenes this applies to
+  order        Int            @default(0)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_special_reqs")
@@ -5178,49 +5183,49 @@ enum SpecialReqType {
 
 // === NEW ENUM: Activity Types for general schedule items ===
 enum ActivityType {
-  GENERAL       // Generic activity
-  PREPARATION   // Setup, prep work
-  STANDBY       // Waiting/ready position
-  BRIEFING      // Team briefings, safety talks
-  REHEARSAL     // Run-throughs
-  TRANSPORT     // Travel, pickup
-  TECHNICAL     // AV setup, equipment check
-  CUSTOM        // User-defined
+  GENERAL // Generic activity
+  PREPARATION // Setup, prep work
+  STANDBY // Waiting/ready position
+  BRIEFING // Team briefings, safety talks
+  REHEARSAL // Run-throughs
+  TRANSPORT // Travel, pickup
+  TECHNICAL // AV setup, equipment check
+  CUSTOM // User-defined
 }
 
 // === NEW MODEL: General Schedule Activities ===
 // For plain schedule items like "Preparation | 03:00 | At location | who"
 model CallSheetActivity {
-  id            String       @id @default(cuid())
-  callSheetId   String
-  callSheet     CallSheet    @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
 
   // Core fields (based on run-of-show standards)
-  activityType  ActivityType @default(GENERAL)
-  activityName  String                        // "Preparation", "Model Standby"
-  description   String?                       // Detailed instructions
+  activityType ActivityType @default(GENERAL)
+  activityName String // "Preparation", "Model Standby"
+  description  String? // Detailed instructions
 
   // Timing
-  startTime     String                        // "03:00", "15:30"
-  endTime       String?                       // Optional end time
-  duration      Int?                          // Minutes (can be calculated or explicit)
+  startTime String // "03:00", "15:30"
+  endTime   String? // Optional end time
+  duration  Int? // Minutes (can be calculated or explicit)
 
   // Location & Personnel
-  location      String?                       // "At location", "Backstage"
-  personnel     String?                       // "Model A, Model B" - comma separated
-  responsibleParty String?                    // Primary person in charge
+  location         String? // "At location", "Backstage"
+  personnel        String? // "Model A, Model B" - comma separated
+  responsibleParty String? // Primary person in charge
 
   // Additional details
-  technicalNotes String?                      // AV, equipment requirements
-  notes         String?                       // General notes
+  technicalNotes String? // AV, equipment requirements
+  notes          String? // General notes
 
   // Display
-  order         Int          @default(0)
-  color         String?                       // Hex color for UI display
-  isHighlighted Boolean      @default(false)  // Mark critical activities
+  order         Int     @default(0)
+  color         String? // Hex color for UI display
+  isHighlighted Boolean @default(false) // Mark critical activities
 
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_activities")
@@ -5232,17 +5237,17 @@ model CallSheetBackground {
   callSheetId String
   callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
 
-  description String    // "20 Office Workers", "50 Crowd Extras"
-  quantity    Int       @default(1)
-  callTime    String
+  description    String // "20 Office Workers", "50 Crowd Extras"
+  quantity       Int     @default(1)
+  callTime       String
   reportLocation String?
-  wardrobeNotes String? // "Business casual provided"
-  scenes      String?   // Which scenes
-  notes       String?
-  order       Int       @default(0)
+  wardrobeNotes  String? // "Business casual provided"
+  scenes         String? // Which scenes
+  notes          String?
+  order          Int     @default(0)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_background")
@@ -5254,14 +5259,14 @@ model CallSheetStandIn {
   callSheetId String
   callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
 
-  name        String    // Name of stand-in
-  forActor    String    // Name or ID of actor they're standing in for
-  callTime    String    // "6:30 AM"
-  notes       String?   // Any special notes
-  order       Int       @default(0)
+  name     String // Name of stand-in
+  forActor String // Name or ID of actor they're standing in for
+  callTime String // "6:30 AM"
+  notes    String? // Any special notes
+  order    Int     @default(0)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_standins")
@@ -5269,20 +5274,20 @@ model CallSheetStandIn {
 
 // === NEW MODEL: Advance Schedule Days ===
 model CallSheetAdvanceDay {
-  id              String    @id @default(cuid())
-  callSheetId     String
-  callSheet       CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
 
-  dayNumber       Int       // "2" for next day
-  date            DateTime  // Shoot date of this advance day
-  estCall         String?   // Estimated crew call time
-  order           Int       @default(0)
+  dayNumber Int // "2" for next day
+  date      DateTime // Shoot date of this advance day
+  estCall   String? // Estimated crew call time
+  order     Int      @default(0)
 
   // Scenes for this advance day
-  scenes          CallSheetAdvanceScene[]
+  scenes CallSheetAdvanceScene[]
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_advance_days")
@@ -5290,30 +5295,30 @@ model CallSheetAdvanceDay {
 
 // === NEW MODEL: Scenes in Advance Schedule ===
 model CallSheetAdvanceScene {
-  id              String              @id @default(cuid())
-  advanceDayId    String
-  advanceDay      CallSheetAdvanceDay @relation(fields: [advanceDayId], references: [id], onDelete: Cascade)
+  id           String              @id @default(cuid())
+  advanceDayId String
+  advanceDay   CallSheetAdvanceDay @relation(fields: [advanceDayId], references: [id], onDelete: Cascade)
 
-  sceneNumber     String
-  sceneName       String?
-  castIds         String?  // Comma-separated cast numbers
-  dayNight        String?  // "D" or "N"
-  location        String?
-  order           Int      @default(0)
+  sceneNumber String
+  sceneName   String?
+  castIds     String? // Comma-separated cast numbers
+  dayNight    String? // "D" or "N"
+  location    String?
+  order       Int     @default(0)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([advanceDayId])
   @@map("call_sheet_advance_scenes")
 }
 
 enum CastWorkStatus {
-  SW    // Start Work - First day on set
-  W     // Work - Continuing work
-  WF    // Work Finish - Final day
-  SWF   // Start-Work-Finish - Day player (one day only)
-  H     // Hold - On standby, not working today
+  SW // Start Work - First day on set
+  W // Work - Continuing work
+  WF // Work Finish - Final day
+  SWF // Start-Work-Finish - Day player (one day only)
+  H // Hold - On standby, not working today
 }
 
 enum CallSheetStatus {
@@ -5333,136 +5338,136 @@ enum CallStatus {
 // === NEW ENUMS FOR PHOTO CALL SHEETS ===
 
 enum CallSheetType {
-  FILM    // Traditional film/TV call sheet
-  PHOTO   // Photography/fashion shoot call sheet
+  FILM // Traditional film/TV call sheet
+  PHOTO // Photography/fashion shoot call sheet
 }
 
 enum ModelArrivalType {
-  CAMERA_READY  // Model arrives camera-ready
-  STYLED        // Model arrives and gets styled on set
+  CAMERA_READY // Model arrives camera-ready
+  STYLED // Model arrives and gets styled on set
 }
 
 enum WardrobeStatus {
-  PENDING      // Wardrobe not yet confirmed
-  CONFIRMED    // Confirmed and ready
-  ON_SET       // Currently on set
-  IN_USE       // Being worn
-  WRAPPED      // Returned/finished
+  PENDING // Wardrobe not yet confirmed
+  CONFIRMED // Confirmed and ready
+  ON_SET // Currently on set
+  IN_USE // Being worn
+  WRAPPED // Returned/finished
 }
 
 enum HMURole {
-  HAIR         // Hair only
-  MAKEUP       // Makeup only
-  BOTH         // Hair and makeup
-  KEY_STYLIST  // Key stylist
+  HAIR // Hair only
+  MAKEUP // Makeup only
+  BOTH // Hair and makeup
+  KEY_STYLIST // Key stylist
 }
 
 // === NEW MODELS FOR PHOTO CALL SHEETS ===
 
 model CallSheetShot {
-  id              String    @id @default(cuid())
-  callSheetId     String
-  callSheet       CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
 
   // Shot information
-  shotNumber      Int                       // 1, 2, 3...
-  shotName        String?                   // "Hero Shot", "Lifestyle", etc.
-  lookReference   String?                   // "Look A", "Look B"
-  description     String?
-  setupLocation   String?                   // Where shot takes place
-  estStartTime    String?                   // Estimated start time
-  estDuration     Int?                      // Duration in minutes
-  wardrobeNotes   String?                   // Wardrobe for this shot
-  hmuNotes        String?                   // Hair/makeup notes
-  modelIds        String?                   // Comma-separated model IDs
+  shotNumber    Int // 1, 2, 3...
+  shotName      String? // "Hero Shot", "Lifestyle", etc.
+  lookReference String? // "Look A", "Look B"
+  description   String?
+  setupLocation String? // Where shot takes place
+  estStartTime  String? // Estimated start time
+  estDuration   Int? // Duration in minutes
+  wardrobeNotes String? // Wardrobe for this shot
+  hmuNotes      String? // Hair/makeup notes
+  modelIds      String? // Comma-separated model IDs
 
-  order           Int       @default(0)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_shots")
 }
 
 model CallSheetModel {
-  id              String    @id @default(cuid())
-  callSheetId     String
-  callSheet       CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
 
   // Model information
-  modelName       String
-  modelNumber     String?                   // #1, #2 for reference
-  agencyName      String?                   // Model's agency
+  modelName   String
+  modelNumber String? // #1, #2 for reference
+  agencyName  String? // Model's agency
 
   // Timing
   arrivalType     ModelArrivalType
-  arrivalTime     String                    // When to arrive
-  hmuStartTime    String?                   // When HMU begins
-  cameraReadyTime String?                   // Must be camera-ready by
+  arrivalTime     String // When to arrive
+  hmuStartTime    String? // When HMU begins
+  cameraReadyTime String? // Must be camera-ready by
 
   // HMU details
-  hmuArtist       String?                   // Assigned HMU artist
-  hmuDuration     Int?                      // Minutes for hair/makeup
+  hmuArtist   String? // Assigned HMU artist
+  hmuDuration Int? // Minutes for hair/makeup
 
   // Details
-  wardrobeSizes   String?                   // Sizes (e.g., "XS/6")
-  shotNumbers     String?                   // Which shots they appear in (comma-separated)
+  wardrobeSizes String? // Sizes (e.g., "XS/6")
+  shotNumbers   String? // Which shots they appear in (comma-separated)
 
-  order           Int       @default(0)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_models")
 }
 
 model CallSheetWardrobe {
-  id              String    @id @default(cuid())
-  callSheetId     String
-  callSheet       CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
 
   // Item details
-  itemName        String                    // "Blue Dress", "Leather Jacket", etc.
-  brand           String?                   // Brand name
-  size            String?                   // Size
-  color           String?                   // Color
+  itemName String // "Blue Dress", "Leather Jacket", etc.
+  brand    String? // Brand name
+  size     String? // Size
+  color    String? // Color
 
   // Assignment
-  providedBy      String?                   // "Client", "Stylist", "Model"
-  forModel        String?                   // Which model
-  forShot         String?                   // Which shot/look
+  providedBy String? // "Client", "Stylist", "Model"
+  forModel   String? // Which model
+  forShot    String? // Which shot/look
 
-  status          WardrobeStatus  @default(PENDING)
+  status WardrobeStatus @default(PENDING)
 
-  order           Int       @default(0)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_wardrobe")
 }
 
 model CallSheetHMU {
-  id              String    @id @default(cuid())
-  callSheetId     String
-  callSheet       CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
 
   // Artist information
-  artistName      String
-  artistRole      HMURole
-  stationNumber   Int?                      // Station 1, 2, etc.
+  artistName    String
+  artistRole    HMURole
+  stationNumber Int? // Station 1, 2, etc.
 
   // Timing
-  callTime        String                    // When artist arrives
-  availableFrom   String?                   // When they start
-  availableUntil  String?                   // When they wrap
+  callTime       String // When artist arrives
+  availableFrom  String? // When they start
+  availableUntil String? // When they wrap
 
   // Assignments
-  assignedModels  String?                   // Model assignments (comma-separated)
+  assignedModels String? // Model assignments (comma-separated)
 
-  order           Int       @default(0)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([callSheetId])
   @@map("call_sheet_hmu")
@@ -5498,55 +5503,55 @@ enum AttendeeStatus {
 }
 
 model CalendarEvent {
-  id          String        @id @default(cuid())
+  id          String  @id @default(cuid())
   title       String
   description String?
   location    String?
 
   // Timing
-  startTime   DateTime
-  endTime     DateTime
-  allDay      Boolean       @default(false)
-  timezone    String        @default("Asia/Jakarta")
+  startTime DateTime
+  endTime   DateTime
+  allDay    Boolean  @default(false)
+  timezone  String   @default("Asia/Jakarta")
 
   // Categorization
-  category    EventCategory @default(OTHER)
-  status      EventStatus   @default(SCHEDULED)
-  color       String?       // Custom color override
-  priority    MilestonePriority @default(MEDIUM)
+  category EventCategory     @default(OTHER)
+  status   EventStatus       @default(SCHEDULED)
+  color    String? // Custom color override
+  priority MilestonePriority @default(MEDIUM)
 
   // Relations
-  projectId   String?
-  project     Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   milestoneId String?
   milestone   ProjectMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
 
-  clientId    String?
-  client      Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
 
   // Ownership
   createdById String
-  createdBy   User          @relation("CreatedEvents", fields: [createdById], references: [id])
+  createdBy   User   @relation("CreatedEvents", fields: [createdById], references: [id])
 
-  assigneeId  String?
-  assignee    User?         @relation("AssignedEvents", fields: [assigneeId], references: [id], onDelete: SetNull)
+  assigneeId String?
+  assignee   User?   @relation("AssignedEvents", fields: [assigneeId], references: [id], onDelete: SetNull)
 
   // Multiple attendees
-  attendees   EventAttendee[]
+  attendees EventAttendee[]
 
   // Recurrence (future feature)
-  recurrence  String?       // RRULE format
-  parentId    String?       // For recurring event instances
-  parent      CalendarEvent? @relation("RecurringSeries", fields: [parentId], references: [id], onDelete: Cascade)
-  instances   CalendarEvent[] @relation("RecurringSeries")
+  recurrence String? // RRULE format
+  parentId   String? // For recurring event instances
+  parent     CalendarEvent?  @relation("RecurringSeries", fields: [parentId], references: [id], onDelete: Cascade)
+  instances  CalendarEvent[] @relation("RecurringSeries")
 
   // Reminders
-  reminders   EventReminder[]
+  reminders EventReminder[]
 
   // Metadata
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([startTime, endTime])
   @@index([createdById])
@@ -5557,12 +5562,12 @@ model CalendarEvent {
 }
 
 model EventAttendee {
-  id        String        @id @default(cuid())
-  eventId   String
-  event     CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status    AttendeeStatus @default(PENDING)
+  id      String         @id @default(cuid())
+  eventId String
+  event   CalendarEvent  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status  AttendeeStatus @default(PENDING)
 
   @@unique([eventId, userId])
   @@index([eventId])
@@ -5570,11 +5575,11 @@ model EventAttendee {
 }
 
 model EventReminder {
-  id        String        @id @default(cuid())
-  eventId   String
-  event     CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  minutes   Int           // Minutes before event
-  sent      Boolean       @default(false)
+  id      String        @id @default(cuid())
+  eventId String
+  event   CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  minutes Int // Minutes before event
+  sent    Boolean       @default(false)
 
   @@index([eventId])
   @@map("event_reminders")
@@ -5586,17 +5591,17 @@ model EventReminder {
 
 model PinterestDownload {
   id             String    @id @default(cuid())
-  url            String    // Original Pinterest URL
-  type           String    // board, user, pin, section
-  username       String?   // Pinterest username
-  boardName      String?   // Board name if applicable
+  url            String // Original Pinterest URL
+  type           String // board, user, pin, section
+  username       String? // Pinterest username
+  boardName      String? // Board name if applicable
   status         String    @default("pending") // pending, running, completed, failed
   totalPins      Int       @default(0)
   downloadedPins Int       @default(0)
   failedPins     Int       @default(0)
   skippedPins    Int       @default(0)
-  outputPath     String?   // Local storage path
-  error          String?   // Error message if failed
+  outputPath     String? // Local storage path
+  error          String? // Error message if failed
   startedAt      DateTime?
   completedAt    DateTime?
   createdAt      DateTime  @default(now())
@@ -5604,7 +5609,7 @@ model PinterestDownload {
 
   // Relations
   userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   pins   PinterestPin[]
 
   @@index([userId])
@@ -5615,18 +5620,18 @@ model PinterestDownload {
 
 model PinterestPin {
   id          String   @id @default(cuid())
-  pinId       String   // Pinterest pin ID
+  pinId       String // Pinterest pin ID
   title       String?
   description String?
-  imageUrl    String?  // Original Pinterest image URL
-  videoUrl    String?  // Original Pinterest video URL
-  localPath   String?  // Local file path after download
-  mediaType   String   // image, video
+  imageUrl    String? // Original Pinterest image URL
+  videoUrl    String? // Original Pinterest video URL
+  localPath   String? // Local file path after download
+  mediaType   String // image, video
   width       Int?
   height      Int?
-  fileSize    Int?     // File size in bytes
+  fileSize    Int? // File size in bytes
   downloaded  Boolean  @default(false)
-  error       String?  // Error message if download failed
+  error       String? // Error message if download failed
   createdAt   DateTime @default(now())
 
   // Relations
@@ -5637,4 +5642,131 @@ model PinterestPin {
   @@index([downloadId])
   @@index([downloaded])
   @@map("pinterest_pins")
+}
+
+// ============================================
+// MCP (Model Context Protocol) Integration
+// Lets users connect their Claude.ai Pro/Max subscription as a custom connector.
+// Each user authenticates via OAuth 2.1 with PKCE; their queries are billed
+// against their own Claude subscription, not the platform.
+// ============================================
+
+// OAuth 2.1 dynamically-registered client (one per Claude.ai installation)
+model McpOAuthClient {
+  id                      String   @id @default(cuid())
+  clientId                String   @unique
+  clientSecret            String? // null for public clients (PKCE-only)
+  clientName              String?
+  redirectUris            String[] // JSON array of allowed redirect URIs
+  grantTypes              String[] // e.g. ["authorization_code", "refresh_token"]
+  responseTypes           String[] // e.g. ["code"]
+  tokenEndpointAuthMethod String? // "none" | "client_secret_basic" | "client_secret_post"
+  scope                   String? // space-separated default scopes
+  clientUri               String?
+  logoUri                 String?
+  clientIdIssuedAt        Int // unix seconds
+  clientSecretExpiresAt   Int? // 0 = never
+
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  authCodes    McpAuthCode[]
+  accessTokens McpAccessToken[]
+
+  @@index([clientId])
+  @@map("mcp_oauth_clients")
+}
+
+// Pending OAuth authorization requests — the bridge between /authorize and
+// /consent. Held briefly while the user logs in. Persisted (not in-memory)
+// so the consent flow survives backend restarts / hot-reloads.
+model McpPendingAuthorization {
+  id                  String   @id @default(cuid())
+  // The opaque request_id we pass to the consent page is this row's id.
+  clientId            String
+  redirectUri         String
+  codeChallenge       String
+  codeChallengeMethod String   @default("S256")
+  scope               String?
+  state               String?
+  resource            String?
+  expiresAt           DateTime // typically now + 15 min
+  createdAt           DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("mcp_pending_authorizations")
+}
+
+// Short-lived authorization codes (PKCE flow)
+model McpAuthCode {
+  id                  String         @id @default(cuid())
+  code                String         @unique
+  clientId            String
+  client              McpOAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId              String // Internal Monomi user this code is bound to
+  user                User           @relation("McpAuthCodeUser", fields: [userId], references: [id], onDelete: Cascade)
+  codeChallenge       String
+  codeChallengeMethod String         @default("S256")
+  redirectUri         String
+  scope               String?
+  resource            String?
+  expiresAt           DateTime // typically now + 10 min
+  consumed            Boolean        @default(false)
+  consumedAt          DateTime?
+  createdAt           DateTime       @default(now())
+
+  @@index([code])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("mcp_auth_codes")
+}
+
+// Issued access + refresh tokens
+model McpAccessToken {
+  id               String         @id @default(cuid())
+  accessToken      String         @unique // hashed (sha256) for storage; the bearer is what we hand out
+  refreshToken     String?        @unique // hashed if present
+  clientId         String
+  client           McpOAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId           String
+  user             User           @relation("McpAccessTokenUser", fields: [userId], references: [id], onDelete: Cascade)
+  scope            String? // space-separated granted scopes
+  resource         String?
+  expiresAt        DateTime
+  refreshExpiresAt DateTime?
+  revokedAt        DateTime?
+  lastUsedAt       DateTime?
+  createdAt        DateTime       @default(now())
+
+  @@index([accessToken])
+  @@index([refreshToken])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("mcp_access_tokens")
+}
+
+// Audit log: every MCP tool/resource/prompt call by every user
+model McpAuditLog {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation("McpAuditLogUser", fields: [userId], references: [id], onDelete: Cascade)
+  role         UserRole // snapshot at time of call
+  clientId     String? // OAuth client identifier
+  tokenId      String? // McpAccessToken.id (so we can correlate to a session)
+  kind         String // "tool" | "resource" | "prompt"
+  name         String // e.g. "quotation_list", "monomi://today"
+  argsHash     String? // sha256 of stringified input args (avoid storing raw PII)
+  resultSize   Int? // bytes of serialized response
+  durationMs   Int?
+  errorCode    String?
+  errorMessage String?  @db.Text
+  ipAddress    String?
+  userAgent    String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([kind, name, createdAt])
+  @@index([createdAt])
+  @@map("mcp_audit_logs")
 }

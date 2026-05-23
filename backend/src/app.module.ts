@@ -45,6 +45,7 @@ import { SystemModule } from "./modules/system/system.module";
 import { PrismaModule } from "./modules/prisma/prisma.module";
 import { HealthModule } from "./health/health.module";
 import { MetricsModule } from "./metrics/metrics.module";
+import { McpModule } from "./modules/mcp/mcp.module";
 import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 
@@ -107,6 +108,7 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     SystemModule,
     HealthModule,
     MetricsModule,
+    McpModule,
   ],
   providers: [
     {

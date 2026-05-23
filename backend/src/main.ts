@@ -1,7 +1,8 @@
 import { NestFactory } from "@nestjs/core";
-import { ValidationPipe, Logger } from "@nestjs/common";
+import { ValidationPipe, Logger, RequestMethod } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import helmet from "helmet";
+import cors from "cors";
 import { AppModule } from "./app.module";
 import { initDatabase } from "./scripts/init-db";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
@@ -59,44 +60,77 @@ async function bootstrap() {
       }),
     );
 
-    // CORS configuration with environment-based origin validation
     const isProduction = process.env.NODE_ENV === "production";
+
+    // ---- CORS, two layers ----
+    //
+    // The MCP + OAuth endpoints are OAuth-protected and intentionally
+    // cross-origin: Claude.ai's cloud, the MCP Inspector, and the user's
+    // browser during the consent redirect all hit these from arbitrary
+    // origins. We allow any origin here — the OAuth bearer is the security
+    // boundary, not the Origin header.
+    const mcpOpenPaths = [
+      "/.well-known/oauth-authorization-server",
+      "/.well-known/oauth-protected-resource",
+      "/.well-known/oauth-protected-resource/mcp",
+      "/register",
+      "/authorize",
+      "/token",
+      "/revoke",
+      "/consent",
+      "/mcp",
+    ];
+    const mcpCors = cors({
+      origin: true, // reflect any origin
+      credentials: false, // bearer token, not cookies
+      methods: ["GET", "POST", "OPTIONS", "DELETE"],
+      allowedHeaders: [
+        "Authorization",
+        "Content-Type",
+        "MCP-Protocol-Version",
+        "Mcp-Session-Id",
+        "Last-Event-ID",
+      ],
+      exposedHeaders: ["Mcp-Session-Id", "WWW-Authenticate"],
+      maxAge: 86400,
+    });
+    app.use((req: any, res: any, next: any) => {
+      if (mcpOpenPaths.includes(req.path)) return mcpCors(req, res, next);
+      next();
+    });
+
+    // The rest of the API keeps the strict origin-allowlist CORS.
     const allowedOrigins = isProduction
-      ? [process.env.FRONTEND_URL, process.env.PUBLIC_URL].filter(Boolean) // Production: FRONTEND_URL + PUBLIC_URL for public share
+      ? [process.env.FRONTEND_URL, process.env.PUBLIC_URL].filter(Boolean)
       : [
           process.env.FRONTEND_URL || "http://localhost:3001",
           process.env.PUBLIC_URL || "http://localhost:3000",
-          "http://localhost:3001", // Dev frontend port
+          "http://localhost:3001",
           "http://localhost:3000",
           "http://127.0.0.1:3001",
           "http://127.0.0.1:3000",
-        ]; // Development: Include localhost variants
+        ];
 
-    app.enableCors({
+    const apiCors = cors({
       origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or Postman)
-        if (!origin) {
+        if (!origin) return callback(null, true);
+        const isTailscale =
+          !isProduction && /^https?:\/\/100\.\d+\.\d+\.\d+:\d+$/.test(origin);
+        if (allowedOrigins.includes(origin as string) || isTailscale) {
           return callback(null, true);
         }
-
-        // In development, allow any origin from Tailscale network (100.x.x.x)
-        const isTailscale =
-          !isProduction &&
-          origin &&
-          /^https?:\/\/100\.\d+\.\d+\.\d+:\d+$/.test(origin);
-
-        if (allowedOrigins.includes(origin) || isTailscale) {
-          callback(null, true);
-        } else {
-          logger.warn(`🚫 CORS blocked origin: ${origin}`);
-          callback(new Error("Not allowed by CORS"));
-        }
+        logger.warn(`🚫 CORS blocked origin: ${origin}`);
+        return callback(new Error("Not allowed by CORS"));
       },
       credentials: true,
       methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
       exposedHeaders: ["X-Total-Count", "X-Page-Count"],
-      maxAge: 86400, // 24 hours
+      maxAge: 86400,
+    });
+    app.use((req: any, res: any, next: any) => {
+      if (mcpOpenPaths.includes(req.path)) return next();
+      return apiCors(req, res, next);
     });
 
     // Global validation pipe
@@ -119,8 +153,21 @@ async function bootstrap() {
       new ResponseInterceptor(),
     );
 
-    // API prefix
-    app.setGlobalPrefix("api/v1");
+    // API prefix — MCP + OAuth endpoints must NOT be prefixed; Claude.ai
+    // discovers them at the root via /.well-known.
+    app.setGlobalPrefix("api/v1", {
+      exclude: [
+        { path: ".well-known/oauth-authorization-server", method: RequestMethod.GET },
+        { path: ".well-known/oauth-protected-resource", method: RequestMethod.GET },
+        { path: ".well-known/oauth-protected-resource/mcp", method: RequestMethod.GET },
+        { path: "register", method: RequestMethod.POST },
+        { path: "authorize", method: RequestMethod.GET },
+        { path: "token", method: RequestMethod.POST },
+        { path: "revoke", method: RequestMethod.POST },
+        { path: "consent", method: RequestMethod.ALL },
+        { path: "mcp", method: RequestMethod.ALL },
+      ],
+    });
 
     // Swagger documentation
     const config = new DocumentBuilder()
