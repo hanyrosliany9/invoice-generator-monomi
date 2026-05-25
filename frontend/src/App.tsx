@@ -123,6 +123,12 @@ const V2AssetsPage = lazy(() => import('./pages/v2/assets/AssetsPage'))
 const V2AssetDetailPage = lazy(() => import('./pages/v2/assets/AssetDetailPage'))
 const V2AssetCreatePage = lazy(() => import('./pages/v2/assets/AssetCreatePage'))
 const V2AssetEditPage = lazy(() => import('./pages/v2/assets/AssetEditPage'))
+const V2ReportsPage = lazy(() => import('./pages/v2/reports/ReportsPage'))
+const V2ReportDetailPage = lazy(() => import('./pages/v2/reports/ReportDetailPage'))
+const V2ReportBuilderPage = lazy(() => import('./pages/v2/reports/ReportBuilderPage'))
+const V2SocialMediaReportsPage = lazy(() => import('./pages/v2/reports/SocialMediaReportsPage'))
+const V2CalendarPage = lazy(() => import('./pages/v2/calendar/CalendarPage'))
+const V2ContentCalendarPage = lazy(() => import('./pages/v2/calendar/ContentCalendarPage'))
 
 import './styles/relationships.css'
 
@@ -390,6 +396,13 @@ function App() {
                     <Route path='/v2/assets/new' element={<Suspense fallback={<PageLoader />}><V2Guard><V2AssetCreatePage /></V2Guard></Suspense>} />
                     <Route path='/v2/assets/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2AssetDetailPage /></V2Guard></Suspense>} />
                     <Route path='/v2/assets/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2AssetEditPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/reports' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ReportsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/reports/social-media' element={<Suspense fallback={<PageLoader />}><V2Guard><V2SocialMediaReportsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/reports/builder' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ReportBuilderPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/reports/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ReportBuilderPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/reports/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ReportDetailPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/calendar' element={<Suspense fallback={<PageLoader />}><V2Guard><V2CalendarPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/calendar/content' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ContentCalendarPage /></V2Guard></Suspense>} />
                     <Route path='/v2/*' element={<V2Guard><div /></V2Guard>} />
 
                     {/* Admin-only routes (SUPER_ADMIN + ADMIN) — VIDEOGRAPHER redirected to /media-collab */}

@@ -16,6 +16,11 @@ const MIGRATED_EXACT = new Set<string>([
   '/v2/users',
   '/v2/settings',
   '/v2/assets',
+  '/v2/reports',
+  '/v2/reports/social-media',
+  '/v2/reports/builder',
+  '/v2/calendar',
+  '/v2/calendar/content',
 ]);
 
 /**
@@ -33,6 +38,7 @@ const MIGRATED_PATTERNS: ReadonlyArray<RegExp> = [
   /^\/v2\/expenses\/[^/]+$/,
   /^\/v2\/vendors\/[^/]+$/,
   /^\/v2\/assets\/[^/]+$/,
+  /^\/v2\/reports\/[^/]+$/,
   // edit
   /^\/v2\/invoices\/[^/]+\/edit$/,
   /^\/v2\/quotations\/[^/]+\/edit$/,
@@ -42,6 +48,7 @@ const MIGRATED_PATTERNS: ReadonlyArray<RegExp> = [
   /^\/v2\/vendors\/[^/]+\/edit$/,
   /^\/v2\/users\/[^/]+\/edit$/,
   /^\/v2\/assets\/[^/]+\/edit$/,
+  /^\/v2\/reports\/[^/]+\/edit$/,
 ];
 
 /**
