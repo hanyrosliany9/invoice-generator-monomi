@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
 import tseslint from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
 
@@ -27,6 +28,7 @@ export default [
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      'jsx-a11y': jsxA11y,
       '@typescript-eslint': tseslint,
     },
     rules: {
@@ -101,6 +103,26 @@ export default [
           ignoreCase: true,
           ignoreDeclarationSort: true,
           ignoreMemberSort: false,
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/pages/v2/**', 'src/components/monomi/**', 'src/components/ui/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'antd',
+              message: 'v2/monomi/ui must not import AntD; use shadcn/Monomi primitives',
+            },
+            {
+              name: '@ant-design/icons',
+              message: 'Use lucide-react icons instead',
+            },
+          ],
         },
       ],
     },
