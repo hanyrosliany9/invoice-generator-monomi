@@ -268,7 +268,7 @@ export default function ECLProvisionPageV2() {
               Analisis per Umur Piutang
             </span>
           </div>
-          <GlassPanel surface="elevated" padding="none" className="overflow-hidden">
+          <GlassPanel surface="strong" padding="none" className="overflow-hidden">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-border-subtle">
               {buckets.map(({ bucket, count, totalOutstanding, totalECL, averageECLRate }) => (
                 <div key={bucket} className="px-4 py-5 flex flex-col gap-2">
