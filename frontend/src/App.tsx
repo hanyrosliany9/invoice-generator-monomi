@@ -9,6 +9,7 @@ import { tokenRefreshService } from './services/token-refresh.service'
 import { AuthLayout } from './components/layout/AuthLayout'
 import { MainLayout } from './components/layout/MainLayout'
 import ErrorBoundary from './components/ErrorBoundary'
+import { V2Guard } from './pages/v2/V2RouteGuard'
 import { LoginPage } from './pages/auth/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import GuestAcceptInvitePage from './pages/GuestAcceptInvitePage'
@@ -70,6 +71,13 @@ import CallSheetsListPage from './pages/CallSheetsListPage'
 const ReportBuilderPage = lazy(() =>
   import('./pages/ReportBuilderPage').then(module => ({
     default: module.ReportBuilderPage,
+  }))
+)
+
+// Lazy load v2 StyleGuidePage
+const StyleGuidePage = lazy(() =>
+  import('./pages/v2/StyleGuidePage').then(module => ({
+    default: module.default,
   }))
 )
 
@@ -284,6 +292,11 @@ function App() {
                     <Route path='/shot-lists/:id' element={<ShotListEditorPage />} />
                     <Route path='/call-sheets' element={<CallSheetsListPage />} />
                     <Route path='/call-sheets/:id' element={<CallSheetEditorPage />} />
+
+                    {/* v2 redesigned pages */}
+                    <Route path='/v2' element={<Suspense fallback={<PageLoader />}><V2Guard><StyleGuidePage /></V2Guard></Suspense>} />
+                    <Route path='/v2/style-guide' element={<Suspense fallback={<PageLoader />}><V2Guard><StyleGuidePage /></V2Guard></Suspense>} />
+                    <Route path='/v2/*' element={<V2Guard><div /></V2Guard>} />
 
                     {/* Admin-only routes (SUPER_ADMIN + ADMIN) — VIDEOGRAPHER redirected to /media-collab */}
                     <Route element={<AdminRoute />}>
