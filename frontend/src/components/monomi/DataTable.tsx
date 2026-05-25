@@ -55,14 +55,14 @@ export function DataTable<TData, TValue = unknown>({
     enableRowSelection,
   });
 
-  const rowPadding = density === 'compact' ? 'px-3 py-1.5' : 'px-4 py-3';
+  const rowPadding = density === 'compact' ? 'px-3 py-2' : 'px-4 py-3.5';
 
   return (
     <div className="w-full space-y-3">
       {toolbar && <div>{toolbar}</div>}
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
-        <table className="w-full font-sans text-sm">
-          <thead className="border-b border-gray-200 bg-gray-50">
+      <div className="rounded-md border border-border-subtle bg-bg-sunken overflow-hidden">
+        <table className="w-full font-body text-sm">
+          <thead className="border-b border-border-subtle">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((header) => {
@@ -71,9 +71,9 @@ export function DataTable<TData, TValue = unknown>({
                     <th
                       key={header.id}
                       className={cn(
-                        'text-left font-semibold text-gray-700 uppercase tracking-wider text-xs px-4 py-3',
+                        'text-left text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary px-4 py-3',
                         canSort &&
-                          'cursor-pointer select-none hover:bg-gray-100',
+                          'cursor-pointer select-none hover:text-text-secondary transition-colors',
                       )}
                       onClick={
                         canSort
@@ -88,10 +88,10 @@ export function DataTable<TData, TValue = unknown>({
                         )}
                         {canSort && (
                           {
-                            asc: <ChevronUp className="h-3 w-3" />,
-                            desc: <ChevronDown className="h-3 w-3" />,
+                            asc: <ChevronUp className="h-3 w-3 text-text-secondary" />,
+                            desc: <ChevronDown className="h-3 w-3 text-text-secondary" />,
                           }[header.column.getIsSorted() as string] ?? (
-                            <ChevronsUpDown className="h-3 w-3 opacity-40" />
+                            <ChevronsUpDown className="h-3 w-3 opacity-30" />
                           )
                         )}
                       </span>
@@ -106,9 +106,9 @@ export function DataTable<TData, TValue = unknown>({
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="py-12 text-center text-gray-500"
+                  className="py-14 text-center text-text-tertiary"
                 >
-                  {emptyState ?? <span>No data</span>}
+                  {emptyState ?? <span>Tidak ada data</span>}
                 </td>
               </tr>
             ) : (
@@ -116,7 +116,8 @@ export function DataTable<TData, TValue = unknown>({
                 <tr
                   key={row.id}
                   className={cn(
-                    'border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors',
+                    'border-b border-border-subtle/60 last:border-0',
+                    'hover:bg-accent-navy-soft transition-colors',
                     onRowClick && 'cursor-pointer',
                   )}
                   onClick={
@@ -124,7 +125,7 @@ export function DataTable<TData, TValue = unknown>({
                   }
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className={rowPadding}>
+                    <td key={cell.id} className={cn(rowPadding, 'text-text-secondary')}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -138,24 +139,24 @@ export function DataTable<TData, TValue = unknown>({
         </table>
       </div>
       {enablePagination && (
-        <div className="flex items-center justify-between text-sm text-gray-600">
+        <div className="flex items-center justify-between text-xs text-text-tertiary">
           <span>
-            Showing {table.getRowModel().rows.length} of {data.length}
+            Menampilkan {table.getRowModel().rows.length} dari {data.length}
           </span>
           <div className="flex gap-2">
             <button
-              className="px-3 py-1 rounded-md border border-gray-300 disabled:opacity-30 hover:bg-gray-50"
+              className="px-3 py-1.5 rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-accent-navy-soft disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
-              Prev
+              Sebelumnya
             </button>
             <button
-              className="px-3 py-1 rounded-md border border-gray-300 disabled:opacity-30 hover:bg-gray-50"
+              className="px-3 py-1.5 rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-accent-navy-soft disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              Next
+              Berikutnya
             </button>
           </div>
         </div>

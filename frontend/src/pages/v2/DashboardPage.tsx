@@ -152,95 +152,116 @@ export default function DashboardPageV2() {
           description={t('dashboard.subtitle', 'Ringkasan bisnis Anda hari ini')}
         />
 
-        {/* Stat Cards Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {isLoading ? (
-            <>
-              <Skeleton className="h-28 rounded-lg" />
-              <Skeleton className="h-28 rounded-lg" />
-              <Skeleton className="h-28 rounded-lg" />
-              <Skeleton className="h-28 rounded-lg" />
-            </>
-          ) : (
-            <>
-              <StatCard
-                label={t('dashboard.revenue', 'Revenue')}
-                value={<MoneyDisplay amount={stats.totalRevenue} />}
-                sublabel={t('dashboard.thisMonth', 'bulan ini')}
-              />
-              <StatCard
-                label={t('dashboard.outstanding', 'Outstanding')}
-                value={<MoneyDisplay amount={stats.pendingPayments} />}
-                sublabel={t('dashboard.unpaid', 'belum dibayar')}
-              />
-              <StatCard
-                label={t('dashboard.activeProjects', 'Proyek Aktif')}
-                value={stats.totalProjects}
-                sublabel={t('dashboard.ongoing', 'berlangsung')}
-              />
-              <StatCard
-                label={t('dashboard.totalClients', 'Klien Aktif')}
-                value={stats.totalClients}
-                sublabel={t('dashboard.active', 'aktif')}
-              />
-            </>
-          )}
-        </div>
-
-        {/* Chart Row */}
-        <GlassPanel className="mb-8">
-          <div className="mb-4">
-            <h3 className="text-lg font-display font-semibold text-text-primary">
-              {t('dashboard.revenueTrend', 'Revenue Trend')}
-            </h3>
-            <p className="text-sm text-text-secondary">{t('dashboard.last6Months', 'Enam bulan terakhir')}</p>
+        {/* KPI band — tight gap so the four cards read as one band, not four billboards */}
+        <section className="mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {isLoading ? (
+              <>
+                <Skeleton className="h-[108px] rounded-lg" />
+                <Skeleton className="h-[108px] rounded-lg" />
+                <Skeleton className="h-[108px] rounded-lg" />
+                <Skeleton className="h-[108px] rounded-lg" />
+              </>
+            ) : (
+              <>
+                <StatCard
+                  label={t('dashboard.revenue', 'Pendapatan')}
+                  value={<MoneyDisplay amount={stats.totalRevenue} />}
+                  sublabel={t('dashboard.thisMonth', 'bulan ini')}
+                />
+                <StatCard
+                  label={t('dashboard.outstanding', 'Belum Tertagih')}
+                  value={<MoneyDisplay amount={stats.pendingPayments} />}
+                  sublabel={t('dashboard.unpaid', 'belum dibayar')}
+                />
+                <StatCard
+                  label={t('dashboard.activeProjects', 'Proyek Aktif')}
+                  value={stats.totalProjects}
+                  sublabel={t('dashboard.ongoing', 'berlangsung')}
+                />
+                <StatCard
+                  label={t('dashboard.totalClients', 'Klien Aktif')}
+                  value={stats.totalClients}
+                  sublabel={t('dashboard.active', 'aktif')}
+                />
+              </>
+            )}
           </div>
-          {isLoading ? (
-            <Skeleton className="h-64 rounded-lg" />
-          ) : (
-            <ResponsiveContainer width="100%" height={240}>
-              <LineChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <XAxis
-                  dataKey="month"
-                  stroke="rgba(255,255,255,0.5)"
-                  style={{ fontSize: '0.875rem' }}
-                />
-                <YAxis
-                  stroke="rgba(255,255,255,0.5)"
-                  style={{ fontSize: '0.875rem' }}
-                  tickFormatter={(value) => `${Math.round(value / 1000000)}M`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(20, 20, 40, 0.9)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '0.5rem',
-                  }}
-                  formatter={(value) => `Rp ${(Number(value) / 1000000).toFixed(1)}M`}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  dot={{ fill: '#3b82f6', r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-          {/* TODO: Replace with real revenue trend data from API when available */}
-        </GlassPanel>
+        </section>
 
-        {/* Two-column Row: Recent Quotations + Recent Invoices */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Revenue chart — its own breathing section */}
+        <section className="mb-12">
+          <GlassPanel surface="glass" padding="lg">
+            <div className="mb-6 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
+                  {t('dashboard.revenueTrend', 'Tren Pendapatan')}
+                </h2>
+                <p className="mt-0.5 text-xs text-text-tertiary">
+                  {t('dashboard.last6Months', 'Enam bulan terakhir')}
+                </p>
+              </div>
+            </div>
+            {isLoading ? (
+              <Skeleton className="h-64 rounded-md" />
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={revenueData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="2 4" stroke="rgba(246,243,232,0.06)" vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    stroke="rgba(246,243,232,0.35)"
+                    tick={{ fontSize: 11, fill: 'rgba(246,243,232,0.45)' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    stroke="rgba(246,243,232,0.35)"
+                    tick={{ fontSize: 11, fill: 'rgba(246,243,232,0.45)' }}
+                    tickFormatter={(value) => `${Math.round(value / 1000000)}jt`}
+                    axisLine={false}
+                    tickLine={false}
+                    width={48}
+                  />
+                  <Tooltip
+                    cursor={{ stroke: 'rgba(246,243,232,0.15)', strokeWidth: 1 }}
+                    contentStyle={{
+                      backgroundColor: '#131316',
+                      border: '1px solid rgba(246, 243, 232, 0.12)',
+                      borderRadius: '8px',
+                      color: '#F6F3E8',
+                      fontSize: '12px',
+                      padding: '8px 12px',
+                    }}
+                    labelStyle={{ color: 'rgba(246,243,232,0.55)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}
+                    formatter={(value) => [`Rp ${(Number(value) / 1000000).toFixed(1)} jt`, 'Pendapatan']}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#F6F3E8"
+                    strokeWidth={1.75}
+                    dot={false}
+                    activeDot={{ r: 4, fill: '#F6F3E8', stroke: '#030303', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+            {/* TODO: Replace with real revenue trend data from API when available */}
+          </GlassPanel>
+        </section>
+
+        {/* Recent activity — paired tables in one rhythmic row */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Recent Quotations */}
-          <GlassPanel>
-            <div className="mb-4">
-              <h3 className="text-lg font-display font-semibold text-text-primary">
+          <GlassPanel surface="glass" padding="lg">
+            <div className="mb-5 flex items-baseline justify-between">
+              <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
                 {t('dashboard.recentQuotations', 'Penawaran Terbaru')}
-              </h3>
+              </h2>
+              <a href="/v2/quotations" className="text-xs text-text-tertiary hover:text-text-primary transition-colors">
+                {t('common.viewAll', 'Lihat semua')} →
+              </a>
             </div>
             {isLoading ? (
               <div className="space-y-3">
@@ -295,11 +316,14 @@ export default function DashboardPageV2() {
           </GlassPanel>
 
           {/* Recent Invoices */}
-          <GlassPanel>
-            <div className="mb-4">
-              <h3 className="text-lg font-display font-semibold text-text-primary">
+          <GlassPanel surface="glass" padding="lg">
+            <div className="mb-5 flex items-baseline justify-between">
+              <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
                 {t('dashboard.recentInvoices', 'Invoice Terbaru')}
-              </h3>
+              </h2>
+              <a href="/v2/invoices" className="text-xs text-text-tertiary hover:text-text-primary transition-colors">
+                {t('common.viewAll', 'Lihat semua')} →
+              </a>
             </div>
             {isLoading ? (
               <div className="space-y-3">
@@ -352,7 +376,7 @@ export default function DashboardPageV2() {
               />
             )}
           </GlassPanel>
-        </div>
+        </section>
       </PageContainer>
     </AppShell>
   );

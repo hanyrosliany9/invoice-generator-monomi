@@ -2,14 +2,24 @@ import { forwardRef, type HTMLAttributes } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
+/**
+ * Container primitive for the dark editorial system.
+ *
+ * Surface choice is a hierarchy decision, not a style decision:
+ *   subtle   → nested wells (inside another panel)
+ *   glass    → default card on the base canvas (most common)
+ *   strong   → primary feature panel — heaviest weight, highest contrast
+ *   elevated → navy-tinted; reserved for accent moments (sheet headers, callouts)
+ */
 const glassPanelVariants = cva(
-  'rounded-lg border border-border-subtle backdrop-blur-[24px] backdrop-saturate-[180%] shadow-[var(--shadow-glow)]',
+  'rounded-lg border shadow-[var(--shadow-glow)]',
   {
     variants: {
       surface: {
-        glass:    'bg-bg-glass',
-        strong:   'bg-bg-glass-strong',
-        elevated: 'bg-bg-elevated',
+        subtle:   'bg-bg-sunken border-border-subtle',
+        glass:    'bg-bg-raised border-border-subtle',
+        strong:   'bg-bg-panel border-border-default',
+        elevated: 'bg-bg-elevated border-border-default backdrop-blur-[24px] backdrop-saturate-[180%]',
       },
       padding: {
         none: '',

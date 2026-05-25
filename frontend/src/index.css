@@ -9,9 +9,15 @@
   --color-brand-black: var(--brand-black);
   --color-brand-cream: var(--brand-cream);
   --color-bg-base: var(--bg-base);
+  --color-bg-sunken: var(--bg-sunken);
+  --color-bg-raised: var(--bg-raised);
+  --color-bg-panel: var(--bg-panel);
   --color-bg-elevated: var(--bg-elevated);
   --color-bg-glass: var(--bg-glass);
   --color-bg-glass-strong: var(--bg-glass-strong);
+  --color-accent-navy-wash: var(--accent-navy-wash);
+  --color-accent-navy-soft: var(--accent-navy-soft);
+  --color-accent-navy-ring: var(--accent-navy-ring);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-tertiary: var(--text-tertiary);

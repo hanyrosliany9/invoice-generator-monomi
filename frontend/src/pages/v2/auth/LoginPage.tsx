@@ -54,51 +54,58 @@ export const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
+    <div className="relative min-h-screen w-full overflow-hidden bg-bg-base">
       <AuroraBackground />
 
+      {/* Editorial footer label, top-right — signals "this is a real product" */}
+      <div className="absolute top-6 right-8 z-10 text-[10px] uppercase tracking-[0.2em] text-text-tertiary">
+        Monomi Studio · 2026
+      </div>
+
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
-        <GlassPanel className="w-full max-w-[440px]">
-          {/* Brand */}
+        <GlassPanel surface="strong" padding="lg" className="w-full max-w-[420px]">
+          {/* Brand block — wordmark first, supporting line beneath a hairline */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-[var(--text-primary)]">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-text-tertiary mb-2">
+              Masuk
+            </div>
+            <h1 className="text-[40px] leading-none font-display font-semibold text-text-primary tracking-tight">
               monomi
             </h1>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">
-              Creative Studio Management
-            </p>
+            <div className="mt-4 flex items-center gap-3">
+              <span className="h-px w-8 bg-brand-cream/40" />
+              <p className="text-xs text-text-secondary">
+                Creative Studio Management
+              </p>
+            </div>
           </div>
 
-          {/* Error Banner */}
           {errorMessage && (
-            <div className="mb-4 rounded-md border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-4 py-3 text-sm text-[var(--danger)]">
+            <div className="mb-5 rounded-md border border-danger/25 bg-danger/[0.07] px-3.5 py-2.5 text-xs text-danger">
               {errorMessage}
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Email Field */}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-[var(--text-primary)]">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary">
                 {t('auth.email', 'Email')}
               </Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="nama@email.com"
+                placeholder="nama@monomi.id"
                 {...register('email')}
-                className="border-input bg-input/50 placeholder:text-[var(--text-tertiary)]"
+                className="bg-bg-sunken border-border-default text-text-primary placeholder:text-text-tertiary focus-visible:border-accent-navy-ring focus-visible:ring-accent-navy-ring/40"
                 disabled={loginMutation.isPending}
               />
               {errors.email && (
-                <p className="text-xs text-[var(--danger)]">{errors.email.message}</p>
+                <p className="text-xs text-danger">{errors.email.message}</p>
               )}
             </div>
 
-            {/* Password Field */}
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-[var(--text-primary)]">
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary">
                 {t('auth.password', 'Password')}
               </Label>
               <Input
@@ -106,20 +113,19 @@ export const LoginPage: React.FC = () => {
                 type="password"
                 placeholder="••••••••"
                 {...register('password')}
-                className="border-input bg-input/50 placeholder:text-[var(--text-tertiary)]"
+                className="bg-bg-sunken border-border-default text-text-primary placeholder:text-text-tertiary focus-visible:border-accent-navy-ring focus-visible:ring-accent-navy-ring/40"
                 disabled={loginMutation.isPending}
               />
               {errors.password && (
-                <p className="text-xs text-[var(--danger)]">{errors.password.message}</p>
+                <p className="text-xs text-danger">{errors.password.message}</p>
               )}
             </div>
 
-            {/* Submit Button */}
-            <div className="pt-4">
+            <div className="pt-2">
               <Button
                 type="submit"
                 disabled={loginMutation.isPending}
-                className="w-full"
+                className="w-full h-10 bg-brand-cream text-brand-black hover:bg-brand-cream/90 font-medium"
               >
                 {loginMutation.isPending ? (
                   <>
@@ -133,9 +139,8 @@ export const LoginPage: React.FC = () => {
             </div>
           </form>
 
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-[var(--text-tertiary)]">
+          <div className="mt-8 pt-5 border-t border-border-subtle text-center">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-text-tertiary">
               © Monomi Agency
             </p>
           </div>

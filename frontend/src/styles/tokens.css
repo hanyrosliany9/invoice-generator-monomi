@@ -6,12 +6,27 @@
   --brand-cream:       #F6F3E8;
   --brand-white:       #FFFFFF;
 
-  /* Surfaces (dark-only) */
+  /* Surfaces (dark-only)
+   * base    : structural canvas — sidebar, topbar, main content all share this
+   * sunken  : slightly recessed wells (table rows, inputs at rest)
+   * raised  : panels that need to read as cards on the black canvas
+   * panel   : strong card surface (the main container weight)
+   * glass*  : optional thin overlays (modal scrims, hovers)
+   * elevated: legacy navy wash — RESERVED for accent moments only, never structural
+   */
   --bg-base:           #030303;
+  --bg-sunken:         #121215;
+  --bg-raised:         #1A1A1F;
+  --bg-panel:          #22222A;
   --bg-elevated:       rgba(19, 25, 54, 0.55);
   --bg-overlay:        rgba(19, 25, 54, 0.78);
   --bg-glass:          rgba(255, 255, 255, 0.025);
   --bg-glass-strong:   rgba(255, 255, 255, 0.045);
+
+  /* Navy accent states (the only places navy is allowed structurally) */
+  --accent-navy-wash:  rgba(19, 25, 54, 0.45);
+  --accent-navy-soft:  rgba(19, 25, 54, 0.22);
+  --accent-navy-ring:  rgba(54, 70, 158, 0.55);
 
   /* Text */
   --text-primary:      #F6F3E8;
@@ -20,9 +35,9 @@
   --text-disabled:     rgba(246, 243, 232, 0.25);
 
   /* Borders */
-  --border-subtle:     rgba(246, 243, 232, 0.06);
-  --border-default:    rgba(246, 243, 232, 0.12);
-  --border-strong:     rgba(246, 243, 232, 0.22);
+  --border-subtle:     rgba(246, 243, 232, 0.10);
+  --border-default:    rgba(246, 243, 232, 0.18);
+  --border-strong:     rgba(246, 243, 232, 0.30);
 
   /* Semantic — muted/luxe */
   --success:           #6EE7B7;
