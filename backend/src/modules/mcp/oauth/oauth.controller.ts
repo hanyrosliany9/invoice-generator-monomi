@@ -109,7 +109,16 @@ export class McpOAuthController {
   private setConsentCsp(res: Response): void {
     res.setHeader(
       "Content-Security-Policy",
-      "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; script-src-attr 'unsafe-inline'; form-action 'self'; frame-ancestors 'self'; base-uri 'self'; object-src 'none'",
+      // form-action MUST include claude.ai because the consent form POSTs
+      // here, then we 302-redirect to https://claude.ai/api/mcp/auth_callback
+      // (or any other OAuth client's registered redirect_uri). The browser
+      // enforces form-action across the entire redirect chain — if the
+      // final navigation target isn't allowed, it blocks the request and
+      // the user is stuck on the consent page (we saw this exact bug).
+      // 'self' allowed for the initial POST + same-host redirects.
+      // We allow https: for the redirect_uri (every legitimate OAuth client
+      // uses HTTPS) — narrower than '*' but covers all real clients.
+      "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; script-src-attr 'unsafe-inline'; form-action 'self' https:; frame-ancestors 'self'; base-uri 'self'; object-src 'none'",
     );
   }
 
