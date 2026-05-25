@@ -217,7 +217,7 @@ export default function DashboardPageV2() {
                     border: '1px solid rgba(255, 255, 255, 0.2)',
                     borderRadius: '0.5rem',
                   }}
-                  formatter={(value: number) => `Rp ${(value / 1000000).toFixed(1)}M`}
+                  formatter={(value) => `Rp ${(Number(value) / 1000000).toFixed(1)}M`}
                 />
                 <Line
                   type="monotone"
