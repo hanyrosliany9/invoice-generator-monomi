@@ -129,6 +129,16 @@ const V2ReportBuilderPage = lazy(() => import('./pages/v2/reports/ReportBuilderP
 const V2SocialMediaReportsPage = lazy(() => import('./pages/v2/reports/SocialMediaReportsPage'))
 const V2CalendarPage = lazy(() => import('./pages/v2/calendar/CalendarPage'))
 const V2ContentCalendarPage = lazy(() => import('./pages/v2/calendar/ContentCalendarPage'))
+const V2CallSheetsListPage = lazy(() => import('./pages/v2/call-sheets/CallSheetsListPage'))
+const V2CallSheetEditorPage = lazy(() => import('./pages/v2/call-sheets/CallSheetEditorPage'))
+const V2DecksPage = lazy(() => import('./pages/v2/decks/DecksPage'))
+const V2DeckEditorPage = lazy(() => import('./pages/v2/decks/DeckEditorPage'))
+const V2ShotListsPage = lazy(() => import('./pages/v2/shot-lists/ShotListsPage'))
+const V2ShotListEditorPage = lazy(() => import('./pages/v2/shot-lists/ShotListEditorPage'))
+const V2MediaCollaborationPage = lazy(() => import('./pages/v2/media/MediaCollaborationPage'))
+const V2MediaProjectDetailPage = lazy(() => import('./pages/v2/media/MediaProjectDetailPage'))
+const V2CollectionDetailPage = lazy(() => import('./pages/v2/collections/CollectionDetailPage'))
+const V2MilestoneAnalyticsPage = lazy(() => import('./pages/v2/milestones/MilestoneAnalyticsPage'))
 
 import './styles/relationships.css'
 
@@ -403,6 +413,16 @@ function App() {
                     <Route path='/v2/reports/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ReportDetailPage /></V2Guard></Suspense>} />
                     <Route path='/v2/calendar' element={<Suspense fallback={<PageLoader />}><V2Guard><V2CalendarPage /></V2Guard></Suspense>} />
                     <Route path='/v2/calendar/content' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ContentCalendarPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/call-sheets' element={<Suspense fallback={<PageLoader />}><V2Guard><V2CallSheetsListPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/call-sheets/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2CallSheetEditorPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/decks' element={<Suspense fallback={<PageLoader />}><V2Guard><V2DecksPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/decks/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2DeckEditorPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/shot-lists' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ShotListsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/shot-lists/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ShotListEditorPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/media-collab' element={<Suspense fallback={<PageLoader />}><V2Guard><V2MediaCollaborationPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/media-collab/projects/:projectId' element={<Suspense fallback={<PageLoader />}><V2Guard><V2MediaProjectDetailPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/collections/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2CollectionDetailPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/milestones' element={<Suspense fallback={<PageLoader />}><V2Guard><V2MilestoneAnalyticsPage /></V2Guard></Suspense>} />
                     <Route path='/v2/*' element={<V2Guard><div /></V2Guard>} />
 
                     {/* Admin-only routes (SUPER_ADMIN + ADMIN) — VIDEOGRAPHER redirected to /media-collab */}
