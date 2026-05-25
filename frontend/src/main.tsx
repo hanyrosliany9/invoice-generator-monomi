@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from './theme'
 import App from './App.tsx'
 import './i18n/config' // Initialize i18n
+import './styles/tokens.css'
 import './index.css'
 
 // Fix for theme initialization order - v1.1

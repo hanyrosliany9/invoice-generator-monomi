@@ -1,0 +1,46 @@
+/* See docs/plans/2026-05-24-ui-ux-rework-design.md §1 for full token spec */
+:root {
+  /* Brand */
+  --brand-navy:        #131936;
+  --brand-black:       #030303;
+  --brand-cream:       #F6F3E8;
+  --brand-white:       #FFFFFF;
+
+  /* Surfaces (dark-only) */
+  --bg-base:           #030303;
+  --bg-elevated:       rgba(19, 25, 54, 0.55);
+  --bg-overlay:        rgba(19, 25, 54, 0.78);
+  --bg-glass:          rgba(255, 255, 255, 0.025);
+  --bg-glass-strong:   rgba(255, 255, 255, 0.045);
+
+  /* Text */
+  --text-primary:      #F6F3E8;
+  --text-secondary:    rgba(246, 243, 232, 0.65);
+  --text-tertiary:     rgba(246, 243, 232, 0.4);
+  --text-disabled:     rgba(246, 243, 232, 0.25);
+
+  /* Borders */
+  --border-subtle:     rgba(246, 243, 232, 0.06);
+  --border-default:    rgba(246, 243, 232, 0.12);
+  --border-strong:     rgba(246, 243, 232, 0.22);
+
+  /* Semantic — muted/luxe */
+  --success:           #6EE7B7;
+  --warning:           #FCD34D;
+  --danger:            #FCA5A5;
+  --info:              #93C5FD;
+
+  /* Atmosphere */
+  --atmos-navy-glow:   radial-gradient(circle, rgba(19,25,54,0.55), transparent 65%);
+  --atmos-cream-glow:  radial-gradient(circle, rgba(246,243,232,0.08), transparent 65%);
+  --atmos-deep-glow:   radial-gradient(circle, rgba(255,255,255,0.04), transparent 70%);
+
+  /* Radii */
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-glow:     0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.4);
+  --shadow-elevated: 0 1px 0 rgba(255,255,255,0.06) inset, 0 16px 48px rgba(0,0,0,0.5);
+  --shadow-modal:    0 1px 0 rgba(255,255,255,0.08) inset, 0 32px 96px rgba(0,0,0,0.6);
+}
