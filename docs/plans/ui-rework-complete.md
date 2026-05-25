@@ -1,12 +1,12 @@
 # UI Rework — COMPLETE
 
 **Date:** 2026-05-25
-**Final commit:** `4a0c8cc`
-**Status:** ✓ All admin/operational pages have v2 counterparts. Public/Guest pages intentionally on classic.
+**Final commit:** `d82ab14`
+**Status:** ✓ Every classic page has a v2 counterpart. Migration is total.
 
 ## What shipped
 
-**61 v2 pages** across 18 directories. Every page in the v2 nav leads somewhere real. Pure-black chrome, ui/monomi primitives only, react-hook-form + zod for forms, token utilities throughout.
+**88 v2 pages** across 20 directories. Every classic route — admin, anonymous, internal tooling — now has a v2 counterpart. Pure-black chrome, ui/monomi primitives only, react-hook-form + zod for forms, token utilities throughout.
 
 ## Waves
 
@@ -21,10 +21,14 @@
 | 5 | 15 | Vendors CRUD + Users CRUD + Settings + Assets CRUD |
 | 6 | 6 | Reports (4 flavors) + Calendars (general + content) |
 | 7 | 10 | Call Sheets + Decks + Shot Lists + Media + Collection + Milestone Analytics |
+| 8 | 27 | Accounting suite (20) + Guest/Public (3) + Project calendars (2) + Internal tooling (2) |
 
 ## Entities with full v2 CRUD coverage
 
 Quotations · Invoices · Clients · Projects · Expenses · Vendors · Users · Assets · Decks · Shot Lists · Call Sheets · Media Collaboration · Settings · Reports · Calendars · Milestone Analytics
+
+**Plus Wave 8 surface area:**
+Chart of Accounts · Journal Entries (+ Adjusting Wizard) · Trial Balance · General Ledger · Income Statement · Balance Sheet · Cash Flow Statement · Accounts Receivable (+ Aging) · Accounts Payable (+ Aging) · Depreciation · ECL Provision · Cash Receipts · Cash Disbursements · Cash & Bank Balance · Bank Reconciliations · Bank Transfers · Project-scoped Calendar · Project-scoped Content Calendar · Public Project View · Guest Project View · Guest Invite Accept · Media Downloader · Pinterest Downloader
 
 ## Brand discipline applied uniformly
 
@@ -49,14 +53,11 @@ Quotations · Invoices · Clients · Projects · Expenses · Vendors · Users ·
 
 These are documented in-file with `Scope note:` comments where applicable. Footer banners on builder/editor pages point users to the classic v1 page for advanced features.
 
-## What was NOT migrated (intentional)
+## What was NOT migrated
 
-- `PublicProjectViewPage` — external-facing shareable project view, different layout needs
-- `GuestProjectViewPage` — guest reviewer flow, different navigation paradigm
-- `GuestAcceptInvitePage` — onboarding for outside collaborators
-- `accounting/` subdirectory — out of declared scope; bookkeeping module
-- `auth/` subdirectory (classic) — superseded by `v2/auth/LoginPage.tsx`
-- `MediaDownloader/`, `PinterestDownloader/` — internal tooling subapps
+Nothing. Every classic page now has a v2 counterpart.
+
+Note: the v2 guest/public pages live under `frontend/src/pages/v2/guest/` rather than `v2/public/` because `public/` is gitignored repo-wide (it traps Vite/Gatsby/Next public directories). The route paths still mirror classic: `/v2/guest/accept`, `/v2/guest/project/:projectId`, `/v2/shared/:token`.
 
 ## Route guard
 
@@ -72,8 +73,8 @@ Anything outside these matchers redirects to the classic equivalent (strips `/v2
 
 ## Build status
 
-- `npx tsc --noEmit` clean across 53 v2 files
-- `npm run build` produces ~9.5 MB main chunk (gzip ~1.86 MB)
+- `npx tsc --noEmit` clean across 80+ v2 files
+- `npm run build` 22.6s — main chunk ~9.5 MB (gzip ~1.86 MB)
 - All v2 pages are `React.lazy`-imported with `Suspense` + `PageLoader`
 
 ## Next steps (when user is ready)
