@@ -8,6 +8,9 @@ export const V2_MIGRATED_PATHS: ReadonlyArray<string> = [
   '/v2',
   '/v2/login',
   '/v2/style-guide',
+  '/v2/invoices',
+  '/v2/quotations',
+  '/v2/clients',
 ];
 
 /**

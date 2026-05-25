@@ -90,6 +90,9 @@ const V2LoginPage = lazy(() =>
     default: module.default,
   }))
 )
+const V2InvoicesPage = lazy(() => import('./pages/v2/invoices/InvoicesPage'))
+const V2QuotationsPage = lazy(() => import('./pages/v2/quotations/QuotationsPage'))
+const V2ClientsPage = lazy(() => import('./pages/v2/clients/ClientsPage'))
 
 import './styles/relationships.css'
 
@@ -324,6 +327,9 @@ function App() {
                         this protected block, declared above with anonymous-only guard. */}
                     <Route path='/v2' element={<Suspense fallback={<PageLoader />}><V2Guard><V2DashboardPage /></V2Guard></Suspense>} />
                     <Route path='/v2/style-guide' element={<Suspense fallback={<PageLoader />}><V2Guard><StyleGuidePage /></V2Guard></Suspense>} />
+                    <Route path='/v2/invoices' element={<Suspense fallback={<PageLoader />}><V2Guard><V2InvoicesPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/quotations' element={<Suspense fallback={<PageLoader />}><V2Guard><V2QuotationsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/clients' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ClientsPage /></V2Guard></Suspense>} />
                     <Route path='/v2/*' element={<V2Guard><div /></V2Guard>} />
 
                     {/* Admin-only routes (SUPER_ADMIN + ADMIN) — VIDEOGRAPHER redirected to /media-collab */}
