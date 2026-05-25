@@ -52,4 +52,53 @@ When migrating to new design system, PDF templates can be updated independently 
 
 ## Task A3: Current AntD Usage Scope
 
-**Pending: AntD audit...**
+### Scope Summary
+- **Files importing AntD:** 296 files
+- **Distinct AntD Components Used:** 52 components
+
+### Components List (52 total)
+Alert, App, Avatar, Badge, Breadcrumb, Button, Card, Checkbox, Col, Collapse, ColorPicker, ConfigProvider, DatePicker, Descriptions, Divider, Drawer, Dropdown, Empty, Flex, FloatButton, Form, FormItemProps, Image, Input, InputNumber, Layout, List, Menu, message, Modal, Popconfirm, Popover, Progress, Radio, Result, Row, Segmented, Select, Skeleton, Slider, Space, Spin, Statistic, Steps, Switch, Table, Tabs, Tag, theme, Timeline, TimePicker, Tooltip, Tree, Typography, Upload
+
+### Complex Usage Patterns Identified
+1. **Table Component:** Heavy usage in data-driven pages (invoices, quotations, projects)
+   - Example files: `SceneScheduleTable.tsx`, `CrewCallTable.tsx`, `CastCallTable.tsx`
+   - Features: Sorting, filtering, pagination, inline editing in some cases
+   
+2. **Form Component:** Used across all CRUD operations
+   - Example files: `ProjectTypeManagement.tsx`, `AddCrewModal.tsx`, `AddCastModal.tsx`
+   - Features: Validation, async submission, nested forms in modals
+   
+3. **DatePicker:** Payment milestone/scheduling features
+   - Used in milestone configuration and call sheet scheduling
+   - Multiple date range selectors in some views
+
+4. **Modal/Drawer:** Dialogs for CRUD operations throughout app
+   - Nested within Tables for row actions
+   - Form validation tied to modal submission
+
+5. **Layout:** Global page structure
+   - Sidebar navigation, main content area, responsive grid
+
+6. **Hooks & Theme:** `useAntdApp()`, `useTheme()` for message/notification system
+
+### Migration Risk Assessment
+**High-impact components to replace first:**
+- Table (52 uses across complex pages)
+- Form (widespread in CRUD workflows)
+- Modal/Drawer (blocking modals in workflows)
+
+**Medium-impact:**
+- DatePicker (scheduling features)
+- Layout (requires global rework)
+
+**Lower-impact:**
+- Basic UI (Button, Input, Select, etc. - easy shadcn drop-in replacements)
+- Icons (can be replaced with Lucide)
+
+### Recommended Migration Order
+1. Establish base component library (Button, Input, Card, Badge replacements)
+2. Migrate Modal/Drawer dialogs (unblocks form redesigns)
+3. Migrate Form component (enables all CRUD pages)
+4. Migrate Table (most complex, impacts data-heavy pages)
+5. Migrate DatePicker/TimePicker (scheduling pages)
+6. Migrate remaining components (Layout, Menu, etc.)
