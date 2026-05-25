@@ -37,6 +37,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 import { ThemeToggle } from '../ThemeToggle'
 import { useTheme } from '../../theme'
 import { useIsMobile } from '../../hooks/useMediaQuery'
+import { UiVersionToggle } from '../monomi/UiVersionToggle'
 // import { BreadcrumbProvider } from '../navigation'
 import MobileQuickActions from '../ui/MobileQuickActions'
 import MobileEntityNav from '../ui/MobileEntityNav'
@@ -493,6 +494,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             >
               Selamat datang, {user?.name}
             </Text>
+            <UiVersionToggle canShow={user?.role === 'SUPER_ADMIN'} />
             <ThemeToggle size='large' />
             <Dropdown
               menu={{ items: userMenuItems }}
