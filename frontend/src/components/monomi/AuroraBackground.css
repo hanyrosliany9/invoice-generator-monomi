@@ -1,0 +1,40 @@
+.aurora-bg {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden;
+  background: var(--bg-base);
+}
+.aurora-orb { position: absolute; border-radius: 50%; will-change: transform; }
+.aurora-orb-1 {
+  width: 720px; height: 720px;
+  background: var(--atmos-navy-glow);
+  top: -260px; left: -200px;
+  animation: aurora-float-1 28s ease-in-out infinite;
+}
+.aurora-orb-2 {
+  width: 600px; height: 600px;
+  background: var(--atmos-cream-glow);
+  bottom: -180px; right: -160px;
+  animation: aurora-float-2 32s ease-in-out infinite;
+}
+.aurora-orb-3 {
+  width: 440px; height: 440px;
+  background: var(--atmos-deep-glow);
+  top: 38%; left: 48%;
+  animation: aurora-float-3 22s ease-in-out infinite;
+}
+@keyframes aurora-float-1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  40% { transform: translate(40px,-50px) scale(1.06); }
+  70% { transform: translate(-30px,30px) scale(0.94); }
+}
+@keyframes aurora-float-2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  35% { transform: translate(-40px,40px) scale(1.05); }
+  65% { transform: translate(25px,-25px) scale(0.96); }
+}
+@keyframes aurora-float-3 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(-40px,-30px) scale(1.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurora-orb-1, .aurora-orb-2, .aurora-orb-3 { animation: none; }
+}
