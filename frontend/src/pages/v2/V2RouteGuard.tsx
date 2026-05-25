@@ -26,6 +26,31 @@ const MIGRATED_EXACT = new Set<string>([
   '/v2/shot-lists',
   '/v2/media-collab',
   '/v2/milestones',
+  // Wave 8 — accounting suite
+  '/v2/accounting/chart-of-accounts',
+  '/v2/accounting/depreciation',
+  '/v2/accounting/ecl-provisions',
+  '/v2/accounting/bank-reconciliations',
+  '/v2/accounting/bank-transfers',
+  '/v2/accounting/cash-bank-balance',
+  '/v2/accounting/journal-entries',
+  '/v2/accounting/adjusting-entries',
+  '/v2/accounting/balance-sheet',
+  '/v2/accounting/income-statement',
+  '/v2/accounting/cash-flow',
+  '/v2/accounting/trial-balance',
+  '/v2/accounting/general-ledger',
+  '/v2/accounting/accounts-receivable',
+  '/v2/accounting/accounts-payable',
+  '/v2/accounting/ar-aging',
+  '/v2/accounting/ap-aging',
+  '/v2/accounting/cash-receipts',
+  '/v2/accounting/cash-disbursements',
+  // Wave 8 — internal tooling subapps
+  '/v2/media-downloader',
+  '/v2/pinterest-downloader',
+  // Wave 8 — guest/public (anonymous)
+  '/v2/guest/accept',
 ]);
 
 /**
@@ -59,6 +84,14 @@ const MIGRATED_PATTERNS: ReadonlyArray<RegExp> = [
   /^\/v2\/users\/[^/]+\/edit$/,
   /^\/v2\/assets\/[^/]+\/edit$/,
   /^\/v2\/reports\/[^/]+\/edit$/,
+  // Wave 8 — project-scoped calendars
+  /^\/v2\/projects\/[^/]+\/calendar$/,
+  /^\/v2\/projects\/[^/]+\/content-calendar$/,
+  // Wave 8 — journal entry form (edit by id)
+  /^\/v2\/accounting\/journal-entries\/[^/]+\/edit$/,
+  // Wave 8 — guest/public (anonymous, parameterized)
+  /^\/v2\/guest\/project\/[^/]+$/,
+  /^\/v2\/shared\/[^/]+$/,
 ];
 
 /**
@@ -77,6 +110,8 @@ const MIGRATED_NEW_PATHS = new Set<string>([
   '/v2/vendors/new',
   '/v2/users/new',
   '/v2/assets/new',
+  // Wave 8 — journal entry create
+  '/v2/accounting/journal-entries/create',
 ]);
 
 export function isV2Migrated(pathname: string): boolean {

@@ -139,6 +139,34 @@ const V2MediaCollaborationPage = lazy(() => import('./pages/v2/media/MediaCollab
 const V2MediaProjectDetailPage = lazy(() => import('./pages/v2/media/MediaProjectDetailPage'))
 const V2CollectionDetailPage = lazy(() => import('./pages/v2/collections/CollectionDetailPage'))
 const V2MilestoneAnalyticsPage = lazy(() => import('./pages/v2/milestones/MilestoneAnalyticsPage'))
+// Wave 8 — project calendars, accounting suite, guest/public, downloaders
+const V2ProjectCalendarPage = lazy(() => import('./pages/v2/projects/ProjectCalendarPage'))
+const V2ProjectContentCalendarPage = lazy(() => import('./pages/v2/projects/ProjectContentCalendarPage'))
+const V2ChartOfAccountsPage = lazy(() => import('./pages/v2/accounting/ChartOfAccountsPage'))
+const V2DepreciationPage = lazy(() => import('./pages/v2/accounting/DepreciationPage'))
+const V2ECLProvisionPage = lazy(() => import('./pages/v2/accounting/ECLProvisionPage'))
+const V2BankReconciliationsPage = lazy(() => import('./pages/v2/accounting/BankReconciliationsPage'))
+const V2BankTransfersPage = lazy(() => import('./pages/v2/accounting/BankTransfersPage'))
+const V2CashBankBalancePage = lazy(() => import('./pages/v2/accounting/CashBankBalancePage'))
+const V2JournalEntriesPage = lazy(() => import('./pages/v2/accounting/JournalEntriesPage'))
+const V2JournalEntryFormPage = lazy(() => import('./pages/v2/accounting/JournalEntryFormPage'))
+const V2AdjustingEntryWizard = lazy(() => import('./pages/v2/accounting/AdjustingEntryWizard'))
+const V2BalanceSheetPage = lazy(() => import('./pages/v2/accounting/BalanceSheetPage'))
+const V2IncomeStatementPage = lazy(() => import('./pages/v2/accounting/IncomeStatementPage'))
+const V2CashFlowStatementPage = lazy(() => import('./pages/v2/accounting/CashFlowStatementPage'))
+const V2TrialBalancePage = lazy(() => import('./pages/v2/accounting/TrialBalancePage'))
+const V2GeneralLedgerPage = lazy(() => import('./pages/v2/accounting/GeneralLedgerPage'))
+const V2AccountsReceivablePage = lazy(() => import('./pages/v2/accounting/AccountsReceivablePage'))
+const V2AccountsPayablePage = lazy(() => import('./pages/v2/accounting/AccountsPayablePage'))
+const V2ARAgingPage = lazy(() => import('./pages/v2/accounting/ARAgingPage'))
+const V2APAgingPage = lazy(() => import('./pages/v2/accounting/APAgingPage'))
+const V2CashReceiptsPage = lazy(() => import('./pages/v2/accounting/CashReceiptsPage'))
+const V2CashDisbursementsPage = lazy(() => import('./pages/v2/accounting/CashDisbursementsPage'))
+const V2GuestAcceptInvitePage = lazy(() => import('./pages/v2/guest/GuestAcceptInvitePage'))
+const V2GuestProjectViewPage = lazy(() => import('./pages/v2/guest/GuestProjectViewPage'))
+const V2PublicProjectViewPage = lazy(() => import('./pages/v2/guest/PublicProjectViewPage'))
+const V2MediaDownloaderPage = lazy(() => import('./pages/v2/downloaders/MediaDownloaderPage'))
+const V2PinterestDownloaderPage = lazy(() => import('./pages/v2/downloaders/PinterestDownloaderPage'))
 
 import './styles/relationships.css'
 
@@ -320,6 +348,11 @@ function App() {
         <Route path='/guest/project/:projectId' element={<GuestProjectViewPage />} />
         <Route path='/shared/:token' element={<PublicProjectViewPage />} />
 
+        {/* v2 Guest Routes (No Auth Required) */}
+        <Route path='/v2/guest/accept' element={<Suspense fallback={<PageLoader />}><V2Guard><V2GuestAcceptInvitePage /></V2Guard></Suspense>} />
+        <Route path='/v2/guest/project/:projectId' element={<Suspense fallback={<PageLoader />}><V2Guard><V2GuestProjectViewPage /></V2Guard></Suspense>} />
+        <Route path='/v2/shared/:token' element={<Suspense fallback={<PageLoader />}><V2Guard><V2PublicProjectViewPage /></V2Guard></Suspense>} />
+
         {/* Auth Routes */}
         <Route
           path='/login'
@@ -423,6 +456,38 @@ function App() {
                     <Route path='/v2/media-collab/projects/:projectId' element={<Suspense fallback={<PageLoader />}><V2Guard><V2MediaProjectDetailPage /></V2Guard></Suspense>} />
                     <Route path='/v2/collections/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2CollectionDetailPage /></V2Guard></Suspense>} />
                     <Route path='/v2/milestones' element={<Suspense fallback={<PageLoader />}><V2Guard><V2MilestoneAnalyticsPage /></V2Guard></Suspense>} />
+
+                    {/* Wave 8 — project calendars */}
+                    <Route path='/v2/projects/:projectId/calendar' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ProjectCalendarPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/projects/:projectId/content-calendar' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ProjectContentCalendarPage /></V2Guard></Suspense>} />
+
+                    {/* Wave 8 — accounting suite */}
+                    <Route path='/v2/accounting/chart-of-accounts' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ChartOfAccountsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/depreciation' element={<Suspense fallback={<PageLoader />}><V2Guard><V2DepreciationPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/ecl-provisions' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ECLProvisionPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/bank-reconciliations' element={<Suspense fallback={<PageLoader />}><V2Guard><V2BankReconciliationsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/bank-transfers' element={<Suspense fallback={<PageLoader />}><V2Guard><V2BankTransfersPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/cash-bank-balance' element={<Suspense fallback={<PageLoader />}><V2Guard><V2CashBankBalancePage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/journal-entries' element={<Suspense fallback={<PageLoader />}><V2Guard><V2JournalEntriesPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/journal-entries/create' element={<Suspense fallback={<PageLoader />}><V2Guard><V2JournalEntryFormPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/journal-entries/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2JournalEntryFormPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/adjusting-entries' element={<Suspense fallback={<PageLoader />}><V2Guard><V2AdjustingEntryWizard /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/balance-sheet' element={<Suspense fallback={<PageLoader />}><V2Guard><V2BalanceSheetPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/income-statement' element={<Suspense fallback={<PageLoader />}><V2Guard><V2IncomeStatementPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/cash-flow' element={<Suspense fallback={<PageLoader />}><V2Guard><V2CashFlowStatementPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/trial-balance' element={<Suspense fallback={<PageLoader />}><V2Guard><V2TrialBalancePage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/general-ledger' element={<Suspense fallback={<PageLoader />}><V2Guard><V2GeneralLedgerPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/accounts-receivable' element={<Suspense fallback={<PageLoader />}><V2Guard><V2AccountsReceivablePage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/accounts-payable' element={<Suspense fallback={<PageLoader />}><V2Guard><V2AccountsPayablePage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/ar-aging' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ARAgingPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/ap-aging' element={<Suspense fallback={<PageLoader />}><V2Guard><V2APAgingPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/cash-receipts' element={<Suspense fallback={<PageLoader />}><V2Guard><V2CashReceiptsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/accounting/cash-disbursements' element={<Suspense fallback={<PageLoader />}><V2Guard><V2CashDisbursementsPage /></V2Guard></Suspense>} />
+
+                    {/* Wave 8 — internal tooling subapps */}
+                    <Route path='/v2/media-downloader' element={<Suspense fallback={<PageLoader />}><V2Guard><V2MediaDownloaderPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/pinterest-downloader' element={<Suspense fallback={<PageLoader />}><V2Guard><V2PinterestDownloaderPage /></V2Guard></Suspense>} />
+
                     <Route path='/v2/*' element={<V2Guard><div /></V2Guard>} />
 
                     {/* Admin-only routes (SUPER_ADMIN + ADMIN) — VIDEOGRAPHER redirected to /media-collab */}
