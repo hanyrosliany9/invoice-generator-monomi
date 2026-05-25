@@ -92,10 +92,16 @@ const V2LoginPage = lazy(() =>
 )
 const V2InvoicesPage = lazy(() => import('./pages/v2/invoices/InvoicesPage'))
 const V2InvoiceDetailPage = lazy(() => import('./pages/v2/invoices/InvoiceDetailPage'))
+const V2InvoiceCreatePage = lazy(() => import('./pages/v2/invoices/InvoiceCreatePage'))
+const V2InvoiceEditPage = lazy(() => import('./pages/v2/invoices/InvoiceEditPage'))
 const V2QuotationsPage = lazy(() => import('./pages/v2/quotations/QuotationsPage'))
 const V2QuotationDetailPage = lazy(() => import('./pages/v2/quotations/QuotationDetailPage'))
+const V2QuotationCreatePage = lazy(() => import('./pages/v2/quotations/QuotationCreatePage'))
+const V2QuotationEditPage = lazy(() => import('./pages/v2/quotations/QuotationEditPage'))
 const V2ClientsPage = lazy(() => import('./pages/v2/clients/ClientsPage'))
 const V2ClientDetailPage = lazy(() => import('./pages/v2/clients/ClientDetailPage'))
+const V2ClientCreatePage = lazy(() => import('./pages/v2/clients/ClientCreatePage'))
+const V2ClientEditPage = lazy(() => import('./pages/v2/clients/ClientEditPage'))
 
 import './styles/relationships.css'
 
@@ -331,11 +337,17 @@ function App() {
                     <Route path='/v2' element={<Suspense fallback={<PageLoader />}><V2Guard><V2DashboardPage /></V2Guard></Suspense>} />
                     <Route path='/v2/style-guide' element={<Suspense fallback={<PageLoader />}><V2Guard><StyleGuidePage /></V2Guard></Suspense>} />
                     <Route path='/v2/invoices' element={<Suspense fallback={<PageLoader />}><V2Guard><V2InvoicesPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/invoices/new' element={<Suspense fallback={<PageLoader />}><V2Guard><V2InvoiceCreatePage /></V2Guard></Suspense>} />
                     <Route path='/v2/invoices/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2InvoiceDetailPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/invoices/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2InvoiceEditPage /></V2Guard></Suspense>} />
                     <Route path='/v2/quotations' element={<Suspense fallback={<PageLoader />}><V2Guard><V2QuotationsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/quotations/new' element={<Suspense fallback={<PageLoader />}><V2Guard><V2QuotationCreatePage /></V2Guard></Suspense>} />
                     <Route path='/v2/quotations/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2QuotationDetailPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/quotations/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2QuotationEditPage /></V2Guard></Suspense>} />
                     <Route path='/v2/clients' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ClientsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/clients/new' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ClientCreatePage /></V2Guard></Suspense>} />
                     <Route path='/v2/clients/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ClientDetailPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/clients/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ClientEditPage /></V2Guard></Suspense>} />
                     <Route path='/v2/*' element={<V2Guard><div /></V2Guard>} />
 
                     {/* Admin-only routes (SUPER_ADMIN + ADMIN) — VIDEOGRAPHER redirected to /media-collab */}

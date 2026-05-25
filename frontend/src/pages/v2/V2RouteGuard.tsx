@@ -19,16 +19,23 @@ const MIGRATED_EXACT = new Set<string>([
  * the classic create/edit forms.
  */
 const MIGRATED_PATTERNS: ReadonlyArray<RegExp> = [
+  // detail
   /^\/v2\/invoices\/[^/]+$/,
   /^\/v2\/quotations\/[^/]+$/,
   /^\/v2\/clients\/[^/]+$/,
+  // edit
+  /^\/v2\/invoices\/[^/]+\/edit$/,
+  /^\/v2\/quotations\/[^/]+\/edit$/,
+  /^\/v2\/clients\/[^/]+\/edit$/,
 ];
 
 /**
- * Paths that LOOK migrated by the patterns above but aren't actually — usually
- * /new (create form) or other sub-pages that still need a classic redirect.
+ * Paths that LOOK migrated by the patterns above but aren't actually.
+ * Empty for now — /new and /:id/edit are all wired in Wave 3.
  */
-const NOT_YET_MIGRATED = new Set<string>([
+const NOT_YET_MIGRATED = new Set<string>([]);
+
+const MIGRATED_NEW_PATHS = new Set<string>([
   '/v2/invoices/new',
   '/v2/quotations/new',
   '/v2/clients/new',
@@ -37,6 +44,7 @@ const NOT_YET_MIGRATED = new Set<string>([
 export function isV2Migrated(pathname: string): boolean {
   if (NOT_YET_MIGRATED.has(pathname)) return false;
   if (MIGRATED_EXACT.has(pathname)) return true;
+  if (MIGRATED_NEW_PATHS.has(pathname)) return true;
   return MIGRATED_PATTERNS.some((rx) => rx.test(pathname));
 }
 
