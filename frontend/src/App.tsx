@@ -102,6 +102,15 @@ const V2ClientsPage = lazy(() => import('./pages/v2/clients/ClientsPage'))
 const V2ClientDetailPage = lazy(() => import('./pages/v2/clients/ClientDetailPage'))
 const V2ClientCreatePage = lazy(() => import('./pages/v2/clients/ClientCreatePage'))
 const V2ClientEditPage = lazy(() => import('./pages/v2/clients/ClientEditPage'))
+const V2ProjectsPage = lazy(() => import('./pages/v2/projects/ProjectsPage'))
+const V2ProjectDetailPage = lazy(() => import('./pages/v2/projects/ProjectDetailPage'))
+const V2ProjectCreatePage = lazy(() => import('./pages/v2/projects/ProjectCreatePage'))
+const V2ProjectEditPage = lazy(() => import('./pages/v2/projects/ProjectEditPage'))
+const V2ExpensesPage = lazy(() => import('./pages/v2/expenses/ExpensesPage'))
+const V2ExpenseDetailPage = lazy(() => import('./pages/v2/expenses/ExpenseDetailPage'))
+const V2ExpenseCreatePage = lazy(() => import('./pages/v2/expenses/ExpenseCreatePage'))
+const V2ExpenseEditPage = lazy(() => import('./pages/v2/expenses/ExpenseEditPage'))
+const V2ExpenseCategoriesPage = lazy(() => import('./pages/v2/expenses/ExpenseCategoriesPage'))
 
 import './styles/relationships.css'
 
@@ -348,6 +357,15 @@ function App() {
                     <Route path='/v2/clients/new' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ClientCreatePage /></V2Guard></Suspense>} />
                     <Route path='/v2/clients/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ClientDetailPage /></V2Guard></Suspense>} />
                     <Route path='/v2/clients/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ClientEditPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/projects' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ProjectsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/projects/new' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ProjectCreatePage /></V2Guard></Suspense>} />
+                    <Route path='/v2/projects/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ProjectDetailPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/projects/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ProjectEditPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/expenses' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ExpensesPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/expenses/new' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ExpenseCreatePage /></V2Guard></Suspense>} />
+                    <Route path='/v2/expenses/categories' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ExpenseCategoriesPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/expenses/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ExpenseDetailPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/expenses/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ExpenseEditPage /></V2Guard></Suspense>} />
                     <Route path='/v2/*' element={<V2Guard><div /></V2Guard>} />
 
                     {/* Admin-only routes (SUPER_ADMIN + ADMIN) — VIDEOGRAPHER redirected to /media-collab */}
