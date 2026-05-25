@@ -285,6 +285,23 @@ function App() {
           }
         />
 
+        {/* v2 Login — anonymous-only (mirror of classic /login). Self-contained
+            page (full-screen with own AuroraBackground), no AuthLayout wrapper. */}
+        <Route
+          path='/v2/login'
+          element={
+            isAuthenticated ? (
+              <Navigate to='/v2' replace />
+            ) : (
+              <Suspense fallback={<PageLoader />}>
+                <V2Guard>
+                  <V2LoginPage />
+                </V2Guard>
+              </Suspense>
+            )
+          }
+        />
+
         {/* Protected Routes */}
         <Route
           path='/*'
@@ -303,9 +320,9 @@ function App() {
                     <Route path='/call-sheets' element={<CallSheetsListPage />} />
                     <Route path='/call-sheets/:id' element={<CallSheetEditorPage />} />
 
-                    {/* v2 redesigned pages */}
+                    {/* v2 redesigned pages (authenticated). /v2/login is OUTSIDE
+                        this protected block, declared above with anonymous-only guard. */}
                     <Route path='/v2' element={<Suspense fallback={<PageLoader />}><V2Guard><V2DashboardPage /></V2Guard></Suspense>} />
-                    <Route path='/v2/login' element={<Suspense fallback={<PageLoader />}><V2Guard><V2LoginPage /></V2Guard></Suspense>} />
                     <Route path='/v2/style-guide' element={<Suspense fallback={<PageLoader />}><V2Guard><StyleGuidePage /></V2Guard></Suspense>} />
                     <Route path='/v2/*' element={<V2Guard><div /></V2Guard>} />
 
