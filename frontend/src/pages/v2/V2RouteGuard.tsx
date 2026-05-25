@@ -6,6 +6,7 @@ import { Navigate, useLocation } from 'react-router-dom';
  */
 export const V2_MIGRATED_PATHS: ReadonlyArray<string> = [
   '/v2',
+  '/v2/login',
   '/v2/style-guide',
 ];
 

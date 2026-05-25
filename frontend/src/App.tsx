@@ -74,9 +74,19 @@ const ReportBuilderPage = lazy(() =>
   }))
 )
 
-// Lazy load v2 StyleGuidePage
+// Lazy load v2 pages
 const StyleGuidePage = lazy(() =>
   import('./pages/v2/StyleGuidePage').then(module => ({
+    default: module.default,
+  }))
+)
+const V2DashboardPage = lazy(() =>
+  import('./pages/v2/DashboardPage').then(module => ({
+    default: module.default,
+  }))
+)
+const V2LoginPage = lazy(() =>
+  import('./pages/v2/auth/LoginPage').then(module => ({
     default: module.default,
   }))
 )
@@ -294,7 +304,8 @@ function App() {
                     <Route path='/call-sheets/:id' element={<CallSheetEditorPage />} />
 
                     {/* v2 redesigned pages */}
-                    <Route path='/v2' element={<Suspense fallback={<PageLoader />}><V2Guard><StyleGuidePage /></V2Guard></Suspense>} />
+                    <Route path='/v2' element={<Suspense fallback={<PageLoader />}><V2Guard><V2DashboardPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/login' element={<Suspense fallback={<PageLoader />}><V2Guard><V2LoginPage /></V2Guard></Suspense>} />
                     <Route path='/v2/style-guide' element={<Suspense fallback={<PageLoader />}><V2Guard><StyleGuidePage /></V2Guard></Suspense>} />
                     <Route path='/v2/*' element={<V2Guard><div /></V2Guard>} />
 
