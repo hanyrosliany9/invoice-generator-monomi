@@ -1,10 +1,11 @@
 /// <reference types='vitest' />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
+import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [react({ jsxRuntime: 'automatic' })],
+  plugins: [tailwindcss(), react({ jsxRuntime: 'automatic' })],
   optimizeDeps: {
     include: [
       'react',
