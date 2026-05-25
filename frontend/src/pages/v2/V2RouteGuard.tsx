@@ -10,6 +10,12 @@ const MIGRATED_EXACT = new Set<string>([
   '/v2/invoices',
   '/v2/quotations',
   '/v2/clients',
+  '/v2/projects',
+  '/v2/expenses',
+  '/v2/vendors',
+  '/v2/users',
+  '/v2/settings',
+  '/v2/assets',
 ]);
 
 /**
@@ -25,12 +31,17 @@ const MIGRATED_PATTERNS: ReadonlyArray<RegExp> = [
   /^\/v2\/clients\/[^/]+$/,
   /^\/v2\/projects\/[^/]+$/,
   /^\/v2\/expenses\/[^/]+$/,
+  /^\/v2\/vendors\/[^/]+$/,
+  /^\/v2\/assets\/[^/]+$/,
   // edit
   /^\/v2\/invoices\/[^/]+\/edit$/,
   /^\/v2\/quotations\/[^/]+\/edit$/,
   /^\/v2\/clients\/[^/]+\/edit$/,
   /^\/v2\/projects\/[^/]+\/edit$/,
   /^\/v2\/expenses\/[^/]+\/edit$/,
+  /^\/v2\/vendors\/[^/]+\/edit$/,
+  /^\/v2\/users\/[^/]+\/edit$/,
+  /^\/v2\/assets\/[^/]+\/edit$/,
 ];
 
 /**
@@ -46,6 +57,9 @@ const MIGRATED_NEW_PATHS = new Set<string>([
   '/v2/projects/new',
   '/v2/expenses/new',
   '/v2/expenses/categories',
+  '/v2/vendors/new',
+  '/v2/users/new',
+  '/v2/assets/new',
 ]);
 
 export function isV2Migrated(pathname: string): boolean {

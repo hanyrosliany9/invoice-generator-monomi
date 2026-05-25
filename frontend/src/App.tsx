@@ -111,6 +111,18 @@ const V2ExpenseDetailPage = lazy(() => import('./pages/v2/expenses/ExpenseDetail
 const V2ExpenseCreatePage = lazy(() => import('./pages/v2/expenses/ExpenseCreatePage'))
 const V2ExpenseEditPage = lazy(() => import('./pages/v2/expenses/ExpenseEditPage'))
 const V2ExpenseCategoriesPage = lazy(() => import('./pages/v2/expenses/ExpenseCategoriesPage'))
+const V2VendorsPage = lazy(() => import('./pages/v2/vendors/VendorsPage'))
+const V2VendorDetailPage = lazy(() => import('./pages/v2/vendors/VendorDetailPage'))
+const V2VendorCreatePage = lazy(() => import('./pages/v2/vendors/VendorCreatePage'))
+const V2VendorEditPage = lazy(() => import('./pages/v2/vendors/VendorEditPage'))
+const V2UsersPage = lazy(() => import('./pages/v2/users/UsersPage'))
+const V2UserCreatePage = lazy(() => import('./pages/v2/users/UserCreatePage'))
+const V2UserEditPage = lazy(() => import('./pages/v2/users/UserEditPage'))
+const V2SettingsPage = lazy(() => import('./pages/v2/SettingsPage'))
+const V2AssetsPage = lazy(() => import('./pages/v2/assets/AssetsPage'))
+const V2AssetDetailPage = lazy(() => import('./pages/v2/assets/AssetDetailPage'))
+const V2AssetCreatePage = lazy(() => import('./pages/v2/assets/AssetCreatePage'))
+const V2AssetEditPage = lazy(() => import('./pages/v2/assets/AssetEditPage'))
 
 import './styles/relationships.css'
 
@@ -366,6 +378,18 @@ function App() {
                     <Route path='/v2/expenses/categories' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ExpenseCategoriesPage /></V2Guard></Suspense>} />
                     <Route path='/v2/expenses/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ExpenseDetailPage /></V2Guard></Suspense>} />
                     <Route path='/v2/expenses/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2ExpenseEditPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/vendors' element={<Suspense fallback={<PageLoader />}><V2Guard><V2VendorsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/vendors/new' element={<Suspense fallback={<PageLoader />}><V2Guard><V2VendorCreatePage /></V2Guard></Suspense>} />
+                    <Route path='/v2/vendors/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2VendorDetailPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/vendors/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2VendorEditPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/users' element={<Suspense fallback={<PageLoader />}><V2Guard><V2UsersPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/users/new' element={<Suspense fallback={<PageLoader />}><V2Guard><V2UserCreatePage /></V2Guard></Suspense>} />
+                    <Route path='/v2/users/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2UserEditPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/settings' element={<Suspense fallback={<PageLoader />}><V2Guard><V2SettingsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/assets' element={<Suspense fallback={<PageLoader />}><V2Guard><V2AssetsPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/assets/new' element={<Suspense fallback={<PageLoader />}><V2Guard><V2AssetCreatePage /></V2Guard></Suspense>} />
+                    <Route path='/v2/assets/:id' element={<Suspense fallback={<PageLoader />}><V2Guard><V2AssetDetailPage /></V2Guard></Suspense>} />
+                    <Route path='/v2/assets/:id/edit' element={<Suspense fallback={<PageLoader />}><V2Guard><V2AssetEditPage /></V2Guard></Suspense>} />
                     <Route path='/v2/*' element={<V2Guard><div /></V2Guard>} />
 
                     {/* Admin-only routes (SUPER_ADMIN + ADMIN) — VIDEOGRAPHER redirected to /media-collab */}
