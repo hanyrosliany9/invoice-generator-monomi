@@ -269,7 +269,7 @@ export default function JournalEntriesPageV2() {
         {/* Filter + table */}
         <GlassPanel surface="glass" padding="none" className="overflow-hidden">
           <div className="flex flex-col gap-3 px-5 py-4 border-b border-border-subtle">
-            <div className="flex flex-col md:flex-row md:items-center md:flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary pointer-events-none" />
                 <Input

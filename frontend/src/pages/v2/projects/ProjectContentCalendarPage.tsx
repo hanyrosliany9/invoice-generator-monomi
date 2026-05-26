@@ -375,7 +375,7 @@ export default function ProjectContentCalendarPage() {
 
         {/* KPI band */}
         <section className="mb-10">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {isLoading ? (
               <>
                 <Skeleton className="h-[108px] rounded-lg" />
@@ -623,6 +623,8 @@ function MonthGrid({
 }) {
   return (
     <>
+      <div className="overflow-x-auto">
+      <div className="min-w-[560px]">
       <div className="grid grid-cols-7 border-b border-border-subtle bg-bg-sunken/40">
         {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map((d) => (
           <div
@@ -719,6 +721,8 @@ function MonthGrid({
           );
         })}
       </div>
+      </div>{/* end min-w-[560px] */}
+      </div>{/* end overflow-x-auto */}
     </>
   );
 }

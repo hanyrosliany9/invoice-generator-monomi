@@ -535,17 +535,26 @@ export default function ClientDetailPageV2() {
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/v2/clients')}
-                className="text-text-secondary hover:text-text-primary"
+                className="hidden sm:inline-flex text-text-secondary hover:text-text-primary"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t('common.back', 'Kembali')}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/v2/clients')}
+                className="sm:hidden text-text-secondary hover:text-text-primary"
+                aria-label={t('common.back', 'Kembali')}
+              >
+                <ArrowLeft className="h-4 w-4" />
               </Button>
               <Button
                 onClick={() => navigate(`/clients/${id}/edit`)}
                 className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
               >
                 <Pencil className="h-4 w-4" />
-                {t('common.edit', 'Ubah')}
+                <span className="hidden sm:inline">{t('common.edit', 'Ubah')}</span>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

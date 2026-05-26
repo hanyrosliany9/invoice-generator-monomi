@@ -362,7 +362,7 @@ export default function PinterestDownloaderPageV2() {
               size="lg"
               onClick={handleSubmit}
               disabled={!canStart || submitting || (!isSinglePin && !downloadImages && !downloadVideos)}
-              className="lg:ml-auto h-11 lg:min-w-[200px]"
+              className="w-full lg:w-auto lg:ml-auto h-11 min-h-[44px] lg:min-w-[200px]"
             >
               {submitting ? (
                 <>
@@ -548,7 +548,7 @@ export default function PinterestDownloaderPageV2() {
 
             {/* Pin gallery */}
             {pinsLoading ? (
-              <div className="p-5 grid grid-cols-4 gap-2">
+              <div className="p-5 grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <Skeleton key={i} className="aspect-square rounded-md" />
                 ))}

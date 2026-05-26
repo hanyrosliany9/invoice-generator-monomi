@@ -443,7 +443,7 @@ export default function MediaProjectDetailPageV2() {
           </div>
 
           {/* Sharing rail */}
-          <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-4 min-w-[220px]">
+          <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-4 min-w-0 lg:min-w-[220px]">
             <div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
                 Tautan Publik

@@ -595,7 +595,7 @@ export default function BankTransfersPage() {
           </DialogHeader>
           {viewing && (
             <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 <ViewRow label="Status">
                   <Badge variant={getStatusVariant(viewing.status)}>{getStatusLabel(viewing.status)}</Badge>
                 </ViewRow>
@@ -635,7 +635,7 @@ export default function BankTransfersPage() {
               </div>
 
               {/* Meta grid */}
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 {viewing.descriptionId && (
                   <ViewRow label="Deskripsi" wide>{viewing.descriptionId}</ViewRow>
                 )}
@@ -730,7 +730,7 @@ export default function BankTransfersPage() {
             </div>
 
             {/* Amount + method */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Jumlah Transfer (IDR) *</label>
                 <Input
@@ -764,7 +764,7 @@ export default function BankTransfersPage() {
             </div>
 
             {/* Fee (optional) */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Biaya Transfer (Opsional)</label>
                 <Input
@@ -805,7 +805,7 @@ export default function BankTransfersPage() {
             </div>
 
             {/* Optional fields */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Referensi Bank</label>
                 <Input value={form.bankReference} onChange={(e) => setForm((f) => ({ ...f, bankReference: e.target.value }))} placeholder="Opsional" className="bg-bg-sunken border-border-subtle text-text-primary" />

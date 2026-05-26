@@ -149,7 +149,7 @@ export const GuestAcceptInvitePage = () => {
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border-subtle pt-3">
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-border-subtle pt-3">
                   <MetaRow
                     icon={<Mail className="h-3 w-3" />}
                     label="Email Tamu"

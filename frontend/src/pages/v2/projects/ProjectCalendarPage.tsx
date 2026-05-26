@@ -329,7 +329,7 @@ export default function ProjectCalendarPage() {
 
         {/* KPI band */}
         <section className="mb-10">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {isLoading ? (
               <>
                 <Skeleton className="h-[108px] rounded-lg" />
@@ -390,6 +390,9 @@ export default function ProjectCalendarPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Month grid */}
           <GlassPanel surface="glass" padding="none" className="lg:col-span-8 overflow-hidden">
+            {/* Mobile horizontal-scroll wrapper — keeps month grid usable at <sm */}
+            {/* The inner <div> is used below for the toolbar+weekday+day cells;  */}
+            {/* we wrap only the grid portion in overflow-x-auto at small sizes.  */}
             {/* Toolbar */}
             <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border-subtle">
               <div className="flex items-center gap-2">
@@ -438,7 +441,9 @@ export default function ProjectCalendarPage() {
               </div>
             </div>
 
-            {/* Weekday header */}
+            {/* Weekday header + day cells — scrollable on mobile */}
+            <div className="overflow-x-auto">
+            <div className="min-w-[560px]">
             <div className="grid grid-cols-7 border-b border-border-subtle bg-bg-sunken/40">
               {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map((d) => (
                 <div
@@ -529,6 +534,8 @@ export default function ProjectCalendarPage() {
                 );
               })}
             </div>
+            </div>{/* end min-w-[560px] */}
+            </div>{/* end overflow-x-auto */}
           </GlassPanel>
 
           {/* Side rail */}

@@ -331,7 +331,8 @@ export default function TrialBalancePageV2() {
                 />
               </div>
             ) : (
-              <table className="w-full font-body text-sm">
+              <div className="overflow-x-auto">
+              <table className="min-w-max w-full font-body text-sm">
                 <colgroup>
                   <col className="w-[110px]" />
                   <col />
@@ -455,6 +456,7 @@ export default function TrialBalancePageV2() {
                   </tr>
                 </tfoot>
               </table>
+              </div>
             )}
           </GlassPanel>
         )}

@@ -586,7 +586,7 @@ export default function ProjectDetailPageV2() {
           card sprawl that plagued the classic page.
          ─────────────────────────────────────────────────────────── */}
       <GlassPanel surface="glass" padding="lg" className="mb-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
           {/* Left: client + project identity */}
           <div className="min-w-0 space-y-5">
             {project.client && (
@@ -650,7 +650,7 @@ export default function ProjectDetailPageV2() {
           </div>
 
           {/* Right: value + dates rail */}
-          <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-4 min-w-[220px]">
+          <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-4 lg:min-w-[220px]">
             <div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
                 {t('projects.detail.budget', 'Anggaran')}
@@ -690,7 +690,7 @@ export default function ProjectDetailPageV2() {
           operator sees the same shape across all three contexts.
          ─────────────────────────────────────────────────────────── */}
       <section className="mb-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
             label={t('projects.detail.kpi.invoiced', 'Total Tertagih')}
             value={<MoneyDisplay amount={totals.invoiced} />}

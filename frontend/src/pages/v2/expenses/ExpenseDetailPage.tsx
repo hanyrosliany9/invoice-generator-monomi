@@ -307,7 +307,7 @@ export default function ExpenseDetailPageV2() {
           sprawl on what is essentially a transaction record.
          ─────────────────────────────────────────────────────────── */}
       <GlassPanel surface="glass" padding="lg" className="mb-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
           {/* Left: vendor + category identity */}
           <div className="min-w-0 space-y-5">
             <div className="flex items-start gap-4">
@@ -398,7 +398,7 @@ export default function ExpenseDetailPageV2() {
           </div>
 
           {/* Right: total + dates rail */}
-          <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-4 min-w-[220px]">
+          <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-4 lg:min-w-[220px]">
             <div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
                 {t('expenses.detail.total', 'Total Biaya')}

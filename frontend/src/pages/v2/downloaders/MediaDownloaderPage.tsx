@@ -412,7 +412,7 @@ export default function MediaDownloaderPageV2() {
               size="lg"
               onClick={() => downloadMutation.mutate()}
               disabled={!canDownload}
-              className="lg:ml-auto h-11 lg:min-w-[180px]"
+              className="w-full lg:w-auto lg:ml-auto h-11 min-h-[44px] lg:min-w-[180px]"
             >
               {downloading ? (
                 <>

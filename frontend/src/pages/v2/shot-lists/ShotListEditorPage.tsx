@@ -252,6 +252,11 @@ export default function ShotListEditorPageV2() {
           description="Susun shot untuk proyek produksi. Setiap baris adalah satu pengambilan gambar."
         />
 
+        {/* Mobile notice — editing is best on tablet or desktop */}
+        <div className="md:hidden mb-6 rounded-md border border-warning/30 bg-warning/[0.06] px-3.5 py-2.5 text-xs text-warning">
+          Editing pengalaman terbaik di tablet atau desktop. Beberapa kontrol mungkin tersembunyi pada layar kecil.
+        </div>
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* ─────────────────────────────────────────────────────────
               Identity header — name + read-only project context. We do

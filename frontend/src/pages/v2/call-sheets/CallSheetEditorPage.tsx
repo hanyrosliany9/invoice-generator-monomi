@@ -632,6 +632,11 @@ export default function CallSheetEditorPageV2() {
         }
       />
 
+      {/* Mobile notice — editing is best on tablet or desktop */}
+      <div className="md:hidden mb-5 rounded-md border border-warning/30 bg-warning/[0.06] px-3.5 py-2.5 text-xs text-warning">
+        Editing pengalaman terbaik di tablet atau desktop. Beberapa kontrol mungkin tersembunyi pada layar kecil.
+      </div>
+
       {/* Deferred-features banner — honest about scope so producers
           know to bounce to v1 for PDF/auto-fill. */}
       <section className="mb-5">

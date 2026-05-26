@@ -649,8 +649,11 @@ function MonthGrid({
   onSelect: (it: ContentCalendarItem) => void;
   onCreate: (date: Date) => void;
 }) {
+  // Horizontally scrollable on small viewports — keeps the 7-col grid
+  // intact without clipping cell content or requiring a layout rewrite.
   return (
-    <>
+    <div className="overflow-x-auto">
+      <div className="min-w-[560px]">
       {/* Weekday header */}
       <div className="grid grid-cols-7 border-b border-border-subtle bg-bg-sunken/40">
         {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map((d) => (
@@ -742,7 +745,8 @@ function MonthGrid({
           );
         })}
       </div>
-    </>
+      </div>
+    </div>
   );
 }
 

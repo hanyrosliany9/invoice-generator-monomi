@@ -301,7 +301,7 @@ export default function ChartOfAccountsPageV2() {
 
       {/* ── Stat band ──────────────────────────────────────────────── */}
       <section className="mb-12">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {isLoading
             ? Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-[108px] rounded-lg" />
@@ -570,7 +570,7 @@ export default function ChartOfAccountsPageV2() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 text-sm">
             {/* Code */}
             <div className="col-span-1">
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">

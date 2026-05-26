@@ -117,7 +117,8 @@ const ActivitySection = ({ title, subtitle, transactions, netCashFlow }: Section
         />
       </div>
     ) : (
-      <table className="w-full font-body">
+      <div className="overflow-x-auto">
+      <table className="min-w-[400px] w-full font-body">
         <colgroup>
           <col />
           <col className="w-[38%]" />
@@ -143,6 +144,7 @@ const ActivitySection = ({ title, subtitle, transactions, netCashFlow }: Section
           </tr>
         </tbody>
       </table>
+      </div>
     )}
   </GlassPanel>
 );
@@ -162,7 +164,8 @@ interface ReconciliationProps {
 
 const ReconciliationStrip = ({ opening, net, closing }: ReconciliationProps) => (
   <GlassPanel surface="strong" padding="none" className="overflow-hidden">
-    <table className="w-full font-body">
+    <div className="overflow-x-auto">
+    <table className="min-w-[400px] w-full font-body">
       <colgroup>
         <col />
         <col className="w-[38%]" />
@@ -201,6 +204,7 @@ const ReconciliationStrip = ({ opening, net, closing }: ReconciliationProps) => 
         </tr>
       </tbody>
     </table>
+    </div>
   </GlassPanel>
 );
 

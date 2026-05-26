@@ -261,7 +261,7 @@ export default function AdjustingEntryWizardV2() {
 
         {/* Stepper rail — numbered, editorial. Each step number sits in a
             small wash circle; the active step is filled with cream. */}
-        <div className="mb-6 flex items-center gap-3 text-xs">
+        <div className="mb-6 flex flex-wrap items-center gap-3 text-xs">
           {[
             { i: 0, label: 'Pilih Tipe' },
             { i: 1, label: 'Isi Data' },

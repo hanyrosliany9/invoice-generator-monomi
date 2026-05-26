@@ -417,6 +417,11 @@ export default function ReportBuilderPageV2() {
         />
       )}
 
+      {/* Mobile hint — builder canvas works best on wider screens. */}
+      <p className="text-xs text-text-tertiary md:hidden mt-6 text-center">
+        Builder pengalaman terbaik di desktop.
+      </p>
+
       {/* Deferred-features note — kept honest about what's in this v2 subset. */}
       {isEditMode && (
         <GlassPanel surface="subtle" padding="md" className="mt-8">

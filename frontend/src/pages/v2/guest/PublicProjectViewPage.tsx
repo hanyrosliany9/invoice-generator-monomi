@@ -209,7 +209,7 @@ export const PublicProjectViewPage = () => {
       </header>
 
       {/* ─────────────── Main content ─────────────── */}
-      <main className="relative z-10 mx-auto max-w-[1280px] px-6 py-8">
+      <main className="relative z-10 mx-auto max-w-[1280px] px-4 sm:px-6 py-8">
         {/* Description card — quiet sunken well */}
         {project?.description && (
           <GlassPanel surface="subtle" padding="md" className="mb-5">
@@ -250,7 +250,7 @@ export const PublicProjectViewPage = () => {
               outside the toolbar so its hierarchy reads as "where am I"
               and not "filter".                                            */}
           {currentFolderId && (
-            <div className="flex flex-wrap items-center gap-1 border-b border-border-subtle bg-bg-sunken/40 px-5 py-2.5">
+            <div className="flex items-center gap-1 border-b border-border-subtle bg-bg-sunken/40 px-5 py-2.5 overflow-x-auto whitespace-nowrap scrollbar-thin">
               <Button
                 variant="ghost"
                 size="sm"
@@ -572,7 +572,7 @@ function PreviewOverlay({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/85 backdrop-blur-md p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/85 backdrop-blur-md p-2 sm:p-4"
       onClick={onClose}
     >
       <div

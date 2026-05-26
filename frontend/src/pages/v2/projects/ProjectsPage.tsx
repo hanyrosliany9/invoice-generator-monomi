@@ -274,7 +274,7 @@ export default function ProjectsPageV2() {
             ambient stats.
            ───────────────────────────────────────────────────────────── */}
         <section className="mb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {isLoading ? (
               <>
                 <Skeleton className="h-[108px] rounded-lg" />

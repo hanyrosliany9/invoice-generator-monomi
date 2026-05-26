@@ -357,8 +357,8 @@ export default function IncomeStatementPageV2() {
               </span>
             </div>
 
-            <div className="px-2 pb-2">
-              <table className="w-full font-body">
+            <div className="overflow-x-auto px-2 pb-2">
+              <table className="min-w-[500px] w-full font-body">
                 <colgroup>
                   <col />
                   <col className="w-[38%]" />

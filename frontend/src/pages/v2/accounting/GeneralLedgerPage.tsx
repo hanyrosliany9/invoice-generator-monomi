@@ -237,7 +237,7 @@ export default function GeneralLedgerPageV2() {
           {/* Filter strip — period is load-bearing so it sits on the left,
               while account-narrowing controls cluster on the right. */}
           <div className="flex flex-col gap-3 px-5 py-4 border-b border-border-subtle">
-            <div className="flex flex-col md:flex-row md:items-center md:flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3">
               <div className="flex items-center gap-2">
                 <Calendar className="h-3.5 w-3.5 text-text-tertiary" />
                 <MonomiDatePicker

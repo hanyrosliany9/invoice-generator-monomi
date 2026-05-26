@@ -393,6 +393,11 @@ export default function CalendarPageV2() {
               </div>
             </div>
 
+            {/* Month grid — horizontally scrollable on small viewports so the
+              7-column layout stays intact without wrapping or clipping. */}
+            <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
+            <div className="min-w-[560px]">
+
             {/* Weekday header (Senin–Minggu) */}
             <div className="grid grid-cols-7 border-b border-border-subtle bg-bg-sunken/40">
               {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map((d) => (
@@ -475,6 +480,8 @@ export default function CalendarPageV2() {
                   </button>
                 );
               })}
+            </div>
+            </div>
             </div>
           </GlassPanel>
 

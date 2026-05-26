@@ -197,7 +197,8 @@ const StatementSection = ({
           />
         </div>
       ) : (
-        <table className="w-full font-body">
+        <div className="overflow-x-auto">
+        <table className="min-w-[500px] w-full font-body">
           <colgroup>
             <col />
             <col className="w-[42%]" />
@@ -230,6 +231,7 @@ const StatementSection = ({
             <GrandTotalRow label={grandLabel} amount={total} tone={tone} />
           </tbody>
         </table>
+        </div>
       )}
     </GlassPanel>
   );
@@ -422,7 +424,8 @@ export default function BalanceSheetPageV2() {
                 {/* Reconciliation strip — explicit so the equation reads
                     even when both columns scroll independently. */}
                 <GlassPanel surface="strong" padding="none" className="overflow-hidden">
-                  <table className="w-full font-body">
+                  <div className="overflow-x-auto">
+                  <table className="min-w-[500px] w-full font-body">
                     <colgroup>
                       <col />
                       <col className="w-[42%]" />
@@ -435,6 +438,7 @@ export default function BalanceSheetPageV2() {
                       />
                     </tbody>
                   </table>
+                  </div>
                 </GlassPanel>
               </div>
             </div>

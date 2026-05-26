@@ -926,8 +926,9 @@ export const QuotationForm = ({
         </section>
 
         {/* ── Footer actions ─────────────────────────────────────
-            Mirrors the header — same actions, easier reach on long forms. */}
-        <div className="flex items-center justify-end gap-2 pt-2">
+            Mirrors the header — same actions, easier reach on long forms.
+            Sticky on mobile so Save is always reachable without scrolling. */}
+        <div className="sticky bottom-0 md:static -mx-4 sm:-mx-6 lg:-mx-8 md:mx-0 px-4 sm:px-6 lg:px-8 md:px-0 py-3 md:py-0 bg-bg-base/95 md:bg-transparent backdrop-blur md:backdrop-blur-none border-t md:border-t-0 border-border-subtle flex items-center justify-end gap-2">
           <Button
             type="button"
             variant="ghost"

@@ -603,7 +603,7 @@ export default function BankReconciliationsPage() {
           {viewing && (
             <div className="space-y-6">
               {/* Info grid */}
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 <DetailRow label="Status" wide={false}>
                   <div className="flex items-center gap-2">
                     <Badge variant={getStatusVariant(viewing.status)}>{getStatusLabel(viewing.status)}</Badge>
@@ -625,7 +625,7 @@ export default function BankReconciliationsPage() {
               {/* Balance section */}
               <div className="bg-bg-sunken rounded-lg p-4 border border-border-subtle">
                 <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">Saldo</p>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div>
                     <span className="text-text-tertiary text-xs">Saldo Buku Awal</span>
                     <div><MoneyDisplay amount={toNumber(viewing.bookBalanceStart)} /></div>
@@ -644,7 +644,7 @@ export default function BankReconciliationsPage() {
               {/* Adjustments */}
               <div className="bg-bg-sunken rounded-lg p-4 border border-border-subtle">
                 <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">Item Penyesuaian</p>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div><span className="text-text-tertiary text-xs">Deposits in Transit</span><div><MoneyDisplay amount={toNumber(viewing.depositsInTransit)} /></div></div>
                   <div><span className="text-text-tertiary text-xs">Outstanding Checks</span><div><MoneyDisplay amount={toNumber(viewing.outstandingChecks)} /></div></div>
                   <div><span className="text-text-tertiary text-xs">Biaya Bank</span><div><MoneyDisplay amount={toNumber(viewing.bankCharges)} /></div></div>
@@ -656,7 +656,7 @@ export default function BankReconciliationsPage() {
               {/* Result */}
               <div className="bg-bg-panel rounded-lg p-4 border border-border-strong">
                 <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">Hasil Rekonsiliasi</p>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div>
                     <span className="text-text-tertiary text-xs">Saldo Buku (Adjusted)</span>
                     <div className="text-base font-semibold"><MoneyDisplay amount={toNumber(viewing.adjustedBookBalance)} /></div>
@@ -700,7 +700,7 @@ export default function BankReconciliationsPage() {
 
           <div className="space-y-5">
             {/* Bank account + statement date */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Akun Bank *</label>
                 <Select value={form.bankAccountId} onValueChange={(v) => setForm((f) => ({ ...f, bankAccountId: v }))}>
@@ -721,7 +721,7 @@ export default function BankReconciliationsPage() {
             </div>
 
             {/* Period */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Mulai Periode *</label>
                 <MonomiDatePicker value={form.periodStartDate} onChange={(d) => setForm((f) => ({ ...f, periodStartDate: d }))} placeholder="Tgl. mulai" className="bg-bg-sunken border-border-subtle" />
@@ -741,7 +741,7 @@ export default function BankReconciliationsPage() {
             {/* Balances */}
             <div className="bg-bg-sunken rounded-lg p-4 border border-border-subtle space-y-4">
               <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Saldo</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <AmountField label="Saldo Buku Awal" value={form.bookBalanceStart} onChange={(v) => setForm((f) => ({ ...f, bookBalanceStart: v }))} />
                 <AmountField label="Saldo Buku Akhir *" value={form.bookBalanceEnd} onChange={(v) => setForm((f) => ({ ...f, bookBalanceEnd: v }))} />
               </div>
@@ -751,7 +751,7 @@ export default function BankReconciliationsPage() {
             {/* Adjustments */}
             <div className="bg-bg-sunken rounded-lg p-4 border border-border-subtle space-y-4">
               <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Item Penyesuaian</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <AmountField label="Deposits in Transit" value={form.depositsInTransit} onChange={(v) => setForm((f) => ({ ...f, depositsInTransit: v }))} />
                 <AmountField label="Outstanding Checks" value={form.outstandingChecks} onChange={(v) => setForm((f) => ({ ...f, outstandingChecks: v }))} />
                 <AmountField label="Biaya Bank" value={form.bankCharges} onChange={(v) => setForm((f) => ({ ...f, bankCharges: v }))} />
@@ -763,7 +763,7 @@ export default function BankReconciliationsPage() {
             {/* Calculated result */}
             <div className="bg-bg-panel rounded-lg p-4 border border-border-strong">
               <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">Hasil Perhitungan</p>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 <div>
                   <span className="text-text-tertiary text-xs">Saldo Buku (Adj.)</span>
                   <div className="font-semibold"><MoneyDisplay amount={calc.adjBook} /></div>

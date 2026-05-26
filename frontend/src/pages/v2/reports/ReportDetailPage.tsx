@@ -577,7 +577,7 @@ export default function ReportDetailPageV2() {
               </div>
             )}
           </div>
-          <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-3 min-w-[200px]">
+          <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-3 lg:min-w-[200px]">
             <div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
                 {t('reports.detail.updated', 'Diperbarui')}

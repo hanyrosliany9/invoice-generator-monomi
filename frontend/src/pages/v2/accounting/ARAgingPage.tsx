@@ -197,7 +197,7 @@ export default function ARAgingPageV2() {
             { label: 'Aging Piutang' },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="w-[200px]">
                 <MonomiDatePicker
                   value={asOfDate}
@@ -222,7 +222,7 @@ export default function ARAgingPageV2() {
             they read as the executive summary of the matrix below.
            ───────────────────────────────────────────────────────────── */}
         <section className="mb-12">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {isLoading
               ? BUCKETS.map((b) => (
                   <Skeleton key={b.key} className="h-[108px] rounded-lg" />
@@ -286,7 +286,7 @@ export default function ARAgingPageV2() {
             />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full font-body text-sm">
+              <table className="min-w-max w-full font-body text-sm">
                 <thead className="border-b border-border-subtle">
                   <tr>
                     <th className="text-left text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary px-4 py-3">

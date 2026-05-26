@@ -256,6 +256,11 @@ export default function DeckEditorPageV2() {
           description="Susun slide presentasi: judul, isi, gambar, dan layout. Penyusunan ulang via tombol atas/bawah."
         />
 
+        {/* Mobile notice — editing is best on tablet or desktop */}
+        <div className="md:hidden mb-6 rounded-md border border-warning/30 bg-warning/[0.06] px-3.5 py-2.5 text-xs text-warning">
+          Editing pengalaman terbaik di tablet atau desktop. Beberapa kontrol mungkin tersembunyi pada layar kecil.
+        </div>
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* ─────────────────────────────────────────────────────────
               Identity card — deck meta. Single panel so the page
@@ -498,14 +503,53 @@ function SlideRow({
 }) {
   return (
     <div className="rounded-md border border-border-subtle bg-bg-sunken/40 p-4">
-      <div className="grid grid-cols-[40px_1fr_56px] gap-4 items-start">
-        {/* index pill */}
-        <div className="text-center pt-1">
-          <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-            Slide
+      <div className="grid grid-cols-1 md:grid-cols-[40px_1fr_56px] gap-4 items-start">
+        {/* Mobile top-bar: index pill + action buttons side by side */}
+        <div className="md:contents flex items-center justify-between gap-2">
+          {/* index pill */}
+          <div className="text-center pt-1 md:pt-1">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
+              Slide
+            </div>
+            <div className="mt-1 font-display font-semibold text-text-primary tabular-nums text-lg leading-none">
+              {String(index + 1).padStart(2, '0')}
+            </div>
           </div>
-          <div className="mt-1 font-display font-semibold text-text-primary tabular-nums text-lg leading-none">
-            {String(index + 1).padStart(2, '0')}
+
+          {/* right rail — reorder + delete (visible inline on mobile) */}
+          <div className="flex md:hidden items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onMoveUp}
+              disabled={index === 0}
+              className="text-text-tertiary hover:text-text-primary disabled:opacity-30"
+              aria-label="Pindah ke atas"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onMoveDown}
+              disabled={index === total - 1}
+              className="text-text-tertiary hover:text-text-primary disabled:opacity-30"
+              aria-label="Pindah ke bawah"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onRemove}
+              className="text-text-tertiary hover:text-danger"
+              aria-label="Hapus slide"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
 
@@ -575,8 +619,8 @@ function SlideRow({
           </div>
         </div>
 
-        {/* right rail — reorder + delete */}
-        <div className="flex flex-col items-center gap-1 pt-1">
+        {/* right rail — reorder + delete (desktop only; mobile handled above) */}
+        <div className="hidden md:flex flex-col items-center gap-1 pt-1">
           <Button
             type="button"
             variant="ghost"
