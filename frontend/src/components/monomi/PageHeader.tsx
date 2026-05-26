@@ -33,7 +33,8 @@ export const PageHeader = ({
         ))}
       </nav>
     )}
-    <div className="flex items-start justify-between gap-6 flex-wrap">
+    {/* On mobile: title and actions stack vertically. At md+: side-by-side. */}
+    <div className="flex flex-col md:flex-row items-stretch md:items-start md:justify-between gap-4 md:gap-6">
       <div className="min-w-0">
         <h1 className="text-3xl sm:text-[34px] font-display font-semibold text-text-primary tracking-tight leading-[1.1]">
           {title}
@@ -44,7 +45,11 @@ export const PageHeader = ({
           </p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+      {actions && (
+        <div className="flex items-center gap-2 md:shrink-0">
+          {actions}
+        </div>
+      )}
     </div>
   </header>
 );

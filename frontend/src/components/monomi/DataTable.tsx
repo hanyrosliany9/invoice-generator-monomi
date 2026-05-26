@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import {
   useReactTable,
   getCoreRowModel,
@@ -55,13 +56,16 @@ export function DataTable<TData, TValue = unknown>({
     enableRowSelection,
   });
 
-  const rowPadding = density === 'compact' ? 'px-3 py-2' : 'px-4 py-3.5';
+  const isMobile = useIsMobile();
+  const effectiveDensity = isMobile ? 'compact' : density;
+  const rowPadding = effectiveDensity === 'compact' ? 'px-3 py-2' : 'px-4 py-3.5';
 
   return (
     <div className="w-full space-y-3">
       {toolbar && <div>{toolbar}</div>}
-      <div className="rounded-md border border-border-subtle bg-bg-sunken overflow-hidden">
-        <table className="w-full font-body text-sm">
+      <div className="relative rounded-md border border-border-subtle bg-bg-sunken overflow-x-auto overflow-y-hidden">
+        <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-bg-sunken/95 to-transparent pointer-events-none z-10" />
+        <table className="w-full min-w-max font-body text-sm">
           <thead className="border-b border-border-subtle">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
@@ -139,7 +143,7 @@ export function DataTable<TData, TValue = unknown>({
         </table>
       </div>
       {enablePagination && (
-        <div className="flex items-center justify-between text-xs text-text-tertiary">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:justify-between sm:items-center text-xs text-text-tertiary">
           <span>
             Menampilkan {table.getRowModel().rows.length} dari {data.length}
           </span>
