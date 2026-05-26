@@ -227,7 +227,7 @@ services:
     container_name: invoice-cloudflared-prod
     environment:
       - TZ=Asia/Jakarta
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate --protocol http2 run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       nginx:
         condition: service_healthy
@@ -246,7 +246,7 @@ services:
     container_name: invoice-cloudflared-ws-prod
     environment:
       - TZ=Asia/Jakarta
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_WS_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate --protocol http2 run --token ${CLOUDFLARE_WS_TUNNEL_TOKEN}
     depends_on:
       app:
         condition: service_healthy
