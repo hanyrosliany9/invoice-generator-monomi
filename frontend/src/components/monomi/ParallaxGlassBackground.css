@@ -1,0 +1,213 @@
+/* "Moonlight on Onyx" — strictly monochrome cream-on-black aurora.
+ *
+ * Design notes (see TSX for component contract):
+ *
+ * The brief: every previous attempt introduced a second hue (cyan, emerald,
+ * navy) and clashed with the brand's pure-black + cream + navy-as-accent
+ * palette. This version commits to ONE tonal family — cream (#F6F3E8) on
+ * pure black (#030303) — and creates all visual interest through alpha,
+ * blur radius, and motion. Navy appears only in trace amounts at the
+ * deepest core of layer 2 (≈6% alpha), where against pure black it reads
+ * as "deeper void", not as colour.
+ *
+ * Reference mood: moonlight falling through fog onto polished obsidian.
+ * Rothko-on-screen — tonal density tells the story, not hue contrast.
+ *
+ * The Monomi signature element is the slow diagonal moonbeam sweep — a
+ * very low-alpha linear-gradient ray that crosses the canvas every 60s.
+ * This is what makes the composition unmistakably this brand's and not
+ * yet-another-soft-mesh-bg.
+ */
+
+.pgbg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-color: var(--bg-base, #030303);
+  --scroll-y: 0px;
+}
+
+/* The signature moonbeam — a single diagonal sweep of cream light that
+ * traverses the canvas slowly. This is the element that makes the
+ * composition feel like Monomi specifically, rather than a generic mesh bg.
+ * It lives on ::before so we don't need an extra DOM node. */
+.pgbg::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    100deg,
+    transparent 38%,
+    rgba(246, 243, 232, 0.045) 47%,
+    rgba(246, 243, 232, 0.085) 50%,
+    rgba(246, 243, 232, 0.045) 53%,
+    transparent 62%
+  );
+  transform-origin: center;
+  animation: pgbg-moonbeam 64s linear infinite;
+  will-change: transform;
+  pointer-events: none;
+}
+
+@keyframes pgbg-moonbeam {
+  0%   { transform: translate3d(-30vw, -10vh, 0) rotate(0deg); }
+  100% { transform: translate3d(30vw, 10vh, 0) rotate(360deg); }
+}
+
+/* Parallax depth wrappers — scroll-coupled translate only, leaving the
+ * inner aurora element free for its own drift/scale/rotate animation. */
+.pgbg-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.pgbg-layer-back  { transform: translate3d(0, calc(var(--scroll-y) *  0.12), 0); }
+.pgbg-layer-mid   { transform: translate3d(0, calc(var(--scroll-y) *  0.30), 0); }
+.pgbg-layer-front { transform: translate3d(0, calc(var(--scroll-y) *  0.55), 0); }
+
+/* Aurora blooms — three densities of cream against black.
+ * The trick: same hue throughout, varying alpha and blur radius creates
+ * the illusion of depth. No mix-blend-mode (it disables GPU compositing
+ * on some Chromium builds and freezes animations). */
+.pgbg-aurora {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform, opacity;
+}
+
+/* Layer 1 — the BACKGROUND HALO.
+ * Largest, softest, deepest. Heavy blur turns it into pure atmosphere.
+ * This is the "moonlight haze" anchoring the upper-left of the canvas. */
+.pgbg-aurora-1 {
+  width: 78vw;
+  height: 78vw;
+  min-width: 820px;
+  min-height: 820px;
+  top: -28%;
+  left: -22%;
+  background: radial-gradient(
+    circle at center,
+    rgba(246, 243, 232, 0.16)  0%,
+    rgba(246, 243, 232, 0.09) 28%,
+    rgba(246, 243, 232, 0.03) 55%,
+    transparent              78%
+  );
+  filter: blur(130px);
+  animation: pgbg-drift-1 44s ease-in-out infinite alternate;
+}
+
+/* Layer 2 — the MID DENSITY BLOOM with a hint of NAVY void at the core.
+ * The navy at 6% alpha is invisible to most viewers but adds tonal weight
+ * to the bloom centre — readable as "deeper black", never as blue.
+ * Right-side anchor, drifting counter to layer 1. */
+.pgbg-aurora-2 {
+  width: 60vw;
+  height: 60vw;
+  min-width: 700px;
+  min-height: 700px;
+  top: 12%;
+  right: -22%;
+  background: radial-gradient(
+    circle at center,
+    rgba(246, 243, 232, 0.20)   0%,
+    rgba(246, 243, 232, 0.10)  22%,
+    rgba(19, 25, 54, 0.06)     50%, /* the only navy in the composition */
+    rgba(19, 25, 54, 0.02)     65%,
+    transparent              80%
+  );
+  filter: blur(110px) saturate(0.7);
+  animation: pgbg-drift-2 50s ease-in-out infinite alternate;
+}
+
+/* Layer 3 — the BRIGHT HIGHLIGHT BLOOM.
+ * Smallest, sharpest, brightest. Lower blur (90px) lets some shape register.
+ * This is the "moonbeam landing" — the eye-anchor at lower-centre. */
+.pgbg-aurora-3 {
+  width: 50vw;
+  height: 50vw;
+  min-width: 560px;
+  min-height: 560px;
+  bottom: -30%;
+  left: 30%;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.18)  0%,   /* pure white core for the brightest spot */
+    rgba(246, 243, 232, 0.12) 18%,
+    rgba(246, 243, 232, 0.05) 42%,
+    transparent              72%
+  );
+  filter: blur(90px);
+  animation: pgbg-drift-3 38s ease-in-out infinite alternate;
+}
+
+/* Drift keyframes — visible motion (12-18vw per cycle), opacity breathing
+ * (0.7-1.0), gentle scale (±10-18%) and rotation (±10°). `alternate` means
+ * no on-rails snap-back. ease-in-out gives the meditative pacing. */
+@keyframes pgbg-drift-1 {
+  0%   { transform: translate3d(-3vw, -3vh, 0) scale(0.94) rotate(-6deg); opacity: 0.85; }
+  100% { transform: translate3d(15vw, 12vh, 0) scale(1.16) rotate(8deg);  opacity: 1; }
+}
+@keyframes pgbg-drift-2 {
+  0%   { transform: translate3d(0vw, 0vh, 0) scale(1.00) rotate(0deg);   opacity: 0.75; }
+  100% { transform: translate3d(-18vw, 10vh, 0) scale(1.22) rotate(-10deg); opacity: 1; }
+}
+@keyframes pgbg-drift-3 {
+  0%   { transform: translate3d(0vw, 0vh, 0) scale(1.00) rotate(0deg);   opacity: 0.9; }
+  100% { transform: translate3d(12vw, -14vh, 0) scale(1.12) rotate(6deg); opacity: 1; }
+}
+
+/* FILM GRAIN — replaces the previous dot grid. This is what gives the
+ * composition its photographic / cinematic feel. SVG fractal-noise turned
+ * into a tileable data-URL, fine enough to read as texture not pattern.
+ * Masked with a soft elliptical vignette so it lives mostly in the centre
+ * where the eye lands. Parallaxes fastest = "near to camera". */
+.pgbg-dots {
+  position: absolute;
+  inset: -10%;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.965  0 0 0 0 0.953  0 0 0 0 0.910  0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 240px 240px;
+  background-repeat: repeat;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  mask-image: radial-gradient(
+    ellipse 75% 60% at 50% 45%,
+    black 30%,
+    transparent 85%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 75% 60% at 50% 45%,
+    black 30%,
+    transparent 85%
+  );
+  transform: translate3d(0, calc(var(--scroll-y) * 0.65), 0);
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* Edge vignette — deepens corners, focuses centre. The COS / Loewe trick
+ * for making photography feel "framed". */
+.pgbg-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 120% 90% at 50% 50%,
+      transparent 28%,
+      rgba(0, 0, 0, 0.55) 100%
+    );
+  pointer-events: none;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .pgbg::before { animation: none; }
+  .pgbg-aurora { animation: none; }
+  .pgbg-layer,
+  .pgbg-dots { transform: none; }
+}

@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { SheetClose } from '@/components/ui/sheet';
 
@@ -10,9 +11,18 @@ export interface SidebarItem {
   children?: SidebarItem[];
 }
 
+export interface SidebarSection {
+  /** Section header label (uppercased in UI). Omit for the first/main section. */
+  label?: string;
+  items: SidebarItem[];
+}
+
 export interface SidebarProps {
   brand: ReactNode;
-  items: SidebarItem[];
+  /** Legacy flat list. Use `sections` for grouped nav. */
+  items?: SidebarItem[];
+  /** Grouped nav with section headers (preferred). */
+  sections?: SidebarSection[];
   footer?: ReactNode;
   collapsed?: boolean;
   /** 'static' (default) — renders as a positioned aside with h-screen.
@@ -21,8 +31,20 @@ export interface SidebarProps {
   variant?: 'static' | 'drawer';
 }
 
-export const Sidebar = ({ brand, items, footer, collapsed, variant = 'static' }: SidebarProps) => {
+export const Sidebar = ({ brand, items, sections, footer, collapsed, variant = 'static' }: SidebarProps) => {
   const isDrawer = variant === 'drawer';
+  // Each `item.label` / `section.label` from sidebar-items.tsx is an i18n
+  // KEY (e.g. 'nav.dashboard'). We translate at render time so the
+  // LanguageSwitcher live-updates every nav entry without re-mounting.
+  const { t } = useTranslation();
+  // i18next falls back to the key string itself when missing — so a broken
+  // key like 'nav.foo' renders as 'nav.foo', making bugs obvious in dev.
+  const tr = (k?: string) => (k ? t(k) : '');
+
+  // Normalize: if sections passed, use them. Otherwise wrap flat items in a single
+  // unlabeled section so the renderer has one code path.
+  const resolvedSections: SidebarSection[] = sections
+    ?? (items ? [{ label: 'Workspace', items }] : []);
 
   const navItem = (item: SidebarItem) => (
     <NavLink
@@ -32,24 +54,28 @@ export const Sidebar = ({ brand, items, footer, collapsed, variant = 'static' }:
       className={({ isActive }) => cn(
         'group relative flex items-center gap-3 mx-1 my-0.5 px-3 py-2 rounded-md text-sm',
         'transition-colors duration-150',
+        // Suffix `!` is Tailwind v4's important modifier. Needed to win over
+        // Ant Design's runtime CSS-in-JS, which globally colours <a> elements
+        // via `colorLink` (= `colorPrimary` = #529CCA teal). NavLink renders
+        // as <a>, so without !important it inherits that teal.
         isActive
           ? [
-              'text-text-primary bg-accent-navy-wash',
+              'text-white! bg-accent-navy-wash',
               'before:absolute before:left-0 before:top-1.5 before:bottom-1.5',
               'before:w-[2px] before:rounded-full before:bg-brand-cream',
             ]
-          : 'text-text-secondary hover:text-text-primary hover:bg-accent-navy-soft',
+          : 'text-white/85! hover:text-white! hover:bg-accent-navy-soft',
       )}
     >
       {({ isActive }) => (
         <>
           <span className={cn(
             'flex-shrink-0 transition-colors',
-            isActive ? 'text-text-primary' : 'text-text-tertiary group-hover:text-text-secondary',
+            isActive ? 'text-white!' : 'text-white/70! group-hover:text-white!',
           )}>
             {item.icon}
           </span>
-          {!collapsed && <span className="truncate">{item.label}</span>}
+          {!collapsed && <span className="truncate">{tr(item.label)}</span>}
         </>
       )}
     </NavLink>
@@ -58,7 +84,10 @@ export const Sidebar = ({ brand, items, footer, collapsed, variant = 'static' }:
   return (
     <aside className={cn(
       'relative z-10 flex flex-col',
-      'bg-bg-base',
+      // Glassmorphism — semi-transparent over the ParallaxGlassBackground.
+      // Layered: 40% black tint + 24px backdrop blur + 180% saturation gives
+      // the "frosted obsidian" feel without obscuring the moonbeam behind it.
+      'bg-bg-base/40 backdrop-blur-2xl backdrop-saturate-[1.8]',
       !isDrawer && 'h-screen border-r border-border-subtle',
       isDrawer && 'h-full',
       collapsed ? 'w-16' : 'w-60',
@@ -69,23 +98,25 @@ export const Sidebar = ({ brand, items, footer, collapsed, variant = 'static' }:
         {brand}
       </div>
 
-      {/* Workspace section label */}
-      {!collapsed && (
-        <div className="px-5 pt-6 pb-2 text-[10px] uppercase tracking-[0.18em] text-text-tertiary font-medium">
-          Workspace
-        </div>
-      )}
-
-      <nav className="flex-1 overflow-y-auto px-2 pb-4">
-        {items.map(item =>
-          isDrawer
-            ? (
-              <SheetClose key={item.href} asChild>
-                {navItem(item)}
-              </SheetClose>
-            )
-            : navItem(item)
-        )}
+      <nav className="aside-nav-v2 flex-1 overflow-y-auto px-2 pb-4 pt-3">
+        {resolvedSections.map((section, sectionIdx) => (
+          <div key={section.label ?? `section-${sectionIdx}`} className={sectionIdx > 0 ? 'mt-4' : undefined}>
+            {!collapsed && section.label && (
+              <div className="px-4 pt-3 pb-2 text-[10px] uppercase tracking-[0.18em] text-text-tertiary font-medium">
+                {tr(section.label)}
+              </div>
+            )}
+            {section.items.map(item =>
+              isDrawer
+                ? (
+                  <SheetClose key={item.href} asChild>
+                    {navItem(item)}
+                  </SheetClose>
+                )
+                : navItem(item)
+            )}
+          </div>
+        ))}
       </nav>
 
       {footer && (

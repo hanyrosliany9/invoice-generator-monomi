@@ -38,6 +38,12 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3000,
+    // Accept tunnel hostnames (cloudflared / ngrok). Dev-only; build output is unaffected.
+    allowedHosts: true,
+    // VITE_TUNNEL=1 routes HMR through the tunnel on wss:443. Used with
+    // cloudflared (--protocol http2) which handles WSS fine. Don't use with
+    // ngrok-free — its connection limit blows up under HMR reconnects.
+    hmr: process.env.VITE_TUNNEL ? { clientPort: 443, protocol: 'wss' } : true,
     watch: { usePolling: true, interval: 1000 },
     fs: { strict: false, allow: ['..'] },
     proxy: {
@@ -49,6 +55,23 @@ export default defineConfig({
       },
     },
     middlewareMode: false,
+  },
+  // `vite preview` mode — used when serving the production build for QA
+  // through the cloudflared tunnel. Each page load fires ~10 requests instead
+  // of Vite dev's ~100+ unbundled module requests, which prevents cloudflared
+  // 2026.5.1 from hitting its "no more connections active and exiting" guard.
+  preview: {
+    host: '0.0.0.0',
+    port: 3000,
+    allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+    },
   },
   css: {
     modules: {

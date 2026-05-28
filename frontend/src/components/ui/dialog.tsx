@@ -49,9 +49,13 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  srTitle = 'Dialog',
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
+  /** Screen-reader fallback title rendered always. Pages can still supply a
+   * visible <DialogTitle> in children — Radix accepts multiple titles. */
+  srTitle?: string
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
@@ -64,6 +68,10 @@ function DialogContent({
         )}
         {...props}
       >
+        {/* Always-rendered screen-reader-only title silences Radix a11y warning
+         * for every dialog. Pages with their own visible <DialogTitle> render
+         * both — harmless, accessible. */}
+        <DialogPrimitive.Title className="sr-only">{srTitle}</DialogPrimitive.Title>
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close

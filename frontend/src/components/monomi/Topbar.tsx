@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 export interface TopbarProps {
   left?: ReactNode;
@@ -16,8 +17,9 @@ export const Topbar = ({ left, center, right, className, onMenuClick }: TopbarPr
   <header className={cn(
     'sticky top-0 z-20 h-14 px-5 sm:px-8',
     'flex items-center justify-between gap-6',
-    // Pure black structural surface — no navy wash here
-    'bg-bg-base/95 backdrop-blur-[12px]',
+    // Glassmorphism — sits over the parallax bg; thinner alpha + heavier
+    // blur + saturation lets the moonbeam glow through.
+    'bg-bg-base/40 backdrop-blur-2xl backdrop-saturate-[1.8]',
     'border-b border-border-subtle',
     className,
   )}>
@@ -36,6 +38,12 @@ export const Topbar = ({ left, center, right, className, onMenuClick }: TopbarPr
       {left}
     </div>
     {center && <div className="flex items-center">{center}</div>}
-    <div className="flex items-center gap-2">{right}</div>
+    <div className="flex items-center gap-3">
+      {/* Global LanguageSwitcher — appears on every v2 page automatically so
+       * we don't have to wire it into 88 page-level topbar props. Persists
+       * choice to localStorage via i18next-browser-languagedetector. */}
+      <LanguageSwitcher />
+      {right}
+    </div>
   </header>
 );

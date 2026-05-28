@@ -294,10 +294,11 @@ function AdminRoute({ children }: { children?: ReactNode }) {
   return children ? <>{children}</> : <Outlet />
 }
 
-// Role-aware default redirect
+// Role-aware default redirect — v2 by default; v1 paths kept as a legacy fallback
+// for anyone with a deep-linked bookmark.
 function DefaultRedirect() {
   const { isAdmin } = usePermissions()
-  return <Navigate to={isAdmin() ? '/dashboard' : '/media-collab'} replace />
+  return <Navigate to={isAdmin() ? '/v2' : '/v2/media-collab'} replace />
 }
 
 function App() {
@@ -358,11 +359,9 @@ function App() {
           path='/login'
           element={
             isAuthenticated ? (
-              <Navigate to='/dashboard' replace />
+              <Navigate to='/v2' replace />
             ) : (
-              <AuthLayout>
-                <LoginPage />
-              </AuthLayout>
+              <Navigate to='/v2/login' replace />
             )
           }
         />
@@ -730,7 +729,7 @@ function App() {
                 </ErrorBoundary>
               </MainLayout>
             ) : (
-              <Navigate to='/login' replace />
+              <Navigate to='/v2/login' replace />
             )
           }
         />

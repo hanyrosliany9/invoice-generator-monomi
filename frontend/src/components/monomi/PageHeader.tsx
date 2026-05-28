@@ -36,7 +36,10 @@ export const PageHeader = ({
     {/* On mobile: title and actions stack vertically. At md+: side-by-side. */}
     <div className="flex flex-col md:flex-row items-stretch md:items-start md:justify-between gap-4 md:gap-6">
       <div className="min-w-0">
-        <h1 className="text-3xl sm:text-[34px] font-display font-semibold text-text-primary tracking-tight leading-[1.1]">
+        {/* Editorial serif headline. Instrument Serif Regular is the thinner
+         * weight; tight leading + slight negative tracking gives the
+         * magazine-headline feel (ozgur.design / Loewe vibe). */}
+        <h1 className="text-4xl sm:text-[44px] font-display font-normal text-text-primary tracking-[-0.012em] leading-[1.05]">
           {title}
         </h1>
         {description && (

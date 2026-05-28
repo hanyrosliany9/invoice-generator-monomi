@@ -1,13 +1,24 @@
-/* Inter font import */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* Type system — 2026 editorial pairing.
+ *  Display: Instrument Serif (regular + italic) — what gives the app its
+ *           literary / cinematic personality. Italic is the move.
+ *  Body:    Geist — Vercel\'s refined modern sans; replaces Inter/DM Sans.
+ *  Mono:    Geist Mono — for currency, dates, invoice numbers, tabular data.
+ *  Inter:   kept as fallback only.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
 
 @import 'tailwindcss';
 
 @theme {
-  /* Colors mapped from CSS tokens — available as Tailwind utilities */
+  /* Colors mapped from CSS tokens — available as Tailwind utilities.
+   * Note: in Tailwind v4 the default palette is excluded unless re-added here,
+   * so common utilities like `text-white` are intentionally re-mapped below. */
+  --color-white: #ffffff;
+  --color-black: #000000;
   --color-brand-navy: var(--brand-navy);
   --color-brand-black: var(--brand-black);
   --color-brand-cream: var(--brand-cream);
+  --color-brand-white: var(--brand-white);
   --color-bg-base: var(--bg-base);
   --color-bg-sunken: var(--bg-sunken);
   --color-bg-raised: var(--bg-raised);
@@ -28,10 +39,15 @@
   --color-danger: var(--danger);
   --color-info: var(--info);
 
-  /* Typography */
-  --font-display: 'Inter Tight', system-ui, sans-serif;
-  --font-body: 'DM Sans', 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Menlo', monospace;
+  /* Typography — 2026 editorial pairing (see top-of-file @import).
+   * font-display = serif used on page titles, hero numbers, brand moments.
+   * font-body    = sans used for everything UI: labels, buttons, body copy.
+   * font-mono    = tabular numerals for currency, dates, IDs.
+   * font-serif   = explicit alias when you want the editorial serif inline. */
+  --font-display: 'Instrument Serif', 'Times New Roman', serif;
+  --font-serif:   'Instrument Serif', 'Times New Roman', serif;
+  --font-body:    'Geist', 'Inter', system-ui, sans-serif;
+  --font-mono:    'Geist Mono', 'JetBrains Mono', 'Menlo', monospace;
 
   /* Radii */
   --radius-sm: 6px;
@@ -42,9 +58,26 @@
 
 /* Global styles */
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  /* Body uses Geist directly so v2 pages get the new sans even before
+   * Tailwind's font-body class is applied. */
+  font-family: 'Geist', 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* v2 sidebar — force white link color over Ant Design CSS-in-JS.
+ * Ant's ConfigProvider sets colorPrimary=#529CCA which Ant uses to colour
+ * all <a> elements via `colorLink` derived from `colorPrimary`. NavLink
+ * renders as <a>, so its inherited Tailwind text colour gets overridden.
+ * Higher-specificity selector (3 element tokens) beats Ant's `:where()` 0-specificity rules.
+ * Inside an .aside-nav-v2 wrapper to scope tightly to the v2 shell. */
+.aside-nav-v2 a {
+  color: rgba(255, 255, 255, 0.85);
+}
+.aside-nav-v2 a:hover,
+.aside-nav-v2 a.active,
+.aside-nav-v2 a[aria-current='page'] {
+  color: rgb(255, 255, 255);
 }
 
 /* Custom scrollbar - Theme-aware */

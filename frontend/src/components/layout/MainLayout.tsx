@@ -51,6 +51,19 @@ interface MainLayoutProps {
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
+  // v2 pages render their OWN AppShell (Sidebar/Topbar) and must not be wrapped
+  // in the classic v1 Ant Design layout — doing so double-wraps the chrome and
+  // pushes content into a constrained box, leaving large negative margins.
+  // Use a child component for the classic shell so hooks aren't conditionally
+  // called when we early-return for v2 routes.
+  const location = useLocation()
+  if (location.pathname === '/v2' || location.pathname.startsWith('/v2/')) {
+    return <>{children}</>
+  }
+  return <ClassicMainLayout>{children}</ClassicMainLayout>
+}
+
+const ClassicMainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileQuickActionsVisible, setMobileQuickActionsVisible] =
     useState(false)
