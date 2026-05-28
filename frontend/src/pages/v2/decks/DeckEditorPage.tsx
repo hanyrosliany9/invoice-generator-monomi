@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFieldArray, useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +12,8 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -35,35 +38,27 @@ import type { DeckStatus, SlideTemplate } from '@/types/deck';
 /*  Nav — consistent with the rest of v2                               */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Schema — v2 keeps slide editing structured (heading / body /       */
 /*  image / layout / notes). Free-form canvas authoring is deferred to */
 /*  the classic editor.                                                */
 /* ------------------------------------------------------------------ */
 
-const STATUS_OPTIONS: { value: DeckStatus; label: string }[] = [
-  { value: 'DRAFT',     label: 'Draf' },
-  { value: 'PUBLISHED', label: 'Diterbitkan' },
-  { value: 'ARCHIVED',  label: 'Diarsipkan' },
+// STATUS_OPTIONS labels resolved at render time via t()
+const STATUS_OPTIONS: { value: DeckStatus; labelKey: string; labelFallback: string }[] = [
+  { value: 'DRAFT',     labelKey: 'decks.statusDraft',     labelFallback: 'Draft' },
+  { value: 'PUBLISHED', labelKey: 'decks.statusPublished', labelFallback: 'Published' },
+  { value: 'ARCHIVED',  labelKey: 'decks.statusArchived',  labelFallback: 'Archived' },
 ];
 
-const LAYOUT_OPTIONS: { value: SlideTemplate; label: string }[] = [
-  { value: 'TITLE',          label: 'Judul' },
-  { value: 'TITLE_CONTENT',  label: 'Judul + Isi' },
-  { value: 'TWO_COLUMN',     label: 'Dua Kolom' },
-  { value: 'FULL_MEDIA',     label: 'Gambar Penuh' },
-  { value: 'MOOD_BOARD',     label: 'Moodboard' },
-  { value: 'BLANK',          label: 'Kosong' },
+// LAYOUT_OPTIONS labels resolved at render time via t()
+const LAYOUT_OPTIONS: { value: SlideTemplate; labelKey: string; labelFallback: string }[] = [
+  { value: 'TITLE',         labelKey: 'deckEditor.layoutTitle',        labelFallback: 'Title' },
+  { value: 'TITLE_CONTENT', labelKey: 'deckEditor.layoutTitleContent', labelFallback: 'Title + Content' },
+  { value: 'TWO_COLUMN',    labelKey: 'deckEditor.layoutTwoColumn',    labelFallback: 'Two Columns' },
+  { value: 'FULL_MEDIA',    labelKey: 'deckEditor.layoutFullMedia',    labelFallback: 'Full Bleed' },
+  { value: 'MOOD_BOARD',    labelKey: 'deckEditor.layoutMoodBoard',    labelFallback: 'Mood Board' },
+  { value: 'BLANK',         labelKey: 'deckEditor.layoutBlank',        labelFallback: 'Blank' },
 ];
 
 const slideSchema = z.object({
@@ -76,7 +71,7 @@ const slideSchema = z.object({
 });
 
 const formSchema = z.object({
-  title:       z.string().min(2, 'Judul deck minimal 2 karakter'),
+  title:       z.string().min(2, 'Deck title must be at least 2 characters'),
   description: z.string().optional(),
   status:      z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']),
   projectId:   z.string().optional(),
@@ -89,6 +84,7 @@ type FormValues = z.infer<typeof formSchema>;
 /* ------------------------------------------------------------------ */
 
 export default function DeckEditorPageV2() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -184,10 +180,10 @@ export default function DeckEditorPageV2() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deck', id] });
       queryClient.invalidateQueries({ queryKey: ['decks'] });
-      toast.success('Perubahan deck disimpan');
+      toast.success(t('deckEditor.saveSuccess', 'Deck changes saved'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Gagal menyimpan deck');
+      toast.error(err.message || t('deckEditor.saveFailed', 'Failed to save deck'));
     },
   });
 
@@ -214,19 +210,19 @@ export default function DeckEditorPageV2() {
         <PageContainer>
           <EmptyState
             icon={<FileText className="h-12 w-12" />}
-            title="Deck tidak ditemukan"
+            title={t('deckEditor.notFoundTitle', 'Deck not found')}
             description={
               error instanceof Error
                 ? error.message
-                : 'Deck ini mungkin sudah dihapus atau Anda tidak memiliki akses.'
+                : t('deckEditor.notFoundDesc', 'This deck may have been deleted or you don\'t have access.')
             }
             action={
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => navigate('/v2/decks')}>
                   <ArrowLeft className="h-4 w-4" />
-                  Kembali ke Deck
+                  {t('deckEditor.backToDecks', 'Back to Decks')}
                 </Button>
-                <Button size="sm" onClick={() => refetch()}>Coba Lagi</Button>
+                <Button size="sm" onClick={() => refetch()}>{t('decks.retry', 'Try Again')}</Button>
               </div>
             }
           />
@@ -247,18 +243,18 @@ export default function DeckEditorPageV2() {
             className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Kembali ke Deck
+            {t('deckEditor.backToDecks', 'Back to Decks')}
           </Link>
         </div>
 
         <PageHeader
-          title="Editor Deck"
-          description="Susun slide presentasi: judul, isi, gambar, dan layout. Penyusunan ulang via tombol atas/bawah."
+          title={t('deckEditor.title', 'Deck Editor')}
+          description={t('deckEditor.description', 'Arrange presentation slides: title, content, image, and layout. Reorder via up/down buttons.')}
         />
 
         {/* Mobile notice — editing is best on tablet or desktop */}
         <div className="md:hidden mb-6 rounded-md border border-warning/30 bg-warning/[0.06] px-3.5 py-2.5 text-xs text-warning">
-          Editing pengalaman terbaik di tablet atau desktop. Beberapa kontrol mungkin tersembunyi pada layar kecil.
+          {t('common.mobileNotice', 'Best editing experience on tablet or desktop. Some controls may be hidden on small screens.')}
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -267,15 +263,15 @@ export default function DeckEditorPageV2() {
               opens with a clear "this is the deck" reading.
              ───────────────────────────────────────────────────────── */}
           <FormSection
-            eyebrow="Identitas"
-            title="Detail Deck"
-            description="Judul tampil di daftar deck. Status mengatur visibilitas dan tanda PUBLISHED."
+            eyebrow={t('deckEditor.eyebrowIdentity', 'Identity')}
+            title={t('deckEditor.detailSectionTitle', 'Deck Details')}
+            description={t('deckEditor.detailSectionDesc', 'The title appears in the deck list. Status controls visibility and the PUBLISHED badge.')}
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-1.5 sm:col-span-2">
-                <FieldLabel required>Judul Deck</FieldLabel>
+                <FieldLabel required>{t('deckEditor.fieldDeckTitle', 'Deck Title')}</FieldLabel>
                 <Input
-                  placeholder="Misal: Pitch Q1 2026"
+                  placeholder={t('decks.titlePlaceholder', 'E.g. Q1 2026 Pitch')}
                   {...register('title')}
                   className="bg-bg-sunken border-border-default text-text-primary"
                   aria-invalid={!!errors.title}
@@ -284,17 +280,17 @@ export default function DeckEditorPageV2() {
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
-                <FieldLabel>Deskripsi</FieldLabel>
+                <FieldLabel>{t('decks.fieldDescription', 'Description')}</FieldLabel>
                 <textarea
                   rows={3}
-                  placeholder="Konteks ringkas tentang deck ini (opsional)"
+                  placeholder={t('deckEditor.descriptionPlaceholder', 'Brief context about this deck (optional)')}
                   {...register('description')}
                   className="block w-full resize-y rounded-md border border-border-default bg-bg-sunken px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary leading-relaxed outline-none focus-visible:border-accent-navy-ring focus-visible:ring-[3px] focus-visible:ring-accent-navy-ring/40"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <FieldLabel>Status</FieldLabel>
+                <FieldLabel>{t('deckEditor.fieldStatus', 'Status')}</FieldLabel>
                 <Controller
                   control={control}
                   name="status"
@@ -305,7 +301,7 @@ export default function DeckEditorPageV2() {
                       </SelectTrigger>
                       <SelectContent>
                         {STATUS_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          <SelectItem key={opt.value} value={opt.value}>{t(opt.labelKey, opt.labelFallback)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -314,7 +310,7 @@ export default function DeckEditorPageV2() {
               </div>
 
               <div className="space-y-1.5">
-                <FieldLabel>Proyek</FieldLabel>
+                <FieldLabel>{t('deckEditor.fieldProject', 'Project')}</FieldLabel>
                 <Controller
                   control={control}
                   name="projectId"
@@ -324,10 +320,10 @@ export default function DeckEditorPageV2() {
                       onValueChange={(v) => field.onChange(v === '__none__' ? '' : v)}
                     >
                       <SelectTrigger className="w-full bg-bg-sunken border-border-default text-text-primary data-[placeholder]:text-text-tertiary">
-                        <SelectValue placeholder="Tidak terhubung" />
+                        <SelectValue placeholder={t('deckEditor.notLinked', 'Not linked')} />
                       </SelectTrigger>
                       <SelectContent className="max-h-72">
-                        <SelectItem value="__none__">Tidak terhubung</SelectItem>
+                        <SelectItem value="__none__">{t('deckEditor.notLinked', 'Not linked')}</SelectItem>
                         {projects.map((p) => (
                           <SelectItem key={p.id} value={p.id}>
                             <span className="font-mono text-xs text-text-tertiary mr-2">
@@ -350,14 +346,14 @@ export default function DeckEditorPageV2() {
               and reorder/delete chrome on the right rail.
              ───────────────────────────────────────────────────────── */}
           <FormSection
-            eyebrow="Slide"
-            title={`Slide (${fields.length})`}
-            description="Susun konten tiap slide. Layout adalah pola tata letak referensi — dapat diubah sewaktu-waktu."
+            eyebrow={t('deckEditor.eyebrowSlides', 'Slides')}
+            title={t('deckEditor.slidesSectionTitle', 'Slides ({{count}})', { count: fields.length })}
+            description={t('deckEditor.slidesSectionDesc', 'Organize content for each slide. Layout is a reference pattern — it can be changed at any time.')}
           >
             {fields.length === 0 ? (
               <div className="rounded-md border border-dashed border-border-subtle bg-bg-sunken/40 py-10 text-center">
                 <p className="text-sm text-text-tertiary">
-                  Deck ini belum punya slide. Tambahkan slide pertama untuk mulai.
+                  {t('deckEditor.noSlides', 'This deck has no slides yet. Add the first slide to get started.')}
                 </p>
               </div>
             ) : (
@@ -395,7 +391,7 @@ export default function DeckEditorPageV2() {
                 className="border-border-subtle text-text-secondary hover:text-text-primary"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Tambah Slide
+                {t('deckEditor.addSlide', 'Add Slide')}
               </Button>
             </div>
           </FormSection>
@@ -408,8 +404,8 @@ export default function DeckEditorPageV2() {
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="text-xs text-text-tertiary">
                 {isDirty
-                  ? 'Ada perubahan yang belum disimpan.'
-                  : 'Tidak ada perubahan tertunda.'}
+                  ? t('common.unsavedChanges', 'You have unsaved changes.')
+                  : t('common.noPendingChanges', 'No pending changes.')}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -419,7 +415,7 @@ export default function DeckEditorPageV2() {
                   disabled={isPending}
                   className="text-text-secondary hover:text-text-primary"
                 >
-                  Batal
+                  {t('common.cancel', 'Cancel')}
                 </Button>
                 <Button
                   type="submit"
@@ -429,12 +425,12 @@ export default function DeckEditorPageV2() {
                   {isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Menyimpan…
+                      {t('common.saving', 'Saving…')}
                     </>
                   ) : (
                     <>
                       <Save className="h-4 w-4" />
-                      Simpan
+                      {t('common.save', 'Save')}
                     </>
                   )}
                 </Button>
@@ -447,10 +443,7 @@ export default function DeckEditorPageV2() {
             honest. Authors who need canvas authoring still get the classic
             page until v2 grows that surface. */}
         <p className="mt-6 text-[11px] text-text-tertiary leading-relaxed">
-          Catatan v2: editor kanvas bebas (drag elemen, teks kaya, presentasi
-          live, kolaborasi real-time, ekspor PDF/PNG, dan upload aset) masih
-          tersedia di tampilan klasik. Tampilan v2 fokus pada CRUD slide
-          terstruktur.
+          {t('deckEditor.footnote', 'Note: The free-canvas editor (drag elements, rich text, live presentation, real-time collaboration, PDF/PNG export, and asset upload) is still available in the classic view. The v2 view focuses on structured slide CRUD.')}
         </p>
       </PageContainer>
     </Shell>
@@ -470,8 +463,8 @@ function Shell({
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -501,6 +494,7 @@ function SlideRow({
   onMoveDown: () => void;
   onRemove: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-md border border-border-subtle bg-bg-sunken/40 p-4">
       <div className="grid grid-cols-1 md:grid-cols-[40px_1fr_56px] gap-4 items-start">
@@ -509,7 +503,7 @@ function SlideRow({
           {/* index pill */}
           <div className="text-center pt-1 md:pt-1">
             <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-              Slide
+              {t('deckEditor.slide', 'Slide')}
             </div>
             <div className="mt-1 font-display font-semibold text-text-primary tabular-nums text-lg leading-none">
               {String(index + 1).padStart(2, '0')}
@@ -525,7 +519,7 @@ function SlideRow({
               onClick={onMoveUp}
               disabled={index === 0}
               className="text-text-tertiary hover:text-text-primary disabled:opacity-30"
-              aria-label="Pindah ke atas"
+              aria-label={t('deckEditor.moveUp', 'Move up')}
             >
               <ChevronUp className="h-4 w-4" />
             </Button>
@@ -536,7 +530,7 @@ function SlideRow({
               onClick={onMoveDown}
               disabled={index === total - 1}
               className="text-text-tertiary hover:text-text-primary disabled:opacity-30"
-              aria-label="Pindah ke bawah"
+              aria-label={t('deckEditor.moveDown', 'Move down')}
             >
               <ChevronDown className="h-4 w-4" />
             </Button>
@@ -546,7 +540,7 @@ function SlideRow({
               size="icon-sm"
               onClick={onRemove}
               className="text-text-tertiary hover:text-danger"
-              aria-label="Hapus slide"
+              aria-label={t('deckEditor.removeSlide', 'Remove slide')}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -556,13 +550,13 @@ function SlideRow({
         {/* fields */}
         <div className="space-y-3 min-w-0">
           <Input
-            placeholder="Judul slide (heading)"
+            placeholder={t('deckEditor.slideTitlePlaceholder', 'Slide title (heading)')}
             {...register(`slides.${index}.title` as const)}
             className="bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary text-sm"
           />
           <textarea
             rows={3}
-            placeholder="Isi / body slide"
+            placeholder={t('deckEditor.slideBodyPlaceholder', 'Slide body / content')}
             {...register(`slides.${index}.subtitle` as const)}
             className="block w-full resize-y rounded-md border border-border-subtle bg-bg-sunken/80 px-3 py-2 text-sm text-text-secondary placeholder:text-text-tertiary leading-relaxed outline-none focus-visible:border-accent-navy-ring focus-visible:ring-[3px] focus-visible:ring-accent-navy-ring/40"
           />
@@ -572,7 +566,7 @@ function SlideRow({
           <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-3">
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-[0.12em] font-medium text-text-tertiary">
-                Layout
+                {t('deckEditor.fieldLayout', 'Layout')}
               </Label>
               <Controller
                 control={control}
@@ -584,7 +578,7 @@ function SlideRow({
                     </SelectTrigger>
                     <SelectContent>
                       {LAYOUT_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        <SelectItem key={opt.value} value={opt.value}>{t(opt.labelKey, opt.labelFallback)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -593,7 +587,7 @@ function SlideRow({
             </div>
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-[0.12em] font-medium text-text-tertiary">
-                URL Gambar Latar
+                {t('deckEditor.fieldBgImage', 'Background Image URL')}
               </Label>
               <div className="relative">
                 <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-tertiary pointer-events-none" />
@@ -608,11 +602,11 @@ function SlideRow({
 
           <div className="space-y-1">
             <Label className="text-[10px] uppercase tracking-[0.12em] font-medium text-text-tertiary">
-              Catatan Pembicara
+              {t('deckEditor.fieldSpeakerNotes', 'Speaker Notes')}
             </Label>
             <textarea
               rows={2}
-              placeholder="Catatan untuk pembicara (opsional)"
+              placeholder={t('deckEditor.speakerNotesPlaceholder', 'Notes for the speaker (optional)')}
               {...register(`slides.${index}.notes` as const)}
               className="block w-full resize-y rounded-md border border-border-subtle bg-bg-sunken/60 px-3 py-1.5 text-xs text-text-tertiary placeholder:text-text-tertiary leading-relaxed outline-none focus-visible:border-accent-navy-ring focus-visible:ring-[3px] focus-visible:ring-accent-navy-ring/40"
             />
@@ -628,7 +622,7 @@ function SlideRow({
             onClick={onMoveUp}
             disabled={index === 0}
             className="text-text-tertiary hover:text-text-primary disabled:opacity-30"
-            aria-label="Pindah ke atas"
+            aria-label={t('deckEditor.moveUp', 'Move up')}
           >
             <ChevronUp className="h-4 w-4" />
           </Button>
@@ -639,7 +633,7 @@ function SlideRow({
             onClick={onMoveDown}
             disabled={index === total - 1}
             className="text-text-tertiary hover:text-text-primary disabled:opacity-30"
-            aria-label="Pindah ke bawah"
+            aria-label={t('deckEditor.moveDown', 'Move down')}
           >
             <ChevronDown className="h-4 w-4" />
           </Button>
@@ -649,7 +643,7 @@ function SlideRow({
             size="icon-sm"
             onClick={onRemove}
             className="text-text-tertiary hover:text-danger mt-1"
-            aria-label="Hapus slide"
+            aria-label={t('deckEditor.removeSlide', 'Remove slide')}
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>

@@ -29,6 +29,8 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -60,21 +62,10 @@ import { tokens } from '@/styles/tokens';
 /*  Sidebar                                                            */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Reports',    icon: <BarChart3   className="h-4 w-4" />, href: '/v2/reports' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 const STATUS_LABEL: Record<string, string> = {
-  DRAFT:     'Draf',
-  COMPLETED: 'Selesai',
-  SENT:      'Terkirim',
+  DRAFT:     'Draft',
+  COMPLETED: 'Completed',
+  SENT:      'Sent',
 };
 
 const statusChipClass = (status?: string) => {
@@ -181,10 +172,10 @@ export default function SocialMediaReportsPageV2() {
   };
 
   const handleDelete = (r: SocialMediaReport) => {
-    if (confirm(t('reports.confirmDelete', `Hapus laporan "${r.title}"?`))) {
+    if (confirm(t('socialMediaReports.confirmDelete', `Delete report "${r.title}"?`))) {
       deleteReport.mutate(r.id, {
-        onSuccess: () => toast.success(t('reports.deleted', 'Laporan berhasil dihapus.')),
-        onError: () => toast.error(t('reports.deleteFailed', 'Gagal menghapus laporan.')),
+        onSuccess: () => toast.success(t('socialMediaReports.deleted', 'Report deleted.')),
+        onError: () => toast.error(t('socialMediaReports.deleteFailed', 'Failed to delete report.')),
       });
     }
   };
@@ -193,8 +184,8 @@ export default function SocialMediaReportsPageV2() {
     return (
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
         topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -202,7 +193,7 @@ export default function SocialMediaReportsPageV2() {
         <PageContainer>
           <EmptyState
             icon={<BarChart3 className="h-12 w-12" />}
-            title={t('socialReports.error.title', 'Tidak bisa memuat laporan')}
+            title={t('socialMediaReports.error.title', 'Unable to load reports')}
             description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
             action={<Button onClick={() => refetch()}>{t('common.retry', 'Coba Lagi')}</Button>}
           />
@@ -214,23 +205,23 @@ export default function SocialMediaReportsPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
     >
       <PageContainer>
         <PageHeader
-          title={t('socialReports.title', 'Laporan Sosial Media')}
+          title={t('socialMediaReports.title', 'Social Media Reports')}
           description={t(
-            'socialReports.subtitle',
-            'Analitik lintas-platform, performa konten, dan laporan klien yang tersimpan.',
+            'socialMediaReports.subtitle',
+            'Cross-platform analytics, content performance, and saved client reports.',
           )}
           actions={
             <Button onClick={() => navigate('/v2/reports/builder')} size="sm">
               <Plus className="h-4 w-4" />
-              {t('socialReports.new', 'Laporan Baru')}
+              {t('socialMediaReports.new', 'New Report')}
             </Button>
           }
         />
@@ -239,24 +230,24 @@ export default function SocialMediaReportsPageV2() {
         <section className="mb-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <StatCard
-              label={t('socialReports.kpi.followers', 'Total Pengikut')}
+              label={t('socialMediaReports.kpi.followers', 'Total Followers')}
               value={formatCompact(aggregates.followers)}
-              sublabel={t('socialReports.kpi.followersSub', 'di semua platform')}
+              sublabel={t('socialMediaReports.kpi.followersSub', 'across all platforms')}
             />
             <StatCard
-              label={t('socialReports.kpi.reach', 'Jangkauan')}
+              label={t('socialMediaReports.kpi.reach', 'Reach')}
               value={formatCompact(aggregates.reach)}
-              sublabel={t('socialReports.kpi.reachSub', '30 hari terakhir')}
+              sublabel={t('socialMediaReports.kpi.reachSub', 'last 30 days')}
             />
             <StatCard
-              label={t('socialReports.kpi.engagement', 'Tingkat Engagement')}
+              label={t('socialMediaReports.kpi.engagement', 'Engagement Rate')}
               value={`${aggregates.engagement.toFixed(1)}%`}
-              sublabel={t('socialReports.kpi.engagementSub', 'rata-rata lintas-platform')}
+              sublabel={t('socialMediaReports.kpi.engagementSub', 'average across platforms')}
             />
             <StatCard
-              label={t('socialReports.kpi.reports', 'Laporan Tersimpan')}
+              label={t('socialMediaReports.kpi.reports', 'Saved Reports')}
               value={aggregates.reportsCount}
-              sublabel={t('socialReports.kpi.reportsSub', 'siap dibagikan')}
+              sublabel={t('socialMediaReports.kpi.reportsSub', 'ready to share')}
             />
           </div>
         </section>
@@ -266,12 +257,12 @@ export default function SocialMediaReportsPageV2() {
           <div className="mb-5 flex items-baseline justify-between gap-4">
             <div>
               <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                {t('socialReports.platform.title', 'Breakdown per Platform')}
+                {t('socialMediaReports.platform.title', 'Per-Platform Breakdown')}
               </h2>
               <p className="mt-0.5 text-xs text-text-tertiary">
                 {t(
-                  'socialReports.platform.subtitle',
-                  'Performa per kanal — pengikut, engagement, dan jangkauan.',
+                  'socialMediaReports.platform.subtitle',
+                  'Performance by channel — followers, engagement, and reach.',
                 )}
               </p>
             </div>
@@ -297,7 +288,7 @@ export default function SocialMediaReportsPageV2() {
                   <div className="space-y-3">
                     <div>
                       <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-0.5">
-                        Pengikut
+                        {t('socialMediaReports.platform.followers', 'Followers')}
                       </div>
                       <div className="text-lg font-display font-semibold text-text-primary tabular-nums">
                         {formatCompact(p.followers)}
@@ -305,13 +296,13 @@ export default function SocialMediaReportsPageV2() {
                     </div>
                     <div className="flex items-baseline justify-between text-xs">
                       <div>
-                        <div className="text-text-tertiary">Engagement</div>
+                        <div className="text-text-tertiary">{t('socialMediaReports.platform.engagement', 'Engagement')}</div>
                         <div className="text-text-secondary tabular-nums">
                           {p.engagement.toFixed(1)}%
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-text-tertiary">Jangkauan</div>
+                        <div className="text-text-tertiary">{t('socialMediaReports.platform.reach', 'Reach')}</div>
                         <div className="text-text-secondary tabular-nums">
                           {formatCompact(p.reach)}
                         </div>
@@ -331,15 +322,15 @@ export default function SocialMediaReportsPageV2() {
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
                 <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                  {t('socialReports.engagementTrend', 'Tren Engagement')}
+                  {t('socialMediaReports.engagementTrend', 'Engagement Trend')}
                 </h2>
                 <p className="mt-0.5 text-xs text-text-tertiary">
-                  {t('socialReports.last6Months', 'Enam bulan terakhir')}
+                  {t('socialMediaReports.last6Months', 'Last six months')}
                 </p>
               </div>
               <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
                 <span className="inline-flex items-center gap-1.5">
-                  <Heart className="h-3 w-3" /> Engagement
+                  <Heart className="h-3 w-3" /> {t('socialMediaReports.platform.engagement', 'Engagement')}
                 </span>
               </div>
             </div>
@@ -357,7 +348,7 @@ export default function SocialMediaReportsPageV2() {
                 <Tooltip
                   contentStyle={tooltipStyle}
                   cursor={{ stroke: tokens.border.default }}
-                  formatter={(v) => [`${v}%`, 'Engagement']}
+                  formatter={(v) => [`${v}%`, t('socialMediaReports.platform.engagement', 'Engagement')]}
                 />
                 <Line
                   type="monotone"
@@ -375,15 +366,15 @@ export default function SocialMediaReportsPageV2() {
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
                 <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                  {t('socialReports.reachVolume', 'Volume Jangkauan')}
+                  {t('socialMediaReports.reachVolume', 'Reach Volume')}
                 </h2>
                 <p className="mt-0.5 text-xs text-text-tertiary">
-                  {t('socialReports.reachSubtitle', 'Pengguna unik per bulan')}
+                  {t('socialMediaReports.reachSubtitle', 'Unique users per month')}
                 </p>
               </div>
               <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
                 <span className="inline-flex items-center gap-1.5">
-                  <Share2 className="h-3 w-3" /> Jangkauan
+                  <Share2 className="h-3 w-3" /> {t('socialMediaReports.platform.reach', 'Reach')}
                 </span>
               </div>
             </div>
@@ -401,7 +392,7 @@ export default function SocialMediaReportsPageV2() {
                 <Tooltip
                   contentStyle={tooltipStyle}
                   cursor={{ fill: 'rgba(246,243,232,0.04)' }}
-                  formatter={(v) => [formatCompact(Number(v)), 'Jangkauan']}
+                  formatter={(v) => [formatCompact(Number(v)), t('socialMediaReports.platform.reach', 'Reach')]}
                 />
                 <Bar dataKey="reach" fill={chartColors[1]} radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -416,17 +407,17 @@ export default function SocialMediaReportsPageV2() {
             <div className="mb-3 flex items-baseline justify-between gap-4">
               <div>
                 <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                  {t('socialReports.saved.title', 'Laporan Klien Tersimpan')}
+                  {t('socialMediaReports.saved.title', 'Saved Client Reports')}
                 </h2>
                 <p className="mt-0.5 text-xs text-text-tertiary">
                   {isLoading
                     ? t('common.loading', 'Memuat…')
-                    : t('socialReports.saved.count', '{{count}} laporan untuk klien', { count: reports.length })}
+                    : t('socialMediaReports.saved.count', '{{count}} client reports', { count: reports.length })}
                 </p>
               </div>
               <div className="inline-flex items-center gap-1.5 text-xs text-text-tertiary">
                 <MessageCircle className="h-3.5 w-3.5" />
-                <span>Laporan per-klien</span>
+                <span>{t('socialMediaReports.perClientReports', 'Per-client reports')}</span>
               </div>
             </div>
 
@@ -438,8 +429,8 @@ export default function SocialMediaReportsPageV2() {
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   placeholder={t(
-                    'socialReports.search.placeholder',
-                    'Cari judul, proyek, atau klien...',
+                    'socialMediaReports.search.placeholder',
+                    'Search by title, project, or client…',
                   )}
                   className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
                 />
@@ -451,10 +442,10 @@ export default function SocialMediaReportsPageV2() {
                     size="sm"
                     className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[150px]"
                   >
-                    <SelectValue placeholder={t('reports.filter.status', 'Status')} />
+                    <SelectValue placeholder={t('socialMediaReports.filter.status', 'Status')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t('reports.filter.allStatuses', 'Semua Status')}</SelectItem>
+                    <SelectItem value="all">{t('socialMediaReports.filter.allStatuses', 'All Statuses')}</SelectItem>
                     <SelectItem value="DRAFT">{STATUS_LABEL.DRAFT}</SelectItem>
                     <SelectItem value="COMPLETED">{STATUS_LABEL.COMPLETED}</SelectItem>
                     <SelectItem value="SENT">{STATUS_LABEL.SENT}</SelectItem>
@@ -487,15 +478,15 @@ export default function SocialMediaReportsPageV2() {
               icon={<MessageCircle className="h-12 w-12" />}
               title={
                 hasActiveFilters
-                  ? t('socialReports.empty.filtered.title', 'Tidak ada laporan yang cocok')
-                  : t('socialReports.empty.title', 'Belum ada laporan klien')
+                  ? t('socialMediaReports.empty.filtered.title', 'No matching reports')
+                  : t('socialMediaReports.empty.title', 'No client reports yet')
               }
               description={
                 hasActiveFilters
-                  ? t('socialReports.empty.filtered.desc', 'Coba ubah atau hapus filter Anda.')
+                  ? t('socialMediaReports.empty.filtered.desc', 'Try adjusting or clearing your filters.')
                   : t(
-                      'socialReports.empty.desc',
-                      'Buat laporan sosial-media pertama untuk klien Anda.',
+                      'socialMediaReports.empty.desc',
+                      'Create your first social media report for a client.',
                     )
               }
               action={
@@ -506,7 +497,7 @@ export default function SocialMediaReportsPageV2() {
                 ) : (
                   <Button onClick={() => navigate('/v2/reports/builder')} size="sm">
                     <Plus className="h-4 w-4" />
-                    {t('socialReports.new', 'Laporan Baru')}
+                    {t('socialMediaReports.new', 'New Report')}
                   </Button>
                 )
               }
@@ -521,7 +512,7 @@ export default function SocialMediaReportsPageV2() {
                   {
                     id: 'title',
                     accessorKey: 'title',
-                    header: 'Judul',
+                    header: t('socialMediaReports.col.title', 'Title'),
                     cell: ({ row }) => (
                       <div className="min-w-0 max-w-[300px]">
                         <div className="text-sm text-text-primary truncate">
@@ -538,7 +529,7 @@ export default function SocialMediaReportsPageV2() {
                   {
                     id: 'client',
                     accessorFn: (r) => r.project?.client?.name ?? '',
-                    header: 'Klien',
+                    header: t('socialMediaReports.col.client', 'Client'),
                     cell: ({ row }) => (
                       <span className="text-sm text-text-secondary">
                         {row.original.project?.client?.name || '—'}
@@ -547,7 +538,7 @@ export default function SocialMediaReportsPageV2() {
                   },
                   {
                     id: 'period',
-                    header: 'Periode',
+                    header: t('socialMediaReports.col.period', 'Period'),
                     cell: ({ row }) => (
                       <span className="text-text-secondary text-xs">
                         {ReportUtils.formatPeriod(row.original.month, row.original.year)}
@@ -556,7 +547,7 @@ export default function SocialMediaReportsPageV2() {
                   },
                   {
                     id: 'sections',
-                    header: 'Bagian',
+                    header: t('socialMediaReports.col.sections', 'Sections'),
                     cell: ({ row }) => (
                       <span className="text-text-secondary text-xs tabular-nums">
                         {row.original.sections?.length ?? 0}
@@ -565,7 +556,7 @@ export default function SocialMediaReportsPageV2() {
                   },
                   {
                     accessorKey: 'status',
-                    header: 'Status',
+                    header: t('socialMediaReports.col.status', 'Status'),
                     cell: ({ row }) => (
                       <Badge
                         variant="outline"
@@ -580,7 +571,7 @@ export default function SocialMediaReportsPageV2() {
                   },
                   {
                     accessorKey: 'updatedAt',
-                    header: 'Diperbarui',
+                    header: t('socialMediaReports.col.updatedAt', 'Updated'),
                     cell: ({ row }) => (
                       <span className="text-text-tertiary text-xs">
                         <DateDisplay date={row.original.updatedAt} />
@@ -589,7 +580,7 @@ export default function SocialMediaReportsPageV2() {
                   },
                   {
                     id: 'actions',
-                    header: () => <span className="sr-only">Aksi</span>,
+                    header: () => <span className="sr-only">{t('socialMediaReports.col.actions', 'Actions')}</span>,
                     cell: ({ row }) => {
                       const r = row.original;
                       return (
@@ -600,21 +591,21 @@ export default function SocialMediaReportsPageV2() {
                                 variant="ghost"
                                 size="icon-sm"
                                 className="text-text-tertiary hover:text-text-primary"
-                                aria-label="Aksi laporan"
+                                aria-label={t('socialMediaReports.reportActions', 'Report actions')}
                               >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
                               <DropdownMenuItem onClick={() => navigate(`/v2/reports/${r.id}`)}>
-                                <Eye className="h-3.5 w-3.5" /> Lihat
+                                <Eye className="h-3.5 w-3.5" /> {t('common.view', 'View')}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => handleDelete(r)}
                                 className="text-danger focus:text-danger"
                               >
-                                <Trash2 className="h-3.5 w-3.5" /> Hapus
+                                <Trash2 className="h-3.5 w-3.5" /> {t('common.delete', 'Delete')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

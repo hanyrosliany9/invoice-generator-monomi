@@ -20,16 +20,25 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'id', // Indonesian as default
-    lng: 'id',
+    // English is the default for all users, regardless of browser locale.
+    // Users in Indonesia explicitly chose to operate the app in English;
+    // they can switch to Indonesian via the LanguageSwitcher and the choice
+    // persists in localStorage via i18next-browser-languagedetector.
+    fallbackLng: 'en',
+    // NOTE: do NOT hardcode `lng` here — that would override any saved
+    // localStorage choice on every page load. Let the detector decide.
 
     interpolation: {
       escapeValue: false, // React already does escaping
     },
 
     detection: {
-      order: ['localStorage', 'navigator'],
+      // localStorage first (user choice), then fall through to fallbackLng=en.
+      // `navigator` is intentionally excluded: Indonesian users have
+      // navigator.language='id' which would defeat the English-default intent.
+      order: ['localStorage'],
       caches: ['localStorage'],
+      lookupLocalStorage: 'monomi.lang',
     },
   })
 

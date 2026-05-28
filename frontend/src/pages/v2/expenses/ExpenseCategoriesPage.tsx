@@ -7,6 +7,8 @@ import {
   ArrowLeft, Plus, Pencil, Trash2, Search, X, Tag as TagIcon,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -40,37 +42,27 @@ import { cn } from '@/lib/utils';
 /*  reads as the same section.                                         */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Helpers / label maps                                               */
 /* ------------------------------------------------------------------ */
 
 const CLASS_LABEL: Record<string, string> = {
-  SELLING:        'Penjualan',
-  GENERAL_ADMIN:  'Adm. Umum',
-  OTHER:          'Lain-Lain',
+  SELLING:        'Selling',
+  GENERAL_ADMIN:  'General & Admin',
+  OTHER:          'Other',
 };
 
 const PPH_LABEL: Record<string, string> = {
-  NONE:    'Tanpa Potongan',
+  NONE:    'No Withholding',
   PPH23:   'PPh 23 (2%)',
   PPH4_2:  'PPh 4(2) (10%)',
   PPH15:   'PPh 15',
 };
 
 const PPN_LABEL: Record<string, string> = {
-  CREDITABLE:     'Dapat Dikreditkan',
-  NON_CREDITABLE: 'Tidak Dapat Dikreditkan',
-  EXEMPT:         'Bebas PPN',
+  CREDITABLE:     'Creditable',
+  NON_CREDITABLE: 'Non-Creditable',
+  EXEMPT:         'VAT Exempt',
 };
 
 /* ------------------------------------------------------------------ */
@@ -235,8 +227,8 @@ export default function ExpenseCategoriesPageV2() {
 
     if (!form.code.trim() || !form.accountCode.trim() || !form.name.trim()) {
       setFormError(t(
-        'expenses.categories.validation.required',
-        'Kode, Kode Akun, dan Nama wajib diisi.',
+        'expenseCategories.validation.required',
+        'Code, Account Code, and Name are required.',
       ));
       return;
     }
@@ -270,8 +262,8 @@ export default function ExpenseCategoriesPageV2() {
 
   const handleDelete = (cat: ExpenseCategory) => {
     if (confirm(t(
-      'expenses.categories.confirmDelete',
-      `Hapus kategori "${cat.nameId || cat.name}"? Hanya kategori yang belum digunakan oleh biaya yang dapat dihapus.`,
+      'expenseCategories.confirmDelete',
+      `Delete category "${cat.nameId || cat.name}"? Only categories not used by any expense can be deleted.`,
     ))) {
       deleteMutation.mutate(cat.id);
     }
@@ -281,8 +273,8 @@ export default function ExpenseCategoriesPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -299,9 +291,9 @@ export default function ExpenseCategoriesPageV2() {
       <Shell>
         <EmptyState
           icon={<TagIcon className="h-12 w-12" />}
-          title={t('expenses.categories.error.title', 'Tidak bisa memuat kategori')}
-          description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-          action={<Button onClick={() => refetch()}>{t('common.retry', 'Coba Lagi')}</Button>}
+          title={t('expenseCategories.error.title', 'Cannot load categories')}
+          description={error instanceof Error ? error.message : t('expenseCategories.error.generic', 'An error occurred')}
+          action={<Button onClick={() => refetch()}>{t('expenseCategories.retry', 'Try Again')}</Button>}
         />
       </Shell>
     );
@@ -318,20 +310,17 @@ export default function ExpenseCategoriesPageV2() {
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          {t('expenses.categories.backToList', 'Kembali ke Biaya')}
+          {t('expenseCategories.backToList', 'Back to Expenses')}
         </Link>
       </div>
 
       <PageHeader
-        title={t('expenses.categories.title', 'Kategori Biaya')}
-        description={t(
-          'expenses.categories.subtitle',
-          'Kelola kategori biaya dan pemetaan kode akun PSAK Indonesia.',
-        )}
+        title={t('expenseCategories.title', 'Expense Categories')}
+        description={t('expenseCategories.subtitle', 'Manage expense categories and Indonesian PSAK account code mappings.')}
         actions={
           <Button size="sm" onClick={openCreate}>
             <Plus className="h-4 w-4" />
-            {t('expenses.categories.add', 'Tambah Kategori')}
+            {t('expenseCategories.add', 'Add Category')}
           </Button>
         }
       />
@@ -351,7 +340,7 @@ export default function ExpenseCategoriesPageV2() {
             <Input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder={t('expenses.categories.search.placeholder', 'Cari kode, akun, atau nama...')}
+              placeholder={t('expenseCategories.search.placeholder', 'Search by code, account, or name...')}
               className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
             />
           </div>
@@ -362,10 +351,10 @@ export default function ExpenseCategoriesPageV2() {
                 size="sm"
                 className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[160px]"
               >
-                <SelectValue placeholder={t('expenses.categories.filter.class', 'Kelas')} />
+                <SelectValue placeholder={t('expenseCategories.filter.class', 'Class')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('expenses.categories.filter.allClasses', 'Semua Kelas')}</SelectItem>
+                <SelectItem value="all">{t('expenseCategories.filter.allClasses', 'All Classes')}</SelectItem>
                 <SelectItem value="SELLING">{CLASS_LABEL.SELLING}</SelectItem>
                 <SelectItem value="GENERAL_ADMIN">{CLASS_LABEL.GENERAL_ADMIN}</SelectItem>
                 <SelectItem value="OTHER">{CLASS_LABEL.OTHER}</SelectItem>
@@ -380,7 +369,7 @@ export default function ExpenseCategoriesPageV2() {
                 className="text-text-tertiary hover:text-text-primary"
               >
                 <X className="h-3.5 w-3.5" />
-                {t('common.reset', 'Reset')}
+                {t('expenseCategories.filter.reset', 'Reset')}
               </Button>
             )}
           </div>
@@ -399,23 +388,23 @@ export default function ExpenseCategoriesPageV2() {
             icon={<TagIcon />}
             title={
               hasActiveFilters
-                ? t('expenses.categories.empty.filtered.title', 'Tidak ada kategori yang cocok')
-                : t('expenses.categories.empty.title', 'Belum ada kategori')
+                ? t('expenseCategories.empty.filteredTitle', 'No categories match')
+                : t('expenseCategories.empty.title', 'No categories yet')
             }
             description={
               hasActiveFilters
-                ? t('expenses.categories.empty.filtered.desc', 'Coba ubah atau hapus filter Anda.')
-                : t('expenses.categories.empty.desc', 'Buat kategori pertama untuk mengelompokkan biaya.')
+                ? t('expenseCategories.empty.filteredDesc', 'Try adjusting or clearing your filters.')
+                : t('expenseCategories.empty.desc', 'Create your first category to group expenses.')
             }
             action={
               hasActiveFilters ? (
                 <Button variant="outline" size="sm" onClick={resetFilters}>
-                  {t('common.resetFilters', 'Reset Filter')}
+                  {t('expenseCategories.empty.resetFilters', 'Reset Filters')}
                 </Button>
               ) : (
                 <Button onClick={openCreate} size="sm">
                   <Plus className="h-4 w-4" />
-                  {t('expenses.categories.add', 'Tambah Kategori')}
+                  {t('expenseCategories.add', 'Add Category')}
                 </Button>
               )
             }
@@ -445,22 +434,19 @@ export default function ExpenseCategoriesPageV2() {
           <DialogHeader>
             <DialogTitle className="text-text-primary font-display">
               {editing
-                ? t('expenses.categories.dialog.editTitle', 'Ubah Kategori')
-                : t('expenses.categories.dialog.createTitle', 'Tambah Kategori')}
+                ? t('expenseCategories.dialog.editTitle', 'Edit Category')
+                : t('expenseCategories.dialog.createTitle', 'Add Category')}
             </DialogTitle>
             <DialogDescription className="text-text-tertiary">
-              {t(
-                'expenses.categories.dialog.desc',
-                'Kategori dipetakan ke kode akun PSAK dan default pajak Indonesia.',
-              )}
+              {t('expenseCategories.dialog.desc', 'Categories map to PSAK account codes and Indonesian tax defaults.')}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-6 mt-2">
             {/* Identity */}
-            <FormSection title={t('expenses.categories.section.identity', 'Identitas')}>
+            <FormSection title={t('expenseCategories.section.identity', 'Identity')}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField label={t('expenses.categories.field.code', 'Kode Kategori')} required>
+                <FormField label={t('expenseCategories.field.code', 'Category Code')} required>
                   <Input
                     value={form.code}
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
@@ -469,7 +455,7 @@ export default function ExpenseCategoriesPageV2() {
                     className="font-mono bg-bg-sunken border-border-subtle text-text-primary"
                   />
                 </FormField>
-                <FormField label={t('expenses.categories.field.account', 'Kode Akun PSAK')} required>
+                <FormField label={t('expenseCategories.field.account', 'PSAK Account Code')} required>
                   <Input
                     value={form.accountCode}
                     onChange={(e) => setForm({ ...form, accountCode: e.target.value })}
@@ -477,7 +463,7 @@ export default function ExpenseCategoriesPageV2() {
                     className="font-mono bg-bg-sunken border-border-subtle text-text-primary"
                   />
                 </FormField>
-                <FormField label={t('expenses.categories.field.name', 'Nama (English)')} required>
+                <FormField label={t('expenseCategories.field.name', 'Name (English)')} required>
                   <Input
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -485,7 +471,7 @@ export default function ExpenseCategoriesPageV2() {
                     className="bg-bg-sunken border-border-subtle text-text-primary"
                   />
                 </FormField>
-                <FormField label={t('expenses.categories.field.nameId', 'Nama (Bahasa Indonesia)')}>
+                <FormField label={t('expenseCategories.field.nameId', 'Name (Bahasa Indonesia)')}>
                   <Input
                     value={form.nameId}
                     onChange={(e) => setForm({ ...form, nameId: e.target.value })}
@@ -493,7 +479,7 @@ export default function ExpenseCategoriesPageV2() {
                     className="bg-bg-sunken border-border-subtle text-text-primary"
                   />
                 </FormField>
-                <FormField label={t('expenses.categories.field.description', 'Deskripsi (English)')}>
+                <FormField label={t('expenseCategories.field.description', 'Description (English)')}>
                   <Input
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -501,7 +487,7 @@ export default function ExpenseCategoriesPageV2() {
                     className="bg-bg-sunken border-border-subtle text-text-primary"
                   />
                 </FormField>
-                <FormField label={t('expenses.categories.field.descriptionId', 'Deskripsi (Bahasa Indonesia)')}>
+                <FormField label={t('expenseCategories.field.descriptionId', 'Description (Bahasa Indonesia)')}>
                   <Input
                     value={form.descriptionId}
                     onChange={(e) => setForm({ ...form, descriptionId: e.target.value })}
@@ -515,9 +501,9 @@ export default function ExpenseCategoriesPageV2() {
             <Separator className="bg-border-subtle" />
 
             {/* Classification */}
-            <FormSection title={t('expenses.categories.section.classification', 'Klasifikasi')}>
+            <FormSection title={t('expenseCategories.section.classification', 'Classification')}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField label={t('expenses.categories.field.class', 'Kelas Biaya')}>
+                <FormField label={t('expenseCategories.field.class', 'Expense Class')}>
                   <Select
                     value={form.expenseClass}
                     onValueChange={(v) => setForm({ ...form, expenseClass: v as ExpenseClass })}
@@ -533,7 +519,7 @@ export default function ExpenseCategoriesPageV2() {
                   </Select>
                 </FormField>
 
-                <FormField label={t('expenses.categories.field.ppnCategory', 'Kategori PPN Default')}>
+                <FormField label={t('expenseCategories.field.ppnCategory', 'Default VAT Category')}>
                   <Select
                     value={form.defaultPPNCategory}
                     onValueChange={(v) => setForm({ ...form, defaultPPNCategory: v as PPNCategory })}
@@ -554,9 +540,9 @@ export default function ExpenseCategoriesPageV2() {
             <Separator className="bg-border-subtle" />
 
             {/* Withholding tax defaults */}
-            <FormSection title={t('expenses.categories.section.withholding', 'Pajak Dipotong (PPh)')}>
+            <FormSection title={t('expenseCategories.section.withholding', 'Withholding Tax (PPh)')}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField label={t('expenses.categories.field.pphType', 'Jenis PPh Default')}>
+                <FormField label={t('expenseCategories.field.pphType', 'Default PPh Type')}>
                   <Select
                     value={form.withholdingTaxType}
                     onValueChange={(v) => setForm({
@@ -578,7 +564,7 @@ export default function ExpenseCategoriesPageV2() {
                   </Select>
                 </FormField>
 
-                <FormField label={t('expenses.categories.field.pphRate', 'Tarif PPh (%)')}>
+                <FormField label={t('expenseCategories.field.pphRate', 'PPh Rate (%)')}>
                   <Input
                     type="number"
                     min={0}
@@ -599,32 +585,23 @@ export default function ExpenseCategoriesPageV2() {
             {/* Flags — rendered as a vertical stack of label/switch rows
                 rather than a grid of toggles, so the affordance reads
                 like a settings checklist. */}
-            <FormSection title={t('expenses.categories.section.flags', 'Pengaturan')}>
+            <FormSection title={t('expenseCategories.section.flags', 'Settings')}>
               <div className="space-y-3">
                 <FlagRow
-                  label={t('expenses.categories.field.requiresEfaktur', 'Memerlukan e-Faktur')}
-                  hint={t(
-                    'expenses.categories.field.requiresEfakturHint',
-                    'Biaya dalam kategori ini wajib menyertakan NSFP e-Faktur.',
-                  )}
+                  label={t('expenseCategories.field.requiresEfaktur', 'Requires e-Faktur')}
+                  hint={t('expenseCategories.field.requiresEfakturHint', 'Expenses in this category must include an e-Faktur NSFP.')}
                   checked={form.requiresEFaktur}
                   onCheckedChange={(v) => setForm({ ...form, requiresEFaktur: v })}
                 />
                 <FlagRow
-                  label={t('expenses.categories.field.isBillable', 'Dapat Ditagihkan ke Klien')}
-                  hint={t(
-                    'expenses.categories.field.isBillableHint',
-                    'Biaya pada kategori ini bisa di-passthrough ke tagihan klien.',
-                  )}
+                  label={t('expenseCategories.field.isBillable', 'Billable to Client')}
+                  hint={t('expenseCategories.field.isBillableHint', 'Expenses in this category can be passed through to client invoices.')}
                   checked={form.isBillable}
                   onCheckedChange={(v) => setForm({ ...form, isBillable: v })}
                 />
                 <FlagRow
-                  label={t('expenses.categories.field.isActive', 'Aktif')}
-                  hint={t(
-                    'expenses.categories.field.isActiveHint',
-                    'Kategori nonaktif tetap tersimpan tapi tidak muncul saat membuat biaya baru.',
-                  )}
+                  label={t('expenseCategories.field.isActive', 'Active')}
+                  hint={t('expenseCategories.field.isActiveHint', 'Inactive categories are retained but hidden when creating new expenses.')}
                   checked={form.isActive}
                   onCheckedChange={(v) => setForm({ ...form, isActive: v })}
                 />
@@ -639,7 +616,7 @@ export default function ExpenseCategoriesPageV2() {
 
             <DialogFooter className="gap-2">
               <Button type="button" variant="outline" size="sm" onClick={closeDialog}>
-                {t('common.cancel', 'Batal')}
+                {t('expenseCategories.cancel', 'Cancel')}
               </Button>
               <Button
                 type="submit"
@@ -647,8 +624,8 @@ export default function ExpenseCategoriesPageV2() {
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
                 {editing
-                  ? t('expenses.categories.action.update', 'Simpan Perubahan')
-                  : t('expenses.categories.action.create', 'Buat Kategori')}
+                  ? t('expenseCategories.action.update', 'Save Changes')
+                  : t('expenseCategories.action.create', 'Create Category')}
               </Button>
             </DialogFooter>
           </form>
@@ -674,6 +651,7 @@ interface CategoryRowProps {
 }
 
 function CategoryRow({ category, onEdit, onDelete }: CategoryRowProps) {
+  const { t } = useTranslation();
   const pphRatePct = category.withholdingTaxRate
     ? `${(category.withholdingTaxRate * 100).toFixed(1)}%`
     : null;
@@ -706,7 +684,7 @@ function CategoryRow({ category, onEdit, onDelete }: CategoryRowProps) {
           </Badge>
           {!category.isActive && (
             <Badge variant="secondary" className="text-[10px]">
-              Nonaktif
+              {t('expenseCategories.inactive', 'Inactive')}
             </Badge>
           )}
         </div>
@@ -730,7 +708,7 @@ function CategoryRow({ category, onEdit, onDelete }: CategoryRowProps) {
           <span>{PPN_LABEL[category.defaultPPNCategory] ?? category.defaultPPNCategory}</span>
         )}
         {category.requiresEFaktur && (
-          <span className="text-[10px] uppercase tracking-[0.12em] mt-0.5">e-Faktur wajib</span>
+          <span className="text-[10px] uppercase tracking-[0.12em] mt-0.5">{t('expenseCategories.eFakturRequired', 'e-Faktur required')}</span>
         )}
       </div>
 
@@ -741,7 +719,7 @@ function CategoryRow({ category, onEdit, onDelete }: CategoryRowProps) {
           size="icon-sm"
           onClick={onEdit}
           className="text-text-tertiary hover:text-text-primary"
-          aria-label={`Ubah kategori ${category.nameId || category.name}`}
+          aria-label={t("expenseCategories.ariaEdit", "Edit category {{name}}", { name: category.nameId || category.name })}
         >
           <Pencil className="h-3.5 w-3.5" />
         </Button>
@@ -750,7 +728,7 @@ function CategoryRow({ category, onEdit, onDelete }: CategoryRowProps) {
           size="icon-sm"
           onClick={onDelete}
           className="text-text-tertiary hover:text-danger"
-          aria-label={`Hapus kategori ${category.nameId || category.name}`}
+          aria-label={t("expenseCategories.ariaDelete", "Delete category {{name}}", { name: category.nameId || category.name })}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>

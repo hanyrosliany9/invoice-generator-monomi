@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -7,6 +8,8 @@ import {
   Printer, Download, Calculator,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -37,17 +40,6 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                            */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Akuntansi',  icon: <BookOpen    className="h-4 w-4" />, href: '/v2/accounting/general-ledger' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -86,6 +78,7 @@ const EMPTY_FORM: CreateForm = {
 /* ------------------------------------------------------------------ */
 
 export default function CashBankBalancePage() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
@@ -120,31 +113,31 @@ export default function CashBankBalancePage() {
   const createMutation = useMutation({
     mutationFn: createCashBankBalance,
     onSuccess: () => {
-      toast.success('Saldo kas/bank berhasil dihitung dan disimpan');
+      toast.success(t('accounting.cashBankBalance.createSuccess', 'Cash & bank balance calculated and saved'));
       invalidate();
       setCreateOpen(false);
       setForm(EMPTY_FORM);
     },
-    onError: () => toast.error('Gagal menyimpan saldo kas/bank'),
+    onError: () => toast.error(t('accounting.cashBankBalance.createFail', 'Failed to save cash & bank balance')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteCashBankBalance,
     onSuccess: () => {
-      toast.success('Saldo berhasil dihapus');
+      toast.success(t('accounting.cashBankBalance.deleteSuccess', 'Balance deleted'));
       invalidate();
       setDeleteTarget(null);
     },
-    onError: () => toast.error('Gagal menghapus saldo'),
+    onError: () => toast.error(t('accounting.cashBankBalance.deleteFail', 'Failed to delete balance')),
   });
 
   const handleCreate = () => {
     if (!form.periodDate) {
-      toast.error('Pilih periode terlebih dahulu');
+      toast.error(t('accounting.cashBankBalance.validationPeriod', 'Please select a period first'));
       return;
     }
     if (!form.openingBalance) {
-      toast.error('Saldo awal harus diisi');
+      toast.error(t('accounting.cashBankBalance.validationOpening', 'Opening balance is required'));
       return;
     }
     const d       = form.periodDate;
@@ -169,8 +162,8 @@ export default function CashBankBalancePage() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -184,9 +177,9 @@ export default function CashBankBalancePage() {
       <Shell>
         <EmptyState
           icon={<BookOpen className="h-12 w-12" />}
-          title="Tidak bisa memuat saldo kas/bank"
-          description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-          action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+          title={t('accounting.cashBankBalance.errorTitle', 'Cannot load cash & bank balance')}
+          description={error instanceof Error ? error.message : t('accounting.cashBankBalance.errorGeneric', 'An error occurred')}
+          action={<Button onClick={() => refetch()}>{t('accounting.cashBankBalance.retry', 'Try Again')}</Button>}
         />
       </Shell>
     );
@@ -195,15 +188,15 @@ export default function CashBankBalancePage() {
   return (
     <Shell>
       <PageHeader
-        title="Saldo Kas & Bank"
-        description="Ringkasan posisi kas dan bank per periode, dihitung otomatis dari jurnal."
+        title={t('cashBankBalance.pageTitle', 'Cash & Bank Balance')}
+        description={t('cashBankBalance.pageDesc', 'Summary of cash and bank positions per period, automatically calculated from journal entries.')}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Printer className="h-4 w-4" /> Cetak
+              <Printer className="h-4 w-4" /> {t('accounting.cashBankBalance.print', 'Print')}
             </Button>
             <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Calculator className="h-4 w-4" /> Hitung Periode Baru
+              <Calculator className="h-4 w-4" /> {t('accounting.cashBankBalance.calcNewPeriod', 'Calculate New Period')}
             </Button>
           </div>
         }
@@ -217,22 +210,22 @@ export default function CashBankBalancePage() {
           ) : (
             <>
               <StatCard
-                label="Saldo Terakhir"
+                label={t('accounting.cashBankBalance.statLatestBalance', 'Latest Balance')}
                 value={<MoneyDisplay amount={stats.closingLatest} className="text-success" />}
                 sublabel={stats.latestPeriod}
               />
               <StatCard
-                label="Total Masuk (Periode Terakhir)"
+                label={t('accounting.cashBankBalance.statTotalInflow', 'Total Inflow (Last Period)')}
                 value={<MoneyDisplay amount={stats.totalInflow} className="text-success" />}
-                sublabel="dari jurnal entri"
+                sublabel={t('accounting.cashBankBalance.statFromJournal', 'from journal entries')}
               />
               <StatCard
-                label="Total Keluar (Periode Terakhir)"
+                label={t('accounting.cashBankBalance.statTotalOutflow', 'Total Outflow (Last Period)')}
                 value={<MoneyDisplay amount={stats.totalOutflow} className="text-danger" />}
-                sublabel="dari jurnal entri"
+                sublabel={t('accounting.cashBankBalance.statFromJournal', 'from journal entries')}
               />
               <StatCard
-                label="Perubahan Bersih"
+                label={t('accounting.cashBankBalance.statNetChange', 'Net Change')}
                 value={
                   <div className={cn('flex items-center gap-1', stats.change >= 0 ? 'text-success' : 'text-danger')}>
                     {stats.change >= 0
@@ -241,7 +234,7 @@ export default function CashBankBalancePage() {
                     <MoneyDisplay amount={Math.abs(stats.change)} />
                   </div>
                 }
-                sublabel={stats.change >= 0 ? 'naik dari periode sebelumnya' : 'turun dari periode sebelumnya'}
+                sublabel={stats.change >= 0 ? t('accounting.cashBankBalance.statIncreased', 'up from previous period') : t('accounting.cashBankBalance.statDecreased', 'down from previous period')}
               />
             </>
           )}
@@ -255,13 +248,13 @@ export default function CashBankBalancePage() {
             <Calculator className="h-4 w-4 text-text-tertiary" />
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1">Cara Kerja</p>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1">{t('accounting.cashBankBalance.howItWorksLabel', 'How It Works')}</p>
             <p className="text-sm text-text-secondary">
-              <span className="text-text-primary font-medium">Input manual:</span> Periode dan Saldo Awal.{' '}
-              <span className="text-text-primary font-medium">Dihitung otomatis:</span> Total Masuk, Total Keluar, Saldo Akhir — diambil dari semua transaksi jurnal kas/bank pada periode tersebut.
+              <span className="text-text-primary font-medium">{t('accounting.cashBankBalance.manualInput', 'Manual input:')} </span>{t('accounting.cashBankBalance.manualInputDesc', 'Period and Opening Balance.')}{' '}
+              <span className="text-text-primary font-medium">{t('accounting.cashBankBalance.autoCalc', 'Auto-calculated:')} </span>{t('accounting.cashBankBalance.autoCalcDesc', 'Total Inflow, Total Outflow, Closing Balance — sourced from all cash/bank journal transactions for that period.')}
             </p>
             <p className="text-xs text-text-tertiary mt-1">
-              Formula: <span className="font-mono">Saldo Akhir = Saldo Awal + Total Masuk − Total Keluar</span>
+              {t('accounting.cashBankBalance.formula', 'Formula:')} <span className="font-mono">Closing Balance = Opening + Inflow − Outflow</span>
             </p>
           </div>
         </div>
@@ -271,9 +264,9 @@ export default function CashBankBalancePage() {
       <GlassPanel surface="glass" padding="none" className="overflow-hidden">
         <div className="px-5 py-4 border-b border-border-subtle flex items-center justify-between">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Riwayat Saldo Per Periode</p>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.cashBankBalance.historyLabel', 'Balance History by Period')}</p>
           </div>
-          <span className="text-xs text-text-tertiary">{balances.length} periode</span>
+          <span className="text-xs text-text-tertiary">{balances.length} {t('cashBankBalance.periodCount', 'periods')}</span>
         </div>
 
         {isLoading ? (
@@ -283,11 +276,11 @@ export default function CashBankBalancePage() {
         ) : balances.length === 0 ? (
           <EmptyState
             icon={<BookOpen />}
-            title="Belum ada data saldo"
-            description="Hitung saldo periode pertama untuk mulai mencatat posisi kas/bank."
+            title={t('accounting.cashBankBalance.emptyTitle', 'No balance data yet')}
+            description={t('accounting.cashBankBalance.emptyDesc', 'Calculate the first period balance to start tracking your cash & bank position.')}
             action={
               <Button size="sm" onClick={() => setCreateOpen(true)}>
-                <Calculator className="h-4 w-4" /> Hitung Periode Baru
+                <Calculator className="h-4 w-4" /> {t('accounting.cashBankBalance.calcNewPeriod', 'Calculate New Period')}
               </Button>
             }
           />
@@ -299,14 +292,14 @@ export default function CashBankBalancePage() {
               columns={[
                 {
                   accessorKey: 'period',
-                  header: 'Periode',
+                  header: t('accounting.cashBankBalance.colPeriod', 'Period'),
                   cell: ({ row }) => (
                     <div className="font-medium text-sm text-text-primary">{row.original.period}</div>
                   ),
                 },
                 {
                   accessorKey: 'openingBalance',
-                  header: () => <span className="block text-right">Saldo Awal</span>,
+                  header: () => <span className="block text-right">{t('accounting.cashBankBalance.colOpening', 'Opening Balance')}</span>,
                   cell: ({ row }) => (
                     <div className="text-right">
                       <MoneyDisplay amount={toNumber(row.original.openingBalance)} />
@@ -315,7 +308,7 @@ export default function CashBankBalancePage() {
                 },
                 {
                   accessorKey: 'totalInflow',
-                  header: () => <span className="block text-right">Total Masuk</span>,
+                  header: () => <span className="block text-right">{t('accounting.cashBankBalance.colInflow', 'Total Inflow')}</span>,
                   cell: ({ row }) => (
                     <div className="text-right">
                       <MoneyDisplay amount={toNumber(row.original.totalInflow)} className="text-success" />
@@ -324,7 +317,7 @@ export default function CashBankBalancePage() {
                 },
                 {
                   accessorKey: 'totalOutflow',
-                  header: () => <span className="block text-right">Total Keluar</span>,
+                  header: () => <span className="block text-right">{t('accounting.cashBankBalance.colOutflow', 'Total Outflow')}</span>,
                   cell: ({ row }) => (
                     <div className="text-right">
                       <MoneyDisplay amount={toNumber(row.original.totalOutflow)} className="text-danger" />
@@ -333,7 +326,7 @@ export default function CashBankBalancePage() {
                 },
                 {
                   accessorKey: 'closingBalance',
-                  header: () => <span className="block text-right">Saldo Akhir</span>,
+                  header: () => <span className="block text-right">{t('accounting.cashBankBalance.colClosing', 'Closing Balance')}</span>,
                   cell: ({ row }) => (
                     <div className="text-right font-semibold">
                       <MoneyDisplay amount={toNumber(row.original.closingBalance)} />
@@ -342,7 +335,7 @@ export default function CashBankBalancePage() {
                 },
                 {
                   accessorKey: 'netChange',
-                  header: () => <span className="block text-right">Perubahan Bersih</span>,
+                  header: () => <span className="block text-right">{t('accounting.cashBankBalance.colNetChange', 'Net Change')}</span>,
                   cell: ({ row }) => {
                     const net = toNumber(row.original.netChange);
                     return (
@@ -365,7 +358,7 @@ export default function CashBankBalancePage() {
                 },
                 {
                   id: 'calculatedAt',
-                  header: 'Dihitung',
+                  header: t('accounting.cashBankBalance.colCalculatedAt', 'Calculated'),
                   cell: ({ row }) => (
                     <span className="text-text-tertiary text-xs">
                       {row.original.calculatedAt
@@ -376,7 +369,7 @@ export default function CashBankBalancePage() {
                 },
                 {
                   id: 'actions',
-                  header: () => <span className="sr-only">Aksi</span>,
+                  header: () => <span className="sr-only">{t('cashBankBalance.actions', 'Actions')}</span>,
                   cell: ({ row }) => (
                     <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                       <Button
@@ -384,7 +377,7 @@ export default function CashBankBalancePage() {
                         size="icon-sm"
                         className="text-text-tertiary hover:text-danger"
                         onClick={() => setDeleteTarget(row.original)}
-                        aria-label="Hapus saldo"
+                        aria-label={t('accounting.cashBankBalance.deleteBalance', 'Delete balance')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -404,30 +397,30 @@ export default function CashBankBalancePage() {
       >
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display">Hitung Saldo Periode Baru</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.cashBankBalance.dialogTitle', 'Calculate New Period Balance')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
-              Masukkan periode dan saldo awal. Total masuk/keluar dihitung otomatis dari jurnal.
+              {t('accounting.cashBankBalance.dialogDesc', 'Enter the period and opening balance. Inflow/outflow totals are calculated automatically from journal entries.')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5">
             {/* Period picker */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Periode *</label>
+              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.cashBankBalance.fieldPeriod', 'Period')} *</label>
               <MonomiDatePicker
                 value={form.periodDate}
                 onChange={(d) => setForm((f) => ({ ...f, periodDate: d }))}
-                placeholder="Pilih bulan"
+                placeholder={t('accounting.cashBankBalance.fieldPeriodPh', 'Select month')}
                 className="bg-bg-sunken border-border-subtle"
               />
               <p className="text-xs text-text-tertiary">
-                Pilih tanggal mana saja dalam bulan yang diinginkan — sistem akan menggunakan bulan tersebut.
+                {t('accounting.cashBankBalance.fieldPeriodHint', 'Select any date within the desired month — the system will use that month.')}
               </p>
             </div>
 
             {/* Opening balance */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Saldo Awal (IDR) *</label>
+              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.cashBankBalance.fieldOpening', 'Opening Balance (IDR)')} *</label>
               <Input
                 type="number"
                 value={form.openingBalance}
@@ -436,36 +429,36 @@ export default function CashBankBalancePage() {
                 className="bg-bg-sunken border-border-subtle text-text-primary"
               />
               <p className="text-xs text-text-tertiary">
-                Biasanya sama dengan saldo akhir periode sebelumnya.
+                {t('accounting.cashBankBalance.fieldOpeningHint', 'Usually equal to the closing balance of the previous period.')}
               </p>
             </div>
 
             {/* Auto-calculated info */}
             <div className="bg-bg-sunken rounded-lg p-4 border border-border-subtle">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-2">Dihitung Otomatis</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-2">{t('accounting.cashBankBalance.autoCalculated', 'Auto-Calculated')}</p>
               <div className="space-y-1.5 text-sm text-text-secondary">
                 <div className="flex items-center justify-between">
-                  <span>Total Masuk</span>
-                  <span className="text-text-tertiary text-xs">dari jurnal entri kas</span>
+                  <span>{t('accounting.cashBankBalance.colInflow', 'Total Inflow')}</span>
+                  <span className="text-text-tertiary text-xs">{t('accounting.cashBankBalance.fromCashJournal', 'from cash journal entries')}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Total Keluar</span>
-                  <span className="text-text-tertiary text-xs">dari jurnal entri kas</span>
+                  <span>{t('accounting.cashBankBalance.colOutflow', 'Total Outflow')}</span>
+                  <span className="text-text-tertiary text-xs">{t('accounting.cashBankBalance.fromCashJournal', 'from cash journal entries')}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Saldo Akhir</span>
-                  <span className="font-mono text-xs text-text-tertiary">= Awal + Masuk − Keluar</span>
+                  <span>{t('accounting.cashBankBalance.colClosing', 'Closing Balance')}</span>
+                  <span className="font-mono text-xs text-text-tertiary">= Opening + Inflow − Outflow</span>
                 </div>
               </div>
             </div>
 
             {/* Notes */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Catatan (Opsional)</label>
+              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.cashBankBalance.fieldNotes', 'Notes (Optional)')}</label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                placeholder="Catatan tambahan..."
+                placeholder={t('accounting.cashBankBalance.fieldNotesPh', 'Additional notes...')}
                 rows={2}
                 className="w-full rounded-md bg-bg-sunken border border-border-subtle text-text-primary text-sm px-3 py-2 placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-border-default"
               />
@@ -474,12 +467,12 @@ export default function CashBankBalancePage() {
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => { setCreateOpen(false); setForm(EMPTY_FORM); }}>
-              Batal
+              {t('accounting.cashBankBalance.cancel', 'Cancel')}
             </Button>
             <Button onClick={handleCreate} disabled={createMutation.isPending}>
               {createMutation.isPending
-                ? <><RefreshCw className="h-4 w-4 animate-spin" /> Menghitung...</>
-                : <><Calculator className="h-4 w-4" /> Hitung Saldo</>}
+                ? <><RefreshCw className="h-4 w-4 animate-spin" /> {t('accounting.cashBankBalance.calculating', 'Calculating...')}</>
+                : <><Calculator className="h-4 w-4" /> {t('accounting.cashBankBalance.calcBalance', 'Calculate Balance')}</>}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -492,14 +485,14 @@ export default function CashBankBalancePage() {
       >
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-display">Hapus Saldo</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.cashBankBalance.deleteDialogTitle', 'Delete Balance')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
-              Yakin ingin menghapus saldo periode <span className="text-text-primary font-medium">{deleteTarget?.period}</span>?
-              Tindakan ini tidak dapat dibatalkan.
+              {t('accounting.cashBankBalance.deleteDialogDesc', 'Are you sure you want to delete the balance for period')} <span className="text-text-primary font-medium">{deleteTarget?.period}</span>?{' '}
+              {t('accounting.cashBankBalance.deleteDialogWarn', 'This action cannot be undone.')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Batal</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>{t('accounting.cashBankBalance.cancel', 'Cancel')}</Button>
             <Button
               variant="destructive"
               disabled={deleteMutation.isPending}
@@ -508,8 +501,8 @@ export default function CashBankBalancePage() {
               }}
             >
               {deleteMutation.isPending
-                ? <><RefreshCw className="h-4 w-4 animate-spin" /> Menghapus...</>
-                : <><Trash2 className="h-4 w-4" /> Hapus Saldo</>}
+                ? <><RefreshCw className="h-4 w-4 animate-spin" /> {t('accounting.cashBankBalance.deleting', 'Deleting...')}</>
+                : <><Trash2 className="h-4 w-4" /> {t('accounting.cashBankBalance.deleteBalance', 'Delete Balance')}</>}
             </Button>
           </DialogFooter>
         </DialogContent>

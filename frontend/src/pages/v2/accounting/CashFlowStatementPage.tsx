@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation, getI18n } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -9,6 +10,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -29,20 +32,6 @@ import {
   type CashFlowStatement,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
-
-const sidebarItems = [
-  { label: 'Dashboard',    icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',     icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',   icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',      icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',     icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',     icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Neraca',       icon: <Scale       className="h-4 w-4" />, href: '/v2/accounting/balance-sheet' },
-  { label: 'Laba Rugi',    icon: <TrendingUp  className="h-4 w-4" />, href: '/v2/accounting/income-statement' },
-  { label: 'Arus Kas',     icon: <Activity    className="h-4 w-4" />, href: '/v2/accounting/cash-flow' },
-  { label: 'Neraca Saldo', icon: <BookOpen    className="h-4 w-4" />, href: '/v2/accounting/trial-balance' },
-  { label: 'Settings',     icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Each transaction row aggregates cashIn − cashOut into a single    */
@@ -112,8 +101,8 @@ const ActivitySection = ({ title, subtitle, transactions, netCashFlow }: Section
     {transactions.length === 0 ? (
       <div className="py-10">
         <EmptyState
-          title="Tidak ada transaksi"
-          description={`Belum ada aktivitas ${title.toLowerCase()} pada periode ini.`}
+          title={getI18n().t('accounting.cashFlow.noTransactions')}
+          description={getI18n().t('accounting.cashFlow.noTransactionsDesc', { activity: title.toLowerCase() })}
         />
       </div>
     ) : (
@@ -130,7 +119,7 @@ const ActivitySection = ({ title, subtitle, transactions, netCashFlow }: Section
           {/* Section subtotal — thin top rule */}
           <tr className="border-t border-border-default">
             <td className="py-3 pl-4 text-[11px] font-medium text-text-primary uppercase tracking-wider">
-              Kas Bersih dari Aktivitas {title}
+              {getI18n().t('accounting.cashFlow.netCash', { activity: title })}
             </td>
             <td className="py-3 pr-4 text-right">
               <MoneyDisplay
@@ -173,7 +162,7 @@ const ReconciliationStrip = ({ opening, net, closing }: ReconciliationProps) => 
       <tbody>
         <tr className="border-b border-border-subtle">
           <td className="py-3 pl-4 text-[11px] text-text-tertiary uppercase tracking-wider">
-            Saldo Awal Kas
+            {getI18n().t('accounting.cashFlow.openingBalance')}
           </td>
           <td className="py-3 pr-4 text-right">
             <MoneyDisplay amount={opening} className="text-sm text-text-secondary" />
@@ -181,7 +170,7 @@ const ReconciliationStrip = ({ opening, net, closing }: ReconciliationProps) => 
         </tr>
         <tr className="border-b border-border-subtle">
           <td className="py-3 pl-4 text-[11px] text-text-tertiary uppercase tracking-wider">
-            Arus Kas Bersih Periode Ini
+            {getI18n().t('accounting.cashFlow.netCashPeriod')}
           </td>
           <td className="py-3 pr-4 text-right">
             <MoneyDisplay
@@ -193,7 +182,7 @@ const ReconciliationStrip = ({ opening, net, closing }: ReconciliationProps) => 
         {/* Double rule final */}
         <tr className="border-t-2 border-border-strong">
           <td className="py-4 pl-4 text-xs font-display font-semibold text-text-primary uppercase tracking-wider">
-            Saldo Akhir Kas
+            {getI18n().t('accounting.cashFlow.closingBalance')}
           </td>
           <td className="py-4 pr-4 text-right border-b-2 border-border-strong">
             <MoneyDisplay
@@ -213,6 +202,7 @@ const ReconciliationStrip = ({ opening, net, closing }: ReconciliationProps) => 
 /* ------------------------------------------------------------------ */
 
 export default function CashFlowStatementPageV2() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const today = new Date();
   const [startDate, setStartDate] = useState<Date>(startOfMonth(today));
@@ -229,18 +219,18 @@ export default function CashFlowStatementPageV2() {
   const handleExportPDF = async () => {
     try {
       await exportCashFlowStatementPDF({ startDate: startStr, endDate: endStr });
-      toast.success('Laporan arus kas berhasil diekspor (PDF).');
+      toast.success(t('accounting.cashFlow.exportSuccess'));
     } catch {
-      toast.error('Gagal mengekspor PDF.');
+      toast.error(t('accounting.cashFlow.exportPdfFail'));
     }
   };
 
   const handleExportExcel = async () => {
     try {
       await exportCashFlowStatementExcel({ startDate: startStr, endDate: endStr });
-      toast.success('Laporan arus kas berhasil diekspor (CSV).');
+      toast.success(t('accounting.cashFlow.exportSuccess'));
     } catch {
-      toast.error('Gagal mengekspor CSV.');
+      toast.error(t('accounting.cashFlow.exportCsvFail'));
     }
   };
 
@@ -252,8 +242,8 @@ export default function CashFlowStatementPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -262,8 +252,8 @@ export default function CashFlowStatementPageV2() {
     >
       <PageContainer>
         <PageHeader
-          title="Laporan Arus Kas"
-          description="Pergerakan kas dari aktivitas operasi, investasi, dan pendanaan — direkonsiliasi dengan saldo kas."
+          title={t('accounting.cashFlow.title')}
+          description={t('accounting.cashFlow.description')}
           actions={
             <div className="flex items-center gap-2">
               <Button
@@ -274,13 +264,13 @@ export default function CashFlowStatementPageV2() {
                 className="text-text-tertiary hover:text-text-primary"
               >
                 <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
-                Muat Ulang
+                {t('accounting.cashFlow.reload')}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
                     <Download className="h-4 w-4" />
-                    Ekspor
+                    {t('accounting.cashFlow.export')}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
@@ -296,7 +286,7 @@ export default function CashFlowStatementPageV2() {
         <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 mb-8 px-4 sm:px-6 lg:px-8 py-3 bg-bg-base/85 backdrop-blur-[24px] border-b border-border-subtle">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3 text-xs text-text-tertiary uppercase tracking-[0.16em]">
-              <span>Periode</span>
+              <span>{t('accounting.cashFlow.period', 'Period')}</span>
               <span className="text-text-primary normal-case tracking-normal font-display text-sm">
                 {format(startDate, 'd MMM yyyy', { locale: idLocale })} – {format(endDate, 'd MMM yyyy', { locale: idLocale })}
               </span>
@@ -306,7 +296,7 @@ export default function CashFlowStatementPageV2() {
                 <MonomiDatePicker
                   value={startDate}
                   onChange={(d) => d && setStartDate(d)}
-                  placeholder="Tanggal mulai"
+                  placeholder={t('accounting.cashFlow.startDate', 'Start date')}
                 />
               </div>
               <span className="text-text-tertiary text-xs">→</span>
@@ -314,7 +304,7 @@ export default function CashFlowStatementPageV2() {
                 <MonomiDatePicker
                   value={endDate}
                   onChange={(d) => d && setEndDate(d)}
-                  placeholder="Tanggal akhir"
+                  placeholder={t('accounting.cashFlow.endDate', 'End date')}
                 />
               </div>
             </div>
@@ -324,9 +314,9 @@ export default function CashFlowStatementPageV2() {
         {error ? (
           <EmptyState
             icon={<Activity />}
-            title="Tidak bisa memuat laporan arus kas"
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan.'}
-            action={<Button onClick={() => refetch()} size="sm">Coba Lagi</Button>}
+            title={t('accounting.cashFlow.errorTitle')}
+            description={error instanceof Error ? error.message : t('accounting.cashFlow.errorGeneric')}
+            action={<Button onClick={() => refetch()} size="sm">{t('accounting.cashFlow.retry')}</Button>}
           />
         ) : isLoading || !data || !summary ? (
           <div className="space-y-6">
@@ -338,20 +328,20 @@ export default function CashFlowStatementPageV2() {
         ) : (
           <div className="space-y-6">
             <ActivitySection
-              title="Operasi"
-              subtitle="Kas dari kegiatan operasional sehari-hari — pendapatan dan biaya bisnis."
+              title={t('accounting.cashFlow.sectionOperating', 'Operating')}
+              subtitle={t('accounting.cashFlow.sectionOperatingSub', 'Cash from day-to-day operations — revenue and business expenses.')}
               transactions={data.operatingActivities.transactions as CashFlowTxn[]}
               netCashFlow={data.operatingActivities.netCashFlow}
             />
             <ActivitySection
-              title="Investasi"
-              subtitle="Kas untuk pembelian / penjualan aset tetap dan investasi jangka panjang."
+              title={t('accounting.cashFlow.sectionInvesting', 'Investing')}
+              subtitle={t('accounting.cashFlow.sectionInvestingSub', 'Cash for the purchase/sale of fixed assets and long-term investments.')}
               transactions={data.investingActivities.transactions as CashFlowTxn[]}
               netCashFlow={data.investingActivities.netCashFlow}
             />
             <ActivitySection
-              title="Pendanaan"
-              subtitle="Kas dari pinjaman, pelunasan utang, dan transaksi pemilik."
+              title={t('accounting.cashFlow.sectionFinancing', 'Financing')}
+              subtitle={t('accounting.cashFlow.sectionFinancingSub', 'Cash from loans, debt repayments, and owner transactions.')}
               transactions={data.financingActivities.transactions as CashFlowTxn[]}
               netCashFlow={data.financingActivities.netCashFlow}
             />

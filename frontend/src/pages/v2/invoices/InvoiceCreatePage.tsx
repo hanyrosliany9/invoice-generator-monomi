@@ -4,6 +4,8 @@ import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings, ArrowLeft,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { UserChip } from '@/components/monomi/UserChip';
@@ -14,16 +16,6 @@ import { InvoiceForm } from './InvoiceForm';
 /*  Sidebar — must match the rest of v2 so the active state reads as   */
 /*  the same app, not a one-off form screen.                           */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Page — thin shell. All form intelligence lives in InvoiceForm so   */
@@ -43,8 +35,8 @@ export default function InvoiceCreatePageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -60,16 +52,13 @@ export default function InvoiceCreatePageV2() {
             className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            {t('invoices.form.backToList', 'Kembali ke Tagihan')}
+            {t('invoiceCreate.backToList', 'Back to Invoices')}
           </Link>
         </div>
 
         <PageHeader
-          title={t('invoices.form.createTitle', 'Invoice Baru')}
-          description={t(
-            'invoices.form.createDesc',
-            'Buat tagihan baru untuk klien — pilih proyek, isi rincian, dan simpan sebagai draft.',
-          )}
+          title={t('invoiceCreate.title', 'New Invoice')}
+          description={t('invoiceCreate.desc', 'Create a new invoice for a client — select project, fill in details, and save as draft.')}
         />
 
         <InvoiceForm

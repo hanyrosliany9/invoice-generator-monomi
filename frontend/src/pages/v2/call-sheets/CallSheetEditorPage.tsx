@@ -58,6 +58,8 @@ import {
 import { toast } from 'sonner';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -88,19 +90,14 @@ import { DEPARTMENTS } from '@/constants/departments';
 /* ------------------------------------------------------------------ */
 /*  Sidebar — identical contract.                                      */
 /* ------------------------------------------------------------------ */
-const sidebarItems = [
-  { label: 'Dashboard',   icon: <Inbox        className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',    icon: <FileText     className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',  icon: <ReceiptText  className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',     icon: <Users        className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',    icon: <Folder       className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Call Sheets', icon: <Clapperboard className="h-4 w-4" />, href: '/v2/call-sheets' },
-  { label: 'Expenses',    icon: <CreditCard   className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',    icon: <Settings     className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 const STATUS_LABEL: Record<CallSheetStatus, string> = {
   DRAFT: 'Draft', READY: 'Siap', SENT: 'Terkirim', UPDATED: 'Diperbarui',
+};
+const STATUS_KEY: Record<CallSheetStatus, string> = {
+  DRAFT:   'callSheets.statusDraft',
+  READY:   'callSheets.statusReady',
+  SENT:    'callSheets.statusSent',
+  UPDATED: 'callSheets.statusUpdated',
 };
 const statusChipClass = (s?: string) => {
   switch (s) {
@@ -113,6 +110,10 @@ const statusChipClass = (s?: string) => {
 };
 
 const TYPE_LABEL: Record<CallSheetType, string> = { FILM: 'Film', PHOTO: 'Foto' };
+const TYPE_KEY: Record<CallSheetType, string> = {
+  FILM:  'callSheets.typeFilm',
+  PHOTO: 'callSheets.typePhoto',
+};
 
 const CAST_STATUS_LABEL: Record<CallStatus, string> = {
   PENDING:   'Menunggu',
@@ -120,16 +121,22 @@ const CAST_STATUS_LABEL: Record<CallStatus, string> = {
   ON_SET:    'Di Lokasi',
   WRAPPED:   'Selesai',
 };
+const CAST_STATUS_KEY: Record<CallStatus, string> = {
+  PENDING:   'callSheetEditor.castStatusPending',
+  CONFIRMED: 'callSheetEditor.castStatusConfirmed',
+  ON_SET:    'callSheetEditor.castStatusOnSet',
+  WRAPPED:   'callSheetEditor.castStatusWrapped',
+};
 
-const ACTIVITY_TYPES: { value: string; label: string }[] = [
-  { value: 'GENERAL',     label: 'Umum' },
-  { value: 'PREPARATION', label: 'Persiapan' },
-  { value: 'STANDBY',     label: 'Standby' },
-  { value: 'BRIEFING',    label: 'Briefing' },
-  { value: 'REHEARSAL',   label: 'Rehearsal' },
-  { value: 'TRANSPORT',   label: 'Transport' },
-  { value: 'TECHNICAL',   label: 'Teknis' },
-  { value: 'CUSTOM',      label: 'Kustom' },
+const ACTIVITY_TYPES: { value: string; labelKey: string; labelFallback: string }[] = [
+  { value: 'GENERAL',     labelKey: 'callSheetEditor.activityGeneral',     labelFallback: 'General' },
+  { value: 'PREPARATION', labelKey: 'callSheetEditor.activityPreparation', labelFallback: 'Preparation' },
+  { value: 'STANDBY',     labelKey: 'callSheetEditor.activityStandby',     labelFallback: 'Standby' },
+  { value: 'BRIEFING',    labelKey: 'callSheetEditor.activityBriefing',    labelFallback: 'Briefing' },
+  { value: 'REHEARSAL',   labelKey: 'callSheetEditor.activityRehearsal',   labelFallback: 'Rehearsal' },
+  { value: 'TRANSPORT',   labelKey: 'callSheetEditor.activityTransport',   labelFallback: 'Transport' },
+  { value: 'TECHNICAL',   labelKey: 'callSheetEditor.activityTechnical',   labelFallback: 'Technical' },
+  { value: 'CUSTOM',      labelKey: 'callSheetEditor.activityCustom',      labelFallback: 'Custom' },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -467,8 +474,8 @@ export default function CallSheetEditorPageV2() {
   const shell = (children: React.ReactNode) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -518,7 +525,7 @@ export default function CallSheetEditorPageV2() {
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => navigate('/v2/call-sheets')}>
               <ArrowLeft className="h-4 w-4" />
-              Kembali
+              {t('common.back', 'Back')}
             </Button>
             <Button onClick={() => refetch()}>{t('common.retry', 'Coba Lagi')}</Button>
           </div>
@@ -587,7 +594,9 @@ export default function CallSheetEditorPageV2() {
               })
             : null,
           callSheet.dayNumber
-            ? `Hari ${callSheet.dayNumber}${callSheet.totalDays ? ` dari ${callSheet.totalDays}` : ''}`
+            ? (callSheet.totalDays
+                ? t('callSheetEditor.dayOf', 'Day {{day}} of {{total}}', { day: callSheet.dayNumber, total: callSheet.totalDays })
+                : t('callSheetEditor.day', 'Day {{day}}', { day: callSheet.dayNumber }))
             : null,
         ].filter(Boolean).join(' · ')}
         actions={
@@ -599,7 +608,7 @@ export default function CallSheetEditorPageV2() {
                 statusChipClass(callSheet.status),
               )}
             >
-              {STATUS_LABEL[statusKey]}
+              {t(STATUS_KEY[statusKey], STATUS_LABEL[statusKey])}
             </span>
             {renderPrimaryAction()}
             <DropdownMenu>
@@ -608,7 +617,7 @@ export default function CallSheetEditorPageV2() {
                   variant="ghost"
                   size="icon-sm"
                   className="text-text-tertiary hover:text-text-primary"
-                  aria-label="Aksi"
+                  aria-label={t('common.actions', 'Actions')}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -616,7 +625,7 @@ export default function CallSheetEditorPageV2() {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => navigate(`/call-sheets/${id}`)}>
                   <FileText className="h-3.5 w-3.5" />
-                  Buka di v1 (PDF/auto-fill)
+                  {t('callSheetEditor.openInV1', 'Open in v1 (PDF / auto-fill)')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -624,7 +633,7 @@ export default function CallSheetEditorPageV2() {
                   className="text-danger focus:text-danger"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  Hapus
+                  {t('common.delete', 'Delete')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -634,7 +643,7 @@ export default function CallSheetEditorPageV2() {
 
       {/* Mobile notice — editing is best on tablet or desktop */}
       <div className="md:hidden mb-5 rounded-md border border-warning/30 bg-warning/[0.06] px-3.5 py-2.5 text-xs text-warning">
-        Editing pengalaman terbaik di tablet atau desktop. Beberapa kontrol mungkin tersembunyi pada layar kecil.
+        {t('common.mobileNotice', 'Best editing experience on tablet or desktop. Some controls may be hidden on small screens.')}
       </div>
 
       {/* Deferred-features banner — honest about scope so producers
@@ -647,15 +656,14 @@ export default function CallSheetEditorPageV2() {
         >
           <Info className="h-4 w-4 mt-0.5 text-info shrink-0" />
           <div className="text-sm text-text-secondary leading-relaxed">
-            <span className="font-medium text-text-primary">Versi v2 — fitur dasar.</span>{' '}
-            Fitur lanjutan (ekspor PDF, auto-fill cuaca/rumah-sakit, drag-reorder, sub-bagian
-            FILM/PHOTO seperti shot list, wardrobe, meal breaks) tersedia di{' '}
+            <span className="font-medium text-text-primary">{t('callSheetEditor.deferredTitle', 'v2 — core features only.')}</span>{' '}
+            {t('callSheetEditor.deferredDesc', 'Advanced features (PDF export, weather/hospital auto-fill, drag-to-reorder, FILM/PHOTO subsections like shot list, wardrobe, meal breaks) are available in the')}{' '}
             <button
               type="button"
               className="underline underline-offset-2 hover:text-text-primary"
               onClick={() => navigate(`/call-sheets/${id}`)}
             >
-              editor klasik
+              {t('callSheetEditor.classicEditor', 'classic editor')}
             </button>
             .
           </div>
@@ -669,19 +677,19 @@ export default function CallSheetEditorPageV2() {
         <div className="space-y-4 min-w-0">
           {/* ──── General ──── */}
           <FormSection
-            eyebrow="Identitas"
-            title="Info Produksi"
-            description="Nama produksi, sutradara, produser, dan jenis call sheet."
+            eyebrow={t('callSheetEditor.eyebrowIdentity', 'Identity')}
+            title={t('callSheetEditor.sectionProduction', 'Production Info')}
+            description={t('callSheetEditor.sectionProductionDesc', 'Production name, director, producer, and call sheet type.')}
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <Field label="Nama Produksi">
+              <Field label={t('callSheetEditor.fieldProductionName', 'Production Name')}>
                 <Input
                   {...headerForm.register('productionName')}
                   placeholder="misal: Kampanye Brand 2026"
                   className="bg-bg-sunken border-border-default"
                 />
               </Field>
-              <Field label="Jenis">
+              <Field label={t('callSheetEditor.fieldType', 'Type')}>
                 <Controller
                   control={headerForm.control}
                   name="callSheetType"
@@ -691,24 +699,24 @@ export default function CallSheetEditorPageV2() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="PHOTO">{TYPE_LABEL.PHOTO}</SelectItem>
-                        <SelectItem value="FILM">{TYPE_LABEL.FILM}</SelectItem>
+                        <SelectItem value="PHOTO">{t(TYPE_KEY.PHOTO, TYPE_LABEL.PHOTO)}</SelectItem>
+                        <SelectItem value="FILM">{t(TYPE_KEY.FILM, TYPE_LABEL.FILM)}</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
                 />
               </Field>
-              <Field label="Sutradara">
+              <Field label={t('callSheetEditor.fieldDirector', 'Director')}>
                 <Input
                   {...headerForm.register('director')}
-                  placeholder="Nama sutradara"
+                  placeholder={t('callSheetEditor.directorPlaceholder', 'Director name')}
                   className="bg-bg-sunken border-border-default"
                 />
               </Field>
-              <Field label="Produser">
+              <Field label={t('callSheetEditor.fieldProducer', 'Producer')}>
                 <Input
                   {...headerForm.register('producer')}
-                  placeholder="Nama produser"
+                  placeholder={t('callSheetEditor.producerPlaceholder', 'Producer name')}
                   className="bg-bg-sunken border-border-default"
                 />
               </Field>
@@ -717,50 +725,50 @@ export default function CallSheetEditorPageV2() {
 
           {/* ──── Times ──── */}
           <FormSection
-            eyebrow="Jadwal Inti"
-            title="Waktu Panggilan"
-            description="Format bebas (misal: '7:00 AM'). Ditampilkan apa adanya pada PDF v1."
+            eyebrow={t('callSheetEditor.eyebrowSchedule', 'Core Schedule')}
+            title={t('callSheetEditor.sectionCallTimes', 'Call Times')}
+            description={t('callSheetEditor.sectionCallTimesDesc', 'Free-form format (e.g. "7:00 AM"). Displayed as-is in the v1 PDF.')}
             icon={<Clock className="h-4 w-4" />}
           >
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <Field label="Panggilan Kru"><TimeInput {...headerForm.register('crewCallTime')} /></Field>
-              <Field label="Shoot Pertama"><TimeInput {...headerForm.register('firstShotTime')} /></Field>
-              <Field label="Makan Siang"><TimeInput {...headerForm.register('lunchTime')} /></Field>
-              <Field label="Perkiraan Wrap"><TimeInput {...headerForm.register('estimatedWrap')} /></Field>
-              <Field label="Sunrise"><TimeInput {...headerForm.register('sunrise')} /></Field>
-              <Field label="Sunset"><TimeInput {...headerForm.register('sunset')} /></Field>
+              <Field label={t('callSheetEditor.fieldCrewCall', 'Crew Call')}><TimeInput {...headerForm.register('crewCallTime')} /></Field>
+              <Field label={t('callSheetEditor.fieldFirstShot', 'First Shot')}><TimeInput {...headerForm.register('firstShotTime')} /></Field>
+              <Field label={t('callSheetEditor.fieldLunch', 'Lunch')}><TimeInput {...headerForm.register('lunchTime')} /></Field>
+              <Field label={t('callSheetEditor.fieldEstWrap', 'Est. Wrap')}><TimeInput {...headerForm.register('estimatedWrap')} /></Field>
+              <Field label={t('callSheetEditor.fieldSunrise', 'Sunrise')}><TimeInput {...headerForm.register('sunrise')} /></Field>
+              <Field label={t('callSheetEditor.fieldSunset', 'Sunset')}><TimeInput {...headerForm.register('sunset')} /></Field>
             </div>
           </FormSection>
 
           {/* ──── Location / Weather / Hospital ──── */}
           <FormSection
-            eyebrow="Lokasi & Cuaca"
-            title="Lokasi Shoot"
-            description="Alamat, parkir, cuaca, dan rumah sakit terdekat. Auto-fill cuaca/RS ada di editor klasik."
+            eyebrow={t('callSheetEditor.eyebrowLocation', 'Location & Weather')}
+            title={t('callSheetEditor.sectionLocation', 'Shoot Location')}
+            description={t('callSheetEditor.sectionLocationDesc', 'Address, parking, weather, and nearest hospital. Weather/hospital auto-fill is in the classic editor.')}
             icon={<MapPin className="h-4 w-4" />}
           >
             <div className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <Field label="Nama Lokasi">
+                <Field label={t('callSheetEditor.fieldLocationName', 'Location Name')}>
                   <Input
                     {...headerForm.register('locationName')}
-                    placeholder="misal: Studio Selatan"
+                    placeholder={t('callSheetEditor.locationNamePlaceholder', 'E.g. South Studio')}
                     className="bg-bg-sunken border-border-default"
                   />
                 </Field>
-                <Field label="Alamat">
+                <Field label={t('callSheetEditor.fieldAddress', 'Address')}>
                   <Input
                     {...headerForm.register('locationAddress')}
-                    placeholder="Jl. Sudirman No. 123, Jakarta"
+                    placeholder={t('callSheetEditor.addressPlaceholder', 'Jl. Sudirman No. 123, Jakarta')}
                     className="bg-bg-sunken border-border-default"
                   />
                 </Field>
               </div>
-              <Field label="Catatan Parkir">
+              <Field label={t('callSheetEditor.fieldParkingNotes', 'Parking Notes')}>
                 <textarea
                   {...headerForm.register('parkingNotes')}
                   rows={2}
-                  placeholder="Instruksi parkir untuk kru..."
+                  placeholder={t('callSheetEditor.parkingPlaceholder', 'Parking instructions for crew...')}
                   className="block w-full resize-y rounded-md border border-border-default bg-bg-sunken px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary leading-relaxed outline-none focus-visible:border-accent-navy-ring focus-visible:ring-[3px] focus-visible:ring-accent-navy-ring/40"
                 />
               </Field>
@@ -770,27 +778,27 @@ export default function CallSheetEditorPageV2() {
               <div>
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">
                   <CloudSun className="h-3.5 w-3.5" />
-                  Cuaca
+                  {t('callSheetEditor.sectionWeather', 'Weather')}
                 </div>
                 <div className="grid grid-cols-3 gap-4">
-                  <Field label="High (°F)">
+                  <Field label={t('callSheetEditor.fieldWeatherHigh', 'High (°F)')}>
                     <Input
                       type="number"
                       {...headerForm.register('weatherHigh')}
                       className="bg-bg-sunken border-border-default tabular-nums"
                     />
                   </Field>
-                  <Field label="Low (°F)">
+                  <Field label={t('callSheetEditor.fieldWeatherLow', 'Low (°F)')}>
                     <Input
                       type="number"
                       {...headerForm.register('weatherLow')}
                       className="bg-bg-sunken border-border-default tabular-nums"
                     />
                   </Field>
-                  <Field label="Kondisi">
+                  <Field label={t('callSheetEditor.fieldWeatherCondition', 'Condition')}>
                     <Input
                       {...headerForm.register('weatherCondition')}
-                      placeholder="Cerah / Mendung"
+                      placeholder={t('callSheetEditor.weatherConditionPlaceholder', 'Sunny / Cloudy')}
                       className="bg-bg-sunken border-border-default"
                     />
                   </Field>
@@ -802,27 +810,27 @@ export default function CallSheetEditorPageV2() {
               <div>
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">
                   <HeartPulse className="h-3.5 w-3.5" />
-                  Rumah Sakit Terdekat
+                  {t('callSheetEditor.sectionHospital', 'Nearest Hospital')}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <Field label="Nama">
+                  <Field label={t('callSheetEditor.fieldHospitalName', 'Name')}>
                     <Input
                       {...headerForm.register('nearestHospital')}
-                      placeholder="Nama RS"
+                      placeholder={t('callSheetEditor.hospitalNamePlaceholder', 'Hospital name')}
                       className="bg-bg-sunken border-border-default"
                     />
                   </Field>
-                  <Field label="Alamat">
+                  <Field label={t('callSheetEditor.fieldHospitalAddress', 'Address')}>
                     <Input
                       {...headerForm.register('hospitalAddress')}
-                      placeholder="Alamat RS"
+                      placeholder={t('callSheetEditor.hospitalAddressPlaceholder', 'Hospital address')}
                       className="bg-bg-sunken border-border-default"
                     />
                   </Field>
-                  <Field label="Telepon">
+                  <Field label={t('callSheetEditor.fieldHospitalPhone', 'Phone')}>
                     <Input
                       {...headerForm.register('hospitalPhone')}
-                      placeholder="(021) ..."
+                      placeholder={t('callSheetEditor.hospitalPhonePlaceholder', '(021) ...')}
                       className="bg-bg-sunken border-border-default"
                     />
                   </Field>
@@ -833,24 +841,24 @@ export default function CallSheetEditorPageV2() {
 
           {/* ──── Schedule (activities) ──── */}
           <FormSection
-            eyebrow="Run of Show"
-            title="Jadwal Aktivitas"
-            description="Susunan aktivitas hari shoot. Pakai 'Tambah' untuk menyimpan baris ke server."
+            eyebrow={t('callSheetEditor.eyebrowRunOfShow', 'Run of Show')}
+            title={t('callSheetEditor.sectionActivities', 'Activity Schedule')}
+            description={t('callSheetEditor.sectionActivitiesDesc', 'Activity lineup for shoot day. Use "Add" to save rows to the server.')}
             icon={<Clock className="h-4 w-4" />}
           >
             {activityArray.fields.length === 0 ? (
               <p className="text-sm text-text-tertiary italic mb-4">
-                Belum ada aktivitas terjadwal.
+                {t('callSheetEditor.noActivities', 'No scheduled activities yet.')}
               </p>
             ) : (
               <div className="space-y-2 mb-4">
                 {/* Header row — desktop only */}
                 <div className="hidden sm:grid grid-cols-[110px_1fr_90px_90px_140px_32px] gap-2 px-1 pb-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
-                  <div>Tipe</div>
-                  <div>Aktivitas</div>
-                  <div>Mulai</div>
-                  <div>Selesai</div>
-                  <div>Lokasi</div>
+                  <div>{t('callSheetEditor.colType', 'Type')}</div>
+                  <div>{t('callSheetEditor.colActivity', 'Activity')}</div>
+                  <div>{t('callSheetEditor.colStart', 'Start')}</div>
+                  <div>{t('callSheetEditor.colEnd', 'End')}</div>
+                  <div>{t('callSheetEditor.colLocation', 'Location')}</div>
                   <div />
                 </div>
                 <div className="divide-y divide-border-subtle">
@@ -886,7 +894,7 @@ export default function CallSheetEditorPageV2() {
                               <SelectContent>
                                 {ACTIVITY_TYPES.map((at) => (
                                   <SelectItem key={at.value} value={at.value}>
-                                    {at.label}
+                                    {t(at.labelKey, at.labelFallback)}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -895,7 +903,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <Input
                           {...arraysForm.register(`activities.${idx}.activityName`)}
-                          placeholder="Nama aktivitas"
+                          placeholder={t('callSheetEditor.activityNamePlaceholder', 'Activity name')}
                           onBlur={(e) => {
                             if (row?.id) {
                               updateActivity.mutate({
@@ -908,7 +916,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <Input
                           {...arraysForm.register(`activities.${idx}.startTime`)}
-                          placeholder="8:00 AM"
+                          placeholder={t('callSheetEditor.startTimePlaceholder', '8:00 AM')}
                           onBlur={(e) => {
                             if (row?.id) {
                               updateActivity.mutate({
@@ -921,7 +929,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <Input
                           {...arraysForm.register(`activities.${idx}.endTime`)}
-                          placeholder="9:00 AM"
+                          placeholder={t('callSheetEditor.endTimePlaceholder', '9:00 AM')}
                           onBlur={(e) => {
                             if (row?.id) {
                               updateActivity.mutate({
@@ -934,7 +942,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <Input
                           {...arraysForm.register(`activities.${idx}.location`)}
-                          placeholder="Lokasi (opsional)"
+                          placeholder={t('callSheetEditor.locationOptionalPlaceholder', 'Location (optional)')}
                           onBlur={(e) => {
                             if (row?.id) {
                               updateActivity.mutate({
@@ -949,7 +957,7 @@ export default function CallSheetEditorPageV2() {
                           isSaved={!!row?.id}
                           onSave={() => {
                             if (!row.activityName) {
-                              toast.error('Nama aktivitas wajib diisi.');
+                              toast.error(t('callSheetEditor.activityNameRequired', 'Activity name is required.'));
                               return;
                             }
                             addActivity.mutate(row);
@@ -982,29 +990,29 @@ export default function CallSheetEditorPageV2() {
               className="border-border-subtle text-text-secondary hover:text-text-primary"
             >
               <Plus className="h-3.5 w-3.5" />
-              Tambah Aktivitas
+              {t('callSheetEditor.addActivity', 'Add Activity')}
             </Button>
           </FormSection>
 
           {/* ──── Crew ──── */}
           <FormSection
-            eyebrow="Tim Produksi"
-            title="Kru"
-            description="Daftar kru dengan departemen, posisi, dan waktu panggilan."
+            eyebrow={t('callSheetEditor.eyebrowProductionTeam', 'Production Team')}
+            title={t('callSheetEditor.sectionCrew', 'Crew')}
+            description={t('callSheetEditor.sectionCrewDesc', 'Crew list with department, position, and call time.')}
             icon={<Users className="h-4 w-4" />}
           >
             {crewArray.fields.length === 0 ? (
               <p className="text-sm text-text-tertiary italic mb-4">
-                Belum ada kru. Klik "Tambah Kru" untuk memulai.
+                {t('callSheetEditor.noCrew', 'No crew yet. Click "Add Crew" to get started.')}
               </p>
             ) : (
               <div className="space-y-2 mb-4">
                 <div className="hidden sm:grid grid-cols-[130px_140px_1fr_100px_140px_32px] gap-2 px-1 pb-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
-                  <div>Dept.</div>
-                  <div>Posisi</div>
-                  <div>Nama</div>
-                  <div>Call</div>
-                  <div>Telepon</div>
+                  <div>{t('callSheetEditor.colDept', 'Dept.')}</div>
+                  <div>{t('callSheetEditor.colPosition', 'Position')}</div>
+                  <div>{t('callSheetEditor.colName', 'Name')}</div>
+                  <div>{t('callSheetEditor.colCall', 'Call')}</div>
+                  <div>{t('callSheetEditor.colPhone', 'Phone')}</div>
                   <div />
                 </div>
                 <div className="divide-y divide-border-subtle">
@@ -1032,7 +1040,7 @@ export default function CallSheetEditorPageV2() {
                                 size="sm"
                                 className="bg-bg-sunken border-border-subtle text-xs"
                               >
-                                <SelectValue placeholder="Dept." />
+                                <SelectValue placeholder={t('callSheetEditor.deptPlaceholder', 'Dept.')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {DEPARTMENTS.map((d) => (
@@ -1046,7 +1054,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <Input
                           {...arraysForm.register(`crew.${idx}.position`)}
-                          placeholder="Posisi"
+                          placeholder={t('callSheetEditor.positionPlaceholder', 'Position')}
                           onBlur={(e) => {
                             if (row?.id) {
                               updateCrew.mutate({ crewId: row.id, dto: { position: e.target.value } });
@@ -1056,7 +1064,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <Input
                           {...arraysForm.register(`crew.${idx}.name`)}
-                          placeholder="Nama"
+                          placeholder={t('callSheetEditor.namePlaceholder', 'Name')}
                           onBlur={(e) => {
                             if (row?.id) {
                               updateCrew.mutate({ crewId: row.id, dto: { name: e.target.value } });
@@ -1066,7 +1074,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <Input
                           {...arraysForm.register(`crew.${idx}.callTime`)}
-                          placeholder="7:00 AM"
+                          placeholder={t('callSheetEditor.crewCallTimePlaceholder', '7:00 AM')}
                           onBlur={(e) => {
                             if (row?.id) {
                               updateCrew.mutate({ crewId: row.id, dto: { callTime: e.target.value } });
@@ -1076,7 +1084,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <Input
                           {...arraysForm.register(`crew.${idx}.phone`)}
-                          placeholder="0812-..."
+                          placeholder={t('callSheetEditor.phonePlaceholder', '0812-...')}
                           onBlur={(e) => {
                             if (row?.id) {
                               updateCrew.mutate({ crewId: row.id, dto: { phone: e.target.value } });
@@ -1088,7 +1096,7 @@ export default function CallSheetEditorPageV2() {
                           isSaved={!!row?.id}
                           onSave={() => {
                             if (!row.department || !row.position || !row.name) {
-                              toast.error('Departemen, posisi, dan nama wajib diisi.');
+                              toast.error(t('callSheetEditor.crewRequiredFields', 'Department, position, and name are required.'));
                               return;
                             }
                             addCrew.mutate(row);
@@ -1121,29 +1129,29 @@ export default function CallSheetEditorPageV2() {
               className="border-border-subtle text-text-secondary hover:text-text-primary"
             >
               <Plus className="h-3.5 w-3.5" />
-              Tambah Kru
+              {t('callSheetEditor.addCrew', 'Add Crew')}
             </Button>
           </FormSection>
 
           {/* ──── Talent / Cast ──── */}
           <FormSection
-            eyebrow="Talent"
-            title={callSheet.callSheetType === 'PHOTO' ? 'Talent / Model' : 'Cast'}
-            description="Daftar talent dengan nomor, nama, karakter, dan waktu panggilan."
+            eyebrow={t('callSheetEditor.eyebrowTalent', 'Talent')}
+            title={callSheet.callSheetType === 'PHOTO' ? t('callSheetEditor.sectionTalentModel', 'Talent / Model') : t('callSheetEditor.sectionCast', 'Cast')}
+            description={t('callSheetEditor.sectionTalentDesc', 'Talent list with number, name, character, and call time.')}
             icon={<Users className="h-4 w-4" />}
           >
             {castArray.fields.length === 0 ? (
               <p className="text-sm text-text-tertiary italic mb-4">
-                Belum ada talent. Klik "Tambah Talent" untuk memulai.
+                {t('callSheetEditor.noTalent', 'No talent yet. Click "Add Talent" to get started.')}
               </p>
             ) : (
               <div className="space-y-2 mb-4">
                 <div className="hidden sm:grid grid-cols-[60px_1fr_1fr_100px_120px_32px] gap-2 px-1 pb-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
-                  <div>#</div>
-                  <div>Nama</div>
-                  <div>Karakter</div>
-                  <div>Call</div>
-                  <div>Status</div>
+                  <div>{t('callSheetEditor.colCastNumber', '#')}</div>
+                  <div>{t('callSheetEditor.colName', 'Name')}</div>
+                  <div>{t('callSheetEditor.colCharacter', 'Character')}</div>
+                  <div>{t('callSheetEditor.colCall', 'Call')}</div>
+                  <div>{t('callSheetEditor.colStatus', 'Status')}</div>
                   <div />
                 </div>
                 <div className="divide-y divide-border-subtle">
@@ -1166,7 +1174,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <Input
                           {...arraysForm.register(`cast.${idx}.actorName`)}
-                          placeholder="Nama talent"
+                          placeholder={t('callSheetEditor.talentNamePlaceholder', 'Talent name')}
                           onBlur={(e) => {
                             if (row?.id) {
                               updateCast.mutate({ castId: row.id, dto: { actorName: e.target.value } });
@@ -1176,7 +1184,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <Input
                           {...arraysForm.register(`cast.${idx}.character`)}
-                          placeholder="Karakter / peran"
+                          placeholder={t('callSheetEditor.characterPlaceholder', 'Character / role')}
                           onBlur={(e) => {
                             if (row?.id) {
                               updateCast.mutate({ castId: row.id, dto: { character: e.target.value } });
@@ -1186,7 +1194,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <Input
                           {...arraysForm.register(`cast.${idx}.callTime`)}
-                          placeholder="8:00 AM"
+                          placeholder={t('callSheetEditor.castCallTimePlaceholder', '8:00 AM')}
                           onBlur={(e) => {
                             if (row?.id) {
                               updateCast.mutate({ castId: row.id, dto: { callTime: e.target.value } });
@@ -1219,7 +1227,7 @@ export default function CallSheetEditorPageV2() {
                               <SelectContent>
                                 {(Object.keys(CAST_STATUS_LABEL) as CallStatus[]).map((k) => (
                                   <SelectItem key={k} value={k}>
-                                    {CAST_STATUS_LABEL[k]}
+                                    {t(CAST_STATUS_KEY[k], CAST_STATUS_LABEL[k])}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -1230,7 +1238,7 @@ export default function CallSheetEditorPageV2() {
                           isSaved={!!row?.id}
                           onSave={() => {
                             if (!row.actorName) {
-                              toast.error('Nama talent wajib diisi.');
+                              toast.error(t('callSheetEditor.talentNameRequired', 'Talent name is required.'));
                               return;
                             }
                             addCast.mutate(row);
@@ -1262,31 +1270,31 @@ export default function CallSheetEditorPageV2() {
               className="border-border-subtle text-text-secondary hover:text-text-primary"
             >
               <Plus className="h-3.5 w-3.5" />
-              Tambah Talent
+              {t('callSheetEditor.addTalent', 'Add Talent')}
             </Button>
           </FormSection>
 
           {/* ──── Notes ──── */}
           <FormSection
-            eyebrow="Catatan"
-            title="Catatan Umum & Produksi"
-            description="Catatan ini muncul di bagian akhir call sheet."
+            eyebrow={t('callSheetEditor.eyebrowNotes', 'Notes')}
+            title={t('callSheetEditor.sectionNotes', 'General & Production Notes')}
+            description={t('callSheetEditor.sectionNotesDesc', 'These notes appear at the end of the call sheet.')}
             icon={<NotesIcon className="h-4 w-4" />}
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <Field label="Catatan Umum">
+              <Field label={t('callSheetEditor.fieldGeneralNotes', 'General Notes')}>
                 <textarea
                   rows={4}
                   {...headerForm.register('generalNotes')}
-                  placeholder="Catatan umum untuk kru..."
+                  placeholder={t('callSheetEditor.generalNotesPlaceholder', 'General notes for crew...')}
                   className="block w-full resize-y rounded-md border border-border-default bg-bg-sunken px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary leading-relaxed outline-none focus-visible:border-accent-navy-ring focus-visible:ring-[3px] focus-visible:ring-accent-navy-ring/40"
                 />
               </Field>
-              <Field label="Catatan Produksi">
+              <Field label={t('callSheetEditor.fieldProductionNotes', 'Production Notes')}>
                 <textarea
                   rows={4}
                   {...headerForm.register('productionNotes')}
-                  placeholder="Catatan penting produksi..."
+                  placeholder={t('callSheetEditor.productionNotesPlaceholder', 'Important production notes...')}
                   className="block w-full resize-y rounded-md border border-border-default bg-bg-sunken px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary leading-relaxed outline-none focus-visible:border-accent-navy-ring focus-visible:ring-[3px] focus-visible:ring-accent-navy-ring/40"
                 />
               </Field>
@@ -1300,23 +1308,23 @@ export default function CallSheetEditorPageV2() {
         <aside className="lg:sticky lg:top-6 space-y-4">
           <GlassPanel surface="strong" padding="lg">
             <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-4">
-              Ringkasan
+              {t('callSheetEditor.summaryTitle', 'Summary')}
             </div>
             <dl className="space-y-3 text-sm">
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-text-tertiary text-xs">Nomor</dt>
+                <dt className="text-text-tertiary text-xs">{t('callSheetEditor.summaryNumber', 'Number')}</dt>
                 <dd className="font-mono text-text-primary tabular-nums">
                   #{callSheet.callSheetNumber}
                 </dd>
               </div>
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-text-tertiary text-xs">Jenis</dt>
+                <dt className="text-text-tertiary text-xs">{t('callSheetEditor.summaryType', 'Type')}</dt>
                 <dd className="text-text-secondary">
-                  {callSheet.callSheetType ? TYPE_LABEL[callSheet.callSheetType] : '—'}
+                  {callSheet.callSheetType ? t(TYPE_KEY[callSheet.callSheetType], TYPE_LABEL[callSheet.callSheetType]) : '—'}
                 </dd>
               </div>
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-text-tertiary text-xs">Hari</dt>
+                <dt className="text-text-tertiary text-xs">{t('callSheetEditor.summaryDay', 'Day')}</dt>
                 <dd className="text-text-secondary tabular-nums">
                   {callSheet.dayNumber ?? '—'}
                   {callSheet.totalDays ? ` / ${callSheet.totalDays}` : ''}
@@ -1324,26 +1332,26 @@ export default function CallSheetEditorPageV2() {
               </div>
               <Separator className="bg-border-subtle" />
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-text-tertiary text-xs">Kru</dt>
+                <dt className="text-text-tertiary text-xs">{t('callSheetEditor.summaryCrew', 'Crew')}</dt>
                 <dd className="text-text-secondary tabular-nums">
                   {callSheet.crewCalls?.length ?? 0}
                 </dd>
               </div>
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-text-tertiary text-xs">Talent</dt>
+                <dt className="text-text-tertiary text-xs">{t('callSheetEditor.summaryTalent', 'Talent')}</dt>
                 <dd className="text-text-secondary tabular-nums">
                   {callSheet.castCalls?.length ?? callSheet.models?.length ?? 0}
                 </dd>
               </div>
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-text-tertiary text-xs">Aktivitas</dt>
+                <dt className="text-text-tertiary text-xs">{t('callSheetEditor.summaryActivities', 'Activities')}</dt>
                 <dd className="text-text-secondary tabular-nums">
                   {callSheet.activities?.length ?? 0}
                 </dd>
               </div>
               <Separator className="bg-border-subtle" />
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-text-tertiary text-xs">Diperbarui</dt>
+                <dt className="text-text-tertiary text-xs">{t('callSheetEditor.summaryUpdated', 'Updated')}</dt>
                 <dd className="text-text-secondary text-xs text-right">
                   <DateDisplay date={callSheet.updatedAt} format="long" />
                 </dd>
@@ -1357,10 +1365,10 @@ export default function CallSheetEditorPageV2() {
                 <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-text-primary">
-                    Lokasi belum diisi
+                    {t('callSheetEditor.locationMissingTitle', 'Location not set')}
                   </div>
                   <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-                    Tambahkan alamat shoot agar kru tahu harus ke mana, dan auto-fill cuaca/RS (di v1) bisa berjalan.
+                    {t('callSheetEditor.locationMissingDesc', 'Add a shoot address so crew know where to go, and weather/hospital auto-fill (in v1) can run.')}
                   </p>
                 </div>
               </div>
@@ -1376,8 +1384,8 @@ export default function CallSheetEditorPageV2() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="text-xs text-text-tertiary">
             {headerForm.formState.isDirty
-              ? 'Perubahan info utama belum disimpan.'
-              : 'Semua perubahan info utama tersimpan. Tabel kru/talent/jadwal tersimpan per baris.'}
+              ? t('callSheetEditor.unsavedHeaderChanges', 'Header changes not yet saved.')
+              : t('callSheetEditor.savedHeaderChanges', 'All header changes saved. Crew/talent/schedule rows save individually.')}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -1386,7 +1394,7 @@ export default function CallSheetEditorPageV2() {
               onClick={() => navigate('/v2/call-sheets')}
               className="text-text-secondary hover:text-text-primary"
             >
-              Kembali
+              {t('common.back', 'Back')}
             </Button>
             <Button
               type="button"
@@ -1397,12 +1405,12 @@ export default function CallSheetEditorPageV2() {
               {updateMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Menyimpan
+                  {t('common.saving', 'Saving...')}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  Simpan Info Utama
+                  {t('callSheetEditor.saveHeader', 'Save Header')}
                 </>
               )}
             </Button>
@@ -1470,29 +1478,32 @@ const TimeInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
    the trash icon (per-field updates fire onBlur). */
 const RowActions = ({
   isSaved, onSave, onRemove,
-}: { isSaved: boolean; onSave: () => void; onRemove: () => void }) => (
-  <div className="flex items-center justify-end gap-1">
-    {!isSaved && (
+}: { isSaved: boolean; onSave: () => void; onRemove: () => void }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center justify-end gap-1">
+      {!isSaved && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onSave}
+          className="text-success hover:text-success hover:bg-success/10"
+          aria-label={t('callSheetEditor.saveRow', 'Save row')}
+        >
+          <Save className="h-3.5 w-3.5" />
+        </Button>
+      )}
       <Button
         type="button"
         variant="ghost"
         size="icon-sm"
-        onClick={onSave}
-        className="text-success hover:text-success hover:bg-success/10"
-        aria-label="Simpan baris"
+        onClick={onRemove}
+        className="text-text-tertiary hover:text-danger"
+        aria-label={t('callSheetEditor.removeRow', 'Remove row')}
       >
-        <Save className="h-3.5 w-3.5" />
+        <Trash2 className="h-3.5 w-3.5" />
       </Button>
-    )}
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon-sm"
-      onClick={onRemove}
-      className="text-text-tertiary hover:text-danger"
-      aria-label="Hapus baris"
-    >
-      <Trash2 className="h-3.5 w-3.5" />
-    </Button>
-  </div>
-);
+    </div>
+  );
+};

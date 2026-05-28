@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,6 +13,8 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -46,16 +49,6 @@ import { cn } from '@/lib/utils';
 /*  consistently across the app.                                       */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Status palette — same wash-background convention used by Projects  */
 /*  so chips read as one family across the app.                        */
@@ -65,6 +58,13 @@ const STATUS_LABEL: Record<DeckStatus, string> = {
   DRAFT:     'Draf',
   PUBLISHED: 'Diterbitkan',
   ARCHIVED:  'Diarsipkan',
+};
+
+// i18n keys for STATUS_LABEL — resolved at render time via t()
+const STATUS_KEY: Record<DeckStatus, string> = {
+  DRAFT:     'decks.statusDraft',
+  PUBLISHED: 'decks.statusPublished',
+  ARCHIVED:  'decks.statusArchived',
 };
 
 const statusChipClass = (status?: DeckStatus) => {
@@ -82,18 +82,19 @@ const statusChipClass = (status?: DeckStatus) => {
 /* ------------------------------------------------------------------ */
 
 const createSchema = z.object({
-  title:       z.string().min(2, 'Judul minimal 2 karakter'),
+  title:       z.string().min(2, 'Title must be at least 2 characters'),
   description: z.string().optional(),
   slideWidth:  z.coerce.number().int().positive(),
   slideHeight: z.coerce.number().int().positive(),
 });
 type CreateFormValues = z.infer<typeof createSchema>;
 
+// ASPECT_PRESETS labels are resolved at render time via t() in CreateDeckDialog
 const ASPECT_PRESETS = [
-  { label: '16:9 HD (1920×1080)', w: 1920, h: 1080 },
-  { label: '16:9 SD (1280×720)',  w: 1280, h: 720  },
-  { label: '1:1 Persegi (1080×1080)', w: 1080, h: 1080 },
-  { label: '9:16 Vertikal (1080×1920)', w: 1080, h: 1920 },
+  { labelKey: 'decks.preset169hd',       labelFallback: '16:9 HD (1920×1080)',    w: 1920, h: 1080 },
+  { labelKey: 'decks.preset169sd',       labelFallback: '16:9 SD (1280×720)',     w: 1280, h: 720  },
+  { labelKey: 'decks.preset11square',    labelFallback: '1:1 Square (1080×1080)', w: 1080, h: 1080 },
+  { labelKey: 'decks.preset916vertical', labelFallback: '9:16 Vertical (1080×1920)', w: 1080, h: 1920 },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -101,6 +102,7 @@ const ASPECT_PRESETS = [
 /* ------------------------------------------------------------------ */
 
 export default function DecksPageV2() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
@@ -120,12 +122,12 @@ export default function DecksPageV2() {
     mutationFn: (data: CreateDeckDto) => decksApi.create(data),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['decks'] });
-      toast.success('Deck berhasil dibuat');
+      toast.success(t('decks.createSuccess', 'Deck created'));
       setCreateOpen(false);
       navigate(`/v2/decks/${created.id}`);
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Gagal membuat deck');
+      toast.error(err.message || t('decks.createFailed', 'Failed to create deck'));
     },
   });
 
@@ -133,19 +135,19 @@ export default function DecksPageV2() {
     mutationFn: (id: string) => decksApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['decks'] });
-      toast.success('Deck dihapus');
+      toast.success(t('decks.deleteSuccess', 'Deck deleted'));
     },
-    onError: () => toast.error('Gagal menghapus deck'),
+    onError: () => toast.error(t('decks.deleteFailed', 'Failed to delete deck')),
   });
 
   const duplicateMutation = useMutation({
     mutationFn: (id: string) => decksApi.duplicate(id),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['decks'] });
-      toast.success('Deck diduplikasi');
+      toast.success(t('decks.duplicateSuccess', 'Deck duplicated'));
       navigate(`/v2/decks/${created.id}`);
     },
-    onError: () => toast.error('Gagal menduplikasi deck'),
+    onError: () => toast.error(t('decks.duplicateFailed', 'Failed to duplicate deck')),
   });
 
   /* ----- derived: filter ----- */
@@ -166,7 +168,7 @@ export default function DecksPageV2() {
   const resetFilters = () => { setSearchText(''); setStatusFilter('all'); };
 
   const handleDelete = (d: Deck) => {
-    if (confirm(`Hapus deck "${d.title}"? Tindakan ini tidak bisa dibatalkan.`)) {
+    if (confirm(t('decks.confirmDelete', `Delete deck "{{title}}"? This action cannot be undone.`, { title: d.title }))) {
       deleteMutation.mutate(d.id);
     }
   };
@@ -178,9 +180,9 @@ export default function DecksPageV2() {
         <PageContainer>
           <EmptyState
             icon={<Presentation className="h-12 w-12" />}
-            title="Tidak bisa memuat deck"
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-            action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+            title={t('decks.errorTitle', 'Cannot load decks')}
+            description={error instanceof Error ? error.message : t('decks.errorGeneric', 'An error occurred')}
+            action={<Button onClick={() => refetch()}>{t('decks.retry', 'Try Again')}</Button>}
           />
         </PageContainer>
       </Shell>
@@ -191,12 +193,12 @@ export default function DecksPageV2() {
     <Shell user={user}>
       <PageContainer>
         <PageHeader
-          title="Deck Presentasi"
-          description="Kumpulan slide untuk pitch, moodboard, dan storyboard. Buka untuk mengedit konten tiap slide."
+          title={t('decks.title', 'Presentation Decks')}
+          description={t('decks.description', 'Slide collections for pitches, moodboards, and storyboards. Open to edit each slide\'s content.')}
           actions={
             <Button onClick={() => setCreateOpen(true)} size="sm">
               <Plus className="h-4 w-4" />
-              Buat Deck Baru
+              {t('decks.newDeck', 'New Deck')}
             </Button>
           }
         />
@@ -212,7 +214,7 @@ export default function DecksPageV2() {
               <Input
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Cari judul, deskripsi, klien, atau proyek..."
+                placeholder={t('decks.searchPlaceholder', 'Search title, description, client, or project...')}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -225,10 +227,10 @@ export default function DecksPageV2() {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Status</SelectItem>
-                  <SelectItem value="DRAFT">{STATUS_LABEL.DRAFT}</SelectItem>
-                  <SelectItem value="PUBLISHED">{STATUS_LABEL.PUBLISHED}</SelectItem>
-                  <SelectItem value="ARCHIVED">{STATUS_LABEL.ARCHIVED}</SelectItem>
+                  <SelectItem value="all">{t('decks.allStatuses', 'All Statuses')}</SelectItem>
+                  <SelectItem value="DRAFT">{t(STATUS_KEY.DRAFT, STATUS_LABEL.DRAFT)}</SelectItem>
+                  <SelectItem value="PUBLISHED">{t(STATUS_KEY.PUBLISHED, STATUS_LABEL.PUBLISHED)}</SelectItem>
+                  <SelectItem value="ARCHIVED">{t(STATUS_KEY.ARCHIVED, STATUS_LABEL.ARCHIVED)}</SelectItem>
                 </SelectContent>
               </Select>
               {hasActiveFilters && (
@@ -239,7 +241,7 @@ export default function DecksPageV2() {
                   className="text-text-tertiary hover:text-text-primary"
                 >
                   <X className="h-3.5 w-3.5" />
-                  Reset
+                  {t('common.reset', 'Reset')}
                 </Button>
               )}
             </div>
@@ -260,21 +262,21 @@ export default function DecksPageV2() {
           <GlassPanel surface="glass" padding="none">
             <EmptyState
               icon={<Presentation />}
-              title={hasActiveFilters ? 'Tidak ada deck yang cocok' : 'Belum ada deck'}
+              title={hasActiveFilters ? t('decks.noMatch', 'No matching decks') : t('decks.noDecks', 'No decks yet')}
               description={
                 hasActiveFilters
-                  ? 'Coba ubah atau hapus filter Anda.'
-                  : 'Mulai dengan membuat deck pertama untuk pitch atau moodboard.'
+                  ? t('decks.noMatchDesc', 'Try adjusting or clearing your filters.')
+                  : t('decks.noDecksDesc', 'Start by creating your first deck for a pitch or moodboard.')
               }
               action={
                 hasActiveFilters ? (
                   <Button variant="outline" size="sm" onClick={resetFilters}>
-                    Reset Filter
+                    {t('common.resetFilters', 'Reset Filters')}
                   </Button>
                 ) : (
                   <Button onClick={() => setCreateOpen(true)} size="sm">
                     <Plus className="h-4 w-4" />
-                    Buat Deck Baru
+                    {t('decks.newDeck', 'New Deck')}
                   </Button>
                 )
               }
@@ -319,8 +321,8 @@ function Shell({
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -347,6 +349,7 @@ function DeckCard({
   onDuplicate: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const slideCount = deck._count?.slides ?? deck.slides?.length ?? 0;
 
   return (
@@ -360,7 +363,7 @@ function DeckCard({
         type="button"
         onClick={onOpen}
         className="relative h-32 w-full overflow-hidden bg-gradient-to-br from-bg-panel via-bg-sunken to-bg-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-navy-ring"
-        aria-label={`Buka ${deck.title}`}
+        aria-label={t('decks.openDeck', 'Open {{title}}', { title: deck.title })}
       >
         {/* visual ghost — slide-count stack */}
         <div className="absolute inset-0 flex items-center justify-center">
@@ -374,7 +377,7 @@ function DeckCard({
               statusChipClass(deck.status),
             )}
           >
-            {STATUS_LABEL[deck.status] ?? deck.status}
+            {t(STATUS_KEY[deck.status], STATUS_LABEL[deck.status] ?? deck.status)}
           </Badge>
           {deck.isPublic && (
             <Badge
@@ -382,7 +385,7 @@ function DeckCard({
               className="border-transparent px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider bg-accent-navy/10 text-accent-navy-foreground"
             >
               <Globe className="h-2.5 w-2.5 mr-0.5" />
-              Publik
+              {t('decks.public', 'Public')}
             </Badge>
           )}
         </div>
@@ -407,7 +410,7 @@ function DeckCard({
             </p>
           ) : (
             <p className="mt-1 text-xs text-text-tertiary italic">
-              Tanpa deskripsi
+              {t('decks.noDescription', 'No description')}
             </p>
           )}
         </button>
@@ -428,7 +431,7 @@ function DeckCard({
               variant="ghost"
               size="icon-sm"
               className="bg-bg-base/80 backdrop-blur-sm text-text-secondary hover:text-text-primary"
-              aria-label="Aksi deck"
+              aria-label={t('decks.deckActions', 'Deck actions')}
               onClick={(e) => e.stopPropagation()}
             >
               <MoreHorizontal className="h-4 w-4" />
@@ -436,17 +439,17 @@ function DeckCard({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
             <DropdownMenuItem onClick={onOpen}>
-              <Eye className="h-3.5 w-3.5" /> Buka
+              <Eye className="h-3.5 w-3.5" /> {t('common.open', 'Open')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onDuplicate}>
-              <Copy className="h-3.5 w-3.5" /> Duplikasi
+              <Copy className="h-3.5 w-3.5" /> {t('decks.duplicate', 'Duplicate')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={onDelete}
               className="text-danger focus:text-danger"
             >
-              <Trash2 className="h-3.5 w-3.5" /> Hapus
+              <Trash2 className="h-3.5 w-3.5" /> {t('common.delete', 'Delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -468,6 +471,7 @@ function CreateDeckDialog({
   onSubmit: (values: CreateFormValues) => void;
   isPending: boolean;
 }) {
+  const { t } = useTranslation();
   const {
     register, handleSubmit, reset, setValue, watch, formState: { errors },
   } = useForm<CreateFormValues>({
@@ -493,20 +497,20 @@ function CreateDeckDialog({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Buat Deck Baru</DialogTitle>
+          <DialogTitle>{t('decks.createTitle', 'New Deck')}</DialogTitle>
           <DialogDescription>
-            Buat kanvas presentasi. Anda bisa menambahkan slide setelah deck dibuat.
+            {t('decks.createDesc', 'Create a presentation canvas. You can add slides after the deck is created.')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
             <Label className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary">
-              Judul <span className="text-text-tertiary ml-0.5">*</span>
+              {t('decks.fieldTitle', 'Title')} <span className="text-text-tertiary ml-0.5">*</span>
             </Label>
             <Input
               autoFocus
-              placeholder="Misal: Pitch Q1 2026"
+              placeholder={t('decks.titlePlaceholder', 'E.g. Q1 2026 Pitch')}
               {...register('title')}
               className="bg-bg-sunken border-border-default text-text-primary"
               aria-invalid={!!errors.title}
@@ -518,11 +522,11 @@ function CreateDeckDialog({
 
           <div className="space-y-1.5">
             <Label className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary">
-              Deskripsi
+              {t('decks.fieldDescription', 'Description')}
             </Label>
             <textarea
               rows={3}
-              placeholder="Catatan ringkas tentang deck ini (opsional)"
+              placeholder={t('decks.descriptionPlaceholder', 'Brief notes about this deck (optional)')}
               {...register('description')}
               className="block w-full resize-y rounded-md border border-border-default bg-bg-sunken px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary leading-relaxed outline-none focus-visible:border-accent-navy-ring focus-visible:ring-[3px] focus-visible:ring-accent-navy-ring/40"
             />
@@ -530,7 +534,7 @@ function CreateDeckDialog({
 
           <div className="space-y-1.5">
             <Label className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary">
-              Ukuran Kanvas
+              {t('decks.fieldCanvasSize', 'Canvas Size')}
             </Label>
             <Select
               value={activePreset >= 0 ? String(activePreset) : ''}
@@ -543,18 +547,18 @@ function CreateDeckDialog({
               }}
             >
               <SelectTrigger className="w-full bg-bg-sunken border-border-default text-text-primary">
-                <SelectValue placeholder="Pilih rasio" />
+                <SelectValue placeholder={t('decks.selectRatio', 'Select aspect ratio')} />
               </SelectTrigger>
               <SelectContent>
                 {ASPECT_PRESETS.map((p, i) => (
-                  <SelectItem key={p.label} value={String(i)}>
-                    {p.label}
+                  <SelectItem key={p.labelKey} value={String(i)}>
+                    {t(p.labelKey, p.labelFallback)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-[11px] text-text-tertiary">
-              {w} × {h} piksel
+              {t('decks.pixels', '{{w}} × {{h}} pixels', { w, h })}
             </p>
           </div>
 
@@ -565,10 +569,10 @@ function CreateDeckDialog({
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
-              Batal
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? 'Membuat…' : 'Buat Deck'}
+              {isPending ? t('common.creating', 'Creating…') : t('decks.createSubmit', 'Create Deck')}
             </Button>
           </DialogFooter>
         </form>

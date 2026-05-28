@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -55,25 +57,14 @@ import { cn } from '@/lib/utils';
 /*  Sidebar — adds Reports to keep parity with the rest of v2.         */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Reports',    icon: <BarChart3   className="h-4 w-4" />, href: '/v2/reports' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Status helpers                                                     */
 /* ------------------------------------------------------------------ */
 
 const STATUS_LABEL: Record<string, string> = {
-  DRAFT:     'Draf',
-  COMPLETED: 'Selesai',
-  SENT:      'Terkirim',
+  DRAFT:     'Draft',
+  COMPLETED: 'Completed',
+  SENT:      'Sent',
 };
 
 const statusChipClass = (status?: string) => {
@@ -91,40 +82,51 @@ const statusChipClass = (status?: string) => {
 /*  jump straight into Revenue / Payment / Client / Project views.     */
 /* ------------------------------------------------------------------ */
 
-interface CanonicalReport {
+
+interface CanonicalReportDef {
   slug: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  titleFallback: string;
+  descKey: string;
+  descFallback: string;
   icon: typeof LineChartIcon;
   accent: string;
 }
 
-const CANONICAL_REPORTS: CanonicalReport[] = [
+const CANONICAL_REPORTS: CanonicalReportDef[] = [
   {
     slug: 'revenue',
-    title: 'Analisis Pendapatan',
-    description: 'Tren pendapatan bulanan, kuartal, dan tahunan.',
+    titleKey: 'reportsPage.canonical.revenue.title',
+    titleFallback: 'Revenue Report',
+    descKey: 'reportsPage.canonical.revenue.desc',
+    descFallback: 'Monthly and cumulative revenue by client, project, and category.',
     icon: LineChartIcon,
     accent: 'text-info',
   },
   {
     slug: 'payment',
-    title: 'Analisis Pembayaran',
-    description: 'Status pembayaran, jatuh tempo, dan piutang.',
+    titleKey: 'reportsPage.canonical.payment.title',
+    titleFallback: 'Payment Report',
+    descKey: 'reportsPage.canonical.payment.desc',
+    descFallback: 'Payment status breakdown, aging analysis, and collection trends.',
     icon: PieChart,
     accent: 'text-warning',
   },
   {
     slug: 'clients',
-    title: 'Analisis Klien',
-    description: 'Klien teratas berdasarkan kontribusi pendapatan.',
+    titleKey: 'reportsPage.canonical.clients.title',
+    titleFallback: 'Client Report',
+    descKey: 'reportsPage.canonical.clients.desc',
+    descFallback: 'Top clients by revenue, activity, and outstanding balances.',
     icon: Building2,
     accent: 'text-success',
   },
   {
     slug: 'projects',
-    title: 'Analisis Proyek',
-    description: 'Proyek teratas, distribusi tipe, dan performa.',
+    titleKey: 'reportsPage.canonical.projects.title',
+    titleFallback: 'Project Report',
+    descKey: 'reportsPage.canonical.projects.desc',
+    descFallback: 'Project performance, billing efficiency, and deadline adherence.',
     icon: TrendingUp,
     accent: 'text-text-primary',
   },
@@ -161,9 +163,9 @@ export default function ReportsPageV2() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success(t('reports.exportSuccess', 'Laporan ringkasan berhasil diunduh.'));
+      toast.success(t('reportsPage.exportSuccess', 'Summary report downloaded successfully.'));
     },
-    onError: () => toast.error(t('reports.exportFailed', 'Gagal mengunduh laporan.')),
+    onError: () => toast.error(t('reportsPage.exportFailed', 'Failed to download report.')),
   });
 
   /* ----- derived ----- */
@@ -195,13 +197,13 @@ export default function ReportsPageV2() {
 
   /* ----- handlers ----- */
   const handleDelete = (r: SocialMediaReport) => {
-    if (confirm(t('reports.confirmDelete', `Hapus laporan "${r.title}"? Tindakan ini tidak bisa dibatalkan.`))) {
+    if (confirm(t('reportsPage.confirmDelete', `Delete report "${r.title}"? This action cannot be undone.`))) {
       deleteReport.mutate(r.id, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ['reports'] });
-          toast.success(t('reports.deleted', 'Laporan berhasil dihapus.'));
+          toast.success(t('reportsPage.deleted', 'Report deleted.'));
         },
-        onError: () => toast.error(t('reports.deleteFailed', 'Gagal menghapus laporan.')),
+        onError: () => toast.error(t('reportsPage.deleteFailed', 'Failed to delete report.')),
       });
     }
   };
@@ -211,8 +213,8 @@ export default function ReportsPageV2() {
     return (
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
         topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -220,9 +222,9 @@ export default function ReportsPageV2() {
         <PageContainer>
           <EmptyState
             icon={<BarChart3 className="h-12 w-12" />}
-            title={t('reports.error.title', 'Tidak bisa memuat laporan')}
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-            action={<Button onClick={() => refetch()}>{t('common.retry', 'Coba Lagi')}</Button>}
+            title={t('reportsPage.error.title', 'Unable to load reports')}
+            description={error instanceof Error ? error.message : t('reportsPage.error.generic', 'An error occurred')}
+            action={<Button onClick={() => refetch()}>{t('common.retry', 'Retry')}</Button>}
           />
         </PageContainer>
       </AppShell>
@@ -233,18 +235,18 @@ export default function ReportsPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
     >
       <PageContainer>
         <PageHeader
-          title={t('reports.title', 'Laporan')}
+          title={t('reportsPage.title', 'Reports')}
           description={t(
-            'reports.subtitle',
-            'Analisis finansial, performa bisnis, dan laporan kustom yang Anda simpan.',
+            'reportsPage.subtitle',
+            'Financial analysis, business performance, and your saved custom reports.',
           )}
           actions={
             <div className="flex items-center gap-2">
@@ -255,11 +257,11 @@ export default function ReportsPageV2() {
                 disabled={exportMutation.isPending}
               >
                 <Download className="h-4 w-4" />
-                {t('reports.exportPdf', 'Ekspor PDF')}
+                {t('reportsPage.exportPdf', 'Export PDF')}
               </Button>
               <Button onClick={() => navigate('/v2/reports/builder')} size="sm">
                 <Plus className="h-4 w-4" />
-                {t('reports.new', 'Laporan Baru')}
+                {t('reportsPage.new', 'New Report')}
               </Button>
             </div>
           }
@@ -281,24 +283,24 @@ export default function ReportsPageV2() {
             ) : (
               <>
                 <StatCard
-                  label={t('reports.kpi.total', 'Total Laporan')}
+                  label={t('reportsPage.kpi.total', 'Total Reports')}
                   value={stats.total}
-                  sublabel={t('reports.kpi.totalSub', 'tersimpan di sistem')}
+                  sublabel={t('reportsPage.kpi.totalSub', 'saved in the system')}
                 />
                 <StatCard
-                  label={t('reports.kpi.sent', 'Terkirim')}
+                  label={t('reportsPage.kpi.sent', 'Sent')}
                   value={stats.sent}
-                  sublabel={t('reports.kpi.sentSub', 'sudah dikirim ke klien')}
+                  sublabel={t('reportsPage.kpi.sentSub', 'delivered to clients')}
                 />
                 <StatCard
-                  label={t('reports.kpi.draft', 'Draf')}
+                  label={t('reportsPage.kpi.draft', 'Draft')}
                   value={stats.draft}
-                  sublabel={t('reports.kpi.draftSub', 'masih dalam pengerjaan')}
+                  sublabel={t('reportsPage.kpi.draftSub', 'still in progress')}
                 />
                 <StatCard
-                  label={t('reports.kpi.sections', 'Total Bagian')}
+                  label={t('reportsPage.kpi.sections', 'Total Sections')}
                   value={stats.totalSections}
-                  sublabel={t('reports.kpi.sectionsSub', 'di seluruh laporan')}
+                  sublabel={t('reportsPage.kpi.sectionsSub', 'across all reports')}
                 />
               </>
             )}
@@ -314,12 +316,12 @@ export default function ReportsPageV2() {
           <div className="mb-5 flex items-baseline justify-between gap-4">
             <div>
               <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                {t('reports.analytics.title', 'Laporan Analitik Sistem')}
+                {t('reportsPage.analytics.title', 'System Analytics Reports')}
               </h2>
               <p className="mt-0.5 text-xs text-text-tertiary">
                 {t(
-                  'reports.analytics.subtitle',
-                  'Empat permukaan analitik utama, selalu tersedia dan terkini.',
+                  'reportsPage.analytics.subtitle',
+                  'Four core analytic surfaces, always available and up to date.',
                 )}
               </p>
             </div>
@@ -343,10 +345,10 @@ export default function ReportsPageV2() {
                       <Icon className="h-5 w-5" strokeWidth={1.5} />
                     </div>
                     <div className="text-sm font-display font-semibold text-text-primary tracking-tight mb-1.5 group-hover:text-text-primary">
-                      {r.title}
+                      {t(r.titleKey, r.titleFallback)}
                     </div>
                     <p className="text-xs text-text-tertiary leading-relaxed">
-                      {r.description}
+                      {t(r.descKey, r.descFallback)}
                     </p>
                   </GlassPanel>
                 </button>
@@ -364,12 +366,12 @@ export default function ReportsPageV2() {
             <div className="mb-3 flex items-baseline justify-between gap-4">
               <div>
                 <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                  {t('reports.saved.title', 'Laporan Tersimpan')}
+                  {t('reportsPage.saved.title', 'Saved Reports')}
                 </h2>
                 <p className="mt-0.5 text-xs text-text-tertiary">
                   {isLoading
-                    ? t('common.loading', 'Memuat…')
-                    : t('reports.saved.count', '{{count}} laporan', { count: reports.length })}
+                    ? t('common.loading', 'Loading…')
+                    : t('reportsPage.saved.count', '{{count}} reports', { count: reports.length })}
                 </p>
               </div>
             </div>
@@ -382,8 +384,8 @@ export default function ReportsPageV2() {
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   placeholder={t(
-                    'reports.search.placeholder',
-                    'Cari judul, proyek, atau klien...',
+                    'reportsPage.search.placeholder',
+                    'Search by title, project, or client…',
                   )}
                   className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
                 />
@@ -395,11 +397,11 @@ export default function ReportsPageV2() {
                     size="sm"
                     className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[160px]"
                   >
-                    <SelectValue placeholder={t('reports.filter.status', 'Status')} />
+                    <SelectValue placeholder={t('reportsPage.filter.status', 'Status')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">
-                      {t('reports.filter.allStatuses', 'Semua Status')}
+                      {t('reportsPage.filter.allStatuses', 'All Statuses')}
                     </SelectItem>
                     <SelectItem value="DRAFT">{STATUS_LABEL.DRAFT}</SelectItem>
                     <SelectItem value="COMPLETED">{STATUS_LABEL.COMPLETED}</SelectItem>
@@ -435,26 +437,26 @@ export default function ReportsPageV2() {
               icon={<Sparkles className="h-12 w-12" />}
               title={
                 hasActiveFilters
-                  ? t('reports.empty.filtered.title', 'Tidak ada laporan yang cocok')
-                  : t('reports.empty.title', 'Belum ada laporan tersimpan')
+                  ? t('reportsPage.empty.filtered.title', 'No matching reports')
+                  : t('reportsPage.empty.title', 'No saved reports yet')
               }
               description={
                 hasActiveFilters
-                  ? t('reports.empty.filtered.desc', 'Coba ubah atau hapus filter Anda.')
+                  ? t('reportsPage.empty.filtered.desc', 'Try adjusting or clearing your filters.')
                   : t(
-                      'reports.empty.desc',
-                      'Buat laporan kustom pertama Anda untuk menggabungkan data CSV dan visualisasi.',
+                      'reportsPage.empty.desc',
+                      'Build your first custom report by combining CSV data and visualizations.',
                     )
               }
               action={
                 hasActiveFilters ? (
                   <Button variant="outline" size="sm" onClick={resetFilters}>
-                    {t('common.resetFilters', 'Reset Filter')}
+                    {t('common.resetFilters', 'Reset Filters')}
                   </Button>
                 ) : (
                   <Button onClick={() => navigate('/v2/reports/builder')} size="sm">
                     <Plus className="h-4 w-4" />
-                    {t('reports.new', 'Laporan Baru')}
+                    {t('reportsPage.new', 'New Report')}
                   </Button>
                 )
               }
@@ -469,7 +471,7 @@ export default function ReportsPageV2() {
                   {
                     id: 'title',
                     accessorKey: 'title',
-                    header: 'Judul',
+                    header: t('reportsPage.col.title', 'Title'),
                     cell: ({ row }) => (
                       <div className="min-w-0 max-w-[300px]">
                         <div className="text-sm text-text-primary truncate">
@@ -486,7 +488,7 @@ export default function ReportsPageV2() {
                   {
                     id: 'project',
                     accessorFn: (r) => r.project?.description ?? '',
-                    header: 'Proyek',
+                    header: t('reportsPage.col.project', 'Project'),
                     cell: ({ row }) => {
                       const p = row.original.project;
                       if (!p) return <span className="text-text-tertiary">—</span>;
@@ -506,7 +508,7 @@ export default function ReportsPageV2() {
                   },
                   {
                     id: 'period',
-                    header: 'Periode',
+                    header: t('reportsPage.col.period', 'Period'),
                     cell: ({ row }) => (
                       <span className="text-text-secondary text-xs">
                         {ReportUtils.formatPeriod(row.original.month, row.original.year)}
@@ -515,7 +517,7 @@ export default function ReportsPageV2() {
                   },
                   {
                     id: 'sections',
-                    header: 'Bagian',
+                    header: t('reportsPage.col.sections', 'Sections'),
                     cell: ({ row }) => (
                       <span className="text-text-secondary text-xs tabular-nums">
                         {row.original.sections?.length ?? 0}
@@ -524,7 +526,7 @@ export default function ReportsPageV2() {
                   },
                   {
                     accessorKey: 'status',
-                    header: 'Status',
+                    header: t('reportsPage.col.status', 'Status'),
                     cell: ({ row }) => (
                       <Badge
                         variant="outline"
@@ -539,7 +541,7 @@ export default function ReportsPageV2() {
                   },
                   {
                     accessorKey: 'updatedAt',
-                    header: 'Diperbarui',
+                    header: t('reportsPage.col.updatedAt', 'Updated'),
                     cell: ({ row }) => (
                       <span className="text-text-tertiary text-xs">
                         <DateDisplay date={row.original.updatedAt} />
@@ -548,7 +550,7 @@ export default function ReportsPageV2() {
                   },
                   {
                     id: 'actions',
-                    header: () => <span className="sr-only">Aksi</span>,
+                    header: () => <span className="sr-only">{t('reportsPage.col.actions', 'Actions')}</span>,
                     cell: ({ row }) => {
                       const r = row.original;
                       return (
@@ -559,20 +561,20 @@ export default function ReportsPageV2() {
                                 variant="ghost"
                                 size="icon-sm"
                                 className="text-text-tertiary hover:text-text-primary"
-                                aria-label="Aksi laporan"
+                                aria-label={t('reportsPage.reportActions', 'Report actions')}
                               >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
                               <DropdownMenuItem onClick={() => navigate(`/v2/reports/${r.id}`)}>
-                                <Eye className="h-3.5 w-3.5" /> Lihat
+                                <Eye className="h-3.5 w-3.5" /> {t('common.view', 'View')}
                               </DropdownMenuItem>
                               {r.pdfUrl && (
                                 <DropdownMenuItem
                                   onClick={() => window.open(r.pdfUrl, '_blank')}
                                 >
-                                  <Download className="h-3.5 w-3.5" /> Unduh PDF
+                                  <Download className="h-3.5 w-3.5" /> {t('reportsPage.downloadPdf', 'Download PDF')}
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
@@ -580,7 +582,7 @@ export default function ReportsPageV2() {
                                 onClick={() => handleDelete(r)}
                                 className="text-danger focus:text-danger"
                               >
-                                <Trash2 className="h-3.5 w-3.5" /> Hapus
+                                <Trash2 className="h-3.5 w-3.5" /> {t('common.delete', 'Delete')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

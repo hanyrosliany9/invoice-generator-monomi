@@ -4,6 +4,8 @@ import {
   Plus, MoreHorizontal,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -28,15 +30,6 @@ import {
 } from '@/components/ui/sheet';
 import { toast, Toaster } from 'sonner';
 
-const sidebarItems = [
-  { label: 'Dashboard', icon: <Inbox className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices', icon: <FileText className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Clients', icon: <Users className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects', icon: <Folder className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses', icon: <CreditCard className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings', icon: <Settings className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 export default function StyleGuidePage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
 
@@ -44,8 +37,8 @@ export default function StyleGuidePage() {
     <>
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: <UserChip name="Admin Sistem" role="SUPER_ADMIN" size="sm" />,
         }}
         topbar={{

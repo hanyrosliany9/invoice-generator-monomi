@@ -137,23 +137,23 @@ const CATEGORY_OPTIONS = [
 ];
 
 const STATUS_OPTIONS: Array<{ value: (typeof STATUS_VALUES)[number]; label: string }> = [
-  { value: 'AVAILABLE', label: 'Tersedia' },
-  { value: 'RESERVED', label: 'Direservasi' },
-  { value: 'CHECKED_OUT', label: 'Dipinjam' },
-  { value: 'IN_MAINTENANCE', label: 'Dalam Perawatan' },
-  { value: 'BROKEN', label: 'Rusak' },
-  { value: 'RETIRED', label: 'Tidak Aktif' },
+  { value: 'AVAILABLE', label: 'Available' },
+  { value: 'RESERVED', label: 'Reserved' },
+  { value: 'CHECKED_OUT', label: 'Checked Out' },
+  { value: 'IN_MAINTENANCE', label: 'In Maintenance' },
+  { value: 'BROKEN', label: 'Broken' },
+  { value: 'RETIRED', label: 'Retired' },
 ];
 
 const CONDITION_OPTIONS: Array<{
   value: (typeof CONDITION_VALUES)[number];
   label: string;
 }> = [
-  { value: 'EXCELLENT', label: 'Sangat Baik' },
-  { value: 'GOOD', label: 'Baik' },
-  { value: 'FAIR', label: 'Cukup' },
-  { value: 'POOR', label: 'Buruk' },
-  { value: 'BROKEN', label: 'Rusak' },
+  { value: 'EXCELLENT', label: 'Excellent' },
+  { value: 'GOOD', label: 'Good' },
+  { value: 'FAIR', label: 'Fair' },
+  { value: 'POOR', label: 'Poor' },
+  { value: 'BROKEN', label: 'Broken' },
 ];
 
 // ──────────────────────────────────────────────────────────────

@@ -19,6 +19,8 @@ import { id as idLocale } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -60,18 +62,6 @@ import { cn } from '@/lib/utils';
 /*  Sidebar — kept identical to general CalendarPage so the two       */
 /*  calendar views feel like siblings under a shared navigation tree. */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',        icon: <Inbox        className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',         icon: <FileText     className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',       icon: <ReceiptText  className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',          icon: <Users        className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',         icon: <Folder       className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Kalender',         icon: <CalendarDays className="h-4 w-4" />, href: '/v2/calendar' },
-  { label: 'Kalender Konten',  icon: <ImageIcon    className="h-4 w-4" />, href: '/v2/calendar/content' },
-  { label: 'Expenses',         icon: <CreditCard   className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',         icon: <Settings     className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Status + platform editorial config.                                */
@@ -333,8 +323,8 @@ export default function ContentCalendarPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -649,6 +639,7 @@ function MonthGrid({
   onSelect: (it: ContentCalendarItem) => void;
   onCreate: (date: Date) => void;
 }) {
+  const { t } = useTranslation();
   // Horizontally scrollable on small viewports — keeps the 7-col grid
   // intact without clipping cell content or requiring a layout rewrite.
   return (
@@ -703,7 +694,7 @@ function MonthGrid({
                     'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity',
                     'inline-flex items-center justify-center',
                   )}
-                  aria-label="Tambah konten di hari ini"
+                  aria-label={t('contentCalendar.addContentOnDay', 'Add content on this day')}
                 >
                   <Plus className="h-3 w-3" />
                 </button>
@@ -737,7 +728,7 @@ function MonthGrid({
                     onClick={() => posts[3] && onSelect(posts[3])}
                     className="text-[10px] text-text-tertiary px-1.5 hover:text-text-secondary"
                   >
-                    +{overflow} lainnya
+                    +{overflow} {t('contentCalendar.moreItems', 'more')}
                   </button>
                 )}
               </div>
@@ -765,6 +756,7 @@ function ListView({
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   // Newest-scheduled first; unscheduled drafts sink to the bottom.
   const sorted = useMemo(() => [...items].sort((a, b) => {
     const da = a.scheduledAt ? +new Date(a.scheduledAt) : -Infinity;
@@ -858,23 +850,23 @@ function ListView({
                     variant="ghost"
                     size="icon-sm"
                     className="text-text-tertiary hover:text-text-primary"
-                    aria-label="Aksi konten"
+                    aria-label={t('contentCalendar.contentActions', 'Content actions')}
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => onSelect(it)}>
-                    <Eye className="h-3.5 w-3.5" /> Lihat detail
+                    <Eye className="h-3.5 w-3.5" /> {t('contentCalendar.viewDetail', 'View Detail')}
                   </DropdownMenuItem>
                   {it.status !== 'PUBLISHED' && (
                     <DropdownMenuItem onClick={() => onPublish(it.id)}>
-                      <Rocket className="h-3.5 w-3.5" /> Terbitkan
+                      <Rocket className="h-3.5 w-3.5" /> {t('contentCalendar.publish', 'Publish')}
                     </DropdownMenuItem>
                   )}
                   {it.status !== 'ARCHIVED' && (
                     <DropdownMenuItem onClick={() => onArchive(it.id)}>
-                      <Archive className="h-3.5 w-3.5" /> Arsipkan
+                      <Archive className="h-3.5 w-3.5" /> {t('contentCalendar.archive', 'Archive')}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
@@ -882,7 +874,7 @@ function ListView({
                     onClick={() => onDelete(it.id)}
                     className="text-danger focus:text-danger"
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Hapus
+                    <Trash2 className="h-3.5 w-3.5" /> {t('common.delete', 'Delete')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -949,6 +941,7 @@ function DetailSheet({
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const open = !!item;
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -977,7 +970,7 @@ function DetailSheet({
                 )}
               </div>
               <SheetTitle className="text-text-primary font-display tracking-tight">
-                {t_('Detail Konten', 'Detail Konten')}
+                {t('contentCalendar.detailSheet.title', 'Content Detail')}
               </SheetTitle>
               <SheetDescription className="text-text-tertiary text-xs">
                 {item.client?.name ?? '—'}
@@ -1041,13 +1034,13 @@ function DetailSheet({
               {/* Timeline */}
               <section className="text-xs text-text-tertiary space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span>Dibuat</span>
+                  <span>{t('contentCalendar.detailSheet.created', 'Created')}</span>
                   <DateDisplay date={item.createdAt} format="long" />
                 </div>
                 {item.publishedAt && (
                   <div className="flex items-center justify-between text-success">
                     <span className="inline-flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> Terbit
+                      <CheckCircle2 className="h-3 w-3" /> {t('contentCalendar.detailSheet.published', 'Published')}
                     </span>
                     <DateDisplay date={item.publishedAt} format="long" />
                   </div>
@@ -1055,7 +1048,7 @@ function DetailSheet({
                 {item.status === 'FAILED' && (
                   <div className="flex items-center gap-1 text-danger">
                     <AlertTriangle className="h-3 w-3" />
-                    Publikasi gagal — perlu pemeriksaan
+                    {t('contentCalendar.detailSheet.publishFailed', 'Publish failed — needs review')}
                   </div>
                 )}
               </section>
@@ -1065,13 +1058,13 @@ function DetailSheet({
               {item.status !== 'PUBLISHED' && (
                 <Button size="sm" onClick={() => onPublish(item.id)}>
                   <Rocket className="h-3.5 w-3.5" />
-                  Terbitkan
+                  {t('contentCalendar.publish', 'Publish')}
                 </Button>
               )}
               {item.status !== 'ARCHIVED' && (
                 <Button variant="outline" size="sm" onClick={() => onArchive(item.id)}>
                   <Archive className="h-3.5 w-3.5" />
-                  Arsipkan
+                  {t('contentCalendar.archive', 'Archive')}
                 </Button>
               )}
               <Button
@@ -1081,7 +1074,7 @@ function DetailSheet({
                 onClick={() => onDelete(item.id)}
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Hapus
+                {t('common.delete', 'Delete')}
               </Button>
             </div>
           </>
@@ -1109,6 +1102,7 @@ function CreateDialog({
   onSubmit: (data: CreateContentDto) => void;
   submitting: boolean;
 }) {
+  const { t } = useTranslation();
   const [caption, setCaption] = useState('');
   const [scheduledAt, setScheduledAt] = useState<Date | undefined>(initialDate);
   const [time, setTime] = useState('09:00');
@@ -1129,7 +1123,7 @@ function CreateDialog({
 
   const handleSubmit = () => {
     if (!caption.trim()) {
-      toast.error('Caption tidak boleh kosong.');
+      toast.error(t('contentCalendar.createDialog.captionRequired', 'Caption is required.'));
       return;
     }
     let iso: string | undefined;
@@ -1159,10 +1153,10 @@ function CreateDialog({
       <DialogContent className="bg-bg-raised border-border-subtle text-text-primary sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="text-text-primary font-display tracking-tight">
-            Tambah Konten
+            {t('contentCalendar.createDialog.title', 'Add Content')}
           </DialogTitle>
           <DialogDescription className="text-text-tertiary text-xs">
-            Buat draf konten — jadwalkan sekarang atau simpan sebagai draf untuk diatur nanti.
+            {t('contentCalendar.createDialog.desc', 'Create a content draft — schedule it now or save as draft to arrange later.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -1170,12 +1164,12 @@ function CreateDialog({
           {/* Caption */}
           <div>
             <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-              Caption
+              {t('contentCalendar.createDialog.caption', 'Caption')}
             </label>
             <Textarea
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              placeholder="Tulis caption media sosial Anda..."
+              placeholder={t('contentCalendar.createDialog.captionPlaceholder', 'Write your social media caption...')}
               maxLength={2200}
             />
             <div className="mt-1 text-[10px] text-text-tertiary text-right tabular-nums">
@@ -1187,13 +1181,13 @@ function CreateDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-                Tanggal Jadwal
+                {t('contentCalendar.createDialog.scheduleDate', 'Schedule Date')}
               </label>
               <MonomiDatePicker value={scheduledAt} onChange={setScheduledAt} />
             </div>
             <div>
               <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-                Waktu
+                {t('contentCalendar.createDialog.time', 'Time')}
               </label>
               <div className="relative">
                 <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary pointer-events-none" />
@@ -1211,7 +1205,7 @@ function CreateDialog({
           {/* Platforms */}
           <div>
             <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-              Platform
+              {t('contentCalendar.createDialog.platform', 'Platform')}
             </label>
             <div className="flex flex-wrap gap-1.5">
               {PLATFORMS.map((p) => {
@@ -1240,14 +1234,14 @@ function CreateDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-                Klien
+                {t('contentCalendar.createDialog.client', 'Client')}
               </label>
               <Select value={clientId || 'none'} onValueChange={(v) => setClientId(v === 'none' ? '' : v)}>
                 <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder="Pilih klien (opsional)" />
+                  <SelectValue placeholder={t('contentCalendar.createDialog.clientPlaceholder', 'Select client (optional)')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Tidak ada</SelectItem>
+                  <SelectItem value="none">{t('contentCalendar.createDialog.none', 'None')}</SelectItem>
                   {clients.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
@@ -1256,14 +1250,14 @@ function CreateDialog({
             </div>
             <div>
               <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-                Proyek
+                {t('contentCalendar.createDialog.project', 'Project')}
               </label>
               <Select value={projectId || 'none'} onValueChange={(v) => setProjectId(v === 'none' ? '' : v)}>
                 <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder="Pilih proyek (opsional)" />
+                  <SelectValue placeholder={t('contentCalendar.createDialog.projectPlaceholder', 'Select project (optional)')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Tidak ada</SelectItem>
+                  <SelectItem value="none">{t('contentCalendar.createDialog.none', 'None')}</SelectItem>
                   {projects.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       <span className="font-mono mr-2">{p.number}</span>
@@ -1278,10 +1272,10 @@ function CreateDialog({
 
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Batal
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button size="sm" onClick={handleSubmit} disabled={submitting}>
-            {submitting ? 'Menyimpan...' : scheduledAt ? 'Jadwalkan' : 'Simpan Draf'}
+            {submitting ? t('common.saving', 'Saving...') : scheduledAt ? t('contentCalendar.createDialog.schedule', 'Schedule') : t('contentCalendar.createDialog.saveDraft', 'Save Draft')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1304,9 +1298,3 @@ function truncate(s: string | null | undefined, n: number): string {
   return s.length > n ? `${s.slice(0, n - 1)}…` : s;
 }
 
-// Tiny stub so we don't need useTranslation in the leaf components; the
-// strings are already Indonesian and the design system encourages
-// inlining where there's no actual translation lookup to do.
-function t_(_id: string, fallback: string) {
-  return fallback;
-}

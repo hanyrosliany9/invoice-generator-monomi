@@ -7,6 +7,8 @@ import {
   Plus, Search, MoreHorizontal, Eye, Pencil, Trash2, X, Tag as TagIcon,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -44,16 +46,6 @@ import { cn } from '@/lib/utils';
 /*  rhythm, and the icon vocabulary read as one app.                   */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard', icon: <Inbox className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices', icon: <FileText className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients', icon: <Users className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects', icon: <Folder className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses', icon: <CreditCard className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings', icon: <Settings className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Status maps — Bahasa Indonesia copy paired with editorial badge    */
 /*  variants. Mirrors the vocabulary of v2/invoices: Lunas == default. */
@@ -61,10 +53,10 @@ const sidebarItems = [
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT:     'Draft',
-  SUBMITTED: 'Diajukan',
-  APPROVED:  'Disetujui',
-  REJECTED:  'Ditolak',
-  CANCELLED: 'Dibatalkan',
+  SUBMITTED: 'Submitted',
+  APPROVED:  'Approved',
+  REJECTED:  'Rejected',
+  CANCELLED: 'Cancelled',
 };
 
 const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
@@ -76,9 +68,9 @@ const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['v
 };
 
 const PAYMENT_LABEL: Record<string, string> = {
-  UNPAID:         'Belum Dibayar',
-  PARTIALLY_PAID: 'Sebagian',
-  PAID:           'Lunas',
+  UNPAID:         'Unpaid',
+  PARTIALLY_PAID: 'Partially Paid',
+  PAID:           'Paid',
 };
 
 const PAYMENT_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
@@ -222,8 +214,8 @@ export default function ExpensesPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -240,9 +232,9 @@ export default function ExpensesPageV2() {
       <Shell>
         <EmptyState
           icon={<CreditCard className="h-12 w-12" />}
-          title={t('expenses.error.title', 'Tidak bisa memuat biaya')}
-          description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-          action={<Button onClick={() => refetch()}>{t('common.retry', 'Coba Lagi')}</Button>}
+          title={t('expensesPage.error.title', 'Cannot load expenses')}
+          description={error instanceof Error ? error.message : t('expensesPage.error.generic', 'An error occurred')}
+          action={<Button onClick={() => refetch()}>{t('expensesPage.retry', 'Try Again')}</Button>}
         />
       </Shell>
     );
@@ -252,10 +244,10 @@ export default function ExpensesPageV2() {
   return (
     <Shell>
       <PageHeader
-        title={t('expenses.title', 'Biaya')}
+        title={t('expensesPage.title', 'Expenses')}
         description={t(
-          'expenses.subtitle',
-          'Catat pengeluaran usaha dengan kepatuhan PSAK & pajak Indonesia.',
+          'expensesPage.subtitle',
+          'Record business expenses with PSAK compliance and Indonesian tax support.',
         )}
         actions={
           <div className="flex items-center gap-2">
@@ -265,11 +257,11 @@ export default function ExpensesPageV2() {
               onClick={() => navigate('/v2/expenses/categories')}
             >
               <TagIcon className="h-4 w-4" />
-              {t('expenses.categories', 'Kategori')}
+              {t('expensesPage.categories', 'Categories')}
             </Button>
             <Button onClick={() => navigate('/expenses/new')} size="sm">
               <Plus className="h-4 w-4" />
-              {t('expenses.new', 'Biaya Baru')}
+              {t('expensesPage.new', 'New Expense')}
             </Button>
           </div>
         }
@@ -293,22 +285,22 @@ export default function ExpensesPageV2() {
           ) : (
             <>
               <StatCard
-                label={t('expenses.kpi.thisMonth', 'Bulan Ini')}
+                label={t('expensesPage.kpi.thisMonth', 'This Month')}
                 value={<MoneyDisplay amount={stats.thisMonthAmount} />}
-                sublabel={t('expenses.kpi.thisMonthSub', 'pengeluaran bulan berjalan')}
+                sublabel={t('expensesPage.kpi.thisMonthSub', 'expenses this month')}
               />
               <StatCard
-                label={t('expenses.kpi.total', 'Total (Filter)')}
+                label={t('expensesPage.kpi.total', 'Total (Filtered)')}
                 value={<MoneyDisplay amount={stats.totalAmount} />}
-                sublabel={t('expenses.kpi.totalSub', 'sesuai filter aktif')}
+                sublabel={t('expensesPage.kpi.totalSub', 'matching active filter')}
               />
               <StatCard
-                label={t('expenses.kpi.ppn', 'PPN Masukan')}
+                label={t('expensesPage.kpi.ppn', 'Input VAT')}
                 value={<MoneyDisplay amount={stats.totalPPN} />}
-                sublabel={t('expenses.kpi.ppnSub', 'pajak masukan terkumpul')}
+                sublabel={t('expensesPage.kpi.ppnSub', 'creditable input tax')}
               />
               <StatCard
-                label={t('expenses.kpi.topCategory', 'Kategori Teratas')}
+                label={t('expensesPage.kpi.topCategory', 'Top Category')}
                 value={
                   <span className="text-base sm:text-lg font-display font-semibold text-text-primary truncate block">
                     {stats.topCategoryName}
@@ -317,7 +309,7 @@ export default function ExpensesPageV2() {
                 sublabel={
                   stats.topCategoryAmount > 0
                     ? `${expenseService.formatIDR(stats.topCategoryAmount)}`
-                    : t('expenses.kpi.noData', 'belum ada data')
+                    : t('expensesPage.kpi.noData', 'no data yet')
                 }
               />
             </>
@@ -341,7 +333,7 @@ export default function ExpensesPageV2() {
               <Input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder={t('expenses.search.placeholder', 'Cari nomor, vendor, atau deskripsi...')}
+                placeholder={t('expensesPage.search.placeholder', 'Search by number, vendor, or description...')}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -352,10 +344,10 @@ export default function ExpensesPageV2() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[160px]"
                 >
-                  <SelectValue placeholder={t('expenses.filter.category', 'Kategori')} />
+                  <SelectValue placeholder={t('expensesPage.filter.category', 'Category')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('expenses.filter.allCategories', 'Semua Kategori')}</SelectItem>
+                  <SelectItem value="all">{t('expensesPage.filter.allCategories', 'All Categories')}</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.nameId || cat.name}
@@ -369,10 +361,10 @@ export default function ExpensesPageV2() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[140px]"
                 >
-                  <SelectValue placeholder={t('expenses.filter.status', 'Status')} />
+                  <SelectValue placeholder={t('expensesPage.filter.status', 'Status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('expenses.filter.allStatuses', 'Semua Status')}</SelectItem>
+                  <SelectItem value="all">{t('expensesPage.filter.allStatuses', 'All Statuses')}</SelectItem>
                   <SelectItem value="DRAFT">{STATUS_LABEL.DRAFT}</SelectItem>
                   <SelectItem value="SUBMITTED">{STATUS_LABEL.SUBMITTED}</SelectItem>
                   <SelectItem value="APPROVED">{STATUS_LABEL.APPROVED}</SelectItem>
@@ -386,10 +378,10 @@ export default function ExpensesPageV2() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[140px]"
                 >
-                  <SelectValue placeholder={t('expenses.filter.payment', 'Pembayaran')} />
+                  <SelectValue placeholder={t('expensesPage.filter.payment', 'Payment')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('expenses.filter.allPayments', 'Semua Pembayaran')}</SelectItem>
+                  <SelectItem value="all">{t('expensesPage.filter.allPayments', 'All Payments')}</SelectItem>
                   <SelectItem value="UNPAID">{PAYMENT_LABEL.UNPAID}</SelectItem>
                   <SelectItem value="PARTIALLY_PAID">{PAYMENT_LABEL.PARTIALLY_PAID}</SelectItem>
                   <SelectItem value="PAID">{PAYMENT_LABEL.PAID}</SelectItem>
@@ -404,13 +396,13 @@ export default function ExpensesPageV2() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary shrink-0">
-                {t('expenses.filter.range', 'Rentang')}
+                {t('expensesPage.filter.range', 'Range')}
               </span>
               <div className="flex-1 min-w-0 max-w-[200px]">
                 <MonomiDatePicker
                   value={startDate}
                   onChange={setStartDate}
-                  placeholder={t('expenses.filter.startDate', 'Tgl. mulai')}
+                  placeholder={t('expensesPage.filter.startDate', 'Start date')}
                   className="h-9 text-sm bg-bg-sunken border-border-subtle"
                 />
               </div>
@@ -419,7 +411,7 @@ export default function ExpensesPageV2() {
                 <MonomiDatePicker
                   value={endDate}
                   onChange={setEndDate}
-                  placeholder={t('expenses.filter.endDate', 'Tgl. akhir')}
+                  placeholder={t('expensesPage.filter.endDate', 'End date')}
                   className="h-9 text-sm bg-bg-sunken border-border-subtle"
                 />
               </div>
@@ -433,7 +425,7 @@ export default function ExpensesPageV2() {
                 className="text-text-tertiary hover:text-text-primary self-start sm:self-auto"
               >
                 <X className="h-3.5 w-3.5" />
-                {t('common.reset', 'Reset')}
+                {t('expensesPage.filter.reset', 'Reset')}
               </Button>
             )}
           </div>
@@ -453,23 +445,23 @@ export default function ExpensesPageV2() {
             icon={<CreditCard />}
             title={
               hasActiveFilters
-                ? t('expenses.empty.filtered.title', 'Tidak ada biaya yang cocok')
-                : t('expenses.empty.title', 'Belum ada biaya')
+                ? t('expensesPage.empty.filteredTitle', 'No expenses match')
+                : t('expensesPage.empty.title', 'No expenses yet')
             }
             description={
               hasActiveFilters
-                ? t('expenses.empty.filtered.desc', 'Coba ubah atau hapus filter Anda.')
-                : t('expenses.empty.desc', 'Mulai catat pengeluaran usaha pertama Anda.')
+                ? t('expensesPage.empty.filteredDesc', 'Try adjusting or clearing your filters.')
+                : t('expensesPage.empty.desc', 'Start recording your first business expense.')
             }
             action={
               hasActiveFilters ? (
                 <Button variant="outline" size="sm" onClick={resetFilters}>
-                  {t('common.resetFilters', 'Reset Filter')}
+                  {t('expensesPage.empty.resetFilters', 'Reset Filters')}
                 </Button>
               ) : (
                 <Button onClick={() => navigate('/expenses/new')} size="sm">
                   <Plus className="h-4 w-4" />
-                  {t('expenses.new', 'Biaya Baru')}
+                  {t('expensesPage.empty.newExpense', 'New Expense')}
                 </Button>
               )
             }
@@ -483,8 +475,8 @@ export default function ExpensesPageV2() {
               onEdit={(row) => navigate(`/expenses/${row.id}/edit`)}
               onDelete={(row) => {
                 if (confirm(t(
-                  'expenses.confirmDelete',
-                  `Hapus biaya ${row.expenseNumber}? Tindakan ini tidak dapat dibatalkan.`,
+                  'expensesPage.confirmDelete',
+                  `Delete expense ${row.expenseNumber}? This action cannot be undone.`,
                 ))) {
                   deleteMutation.mutate(row.id);
                 }
@@ -513,6 +505,7 @@ interface ExpenseTableProps {
 }
 
 function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTableProps) {
+  const { t } = useTranslation();
   return (
     <DataTable<Expense>
       data={rows}
@@ -521,7 +514,7 @@ function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTab
       columns={[
         {
           accessorKey: 'expenseNumber',
-          header: 'Nomor',
+          header: t('expensesPage.col.number', 'Number'),
           cell: ({ row }) => (
             <div className="min-w-0">
               <div className="font-mono text-xs text-text-primary tracking-tight">
@@ -537,7 +530,7 @@ function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTab
         },
         {
           id: 'vendor',
-          header: 'Vendor / Deskripsi',
+          header: t('expensesPage.col.vendor', 'Vendor / Description'),
           accessorFn: (row) => row.vendorName ?? '',
           cell: ({ row }) => {
             const e = row.original;
@@ -556,7 +549,7 @@ function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTab
         },
         {
           id: 'category',
-          header: 'Kategori',
+          header: t('expensesPage.col.category', 'Category'),
           accessorFn: (row) => row.category?.nameId ?? row.category?.name ?? '',
           cell: ({ row }) => {
             const cat = row.original.category;
@@ -581,7 +574,7 @@ function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTab
         },
         {
           accessorKey: 'totalAmount',
-          header: () => <span className="block text-right">Jumlah</span>,
+          header: () => <span className="block text-right">{t('expensesPage.col.amount', 'Amount')}</span>,
           cell: ({ row }) => {
             const e = row.original;
             const ppn  = toNumber(e.ppnAmount);
@@ -605,7 +598,7 @@ function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTab
         },
         {
           accessorKey: 'expenseDate',
-          header: 'Tanggal',
+          header: t('expensesPage.col.date', 'Date'),
           cell: ({ row }) => (
             <span className="text-text-tertiary">
               <DateDisplay date={row.original.expenseDate} />
@@ -614,7 +607,7 @@ function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTab
         },
         {
           accessorKey: 'status',
-          header: 'Status',
+          header: t('expensesPage.col.status', 'Status'),
           cell: ({ row }) => {
             const e = row.original;
             return (
@@ -631,7 +624,7 @@ function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTab
         },
         {
           id: 'actions',
-          header: () => <span className="sr-only">Aksi</span>,
+          header: () => <span className="sr-only">{t('expensesPage.col.actions', 'Actions')}</span>,
           cell: ({ row }) => {
             const e = row.original;
             const canEdit   = expenseService.canEdit(e);
@@ -644,18 +637,18 @@ function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTab
                       variant="ghost"
                       size="icon-sm"
                       className={cn('text-text-tertiary hover:text-text-primary')}
-                      aria-label="Aksi biaya"
+                      aria-label={t('expensesPage.expenseActions', 'Expense actions')}
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-44">
                     <DropdownMenuItem onClick={() => onView(e)}>
-                      <Eye className="h-3.5 w-3.5" /> Lihat
+                      <Eye className="h-3.5 w-3.5" /> {t('common.view', 'View')}
                     </DropdownMenuItem>
                     {canEdit && (
                       <DropdownMenuItem onClick={() => onEdit(e)}>
-                        <Pencil className="h-3.5 w-3.5" /> Ubah
+                        <Pencil className="h-3.5 w-3.5" /> {t('common.edit', 'Edit')}
                       </DropdownMenuItem>
                     )}
                     {canDelete && (
@@ -665,7 +658,7 @@ function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTab
                           onClick={() => onDelete(e)}
                           className="text-danger focus:text-danger"
                         >
-                          <Trash2 className="h-3.5 w-3.5" /> Hapus
+                          <Trash2 className="h-3.5 w-3.5" /> {t('common.delete', 'Delete')}
                         </DropdownMenuItem>
                       </>
                     )}

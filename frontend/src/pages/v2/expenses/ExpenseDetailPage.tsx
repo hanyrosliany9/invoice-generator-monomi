@@ -8,6 +8,8 @@ import {
   Building2, Briefcase, Calendar, Receipt, AlertTriangle, Hash,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -32,30 +34,20 @@ import { cn } from '@/lib/utils';
 /*  Navigation — identical to v2/expenses list so active state matches */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Status maps — kept identical to list page for vocabulary parity    */
 /* ------------------------------------------------------------------ */
 
 const STATUS_LABEL: Record<string, string> = {
-  DRAFT: 'Draft', SUBMITTED: 'Diajukan', APPROVED: 'Disetujui',
-  REJECTED: 'Ditolak', CANCELLED: 'Dibatalkan',
+  DRAFT: 'Draft', SUBMITTED: 'Submitted', APPROVED: 'Approved',
+  REJECTED: 'Rejected', CANCELLED: 'Cancelled',
 };
 const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
   DRAFT: 'outline', SUBMITTED: 'secondary', APPROVED: 'default',
   REJECTED: 'destructive', CANCELLED: 'outline',
 };
 const PAYMENT_LABEL: Record<string, string> = {
-  UNPAID: 'Belum Dibayar', PARTIALLY_PAID: 'Sebagian Dibayar', PAID: 'Lunas',
+  UNPAID: 'Unpaid', PARTIALLY_PAID: 'Partially Paid', PAID: 'Paid',
 };
 const PAYMENT_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
   UNPAID: 'destructive', PARTIALLY_PAID: 'secondary', PAID: 'default',
@@ -137,8 +129,8 @@ export default function ExpenseDetailPageV2() {
   const handleDelete = () => {
     if (!expense) return;
     if (confirm(t(
-      'expenses.confirmDelete',
-      `Hapus biaya ${expense.expenseNumber}? Tindakan ini tidak dapat dibatalkan.`,
+      'expenseDetail.confirmDelete',
+      `Delete expense ${expense.expenseNumber}? This action cannot be undone.`,
     ))) {
       deleteMutation.mutate();
     }
@@ -148,8 +140,8 @@ export default function ExpenseDetailPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -182,23 +174,23 @@ export default function ExpenseDetailPageV2() {
       <Shell>
         <EmptyState
           icon={<CreditCard className="h-12 w-12" />}
-          title={t('expenses.detail.error.title', 'Biaya tidak ditemukan')}
+          title={t('expenseDetail.error.title', 'Expense not found')}
           description={
             error instanceof Error
               ? error.message
               : t(
-                  'expenses.detail.error.desc',
-                  'Biaya ini mungkin sudah dihapus atau Anda tidak memiliki akses.',
+                  'expenseDetail.error.desc',
+                  'This expense may have been deleted or you do not have access.',
                 )
           }
           action={
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => navigate('/v2/expenses')}>
                 <ArrowLeft className="h-4 w-4" />
-                {t('expenses.detail.backToList', 'Kembali ke Biaya')}
+                {t('expenseDetail.backToList', 'Back to Expenses')}
               </Button>
               <Button size="sm" onClick={() => refetch()}>
-                {t('common.retry', 'Coba Lagi')}
+                {t('expenseDetail.retry', 'Try Again')}
               </Button>
             </div>
           }
@@ -222,14 +214,14 @@ export default function ExpenseDetailPageV2() {
         disabled={approveMutation.isPending}
       >
         <CheckCircle2 className="h-4 w-4" />
-        {t('expenses.action.approve', 'Setujui')}
+        {t('expenseDetail.action.approve', 'Approve')}
       </Button>
     )
     : canEdit
     ? (
       <Button size="sm" onClick={() => navigate(`/expenses/${id}/edit`)}>
         <Pencil className="h-4 w-4" />
-        {t('expenses.action.edit', 'Ubah')}
+        {t('expenseDetail.action.edit', 'Edit')}
       </Button>
     )
     : null;
@@ -244,7 +236,7 @@ export default function ExpenseDetailPageV2() {
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          {t('expenses.detail.backToList', 'Kembali ke Biaya')}
+          {t('expenseDetail.backToList', 'Back to Expenses')}
         </Link>
       </div>
 
@@ -253,7 +245,7 @@ export default function ExpenseDetailPageV2() {
         description={
           expense.descriptionId ||
           expense.description ||
-          t('expenses.detail.subtitle', 'Rincian biaya, pajak, dan tindakan terkait.')
+          t('expenseDetail.subtitle', 'Expense details, taxes, and related actions.')
         }
         actions={
           <div className="flex items-center gap-2">
@@ -270,7 +262,7 @@ export default function ExpenseDetailPageV2() {
                   variant="ghost"
                   size="icon-sm"
                   className="text-text-tertiary hover:text-text-primary"
-                  aria-label={t('common.moreActions', 'Tindakan lain')}
+                  aria-label={t('expenseDetail.moreActions', 'More actions')}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -279,7 +271,7 @@ export default function ExpenseDetailPageV2() {
                 {canEdit && (
                   <DropdownMenuItem onClick={() => navigate(`/expenses/${id}/edit`)}>
                     <Pencil className="h-3.5 w-3.5" />
-                    {t('expenses.action.edit', 'Ubah')}
+                    {t('expenseDetail.action.edit', 'Edit')}
                   </DropdownMenuItem>
                 )}
                 {canDelete && (
@@ -290,7 +282,7 @@ export default function ExpenseDetailPageV2() {
                       className="text-danger focus:text-danger"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      {t('expenses.action.delete', 'Hapus')}
+                      {t('expenseDetail.action.delete', 'Delete')}
                     </DropdownMenuItem>
                   </>
                 )}
@@ -318,7 +310,7 @@ export default function ExpenseDetailPageV2() {
               </Avatar>
               <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                  {t('expenses.detail.vendor', 'Vendor')}
+                  {t('expenseDetail.vendor', 'Vendor')}
                 </div>
                 <div className="text-base font-medium text-text-primary truncate">
                   {expense.vendorName || '—'}
@@ -342,7 +334,7 @@ export default function ExpenseDetailPageV2() {
               {expense.category && (
                 <div className="min-w-0">
                   <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                    {t('expenses.detail.category', 'Kategori')}
+                    {t('expenseDetail.category', 'Category')}
                   </div>
                   <div className="inline-flex items-center gap-1.5 text-sm text-text-primary">
                     <Hash className="h-3.5 w-3.5 text-text-tertiary" />
@@ -357,7 +349,7 @@ export default function ExpenseDetailPageV2() {
               {expense.project && (
                 <div className="min-w-0">
                   <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                    {t('expenses.detail.project', 'Proyek')}
+                    {t('expenseDetail.project', 'Project')}
                   </div>
                   <button
                     type="button"
@@ -376,7 +368,7 @@ export default function ExpenseDetailPageV2() {
               {expense.client && (
                 <div className="min-w-0">
                   <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                    {t('expenses.detail.client', 'Klien')}
+                    {t('expenseDetail.client', 'Client')}
                   </div>
                   <button
                     type="button"
@@ -392,7 +384,7 @@ export default function ExpenseDetailPageV2() {
 
             {expense.buktiPengeluaranNumber && (
               <div className="text-xs text-text-tertiary font-mono pt-1">
-                {t('expenses.detail.bkk', 'BKK')}: {expense.buktiPengeluaranNumber}
+                {t('expenseDetail.bkk', 'BKK')}: {expense.buktiPengeluaranNumber}
               </div>
             )}
           </div>
@@ -401,7 +393,7 @@ export default function ExpenseDetailPageV2() {
           <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-4 lg:min-w-[220px]">
             <div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                {t('expenses.detail.total', 'Total Biaya')}
+                {t('expenseDetail.total', 'Total Expense')}
               </div>
               <MoneyDisplay
                 amount={totals.total}
@@ -411,14 +403,14 @@ export default function ExpenseDetailPageV2() {
             <div className="flex lg:justify-end gap-6 text-xs">
               <div>
                 <div className="text-text-tertiary mb-0.5">
-                  {t('expenses.detail.expenseDate', 'Tgl. Biaya')}
+                  {t('expenseDetail.expenseDate', 'Expense Date')}
                 </div>
                 <DateDisplay date={expense.expenseDate} className="text-text-secondary" />
               </div>
               {expense.paymentDate && (
                 <div>
                   <div className="text-text-tertiary mb-0.5">
-                    {t('expenses.detail.paymentDate', 'Tgl. Bayar')}
+                    {t('expenseDetail.paymentDate', 'Payment Date')}
                   </div>
                   <DateDisplay date={expense.paymentDate} className="text-text-secondary" />
                 </div>
@@ -439,7 +431,7 @@ export default function ExpenseDetailPageV2() {
             <AlertTriangle className="h-4 w-4 text-danger shrink-0 mt-0.5" />
             <div className="min-w-0">
               <div className="text-sm font-medium text-text-primary">
-                {t('expenses.detail.rejected.title', 'Biaya ditolak')}
+                {t('expenseDetail.rejected.title', 'Expense rejected')}
               </div>
               <div className="text-xs text-text-secondary mt-1 leading-relaxed">
                 {expense.rejectionReason}
@@ -462,14 +454,14 @@ export default function ExpenseDetailPageV2() {
           <GlassPanel surface="glass" padding="none" className="overflow-hidden">
             <div className="px-6 py-4 border-b border-border-subtle">
               <h2 className="text-sm font-medium text-text-primary">
-                {t('expenses.detail.description', 'Deskripsi')}
+                {t('expenseDetail.description', 'Description')}
               </h2>
             </div>
             <div className="px-6 py-5 space-y-4 text-sm">
               <p className="text-text-secondary leading-relaxed whitespace-pre-line">
                 {expense.descriptionId || expense.description || (
                   <span className="text-text-tertiary italic">
-                    {t('expenses.detail.noDescription', 'Tidak ada deskripsi')}
+                    {t('expenseDetail.noDescription', 'No description')}
                   </span>
                 )}
               </p>
@@ -478,7 +470,7 @@ export default function ExpenseDetailPageV2() {
                   <Separator className="bg-border-subtle" />
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-2">
-                      {t('expenses.detail.notes', 'Catatan')}
+                      {t('expenseDetail.notes', 'Notes')}
                     </div>
                     <p className="text-text-secondary leading-relaxed whitespace-pre-line">
                       {expense.notesId || expense.notes}
@@ -495,7 +487,7 @@ export default function ExpenseDetailPageV2() {
             <GlassPanel surface="glass" padding="none">
               <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between">
                 <h2 className="text-sm font-medium text-text-primary">
-                  {t('expenses.detail.efaktur', 'e-Faktur')}
+                  {t('expenseDetail.efaktur', 'e-Faktur')}
                 </h2>
                 <Badge variant="secondary" className="text-[10px]">
                   {expense.eFakturStatus}
@@ -504,7 +496,7 @@ export default function ExpenseDetailPageV2() {
               <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                    {t('expenses.detail.nsfp', 'NSFP')}
+                    {t('expenseDetail.nsfp', 'NSFP')}
                   </div>
                   <div className="font-mono text-text-primary">
                     {expenseService.formatNSFP(expense.eFakturNSFP)}
@@ -513,7 +505,7 @@ export default function ExpenseDetailPageV2() {
                 {expense.eFakturIssueDate && (
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                      {t('expenses.detail.issued', 'Diterbitkan')}
+                      {t('expenseDetail.issued', 'Issued')}
                     </div>
                     <DateDisplay date={expense.eFakturIssueDate} className="text-text-primary" />
                   </div>
@@ -521,7 +513,7 @@ export default function ExpenseDetailPageV2() {
                 {expense.eFakturValidatedAt && (
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                      {t('expenses.detail.validated', 'Divalidasi')}
+                      {t('expenseDetail.validated', 'Validated')}
                     </div>
                     <DateDisplay date={expense.eFakturValidatedAt} className="text-text-primary" />
                   </div>
@@ -529,7 +521,7 @@ export default function ExpenseDetailPageV2() {
                 {expense.buktiPotongNumber && (
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                      {t('expenses.detail.buktiPotong', 'Bukti Potong')}
+                      {t('expenseDetail.buktiPotong', 'Withholding Receipt')}
                     </div>
                     <div className="font-mono text-text-primary">{expense.buktiPotongNumber}</div>
                   </div>
@@ -544,7 +536,7 @@ export default function ExpenseDetailPageV2() {
             <GlassPanel surface="glass" padding="none">
               <div className="px-6 py-4 border-b border-border-subtle">
                 <h2 className="text-sm font-medium text-text-primary">
-                  {t('expenses.detail.history', 'Riwayat Persetujuan')}
+                  {t('expenseDetail.history', 'Approval History')}
                 </h2>
               </div>
               <ol className="px-6 py-2 divide-y divide-border-subtle">
@@ -581,12 +573,12 @@ export default function ExpenseDetailPageV2() {
           {/* Tax breakdown — the load-bearing money panel */}
           <GlassPanel surface="strong" padding="lg">
             <h2 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-4">
-              {t('expenses.detail.taxBreakdown', 'Rincian Pajak')}
+              {t('expenseDetail.taxBreakdown', 'Tax Breakdown')}
             </h2>
             <dl className="space-y-2.5 text-sm">
               <div className="flex items-center justify-between">
                 <dt className="text-text-secondary">
-                  {t('expenses.detail.gross', 'Jumlah Bruto')}
+                  {t('expenseDetail.gross', 'Gross Amount')}
                 </dt>
                 <dd><MoneyDisplay amount={totals.gross} className="text-text-secondary" /></dd>
               </div>
@@ -611,7 +603,7 @@ export default function ExpenseDetailPageV2() {
               <Separator className="bg-border-subtle my-3" />
               <div className="flex items-center justify-between">
                 <dt className="text-sm font-medium text-text-primary">
-                  {t('expenses.detail.totalLine', 'Total')}
+                  {t('expenseDetail.totalLine', 'Total')}
                 </dt>
                 <dd>
                   <MoneyDisplay
@@ -623,7 +615,7 @@ export default function ExpenseDetailPageV2() {
               {totals.pph > 0 && (
                 <div className="flex items-center justify-between pt-1">
                   <dt className="text-xs text-text-tertiary">
-                    {t('expenses.detail.netPayable', 'Netto Dibayar')}
+                    {t('expenseDetail.netPayable', 'Net Payable')}
                   </dt>
                   <dd>
                     <MoneyDisplay amount={totals.net} className="text-xs text-text-tertiary" />
@@ -633,7 +625,7 @@ export default function ExpenseDetailPageV2() {
             </dl>
             {!hasTax && (
               <div className="mt-3 pt-3 border-t border-border-subtle text-[11px] text-text-tertiary leading-relaxed">
-                {t('expenses.detail.noTax', 'Tidak ada komponen pajak.')}
+                {t('expenseDetail.noTax', 'No tax components.')}
               </div>
             )}
           </GlassPanel>
@@ -642,7 +634,7 @@ export default function ExpenseDetailPageV2() {
           {(expense.paymentStatus === 'PAID' || expense.paymentDate || expense.paidAmount) && (
             <GlassPanel surface="glass" padding="lg">
               <h2 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-4">
-                {t('expenses.detail.payment', 'Pembayaran')}
+                {t('expenseDetail.payment', 'Payment')}
               </h2>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
@@ -664,7 +656,7 @@ export default function ExpenseDetailPageV2() {
                   <div className="flex items-center justify-between">
                     <span className="text-text-secondary inline-flex items-center gap-2 text-xs">
                       <Receipt className="h-3.5 w-3.5 text-text-tertiary" />
-                      {t('expenses.detail.method', 'Metode')}
+                      {t('expenseDetail.method', 'Method')}
                     </span>
                     <span className="text-xs text-text-secondary">{expense.paymentMethod}</span>
                   </div>
@@ -672,7 +664,7 @@ export default function ExpenseDetailPageV2() {
                 {expense.paymentReference && (
                   <div className="flex items-center justify-between">
                     <span className="text-text-tertiary text-xs">
-                      {t('expenses.detail.reference', 'Ref.')}
+                      {t('expenseDetail.reference', 'Ref.')}
                     </span>
                     <span className="text-xs font-mono text-text-secondary">
                       {expense.paymentReference}
@@ -683,7 +675,7 @@ export default function ExpenseDetailPageV2() {
                   <div className="flex items-center justify-between pt-1 border-t border-border-subtle">
                     <span className="text-text-tertiary inline-flex items-center gap-2 text-xs">
                       <Calendar className="h-3.5 w-3.5" />
-                      {t('expenses.detail.paidOn', 'Dibayar pada')}
+                      {t('expenseDetail.paidOn', 'Paid on')}
                     </span>
                     <DateDisplay date={expense.paymentDate} className="text-xs text-text-secondary" />
                   </div>
@@ -696,7 +688,7 @@ export default function ExpenseDetailPageV2() {
           {expense.approver && (
             <GlassPanel surface="glass" padding="lg">
               <h2 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-3">
-                {t('expenses.detail.approvedBy', 'Disetujui Oleh')}
+                {t('expenseDetail.approvedBy', 'Approved By')}
               </h2>
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8">

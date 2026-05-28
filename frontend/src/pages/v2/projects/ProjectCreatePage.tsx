@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { UserChip } from '@/components/monomi/UserChip';
@@ -30,16 +31,6 @@ import { ProjectForm, type ProjectFormValues } from './ProjectForm';
 
 // Mirrors the other v2 pages so the chrome reads identically — "Projects"
 // stays highlighted while creating.
-const sidebarItems = [
-  { label: 'Dashboard', icon: <Inbox className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices', icon: <FileText className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients', icon: <Users className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects', icon: <Folder className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses', icon: <CreditCard className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings', icon: <Settings className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 const FORM_ID = 'project-create-form';
 
 export default function ProjectCreatePageV2() {
@@ -63,11 +54,7 @@ export default function ProjectCreatePageV2() {
     onSuccess: (project) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success(
-        t(
-          'projects.create.success',
-          'Proyek "{{name}}" berhasil dibuat.',
-          { name: project.number || project.description },
-        ),
+        t('projectCreate.success', 'Project "{{name}}" created successfully.', { name: project.number || project.description }),
       );
       // Route to v2 detail when it lands; for now fall back to the v2 list
       // (detail page is not built yet) — keep navigation in v2.
@@ -77,7 +64,7 @@ export default function ProjectCreatePageV2() {
       const message =
         error instanceof Error
           ? error.message
-          : t('projects.create.error', 'Gagal membuat proyek. Coba lagi.');
+          : t('projectCreate.error', 'Failed to create project. Please try again.');
       toast.error(message);
     },
     onSettled: () => setIsSubmitting(false),
@@ -127,7 +114,7 @@ export default function ProjectCreatePageV2() {
             monomi
           </div>
         ),
-        items: sidebarItems,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -136,14 +123,11 @@ export default function ProjectCreatePageV2() {
     >
       <PageContainer>
         <PageHeader
-          title={t('projects.create.title', 'Proyek Baru')}
-          description={t(
-            'projects.create.subtitle',
-            'Susun proyek baru dengan klien, tipe, dan rincian produk yang akan ditagih.',
-          )}
+          title={t('projectCreate.title', 'New Project')}
+          description={t('projectCreate.subtitle', 'Set up a new project with client, type, and billable product details.')}
           breadcrumbs={[
-            { label: t('projects.title', 'Proyek'), href: '/v2/projects' },
-            { label: t('projects.create.title', 'Proyek Baru') },
+            { label: t('projectCreate.listLabel', 'Projects'), href: '/v2/projects' },
+            { label: t('projectCreate.title', 'New Project') },
           ]}
           actions={
             <div className="flex items-center gap-2">
@@ -155,7 +139,7 @@ export default function ProjectCreatePageV2() {
                 className="text-text-secondary hover:text-text-primary"
               >
                 <ArrowLeft className="h-4 w-4" />
-                {t('common.cancel', 'Batal')}
+                {t('projectCreate.cancel', 'Cancel')}
               </Button>
               <Button
                 type="submit"
@@ -166,10 +150,10 @@ export default function ProjectCreatePageV2() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {t('common.saving', 'Menyimpan…')}
+                    {t('projectCreate.saving', 'Saving...')}
                   </>
                 ) : (
-                  t('common.save', 'Simpan')
+                  t('projectCreate.save', 'Save')
                 )}
               </Button>
             </div>

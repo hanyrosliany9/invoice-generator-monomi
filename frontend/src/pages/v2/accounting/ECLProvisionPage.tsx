@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -7,6 +8,8 @@ import {
   CheckCircle2, X,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -39,31 +42,20 @@ import { cn } from '@/lib/utils';
 /*  Sidebar                                                            */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',   icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',    icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',  icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',     icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',    icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',    icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Akuntansi',   icon: <BookOpen    className="h-4 w-4" />, href: '/v2/accounting/general-ledger' },
-  { label: 'Settings',    icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Vocabularies                                                       */
 /* ------------------------------------------------------------------ */
 
-const AGING_LABEL: Record<string, string> = {
-  Current:    'Lancar',
-  '1-30':     '1–30 Hari',
-  '31-60':    '31–60 Hari',
-  '61-90':    '61–90 Hari',
-  '91-120':   '91–120 Hari',
-  'Over 120': '> 120 Hari',
+const AGING_LABEL_EN: Record<string, string> = {
+  Current:    'Current',
+  '1-30':     '1–30 Days',
+  '31-60':    '31–60 Days',
+  '61-90':    '61–90 Days',
+  '91-120':   '91–120 Days',
+  'Over 120': '> 120 Days',
 };
 
-const agingLabel = (bucket: string) => AGING_LABEL[bucket] ?? bucket;
+const agingLabel = (bucket: string) => AGING_LABEL_EN[bucket] ?? bucket;
 
 const agingRiskClass = (bucket: string) => {
   switch (bucket) {
@@ -75,10 +67,10 @@ const agingRiskClass = (bucket: string) => {
 };
 
 const RISK_BAND_LABEL: Record<string, string> = {
-  LOW:      'Rendah',
-  MEDIUM:   'Sedang',
-  HIGH:     'Tinggi',
-  CRITICAL: 'Kritis',
+  LOW:      'Low',
+  MEDIUM:   'Medium',
+  HIGH:     'High',
+  CRITICAL: 'Critical',
 };
 
 type Provision = ECLSummary['provisions'][number];
@@ -98,6 +90,7 @@ const fmt          = (d: Date) => d.toISOString().slice(0, 10);
 /* ------------------------------------------------------------------ */
 
 export default function ECLProvisionPageV2() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
 
@@ -131,12 +124,12 @@ export default function ECLProvisionPageV2() {
     mutationFn: processMonthlyECL,
     onSuccess: (data) => {
       toast.success(
-        `Berhasil memproses ${data.processed} provisi ECL. ${data.posted} diposting ke jurnal.`,
+        t('accounting.eclProvision.processSuccess', { count: data.processed, posted: data.posted, defaultValue: `Processed ${data.processed} ECL provisions. ${data.posted} posted to journal.` }),
       );
       queryClient.invalidateQueries({ queryKey: ['ecl-summary'] });
       setProcessOpen(false);
     },
-    onError: () => toast.error('Gagal memproses ECL'),
+    onError: () => toast.error(t('accounting.eclProvision.processFail', 'Failed to process ECL')),
   });
 
   /* ----- derived KPIs ----- */
@@ -164,8 +157,8 @@ export default function ECLProvisionPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -179,9 +172,9 @@ export default function ECLProvisionPageV2() {
       <Shell>
         <EmptyState
           icon={<AlertTriangle className="h-12 w-12" />}
-          title="Tidak dapat memuat data ECL"
-          description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-          action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+          title={t('accounting.eclProvision.errorTitle', 'Unable to load ECL data')}
+          description={error instanceof Error ? error.message : t('accounting.eclProvision.errorGeneric', 'An error occurred')}
+          action={<Button onClick={() => refetch()}>{t('accounting.eclProvision.retry', 'Try Again')}</Button>}
         />
       </Shell>
     );
@@ -190,8 +183,8 @@ export default function ECLProvisionPageV2() {
   return (
     <Shell>
       <PageHeader
-        title="Provisi Kerugian Kredit (ECL)"
-        description="Expected Credit Loss untuk piutang sesuai standar PSAK 71."
+        title={t('accounting.eclProvision.title', 'ECL Provision')}
+        description={t('accounting.eclProvision.description', 'Expected Credit Loss provision for receivables under PSAK 71.')}
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -201,11 +194,11 @@ export default function ECLProvisionPageV2() {
               disabled={isLoading}
             >
               <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
-              Segarkan
+              {t('accounting.eclProvision.refresh', 'Refresh')}
             </Button>
             <Button size="sm" onClick={() => setProcessOpen(true)}>
               <Play className="h-4 w-4" />
-              Hitung ECL
+              {t('accounting.eclProvision.calcECL', 'Calculate ECL')}
             </Button>
           </div>
         }
@@ -224,36 +217,36 @@ export default function ECLProvisionPageV2() {
           ) : (
             <>
               <StatCard
-                label="Total Piutang"
+                label={t('accounting.eclProvision.statReceivables', 'Total Receivables')}
                 value={<MoneyDisplay amount={kpis.totalOutstanding} />}
-                sublabel="piutang outstanding"
+                sublabel={t('accounting.eclProvision.statReceivablesSub', 'outstanding receivables')}
               />
               <StatCard
-                label="Total Provisi ECL"
+                label={t('accounting.eclProvision.statECL', 'Total ECL Provision')}
                 value={<MoneyDisplay amount={kpis.totalECL} className="text-danger" />}
-                sublabel="kerugian kredit expected"
+                sublabel={t('accounting.eclProvision.statECLSub', 'expected credit loss')}
               />
               <StatCard
-                label="Rasio Provisi"
+                label={t('accounting.eclProvision.statProvisionRate', 'Provision Ratio')}
                 value={
                   <span className="text-2xl font-display font-semibold text-warning">
                     {kpis.provisionPct}
                   </span>
                 }
-                sublabel="ECL terhadap total piutang"
+                sublabel={t('accounting.eclProvision.statProvisionRateSub', 'ECL to total receivables')}
               />
               <StatCard
-                label="Perhitungan Terakhir"
+                label={t('accounting.eclProvision.statLastCalc', 'Last Calculation')}
                 value={
                   kpis.lastCalcDate ? (
                     <span className="text-base font-display font-semibold text-text-primary">
                       <DateDisplay date={kpis.lastCalcDate} />
                     </span>
                   ) : (
-                    <span className="text-base text-text-tertiary">Belum ada</span>
+                    <span className="text-base text-text-tertiary">{t('accounting.eclProvision.statNone', 'None yet')}</span>
                   )
                 }
-                sublabel="tanggal kalkulasi ECL"
+                sublabel={t('accounting.eclProvision.statLastCalcSub', 'ECL calculation date')}
               />
             </>
           )}
@@ -265,7 +258,7 @@ export default function ECLProvisionPageV2() {
         <section className="mb-12">
           <div className="mb-3">
             <span className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">
-              Analisis per Umur Piutang
+              {t('accounting.eclProvision.agingAnalysis', 'Aging Analysis')}
             </span>
           </div>
           <GlassPanel surface="strong" padding="none" className="overflow-hidden">
@@ -280,20 +273,20 @@ export default function ECLProvisionPageV2() {
                   </span>
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-0.5">
-                      Faktur
+                      {t('accounting.eclProvision.bucketInvoices', 'Invoices')}
                     </div>
                     <div className="text-lg font-display font-semibold text-text-primary">{count}</div>
                   </div>
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-0.5">
-                      Total ECL
+                      {t('accounting.eclProvision.bucketTotalECL', 'Total ECL')}
                     </div>
                     <MoneyDisplay amount={toNumber(totalECL)} className="text-sm text-danger" />
                   </div>
                   {/* Rate bar */}
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                      Avg Rate — {(averageECLRate * 100).toFixed(1)}%
+                      {t('accounting.eclProvision.bucketAvgRate', 'Avg Rate')} — {(averageECLRate * 100).toFixed(1)}%
                     </div>
                     <div className="h-1 w-full rounded-full bg-bg-sunken overflow-hidden">
                       <div
@@ -319,20 +312,20 @@ export default function ECLProvisionPageV2() {
         {/* Filter bar */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-4 border-b border-border-subtle">
           <span className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary shrink-0">
-            Periode
+            {t('accounting.eclProvision.period', 'Period')}
           </span>
           <div className="flex items-center gap-2 flex-1">
             <MonomiDatePicker
               value={startDate}
               onChange={(d) => d && setStartDate(d)}
-              placeholder="Tgl. mulai"
+              placeholder={t('accounting.eclProvision.startDate', 'Start date')}
               className="h-9 text-sm bg-bg-sunken border-border-subtle"
             />
             <span className="text-text-tertiary text-xs">—</span>
             <MonomiDatePicker
               value={endDate}
               onChange={(d) => d && setEndDate(d)}
-              placeholder="Tgl. akhir"
+              placeholder={t('accounting.eclProvision.endDate', 'End date')}
               className="h-9 text-sm bg-bg-sunken border-border-subtle"
             />
           </div>
@@ -348,8 +341,8 @@ export default function ECLProvisionPageV2() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="false">Tanpa Write-off</SelectItem>
-              <SelectItem value="true">Termasuk Write-off</SelectItem>
+              <SelectItem value="false">{t('accounting.eclProvision.excludeWriteOff', 'Exclude Write-offs')}</SelectItem>
+              <SelectItem value="true">{t('accounting.eclProvision.includeWriteOff', 'Include Write-offs')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -357,7 +350,7 @@ export default function ECLProvisionPageV2() {
         {/* Table section header */}
         <div className="px-5 py-3 border-b border-border-subtle bg-bg-sunken/50">
           <span className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">
-            Faktur Berisiko — {provisions.length} faktur
+            {t('accounting.eclProvision.atRiskHeader', 'At-Risk Invoices')} — {provisions.length} {t('accounting.eclProvision.invoicesCount', 'invoices')}
           </span>
         </div>
 
@@ -369,8 +362,8 @@ export default function ECLProvisionPageV2() {
         ) : provisions.length === 0 ? (
           <EmptyState
             icon={<CheckCircle2 />}
-            title="Tidak ada faktur berisiko"
-            description="Tidak ada data ECL untuk periode dan filter yang dipilih."
+            title={t('accounting.eclProvision.emptyTitle', 'No at-risk invoices')}
+            description={t('accounting.eclProvision.emptyDesc', 'No ECL data for the selected period and filters.')}
           />
         ) : (
           <div className="px-1 pb-1">
@@ -380,7 +373,7 @@ export default function ECLProvisionPageV2() {
               columns={[
                 {
                   id: 'invoice',
-                  header: 'Faktur & Klien',
+                  header: t('accounting.eclProvision.colInvoiceClient', 'Invoice & Client'),
                   accessorFn: (r) => r.invoiceNumber,
                   cell: ({ row }) => (
                     <div className="min-w-0">
@@ -395,7 +388,7 @@ export default function ECLProvisionPageV2() {
                 },
                 {
                   accessorKey: 'agingBucket',
-                  header: 'Umur Piutang',
+                  header: t('accounting.eclProvision.colAging', 'Aging'),
                   cell: ({ row }) => (
                     <div>
                       <span className={cn(
@@ -405,14 +398,14 @@ export default function ECLProvisionPageV2() {
                         {agingLabel(row.original.agingBucket)}
                       </span>
                       <div className="text-[10px] text-text-tertiary mt-0.5">
-                        {row.original.daysPastDue} hari
+                        {row.original.daysPastDue} {t('accounting.eclProvision.days', 'days')}
                       </div>
                     </div>
                   ),
                 },
                 {
                   accessorKey: 'outstandingAmount',
-                  header: () => <span className="block text-right">Outstanding</span>,
+                  header: () => <span className="block text-right">{t('accounting.eclProvision.colOutstanding', 'Outstanding')}</span>,
                   cell: ({ row }) => (
                     <div className="text-right">
                       <MoneyDisplay amount={toNumber(row.original.outstandingAmount)} />
@@ -421,7 +414,7 @@ export default function ECLProvisionPageV2() {
                 },
                 {
                   accessorKey: 'eclRate',
-                  header: 'ECL Rate',
+                  header: t('accounting.eclProvision.colECLRate', 'ECL Rate'),
                   cell: ({ row }) => (
                     <span className={cn(
                       'inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-medium',
@@ -433,7 +426,7 @@ export default function ECLProvisionPageV2() {
                 },
                 {
                   accessorKey: 'eclAmount',
-                  header: () => <span className="block text-right">Provisi ECL</span>,
+                  header: () => <span className="block text-right">{t('accounting.eclProvision.colECLAmount', 'ECL Provision')}</span>,
                   cell: ({ row }) => (
                     <div className="text-right">
                       <MoneyDisplay amount={toNumber(row.original.eclAmount)} className="text-danger" />
@@ -442,7 +435,7 @@ export default function ECLProvisionPageV2() {
                 },
                 {
                   accessorKey: 'calculationDate',
-                  header: 'Tgl. Kalkulasi',
+                  header: t('accounting.eclProvision.colCalcDate', 'Calc. Date'),
                   cell: ({ row }) => (
                     <span className="text-text-tertiary">
                       <DateDisplay date={row.original.calculationDate} />
@@ -477,17 +470,17 @@ export default function ECLProvisionPageV2() {
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-text-tertiary" />
-              Hitung ECL Bulanan
+              {t('accounting.eclProvision.processDialogTitle', 'Calculate Monthly ECL')}
             </DialogTitle>
             <DialogDescription className="text-text-tertiary">
-              Hitung Expected Credit Loss untuk semua faktur outstanding.
+              {t('accounting.eclProvision.processDialogDesc', 'Calculate Expected Credit Loss for all outstanding invoices.')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">
-                Tanggal Perhitungan
+                {t('accounting.eclProvision.processFieldDate', 'Calculation Date')}
               </label>
               <MonomiDatePicker
                 value={processDate}
@@ -498,7 +491,7 @@ export default function ECLProvisionPageV2() {
 
             <div>
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">
-                Opsi Posting
+                {t('accounting.eclProvision.processFieldPosting', 'Posting Option')}
               </label>
               <Select
                 value={autoPost}
@@ -508,16 +501,15 @@ export default function ECLProvisionPageV2() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="manual">Simpan sebagai draft (posting manual)</SelectItem>
-                  <SelectItem value="auto">Posting otomatis ke jurnal</SelectItem>
+                  <SelectItem value="manual">{t('accounting.eclProvision.saveDraft', 'Save as draft (manual posting)')}</SelectItem>
+                  <SelectItem value="auto">{t('accounting.eclProvision.autoPost', 'Auto-post to journal')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="rounded-lg border-l-2 border-warning bg-warning/5 px-4 py-3">
               <p className="text-xs text-text-secondary leading-relaxed">
-                Proses ini menghitung Expected Credit Loss untuk semua faktur outstanding pada
-                tanggal yang dipilih berdasarkan umur piutang dan default ECL rates PSAK 71.
+                {t('accounting.eclProvision.processInfo', 'This process calculates Expected Credit Loss for all outstanding invoices on the selected date, based on receivable aging and PSAK 71 default ECL rates.')}
               </p>
             </div>
           </div>
@@ -528,7 +520,7 @@ export default function ECLProvisionPageV2() {
               onClick={() => setProcessOpen(false)}
               disabled={processMutation.isPending}
             >
-              Batal
+              {t('accounting.eclProvision.cancel', 'Cancel')}
             </Button>
             <Button
               onClick={() =>
@@ -539,7 +531,7 @@ export default function ECLProvisionPageV2() {
               }
               disabled={processMutation.isPending}
             >
-              {processMutation.isPending ? 'Menghitung...' : 'Hitung ECL'}
+              {processMutation.isPending ? t('accounting.eclProvision.calculating', 'Calculating...') : t('accounting.eclProvision.calcECL', 'Calculate ECL')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -549,7 +541,7 @@ export default function ECLProvisionPageV2() {
       <Dialog open={!!detailProvision} onOpenChange={(o) => { if (!o) setDetailProvision(null); }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-display">Detail ECL Faktur</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.eclProvision.detailTitle', 'Invoice ECL Detail')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
               {detailProvision?.invoiceNumber} — {detailProvision?.clientName}
             </DialogDescription>
@@ -557,13 +549,13 @@ export default function ECLProvisionPageV2() {
 
           {detailProvision && (
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-              <DetailRow label="No. Faktur" wide>
+              <DetailRow label={t('accounting.eclProvision.detailInvoiceNo', 'Invoice No.')} wide>
                 <span className="font-mono text-text-primary">{detailProvision.invoiceNumber}</span>
               </DetailRow>
-              <DetailRow label="Klien" wide>
+              <DetailRow label={t('accounting.eclProvision.detailClient', 'Client')} wide>
                 <span className="text-text-primary">{detailProvision.clientName}</span>
               </DetailRow>
-              <DetailRow label="Umur Piutang">
+              <DetailRow label={t('accounting.eclProvision.detailAging', 'Aging')}>
                 <span className={cn(
                   'inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-medium',
                   agingRiskClass(detailProvision.agingBucket),
@@ -571,13 +563,13 @@ export default function ECLProvisionPageV2() {
                   {agingLabel(detailProvision.agingBucket)}
                 </span>
               </DetailRow>
-              <DetailRow label="Hari Jatuh Tempo">
-                <span className="text-text-primary">{detailProvision.daysPastDue} hari</span>
+              <DetailRow label={t('accounting.eclProvision.detailDaysPastDue', 'Days Past Due')}>
+                <span className="text-text-primary">{detailProvision.daysPastDue} {t('accounting.eclProvision.days', 'days')}</span>
               </DetailRow>
-              <DetailRow label="Jumlah Outstanding" wide>
+              <DetailRow label={t('accounting.eclProvision.detailOutstanding', 'Outstanding Amount')} wide>
                 <MoneyDisplay amount={toNumber(detailProvision.outstandingAmount)} />
               </DetailRow>
-              <DetailRow label="ECL Rate">
+              <DetailRow label={t('accounting.eclProvision.detailECLRate', 'ECL Rate')}>
                 <span className={cn(
                   'inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-medium',
                   'bg-warning/10 text-warning border-warning/20',
@@ -585,18 +577,18 @@ export default function ECLProvisionPageV2() {
                   {(toNumber(detailProvision.eclRate) * 100).toFixed(1)}%
                 </span>
               </DetailRow>
-              <DetailRow label="Status">
+              <DetailRow label={t('accounting.eclProvision.detailStatus', 'Status')}>
                 <Badge variant="outline" className="text-[10px]">
                   {detailProvision.status}
                 </Badge>
               </DetailRow>
-              <DetailRow label="Provisi ECL" wide>
+              <DetailRow label={t('accounting.eclProvision.detailECLAmount', 'ECL Provision')} wide>
                 <MoneyDisplay
                   amount={toNumber(detailProvision.eclAmount)}
                   className="text-danger text-base"
                 />
               </DetailRow>
-              <DetailRow label="Tanggal Kalkulasi" wide>
+              <DetailRow label={t('accounting.eclProvision.detailCalcDate', 'Calculation Date')} wide>
                 <DateDisplay date={detailProvision.calculationDate} />
               </DetailRow>
             </div>
@@ -604,14 +596,12 @@ export default function ECLProvisionPageV2() {
 
           <div className="rounded-lg border border-border-subtle bg-bg-sunken px-4 py-3">
             <p className="text-xs text-text-secondary leading-relaxed">
-              <strong className="text-text-primary">Catatan:</strong> Provisi ECL dihitung berdasarkan
-              umur piutang menggunakan default ECL rates sesuai PSAK 71. Rate dapat disesuaikan
-              berdasarkan pengalaman historis perusahaan.
+              <strong className="text-text-primary">{t('accounting.eclProvision.detailNote', 'Note')}:</strong> {t('accounting.eclProvision.detailNoteText', 'ECL provision is calculated based on receivable aging using PSAK 71 default ECL rates. Rates can be adjusted based on the company\'s historical experience.')}
             </p>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDetailProvision(null)}>Tutup</Button>
+            <Button variant="outline" onClick={() => setDetailProvision(null)}>{t('accounting.eclProvision.close', 'Close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

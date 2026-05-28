@@ -8,10 +8,13 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { StatCard } from '@/components/monomi/StatCard';
+import { RevealOnView } from '@/components/monomi/RevealOnView';
 import { EmptyState } from '@/components/monomi/EmptyState';
 import { UserChip } from '@/components/monomi/UserChip';
 import { MoneyDisplay } from '@/components/monomi/MoneyDisplay';
@@ -22,16 +25,6 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/store/auth';
 import { useDashboardData } from '@/hooks/useDashboard';
-
-const sidebarItems = [
-  { label: 'Dashboard', icon: <Inbox className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices', icon: <FileText className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients', icon: <Users className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects', icon: <Folder className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses', icon: <CreditCard className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings', icon: <Settings className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 // Generate stub revenue trend data (6 months)
 const generateRevenueData = () => [
@@ -107,8 +100,8 @@ export default function DashboardPageV2() {
     return (
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
         topbar={{
@@ -134,8 +127,8 @@ export default function DashboardPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -164,26 +157,37 @@ export default function DashboardPageV2() {
               </>
             ) : (
               <>
-                <StatCard
-                  label={t('dashboard.revenue', 'Pendapatan')}
-                  value={<MoneyDisplay amount={stats.totalRevenue} />}
-                  sublabel={t('dashboard.thisMonth', 'bulan ini')}
-                />
-                <StatCard
-                  label={t('dashboard.outstanding', 'Belum Tertagih')}
-                  value={<MoneyDisplay amount={stats.pendingPayments} />}
-                  sublabel={t('dashboard.unpaid', 'belum dibayar')}
-                />
-                <StatCard
-                  label={t('dashboard.activeProjects', 'Proyek Aktif')}
-                  value={stats.totalProjects}
-                  sublabel={t('dashboard.ongoing', 'berlangsung')}
-                />
-                <StatCard
-                  label={t('dashboard.totalClients', 'Klien Aktif')}
-                  value={stats.totalClients}
-                  sublabel={t('dashboard.active', 'aktif')}
-                />
+                {/* Staggered cinematic reveal — each card arrives 80ms after
+                 * the previous, giving the band of KPIs a deliberate cadence
+                 * that feels designed, not random. */}
+                <RevealOnView delay={0}>
+                  <StatCard
+                    label={t('dashboard.revenue', 'Pendapatan')}
+                    value={<MoneyDisplay amount={stats.totalRevenue} />}
+                    sublabel={t('dashboard.thisMonth', 'bulan ini')}
+                  />
+                </RevealOnView>
+                <RevealOnView delay={80}>
+                  <StatCard
+                    label={t('dashboard.outstanding', 'Belum Tertagih')}
+                    value={<MoneyDisplay amount={stats.pendingPayments} />}
+                    sublabel={t('dashboard.unpaid', 'belum dibayar')}
+                  />
+                </RevealOnView>
+                <RevealOnView delay={160}>
+                  <StatCard
+                    label={t('dashboard.activeProjects', 'Proyek Aktif')}
+                    value={stats.totalProjects}
+                    sublabel={t('dashboard.ongoing', 'berlangsung')}
+                  />
+                </RevealOnView>
+                <RevealOnView delay={240}>
+                  <StatCard
+                    label={t('dashboard.totalClients', 'Klien Aktif')}
+                    value={stats.totalClients}
+                    sublabel={t('dashboard.active', 'aktif')}
+                  />
+                </RevealOnView>
               </>
             )}
           </div>

@@ -41,6 +41,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -69,28 +71,17 @@ import type {
 /*  Sidebar                                                            */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Reports',    icon: <BarChart3   className="h-4 w-4" />, href: '/v2/reports' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
-const MONTHS_ID = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+const MONTHS_EN = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
 const CHART_TYPES: { value: VisualizationConfig['type']; label: string; Icon: typeof LineChartIcon }[] = [
-  { value: 'line',         label: 'Garis',         Icon: LineChartIcon },
-  { value: 'bar',          label: 'Batang',        Icon: BarChart2 },
-  { value: 'area',         label: 'Area',          Icon: Activity },
-  { value: 'pie',          label: 'Lingkaran',     Icon: PieIcon },
-  { value: 'metric_card',  label: 'Kartu Metrik',  Icon: Hash },
+  { value: 'line',         label: 'Line',         Icon: LineChartIcon },
+  { value: 'bar',          label: 'Bar',          Icon: BarChart2 },
+  { value: 'area',         label: 'Area',         Icon: Activity },
+  { value: 'pie',          label: 'Pie',          Icon: PieIcon },
+  { value: 'metric_card',  label: 'Metric Card',  Icon: Hash },
 ];
 
 const AGGREGATIONS: VisualizationConfig['aggregation'][] = ['sum', 'average', 'count', 'min', 'max'];
@@ -134,11 +125,11 @@ export default function ReportBuilderPageV2() {
     mutationFn: (data: CreateReportDto) => socialMediaReportsService.createReport(data),
     onSuccess: (newReport) => {
       queryClient.invalidateQueries({ queryKey: ['reports'] });
-      toast.success(t('builder.created', 'Laporan berhasil dibuat.'));
+      toast.success(t('reportBuilder.created', 'Report created successfully.'));
       navigate(`/v2/reports/${newReport.id}/edit`);
     },
     onError: (e: any) =>
-      toast.error(e?.response?.data?.message ?? t('builder.createFailed', 'Gagal membuat laporan.')),
+      toast.error(e?.response?.data?.message ?? t('reportBuilder.createFailed', 'Failed to create report.')),
   });
 
   const updateIdentityMutation = useMutation({
@@ -151,7 +142,7 @@ export default function ReportBuilderPageV2() {
     mutationFn: async () => Promise.resolve(),
     onSuccess: () => {
       toast.info(
-        t('builder.identityReadOnly', 'Identitas laporan tidak dapat diubah pasca-pembuatan.'),
+        t('reportBuilder.identityReadOnly', 'Report identity cannot be changed after creation.'),
       );
     },
   });
@@ -161,10 +152,10 @@ export default function ReportBuilderPageV2() {
       socialMediaReportsService.addSection(id!, file, { title, description: secDesc }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report', id] });
-      toast.success(t('builder.sectionAdded', 'Bagian berhasil ditambahkan.'));
+      toast.success(t('reportBuilder.sectionAdded', 'Section added successfully.'));
     },
     onError: (e: any) =>
-      toast.error(e?.response?.data?.message ?? t('builder.sectionAddFailed', 'Gagal menambahkan bagian.')),
+      toast.error(e?.response?.data?.message ?? t('reportBuilder.sectionAddFailed', 'Failed to add section.')),
   });
 
   const removeSectionMutation = useMutation({
@@ -172,16 +163,16 @@ export default function ReportBuilderPageV2() {
       socialMediaReportsService.removeSection(id!, sectionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report', id] });
-      toast.success(t('builder.sectionRemoved', 'Bagian dihapus.'));
+      toast.success(t('reportBuilder.sectionRemoved', 'Section removed.'));
     },
-    onError: () => toast.error(t('builder.sectionRemoveFailed', 'Gagal menghapus bagian.')),
+    onError: () => toast.error(t('reportBuilder.sectionRemoveFailed', 'Failed to remove section.')),
   });
 
   const reorderMutation = useMutation({
     mutationFn: (sectionIds: string[]) =>
       socialMediaReportsService.reorderSections(id!, sectionIds),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['report', id] }),
-    onError: () => toast.error(t('builder.reorderFailed', 'Gagal mengurutkan ulang.')),
+    onError: () => toast.error(t('reportBuilder.reorderFailed', 'Failed to reorder sections.')),
   });
 
   const updateVizMutation = useMutation({
@@ -189,20 +180,20 @@ export default function ReportBuilderPageV2() {
       socialMediaReportsService.updateVisualizations(id!, sectionId, { visualizations }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report', id] });
-      toast.success(t('builder.vizSaved', 'Visualisasi disimpan.'));
+      toast.success(t('reportBuilder.vizSaved', 'Visualization saved.'));
     },
     onError: (e: any) =>
-      toast.error(e?.response?.data?.message ?? t('builder.vizFailed', 'Gagal menyimpan visualisasi.')),
+      toast.error(e?.response?.data?.message ?? t('reportBuilder.vizFailed', 'Failed to save visualization.')),
   });
 
   /* ---------- handlers ---------- */
   const handleSaveIdentity = () => {
     if (!title.trim()) {
-      toast.error(t('builder.titleRequired', 'Judul wajib diisi.'));
+      toast.error(t('reportBuilder.titleRequired', 'Title is required.'));
       return;
     }
     if (!projectId) {
-      toast.error(t('builder.projectRequired', 'Pilih proyek terlebih dahulu.'));
+      toast.error(t('reportBuilder.projectRequired', 'Please select a project.'));
       return;
     }
     if (!isEditMode) {
@@ -216,8 +207,8 @@ export default function ReportBuilderPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -244,12 +235,12 @@ export default function ReportBuilderPageV2() {
       <Shell>
         <EmptyState
           icon={<Layers className="h-12 w-12" />}
-          title={t('builder.notFound.title', 'Laporan tidak ditemukan')}
-          description={t('builder.notFound.desc', 'Laporan ini mungkin sudah dihapus.')}
+          title={t('reportBuilder.notFound.title', 'Report not found')}
+          description={t('reportBuilder.notFound.desc', 'This report may have been deleted.')}
           action={
             <Button variant="outline" size="sm" onClick={() => navigate('/v2/reports')}>
               <ArrowLeft className="h-4 w-4" />
-              {t('builder.backToList', 'Kembali ke Laporan')}
+              {t('reportBuilder.backToList', 'Back to Reports')}
             </Button>
           }
         />
@@ -267,21 +258,21 @@ export default function ReportBuilderPageV2() {
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           {isEditMode
-            ? t('builder.backToReport', 'Kembali ke Laporan')
-            : t('builder.backToList', 'Kembali ke Laporan')}
+            ? t('reportBuilder.backToReport', 'Back to Report')
+            : t('reportBuilder.backToList', 'Back to Reports')}
         </Link>
       </div>
 
       <PageHeader
         title={
           isEditMode
-            ? t('builder.editTitle', 'Ubah Laporan')
-            : t('builder.createTitle', 'Laporan Baru')
+            ? t('reportBuilder.editTitle', 'Edit Report')
+            : t('reportBuilder.createTitle', 'New Report')
         }
         description={
           isEditMode
-            ? t('builder.editSubtitle', 'Tambahkan bagian data dan konfigurasi visualisasi.')
-            : t('builder.createSubtitle', 'Mulai dengan menentukan identitas laporan, lalu tambahkan bagian.')
+            ? t('reportBuilder.editSubtitle', 'Add data sections and configure visualizations.')
+            : t('reportBuilder.createSubtitle', 'Start by defining the report identity, then add sections.')
         }
         actions={
           !isEditMode && (
@@ -291,7 +282,7 @@ export default function ReportBuilderPageV2() {
               disabled={createMutation.isPending}
             >
               <Save className="h-4 w-4" />
-              {t('builder.saveAndContinue', 'Simpan & Lanjutkan')}
+              {t('reportBuilder.saveAndContinue', 'Save & Continue')}
             </Button>
           )
         }
@@ -303,17 +294,17 @@ export default function ReportBuilderPageV2() {
       <GlassPanel surface="glass" padding="lg" className="mb-8">
         <div className="mb-5">
           <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-            {t('builder.identity.title', 'Identitas Laporan')}
+            {t('reportBuilder.identity.title', 'Report Identity')}
           </h2>
           <p className="mt-0.5 text-xs text-text-tertiary">
             {isEditMode
               ? t(
-                  'builder.identity.editSubtitle',
-                  'Identitas terkunci setelah laporan dibuat. Hubungi admin untuk perubahan terstruktur.',
+                  'reportBuilder.identity.editSubtitle',
+                  'Identity is locked after the report is created. Contact admin for structural changes.',
                 )
               : t(
-                  'builder.identity.createSubtitle',
-                  'Judul, proyek, dan periode laporan. Akan dikunci setelah disimpan.',
+                  'reportBuilder.identity.createSubtitle',
+                  'Title, project, and reporting period. Locked after saving.',
                 )}
           </p>
         </div>
@@ -321,13 +312,13 @@ export default function ReportBuilderPageV2() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div className="sm:col-span-2">
             <Label htmlFor="title">
-              {t('builder.field.title', 'Judul Laporan')} <span className="text-danger">*</span>
+              {t('reportBuilder.field.title', 'Report Title')} <span className="text-danger">*</span>
             </Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('builder.field.titlePlaceholder', 'Mis. Laporan Sosmed Juli 2025')}
+              placeholder={t('reportBuilder.field.titlePlaceholder', 'e.g. Social Media Report July 2025')}
               disabled={isEditMode}
               className="bg-bg-sunken border-border-subtle text-text-primary"
             />
@@ -335,13 +326,13 @@ export default function ReportBuilderPageV2() {
 
           <div className="sm:col-span-2">
             <Label htmlFor="description">
-              {t('builder.field.description', 'Deskripsi')}
+              {t('reportBuilder.field.description', 'Description')}
             </Label>
             <Input
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('builder.field.descriptionPlaceholder', 'Opsional')}
+              placeholder={t('reportBuilder.field.descriptionPlaceholder', 'Optional')}
               disabled={isEditMode}
               className="bg-bg-sunken border-border-subtle text-text-primary"
             />
@@ -349,11 +340,11 @@ export default function ReportBuilderPageV2() {
 
           <div>
             <Label htmlFor="project">
-              {t('builder.field.project', 'Proyek')} <span className="text-danger">*</span>
+              {t('reportBuilder.field.project', 'Project')} <span className="text-danger">*</span>
             </Label>
             <Select value={projectId} onValueChange={setProjectId} disabled={isEditMode}>
               <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                <SelectValue placeholder={t('builder.field.projectPlaceholder', 'Pilih proyek')} />
+                <SelectValue placeholder={t('reportBuilder.field.projectPlaceholder', 'Select project')} />
               </SelectTrigger>
               <SelectContent>
                 {projects.map((p: any) => (
@@ -367,7 +358,7 @@ export default function ReportBuilderPageV2() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="month">{t('builder.field.month', 'Bulan')}</Label>
+              <Label htmlFor="month">{t('reportBuilder.field.month', 'Month')}</Label>
               <Select
                 value={String(month)}
                 onValueChange={(v) => setMonth(Number(v))}
@@ -377,7 +368,7 @@ export default function ReportBuilderPageV2() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {MONTHS_ID.map((m, i) => (
+                  {MONTHS_EN.map((m, i) => (
                     <SelectItem key={i} value={String(i + 1)}>
                       {m}
                     </SelectItem>
@@ -386,7 +377,7 @@ export default function ReportBuilderPageV2() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="year">{t('builder.field.year', 'Tahun')}</Label>
+              <Label htmlFor="year">{t('reportBuilder.field.year', 'Year')}</Label>
               <Input
                 id="year"
                 type="number"
@@ -419,7 +410,7 @@ export default function ReportBuilderPageV2() {
 
       {/* Mobile hint — builder canvas works best on wider screens. */}
       <p className="text-xs text-text-tertiary md:hidden mt-6 text-center">
-        Builder pengalaman terbaik di desktop.
+        {t('reportBuilder.desktopHint', 'Best experience on desktop.')}
       </p>
 
       {/* Deferred-features note — kept honest about what's in this v2 subset. */}
@@ -429,12 +420,12 @@ export default function ReportBuilderPageV2() {
             <Layers className="h-4 w-4 shrink-0 mt-0.5" />
             <div>
               <strong className="text-text-secondary block mb-1">
-                {t('builder.advancedDeferred.title', 'Fitur lanjutan tertunda')}
+                {t('reportBuilder.advancedDeferred.title', 'Advanced features deferred')}
               </strong>
               <p>
                 {t(
-                  'builder.advancedDeferred.body',
-                  'Editor drag-and-drop kanvas, palet widget (Teks/Metrik/Gambar/Callout), tata letak grid bebas, dan pratinjau langsung tersedia di editor klasik. Versi v2 fokus pada alur identitas + bagian CSV + visualisasi yang dikonfigurasi melalui formulir.',
+                  'reportBuilder.advancedDeferred.body',
+                  'Drag-and-drop canvas editor, widget palette (Text/Metric/Image/Callout), freeform grid layout, and live preview are available in the classic editor. The v2 version focuses on the identity + CSV sections + form-configured visualizations flow.',
                 )}
               </p>
             </div>
@@ -469,11 +460,11 @@ function SectionsEditor({
 
   const handleAddClick = async () => {
     if (!draftFile) {
-      toast.error(t('builder.csvRequired', 'Pilih file CSV terlebih dahulu.'));
+      toast.error(t('reportBuilder.csvRequired', 'Please select a CSV file first.'));
       return;
     }
     if (!draftTitle.trim()) {
-      toast.error(t('builder.sectionTitleRequired', 'Judul bagian wajib diisi.'));
+      toast.error(t('reportBuilder.sectionTitleRequired', 'Section title is required.'));
       return;
     }
     try {
@@ -501,10 +492,10 @@ function SectionsEditor({
       <div className="mb-5 flex items-baseline justify-between gap-4">
         <div>
           <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-            {t('builder.sections.title', 'Bagian Data')}
+            {t('reportBuilder.sections.title', 'Data Sections')}
           </h2>
           <p className="mt-0.5 text-xs text-text-tertiary">
-            {t('builder.sections.subtitle', '{{count}} bagian — setiap bagian satu file CSV', {
+            {t('reportBuilder.sections.subtitle', '{{count}} sections — one CSV file per section', {
               count: sections.length,
             })}
           </p>
@@ -516,25 +507,25 @@ function SectionsEditor({
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
           <div>
             <Label htmlFor="sec-title" className="text-xs">
-              {t('builder.field.sectionTitle', 'Judul Bagian')}
+              {t('reportBuilder.field.sectionTitle', 'Section Title')}
             </Label>
             <Input
               id="sec-title"
               value={draftTitle}
               onChange={(e) => setDraftTitle(e.target.value)}
-              placeholder={t('builder.field.sectionTitlePlaceholder', 'Mis. Instagram Performance')}
+              placeholder={t('reportBuilder.field.sectionTitlePlaceholder', 'e.g. Instagram Performance')}
               className="bg-bg-base border-border-subtle text-text-primary"
             />
           </div>
           <div>
             <Label htmlFor="sec-desc" className="text-xs">
-              {t('builder.field.sectionDesc', 'Deskripsi')}
+              {t('reportBuilder.field.sectionDesc', 'Description')}
             </Label>
             <Input
               id="sec-desc"
               value={draftDesc}
               onChange={(e) => setDraftDesc(e.target.value)}
-              placeholder={t('builder.field.sectionDescPlaceholder', 'Opsional')}
+              placeholder={t('reportBuilder.field.sectionDescPlaceholder', 'Optional')}
               className="bg-bg-base border-border-subtle text-text-primary"
             />
           </div>
@@ -551,7 +542,7 @@ function SectionsEditor({
                 ? draftFile.name.length > 24
                   ? `${draftFile.name.slice(0, 22)}…`
                   : draftFile.name
-                : t('builder.field.uploadCsv', 'Pilih CSV')}
+                : t('reportBuilder.field.uploadCsv', 'Choose CSV')}
               <input
                 id="csv-upload"
                 type="file"
@@ -565,7 +556,7 @@ function SectionsEditor({
         <div className="mt-4 flex justify-end">
           <Button size="sm" onClick={handleAddClick} disabled={isAdding}>
             <Plus className="h-4 w-4" />
-            {t('builder.addSection', 'Tambah Bagian')}
+            {t('reportBuilder.addSection', 'Add Section')}
           </Button>
         </div>
       </div>
@@ -573,10 +564,10 @@ function SectionsEditor({
       {sections.length === 0 ? (
         <EmptyState
           icon={<Layers className="h-12 w-12" />}
-          title={t('builder.noSections.title', 'Belum ada bagian')}
+          title={t('reportBuilder.noSections.title', 'No sections yet')}
           description={t(
-            'builder.noSections.desc',
-            'Unggah file CSV di atas untuk membuat bagian pertama.',
+            'reportBuilder.noSections.desc',
+            'Upload a CSV file above to create your first section.',
           )}
         />
       ) : (
@@ -639,7 +630,7 @@ function SectionCard({
       ...d,
       {
         type: 'line',
-        title: t('builder.viz.newTitle', 'Grafik Baru'),
+        title: t('reportBuilder.viz.newTitle', 'New Chart'),
         xAxis: columns[0],
         yAxis: numericColumns[0] ? [numericColumns[0]] : [],
         aggregation: 'sum',
@@ -664,7 +655,7 @@ function SectionCard({
               {section.title}
             </h3>
             <Badge variant="outline" className="border-border-subtle text-text-tertiary text-[10px]">
-              {section.rowCount} baris
+              {section.rowCount} {t('reportBuilder.rows', 'rows')}
             </Badge>
           </div>
           {section.description && (
@@ -717,7 +708,7 @@ function SectionCard({
             variant="ghost"
             size="icon-sm"
             onClick={() => {
-              if (confirm(t('builder.confirmRemoveSection', 'Hapus bagian ini?'))) onRemove();
+              if (confirm(t('reportBuilder.confirmRemoveSection', 'Remove this section?'))) onRemove();
             }}
             aria-label="Remove section"
             className="text-danger/70 hover:text-danger"
@@ -732,10 +723,10 @@ function SectionCard({
         <div className="flex items-baseline justify-between gap-4 mb-3">
           <div>
             <div className="text-xs font-medium text-text-secondary">
-              {t('builder.viz.title', 'Visualisasi')}
+              {t('reportBuilder.viz.title', 'Visualizations')}
             </div>
             <div className="text-[11px] text-text-tertiary">
-              {vizDrafts.length} {t('builder.viz.configured', 'grafik dikonfigurasi')}
+              {vizDrafts.length} {t('reportBuilder.viz.configured', 'charts configured')}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -746,7 +737,7 @@ function SectionCard({
                 onClick={() => setVizDrafts(section.visualizations ?? [])}
               >
                 <X className="h-3.5 w-3.5" />
-                {t('common.discard', 'Batal')}
+                {t('common.discard', 'Discard')}
               </Button>
             )}
             <Button
@@ -756,18 +747,18 @@ function SectionCard({
               onClick={() => onSaveViz(vizDrafts)}
             >
               <Save className="h-3.5 w-3.5" />
-              {t('builder.viz.save', 'Simpan')}
+              {t('reportBuilder.viz.save', 'Save')}
             </Button>
             <Button size="sm" variant="outline" onClick={addViz}>
               <Plus className="h-3.5 w-3.5" />
-              {t('builder.viz.add', 'Tambah Grafik')}
+              {t('reportBuilder.viz.add', 'Add Chart')}
             </Button>
           </div>
         </div>
 
         {vizDrafts.length === 0 ? (
           <div className="rounded-md border border-dashed border-border-subtle p-4 text-center text-xs text-text-tertiary">
-            {t('builder.viz.empty', 'Belum ada grafik. Tambahkan grafik pertama.')}
+            {t('reportBuilder.viz.empty', 'No charts yet. Add your first chart.')}
           </div>
         ) : (
           <div className="space-y-3">
@@ -809,7 +800,7 @@ function VizConfigRow({ viz, columns, numericColumns, onChange, onRemove }: VizC
     <div className="rounded-md border border-border-subtle bg-bg-base p-4">
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 mb-3">
         <div>
-          <Label className="text-[11px]">{t('builder.viz.field.title', 'Judul')}</Label>
+          <Label className="text-[11px]">{t('reportBuilder.viz.field.title', 'Title')}</Label>
           <Input
             value={viz.title}
             onChange={(e) => onChange({ title: e.target.value })}
@@ -817,7 +808,7 @@ function VizConfigRow({ viz, columns, numericColumns, onChange, onRemove }: VizC
           />
         </div>
         <div>
-          <Label className="text-[11px]">{t('builder.viz.field.type', 'Tipe Grafik')}</Label>
+          <Label className="text-[11px]">{t('reportBuilder.viz.field.type', 'Chart Type')}</Label>
           <Select value={viz.type} onValueChange={(v) => onChange({ type: v as VisualizationConfig['type'] })}>
             <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
               <SelectValue />
@@ -854,13 +845,13 @@ function VizConfigRow({ viz, columns, numericColumns, onChange, onRemove }: VizC
         {isMetricCard ? (
           <>
             <div>
-              <Label className="text-[11px]">{t('builder.viz.field.valueKey', 'Kolom Nilai')}</Label>
+              <Label className="text-[11px]">{t('reportBuilder.viz.field.valueKey', 'Value Column')}</Label>
               <Select
                 value={viz.valueKey ?? ''}
                 onValueChange={(v) => onChange({ valueKey: v })}
               >
                 <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder="Pilih kolom" />
+                  <SelectValue placeholder={t('reportBuilder.selectColumn', 'Select column')} />
                 </SelectTrigger>
                 <SelectContent>
                   {numericColumns.map((c) => (
@@ -870,7 +861,7 @@ function VizConfigRow({ viz, columns, numericColumns, onChange, onRemove }: VizC
               </Select>
             </div>
             <div>
-              <Label className="text-[11px]">{t('builder.viz.field.aggregation', 'Agregasi')}</Label>
+              <Label className="text-[11px]">{t('reportBuilder.viz.field.aggregation', 'Aggregation')}</Label>
               <Select
                 value={viz.aggregation ?? 'sum'}
                 onValueChange={(v) => onChange({ aggregation: v as VisualizationConfig['aggregation'] })}
@@ -886,7 +877,7 @@ function VizConfigRow({ viz, columns, numericColumns, onChange, onRemove }: VizC
               </Select>
             </div>
             <div>
-              <Label className="text-[11px]">{t('builder.viz.field.precision', 'Presisi Desimal')}</Label>
+              <Label className="text-[11px]">{t('reportBuilder.viz.field.precision', 'Decimal Precision')}</Label>
               <Input
                 type="number"
                 min={0}
@@ -900,13 +891,13 @@ function VizConfigRow({ viz, columns, numericColumns, onChange, onRemove }: VizC
         ) : isPie ? (
           <>
             <div>
-              <Label className="text-[11px]">{t('builder.viz.field.nameKey', 'Kolom Label')}</Label>
+              <Label className="text-[11px]">{t('reportBuilder.viz.field.nameKey', 'Label Column')}</Label>
               <Select
                 value={viz.nameKey ?? viz.xAxis ?? ''}
                 onValueChange={(v) => onChange({ nameKey: v })}
               >
                 <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder="Pilih kolom" />
+                  <SelectValue placeholder={t('reportBuilder.selectColumn', 'Select column')} />
                 </SelectTrigger>
                 <SelectContent>
                   {columns.map((c) => (
@@ -916,13 +907,13 @@ function VizConfigRow({ viz, columns, numericColumns, onChange, onRemove }: VizC
               </Select>
             </div>
             <div>
-              <Label className="text-[11px]">{t('builder.viz.field.valueKey', 'Kolom Nilai')}</Label>
+              <Label className="text-[11px]">{t('reportBuilder.viz.field.valueKey', 'Value Column')}</Label>
               <Select
                 value={viz.valueKey ?? viz.yAxis?.[0] ?? ''}
                 onValueChange={(v) => onChange({ valueKey: v })}
               >
                 <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder="Pilih kolom" />
+                  <SelectValue placeholder={t('reportBuilder.selectColumn', 'Select column')} />
                 </SelectTrigger>
                 <SelectContent>
                   {numericColumns.map((c) => (
@@ -936,13 +927,13 @@ function VizConfigRow({ viz, columns, numericColumns, onChange, onRemove }: VizC
         ) : (
           <>
             <div>
-              <Label className="text-[11px]">{t('builder.viz.field.xAxis', 'Sumbu X')}</Label>
+              <Label className="text-[11px]">{t('reportBuilder.viz.field.xAxis', 'X Axis')}</Label>
               <Select
                 value={viz.xAxis ?? ''}
                 onValueChange={(v) => onChange({ xAxis: v })}
               >
                 <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder="Pilih kolom" />
+                  <SelectValue placeholder={t('reportBuilder.selectColumn', 'Select column')} />
                 </SelectTrigger>
                 <SelectContent>
                   {columns.map((c) => (
@@ -952,13 +943,13 @@ function VizConfigRow({ viz, columns, numericColumns, onChange, onRemove }: VizC
               </Select>
             </div>
             <div>
-              <Label className="text-[11px]">{t('builder.viz.field.yAxis', 'Sumbu Y')}</Label>
+              <Label className="text-[11px]">{t('reportBuilder.viz.field.yAxis', 'Y Axis')}</Label>
               <Select
                 value={viz.yAxis?.[0] ?? ''}
                 onValueChange={(v) => onChange({ yAxis: [v] })}
               >
                 <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder="Pilih kolom" />
+                  <SelectValue placeholder={t('reportBuilder.selectColumn', 'Select column')} />
                 </SelectTrigger>
                 <SelectContent>
                   {numericColumns.map((c) => (
@@ -968,7 +959,7 @@ function VizConfigRow({ viz, columns, numericColumns, onChange, onRemove }: VizC
               </Select>
             </div>
             <div>
-              <Label className="text-[11px]">{t('builder.viz.field.aggregation', 'Agregasi')}</Label>
+              <Label className="text-[11px]">{t('reportBuilder.viz.field.aggregation', 'Aggregation')}</Label>
               <Select
                 value={viz.aggregation ?? 'sum'}
                 onValueChange={(v) => onChange({ aggregation: v as VisualizationConfig['aggregation'] })}

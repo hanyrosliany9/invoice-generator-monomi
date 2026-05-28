@@ -31,8 +31,8 @@ import { cn } from '@/lib/utils';
 // ──────────────────────────────────────────────────────────────
 
 const productItemSchema = z.object({
-  name: z.string().min(1, 'Nama item wajib diisi'),
-  description: z.string().min(1, 'Deskripsi wajib diisi'),
+  name: z.string().min(1, 'Item name is required'),
+  description: z.string().min(1, 'Description is required'),
   quantity: z.coerce.number().min(1, 'Min. 1'),
   price: z.coerce.number().min(0, 'Min. 0'),
 });
@@ -42,15 +42,15 @@ export const projectFormSchema = z
     // Identitas
     description: z
       .string()
-      .min(1, 'Deskripsi proyek wajib diisi')
-      .min(10, 'Deskripsi minimal 10 karakter')
-      .max(500, 'Deskripsi terlalu panjang'),
-    output: z.string().max(160, 'Terlalu panjang').optional().or(z.literal('')),
-    scopeOfWork: z.string().max(5000, 'Terlalu panjang').optional().or(z.literal('')),
+      .min(1, 'Project description is required')
+      .min(10, 'Description must be at least 10 characters')
+      .max(500, 'Description is too long'),
+    output: z.string().max(160, 'Too long').optional().or(z.literal('')),
+    scopeOfWork: z.string().max(5000, 'Too long').optional().or(z.literal('')),
 
     // Klien & Tipe
-    clientId: z.string().min(1, 'Klien wajib dipilih'),
-    projectTypeId: z.string().min(1, 'Tipe proyek wajib dipilih'),
+    clientId: z.string().min(1, 'Client is required'),
+    projectTypeId: z.string().min(1, 'Project type is required'),
 
     // Tanggal — keep optional to match backend (CreateProjectRequest)
     startDate: z.date().optional().nullable(),
@@ -59,7 +59,7 @@ export const projectFormSchema = z
     // Rincian
     products: z
       .array(productItemSchema)
-      .min(1, 'Minimal satu produk/layanan'),
+      .min(1, 'At least one product/service is required'),
 
     // Status — edit only; controller still hides it on create
     status: z
@@ -68,7 +68,7 @@ export const projectFormSchema = z
   })
   .refine(
     (v) => !v.startDate || !v.endDate || v.endDate.getTime() >= v.startDate.getTime(),
-    { message: 'Tanggal akhir harus setelah tanggal mulai', path: ['endDate'] },
+    { message: 'End date must be after start date', path: ['endDate'] },
   );
 
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
@@ -190,11 +190,11 @@ const STATUS_OPTIONS: Array<{
   labelKey: string;
   fallback: string;
 }> = [
-  { value: 'PLANNING', labelKey: 'projects.status.planning', fallback: 'Perencanaan' },
-  { value: 'IN_PROGRESS', labelKey: 'projects.status.inProgress', fallback: 'Berjalan' },
-  { value: 'ON_HOLD', labelKey: 'projects.status.onHold', fallback: 'Tertunda' },
-  { value: 'COMPLETED', labelKey: 'projects.status.completed', fallback: 'Selesai' },
-  { value: 'CANCELLED', labelKey: 'projects.status.cancelled', fallback: 'Dibatalkan' },
+  { value: 'PLANNING', labelKey: 'projectForm.status.planning', fallback: 'Planning' },
+  { value: 'IN_PROGRESS', labelKey: 'projectForm.status.inProgress', fallback: 'In Progress' },
+  { value: 'ON_HOLD', labelKey: 'projectForm.status.onHold', fallback: 'On Hold' },
+  { value: 'COMPLETED', labelKey: 'projectForm.status.completed', fallback: 'Completed' },
+  { value: 'CANCELLED', labelKey: 'projectForm.status.cancelled', fallback: 'Cancelled' },
 ];
 
 // Helper — same coercion the classic page uses; resilient to '' from RHF.
@@ -308,17 +308,14 @@ export const ProjectForm = ({
       <GlassPanel surface="glass" padding="lg">
         <SectionHeader
           index={1}
-          title={t('projects.form.identity.title', 'Identitas')}
-          description={t(
-            'projects.form.identity.desc',
-            'Deskripsi singkat dan lingkup yang akan dicetak di dokumen.',
-          )}
+          title={t('projectForm.identity.title', 'Identity')}
+          description={t('projectForm.identity.desc', 'Short description and scope to be printed on documents.')}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
           <FieldShell
             id="pf-description"
-            label={t('projects.form.description', 'Deskripsi Proyek')}
+            label={t('projectForm.description', 'Project Description')}
             required
             error={errors.description?.message}
             className="md:col-span-2"
@@ -326,10 +323,7 @@ export const ProjectForm = ({
             <Textarea
               id="pf-description"
               rows={3}
-              placeholder={t(
-                'projects.form.descriptionPh',
-                'Ringkasan tujuan proyek — apa yang dibuat, untuk siapa, mengapa.',
-              )}
+              placeholder={t('projectForm.descriptionPh', 'Summary of project purpose — what is being made, for whom, and why.')}
               invalid={!!errors.description}
               aria-invalid={!!errors.description}
               disabled={isSubmitting}
@@ -339,8 +333,8 @@ export const ProjectForm = ({
 
           <FieldShell
             id="pf-output"
-            label={t('projects.form.output', 'Output')}
-            hint={t('projects.form.outputHint', 'Hasil akhir, mis. video, kampanye, situs')}
+            label={t('projectForm.output', 'Output')}
+            hint={t('projectForm.outputHint', 'Final deliverable, e.g. video, campaign, website')}
             error={errors.output?.message}
             className="md:col-span-2"
           >
@@ -357,11 +351,8 @@ export const ProjectForm = ({
 
           <FieldShell
             id="pf-scope"
-            label={t('projects.form.scope', 'Lingkup Kerja')}
-            hint={t(
-              'projects.form.scopeHint',
-              'Opsional. Rinci tugas, deliverable, revisi, timeline.',
-            )}
+            label={t('projectForm.scope', 'Scope of Work')}
+            hint={t('projectForm.scopeHint', 'Optional. Detail tasks, deliverables, revisions, timeline.')}
             error={errors.scopeOfWork?.message}
             className="md:col-span-2"
           >
@@ -369,8 +360,8 @@ export const ProjectForm = ({
               id="pf-scope"
               rows={6}
               placeholder={t(
-                'projects.form.scopePh',
-                'Contoh:\n1. Pembuatan konsep kreatif\n2. Produksi video 30 detik\n3. Editing dan color grading\n4. Revisi hingga 3 kali\n\nTimeline: 2 minggu\nDeliverables: Video final MP4 1080p',
+                'projectForm.scopePh',
+                'Example:\n1. Creative concept development\n2. 30-second video production\n3. Editing and color grading\n4. Up to 3 revisions\n\nTimeline: 2 weeks\nDeliverables: Final video MP4 1080p',
               )}
               invalid={!!errors.scopeOfWork}
               aria-invalid={!!errors.scopeOfWork}
@@ -390,17 +381,14 @@ export const ProjectForm = ({
       <GlassPanel surface="glass" padding="lg">
         <SectionHeader
           index={2}
-          title={t('projects.form.classification.title', 'Klien & Tipe')}
-          description={t(
-            'projects.form.classification.desc',
-            'Klien menjadi pemilik proyek; tipe menentukan prefix penomoran.',
-          )}
+          title={t('projectForm.classification.title', 'Client & Type')}
+          description={t('projectForm.classification.desc', 'Client becomes the project owner; type determines the numbering prefix.')}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
           <FieldShell
             id="pf-client"
-            label={t('projects.form.client', 'Klien')}
+            label={t('projectForm.client', 'Client')}
             required
             error={errors.clientId?.message}
           >
@@ -425,8 +413,8 @@ export const ProjectForm = ({
                     <SelectValue
                       placeholder={
                         clientsLoading
-                          ? t('common.loading', 'Memuat…')
-                          : t('projects.form.clientPh', 'Pilih klien')
+                          ? t('projectForm.loading', 'Loading...')
+                          : t('projectForm.clientPh', 'Select client')
                       }
                     />
                   </SelectTrigger>
@@ -439,7 +427,7 @@ export const ProjectForm = ({
                     ))}
                     {clients.length === 0 && !clientsLoading && (
                       <div className="px-2 py-2 text-xs text-text-tertiary">
-                        {t('projects.form.noClients', 'Belum ada klien terdaftar.')}
+                        {t('projectForm.noClients', 'No clients registered yet.')}
                       </div>
                     )}
                   </SelectContent>
@@ -450,7 +438,7 @@ export const ProjectForm = ({
 
           <FieldShell
             id="pf-type"
-            label={t('projects.form.type', 'Tipe Proyek')}
+            label={t('projectForm.type', 'Project Type')}
             required
             error={errors.projectTypeId?.message}
           >
@@ -475,8 +463,8 @@ export const ProjectForm = ({
                     <SelectValue
                       placeholder={
                         projectTypesLoading
-                          ? t('common.loading', 'Memuat…')
-                          : t('projects.form.typePh', 'Pilih tipe proyek')
+                          ? t('projectForm.loading', 'Loading...')
+                          : t('projectForm.typePh', 'Select project type')
                       }
                     />
                   </SelectTrigger>
@@ -491,7 +479,7 @@ export const ProjectForm = ({
                     ))}
                     {sortedActiveTypes.length === 0 && !projectTypesLoading && (
                       <div className="px-2 py-2 text-xs text-text-tertiary">
-                        {t('projects.form.noTypes', 'Belum ada tipe proyek aktif.')}
+                        {t('projectForm.noTypes', 'No active project types.')}
                       </div>
                     )}
                   </SelectContent>
@@ -507,11 +495,8 @@ export const ProjectForm = ({
           {mode === 'edit' && (
             <FieldShell
               id="pf-status"
-              label={t('projects.form.status', 'Status')}
-              hint={t(
-                'projects.form.statusHint',
-                'Status memengaruhi visibilitas dan workflow invoice.',
-              )}
+              label={t('projectForm.status', 'Status')}
+              hint={t('projectForm.statusHint', 'Status affects invoice visibility and workflow.')}
               error={errors.status?.message}
               className="md:col-span-2"
             >
@@ -559,16 +544,13 @@ export const ProjectForm = ({
       <GlassPanel surface="glass" padding="lg">
         <SectionHeader
           index={3}
-          title={t('projects.form.timeline.title', 'Tanggal')}
-          description={t(
-            'projects.form.timeline.desc',
-            'Periode rencana proyek. Bisa diperbarui kapan saja.',
-          )}
+          title={t('projectForm.timeline.title', 'Dates')}
+          description={t('projectForm.timeline.desc', 'Planned project period. Can be updated at any time.')}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
           <FieldShell
-            label={t('projects.form.startDate', 'Tanggal Mulai')}
+            label={t('projectForm.startDate', 'Start Date')}
             error={errors.startDate?.message as string | undefined}
           >
             <Controller
@@ -578,7 +560,7 @@ export const ProjectForm = ({
                 <MonomiDatePicker
                   value={field.value ?? undefined}
                   onChange={(d) => field.onChange(d ?? null)}
-                  placeholder={t('projects.form.pickDate', 'Pilih tanggal')}
+                  placeholder={t('projectForm.pickDate', 'Select date')}
                   disabled={isSubmitting}
                   className={cn(
                     fieldInputClass,
@@ -590,7 +572,7 @@ export const ProjectForm = ({
           </FieldShell>
 
           <FieldShell
-            label={t('projects.form.endDate', 'Tanggal Akhir')}
+            label={t('projectForm.endDate', 'End Date')}
             error={errors.endDate?.message as string | undefined}
           >
             <Controller
@@ -600,7 +582,7 @@ export const ProjectForm = ({
                 <MonomiDatePicker
                   value={field.value ?? undefined}
                   onChange={(d) => field.onChange(d ?? null)}
-                  placeholder={t('projects.form.pickDate', 'Pilih tanggal')}
+                  placeholder={t('projectForm.pickDate', 'Select date')}
                   disabled={isSubmitting}
                   className={cn(
                     fieldInputClass,
@@ -616,9 +598,9 @@ export const ProjectForm = ({
           <div className="mt-5 flex items-center gap-2 rounded-md border border-border-subtle bg-bg-sunken px-3.5 py-2.5">
             <CalendarDays className="h-4 w-4 text-text-tertiary" />
             <span className="text-xs text-text-secondary">
-              {t('projects.form.durationLabel', 'Durasi rencana')}:{' '}
+              {t('projectForm.durationLabel', 'Planned duration')}:{' '}
               <span className="font-medium text-text-primary tabular-nums">
-                {t('projects.form.durationDays', '{{count}} hari', { count: duration })}
+                {t('projectForm.durationDays', '{{count}} days', { count: duration })}
               </span>
             </span>
           </div>
@@ -634,19 +616,16 @@ export const ProjectForm = ({
       <GlassPanel surface="glass" padding="lg">
         <SectionHeader
           index={4}
-          title={t('projects.form.products.title', 'Produk & Layanan')}
-          description={t(
-            'projects.form.products.desc',
-            'Komponen yang akan ditagih. Total otomatis menjadi estimasi anggaran.',
-          )}
+          title={t('projectForm.products.title', 'Products & Services')}
+          description={t('projectForm.products.desc', 'Billable components. Total automatically becomes the budget estimate.')}
         />
 
         {/* Desktop column header — collapses on mobile to per-row labels */}
         <div className="hidden sm:grid grid-cols-[1fr_80px_160px_140px_32px] gap-3 px-1 pb-2 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
-          <div>{t('projects.form.col.item', 'Item & Deskripsi')}</div>
-          <div className="text-right">{t('projects.form.col.qty', 'Qty')}</div>
-          <div className="text-right">{t('projects.form.col.price', 'Harga')}</div>
-          <div className="text-right">{t('projects.form.col.subtotal', 'Subtotal')}</div>
+          <div>{t('projectForm.col.item', 'Item & Description')}</div>
+          <div className="text-right">{t('projectForm.col.qty', 'Qty')}</div>
+          <div className="text-right">{t('projectForm.col.price', 'Price')}</div>
+          <div className="text-right">{t('projectForm.col.subtotal', 'Subtotal')}</div>
           <div />
         </div>
 
@@ -665,8 +644,8 @@ export const ProjectForm = ({
                 <div className="space-y-1.5 min-w-0">
                   <Input
                     placeholder={t(
-                      'projects.form.itemNamePh',
-                      'Nama produk / layanan',
+                      'projectForm.itemNamePh',
+                      'Product / service name',
                     )}
                     autoComplete="off"
                     aria-invalid={!!rowErrors?.name}
@@ -679,10 +658,7 @@ export const ProjectForm = ({
                   />
                   <Textarea
                     rows={2}
-                    placeholder={t(
-                      'projects.form.itemDescPh',
-                      'Deskripsi singkat (akan dicetak di dokumen)',
-                    )}
+                    placeholder={t('projectForm.itemDescPh', 'Short description (printed on document)')}
                     invalid={!!rowErrors?.description}
                     aria-invalid={!!rowErrors?.description}
                     disabled={isSubmitting}
@@ -760,7 +736,7 @@ export const ProjectForm = ({
                     onClick={() => fields.length > 1 && remove(idx)}
                     disabled={fields.length <= 1 || isSubmitting}
                     className="text-text-tertiary hover:text-danger"
-                    aria-label={t('projects.form.removeItem', 'Hapus baris')}
+                    aria-label={t('projectForm.removeItem', 'Remove row')}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
@@ -787,12 +763,12 @@ export const ProjectForm = ({
             className="border-border-subtle text-text-secondary hover:text-text-primary"
           >
             <Plus className="h-3.5 w-3.5" />
-            {t('projects.form.addItem', 'Tambah Baris')}
+            {t('projectForm.addItem', 'Add Row')}
           </Button>
 
           <div className="flex items-baseline gap-3">
             <span className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">
-              {t('projects.form.estimatedTotal', 'Estimasi Total')}
+              {t('projectForm.estimatedTotal', 'Estimated Total')}
             </span>
             <MoneyDisplay
               amount={estimatedTotal}
@@ -803,10 +779,7 @@ export const ProjectForm = ({
 
         <Separator className="bg-border-subtle mt-4" />
         <p className="mt-3 text-[11px] text-text-tertiary leading-relaxed">
-          {t(
-            'projects.form.budgetNote',
-            'Estimasi anggaran proyek dihitung dari subtotal di atas dan disimpan saat proyek dibuat.',
-          )}
+          {t('projectForm.budgetNote', 'Project budget estimate is calculated from the subtotals above and saved when the project is created.')}
         </p>
       </GlassPanel>
 
@@ -816,14 +789,8 @@ export const ProjectForm = ({
       <div className="sticky bottom-0 md:static -mx-4 sm:-mx-6 lg:-mx-8 md:mx-0 px-4 sm:px-6 lg:px-8 md:px-0 py-3 md:py-0 bg-bg-base/95 md:bg-transparent backdrop-blur md:backdrop-blur-none border-t md:border-t-0 border-border-subtle flex items-center justify-end gap-3">
         <p className="text-[11px] text-text-tertiary mr-auto hidden md:block">
           {mode === 'create'
-            ? t(
-                'projects.form.requiredNote',
-                'Tanda * menandakan kolom wajib diisi.',
-              )
-            : t(
-                'projects.form.editNote',
-                'Perubahan disimpan saat Anda menekan "Simpan".',
-              )}
+            ? t('projectForm.requiredNote', 'Fields marked * are required.')
+            : t('projectForm.editNote', 'Changes are saved when you click "Save".')}
         </p>
         <Button
           type="submit"
@@ -833,10 +800,10 @@ export const ProjectForm = ({
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              {t('common.saving', 'Menyimpan…')}
+              {t('projectForm.saving', 'Saving...')}
             </>
           ) : (
-            t('common.save', 'Simpan')
+            t('projectForm.save', 'Save')
           )}
         </Button>
       </div>

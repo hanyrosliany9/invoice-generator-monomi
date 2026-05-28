@@ -2,11 +2,14 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Search, Download, X, AlertTriangle, Wallet, BookOpen,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -35,16 +38,6 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 /*  Navigation                                                         */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard', icon: <Inbox className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices', icon: <FileText className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients', icon: <Users className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects', icon: <Folder className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses', icon: <CreditCard className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings', icon: <Settings className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Bucket vocabulary                                                  */
@@ -92,6 +85,7 @@ const toNumber = (v: unknown): number => {
 /* ------------------------------------------------------------------ */
 
 export default function AccountsPayablePageV2() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
 
@@ -167,18 +161,18 @@ export default function AccountsPayablePageV2() {
   const handleExportPDF = async () => {
     try {
       await exportAccountsPayablePDF({ startDate: startOfYear, endDate: isoDate });
-      toast.success('Laporan PDF berhasil diunduh');
+      toast.success(t('accounting.accountsPayable.exportPdfSuccess'));
     } catch {
-      toast.error('Gagal mengunduh PDF');
+      toast.error(t('accounting.accountsPayable.exportPdfFail'));
     }
   };
 
   const handleExportExcel = async () => {
     try {
       await exportAccountsPayableExcel({ startDate: startOfYear, endDate: isoDate });
-      toast.success('Laporan Excel berhasil diunduh');
+      toast.success(t('accounting.accountsPayable.exportExcelSuccess'));
     } catch {
-      toast.error('Gagal mengunduh Excel');
+      toast.error(t('accounting.accountsPayable.exportExcelFail'));
     }
   };
 
@@ -186,8 +180,8 @@ export default function AccountsPayablePageV2() {
     return (
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
         topbar={{ right: <Button variant="ghost" size="sm">{user?.name || 'User'}</Button> }}
@@ -195,9 +189,9 @@ export default function AccountsPayablePageV2() {
         <PageContainer>
           <EmptyState
             icon={<Wallet className="h-12 w-12" />}
-            title="Tidak bisa memuat laporan hutang"
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-            action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+            title={t('accounting.accountsPayable.errorTitle')}
+            description={error instanceof Error ? error.message : t('accounting.accountsPayable.errorDesc')}
+            action={<Button onClick={() => refetch()}>{t('accounting.accountsPayable.retry')}</Button>}
           />
         </PageContainer>
       </AppShell>
@@ -207,19 +201,19 @@ export default function AccountsPayablePageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: <Button variant="ghost" size="sm">{user?.name || 'User'}</Button> }}
     >
       <PageContainer>
         <PageHeader
-          title="Hutang Usaha"
-          description="Pantau kewajiban kepada vendor per tanggal pelaporan. Klik baris untuk membuka detail beban."
+          title={t('accounting.accountsPayable.title')}
+          description={t('accounting.accountsPayable.description')}
           breadcrumbs={[
-            { label: 'Akuntansi' },
-            { label: 'Hutang' },
+            { label: t('accounting.accountsPayable.breadcrumbAccounting') },
+            { label: t('accounting.accountsPayable.title') },
           ]}
           actions={
             <div className="flex flex-wrap items-center gap-2">
@@ -346,15 +340,15 @@ export default function AccountsPayablePageV2() {
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={<BookOpen />}
-              title={hasActiveFilters ? 'Tidak ada beban yang cocok' : 'Tidak ada hutang terbuka'}
+              title={hasActiveFilters ? t('accounting.accountsPayable.noMatch') : t('accounting.accountsPayable.noPayables')}
               description={
                 hasActiveFilters
-                  ? 'Coba ubah atau hapus filter Anda.'
-                  : 'Semua kewajiban telah diselesaikan per tanggal ini.'
+                  ? t('accounting.accountsPayable.noMatchDesc')
+                  : t('accounting.accountsPayable.noPayablesDesc')
               }
               action={
                 hasActiveFilters && (
-                  <Button variant="outline" size="sm" onClick={resetFilters}>Reset Filter</Button>
+                  <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.accountsPayable.resetFilter')}</Button>
                 )
               }
             />

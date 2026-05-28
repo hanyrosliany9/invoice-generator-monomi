@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
@@ -17,6 +18,8 @@ import { id as idLocale } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -56,18 +59,6 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 /*  Sidebar — "Projects" highlighted.                                  */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',       icon: <Inbox        className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',        icon: <FileText     className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',      icon: <ReceiptText  className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',         icon: <Users        className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',        icon: <Folder       className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Kalender',        icon: <CalendarDays className="h-4 w-4" />, href: '/v2/calendar' },
-  { label: 'Kalender Konten', icon: <ImageIcon    className="h-4 w-4" />, href: '/v2/calendar/content' },
-  { label: 'Expenses',        icon: <CreditCard   className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',        icon: <Settings     className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Status + platform editorial config — mirrors ContentCalendarPage.  */
@@ -157,6 +148,7 @@ type ViewMode = 'month' | 'list';
 
 export default function ProjectContentCalendarPage() {
   const { projectId } = useParams<{ projectId: string }>();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
@@ -264,38 +256,38 @@ export default function ProjectContentCalendarPage() {
     mutationFn: (id: string) => contentCalendarService.deleteContent(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['content-calendar-project'] });
-      toast.success('Konten dihapus.');
+      toast.success(t('projectContentCalendar.contentDeleted', 'Content deleted.'));
       setSelectedItem(null);
     },
-    onError: () => toast.error('Gagal menghapus konten.'),
+    onError: () => toast.error(t('projectContentCalendar.contentDeleteFailed', 'Failed to delete content.')),
   });
 
   const publishMutation = useMutation({
     mutationFn: (id: string) => contentCalendarService.publishContent(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['content-calendar-project'] });
-      toast.success('Konten ditandai terbit.');
+      toast.success(t('projectContentCalendar.contentPublished', 'Content marked as published.'));
     },
-    onError: () => toast.error('Gagal menerbitkan konten.'),
+    onError: () => toast.error(t('projectContentCalendar.contentPublishFailed', 'Failed to publish content.')),
   });
 
   const archiveMutation = useMutation({
     mutationFn: (id: string) => contentCalendarService.archiveContent(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['content-calendar-project'] });
-      toast.success('Konten diarsipkan.');
+      toast.success(t('projectContentCalendar.contentArchived', 'Content archived.'));
     },
-    onError: () => toast.error('Gagal mengarsipkan konten.'),
+    onError: () => toast.error(t('projectContentCalendar.contentArchiveFailed', 'Failed to archive content.')),
   });
 
   const createMutation = useMutation({
     mutationFn: (data: CreateContentDto) => contentCalendarService.createContent(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['content-calendar-project'] });
-      toast.success('Konten dibuat.');
+      toast.success(t('projectContentCalendar.contentCreated', 'Content created.'));
       setCreateOpen(false);
     },
-    onError: () => toast.error('Gagal membuat konten.'),
+    onError: () => toast.error(t('projectContentCalendar.contentCreateFailed', 'Failed to create content.')),
   });
 
   const hasActiveFilters = !!search || statusFilter !== 'all' || platformFilter !== 'all';
@@ -314,8 +306,8 @@ export default function ProjectContentCalendarPage() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -330,7 +322,7 @@ export default function ProjectContentCalendarPage() {
             onClick={() => navigate('/v2/projects')}
             className="hover:text-text-secondary transition-colors"
           >
-            Proyek
+            {t('projectContentCalendar.breadcrumb.projects', 'Projects')}
           </button>
           <span>/</span>
           {projectLoading ? (
@@ -345,11 +337,11 @@ export default function ProjectContentCalendarPage() {
             </button>
           )}
           <span>/</span>
-          <span className="text-text-secondary">Kalender Konten</span>
+          <span className="text-text-secondary">{t('projectContentCalendar.breadcrumb.contentCalendar', 'Content Calendar')}</span>
         </nav>
 
         <PageHeader
-          title="Kalender Konten"
+          title={t('projectContentCalendar.title', 'Content Calendar')}
           description={
             projectLoading
               ? undefined
@@ -363,11 +355,11 @@ export default function ProjectContentCalendarPage() {
                 onClick={() => navigate(`/v2/projects/${projectId}/calendar`)}
               >
                 <CalendarDays className="h-4 w-4" />
-                Kalender Proyek
+                {t('projectContentCalendar.openProjectCalendar', 'Project Calendar')}
               </Button>
               <Button size="sm" onClick={() => openCreate()}>
                 <Plus className="h-4 w-4" />
-                Tambah Konten
+                {t('projectContentCalendar.addContent', 'Add Content')}
               </Button>
             </div>
           }
@@ -386,24 +378,24 @@ export default function ProjectContentCalendarPage() {
             ) : (
               <>
                 <StatCard
-                  label="Konten Bulan Ini"
+                  label={t('projectContentCalendar.kpi.total', 'Content This Month')}
                   value={stats.total}
-                  sublabel="terjadwal & terbit"
+                  sublabel={t('projectContentCalendar.kpi.totalSub', 'scheduled & published')}
                 />
                 <StatCard
-                  label="Terjadwal"
+                  label={t('projectContentCalendar.kpi.scheduled', 'Scheduled')}
                   value={stats.scheduled}
-                  sublabel="menunggu publikasi"
+                  sublabel={t('projectContentCalendar.kpi.scheduledSub', 'awaiting publish')}
                 />
                 <StatCard
-                  label="Terbit"
+                  label={t('projectContentCalendar.kpi.published', 'Published')}
                   value={stats.published}
-                  sublabel="sudah tayang"
+                  sublabel={t('projectContentCalendar.kpi.publishedSub', 'already live')}
                 />
                 <StatCard
-                  label="Draf Aktif"
+                  label={t('projectContentCalendar.kpi.drafts', 'Active Drafts')}
                   value={stats.drafts}
-                  sublabel="belum dijadwalkan"
+                  sublabel={t('projectContentCalendar.kpi.draftsSub', 'not yet scheduled')}
                 />
               </>
             )}
@@ -429,7 +421,7 @@ export default function ProjectContentCalendarPage() {
                 onClick={() => setCursor(startOfMonth(new Date()))}
                 className="text-text-secondary hover:text-text-primary"
               >
-                Hari Ini
+                {t('projectContentCalendar.today', 'Today')}
               </Button>
               <Button
                 variant="ghost"
@@ -448,11 +440,11 @@ export default function ProjectContentCalendarPage() {
               <TabsList>
                 <TabsTrigger value="month">
                   <Layers className="h-3.5 w-3.5" />
-                  Bulan
+                  {t('projectContentCalendar.view.month', 'Month')}
                 </TabsTrigger>
                 <TabsTrigger value="list">
                   <ListChecks className="h-3.5 w-3.5" />
-                  Daftar
+                  {t('projectContentCalendar.view.list', 'List')}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -465,7 +457,7 @@ export default function ProjectContentCalendarPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari caption, platform..."
+                placeholder={t('projectContentCalendar.search.placeholder', 'Search caption, platform...')}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -475,10 +467,10 @@ export default function ProjectContentCalendarPage() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[130px]"
                 >
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('projectContentCalendar.filter.status', 'Status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="all">{t('projectContentCalendar.filter.allStatuses', 'All Statuses')}</SelectItem>
                   {(Object.keys(STATUS_LABEL) as ContentStatus[]).map((s) => (
                     <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
                   ))}
@@ -490,10 +482,10 @@ export default function ProjectContentCalendarPage() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[140px]"
                 >
-                  <SelectValue placeholder="Platform" />
+                  <SelectValue placeholder={t('projectContentCalendar.filter.platform', 'Platform')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Platform</SelectItem>
+                  <SelectItem value="all">{t('projectContentCalendar.filter.allPlatforms', 'All Platforms')}</SelectItem>
                   {PLATFORMS.map((p) => (
                     <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                   ))}
@@ -508,7 +500,7 @@ export default function ProjectContentCalendarPage() {
                   className="text-text-tertiary hover:text-text-primary"
                 >
                   <X className="h-3.5 w-3.5" />
-                  Reset
+                  {t('common.reset', 'Reset')}
                 </Button>
               )}
             </div>
@@ -532,21 +524,21 @@ export default function ProjectContentCalendarPage() {
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={<CalendarDays />}
-              title={hasActiveFilters ? 'Tidak ada konten yang cocok' : 'Belum ada konten'}
+              title={hasActiveFilters ? t('projectContentCalendar.empty.filtered.title', 'No matching content') : t('projectContentCalendar.empty.title', 'No content yet')}
               description={
                 hasActiveFilters
-                  ? 'Coba ubah atau hapus filter Anda.'
-                  : 'Mulai dengan menambah konten pertama untuk proyek ini.'
+                  ? t('projectContentCalendar.empty.filtered.desc', 'Try changing or clearing your filters.')
+                  : t('projectContentCalendar.empty.desc', 'Start by adding the first content for this project.')
               }
               action={
                 hasActiveFilters ? (
                   <Button variant="outline" size="sm" onClick={resetFilters}>
-                    Reset Filter
+                    {t('common.resetFilters', 'Reset Filters')}
                   </Button>
                 ) : (
                   <Button size="sm" onClick={() => openCreate()}>
                     <Plus className="h-4 w-4" />
-                    Tambah Konten
+                    {t('projectContentCalendar.addContent', 'Add Content')}
                   </Button>
                 )
               }
@@ -558,7 +550,7 @@ export default function ProjectContentCalendarPage() {
               onPublish={(id) => publishMutation.mutate(id)}
               onArchive={(id) => archiveMutation.mutate(id)}
               onDelete={(id) => {
-                if (confirm('Hapus konten ini?')) deleteMutation.mutate(id);
+                if (confirm(t('projectContentCalendar.confirmDeleteContent', 'Delete this content?'))) deleteMutation.mutate(id);
               }}
             />
           )}
@@ -569,7 +561,7 @@ export default function ProjectContentCalendarPage() {
           <section className="mt-6">
             <div className="flex items-baseline justify-between mb-3">
               <h3 className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-                Draf Tanpa Jadwal
+                {t('projectContentCalendar.unscheduledDrafts', 'Unscheduled Drafts')}
               </h3>
               <span className="text-[11px] text-text-tertiary tabular-nums">
                 {unscheduledDrafts.length}
@@ -621,6 +613,7 @@ function MonthGrid({
   onSelect: (it: ContentCalendarItem) => void;
   onCreate: (date: Date) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="overflow-x-auto">
@@ -672,7 +665,7 @@ function MonthGrid({
                     'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity',
                     'inline-flex items-center justify-center',
                   )}
-                  aria-label="Tambah konten di hari ini"
+                  aria-label={t('projectContentCalendar.addContentOnDay', 'Add content on this day')}
                 >
                   <Plus className="h-3 w-3" />
                 </button>
@@ -713,7 +706,7 @@ function MonthGrid({
                     onClick={() => posts[3] && onSelect(posts[3])}
                     className="text-[10px] text-text-tertiary px-1.5 hover:text-text-secondary"
                   >
-                    +{overflow} lainnya
+                    +{overflow} {t('projectContentCalendar.moreItems', 'more')}
                   </button>
                 )}
               </div>
@@ -740,6 +733,7 @@ function ListView({
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const sorted = useMemo(() => [...items].sort((a, b) => {
     const da = a.scheduledAt ? +new Date(a.scheduledAt) : -Infinity;
     const db = b.scheduledAt ? +new Date(b.scheduledAt) : -Infinity;
@@ -820,23 +814,23 @@ function ListView({
                     variant="ghost"
                     size="icon-sm"
                     className="text-text-tertiary hover:text-text-primary"
-                    aria-label="Aksi konten"
+                    aria-label={t('projectContentCalendar.contentActions', 'Content actions')}
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => onSelect(it)}>
-                    <Eye className="h-3.5 w-3.5" /> Lihat detail
+                    <Eye className="h-3.5 w-3.5" /> {t('projectContentCalendar.viewDetail', 'View Detail')}
                   </DropdownMenuItem>
                   {it.status !== 'PUBLISHED' && (
                     <DropdownMenuItem onClick={() => onPublish(it.id)}>
-                      <Rocket className="h-3.5 w-3.5" /> Terbitkan
+                      <Rocket className="h-3.5 w-3.5" /> {t('projectContentCalendar.publish', 'Publish')}
                     </DropdownMenuItem>
                   )}
                   {it.status !== 'ARCHIVED' && (
                     <DropdownMenuItem onClick={() => onArchive(it.id)}>
-                      <Archive className="h-3.5 w-3.5" /> Arsipkan
+                      <Archive className="h-3.5 w-3.5" /> {t('projectContentCalendar.archive', 'Archive')}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
@@ -844,7 +838,7 @@ function ListView({
                     onClick={() => onDelete(it.id)}
                     className="text-danger focus:text-danger"
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Hapus
+                    <Trash2 className="h-3.5 w-3.5" /> {t('common.delete', 'Delete')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -910,6 +904,7 @@ function DetailSheet({
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Sheet open={!!item} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
@@ -937,7 +932,7 @@ function DetailSheet({
                 )}
               </div>
               <SheetTitle className="text-text-primary font-display tracking-tight">
-                Detail Konten
+                {t('projectContentCalendar.detailSheet.title', 'Content Detail')}
               </SheetTitle>
               <SheetDescription className="text-text-tertiary text-xs">
                 {item.project?.number && (
@@ -959,7 +954,7 @@ function DetailSheet({
 
               <section>
                 <h4 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-2">
-                  Platform
+                  {t('projectContentCalendar.detailSheet.platform', 'Platform')}
                 </h4>
                 {item.platforms.length === 0 ? (
                   <span className="text-sm text-text-tertiary">—</span>
@@ -990,20 +985,20 @@ function DetailSheet({
                     {item.media[0].type === 'VIDEO'
                       ? <Video className="h-4 w-4" />
                       : <FileImage className="h-4 w-4" />}
-                    {item.media.length} berkas
+                    {item.media.length} {t('projectContentCalendar.detailSheet.files', 'files')}
                   </div>
                 </section>
               )}
 
               <section className="text-xs text-text-tertiary space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span>Dibuat</span>
+                  <span>{t('projectContentCalendar.detailSheet.created', 'Created')}</span>
                   <DateDisplay date={item.createdAt} format="long" />
                 </div>
                 {item.publishedAt && (
                   <div className="flex items-center justify-between text-success">
                     <span className="inline-flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> Terbit
+                      <CheckCircle2 className="h-3 w-3" /> {t('projectContentCalendar.detailSheet.published', 'Published')}
                     </span>
                     <DateDisplay date={item.publishedAt} format="long" />
                   </div>
@@ -1011,7 +1006,7 @@ function DetailSheet({
                 {item.status === 'FAILED' && (
                   <div className="flex items-center gap-1 text-danger">
                     <AlertTriangle className="h-3 w-3" />
-                    Publikasi gagal — perlu pemeriksaan
+                    {t('projectContentCalendar.detailSheet.publishFailed', 'Publish failed — needs review')}
                   </div>
                 )}
               </section>
@@ -1021,13 +1016,13 @@ function DetailSheet({
               {item.status !== 'PUBLISHED' && (
                 <Button size="sm" onClick={() => onPublish(item.id)}>
                   <Rocket className="h-3.5 w-3.5" />
-                  Terbitkan
+                  {t('projectContentCalendar.publish', 'Publish')}
                 </Button>
               )}
               {item.status !== 'ARCHIVED' && (
                 <Button variant="outline" size="sm" onClick={() => onArchive(item.id)}>
                   <Archive className="h-3.5 w-3.5" />
-                  Arsipkan
+                  {t('projectContentCalendar.archive', 'Archive')}
                 </Button>
               )}
               <Button
@@ -1037,7 +1032,7 @@ function DetailSheet({
                 onClick={() => onDelete(item.id)}
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Hapus
+                {t('common.delete', 'Delete')}
               </Button>
             </div>
           </>
@@ -1061,6 +1056,7 @@ function CreateDialog({
   onSubmit: (data: CreateContentDto) => void;
   submitting: boolean;
 }) {
+  const { t } = useTranslation();
   const [caption, setCaption] = useState('');
   const [scheduledAt, setScheduledAt] = useState<Date | undefined>(initialDate);
   const [time, setTime] = useState('09:00');
@@ -1074,7 +1070,7 @@ function CreateDialog({
 
   const handleSubmit = () => {
     if (!caption.trim()) {
-      toast.error('Caption tidak boleh kosong.');
+      toast.error(t('projectContentCalendar.createDialog.captionRequired', 'Caption is required.'));
       return;
     }
     let iso: string | undefined;
@@ -1101,10 +1097,10 @@ function CreateDialog({
       <DialogContent className="bg-bg-raised border-border-subtle text-text-primary sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="text-text-primary font-display tracking-tight">
-            Tambah Konten
+            {t('projectContentCalendar.createDialog.title', 'Add Content')}
           </DialogTitle>
           <DialogDescription className="text-text-tertiary text-xs">
-            Buat draf konten untuk proyek ini — jadwalkan sekarang atau simpan sebagai draf.
+            {t('projectContentCalendar.createDialog.desc', 'Create a content draft for this project — schedule now or save as draft.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -1112,12 +1108,12 @@ function CreateDialog({
           {/* Caption */}
           <div>
             <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-              Caption *
+              {t('projectContentCalendar.createDialog.caption', 'Caption')} *
             </label>
             <Textarea
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              placeholder="Tulis caption media sosial Anda..."
+              placeholder={t('projectContentCalendar.createDialog.captionPlaceholder', 'Write your social media caption...')}
               maxLength={2200}
             />
             <div className="mt-1 text-[10px] text-text-tertiary text-right tabular-nums">
@@ -1129,13 +1125,13 @@ function CreateDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-                Tanggal Jadwal
+                {t('projectContentCalendar.createDialog.scheduleDate', 'Schedule Date')}
               </label>
               <MonomiDatePicker value={scheduledAt} onChange={setScheduledAt} />
             </div>
             <div>
               <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-                Waktu
+                {t('projectContentCalendar.createDialog.time', 'Time')}
               </label>
               <div className="relative">
                 <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary pointer-events-none" />
@@ -1153,7 +1149,7 @@ function CreateDialog({
           {/* Platforms */}
           <div>
             <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-              Platform
+              {t('projectContentCalendar.createDialog.platform', 'Platform')}
             </label>
             <div className="flex flex-wrap gap-1.5">
               {PLATFORMS.map((p) => {
@@ -1181,10 +1177,10 @@ function CreateDialog({
 
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Batal
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button size="sm" onClick={handleSubmit} disabled={submitting}>
-            {submitting ? 'Menyimpan...' : scheduledAt ? 'Jadwalkan' : 'Simpan Draf'}
+            {submitting ? t('common.saving', 'Saving...') : scheduledAt ? t('projectContentCalendar.createDialog.schedule', 'Schedule') : t('projectContentCalendar.createDialog.saveDraft', 'Save Draft')}
           </Button>
         </DialogFooter>
       </DialogContent>

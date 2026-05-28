@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -6,6 +7,8 @@ import {
   BookOpen, Play, Eye, RefreshCw, TrendingDown, Package, Calendar, DollarSign,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -37,17 +40,6 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                            */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',   icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',    icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',  icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',     icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',    icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',    icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Akuntansi',   icon: <BookOpen    className="h-4 w-4" />, href: '/v2/accounting/general-ledger' },
-  { label: 'Settings',    icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -81,6 +73,7 @@ type AssetRow = DepreciationSummary['byAsset'][number];
 /* ------------------------------------------------------------------ */
 
 export default function DepreciationPageV2() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
 
@@ -107,13 +100,11 @@ export default function DepreciationPageV2() {
   const processMutation = useMutation({
     mutationFn: processMonthlyDepreciation,
     onSuccess: (data) => {
-      toast.success(
-        `Berhasil memproses ${data.processed} entri depresiasi. ${data.posted} diposting ke jurnal.`,
-      );
+      toast.success(t('accounting.depreciation.processSuccess', { count: data.processed, posted: data.posted }));
       queryClient.invalidateQueries({ queryKey: ['depreciation-summary'] });
       setProcessOpen(false);
     },
-    onError: () => toast.error('Gagal memproses depresiasi'),
+    onError: () => toast.error(t('accounting.depreciation.processFail')),
   });
 
   /* ----- derived KPIs ----- */
@@ -136,8 +127,8 @@ export default function DepreciationPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -151,9 +142,9 @@ export default function DepreciationPageV2() {
       <Shell>
         <EmptyState
           icon={<TrendingDown className="h-12 w-12" />}
-          title="Tidak dapat memuat data penyusutan"
-          description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-          action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+          title={t('accounting.depreciation.errorTitle')}
+          description={error instanceof Error ? error.message : t('accounting.depreciation.errorGeneric')}
+          action={<Button onClick={() => refetch()}>{t('accounting.depreciation.retry')}</Button>}
         />
       </Shell>
     );
@@ -164,8 +155,8 @@ export default function DepreciationPageV2() {
   return (
     <Shell>
       <PageHeader
-        title="Penyusutan Aset"
-        description="Manajemen depresiasi aset tetap sesuai standar PSAK 16."
+        title={t('accounting.depreciation.title')}
+        description={t('accounting.depreciation.description')}
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -175,11 +166,11 @@ export default function DepreciationPageV2() {
               disabled={isLoading}
             >
               <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
-              Segarkan
+              {t('accounting.depreciation.refresh')}
             </Button>
             <Button size="sm" onClick={() => setProcessOpen(true)}>
               <Play className="h-4 w-4" />
-              Proses Depresiasi
+              {t('accounting.depreciation.process')}
             </Button>
           </div>
         }
@@ -198,32 +189,32 @@ export default function DepreciationPageV2() {
           ) : (
             <>
               <StatCard
-                label="Aset Tersusut"
+                label={t('accounting.depreciation.statAssets', 'Depreciated Assets')}
                 value={
                   <span className="text-2xl font-display font-semibold text-text-primary">
                     {kpis.assetCount}
                   </span>
                 }
-                sublabel="aset dengan jadwal aktif"
+                sublabel={t('accounting.depreciation.statAssetsSub', 'assets with active schedule')}
               />
               <StatCard
-                label="Total Akumulasi"
+                label={t('accounting.depreciation.statAccumulated', 'Total Accumulated')}
                 value={<MoneyDisplay amount={kpis.totalAccumulated} className="text-danger" />}
-                sublabel="akumulasi depresiasi"
+                sublabel={t('accounting.depreciation.statAccumulatedSub', 'accumulated depreciation')}
               />
               <StatCard
-                label="Depresiasi Periode"
+                label={t('accounting.depreciation.statPeriod', 'Period Depreciation')}
                 value={<MoneyDisplay amount={kpis.monthlyDep} className="text-warning" />}
-                sublabel="nilai penyusutan periode ini"
+                sublabel={t('accounting.depreciation.statPeriodSub', 'depreciation value this period')}
               />
               <StatCard
-                label="Proses Berikutnya"
+                label={t('accounting.depreciation.statNextRun', 'Next Run')}
                 value={
                   <span className="text-base font-display font-semibold text-text-primary">
                     <DateDisplay date={nextRunDate.toISOString()} />
                   </span>
                 }
-                sublabel="estimasi run depresiasi"
+                sublabel={t('accounting.depreciation.statNextRunSub', 'estimated depreciation run')}
               />
             </>
           )}
@@ -235,20 +226,20 @@ export default function DepreciationPageV2() {
         {/* Period filter */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-4 border-b border-border-subtle">
           <span className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary shrink-0">
-            Periode
+            {t('accounting.depreciation.period', 'Period')}
           </span>
           <div className="flex items-center gap-2">
             <MonomiDatePicker
               value={startDate}
               onChange={(d) => d && setStartDate(d)}
-              placeholder="Tgl. mulai"
+              placeholder={t('accounting.depreciation.startDate', 'Start date')}
               className="h-9 text-sm bg-bg-sunken border-border-subtle"
             />
             <span className="text-text-tertiary text-xs">—</span>
             <MonomiDatePicker
               value={endDate}
               onChange={(d) => d && setEndDate(d)}
-              placeholder="Tgl. akhir"
+              placeholder={t('accounting.depreciation.endDate', 'End date')}
               className="h-9 text-sm bg-bg-sunken border-border-subtle"
             />
           </div>
@@ -262,8 +253,8 @@ export default function DepreciationPageV2() {
         ) : byAsset.length === 0 ? (
           <EmptyState
             icon={<Package />}
-            title="Tidak ada data penyusutan"
-            description="Tidak ada aset tersusut untuk periode ini. Coba ubah rentang periode."
+            title={t('accounting.depreciation.noData')}
+            description={t('accounting.depreciation.noDataDesc')}
           />
         ) : (
           <div className="px-1 pb-1">
@@ -273,7 +264,7 @@ export default function DepreciationPageV2() {
               columns={[
                 {
                   id: 'asset',
-                  header: 'Aset',
+                  header: t('accounting.depreciation.colAsset', 'Asset'),
                   accessorFn: (r) => r.assetName,
                   cell: ({ row }) => (
                     <div className="min-w-0">
@@ -286,16 +277,16 @@ export default function DepreciationPageV2() {
                 },
                 {
                   id: 'yearsInUse',
-                  header: 'Tahun Pakai',
+                  header: t('accounting.depreciation.colYearsInUse', 'Years in Use'),
                   cell: ({ row }) => (
                     <span className="text-sm text-text-secondary">
-                      {yearsInUse(row.original.purchaseDate)} thn
+                      {yearsInUse(row.original.purchaseDate)} {t('accounting.depreciation.yr', 'yr')}
                     </span>
                   ),
                 },
                 {
                   accessorKey: 'purchasePrice',
-                  header: () => <span className="block text-right">Harga Perolehan</span>,
+                  header: () => <span className="block text-right">{t('accounting.depreciation.colPurchasePrice', 'Cost')}</span>,
                   cell: ({ row }) => (
                     <div className="text-right">
                       <MoneyDisplay amount={toNumber(row.original.purchasePrice)} />
@@ -304,16 +295,16 @@ export default function DepreciationPageV2() {
                 },
                 {
                   accessorKey: 'usefulLifeYears',
-                  header: 'Umur Ekonomis',
+                  header: t('accounting.depreciation.colUsefulLife', 'Useful Life'),
                   cell: ({ row }) => (
                     <span className="text-sm text-text-secondary">
-                      {row.original.usefulLifeYears ?? '—'} thn
+                      {row.original.usefulLifeYears ?? '—'} {t('accounting.depreciation.yr', 'yr')}
                     </span>
                   ),
                 },
                 {
                   accessorKey: 'depreciationAmount',
-                  header: () => <span className="block text-right">Penyusutan Periode</span>,
+                  header: () => <span className="block text-right">{t('accounting.depreciation.colPeriodDep', 'Period Dep.')}</span>,
                   cell: ({ row }) => (
                     <div className="text-right">
                       <MoneyDisplay amount={toNumber(row.original.depreciationAmount)} className="text-warning" />
@@ -322,7 +313,7 @@ export default function DepreciationPageV2() {
                 },
                 {
                   accessorKey: 'accumulatedDepreciation',
-                  header: () => <span className="block text-right">Akumulasi</span>,
+                  header: () => <span className="block text-right">{t('accounting.depreciation.colAccumulated', 'Accumulated')}</span>,
                   cell: ({ row }) => (
                     <div className="text-right">
                       <MoneyDisplay amount={toNumber(row.original.accumulatedDepreciation)} className="text-danger" />
@@ -331,7 +322,7 @@ export default function DepreciationPageV2() {
                 },
                 {
                   accessorKey: 'netBookValue',
-                  header: () => <span className="block text-right">Nilai Buku</span>,
+                  header: () => <span className="block text-right">{t('accounting.depreciation.colNetBook', 'Net Book Value')}</span>,
                   cell: ({ row }) => (
                     <div className="text-right">
                       <MoneyDisplay amount={toNumber(row.original.netBookValue)} className="text-success" />
@@ -340,7 +331,7 @@ export default function DepreciationPageV2() {
                 },
                 {
                   id: 'status',
-                  header: 'Status',
+                  header: t('accounting.depreciation.colStatus', 'Status'),
                   cell: ({ row }) => (
                     <Badge
                       variant="outline"
@@ -351,7 +342,7 @@ export default function DepreciationPageV2() {
                           : 'text-text-tertiary border-border-subtle',
                       )}
                     >
-                      {toNumber(row.original.netBookValue) > 0 ? 'Aktif' : 'Habis'}
+                      {toNumber(row.original.netBookValue) > 0 ? t('accounting.depreciation.statusActive', 'Active') : t('accounting.depreciation.statusExpired', 'Expired')}
                     </Badge>
                   ),
                 },
@@ -383,17 +374,17 @@ export default function DepreciationPageV2() {
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
               <Play className="h-4 w-4 text-text-tertiary" />
-              Proses Depresiasi Bulanan
+              {t('accounting.depreciation.processDialogTitle')}
             </DialogTitle>
             <DialogDescription className="text-text-tertiary">
-              Hitung depresiasi untuk semua aset aktif pada periode yang dipilih.
+              {t('accounting.depreciation.processDialogDesc')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">
-                Tanggal Periode
+                {t('accounting.depreciation.processFieldDate', 'Period Date')}
               </label>
               <MonomiDatePicker
                 value={processDate}
@@ -404,7 +395,7 @@ export default function DepreciationPageV2() {
 
             <div>
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">
-                Opsi Posting
+                {t('accounting.depreciation.processFieldPosting', 'Posting Option')}
               </label>
               <Select
                 value={autoPost}
@@ -414,16 +405,15 @@ export default function DepreciationPageV2() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="manual">Simpan sebagai draft (posting manual)</SelectItem>
-                  <SelectItem value="auto">Posting otomatis ke jurnal</SelectItem>
+                  <SelectItem value="manual">{t('accounting.depreciation.saveDraft')}</SelectItem>
+                  <SelectItem value="auto">{t('accounting.depreciation.autoPost')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="rounded-lg border-l-2 border-info bg-info/5 px-4 py-3">
               <p className="text-xs text-text-secondary leading-relaxed">
-                Proses ini menghitung depresiasi untuk semua aset aktif pada periode yang dipilih.
-                Pastikan tanggal periode sudah benar sebelum melanjutkan.
+                {t('accounting.depreciation.processInfo')}
               </p>
             </div>
           </div>
@@ -434,7 +424,7 @@ export default function DepreciationPageV2() {
               onClick={() => setProcessOpen(false)}
               disabled={processMutation.isPending}
             >
-              Batal
+              {t('accounting.depreciation.cancel', 'Cancel')}
             </Button>
             <Button
               onClick={() =>
@@ -445,7 +435,7 @@ export default function DepreciationPageV2() {
               }
               disabled={processMutation.isPending}
             >
-              {processMutation.isPending ? 'Memproses...' : 'Proses Sekarang'}
+              {processMutation.isPending ? t('accounting.depreciation.processing') : t('accounting.depreciation.processNow')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -455,7 +445,7 @@ export default function DepreciationPageV2() {
       <Dialog open={!!detailAsset} onOpenChange={(o) => { if (!o) setDetailAsset(null); }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-display">Detail Depresiasi Aset</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.depreciation.detailTitle')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
               {detailAsset?.assetCode} — {detailAsset?.assetName}
             </DialogDescription>
@@ -463,38 +453,38 @@ export default function DepreciationPageV2() {
 
           {detailAsset && (
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-              <DetailRow label="Nama Aset" wide>
+              <DetailRow label={t('accounting.depreciation.detailAssetName', 'Asset Name')} wide>
                 <span className="font-medium text-text-primary">{detailAsset.assetName}</span>
               </DetailRow>
-              <DetailRow label="Kode Aset">
+              <DetailRow label={t('accounting.depreciation.detailAssetCode', 'Asset Code')}>
                 <span className="font-mono text-xs text-text-secondary">{detailAsset.assetCode}</span>
               </DetailRow>
-              <DetailRow label="Jumlah Entri">
+              <DetailRow label={t('accounting.depreciation.detailEntryCount', 'Entry Count')}>
                 <span className="text-text-primary">{detailAsset.entryCount}</span>
               </DetailRow>
-              <DetailRow label="Harga Perolehan" wide>
+              <DetailRow label={t('accounting.depreciation.detailPurchasePrice', 'Acquisition Cost')} wide>
                 <MoneyDisplay amount={toNumber(detailAsset.purchasePrice)} />
               </DetailRow>
-              <DetailRow label="Tahun Pakai">
-                <span className="text-text-primary">{yearsInUse(detailAsset.purchaseDate)} tahun</span>
+              <DetailRow label={t('accounting.depreciation.detailYearsInUse', 'Years in Use')}>
+                <span className="text-text-primary">{yearsInUse(detailAsset.purchaseDate)} {t('accounting.depreciation.years', 'years')}</span>
               </DetailRow>
-              <DetailRow label="Umur Ekonomis">
-                <span className="text-text-primary">{detailAsset.usefulLifeYears ?? '—'} tahun</span>
+              <DetailRow label={t('accounting.depreciation.detailUsefulLife', 'Useful Life')}>
+                <span className="text-text-primary">{detailAsset.usefulLifeYears ?? '—'} {t('accounting.depreciation.years', 'years')}</span>
               </DetailRow>
-              <DetailRow label="Penyusutan Periode" wide>
+              <DetailRow label={t('accounting.depreciation.detailPeriodDep', 'Period Depreciation')} wide>
                 <MoneyDisplay amount={toNumber(detailAsset.depreciationAmount)} className="text-warning" />
               </DetailRow>
-              <DetailRow label="Akumulasi Depresiasi" wide>
+              <DetailRow label={t('accounting.depreciation.detailAccumulated', 'Accumulated Depreciation')} wide>
                 <MoneyDisplay amount={toNumber(detailAsset.accumulatedDepreciation)} className="text-danger" />
               </DetailRow>
-              <DetailRow label="Nilai Buku Bersih" wide>
+              <DetailRow label={t('accounting.depreciation.detailNetBook', 'Net Book Value')} wide>
                 <MoneyDisplay amount={toNumber(detailAsset.netBookValue)} className="text-success text-base" />
               </DetailRow>
             </div>
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDetailAsset(null)}>Tutup</Button>
+            <Button variant="outline" onClick={() => setDetailAsset(null)}>{t('accounting.depreciation.close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

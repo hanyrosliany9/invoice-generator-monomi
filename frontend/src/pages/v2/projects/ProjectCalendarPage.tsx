@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
@@ -17,6 +18,8 @@ import { id as idLocale } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -47,18 +50,6 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 /*  Sidebar — "Projects" highlighted; calendars appear as siblings.   */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',       icon: <Inbox        className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',        icon: <FileText     className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',      icon: <ReceiptText  className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',         icon: <Users        className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',        icon: <Folder       className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Kalender',        icon: <CalendarDays className="h-4 w-4" />, href: '/v2/calendar' },
-  { label: 'Kalender Konten', icon: <ImageIcon    className="h-4 w-4" />, href: '/v2/calendar/content' },
-  { label: 'Expenses',        icon: <CreditCard   className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',        icon: <Settings     className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Event-type editorial palette.                                      */
@@ -129,6 +120,7 @@ const Textarea = ({
 
 export default function ProjectCalendarPage() {
   const { projectId } = useParams<{ projectId: string }>();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
@@ -226,20 +218,20 @@ export default function ProjectCalendarPage() {
     mutationFn: (data: CreateCalendarEventRequest) => calendarEventsService.createEvent(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['calendar-events-project'] });
-      toast.success('Acara berhasil dibuat.');
+      toast.success(t('projectCalendar.eventCreated', 'Event created successfully.'));
       setCreateOpen(false);
     },
-    onError: () => toast.error('Gagal membuat acara.'),
+    onError: () => toast.error(t('projectCalendar.eventCreateFailed', 'Failed to create event.')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => calendarEventsService.deleteEvent(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['calendar-events-project'] });
-      toast.success('Acara dihapus.');
+      toast.success(t('projectCalendar.eventDeleted', 'Event deleted.'));
       setSelectedEvent(null);
     },
-    onError: () => toast.error('Gagal menghapus acara.'),
+    onError: () => toast.error(t('projectCalendar.eventDeleteFailed', 'Failed to delete event.')),
   });
 
   const openCreate = (date?: Date) => {
@@ -251,14 +243,14 @@ export default function ProjectCalendarPage() {
     return (
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
         topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
       >
         <PageContainer>
-          <EmptyState icon={<CalendarDays />} title="Project ID diperlukan" description="Buka halaman ini melalui daftar proyek." />
+          <EmptyState icon={<CalendarDays />} title={t('projectCalendar.noProjectId.title', 'Project ID required')} description={t('projectCalendar.noProjectId.desc', 'Open this page via the projects list.')} />
         </PageContainer>
       </AppShell>
     );
@@ -268,8 +260,8 @@ export default function ProjectCalendarPage() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -284,7 +276,7 @@ export default function ProjectCalendarPage() {
             onClick={() => navigate('/v2/projects')}
             className="hover:text-text-secondary transition-colors"
           >
-            Proyek
+            {t('projectCalendar.breadcrumb.projects', 'Projects')}
           </button>
           <span>/</span>
           {projectLoading ? (
@@ -299,11 +291,11 @@ export default function ProjectCalendarPage() {
             </button>
           )}
           <span>/</span>
-          <span className="text-text-secondary">Kalender</span>
+          <span className="text-text-secondary">{t('projectCalendar.breadcrumb.calendar', 'Calendar')}</span>
         </nav>
 
         <PageHeader
-          title="Kalender Proyek"
+          title={t('projectCalendar.title', 'Project Calendar')}
           description={
             projectLoading
               ? undefined
@@ -317,11 +309,11 @@ export default function ProjectCalendarPage() {
                 onClick={() => navigate(`/v2/projects/${projectId}/content-calendar`)}
               >
                 <ImageIcon className="h-4 w-4" />
-                Kalender Konten
+                {t('projectCalendar.openContentCalendar', 'Content Calendar')}
               </Button>
               <Button size="sm" onClick={() => openCreate()}>
                 <Plus className="h-4 w-4" />
-                Tambah Acara
+                {t('projectCalendar.addEvent', 'Add Event')}
               </Button>
             </div>
           }
@@ -340,24 +332,24 @@ export default function ProjectCalendarPage() {
             ) : (
               <>
                 <StatCard
-                  label="Acara Mendatang"
+                  label={t('projectCalendar.kpi.upcoming', 'Upcoming Events')}
                   value={stats.upcoming}
-                  sublabel="dalam 30 hari ke depan"
+                  sublabel={t('projectCalendar.kpi.upcomingSub', 'in the next 30 days')}
                 />
                 <StatCard
-                  label="Terlewat"
+                  label={t('projectCalendar.kpi.overdue', 'Overdue')}
                   value={stats.overdue}
-                  sublabel="butuh perhatian"
+                  sublabel={t('projectCalendar.kpi.overdueSub', 'needs attention')}
                 />
                 <StatCard
-                  label="Bulan Ini"
+                  label={t('projectCalendar.kpi.thisMonth', 'This Month')}
                   value={stats.thisMonth}
                   sublabel={format(cursor, 'MMMM yyyy', { locale: idLocale })}
                 />
                 <StatCard
-                  label="Selesai Bulan Ini"
+                  label={t('projectCalendar.kpi.completed', 'Completed This Month')}
                   value={stats.completedThisMonth}
-                  sublabel="terkonfirmasi"
+                  sublabel={t('projectCalendar.kpi.completedSub', 'confirmed')}
                 />
               </>
             )}
@@ -414,7 +406,7 @@ export default function ProjectCalendarPage() {
                   }}
                   className="text-text-secondary hover:text-text-primary"
                 >
-                  Hari Ini
+                  {t('projectCalendar.today', 'Today')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -497,7 +489,7 @@ export default function ProjectCalendarPage() {
                           'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity',
                           'inline-flex items-center justify-center',
                         )}
-                        aria-label="Tambah acara"
+                        aria-label={t('projectCalendar.addEvent', 'Add Event')}
                       >
                         <Plus className="h-3 w-3" />
                       </button>
@@ -526,7 +518,7 @@ export default function ProjectCalendarPage() {
                       })}
                       {overflow > 0 && (
                         <div className="px-1.5 text-[10px] text-text-tertiary">
-                          +{overflow} lainnya
+                          +{overflow} {t('projectCalendar.moreItems', 'more')}
                         </div>
                       )}
                     </div>
@@ -544,7 +536,7 @@ export default function ProjectCalendarPage() {
               <div className="flex items-baseline justify-between mb-3">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-                    Hari Terpilih
+                    {t('projectCalendar.selectedDay', 'Selected Day')}
                   </div>
                   <h3 className="mt-1 text-lg font-display font-semibold text-text-primary tracking-tight">
                     {format(selectedDay, 'EEEE, d MMM yyyy', { locale: idLocale })}
@@ -563,7 +555,7 @@ export default function ProjectCalendarPage() {
               ) : selectedDayEvents.length === 0 ? (
                 <div className="py-8 text-center">
                   <CalendarDays className="h-8 w-8 mx-auto text-text-tertiary stroke-1 mb-2" />
-                  <p className="text-sm text-text-tertiary">Tidak ada acara pada hari ini.</p>
+                  <p className="text-sm text-text-tertiary">{t('projectCalendar.noEventsOnDay', 'No events on this day.')}</p>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -571,7 +563,7 @@ export default function ProjectCalendarPage() {
                     className="mt-3 text-text-tertiary hover:text-text-primary"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    Tambah Acara
+                    {t('projectCalendar.addEvent', 'Add Event')}
                   </Button>
                 </div>
               ) : (
@@ -588,10 +580,10 @@ export default function ProjectCalendarPage() {
               <div className="flex items-baseline justify-between mb-3">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-                    14 Hari ke Depan
+                    {t('projectCalendar.upcoming14Days', 'Next 14 Days')}
                   </div>
                   <h3 className="mt-1 text-base font-display font-semibold text-text-primary">
-                    Agenda Mendatang
+                    {t('projectCalendar.upcomingAgenda', 'Upcoming Agenda')}
                   </h3>
                 </div>
               </div>
@@ -616,8 +608,8 @@ export default function ProjectCalendarPage() {
                 return upcoming14.length === 0 ? (
                   <EmptyState
                     icon={<CalendarDays />}
-                    title="Tidak ada agenda mendatang"
-                    description="Tidak ada acara dalam 14 hari ke depan."
+                    title={t('projectCalendar.noUpcoming.title', 'No upcoming agenda')}
+                    description={t('projectCalendar.noUpcoming.desc', 'No events in the next 14 days.')}
                   />
                 ) : (
                   <ul className="space-y-2">
@@ -637,7 +629,7 @@ export default function ProjectCalendarPage() {
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}
         onDelete={(id) => {
-          if (confirm('Hapus acara ini?')) deleteMutation.mutate(id);
+          if (confirm(t('projectCalendar.confirmDeleteEvent', 'Delete this event?'))) deleteMutation.mutate(id);
         }}
       />
 
@@ -659,6 +651,7 @@ export default function ProjectCalendarPage() {
 /* ------------------------------------------------------------------ */
 
 function EventRow({ event, onClick }: { event: CalendarEvent; onClick?: () => void }) {
+  const { t } = useTranslation();
   const meta = CATEGORY_META[event.category] ?? CATEGORY_META.OTHER;
   const now = new Date();
   const overdue = isBefore(new Date(event.startTime), now) && event.status !== 'COMPLETED' && event.status !== 'CANCELLED';
@@ -680,7 +673,7 @@ function EventRow({ event, onClick }: { event: CalendarEvent; onClick?: () => vo
           </span>
           {overdue && (
             <Badge variant="outline" className="border-transparent bg-danger/10 text-danger text-[10px] px-1.5 py-0">
-              Terlewat
+              {t('projectCalendar.overdue', 'Overdue')}
             </Badge>
           )}
           <span className="ml-auto text-[11px] text-text-tertiary tabular-nums">
@@ -707,6 +700,7 @@ function EventDetailSheet({
   onClose: () => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   if (!event) return null;
   const meta = CATEGORY_META[event.category] ?? CATEGORY_META.OTHER;
   const statusIcon = event.status === 'COMPLETED'
@@ -749,7 +743,7 @@ function EventDetailSheet({
           {event.description && (
             <section>
               <h4 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-2">
-                Deskripsi
+                {t('projectCalendar.detailSheet.description', 'Description')}
               </h4>
               <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
                 {event.description}
@@ -760,7 +754,7 @@ function EventDetailSheet({
           {event.location && (
             <section>
               <h4 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-2">
-                Lokasi
+                {t('projectCalendar.detailSheet.location', 'Location')}
               </h4>
               <p className="text-sm text-text-primary">{event.location}</p>
             </section>
@@ -768,16 +762,16 @@ function EventDetailSheet({
 
           <section className="text-xs text-text-tertiary space-y-1.5">
             <div className="flex items-center justify-between">
-              <span>Mulai</span>
+              <span>{t('projectCalendar.detailSheet.start', 'Start')}</span>
               <DateDisplay date={event.startTime} format="long" />
             </div>
             <div className="flex items-center justify-between">
-              <span>Selesai</span>
+              <span>{t('projectCalendar.detailSheet.end', 'End')}</span>
               <DateDisplay date={event.endTime} format="long" />
             </div>
             {event.assignee && (
               <div className="flex items-center justify-between">
-                <span>Ditugaskan ke</span>
+                <span>{t('projectCalendar.detailSheet.assignedTo', 'Assigned to')}</span>
                 <span className="text-text-secondary">{event.assignee.name}</span>
               </div>
             )}
@@ -792,7 +786,7 @@ function EventDetailSheet({
             onClick={() => onDelete(event.id)}
           >
             <AlertTriangle className="h-3.5 w-3.5" />
-            Hapus
+            {t('common.delete', 'Delete')}
           </Button>
         </div>
       </SheetContent>
@@ -814,6 +808,7 @@ function CreateEventDialog({
   onSubmit: (data: CreateCalendarEventRequest) => void;
   submitting: boolean;
 }) {
+  const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -824,11 +819,11 @@ function CreateEventDialog({
 
   const handleSubmit = () => {
     if (!title.trim()) {
-      toast.error('Judul acara tidak boleh kosong.');
+      toast.error(t('projectCalendar.createDialog.titleRequired', 'Event title is required.'));
       return;
     }
     if (!startDate) {
-      toast.error('Pilih tanggal acara.');
+      toast.error(t('projectCalendar.createDialog.dateRequired', 'Select an event date.'));
       return;
     }
     const [sh, sm] = startTime.split(':').map(Number);
@@ -860,29 +855,29 @@ function CreateEventDialog({
       <DialogContent className="bg-bg-raised border-border-subtle text-text-primary sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-text-primary font-display tracking-tight">
-            Tambah Acara
+            {t('projectCalendar.createDialog.title', 'Add Event')}
           </DialogTitle>
           <DialogDescription className="text-text-tertiary text-xs">
-            Tambahkan milestone, tenggat, atau acara ke kalender proyek ini.
+            {t('projectCalendar.createDialog.desc', 'Add a milestone, deadline, or event to this project calendar.')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
             <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-              Judul Acara *
+              {t('projectCalendar.createDialog.eventTitle', 'Event Title')} *
             </label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Nama milestone / acara..."
+              placeholder={t('projectCalendar.createDialog.eventTitlePlaceholder', 'Milestone / event name...')}
               className="bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
             />
           </div>
 
           <div>
             <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-              Tipe
+              {t('projectCalendar.createDialog.type', 'Type')}
             </label>
             <Select value={category} onValueChange={(v) => setCategory(v as EventCategory)}>
               <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
@@ -899,13 +894,13 @@ function CreateEventDialog({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-1">
               <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-                Tanggal *
+                {t('projectCalendar.createDialog.date', 'Date')} *
               </label>
               <MonomiDatePicker value={startDate} onChange={setStartDate} />
             </div>
             <div>
               <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-                Mulai
+                {t('projectCalendar.createDialog.startTime', 'Start')}
               </label>
               <Input
                 type="time"
@@ -916,7 +911,7 @@ function CreateEventDialog({
             </div>
             <div>
               <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-                Selesai
+                {t('projectCalendar.createDialog.endTime', 'End')}
               </label>
               <Input
                 type="time"
@@ -929,23 +924,23 @@ function CreateEventDialog({
 
           <div>
             <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-              Deskripsi
+              {t('projectCalendar.createDialog.description', 'Description')}
             </label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Keterangan tambahan (opsional)..."
+              placeholder={t('projectCalendar.createDialog.descriptionPlaceholder', 'Additional notes (optional)...')}
             />
           </div>
 
           <div>
             <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-              Lokasi
+              {t('projectCalendar.createDialog.location', 'Location')}
             </label>
             <Input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="Lokasi / tautan meeting (opsional)..."
+              placeholder={t('projectCalendar.createDialog.locationPlaceholder', 'Location / meeting link (optional)...')}
               className="bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
             />
           </div>
@@ -953,10 +948,10 @@ function CreateEventDialog({
 
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Batal
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button size="sm" onClick={handleSubmit} disabled={submitting}>
-            {submitting ? 'Menyimpan...' : 'Simpan Acara'}
+            {submitting ? t('common.saving', 'Saving...') : t('projectCalendar.createDialog.saveEvent', 'Save Event')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -52,16 +54,6 @@ import {
 } from '@/services/settings';
 import { authService } from '@/services/auth';
 
-const sidebarItems = [
-  { label: 'Dashboard', icon: <Inbox className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices', icon: <FileText className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients', icon: <Users className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects', icon: <Folder className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses', icon: <CreditCard className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings', icon: <SettingsIcon className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 // ──────────────────────────────────────────────────────────────
 // Section vocabulary — a stable list, ordered by who-cares-most.
 // Profil/Keamanan are personal; Perusahaan/Rekening are
@@ -86,50 +78,8 @@ interface SectionMeta {
   icon: React.ReactNode;
 }
 
-const SECTIONS: SectionMeta[] = [
-  {
-    id: 'profile',
-    label: 'Profil',
-    description: 'Informasi akun pribadi Anda',
-    icon: <UserIcon className="h-4 w-4" />,
-  },
-  {
-    id: 'security',
-    label: 'Keamanan',
-    description: 'Kata sandi dan autentikasi',
-    icon: <Lock className="h-4 w-4" />,
-  },
-  {
-    id: 'company',
-    label: 'Perusahaan',
-    description: 'Identitas dan kontak bisnis',
-    icon: <Building2 className="h-4 w-4" />,
-  },
-  {
-    id: 'banks',
-    label: 'Rekening Bank',
-    description: 'Tujuan pembayaran di invoice',
-    icon: <Landmark className="h-4 w-4" />,
-  },
-  {
-    id: 'invoicing',
-    label: 'Faktur & Penomoran',
-    description: 'Termin, prefix, dan Materai',
-    icon: <Receipt className="h-4 w-4" />,
-  },
-  {
-    id: 'notifications',
-    label: 'Notifikasi',
-    description: 'Email dan push',
-    icon: <Bell className="h-4 w-4" />,
-  },
-  {
-    id: 'backup',
-    label: 'Cadangan Data',
-    description: 'Backup otomatis dan unduhan manual',
-    icon: <DatabaseBackup className="h-4 w-4" />,
-  },
-];
+// SECTIONS is built lazily inside the component so labels can use t().
+// We keep the id/icon list here and inject labels in the component.
 
 // ──────────────────────────────────────────────────────────────
 // Field shells — duplicated from UserForm/ClientForm intentionally;
@@ -223,27 +173,32 @@ const SectionFooter = ({
   isDirty: boolean;
   isSubmitting: boolean;
   saveLabel: string;
-}) => (
-  <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-border-subtle">
-    <span className="text-[11px] text-text-tertiary mr-auto">
-      {isDirty ? 'Ada perubahan yang belum disimpan.' : 'Semua perubahan tersimpan.'}
-    </span>
-    <Button
-      type="submit"
-      disabled={isSubmitting || !isDirty}
-      className="bg-brand-cream text-brand-black hover:bg-brand-cream/90 min-w-[110px]"
-    >
-      {isSubmitting ? (
-        <>
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Menyimpan…
-        </>
-      ) : (
-        saveLabel
-      )}
-    </Button>
-  </div>
-);
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-border-subtle">
+      <span className="text-[11px] text-text-tertiary mr-auto">
+        {isDirty
+          ? t('settingsPage.footer.unsaved', 'You have unsaved changes.')
+          : t('settingsPage.footer.saved', 'All changes saved.')}
+      </span>
+      <Button
+        type="submit"
+        disabled={isSubmitting || !isDirty}
+        className="bg-brand-cream text-brand-black hover:bg-brand-cream/90 min-w-[110px]"
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('common.saving', 'Saving...')}
+          </>
+        ) : (
+          saveLabel
+        )}
+      </Button>
+    </div>
+  );
+};
 
 // ──────────────────────────────────────────────────────────────
 // 01 · Profile section
@@ -258,6 +213,7 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 const ProfileSection = ({ data }: { data: UserSettings | undefined }) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const {
@@ -296,10 +252,10 @@ const ProfileSection = ({ data }: { data: UserSettings | undefined }) => {
       if (res?.user) {
         useAuthStore.getState().updateUser(res.user);
       }
-      toast.success('Profil tersimpan.');
+      toast.success(t('settingsPage.profile.saveSuccess', 'Profile saved.'));
     },
     onError: (err: unknown) => {
-      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan profil.');
+      toast.error(err instanceof Error ? err.message : t('settingsPage.profile.saveError', 'Failed to save profile.'));
     },
   });
 
@@ -311,11 +267,11 @@ const ProfileSection = ({ data }: { data: UserSettings | undefined }) => {
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <SectionTitle
         icon={<UserIcon />}
-        title="Profil"
-        description="Nama dan preferensi tampilan akun Anda."
+        title={t('settingsPage.profile.title', 'Profile')}
+        description={t('settingsPage.profile.desc', 'Your account name and display preferences.')}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-        <FieldShell id="sp-name" label="Nama Lengkap" required error={errors.name?.message}>
+        <FieldShell id="sp-name" label={t('settingsPage.profile.fullName', 'Full Name')} required error={errors.name?.message}>
           <Input
             id="sp-name"
             autoComplete="off"
@@ -324,7 +280,7 @@ const ProfileSection = ({ data }: { data: UserSettings | undefined }) => {
             {...register('name')}
           />
         </FieldShell>
-        <FieldShell id="sp-email" label="Email" required error={errors.email?.message}>
+        <FieldShell id="sp-email" label={t('settingsPage.profile.email', 'Email')} required error={errors.email?.message}>
           <Input
             id="sp-email"
             type="email"
@@ -334,7 +290,7 @@ const ProfileSection = ({ data }: { data: UserSettings | undefined }) => {
             {...register('email')}
           />
         </FieldShell>
-        <FieldShell id="sp-timezone" label="Zona Waktu" error={errors.timezone?.message}>
+        <FieldShell id="sp-timezone" label={t('settingsPage.profile.timezone', 'Timezone')} error={errors.timezone?.message}>
           <Controller
             control={control}
             name="timezone"
@@ -352,7 +308,7 @@ const ProfileSection = ({ data }: { data: UserSettings | undefined }) => {
             )}
           />
         </FieldShell>
-        <FieldShell id="sp-language" label="Bahasa" error={errors.language?.message}>
+        <FieldShell id="sp-language" label={t('settingsPage.profile.language', 'Language')} error={errors.language?.message}>
           <Controller
             control={control}
             name="language"
@@ -370,7 +326,7 @@ const ProfileSection = ({ data }: { data: UserSettings | undefined }) => {
           />
         </FieldShell>
       </div>
-      <SectionFooter isDirty={isDirty} isSubmitting={mutation.isPending} saveLabel="Simpan Profil" />
+      <SectionFooter isDirty={isDirty} isSubmitting={mutation.isPending} saveLabel={t('settingsPage.profile.saveLabel', 'Save Profile')} />
     </form>
   );
 };
@@ -398,6 +354,7 @@ const securitySchema = z
 type SecurityFormValues = z.infer<typeof securitySchema>;
 
 const SecuritySection = () => {
+  const { t } = useTranslation();
   const {
     register,
     handleSubmit,
@@ -411,11 +368,11 @@ const SecuritySection = () => {
   const mutation = useMutation({
     mutationFn: authService.changePassword,
     onSuccess: () => {
-      toast.success('Kata sandi berhasil diubah.');
+      toast.success(t('settingsPage.security.saveSuccess', 'Password changed successfully.'));
       reset();
     },
     onError: (err: unknown) => {
-      toast.error(err instanceof Error ? err.message : 'Gagal mengubah kata sandi.');
+      toast.error(err instanceof Error ? err.message : t('settingsPage.security.saveError', 'Failed to change password.'));
     },
   });
 
@@ -430,13 +387,13 @@ const SecuritySection = () => {
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <SectionTitle
         icon={<Lock />}
-        title="Keamanan"
-        description="Ubah kata sandi akun. Gunakan kombinasi huruf besar, huruf kecil, dan angka."
+        title={t('settingsPage.security.title', 'Security')}
+        description={t('settingsPage.security.desc', 'Change your account password. Use a mix of uppercase, lowercase, and numbers.')}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
         <FieldShell
           id="ss-current"
-          label="Kata Sandi Saat Ini"
+          label={t('settingsPage.security.currentPassword', 'Current Password')}
           required
           error={errors.currentPassword?.message}
           className="md:col-span-2"
@@ -452,7 +409,7 @@ const SecuritySection = () => {
         </FieldShell>
         <FieldShell
           id="ss-new"
-          label="Kata Sandi Baru"
+          label={t('settingsPage.security.newPassword', 'New Password')}
           required
           error={errors.newPassword?.message}
         >
@@ -467,7 +424,7 @@ const SecuritySection = () => {
         </FieldShell>
         <FieldShell
           id="ss-confirm"
-          label="Konfirmasi Kata Sandi Baru"
+          label={t('settingsPage.security.confirmPassword', 'Confirm New Password')}
           required
           error={errors.confirmPassword?.message}
         >
@@ -484,7 +441,7 @@ const SecuritySection = () => {
       <SectionFooter
         isDirty={isDirty}
         isSubmitting={mutation.isPending}
-        saveLabel="Ubah Kata Sandi"
+        saveLabel={t('settingsPage.security.saveLabel', 'Change Password')}
       />
     </form>
   );
@@ -518,6 +475,7 @@ const companySchema = z.object({
 type CompanyFormValues = z.infer<typeof companySchema>;
 
 const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const {
@@ -557,10 +515,10 @@ const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
     mutationFn: settingsService.updateCompanySettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings-company'] });
-      toast.success('Informasi perusahaan tersimpan.');
+      toast.success(t('settingsPage.company.saveSuccess', 'Company information saved.'));
     },
     onError: (err: unknown) => {
-      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan perusahaan.');
+      toast.error(err instanceof Error ? err.message : t('settingsPage.company.saveError', 'Failed to save company information.'));
     },
   });
 
@@ -580,13 +538,13 @@ const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <SectionTitle
         icon={<Building2 />}
-        title="Perusahaan"
-        description="Identitas resmi yang tampil di invoice, kwitansi, dan dokumen pajak."
+        title={t('settingsPage.company.title', 'Company')}
+        description={t('settingsPage.company.desc', 'Official identity shown on invoices, receipts, and tax documents.')}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
         <FieldShell
           id="sc-company-name"
-          label="Nama Perusahaan"
+          label={t('settingsPage.company.companyName', 'Company Name')}
           required
           error={errors.companyName?.message}
         >
@@ -600,7 +558,7 @@ const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
         </FieldShell>
         <FieldShell
           id="sc-tax"
-          label="NPWP"
+          label={t('settingsPage.company.npwp', 'NPWP')}
           hint="XX.XXX.XXX.X-XXX.XXX"
           required
           error={errors.taxNumber?.message}
@@ -619,7 +577,7 @@ const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
         </FieldShell>
         <FieldShell
           id="sc-address"
-          label="Alamat"
+          label={t('settingsPage.company.address', 'Address')}
           required
           error={errors.address?.message}
           className="md:col-span-2"
@@ -632,7 +590,7 @@ const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
             {...register('address')}
           />
         </FieldShell>
-        <FieldShell id="sc-phone" label="Telepon" required error={errors.phone?.message}>
+        <FieldShell id="sc-phone" label={t('settingsPage.company.phone', 'Phone')} required error={errors.phone?.message}>
           <Input
             id="sc-phone"
             autoComplete="tel"
@@ -641,7 +599,7 @@ const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
             {...register('phone')}
           />
         </FieldShell>
-        <FieldShell id="sc-email" label="Email" required error={errors.email?.message}>
+        <FieldShell id="sc-email" label={t('settingsPage.company.email', 'Email')} required error={errors.email?.message}>
           <Input
             id="sc-email"
             type="email"
@@ -651,7 +609,7 @@ const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
             {...register('email')}
           />
         </FieldShell>
-        <FieldShell id="sc-website" label="Website" error={errors.website?.message}>
+        <FieldShell id="sc-website" label={t('settingsPage.company.website', 'Website')} error={errors.website?.message}>
           <Input
             id="sc-website"
             autoComplete="url"
@@ -661,7 +619,7 @@ const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
             {...register('website')}
           />
         </FieldShell>
-        <FieldShell id="sc-currency" label="Mata Uang" error={errors.currency?.message}>
+        <FieldShell id="sc-currency" label={t('settingsPage.company.currency', 'Currency')} error={errors.currency?.message}>
           <Controller
             control={control}
             name="currency"
@@ -672,7 +630,7 @@ const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
                 </SelectTrigger>
                 <SelectContent className="bg-bg-raised border-border-subtle">
                   <SelectItem value="IDR">IDR — Rupiah</SelectItem>
-                  <SelectItem value="USD">USD — Dolar AS</SelectItem>
+                  <SelectItem value="USD">USD — US Dollar</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -682,7 +640,7 @@ const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
       <SectionFooter
         isDirty={isDirty}
         isSubmitting={mutation.isPending}
-        saveLabel="Simpan Perusahaan"
+        saveLabel={t('settingsPage.company.saveLabel', 'Save Company')}
       />
     </form>
   );
@@ -706,6 +664,7 @@ const banksSchema = z.object({
 type BanksFormValues = z.infer<typeof banksSchema>;
 
 const BanksSection = ({ data }: { data: CompanySettings | undefined }) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const {
@@ -744,10 +703,10 @@ const BanksSection = ({ data }: { data: CompanySettings | undefined }) => {
     mutationFn: settingsService.updateCompanySettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings-company'] });
-      toast.success('Rekening bank tersimpan.');
+      toast.success(t('settingsPage.banks.saveSuccess', 'Bank accounts saved.'));
     },
     onError: (err: unknown) => {
-      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan rekening.');
+      toast.error(err instanceof Error ? err.message : t('settingsPage.banks.saveError', 'Failed to save bank accounts.'));
     },
   });
 
@@ -775,14 +734,14 @@ const BanksSection = ({ data }: { data: CompanySettings | undefined }) => {
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <SectionTitle
         icon={<Landmark />}
-        title="Rekening Bank"
-        description="Hingga tiga rekening yang dicetak di footer invoice sebagai tujuan pembayaran."
+        title={t('settingsPage.banks.title', 'Bank Accounts')}
+        description={t('settingsPage.banks.desc', 'Up to three bank accounts printed in the invoice footer as payment destinations.')}
       />
       <div className="space-y-5">
         <FieldShell
           id="sb-holder"
-          label="Nama Pemilik Rekening"
-          hint="Kosongkan untuk memakai nama perusahaan."
+          label={t('settingsPage.banks.holderName', 'Account Holder Name')}
+          hint={t('settingsPage.banks.holderHint', 'Leave blank to use the company name.')}
           error={errors.bankAccountName?.message}
         >
           <Input
@@ -801,12 +760,12 @@ const BanksSection = ({ data }: { data: CompanySettings | undefined }) => {
             className="rounded-md border border-border-subtle bg-bg-sunken p-4"
           >
             <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium mb-3">
-              Rekening {String(s.idx).padStart(2, '0')}
+              {t('settingsPage.banks.slotLabel', 'Account {{n}}', { n: String(s.idx).padStart(2, '0') })}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
               <FieldShell
                 id={`sb-${s.name}`}
-                label="Nama Bank"
+                label={t('settingsPage.banks.bankName', 'Bank Name')}
                 error={errors[s.name]?.message}
               >
                 <Input
@@ -820,7 +779,7 @@ const BanksSection = ({ data }: { data: CompanySettings | undefined }) => {
               </FieldShell>
               <FieldShell
                 id={`sb-${s.num}`}
-                label="Nomor Rekening"
+                label={t('settingsPage.banks.accountNumber', 'Account Number')}
                 error={errors[s.num]?.message}
               >
                 <Input
@@ -844,7 +803,7 @@ const BanksSection = ({ data }: { data: CompanySettings | undefined }) => {
       <SectionFooter
         isDirty={isDirty}
         isSubmitting={mutation.isPending}
-        saveLabel="Simpan Rekening"
+        saveLabel={t('settingsPage.banks.saveLabel', 'Save Bank Accounts')}
       />
     </form>
   );
@@ -872,6 +831,7 @@ const invoicingSchema = z.object({
 type InvoicingFormValues = z.infer<typeof invoicingSchema>;
 
 const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const {
@@ -907,10 +867,10 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
     mutationFn: settingsService.updateSystemSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings-system'] });
-      toast.success('Pengaturan faktur tersimpan.');
+      toast.success(t('settingsPage.invoicing.saveSuccess', 'Invoice settings saved.'));
     },
     onError: (err: unknown) => {
-      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan pengaturan faktur.');
+      toast.error(err instanceof Error ? err.message : t('settingsPage.invoicing.saveError', 'Failed to save invoice settings.'));
     },
   });
 
@@ -928,13 +888,13 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <SectionTitle
         icon={<Receipt />}
-        title="Faktur & Penomoran"
-        description="Default termin pembayaran, prefix penomoran, dan ambang batas Materai."
+        title={t('settingsPage.invoicing.title', 'Invoicing & Numbering')}
+        description={t('settingsPage.invoicing.desc', 'Default payment terms, numbering prefixes, and Materai threshold.')}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
         <FieldShell
           id="si-terms"
-          label="Termin Pembayaran Default"
+          label={t('settingsPage.invoicing.defaultTerms', 'Default Payment Terms')}
           error={errors.defaultPaymentTerms?.message}
         >
           <Controller
@@ -946,10 +906,10 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-bg-raised border-border-subtle">
-                  <SelectItem value="NET 7">NET 7 hari</SelectItem>
-                  <SelectItem value="NET 14">NET 14 hari</SelectItem>
-                  <SelectItem value="NET 30">NET 30 hari</SelectItem>
-                  <SelectItem value="NET 60">NET 60 hari</SelectItem>
+                  <SelectItem value="NET 7">{t('settingsPage.invoicing.net7', 'NET 7 days')}</SelectItem>
+                  <SelectItem value="NET 14">{t('settingsPage.invoicing.net14', 'NET 14 days')}</SelectItem>
+                  <SelectItem value="NET 30">{t('settingsPage.invoicing.net30', 'NET 30 days')}</SelectItem>
+                  <SelectItem value="NET 60">{t('settingsPage.invoicing.net60', 'NET 60 days')}</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -957,8 +917,8 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
         </FieldShell>
         <FieldShell
           id="si-materai"
-          label="Ambang Batas Materai (IDR)"
-          hint="Invoice di atas nilai ini akan menampilkan pengingat Materai."
+          label={t('settingsPage.invoicing.materaiThreshold', 'Materai Threshold (IDR)')}
+          hint={t('settingsPage.invoicing.materaiThresholdHint', 'Invoices above this amount will show a Materai reminder.')}
           error={errors.materaiThreshold?.message}
         >
           <Input
@@ -977,8 +937,8 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
         </FieldShell>
         <FieldShell
           id="si-inv-prefix"
-          label="Prefix Invoice"
-          hint="Contoh: INV- menjadi INV-2026-001"
+          label={t('settingsPage.invoicing.invoicePrefix', 'Invoice Prefix')}
+          hint={t('settingsPage.invoicing.invoicePrefixHint', 'Example: INV- becomes INV-2026-001')}
           required
           error={errors.invoicePrefix?.message}
         >
@@ -995,8 +955,8 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
         </FieldShell>
         <FieldShell
           id="si-qt-prefix"
-          label="Prefix Penawaran"
-          hint="Contoh: QT- menjadi QT-2026-001"
+          label={t('settingsPage.invoicing.quotationPrefix', 'Quotation Prefix')}
+          hint={t('settingsPage.invoicing.quotationPrefixHint', 'Example: QT- becomes QT-2026-001')}
           required
           error={errors.quotationPrefix?.message}
         >
@@ -1013,8 +973,8 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
         </FieldShell>
         <FieldShell
           id="si-auto-materai"
-          label="Pengingat Materai Otomatis"
-          hint="Tampilkan pengingat saat invoice melebihi ambang batas."
+          label={t('settingsPage.invoicing.autoMateraiReminder', 'Auto Materai Reminder')}
+          hint={t('settingsPage.invoicing.autoMateraiReminderHint', 'Show a reminder when invoices exceed the threshold.')}
           className="md:col-span-2"
         >
           <Controller
@@ -1029,7 +989,7 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
                   disabled={mutation.isPending}
                 />
                 <span className="text-sm text-text-primary">
-                  {field.value ? 'Aktif' : 'Nonaktif'}
+                  {field.value ? t('users.status.active', 'Aktif') : t('users.status.inactive', 'Nonaktif')}
                 </span>
               </div>
             )}
@@ -1039,7 +999,7 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
       <SectionFooter
         isDirty={isDirty}
         isSubmitting={mutation.isPending}
-        saveLabel="Simpan Faktur"
+        saveLabel={t('settingsPage.invoicing.saveLabel', 'Save Invoicing')}
       />
     </form>
   );
@@ -1057,6 +1017,7 @@ const notificationsSchema = z.object({
 type NotificationsFormValues = z.infer<typeof notificationsSchema>;
 
 const NotificationsSection = ({ data }: { data: UserSettings | undefined }) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const {
@@ -1085,10 +1046,10 @@ const NotificationsSection = ({ data }: { data: UserSettings | undefined }) => {
     mutationFn: settingsService.updateUserSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings-user'] });
-      toast.success('Preferensi notifikasi tersimpan.');
+      toast.success(t('settingsPage.notifications.saveSuccess', 'Notification preferences saved.'));
     },
     onError: (err: unknown) => {
-      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan notifikasi.');
+      toast.error(err instanceof Error ? err.message : t('settingsPage.notifications.saveError', 'Failed to save notifications.'));
     },
   });
 
@@ -1100,7 +1061,7 @@ const NotificationsSection = ({ data }: { data: UserSettings | undefined }) => {
   };
 
   // Inline switch rows — notifications are visceral, so reading
-  // "Notifikasi Email · ON" at a glance is more honest than a checkbox grid.
+  // "Email Notifications · ON" at a glance is more honest than a checkbox grid.
   const SwitchRow = ({
     name,
     label,
@@ -1133,25 +1094,25 @@ const NotificationsSection = ({ data }: { data: UserSettings | undefined }) => {
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <SectionTitle
         icon={<Bell />}
-        title="Notifikasi"
-        description="Pilih cara sistem menghubungi Anda untuk peristiwa penting."
+        title={t('settingsPage.notifications.title', 'Notifications')}
+        description={t('settingsPage.notifications.desc', 'Choose how the system contacts you for important events.')}
       />
       <div className="space-y-3">
         <SwitchRow
           name="emailNotifications"
-          label="Notifikasi Email"
-          description="Invoice jatuh tempo, pembayaran masuk, ringkasan harian."
+          label={t('settingsPage.notifications.emailLabel', 'Email Notifications')}
+          description={t('settingsPage.notifications.emailDesc', 'Overdue invoices, incoming payments, daily digest.')}
         />
         <SwitchRow
           name="pushNotifications"
-          label="Notifikasi Push"
-          description="Peringatan langsung di browser saat Anda online."
+          label={t('settingsPage.notifications.pushLabel', 'Push Notifications')}
+          description={t('settingsPage.notifications.pushDesc', 'Instant browser alerts while you are online.')}
         />
       </div>
       <SectionFooter
         isDirty={isDirty}
         isSubmitting={mutation.isPending}
-        saveLabel="Simpan Notifikasi"
+        saveLabel={t('settingsPage.notifications.saveLabel', 'Save Notifications')}
       />
     </form>
   );
@@ -1172,6 +1133,7 @@ const backupSchema = z.object({
 type BackupFormValues = z.infer<typeof backupSchema>;
 
 const BackupSection = ({ data }: { data: SystemSettings | undefined }) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const {
@@ -1205,18 +1167,18 @@ const BackupSection = ({ data }: { data: SystemSettings | undefined }) => {
     mutationFn: settingsService.updateSystemSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings-system'] });
-      toast.success('Pengaturan cadangan tersimpan.');
+      toast.success(t('settingsPage.backup.saveSuccess', 'Backup settings saved.'));
     },
     onError: (err: unknown) => {
-      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan cadangan.');
+      toast.error(err instanceof Error ? err.message : t('settingsPage.backup.saveError', 'Failed to save backup settings.'));
     },
   });
 
   const downloadMutation = useMutation({
     mutationFn: settingsService.downloadBackup,
-    onSuccess: () => toast.success('Cadangan basis data berhasil diunduh.'),
+    onSuccess: () => toast.success(t('settingsPage.backup.downloadSuccess', 'Database backup downloaded successfully.')),
     onError: (err: unknown) => {
-      toast.error(err instanceof Error ? err.message : 'Gagal mengunduh cadangan.');
+      toast.error(err instanceof Error ? err.message : t('settingsPage.backup.downloadError', 'Failed to download backup.'));
     },
   });
 
@@ -1234,15 +1196,17 @@ const BackupSection = ({ data }: { data: SystemSettings | undefined }) => {
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <SectionTitle
         icon={<DatabaseBackup />}
-        title="Cadangan Data"
-        description="Jadwal backup otomatis, atau unduh cadangan basis data secara manual."
+        title={t('settingsPage.backup.title', 'Data Backup')}
+        description={t('settingsPage.backup.desc', 'Schedule automatic backups, or download a manual database backup.')}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
         <FieldShell
           id="bk-auto"
-          label="Backup Otomatis"
-          hint={autoOn ? 'Sistem akan menjadwalkan backup.' : 'Backup hanya manual.'}
+          label={t('settingsPage.backup.autoBackup', 'Automatic Backup')}
+          hint={autoOn
+            ? t('settingsPage.backup.autoBackupOnHint', 'System will schedule backups automatically.')
+            : t('settingsPage.backup.autoBackupOffHint', 'Manual backup only.')}
           className="md:col-span-3"
         >
           <Controller
@@ -1257,14 +1221,14 @@ const BackupSection = ({ data }: { data: SystemSettings | undefined }) => {
                   disabled={mutation.isPending}
                 />
                 <span className="text-sm text-text-primary">
-                  {field.value ? 'Aktif' : 'Nonaktif'}
+                  {field.value ? t('users.status.active', 'Aktif') : t('users.status.inactive', 'Nonaktif')}
                 </span>
               </div>
             )}
           />
         </FieldShell>
 
-        <FieldShell id="bk-freq" label="Frekuensi" error={errors.backupFrequency?.message}>
+        <FieldShell id="bk-freq" label={t('settingsPage.backup.frequency', 'Frequency')} error={errors.backupFrequency?.message}>
           <Controller
             control={control}
             name="backupFrequency"
@@ -1278,9 +1242,9 @@ const BackupSection = ({ data }: { data: SystemSettings | undefined }) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-bg-raised border-border-subtle">
-                  <SelectItem value="daily">Harian</SelectItem>
-                  <SelectItem value="weekly">Mingguan</SelectItem>
-                  <SelectItem value="monthly">Bulanan</SelectItem>
+                  <SelectItem value="daily">{t('settingsPage.backup.daily', 'Daily')}</SelectItem>
+                  <SelectItem value="weekly">{t('settingsPage.backup.weekly', 'Weekly')}</SelectItem>
+                  <SelectItem value="monthly">{t('settingsPage.backup.monthly', 'Monthly')}</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -1289,8 +1253,8 @@ const BackupSection = ({ data }: { data: SystemSettings | undefined }) => {
 
         <FieldShell
           id="bk-time"
-          label="Waktu Backup"
-          hint="Zona waktu mengikuti server (WIB)."
+          label={t('settingsPage.backup.backupTime', 'Backup Time')}
+          hint={t('settingsPage.backup.backupTimeHint', 'Timezone follows server (WIB).')}
           error={errors.backupTime?.message}
         >
           <Input
@@ -1311,7 +1275,7 @@ const BackupSection = ({ data }: { data: SystemSettings | undefined }) => {
             same mental model: data preservation. */}
         <div className="space-y-1.5">
           <Label className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary">
-            Unduh Manual
+            {t('settingsPage.backup.manualDownload', 'Manual Download')}
           </Label>
           <Button
             type="button"
@@ -1323,24 +1287,24 @@ const BackupSection = ({ data }: { data: SystemSettings | undefined }) => {
             {downloadMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Menyiapkan…
+                {t('settingsPage.backup.preparing', 'Preparing...')}
               </>
             ) : (
               <>
                 <Download className="h-4 w-4" />
-                Unduh .sql
+                {t('settingsPage.backup.downloadSql', 'Download .sql')}
               </>
             )}
           </Button>
           <p className="text-[11px] text-text-tertiary">
-            Cadangan lengkap basis data sebagai berkas SQL.
+            {t('settingsPage.backup.downloadDesc', 'Full database backup as an SQL file.')}
           </p>
         </div>
       </div>
       <SectionFooter
         isDirty={isDirty}
         isSubmitting={mutation.isPending}
-        saveLabel="Simpan Cadangan"
+        saveLabel={t('settingsPage.backup.saveLabel', 'Save Backup Settings')}
       />
     </form>
   );
@@ -1359,6 +1323,52 @@ export default function SettingsPageV2() {
   const { canManageSettings } = usePermissions();
 
   const [activeSection, setActiveSection] = useState<SectionId>('profile');
+
+  // Build SECTIONS with translations — must be inside the component so t() works.
+  const SECTIONS: SectionMeta[] = useMemo(() => [
+    {
+      id: 'profile',
+      label: t('settingsPage.nav.profile', 'Profile'),
+      description: t('settingsPage.nav.profileDesc', 'Your personal account information'),
+      icon: <UserIcon className="h-4 w-4" />,
+    },
+    {
+      id: 'security',
+      label: t('settingsPage.nav.security', 'Security'),
+      description: t('settingsPage.nav.securityDesc', 'Password and authentication'),
+      icon: <Lock className="h-4 w-4" />,
+    },
+    {
+      id: 'company',
+      label: t('settingsPage.nav.company', 'Company'),
+      description: t('settingsPage.nav.companyDesc', 'Business identity and contact'),
+      icon: <Building2 className="h-4 w-4" />,
+    },
+    {
+      id: 'banks',
+      label: t('settingsPage.nav.banks', 'Bank Accounts'),
+      description: t('settingsPage.nav.banksDesc', 'Payment destinations on invoices'),
+      icon: <Landmark className="h-4 w-4" />,
+    },
+    {
+      id: 'invoicing',
+      label: t('settingsPage.nav.invoicing', 'Invoicing & Numbering'),
+      description: t('settingsPage.nav.invoicingDesc', 'Terms, prefixes, and Materai'),
+      icon: <Receipt className="h-4 w-4" />,
+    },
+    {
+      id: 'notifications',
+      label: t('settingsPage.nav.notifications', 'Notifications'),
+      description: t('settingsPage.nav.notificationsDesc', 'Email and push'),
+      icon: <Bell className="h-4 w-4" />,
+    },
+    {
+      id: 'backup',
+      label: t('settingsPage.nav.backup', 'Data Backup'),
+      description: t('settingsPage.nav.backupDesc', 'Auto backup and manual download'),
+      icon: <DatabaseBackup className="h-4 w-4" />,
+    },
+  ], [t]);
 
   // Three queries, fired in parallel. Each section consumes only what
   // it needs; loading is local to the section body so the nav stays
@@ -1431,8 +1441,8 @@ export default function SettingsPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -1441,10 +1451,10 @@ export default function SettingsPageV2() {
     >
       <PageContainer>
         <PageHeader
-          title={t('settings.title', 'Pengaturan')}
+          title={t('settingsPage.title', 'Settings')}
           description={t(
-            'settings.subtitle',
-            'Kelola akun pribadi, identitas perusahaan, dan pengaturan sistem.',
+            'settingsPage.subtitle',
+            'Manage your personal account, company identity, and system settings.',
           )}
         />
 

@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   BookOpen, Plus, Search, X, MoreHorizontal, Eye, FileText as FileTextIcon,
   Check, ChevronDown, AlertTriangle, CheckCircle2, RefreshCw,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -50,17 +53,6 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                            */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',     icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',      icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',    icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',       icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',      icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',      icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Akuntansi',     icon: <BookOpen    className="h-4 w-4" />, href: '/v2/accounting/general-ledger' },
-  { label: 'Settings',      icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Vocab                                                              */
@@ -138,6 +130,7 @@ const EMPTY_FORM: CreateFormState = {
 /* ------------------------------------------------------------------ */
 
 export default function BankReconciliationsPage() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
@@ -193,42 +186,42 @@ export default function BankReconciliationsPage() {
   const createMutation = useMutation({
     mutationFn: createBankReconciliation,
     onSuccess: () => {
-      toast.success('Rekonsiliasi bank berhasil dibuat');
+      toast.success(t('accounting.bankReconciliations.createSuccess'));
       invalidate();
       setCreateOpen(false);
       setForm(EMPTY_FORM);
     },
-    onError: () => toast.error('Gagal membuat rekonsiliasi bank'),
+    onError: () => toast.error(t('accounting.bankReconciliations.createFail')),
   });
 
   const reviewMutation = useMutation({
     mutationFn: reviewBankReconciliation,
-    onSuccess: () => { toast.success('Rekonsiliasi direview'); invalidate(); },
-    onError:   () => toast.error('Gagal mereview rekonsiliasi'),
+    onSuccess: () => { toast.success(t('accounting.bankReconciliations.reviewSuccess')); invalidate(); },
+    onError:   () => toast.error(t('accounting.bankReconciliations.reviewFail')),
   });
 
   const approveMutation = useMutation({
     mutationFn: approveBankReconciliation,
-    onSuccess: () => { toast.success('Rekonsiliasi disetujui dan diposting'); invalidate(); },
-    onError:   () => toast.error('Gagal menyetujui rekonsiliasi'),
+    onSuccess: () => { toast.success(t('accounting.bankReconciliations.approveSuccess')); invalidate(); },
+    onError:   () => toast.error(t('accounting.bankReconciliations.approveFail')),
   });
 
   const rejectMutation = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       rejectBankReconciliation(id, reason),
     onSuccess: () => {
-      toast.success('Rekonsiliasi ditolak');
+      toast.success(t('accounting.bankReconciliations.rejectSuccess'));
       invalidate();
       setRejectTarget(null);
       setRejectReason('');
     },
-    onError: () => toast.error('Gagal menolak rekonsiliasi'),
+    onError: () => toast.error(t('accounting.bankReconciliations.rejectFail')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteBankReconciliation,
-    onSuccess: () => { toast.success('Rekonsiliasi dihapus'); invalidate(); },
-    onError:   () => toast.error('Gagal menghapus rekonsiliasi'),
+    onSuccess: () => { toast.success(t('accounting.bankReconciliations.deleteSuccess')); invalidate(); },
+    onError:   () => toast.error(t('accounting.bankReconciliations.deleteFail')),
   });
 
   /* derived stats */
@@ -266,11 +259,11 @@ export default function BankReconciliationsPage() {
 
   const handleCreate = () => {
     if (!form.bankAccountId || !form.statementDate || !form.periodStartDate || !form.periodEndDate) {
-      toast.error('Lengkapi field yang wajib diisi');
+      toast.error(t('accounting.bankReconciliations.validationRequired'));
       return;
     }
     if (!form.bookBalanceEnd || !form.statementBalance) {
-      toast.error('Saldo buku akhir dan saldo statement harus diisi');
+      toast.error(t('accounting.bankReconciliations.validationBalances'));
       return;
     }
     createMutation.mutate({
@@ -297,8 +290,8 @@ export default function BankReconciliationsPage() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -312,9 +305,9 @@ export default function BankReconciliationsPage() {
       <Shell>
         <EmptyState
           icon={<BookOpen className="h-12 w-12" />}
-          title="Tidak bisa memuat rekonsiliasi bank"
-          description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-          action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+          title={t('accounting.bankReconciliations.errorTitle')}
+          description={error instanceof Error ? error.message : t('accounting.bankReconciliations.errorDesc')}
+          action={<Button onClick={() => refetch()}>{t('accounting.bankReconciliations.retry')}</Button>}
         />
       </Shell>
     );
@@ -323,13 +316,13 @@ export default function BankReconciliationsPage() {
   return (
     <Shell>
       <PageHeader
-        title="Rekonsiliasi Bank"
-        description="Cocokkan saldo buku dengan laporan bank dan selesaikan selisih."
+        title={t('accounting.bankReconciliations.title')}
+        description={t('accounting.bankReconciliations.description')}
         actions={
           <div className="flex items-center gap-2">
             <Button onClick={() => setCreateOpen(true)} size="sm">
               <Plus className="h-4 w-4" />
-              Rekonsiliasi Baru
+              {t('accounting.bankReconciliations.newReconciliation')}
             </Button>
           </div>
         }
@@ -436,12 +429,12 @@ export default function BankReconciliationsPage() {
         ) : rows.length === 0 ? (
           <EmptyState
             icon={<BookOpen />}
-            title={hasActiveFilters ? 'Tidak ada rekonsiliasi yang cocok' : 'Belum ada rekonsiliasi bank'}
-            description={hasActiveFilters ? 'Coba ubah filter.' : 'Buat rekonsiliasi bank pertama untuk mulai mencocokkan saldo.'}
+            title={hasActiveFilters ? t('accounting.bankReconciliations.noMatch') : t('accounting.bankReconciliations.noReconciliations')}
+            description={hasActiveFilters ? t('accounting.bankReconciliations.noMatchDesc') : t('accounting.bankReconciliations.noReconciliationsDesc')}
             action={
               hasActiveFilters
-                ? <Button variant="outline" size="sm" onClick={resetFilters}>Reset Filter</Button>
-                : <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4" /> Rekonsiliasi Baru</Button>
+                ? <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.bankReconciliations.resetFilter')}</Button>
+                : <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4" /> {t('accounting.bankReconciliations.newReconciliation')}</Button>
             }
           />
         ) : (
@@ -565,7 +558,7 @@ export default function BankReconciliationsPage() {
                                 <DropdownMenuItem
                                   onClick={() => {
                                     if (!rec.isBalanced) {
-                                      toast.warning('Rekonsiliasi harus balanced sebelum disetujui');
+                                      toast.warning(t('accounting.bankReconciliations.mustBeBalanced'));
                                       return;
                                     }
                                     approveMutation.mutate(rec.id);
@@ -597,7 +590,7 @@ export default function BankReconciliationsPage() {
       <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) setViewing(null); }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display">Detail Rekonsiliasi Bank</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.bankReconciliations.detailTitle')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">{viewing?.reconciliationNumber}</DialogDescription>
           </DialogHeader>
           {viewing && (
@@ -683,7 +676,7 @@ export default function BankReconciliationsPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewing(null)}>Tutup</Button>
+            <Button variant="outline" onClick={() => setViewing(null)}>{t('accounting.bankReconciliations.close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -692,9 +685,9 @@ export default function BankReconciliationsPage() {
       <Dialog open={createOpen} onOpenChange={(open) => { if (!open) { setCreateOpen(false); setForm(EMPTY_FORM); } }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display">Rekonsiliasi Bank Baru</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.bankReconciliations.createDialogTitle')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
-              Cocokkan saldo buku dengan laporan bank.
+              {t('accounting.bankReconciliations.createDialogDesc')}
             </DialogDescription>
           </DialogHeader>
 
@@ -796,14 +789,14 @@ export default function BankReconciliationsPage() {
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setCreateOpen(false); setForm(EMPTY_FORM); }}>Batal</Button>
+            <Button variant="outline" onClick={() => { setCreateOpen(false); setForm(EMPTY_FORM); }}>{t('accounting.bankReconciliations.cancel')}</Button>
             <Button
               onClick={handleCreate}
               disabled={createMutation.isPending || !calc.isBalanced}
             >
               {createMutation.isPending ? (
                 <><RefreshCw className="h-4 w-4 animate-spin" /> Menyimpan...</>
-              ) : calc.isBalanced ? 'Buat Rekonsiliasi' : 'Belum Balanced'}
+              ) : calc.isBalanced ? t('accounting.bankReconciliations.createButton') : t('accounting.bankReconciliations.notBalancedButton')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -813,7 +806,7 @@ export default function BankReconciliationsPage() {
       <Dialog open={!!rejectTarget} onOpenChange={(open) => { if (!open) { setRejectTarget(null); setRejectReason(''); } }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display">Tolak Rekonsiliasi</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.bankReconciliations.rejectDialogTitle')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
               {rejectTarget?.reconciliationNumber}
             </DialogDescription>
@@ -829,7 +822,7 @@ export default function BankReconciliationsPage() {
             />
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setRejectTarget(null); setRejectReason(''); }}>Batal</Button>
+            <Button variant="outline" onClick={() => { setRejectTarget(null); setRejectReason(''); }}>{t('accounting.bankReconciliations.cancel')}</Button>
             <Button
               variant="destructive"
               disabled={!rejectReason.trim() || rejectMutation.isPending}
@@ -839,7 +832,7 @@ export default function BankReconciliationsPage() {
                 }
               }}
             >
-              Tolak Rekonsiliasi
+              {t('accounting.bankReconciliations.rejectButton')}
             </Button>
           </DialogFooter>
         </DialogContent>

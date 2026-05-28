@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
@@ -6,6 +7,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -37,17 +40,6 @@ import { cn } from '@/lib/utils';
 /*  app. We splice an Accounting item in; the active state simply     */
 /*  matches the /v2/accounting prefix.                                 */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Akuntansi',  icon: <BookOpen    className="h-4 w-4" />, href: '/v2/accounting/general-ledger' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 const toNumber = (v: unknown): number => {
   if (v === null || v === undefined) return 0;
@@ -82,6 +74,7 @@ interface LedgerEntry {
 }
 
 export default function GeneralLedgerPageV2() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
 
   const [startDate, setStartDate] = useState<Date>(startOfMonth());
@@ -143,9 +136,9 @@ export default function GeneralLedgerPageV2() {
     try {
       if (kind === 'pdf') await exportGeneralLedgerPDF(params);
       else await exportGeneralLedgerExcel(params);
-      toast.success(`Ekspor ${kind.toUpperCase()} dimulai.`);
+      toast.success(t('accounting.generalLedger.exportStarted', { type: kind.toUpperCase() }));
     } catch (err) {
-      toast.error(`Gagal mengekspor: ${(err as Error).message}`);
+      toast.error(t('accounting.generalLedger.exportFail', { message: (err as Error).message }));
     }
   };
 
@@ -153,8 +146,8 @@ export default function GeneralLedgerPageV2() {
     return (
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
         topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -162,9 +155,9 @@ export default function GeneralLedgerPageV2() {
         <PageContainer>
           <EmptyState
             icon={<BookOpen className="h-12 w-12" />}
-            title="Tidak bisa memuat buku besar"
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-            action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+            title={t('accounting.generalLedger.errorTitle')}
+            description={error instanceof Error ? error.message : t('accounting.generalLedger.errorGeneric')}
+            action={<Button onClick={() => refetch()}>{t('accounting.generalLedger.retry')}</Button>}
           />
         </PageContainer>
       </AppShell>
@@ -174,16 +167,16 @@ export default function GeneralLedgerPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
     >
       <PageContainer>
         <PageHeader
-          title="Buku Besar"
-          description="Catatan transaksi per akun dengan saldo berjalan."
+          title={t('accounting.generalLedger.title')}
+          description={t('accounting.generalLedger.description')}
           actions={
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -339,11 +332,11 @@ export default function GeneralLedgerPageV2() {
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={<BookOpen />}
-              title={hasActiveFilters ? 'Tidak ada entri yang cocok' : 'Belum ada catatan'}
+              title={hasActiveFilters ? t('accounting.generalLedger.noMatch') : t('accounting.generalLedger.noEntries')}
               description={
                 hasActiveFilters
-                  ? 'Coba ubah periode atau filter akun.'
-                  : 'Posting jurnal terlebih dahulu untuk melihat catatan buku besar.'
+                  ? t('accounting.generalLedger.noMatchDesc')
+                  : t('accounting.generalLedger.noEntriesDesc')
               }
               action={
                 hasActiveFilters ? (

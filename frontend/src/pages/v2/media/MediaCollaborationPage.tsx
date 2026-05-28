@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
@@ -8,6 +9,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -35,16 +38,6 @@ import { cn } from '@/lib/utils';
 /*  state and rhythm read as one app, not a one-off list screen.       */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Page — a quiet hub. Three KPIs tell the operator "what's alive",   */
 /*  filters narrow, the grid carries the work. We avoid duplicating    */
@@ -54,6 +47,7 @@ const sidebarItems = [
 /* ------------------------------------------------------------------ */
 
 export default function MediaCollaborationPageV2() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
@@ -70,10 +64,10 @@ export default function MediaCollaborationPageV2() {
     mutationFn: (id: string) => mediaCollabService.deleteProject(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['media-projects'] });
-      toast.success('Proyek media berhasil dihapus.');
+      toast.success(t('mediaCollab.deleteSuccess', 'Proyek media berhasil dihapus.'));
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Gagal menghapus proyek.');
+      toast.error(err?.response?.data?.message || t('mediaCollab.deleteFailed', 'Gagal menghapus proyek.'));
     },
   });
 
@@ -130,8 +124,8 @@ export default function MediaCollaborationPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -148,9 +142,9 @@ export default function MediaCollaborationPageV2() {
       <Shell>
         <EmptyState
           icon={<Film className="h-12 w-12" />}
-          title="Tidak bisa memuat proyek media"
-          description={error instanceof Error ? error.message : 'Terjadi kesalahan.'}
-          action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+          title={t('mediaCollaboration.errorTitle', 'Tidak bisa memuat proyek media')}
+          description={error instanceof Error ? error.message : t('mediaCollaboration.errorGeneric', 'Terjadi kesalahan.')}
+          action={<Button onClick={() => refetch()}>{t('mediaCollaboration.retry', 'Coba Lagi')}</Button>}
         />
       </Shell>
     );
@@ -160,7 +154,7 @@ export default function MediaCollaborationPageV2() {
   const handleDelete = (p: MediaProject) => {
     if (
       confirm(
-        `Hapus proyek "${p.name}"? Semua aset di dalamnya akan ikut terhapus.`,
+        t('mediaCollab.confirmDelete', 'Hapus proyek "{{name}}"? Semua aset di dalamnya akan ikut terhapus.', { name: p.name }),
       )
     ) {
       deleteMutation.mutate(p.id);
@@ -170,12 +164,12 @@ export default function MediaCollaborationPageV2() {
   return (
     <Shell>
       <PageHeader
-        title="Kolaborasi Media"
-        description="Ruang berbagi video dan foto untuk tim produksi — komentari, setujui, dan kirim ke klien."
+        title={t('mediaCollaboration.title', 'Kolaborasi Media')}
+        description={t('mediaCollaboration.description', 'Ruang berbagi video dan foto untuk tim produksi — komentari, setujui, dan kirim ke klien.')}
         actions={
           <Button onClick={() => navigate('/media-collab')} size="sm">
             <Plus className="h-4 w-4" />
-            Proyek Baru
+            {t('mediaCollab.newProject', 'Proyek Baru')}
           </Button>
         }
       />
@@ -196,19 +190,19 @@ export default function MediaCollaborationPageV2() {
           ) : (
             <>
               <StatCard
-                label="Total Proyek"
+                label={t('mediaCollab.kpi.totalProjects', 'Total Proyek')}
                 value={stats.totalProjects}
-                sublabel="ruang kerja media"
+                sublabel={t('mediaCollab.kpi.totalProjectsSub', 'ruang kerja media')}
               />
               <StatCard
-                label="Total Aset"
+                label={t('mediaCollab.kpi.totalAssets', 'Total Aset')}
                 value={stats.totalAssets.toLocaleString('id-ID')}
-                sublabel="video & foto tersimpan"
+                sublabel={t('mediaCollab.kpi.totalAssetsSub', 'video & foto tersimpan')}
               />
               <StatCard
-                label="Tautan Publik"
+                label={t('mediaCollab.kpi.publicLinks', 'Tautan Publik')}
                 value={stats.sharedCount}
-                sublabel="proyek dibagikan ke klien"
+                sublabel={t('mediaCollab.kpi.publicLinksSub', 'proyek dibagikan ke klien')}
               />
             </>
           )}
@@ -227,7 +221,7 @@ export default function MediaCollaborationPageV2() {
             <Input
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Cari nama proyek, deskripsi, atau pembuat..."
+              placeholder={t('mediaCollaboration.searchPlaceholder', 'Cari nama proyek, deskripsi, atau pembuat...')}
               className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
             />
           </div>
@@ -238,12 +232,12 @@ export default function MediaCollaborationPageV2() {
                 size="sm"
                 className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[160px]"
               >
-                <SelectValue placeholder="Urutkan" />
+                <SelectValue placeholder={t('mediaCollaboration.sortPlaceholder', 'Urutkan')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="recent">Terbaru diperbarui</SelectItem>
-                <SelectItem value="name">Nama (A → Z)</SelectItem>
-                <SelectItem value="busiest">Paling banyak aset</SelectItem>
+                <SelectItem value="recent">{t('mediaCollab.sort.recent', 'Terbaru diperbarui')}</SelectItem>
+                <SelectItem value="name">{t('mediaCollab.sort.name', 'Nama (A → Z)')}</SelectItem>
+                <SelectItem value="busiest">{t('mediaCollab.sort.busiest', 'Paling banyak aset')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -255,7 +249,7 @@ export default function MediaCollaborationPageV2() {
                 className="text-text-tertiary hover:text-text-primary"
               >
                 <X className="h-3.5 w-3.5" />
-                Reset
+                {t('common.reset', 'Reset')}
               </Button>
             )}
           </div>
@@ -276,23 +270,23 @@ export default function MediaCollaborationPageV2() {
             icon={<FolderOpen />}
             title={
               hasActiveFilters
-                ? 'Tidak ada proyek yang cocok'
-                : 'Belum ada proyek media'
+                ? t('mediaCollab.noMatch', 'Tidak ada proyek yang cocok')
+                : t('mediaCollab.noProjects', 'Belum ada proyek media')
             }
             description={
               hasActiveFilters
-                ? 'Coba ubah atau hapus filter Anda.'
-                : 'Mulai dengan membuat proyek media pertama Anda untuk berkolaborasi.'
+                ? t('mediaCollab.noMatchDesc', 'Coba ubah atau hapus filter Anda.')
+                : t('mediaCollab.noProjectsDesc', 'Mulai dengan membuat proyek media pertama Anda untuk berkolaborasi.')
             }
             action={
               hasActiveFilters ? (
                 <Button variant="outline" size="sm" onClick={resetFilters}>
-                  Reset Filter
+                  {t('common.resetFilters', 'Reset Filter')}
                 </Button>
               ) : (
                 <Button onClick={() => navigate('/media-collab')} size="sm">
                   <Plus className="h-4 w-4" />
-                  Proyek Baru
+                  {t('mediaCollab.newProject', 'Proyek Baru')}
                 </Button>
               )
             }
@@ -327,6 +321,7 @@ interface ProjectCardProps {
 }
 
 function ProjectCard({ project, onOpen, onDelete }: ProjectCardProps) {
+  const { t } = useTranslation();
   const assetCount = project._count?.assets ?? 0;
   const collaboratorCount = project._count?.collaborators ?? 0;
   const collectionCount = project._count?.collections ?? 0;
@@ -360,21 +355,21 @@ function ProjectCard({ project, onOpen, onDelete }: ProjectCardProps) {
                 variant="ghost"
                 size="icon-sm"
                 className="text-text-tertiary hover:text-text-primary opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                aria-label="Aksi proyek"
+                aria-label={t('mediaCollab.projectActions', 'Aksi proyek')}
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem onClick={onOpen}>
-                <Eye className="h-3.5 w-3.5" /> Buka
+                <Eye className="h-3.5 w-3.5" /> {t('mediaCollab.open', 'Buka')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={onDelete}
                 className="text-danger focus:text-danger"
               >
-                <Trash2 className="h-3.5 w-3.5" /> Hapus
+                <Trash2 className="h-3.5 w-3.5" /> {t('mediaCollab.delete', 'Hapus')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -383,7 +378,7 @@ function ProjectCard({ project, onOpen, onDelete }: ProjectCardProps) {
 
       {/* Description */}
       <p className="text-sm text-text-secondary leading-relaxed line-clamp-2 mb-4 min-h-[2.5rem]">
-        {project.description || 'Tanpa deskripsi.'}
+        {project.description || t('mediaCollab.noDescription', 'Tanpa deskripsi.')}
       </p>
 
       {/* Counts strip */}
@@ -391,24 +386,24 @@ function ProjectCard({ project, onOpen, onDelete }: ProjectCardProps) {
         <span className="inline-flex items-center gap-1.5">
           <ImageIcon className="h-3.5 w-3.5" />
           <span className="text-text-secondary tabular-nums">{assetCount}</span>
-          aset
+          {t('mediaCollab.assets', 'aset')}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Users className="h-3.5 w-3.5" />
           <span className="text-text-secondary tabular-nums">{collaboratorCount}</span>
-          kolaborator
+          {t('mediaCollab.collaborators', 'kolaborator')}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Folder className="h-3.5 w-3.5" />
           <span className="text-text-secondary tabular-nums">{collectionCount}</span>
-          koleksi
+          {t('mediaCollab.collections', 'koleksi')}
         </span>
       </div>
 
       {/* Footer */}
       <div className="mt-auto pt-3 border-t border-border-subtle/60 flex items-center justify-between gap-2 text-xs">
         <span className="text-text-tertiary truncate min-w-0">
-          oleh{' '}
+          {t('mediaCollab.by', 'oleh')}{' '}
           <span className="text-text-secondary">
             {project.creator?.name ?? '—'}
           </span>
@@ -419,7 +414,7 @@ function ProjectCard({ project, onOpen, onDelete }: ProjectCardProps) {
               variant="outline"
               className="border-transparent bg-info/10 text-info px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
             >
-              Publik
+              {t('mediaCollab.public', 'Publik')}
             </Badge>
           )}
           <DateDisplay

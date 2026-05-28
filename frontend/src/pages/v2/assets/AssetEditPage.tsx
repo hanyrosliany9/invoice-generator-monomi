@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -24,16 +26,6 @@ import {
   emptyAssetFormValues,
   type AssetFormValues,
 } from './AssetForm';
-
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 const FORM_ID = 'asset-edit-form';
 
@@ -66,9 +58,9 @@ export default function AssetEditPageV2() {
   const shell = {
     sidebar: {
       brand: (
-        <div className="font-display font-bold text-text-primary text-lg">monomi</div>
+        <MonomiBrand />
       ),
-      items: sidebarItems,
+      sections: v2SidebarSections,
       footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
     },
     topbar: {

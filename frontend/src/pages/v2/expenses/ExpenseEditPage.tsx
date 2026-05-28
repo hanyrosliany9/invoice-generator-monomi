@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -37,16 +39,6 @@ import {
 /* ------------------------------------------------------------------ */
 /*  Sidebar — match the rest of v2.                                    */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 const FORM_ID = 'expense-edit-form';
 
@@ -174,7 +166,7 @@ export default function ExpenseEditPageV2() {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['expense', id] });
       toast.success(
-        t('expenses.edit.success', 'Perubahan untuk {{n}} tersimpan.', {
+        t('expenseEdit.success', 'Changes for {{n}} saved.', {
           n: updated.expenseNumber || '',
         }),
       );
@@ -184,7 +176,7 @@ export default function ExpenseEditPageV2() {
       const message =
         err instanceof Error
           ? err.message
-          : t('expenses.edit.error', 'Gagal menyimpan perubahan. Coba lagi.');
+          : t('expenseEdit.error', 'Failed to save changes. Please try again.');
       toast.error(message);
     },
     onSettled: () => setIsSubmitting(false),
@@ -201,8 +193,8 @@ export default function ExpenseEditPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -222,37 +214,37 @@ export default function ExpenseEditPageV2() {
             className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            {t('expenses.form.backToList', 'Kembali ke Biaya')}
+            {t('expenseEdit.backToList', 'Back to Expenses')}
           </Link>
         </div>
         <PageHeader
-          title={t('expenses.detail.notFoundTitle', 'Biaya tidak ditemukan')}
+          title={t('expenseEdit.notFoundTitle', 'Expense not found')}
           breadcrumbs={[
-            { label: t('expenses.title', 'Biaya'), href: '/v2/expenses' },
-            { label: t('expenses.detail.notFound', 'Tidak ditemukan') },
+            { label: t('expenseEdit.listLabel', 'Expenses'), href: '/v2/expenses' },
+            { label: t('expenseEdit.notFound', 'Not found') },
           ]}
         />
         <EmptyState
           icon={<CardIcon className="h-12 w-12" />}
-          title={t('expenses.detail.notFoundTitle', 'Biaya tidak ditemukan')}
+          title={t('expenseEdit.notFoundTitle', 'Expense not found')}
           description={
             error instanceof Error
               ? error.message
               : t(
-                  'expenses.edit.notFoundDesc',
-                  'Biaya yang Anda coba ubah tidak ada atau telah dihapus.',
+                  'expenseEdit.notFoundDesc',
+                  'The expense you are trying to edit does not exist or has been deleted.',
                 )
           }
           action={
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => refetch()}>
-                {t('common.retry', 'Coba Lagi')}
+                {t('expenseEdit.retry', 'Try Again')}
               </Button>
               <Button
                 onClick={() => navigate('/v2/expenses')}
                 className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
               >
-                {t('expenses.detail.backToList', 'Kembali ke Daftar')}
+                {t('expenseEdit.backToList', 'Back to List')}
               </Button>
             </div>
           }
@@ -299,21 +291,17 @@ export default function ExpenseEditPageV2() {
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          {t('expenses.form.backToDetail', 'Kembali ke Detail')}
+          {t('expenseEdit.backToDetail', 'Back to Detail')}
         </Link>
       </div>
 
       <PageHeader
-        title={t('expenses.edit.title', 'Ubah Biaya')}
-        description={t(
-          'expenses.edit.subtitle',
-          'Mengubah {{n}} — perubahan tersimpan ke catatan biaya.',
-          { n: expense.expenseNumber || '' },
-        )}
+        title={t('expenseEdit.title', 'Edit Expense')}
+        description={t('expenseEdit.subtitle', 'Editing {{n}} — changes are saved to the expense record.', { n: expense.expenseNumber || '' })}
         breadcrumbs={[
-          { label: t('expenses.title', 'Biaya'), href: '/v2/expenses' },
+          { label: t('expenseEdit.listLabel', 'Expenses'), href: '/v2/expenses' },
           { label: expense.expenseNumber || '—', href: `/expenses/${expense.id}` },
-          { label: t('expenses.edit.crumb', 'Ubah') },
+          { label: t('expenseEdit.crumb', 'Edit') },
         ]}
         actions={
           <div className="flex items-center gap-2">
@@ -325,7 +313,7 @@ export default function ExpenseEditPageV2() {
               className="text-text-secondary hover:text-text-primary"
             >
               <ArrowLeft className="h-4 w-4" />
-              {t('common.cancel', 'Batal')}
+              {t('expenseEdit.cancel', 'Cancel')}
             </Button>
             <Button
               type="submit"
@@ -336,10 +324,10 @@ export default function ExpenseEditPageV2() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {t('common.saving', 'Menyimpan…')}
+                  {t('expenseEdit.saving', 'Saving...')}
                 </>
               ) : (
-                t('common.save', 'Simpan')
+                t('expenseEdit.save', 'Save')
               )}
             </Button>
           </div>

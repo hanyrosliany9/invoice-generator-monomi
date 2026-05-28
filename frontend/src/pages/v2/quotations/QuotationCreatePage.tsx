@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { UserChip } from '@/components/monomi/UserChip';
 import { useAuthStore } from '@/store/auth';
@@ -33,16 +34,6 @@ import {
 import { QuotationForm, type QuotationFormValues } from './QuotationForm';
 
 // Sidebar mirrors the rest of v2 — same items, same order, same active rule.
-const sidebarItems = [
-  { label: 'Dashboard', icon: <Inbox className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices', icon: <FileText className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients', icon: <Users className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects', icon: <Folder className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses', icon: <CreditCard className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings', icon: <Settings className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 export default function QuotationCreatePageV2() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -144,7 +135,7 @@ export default function QuotationCreatePageV2() {
             monomi
           </div>
         ),
-        items: sidebarItems,
+        sections: v2SidebarSections,
         footer: user ? (
           <UserChip name={user.name} role={user.role} size="sm" />
         ) : null,

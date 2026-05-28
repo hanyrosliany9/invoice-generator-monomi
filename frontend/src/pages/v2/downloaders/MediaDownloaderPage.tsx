@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Download, Clipboard, Loader2, CheckCircle2, XCircle, Film,
@@ -8,6 +9,8 @@ import { toast } from 'sonner';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -39,17 +42,6 @@ import { cn } from '@/lib/utils';
 /*  sidebar doesn't sprout one-off leaves for each platform.           */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Unduhan',    icon: <Download    className="h-4 w-4" />, href: '/v2/downloaders/media' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Local session history — the backend has no "completed downloads"   */
 /*  endpoint for yt-dlp jobs (everything streams as blob and is gone), */
@@ -70,7 +62,18 @@ interface DownloadEntry {
   finishedAt: string;
 }
 
-const QUALITY_LABEL: Record<VideoQuality, string> = {
+// Display labels computed via t() inside components; keep this as a key map
+const QUALITY_KEYS: Record<VideoQuality, string> = {
+  best:  'mediaDownloader.quality_best',
+  '1080p': 'mediaDownloader.quality_1080p',
+  '720p':  'mediaDownloader.quality_720p',
+  '480p':  'mediaDownloader.quality_480p',
+  '360p':  'mediaDownloader.quality_360p',
+  worst: 'mediaDownloader.quality_worst',
+  audio: 'mediaDownloader.quality_audio',
+};
+// Fallback labels (Indonesian originals)
+const QUALITY_FALLBACK: Record<VideoQuality, string> = {
   best:  'Kualitas Terbaik',
   '1080p': '1080p (Full HD)',
   '720p':  '720p (HD)',
@@ -79,6 +82,8 @@ const QUALITY_LABEL: Record<VideoQuality, string> = {
   worst: 'Kualitas Terendah',
   audio: 'Audio Saja (MP3)',
 };
+// Legacy alias used in HistoryRow (non-component context)
+const QUALITY_LABEL = QUALITY_FALLBACK;
 
 const PLATFORM_LABEL: Record<string, string> = {
   youtube:   'YouTube',
@@ -88,11 +93,11 @@ const PLATFORM_LABEL: Record<string, string> = {
   facebook:  'Facebook',
   vimeo:     'Vimeo',
   pinterest: 'Pinterest',
-  unknown:   'Tidak dikenal',
+  unknown:   'Unknown',
 };
 
 const formatPlatform = (p?: string | null) =>
-  PLATFORM_LABEL[(p ?? 'unknown').toLowerCase()] ?? (p ?? 'Tidak dikenal');
+  PLATFORM_LABEL[(p ?? 'unknown').toLowerCase()] ?? (p ?? 'Unknown');
 
 const formatDuration = (seconds?: number): string => {
   if (!seconds) return '—';
@@ -111,15 +116,15 @@ const formatFileSize = (bytes?: number): string => {
   return `${bytes} B`;
 };
 
-const formatRelative = (iso: string): string => {
+const formatRelative = (iso: string, t: (key: string, fallback: string, opts?: Record<string, unknown>) => string): string => {
   const now = Date.now();
   const then = new Date(iso).getTime();
   const diff = Math.max(0, now - then);
   const min = Math.floor(diff / 60_000);
-  if (min < 1) return 'Baru saja';
-  if (min < 60) return `${min} menit lalu`;
+  if (min < 1) return t('mediaDownloader.justNow', 'Baru saja');
+  if (min < 60) return t('mediaDownloader.minutesAgo', '{{count}} menit lalu', { count: min });
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr} jam lalu`;
+  if (hr < 24) return t('mediaDownloader.hoursAgo', '{{count}} jam lalu', { count: hr });
   return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
 };
 
@@ -128,6 +133,7 @@ const formatRelative = (iso: string): string => {
 /* ------------------------------------------------------------------ */
 
 export default function MediaDownloaderPageV2() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
 
   const [url, setUrl] = useState('');
@@ -170,7 +176,7 @@ export default function MediaDownloaderPageV2() {
     onMutate: () => setDownloading(true),
     onSettled: () => setDownloading(false),
     onSuccess: () => {
-      toast.success('Unduhan dimulai — periksa folder Downloads Anda.');
+      toast.success(t('mediaDownloader.startSuccess', 'Unduhan dimulai — periksa folder Downloads Anda.'));
       const entry: DownloadEntry = {
         id: crypto.randomUUID(),
         url: debouncedUrl,
@@ -210,12 +216,12 @@ export default function MediaDownloaderPageV2() {
       const text = await navigator.clipboard.readText();
       if (text) {
         setUrl(text.trim());
-        toast.success('URL ditempel dari clipboard.');
+        toast.success(t('mediaDownloader.pasteSuccess', 'URL ditempel dari clipboard.'));
       } else {
-        toast.info('Clipboard kosong.');
+        toast.info(t('mediaDownloader.clipboardEmpty', 'Clipboard kosong.'));
       }
     } catch {
-      toast.error('Tidak bisa membaca clipboard. Tempel manual saja.');
+      toast.error(t('mediaDownloader.clipboardFail', 'Tidak bisa membaca clipboard. Tempel manual saja.'));
     }
   }, []);
 
@@ -223,7 +229,7 @@ export default function MediaDownloaderPageV2() {
   const qualityOptions = useMemo<{ value: VideoQuality; label: string }[]>(() => {
     const fromInfo: VideoQuality[] = (mediaInfo?.availableQualities ?? [])
       .map((q) => q.toLowerCase())
-      .filter((q): q is VideoQuality => q in QUALITY_LABEL);
+      .filter((q): q is VideoQuality => q in QUALITY_FALLBACK);
 
     const base: VideoQuality[] = ['best', '1080p', '720p', '480p', '360p', 'audio'];
     const source: VideoQuality[] = fromInfo.length ? fromInfo : base;
@@ -232,8 +238,8 @@ export default function MediaDownloaderPageV2() {
     for (const q of [...source, 'audio' as VideoQuality]) {
       if (!seen.has(q)) { seen.add(q); merged.push(q); }
     }
-    return merged.map((v) => ({ value: v, label: QUALITY_LABEL[v] }));
-  }, [mediaInfo]);
+    return merged.map((v) => ({ value: v, label: t(QUALITY_KEYS[v], QUALITY_FALLBACK[v]) }));
+  }, [mediaInfo, t]);
 
   /* ---- KPIs ---- */
   const stats = useMemo(() => {
@@ -247,8 +253,8 @@ export default function MediaDownloaderPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -271,14 +277,14 @@ export default function MediaDownloaderPageV2() {
   return (
     <Shell>
       <PageHeader
-        title="Pengunduh Media"
-        description="Tempel tautan dari YouTube, Instagram, TikTok, Twitter, Facebook, atau Vimeo. Kami mengurus formatnya — Anda terima file."
+        title={t('mediaDownloader.title', 'Pengunduh Media')}
+        description={t('mediaDownloader.description', 'Tempel tautan dari YouTube, Instagram, TikTok, Twitter, Facebook, atau Vimeo. Kami mengurus formatnya — Anda terima file.')}
         actions={
           <Badge
             variant="outline"
             className="border-border-subtle text-text-tertiary px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider"
           >
-            6 platform didukung
+            {t('mediaDownloader.platformsSupported', '6 platform didukung')}
           </Badge>
         }
       />
@@ -293,10 +299,10 @@ export default function MediaDownloaderPageV2() {
         <div className="px-6 sm:px-8 py-7">
           <div className="flex items-baseline justify-between gap-4 mb-4">
             <h2 className="text-base font-display font-semibold text-text-primary">
-              Tempel tautan video atau gambar
+              {t('mediaDownloader.pastePrompt', 'Tempel tautan video atau gambar')}
             </h2>
             <span className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-              Langkah 1
+              {t('mediaDownloader.step1', 'Langkah 1')}
             </span>
           </div>
 
@@ -306,7 +312,7 @@ export default function MediaDownloaderPageV2() {
               <Input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://youtube.com/watch?v=... atau https://instagram.com/p/..."
+                placeholder={t('mediaDownloader.urlPlaceholder', 'https://youtube.com/watch?v=... atau https://instagram.com/p/...')}
                 className="pl-9 pr-3 h-11 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary text-sm"
                 autoComplete="off"
                 spellCheck={false}
@@ -319,7 +325,7 @@ export default function MediaDownloaderPageV2() {
               className="h-11 shrink-0 border-border-subtle text-text-secondary hover:text-text-primary"
             >
               <Clipboard className="h-4 w-4" />
-              Tempel
+              {t('mediaDownloader.paste', 'Tempel')}
             </Button>
           </div>
 
@@ -327,18 +333,18 @@ export default function MediaDownloaderPageV2() {
           <div className="mt-3 min-h-[20px] flex items-center gap-2 text-xs">
             {url.length === 0 ? (
               <span className="text-text-tertiary">
-                Mendukung YouTube, Instagram, TikTok, Twitter, Facebook, Vimeo.
+                {t('mediaDownloader.supportedPlatforms', 'Mendukung YouTube, Instagram, TikTok, Twitter, Facebook, Vimeo.')}
               </span>
             ) : detecting || loadingInfo ? (
               <span className="inline-flex items-center gap-1.5 text-text-tertiary">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Memeriksa tautan…
+                {t('mediaDownloader.detecting', 'Memeriksa tautan…')}
               </span>
             ) : platform && platformSupported ? (
               <>
                 <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                 <span className="text-text-secondary">
-                  Terdeteksi
+                  {t('mediaDownloader.detected', 'Terdeteksi')}
                 </span>
                 <Badge
                   variant="outline"
@@ -349,7 +355,7 @@ export default function MediaDownloaderPageV2() {
                 </Badge>
                 {isPinterest && (
                   <span className="text-text-tertiary">
-                    — gunakan halaman Pinterest untuk batch.
+                    {t('mediaDownloader.usePinterestPage', '— gunakan halaman Pinterest untuk batch.')}
                   </span>
                 )}
               </>
@@ -357,7 +363,7 @@ export default function MediaDownloaderPageV2() {
               <>
                 <XCircle className="h-3.5 w-3.5 text-danger" />
                 <span className="text-text-secondary">
-                  Platform <span className="text-text-primary">{formatPlatform(platform.platform)}</span> belum didukung.
+                  {t('mediaDownloader.notSupported', 'Platform')} <span className="text-text-primary">{formatPlatform(platform.platform)}</span> {t('mediaDownloader.notSupportedSuffix', 'belum didukung.')}
                 </span>
               </>
             ) : null}
@@ -370,7 +376,7 @@ export default function MediaDownloaderPageV2() {
             {/* Quality */}
             <div className="flex-1 min-w-0">
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium mb-2">
-                Kualitas
+                {t('mediaDownloader.quality', 'Kualitas')}
               </label>
               <Select
                 value={quality}
@@ -393,8 +399,8 @@ export default function MediaDownloaderPageV2() {
               <div className="flex items-center gap-2">
                 <Music className="h-4 w-4 text-text-tertiary" />
                 <div className="flex flex-col">
-                  <span className="text-sm text-text-primary leading-tight">Audio saja</span>
-                  <span className="text-xs text-text-tertiary leading-tight">Ekstrak ke MP3</span>
+                  <span className="text-sm text-text-primary leading-tight">{t('mediaDownloader.audioOnly', 'Audio saja')}</span>
+                  <span className="text-xs text-text-tertiary leading-tight">{t('mediaDownloader.audioOnlySub', 'Ekstrak ke MP3')}</span>
                 </div>
               </div>
               <Switch
@@ -417,12 +423,12 @@ export default function MediaDownloaderPageV2() {
               {downloading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Mengunduh…
+                  {t('mediaDownloader.downloading', 'Mengunduh…')}
                 </>
               ) : (
                 <>
                   <Download className="h-4 w-4" />
-                  Unduh Sekarang
+                  {t('mediaDownloader.downloadNow', 'Unduh Sekarang')}
                 </>
               )}
             </Button>
@@ -446,7 +452,7 @@ export default function MediaDownloaderPageV2() {
             )}
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-display font-semibold text-text-primary line-clamp-2 leading-snug">
-                {mediaInfo.title || 'Tanpa judul'}
+                {mediaInfo.title || t('mediaDownloader.noTitle', 'Tanpa judul')}
               </h3>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-tertiary">
                 {mediaInfo.uploader && (
@@ -476,19 +482,19 @@ export default function MediaDownloaderPageV2() {
       <section className="mb-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <StatCard
-            label="Unduhan sesi ini"
+            label={t('mediaDownloader.stat.sessionDownloads', 'Unduhan sesi ini')}
             value={stats.total}
-            sublabel="sejak halaman dibuka"
+            sublabel={t('mediaDownloader.stat.sessionSub', 'sejak halaman dibuka')}
           />
           <StatCard
-            label="Berhasil"
+            label={t('mediaDownloader.stat.success', 'Berhasil')}
             value={stats.success}
-            sublabel={stats.failed > 0 ? `${stats.failed} gagal` : 'tanpa kegagalan'}
+            sublabel={stats.failed > 0 ? t('mediaDownloader.stat.failedCount', '{{count}} gagal', { count: stats.failed }) : t('mediaDownloader.stat.noFailures', 'tanpa kegagalan')}
           />
           <StatCard
-            label="Tingkat keberhasilan"
+            label={t('mediaDownloader.stat.successRate', 'Tingkat keberhasilan')}
             value={stats.rate === null ? '—' : `${stats.rate}%`}
-            sublabel="rasio unduhan sukses"
+            sublabel={t('mediaDownloader.stat.successRateSub', 'rasio unduhan sukses')}
           />
         </div>
       </section>
@@ -502,7 +508,7 @@ export default function MediaDownloaderPageV2() {
           <div className="flex items-center gap-2 min-w-0">
             <History className="h-4 w-4 text-text-tertiary shrink-0" />
             <h2 className="text-sm font-display font-semibold text-text-primary">
-              Riwayat sesi
+              {t('mediaDownloader.sessionHistory', 'Riwayat sesi')}
             </h2>
           </div>
           {history.length > 0 && (
@@ -512,7 +518,7 @@ export default function MediaDownloaderPageV2() {
               onClick={() => setHistory([])}
               className="text-text-tertiary hover:text-text-primary"
             >
-              Kosongkan
+              {t('mediaDownloader.clearHistory', 'Kosongkan')}
             </Button>
           )}
         </div>
@@ -520,8 +526,8 @@ export default function MediaDownloaderPageV2() {
         {history.length === 0 ? (
           <EmptyState
             icon={<Download />}
-            title="Belum ada unduhan"
-            description="Tempel sebuah tautan di atas dan klik Unduh untuk memulai. Daftar ini hanya bertahan selama sesi browser Anda."
+            title={t('mediaDownloader.noDownloads', 'Belum ada unduhan')}
+            description={t('mediaDownloader.noDownloadsDesc', 'Tempel sebuah tautan di atas dan klik Unduh untuk memulai. Daftar ini hanya bertahan selama sesi browser Anda.')}
           />
         ) : downloading && history.length === 0 ? (
           <div className="p-5 space-y-2">
@@ -542,8 +548,7 @@ export default function MediaDownloaderPageV2() {
       <p className="mt-6 text-xs text-text-tertiary flex items-start gap-1.5">
         <AlertTriangle className="h-3.5 w-3.5 mt-[1px] shrink-0" />
         <span>
-          Beberapa konten Instagram dan TikTok memerlukan login.
-          Jika unduhan gagal, kemungkinan konten privat atau dibatasi platform.
+          {t('mediaDownloader.disclaimer', 'Beberapa konten Instagram dan TikTok memerlukan login. Jika unduhan gagal, kemungkinan konten privat atau dibatasi platform.')}
         </span>
       </p>
     </Shell>
@@ -558,6 +563,7 @@ export default function MediaDownloaderPageV2() {
 interface HistoryRowProps { entry: DownloadEntry }
 
 function HistoryRow({ entry }: HistoryRowProps) {
+  const { t } = useTranslation();
   const [, setTick] = useState(0);
 
   // re-render every 30s so "Baru saja" → "1 menit lalu" updates quietly.
@@ -603,8 +609,8 @@ function HistoryRow({ entry }: HistoryRowProps) {
           </Badge>
         </div>
         <div className="mt-0.5 flex items-center gap-x-3 gap-y-0.5 flex-wrap text-xs text-text-tertiary">
-          <span className="tabular-nums">{QUALITY_LABEL[entry.quality] ?? entry.quality}</span>
-          <span>{formatRelative(entry.finishedAt)}</span>
+          <span className="tabular-nums">{QUALITY_KEYS[entry.quality as VideoQuality] ? t(QUALITY_KEYS[entry.quality as VideoQuality], QUALITY_FALLBACK[entry.quality as VideoQuality]) : (entry.quality ?? '')}</span>
+          <span>{formatRelative(entry.finishedAt, t)}</span>
           {entry.status === 'failed' && entry.errorMessage && (
             <span className="text-danger truncate max-w-[300px]">{entry.errorMessage}</span>
           )}
@@ -616,12 +622,12 @@ function HistoryRow({ entry }: HistoryRowProps) {
         {entry.status === 'success' ? (
           <span className="inline-flex items-center gap-1 text-xs text-success">
             <CheckCircle2 className="h-3.5 w-3.5" />
-            Selesai
+            {t('mediaDownloader.statusDone', 'Selesai')}
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 text-xs text-danger">
             <XCircle className="h-3.5 w-3.5" />
-            Gagal
+            {t('mediaDownloader.statusFailed', 'Gagal')}
           </span>
         )}
       </div>

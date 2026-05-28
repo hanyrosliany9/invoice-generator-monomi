@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -7,6 +8,8 @@ import {
   RefreshCw, ArrowRight,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -51,29 +54,18 @@ import { cn } from '@/lib/utils';
 /*  Sidebar                                                            */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Akuntansi',  icon: <BookOpen    className="h-4 w-4" />, href: '/v2/accounting/general-ledger' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Vocab                                                              */
 /* ------------------------------------------------------------------ */
 
-const STATUS_LABEL: Record<string, string> = {
-  PENDING:     'Menunggu',
-  APPROVED:    'Disetujui',
-  IN_PROGRESS: 'Proses',
-  COMPLETED:   'Selesai',
-  FAILED:      'Gagal',
-  REJECTED:    'Ditolak',
-  CANCELLED:   'Dibatalkan',
+const STATUS_LABEL_EN: Record<string, string> = {
+  PENDING:     'Pending',
+  APPROVED:    'Approved',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED:   'Completed',
+  FAILED:      'Failed',
+  REJECTED:    'Rejected',
+  CANCELLED:   'Cancelled',
 };
 
 const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
@@ -86,19 +78,19 @@ const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['v
   CANCELLED:   'outline',
 };
 
-const TRANSFER_METHOD_LABEL: Record<string, string> = {
+const TRANSFER_METHOD_LABEL_EN: Record<string, string> = {
   INTERNAL:  'Internal',
-  INTERBANK: 'Antar Bank',
+  INTERBANK: 'Interbank',
   RTGS:      'RTGS',
-  CLEARING:  'Kliring',
+  CLEARING:  'Clearing',
   SKN:       'SKN',
   BIFAST:    'BI-FAST',
-  OTHER:     'Lainnya',
+  OTHER:     'Other',
 };
 
-const getStatusLabel   = (s?: string) => STATUS_LABEL[s ?? '']        ?? (s ?? '—');
+const getStatusLabel   = (s?: string) => STATUS_LABEL_EN[s ?? '']        ?? (s ?? '—');
 const getStatusVariant = (s?: string) => STATUS_BADGE_VARIANT[s ?? ''] ?? 'secondary';
-const getMethodLabel   = (m?: string) => TRANSFER_METHOD_LABEL[m ?? ''] ?? (m ?? '—');
+const getMethodLabel   = (m?: string) => TRANSFER_METHOD_LABEL_EN[m ?? ''] ?? (m ?? '—');
 
 const toNumber = (v: unknown): number => {
   if (v === null || v === undefined) return 0;
@@ -156,6 +148,7 @@ const EMPTY_FORM: CreateForm = {
 /* ------------------------------------------------------------------ */
 
 export default function BankTransfersPage() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
@@ -225,42 +218,42 @@ export default function BankTransfersPage() {
   const createMutation = useMutation({
     mutationFn: createBankTransfer,
     onSuccess: () => {
-      toast.success('Transfer bank berhasil dibuat');
+      toast.success(t('accounting.bankTransfers.createSuccess', 'Bank transfer created'));
       invalidate();
       setCreateOpen(false);
       setForm(EMPTY_FORM);
     },
-    onError: () => toast.error('Gagal membuat transfer bank'),
+    onError: () => toast.error(t('accounting.bankTransfers.createFail', 'Failed to create bank transfer')),
   });
 
   const approveMutation = useMutation({
     mutationFn: approveBankTransfer,
-    onSuccess: () => { toast.success('Transfer bank disetujui dan diposting'); invalidate(); },
-    onError:   () => toast.error('Gagal menyetujui transfer bank'),
+    onSuccess: () => { toast.success(t('accounting.bankTransfers.approveSuccess', 'Bank transfer approved and posted')); invalidate(); },
+    onError:   () => toast.error(t('accounting.bankTransfers.approveFail', 'Failed to approve bank transfer')),
   });
 
   const rejectMutation = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       rejectBankTransfer(id, reason),
     onSuccess: () => {
-      toast.success('Transfer bank ditolak');
+      toast.success(t('accounting.bankTransfers.rejectSuccess', 'Bank transfer rejected'));
       invalidate();
       setRejectTarget(null);
       setRejectReason('');
     },
-    onError: () => toast.error('Gagal menolak transfer bank'),
+    onError: () => toast.error(t('accounting.bankTransfers.rejectFail', 'Failed to reject bank transfer')),
   });
 
   const cancelMutation = useMutation({
     mutationFn: cancelBankTransfer,
-    onSuccess: () => { toast.success('Transfer bank dibatalkan'); invalidate(); },
-    onError:   () => toast.error('Gagal membatalkan transfer bank'),
+    onSuccess: () => { toast.success(t('accounting.bankTransfers.cancelSuccess', 'Bank transfer cancelled')); invalidate(); },
+    onError:   () => toast.error(t('accounting.bankTransfers.cancelFail', 'Failed to cancel bank transfer')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteBankTransfer,
-    onSuccess: () => { toast.success('Transfer bank dihapus'); invalidate(); },
-    onError:   () => toast.error('Gagal menghapus transfer bank'),
+    onSuccess: () => { toast.success(t('accounting.bankTransfers.deleteSuccess', 'Bank transfer deleted')); invalidate(); },
+    onError:   () => toast.error(t('accounting.bankTransfers.deleteFail', 'Failed to delete bank transfer')),
   });
 
   const hasActiveFilters =
@@ -273,15 +266,15 @@ export default function BankTransfersPage() {
 
   const handleCreate = () => {
     if (!form.transferDate || !form.fromAccountId || !form.toAccountId) {
-      toast.error('Lengkapi field yang wajib diisi');
+      toast.error(t('accounting.bankTransfers.validationRequired', 'Please complete all required fields'));
       return;
     }
     if (!form.amount || parseFloat(form.amount) <= 0) {
-      toast.error('Jumlah transfer harus diisi dan lebih dari 0');
+      toast.error(t('accounting.bankTransfers.validationAmount', 'Transfer amount is required and must be greater than 0'));
       return;
     }
     if (!form.descriptionId.trim()) {
-      toast.error('Deskripsi transfer harus diisi');
+      toast.error(t('accounting.bankTransfers.validationDesc', 'Transfer description is required'));
       return;
     }
     createMutation.mutate({
@@ -306,8 +299,8 @@ export default function BankTransfersPage() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -321,9 +314,9 @@ export default function BankTransfersPage() {
       <Shell>
         <EmptyState
           icon={<BookOpen className="h-12 w-12" />}
-          title="Tidak bisa memuat transfer bank"
-          description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-          action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+          title={t('accounting.bankTransfers.errorTitle', 'Cannot load bank transfers')}
+          description={error instanceof Error ? error.message : t('accounting.bankTransfers.errorGeneric', 'An error occurred')}
+          action={<Button onClick={() => refetch()}>{t('accounting.bankTransfers.retry', 'Try Again')}</Button>}
         />
       </Shell>
     );
@@ -332,11 +325,11 @@ export default function BankTransfersPage() {
   return (
     <Shell>
       <PageHeader
-        title="Transfer Antar Bank"
-        description="Catat dan setujui transfer antar rekening kas dan bank."
+        title={t('accounting.bankTransfers.title', 'Bank Transfers')}
+        description={t('accounting.bankTransfers.description', 'Record and approve transfers between cash and bank accounts.')}
         actions={
           <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" /> Transfer Baru
+            <Plus className="h-4 w-4" /> {t('accounting.bankTransfers.newTransfer', 'New Transfer')}
           </Button>
         }
       />
@@ -348,10 +341,10 @@ export default function BankTransfersPage() {
             Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[108px] rounded-lg" />)
           ) : (
             <>
-              <StatCard label="Total Bulan Ini" value={<MoneyDisplay amount={stats.totalMonth} />} sublabel="nilai transfer bulan berjalan" />
-              <StatCard label="Menunggu Persetujuan" value={String(stats.pending)} sublabel="transfer pending" />
-              <StatCard label="Selesai" value={String(stats.completed)} sublabel="transfer completed" />
-              <StatCard label="Total (Filter)" value={<MoneyDisplay amount={stats.totalAll} />} sublabel="sesuai filter aktif" />
+              <StatCard label={t('accounting.bankTransfers.statThisMonth', 'This Month Total')} value={<MoneyDisplay amount={stats.totalMonth} />} sublabel={t('accounting.bankTransfers.statThisMonthSub', 'transfer value this month')} />
+              <StatCard label={t('accounting.bankTransfers.statPending', 'Awaiting Approval')} value={String(stats.pending)} sublabel={t('accounting.bankTransfers.statPendingSub', 'pending transfers')} />
+              <StatCard label={t('accounting.bankTransfers.statCompleted', 'Completed')} value={String(stats.completed)} sublabel={t('accounting.bankTransfers.statCompletedSub', 'completed transfers')} />
+              <StatCard label={t('accounting.bankTransfers.statFiltered', 'Total (Filtered)')} value={<MoneyDisplay amount={stats.totalAll} />} sublabel={t('accounting.bankTransfers.statFilteredSub', 'matching active filter')} />
             </>
           )}
         </div>
@@ -366,7 +359,7 @@ export default function BankTransfersPage() {
               <Input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Cari nomor transfer, deskripsi..."
+                placeholder={t('accounting.bankTransfers.searchPlaceholder', 'Search transfer number, description...')}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -376,29 +369,29 @@ export default function BankTransfersPage() {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Status</SelectItem>
-                  <SelectItem value="PENDING">Menunggu</SelectItem>
-                  <SelectItem value="APPROVED">Disetujui</SelectItem>
-                  <SelectItem value="IN_PROGRESS">Proses</SelectItem>
-                  <SelectItem value="COMPLETED">Selesai</SelectItem>
-                  <SelectItem value="FAILED">Gagal</SelectItem>
-                  <SelectItem value="REJECTED">Ditolak</SelectItem>
-                  <SelectItem value="CANCELLED">Dibatalkan</SelectItem>
+                  <SelectItem value="all">{t('accounting.bankTransfers.allStatuses', 'All Statuses')}</SelectItem>
+                  <SelectItem value="PENDING">{t('accounting.bankTransfers.statusPending', 'Pending')}</SelectItem>
+                  <SelectItem value="APPROVED">{t('accounting.bankTransfers.statusApproved', 'Approved')}</SelectItem>
+                  <SelectItem value="IN_PROGRESS">{t('accounting.bankTransfers.statusInProgress', 'In Progress')}</SelectItem>
+                  <SelectItem value="COMPLETED">{t('accounting.bankTransfers.statusCompleted', 'Completed')}</SelectItem>
+                  <SelectItem value="FAILED">{t('accounting.bankTransfers.statusFailed', 'Failed')}</SelectItem>
+                  <SelectItem value="REJECTED">{t('accounting.bankTransfers.statusRejected', 'Rejected')}</SelectItem>
+                  <SelectItem value="CANCELLED">{t('accounting.bankTransfers.statusCancelled', 'Cancelled')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={methodFilter} onValueChange={setMethodFilter}>
                 <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[140px]">
-                  <SelectValue placeholder="Metode" />
+                  <SelectValue placeholder={t('bankTransfers.methodPlaceholder', 'Method')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Metode</SelectItem>
-                  <SelectItem value="INTERNAL">Internal</SelectItem>
-                  <SelectItem value="INTERBANK">Antar Bank</SelectItem>
+                  <SelectItem value="all">{t('accounting.bankTransfers.allMethods', 'All Methods')}</SelectItem>
+                  <SelectItem value="INTERNAL">{t('accounting.bankTransfers.methodInternal', 'Internal')}</SelectItem>
+                  <SelectItem value="INTERBANK">{t('accounting.bankTransfers.methodInterbank', 'Interbank')}</SelectItem>
                   <SelectItem value="RTGS">RTGS</SelectItem>
-                  <SelectItem value="CLEARING">Kliring</SelectItem>
+                  <SelectItem value="CLEARING">{t('accounting.bankTransfers.methodClearing', 'Clearing')}</SelectItem>
                   <SelectItem value="SKN">SKN</SelectItem>
                   <SelectItem value="BIFAST">BI-FAST</SelectItem>
-                  <SelectItem value="OTHER">Lainnya</SelectItem>
+                  <SelectItem value="OTHER">{t('accounting.bankTransfers.methodOther', 'Other')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -406,13 +399,13 @@ export default function BankTransfersPage() {
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary shrink-0">Rentang</span>
+              <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary shrink-0">{t('accounting.bankTransfers.dateRange', 'Range')}</span>
               <div className="flex-1 min-w-0 max-w-[200px]">
-                <MonomiDatePicker value={startDate} onChange={setStartDate} placeholder="Tgl. mulai" className="h-9 text-sm bg-bg-sunken border-border-subtle" />
+                <MonomiDatePicker value={startDate} onChange={setStartDate} placeholder={t('accounting.bankTransfers.startDate', 'Start date')} className="h-9 text-sm bg-bg-sunken border-border-subtle" />
               </div>
               <span className="text-text-tertiary text-xs">—</span>
               <div className="flex-1 min-w-0 max-w-[200px]">
-                <MonomiDatePicker value={endDate} onChange={setEndDate} placeholder="Tgl. akhir" className="h-9 text-sm bg-bg-sunken border-border-subtle" />
+                <MonomiDatePicker value={endDate} onChange={setEndDate} placeholder={t('accounting.bankTransfers.endDate', 'End date')} className="h-9 text-sm bg-bg-sunken border-border-subtle" />
               </div>
             </div>
             {hasActiveFilters && (
@@ -431,12 +424,12 @@ export default function BankTransfersPage() {
         ) : transfers.length === 0 ? (
           <EmptyState
             icon={<BookOpen />}
-            title={hasActiveFilters ? 'Tidak ada transfer yang cocok' : 'Belum ada transfer bank'}
-            description={hasActiveFilters ? 'Coba ubah filter.' : 'Buat transfer bank pertama untuk mulai mencatat pemindahan dana.'}
+            title={hasActiveFilters ? t('accounting.bankTransfers.noMatch', 'No matching transfers') : t('accounting.bankTransfers.emptyTitle', 'No bank transfers yet')}
+            description={hasActiveFilters ? t('accounting.bankTransfers.noMatchDesc', 'Try adjusting the filter.') : t('accounting.bankTransfers.emptyDesc', 'Create the first bank transfer to start recording fund movements.')}
             action={
               hasActiveFilters
-                ? <Button variant="outline" size="sm" onClick={resetFilters}>Reset Filter</Button>
-                : <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4" /> Transfer Baru</Button>
+                ? <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.bankTransfers.resetFilter', 'Reset Filter')}</Button>
+                : <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4" /> {t('accounting.bankTransfers.newTransfer', 'New Transfer')}</Button>
             }
           />
         ) : (
@@ -448,7 +441,7 @@ export default function BankTransfersPage() {
               columns={[
                 {
                   accessorKey: 'transferNumber',
-                  header: 'Nomor',
+                  header: t('accounting.bankTransfers.colNumber', 'Number'),
                   cell: ({ row }) => (
                     <div className="font-mono text-xs text-text-primary tracking-tight">
                       {row.original.transferNumber || '—'}
@@ -457,27 +450,27 @@ export default function BankTransfersPage() {
                 },
                 {
                   accessorKey: 'transferDate',
-                  header: 'Tanggal',
+                  header: t('accounting.bankTransfers.colDate', 'Date'),
                   cell: ({ row }) => (
                     <span className="text-text-tertiary"><DateDisplay date={row.original.transferDate} /></span>
                   ),
                 },
                 {
                   id: 'route',
-                  header: 'Dari → Ke',
+                  header: t('accounting.bankTransfers.colRoute', 'From → To'),
                   cell: ({ row }) => {
-                    const t = row.original;
+                    const tx = row.original;
                     return (
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 text-sm">
-                          <span className="text-text-secondary truncate">{t.fromAccount.nameId}</span>
+                          <span className="text-text-secondary truncate">{tx.fromAccount.nameId}</span>
                           <ArrowRight className="h-3 w-3 text-text-tertiary shrink-0" />
-                          <span className="text-text-secondary truncate">{t.toAccount.nameId}</span>
+                          <span className="text-text-secondary truncate">{tx.toAccount.nameId}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-text-tertiary font-mono mt-0.5">
-                          <span>{t.fromAccount.code}</span>
+                          <span>{tx.fromAccount.code}</span>
                           <ArrowRight className="h-2.5 w-2.5 shrink-0" />
-                          <span>{t.toAccount.code}</span>
+                          <span>{tx.toAccount.code}</span>
                         </div>
                       </div>
                     );
@@ -485,23 +478,23 @@ export default function BankTransfersPage() {
                 },
                 {
                   accessorKey: 'transferMethod',
-                  header: 'Metode',
+                  header: t('accounting.bankTransfers.colMethod', 'Method'),
                   cell: ({ row }) => (
                     <span className="text-xs text-text-secondary">{getMethodLabel(row.original.transferMethod)}</span>
                   ),
                 },
                 {
                   id: 'amount',
-                  header: () => <span className="block text-right">Jumlah</span>,
+                  header: () => <span className="block text-right">{t('accounting.bankTransfers.colAmount', 'Amount')}</span>,
                   cell: ({ row }) => {
-                    const t = row.original;
-                    const fee = toNumber(t.transferFee);
+                    const tx = row.original;
+                    const fee = toNumber(tx.transferFee);
                     return (
                       <div className="text-right">
-                        <MoneyDisplay amount={toNumber(t.amount)} />
+                        <MoneyDisplay amount={toNumber(tx.amount)} />
                         {fee > 0 && (
                           <div className="text-xs text-text-tertiary mt-0.5">
-                            Biaya: <MoneyDisplay amount={fee} />
+                            {t('accounting.bankTransfers.fee', 'Fee')}: <MoneyDisplay amount={fee} />
                           </div>
                         )}
                       </div>
@@ -510,7 +503,7 @@ export default function BankTransfersPage() {
                 },
                 {
                   accessorKey: 'status',
-                  header: 'Status',
+                  header: t('accounting.bankTransfers.colStatus', 'Status'),
                   cell: ({ row }) => (
                     <Badge variant={getStatusVariant(row.original.status)}>
                       {getStatusLabel(row.original.status)}
@@ -519,9 +512,9 @@ export default function BankTransfersPage() {
                 },
                 {
                   id: 'actions',
-                  header: () => <span className="sr-only">Aksi</span>,
+                  header: () => <span className="sr-only">{t('bankTransfers.actions', 'Actions')}</span>,
                   cell: ({ row }) => {
-                    const t = row.original;
+                    const tx = row.original;
                     return (
                       <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
@@ -531,46 +524,46 @@ export default function BankTransfersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-44">
-                            <DropdownMenuItem onClick={() => setViewing(t)}>
-                              <Eye className="h-3.5 w-3.5" /> Lihat Detail
+                            <DropdownMenuItem onClick={() => setViewing(tx)}>
+                              <Eye className="h-3.5 w-3.5" /> {t('accounting.bankTransfers.actionView', 'View Details')}
                             </DropdownMenuItem>
-                            {t.status === 'PENDING' && (
+                            {tx.status === 'PENDING' && (
                               <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => approveMutation.mutate(t.id)}>
-                                  <Check className="h-3.5 w-3.5" /> Setujui
+                                <DropdownMenuItem onClick={() => approveMutation.mutate(tx.id)}>
+                                  <Check className="h-3.5 w-3.5" /> {t('accounting.bankTransfers.actionApprove', 'Approve')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => { setRejectTarget(t); setRejectReason(''); }}
+                                  onClick={() => { setRejectTarget(tx); setRejectReason(''); }}
                                   className="text-danger focus:text-danger"
                                 >
-                                  <X className="h-3.5 w-3.5" /> Tolak
+                                  <X className="h-3.5 w-3.5" /> {t('accounting.bankTransfers.actionReject', 'Reject')}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    if (window.confirm(`Hapus transfer ${t.transferNumber}?`)) {
-                                      deleteMutation.mutate(t.id);
+                                    if (window.confirm(`${t('accounting.bankTransfers.confirmDelete', 'Delete transfer')} ${tx.transferNumber}?`)) {
+                                      deleteMutation.mutate(tx.id);
                                     }
                                   }}
                                   className="text-danger focus:text-danger"
                                 >
-                                  <X className="h-3.5 w-3.5" /> Hapus
+                                  <X className="h-3.5 w-3.5" /> {t('accounting.bankTransfers.actionDelete', 'Delete')}
                                 </DropdownMenuItem>
                               </>
                             )}
-                            {(t.status === 'APPROVED' || t.status === 'IN_PROGRESS') && (
+                            {(tx.status === 'APPROVED' || tx.status === 'IN_PROGRESS') && (
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    if (window.confirm(`Batalkan transfer ${t.transferNumber}?`)) {
-                                      cancelMutation.mutate(t.id);
+                                    if (window.confirm(`${t('accounting.bankTransfers.confirmCancel', 'Cancel transfer')} ${tx.transferNumber}?`)) {
+                                      cancelMutation.mutate(tx.id);
                                     }
                                   }}
                                   className="text-danger focus:text-danger"
                                 >
-                                  <Ban className="h-3.5 w-3.5" /> Batalkan
+                                  <Ban className="h-3.5 w-3.5" /> {t('accounting.bankTransfers.actionCancel', 'Cancel')}
                                 </DropdownMenuItem>
                               </>
                             )}
@@ -590,31 +583,31 @@ export default function BankTransfersPage() {
       <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) setViewing(null); }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display">Detail Transfer Bank</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.bankTransfers.viewTitle', 'Bank Transfer Detail')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">{viewing?.transferNumber}</DialogDescription>
           </DialogHeader>
           {viewing && (
             <div className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                <ViewRow label="Status">
+                <ViewRow label={t('accounting.bankTransfers.viewStatus', 'Status')}>
                   <Badge variant={getStatusVariant(viewing.status)}>{getStatusLabel(viewing.status)}</Badge>
                 </ViewRow>
-                <ViewRow label="Metode">{getMethodLabel(viewing.transferMethod)}</ViewRow>
-                <ViewRow label="Tanggal" wide><DateDisplay date={viewing.transferDate} /></ViewRow>
+                <ViewRow label={t('accounting.bankTransfers.viewMethod', 'Method')}>{getMethodLabel(viewing.transferMethod)}</ViewRow>
+                <ViewRow label={t('accounting.bankTransfers.viewDate', 'Date')} wide><DateDisplay date={viewing.transferDate} /></ViewRow>
               </div>
 
               {/* Transfer route */}
               <div className="bg-bg-sunken rounded-lg p-4 border border-border-subtle">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">Rute Transfer</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">{t('accounting.bankTransfers.viewRoute', 'Transfer Route')}</p>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">Dari</div>
+                    <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">{t('accounting.bankTransfers.viewFrom', 'From')}</div>
                     <div className="text-sm text-text-primary">{viewing.fromAccount.nameId}</div>
                     <div className="text-xs font-mono text-text-tertiary">{viewing.fromAccount.code}</div>
                   </div>
                   <ArrowRight className="h-5 w-5 text-text-tertiary shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">Ke</div>
+                    <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">{t('accounting.bankTransfers.viewTo', 'To')}</div>
                     <div className="text-sm text-text-primary">{viewing.toAccount.nameId}</div>
                     <div className="text-xs font-mono text-text-tertiary">{viewing.toAccount.code}</div>
                   </div>
@@ -623,13 +616,13 @@ export default function BankTransfersPage() {
 
               {/* Amount block */}
               <div className="bg-bg-panel rounded-lg p-4 border border-border-strong">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-2">Jumlah Transfer</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-2">{t('accounting.bankTransfers.viewAmount', 'Transfer Amount')}</p>
                 <div className="text-2xl font-display font-bold text-text-primary">
                   <MoneyDisplay amount={toNumber(viewing.amount)} />
                 </div>
                 {toNumber(viewing.transferFee) > 0 && (
                   <div className="text-xs text-text-tertiary mt-1">
-                    Biaya transfer: <MoneyDisplay amount={toNumber(viewing.transferFee)} />
+                    {t('accounting.bankTransfers.viewFeeLabel', 'Transfer fee:')} <MoneyDisplay amount={toNumber(viewing.transferFee)} />
                   </div>
                 )}
               </div>
@@ -637,33 +630,33 @@ export default function BankTransfersPage() {
               {/* Meta grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 {viewing.descriptionId && (
-                  <ViewRow label="Deskripsi" wide>{viewing.descriptionId}</ViewRow>
+                  <ViewRow label={t('accounting.bankTransfers.viewDescription', 'Description')} wide>{viewing.descriptionId}</ViewRow>
                 )}
-                {viewing.reference && <ViewRow label="Referensi">{viewing.reference}</ViewRow>}
-                {viewing.bankReference && <ViewRow label="Ref. Bank">{viewing.bankReference}</ViewRow>}
-                {viewing.confirmationCode && <ViewRow label="Kode Konfirmasi">{viewing.confirmationCode}</ViewRow>}
+                {viewing.reference && <ViewRow label={t('accounting.bankTransfers.viewReference', 'Reference')}>{viewing.reference}</ViewRow>}
+                {viewing.bankReference && <ViewRow label={t('accounting.bankTransfers.viewBankRef', 'Bank Ref.')}>{viewing.bankReference}</ViewRow>}
+                {viewing.confirmationCode && <ViewRow label={t('accounting.bankTransfers.viewConfirmCode', 'Confirmation Code')}>{viewing.confirmationCode}</ViewRow>}
                 {viewing.journalEntryId && (
-                  <ViewRow label="Journal Entry ID" wide>
+                  <ViewRow label={t('accounting.bankTransfers.viewJournalId', 'Journal Entry ID')} wide>
                     <span className="font-mono text-xs">{viewing.journalEntryId}</span>
                   </ViewRow>
                 )}
-                {viewing.notes && <ViewRow label="Catatan" wide>{viewing.notes}</ViewRow>}
+                {viewing.notes && <ViewRow label={t('accounting.bankTransfers.viewNotes', 'Notes')} wide>{viewing.notes}</ViewRow>}
                 {viewing.rejectionReason && (
-                  <ViewRow label="Alasan Penolakan" wide>
+                  <ViewRow label={t('accounting.bankTransfers.viewRejectionReason', 'Rejection Reason')} wide>
                     <span className="text-danger">{viewing.rejectionReason}</span>
                   </ViewRow>
                 )}
                 {viewing.approvedAt && (
-                  <ViewRow label="Disetujui"><DateDisplay date={viewing.approvedAt} /></ViewRow>
+                  <ViewRow label={t('accounting.bankTransfers.viewApproved', 'Approved')}><DateDisplay date={viewing.approvedAt} /></ViewRow>
                 )}
                 {viewing.completedAt && (
-                  <ViewRow label="Diselesaikan"><DateDisplay date={viewing.completedAt} /></ViewRow>
+                  <ViewRow label={t('accounting.bankTransfers.viewCompleted', 'Completed')}><DateDisplay date={viewing.completedAt} /></ViewRow>
                 )}
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewing(null)}>Tutup</Button>
+            <Button variant="outline" onClick={() => setViewing(null)}>{t('accounting.bankTransfers.close', 'Close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -672,30 +665,30 @@ export default function BankTransfersPage() {
       <Dialog open={createOpen} onOpenChange={(open) => { if (!open) { setCreateOpen(false); setForm(EMPTY_FORM); } }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display">Transfer Bank Baru</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.bankTransfers.createTitle', 'New Bank Transfer')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
-              Pindahkan dana antar rekening kas dan bank.
+              {t('accounting.bankTransfers.createDesc', 'Move funds between cash and bank accounts.')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5">
             {/* Date */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Tanggal Transfer *</label>
+              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankTransfers.fieldDate', 'Transfer Date')} *</label>
               <MonomiDatePicker
                 value={form.transferDate}
                 onChange={(d) => setForm((f) => ({ ...f, transferDate: d }))}
-                placeholder="Pilih tanggal"
+                placeholder={t('accounting.bankTransfers.fieldDatePh', 'Select date')}
                 className="bg-bg-sunken border-border-subtle"
               />
             </div>
 
             {/* From account */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Dari Akun (Debit) *</label>
+              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankTransfers.fieldFromAccount', 'From Account (Debit)')} *</label>
               <Select value={form.fromAccountId} onValueChange={(v) => setForm((f) => ({ ...f, fromAccountId: v }))}>
                 <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-primary">
-                  <SelectValue placeholder="Pilih akun sumber" />
+                  <SelectValue placeholder={t('accounting.bankTransfers.fieldFromAccountPh', 'Select source account')} />
                 </SelectTrigger>
                 <SelectContent>
                   {bankAccounts.map((a) => (
@@ -716,10 +709,10 @@ export default function BankTransfersPage() {
 
             {/* To account */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Ke Akun (Credit) *</label>
+              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankTransfers.fieldToAccount', 'To Account (Credit)')} *</label>
               <Select value={form.toAccountId} onValueChange={(v) => setForm((f) => ({ ...f, toAccountId: v }))}>
                 <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-primary">
-                  <SelectValue placeholder="Pilih akun tujuan" />
+                  <SelectValue placeholder={t('accounting.bankTransfers.fieldToAccountPh', 'Select destination account')} />
                 </SelectTrigger>
                 <SelectContent>
                   {bankAccounts.map((a) => (
@@ -732,7 +725,7 @@ export default function BankTransfersPage() {
             {/* Amount + method */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Jumlah Transfer (IDR) *</label>
+                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankTransfers.fieldAmount', 'Transfer Amount (IDR)')} *</label>
                 <Input
                   type="number"
                   value={form.amount}
@@ -742,7 +735,7 @@ export default function BankTransfersPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Metode Transfer</label>
+                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankTransfers.fieldMethod', 'Transfer Method')}</label>
                 <Select
                   value={form.transferMethod}
                   onValueChange={(v) => setForm((f) => ({ ...f, transferMethod: v as BankTransfer['transferMethod'] }))}
@@ -752,12 +745,12 @@ export default function BankTransfersPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="INTERNAL">Internal</SelectItem>
-                    <SelectItem value="INTERBANK">Antar Bank</SelectItem>
+                    <SelectItem value="INTERBANK">{t('accounting.bankTransfers.methodInterbank', 'Interbank')}</SelectItem>
                     <SelectItem value="RTGS">RTGS</SelectItem>
-                    <SelectItem value="CLEARING">Kliring</SelectItem>
+                    <SelectItem value="CLEARING">{t('accounting.bankTransfers.methodClearing', 'Clearing')}</SelectItem>
                     <SelectItem value="SKN">SKN</SelectItem>
                     <SelectItem value="BIFAST">BI-FAST</SelectItem>
-                    <SelectItem value="OTHER">Lainnya</SelectItem>
+                    <SelectItem value="OTHER">{t('accounting.bankTransfers.methodOther', 'Other')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -766,7 +759,7 @@ export default function BankTransfersPage() {
             {/* Fee (optional) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Biaya Transfer (Opsional)</label>
+                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankTransfers.fieldFee', 'Transfer Fee (Optional)')}</label>
                 <Input
                   type="number"
                   value={form.transferFee}
@@ -777,10 +770,10 @@ export default function BankTransfersPage() {
               </div>
               {expenseAccounts.length > 0 && (
                 <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Akun Biaya</label>
+                  <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankTransfers.fieldFeeAccount', 'Fee Account')}</label>
                   <Select value={form.feeAccountId} onValueChange={(v) => setForm((f) => ({ ...f, feeAccountId: v }))}>
                     <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-primary">
-                      <SelectValue placeholder="Pilih akun" />
+                      <SelectValue placeholder={t('accounting.bankTransfers.fieldFeeAccountPh', 'Select account')} />
                     </SelectTrigger>
                     <SelectContent>
                       {expenseAccounts.map((a) => (
@@ -794,11 +787,11 @@ export default function BankTransfersPage() {
 
             {/* Description */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Deskripsi (Bahasa Indonesia) *</label>
+              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankTransfers.fieldDescId', 'Description (Indonesian)')} *</label>
               <textarea
                 value={form.descriptionId}
                 onChange={(e) => setForm((f) => ({ ...f, descriptionId: e.target.value }))}
-                placeholder="Contoh: Transfer dana operasional ke rekening BCA"
+                placeholder={t('accounting.bankTransfers.fieldDescIdPh', 'e.g. Transfer operational funds to BCA account')}
                 rows={2}
                 className="w-full rounded-md bg-bg-sunken border border-border-subtle text-text-primary text-sm px-3 py-2 placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-border-default"
               />
@@ -807,21 +800,21 @@ export default function BankTransfersPage() {
             {/* Optional fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Referensi Bank</label>
-                <Input value={form.bankReference} onChange={(e) => setForm((f) => ({ ...f, bankReference: e.target.value }))} placeholder="Opsional" className="bg-bg-sunken border-border-subtle text-text-primary" />
+                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankTransfers.fieldBankRef', 'Bank Reference')}</label>
+                <Input value={form.bankReference} onChange={(e) => setForm((f) => ({ ...f, bankReference: e.target.value }))} placeholder={t('accounting.bankTransfers.optional', 'Optional')} className="bg-bg-sunken border-border-subtle text-text-primary" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Kode Konfirmasi</label>
-                <Input value={form.confirmationCode} onChange={(e) => setForm((f) => ({ ...f, confirmationCode: e.target.value }))} placeholder="Opsional" className="bg-bg-sunken border-border-subtle text-text-primary" />
+                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankTransfers.fieldConfirmCode', 'Confirmation Code')}</label>
+                <Input value={form.confirmationCode} onChange={(e) => setForm((f) => ({ ...f, confirmationCode: e.target.value }))} placeholder={t('accounting.bankTransfers.optional', 'Optional')} className="bg-bg-sunken border-border-subtle text-text-primary" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Catatan</label>
+              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankTransfers.fieldNotes', 'Notes')}</label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                placeholder="Catatan tambahan (opsional)"
+                placeholder={t('accounting.bankTransfers.fieldNotesPh', 'Additional notes (optional)')}
                 rows={2}
                 className="w-full rounded-md bg-bg-sunken border border-border-subtle text-text-primary text-sm px-3 py-2 placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-border-default"
               />
@@ -829,9 +822,9 @@ export default function BankTransfersPage() {
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setCreateOpen(false); setForm(EMPTY_FORM); }}>Batal</Button>
+            <Button variant="outline" onClick={() => { setCreateOpen(false); setForm(EMPTY_FORM); }}>{t('accounting.bankTransfers.cancel', 'Cancel')}</Button>
             <Button onClick={handleCreate} disabled={createMutation.isPending}>
-              {createMutation.isPending ? <><RefreshCw className="h-4 w-4 animate-spin" /> Menyimpan...</> : 'Buat Transfer'}
+              {createMutation.isPending ? <><RefreshCw className="h-4 w-4 animate-spin" /> {t('accounting.bankTransfers.saving', 'Saving...')}</> : t('accounting.bankTransfers.createSubmit', 'Create Transfer')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -841,21 +834,21 @@ export default function BankTransfersPage() {
       <Dialog open={!!rejectTarget} onOpenChange={(open) => { if (!open) { setRejectTarget(null); setRejectReason(''); } }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display">Tolak Transfer Bank</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.bankTransfers.rejectTitle', 'Reject Bank Transfer')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">{rejectTarget?.transferNumber}</DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Alasan Penolakan *</label>
+            <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankTransfers.rejectReasonLabel', 'Rejection Reason')} *</label>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Tuliskan alasan penolakan..."
+              placeholder={t('accounting.bankTransfers.rejectReasonPh', 'State the reason for rejection...')}
               rows={3}
               className="w-full rounded-md bg-bg-sunken border border-border-subtle text-text-primary text-sm px-3 py-2 placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-border-default"
             />
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setRejectTarget(null); setRejectReason(''); }}>Batal</Button>
+            <Button variant="outline" onClick={() => { setRejectTarget(null); setRejectReason(''); }}>{t('accounting.bankTransfers.cancel', 'Cancel')}</Button>
             <Button
               variant="destructive"
               disabled={!rejectReason.trim() || rejectMutation.isPending}
@@ -865,7 +858,7 @@ export default function BankTransfersPage() {
                 }
               }}
             >
-              Tolak Transfer
+              {t('accounting.bankTransfers.rejectSubmit', 'Reject Transfer')}
             </Button>
           </DialogFooter>
         </DialogContent>

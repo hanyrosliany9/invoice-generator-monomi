@@ -44,19 +44,19 @@ const STATUS_VALUES = ['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'CANCELLED'
 
 export const expenseFormSchema = z.object({
   // 01 · Rincian
-  categoryId:   z.string().min(1, 'Kategori wajib dipilih'),
-  expenseDate:  z.date({ required_error: 'Tanggal biaya wajib diisi' }),
-  description:  z.string().min(1, 'Deskripsi wajib diisi').max(500, 'Deskripsi terlalu panjang'),
-  grossAmount:  z.coerce.number().min(1, 'Jumlah harus lebih dari 0'),
+  categoryId:   z.string().min(1, 'Category is required'),
+  expenseDate:  z.date({ required_error: 'Expense date is required' }),
+  description:  z.string().min(1, 'Description is required').max(500, 'Description is too long'),
+  grossAmount:  z.coerce.number().min(1, 'Amount must be greater than 0'),
 
   // 02 · Vendor
-  vendorName:    z.string().min(1, 'Nama vendor wajib diisi').max(160, 'Nama vendor terlalu panjang'),
+  vendorName:    z.string().min(1, 'Vendor name is required').max(160, 'Vendor name is too long'),
   vendorNPWP: z
     .string()
     .optional()
     .or(z.literal(''))
-    .refine((v) => !v || npwpPattern.test(v), 'Format NPWP tidak valid (XX.XXX.XXX.X-XXX.XXX)'),
-  vendorAddress: z.string().max(500, 'Alamat terlalu panjang').optional().or(z.literal('')),
+    .refine((v) => !v || npwpPattern.test(v), 'Invalid NPWP format (XX.XXX.XXX.X-XXX.XXX)'),
+  vendorAddress: z.string().max(500, 'Address is too long').optional().or(z.literal('')),
 
   // 03 · Pajak (PPN & PPh)
   includePPN:        z.boolean(),
@@ -73,11 +73,11 @@ export const expenseFormSchema = z.object({
     .string()
     .optional()
     .or(z.literal(''))
-    .refine((v) => !v || nsfpPattern.test(v), 'Format NSFP tidak valid (XXX.XXX-XX.XXXXXXXX)'),
+    .refine((v) => !v || nsfpPattern.test(v), 'Invalid NSFP format (XXX.XXX-XX.XXXXXXXX)'),
   eFakturStatus: z.nativeEnum(EFakturStatus),
 
   // 06 · Catatan
-  notes: z.string().max(2000, 'Catatan terlalu panjang').optional().or(z.literal('')),
+  notes: z.string().max(2000, 'Notes are too long').optional().or(z.literal('')),
 
   // Edit-only
   status: z.enum(STATUS_VALUES).optional(),
@@ -110,32 +110,32 @@ export const emptyExpenseFormValues: ExpenseFormValues = {
 /* ============================================================== */
 
 const PPN_CATEGORY_OPTIONS: Array<{ value: PPNCategory; label: string }> = [
-  { value: PPNCategory.CREDITABLE,     label: 'Dapat Dikreditkan' },
-  { value: PPNCategory.NON_CREDITABLE, label: 'Tidak Dapat Dikreditkan' },
-  { value: PPNCategory.EXEMPT,         label: 'Bebas PPN' },
+  { value: PPNCategory.CREDITABLE,     label: 'Creditable' },
+  { value: PPNCategory.NON_CREDITABLE, label: 'Non-Creditable' },
+  { value: PPNCategory.EXEMPT,         label: 'VAT Exempt' },
 ];
 
 const WITHHOLDING_OPTIONS: Array<{ value: WithholdingTaxType; label: string; hint: string }> = [
-  { value: WithholdingTaxType.NONE,  label: 'Tidak Ada',        hint: 'Tanpa pemotongan PPh' },
-  { value: WithholdingTaxType.PPH23, label: 'PPh 23 (Jasa)',    hint: '2% — jasa, sewa peralatan' },
-  { value: WithholdingTaxType.PPH4_2, label: 'PPh 4(2) (Sewa)', hint: '10% — sewa gedung & bunga' },
-  { value: WithholdingTaxType.PPH15, label: 'PPh 15 (Kirim)',   hint: '±2,65% — pengiriman & aviasi' },
+  { value: WithholdingTaxType.NONE,   label: 'None',              hint: 'No income tax withholding' },
+  { value: WithholdingTaxType.PPH23,  label: 'PPh 23 (Services)', hint: '2% — services, equipment rental' },
+  { value: WithholdingTaxType.PPH4_2, label: 'PPh 4(2) (Rent)',   hint: '10% — building rental & interest' },
+  { value: WithholdingTaxType.PPH15,  label: 'PPh 15 (Freight)',  hint: '±2.65% — freight & aviation' },
 ];
 
 const EFAKTUR_STATUS_OPTIONS: Array<{ value: EFakturStatus; label: string }> = [
-  { value: EFakturStatus.NOT_REQUIRED, label: 'Tidak Diperlukan' },
-  { value: EFakturStatus.REQUIRED,     label: 'Diperlukan' },
-  { value: EFakturStatus.UPLOADED,     label: 'Sudah Upload' },
-  { value: EFakturStatus.VALIDATED,    label: 'Tervalidasi' },
-  { value: EFakturStatus.REJECTED,     label: 'Ditolak DJP' },
+  { value: EFakturStatus.NOT_REQUIRED, label: 'Not Required' },
+  { value: EFakturStatus.REQUIRED,     label: 'Required' },
+  { value: EFakturStatus.UPLOADED,     label: 'Uploaded' },
+  { value: EFakturStatus.VALIDATED,    label: 'Validated' },
+  { value: EFakturStatus.REJECTED,     label: 'Rejected by DGT' },
 ];
 
 const STATUS_OPTIONS: Array<{ value: typeof STATUS_VALUES[number]; label: string }> = [
   { value: 'DRAFT',     label: 'Draft' },
-  { value: 'SUBMITTED', label: 'Diajukan' },
-  { value: 'APPROVED',  label: 'Disetujui' },
-  { value: 'REJECTED',  label: 'Ditolak' },
-  { value: 'CANCELLED', label: 'Dibatalkan' },
+  { value: 'SUBMITTED', label: 'Submitted' },
+  { value: 'APPROVED',  label: 'Approved' },
+  { value: 'REJECTED',  label: 'Rejected' },
+  { value: 'CANCELLED', label: 'Cancelled' },
 ];
 
 /* ============================================================== */
@@ -416,15 +416,15 @@ export const ExpenseForm = ({
           <GlassPanel surface="glass" padding="lg">
             <SectionHeader
               index={1}
-              eyebrow="Rincian"
-              title="Detail Biaya"
-              description="Inti pengeluaran: kategori, tanggal, deskripsi, dan jumlah bruto sebelum pajak."
+              eyebrow={t('expenseForm.section1.eyebrow', 'Details')}
+              title={t('expenseForm.section1.title', 'Expense Details')}
+              description={t('expenseForm.section1.desc', 'Core expense info: category, date, description, and gross amount before tax.')}
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
               {/* Category */}
               <div className="space-y-1.5 sm:col-span-2">
-                <FieldLabel required>Kategori Biaya</FieldLabel>
+                <FieldLabel required>{t('expenseForm.field.category', 'Expense Category')}</FieldLabel>
                 <Controller
                   control={control}
                   name="categoryId"
@@ -441,7 +441,7 @@ export const ExpenseForm = ({
                           errors.categoryId && fieldInvalidClass,
                         )}
                       >
-                        <SelectValue placeholder="Pilih kategori biaya" />
+                        <SelectValue placeholder={t('expenseForm.field.categoryPlaceholder', 'Select expense category')} />
                       </SelectTrigger>
                       <SelectContent className="max-h-72 bg-bg-raised border-border-subtle">
                         {categories.map((cat) => (
@@ -454,7 +454,7 @@ export const ExpenseForm = ({
                         ))}
                         {categories.length === 0 && !categoriesLoading && (
                           <div className="px-2 py-2 text-xs text-text-tertiary">
-                            Belum ada kategori biaya
+                            {t('expenseForm.noCategories', 'No expense categories yet')}
                           </div>
                         )}
                       </SelectContent>
@@ -471,7 +471,7 @@ export const ExpenseForm = ({
 
               {/* Date */}
               <div className="space-y-1.5">
-                <FieldLabel required>Tanggal Biaya</FieldLabel>
+                <FieldLabel required>{t('expenseForm.field.date', 'Expense Date')}</FieldLabel>
                 <Controller
                   control={control}
                   name="expenseDate"
@@ -479,7 +479,7 @@ export const ExpenseForm = ({
                     <MonomiDatePicker
                       value={field.value}
                       onChange={(d) => field.onChange(d ?? new Date())}
-                      placeholder="Pilih tanggal"
+                      placeholder={t('expenseForm.field.datePlaceholder', 'Select date')}
                       className="bg-bg-sunken border-border-subtle text-text-primary"
                       disabled={isSubmitting}
                     />
@@ -490,7 +490,7 @@ export const ExpenseForm = ({
 
               {/* Gross amount */}
               <div className="space-y-1.5">
-                <FieldLabel htmlFor="ef-gross" required>Jumlah Bruto (IDR)</FieldLabel>
+                <FieldLabel htmlFor="ef-gross" required>{t('expenseForm.field.grossAmount', 'Gross Amount (IDR)')}</FieldLabel>
                 <div className="relative">
                   <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs font-mono text-text-tertiary">
                     Rp
@@ -517,11 +517,11 @@ export const ExpenseForm = ({
 
               {/* Description */}
               <div className="space-y-1.5 sm:col-span-2">
-                <FieldLabel htmlFor="ef-description" required>Deskripsi</FieldLabel>
+                <FieldLabel htmlFor="ef-description" required>{t('expenseForm.field.description', 'Description')}</FieldLabel>
                 <Textarea
                   id="ef-description"
                   rows={3}
-                  placeholder="Contoh: Sewa kantor bulan Januari 2025"
+                  placeholder={t('expenseForm.field.descriptionPlaceholder', 'e.g. Office rent January 2025')}
                   invalid={!!errors.description}
                   aria-invalid={!!errors.description}
                   disabled={isSubmitting}
@@ -536,14 +536,14 @@ export const ExpenseForm = ({
           <GlassPanel surface="glass" padding="lg">
             <SectionHeader
               index={2}
-              eyebrow="Vendor"
-              title="Pihak Penerima"
-              description="Identitas vendor untuk dokumen pajak dan rekonsiliasi pembayaran."
+              eyebrow={t('expenseForm.section2.eyebrow', 'Vendor')}
+              title={t('expenseForm.section2.title', 'Payee')}
+              description={t('expenseForm.section2.desc', 'Vendor identity for tax documents and payment reconciliation.')}
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
               <div className="space-y-1.5 sm:col-span-2">
-                <FieldLabel htmlFor="ef-vendor-name" required>Nama Vendor</FieldLabel>
+                <FieldLabel htmlFor="ef-vendor-name" required>{t('expenseForm.field.vendorName', 'Vendor Name')}</FieldLabel>
                 <Input
                   id="ef-vendor-name"
                   placeholder="PT Vendor Indonesia"
@@ -557,7 +557,7 @@ export const ExpenseForm = ({
               </div>
 
               <div className="space-y-1.5">
-                <FieldLabel htmlFor="ef-vendor-npwp">NPWP Vendor</FieldLabel>
+                <FieldLabel htmlFor="ef-vendor-npwp">{t('expenseForm.field.vendorNPWP', 'Vendor NPWP')}</FieldLabel>
                 <Input
                   id="ef-vendor-npwp"
                   placeholder="01.234.567.8-901.000"
@@ -572,12 +572,12 @@ export const ExpenseForm = ({
                   disabled={isSubmitting}
                   {...register('vendorNPWP')}
                 />
-                <FieldHint>Opsional. Format XX.XXX.XXX.X-XXX.XXX</FieldHint>
+                <FieldHint>{t('expenseForm.field.vendorNPWPHint', 'Optional. Format XX.XXX.XXX.X-XXX.XXX')}</FieldHint>
                 <FieldError message={errors.vendorNPWP?.message} />
               </div>
 
               <div className="space-y-1.5">
-                <FieldLabel htmlFor="ef-vendor-address">Alamat Vendor</FieldLabel>
+                <FieldLabel htmlFor="ef-vendor-address">{t('expenseForm.field.vendorAddress', 'Vendor Address')}</FieldLabel>
                 <Input
                   id="ef-vendor-address"
                   placeholder="Jl. Sudirman No. 1, Jakarta"
@@ -595,9 +595,9 @@ export const ExpenseForm = ({
           <GlassPanel surface="glass" padding="lg">
             <SectionHeader
               index={3}
-              eyebrow="Pajak"
-              title="PPN & PPh"
-              description="Perhitungan PPN dan pemotongan PPh dihitung otomatis dari jumlah bruto."
+              eyebrow={t('expenseForm.section3.eyebrow', 'Tax')}
+              title={t('expenseForm.section3.title', 'VAT & Income Tax')}
+              description={t('expenseForm.section3.desc', 'VAT and withholding tax are calculated automatically from the gross amount.')}
             />
 
             <div className="space-y-5">
@@ -618,12 +618,12 @@ export const ExpenseForm = ({
                         htmlFor="ef-include-ppn"
                         className="text-sm text-text-primary cursor-pointer"
                       >
-                        Sertakan PPN
+                        {t('expenseForm.field.includePPN', 'Include VAT')}
                       </Label>
                       <p className="mt-0.5 text-[11px] text-text-tertiary">
                         {field.value
-                          ? `PPN ${isLuxuryGoods ? '12%' : '11%'} ditambahkan ke total`
-                          : 'PPN tidak dihitung untuk biaya ini'}
+                          ? t('expenseForm.field.includePPNOn', 'VAT {{rate}}% added to total', { rate: isLuxuryGoods ? '12' : '11' })
+                          : t('expenseForm.field.includePPNOff', 'VAT not applied to this expense')}
                       </p>
                     </div>
                   </div>
@@ -649,10 +649,10 @@ export const ExpenseForm = ({
                             htmlFor="ef-luxury"
                             className="text-sm text-text-primary cursor-pointer"
                           >
-                            Barang Mewah
+                            {t('expenseForm.field.luxuryGoods', 'Luxury Goods')}
                           </Label>
                           <p className="mt-0.5 text-[11px] text-text-tertiary">
-                            {field.value ? 'Tarif PPN 12% (PPnBM)' : 'Tarif PPN efektif 11%'}
+                            {field.value ? t('expenseForm.field.luxuryGoodsOn', 'VAT rate 12% (PPnBM)') : t('expenseForm.field.luxuryGoodsOff', 'Effective VAT rate 11%')}
                           </p>
                         </div>
                       </div>
@@ -663,7 +663,7 @@ export const ExpenseForm = ({
                 {/* PPN category */}
                 {includePPN && (
                   <div className="space-y-1.5">
-                    <FieldLabel>Kategori PPN</FieldLabel>
+                    <FieldLabel>{t('expenseForm.field.ppnCategory', 'VAT Category')}</FieldLabel>
                     <Controller
                       control={control}
                       name="ppnCategory"
@@ -689,7 +689,7 @@ export const ExpenseForm = ({
 
                 {/* Withholding type */}
                 <div className={cn('space-y-1.5', !includePPN && 'sm:col-span-2')}>
-                  <FieldLabel>Jenis PPh (Dipotong)</FieldLabel>
+                  <FieldLabel>{t('expenseForm.field.withholdingType', 'Withholding Tax (PPh)')}</FieldLabel>
                   <Controller
                     control={control}
                     name="withholdingTaxType"
@@ -724,9 +724,9 @@ export const ExpenseForm = ({
           <GlassPanel surface="glass" padding="lg">
             <SectionHeader
               index={4}
-              eyebrow="Konteks"
-              title="Proyek & Penagihan"
-              description="Hubungkan biaya ke proyek tertentu. Aktifkan billable jika biaya akan ditagihkan ulang ke klien."
+              eyebrow={t('expenseForm.section4.eyebrow', 'Context')}
+              title={t('expenseForm.section4.title', 'Project & Billing')}
+              description={t('expenseForm.section4.desc', 'Link the expense to a specific project. Enable billable if the cost will be passed through to the client.')}
             />
 
             <div className="space-y-5">
@@ -746,12 +746,12 @@ export const ExpenseForm = ({
                         htmlFor="ef-billable"
                         className="text-sm text-text-primary cursor-pointer"
                       >
-                        Dapat Ditagihkan ke Klien
+                        {t('expenseForm.field.billable', 'Billable to Client')}
                       </Label>
                       <p className="mt-0.5 text-[11px] text-text-tertiary">
                         {field.value
-                          ? 'Biaya akan muncul sebagai item tagihan di invoice proyek'
-                          : 'Biaya internal — tidak ditagihkan ulang'}
+                          ? t('expenseForm.field.billableOn', 'Cost will appear as a line item on the project invoice')
+                          : t('expenseForm.field.billableOff', 'Internal cost — not billed to client')}
                       </p>
                     </div>
                   </div>
@@ -759,7 +759,7 @@ export const ExpenseForm = ({
               />
 
               <div className="space-y-1.5">
-                <FieldLabel>Proyek Terkait</FieldLabel>
+                <FieldLabel>{t('expenseForm.field.project', 'Related Project')}</FieldLabel>
                 <Controller
                   control={control}
                   name="projectId"
@@ -773,14 +773,14 @@ export const ExpenseForm = ({
                         <SelectValue
                           placeholder={
                             isBillable
-                              ? 'Pilih proyek tujuan tagihan'
-                              : 'Opsional — pilih proyek terkait'
+                              ? t('expenseForm.field.projectBillablePlaceholder', 'Select billing project')
+                              : t('expenseForm.field.projectPlaceholder', 'Optional — select related project')
                           }
                         />
                       </SelectTrigger>
                       <SelectContent className="max-h-72 bg-bg-raised border-border-subtle">
                         <SelectItem value="__none__">
-                          <span className="text-text-tertiary italic">Tanpa proyek</span>
+                          <span className="text-text-tertiary italic">{t('expenseForm.field.noProject', 'No project')}</span>
                         </SelectItem>
                         {projects.map((p) => (
                           <SelectItem key={p.id} value={p.id}>
@@ -795,7 +795,7 @@ export const ExpenseForm = ({
                   )}
                 />
                 <FieldHint>
-                  Klien akan otomatis terisi dari proyek yang dipilih.
+                  {t('expenseForm.field.projectHint', 'Client will be auto-filled from the selected project.')}
                 </FieldHint>
               </div>
             </div>
@@ -805,14 +805,14 @@ export const ExpenseForm = ({
           <GlassPanel surface="glass" padding="lg">
             <SectionHeader
               index={5}
-              eyebrow="e-Faktur"
-              title="Faktur Pajak Elektronik"
-              description="Isi jika vendor menerbitkan faktur pajak. Wajib untuk mengkreditkan PPN masukan."
+              eyebrow={t('expenseForm.section5.eyebrow', 'e-Invoice')}
+              title={t('expenseForm.section5.title', 'Electronic Tax Invoice')}
+              description={t('expenseForm.section5.desc', 'Fill in if the vendor issues a tax invoice. Required to credit input VAT.')}
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
               <div className="space-y-1.5">
-                <FieldLabel htmlFor="ef-nsfp">Nomor Seri Faktur Pajak (NSFP)</FieldLabel>
+                <FieldLabel htmlFor="ef-nsfp">{t('expenseForm.field.nsfp', 'Tax Invoice Serial Number (NSFP)')}</FieldLabel>
                 <Input
                   id="ef-nsfp"
                   placeholder="010.123-25.12345678"
@@ -827,12 +827,12 @@ export const ExpenseForm = ({
                   disabled={isSubmitting}
                   {...register('eFakturNSFP')}
                 />
-                <FieldHint>Format XXX.XXX-XX.XXXXXXXX</FieldHint>
+                <FieldHint>{t('expenseForm.field.nsfpHint', 'Format XXX.XXX-XX.XXXXXXXX')}</FieldHint>
                 <FieldError message={errors.eFakturNSFP?.message} />
               </div>
 
               <div className="space-y-1.5">
-                <FieldLabel>Status e-Faktur</FieldLabel>
+                <FieldLabel>{t('expenseForm.field.eFakturStatus', 'e-Invoice Status')}</FieldLabel>
                 <Controller
                   control={control}
                   name="eFakturStatus"
@@ -861,15 +861,15 @@ export const ExpenseForm = ({
           <GlassPanel surface="subtle" padding="lg">
             <SectionHeader
               index={6}
-              eyebrow="Catatan"
-              title="Catatan Internal"
-              description="Konteks tambahan untuk tim — tidak ditampilkan ke klien."
+              eyebrow={t('expenseForm.section6.eyebrow', 'Notes')}
+              title={t('expenseForm.section6.title', 'Internal Notes')}
+              description={t('expenseForm.section6.desc', 'Additional context for the team — not shown to clients.')}
             />
 
             <Textarea
               id="ef-notes"
               rows={4}
-              placeholder="Misal: invoice rangkap 2, butuh persetujuan finance manager…"
+              placeholder={t('expenseForm.field.notesPlaceholder', 'e.g. duplicate invoice, requires finance manager approval...')}
               invalid={!!errors.notes}
               aria-invalid={!!errors.notes}
               disabled={isSubmitting}
@@ -883,14 +883,14 @@ export const ExpenseForm = ({
             <GlassPanel surface="glass" padding="lg">
               <SectionHeader
                 index={7}
-                eyebrow="Status"
-                title="Alur Persetujuan"
-                description="Perubahan status di sini hanya berlaku jika ditangani oleh endpoint approval. Konfirmasi melalui aksi khusus di halaman detail untuk transisi penuh."
+                eyebrow={t('expenseForm.section7.eyebrow', 'Status')}
+                title={t('expenseForm.section7.title', 'Approval Workflow')}
+                description={t('expenseForm.section7.desc', 'Status changes here only apply via the approval endpoint. Use dedicated actions on the detail page for full transitions.')}
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
                 <div className="space-y-1.5">
-                  <FieldLabel>Status Persetujuan</FieldLabel>
+                  <FieldLabel>{t('expenseForm.field.approvalStatus', 'Approval Status')}</FieldLabel>
                   <Controller
                     control={control}
                     name="status"
@@ -912,7 +912,7 @@ export const ExpenseForm = ({
                     )}
                   />
                   <FieldHint>
-                    Transisi sebenarnya (submit, approve, reject, mark-paid) dilakukan dari halaman detail.
+                    {t('expenseForm.section7.hint', 'Actual transitions (submit, approve, reject, mark paid) are performed from the detail page.')}
                   </FieldHint>
                 </div>
               </div>
@@ -928,13 +928,13 @@ export const ExpenseForm = ({
             <div className="flex items-center gap-2 mb-4">
               <Receipt className="h-3.5 w-3.5 text-text-tertiary" />
               <h2 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
-                Ringkasan
+                {t('expenseForm.summary.title', 'Summary')}
               </h2>
             </div>
 
             <dl className="space-y-2.5 text-sm">
               <div className="flex items-center justify-between">
-                <dt className="text-text-secondary">Bruto</dt>
+                <dt className="text-text-secondary">{t('expenseForm.summary.gross', 'Gross')}</dt>
                 <dd><MoneyDisplay amount={grossAmount} className="text-text-secondary" /></dd>
               </div>
 
@@ -953,7 +953,7 @@ export const ExpenseForm = ({
               {withholdingType !== WithholdingTaxType.NONE && (
                 <div className="flex items-center justify-between">
                   <dt className="text-text-secondary inline-flex items-center gap-1.5">
-                    <span>PPh Dipotong</span>
+                    <span>{t('expenseForm.summary.withheld', 'PPh Withheld')}</span>
                     <span className="text-[10px] uppercase tracking-[0.12em] text-warning">
                       {withholdingType.replace('_', ' ')}
                     </span>
@@ -971,7 +971,7 @@ export const ExpenseForm = ({
               <Separator className="bg-border-subtle my-3" />
 
               <div className="flex items-center justify-between">
-                <dt className="text-sm font-medium text-text-primary">Total Biaya</dt>
+                <dt className="text-sm font-medium text-text-primary">{t('expenseForm.summary.total', 'Total Expense')}</dt>
                 <dd>
                   <MoneyDisplay
                     amount={totals.totalAmount}
@@ -983,7 +983,7 @@ export const ExpenseForm = ({
               {withholdingType !== WithholdingTaxType.NONE && (
                 <div className="flex items-center justify-between pt-1">
                   <dt className="text-[11px] uppercase tracking-[0.12em] text-text-tertiary">
-                    Netto Dibayar
+                    {t('expenseForm.summary.netPayable', 'Net Payable')}
                   </dt>
                   <dd>
                     <MoneyDisplay
@@ -1003,16 +1003,16 @@ export const ExpenseForm = ({
                 <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <div className="text-sm font-medium text-text-primary">
-                    Catatan Kepatuhan
+                    {t('expenseForm.compliance.title', 'Compliance Note')}
                   </div>
                   {includePPN && (
                     <p className="text-xs text-text-secondary leading-relaxed">
-                      Vendor wajib menerbitkan faktur pajak {isLuxuryGoods ? '12%' : '11%'} agar PPN dapat dikreditkan.
+                      {t('expenseForm.compliance.ppn', 'Vendor must issue a {{rate}}% tax invoice for input VAT to be creditable.', { rate: isLuxuryGoods ? '12' : '11' })}
                     </p>
                   )}
                   {withholdingType !== WithholdingTaxType.NONE && (
                     <p className="text-xs text-text-secondary leading-relaxed">
-                      Terbitkan Bukti Potong dan setor PPh ke kas negara sesuai jadwal.
+                      {t('expenseForm.compliance.pph', 'Issue a withholding receipt (Bukti Potong) and remit PPh to the tax authority on schedule.')}
                     </p>
                   )}
                 </div>
@@ -1026,7 +1026,7 @@ export const ExpenseForm = ({
             <GlassPanel surface="subtle" padding="md">
               <div className="space-y-2">
                 <p className="text-[11px] text-text-tertiary leading-relaxed">
-                  Simpan sebagai draft untuk meninjau ulang nanti, atau ajukan langsung untuk persetujuan.
+                  {t('expenseForm.submitNote', 'Save as draft to review later, or submit immediately for approval.')}
                 </p>
                 <Button
                   type="button"
@@ -1039,10 +1039,10 @@ export const ExpenseForm = ({
                   {isSubmitting ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Mengajukan…
+                      {t('expenseForm.submitting', 'Submitting...')}
                     </>
                   ) : (
-                    'Simpan & Ajukan untuk Persetujuan'
+                    t('expenseForm.saveAndSubmit', 'Save & Submit for Approval')
                   )}
                 </Button>
               </div>
@@ -1058,8 +1058,8 @@ export const ExpenseForm = ({
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <p className="text-[11px] text-text-tertiary">
             {mode === 'create'
-              ? 'Biaya akan tersimpan sebagai DRAFT. Tanda * menandakan kolom wajib diisi.'
-              : 'Perubahan diterapkan saat Anda menekan "Simpan".'}
+              ? t('expenseForm.bottomBar.createHint', 'Expense will be saved as DRAFT. Fields marked * are required.')
+              : t('expenseForm.bottomBar.editHint', 'Changes are applied when you click "Save".')}
           </p>
           <div className="flex items-center gap-2">
             {onCancel && (
@@ -1070,7 +1070,7 @@ export const ExpenseForm = ({
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >
-                Batal
+                {t('expenseForm.cancel', 'Cancel')}
               </Button>
             )}
             <Button
@@ -1081,10 +1081,10 @@ export const ExpenseForm = ({
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Menyimpan…
+                  {t('expenseForm.saving', 'Saving...')}
                 </>
               ) : (
-                'Simpan'
+                t('expenseForm.save', 'Save')
               )}
             </Button>
           </div>
@@ -1107,9 +1107,9 @@ const WITHHOLDING_RATE_MAP: Record<WithholdingTaxType, number> = {
 
 const expenseClassLabel = (c: ExpenseClass): string => {
   switch (c) {
-    case ExpenseClass.SELLING:       return 'Beban Penjualan';
-    case ExpenseClass.GENERAL_ADMIN: return 'Beban Umum & Administrasi';
-    case ExpenseClass.OTHER:         return 'Beban Lain-Lain';
+    case ExpenseClass.SELLING:       return 'Selling Expense';
+    case ExpenseClass.GENERAL_ADMIN: return 'General & Administrative';
+    case ExpenseClass.OTHER:         return 'Other Expense';
     default:                         return c;
   }
 };

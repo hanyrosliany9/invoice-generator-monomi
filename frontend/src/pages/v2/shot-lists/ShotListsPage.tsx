@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +12,8 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -44,23 +47,13 @@ import type { ShotList } from '@/types/shotList';
 /*  Nav                                                                */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Create form                                                        */
 /* ------------------------------------------------------------------ */
 
 const createSchema = z.object({
-  name:        z.string().min(2, 'Nama minimal 2 karakter'),
-  projectId:   z.string().min(1, 'Proyek wajib dipilih'),
+  name:        z.string().min(2, 'Name must be at least 2 characters'),
+  projectId:   z.string().min(1, 'A project must be selected'),
   description: z.string().optional(),
 });
 type CreateFormValues = z.infer<typeof createSchema>;
@@ -77,6 +70,7 @@ const totalShots = (sl: ShotList) =>
 /* ------------------------------------------------------------------ */
 
 export default function ShotListsPageV2() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
@@ -116,12 +110,12 @@ export default function ShotListsPageV2() {
     mutationFn: shotListsApi.create,
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['shot-lists'] });
-      toast.success('Shot list berhasil dibuat');
+      toast.success(t('shotLists.createSuccess', 'Shot list created'));
       setCreateOpen(false);
       navigate(`/v2/shot-lists/${created.id}`);
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Gagal membuat shot list');
+      toast.error(err.message || t('shotLists.createFailed', 'Failed to create shot list'));
     },
   });
 
@@ -129,9 +123,9 @@ export default function ShotListsPageV2() {
     mutationFn: (id: string) => shotListsApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shot-lists'] });
-      toast.success('Shot list dihapus');
+      toast.success(t('shotLists.deleteSuccess', 'Shot list deleted'));
     },
-    onError: () => toast.error('Gagal menghapus shot list'),
+    onError: () => toast.error(t('shotLists.deleteFailed', 'Failed to delete shot list')),
   });
 
   /* ----- derived ----- */
@@ -153,7 +147,7 @@ export default function ShotListsPageV2() {
   const handleDelete = (sl: ShotList) => {
     if (
       confirm(
-        `Hapus shot list "${sl.name}"? Semua scene dan shot di dalamnya akan dihapus dan tidak dapat dipulihkan.`,
+        t('shotLists.confirmDelete', 'Delete shot list "{{name}}"? All scenes and shots inside will be permanently deleted.', { name: sl.name }),
       )
     ) {
       deleteMutation.mutate(sl.id);
@@ -167,9 +161,9 @@ export default function ShotListsPageV2() {
         <PageContainer>
           <EmptyState
             icon={<Film className="h-12 w-12" />}
-            title="Tidak bisa memuat shot list"
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-            action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+            title={t('shotLists.errorTitle', 'Cannot load shot lists')}
+            description={error instanceof Error ? error.message : t('shotLists.errorGeneric', 'An error occurred')}
+            action={<Button onClick={() => refetch()}>{t('shotLists.retry', 'Try Again')}</Button>}
           />
         </PageContainer>
       </Shell>
@@ -180,12 +174,12 @@ export default function ShotListsPageV2() {
     <Shell user={user}>
       <PageContainer>
         <PageHeader
-          title="Shot List"
-          description="Rencana pengambilan gambar untuk produksi film. Buka shot list untuk menyusun shot per scene."
+          title={t('shotLists.title', 'Shot Lists')}
+          description={t('shotLists.description', 'Shot plans for film production. Open a shot list to organize shots by scene.')}
           actions={
             <Button onClick={() => setCreateOpen(true)} size="sm">
               <Plus className="h-4 w-4" />
-              Shot List Baru
+              {t('shotLists.newShotList', 'New Shot List')}
             </Button>
           }
         />
@@ -200,7 +194,7 @@ export default function ShotListsPageV2() {
               <Input
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Cari nama, deskripsi, atau proyek..."
+                placeholder={t('shotLists.searchPlaceholder', 'Search name, description, or project...')}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -210,10 +204,10 @@ export default function ShotListsPageV2() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[180px] max-w-[260px]"
                 >
-                  <SelectValue placeholder="Proyek" />
+                  <SelectValue placeholder={t('shotLists.projectPlaceholder', 'Project')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Proyek</SelectItem>
+                  <SelectItem value="all">{t('shotLists.allProjects', 'All Projects')}</SelectItem>
                   {projects.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.number} {p.description ? `· ${p.description}` : ''}
@@ -229,7 +223,7 @@ export default function ShotListsPageV2() {
                   className="text-text-tertiary hover:text-text-primary"
                 >
                   <X className="h-3.5 w-3.5" />
-                  Reset
+                  {t('common.reset', 'Reset')}
                 </Button>
               )}
             </div>
@@ -244,21 +238,21 @@ export default function ShotListsPageV2() {
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={<Film />}
-              title={hasActiveFilters ? 'Tidak ada shot list yang cocok' : 'Belum ada shot list'}
+              title={hasActiveFilters ? t('shotLists.noMatch', 'No matching shot lists') : t('shotLists.noShotLists', 'No shot lists yet')}
               description={
                 hasActiveFilters
-                  ? 'Coba ubah atau hapus filter Anda.'
-                  : 'Mulai dengan membuat shot list pertama untuk proyek Anda.'
+                  ? t('shotLists.noMatchDesc', 'Try adjusting or clearing your filters.')
+                  : t('shotLists.noShotListsDesc', 'Start by creating a shot list for your project.')
               }
               action={
                 hasActiveFilters ? (
                   <Button variant="outline" size="sm" onClick={resetFilters}>
-                    Reset Filter
+                    {t('common.resetFilters', 'Reset Filters')}
                   </Button>
                 ) : (
                   <Button onClick={() => setCreateOpen(true)} size="sm">
                     <Plus className="h-4 w-4" />
-                    Shot List Baru
+                    {t('shotLists.newShotList', 'New Shot List')}
                   </Button>
                 )
               }
@@ -272,7 +266,7 @@ export default function ShotListsPageV2() {
                 columns={[
                   {
                     accessorKey: 'name',
-                    header: 'Nama',
+                    header: t('shotLists.colName', 'Name'),
                     cell: ({ row }) => (
                       <div className="min-w-0 max-w-[320px]">
                         <div className="text-sm text-text-primary truncate">
@@ -288,7 +282,7 @@ export default function ShotListsPageV2() {
                   },
                   {
                     id: 'project',
-                    header: 'Proyek',
+                    header: t('shotLists.colProject', 'Project'),
                     accessorFn: (row) => row.project?.name ?? '',
                     cell: ({ row }) => {
                       const p = row.original.project;
@@ -333,7 +327,7 @@ export default function ShotListsPageV2() {
                   },
                   {
                     accessorKey: 'updatedAt',
-                    header: 'Diperbarui',
+                    header: t('shotLists.colUpdated', 'Updated'),
                     cell: ({ row }) => (
                       <span className="text-text-tertiary text-xs">
                         <DateDisplay date={row.original.updatedAt} />
@@ -351,7 +345,7 @@ export default function ShotListsPageV2() {
                               variant="ghost"
                               size="icon-sm"
                               className="text-text-tertiary hover:text-text-primary"
-                              aria-label="Aksi shot list"
+                              aria-label={t('shotLists.shotListActions', 'Shot list actions')}
                             >
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
@@ -360,14 +354,14 @@ export default function ShotListsPageV2() {
                             <DropdownMenuItem
                               onClick={() => navigate(`/v2/shot-lists/${row.original.id}`)}
                             >
-                              <Eye className="h-3.5 w-3.5" /> Buka
+                              <Eye className="h-3.5 w-3.5" /> {t('common.open', 'Open')}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => handleDelete(row.original)}
                               className="text-danger focus:text-danger"
                             >
-                              <Trash2 className="h-3.5 w-3.5" /> Hapus
+                              <Trash2 className="h-3.5 w-3.5" /> {t('common.delete', 'Delete')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -405,8 +399,8 @@ function Shell({
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -432,6 +426,7 @@ function CreateShotListDialog({
   onSubmit: (values: CreateFormValues) => void;
   isPending: boolean;
 }) {
+  const { t } = useTranslation();
   const {
     register, handleSubmit, control, reset, formState: { errors },
   } = useForm<CreateFormValues>({
@@ -449,20 +444,20 @@ function CreateShotListDialog({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Shot List Baru</DialogTitle>
+          <DialogTitle>{t('shotLists.createTitle', 'New Shot List')}</DialogTitle>
           <DialogDescription>
-            Buat rencana pengambilan gambar. Anda bisa menambahkan scene dan shot setelahnya.
+            {t('shotLists.createDesc', 'Create a shot plan. You can add scenes and shots afterwards.')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary">
-              Nama <span className="text-text-tertiary ml-0.5">*</span>
+              {t('shotLists.fieldName', 'Name')} <span className="text-text-tertiary ml-0.5">*</span>
             </Label>
             <Input
               autoFocus
-              placeholder="Misal: Scene 1–5 — Pembuka"
+              placeholder={t('shotLists.namePlaceholder', 'E.g. Scenes 1–5 — Opening')}
               {...register('name')}
               className="bg-bg-sunken border-border-default text-text-primary"
               aria-invalid={!!errors.name}
@@ -474,7 +469,7 @@ function CreateShotListDialog({
 
           <div className="space-y-1.5">
             <Label className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary">
-              Proyek <span className="text-text-tertiary ml-0.5">*</span>
+              {t('shotLists.fieldProject', 'Project')} <span className="text-text-tertiary ml-0.5">*</span>
             </Label>
             <Controller
               control={control}
@@ -482,7 +477,7 @@ function CreateShotListDialog({
               render={({ field }) => (
                 <Select value={field.value || undefined} onValueChange={field.onChange}>
                   <SelectTrigger className="w-full bg-bg-sunken border-border-default text-text-primary data-[placeholder]:text-text-tertiary">
-                    <SelectValue placeholder="Pilih proyek" />
+                    <SelectValue placeholder={t('shotLists.selectProject', 'Select a project')} />
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
                     {projects.map((p) => (
@@ -490,7 +485,7 @@ function CreateShotListDialog({
                         <span className="font-mono text-xs text-text-tertiary mr-2">
                           {p.number}
                         </span>
-                        {p.description || 'Tanpa deskripsi'}
+                        {p.description || t('common.noDescription', 'No description')}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -504,11 +499,11 @@ function CreateShotListDialog({
 
           <div className="space-y-1.5">
             <Label className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary">
-              Deskripsi
+              {t('shotLists.fieldDescription', 'Description')}
             </Label>
             <textarea
               rows={3}
-              placeholder="Konteks ringkas tentang shot list ini (opsional)"
+              placeholder={t('shotLists.descriptionPlaceholder', 'Brief context about this shot list (optional)')}
               {...register('description')}
               className="block w-full resize-y rounded-md border border-border-default bg-bg-sunken px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary leading-relaxed outline-none focus-visible:border-accent-navy-ring focus-visible:ring-[3px] focus-visible:ring-accent-navy-ring/40"
             />
@@ -521,10 +516,10 @@ function CreateShotListDialog({
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
-              Batal
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? 'Membuat…' : 'Buat Shot List'}
+              {isPending ? t('common.creating', 'Creating…') : t('shotLists.createSubmit', 'Create Shot List')}
             </Button>
           </DialogFooter>
         </form>

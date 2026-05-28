@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -8,6 +9,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -40,17 +43,6 @@ import { cn } from '@/lib/utils';
 /*  Sidebar — mirrors GeneralLedgerPage so all accounting screens     */
 /*  share one nav reading.                                            */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Akuntansi',  icon: <BookOpen    className="h-4 w-4" />, href: '/v2/accounting/general-ledger' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Status & helpers                                                  */
@@ -105,6 +97,7 @@ const isThisMonth = (dateStr?: string) => {
 /* ------------------------------------------------------------------ */
 
 export default function JournalEntriesPageV2() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
@@ -137,27 +130,27 @@ export default function JournalEntriesPageV2() {
     mutationFn: postJournalEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
-      toast.success('Jurnal berhasil diposting ke buku besar.');
+      toast.success(t('accounting.journalEntries.postSuccess'));
     },
-    onError: (e: Error) => toast.error(e.message || 'Gagal memposting jurnal.'),
+    onError: (e: Error) => toast.error(e.message || t('accounting.journalEntries.postFail')),
   });
 
   const reverseMutation = useMutation({
     mutationFn: reverseJournalEntry,
     onSuccess: (reversing) => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
-      toast.success(`Jurnal pembalik dibuat: ${reversing.entryNumber}`);
+      toast.success(t('accounting.journalEntries.reverseSuccess', { number: reversing.entryNumber }));
     },
-    onError: (e: Error) => toast.error(e.message || 'Gagal membuat jurnal pembalik.'),
+    onError: (e: Error) => toast.error(e.message || t('accounting.journalEntries.reverseFail')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteJournalEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
-      toast.success('Jurnal dihapus.');
+      toast.success(t('accounting.journalEntries.deleteSuccess'));
     },
-    onError: (e: Error) => toast.error(e.message || 'Gagal menghapus jurnal.'),
+    onError: (e: Error) => toast.error(e.message || t('accounting.journalEntries.deleteFail')),
   });
 
   /* ----- derived KPIs — counts and money this month ----- */
@@ -183,7 +176,7 @@ export default function JournalEntriesPageV2() {
   };
 
   const handleDelete = (e: JournalEntry) => {
-    if (confirm(`Hapus jurnal ${e.entryNumber}? Tindakan ini tidak bisa dibatalkan.`)) {
+    if (confirm(t('accounting.journalEntries.deleteConfirm', { number: e.entryNumber }))) {
       deleteMutation.mutate(e.id);
     }
   };
@@ -193,8 +186,8 @@ export default function JournalEntriesPageV2() {
     return (
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
         topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -202,9 +195,9 @@ export default function JournalEntriesPageV2() {
         <PageContainer>
           <EmptyState
             icon={<FileText className="h-12 w-12" />}
-            title="Tidak bisa memuat jurnal"
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-            action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+            title={t('accounting.journalEntries.errorTitle')}
+            description={error instanceof Error ? error.message : t('accounting.journalEntries.errorGeneric')}
+            action={<Button onClick={() => refetch()}>{t('accounting.journalEntries.retry')}</Button>}
           />
         </PageContainer>
       </AppShell>
@@ -214,16 +207,16 @@ export default function JournalEntriesPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
     >
       <PageContainer>
         <PageHeader
-          title="Jurnal"
-          description="Catat, periksa, dan posting jurnal manual & otomatis."
+          title={t('accounting.journalEntries.title')}
+          description={t('accounting.journalEntries.description')}
           actions={
             <div className="flex items-center gap-2">
               <Button
@@ -342,11 +335,11 @@ export default function JournalEntriesPageV2() {
           ) : entries.length === 0 ? (
             <EmptyState
               icon={<FileText />}
-              title={hasActiveFilters ? 'Tidak ada jurnal yang cocok' : 'Belum ada jurnal'}
+              title={hasActiveFilters ? t('accounting.journalEntries.noMatch') : t('accounting.journalEntries.noJournals')}
               description={
                 hasActiveFilters
-                  ? 'Coba ubah filter atau periode.'
-                  : 'Buat jurnal pertama untuk mencatat transaksi.'
+                  ? t('accounting.journalEntries.noMatchDesc')
+                  : t('accounting.journalEntries.noJournalsDesc')
               }
               action={
                 hasActiveFilters ? (

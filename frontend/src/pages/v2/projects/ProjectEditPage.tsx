@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -35,16 +36,6 @@ import {
   emptyProjectFormValues,
   type ProjectFormValues,
 } from './ProjectForm';
-
-const sidebarItems = [
-  { label: 'Dashboard', icon: <Inbox className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices', icon: <FileText className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients', icon: <Users className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects', icon: <Folder className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses', icon: <CreditCard className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings', icon: <Settings className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 const FORM_ID = 'project-edit-form';
 
@@ -88,7 +79,7 @@ export default function ProjectEditPageV2() {
           monomi
         </div>
       ),
-      items: sidebarItems,
+      sections: v2SidebarSections,
       footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
     },
     topbar: {
@@ -151,11 +142,7 @@ export default function ProjectEditPageV2() {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       queryClient.invalidateQueries({ queryKey: ['project', id] });
       toast.success(
-        t(
-          'projects.edit.success',
-          'Perubahan untuk "{{name}}" tersimpan.',
-          { name: updated.number || updated.description },
-        ),
+        t('projectEdit.success', 'Changes for "{{name}}" saved.', { name: updated.number || updated.description }),
       );
       navigate('/v2/projects');
     },
@@ -163,7 +150,7 @@ export default function ProjectEditPageV2() {
       const message =
         err instanceof Error
           ? err.message
-          : t('projects.edit.error', 'Gagal menyimpan perubahan. Coba lagi.');
+          : t('projectEdit.error', 'Failed to save changes. Please try again.');
       toast.error(message);
     },
     onSettled: () => setIsSubmitting(false),
@@ -205,33 +192,30 @@ export default function ProjectEditPageV2() {
       <AppShell sidebar={shell.sidebar} topbar={shell.topbar}>
         <PageContainer>
           <PageHeader
-            title={t('projects.detail.notFoundTitle', 'Proyek tidak ditemukan')}
+            title={t('projectEdit.notFoundTitle', 'Project not found')}
             breadcrumbs={[
-              { label: t('projects.title', 'Proyek'), href: '/v2/projects' },
-              { label: t('projects.detail.notFound', 'Tidak ditemukan') },
+              { label: t('projectEdit.listLabel', 'Projects'), href: '/v2/projects' },
+              { label: t('projectEdit.notFound', 'Not found') },
             ]}
           />
           <EmptyState
             icon={<Folder className="h-12 w-12" />}
-            title={t('projects.detail.notFoundTitle', 'Proyek tidak ditemukan')}
+            title={t('projectEdit.notFoundTitle', 'Project not found')}
             description={
               error instanceof Error
                 ? error.message
-                : t(
-                    'projects.edit.notFoundDesc',
-                    'Proyek yang Anda coba ubah tidak ada atau telah dihapus.',
-                  )
+                : t('projectEdit.notFoundDesc', 'The project you are trying to edit does not exist or has been deleted.')
             }
             action={
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => refetch()}>
-                  {t('common.retry', 'Coba Lagi')}
+                  {t('projectEdit.retry', 'Try Again')}
                 </Button>
                 <Button
                   onClick={() => navigate('/v2/projects')}
                   className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                 >
-                  {t('projects.detail.backToList', 'Kembali ke Daftar')}
+                  {t('projectEdit.backToList', 'Back to Projects')}
                 </Button>
               </div>
             }
@@ -250,9 +234,9 @@ export default function ProjectEditPageV2() {
       <AppShell sidebar={shell.sidebar} topbar={shell.topbar}>
         <PageContainer>
           <PageHeader
-            title={t('common.loading', 'Memuat…')}
+            title={t('projectEdit.loading', 'Loading...')}
             breadcrumbs={[
-              { label: t('projects.title', 'Proyek'), href: '/v2/projects' },
+              { label: t('projectEdit.listLabel', 'Projects'), href: '/v2/projects' },
               { label: '…' },
             ]}
           />
@@ -299,28 +283,28 @@ export default function ProjectEditPageV2() {
     <AppShell sidebar={shell.sidebar} topbar={shell.topbar}>
       <PageContainer>
         <PageHeader
-          title={t('projects.edit.title', 'Ubah Proyek')}
+          title={t('projectEdit.title', 'Edit Project')}
           description={
             project.client?.name
               ? t(
-                  'projects.edit.subtitleWithClient',
-                  'Perbarui {{number}} · {{client}}',
+                  'projectEdit.subtitleWithClient',
+                  'Update {{number}} · {{client}}',
                   {
                     number: project.number || project.description,
                     client: project.client.name,
                   },
                 )
-              : t('projects.edit.subtitle', 'Perbarui {{number}}', {
+              : t('projectEdit.subtitle', 'Update {{number}}', {
                   number: project.number || project.description,
                 })
           }
           breadcrumbs={[
-            { label: t('projects.title', 'Proyek'), href: '/v2/projects' },
+            { label: t('projectEdit.listLabel', 'Projects'), href: '/v2/projects' },
             {
               label: project.number || project.description,
               href: `/v2/projects/${id}`,
             },
-            { label: t('projects.edit.crumb', 'Ubah') },
+            { label: t('projectEdit.crumb', 'Edit') },
           ]}
           actions={
             <div className="flex items-center gap-2">
@@ -332,7 +316,7 @@ export default function ProjectEditPageV2() {
                 className="text-text-secondary hover:text-text-primary"
               >
                 <ArrowLeft className="h-4 w-4" />
-                {t('common.cancel', 'Batal')}
+                {t('projectEdit.cancel', 'Cancel')}
               </Button>
               <Button
                 type="submit"
@@ -343,10 +327,10 @@ export default function ProjectEditPageV2() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {t('common.saving', 'Menyimpan…')}
+                    {t('projectEdit.saving', 'Saving...')}
                   </>
                 ) : (
-                  t('common.save', 'Simpan')
+                  t('projectEdit.save', 'Save')
                 )}
               </Button>
             </div>

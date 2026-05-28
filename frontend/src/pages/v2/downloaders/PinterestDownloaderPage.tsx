@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Download, Clipboard, Loader2, CheckCircle2, XCircle, Image as ImageIcon,
@@ -8,6 +9,8 @@ import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -35,38 +38,27 @@ import { cn } from '@/lib/utils';
 /*  media downloader by default since that's the broader tool.         */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Unduhan',    icon: <Download    className="h-4 w-4" />, href: '/v2/downloaders/media' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
 const URL_TYPE_LABEL: Record<string, string> = {
-  pin:     'Pin tunggal',
+  pin:     'Single Pin',
   board:   'Board',
-  user:    'Profil pengguna',
+  user:    'User Profile',
   section: 'Section',
-  unknown: 'Tidak dikenal',
+  unknown: 'Unknown',
 };
 
 const JOB_STATUS_LABEL: Record<PinterestJob['status'], string> = {
-  pending:   'Menunggu',
-  running:   'Berjalan',
-  completed: 'Selesai',
-  failed:    'Gagal',
+  pending:   'Pending',
+  running:   'Running',
+  completed: 'Completed',
+  failed:    'Failed',
 };
 
 const formatJobName = (j: PinterestJob): string =>
-  j.boardName || j.username || URL_TYPE_LABEL[j.type] || 'Tanpa nama';
+  j.boardName || j.username || URL_TYPE_LABEL[j.type] || 'Unnamed';
 
 const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString('id-ID', {
@@ -83,6 +75,7 @@ const PIN_FILE_URL = (pinId: string) => `/api/v1/pinterest/pins/${pinId}/file`;
 /* ------------------------------------------------------------------ */
 
 export default function PinterestDownloaderPageV2() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
 
@@ -130,14 +123,14 @@ export default function PinterestDownloaderPageV2() {
         downloadVideos,
       }),
     onSuccess: () => {
-      toast.success('Pekerjaan unduhan dimulai. Pantau progresnya di bawah.');
+      toast.success(t('pinterestDownloader.startSuccess', 'Pekerjaan unduhan dimulai. Pantau progresnya di bawah.'));
       setUrl('');
       queryClient.invalidateQueries({ queryKey: ['pinterest', 'jobs'] });
     },
     onError: (err: unknown) => {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        ?? 'Gagal memulai unduhan.';
+        ?? t('pinterestDownloader.startFail', 'Gagal memulai unduhan.');
       toast.error(message);
     },
   });
@@ -145,13 +138,13 @@ export default function PinterestDownloaderPageV2() {
   const quickPin = useMutation({
     mutationFn: () => pinterestService.quickDownload(debouncedUrl),
     onSuccess: () => {
-      toast.success('Pin diunduh ke folder Downloads.');
+      toast.success(t('pinterestDownloader.pinDownloaded', 'Pin diunduh ke folder Downloads.'));
       setUrl('');
     },
     onError: (err: unknown) => {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        ?? 'Gagal mengunduh pin.';
+        ?? t('pinterestDownloader.pinDownloadFail', 'Gagal mengunduh pin.');
       toast.error(message);
     },
   });
@@ -159,20 +152,20 @@ export default function PinterestDownloaderPageV2() {
   const cancelJob = useMutation({
     mutationFn: (id: string) => pinterestService.cancelJob(id),
     onSuccess: () => {
-      toast.success('Pekerjaan dibatalkan.');
+      toast.success(t('pinterestDownloader.cancelSuccess', 'Pekerjaan dibatalkan.'));
       queryClient.invalidateQueries({ queryKey: ['pinterest', 'jobs'] });
     },
-    onError: () => toast.error('Gagal membatalkan pekerjaan.'),
+    onError: () => toast.error(t('pinterestDownloader.cancelFail', 'Gagal membatalkan pekerjaan.')),
   });
 
   const deleteJob = useMutation({
     mutationFn: (id: string) => pinterestService.deleteJob(id),
     onSuccess: () => {
-      toast.success('Pekerjaan dihapus.');
+      toast.success(t('pinterestDownloader.deleteSuccess', 'Pekerjaan dihapus.'));
       if (selectedJobId) setSelectedJobId(null);
       queryClient.invalidateQueries({ queryKey: ['pinterest', 'jobs'] });
     },
-    onError: () => toast.error('Gagal menghapus pekerjaan.'),
+    onError: () => toast.error(t('pinterestDownloader.deleteFail', 'Gagal menghapus pekerjaan.')),
   });
 
   /* ---- Clipboard ---- */
@@ -181,14 +174,14 @@ export default function PinterestDownloaderPageV2() {
       const text = await navigator.clipboard.readText();
       if (text) {
         setUrl(text.trim());
-        toast.success('URL ditempel dari clipboard.');
+        toast.success(t('pinterestDownloader.pasteSuccess', 'URL ditempel dari clipboard.'));
       } else {
-        toast.info('Clipboard kosong.');
+        toast.info(t('pinterestDownloader.clipboardEmpty', 'Clipboard kosong.'));
       }
     } catch {
-      toast.error('Tidak bisa membaca clipboard. Tempel manual saja.');
+      toast.error(t('pinterestDownloader.clipboardFail', 'Tidak bisa membaca clipboard. Tempel manual saja.'));
     }
-  }, []);
+  }, [t]);
 
   /* ---- Derived KPIs from the jobs list ---- */
   const stats = useMemo(() => {
@@ -221,8 +214,8 @@ export default function PinterestDownloaderPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -236,14 +229,14 @@ export default function PinterestDownloaderPageV2() {
   return (
     <Shell>
       <PageHeader
-        title="Pengunduh Pinterest"
-        description="Unduh satu pin, seluruh board, atau profil pengguna. Pekerjaan batch berjalan di latar belakang — Anda bisa menutup tab dan kembali nanti."
+        title={t('pinterestDownloader.title', 'Pengunduh Pinterest')}
+        description={t('pinterestDownloader.description', 'Unduh satu pin, seluruh board, atau profil pengguna. Pekerjaan batch berjalan di latar belakang — Anda bisa menutup tab dan kembali nanti.')}
         actions={
           <Badge
             variant="outline"
             className="border-border-subtle text-text-tertiary px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider"
           >
-            Pin · Board · Profil
+            {t('pinterestDownloader.typeBadge', 'Pin · Board · Profil')}
           </Badge>
         }
       />
@@ -256,10 +249,10 @@ export default function PinterestDownloaderPageV2() {
         <div className="px-6 sm:px-8 py-7">
           <div className="flex items-baseline justify-between gap-4 mb-4">
             <h2 className="text-base font-display font-semibold text-text-primary">
-              Tempel tautan Pinterest
+              {t('pinterestDownloader.pastePrompt', 'Tempel tautan Pinterest')}
             </h2>
             <span className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-              Langkah 1
+              {t('pinterestDownloader.step1', 'Langkah 1')}
             </span>
           </div>
 
@@ -269,7 +262,7 @@ export default function PinterestDownloaderPageV2() {
               <Input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://pinterest.com/pin/123… atau https://pinterest.com/username/board"
+                placeholder={t('pinterestDownloader.urlPlaceholder', 'https://pinterest.com/pin/123… atau https://pinterest.com/username/board')}
                 className="pl-9 pr-3 h-11 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary text-sm"
                 autoComplete="off"
                 spellCheck={false}
@@ -282,7 +275,7 @@ export default function PinterestDownloaderPageV2() {
               className="h-11 shrink-0 border-border-subtle text-text-secondary hover:text-text-primary"
             >
               <Clipboard className="h-4 w-4" />
-              Tempel
+              {t('pinterestDownloader.paste', 'Tempel')}
             </Button>
           </div>
 
@@ -290,33 +283,33 @@ export default function PinterestDownloaderPageV2() {
           <div className="mt-3 min-h-[20px] flex items-center gap-2 text-xs">
             {url.length === 0 ? (
               <span className="text-text-tertiary">
-                Hanya tautan pinterest.com atau pin.it yang diterima.
+                {t('pinterestDownloader.urlHint', 'Hanya tautan pinterest.com atau pin.it yang diterima.')}
               </span>
             ) : !isPinterestUrl ? (
               <>
                 <XCircle className="h-3.5 w-3.5 text-danger" />
                 <span className="text-text-secondary">
-                  Tautan ini bukan dari Pinterest.
+                  {t('pinterestDownloader.notPinterest', 'Tautan ini bukan dari Pinterest.')}
                 </span>
               </>
             ) : checking ? (
               <span className="inline-flex items-center gap-1.5 text-text-tertiary">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Memeriksa tautan…
+                {t('pinterestDownloader.detecting', 'Memeriksa tautan…')}
               </span>
             ) : pinInfo ? (
               <>
                 <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                <span className="text-text-secondary">Terdeteksi</span>
+                <span className="text-text-secondary">{t('pinterestDownloader.detected', 'Terdeteksi')}</span>
                 <Badge
                   variant="outline"
                   className="border-transparent bg-accent-navy/15 text-accent-navy px-2 py-0.5 text-[10px] font-medium"
                 >
-                  {URL_TYPE_LABEL[pinInfo.urlType] ?? pinInfo.urlType}
+                  {t(`pinterestDownloader.urlType.${pinInfo.urlType}`, URL_TYPE_LABEL[pinInfo.urlType] ?? pinInfo.urlType)}
                 </Badge>
                 {isSinglePin && (
                   <span className="text-text-tertiary">
-                    — akan langsung diunduh ke browser.
+                    {t('pinterestDownloader.singlePinHint', '— akan langsung diunduh ke browser.')}
                   </span>
                 )}
               </>
@@ -331,7 +324,7 @@ export default function PinterestDownloaderPageV2() {
             {!isSinglePin && (
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 sm:items-center">
                 <span className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-                  Jenis media
+                  {t('pinterestDownloader.mediaType', 'Jenis media')}
                 </span>
                 <div className="flex items-center gap-5">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -341,7 +334,7 @@ export default function PinterestDownloaderPageV2() {
                     />
                     <span className="inline-flex items-center gap-1.5 text-sm text-text-primary">
                       <ImageIcon className="h-3.5 w-3.5 text-text-tertiary" />
-                      Gambar
+                      {t('pinterestDownloader.images', 'Gambar')}
                     </span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -351,7 +344,7 @@ export default function PinterestDownloaderPageV2() {
                     />
                     <span className="inline-flex items-center gap-1.5 text-sm text-text-primary">
                       <Video className="h-3.5 w-3.5 text-text-tertiary" />
-                      Video
+                      {t('pinterestDownloader.videos', 'Video')}
                     </span>
                   </label>
                 </div>
@@ -367,17 +360,17 @@ export default function PinterestDownloaderPageV2() {
               {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Memulai…
+                  {t('pinterestDownloader.starting', 'Memulai…')}
                 </>
               ) : isSinglePin ? (
                 <>
                   <Download className="h-4 w-4" />
-                  Unduh Pin
+                  {t('pinterestDownloader.downloadPin', 'Unduh Pin')}
                 </>
               ) : (
                 <>
                   <FolderArchive className="h-4 w-4" />
-                  Mulai Unduhan Batch
+                  {t('pinterestDownloader.startBatch', 'Mulai Unduhan Batch')}
                 </>
               )}
             </Button>
@@ -403,16 +396,16 @@ export default function PinterestDownloaderPageV2() {
             )}
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-display font-semibold text-text-primary line-clamp-1 leading-snug">
-                {pinInfo.title || 'Tanpa judul'}
+                {pinInfo.title || t('pinterestDownloader.noTitle', 'Tanpa judul')}
               </h3>
               <div className="mt-1 text-xs text-text-tertiary">
-                ID pin: <span className="text-text-secondary font-mono">{pinInfo.pinId}</span>
+                {t('pinterestDownloader.pinId', 'ID pin:')} <span className="text-text-secondary font-mono">{pinInfo.pinId}</span>
               </div>
               <Badge
                 variant="outline"
                 className="mt-2 border-transparent bg-bg-sunken text-text-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
               >
-                {pinInfo.mediaType === 'video' ? 'Video' : 'Gambar'}
+                {pinInfo.mediaType === 'video' ? t('pinterestDownloader.video', 'Video') : t('pinterestDownloader.image', 'Gambar')}
               </Badge>
             </div>
           </div>
@@ -425,19 +418,19 @@ export default function PinterestDownloaderPageV2() {
       <section className="mb-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <StatCard
-            label="Total pekerjaan"
+            label={t('pinterestDownloader.stat.totalJobs', 'Total pekerjaan')}
             value={jobsLoading ? '…' : stats.total}
-            sublabel="batch + tunggal tersimpan"
+            sublabel={t('pinterestDownloader.stat.totalJobsSub', 'batch + tunggal tersimpan')}
           />
           <StatCard
-            label="Sedang berjalan"
+            label={t('pinterestDownloader.stat.running', 'Sedang berjalan')}
             value={jobsLoading ? '…' : stats.running}
-            sublabel="diperbarui tiap 5 detik"
+            sublabel={t('pinterestDownloader.stat.runningSub', 'diperbarui tiap 5 detik')}
           />
           <StatCard
-            label="Total pin diunduh"
+            label={t('pinterestDownloader.stat.totalPins', 'Total pin diunduh')}
             value={jobsLoading ? '…' : stats.totalPins.toLocaleString('id-ID')}
-            sublabel="lintas semua pekerjaan"
+            sublabel={t('pinterestDownloader.stat.totalPinsSub', 'lintas semua pekerjaan')}
           />
         </div>
       </section>
@@ -457,12 +450,12 @@ export default function PinterestDownloaderPageV2() {
             <div className="flex items-center gap-2 min-w-0">
               <Layers className="h-4 w-4 text-text-tertiary shrink-0" />
               <h2 className="text-sm font-display font-semibold text-text-primary">
-                Pekerjaan unduhan
+                {t('pinterestDownloader.downloadJobs', 'Pekerjaan unduhan')}
               </h2>
             </div>
             {jobs.length > 0 && (
               <span className="text-xs text-text-tertiary tabular-nums">
-                {jobs.length} pekerjaan
+                {t('pinterestDownloader.jobCount', '{{count}} pekerjaan', { count: jobs.length })}
               </span>
             )}
           </div>
@@ -476,8 +469,8 @@ export default function PinterestDownloaderPageV2() {
           ) : jobs.length === 0 ? (
             <EmptyState
               icon={<FolderArchive />}
-              title="Belum ada pekerjaan unduhan"
-              description="Tempel URL board atau profil Pinterest di atas untuk memulai unduhan batch pertama Anda."
+              title={t('pinterestDownloader.noJobs', 'Belum ada pekerjaan unduhan')}
+              description={t('pinterestDownloader.noJobsDesc', 'Tempel URL board atau profil Pinterest di atas untuk memulai unduhan batch pertama Anda.')}
             />
           ) : (
             <ul className="divide-y divide-border-subtle">
@@ -489,7 +482,7 @@ export default function PinterestDownloaderPageV2() {
                   onSelect={() => setSelectedJobId(job.id)}
                   onCancel={() => cancelJob.mutate(job.id)}
                   onDelete={() => {
-                    if (confirm(`Hapus pekerjaan "${formatJobName(job)}"? File yang sudah diunduh juga akan ikut terhapus.`)) {
+                    if (confirm(t('pinterestDownloader.confirmDelete', 'Hapus pekerjaan "{{name}}"? File yang sudah diunduh juga akan ikut terhapus.', { name: formatJobName(job) }))) {
                       deleteJob.mutate(job.id);
                     }
                   }}
@@ -505,14 +498,14 @@ export default function PinterestDownloaderPageV2() {
           <GlassPanel surface="glass" padding="none" className="overflow-hidden">
             <div className="px-5 sm:px-6 py-4 border-b border-border-subtle flex items-center justify-between gap-3">
               <h2 className="text-sm font-display font-semibold text-text-primary truncate">
-                {selectedJob ? formatJobName(selectedJob) : 'Detail pekerjaan'}
+                {selectedJob ? formatJobName(selectedJob) : t('pinterestDownloader.jobDetail', 'Detail pekerjaan')}
               </h2>
               <Button
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setSelectedJobId(null)}
                 className="text-text-tertiary hover:text-text-primary shrink-0"
-                aria-label="Tutup panel"
+                aria-label={t('pinterestDownloader.closePanel', 'Tutup panel')}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -521,9 +514,9 @@ export default function PinterestDownloaderPageV2() {
             {selectedJob && (
               <div className="px-5 sm:px-6 py-4 border-b border-border-subtle">
                 <div className="grid grid-cols-3 gap-3 mb-4">
-                  <MiniStat label="Total" value={selectedJob.totalPins} />
-                  <MiniStat label="Selesai" value={selectedJob.downloadedPins} tone="success" />
-                  <MiniStat label="Gagal" value={selectedJob.failedPins} tone={selectedJob.failedPins > 0 ? 'danger' : undefined} />
+                  <MiniStat label={t('pinterestDownloader.miniTotal', 'Total')} value={selectedJob.totalPins} />
+                  <MiniStat label={t('pinterestDownloader.miniDone', 'Selesai')} value={selectedJob.downloadedPins} tone="success" />
+                  <MiniStat label={t('pinterestDownloader.miniFailed', 'Gagal')} value={selectedJob.failedPins} tone={selectedJob.failedPins > 0 ? 'danger' : undefined} />
                 </div>
                 {selectedJob.status === 'completed' && selectedJob.downloadedPins > 0 && (
                   <Button
@@ -532,12 +525,12 @@ export default function PinterestDownloaderPageV2() {
                     className="w-full"
                   >
                     <FolderArchive className="h-4 w-4" />
-                    Unduh semua sebagai ZIP
+                    {t('pinterestDownloader.downloadZip', 'Unduh semua sebagai ZIP')}
                   </Button>
                 )}
                 {selectedJob.outputPath && (
                   <p className="mt-3 text-xs text-text-tertiary">
-                    Tersimpan di{' '}
+                    {t('pinterestDownloader.savedAt', 'Tersimpan di')}{' '}
                     <code className="font-mono text-text-secondary break-all">
                       {selectedJob.outputPath}
                     </code>
@@ -556,8 +549,8 @@ export default function PinterestDownloaderPageV2() {
             ) : pins.length === 0 ? (
               <EmptyState
                 icon={<ImageIcon />}
-                title="Belum ada pin"
-                description="Pin akan muncul di sini setelah selesai diunduh."
+                title={t('pinterestDownloader.noPins', 'Belum ada pin')}
+                description={t('pinterestDownloader.noPinsDesc', 'Pin akan muncul di sini setelah selesai diunduh.')}
               />
             ) : (
               <div className="p-4 grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[480px] overflow-y-auto">
@@ -588,6 +581,7 @@ interface JobRowProps {
 }
 
 function JobRow({ job, isSelected, onSelect, onCancel, onDelete, onZip }: JobRowProps) {
+  const { t } = useTranslation();
   const total = job.totalPins || 0;
   const done = job.downloadedPins + job.failedPins + job.skippedPins;
   const percent = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -627,7 +621,7 @@ function JobRow({ job, isSelected, onSelect, onCancel, onDelete, onZip }: JobRow
               variant="outline"
               className="border-border-subtle text-text-tertiary px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider shrink-0"
             >
-              {URL_TYPE_LABEL[job.type] ?? job.type}
+              {t(`pinterestDownloader.urlType.${job.type}`, URL_TYPE_LABEL[job.type] ?? job.type)}
             </Badge>
           </div>
           <div className="mt-0.5 text-xs text-text-tertiary truncate">
@@ -643,7 +637,7 @@ function JobRow({ job, isSelected, onSelect, onCancel, onDelete, onZip }: JobRow
           ) : job.status === 'failed' ? (
             <XCircle className="h-3 w-3" />
           ) : null}
-          {JOB_STATUS_LABEL[job.status]}
+          {t(`pinterestDownloader.jobStatus.${job.status}`, JOB_STATUS_LABEL[job.status])}
         </span>
       </div>
 
@@ -678,7 +672,7 @@ function JobRow({ job, isSelected, onSelect, onCancel, onDelete, onZip }: JobRow
           className="text-text-tertiary hover:text-text-primary h-7 px-2 text-xs"
         >
           <Eye className="h-3.5 w-3.5" />
-          Lihat pin
+          {t('pinterestDownloader.viewPins', 'Lihat pin')}
         </Button>
         {job.status === 'completed' && job.downloadedPins > 0 && (
           <Button
@@ -699,7 +693,7 @@ function JobRow({ job, isSelected, onSelect, onCancel, onDelete, onZip }: JobRow
             className="text-text-tertiary hover:text-danger h-7 px-2 text-xs"
           >
             <XCircle className="h-3.5 w-3.5" />
-            Batal
+            {t('pinterestDownloader.cancel', 'Batal')}
           </Button>
         )}
         <Button
@@ -709,7 +703,7 @@ function JobRow({ job, isSelected, onSelect, onCancel, onDelete, onZip }: JobRow
           className="ml-auto text-text-tertiary hover:text-danger h-7 px-2 text-xs"
         >
           <Trash2 className="h-3.5 w-3.5" />
-          Hapus
+          {t('pinterestDownloader.delete', 'Hapus')}
         </Button>
       </div>
     </li>

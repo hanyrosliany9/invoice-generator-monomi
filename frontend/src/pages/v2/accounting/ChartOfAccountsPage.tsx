@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -8,6 +9,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -46,17 +49,6 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                            */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',   icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',    icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',  icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',     icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',    icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',    icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Akuntansi',   icon: <BookOpen    className="h-4 w-4" />, href: '/v2/accounting/general-ledger' },
-  { label: 'Settings',    icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Vocabularies                                                       */
@@ -121,6 +113,7 @@ const BLANK_FORM = {
 /* ------------------------------------------------------------------ */
 
 export default function ChartOfAccountsPageV2() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
 
@@ -146,24 +139,24 @@ export default function ChartOfAccountsPageV2() {
 
   const createMutation = useMutation({
     mutationFn: createChartOfAccount,
-    onSuccess: () => { toast.success('Akun berhasil dibuat'); invalidate(); setDialogOpen(false); },
-    onError:   () => toast.error('Gagal membuat akun'),
+    onSuccess: () => { toast.success(t('accounting.chartOfAccounts.createSuccess')); invalidate(); setDialogOpen(false); },
+    onError:   () => toast.error(t('accounting.chartOfAccounts.createFail')),
   });
   const updateMutation = useMutation({
     mutationFn: ({ code, data }: { code: string; data: Partial<ChartOfAccount> }) =>
       updateChartOfAccount(code, data),
-    onSuccess: () => { toast.success('Akun berhasil diperbarui'); invalidate(); setDialogOpen(false); },
-    onError:   () => toast.error('Gagal memperbarui akun'),
+    onSuccess: () => { toast.success(t('accounting.chartOfAccounts.updateSuccess')); invalidate(); setDialogOpen(false); },
+    onError:   () => toast.error(t('accounting.chartOfAccounts.updateFail')),
   });
   const deleteMutation = useMutation({
     mutationFn: deleteChartOfAccount,
-    onSuccess: () => { toast.success('Akun dihapus'); invalidate(); },
-    onError:   () => toast.error('Gagal menghapus akun'),
+    onSuccess: () => { toast.success(t('accounting.chartOfAccounts.deleteSuccess')); invalidate(); },
+    onError:   () => toast.error(t('accounting.chartOfAccounts.deleteFail')),
   });
   const toggleMutation = useMutation({
     mutationFn: toggleAccountStatus,
-    onSuccess: () => { toast.success('Status akun diperbarui'); invalidate(); },
-    onError:   () => toast.error('Gagal mengubah status akun'),
+    onSuccess: () => { toast.success(t('accounting.chartOfAccounts.toggleSuccess')); invalidate(); },
+    onError:   () => toast.error(t('accounting.chartOfAccounts.toggleFail')),
   });
 
   /* ----- derived data ----- */
@@ -250,8 +243,8 @@ export default function ChartOfAccountsPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -265,9 +258,9 @@ export default function ChartOfAccountsPageV2() {
       <Shell>
         <EmptyState
           icon={<BookOpen className="h-12 w-12" />}
-          title="Tidak dapat memuat bagan akun"
-          description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-          action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+          title={t('accounting.chartOfAccounts.errorTitle')}
+          description={error instanceof Error ? error.message : t('accounting.chartOfAccounts.errorGeneric')}
+          action={<Button onClick={() => refetch()}>{t('accounting.chartOfAccounts.retry')}</Button>}
         />
       </Shell>
     );
@@ -278,8 +271,8 @@ export default function ChartOfAccountsPageV2() {
   return (
     <Shell>
       <PageHeader
-        title="Bagan Akun"
-        description="Struktur akun berdasarkan standar akuntansi PSAK Indonesia."
+        title={t('accounting.chartOfAccounts.title')}
+        description={t('accounting.chartOfAccounts.description')}
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -289,11 +282,11 @@ export default function ChartOfAccountsPageV2() {
               disabled={isLoading}
             >
               <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
-              Segarkan
+              {t('accounting.chartOfAccounts.refresh')}
             </Button>
             <Button size="sm" onClick={openCreate}>
               <Plus className="h-4 w-4" />
-              Akun Baru
+              {t('accounting.chartOfAccounts.newAccount')}
             </Button>
           </div>
         }
@@ -372,16 +365,16 @@ export default function ChartOfAccountsPageV2() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={<BookOpen />}
-            title={hasActiveFilters ? 'Tidak ada akun yang cocok' : 'Belum ada akun'}
+            title={hasActiveFilters ? t('accounting.chartOfAccounts.noMatch') : t('accounting.chartOfAccounts.noAccounts')}
             description={
               hasActiveFilters
-                ? 'Coba ubah atau hapus filter Anda.'
-                : 'Buat akun pertama untuk memulai.'
+                ? t('accounting.chartOfAccounts.noMatchDesc')
+                : t('accounting.chartOfAccounts.noAccountsDesc')
             }
             action={
               hasActiveFilters
-                ? <Button variant="outline" size="sm" onClick={resetFilters}>Reset Filter</Button>
-                : <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4" />Akun Baru</Button>
+                ? <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.chartOfAccounts.resetFilter')}</Button>
+                : <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4" />{t('accounting.chartOfAccounts.newAccount')}</Button>
             }
           />
         ) : (
@@ -528,12 +521,12 @@ export default function ChartOfAccountsPageV2() {
                                       </DropdownMenuItem>
                                       <DropdownMenuItem onClick={() => toggleMutation.mutate(a.code)}>
                                         <Power className="h-3.5 w-3.5" />
-                                        {a.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                                        {a.isActive ? t('accounting.chartOfAccounts.deactivate') : t('accounting.chartOfAccounts.activate')}
                                       </DropdownMenuItem>
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem
                                         onClick={() => {
-                                          if (window.confirm(`Hapus akun ${a.code}? Tidak dapat dibatalkan.`)) {
+                                          if (window.confirm(t('accounting.chartOfAccounts.deleteConfirm', { code: a.code }))) {
                                             deleteMutation.mutate(a.code);
                                           }
                                         }}
@@ -563,10 +556,10 @@ export default function ChartOfAccountsPageV2() {
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-display">
-              {editing ? 'Edit Akun' : 'Akun Baru'}
+              {editing ? t('accounting.chartOfAccounts.editDialogTitle') : t('accounting.chartOfAccounts.newDialogTitle')}
             </DialogTitle>
             <DialogDescription className="text-text-tertiary">
-              {editing ? `Memperbarui akun ${editing.code}` : 'Tambah akun ke bagan akun.'}
+              {editing ? t('accounting.chartOfAccounts.editDialogDesc', { code: editing.code }) : t('accounting.chartOfAccounts.newDialogDesc')}
             </DialogDescription>
           </DialogHeader>
 
@@ -693,10 +686,10 @@ export default function ChartOfAccountsPageV2() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isMutating}>
-              Batal
+              {t('accounting.chartOfAccounts.cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={isMutating || !form.code || !form.nameId}>
-              {isMutating ? 'Menyimpan...' : (editing ? 'Perbarui' : 'Buat Akun')}
+              {isMutating ? t('accounting.chartOfAccounts.saving') : (editing ? t('accounting.chartOfAccounts.update') : t('accounting.chartOfAccounts.createAccount'))}
             </Button>
           </DialogFooter>
         </DialogContent>

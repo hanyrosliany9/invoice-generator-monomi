@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -9,6 +10,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -34,20 +37,6 @@ import {
   type TrialBalance,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
-
-const sidebarItems = [
-  { label: 'Dashboard',    icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',     icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',   icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',      icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',     icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',     icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Neraca',       icon: <Scale       className="h-4 w-4" />, href: '/v2/accounting/balance-sheet' },
-  { label: 'Laba Rugi',    icon: <TrendingUp  className="h-4 w-4" />, href: '/v2/accounting/income-statement' },
-  { label: 'Arus Kas',     icon: <Activity    className="h-4 w-4" />, href: '/v2/accounting/cash-flow' },
-  { label: 'Neraca Saldo', icon: <BookOpen    className="h-4 w-4" />, href: '/v2/accounting/trial-balance' },
-  { label: 'Settings',     icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 const TYPE_LABEL: Record<string, string> = {
   ASSET: 'Aset',
@@ -75,6 +64,7 @@ const typeChipClass = (type: string) => {
 /* ------------------------------------------------------------------ */
 
 export default function TrialBalancePageV2() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const today = new Date();
   const [startDate, setStartDate] = useState<Date>(startOfMonth(today));
@@ -104,9 +94,9 @@ export default function TrialBalancePageV2() {
         includeInactive: false,
         includeZeroBalances: false,
       });
-      toast.success('Neraca saldo berhasil diekspor (PDF).');
+      toast.success(t('accounting.trialBalance.exportPdfSuccess'));
     } catch {
-      toast.error('Gagal mengekspor PDF.');
+      toast.error(t('accounting.trialBalance.exportPdfFail'));
     }
   };
 
@@ -118,9 +108,9 @@ export default function TrialBalancePageV2() {
         includeInactive: false,
         includeZeroBalances: false,
       });
-      toast.success('Neraca saldo berhasil diekspor (CSV).');
+      toast.success(t('accounting.trialBalance.exportCsvSuccess'));
     } catch {
-      toast.error('Gagal mengekspor CSV.');
+      toast.error(t('accounting.trialBalance.exportCsvFail'));
     }
   };
 
@@ -159,8 +149,8 @@ export default function TrialBalancePageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -169,8 +159,8 @@ export default function TrialBalancePageV2() {
     >
       <PageContainer>
         <PageHeader
-          title="Neraca Saldo"
-          description="Ringkasan saldo debit dan kredit seluruh akun — verifikasi keseimbangan buku besar."
+          title={t('accounting.trialBalance.title')}
+          description={t('accounting.trialBalance.description')}
           actions={
             <div className="flex items-center gap-2">
               <Button
@@ -260,9 +250,9 @@ export default function TrialBalancePageV2() {
         {error ? (
           <EmptyState
             icon={<BookOpen />}
-            title="Tidak bisa memuat neraca saldo"
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan.'}
-            action={<Button onClick={() => refetch()} size="sm">Coba Lagi</Button>}
+            title={t('accounting.trialBalance.errorTitle')}
+            description={error instanceof Error ? error.message : t('accounting.trialBalance.errorGeneric')}
+            action={<Button onClick={() => refetch()} size="sm">{t('accounting.trialBalance.retry')}</Button>}
           />
         ) : isLoading || !data ? (
           <Skeleton className="h-[600px] rounded-lg" />
@@ -315,11 +305,11 @@ export default function TrialBalancePageV2() {
             {filtered.length === 0 ? (
               <div className="py-10">
                 <EmptyState
-                  title={hasActiveFilters ? 'Tidak ada akun cocok' : 'Belum ada saldo'}
+                  title={hasActiveFilters ? t('accounting.trialBalance.noAccounts') : t('accounting.trialBalance.noBalances')}
                   description={
                     hasActiveFilters
-                      ? 'Coba ubah pencarian atau filter Anda.'
-                      : 'Belum ada saldo akun pada periode ini.'
+                      ? t('accounting.trialBalance.noAccountsDesc')
+                      : t('accounting.trialBalance.noBalancesDesc')
                   }
                   action={
                     hasActiveFilters ? (

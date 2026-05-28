@@ -11,6 +11,8 @@ import {
 import { toast } from 'sonner';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -37,35 +39,25 @@ import { assetService, type Asset } from '@/services/assets';
 /*  between routes.                                                    */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Status + condition copy — keep in sync with the list page.        */
 /* ------------------------------------------------------------------ */
 
 const STATUS_LABEL: Record<Asset['status'], string> = {
-  AVAILABLE:       'Tersedia',
-  RESERVED:        'Direservasi',
-  CHECKED_OUT:     'Dipinjam',
-  IN_MAINTENANCE:  'Dalam Perawatan',
-  BROKEN:          'Rusak',
-  RETIRED:         'Tidak Aktif',
+  AVAILABLE:       'Available',
+  RESERVED:        'Reserved',
+  CHECKED_OUT:     'Checked Out',
+  IN_MAINTENANCE:  'In Maintenance',
+  BROKEN:          'Broken',
+  RETIRED:         'Retired',
 };
 
 const CONDITION_LABEL: Record<Asset['condition'], string> = {
-  EXCELLENT: 'Sangat Baik',
-  GOOD:      'Baik',
-  FAIR:      'Cukup',
-  POOR:      'Buruk',
-  BROKEN:    'Rusak',
+  EXCELLENT: 'Excellent',
+  GOOD:      'Good',
+  FAIR:      'Fair',
+  POOR:      'Poor',
+  BROKEN:    'Broken',
 };
 
 const statusChipClass = (status?: Asset['status']) => {
@@ -197,8 +189,8 @@ export default function AssetDetailPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -277,7 +269,7 @@ export default function AssetDetailPageV2() {
   const maintenanceColumns = [
     {
       accessorKey: 'performedDate',
-      header: 'Tanggal',
+      header: t('assetDetail.col.date', 'Date'),
       cell: ({ row }: { row: { original: any } }) => (
         <DateDisplay
           date={row.original.performedDate}
@@ -287,7 +279,7 @@ export default function AssetDetailPageV2() {
     },
     {
       id: 'type',
-      header: 'Jenis',
+      header: t('assetDetail.col.type', 'Type'),
       accessorFn: (row: any) => row?.maintenanceType ?? '',
       cell: ({ row }: { row: { original: any } }) => (
         <span className="text-sm text-text-secondary">
@@ -297,7 +289,7 @@ export default function AssetDetailPageV2() {
     },
     {
       id: 'description',
-      header: 'Deskripsi',
+      header: t('assetDetail.col.description', 'Description'),
       accessorFn: (row: any) => row?.description ?? '',
       cell: ({ row }: { row: { original: any } }) => (
         <div className="min-w-0 max-w-[320px]">
@@ -314,7 +306,7 @@ export default function AssetDetailPageV2() {
     },
     {
       accessorKey: 'cost',
-      header: () => <span className="block text-right">Biaya</span>,
+      header: () => <span className="block text-right">{t('assetDetail.col.cost', 'Cost')}</span>,
       cell: ({ row }: { row: { original: any } }) => (
         <div className="text-right">
           <MoneyDisplay
@@ -329,7 +321,7 @@ export default function AssetDetailPageV2() {
   const reservationColumns = [
     {
       id: 'period',
-      header: 'Periode',
+      header: t('assetDetail.col.period', 'Period'),
       accessorFn: (row: any) => row?.startDate ?? '',
       cell: ({ row }: { row: { original: any } }) => (
         <div className="text-xs text-text-tertiary">
@@ -341,7 +333,7 @@ export default function AssetDetailPageV2() {
     },
     {
       id: 'user',
-      header: 'Pengguna',
+      header: t('assetDetail.col.user', 'User'),
       accessorFn: (row: any) => row?.user?.name ?? '',
       cell: ({ row }: { row: { original: any } }) => (
         <span className="text-sm text-text-secondary">
@@ -351,7 +343,7 @@ export default function AssetDetailPageV2() {
     },
     {
       accessorKey: 'purpose',
-      header: 'Tujuan',
+      header: t('assetDetail.col.purpose', 'Purpose'),
       cell: ({ row }: { row: { original: any } }) => (
         <div className="min-w-0 max-w-[280px]">
           <div className="text-sm text-text-primary truncate">
@@ -362,7 +354,7 @@ export default function AssetDetailPageV2() {
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: t('assetDetail.col.status', 'Status'),
       cell: ({ row }: { row: { original: any } }) => (
         <Badge
           variant="outline"

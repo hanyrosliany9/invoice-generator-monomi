@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
@@ -9,6 +10,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -42,16 +45,6 @@ import {
 /*  Sidebar — same shape as every v2 page.                             */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
@@ -83,11 +76,11 @@ const assetStatusChip = (s?: string) => {
 };
 
 const ASSET_STATUS_LABEL: Record<string, string> = {
-  DRAFT:         'Draf',
-  IN_REVIEW:     'Direview',
-  NEEDS_CHANGES: 'Perlu Revisi',
-  APPROVED:      'Disetujui',
-  ARCHIVED:      'Diarsipkan',
+  DRAFT:         'Draft',
+  IN_REVIEW:     'In Review',
+  NEEDS_CHANGES: 'Needs Changes',
+  APPROVED:      'Approved',
+  ARCHIVED:      'Archived',
 };
 
 /* ------------------------------------------------------------------ */
@@ -95,6 +88,7 @@ const ASSET_STATUS_LABEL: Record<string, string> = {
 /* ------------------------------------------------------------------ */
 
 export default function MediaProjectDetailPageV2() {
+  const { t } = useTranslation();
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
@@ -161,11 +155,11 @@ export default function MediaProjectDetailPageV2() {
     mutationFn: (assetId: string) => mediaCollabService.deleteAsset(assetId),
     onSuccess: () => {
       invalidateAssets();
-      toast.success('Aset berhasil dihapus.');
+      toast.success(t('mediaCollab.assetDeleted', 'Aset berhasil dihapus.'));
       setSelectedAsset(null);
     },
     onError: (err: any) =>
-      toast.error(err?.response?.data?.message || 'Gagal menghapus aset.'),
+      toast.error(err?.response?.data?.message || t('mediaCollab.assetDeleteFailed', 'Gagal menghapus aset.')),
   });
 
   const statusMutation = useMutation({
@@ -173,27 +167,27 @@ export default function MediaProjectDetailPageV2() {
       mediaCollabService.updateAssetStatus(id, status),
     onSuccess: () => {
       invalidateAssets();
-      toast.success('Status aset diperbarui.');
+      toast.success(t('mediaCollab.statusUpdated', 'Status aset diperbarui.'));
     },
-    onError: () => toast.error('Gagal memperbarui status.'),
+    onError: () => toast.error(t('mediaCollab.statusUpdateFailed', 'Gagal memperbarui status.')),
   });
 
   const enableShareMutation = useMutation({
     mutationFn: () => mediaCollabService.enablePublicSharing(projectId!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['media-project', projectId] });
-      toast.success('Tautan publik diaktifkan.');
+      toast.success(t('mediaCollab.shareEnabled', 'Tautan publik diaktifkan.'));
     },
-    onError: () => toast.error('Gagal mengaktifkan tautan publik.'),
+    onError: () => toast.error(t('mediaCollab.shareEnableFailed', 'Gagal mengaktifkan tautan publik.')),
   });
 
   const disableShareMutation = useMutation({
     mutationFn: () => mediaCollabService.disablePublicSharing(projectId!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['media-project', projectId] });
-      toast.success('Tautan publik dinonaktifkan.');
+      toast.success(t('mediaCollab.shareDisabled', 'Tautan publik dinonaktifkan.'));
     },
-    onError: () => toast.error('Gagal menonaktifkan tautan publik.'),
+    onError: () => toast.error(t('mediaCollab.shareDisableFailed', 'Gagal menonaktifkan tautan publik.')),
   });
 
   const addCommentMutation = useMutation({
@@ -204,9 +198,9 @@ export default function MediaProjectDetailPageV2() {
       }),
     onSuccess: () => {
       refetchComments();
-      toast.success('Komentar terkirim.');
+      toast.success(t('mediaCollab.commentSent', 'Komentar terkirim.'));
     },
-    onError: () => toast.error('Gagal mengirim komentar.'),
+    onError: () => toast.error(t('mediaCollab.commentFailed', 'Gagal mengirim komentar.')),
   });
 
   /* ---------- derived ---------- */
@@ -241,9 +235,9 @@ export default function MediaProjectDetailPageV2() {
     if (!projectId) return;
     try {
       await mediaCollabService.uploadAsset(projectId, file);
-      toast.success(`"${file.name}" diunggah.`);
+      toast.success(t('mediaCollab.uploaded', '"{{name}}" diunggah.', { name: file.name }));
     } catch (err: any) {
-      toast.error(`Gagal unggah "${file.name}": ${err?.response?.data?.message ?? err?.message ?? 'error'}`);
+      toast.error(t('mediaCollab.uploadFailed', 'Gagal unggah "{{name}}": {{error}}', { name: file.name, error: err?.response?.data?.message ?? err?.message ?? 'error' }));
     }
   };
 
@@ -271,9 +265,9 @@ export default function MediaProjectDetailPageV2() {
     if (!shareUrl) return;
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.success('Tautan disalin ke clipboard.');
+      toast.success(t('mediaCollab.linkCopied', 'Tautan disalin ke clipboard.'));
     } catch {
-      toast.error('Gagal menyalin tautan.');
+      toast.error(t('mediaCollab.linkCopyFailed', 'Gagal menyalin tautan.'));
     }
   };
 
@@ -281,8 +275,8 @@ export default function MediaProjectDetailPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -315,18 +309,18 @@ export default function MediaProjectDetailPageV2() {
       <Shell>
         <EmptyState
           icon={<FolderOpen className="h-12 w-12" />}
-          title="Proyek tidak ditemukan"
+          title={t('mediaCollab.notFound', 'Proyek tidak ditemukan')}
           description={
             projectError instanceof Error
               ? projectError.message
-              : 'Proyek ini mungkin sudah dihapus atau Anda tidak memiliki akses.'
+              : t('mediaCollab.notFoundDesc', 'Proyek ini mungkin sudah dihapus atau Anda tidak memiliki akses.')
           }
           action={
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => navigate('/v2/media-collab')}>
-                <ArrowLeft className="h-4 w-4" /> Kembali
+                <ArrowLeft className="h-4 w-4" /> {t('mediaCollab.back', 'Kembali')}
               </Button>
-              <Button size="sm" onClick={() => refetchProject()}>Coba Lagi</Button>
+              <Button size="sm" onClick={() => refetchProject()}>{t('common.retry', 'Coba Lagi')}</Button>
             </div>
           }
         />
@@ -344,7 +338,7 @@ export default function MediaProjectDetailPageV2() {
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Kembali ke Kolaborasi Media
+          {t('mediaCollab.backToCollab', 'Kembali ke Kolaborasi Media')}
         </Link>
       </div>
 
@@ -352,7 +346,7 @@ export default function MediaProjectDetailPageV2() {
         title={project.name}
         description={
           project.description
-          || 'Ruang kolaborasi media — unggah, ulas, dan setujui aset bersama tim.'
+          || t('mediaCollab.defaultDesc', 'Ruang kolaborasi media — unggah, ulas, dan setujui aset bersama tim.')
         }
         actions={
           <div className="flex items-center gap-2">
@@ -362,11 +356,11 @@ export default function MediaProjectDetailPageV2() {
               onClick={() => setShareSheetOpen(true)}
             >
               <Share2 className="h-4 w-4" />
-              Bagikan
+              {t('mediaCollab.share', 'Bagikan')}
             </Button>
             <Button size="sm" onClick={() => fileInputRef.current?.click()}>
               <Upload className="h-4 w-4" />
-              Unggah Aset
+              {t('mediaCollab.uploadAsset', 'Unggah Aset')}
             </Button>
             <input
               ref={fileInputRef}
@@ -398,7 +392,7 @@ export default function MediaProjectDetailPageV2() {
               </Avatar>
               <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                  Pemilik
+                  {t('mediaCollab.owner', 'Pemilik')}
                 </div>
                 <div className="text-base font-medium text-text-primary truncate">
                   {project.creator?.name ?? '—'}
@@ -417,7 +411,7 @@ export default function MediaProjectDetailPageV2() {
                 {project.client && (
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                      Klien
+                      {t('mediaCollab.client', 'Klien')}
                     </div>
                     <div className="text-sm text-text-primary">
                       {project.client.name}
@@ -427,7 +421,7 @@ export default function MediaProjectDetailPageV2() {
                 {project.project && (
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                      Proyek Terhubung
+                      {t('mediaCollab.linkedProject', 'Proyek Terhubung')}
                     </div>
                     <div className="text-sm text-text-secondary inline-flex items-center gap-1.5">
                       <Folder className="h-3.5 w-3.5 text-text-tertiary" />
@@ -446,7 +440,7 @@ export default function MediaProjectDetailPageV2() {
           <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-4 min-w-0 lg:min-w-[220px]">
             <div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                Tautan Publik
+                {t('mediaCollab.publicLink', 'Tautan Publik')}
               </div>
               <div className="flex lg:justify-end items-center gap-2">
                 {project.isPublic ? (
@@ -454,20 +448,20 @@ export default function MediaProjectDetailPageV2() {
                     variant="outline"
                     className="border-transparent bg-success/10 text-success px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
                   >
-                    Aktif
+                    {t('mediaCollab.active', 'Aktif')}
                   </Badge>
                 ) : (
                   <Badge
                     variant="outline"
                     className="border-transparent bg-bg-sunken text-text-tertiary px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
                   >
-                    Nonaktif
+                    {t('mediaCollab.inactive', 'Nonaktif')}
                   </Badge>
                 )}
               </div>
               {project.publicViewCount !== undefined && project.isPublic && (
                 <div className="text-xs text-text-tertiary mt-2">
-                  {project.publicViewCount.toLocaleString('id-ID')} tampilan
+                  {t('mediaCollab.viewCount', '{{n}} views', { n: project.publicViewCount.toLocaleString('id-ID') })}
                 </div>
               )}
             </div>
@@ -478,7 +472,7 @@ export default function MediaProjectDetailPageV2() {
                 onClick={() => setShareSheetOpen(true)}
               >
                 <Globe className="h-4 w-4" />
-                Atur Berbagi
+                {t('mediaCollab.shareSettings', 'Atur Berbagi')}
               </Button>
             </div>
           </div>
@@ -492,24 +486,24 @@ export default function MediaProjectDetailPageV2() {
       <section className="mb-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard
-            label="Total Aset"
+            label={t('mediaCollab.kpi.totalAssets', 'Total Aset')}
             value={kpis.total}
-            sublabel="file dalam proyek"
+            sublabel={t('mediaCollab.kpi.totalAssetsSub', 'file dalam proyek')}
           />
           <StatCard
-            label="Foto"
+            label={t('mediaCollab.kpi.photos', 'Foto')}
             value={kpis.images}
-            sublabel="termasuk RAW"
+            sublabel={t('mediaCollab.kpi.photosSub', 'termasuk RAW')}
           />
           <StatCard
-            label="Video"
+            label={t('mediaCollab.kpi.videos', 'Video')}
             value={kpis.videos}
-            sublabel="klip & rekaman"
+            sublabel={t('mediaCollab.kpi.videosSub', 'klip & rekaman')}
           />
           <StatCard
-            label="Sedang Direview"
+            label={t('mediaCollab.kpi.inReview', 'Sedang Direview')}
             value={kpis.inReview}
-            sublabel="menunggu persetujuan"
+            sublabel={t('mediaCollab.kpi.inReviewSub', 'menunggu persetujuan')}
           />
         </div>
       </section>
@@ -524,19 +518,19 @@ export default function MediaProjectDetailPageV2() {
           <div className="mb-5 flex items-baseline justify-between gap-4 flex-wrap">
             <div>
               <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                Galeri Aset
+                {t('mediaCollab.assetGallery', 'Galeri Aset')}
               </h2>
               <p className="mt-0.5 text-xs text-text-tertiary">
                 {assetsLoading
-                  ? 'Memuat…'
-                  : `${filteredAssets.length} dari ${assets.length} aset`}
+                  ? t('common.loading', 'Loading…')
+                  : t('mediaCollab.assetCount', '{{filtered}} of {{total}} assets', { filtered: filteredAssets.length, total: assets.length })}
               </p>
             </div>
 
             {/* Type filter — tab-style segmented control */}
             <div className="inline-flex p-0.5 rounded-md bg-bg-sunken border border-border-subtle text-xs">
               {(['all', 'IMAGE', 'VIDEO'] as const).map((opt) => {
-                const label = opt === 'all' ? 'Semua' : opt === 'IMAGE' ? 'Foto' : 'Video';
+                const label = opt === 'all' ? t('mediaCollab.filterAll', 'Semua') : opt === 'IMAGE' ? t('mediaCollab.filterPhoto', 'Foto') : t('mediaCollab.filterVideo', 'Video');
                 const active = mediaTypeFilter === opt;
                 return (
                   <button
@@ -605,12 +599,12 @@ export default function MediaProjectDetailPageV2() {
           <div className="mb-5 flex items-baseline justify-between gap-4">
             <div>
               <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                Koleksi
+                {t('mediaCollab.collections', 'Koleksi')}
               </h2>
               <p className="mt-0.5 text-xs text-text-tertiary">
                 {collectionsLoading
-                  ? 'Memuat…'
-                  : `${collections.length} koleksi`}
+                  ? t('common.loading', 'Loading…')
+                  : t('mediaCollab.collectionCount', '{{count}} collections', { count: collections.length })}
               </p>
             </div>
           </div>
@@ -623,8 +617,8 @@ export default function MediaProjectDetailPageV2() {
           ) : collections.length === 0 ? (
             <EmptyState
               icon={<Folder className="h-12 w-12" />}
-              title="Belum ada koleksi"
-              description="Buat koleksi untuk mengelompokkan aset berdasarkan tema, rilis, atau klien."
+              title={t('mediaCollab.noCollections', 'Belum ada koleksi')}
+              description={t('mediaCollab.noCollectionsDesc', 'Buat koleksi untuk mengelompokkan aset berdasarkan tema, rilis, atau klien.')}
             />
           ) : (
             <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -655,10 +649,10 @@ export default function MediaProjectDetailPageV2() {
                   {selectedAsset.originalName}
                 </SheetTitle>
                 <SheetDescription className="text-text-tertiary text-xs">
-                  Diunggah{' '}
+                  {t('mediaCollab.uploaded', 'Diunggah')}{' '}
                   <DateDisplay date={selectedAsset.uploadedAt} className="text-text-secondary" />
                   {selectedAsset.uploader?.name && (
-                    <> oleh <span className="text-text-secondary">{selectedAsset.uploader.name}</span></>
+                    <> {t('mediaCollab.by', 'oleh')} <span className="text-text-secondary">{selectedAsset.uploader.name}</span></>
                   )}
                 </SheetDescription>
               </SheetHeader>
@@ -669,7 +663,7 @@ export default function MediaProjectDetailPageV2() {
                   {selectedAsset.mediaType === 'VIDEO' ? (
                     <div className="aspect-video flex flex-col items-center justify-center gap-2 text-text-tertiary">
                       <Play className="h-10 w-10 stroke-1" />
-                      <span className="text-xs">Pratinjau video</span>
+                      <span className="text-xs">{t('mediaCollab.videoPreview', 'Pratinjau video')}</span>
                     </div>
                   ) : selectedAsset.thumbnailUrl || selectedAsset.url ? (
                     <img
@@ -692,11 +686,11 @@ export default function MediaProjectDetailPageV2() {
 
                 {/* Metadata grid */}
                 <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-xs">
-                  <MetaRow label="Tipe" value={selectedAsset.mediaType} />
-                  <MetaRow label="Ukuran" value={formatBytes(Number(selectedAsset.size) || 0)} />
-                  <MetaRow label="Format" value={selectedAsset.mimeType} />
+                  <MetaRow label={t('mediaCollab.meta.type', 'Tipe')} value={selectedAsset.mediaType} />
+                  <MetaRow label={t('mediaCollab.meta.size', 'Ukuran')} value={formatBytes(Number(selectedAsset.size) || 0)} />
+                  <MetaRow label={t('mediaCollab.meta.format', 'Format')} value={selectedAsset.mimeType} />
                   <MetaRow
-                    label="Status"
+                    label={t('mediaCollab.meta.status', 'Status')}
                     value={
                       <Badge
                         variant="outline"
@@ -705,20 +699,20 @@ export default function MediaProjectDetailPageV2() {
                           assetStatusChip(selectedAsset.status),
                         )}
                       >
-                        {ASSET_STATUS_LABEL[selectedAsset.status] ?? selectedAsset.status}
+                        {t(`mediaCollab.assetStatus.${selectedAsset.status}`, ASSET_STATUS_LABEL[selectedAsset.status] ?? selectedAsset.status)}
                       </Badge>
                     }
                   />
                   {selectedAsset.width && selectedAsset.height && (
                     <MetaRow
-                      label="Dimensi"
+                      label={t('mediaCollab.meta.dimensions', 'Dimensi')}
                       value={`${selectedAsset.width} × ${selectedAsset.height}`}
                     />
                   )}
                   {selectedAsset.duration && (
                     <MetaRow
-                      label="Durasi"
-                      value={`${Math.round(selectedAsset.duration)} dtk`}
+                      label={t('mediaCollab.meta.duration', 'Durasi')}
+                      value={`${Math.round(selectedAsset.duration)} ${t('mediaCollab.meta.seconds', 'dtk')}`}
                     />
                   )}
                 </div>
@@ -736,7 +730,7 @@ export default function MediaProjectDetailPageV2() {
                     }
                     disabled={selectedAsset.status === 'IN_REVIEW'}
                   >
-                    <Eye className="h-3.5 w-3.5" /> Tandai Review
+                    <Eye className="h-3.5 w-3.5" /> {t('mediaCollab.markReview', 'Tandai Review')}
                   </Button>
                   <Button
                     size="sm"
@@ -748,7 +742,7 @@ export default function MediaProjectDetailPageV2() {
                     }
                     disabled={selectedAsset.status === 'APPROVED'}
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Setujui
+                    <CheckCircle2 className="h-3.5 w-3.5" /> {t('mediaCollab.approve', 'Setujui')}
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -756,7 +750,7 @@ export default function MediaProjectDetailPageV2() {
                         variant="ghost"
                         size="icon-sm"
                         className="text-text-tertiary hover:text-text-primary"
-                        aria-label="Tindakan lain"
+                        aria-label={t('mediaCollab.moreActions', 'Tindakan lain')}
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
@@ -770,7 +764,7 @@ export default function MediaProjectDetailPageV2() {
                           })
                         }
                       >
-                        Minta Revisi
+                        {t('mediaCollab.requestChanges', 'Minta Revisi')}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() =>
@@ -780,18 +774,18 @@ export default function MediaProjectDetailPageV2() {
                           })
                         }
                       >
-                        Arsipkan
+                        {t('mediaCollab.archive', 'Arsipkan')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => {
-                          if (confirm(`Hapus "${selectedAsset.originalName}"?`)) {
+                          if (confirm(t('mediaCollab.confirmDeleteAsset', 'Hapus "{{name}}"?', { name: selectedAsset.originalName }))) {
                             deleteAssetMutation.mutate(selectedAsset.id);
                           }
                         }}
                         className="text-danger focus:text-danger"
                       >
-                        <Trash2 className="h-3.5 w-3.5" /> Hapus
+                        <Trash2 className="h-3.5 w-3.5" /> {t('mediaCollab.delete', 'Hapus')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -802,7 +796,7 @@ export default function MediaProjectDetailPageV2() {
                   <div className="flex items-center gap-2 mb-3 text-text-secondary">
                     <MessageCircle className="h-4 w-4" />
                     <h3 className="text-sm font-medium">
-                      Komentar
+                      {t('mediaCollab.comments', 'Komentar')}
                       <span className="text-text-tertiary font-normal ml-1.5">
                         ({assetComments.length})
                       </span>
@@ -832,10 +826,10 @@ export default function MediaProjectDetailPageV2() {
         >
           <SheetHeader className="border-b border-border-subtle p-5">
             <SheetTitle className="text-text-primary text-base font-display font-semibold">
-              Bagikan Proyek
+              {t('mediaCollab.shareProject', 'Bagikan Proyek')}
             </SheetTitle>
             <SheetDescription className="text-text-tertiary text-xs">
-              Aktifkan tautan publik agar klien bisa melihat dan memberi komentar tanpa login.
+              {t('mediaCollab.shareDesc', 'Aktifkan tautan publik agar klien bisa melihat dan memberi komentar tanpa login.')}
             </SheetDescription>
           </SheetHeader>
 
@@ -843,12 +837,12 @@ export default function MediaProjectDetailPageV2() {
             <div className="flex items-center justify-between gap-3 p-4 rounded-md bg-bg-sunken border border-border-subtle">
               <div className="min-w-0">
                 <div className="text-sm font-medium text-text-primary">
-                  Tautan Publik
+                  {t('mediaCollab.publicLink', 'Tautan Publik')}
                 </div>
                 <div className="text-xs text-text-tertiary mt-0.5">
                   {project.isPublic
-                    ? 'Siapa pun dengan tautan dapat melihat.'
-                    : 'Tidak ada akses publik.'}
+                    ? t('mediaCollab.anyoneWithLink', 'Siapa pun dengan tautan dapat melihat.')
+                    : t('mediaCollab.noPublicAccess', 'Tidak ada akses publik.')}
                 </div>
               </div>
               {project.isPublic ? (
@@ -858,7 +852,7 @@ export default function MediaProjectDetailPageV2() {
                   onClick={() => disableShareMutation.mutate()}
                   disabled={disableShareMutation.isPending}
                 >
-                  <X className="h-3.5 w-3.5" /> Nonaktifkan
+                  <X className="h-3.5 w-3.5" /> {t('mediaCollab.disable', 'Nonaktifkan')}
                 </Button>
               ) : (
                 <Button
@@ -866,7 +860,7 @@ export default function MediaProjectDetailPageV2() {
                   onClick={() => enableShareMutation.mutate()}
                   disabled={enableShareMutation.isPending}
                 >
-                  <Globe className="h-3.5 w-3.5" /> Aktifkan
+                  <Globe className="h-3.5 w-3.5" /> {t('mediaCollab.enable', 'Aktifkan')}
                 </Button>
               )}
             </div>
@@ -887,12 +881,12 @@ export default function MediaProjectDetailPageV2() {
                     />
                   </div>
                   <Button size="sm" onClick={copyShareLink}>
-                    <Copy className="h-3.5 w-3.5" /> Salin
+                    <Copy className="h-3.5 w-3.5" /> {t('mediaCollab.copy', 'Salin')}
                   </Button>
                 </div>
                 {project.publicViewCount !== undefined && (
                   <div className="text-xs text-text-tertiary">
-                    {project.publicViewCount.toLocaleString('id-ID')} tampilan sampai sekarang
+                    {t('mediaCollab.viewCountSoFar', '{{n}} views so far', { n: project.publicViewCount.toLocaleString('id-ID') })}
                   </div>
                 )}
               </div>
@@ -915,6 +909,7 @@ interface AssetTileProps {
 }
 
 function AssetTile({ asset, mediaToken, onClick }: AssetTileProps) {
+  const { t } = useTranslation();
   const isVideo = asset.mediaType === 'VIDEO';
   const src = asset.thumbnailUrl || (!isVideo ? asset.url : null);
   const proxied = src ? getProxyUrl(src, mediaToken) : null;
@@ -967,7 +962,7 @@ function AssetTile({ asset, mediaToken, onClick }: AssetTileProps) {
               assetStatusChip(asset.status),
             )}
           >
-            {ASSET_STATUS_LABEL[asset.status] ?? asset.status}
+            {t(`mediaCollab.assetStatus.${asset.status}`, ASSET_STATUS_LABEL[asset.status] ?? asset.status)}
           </Badge>
           {asset.size && (
             <span className="text-[10px] text-white/70 tabular-nums">
@@ -981,6 +976,7 @@ function AssetTile({ asset, mediaToken, onClick }: AssetTileProps) {
 }
 
 function UploadZone({ onPick }: { onPick: () => void }) {
+  const { t } = useTranslation();
   return (
     <div
       className={cn(
@@ -992,19 +988,20 @@ function UploadZone({ onPick }: { onPick: () => void }) {
         <Upload className="h-5 w-5" />
       </div>
       <h3 className="text-base font-display font-semibold text-text-primary">
-        Belum ada aset
+        {t('mediaCollab.noAssets', 'Belum ada aset')}
       </h3>
       <p className="mt-2 text-sm text-text-secondary max-w-md mx-auto">
-        Unggah foto atau video pertama untuk mulai berkolaborasi dengan tim.
+        {t('mediaCollab.noAssetsDesc', 'Unggah foto atau video pertama untuk mulai berkolaborasi dengan tim.')}
       </p>
       <Button onClick={onPick} size="sm" className="mt-5">
-        <Upload className="h-4 w-4" /> Pilih File
+        <Upload className="h-4 w-4" /> {t('mediaCollab.pickFile', 'Pilih File')}
       </Button>
     </div>
   );
 }
 
 function CollectionRow({ collection }: { collection: MediaCollection }) {
+  const { t } = useTranslation();
   return (
     <li className="flex items-start gap-3 p-3 rounded-md bg-bg-sunken/40 border border-border-subtle">
       <div className="shrink-0 mt-0.5 h-8 w-8 rounded-md bg-bg-raised border border-border-subtle flex items-center justify-center">
@@ -1025,7 +1022,7 @@ function CollectionRow({ collection }: { collection: MediaCollection }) {
           )}
         </div>
         <div className="text-xs text-text-tertiary mt-0.5">
-          {collection._count?.assets ?? 0} aset
+          {t('mediaCollab.collectionAssetCount', '{{count}} assets', { count: collection._count?.assets ?? 0 })}
         </div>
       </div>
     </li>
@@ -1054,10 +1051,11 @@ interface CommentListProps {
 }
 
 function CommentList({ comments }: CommentListProps) {
+  const { t } = useTranslation();
   if (comments.length === 0) {
     return (
       <div className="rounded-md bg-bg-sunken/40 border border-border-subtle px-4 py-6 text-center text-xs text-text-tertiary mb-3">
-        Belum ada komentar.
+        {t('mediaCollab.noComments', 'No comments yet.')}
       </div>
     );
   }
@@ -1076,14 +1074,14 @@ function CommentList({ comments }: CommentListProps) {
                 </AvatarFallback>
               </Avatar>
               <span className="text-xs font-medium text-text-primary truncate">
-                {c.author?.name ?? 'Anonim'}
+                {c.author?.name ?? t('mediaCollab.anonymousAuthor', 'Anonymous')}
               </span>
               {c.status === 'RESOLVED' && (
                 <Badge
                   variant="outline"
                   className="border-transparent bg-success/10 text-success px-1.5 py-0 text-[9px] font-medium uppercase tracking-wider shrink-0"
                 >
-                  Selesai
+                  {t('mediaCollab.resolved', 'Resolved')}
                 </Badge>
               )}
             </div>
@@ -1108,6 +1106,7 @@ function CommentComposer({
   onSubmit: (text: string) => void;
   isPending: boolean;
 }) {
+  const { t } = useTranslation();
   const [text, setText] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -1123,11 +1122,11 @@ function CommentComposer({
       <Input
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Tulis komentar..."
+        placeholder={t('mediaCollab.commentPlaceholder', 'Write a comment...')}
         className="bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary text-xs"
       />
       <Button type="submit" size="sm" disabled={!text.trim() || isPending}>
-        {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Kirim'}
+        {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('mediaCollab.sendComment', 'Send')}
       </Button>
     </form>
   );

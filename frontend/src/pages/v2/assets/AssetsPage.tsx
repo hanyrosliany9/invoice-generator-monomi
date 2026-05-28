@@ -9,6 +9,8 @@ import {
 import { toast } from 'sonner';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -40,36 +42,26 @@ import { cn } from '@/lib/utils';
 /*  resolved by AppShell.                                              */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Status + condition copy — kept in one place so the list and detail */
 /*  pages agree word-for-word.                                         */
 /* ------------------------------------------------------------------ */
 
 const STATUS_LABEL: Record<Asset['status'], string> = {
-  AVAILABLE:       'Tersedia',
-  RESERVED:        'Direservasi',
-  CHECKED_OUT:     'Dipinjam',
-  IN_MAINTENANCE:  'Dalam Perawatan',
-  BROKEN:          'Rusak',
-  RETIRED:         'Tidak Aktif',
+  AVAILABLE:       'Available',
+  RESERVED:        'Reserved',
+  CHECKED_OUT:     'Checked Out',
+  IN_MAINTENANCE:  'In Maintenance',
+  BROKEN:          'Broken',
+  RETIRED:         'Retired',
 };
 
 const CONDITION_LABEL: Record<Asset['condition'], string> = {
-  EXCELLENT: 'Sangat Baik',
-  GOOD:      'Baik',
-  FAIR:      'Cukup',
-  POOR:      'Buruk',
-  BROKEN:    'Rusak',
+  EXCELLENT: 'Excellent',
+  GOOD:      'Good',
+  FAIR:      'Fair',
+  POOR:      'Poor',
+  BROKEN:    'Broken',
 };
 
 const statusChipClass = (status?: Asset['status']) => {
@@ -203,8 +195,8 @@ export default function AssetsPageV2() {
     return (
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
         topbar={{
@@ -241,8 +233,8 @@ export default function AssetsPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -471,6 +463,7 @@ interface AssetTableProps {
 }
 
 function AssetTable({ rows, onRowClick, onView, onEdit, onDelete }: AssetTableProps) {
+  const { t } = useTranslation();
   return (
     <DataTable<Asset>
       data={rows}
@@ -479,7 +472,7 @@ function AssetTable({ rows, onRowClick, onView, onEdit, onDelete }: AssetTablePr
       columns={[
         {
           accessorKey: 'assetCode',
-          header: 'Kode',
+          header: t('assetsPage.col.code', 'Code'),
           cell: ({ row }) => (
             <span className="font-mono text-xs text-text-primary tracking-tight">
               {row.original.assetCode || '—'}
@@ -488,7 +481,7 @@ function AssetTable({ rows, onRowClick, onView, onEdit, onDelete }: AssetTablePr
         },
         {
           id: 'asset',
-          header: 'Aset',
+          header: t('assetsPage.col.asset', 'Asset'),
           accessorFn: (row) => row.name ?? '',
           cell: ({ row }) => {
             const a = row.original;
@@ -509,7 +502,7 @@ function AssetTable({ rows, onRowClick, onView, onEdit, onDelete }: AssetTablePr
         },
         {
           accessorKey: 'category',
-          header: 'Kategori',
+          header: t('assetsPage.col.category', 'Category'),
           cell: ({ row }) => {
             const a = row.original;
             return (
@@ -528,7 +521,7 @@ function AssetTable({ rows, onRowClick, onView, onEdit, onDelete }: AssetTablePr
         },
         {
           accessorKey: 'status',
-          header: 'Status',
+          header: t('assetsPage.col.status', 'Status'),
           cell: ({ row }) => {
             const a = row.original;
             return (
@@ -554,7 +547,7 @@ function AssetTable({ rows, onRowClick, onView, onEdit, onDelete }: AssetTablePr
         {
           id: 'value',
           accessorFn: (row) => toNumber(row.purchasePrice),
-          header: () => <span className="block text-right">Nilai</span>,
+          header: () => <span className="block text-right">{t('assetsPage.col.value', 'Value')}</span>,
           cell: ({ row }) => {
             const v = toNumber(row.original.purchasePrice);
             return (
@@ -571,7 +564,7 @@ function AssetTable({ rows, onRowClick, onView, onEdit, onDelete }: AssetTablePr
         },
         {
           accessorKey: 'location',
-          header: 'Lokasi',
+          header: t('assetsPage.col.location', 'Location'),
           cell: ({ row }) => (
             <span className="text-text-tertiary text-xs">
               {row.original.location || '—'}
@@ -580,7 +573,7 @@ function AssetTable({ rows, onRowClick, onView, onEdit, onDelete }: AssetTablePr
         },
         {
           id: 'actions',
-          header: () => <span className="sr-only">Aksi</span>,
+          header: () => <span className="sr-only">{t('assetsPage.col.actions', 'Actions')}</span>,
           cell: ({ row }) => {
             const a = row.original;
             return (
@@ -591,24 +584,24 @@ function AssetTable({ rows, onRowClick, onView, onEdit, onDelete }: AssetTablePr
                       variant="ghost"
                       size="icon-sm"
                       className="text-text-tertiary hover:text-text-primary"
-                      aria-label="Aksi aset"
+                      aria-label={t('assetsPage.assetActions', 'Asset actions')}
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem onClick={() => onView(a)}>
-                      <Eye className="h-3.5 w-3.5" /> Lihat
+                      <Eye className="h-3.5 w-3.5" /> {t('common.view', 'View')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEdit(a)}>
-                      <Pencil className="h-3.5 w-3.5" /> Ubah
+                      <Pencil className="h-3.5 w-3.5" /> {t('common.edit', 'Edit')}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => onDelete(a)}
                       className="text-danger focus:text-danger"
                     >
-                      <Trash2 className="h-3.5 w-3.5" /> Hapus
+                      <Trash2 className="h-3.5 w-3.5" /> {t('common.delete', 'Delete')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

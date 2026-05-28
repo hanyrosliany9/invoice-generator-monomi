@@ -15,6 +15,8 @@ import {
 import { id as idLocale } from 'date-fns/locale';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -39,18 +41,6 @@ import { cn } from '@/lib/utils';
 /*  calendar destinations so the nav reads as one continuous app.     */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',        icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',         icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',       icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',          icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',         icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Kalender',         icon: <CalendarDays className="h-4 w-4" />, href: '/v2/calendar' },
-  { label: 'Kalender Konten',  icon: <ImageIcon   className="h-4 w-4" />, href: '/v2/calendar/content' },
-  { label: 'Expenses',         icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',         icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Editorial palette for the four item families.                     */
 /*  The map is intentional: invoices read as "money/risk" (warning),  */
@@ -72,11 +62,11 @@ interface AgendaItem {
   overdue?: boolean;
 }
 
-const kindMeta: Record<ItemKind, { label: string; chipClass: string; dotClass: string; icon: React.ReactNode }> = {
-  invoice:   { label: 'Tagihan',    chipClass: 'bg-warning/10 text-warning',  dotClass: 'bg-warning',  icon: <Receipt        className="h-3 w-3" /> },
-  quotation: { label: 'Penawaran',  chipClass: 'bg-info/10 text-info',        dotClass: 'bg-info',     icon: <FileSignature  className="h-3 w-3" /> },
-  project:   { label: 'Proyek',     chipClass: 'bg-accent/10 text-accent',    dotClass: 'bg-accent',   icon: <Flag           className="h-3 w-3" /> },
-  event:     { label: 'Acara',      chipClass: 'bg-bg-sunken text-text-secondary', dotClass: 'bg-text-tertiary', icon: <AlarmClock className="h-3 w-3" /> },
+const kindMeta: Record<ItemKind, { label: string; labelKey: string; chipClass: string; dotClass: string; icon: React.ReactNode }> = {
+  invoice:   { label: 'Invoice',    labelKey: 'calendarPage.kind.invoice',    chipClass: 'bg-warning/10 text-warning',  dotClass: 'bg-warning',  icon: <Receipt        className="h-3 w-3" /> },
+  quotation: { label: 'Quotation',  labelKey: 'calendarPage.kind.quotation',  chipClass: 'bg-info/10 text-info',        dotClass: 'bg-info',     icon: <FileSignature  className="h-3 w-3" /> },
+  project:   { label: 'Project',    labelKey: 'calendarPage.kind.project',    chipClass: 'bg-accent/10 text-accent',    dotClass: 'bg-accent',   icon: <Flag           className="h-3 w-3" /> },
+  event:     { label: 'Event',      labelKey: 'calendarPage.kind.event',      chipClass: 'bg-bg-sunken text-text-secondary', dotClass: 'bg-text-tertiary', icon: <AlarmClock className="h-3 w-3" /> },
 };
 
 /* ------------------------------------------------------------------ */
@@ -270,8 +260,8 @@ export default function CalendarPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -280,10 +270,10 @@ export default function CalendarPageV2() {
     >
       <PageContainer>
         <PageHeader
-          title={t('calendar.title', 'Kalender')}
+          title={t('calendarPage.title', 'Calendar')}
           description={t(
-            'calendar.subtitle',
-            'Satu pandangan untuk jatuh tempo tagihan, masa berlaku penawaran, tenggat proyek, dan acara tim.',
+            'calendarPage.subtitle',
+            'A single view for invoice due dates, quotation expiries, project deadlines, and team events.',
           )}
           actions={
             <Button
@@ -292,7 +282,7 @@ export default function CalendarPageV2() {
               onClick={() => navigate('/v2/calendar/content')}
             >
               <ImageIcon className="h-4 w-4" />
-              {t('calendar.openContent', 'Kalender Konten')}
+              {t('calendarPage.openContent', 'Content Calendar')}
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           }
@@ -311,24 +301,24 @@ export default function CalendarPageV2() {
             ) : (
               <>
                 <StatCard
-                  label={t('calendar.kpi.due30', 'Jatuh Tempo 30 Hari')}
+                  label={t('calendarPage.kpi.due30', 'Due in 30 Days')}
                   value={stats.due30}
-                  sublabel={t('calendar.kpi.due30Sub', 'tagihan & penawaran')}
+                  sublabel={t('calendarPage.kpi.due30Sub', 'invoices & quotations')}
                 />
                 <StatCard
-                  label={t('calendar.kpi.moneyDue', 'Nilai Tertagih')}
+                  label={t('calendarPage.kpi.moneyDue', 'Receivable Value')}
                   value={<MoneyDisplay amount={stats.moneyDue} />}
-                  sublabel={t('calendar.kpi.moneyDueSub', 'dalam 30 hari ke depan')}
+                  sublabel={t('calendarPage.kpi.moneyDueSub', 'in the next 30 days')}
                 />
                 <StatCard
-                  label={t('calendar.kpi.overdue', 'Terlewat')}
+                  label={t('calendarPage.kpi.overdue', 'Overdue')}
                   value={stats.overdue}
-                  sublabel={t('calendar.kpi.overdueSub', 'butuh perhatian')}
+                  sublabel={t('calendarPage.kpi.overdueSub', 'needs attention')}
                 />
                 <StatCard
-                  label={t('calendar.kpi.events', 'Acara Mendatang')}
+                  label={t('calendarPage.kpi.events', 'Upcoming Events')}
                   value={stats.upcomingEvents}
-                  sublabel={t('calendar.kpi.eventsSub', 'meeting & milestone')}
+                  sublabel={t('calendarPage.kpi.eventsSub', 'meetings & milestones')}
                 />
               </>
             )}
@@ -349,7 +339,7 @@ export default function CalendarPageV2() {
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => setCursor((c) => addMonths(c, -1))}
-                  aria-label={t('calendar.prev', 'Bulan sebelumnya')}
+                  aria-label={t('calendarPage.prev', 'Previous month')}
                   className="text-text-tertiary hover:text-text-primary"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -364,13 +354,13 @@ export default function CalendarPageV2() {
                   }}
                   className="text-text-secondary hover:text-text-primary"
                 >
-                  {t('calendar.today', 'Hari Ini')}
+                  {t('calendarPage.today', 'Today')}
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => setCursor((c) => addMonths(c, 1))}
-                  aria-label={t('calendar.next', 'Bulan berikutnya')}
+                  aria-label={t('calendarPage.next', 'Next month')}
                   className="text-text-tertiary hover:text-text-primary"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -387,7 +377,7 @@ export default function CalendarPageV2() {
                 {(['invoice', 'quotation', 'project', 'event'] as ItemKind[]).map((k) => (
                   <span key={k} className="inline-flex items-center gap-1.5">
                     <span className={cn('h-1.5 w-1.5 rounded-full', kindMeta[k].dotClass)} />
-                    {kindMeta[k].label}
+                    {t(kindMeta[k].labelKey, kindMeta[k].label)}
                   </span>
                 ))}
               </div>
@@ -473,7 +463,7 @@ export default function CalendarPageV2() {
                       ))}
                       {overflow > 0 && (
                         <div className="px-1.5 text-[10px] text-text-tertiary">
-                          +{overflow} {t('calendar.more', 'lainnya')}
+                          +{overflow} {t('calendarPage.more', 'more')}
                         </div>
                       )}
                     </div>
@@ -491,7 +481,7 @@ export default function CalendarPageV2() {
               <div className="flex items-baseline justify-between mb-3">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-                    {t('calendar.selected', 'Hari Terpilih')}
+                    {t('calendarPage.selected', 'Selected Day')}
                   </div>
                   <h3 className="mt-1 text-lg font-display font-semibold text-text-primary tracking-tight">
                     {format(selectedDay, 'EEEE, d MMM yyyy', { locale: idLocale })}
@@ -506,7 +496,7 @@ export default function CalendarPageV2() {
                 <div className="py-8 text-center">
                   <CalendarRange className="h-8 w-8 mx-auto text-text-tertiary stroke-1 mb-2" />
                   <p className="text-sm text-text-tertiary">
-                    {t('calendar.emptyDay', 'Tidak ada agenda pada hari ini.')}
+                    {t('calendarPage.emptyDay', 'No agenda on this day.')}
                   </p>
                 </div>
               ) : (
@@ -522,10 +512,10 @@ export default function CalendarPageV2() {
               <div className="flex items-baseline justify-between mb-3">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-                    {t('calendar.upcoming', '14 Hari ke Depan')}
+                    {t('calendarPage.upcoming', 'Next 14 Days')}
                   </div>
                   <h3 className="mt-1 text-base font-display font-semibold text-text-primary">
-                    {t('calendar.upcomingTitle', 'Agenda Mendatang')}
+                    {t('calendarPage.upcomingTitle', 'Upcoming Agenda')}
                   </h3>
                 </div>
                 <Badge variant="outline" className="border-border-subtle text-text-tertiary">
@@ -542,10 +532,10 @@ export default function CalendarPageV2() {
               ) : upcoming.length === 0 ? (
                 <EmptyState
                   icon={<CalendarDays />}
-                  title={t('calendar.upcomingEmpty.title', 'Tidak ada agenda mendatang')}
+                  title={t('calendarPage.upcomingEmpty.title', 'No upcoming agenda')}
                   description={t(
-                    'calendar.upcomingEmpty.desc',
-                    'Tidak ada yang dijadwalkan dalam 14 hari ke depan.',
+                    'calendarPage.upcomingEmpty.desc',
+                    'Nothing scheduled in the next 14 days.',
                   )}
                 />
               ) : (
@@ -569,6 +559,7 @@ export default function CalendarPageV2() {
 /* ------------------------------------------------------------------ */
 
 function AgendaRow({ item, onClick }: { item: AgendaItem; onClick?: () => void }) {
+  const { t } = useTranslation();
   const meta = kindMeta[item.kind];
   const interactive = !!item.href;
   return (
@@ -587,11 +578,11 @@ function AgendaRow({ item, onClick }: { item: AgendaItem; onClick?: () => void }
         <div className="flex items-center gap-2 mb-1">
           <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', meta.dotClass)} />
           <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
-            {meta.label}
+            {t(meta.labelKey, meta.label)}
           </span>
           {item.overdue && (
             <Badge variant="outline" className="border-transparent bg-danger/10 text-danger text-[10px] px-1.5 py-0">
-              Terlewat
+              {t('calendarPage.overdue', 'Overdue')}
             </Badge>
           )}
           <span className="ml-auto text-[11px] text-text-tertiary tabular-nums">

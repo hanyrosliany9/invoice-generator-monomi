@@ -2,12 +2,15 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Plus, Search, MoreHorizontal, Eye, Send, Check, X, Trash2, Ban,
   ArrowDownLeft, Wallet,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -52,17 +55,6 @@ import { cn } from '@/lib/utils';
 /*  Navigation — shares the v2 spine. "Kas" sits beneath Expenses so   */
 /*  the financial group reads as one chapter in the sidebar.           */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',   icon: <Inbox className="h-4 w-4" />,        href: '/v2' },
-  { label: 'Invoices',    icon: <FileText className="h-4 w-4" />,     href: '/v2/invoices' },
-  { label: 'Quotations',  icon: <ReceiptText className="h-4 w-4" />,  href: '/v2/quotations' },
-  { label: 'Clients',     icon: <Users className="h-4 w-4" />,        href: '/v2/clients' },
-  { label: 'Projects',    icon: <Folder className="h-4 w-4" />,       href: '/v2/projects' },
-  { label: 'Expenses',    icon: <CreditCard className="h-4 w-4" />,   href: '/v2/expenses' },
-  { label: 'Kas Masuk',   icon: <ArrowDownLeft className="h-4 w-4" />, href: '/v2/accounting/cash-receipts' },
-  { label: 'Settings',    icon: <Settings className="h-4 w-4" />,     href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Status & category vocabularies — Bahasa Indonesia for the user,    */
@@ -146,6 +138,7 @@ const formatIDR = (n: number) =>
 /* ------------------------------------------------------------------ */
 
 export default function CashReceiptsPageV2() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
@@ -200,28 +193,28 @@ export default function CashReceiptsPageV2() {
 
   const submitMutation = useMutation({
     mutationFn: submitCashTransaction,
-    onSuccess: () => { toast.success('Penerimaan kas berhasil diajukan'); invalidate(); },
-    onError:   () => toast.error('Gagal mengajukan penerimaan kas'),
+    onSuccess: () => { toast.success(t('accounting.cashReceipts.submitSuccess')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashReceipts.submitFail')),
   });
   const approveMutation = useMutation({
     mutationFn: approveCashTransaction,
-    onSuccess: () => { toast.success('Penerimaan kas disetujui dan diposting'); invalidate(); },
-    onError:   () => toast.error('Gagal menyetujui penerimaan kas'),
+    onSuccess: () => { toast.success(t('accounting.cashReceipts.approveSuccess')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashReceipts.approveFail')),
   });
   const rejectMutation = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) => rejectCashTransaction(id, reason),
-    onSuccess: () => { toast.success('Penerimaan kas ditolak'); invalidate(); },
-    onError:   () => toast.error('Gagal menolak penerimaan kas'),
+    onSuccess: () => { toast.success(t('accounting.cashReceipts.rejectSuccess')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashReceipts.rejectFail')),
   });
   const voidMutation = useMutation({
     mutationFn: voidCashTransaction,
-    onSuccess: () => { toast.success('Penerimaan kas dibatalkan (void)'); invalidate(); },
-    onError:   () => toast.error('Gagal membatalkan penerimaan kas'),
+    onSuccess: () => { toast.success(t('accounting.cashReceipts.voidSuccess')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashReceipts.voidFail')),
   });
   const deleteMutation = useMutation({
     mutationFn: deleteCashTransaction,
-    onSuccess: () => { toast.success('Penerimaan kas dihapus'); invalidate(); },
-    onError:   () => toast.error('Gagal menghapus penerimaan kas'),
+    onSuccess: () => { toast.success(t('accounting.cashReceipts.deleteSuccess')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashReceipts.deleteFail')),
   });
 
   /* ----- derived KPI band — Hari Ini / Bulan Ini / Top sumber ------- */
@@ -271,8 +264,8 @@ export default function CashReceiptsPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -287,9 +280,9 @@ export default function CashReceiptsPageV2() {
       <Shell>
         <EmptyState
           icon={<ArrowDownLeft className="h-12 w-12" />}
-          title="Tidak bisa memuat penerimaan kas"
-          description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-          action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+          title={t('accounting.cashReceipts.errorTitle')}
+          description={error instanceof Error ? error.message : t('accounting.cashReceipts.errorDesc')}
+          action={<Button onClick={() => refetch()}>{t('accounting.cashReceipts.retry')}</Button>}
         />
       </Shell>
     );
@@ -299,8 +292,8 @@ export default function CashReceiptsPageV2() {
   return (
     <Shell>
       <PageHeader
-        title="Penerimaan Kas"
-        description="Catat dan setujui kas masuk dari pendapatan, pelanggan, dan sumber lain."
+        title={t('accounting.cashReceipts.title')}
+        description={t('accounting.cashReceipts.description')}
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -309,11 +302,11 @@ export default function CashReceiptsPageV2() {
               onClick={() => navigate('/accounting/cash-bank-balance')}
             >
               <Wallet className="h-4 w-4" />
-              Saldo Kas
+              {t('accounting.cashReceipts.cashBalance')}
             </Button>
             <Button onClick={() => navigate('/accounting/cash-receipts')} size="sm">
               <Plus className="h-4 w-4" />
-              Penerimaan Baru
+              {t('accounting.cashReceipts.newReceipt')}
             </Button>
           </div>
         }
@@ -482,19 +475,19 @@ export default function CashReceiptsPageV2() {
         ) : receipts.length === 0 ? (
           <EmptyState
             icon={<ArrowDownLeft />}
-            title={hasActiveFilters ? 'Tidak ada penerimaan yang cocok' : 'Belum ada penerimaan kas'}
+            title={hasActiveFilters ? t('accounting.cashReceipts.noMatch') : t('accounting.cashReceipts.noReceipts')}
             description={
               hasActiveFilters
-                ? 'Coba ubah atau hapus filter Anda.'
-                : 'Catat penerimaan kas pertama untuk memulai pembukuan kas masuk.'
+                ? t('accounting.cashReceipts.noMatchDesc')
+                : t('accounting.cashReceipts.noReceiptsDesc')
             }
             action={
               hasActiveFilters ? (
-                <Button variant="outline" size="sm" onClick={resetFilters}>Reset Filter</Button>
+                <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.cashReceipts.resetFilter')}</Button>
               ) : (
                 <Button onClick={() => navigate('/accounting/cash-receipts')} size="sm">
                   <Plus className="h-4 w-4" />
-                  Penerimaan Baru
+                  {t('accounting.cashReceipts.newReceipt')}
                 </Button>
               )
             }
@@ -507,17 +500,17 @@ export default function CashReceiptsPageV2() {
               onSubmit={(row) => submitMutation.mutate(row.id)}
               onApprove={(row) => approveMutation.mutate(row.id)}
               onReject={(row) => {
-                const reason = window.prompt('Alasan penolakan:')?.trim();
+                const reason = window.prompt(t('accounting.cashReceipts.rejectPrompt'))?.trim();
                 if (!reason) return;
                 rejectMutation.mutate({ id: row.id, reason });
               }}
               onVoid={(row) => {
-                if (window.confirm(`Batalkan penerimaan ${row.transactionNumber}? Jurnal akan direverse.`)) {
+                if (window.confirm(t('accounting.cashReceipts.voidConfirm', { number: row.transactionNumber }))) {
                   voidMutation.mutate(row.id);
                 }
               }}
               onDelete={(row) => {
-                if (window.confirm(`Hapus penerimaan ${row.transactionNumber}? Tidak dapat dibatalkan.`)) {
+                if (window.confirm(t('accounting.cashReceipts.deleteConfirm', { number: row.transactionNumber }))) {
                   deleteMutation.mutate(row.id);
                 }
               }}
@@ -531,7 +524,7 @@ export default function CashReceiptsPageV2() {
       <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) setViewing(null); }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle className="font-display">Detail Penerimaan Kas</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.cashReceipts.detailTitle')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
               {viewing?.transactionNumber}
             </DialogDescription>
@@ -574,7 +567,7 @@ export default function CashReceiptsPageV2() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewing(null)}>Tutup</Button>
+            <Button variant="outline" onClick={() => setViewing(null)}>{t('accounting.cashReceipts.close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

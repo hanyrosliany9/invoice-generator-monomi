@@ -16,7 +16,37 @@
     "next": "Next",
     "previous": "Previous",
     "submit": "Submit",
-    "reset": "Reset"
+    "reset": "Reset",
+    "retry": "Try Again",
+    "viewAll": "View all",
+    "adding": "Adding...",
+    "analytics": "Analytics",
+    "backToDashboard": "Back to Dashboard",
+    "backToList": "Back to list",
+    "clearAll": "Clear All",
+    "deleting": "Deleting...",
+    "discard": "Discard",
+    "duplicate": "Duplicate",
+    "errorGeneric": "An error occurred",
+    "filters": "Active filters",
+    "moreActions": "More Actions",
+    "refresh": "Refresh",
+    "resetFilters": "Reset Filters",
+    "saving": "Saving...",
+    "open": "Open",
+    "view": "View",
+    "creating": "Creating...",
+    "mobileNotice": "Best editing experience on tablet or desktop. Some controls may be hidden on small screens.",
+    "unsavedChanges": "Unsaved changes",
+    "noPendingChanges": "No pending changes"
+  },
+  "table": {
+    "number": "Number",
+    "client": "Client",
+    "amount": "Amount",
+    "status": "Status",
+    "date": "Date",
+    "dueDate": "Due Date"
   },
   "auth": {
     "login": "Login",
@@ -27,10 +57,11 @@
     "name": "Name",
     "forgotPassword": "Forgot Password?",
     "rememberMe": "Remember Me",
-    "loginTitle": "Login to Your Account",
+    "loginTitle": "Sign in to Your Account",
     "loginSubtitle": "Indonesian Business Management System",
     "invalidCredentials": "Invalid email or password",
-    "accountDisabled": "Your account has been disabled"
+    "accountDisabled": "Your account has been disabled",
+    "signIn": "Sign In"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -39,6 +70,45 @@
     "clients": "Clients",
     "projects": "Projects",
     "reports": "Reports",
+    "settings": "Settings"
+  },
+  "sectionLabels": {
+    "workspace": "Workspace",
+    "marketing": "Marketing",
+    "production": "Production",
+    "accounting": "Accounting",
+    "other": "Other"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "calendar": "Calendar",
+    "quotations": "Quotations",
+    "invoices": "Invoices",
+    "clients": "Clients",
+    "vendors": "Vendors",
+    "socialMediaReports": "Social Media Reports",
+    "contentCalendar": "Content Calendar",
+    "mediaCollaboration": "Media Collaboration",
+    "presentationDecks": "Presentation Decks",
+    "mediaDownloader": "Media Downloader",
+    "shotLists": "Shot Lists",
+    "callSheets": "Call Sheets",
+    "chartOfAccounts": "Chart of Accounts",
+    "cashBankBalance": "Cash & Bank Balance",
+    "expenses": "Expenses",
+    "journalEntries": "Journal Entries",
+    "accountsReceivable": "Accounts Receivable",
+    "accountsPayable": "Accounts Payable",
+    "generalLedger": "General Ledger",
+    "cashFlow": "Cash Flow",
+    "incomeStatement": "Income Statement",
+    "trialBalance": "Trial Balance",
+    "balanceSheet": "Balance Sheet",
+    "assets": "Assets & Depreciation",
+    "reports": "Reports",
+    "milestones": "Milestones",
+    "users": "Users",
     "settings": "Settings"
   },
   "breadcrumb": {
@@ -67,22 +137,39 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "subtitle": "Your business summary today",
     "overview": "Overview",
     "totalQuotations": "Total Quotations",
     "totalInvoices": "Total Invoices",
-    "totalClients": "Total Clients",
+    "totalClients": "Active Clients",
     "totalProjects": "Total Projects",
     "recentQuotations": "Recent Quotations",
     "recentInvoices": "Recent Invoices",
     "pendingPayments": "Pending Payments",
     "overdueInvoices": "Overdue Invoices",
     "totalRevenue": "Total Revenue",
+    "revenue": "Revenue",
+    "outstanding": "Outstanding",
+    "activeProjects": "Active Projects",
+    "active": "active",
+    "ongoing": "ongoing",
+    "unpaid": "unpaid",
+    "thisMonth": "this month",
+    "revenueTrend": "Revenue Trend",
+    "last6Months": "Last 6 months",
+    "noInvoices": "No invoices yet",
+    "noInvoicesDesc": "Create your first invoice",
+    "noQuotations": "No quotations yet",
+    "noQuotationsDesc": "Create your first quotation",
     "loading": "Loading dashboard data...",
     "errorLoading": "Failed to load dashboard data",
     "tryAgain": "Try Again",
     "dataUpdated": "Data updated successfully",
     "noData": "No data available",
-    "autoRefresh": "Auto-refreshes every 5 minutes"
+    "autoRefresh": "Auto-refreshes every 5 minutes",
+    "error": {
+      "title": "Cannot load dashboard"
+    }
   },
   "quotations": {
     "title": "Quotations",
@@ -120,26 +207,26 @@
       "selectDate": "Select date",
       "selectMonthYear": "Select month & year",
       "selectStatus": "Select status",
-      "selectClientFirst": "Select client first",
+      "selectClientFirst": "Select a client first",
       "selectNewStatus": "Select new status"
     },
     "changeStatusModal": {
       "title": "Change Quotation Status"
     },
     "milestones": {
-      "title": "Payment Terms & Termin",
+      "title": "Payment Terms & Installments",
       "paymentStructure": "Payment Structure",
       "paymentType": {
         "fullPayment": "Full Payment",
-        "milestoneBased": "Milestone-Based (Termin)",
-        "advancePayment": "Advance + Final",
+        "milestoneBased": "Installment-Based",
+        "advancePayment": "Deposit + Final Payment",
         "customStructure": "Custom Structure"
       },
       "templates": {
-        "title": "Quick Start: Indonesian Payment Templates",
-        "termin3Standard": "Termin 3 Fase (Standard) - DP 30% → Tahap 1 40% → Pelunasan 30%",
-        "termin2_50_50": "Termin 2 Fase (50-50) - DP 50% → Pelunasan 50%",
-        "construction4Phase": "Konstruksi 4 Fase - Mobilisasi 20% → Tahap 1 30% → Tahap 2 30% → Selesai 20%"
+        "title": "Quick Start: Payment Templates",
+        "termin3Standard": "3-Phase Installment (Standard) — 30% Deposit → 40% Midway → 30% Final",
+        "termin2_50_50": "2-Phase Installment (50-50) — 50% Deposit → 50% Final",
+        "construction4Phase": "4-Phase Construction — 20% Mobilization → 30% Phase 1 → 30% Phase 2 → 20% Completion"
       },
       "form": {
         "nameEnglish": "Name (English)",
@@ -147,7 +234,7 @@
         "percentage": "Payment Percentage (%)",
         "amount": "Calculated Amount (IDR)",
         "dueDate": "Due Date",
-        "daysAfterPrevious": "Days After Previous Termin",
+        "daysAfterPrevious": "Days After Previous Installment",
         "description": "Description (English)",
         "descriptionIndonesian": "Description (Bahasa Indonesia)",
         "deliverables": "Deliverables (comma-separated)"
@@ -161,22 +248,22 @@
       "validation": {
         "totalPercentageInvalid": "Total percentages must equal 100%",
         "percentageNotEqual": "Total percentages must equal 100% (currently {{percentage}}%)",
-        "sequentialNumbers": "Termin numbers must be sequential (1, 2, 3...)",
-        "amountMismatch": "Termin {{number}} amount doesn't match percentage",
-        "firstMilestoneNoDays": "First termin cannot have 'days after previous'"
+        "sequentialNumbers": "Installment numbers must be sequential (1, 2, 3...)",
+        "amountMismatch": "Installment {{number}} amount does not match the percentage",
+        "firstMilestoneNoDays": "The first installment cannot have a 'days after previous' value"
       },
       "messages": {
-        "info": "Termin-Based Payments (Termin Pembayaran) - This payment structure is common in Indonesian business. Each termin represents a payment stage with specific deliverables.",
-        "infoContinued": "When you approve this quotation, invoices will be generated automatically for each termin.",
-        "noMilestones": "No termin yet",
-        "addFirstMilestone": "Add First Termin",
-        "addAnother": "Add Another Termin",
-        "deleteMilestone": "Delete Termin",
-        "confirmDelete": "Are you sure you want to delete this termin?"
+        "info": "Installment Payments — This payment structure is common in Indonesian business. Each installment represents a payment stage with specific deliverables.",
+        "infoContinued": "When you approve this quotation, invoices will be generated automatically for each installment.",
+        "noMilestones": "No installments yet",
+        "addFirstMilestone": "Add First Installment",
+        "addAnother": "Add Another Installment",
+        "deleteMilestone": "Delete Installment",
+        "confirmDelete": "Are you sure you want to delete this installment?"
       },
       "progress": {
         "title": "Payment Progress",
-        "totalMilestones": "Total Termin",
+        "totalMilestones": "Total Installments",
         "invoiced": "Invoiced",
         "paid": "Paid",
         "overdue": "Overdue",
@@ -187,7 +274,117 @@
         "generateInvoice": "Generate Invoice",
         "viewInvoice": "View Invoice"
       }
-    }
+    },
+    "col": {
+      "amount": "Amount",
+      "client": "Client",
+      "date": "Date",
+      "number": "Number",
+      "project": "Project",
+      "status": "Status",
+      "validUntil": "Valid Until"
+    },
+    "empty": {
+      "title": "No quotations yet",
+      "desc": "Get started by creating your first quotation for a client."
+    },
+    "error": {
+      "title": "Cannot load quotations"
+    },
+    "form": {
+      "client": "Client",
+      "create": "Save",
+      "createTitle": "New Quotation",
+      "editShort": "Edit",
+      "editTitle": "Edit Quotation",
+      "grandTotal": "Grand Total",
+      "includeTax": "Include VAT 11%",
+      "item": {
+        "add": "Add item",
+        "name": "Description",
+        "price": "Unit Price",
+        "qty": "Qty",
+        "subtotal": "Subtotal",
+        "descriptionPlaceholder": "Additional notes (optional)",
+        "empty": "No items yet. Add one to get started.",
+        "namePlaceholder": "Item name"
+      },
+      "number": "Number",
+      "project": "Project",
+      "save": "Save Changes",
+      "scope": "Scope description",
+      "section": {
+        "identity": "Identity",
+        "identityTitle": "Client & Project",
+        "items": "Line Items",
+        "itemsTitle": "Products & Services",
+        "scope": "Scope",
+        "scopeTitle": "Scope of Work",
+        "terms": "Terms",
+        "totals": "Totals",
+        "totalsTitle": "Value Summary",
+        "identityHint": "A quotation is tied to one client and one project. Selecting a client filters the project list accordingly.",
+        "itemsHint": "Add each product or service with its unit price. Subtotals are calculated automatically.",
+        "scopeHint": "Optional — describe the scope, deliverables, or relevant timeline.",
+        "termsHint": "Specify payment terms, delivery schedule, revision policy, and any other conditions.",
+        "termsTitle": "Terms & Conditions"
+      },
+      "status": "Status",
+      "subtotal": "Subtotal",
+      "tax": "Tax",
+      "terms": "Terms",
+      "toast": {
+        "createFailed": "Failed to create quotation.",
+        "updated": "Quotation updated successfully.",
+        "updateFailed": "Failed to update quotation."
+      },
+      "validUntil": "Valid Until",
+      "clientPlaceholder": "Select client…",
+      "createSubtitle": "Build a new quotation — choose a client, add line items, and set your terms.",
+      "editingSubtitle": "Edit this quotation's details before sending or revising.",
+      "includeTaxHint": "Required for clients with a tax ID (NPWP). Tax is calculated on the subtotal.",
+      "materaiHint": "Value exceeds IDR 5,000,000 — prepare stamp duty when printing the invoice.",
+      "materaiRequired": "Stamp duty required",
+      "milestoneHint": "Manage installment payments from the detail page to avoid conflicts with already-issued invoices.",
+      "milestoneNotice": "This quotation uses installment-based payment.",
+      "noClients": "No clients yet.",
+      "noProjects": "No projects for this client.",
+      "projectPlaceholder": "Select project…",
+      "projectPlaceholderNoClient": "Select a client first",
+      "scopePlaceholder": "E.g. One month of video content production covering 4 reels, 2 long-form videos, and up to 2 rounds of revisions per video.",
+      "statusReadonly": "Status transitions are managed via the workflow on the detail page.",
+      "validUntilPlaceholder": "Select expiry date"
+    },
+    "kpi": {
+      "approved": "Approved",
+      "approvedSub": "ready to invoice",
+      "declined": "Declined",
+      "declinedSub": "needs revision",
+      "draft": "Draft",
+      "draftSub": "not yet sent",
+      "sent": "Sent",
+      "sentSub": "awaiting response"
+    },
+    "new": "New Quotation",
+    "noResults": {
+      "title": "No results found",
+      "desc": "No quotations match your current filters."
+    },
+    "table": {
+      "amount": "Amount",
+      "date": "Date",
+      "number": "Number",
+      "status": "Status",
+      "validUntil": "Valid Until"
+    },
+    "edit": {
+      "error": {
+        "desc": "The quotation you're looking for could not be found or an error occurred.",
+        "title": "Cannot load quotation"
+      }
+    },
+    "search": "Search by number, client, or project…",
+    "subtitle": "Manage client quotations — from draft through to invoice conversion."
   },
   "invoices": {
     "title": "Invoices",
@@ -196,9 +393,9 @@
     "creationDate": "Creation Date",
     "dueDate": "Due Date",
     "paymentInfo": "Payment Information",
-    "materaiRequired": "Materai Required",
-    "materaiApplied": "Materai Applied",
-    "materaiWarning": "This invoice requires IDR 10,000 materai",
+    "materaiRequired": "Stamp Duty Required",
+    "materaiApplied": "Stamp Duty Applied",
+    "materaiWarning": "This invoice requires IDR 10,000 stamp duty (materai)",
     "statuses": {
       "draft": "Draft",
       "sent": "Sent",
@@ -206,22 +403,322 @@
       "overdue": "Overdue",
       "pending": "Pending",
       "cancelled": "Cancelled"
+    },
+    "action": {
+      "delete": "Delete",
+      "download": "Download PDF",
+      "edit": "Edit",
+      "markPaid": "Mark as Paid",
+      "send": "Send"
+    },
+    "detail": {
+      "backToList": "Back to Invoices",
+      "billedTo": "Billed To",
+      "col": {
+        "desc": "Description",
+        "price": "Price",
+        "qty": "Qty",
+        "total": "Total"
+      },
+      "due": "Due Date",
+      "error": {
+        "desc": "This invoice may have been deleted or you don't have access.",
+        "title": "Invoice not found"
+      },
+      "grandTotal": "Grand Total",
+      "issued": "Issued",
+      "items": "Line Items",
+      "lumpSum": "Project expense",
+      "materai": {
+        "title": "Stamp duty required",
+        "desc": "This invoice exceeds IDR 5,000,000 and requires a IDR 10,000 stamp duty. Affix the stamp to the printed document before sending to the client."
+      },
+      "materaiApplied": "Applied",
+      "materaiLine": "Stamp Duty",
+      "materaiPending": "Not yet applied",
+      "milestone": "Payment Installment",
+      "ofTotal": "of total",
+      "paid": "Paid",
+      "paidOn": "Paid on",
+      "payment": "Payment",
+      "paymentCount": "Transaction count",
+      "paymentInfo": "Payment Information",
+      "project": "Project",
+      "quotation": "From Quotation",
+      "remaining": "Remaining",
+      "subtitle": "Invoice details, payment history, and related actions.",
+      "subtotal": "Subtotal",
+      "summary": "Summary",
+      "tax": "Tax",
+      "terms": "Terms & Conditions",
+      "totalDue": "Total Due"
+    },
+    "empty": {
+      "desc": "Get started by creating your first invoice.",
+      "filtered": {
+        "desc": "Try adjusting or clearing your filters.",
+        "title": "No invoices match your filters"
+      },
+      "title": "No invoices yet"
+    },
+    "error": {
+      "title": "Cannot load invoices"
+    },
+    "filter": {
+      "allMaterai": "All Stamp Duty",
+      "allStatuses": "All Statuses",
+      "materai": "Stamp Duty",
+      "materaiApplied": "Stamp Duty Applied",
+      "materaiPending": "Stamp Duty Pending",
+      "materaiRequired": "Stamp Duty Required",
+      "status": "Status"
+    },
+    "form": {
+      "addItem": "Add Line Item",
+      "autoNumber": "Generated automatically after saving",
+      "backToInvoice": "Back to Invoice",
+      "backToList": "Back to Invoices",
+      "client": "Client",
+      "col": {
+        "desc": "Description",
+        "price": "Price",
+        "qty": "Qty",
+        "subtotal": "Subtotal"
+      },
+      "createError": "Failed to create invoice",
+      "createSuccess": "Invoice created successfully",
+      "createTitle": "New Invoice",
+      "creatingHint": "Invoice will be saved as a Draft.",
+      "dueDate": "Due Date",
+      "editDescPlain": "Changes are saved to the invoice record.",
+      "editTitle": "Edit Invoice",
+      "editingHint": "Changes will take effect after saving.",
+      "grandTotal": "Grand Total",
+      "issuedDate": "Issue Date",
+      "itemNamePh": "Item name / service",
+      "itemNotePh": "Notes (optional)",
+      "materaiApplied": "Stamp duty applied",
+      "materaiAuto": "auto",
+      "materaiLine": "Stamp Duty",
+      "materaiTitle": "Stamp duty required",
+      "materaiToggle": "Stamp duty required",
+      "noProjects": "No projects for this client",
+      "notFoundTitle": "Invoice not found",
+      "number": "Invoice Number",
+      "paymentInfo": "Payment Information",
+      "paymentInfoRestored": "Default template applied",
+      "project": "Project",
+      "removeItem": "Remove line",
+      "section": {
+        "finePrint": "Fine Print",
+        "finePrintTitle": "Payment Information & Terms",
+        "identity": "Identity",
+        "identityTitle": "Client & Project",
+        "items": "Line Items",
+        "itemsTitle": "Line Items",
+        "scope": "Scope of Work",
+        "scopeTitle": "Work Description",
+        "finePrintDesc": "Bank details and payment terms will be printed on the invoice PDF.",
+        "identityDesc": "Select the client and associated project. The issue date determines the invoice number.",
+        "itemsDesc": "Add a line for each service or deliverable. Totals are calculated automatically.",
+        "scopeDesc": "Optional. Summarise tasks, deliverables, and timeline. Leave blank to inherit from the project."
+      },
+      "selectClient": "Select client",
+      "selectClientFirst": "Select a client first",
+      "selectDate": "Select date",
+      "selectProject": "Select project",
+      "status": "Status",
+      "statusError": "Failed to update invoice status",
+      "subtotal": "Subtotal",
+      "summary": "Summary",
+      "tax": "Tax",
+      "terms": "Terms & Conditions",
+      "updateError": "Failed to update invoice",
+      "updateSuccess": "Invoice updated successfully",
+      "useDefault": "Use default",
+      "createDesc": "Create a new invoice for a client — select a project, fill in the details, and save as a draft.",
+      "editDesc": "Editing {{n}} — changes are saved to the invoice record.",
+      "materaiDesc": "Total exceeds IDR 5,000,000 — affix a IDR 10,000 stamp duty to the printed copy before sending.",
+      "notFoundDesc": "This invoice may have been deleted or you don't have access.",
+      "statusHelp": "Status changes are processed via a separate endpoint."
+    },
+    "kpi": {
+      "drafts": "Drafts",
+      "draftsSub": "not yet sent",
+      "outstanding": "Outstanding",
+      "outstandingSub": "sent & due",
+      "overdue": "Overdue",
+      "overdueSub": "needs attention",
+      "paidThisMonth": "Paid This Month",
+      "paidThisMonthSub": "collected this billing period"
+    },
+    "new": "New Invoice",
+    "search": {
+      "placeholder": "Search by number, client, or project..."
+    },
+    "subtitle": "Manage your client invoices — send, mark paid, and track overdue.",
+    "table": {
+      "amount": "Amount",
+      "date": "Date",
+      "dueDate": "Due Date",
+      "number": "Number",
+      "status": "Status"
     }
   },
   "clients": {
     "title": "Clients",
-    "create": "Add Client",
+    "create": {
+      "error": "Failed to add client. Please try again.",
+      "subtitle": "Add a new client to start recording projects, quotations, and invoices.",
+      "title": "New Client"
+    },
     "name": "Name",
     "email": "Email",
     "phone": "Phone",
     "address": "Address",
     "company": "Company",
     "contactPerson": "Contact Person",
-    "paymentTerms": "Payment Terms"
+    "paymentTerms": "Payment Terms",
+    "detail": {
+      "address": "Address",
+      "backToList": "Back to Clients",
+      "bankAccount": "Bank Account",
+      "company": "Company",
+      "contactPerson": "Contact Person",
+      "email": "Email",
+      "headerSubNoCompany": "Business profile & transaction history",
+      "invoicesSection": "Invoice History",
+      "kpi": {
+        "activeProjects": "Active Projects",
+        "allCurrent": "all current",
+        "outstanding": "Outstanding",
+        "revenue": "Total Revenue",
+        "revenueSub": "all time",
+        "totalInvoices": "Total Invoices",
+        "activeProjectsSub": "of {{total}} total",
+        "outstandingSub": "awaiting payment",
+        "overdueWarn": "{{count}} overdue"
+      },
+      "noInvoices": "No invoices yet",
+      "noProjects": "No projects yet",
+      "noQuotations": "No quotations yet",
+      "notFound": "Not found",
+      "notFoundTitle": "Client not found",
+      "notesSection": "Notes",
+      "notesSub": "Internal notes about this client",
+      "phone": "Phone",
+      "projectsSection": "Project History",
+      "quotationsSection": "Quotation History",
+      "taxNumber": "Tax ID (NPWP)",
+      "headerSub": "Business profile & transaction history · {{company}}",
+      "noInvoicesDesc": "This client has never been invoiced.",
+      "noProjectsDesc": "This client has no projects on record.",
+      "noQuotationsDesc": "No quotations have been created for this client yet.",
+      "notFoundDesc": "The client you're looking for does not exist or has been deleted.",
+      "overdueDesc": "Review the invoice history below to follow up on overdue payments.",
+      "overdueTitle": "{{count}} invoice overdue",
+      "recordCount": "{{count}} records"
+    },
+    "directory": "Client Directory",
+    "edit": {
+      "crumb": "Edit",
+      "error": "Failed to save changes. Please try again.",
+      "title": "Edit Client",
+      "notFoundDesc": "The client you're trying to edit does not exist or has been deleted.",
+      "subtitle": "Update {{name}}'s information",
+      "subtitleWithCompany": "Update {{name}}'s information · {{company}}"
+    },
+    "empty": {
+      "filtered": {
+        "title": "No clients match your filters",
+        "desc": "Try adjusting your search or clearing the filters to see all clients."
+      },
+      "title": "No clients yet",
+      "desc": "Start building your client base by adding your first client."
+    },
+    "error": {
+      "title": "Cannot load client data"
+    },
+    "filter": {
+      "allStatus": "All Statuses"
+    },
+    "form": {
+      "address": {
+        "title": "Address",
+        "desc": "Full address for official documents such as invoices and receipts."
+      },
+      "addressHint": "Street, city, province, postal code",
+      "addressLabel": "Full Address",
+      "bankAccount": "Bank Account",
+      "bankAccountHint": "Bank, account number, and account holder name",
+      "company": "Company",
+      "companyHint": "Optional for individual clients",
+      "contact": {
+        "title": "Contact",
+        "desc": "Primary contact and communication channels."
+      },
+      "contactPerson": "Contact Person",
+      "contactPersonPlaceholder": "Primary contact name",
+      "email": "Email",
+      "identity": {
+        "title": "Identity",
+        "desc": "Basic information to identify the client in the system."
+      },
+      "name": "Client Name",
+      "namePlaceholder": "Full name or preferred name",
+      "notes": {
+        "title": "Notes",
+        "desc": "Internal notes visible only to your team."
+      },
+      "notesLabel": "Internal Notes",
+      "paymentTerms": {
+        "label": "Payment Terms"
+      },
+      "paymentTermsHint": "Default payment terms for new invoices",
+      "paymentTermsPlaceholder": "Select payment terms",
+      "phone": "Phone",
+      "requiredNote": "Fields marked * are required.",
+      "status": "Client Status",
+      "statusActiveSub": "Can receive new quotations and invoices.",
+      "statusInactiveSub": "Archived and hidden from main workflows.",
+      "taxNumber": "Tax ID (NPWP)",
+      "addressPlaceholder": "Jl. Sudirman No. 1, South Jakarta, DKI Jakarta 12190",
+      "notesPlaceholder": "Communication preferences, relationship history, important notes to remember…",
+      "statusHint": "Inactive clients do not appear in default selection lists."
+    },
+    "kpi": {
+      "active": "Active Clients",
+      "new": "New This Month",
+      "newSub": "new registrations",
+      "outstanding": "Outstanding",
+      "outstandingSub": "awaiting payment",
+      "revenue": "Total Revenue",
+      "revenueSub": "all time",
+      "activeSub": "of {{total}} total"
+    },
+    "searchPlaceholder": "Search by name, company, or email...",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "table": {
+      "client": "Client",
+      "contact": "Contact",
+      "lastActivity": "Last Activity",
+      "pending": "Pending",
+      "revenue": "Revenue",
+      "status": "Status"
+    },
+    "directoryCount": "{{count}} clients found",
+    "subtitle": "Manage client records, contacts, and business transaction history."
   },
   "projects": {
     "title": "Projects",
-    "create": "Create Project",
+    "create": {
+      "error": "Failed to create project. Please try again.",
+      "title": "New Project",
+      "subtitle": "Set up a new project with a client, type, and the products or services to be billed."
+    },
     "number": "Project Number",
     "description": "Description",
     "output": "Output",
@@ -238,7 +735,152 @@
       "inProgress": "In Progress",
       "completed": "Completed",
       "cancelled": "Cancelled"
-    }
+    },
+    "action": {
+      "complete": "Mark Complete",
+      "hold": "Put On Hold",
+      "start": "Start Project"
+    },
+    "deleteFailed": "Failed to delete project.",
+    "deleted": "Project deleted successfully.",
+    "detail": {
+      "backToList": "Back to Projects",
+      "budget": "Budget",
+      "client": "Client",
+      "endDate": "Completed",
+      "error": {
+        "title": "Project not found",
+        "desc": "This project may have been deleted or you don't have access."
+      },
+      "expensesSection": "Related Expenses",
+      "invoicesSection": "Related Invoices",
+      "kpi": {
+        "expenses": "Total Expenses",
+        "expensesSub": "related costs",
+        "invoiced": "Total Invoiced",
+        "invoicedSub": "across all invoices",
+        "margin": "Margin",
+        "marginLoss": "estimated loss",
+        "marginSub": "estimated net profit",
+        "paid": "Total Received",
+        "paidSub": "payments received"
+      },
+      "milestonesSection": "Project Milestones",
+      "noExpenses": "No expenses yet",
+      "noInvoices": "No invoices yet",
+      "noQuotations": "No quotations yet",
+      "notFound": "Not found",
+      "notFoundTitle": "Project not found",
+      "quotationsSection": "Related Quotations",
+      "scope": "Scope of Work",
+      "startDate": "Start Date",
+      "subtitle": "Project details, budget, and related history.",
+      "type": "Project Type",
+      "noExpensesDesc": "No expenses have been recorded for this project.",
+      "noInvoicesDesc": "No invoices have been created for this project yet.",
+      "noQuotationsDesc": "No quotations have been created for this project yet.",
+      "recordCount": "{{count}} records"
+    },
+    "duplicateFailed": "Failed to duplicate project.",
+    "edit": {
+      "crumb": "Edit",
+      "error": "Failed to save changes. Please try again.",
+      "title": "Edit Project",
+      "notFoundDesc": "The project you're trying to edit does not exist or has been deleted.",
+      "subtitle": "Update {{number}}",
+      "subtitleWithClient": "Update {{number}} · {{client}}"
+    },
+    "empty": {
+      "filtered": {
+        "title": "No projects match your filters",
+        "desc": "Try adjusting or clearing your filters."
+      },
+      "title": "No projects yet",
+      "desc": "Get started by creating your first project."
+    },
+    "error": {
+      "title": "Cannot load projects"
+    },
+    "filter": {
+      "allClients": "All Clients",
+      "allStatuses": "All Statuses",
+      "client": "Client",
+      "status": "Status"
+    },
+    "form": {
+      "addItem": "Add Line Item",
+      "classification": {
+        "title": "Client & Type",
+        "desc": "The client owns the project; the type determines the numbering prefix."
+      },
+      "client": "Client",
+      "clientPh": "Select client",
+      "col": {
+        "item": "Item & Description",
+        "price": "Price",
+        "qty": "Qty",
+        "subtotal": "Subtotal"
+      },
+      "description": "Project Description",
+      "durationLabel": "Planned duration",
+      "endDate": "End Date",
+      "estimatedTotal": "Estimated Total",
+      "identity": {
+        "title": "Identity",
+        "desc": "A short description and scope that will appear on printed documents."
+      },
+      "noClients": "No clients registered yet.",
+      "noTypes": "No active project types available.",
+      "output": "Output",
+      "outputHint": "Final deliverable, e.g. video, campaign, website",
+      "pickDate": "Pick date",
+      "products": {
+        "title": "Products & Services",
+        "desc": "Billable components. The total automatically becomes the estimated budget."
+      },
+      "removeItem": "Remove line",
+      "scope": "Scope of Work",
+      "startDate": "Start Date",
+      "status": "Status",
+      "timeline": {
+        "title": "Timeline",
+        "desc": "Planned project period. Can be updated at any time."
+      },
+      "type": "Project Type",
+      "typePh": "Select project type",
+      "budgetNote": "The estimated project budget is calculated from the subtotal above and saved when the project is created.",
+      "descriptionPh": "Project objective summary — what's being made, for whom, and why.",
+      "durationDays": "{{count}} days",
+      "itemDescPh": "Short description (will appear on printed documents)",
+      "itemNamePh": "Product / service name",
+      "requiredNote": "Fields marked * are required.",
+      "scopeHint": "Optional. Detail tasks, deliverables, revisions, and timeline.",
+      "statusHint": "Status affects visibility and invoice workflow."
+    },
+    "kpi": {
+      "active": "Active Projects",
+      "activeSub": "currently running",
+      "completedMonth": "Completed This Month",
+      "completedMonthSub": "this billing period",
+      "outstanding": "Outstanding",
+      "outstandingSub": "awaiting payment",
+      "revenue": "Total Revenue",
+      "revenueSub": "from paid projects"
+    },
+    "new": "New Project",
+    "statusFailed": "Failed to update status.",
+    "statusUpdated": "Project status updated successfully.",
+    "table": {
+      "budget": "Budget",
+      "description": "Description",
+      "number": "Number",
+      "start": "Start",
+      "status": "Status"
+    },
+    "search": {
+      "placeholder": "Search by number, description, or client..."
+    },
+    "subtitle": "Manage active projects, monitor budgets, and track delivery status."
   },
   "currency": {
     "idr": "IDR",
@@ -253,32 +895,7 @@
     "positive": "{{field}} must be positive"
   },
   "messages": {
-    "success": {
-      "created": "{{item}} created successfully",
-      "updated": "{{item}} updated successfully",
-      "deleted": "{{item}} deleted successfully",
-      "saved": "Data saved successfully",
-      "sent": "{{item}} sent successfully",
-      "approved": "{{item}} approved successfully",
-      "declined": "{{item}} declined successfully",
-      "paid": "{{item}} marked as paid successfully"
-    },
-    "error": {
-      "general": "An error occurred",
-      "network": "Failed to connect to server",
-      "unauthorized": "You don't have access",
-      "notFound": "Data not found",
-      "validation": "Invalid data",
-      "quotationNotApproved": "Only approved quotations can be converted to invoices",
-      "materaiRequired": "This invoice requires materai"
-    },
-    "confirm": {
-      "delete": "Are you sure you want to delete {{item}}?",
-      "cancel": "Are you sure you want to cancel changes?",
-      "approve": "Are you sure you want to approve {{item}}?",
-      "decline": "Are you sure you want to decline {{item}}?",
-      "markPaid": "Are you sure you want to mark {{item}} as paid?"
-    }
+    "downloadFeatureComingSoon": "Download feature coming soon"
   },
   "reports": {
     "title": "Reports",
@@ -302,7 +919,82 @@
     "topProjects": "Top Projects",
     "overdueInvoices": "Overdue Invoices",
     "paidInvoices": "Paid Invoices",
-    "pendingInvoices": "Pending Invoices"
+    "pendingInvoices": "Pending Invoices",
+    "analytics": {
+      "title": "System Analytics Report",
+      "subtitle": "Four core analytics surfaces, always available and up to date."
+    },
+    "deleteFailed": "Failed to delete report.",
+    "deleted": "Report deleted successfully.",
+    "detail": {
+      "backToList": "Back to Reports",
+      "downloadPdf": "Download PDF",
+      "generatePdf": "Generate PDF",
+      "kpi": {
+        "rows": "Total Data Rows",
+        "rowsSub": "across all CSVs",
+        "sections": "Total Sections",
+        "sectionsSub": "data sources merged",
+        "visualizations": "Total Visualizations",
+        "visualizationsSub": "charts configured"
+      },
+      "markComplete": "Mark Complete",
+      "markSent": "Mark as Sent",
+      "noSections": {
+        "title": "No sections yet",
+        "desc": "Add CSV data sources and visualizations via the report editor."
+      },
+      "notFound": {
+        "title": "Report not found",
+        "desc": "This report may have been deleted or you don't have access."
+      },
+      "openBuilder": "Open Builder",
+      "pdfFailed": "Failed to generate PDF.",
+      "pdfGenerated": "PDF generated",
+      "period": "Period",
+      "project": "Project",
+      "refresh": "Refresh",
+      "subtitle": "Report details, sections, and visualizations.",
+      "updated": "Updated"
+    },
+    "empty": {
+      "filtered": {
+        "desc": "Try adjusting or clearing your filters.",
+        "title": "No reports match your filters"
+      },
+      "title": "No saved reports yet",
+      "desc": "Create your first custom report to combine CSV data and visualizations."
+    },
+    "error": {
+      "title": "Cannot load reports"
+    },
+    "exportFailed": "Failed to download report.",
+    "exportSuccess": "Summary report downloaded successfully.",
+    "filter": {
+      "allStatuses": "All Statuses",
+      "status": "Status"
+    },
+    "kpi": {
+      "draft": "Draft",
+      "draftSub": "still in progress",
+      "sections": "Total Sections",
+      "sectionsSub": "across all reports",
+      "sent": "Sent",
+      "sentSub": "delivered to clients",
+      "total": "Total Reports",
+      "totalSub": "saved in the system"
+    },
+    "new": "New Report",
+    "saved": {
+      "title": "Saved Reports",
+      "count": "{{count}} reports"
+    },
+    "statusFailed": "Failed to update status.",
+    "statusUpdated": "Report status updated.",
+    "search": {
+      "placeholder": "Search by title, project, or client..."
+    },
+    "subtitle": "Financial analysis, business performance, and your saved custom reports."
   },
   "settings": {
     "title": "Settings",
@@ -366,25 +1058,18 @@
       "activeProjects": "Active Projects",
       "completedProjects": "Completed Projects",
       "totalRevenue": "Total Revenue"
-    }
+    },
+    "subtitle": "Manage your account, company identity, and system settings."
   },
   "actions": {
-    "view": "View Details",
-    "edit": "Edit",
-    "delete": "Delete",
-    "send": "Send",
-    "approve": "Approve",
-    "decline": "Decline",
-    "revise": "Revise",
+    "details": "Details",
     "generateInvoice": "Generate Invoice",
-    "markPaid": "Mark Paid",
-    "print": "Print",
-    "export": "Export",
-    "import": "Import",
-    "viewAll": "View All",
-    "viewInvoice": "View Invoice",
-    "changeStatus": "Change Status",
-    "deselect": "Deselect"
+    "markAsPaid": "Mark as Paid",
+    "uploadProof": "Upload Proof",
+    "download": "Download",
+    "refresh": "Refresh",
+    "snooze": "Snooze",
+    "dismiss": "Dismiss"
   },
   "labels": {
     "totalValue": "Total Value",
@@ -402,16 +1087,16 @@
     "budget": "Budget",
     "actual": "Actual",
     "estimated": "Estimated",
-    "materai": "Materai",
-    "materaiStatus": "Materai Status",
-    "materaiApplied": "Materai Applied",
-    "materaiPending": "Materai Pending",
+    "materai": "Stamp Duty",
+    "materaiStatus": "Stamp Duty Status",
+    "materaiApplied": "Stamp Duty Applied",
+    "materaiPending": "Stamp Duty Pending",
     "paymentMethod": "Payment Method",
     "bankAccount": "Bank Account",
-    "taxNumber": "Tax Number",
+    "taxNumber": "Tax ID (NPWP)",
     "contactPerson": "Contact Person",
     "companyType": "Company Type",
-    "milestone": "Termin",
+    "milestone": "Installment",
     "dueDate": "Due Date",
     "amount": "Amount",
     "status": "Status",
@@ -422,17 +1107,16 @@
     "overdue": "Overdue",
     "onTime": "On Time",
     "daysBehind": "Days Behind",
-    "daysOverdue": "Days Overdue",
     "dueToday": "Due Today",
     "dueTomorrow": "Due Tomorrow",
     "dueIn": "Due In",
     "days": "Days",
     "remaining": "Remaining",
     "total": "Total",
-    "allMilestones": "All Termin",
+    "allMilestones": "All Installments",
     "details": "Details",
     "deliverables": "Deliverables",
-    "paidDate": "Paid Date",
+    "paidDate": "Payment Date",
     "daysToPayment": "Days to Payment",
     "revenueRecognized": "Revenue Recognized",
     "profitabilitySummary": "Profitability Summary",
@@ -450,20 +1134,20 @@
     "profit": "Profit"
   },
   "pages": {
-    "milestoneAnalytics": "Termin Analytics"
+    "milestoneAnalytics": "Installment Analytics"
   },
   "descriptions": {
-    "milestoneAnalyticsDescription": "Track and analyze termin payments, revenue recognition, and project profitability",
+    "milestoneAnalyticsDescription": "Track and analyze installment payments, revenue recognition, and project profitability",
     "averageTimeToPayment": "Average number of days from invoice to payment",
-    "percentagePaidOnTime": "Percentage of termin paid on or before due date",
+    "percentagePaidOnTime": "Percentage of installments paid on or before the due date",
     "percentageRevenueRecognized": "Percentage of revenue recognized per PSAK 72 standards",
-    "activeMilestones": "Number of active termin in the system"
+    "activeMilestones": "Number of active installments in the system"
   },
   "metrics": {
     "averagePaymentCycle": "Average Payment Cycle",
     "onTimePaymentRate": "On-Time Payment Rate",
     "revenueRecognitionRate": "Revenue Recognition Rate",
-    "totalMilestones": "Total Termin"
+    "totalMilestones": "Total Installments"
   },
   "charts": {
     "profitabilityByPhase": "Profitability by Phase",
@@ -472,11 +1156,11 @@
   },
   "notifications": {
     "milestones": {
-      "title": "Termin Notifications",
-      "dueSoon": "Termin Due Soon",
-      "overdue": "Termin Overdue",
+      "title": "Installment Notifications",
+      "dueSoon": "Installment Due Soon",
+      "overdue": "Installment Overdue",
       "paymentOverdue": "Payment Overdue",
-      "completed": "Termin Completed",
+      "completed": "Installment Completed",
       "revenueRecognitionRequired": "Revenue Recognition Required",
       "preferences": "Notification Preferences",
       "reminderFrequency": "Reminder Frequency",
@@ -484,23 +1168,13 @@
       "pushNotifications": "Push Notifications"
     }
   },
-  "actions": {
-    "details": "Details",
-    "generateInvoice": "Generate Invoice",
-    "markAsPaid": "Mark As Paid",
-    "uploadProof": "Upload Proof",
-    "download": "Download",
-    "refresh": "Refresh",
-    "snooze": "Snooze",
-    "dismiss": "Dismiss"
-  },
   "success": {
     "invoiceGenerated": "Invoice generated successfully",
     "markedAsPaid": "Marked as paid successfully",
     "proofUploaded": "Proof of delivery uploaded successfully",
-    "shared": "Successfully shared",
+    "shared": "Shared successfully",
     "analyticsExported": "Analytics exported successfully",
-    "milestoneDeleted": "Termin deleted successfully"
+    "milestoneDeleted": "Installment deleted successfully"
   },
   "error": {
     "failedToLoadAnalytics": "Failed to load analytics",
@@ -509,19 +1183,2936 @@
     "failedToMarkAsPaid": "Failed to mark as paid",
     "failedToShare": "Failed to share",
     "failedToUploadProof": "Failed to upload proof",
-    "failedToDelete": "Failed to delete termin"
+    "failedToDelete": "Failed to delete installment"
   },
   "confirmations": {
     "deleteTitle": "Confirm Delete",
-    "deleteMilestoneContent": "Are you sure you want to delete this termin?"
-  },
-  "messages": {
-    "downloadFeatureComingSoon": "Download feature coming soon"
+    "deleteMilestoneContent": "Are you sure you want to delete this installment?"
   },
   "status": {
     "paid": "Paid",
     "invoiced": "Invoiced",
     "pending": "Pending",
     "overdue": "Overdue"
+  },
+  "assets": {
+    "create": {
+      "error": "Failed to create asset. Please try again.",
+      "title": "New Asset",
+      "subtitle": "Add a new asset — identity, acquisition details, location, and depreciation parameters."
+    },
+    "deleteFailed": "Failed to delete asset.",
+    "deleted": "Asset deleted successfully.",
+    "detail": {
+      "backToList": "Back to Assets",
+      "depr": {
+        "method": "Method",
+        "monthly": "Depreciation / Month",
+        "residual": "Residual Value",
+        "straightLine": "Straight-line",
+        "usefulLife": "Useful Life",
+        "years": "years"
+      },
+      "depreciationSection": "Depreciation Schedule",
+      "error": {
+        "title": "Asset not found",
+        "desc": "This asset may have been deleted or you don't have access."
+      },
+      "kpi": {
+        "accumulated": "Accumulated Depreciation",
+        "accumulatedSub": "since purchase date",
+        "accumulatedSubNone": "not yet depreciated",
+        "current": "Current Book Value",
+        "currentSub": "PSAK 16 straight-line estimate",
+        "currentSubNone": "no depreciation schedule",
+        "monthsInService": "Time in Service",
+        "monthsInServiceSub": "months since acquisition",
+        "original": "Acquisition Cost",
+        "originalSub": "purchase price"
+      },
+      "maintenanceSection": "Maintenance History",
+      "name": "Asset Name",
+      "noLocation": "Not set",
+      "noMaintenance": "No maintenance history",
+      "noReservations": "No reservations",
+      "notFound": "Not found",
+      "notFoundTitle": "Asset not found",
+      "notesSection": "Notes",
+      "purchaseDate": "Purchase Date",
+      "purchasePrice": "Purchase Price",
+      "specs": "Specifications",
+      "subtitle": "Asset details, value, and operational history.",
+      "warrantyEnds": "Warranty Ends",
+      "noMaintenanceDesc": "This asset has never been serviced or maintained.",
+      "noReservationsDesc": "This asset has never been reserved or checked out.",
+      "recordCount": "{{count}} records",
+      "reservationsSection": "Reservation & Assignment History"
+    },
+    "edit": {
+      "crumb": "Edit",
+      "error": "Failed to save changes. Please try again.",
+      "title": "Edit Asset",
+      "notFoundDesc": "The asset you're trying to edit does not exist or has been deleted.",
+      "subtitleWithCode": "Update {{name}} · {{code}}"
+    },
+    "empty": {
+      "filtered": {
+        "title": "No assets match your filters",
+        "desc": "Try adjusting or clearing your filters."
+      },
+      "title": "No assets yet",
+      "desc": "Get started by adding your first asset."
+    },
+    "error": {
+      "title": "Cannot load assets"
+    },
+    "filter": {
+      "allCategories": "All Categories",
+      "allConditions": "All Conditions",
+      "allStatuses": "All Statuses",
+      "category": "Category",
+      "condition": "Condition",
+      "status": "Status"
+    },
+    "form": {
+      "acquisition": {
+        "title": "Acquisition",
+        "desc": "Purchase date, supplier, and acquisition cost."
+      },
+      "annualDepreciation": "Annual Depreciation",
+      "category": "Category",
+      "categoryPh": "Select category",
+      "conditionLabel": "Condition",
+      "depreciation": {
+        "title": "Depreciation",
+        "desc": "Useful life and residual value. Depreciation is calculated straight-line per PSAK 16."
+      },
+      "identity": {
+        "title": "Identity",
+        "desc": "Asset name and operational category. Asset code is generated automatically."
+      },
+      "invoiceNumber": "Invoice Number",
+      "location": {
+        "desc": "Current physical location or responsible custodian.",
+        "title": "Location"
+      },
+      "manufacturer": "Manufacturer",
+      "model": "Model",
+      "name": "Asset Name",
+      "notes": {
+        "title": "Notes",
+        "desc": "Internal notes: special conditions, brief history, or usage instructions."
+      },
+      "notesLabel": "Additional Notes",
+      "pickDate": "Pick date",
+      "purchaseDate": "Purchase Date",
+      "purchasePrice": "Purchase Price (IDR)",
+      "residualValue": "Residual Value (IDR)",
+      "serial": "Serial Number",
+      "specs": {
+        "title": "Specifications",
+        "desc": "Brand, model, and serial number. Useful for warranty claims."
+      },
+      "status": {
+        "title": "Status & Condition",
+        "desc": "Current operational status and physical condition of the asset."
+      },
+      "statusLabel": "Status",
+      "subcategory": "Subcategory",
+      "subcategoryHint": "E.g. Mirrorless, DSLR, Wireless",
+      "supplier": "Supplier",
+      "usefulLife": "Useful Life (Years)",
+      "warrantyExpiration": "Warranty Expiration",
+      "warrantyHint": "Leave blank if no warranty.",
+      "locationHint": "E.g. Studio A, HQ Warehouse, or the responsible team member's name.",
+      "notesPh": "Internal notes about this asset…",
+      "requiredNote": "Fields marked * are required.",
+      "residualHint": "Estimated asset value at the end of its useful life.",
+      "usefulLifeHint": "How long the asset is expected to provide economic benefit."
+    },
+    "kpi": {
+      "depreciating": "Actively Depreciating",
+      "depreciatingSub": "have a useful life set",
+      "maintenance": "Under Maintenance",
+      "maintenanceSub": "broken or being serviced",
+      "total": "Total Assets",
+      "totalSub": "units on record",
+      "value": "Acquisition Cost",
+      "valueSub": "cumulative purchase price"
+    },
+    "new": "New Asset",
+    "title": "Assets",
+    "search": {
+      "placeholder": "Search by code, name, model, or serial..."
+    },
+    "subtitle": "Operational equipment inventory, values, and maintenance status."
+  },
+  "builder": {
+    "addSection": "Add Section",
+    "advancedDeferred": {
+      "title": "Advanced features pending",
+      "body": "Drag-and-drop canvas editor, widget palette (Text / Metric / Image / Callout), free-form grid layout, and live preview are available in the classic editor. The v2 version focuses on the identity flow + CSV sections + visualizations configured via forms."
+    },
+    "backToList": "Back to Reports",
+    "backToReport": "Back to Report",
+    "confirmRemoveSection": "Remove this section?",
+    "createFailed": "Failed to create report.",
+    "createSubtitle": "Start by defining the report identity, then add sections.",
+    "createTitle": "New Report",
+    "created": "Report created successfully.",
+    "csvRequired": "Please select a CSV file first.",
+    "editSubtitle": "Add data sections and configure visualizations.",
+    "editTitle": "Edit Report",
+    "field": {
+      "description": "Description",
+      "descriptionPlaceholder": "Optional",
+      "month": "Month",
+      "project": "Project",
+      "projectPlaceholder": "Select project",
+      "sectionDesc": "Description",
+      "sectionDescPlaceholder": "Optional",
+      "sectionTitle": "Section Title",
+      "sectionTitlePlaceholder": "E.g. Instagram Performance",
+      "title": "Report Title",
+      "titlePlaceholder": "E.g. Social Media Report July 2025",
+      "uploadCsv": "Select CSV",
+      "year": "Year"
+    },
+    "identity": {
+      "title": "Report Identity",
+      "createSubtitle": "Title, project, and report period. Will be locked after saving.",
+      "editSubtitle": "Identity is locked after the report is created. Contact an admin for structural changes."
+    },
+    "identityReadOnly": "Report identity cannot be changed after creation.",
+    "noSections": {
+      "title": "No sections yet",
+      "desc": "Upload a CSV file above to create the first section."
+    },
+    "notFound": {
+      "desc": "This report may have been deleted.",
+      "title": "Report not found"
+    },
+    "projectRequired": "Please select a project first.",
+    "reorderFailed": "Failed to reorder sections.",
+    "saveAndContinue": "Save & Continue",
+    "sectionAddFailed": "Failed to add section.",
+    "sectionAdded": "Section added successfully.",
+    "sectionRemoveFailed": "Failed to remove section.",
+    "sectionRemoved": "Section removed.",
+    "sectionTitleRequired": "Section title is required.",
+    "sections": {
+      "title": "Data Sections",
+      "subtitle": "{{count}} sections — one CSV file per section"
+    },
+    "titleRequired": "Title is required.",
+    "viz": {
+      "add": "Add Chart",
+      "configured": "charts configured",
+      "empty": "No charts yet. Add your first chart.",
+      "field": {
+        "aggregation": "Aggregation",
+        "nameKey": "Label Column",
+        "precision": "Decimal Precision",
+        "title": "Title",
+        "type": "Chart Type",
+        "valueKey": "Value Column",
+        "xAxis": "X Axis",
+        "yAxis": "Y Axis"
+      },
+      "newTitle": "New Chart",
+      "save": "Save",
+      "title": "Visualizations"
+    },
+    "vizFailed": "Failed to save visualization.",
+    "vizSaved": "Visualization saved."
+  },
+  "calendar": {
+    "emptyDay": "No events on this day.",
+    "kpi": {
+      "due30": "Due in 30 Days",
+      "due30Sub": "invoices & quotations",
+      "events": "Upcoming Events",
+      "eventsSub": "meetings & milestones",
+      "moneyDue": "Amount Due",
+      "moneyDueSub": "within the next 30 days",
+      "overdue": "Overdue",
+      "overdueSub": "needs attention"
+    },
+    "more": "more",
+    "next": "Next month",
+    "openContent": "Content Calendar",
+    "prev": "Previous month",
+    "selected": "Selected Day",
+    "title": "Calendar",
+    "today": "Today",
+    "upcoming": "Next 14 Days",
+    "upcomingEmpty": {
+      "title": "No upcoming events",
+      "desc": "Nothing is scheduled in the next 14 days."
+    },
+    "upcomingTitle": "Upcoming Events",
+    "subtitle": "A single view of invoice due dates, quotation expiries, project deadlines, and team events."
+  },
+  "callSheets": {
+    "create": {
+      "dayNumber": "Day Number",
+      "missingDate": "Shoot date is required.",
+      "missingName": "Production name is required.",
+      "production": "Production Name",
+      "productionPh": "E.g. Brand Campaign 2026",
+      "shootDate": "Shoot Date",
+      "shootDatePh": "Select shoot date",
+      "submit": "Create & Open Editor",
+      "title": "New Call Sheet",
+      "totalDays": "Total Days",
+      "type": "Type",
+      "desc": "Enter the basic info. Crew, talent, and schedule details are filled in the editor."
+    },
+    "createFailed": "Failed to create call sheet.",
+    "created": "Call sheet created successfully.",
+    "deleteFailed": "Failed to delete call sheet.",
+    "deleted": "Call sheet deleted successfully.",
+    "editor": {
+      "activityAddFailed": "Failed to add schedule entry.",
+      "activityAdded": "Schedule entry added.",
+      "activityRemoveFailed": "Failed to remove schedule entry.",
+      "activityRemoved": "Schedule entry removed.",
+      "activityUpdateFailed": "Failed to update schedule entry.",
+      "castAddFailed": "Failed to add talent.",
+      "castAdded": "Talent added.",
+      "castRemoveFailed": "Failed to remove talent.",
+      "castRemoved": "Talent removed.",
+      "castUpdateFailed": "Failed to update talent.",
+      "crewAddFailed": "Failed to add crew member.",
+      "crewAdded": "Crew member added.",
+      "crewRemoveFailed": "Failed to remove crew member.",
+      "crewRemoved": "Crew member removed.",
+      "crewUpdateFailed": "Failed to update crew member.",
+      "error": {
+        "title": "Call sheet not found",
+        "desc": "The call sheet you're looking for may have been deleted or an error occurred."
+      },
+      "markReady": "Mark Ready",
+      "markUpdated": "Mark Updated",
+      "saveFailed": "Failed to save.",
+      "saved": "Changes saved.",
+      "send": "Mark as Sent"
+    },
+    "empty": {
+      "desc": "Create your first call sheet for a production.",
+      "filtered": {
+        "desc": "Try adjusting or clearing your filters.",
+        "title": "No call sheets match your filters"
+      },
+      "title": "No call sheets yet"
+    },
+    "error": {
+      "title": "Cannot load call sheets"
+    },
+    "filter": {
+      "allProjects": "All Projects",
+      "allStatuses": "All Statuses",
+      "dateFrom": "From date",
+      "dateTo": "To date",
+      "project": "Project",
+      "shootRange": "Shoot Date Range",
+      "status": "Status"
+    },
+    "kpi": {
+      "draft": "Still Draft",
+      "draftSub": "awaiting preparation",
+      "sent": "Sent",
+      "sentSub": "distributed to crew",
+      "thisWeek": "Shooting This Week",
+      "thisWeekSub": "next 7 days",
+      "total": "Total Call Sheets",
+      "totalSub": "across all productions"
+    },
+    "new": "New Call Sheet",
+    "title": "Call Sheets",
+    "search": {
+      "placeholder": "Search by production name, location, or director..."
+    },
+    "subtitle": "Manage production documents: crew call times, talent, and shoot locations.",
+    "statusDraft": "Draft",
+    "statusReady": "Ready",
+    "statusSent": "Sent",
+    "statusUpdated": "Updated",
+    "typeFilm": "Film",
+    "typePhoto": "Photo",
+    "colDay": "Day",
+    "colShootDate": "Shoot Date",
+    "colProduction": "Production",
+    "colLocation": "Location",
+    "colCrewTalent": "Crew / Talent",
+    "colStatus": "Status",
+    "crew": "crew",
+    "talent": "talent",
+    "callSheetActions": "Call sheet actions"
+  },
+  "collections": {
+    "detail": {
+      "addAssets": "Add Assets",
+      "addFailed": "Failed to add asset.",
+      "addTitle": "Add Assets to Collection",
+      "copyLink": "Copy Link",
+      "deleteFailed": "Failed to delete collection.",
+      "deleted": "Collection deleted successfully.",
+      "description": "Description",
+      "editTitle": "Edit Collection",
+      "emptyManual": "Collection is empty",
+      "fieldDescription": "Description",
+      "fieldName": "Name",
+      "gridTitle": "Assets in Collection",
+      "id": "Collection ID",
+      "kpi": {
+        "assets": "Total Assets",
+        "assetsManual": "manually curated",
+        "assetsSmart": "matching criteria",
+        "images": "Images",
+        "imagesSub": "photos & RAW",
+        "videos": "Videos",
+        "videosSub": "clips"
+      },
+      "linkCopied": "Collection link copied.",
+      "linkCopyFailed": "Failed to copy link.",
+      "nameRequired": "Collection name is required.",
+      "notFound": "Not found",
+      "notFoundTitle": "Collection not found",
+      "parentProject": "Parent Project",
+      "removeFailed": "Failed to remove asset.",
+      "removed": "Asset removed from collection successfully.",
+      "totalSize": "Total Size",
+      "updateFailed": "Failed to update collection.",
+      "updated": "Collection updated successfully.",
+      "addCount": "Add ({{count}})",
+      "addDesc": "Assets already in the collection are not shown. {{count}} selected.",
+      "added": "{{count}} assets added to collection.",
+      "allAdded": "All project assets are already in the collection",
+      "allAddedDesc": "There are no new assets to add.",
+      "assetCount": "{{count}} assets",
+      "descPlaceholder": "What does this collection contain?",
+      "editDesc": "Update the collection name and description.",
+      "emptyManualDesc": "Add assets from the project to start curating.",
+      "emptySmart": "No matching assets",
+      "emptySmartDesc": "Adjust the smart collection criteria to display assets.",
+      "manualSub": "Manual collection — pick the assets you want to group together.",
+      "namePlaceholder": "E.g. Final Deliverables",
+      "notFoundDesc": "The collection you're looking for does not exist or has been deleted.",
+      "selectAtLeastOne": "Select at least one asset.",
+      "smartSub": "Smart collection — updated automatically based on criteria."
+    },
+    "media": "Media",
+    "project": "Project",
+    "title": "Collections",
+    "type": {
+      "manual": "Manual",
+      "smart": "Smart"
+    }
+  },
+  "content": {
+    "archiveFailed": "Failed to archive content.",
+    "archived": "Content archived.",
+    "confirmDelete": "Delete this content?",
+    "createFailed": "Failed to create content.",
+    "created": "Content created.",
+    "deleteFailed": "Failed to delete content.",
+    "deleted": "Content deleted.",
+    "draftsRail": "Unscheduled Drafts",
+    "empty": {
+      "desc": "Get started by adding your first content item.",
+      "filtered": {
+        "desc": "Try adjusting or clearing your filters.",
+        "title": "No content matches your filters"
+      },
+      "title": "No content yet"
+    },
+    "filter": {
+      "allClients": "All Clients",
+      "allPlatforms": "All Platforms",
+      "allStatuses": "All Statuses",
+      "client": "Client",
+      "platform": "Platform",
+      "status": "Status"
+    },
+    "kpi": {
+      "drafts": "Active Drafts",
+      "draftsSub": "not yet scheduled",
+      "published": "Published",
+      "publishedSub": "live",
+      "scheduled": "Scheduled",
+      "scheduledSub": "awaiting publication",
+      "total": "Content This Month",
+      "totalSub": "scheduled & published"
+    },
+    "new": "Add Content",
+    "openGeneral": "General Calendar",
+    "publishFailed": "Failed to publish content.",
+    "published": "Content marked as published.",
+    "title": "Content Calendar",
+    "view": {
+      "list": "List",
+      "month": "Month"
+    },
+    "search": {
+      "placeholder": "Search by caption, platform, or client..."
+    },
+    "subtitle": "Plan, schedule, and track social media publications across platforms."
+  },
+  "expenses": {
+    "action": {
+      "approve": "Approve",
+      "delete": "Delete",
+      "edit": "Edit"
+    },
+    "categories": {
+      "action": {
+        "create": "Create Category",
+        "update": "Save Changes"
+      },
+      "add": "Add Category",
+      "backToList": "Back to Expenses",
+      "dialog": {
+        "createTitle": "Add Category",
+        "desc": "Categories are mapped to PSAK account codes and Indonesian tax defaults.",
+        "editTitle": "Edit Category"
+      },
+      "empty": {
+        "desc": "Create your first category to group expenses.",
+        "filtered": {
+          "desc": "Try adjusting or clearing your filters.",
+          "title": "No categories match your filters"
+        },
+        "title": "No categories yet"
+      },
+      "error": {
+        "title": "Cannot load categories"
+      },
+      "field": {
+        "account": "PSAK Account Code",
+        "class": "Expense Class",
+        "code": "Category Code",
+        "description": "Description (English)",
+        "descriptionId": "Description (Bahasa Indonesia)",
+        "isActive": "Active",
+        "isActiveHint": "Inactive categories are retained but will not appear when creating new expenses.",
+        "isBillable": "Billable to Client",
+        "isBillableHint": "Expenses in this category can be passed through to client invoices.",
+        "name": "Name (English)",
+        "nameId": "Name (Bahasa Indonesia)",
+        "pphRate": "PPh Rate (%)",
+        "pphType": "Default PPh Type",
+        "ppnCategory": "Default VAT Category",
+        "requiresEfaktur": "Requires e-Faktur",
+        "requiresEfakturHint": "Expenses in this category must include an NSFP e-Faktur serial number."
+      },
+      "filter": {
+        "allClasses": "All Classes",
+        "class": "Class"
+      },
+      "search": {
+        "placeholder": "Search by code, account, or name..."
+      },
+      "section": {
+        "classification": "Classification",
+        "flags": "Settings",
+        "identity": "Identity",
+        "withholding": "Withholding Tax (PPh)"
+      },
+      "subtitle": "Manage expense categories and PSAK account code mappings.",
+      "title": "Expense Categories",
+      "validation": {
+        "required": "Code, Account Code, and Name are required."
+      }
+    },
+    "create": {
+      "crumb": "New",
+      "error": "Failed to create expense. Please try again.",
+      "title": "New Expense",
+      "submitWarn": "Expense saved but approval submission failed: {{m}}",
+      "subtitle": "Record an expense with automatic VAT and withholding tax calculations per Indonesian standards.",
+      "success": "Expense {{n}} created successfully.",
+      "successSubmitted": "Expense {{n}} created and submitted for approval."
+    },
+    "detail": {
+      "approvedBy": "Approved By",
+      "backToList": "Back to Expenses",
+      "bkk": "Payment Voucher (BKK)",
+      "buktiPotong": "Withholding Tax Slip",
+      "category": "Category",
+      "client": "Client",
+      "description": "Description",
+      "efaktur": "e-Invoice (e-Faktur)",
+      "error": {
+        "title": "Expense not found",
+        "desc": "This expense may have been deleted or you don't have access."
+      },
+      "expenseDate": "Expense Date",
+      "gross": "Gross Amount",
+      "history": "Approval History",
+      "issued": "Issued",
+      "method": "Method",
+      "netPayable": "Net Payable",
+      "noDescription": "No description",
+      "noTax": "No tax components.",
+      "notFound": "Not found",
+      "notFoundTitle": "Expense not found",
+      "notes": "Notes",
+      "nsfp": "Tax Invoice Serial (NSFP)",
+      "paidOn": "Paid on",
+      "payment": "Payment",
+      "paymentDate": "Payment Date",
+      "project": "Project",
+      "reference": "Reference",
+      "rejected": {
+        "title": "Expense rejected"
+      },
+      "subtitle": "Expense details, tax breakdown, and related actions.",
+      "taxBreakdown": "Tax Breakdown",
+      "total": "Total Expense",
+      "totalLine": "Total",
+      "validated": "Validated",
+      "vendor": "Vendor"
+    },
+    "edit": {
+      "crumb": "Edit",
+      "error": "Failed to save changes. Please try again.",
+      "title": "Edit Expense",
+      "notFoundDesc": "The expense you're trying to edit does not exist or has been deleted.",
+      "subtitle": "Editing {{n}} — changes are saved to the expense record.",
+      "success": "Changes for {{n}} saved."
+    },
+    "empty": {
+      "desc": "Start recording your first business expense.",
+      "filtered": {
+        "desc": "Try adjusting or clearing your filters.",
+        "title": "No expenses match your filters"
+      },
+      "title": "No expenses yet"
+    },
+    "error": {
+      "title": "Cannot load expenses"
+    },
+    "filter": {
+      "allCategories": "All Categories",
+      "allPayments": "All Payment Methods",
+      "allStatuses": "All Statuses",
+      "category": "Category",
+      "endDate": "End Date",
+      "payment": "Payment",
+      "range": "Range",
+      "startDate": "Start Date",
+      "status": "Status"
+    },
+    "form": {
+      "backToDetail": "Back to Detail",
+      "backToList": "Back to Expenses"
+    },
+    "kpi": {
+      "noData": "no data yet",
+      "ppn": "Input VAT",
+      "ppnSub": "input tax collected",
+      "thisMonth": "This Month",
+      "thisMonthSub": "current month spend",
+      "topCategory": "Top Category",
+      "total": "Total (Filtered)",
+      "totalSub": "based on active filters"
+    },
+    "new": "New Expense",
+    "search": {
+      "placeholder": "Search by number, vendor, or description..."
+    },
+    "title": "Expenses",
+    "subtitle": "Record business expenses with PSAK compliance and Indonesian tax calculations."
+  },
+  "milestones": {
+    "analytics": {
+      "errorTitle": "Cannot load analytics",
+      "export": "Export JSON",
+      "exportFailed": "Failed to export data.",
+      "exported": "Analytics data exported.",
+      "noData": "No data to export.",
+      "title": "Milestone Analytics",
+      "subtitle": "Milestone payment performance across projects — cycles, on-time rates, and cash flow."
+    },
+    "charts": {
+      "cashFlow": "Cash Flow Projection",
+      "cashFlowEmpty": "No cash flow data yet",
+      "empty": "No profitability data yet",
+      "profitability": "Profitability by Phase",
+      "cashFlowEmptyDesc": "Not enough milestones to build a projection yet.",
+      "cashFlowSub": "Comparison of expected, actual, and projected cash inflows.",
+      "emptyDesc": "Adjust the filters or wait until milestones are recorded.",
+      "profitabilitySub": "Revenue, cost, and profit per milestone phase."
+    },
+    "empty": {
+      "filtered": "No milestones match your filters",
+      "title": "No milestones yet",
+      "desc": "No milestones have been recorded in this time range.",
+      "filteredDesc": "Try adjusting the filters or selecting a different time range."
+    },
+    "filter": {
+      "allProjects": "All Projects",
+      "allStatuses": "All Statuses",
+      "project": "Project",
+      "range": "Range",
+      "status": "Status"
+    },
+    "kpi": {
+      "completed": "Completed",
+      "completedSub": "fully paid",
+      "overdue": "Overdue",
+      "overdueOk": "all on track",
+      "overdueWarn": "needs follow-up",
+      "total": "Total Milestones",
+      "totalSub": "within time range",
+      "upcoming": "Upcoming",
+      "upcomingSub": "pending or invoiced"
+    },
+    "legend": {
+      "actual": "Actual",
+      "cost": "Cost",
+      "expected": "Expected",
+      "forecast": "Forecast",
+      "profit": "Profit",
+      "revenue": "Revenue"
+    },
+    "metric": {
+      "cycle": "Payment Cycle",
+      "cycleSub": "average time to pay",
+      "onTime": "On Time",
+      "onTimeSub": "of milestones paid",
+      "recognition": "Revenue Recognition",
+      "recognitionSub": "of milestone value"
+    },
+    "range": {
+      "30": "Last 30 days",
+      "90": "Last 90 days",
+      "custom": "Custom",
+      "year": "Last 1 year"
+    },
+    "table": {
+      "amount": "Amount",
+      "daysToPayment": "Days to Pay",
+      "dueDate": "Due Date",
+      "name": "Milestone",
+      "number": "No.",
+      "recognized": "Recognized",
+      "status": "Status",
+      "title": "Milestone Details",
+      "count": "{{count}} records",
+      "overdueNote": "{{count}} overdue"
+    }
+  },
+  "quotationDetail": {
+    "untitled": "Quotation Detail",
+    "error": {
+      "desc": "The quotation you're looking for could not be found or an error occurred.",
+      "title": "Cannot load quotation"
+    }
+  },
+  "socialReports": {
+    "empty": {
+      "filtered": {
+        "desc": "Try adjusting or clearing your filters.",
+        "title": "No reports match your filters"
+      },
+      "title": "No client reports yet",
+      "desc": "Create your first social media report for a client."
+    },
+    "engagementTrend": "Engagement Trend",
+    "error": {
+      "title": "Cannot load reports"
+    },
+    "kpi": {
+      "engagement": "Engagement Rate",
+      "engagementSub": "average across platforms",
+      "followers": "Total Followers",
+      "followersSub": "across all platforms",
+      "reach": "Reach",
+      "reachSub": "last 30 days",
+      "reports": "Saved Reports",
+      "reportsSub": "ready to share"
+    },
+    "last6Months": "Last 6 months",
+    "new": "New Report",
+    "platform": {
+      "title": "Breakdown by Platform",
+      "subtitle": "Performance by channel — followers, engagement, and reach."
+    },
+    "reachSubtitle": "Unique users per month",
+    "reachVolume": "Reach Volume",
+    "saved": {
+      "title": "Saved Client Reports",
+      "count": "{{count}} reports for this client"
+    },
+    "title": "Social Media Reports",
+    "search": {
+      "placeholder": "Search by title, project, or client..."
+    },
+    "subtitle": "Cross-platform analytics, content performance, and saved client reports."
+  },
+  "users": {
+    "create": {
+      "error": "Failed to add user. Please try again.",
+      "subtitle": "Add a new account with a role and initial password.",
+      "title": "New User"
+    },
+    "denied": {
+      "title": "Access Denied",
+      "desc": "Only Super Admins can manage system users."
+    },
+    "directory": "User Directory",
+    "edit": {
+      "backToList": "Back to Users",
+      "crumb": "Edit",
+      "error": "Failed to save changes. Please try again.",
+      "notFound": "Not found",
+      "notFoundTitle": "User not found",
+      "title": "Edit User",
+      "notFoundDesc": "The user you're trying to edit does not exist or has been deleted.",
+      "subtitle": "Update {{name}}'s account information"
+    },
+    "empty": {
+      "filtered": {
+        "title": "No users match your filters",
+        "desc": "Try adjusting your search or clearing the filters to see all users."
+      },
+      "title": "No users yet",
+      "desc": "Add the first user to start granting team access."
+    },
+    "error": {
+      "title": "Cannot load users"
+    },
+    "filter": {
+      "allRoles": "All Roles",
+      "allStatus": "All Statuses"
+    },
+    "form": {
+      "access": {
+        "title": "Access & Role",
+        "desc": "The role determines which areas of the system the user can access."
+      },
+      "email": "Email",
+      "emailHint": "Used as the login username",
+      "identity": {
+        "title": "Identity",
+        "desc": "Name and email used to sign in to the system."
+      },
+      "name": "Full Name",
+      "namePlaceholder": "User's full name",
+      "password": "Password",
+      "passwordEditPlaceholder": "Leave blank to keep unchanged",
+      "passwordNew": "New Password",
+      "passwordPlaceholder": "Enter initial password",
+      "requiredNote": "Fields marked * are required.",
+      "role": "Role",
+      "rolePlaceholder": "Select role",
+      "security": {
+        "title": "Security",
+        "descCreate": "Set an initial password. The user should change it after their first login.",
+        "descEdit": "Leave blank if you don't want to change the user's password."
+      },
+      "status": "Account Status",
+      "passwordHint": "Min. 8 characters, including uppercase, lowercase, and a number.",
+      "statusActiveSub": "Can log in and access the system.",
+      "statusHint": "Inactive users cannot sign in to the system.",
+      "statusInactiveSub": "Account is retained but cannot log in.",
+      "statusSelfHint": "You cannot deactivate your own account."
+    },
+    "kpi": {
+      "active": "Active",
+      "superAdmins": "Super Admins",
+      "superAdminsSub": "full access",
+      "total": "Total Users",
+      "totalSub": "registered accounts",
+      "videographers": "Videographers",
+      "videographersSub": "media collaboration only",
+      "activeSub": "of {{total}} total"
+    },
+    "role": {
+      "videographer": "Videographer"
+    },
+    "searchPlaceholder": "Search by name or email...",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "table": {
+      "created": "Created",
+      "role": "Role",
+      "status": "Status",
+      "user": "User"
+    },
+    "title": "Users",
+    "toggle": {
+      "activated": "User activated.",
+      "deactivated": "User deactivated.",
+      "error": "Failed to update user status."
+    },
+    "directoryCount": "{{count}} users found",
+    "subtitle": "Manage accounts, roles, and team access to the system."
+  },
+  "vendors": {
+    "create": {
+      "error": "Failed to add vendor. Please try again.",
+      "subtitle": "Add a new vendor to start recording POs, invoices, and payments.",
+      "title": "New Vendor"
+    },
+    "detail": {
+      "address": "Address",
+      "backToList": "Back to Vendors",
+      "bankAccount": "Bank Account",
+      "bankAccountName": "Account Holder",
+      "bankAccountNumber": "Account Number",
+      "bankBranch": "Branch",
+      "bankName": "Bank Name",
+      "bankingTitle": "Banking Information",
+      "contactPerson": "Contact Person",
+      "country": "Country",
+      "createdAt": "Created",
+      "creditLimit": "Credit Limit",
+      "currency": "Currency",
+      "email": "Email",
+      "headerSubNoCode": "Profile & procurement history",
+      "kpi": {
+        "activity": "Total Activity",
+        "invoices": "Vendor Invoices",
+        "payments": "Payments",
+        "paymentsSub": "payments recorded",
+        "purchaseOrders": "Purchase Orders",
+        "activitySub": "combined across all transactions",
+        "creditLimitSub": "Limit {{amount}}",
+        "invoicesSub": "{{count}} open AP",
+        "purchaseOrdersSub": "{{count}} goods receipts"
+      },
+      "location": "Location",
+      "noActivity": "No activity yet",
+      "notFound": "Not found",
+      "notFoundTitle": "Vendor not found",
+      "npwp": "Tax ID (NPWP)",
+      "paymentTerms": "Payment Terms",
+      "phone": "Phone",
+      "rel": {
+        "accountsPayable": "Accounts Payable",
+        "accountsPayableSub": "open AP",
+        "expenses": "Expenses",
+        "expensesSub": "recorded expenses",
+        "goodsReceipts": "Goods Receipts",
+        "goodsReceiptsSub": "goods received",
+        "invoices": "Vendor Invoices",
+        "invoicesSub": "invoices received",
+        "payments": "Payments",
+        "paymentsSub": "completed payments",
+        "purchaseOrders": "Purchase Orders",
+        "purchaseOrdersSub": "POs issued"
+      },
+      "relationsTitle": "Procurement History",
+      "swiftCode": "SWIFT Code",
+      "taxAddress": "Tax Address",
+      "termsTitle": "Terms & Audit",
+      "updatedAt": "Last Updated",
+      "bankingSub": "Bank account used for payments to this vendor.",
+      "cannotDelete": "This vendor cannot be deleted because it has associated transactions.",
+      "deleteError": "Failed to delete vendor. The vendor may have related transactions.",
+      "headerSub": "Code: {{code}} · Profile & procurement history",
+      "lockedDesc": "Delete associated POs, invoices, expenses, or assets before removing this vendor.",
+      "lockedTitle": "Vendor is locked due to existing transactions",
+      "noActivityDesc": "This vendor has no POs, invoices, or payments on record.",
+      "notFoundDesc": "The vendor you're looking for does not exist or has been deleted.",
+      "relationsSub": "Overview of transactions linked to this vendor.",
+      "termsSub": "Payment terms, currency, and basic audit trail."
+    },
+    "directory": "Vendor Directory",
+    "edit": {
+      "crumb": "Edit",
+      "error": "Failed to save changes. Please try again.",
+      "title": "Edit Vendor",
+      "notFoundDesc": "The vendor you're trying to edit does not exist or has been deleted.",
+      "subtitle": "Update {{name}}'s information",
+      "subtitleWithCode": "Update {{name}}'s information · {{code}}"
+    },
+    "empty": {
+      "filtered": {
+        "title": "No vendors match your filters",
+        "desc": "Try adjusting your search or clearing the filters to see all vendors."
+      },
+      "title": "No vendors yet",
+      "desc": "Start building your procurement database by adding your first vendor."
+    },
+    "error": {
+      "title": "Cannot load vendor data"
+    },
+    "filter": {
+      "allPkp": "All VAT Status",
+      "allStatus": "All Statuses",
+      "allTypes": "All Categories"
+    },
+    "form": {
+      "address": {
+        "title": "Address",
+        "desc": "Vendor's operational address for correspondence and deliveries."
+      },
+      "addressHint": "Street name and building number",
+      "addressLabel": "Full Address",
+      "bankAccountName": "Account Holder",
+      "bankAccountNumber": "Account Number",
+      "bankBranch": "Branch",
+      "bankName": "Bank Name",
+      "banking": {
+        "title": "Banking & Payment",
+        "desc": "Payment destination account and applicable terms."
+      },
+      "city": "City",
+      "contact": {
+        "title": "Contact",
+        "desc": "Primary contact and communication channels."
+      },
+      "contactPerson": "Contact Person",
+      "country": "Country",
+      "creditLimit": "Credit Limit",
+      "currency": "Currency",
+      "email": "Email",
+      "identity": {
+        "title": "Identity",
+        "desc": "Basic information to identify the vendor in the system."
+      },
+      "industryType": "Industry Type",
+      "industryTypeHint": "Vendor's line of business",
+      "name": "Vendor Name",
+      "nameId": "Indonesian Name",
+      "nameIdHint": "Optional, for vendors with a foreign-language name",
+      "npwp": "Tax ID (NPWP)",
+      "paymentTerms": "Payment Terms",
+      "phone": "Phone",
+      "pkpStatus": "VAT Registered (PKP)",
+      "postalCode": "Postal Code",
+      "province": "Province",
+      "requiredNote": "Fields marked * are required.",
+      "status": "Vendor Status",
+      "statusActiveSub": "Can receive new POs and transactions.",
+      "statusInactiveSub": "Archived and hidden from main workflows.",
+      "swiftCode": "SWIFT Code",
+      "swiftCodeHint": "Optional, for international transactions",
+      "tax": {
+        "title": "Tax & NPWP",
+        "desc": "Tax information for invoices and withholding tax deductions."
+      },
+      "taxAddress": "Tax Address",
+      "vendorType": "Vendor Category",
+      "addressPlaceholder": "Jl. Gatot Subroto No. 25, Sumber Makmur Building, 5th Floor",
+      "contactPersonPlaceholder": "Primary contact name",
+      "creditLimitHint": "Maximum permitted payable balance. Leave blank for no limit.",
+      "namePlaceholder": "Official vendor name (PT, CV, or individual)",
+      "pkpStatusHint": "Determines whether VAT is issued on invoices.",
+      "statusHint": "Inactive vendors do not appear in default selection lists.",
+      "taxAddressHint": "Fill in if different from the operational address.",
+      "taxAddressPlaceholder": "Official address as registered for tax documents",
+      "vendorTypeHint": "Determines how transactions will be grouped."
+    },
+    "kpi": {
+      "active": "Active Vendors",
+      "outstanding": "Payables Outstanding",
+      "purchaseOrders": "Total Purchase Orders",
+      "purchaseOrdersSub": "all time",
+      "topVendor": "Most Active Vendor",
+      "topVendorEmpty": "no transactions yet",
+      "activeSub": "of {{total}} total",
+      "outstandingSub": "vendors with open AP",
+      "topVendorSub": "{{count}} transactions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "table": {
+      "activity": "Activity",
+      "category": "Category",
+      "code": "Code",
+      "contact": "Contact",
+      "location": "Location",
+      "status": "Status",
+      "vendor": "Vendor",
+      "poCount": "{{count}} POs"
+    },
+    "title": "Vendors",
+    "directoryCount": "{{count}} vendors found",
+    "searchPlaceholder": "Search by name, code, contact, or city…",
+    "subtitle": "Manage suppliers, service providers, and procurement partners."
+  },
+  "accounting": {
+    "chartOfAccounts": {
+      "title": "Chart of Accounts",
+      "description": "Account structure based on Indonesian PSAK accounting standards.",
+      "newAccount": "New Account",
+      "refresh": "Refresh",
+      "errorTitle": "Cannot load chart of accounts",
+      "errorGeneric": "An error occurred",
+      "retry": "Try Again",
+      "searchPlaceholder": "Search by account code or name...",
+      "allTypes": "All Types",
+      "noMatch": "No matching accounts",
+      "noAccounts": "No accounts yet",
+      "noMatchDesc": "Try changing or removing your filters.",
+      "noAccountsDesc": "Create your first account to get started.",
+      "createSuccess": "Account created",
+      "createFail": "Failed to create account",
+      "updateSuccess": "Account updated",
+      "updateFail": "Failed to update account",
+      "deleteSuccess": "Account deleted",
+      "deleteFail": "Failed to delete account",
+      "toggleSuccess": "Account status updated",
+      "toggleFail": "Failed to update account status",
+      "registeredAccounts": "registered accounts",
+      "editDialogTitle": "Edit Account",
+      "newDialogTitle": "New Account",
+      "editDialogDesc": "Updating account {{code}}",
+      "newDialogDesc": "Add account to chart of accounts.",
+      "saving": "Saving...",
+      "update": "Update",
+      "createAccount": "Create Account",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "deleteConfirm": "Delete account {{code}}? Cannot be undone."
+    },
+    "arAging": {
+      "title": "Accounts Receivable Aging",
+      "description": "Aging analysis of receivables per client — the older the bucket, the higher the default risk.",
+      "errorTitle": "Cannot load receivables aging",
+      "errorGeneric": "An error occurred",
+      "retry": "Try Again",
+      "clientsWithOpen": "{{count}} clients with open balance",
+      "totalReceivables": "Total Receivables",
+      "agingPerClient": "Aging by Client",
+      "noReceivables": "No open receivables",
+      "noReceivablesDesc": "All invoices have been settled as of this date.",
+      "pdfSuccess": "PDF report downloaded",
+      "pdfFail": "Failed to download PDF",
+      "excelSuccess": "Excel report downloaded",
+      "excelFail": "Failed to download Excel"
+    },
+    "apAging": {
+      "title": "Accounts Payable Aging",
+      "description": "Aging analysis of payables per category — the older the bucket, the more urgent the payment.",
+      "errorTitle": "Cannot load payables aging",
+      "errorGeneric": "An error occurred",
+      "retry": "Try Again",
+      "categoriesWithOpen": "{{count}} categories with open balance",
+      "totalPayables": "Total Payables",
+      "agingPerCategory": "Aging by Category",
+      "noPayables": "No open payables",
+      "noPayablesDesc": "All liabilities have been settled as of this date.",
+      "pdfSuccess": "PDF report downloaded",
+      "pdfFail": "Failed to download PDF",
+      "excelSuccess": "Excel report downloaded",
+      "excelFail": "Failed to download Excel"
+    },
+    "journalEntryForm": {
+      "newTitle": "New Journal",
+      "editTitle": "Edit {{number}}",
+      "sectionDateTitle": "Date & Classification",
+      "sectionDateDesc": "The entry date determines the fiscal period of this journal.",
+      "sectionLinesTitle": "Journal Lines",
+      "prefillToast": "Data from the adjusting wizard has been pre-filled. Review and save.",
+      "saveDraftSuccess": "Journal saved as draft.",
+      "saveDraftFail": "Failed to save journal.",
+      "updateSuccess": "Journal updated.",
+      "updateFail": "Failed to update journal.",
+      "postSuccess": "Journal posted to general ledger.",
+      "postFail": "Failed to post journal."
+    },
+    "cashReceipts": {
+      "title": "Cash Receipts",
+      "description": "Record, submit, and post incoming cash transactions.",
+      "errorTitle": "Cannot load cash receipts",
+      "errorGeneric": "An error occurred",
+      "retry": "Try Again",
+      "searchPlaceholder": "Search by transaction number or description...",
+      "cashAccountPlaceholder": "Cash Account",
+      "noMatch": "No matching receipts",
+      "noReceipts": "No cash receipts yet",
+      "voidConfirm": "Void receipt {{number}}? Journal will be reversed.",
+      "deleteConfirm": "Delete receipt {{number}}? Cannot be undone."
+    },
+    "cashDisbursements": {
+      "title": "Cash Disbursements",
+      "description": "Record, submit, and post outgoing cash transactions.",
+      "errorTitle": "Cannot load cash disbursements",
+      "errorGeneric": "An error occurred",
+      "retry": "Try Again",
+      "searchPlaceholder": "Search by transaction number or description...",
+      "cashAccountPlaceholder": "Cash Account",
+      "noMatch": "No matching disbursements",
+      "noDisbursements": "No cash disbursements yet",
+      "voidConfirm": "Void disbursement {{number}}? Journal will be reversed.",
+      "deleteConfirm": "Delete disbursement {{number}}? Cannot be undone."
+    },
+    "bankReconciliations": {
+      "title": "Bank Reconciliations",
+      "description": "Match book balance with bank statement and resolve discrepancies.",
+      "errorTitle": "Cannot load bank reconciliations",
+      "errorGeneric": "An error occurred",
+      "retry": "Try Again",
+      "searchPlaceholder": "Search by reconciliation number...",
+      "bankAccountPlaceholder": "Bank Account",
+      "noMatch": "No matching reconciliations",
+      "noReconciliations": "No bank reconciliations yet",
+      "noMatchDesc": "Try changing the filter.",
+      "noReconciliationsDesc": "Create your first bank reconciliation to start matching balances."
+    },
+    "accountsReceivable": {
+      "title": "Accounts Receivable",
+      "description": "Monitor client invoice balances as of the reporting date. Click a row to open the invoice.",
+      "errorTitle": "Cannot load receivables report",
+      "errorGeneric": "An error occurred",
+      "retry": "Try Again",
+      "noMatch": "No matching invoices",
+      "noReceivables": "No open receivables"
+    },
+    "accountsPayable": {
+      "title": "Accounts Payable",
+      "description": "Monitor vendor obligations as of the reporting date. Click a row to open the expense.",
+      "errorTitle": "Cannot load payables report",
+      "errorGeneric": "An error occurred",
+      "retry": "Try Again",
+      "noMatch": "No matching expenses",
+      "noPayables": "No open payables"
+    },
+    "cashFlow": {
+      "title": "Cash Flow Statement",
+      "description": "Cash movement from operating, investing, and financing activities — reconciled against the cash balance.",
+      "reload": "Reload",
+      "export": "Export",
+      "period": "Period",
+      "noTransactions": "No transactions",
+      "noTransactionsDesc": "No {{activity}} activity for this period.",
+      "netCash": "Net Cash from {{activity}} Activities",
+      "openingBalance": "Opening Cash Balance",
+      "netCashPeriod": "Net Cash Flow This Period",
+      "closingBalance": "Closing Cash Balance",
+      "errorTitle": "Cannot load cash flow statement",
+      "errorGeneric": "An error occurred.",
+      "retry": "Try Again",
+      "exportSuccess": "Cash flow statement exported successfully",
+      "exportPdfFail": "Failed to export PDF.",
+      "exportCsvFail": "Failed to export CSV.",
+      "startDate": "Start date",
+      "endDate": "End date"
+    },
+    "balanceSheet": {
+      "title": "Balance Sheet",
+      "description": "Financial position report — assets, liabilities, and equity at a point in time.",
+      "reload": "Reload",
+      "export": "Export",
+      "asOf": "As of",
+      "noAccounts": "No accounts",
+      "noAccountsDesc": "No balances in this section.",
+      "errorTitle": "Cannot load balance sheet",
+      "errorGeneric": "An error occurred.",
+      "retry": "Try Again",
+      "imbalanceTitle": "Balance sheet is not balanced",
+      "imbalanceDesc": "Difference of {{amount}} between total assets and total liabilities + equity. Check journal entries.",
+      "balancedMsg": "Balance sheet is balanced",
+      "exportPdfSuccess": "Balance sheet exported (PDF).",
+      "exportCsvSuccess": "Balance sheet exported (CSV).",
+      "exportPdfFail": "Failed to export PDF.",
+      "exportCsvFail": "Failed to export CSV.",
+      "totalLiabEq": "Total Liabilities + Equity"
+    },
+    "adjustingWizard": {
+      "title": "Adjusting Journal Entry Wizard",
+      "description": "Three steps to create an accrual adjusting journal entry.",
+      "back": "Back",
+      "cancel": "Cancel",
+      "next": "Next",
+      "proceedToForm": "Proceed to Journal Form",
+      "stepPickType": "Choose Type",
+      "stepFillData": "Fill Data",
+      "stepReview": "Review",
+      "hintPickType": "Select a pattern to continue.",
+      "hintFillData": "Complete all required fields then proceed to review.",
+      "hintReview": "Click Proceed to open the pre-filled journal form.",
+      "sectionPickType": "Select Adjustment Type",
+      "sectionPickTypeDesc": "Choose the pattern that matches your transaction. Each pattern determines the debit and credit accounts automatically.",
+      "noAccountsForType": "No accounts for this type.",
+      "journalToCreate": "Journal entry to be created",
+      "reviewTitle": "Review Journal",
+      "reviewDesc": "Check before continuing. After clicking Proceed, you will be redirected to the journal form with pre-filled data.",
+      "breadcrumbAccounting": "Accounting",
+      "breadcrumbJournal": "Journal",
+      "breadcrumbWizard": "Adjustment Wizard"
+    },
+    "trialBalance": {
+      "title": "Trial Balance",
+      "description": "Summary of debit and credit balances across all accounts — verify general ledger balance.",
+      "reload": "Reload",
+      "export": "Export",
+      "period": "Period",
+      "searchPlaceholder": "Search by account code or name...",
+      "allTypes": "All Types",
+      "errorTitle": "Cannot load trial balance",
+      "errorGeneric": "An error occurred.",
+      "retry": "Try Again",
+      "imbalanceTitle": "Trial balance is not balanced",
+      "imbalanceDesc": "Difference of {{amount}} between total debit and credit. Check unbalanced journal entries.",
+      "balancedMsg": "General ledger is balanced",
+      "noAccounts": "No matching accounts",
+      "noBalances": "No balances yet",
+      "noAccountsDesc": "Try changing your search or filters.",
+      "noBalancesDesc": "No account balances for this period.",
+      "exportPdfSuccess": "Trial balance exported (PDF).",
+      "exportCsvSuccess": "Trial balance exported (CSV).",
+      "exportPdfFail": "Failed to export PDF.",
+      "exportCsvFail": "Failed to export CSV."
+    },
+    "journalEntries": {
+      "title": "Journal",
+      "description": "Record, review, and post manual and automatic journal entries.",
+      "newAdjusting": "Adjusting",
+      "newJournal": "New Journal",
+      "errorTitle": "Cannot load journals",
+      "errorGeneric": "An error occurred",
+      "retry": "Try Again",
+      "searchPlaceholder": "Search journal number, description, document...",
+      "allStatuses": "All Statuses",
+      "allTypes": "All Types",
+      "noMatch": "No matching journals",
+      "noJournals": "No journals yet",
+      "noMatchDesc": "Try changing filters or the date range.",
+      "noJournalsDesc": "Create your first journal entry to record a transaction.",
+      "postSuccess": "Journal successfully posted to general ledger.",
+      "postFail": "Failed to post journal.",
+      "reverseSuccess": "Reversing journal created: {{number}}",
+      "reverseFail": "Failed to create reversing journal.",
+      "deleteSuccess": "Journal deleted.",
+      "deleteFail": "Failed to delete journal.",
+      "deleteConfirm": "Delete journal {{number}}? This action cannot be undone.",
+      "statKpiEntries": "Total Entries",
+      "statKpiEntriesSub": "in active filter",
+      "statKpiDebit": "Total Debit",
+      "statKpiDebitSub": "accumulated visible",
+      "statKpiDraft": "Pending Drafts",
+      "statKpiDraftSub": "awaiting posting",
+      "statKpiPostedMonth": "Posted This Month",
+      "statKpiPostedMonthSub": "in current month",
+      "fromDate": "From date",
+      "toDate": "To date"
+    },
+    "generalLedger": {
+      "title": "General Ledger",
+      "description": "Transaction history per account with running balance.",
+      "export": "Export",
+      "errorTitle": "Cannot load general ledger",
+      "errorGeneric": "An error occurred",
+      "retry": "Try Again",
+      "searchPlaceholder": "Search account code, journal number, description...",
+      "allAccounts": "All Accounts",
+      "allTypes": "All Types",
+      "noMatch": "No matching entries",
+      "noEntries": "No entries yet",
+      "noMatchDesc": "Try changing the date range or account filter.",
+      "noEntriesDesc": "Post journal entries first to see general ledger records.",
+      "statKpiEntries": "Total Entries",
+      "statKpiEntriesSub": "in selected period",
+      "statKpiDebit": "Total Debit",
+      "statKpiDebitSub": "accumulated across all accounts",
+      "statKpiCredit": "Total Credit",
+      "statKpiCreditSub": "accumulated across all accounts",
+      "exportStarted": "Export {{type}} started.",
+      "exportFail": "Failed to export: {{message}}"
+    },
+    "depreciation": {
+      "title": "Asset Depreciation",
+      "description": "Fixed asset depreciation management per PSAK 16 standards.",
+      "process": "Process Depreciation",
+      "refresh": "Refresh",
+      "errorTitle": "Cannot load depreciation data",
+      "errorGeneric": "An error occurred",
+      "retry": "Try Again",
+      "noData": "No depreciation data",
+      "noDataDesc": "No depreciable assets for this period. Try changing the date range.",
+      "processSuccess": "Successfully processed {{count}} depreciation entries. {{posted}} posted to journal.",
+      "processFail": "Failed to process depreciation",
+      "statKpiAssets": "Depreciable Assets",
+      "statKpiAssetsSub": "assets with active schedule",
+      "statKpiAccumulated": "Total Accumulated",
+      "statKpiAccumulatedSub": "accumulated depreciation",
+      "statKpiPeriod": "Period Depreciation",
+      "statKpiPeriodSub": "depreciation value this period",
+      "statKpiNextRun": "Next Run",
+      "statKpiNextRunSub": "estimated depreciation run",
+      "processDialogTitle": "Process Monthly Depreciation",
+      "processDialogDesc": "Calculate depreciation for all active assets in the selected period.",
+      "periodDate": "Period Date",
+      "postingOptions": "Posting Options",
+      "saveDraft": "Save as draft (manual posting)",
+      "autoPost": "Auto-post to journal",
+      "processInfo": "This process calculates depreciation for all active assets in the selected period. Make sure the period date is correct before proceeding.",
+      "processing": "Processing...",
+      "processNow": "Process Now",
+      "detailTitle": "Asset Depreciation Details",
+      "assetName": "Asset Name",
+      "assetCode": "Asset Code",
+      "entryCount": "Entry Count",
+      "purchasePrice": "Purchase Price",
+      "yearsInUse": "Years in Use",
+      "usefulLife": "Useful Life",
+      "periodDep": "Period Depreciation",
+      "accumulated": "Accumulated Depreciation",
+      "netBookValue": "Net Book Value",
+      "close": "Close",
+      "yearsUnit": "yrs"
+    }
+  },
+  "pinterestDownloader": {
+    "title": "Pinterest Downloader",
+    "description": "Download a single pin, an entire board, or a user profile. Batch jobs run in the background — you can close the tab and come back later.",
+    "urlPlaceholder": "https://pinterest.com/pin/123… or https://pinterest.com/username/board",
+    "startSuccess": "Download job started. Monitor its progress below.",
+    "cancelSuccess": "Job cancelled.",
+    "cancelFail": "Failed to cancel job.",
+    "deleteSuccess": "Job deleted.",
+    "deleteFail": "Failed to delete job.",
+    "pinDownloaded": "Pin downloaded to Downloads folder.",
+    "pasteSuccess": "URL pasted from clipboard.",
+    "clipboardEmpty": "Clipboard is empty.",
+    "clipboardFail": "Cannot read clipboard. Paste manually.",
+    "noJobs": "No download jobs yet",
+    "noJobsDesc": "Paste a board or Pinterest profile URL above to start your first batch download.",
+    "noPins": "No pins",
+    "noPinsDesc": "Pins will appear here once they finish downloading."
+  },
+  "mediaDownloader": {
+    "title": "Media Downloader",
+    "description": "Paste a link from YouTube, Instagram, TikTok, Twitter, Facebook, or Vimeo. We handle the format — you get the file.",
+    "urlPlaceholder": "https://youtube.com/watch?v=... or https://instagram.com/p/...",
+    "startSuccess": "Download started — check your Downloads folder.",
+    "pasteSuccess": "URL pasted from clipboard.",
+    "clipboardEmpty": "Clipboard is empty.",
+    "clipboardFail": "Cannot read clipboard. Paste manually.",
+    "noDownloads": "No downloads yet",
+    "noDownloadsDesc": "Paste a link above and click Download to get started. This list only persists for the current browser session.",
+    "sessionHistory": "Session history",
+    "quality_best": "Best Quality",
+    "quality_1080p": "1080p (Full HD)",
+    "quality_720p": "720p (HD)",
+    "quality_480p": "480p",
+    "quality_360p": "360p",
+    "quality_worst": "Lowest Quality",
+    "quality_audio": "Audio Only (MP3)",
+    "statusDone": "Done",
+    "statusFailed": "Failed"
+  },
+  "shotLists": {
+    "title": "Shot Lists",
+    "description": "Shot plans for film production. Open a shot list to organize shots by scene.",
+    "errorTitle": "Cannot load shot lists",
+    "errorGeneric": "An error occurred",
+    "retry": "Try Again",
+    "searchPlaceholder": "Search name, description, or project...",
+    "projectPlaceholder": "Project",
+    "noMatch": "No matching shot lists",
+    "noShotLists": "No shot lists yet",
+    "createSuccess": "Shot list created",
+    "deleteSuccess": "Shot list deleted",
+    "allProjects": "All Projects",
+    "reset": "Reset",
+    "noMatchDesc": "Try adjusting your search or project filter.",
+    "noShotListsDesc": "Create your first shot list to get started.",
+    "createFailed": "Failed to create shot list",
+    "deleteFailed": "Failed to delete shot list",
+    "confirmDelete": "Delete shot list “{{name}}”? All scenes and shots inside will be permanently deleted.",
+    "colName": "Name",
+    "colProject": "Project",
+    "colUpdated": "Last Updated",
+    "shotListActions": "Shot list actions",
+    "createTitle": "New Shot List",
+    "createDesc": "Create a new shot list for your production.",
+    "fieldName": "Name",
+    "fieldProject": "Project (optional)",
+    "fieldDescription": "Description",
+    "namePlaceholder": "Shot list name",
+    "noProject": "No description",
+    "descriptionPlaceholder": "Brief description (optional)"
+  },
+  "projectCalendar": {
+    "title": "Project Calendar",
+    "noUpcomingAgenda": "No upcoming agenda",
+    "noUpcomingAgendaDesc": "No events in the next 14 days.",
+    "projectIdRequired": "Project ID required",
+    "projectIdRequiredDesc": "Open this page from the project list.",
+    "breadcrumb": {
+      "projects": "Projects",
+      "calendar": "Calendar"
+    },
+    "openContentCalendar": "Content Calendar",
+    "addEvent": "Add Event",
+    "kpi": {
+      "totalEvents": "Total Events",
+      "totalEventsSub": "in this project",
+      "upcoming": "Upcoming",
+      "upcomingSub": "in the next 14 days",
+      "overdueTasks": "Overdue Tasks",
+      "overdueTasksSub": "need attention",
+      "milestones": "Milestones",
+      "milestonesSub": "tracked"
+    },
+    "today": "Today",
+    "selectedDay": "Selected Day",
+    "noEventsOnDay": "No events on this day.",
+    "upcoming14Days": "Next 14 Days",
+    "upcomingAgenda": "Upcoming Agenda",
+    "overdue": "Overdue",
+    "addEventOnDay": "Add event on this day",
+    "moreItems": "+{{count}} more",
+    "confirmDeleteEvent": "Delete this event?",
+    "eventCreated": "Event created successfully.",
+    "eventDeleted": "Event deleted.",
+    "noEventsInPeriod": "No upcoming events.",
+    "emptyState": {
+      "title": "Project ID required",
+      "desc": "Open this page from the project list."
+    },
+    "eventDetail": {
+      "description": "Description",
+      "location": "Location",
+      "start": "Start",
+      "end": "End",
+      "assignedTo": "Assigned to",
+      "deleteEvent": "Delete Event"
+    },
+    "createEvent": {
+      "title": "Create New Event",
+      "desc": "Add a new event to the project calendar.",
+      "titleLabel": "Event Title",
+      "titlePlaceholder": "e.g. Client presentation",
+      "descLabel": "Description",
+      "locationLabel": "Location",
+      "startLabel": "Start Date & Time",
+      "endLabel": "End Date & Time",
+      "assignLabel": "Assign to",
+      "cancel": "Cancel",
+      "save": "Save Event"
+    }
+  },
+  "mediaCollaboration": {
+    "title": "Media Collaboration",
+    "description": "A shared space for production video and photo — comment, approve, and deliver to clients.",
+    "errorTitle": "Cannot load media projects",
+    "errorGeneric": "An error occurred.",
+    "retry": "Try Again",
+    "searchPlaceholder": "Search project name, description, or creator...",
+    "sortPlaceholder": "Sort by"
+  },
+  "decks": {
+    "title": "Presentation Decks",
+    "description": "Slide collections for pitches, moodboards, and storyboards. Open to edit each slide's content.",
+    "errorTitle": "Cannot load decks",
+    "errorGeneric": "An error occurred",
+    "retry": "Try Again",
+    "noMatch": "No matching decks",
+    "noDecks": "No decks yet",
+    "createSuccess": "Deck created",
+    "deleteSuccess": "Deck deleted",
+    "duplicateSuccess": "Deck duplicated",
+    "editor": {
+      "title": "Deck Editor",
+      "description": "Arrange presentation slides: title, content, image, and layout. Reorder via up/down buttons.",
+      "notFoundTitle": "Deck not found",
+      "detailSectionTitle": "Deck Details",
+      "detailSectionDesc": "The title appears in the deck list. Status controls visibility and the PUBLISHED badge.",
+      "slidesSectionTitle": "Slides ({{count}})",
+      "slidesSectionDesc": "Organize content for each slide. Layout is a reference pattern — it can be changed at any time."
+    },
+    "newDeck": "New Deck",
+    "allStatuses": "All Statuses",
+    "searchPlaceholder": "Search title...",
+    "statusDraft": "Draft",
+    "statusPublished": "Published",
+    "statusArchived": "Archived",
+    "noMatchDesc": "Try a different search or status filter.",
+    "noDecksDesc": "Create your first deck to get started.",
+    "createFailed": "Failed to create deck",
+    "deleteFailed": "Failed to delete deck",
+    "duplicateFailed": "Failed to duplicate deck",
+    "confirmDelete": "Delete deck “{{title}}”? This action cannot be undone.",
+    "openDeck": "Open {{title}}",
+    "public": "Public",
+    "noDescription": "No description",
+    "deckActions": "Deck actions",
+    "duplicate": "Duplicate",
+    "fieldTitle": "Title",
+    "fieldDescription": "Description",
+    "fieldCanvasSize": "Canvas Size",
+    "pixels": "{{w}} × {{h}} pixels",
+    "preset169hd": "16:9 HD (1920×1080)",
+    "preset169sd": "16:9 SD (1280×720)",
+    "preset11square": "1:1 Square (1080×1080)",
+    "preset916vertical": "9:16 Vertical (1080×1920)",
+    "createSubmit": "Create Deck",
+    "newDeckTitle": "New Deck",
+    "newDeckDesc": "Create a new presentation deck."
+  },
+  "incomeStatement": {
+    "title": "Income Statement",
+    "subtitle": "Revenue minus expenses — period to date, from gross revenue to net profit.",
+    "error": {
+      "title": "Cannot load report"
+    }
+  },
+  "settingsPage": {
+    "title": "Settings",
+    "subtitle": "Manage your personal account, company identity, and system settings.",
+    "footer": {
+      "unsaved": "You have unsaved changes.",
+      "saved": "All changes saved.",
+      "saving": "Saving…"
+    },
+    "nav": {
+      "profile": "Profile",
+      "profileDesc": "Your personal account information",
+      "security": "Security",
+      "securityDesc": "Password and authentication",
+      "company": "Company",
+      "companyDesc": "Business identity and contact",
+      "banks": "Bank Accounts",
+      "banksDesc": "Payment destinations on invoices",
+      "invoicing": "Invoicing & Numbering",
+      "invoicingDesc": "Terms, prefixes, and Materai",
+      "notifications": "Notifications",
+      "notificationsDesc": "Email and push",
+      "backup": "Data Backup",
+      "backupDesc": "Auto backup and manual download"
+    },
+    "profile": {
+      "title": "Profile",
+      "desc": "Your account name and display preferences.",
+      "saveSuccess": "Profile saved.",
+      "saveError": "Failed to save profile.",
+      "fullName": "Full Name",
+      "email": "Email",
+      "timezone": "Timezone",
+      "language": "Language",
+      "saveLabel": "Save Profile"
+    },
+    "security": {
+      "title": "Security",
+      "desc": "Change your account password. Use a mix of uppercase, lowercase, and numbers.",
+      "saveSuccess": "Password changed successfully.",
+      "saveError": "Failed to change password.",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "saveLabel": "Change Password"
+    },
+    "company": {
+      "title": "Company",
+      "desc": "Official identity shown on invoices, receipts, and tax documents.",
+      "saveSuccess": "Company information saved.",
+      "saveError": "Failed to save company information.",
+      "companyName": "Company Name",
+      "npwp": "NPWP",
+      "address": "Address",
+      "phone": "Phone",
+      "email": "Email",
+      "website": "Website",
+      "currency": "Currency",
+      "saveLabel": "Save Company"
+    },
+    "banks": {
+      "title": "Bank Accounts",
+      "desc": "Up to three bank accounts printed in the invoice footer as payment destinations.",
+      "saveSuccess": "Bank accounts saved.",
+      "saveError": "Failed to save bank accounts.",
+      "holderName": "Account Holder Name",
+      "holderHint": "Leave blank to use the company name.",
+      "slotLabel": "Account {{n}}",
+      "bankName": "Bank Name",
+      "accountNumber": "Account Number",
+      "saveLabel": "Save Bank Accounts"
+    },
+    "invoicing": {
+      "title": "Invoicing & Numbering",
+      "desc": "Default payment terms, numbering prefixes, and Materai threshold.",
+      "saveSuccess": "Invoice settings saved.",
+      "saveError": "Failed to save invoice settings.",
+      "defaultTerms": "Default Payment Terms",
+      "net7": "NET 7 days",
+      "net14": "NET 14 days",
+      "net30": "NET 30 days",
+      "net60": "NET 60 days",
+      "materaiThreshold": "Materai Threshold (IDR)",
+      "materaiThresholdHint": "Invoices above this amount will show a Materai reminder.",
+      "invoicePrefix": "Invoice Prefix",
+      "invoicePrefixHint": "Example: INV- becomes INV-2026-001",
+      "quotationPrefix": "Quotation Prefix",
+      "quotationPrefixHint": "Example: QT- becomes QT-2026-001",
+      "autoMateraiReminder": "Auto Materai Reminder",
+      "autoMateraiReminderHint": "Show a reminder when invoices exceed the threshold.",
+      "saveLabel": "Save Invoicing"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "desc": "Choose how the system contacts you for important events.",
+      "saveSuccess": "Notification preferences saved.",
+      "saveError": "Failed to save notifications.",
+      "emailLabel": "Email Notifications",
+      "emailDesc": "Overdue invoices, incoming payments, daily digest.",
+      "pushLabel": "Push Notifications",
+      "pushDesc": "Instant browser alerts while you are online.",
+      "saveLabel": "Save Notifications"
+    },
+    "backup": {
+      "title": "Data Backup",
+      "desc": "Schedule automatic backups, or download a manual database backup.",
+      "saveSuccess": "Backup settings saved.",
+      "saveError": "Failed to save backup settings.",
+      "downloadSuccess": "Database backup downloaded successfully.",
+      "downloadError": "Failed to download backup.",
+      "autoBackup": "Automatic Backup",
+      "autoBackupOnHint": "System will schedule backups automatically.",
+      "autoBackupOffHint": "Manual backup only.",
+      "frequency": "Frequency",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "backupTime": "Backup Time",
+      "backupTimeHint": "Timezone follows server (WIB).",
+      "manualDownload": "Manual Download",
+      "preparing": "Preparing...",
+      "downloadSql": "Download .sql",
+      "downloadDesc": "Full database backup as an SQL file.",
+      "saveLabel": "Save Backup Settings"
+    }
+  },
+  "cashBankBalance": {
+    "pageTitle": "Cash & Bank Balance",
+    "pageDesc": "Summary of cash and bank positions per period, automatically calculated from journal entries.",
+    "periodCount": "periods",
+    "actions": "Actions"
+  },
+  "bankTransfers": {
+    "actions": "Actions",
+    "methodPlaceholder": "Method"
+  },
+  "expensesPage": {
+    "title": "Expenses",
+    "subtitle": "Track business spending with automatic PPN and PPh tax calculations.",
+    "categories": "Categories",
+    "new": "New Expense",
+    "retry": "Try Again",
+    "expenseActions": "Expense actions",
+    "error": {
+      "title": "Cannot load expenses",
+      "generic": "An error occurred"
+    },
+    "kpi": {
+      "thisMonth": "This Month",
+      "thisMonthSub": "expenses this month",
+      "total": "Total (Filtered)",
+      "totalSub": "matching active filter",
+      "ppn": "Input VAT",
+      "ppnSub": "creditable input tax",
+      "topCategory": "Top Category",
+      "noData": "no data yet"
+    },
+    "search": {
+      "placeholder": "Search by number, vendor, or description..."
+    },
+    "filter": {
+      "category": "Category",
+      "allCategories": "All Categories",
+      "status": "Status",
+      "allStatuses": "All Statuses",
+      "payment": "Payment",
+      "allPayments": "All Payments",
+      "range": "Range",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "reset": "Reset"
+    },
+    "empty": {
+      "filteredTitle": "No expenses match",
+      "title": "No expenses yet",
+      "filteredDesc": "Try adjusting or clearing your filters.",
+      "desc": "Start recording your first business expense.",
+      "resetFilters": "Reset Filters",
+      "newExpense": "New Expense"
+    },
+    "confirmDelete": "Delete expense {{number}}? This action cannot be undone.",
+    "col": {
+      "number": "Number",
+      "vendor": "Vendor / Description",
+      "category": "Category",
+      "amount": "Amount",
+      "date": "Date",
+      "status": "Status",
+      "actions": "Actions"
+    }
+  },
+  "expenseDetail": {
+    "error": {
+      "title": "Expense not found",
+      "desc": "This expense may have been deleted or you do not have access."
+    },
+    "backToList": "Back to Expenses",
+    "retry": "Try Again",
+    "confirmDelete": "Delete expense {{number}}? This action cannot be undone.",
+    "action": {
+      "approve": "Approve",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "moreActions": "More actions",
+    "subtitle": "Expense details, taxes, and related actions.",
+    "vendor": "Vendor",
+    "category": "Category",
+    "project": "Project",
+    "client": "Client",
+    "bkk": "BKK",
+    "total": "Total Expense",
+    "expenseDate": "Expense Date",
+    "paymentDate": "Payment Date",
+    "rejected": {
+      "title": "Expense rejected"
+    },
+    "description": "Description",
+    "noDescription": "No description",
+    "notes": "Notes",
+    "efaktur": "e-Faktur",
+    "nsfp": "NSFP",
+    "issued": "Issued",
+    "validated": "Validated",
+    "buktiPotong": "Withholding Receipt",
+    "history": "Approval History",
+    "taxBreakdown": "Tax Breakdown",
+    "gross": "Gross Amount",
+    "totalLine": "Total",
+    "netPayable": "Net Payable",
+    "noTax": "No tax components.",
+    "payment": "Payment",
+    "method": "Method",
+    "reference": "Ref.",
+    "paidOn": "Paid on",
+    "approvedBy": "Approved By"
+  },
+  "expenseForm": {
+    "section1": {
+      "eyebrow": "Details",
+      "title": "Expense Details",
+      "desc": "Core expense info: category, date, description, and gross amount before tax."
+    },
+    "section2": {
+      "eyebrow": "Vendor",
+      "title": "Payee",
+      "desc": "Vendor identity for tax documents and payment reconciliation."
+    },
+    "section3": {
+      "eyebrow": "Tax",
+      "title": "VAT & Income Tax",
+      "desc": "VAT and withholding tax are calculated automatically from the gross amount."
+    },
+    "section4": {
+      "eyebrow": "Context",
+      "title": "Project & Billing",
+      "desc": "Link the expense to a specific project. Enable billable if the cost will be passed through to the client."
+    },
+    "section5": {
+      "eyebrow": "e-Invoice",
+      "title": "Electronic Tax Invoice",
+      "desc": "Fill in if the vendor issues a tax invoice. Required to credit input VAT."
+    },
+    "section6": {
+      "eyebrow": "Notes",
+      "title": "Internal Notes",
+      "desc": "Additional context for the team — not shown to clients."
+    },
+    "section7": {
+      "eyebrow": "Status",
+      "title": "Approval Workflow",
+      "desc": "Status changes here only apply via the approval endpoint. Use dedicated actions on the detail page for full transitions.",
+      "hint": "Actual transitions (submit, approve, reject, mark paid) are performed from the detail page."
+    },
+    "summary": {
+      "title": "Summary",
+      "gross": "Gross",
+      "withheld": "PPh Withheld",
+      "total": "Total Expense",
+      "netPayable": "Net Payable"
+    },
+    "compliance": {
+      "title": "Compliance Note",
+      "ppn": "Vendor must issue a {{rate}}% tax invoice for input VAT to be creditable.",
+      "pph": "Issue a withholding receipt (Bukti Potong) and remit PPh to the tax authority on schedule."
+    },
+    "field": {
+      "category": "Expense Category",
+      "categoryPlaceholder": "Select expense category",
+      "date": "Expense Date",
+      "datePlaceholder": "Select date",
+      "description": "Description",
+      "descriptionPlaceholder": "e.g. Office rent January 2025",
+      "grossAmount": "Gross Amount (IDR)",
+      "vendorName": "Vendor Name",
+      "vendorNPWP": "Vendor NPWP",
+      "vendorNPWPHint": "Optional. Format XX.XXX.XXX.X-XXX.XXX",
+      "vendorAddress": "Vendor Address",
+      "includePPN": "Include VAT",
+      "includePPNOn": "VAT {{rate}}% added to total",
+      "includePPNOff": "VAT not applied to this expense",
+      "luxuryGoods": "Luxury Goods",
+      "luxuryGoodsOn": "VAT rate 12% (PPnBM)",
+      "luxuryGoodsOff": "Effective VAT rate 11%",
+      "ppnCategory": "VAT Category",
+      "withholdingType": "Withholding Tax (PPh)",
+      "project": "Related Project",
+      "projectPlaceholder": "Optional — select related project",
+      "projectBillablePlaceholder": "Select billing project",
+      "projectHint": "Client will be auto-filled from the selected project.",
+      "noProject": "No project",
+      "billable": "Billable to Client",
+      "billableOn": "Cost will appear as a line item on the project invoice",
+      "billableOff": "Internal cost — not billed to client",
+      "nsfp": "Tax Invoice Serial Number (NSFP)",
+      "nsfpHint": "Format XXX.XXX-XX.XXXXXXXX",
+      "eFakturStatus": "e-Invoice Status",
+      "approvalStatus": "Approval Status",
+      "notesPlaceholder": "e.g. duplicate invoice, requires finance manager approval..."
+    },
+    "noCategories": "No expense categories yet",
+    "submitNote": "Save as draft to review later, or submit immediately for approval.",
+    "submitting": "Submitting...",
+    "saveAndSubmit": "Save & Submit for Approval",
+    "bottomBar": {
+      "createHint": "Expense will be saved as DRAFT. Fields marked * are required.",
+      "editHint": "Changes are applied when you click \"Save\"."
+    },
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save"
+  },
+  "expenseCreate": {
+    "success": "Expense {{n}} created successfully.",
+    "error": "Failed to create expense. Please try again.",
+    "submitWarn": "Expense saved but approval submission failed: {{m}}",
+    "successSubmitted": "Expense {{n}} created and submitted.",
+    "backToList": "Back to Expenses",
+    "title": "New Expense",
+    "subtitle": "Record expenses with automatic PPN and PPh calculations per Indonesian standards.",
+    "listLabel": "Expenses",
+    "crumb": "New",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save"
+  },
+  "expenseEdit": {
+    "success": "Changes for {{n}} saved.",
+    "error": "Failed to save changes. Please try again.",
+    "notFoundTitle": "Expense not found",
+    "notFound": "Not found",
+    "notFoundDesc": "The expense you are trying to edit does not exist or has been deleted.",
+    "retry": "Try Again",
+    "backToList": "Back to List",
+    "backToDetail": "Back to Detail",
+    "title": "Edit Expense",
+    "subtitle": "Editing {{n}} — changes are saved to the expense record.",
+    "listLabel": "Expenses",
+    "crumb": "Edit",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save"
+  },
+  "expenseCategories": {
+    "title": "Expense Categories",
+    "subtitle": "Manage expense categories and Indonesian PSAK account code mappings.",
+    "add": "Add Category",
+    "backToList": "Back to Expenses",
+    "retry": "Try Again",
+    "error": {
+      "title": "Cannot load categories",
+      "generic": "An error occurred"
+    },
+    "search": {
+      "placeholder": "Search by code, account, or name..."
+    },
+    "filter": {
+      "class": "Class",
+      "allClasses": "All Classes",
+      "reset": "Reset"
+    },
+    "empty": {
+      "filteredTitle": "No categories match",
+      "title": "No categories yet",
+      "filteredDesc": "Try adjusting or clearing your filters.",
+      "desc": "Create your first category to group expenses.",
+      "resetFilters": "Reset Filters"
+    },
+    "validation": {
+      "required": "Code, Account Code, and Name are required."
+    },
+    "confirmDelete": "Delete category \"{{name}}\"? Only categories not used by any expense can be deleted.",
+    "dialog": {
+      "editTitle": "Edit Category",
+      "createTitle": "Add Category",
+      "desc": "Categories map to PSAK account codes and Indonesian tax defaults."
+    },
+    "section": {
+      "identity": "Identity",
+      "classification": "Classification",
+      "withholding": "Withholding Tax (PPh)",
+      "flags": "Settings"
+    },
+    "field": {
+      "code": "Category Code",
+      "account": "PSAK Account Code",
+      "name": "Name (English)",
+      "nameId": "Name (Bahasa Indonesia)",
+      "description": "Description (English)",
+      "descriptionId": "Description (Bahasa Indonesia)",
+      "class": "Expense Class",
+      "ppnCategory": "Default VAT Category",
+      "pphType": "Default PPh Type",
+      "pphRate": "PPh Rate (%)",
+      "requiresEfaktur": "Requires e-Faktur",
+      "requiresEfakturHint": "Expenses in this category must include an e-Faktur NSFP.",
+      "isBillable": "Billable to Client",
+      "isBillableHint": "Expenses in this category can be passed through to client invoices.",
+      "isActive": "Active",
+      "isActiveHint": "Inactive categories are retained but hidden when creating new expenses."
+    },
+    "cancel": "Cancel",
+    "action": {
+      "update": "Save Changes",
+      "create": "Create Category"
+    },
+    "ariaEdit": "Edit category {{name}}",
+    "ariaDelete": "Delete category {{name}}",
+    "inactive": "Inactive",
+    "eFakturRequired": "e-Faktur required"
+  },
+  "projectDetail": {
+    "statusUpdated": "Project status updated.",
+    "statusFailed": "Failed to update status.",
+    "duplicated": "Project duplicated: {{n}}",
+    "duplicateFailed": "Failed to duplicate project.",
+    "deleted": "Project deleted.",
+    "deleteFailed": "Failed to delete project.",
+    "loading": "Loading...",
+    "recordCount": "{{count}} records",
+    "error": {
+      "title": "Project not found",
+      "desc": "This project may have been deleted or you do not have access."
+    },
+    "backToList": "Back to Projects",
+    "retry": "Try Again",
+    "confirmDelete": "Delete project {{number}}? This action cannot be undone.",
+    "subtitle": "Project details, budget, and related history.",
+    "edit": "Edit",
+    "moreActions": "More actions",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "action": {
+      "start": "Start Project",
+      "complete": "Complete",
+      "hold": "Put on Hold",
+      "delete": "Delete"
+    },
+    "client": "Client",
+    "type": "Project Type",
+    "scope": "Scope of Work",
+    "budget": "Budget",
+    "startDate": "Start",
+    "endDate": "End",
+    "kpi": {
+      "invoiced": "Total Invoiced",
+      "invoicedSub": "across all invoices",
+      "paid": "Total Received",
+      "paidSub": "payments received",
+      "expenses": "Total Expenses",
+      "expensesSub": "related costs",
+      "margin": "Margin",
+      "marginSub": "estimated net profit",
+      "marginLoss": "estimated loss"
+    },
+    "invoicesSection": "Related Invoices",
+    "noInvoices": "No invoices yet",
+    "noInvoicesDesc": "No invoices have been created for this project.",
+    "quotationsSection": "Related Quotations",
+    "noQuotations": "No quotations yet",
+    "noQuotationsDesc": "No quotations have been created for this project.",
+    "expensesSection": "Related Expenses",
+    "noExpenses": "No expenses yet",
+    "noExpensesDesc": "No expenses have been recorded for this project.",
+    "milestonesSection": "Project Milestones",
+    "col": {
+      "number": "Number",
+      "issued": "Issued",
+      "dueDate": "Due Date",
+      "amount": "Amount",
+      "status": "Status",
+      "date": "Date",
+      "validUntil": "Valid Until",
+      "value": "Value",
+      "description": "Description"
+    }
+  },
+  "projectForm": {
+    "identity": {
+      "title": "Identity",
+      "desc": "Short description and scope to be printed on documents."
+    },
+    "description": "Project Description",
+    "descriptionPh": "Summary of project purpose — what is being made, for whom, and why.",
+    "output": "Output",
+    "outputHint": "Final deliverable, e.g. video, campaign, website",
+    "scope": "Scope of Work",
+    "scopeHint": "Optional. Detail tasks, deliverables, revisions, timeline.",
+    "scopePh": "Scope placeholder",
+    "classification": {
+      "title": "Client & Type",
+      "desc": "Client becomes the project owner; type determines the numbering prefix."
+    },
+    "client": "Client",
+    "clientPh": "Select client",
+    "noClients": "No clients registered yet.",
+    "type": "Project Type",
+    "typePh": "Select project type",
+    "noTypes": "No active project types.",
+    "status": {
+      "planning": "Planning",
+      "inProgress": "In Progress",
+      "onHold": "On Hold",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "statusHint": "Status affects invoice visibility and workflow.",
+    "timeline": {
+      "title": "Dates",
+      "desc": "Planned project period. Can be updated at any time."
+    },
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "pickDate": "Select date",
+    "durationLabel": "Planned duration",
+    "durationDays": "{{count}} days",
+    "products": {
+      "title": "Products & Services",
+      "desc": "Billable components. Total automatically becomes the budget estimate."
+    },
+    "col": {
+      "item": "Item & Description",
+      "qty": "Qty",
+      "price": "Price",
+      "subtotal": "Subtotal"
+    },
+    "itemNamePh": "Item name",
+    "itemDescPh": "Short description (printed on document)",
+    "removeItem": "Remove row",
+    "addItem": "Add Row",
+    "estimatedTotal": "Estimated Total",
+    "budgetNote": "Project budget estimate is calculated from the subtotals above and saved when the project is created.",
+    "requiredNote": "Fields marked * are required.",
+    "editNote": "Changes are saved when you click \"Save\".",
+    "saving": "Saving...",
+    "save": "Save",
+    "loading": "Loading..."
+  },
+  "projectCreate": {
+    "success": "Project \"{{name}}\" created successfully.",
+    "error": "Failed to create project. Please try again.",
+    "title": "New Project",
+    "subtitle": "Set up a new project with client, type, and billable product details.",
+    "listLabel": "Projects",
+    "crumb": "New",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save"
+  },
+  "projectEdit": {
+    "success": "Changes for \"{{name}}\" saved.",
+    "error": "Failed to save changes. Please try again.",
+    "notFoundTitle": "Project not found",
+    "notFound": "Not found",
+    "notFoundDesc": "The project you are trying to edit does not exist or has been deleted.",
+    "retry": "Try Again",
+    "backToList": "Back to Projects",
+    "loading": "Loading...",
+    "title": "Edit Project",
+    "subtitle": "Update {{number}}",
+    "subtitleWithClient": "Editing {{number}} for {{client}}",
+    "listLabel": "Projects",
+    "crumb": "Edit",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save"
+  },
+  "invoiceDetail": {
+    "error": {
+      "title": "Invoice not found",
+      "desc": "This invoice may have been deleted or you do not have access."
+    },
+    "backToList": "Back to Invoices",
+    "retry": "Try Again",
+    "confirmDelete": "Delete invoice {{number}}? This action cannot be undone.",
+    "action": {
+      "markPaid": "Mark as Paid",
+      "send": "Send",
+      "download": "Download PDF",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "moreActions": "More actions",
+    "subtitle": "Invoice details, payment history, and related actions.",
+    "billedTo": "Billed To",
+    "project": "Project",
+    "quotation": "From Quotation",
+    "totalDue": "Total Due",
+    "issued": "Issued",
+    "due": "Due Date",
+    "materai": {
+      "title": "Materai required",
+      "desc": "This invoice exceeds Rp 5,000,000 and requires a Rp 10,000 stamp duty. Affix the materai to the printed copy before sending to the client."
+    },
+    "items": "Line Items",
+    "col": {
+      "desc": "Description",
+      "qty": "Qty",
+      "price": "Price",
+      "total": "Total"
+    },
+    "lumpSum": "Project fee",
+    "paymentInfo": "Payment Information",
+    "terms": "Terms & Conditions",
+    "summary": "Summary",
+    "subtotal": "Subtotal",
+    "tax": "VAT",
+    "materaiLine": "Materai",
+    "materaiApplied": "Applied",
+    "materaiPending": "Not applied",
+    "grandTotal": "Total",
+    "payment": "Payment",
+    "paid": "Paid",
+    "remaining": "Remaining",
+    "paidOn": "Paid on",
+    "paymentCount": "Transactions",
+    "milestone": "Payment Milestone",
+    "ofTotal": "of total"
+  },
+  "invoiceCreate": {
+    "backToList": "Back to Invoices",
+    "title": "New Invoice",
+    "desc": "Create a new invoice for a client — select project, fill in details, and save as draft."
+  },
+  "invoiceEdit": {
+    "notFoundTitle": "Invoice not found",
+    "notFoundDesc": "This invoice may have been deleted or you do not have access.",
+    "backToList": "Back to Invoices",
+    "retry": "Try Again",
+    "backToInvoice": "Back to Invoice",
+    "title": "Edit Invoice",
+    "desc": "Editing {{n}} — changes are saved to the invoice record.",
+    "descPlain": "Changes are saved to the invoice record."
+  },
+  "reportsPage": {
+    "title": "Reports",
+    "subtitle": "Financial analysis, business performance, and your saved custom reports.",
+    "exportPdf": "Export PDF",
+    "exportSuccess": "Summary report downloaded successfully.",
+    "exportFailed": "Failed to download report.",
+    "new": "New Report",
+    "confirmDelete": "Delete report? This action cannot be undone.",
+    "deleted": "Report deleted.",
+    "deleteFailed": "Failed to delete report.",
+    "error": {
+      "title": "Unable to load reports",
+      "generic": "An error occurred"
+    },
+    "kpi": {
+      "total": "Total Reports",
+      "totalSub": "saved in the system",
+      "sent": "Sent",
+      "sentSub": "delivered to clients",
+      "draft": "Draft",
+      "draftSub": "still in progress",
+      "sections": "Total Sections",
+      "sectionsSub": "across all reports"
+    },
+    "analytics": {
+      "title": "System Analytics Reports",
+      "subtitle": "Four core analytic surfaces, always available and up to date."
+    },
+    "canonical": {
+      "revenue": {
+        "title": "Revenue Report",
+        "desc": "Monthly and cumulative revenue by client, project, and category."
+      },
+      "payment": {
+        "title": "Payment Report",
+        "desc": "Payment status breakdown, aging analysis, and collection trends."
+      },
+      "clients": {
+        "title": "Client Report",
+        "desc": "Top clients by revenue, activity, and outstanding balances."
+      },
+      "projects": {
+        "title": "Project Report",
+        "desc": "Project performance, billing efficiency, and deadline adherence."
+      }
+    },
+    "saved": {
+      "title": "Saved Reports",
+      "count": "{{count}} reports"
+    },
+    "search": {
+      "placeholder": "Search by title, project, or client…"
+    },
+    "filter": {
+      "status": "Status",
+      "allStatuses": "All Statuses"
+    },
+    "empty": {
+      "title": "No saved reports yet",
+      "desc": "Build your first custom report by combining CSV data and visualizations.",
+      "filtered": {
+        "title": "No matching reports",
+        "desc": "Try adjusting or clearing your filters."
+      }
+    },
+    "col": {
+      "title": "Title",
+      "project": "Project",
+      "period": "Period",
+      "sections": "Sections",
+      "status": "Status",
+      "updatedAt": "Updated",
+      "actions": "Actions"
+    },
+    "reportActions": "Report actions",
+    "downloadPdf": "Download PDF"
+  },
+  "reportDetail": {
+    "subtitle": "Report details, sections, and associated visualizations.",
+    "backToList": "Back to Reports",
+    "notFound": {
+      "title": "Report not found",
+      "desc": "This report may have been deleted or you may not have access."
+    },
+    "confirmDelete": "Delete report? This action cannot be undone.",
+    "deleted": "Report deleted.",
+    "deleteFailed": "Failed to delete report.",
+    "statusUpdated": "Report status updated.",
+    "statusFailed": "Failed to update status.",
+    "pdfGenerated": "PDF generated and downloaded.",
+    "pdfFailed": "Failed to generate PDF.",
+    "pdfPublished": "PDF Published",
+    "refresh": "Refresh",
+    "generatePdf": "Generate PDF",
+    "downloadPdf": "Download PDF",
+    "markComplete": "Mark as Complete",
+    "markSent": "Mark as Sent",
+    "period": "Period",
+    "project": "Project",
+    "updated": "Updated",
+    "kpi": {
+      "sections": "Total Sections",
+      "sectionsSub": "data sources merged",
+      "visualizations": "Total Visualizations",
+      "visualizationsSub": "charts configured",
+      "rows": "Total Data Rows",
+      "rowsSub": "across all CSVs"
+    },
+    "noSections": {
+      "title": "No sections yet",
+      "desc": "Add CSV data sources and visualizations via the report editor."
+    },
+    "openBuilder": "Open Editor",
+    "noData": "No data",
+    "rows": "rows",
+    "metricCardMisconfigured": "metric_card configuration incomplete (valueKey missing).",
+    "noViz": "No visualizations in this section yet."
+  },
+  "reportBuilder": {
+    "createTitle": "New Report",
+    "editTitle": "Edit Report",
+    "createSubtitle": "Start by defining the report identity, then add sections.",
+    "editSubtitle": "Add data sections and configure visualizations.",
+    "backToList": "Back to Reports",
+    "backToReport": "Back to Report",
+    "saveAndContinue": "Save & Continue",
+    "created": "Report created successfully.",
+    "createFailed": "Failed to create report.",
+    "identityReadOnly": "Report identity cannot be changed after creation.",
+    "titleRequired": "Title is required.",
+    "projectRequired": "Please select a project.",
+    "notFound": {
+      "title": "Report not found",
+      "desc": "This report may have been deleted."
+    },
+    "identity": {
+      "title": "Report Identity",
+      "editSubtitle": "Identity is locked after the report is created. Contact admin for structural changes.",
+      "createSubtitle": "Title, project, and reporting period. Locked after saving."
+    },
+    "field": {
+      "title": "Report Title",
+      "titlePlaceholder": "e.g. Social Media Report July 2025",
+      "description": "Description",
+      "descriptionPlaceholder": "Optional",
+      "project": "Project",
+      "projectPlaceholder": "Select project",
+      "month": "Month",
+      "year": "Year",
+      "sectionTitle": "Section Title",
+      "sectionTitlePlaceholder": "e.g. Instagram Performance",
+      "sectionDesc": "Description",
+      "sectionDescPlaceholder": "Optional",
+      "uploadCsv": "Choose CSV"
+    },
+    "sections": {
+      "title": "Data Sections",
+      "subtitle": "{{count}} sections — one CSV file per section"
+    },
+    "addSection": "Add Section",
+    "csvRequired": "Please select a CSV file first.",
+    "sectionTitleRequired": "Section title is required.",
+    "sectionAdded": "Section added successfully.",
+    "sectionAddFailed": "Failed to add section.",
+    "sectionRemoved": "Section removed.",
+    "sectionRemoveFailed": "Failed to remove section.",
+    "reorderFailed": "Failed to reorder sections.",
+    "confirmRemoveSection": "Remove this section?",
+    "noSections": {
+      "title": "No sections yet",
+      "desc": "Upload a CSV file above to create your first section."
+    },
+    "viz": {
+      "title": "Visualizations",
+      "configured": "charts configured",
+      "save": "Save",
+      "add": "Add Chart",
+      "empty": "No charts yet. Add your first chart.",
+      "newTitle": "New Chart",
+      "vizSaved": "Visualization saved.",
+      "vizFailed": "Failed to save visualization.",
+      "field": {
+        "title": "Title",
+        "type": "Chart Type",
+        "valueKey": "Value Column",
+        "aggregation": "Aggregation",
+        "precision": "Decimal Precision",
+        "nameKey": "Label Column",
+        "xAxis": "X Axis",
+        "yAxis": "Y Axis"
+      }
+    },
+    "rows": "rows",
+    "selectColumn": "Select column",
+    "desktopHint": "Best experience on desktop.",
+    "advancedDeferred": {
+      "title": "Advanced features deferred",
+      "body": "Drag-and-drop canvas editor, widget palette (Text/Metric/Image/Callout), freeform grid layout, and live preview are available in the classic editor. The v2 version focuses on the identity + CSV sections + form-configured visualizations flow."
+    }
+  },
+  "socialMediaReports": {
+    "title": "Social Media Reports",
+    "subtitle": "Cross-platform analytics, content performance, and saved client reports.",
+    "new": "New Report",
+    "confirmDelete": "Delete report? This action cannot be undone.",
+    "deleted": "Report deleted.",
+    "deleteFailed": "Failed to delete report.",
+    "error": {
+      "title": "Unable to load reports",
+      "generic": "An error occurred"
+    },
+    "kpi": {
+      "followers": "Total Followers",
+      "followersSub": "across all platforms",
+      "reach": "Reach",
+      "reachSub": "last 30 days",
+      "engagement": "Engagement Rate",
+      "engagementSub": "average across platforms",
+      "reports": "Saved Reports",
+      "reportsSub": "ready to share"
+    },
+    "platform": {
+      "title": "Per-Platform Breakdown",
+      "subtitle": "Performance by channel — followers, engagement, and reach.",
+      "followers": "Followers",
+      "engagement": "Engagement",
+      "reach": "Reach"
+    },
+    "engagementTrend": "Engagement Trend",
+    "last6Months": "Last six months",
+    "reachVolume": "Reach Volume",
+    "reachSubtitle": "Unique users per month",
+    "perClientReports": "Per-client reports",
+    "saved": {
+      "title": "Saved Client Reports",
+      "count": "{{count}} client reports"
+    },
+    "search": {
+      "placeholder": "Search by title, project, or client…"
+    },
+    "filter": {
+      "status": "Status",
+      "allStatuses": "All Statuses"
+    },
+    "empty": {
+      "title": "No client reports yet",
+      "desc": "Create your first social media report for a client.",
+      "filtered": {
+        "title": "No matching reports",
+        "desc": "Try adjusting or clearing your filters."
+      }
+    },
+    "col": {
+      "title": "Title",
+      "client": "Client",
+      "period": "Period",
+      "sections": "Sections",
+      "status": "Status",
+      "updatedAt": "Updated",
+      "actions": "Actions"
+    },
+    "reportActions": "Report actions"
+  },
+  "calendarPage": {
+    "title": "Calendar",
+    "subtitle": "Invoices, quotations, projects, and events shown on a monthly grid.",
+    "today": "Today",
+    "noItems": "No items this day.",
+    "selectedDay": "Selected Day",
+    "noEventsOnDay": "No events on this day.",
+    "upcoming14Days": "Next 14 Days",
+    "upcomingAgenda": "Upcoming Agenda",
+    "noUpcomingItems": "No upcoming items.",
+    "overdue": "Overdue",
+    "kind": {
+      "invoice": "Invoice",
+      "quotation": "Quotation",
+      "project": "Project",
+      "event": "Event"
+    }
+  },
+  "contentCalendar": {
+    "title": "Content Calendar",
+    "subtitle": "Plan and publish content across all platforms and clients.",
+    "addContentOnDay": "Add content on this day",
+    "moreItems": "+{{count}} more",
+    "contentActions": "Content actions",
+    "viewDetail": "View details",
+    "publish": "Publish",
+    "archive": "Archive",
+    "sheetTitle": "Content Detail",
+    "createdAt": "Created",
+    "publishedAt": "Published",
+    "publishFailed": "Publish failed — needs review",
+    "actionPublish": "Publish",
+    "actionArchive": "Archive",
+    "actionDelete": "Delete",
+    "createTitle": "Schedule New Content",
+    "createDesc": "Add a new content item to the calendar.",
+    "captionLabel": "Caption",
+    "captionPlaceholder": "Write your caption…",
+    "scheduleDateLabel": "Schedule Date",
+    "scheduleTimeLabel": "Time",
+    "platformLabel": "Platform",
+    "clientLabel": "Client",
+    "projectLabel": "Project",
+    "noneOption": "None",
+    "cancelButton": "Cancel",
+    "scheduleButton": "Schedule",
+    "saveDraftButton": "Save Draft"
+  },
+  "projectContentCalendar": {
+    "title": "Content Calendar",
+    "breadcrumb": {
+      "projects": "Projects",
+      "contentCalendar": "Content Calendar"
+    },
+    "openProjectCalendar": "Project Calendar",
+    "addContent": "Add Content",
+    "kpi": {
+      "totalContent": "Total Content",
+      "totalContentSub": "in this project",
+      "published": "Published",
+      "publishedSub": "successfully posted",
+      "scheduled": "Scheduled",
+      "scheduledSub": "awaiting publish",
+      "drafts": "Drafts",
+      "draftsSub": "in progress"
+    },
+    "view": {
+      "month": "Month",
+      "list": "List"
+    },
+    "search": {
+      "placeholder": "Search content…"
+    },
+    "filter": {
+      "status": "Status",
+      "allStatuses": "All Statuses",
+      "platform": "Platform",
+      "allPlatforms": "All Platforms"
+    },
+    "resetFilters": "Reset",
+    "empty": {
+      "filtered": {
+        "title": "No matching content",
+        "desc": "Try adjusting or clearing your filters."
+      },
+      "title": "No content yet",
+      "desc": "Schedule your first content item for this project."
+    },
+    "unscheduledDrafts": "Unscheduled Drafts",
+    "confirmDelete": "Delete this content item?",
+    "contentCreated": "Content scheduled.",
+    "contentDraftSaved": "Draft saved.",
+    "contentPublished": "Content published.",
+    "contentArchived": "Content archived.",
+    "contentDeleted": "Content deleted.",
+    "addContentOnDay": "Add content on this day",
+    "moreItems": "+{{count}} more",
+    "kebab": {
+      "viewDetail": "View details",
+      "publish": "Publish",
+      "archive": "Archive",
+      "delete": "Delete"
+    },
+    "detail": {
+      "sheetTitle": "Content Detail",
+      "platform": "Platform",
+      "files": "Files",
+      "createdAt": "Created",
+      "publishedAt": "Published",
+      "publishFailed": "Publish failed — needs review",
+      "actionPublish": "Publish",
+      "actionArchive": "Archive",
+      "actionDelete": "Delete"
+    },
+    "create": {
+      "title": "Schedule New Content",
+      "desc": "Add a new content item to the project calendar.",
+      "captionLabel": "Caption",
+      "captionPlaceholder": "Write your caption…",
+      "scheduleDateLabel": "Schedule Date",
+      "scheduleTimeLabel": "Time",
+      "platformLabel": "Platform",
+      "cancel": "Cancel",
+      "schedule": "Schedule",
+      "saveDraft": "Save Draft"
+    }
+  },
+  "deckEditor": {
+    "title": "Deck Editor",
+    "description": "Edit slides, status, and details for this presentation deck.",
+    "notFoundTitle": "Deck not found",
+    "notFoundDesc": "The deck you are looking for may have been deleted.",
+    "backToDecks": "Back to Decks",
+    "saveSuccess": "Deck changes saved",
+    "saveFailed": "Failed to save deck changes",
+    "eyebrowIdentity": "Identity",
+    "detailSectionTitle": "Deck Details",
+    "detailSectionDesc": "The title appears in the deck list. Status controls visibility.",
+    "fieldDeckTitle": "Deck Title",
+    "fieldDescription": "Description",
+    "fieldStatus": "Status",
+    "fieldProject": "Project",
+    "notLinked": "Not linked",
+    "eyebrowSlides": "Slides",
+    "slidesSectionTitle": "Slides ({{count}})",
+    "slidesSectionDesc": "Arrange content for each slide. Layout is a reference — the v1 renderer reads it.",
+    "noSlides": "No slides yet. Click “Add Slide” to get started.",
+    "addSlide": "Add Slide",
+    "slideIndex": "Slide {{index}}",
+    "fieldLayout": "Layout",
+    "fieldBgImage": "Background Image URL",
+    "fieldSpeakerNotes": "Speaker Notes",
+    "slideTitlePlaceholder": "Slide title",
+    "slideBodyPlaceholder": "Body / content text",
+    "speakerNotesPlaceholder": "Notes for the presenter (not shown to audience)…",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "removeSlide": "Remove slide",
+    "footnote": "Row-level changes auto-save on blur. Click “Save” to persist header fields.",
+    "statusDraft": "Draft",
+    "statusPublished": "Published",
+    "statusArchived": "Archived",
+    "layoutTitle": "Title",
+    "layoutTitleContent": "Title + Content",
+    "layoutImage": "Full Image",
+    "layoutBlank": "Blank",
+    "layoutQuote": "Quote",
+    "layoutSection": "Section Break"
+  },
+  "shotListEditor": {
+    "saveSuccess": "Shot list saved",
+    "saveFailed": "Failed to save shot list",
+    "notFoundTitle": "Shot list not found",
+    "notFoundDesc": "The shot list you are looking for may have been deleted.",
+    "backToShotLists": "Back to Shot Lists",
+    "eyebrowIdentity": "Identity",
+    "detailSectionTitle": "Shot List Details",
+    "detailSectionDesc": "Name and project link appear in the shot list library.",
+    "fieldName": "Name",
+    "fieldDescription": "Description",
+    "fieldProject": "Project",
+    "fieldShotCount": "Shot Count",
+    "namePlaceholder": "Shot list name",
+    "descriptionPlaceholder": "Brief description (optional)",
+    "eyebrowShots": "Shots",
+    "shotsSectionTitle": "Shot Rows ({{count}})",
+    "shotsSectionDesc": "Each row is one shot. Add as many as you need.",
+    "noShots": "No shots yet. Click “Add Shot” to get started.",
+    "colNumber": "#",
+    "colDescription": "Description",
+    "colType": "Type",
+    "colCameraMove": "Camera / Move",
+    "colDuration": "Duration",
+    "colNotes": "Notes",
+    "removeShot": "Remove shot",
+    "addShot": "Add Shot",
+    "footnote": "Changes auto-save on blur. Click “Save” to persist identity fields."
+  },
+  "callSheetEditor": {
+    "openInV1": "Open in v1 (PDF / auto-fill)",
+    "deferredTitle": "v2 — core features only.",
+    "deferredDesc": "Advanced features (PDF export, weather/hospital auto-fill, drag-to-reorder, FILM/PHOTO subsections like shot list, wardrobe, meal breaks) are available in the",
+    "classicEditor": "classic editor",
+    "dayOf": "Day {{day}} of {{total}}",
+    "day": "Day {{day}}",
+    "eyebrowIdentity": "Identity",
+    "sectionProduction": "Production Info",
+    "sectionProductionDesc": "Production name, director, producer, and call sheet type.",
+    "fieldProductionName": "Production Name",
+    "fieldType": "Type",
+    "fieldDirector": "Director",
+    "fieldProducer": "Producer",
+    "directorPlaceholder": "Director name",
+    "producerPlaceholder": "Producer name",
+    "eyebrowSchedule": "Core Schedule",
+    "sectionCallTimes": "Call Times",
+    "sectionCallTimesDesc": "Free-form format (e.g. \"7:00 AM\"). Displayed as-is in the v1 PDF.",
+    "fieldCrewCall": "Crew Call",
+    "fieldFirstShot": "First Shot",
+    "fieldLunch": "Lunch",
+    "fieldEstWrap": "Est. Wrap",
+    "fieldSunrise": "Sunrise",
+    "fieldSunset": "Sunset",
+    "eyebrowLocation": "Location & Weather",
+    "sectionLocation": "Shoot Location",
+    "sectionLocationDesc": "Address, parking, weather, and nearest hospital. Weather/hospital auto-fill is in the classic editor.",
+    "fieldLocationName": "Location Name",
+    "locationNamePlaceholder": "E.g. South Studio",
+    "fieldAddress": "Address",
+    "addressPlaceholder": "Jl. Sudirman No. 123, Jakarta",
+    "fieldParkingNotes": "Parking Notes",
+    "parkingPlaceholder": "Parking instructions for crew...",
+    "sectionWeather": "Weather",
+    "fieldWeatherHigh": "High (°F)",
+    "fieldWeatherLow": "Low (°F)",
+    "fieldWeatherCondition": "Condition",
+    "weatherConditionPlaceholder": "Sunny / Cloudy",
+    "sectionHospital": "Nearest Hospital",
+    "fieldHospitalName": "Name",
+    "hospitalNamePlaceholder": "Hospital name",
+    "fieldHospitalAddress": "Address",
+    "hospitalAddressPlaceholder": "Hospital address",
+    "fieldHospitalPhone": "Phone",
+    "hospitalPhonePlaceholder": "(021) ...",
+    "eyebrowRunOfShow": "Run of Show",
+    "sectionActivities": "Activity Schedule",
+    "sectionActivitiesDesc": "Activity lineup for shoot day. Use \"Add\" to save rows to the server.",
+    "noActivities": "No scheduled activities yet.",
+    "colType": "Type",
+    "colActivity": "Activity",
+    "colStart": "Start",
+    "colEnd": "End",
+    "colLocation": "Location",
+    "activityNamePlaceholder": "Activity name",
+    "startTimePlaceholder": "8:00 AM",
+    "endTimePlaceholder": "9:00 AM",
+    "locationOptionalPlaceholder": "Location (optional)",
+    "activityNameRequired": "Activity name is required.",
+    "addActivity": "Add Activity",
+    "activityGeneral": "General",
+    "activityPreparation": "Preparation",
+    "activityStandby": "Standby",
+    "activityBriefing": "Briefing",
+    "activityRehearsal": "Rehearsal",
+    "activityTransport": "Transport",
+    "activityTechnical": "Technical",
+    "activityCustom": "Custom",
+    "eyebrowProductionTeam": "Production Team",
+    "sectionCrew": "Crew",
+    "sectionCrewDesc": "Crew list with department, position, and call time.",
+    "noCrew": "No crew yet. Click \"Add Crew\" to get started.",
+    "colDept": "Dept.",
+    "colPosition": "Position",
+    "colName": "Name",
+    "colCall": "Call",
+    "colPhone": "Phone",
+    "deptPlaceholder": "Dept.",
+    "positionPlaceholder": "Position",
+    "namePlaceholder": "Name",
+    "crewCallTimePlaceholder": "7:00 AM",
+    "phonePlaceholder": "0812-...",
+    "crewRequiredFields": "Department, position, and name are required.",
+    "addCrew": "Add Crew",
+    "eyebrowTalent": "Talent",
+    "sectionTalentModel": "Talent / Model",
+    "sectionCast": "Cast",
+    "sectionTalentDesc": "Talent list with number, name, character, and call time.",
+    "noTalent": "No talent yet. Click \"Add Talent\" to get started.",
+    "colCastNumber": "#",
+    "colCharacter": "Character",
+    "colStatus": "Status",
+    "talentNamePlaceholder": "Talent name",
+    "characterPlaceholder": "Character / role",
+    "castCallTimePlaceholder": "8:00 AM",
+    "talentNameRequired": "Talent name is required.",
+    "addTalent": "Add Talent",
+    "castStatusPending": "Pending",
+    "castStatusConfirmed": "Confirmed",
+    "castStatusOnSet": "On Set",
+    "castStatusWrapped": "Wrapped",
+    "eyebrowNotes": "Notes",
+    "sectionNotes": "General & Production Notes",
+    "sectionNotesDesc": "These notes appear at the end of the call sheet.",
+    "fieldGeneralNotes": "General Notes",
+    "generalNotesPlaceholder": "General notes for crew...",
+    "fieldProductionNotes": "Production Notes",
+    "productionNotesPlaceholder": "Important production notes...",
+    "summaryTitle": "Summary",
+    "summaryNumber": "Number",
+    "summaryType": "Type",
+    "summaryDay": "Day",
+    "summaryCrew": "Crew",
+    "summaryTalent": "Talent",
+    "summaryActivities": "Activities",
+    "summaryUpdated": "Updated",
+    "locationMissingTitle": "Location not set",
+    "locationMissingDesc": "Add a shoot address so crew know where to go, and weather/hospital auto-fill (in v1) can run.",
+    "unsavedHeaderChanges": "Header changes not yet saved.",
+    "savedHeaderChanges": "All header changes saved. Crew/talent/schedule rows save individually.",
+    "saveHeader": "Save Header",
+    "saveRow": "Save row",
+    "removeRow": "Remove row"
+  },
+  "mediaCollab": {
+    "deleteSuccess": "Media project deleted.",
+    "deleteFailed": "Failed to delete project.",
+    "confirmDelete": "Delete project “{{name}}”? All assets inside will also be deleted.",
+    "newProject": "New Project",
+    "kpi": {
+      "totalProjects": "Total Projects",
+      "totalProjectsSub": "media workspaces",
+      "totalAssets": "Total Assets",
+      "totalAssetsSub": "videos & photos stored",
+      "publicLinks": "Public Links",
+      "publicLinksSub": "projects shared with clients",
+      "photos": "Photos",
+      "photosSub": "including RAW",
+      "videos": "Videos",
+      "videosSub": "clips & recordings",
+      "inReview": "In Review",
+      "inReviewSub": "awaiting approval"
+    },
+    "noMatch": "No matching projects",
+    "noProjects": "No media projects yet",
+    "noMatchDesc": "Try adjusting or clearing your filters.",
+    "noProjectsDesc": "Create your first media project to start collaborating.",
+    "projectActions": "Project actions",
+    "open": "Open",
+    "delete": "Delete",
+    "noDescription": "No description.",
+    "assets": "assets",
+    "collaborators": "collaborators",
+    "collections": "collections",
+    "by": "by",
+    "public": "Public",
+    "sort": {
+      "recent": "Recently updated",
+      "name": "Name (A → Z)",
+      "busiest": "Most assets"
+    },
+    "notFound": "Project not found",
+    "notFoundDesc": "This project may have been deleted or you do not have access.",
+    "back": "Back",
+    "backToCollab": "Back to Media Collaboration",
+    "defaultDesc": "Media collaboration space — upload, review, and approve assets with your team.",
+    "share": "Share",
+    "uploadAsset": "Upload Asset",
+    "owner": "Owner",
+    "client": "Client",
+    "linkedProject": "Linked Project",
+    "publicLink": "Public Link",
+    "active": "Active",
+    "inactive": "Inactive",
+    "viewCount": "{{n}} views",
+    "viewCountSoFar": "{{n}} views so far",
+    "shareSettings": "Share Settings",
+    "assetGallery": "Asset Gallery",
+    "assetCount": "{{filtered}} of {{total}} assets",
+    "collectionCount": "{{count}} collections",
+    "filterAll": "All",
+    "filterPhoto": "Photos",
+    "filterVideo": "Videos",
+    "noAssets": "No assets yet",
+    "noAssetsDesc": "Upload a photo or video to start collaborating with your team.",
+    "pickFile": "Pick File",
+    "noCollections": "No collections yet",
+    "noCollectionsDesc": "Create collections to group assets by theme, release, or client.",
+    "collectionAssetCount": "{{count}} assets",
+    "uploaded": "Uploaded",
+    "videoPreview": "Video preview",
+    "meta": {
+      "type": "Type",
+      "size": "Size",
+      "format": "Format",
+      "status": "Status",
+      "dimensions": "Dimensions",
+      "duration": "Duration",
+      "seconds": "sec"
+    },
+    "assetStatus": {
+      "DRAFT": "Draft",
+      "IN_REVIEW": "In Review",
+      "NEEDS_CHANGES": "Needs Changes",
+      "APPROVED": "Approved",
+      "ARCHIVED": "Archived"
+    },
+    "markReview": "Mark as Review",
+    "approve": "Approve",
+    "moreActions": "More actions",
+    "requestChanges": "Request Changes",
+    "archive": "Archive",
+    "confirmDeleteAsset": "Delete “{{name}}”?",
+    "comments": "Comments",
+    "noComments": "No comments yet.",
+    "anonymousAuthor": "Anonymous",
+    "resolved": "Resolved",
+    "commentPlaceholder": "Write a comment...",
+    "sendComment": "Send",
+    "shareProject": "Share Project",
+    "shareDesc": "Enable a public link so clients can view and comment without logging in.",
+    "anyoneWithLink": "Anyone with the link can view.",
+    "noPublicAccess": "No public access.",
+    "disable": "Disable",
+    "enable": "Enable",
+    "copy": "Copy",
+    "linkCopied": "Link copied to clipboard.",
+    "linkCopyFailed": "Failed to copy link.",
+    "assetDeleted": "Asset deleted.",
+    "assetDeleteFailed": "Failed to delete asset.",
+    "statusUpdated": "Asset status updated.",
+    "statusUpdateFailed": "Failed to update status.",
+    "shareEnabled": "Public link enabled.",
+    "shareEnableFailed": "Failed to enable public link.",
+    "shareDisabled": "Public link disabled.",
+    "shareDisableFailed": "Failed to disable public link.",
+    "commentSent": "Comment sent.",
+    "commentFailed": "Failed to send comment.",
+    "uploadFailed": "Failed to upload “{{name}}”: {{error}}"
   }
 }

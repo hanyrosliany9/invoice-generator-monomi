@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFieldArray, useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +12,8 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -30,16 +33,6 @@ import type { Shot } from '@/types/shotList';
 /*  Nav                                                                */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Schema — flattened, single-scene model for v2.                     */
 /*  Multi-scene authoring (scene grouping, INT/EXT/Day/Night metadata) */
@@ -48,7 +41,7 @@ const sidebarItems = [
 
 const shotRowSchema = z.object({
   id:             z.string().optional(),
-  shotNumber:     z.string().min(1, 'Wajib'),
+  shotNumber:     z.string().min(1, 'Required'),
   description:    z.string().optional(),
   shotType:       z.string().optional(), // e.g. CU / WS / MS
   cameraMovement: z.string().optional(), // e.g. Pan / Track / Static
@@ -58,7 +51,7 @@ const shotRowSchema = z.object({
 });
 
 const formSchema = z.object({
-  name:        z.string().min(2, 'Nama minimal 2 karakter'),
+  name:        z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().optional(),
   shots:       z.array(shotRowSchema),
 });
@@ -78,6 +71,7 @@ const flattenShots = (scenes: Array<{ shots?: Shot[] }> | undefined): Shot[] => 
 /* ------------------------------------------------------------------ */
 
 export default function ShotListEditorPageV2() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -179,10 +173,10 @@ export default function ShotListEditorPageV2() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shot-list', id] });
       queryClient.invalidateQueries({ queryKey: ['shot-lists'] });
-      toast.success('Shot list disimpan');
+      toast.success(t('shotListEditor.saveSuccess', 'Shot list saved'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Gagal menyimpan shot list');
+      toast.error(err.message || t('shotListEditor.saveFailed', 'Failed to save shot list'));
     },
   });
 
@@ -209,19 +203,19 @@ export default function ShotListEditorPageV2() {
         <PageContainer>
           <EmptyState
             icon={<Film className="h-12 w-12" />}
-            title="Shot list tidak ditemukan"
+            title={t('shotListEditor.notFoundTitle', 'Shot list not found')}
             description={
               error instanceof Error
                 ? error.message
-                : 'Shot list ini mungkin sudah dihapus atau Anda tidak memiliki akses.'
+                : t('shotListEditor.notFoundDesc', 'This shot list may have been deleted or you don\'t have access.')
             }
             action={
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => navigate('/v2/shot-lists')}>
                   <ArrowLeft className="h-4 w-4" />
-                  Kembali ke Shot List
+                  {t('shotListEditor.backToShotLists', 'Back to Shot Lists')}
                 </Button>
-                <Button size="sm" onClick={() => refetch()}>Coba Lagi</Button>
+                <Button size="sm" onClick={() => refetch()}>{t('shotLists.retry', 'Try Again')}</Button>
               </div>
             }
           />
@@ -243,18 +237,18 @@ export default function ShotListEditorPageV2() {
             className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Kembali ke Shot List
+            {t('shotListEditor.backToShotLists', 'Back to Shot Lists')}
           </Link>
         </div>
 
         <PageHeader
-          title="Editor Shot List"
-          description="Susun shot untuk proyek produksi. Setiap baris adalah satu pengambilan gambar."
+          title={t('shotListEditor.title', 'Shot List Editor')}
+          description={t('shotListEditor.description', 'Arrange shots for a production project. Each row is one take.')}
         />
 
         {/* Mobile notice — editing is best on tablet or desktop */}
         <div className="md:hidden mb-6 rounded-md border border-warning/30 bg-warning/[0.06] px-3.5 py-2.5 text-xs text-warning">
-          Editing pengalaman terbaik di tablet atau desktop. Beberapa kontrol mungkin tersembunyi pada layar kecil.
+          {t('common.mobileNotice', 'Best editing experience on tablet or desktop. Some controls may be hidden on small screens.')}
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -264,15 +258,15 @@ export default function ShotListEditorPageV2() {
               destructive edit deferred to the classic flow.
              ───────────────────────────────────────────────────────── */}
           <FormSection
-            eyebrow="Identitas"
-            title="Detail Shot List"
-            description="Nama dan deskripsi muncul di daftar. Proyek terkait tidak bisa diubah di sini."
+            eyebrow={t('shotListEditor.eyebrowIdentity', 'Identity')}
+            title={t('shotListEditor.detailSectionTitle', 'Shot List Details')}
+            description={t('shotListEditor.detailSectionDesc', 'Name and description appear in the list. The linked project cannot be changed here.')}
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-1.5 sm:col-span-2">
-                <FieldLabel required>Nama</FieldLabel>
+                <FieldLabel required>{t('shotListEditor.fieldName', 'Name')}</FieldLabel>
                 <Input
-                  placeholder="Misal: Hari 1 — Eksterior"
+                  placeholder={t('shotListEditor.namePlaceholder', 'E.g. Day 1 — Exterior')}
                   {...register('name')}
                   className="bg-bg-sunken border-border-default text-text-primary"
                   aria-invalid={!!errors.name}
@@ -281,24 +275,24 @@ export default function ShotListEditorPageV2() {
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
-                <FieldLabel>Deskripsi</FieldLabel>
+                <FieldLabel>{t('shotListEditor.fieldDescription', 'Description')}</FieldLabel>
                 <textarea
                   rows={2}
-                  placeholder="Konteks ringkas (opsional)"
+                  placeholder={t('shotListEditor.descriptionPlaceholder', 'Brief context (optional)')}
                   {...register('description')}
                   className="block w-full resize-y rounded-md border border-border-default bg-bg-sunken px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary leading-relaxed outline-none focus-visible:border-accent-navy-ring focus-visible:ring-[3px] focus-visible:ring-accent-navy-ring/40"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <FieldLabel>Proyek</FieldLabel>
+                <FieldLabel>{t('shotListEditor.fieldProject', 'Project')}</FieldLabel>
                 <div className="h-9 px-3 flex items-center rounded-md border border-border-subtle bg-bg-sunken/60 text-sm text-text-secondary">
                   {projectLabel}
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <FieldLabel>Jumlah Shot</FieldLabel>
+                <FieldLabel>{t('shotListEditor.fieldShotCount', 'Shot Count')}</FieldLabel>
                 <div className="h-9 px-3 flex items-center rounded-md border border-border-subtle bg-bg-sunken/60 text-sm font-mono tabular-nums text-text-secondary">
                   {fields.length}
                 </div>
@@ -313,26 +307,26 @@ export default function ShotListEditorPageV2() {
               InvoiceForm line items so the editorial voice stays one.
              ───────────────────────────────────────────────────────── */}
           <FormSection
-            eyebrow="Shot"
-            title={`Baris Shot (${fields.length})`}
-            description="Tambahkan shot satu per satu. Nomor shot bebas mengikuti konvensi tim Anda (mis. 1A, 12B)."
+            eyebrow={t('shotListEditor.eyebrowShots', 'Shots')}
+            title={t('shotListEditor.shotsSectionTitle', 'Shot Rows ({{count}})', { count: fields.length })}
+            description={t('shotListEditor.shotsSectionDesc', 'Add shots one by one. Shot numbers follow your team\'s convention (e.g. 1A, 12B).')}
           >
             {fields.length === 0 ? (
               <div className="rounded-md border border-dashed border-border-subtle bg-bg-sunken/40 py-10 text-center">
                 <p className="text-sm text-text-tertiary">
-                  Belum ada shot. Tambahkan baris pertama untuk mulai menyusun.
+                  {t('shotListEditor.noShots', 'No shots yet. Add the first row to start planning.')}
                 </p>
               </div>
             ) : (
               <>
                 {/* Header — desktop only */}
                 <div className="hidden lg:grid grid-cols-[60px_1fr_100px_140px_90px_1fr_32px] gap-3 px-1 pb-2 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
-                  <div>#</div>
-                  <div>Deskripsi</div>
-                  <div>Jenis</div>
-                  <div>Kamera / Gerak</div>
-                  <div className="text-right">Durasi</div>
-                  <div>Catatan</div>
+                  <div>{t('shotListEditor.colNumber', '#')}</div>
+                  <div>{t('shotListEditor.colDescription', 'Description')}</div>
+                  <div>{t('shotListEditor.colType', 'Type')}</div>
+                  <div>{t('shotListEditor.colCameraMove', 'Camera / Move')}</div>
+                  <div className="text-right">{t('shotListEditor.colDuration', 'Duration')}</div>
+                  <div>{t('shotListEditor.colNotes', 'Notes')}</div>
                   <div />
                 </div>
 
@@ -345,7 +339,7 @@ export default function ShotListEditorPageV2() {
                       {/* shot number */}
                       <div className="space-y-1">
                         <Input
-                          placeholder="1A"
+                          placeholder={t('shotListEditor.shotNumberPlaceholder', '1A')}
                           {...register(`shots.${idx}.shotNumber` as const)}
                           className="bg-bg-sunken border-border-subtle text-text-primary text-sm font-mono tabular-nums"
                           aria-invalid={!!errors.shots?.[idx]?.shotNumber}
@@ -356,7 +350,7 @@ export default function ShotListEditorPageV2() {
                       {/* description */}
                       <div className="space-y-1 min-w-0">
                         <Input
-                          placeholder="Aksi / lokasi / subjek shot"
+                          placeholder={t('shotListEditor.descriptionShotPlaceholder', 'Action / location / subject')}
                           {...register(`shots.${idx}.description` as const)}
                           className="bg-bg-sunken border-border-subtle text-text-primary text-sm placeholder:text-text-tertiary"
                         />
@@ -365,7 +359,7 @@ export default function ShotListEditorPageV2() {
                       {/* shot type (CU, WS, MS) */}
                       <div>
                         <Input
-                          placeholder="WS / CU"
+                          placeholder={t('shotListEditor.shotTypePlaceholder', 'WS / CU')}
                           {...register(`shots.${idx}.shotType` as const)}
                           className="bg-bg-sunken border-border-subtle text-text-secondary text-sm uppercase tracking-wider"
                         />
@@ -374,12 +368,12 @@ export default function ShotListEditorPageV2() {
                       {/* camera + movement combined */}
                       <div className="space-y-1.5">
                         <Input
-                          placeholder="Kamera"
+                          placeholder={t('shotListEditor.cameraPlaceholder', 'Camera')}
                           {...register(`shots.${idx}.camera` as const)}
                           className="bg-bg-sunken border-border-subtle text-text-secondary text-xs h-8"
                         />
                         <Input
-                          placeholder="Gerak (Pan / Track)"
+                          placeholder={t('shotListEditor.movementPlaceholder', 'Move (Pan / Track)')}
                           {...register(`shots.${idx}.cameraMovement` as const)}
                           className="bg-bg-sunken border-border-subtle text-text-tertiary text-xs h-8"
                         />
@@ -392,7 +386,7 @@ export default function ShotListEditorPageV2() {
                           min="0"
                           step="1"
                           inputMode="numeric"
-                          placeholder="min"
+                          placeholder={t('shotListEditor.durationPlaceholder', 'min')}
                           {...register(`shots.${idx}.estimatedTime` as const, { valueAsNumber: true })}
                           className="bg-bg-sunken border-border-subtle text-right font-mono tabular-nums text-text-primary text-sm"
                         />
@@ -402,7 +396,7 @@ export default function ShotListEditorPageV2() {
                       <div>
                         <textarea
                           rows={2}
-                          placeholder="Catatan kru / props / lensa"
+                          placeholder={t('shotListEditor.notesPlaceholder', 'Crew / props / lens notes')}
                           {...register(`shots.${idx}.notes` as const)}
                           className="block w-full resize-y rounded-md border border-border-subtle bg-bg-sunken/60 px-3 py-1.5 text-xs text-text-secondary placeholder:text-text-tertiary leading-relaxed outline-none focus-visible:border-accent-navy-ring focus-visible:ring-[3px] focus-visible:ring-accent-navy-ring/40"
                         />
@@ -416,7 +410,7 @@ export default function ShotListEditorPageV2() {
                           size="icon-sm"
                           onClick={() => remove(idx)}
                           className="text-text-tertiary hover:text-danger"
-                          aria-label="Hapus shot"
+                          aria-label={t('shotListEditor.removeShot', 'Remove shot')}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -447,7 +441,7 @@ export default function ShotListEditorPageV2() {
                 className="border-border-subtle text-text-secondary hover:text-text-primary"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Tambah Shot
+                {t('shotListEditor.addShot', 'Add Shot')}
               </Button>
             </div>
           </FormSection>
@@ -457,8 +451,8 @@ export default function ShotListEditorPageV2() {
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="text-xs text-text-tertiary">
                 {isDirty
-                  ? 'Ada perubahan yang belum disimpan.'
-                  : 'Tidak ada perubahan tertunda.'}
+                  ? t('common.unsavedChanges', 'You have unsaved changes.')
+                  : t('common.noPendingChanges', 'No pending changes.')}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -468,7 +462,7 @@ export default function ShotListEditorPageV2() {
                   disabled={isPending}
                   className="text-text-secondary hover:text-text-primary"
                 >
-                  Batal
+                  {t('common.cancel', 'Cancel')}
                 </Button>
                 <Button
                   type="submit"
@@ -478,12 +472,12 @@ export default function ShotListEditorPageV2() {
                   {isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Menyimpan…
+                      {t('common.saving', 'Saving…')}
                     </>
                   ) : (
                     <>
                       <Save className="h-4 w-4" />
-                      Simpan
+                      {t('common.save', 'Save')}
                     </>
                   )}
                 </Button>
@@ -494,10 +488,7 @@ export default function ShotListEditorPageV2() {
 
         {/* Deferred-feature callout — keeps expectations honest. */}
         <p className="mt-6 text-[11px] text-text-tertiary leading-relaxed">
-          Catatan v2: pengelompokan scene (INT/EXT, Day/Night, lokasi),
-          storyboard upload, status shot (planned/shot/wrapped), reorder
-          drag-and-drop, dan ekspor PDF masih tersedia di tampilan klasik.
-          Tampilan v2 fokus pada CRUD shot terstruktur dalam satu scene.
+          {t('shotListEditor.footnote', 'Note: Scene grouping (INT/EXT, Day/Night, location), storyboard uploads, shot status (planned/shot/wrapped), drag-to-reorder, and PDF export are still available in the classic view. The v2 view focuses on structured shot CRUD in a single scene.')}
         </p>
       </PageContainer>
     </Shell>
@@ -517,8 +508,8 @@ function Shell({
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{

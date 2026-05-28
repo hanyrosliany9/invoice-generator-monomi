@@ -30,6 +30,8 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -62,21 +64,10 @@ import { tokens } from '@/styles/tokens';
 /*  Sidebar                                                            */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Reports',    icon: <BarChart3   className="h-4 w-4" />, href: '/v2/reports' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 const STATUS_LABEL: Record<string, string> = {
-  DRAFT:     'Draf',
-  COMPLETED: 'Selesai',
-  SENT:      'Terkirim',
+  DRAFT:     'Draft',
+  COMPLETED: 'Completed',
+  SENT:      'Sent',
 };
 
 const statusChipClass = (status?: string) => {
@@ -148,6 +139,7 @@ const tooltipStyle = {
 };
 
 function VizRenderer({ config, data }: { config: VisualizationConfig; data: any[] }) {
+  const { t } = useTranslation();
   const numericKeys = useMemo(
     () => [
       ...(config.yAxis ?? []),
@@ -164,7 +156,7 @@ function VizRenderer({ config, data }: { config: VisualizationConfig; data: any[
     if (!key) {
       return (
         <div className="text-xs text-text-tertiary p-4">
-          Konfigurasi metric_card tidak lengkap (valueKey hilang).
+          {t('reportDetail.metricCardMisconfigured', 'metric_card configuration incomplete (valueKey missing).')}
         </div>
       );
     }
@@ -202,7 +194,7 @@ function VizRenderer({ config, data }: { config: VisualizationConfig; data: any[
   if (!normalized.length) {
     return (
       <div className="h-[220px] flex items-center justify-center text-xs text-text-tertiary">
-        Tidak ada data
+        {t('reportDetail.noData', 'No data')}
       </div>
     );
   }
@@ -336,8 +328,8 @@ export default function ReportDetailPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -351,12 +343,12 @@ export default function ReportDetailPageV2() {
     try {
       setPdfPending(true);
       await socialMediaReportsService.generatePDF(id);
-      toast.success(t('reports.detail.pdfGenerated', 'PDF berhasil dibuat dan diunduh.'));
+      toast.success(t('reportDetail.pdfGenerated', 'PDF generated and downloaded.'));
       queryClient.invalidateQueries({ queryKey: ['report', id] });
     } catch (e: any) {
       toast.error(
         e?.response?.data?.message
-          ?? t('reports.detail.pdfFailed', 'Gagal membuat PDF.'),
+          ?? t('reportDetail.pdfFailed', 'Failed to generate PDF.'),
       );
     } finally {
       setPdfPending(false);
@@ -367,15 +359,15 @@ export default function ReportDetailPageV2() {
     if (!report) return;
     if (
       confirm(
-        t('reports.confirmDelete', `Hapus laporan "${report.title}"? Tindakan ini tidak bisa dibatalkan.`),
+        t('reportDetail.confirmDelete', `Delete report "${report.title}"? This action cannot be undone.`),
       )
     ) {
       deleteReport.mutate(report.id, {
         onSuccess: () => {
-          toast.success(t('reports.deleted', 'Laporan berhasil dihapus.'));
+          toast.success(t('reportDetail.deleted', 'Report deleted.'));
           navigate('/v2/reports');
         },
-        onError: () => toast.error(t('reports.deleteFailed', 'Gagal menghapus laporan.')),
+        onError: () => toast.error(t('reportDetail.deleteFailed', 'Failed to delete report.')),
       });
     }
   };
@@ -385,8 +377,8 @@ export default function ReportDetailPageV2() {
     updateStatus.mutate(
       { id: report.id, status },
       {
-        onSuccess: () => toast.success(t('reports.statusUpdated', 'Status laporan diperbarui.')),
-        onError: () => toast.error(t('reports.statusFailed', 'Gagal mengubah status.')),
+        onSuccess: () => toast.success(t('reportDetail.statusUpdated', 'Report status updated.')),
+        onError: () => toast.error(t('reportDetail.statusFailed', 'Failed to update status.')),
       },
     );
   };
@@ -413,23 +405,23 @@ export default function ReportDetailPageV2() {
       <Shell>
         <EmptyState
           icon={<FileBarChart className="h-12 w-12" />}
-          title={t('reports.detail.notFound.title', 'Laporan tidak ditemukan')}
+          title={t('reportDetail.notFound.title', 'Report not found')}
           description={
             error instanceof Error
               ? error.message
               : t(
-                  'reports.detail.notFound.desc',
-                  'Laporan ini mungkin sudah dihapus atau Anda tidak memiliki akses.',
+                  'reportDetail.notFound.desc',
+                  'This report may have been deleted or you may not have access.',
                 )
           }
           action={
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => navigate('/v2/reports')}>
                 <ArrowLeft className="h-4 w-4" />
-                {t('reports.detail.backToList', 'Kembali ke Laporan')}
+                {t('reportDetail.backToList', 'Back to Reports')}
               </Button>
               <Button size="sm" onClick={() => refetch()}>
-                {t('common.retry', 'Coba Lagi')}
+                {t('common.retry', 'Retry')}
               </Button>
             </div>
           }
@@ -451,7 +443,7 @@ export default function ReportDetailPageV2() {
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          {t('reports.detail.backToList', 'Kembali ke Laporan')}
+          {t('reportDetail.backToList', 'Back to Reports')}
         </Link>
       </div>
 
@@ -459,7 +451,7 @@ export default function ReportDetailPageV2() {
         title={report.title || '—'}
         description={
           report.description ||
-          t('reports.detail.subtitle', 'Detail laporan, bagian, dan visualisasi terkait.')
+          t('reportDetail.subtitle', 'Report details, sections, and associated visualizations.')
         }
         actions={
           <div className="flex items-center gap-2">
@@ -479,7 +471,7 @@ export default function ReportDetailPageV2() {
               disabled={isFetching}
             >
               <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
-              {t('reports.detail.refresh', 'Muat Ulang')}
+              {t('reportDetail.refresh', 'Refresh')}
             </Button>
             {canEdit && (
               <Button
@@ -505,25 +497,25 @@ export default function ReportDetailPageV2() {
                 {canGenPdf && (
                   <DropdownMenuItem onClick={handleGeneratePdf} disabled={pdfPending}>
                     <FileSpreadsheet className="h-3.5 w-3.5" />
-                    {t('reports.detail.generatePdf', 'Buat PDF')}
+                    {t('reportDetail.generatePdf', 'Generate PDF')}
                   </DropdownMenuItem>
                 )}
                 {report.pdfUrl && (
                   <DropdownMenuItem onClick={() => window.open(report.pdfUrl, '_blank')}>
                     <Download className="h-3.5 w-3.5" />
-                    {t('reports.detail.downloadPdf', 'Unduh PDF')}
+                    {t('reportDetail.downloadPdf', 'Download PDF')}
                   </DropdownMenuItem>
                 )}
                 {report.status === 'DRAFT' && (
                   <DropdownMenuItem onClick={() => setStatus('COMPLETED')}>
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    {t('reports.detail.markComplete', 'Tandai Selesai')}
+                    {t('reportDetail.markComplete', 'Mark as Complete')}
                   </DropdownMenuItem>
                 )}
                 {report.status === 'COMPLETED' && (
                   <DropdownMenuItem onClick={() => setStatus('SENT')}>
                     <Send className="h-3.5 w-3.5" />
-                    {t('reports.detail.markSent', 'Tandai Terkirim')}
+                    {t('reportDetail.markSent', 'Mark as Sent')}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
@@ -546,7 +538,7 @@ export default function ReportDetailPageV2() {
           <div className="min-w-0 space-y-5">
             <div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                {t('reports.detail.period', 'Periode')}
+                {t('reportDetail.period', 'Period')}
               </div>
               <div className="text-base font-medium text-text-primary">
                 {ReportUtils.formatPeriod(report.month, report.year)}
@@ -555,7 +547,7 @@ export default function ReportDetailPageV2() {
             {report.project && (
               <div>
                 <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                  {t('reports.detail.project', 'Proyek')}
+                  {t('reportDetail.project', 'Project')}
                 </div>
                 <button
                   type="button"
@@ -580,14 +572,14 @@ export default function ReportDetailPageV2() {
           <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-3 lg:min-w-[200px]">
             <div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                {t('reports.detail.updated', 'Diperbarui')}
+                {t('reportDetail.updated', 'Updated')}
               </div>
               <DateDisplay date={report.updatedAt} className="text-sm text-text-secondary" />
             </div>
             {report.pdfGeneratedAt && (
               <div>
                 <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                  {t('reports.detail.pdfGenerated', 'PDF Terbit')}
+                  {t('reportDetail.pdfPublished', 'PDF Published')}
                 </div>
                 <DateDisplay
                   date={report.pdfGeneratedAt}
@@ -603,19 +595,19 @@ export default function ReportDetailPageV2() {
       <section className="mb-12">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <StatCard
-            label={t('reports.detail.kpi.sections', 'Total Bagian')}
+            label={t('reportDetail.kpi.sections', 'Total Sections')}
             value={totals.sections}
-            sublabel={t('reports.detail.kpi.sectionsSub', 'sumber data tergabung')}
+            sublabel={t('reportDetail.kpi.sectionsSub', 'data sources merged')}
           />
           <StatCard
-            label={t('reports.detail.kpi.visualizations', 'Total Visualisasi')}
+            label={t('reportDetail.kpi.visualizations', 'Total Visualizations')}
             value={totals.visualizations}
-            sublabel={t('reports.detail.kpi.visualizationsSub', 'grafik dikonfigurasi')}
+            sublabel={t('reportDetail.kpi.visualizationsSub', 'charts configured')}
           />
           <StatCard
-            label={t('reports.detail.kpi.rows', 'Total Baris Data')}
+            label={t('reportDetail.kpi.rows', 'Total Data Rows')}
             value={formatNumber(totals.rows)}
-            sublabel={t('reports.detail.kpi.rowsSub', 'di semua CSV')}
+            sublabel={t('reportDetail.kpi.rowsSub', 'across all CSVs')}
           />
         </div>
       </section>
@@ -625,10 +617,10 @@ export default function ReportDetailPageV2() {
         <GlassPanel surface="glass" padding="lg">
           <EmptyState
             icon={<LayoutGrid className="h-12 w-12" />}
-            title={t('reports.detail.noSections.title', 'Belum ada bagian')}
+            title={t('reportDetail.noSections.title', 'No sections yet')}
             description={t(
-              'reports.detail.noSections.desc',
-              'Tambahkan sumber data CSV dan visualisasi melalui editor laporan.',
+              'reportDetail.noSections.desc',
+              'Add CSV data sources and visualizations via the report editor.',
             )}
             action={
               <Button
@@ -636,7 +628,7 @@ export default function ReportDetailPageV2() {
                 onClick={() => navigate(`/v2/reports/${report.id}/edit`)}
               >
                 <AppWindow className="h-4 w-4" />
-                {t('reports.detail.openBuilder', 'Buka Editor')}
+                {t('reportDetail.openBuilder', 'Open Editor')}
               </Button>
             }
           />
@@ -660,6 +652,7 @@ export default function ReportDetailPageV2() {
 /* ------------------------------------------------------------------ */
 
 function SectionBlock({ section }: { section: ReportSection }) {
+  const { t } = useTranslation();
   const visualizations = section.visualizations ?? [];
   return (
     <GlassPanel surface="glass" padding="lg">
@@ -670,7 +663,7 @@ function SectionBlock({ section }: { section: ReportSection }) {
               {section.title}
             </h2>
             <span className="text-xs text-text-tertiary tabular-nums">
-              {section.rowCount} baris
+              {section.rowCount} {t('reportDetail.rows', 'rows')}
             </span>
           </div>
           {section.description && (
@@ -688,7 +681,7 @@ function SectionBlock({ section }: { section: ReportSection }) {
 
       {visualizations.length === 0 ? (
         <div className="rounded-md border border-dashed border-border-subtle p-6 text-center text-xs text-text-tertiary">
-          Belum ada visualisasi pada bagian ini.
+          {t('reportDetail.noViz', 'No visualizations in this section yet.')}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -49,16 +51,6 @@ import type { User, UserRole } from '@/types/user';
 
 // Sidebar — same shape used by every v2 page so the chrome reads as one
 // unified application surface, not a patchwork of bespoke screens.
-const sidebarItems = [
-  { label: 'Dashboard', icon: <Inbox className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices', icon: <FileText className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients', icon: <Users className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects', icon: <Folder className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses', icon: <CreditCard className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings', icon: <Settings className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 // 1–2 character avatar token from name; mirrors ClientsPage so the
 // visual vocabulary is consistent across list surfaces.
 const getInitials = (name: string): string => {
@@ -268,8 +260,8 @@ export default function UsersPageV2() {
     return (
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: currentUser ? <UserChip name={currentUser.name} role={currentUser.role} size="sm" /> : null,
         }}
         topbar={{
@@ -302,8 +294,8 @@ export default function UsersPageV2() {
     return (
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: currentUser ? <UserChip name={currentUser.name} role={currentUser.role} size="sm" /> : null,
         }}
         topbar={{
@@ -325,8 +317,8 @@ export default function UsersPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: currentUser ? <UserChip name={currentUser.name} role={currentUser.role} size="sm" /> : null,
       }}
       topbar={{

@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { UserChip } from '@/components/monomi/UserChip';
@@ -28,16 +30,6 @@ import {
 /*  Sidebar — identical across v2 surface. "Expenses" stays selected   */
 /*  while we're creating one.                                          */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 const FORM_ID = 'expense-create-form';
 
@@ -129,7 +121,7 @@ export default function ExpenseCreatePageV2() {
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       toast.success(
-        t('expenses.create.success', 'Biaya {{n}} berhasil dibuat.', {
+        t('expenseCreate.success', 'Expense {{n}} created successfully.', {
           n: created.expenseNumber || '',
         }),
       );
@@ -139,7 +131,7 @@ export default function ExpenseCreatePageV2() {
       const message =
         err instanceof Error
           ? err.message
-          : t('expenses.create.error', 'Gagal membuat biaya. Coba lagi.');
+          : t('expenseCreate.error', 'Failed to create expense. Please try again.');
       toast.error(message);
     },
     onSettled: () => setIsSubmitting(false),
@@ -155,8 +147,8 @@ export default function ExpenseCreatePageV2() {
         // so they aren't left thinking save failed.
         toast.error(
           t(
-            'expenses.create.submitWarn',
-            'Biaya tersimpan tapi pengajuan persetujuan gagal: {{m}}',
+            'expenseCreate.submitWarn',
+            'Expense saved but approval submission failed: {{m}}',
             { m: (err as Error).message },
           ),
         );
@@ -167,7 +159,7 @@ export default function ExpenseCreatePageV2() {
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       toast.success(
-        t('expenses.create.successSubmitted', 'Biaya {{n}} dibuat dan diajukan.', {
+        t('expenseCreate.successSubmitted', 'Expense {{n}} created and submitted.', {
           n: created.expenseNumber || '',
         }),
       );
@@ -177,7 +169,7 @@ export default function ExpenseCreatePageV2() {
       const message =
         err instanceof Error
           ? err.message
-          : t('expenses.create.error', 'Gagal membuat biaya. Coba lagi.');
+          : t('expenseCreate.error', 'Failed to create expense. Please try again.');
       toast.error(message);
     },
     onSettled: () => setIsSubmitting(false),
@@ -196,8 +188,8 @@ export default function ExpenseCreatePageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -212,19 +204,16 @@ export default function ExpenseCreatePageV2() {
             className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            {t('expenses.form.backToList', 'Kembali ke Biaya')}
+            {t('expenseCreate.backToList', 'Back to Expenses')}
           </Link>
         </div>
 
         <PageHeader
-          title={t('expenses.create.title', 'Biaya Baru')}
-          description={t(
-            'expenses.create.subtitle',
-            'Catat pengeluaran dengan perhitungan PPN dan PPh otomatis sesuai standar Indonesia.',
-          )}
+          title={t('expenseCreate.title', 'New Expense')}
+          description={t('expenseCreate.subtitle', 'Record expenses with automatic PPN and PPh calculations per Indonesian standards.')}
           breadcrumbs={[
-            { label: t('expenses.title', 'Biaya'), href: '/v2/expenses' },
-            { label: t('expenses.create.crumb', 'Baru') },
+            { label: t('expenseCreate.listLabel', 'Expenses'), href: '/v2/expenses' },
+            { label: t('expenseCreate.crumb', 'New') },
           ]}
           actions={
             <div className="flex items-center gap-2">
@@ -236,7 +225,7 @@ export default function ExpenseCreatePageV2() {
                 className="text-text-secondary hover:text-text-primary"
               >
                 <ArrowLeft className="h-4 w-4" />
-                {t('common.cancel', 'Batal')}
+                {t('expenseCreate.cancel', 'Cancel')}
               </Button>
               <Button
                 type="submit"
@@ -247,10 +236,10 @@ export default function ExpenseCreatePageV2() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {t('common.saving', 'Menyimpan…')}
+                    {t('expenseCreate.saving', 'Saving...')}
                   </>
                 ) : (
-                  t('common.save', 'Simpan')
+                  t('expenseCreate.save', 'Save')
                 )}
               </Button>
             </div>

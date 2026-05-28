@@ -21,6 +21,8 @@ import {
 import { toast } from 'sonner';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -56,17 +58,6 @@ import { cn } from '@/lib/utils';
 /*  Sidebar — identical contract to other v2 list pages.              */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',   icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',    icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',  icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',     icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',    icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Call Sheets', icon: <Clapperboard className="h-4 w-4" />, href: '/v2/call-sheets' },
-  { label: 'Expenses',    icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',    icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Status helpers — Bahasa labels, quiet wash backgrounds.           */
 /* ------------------------------------------------------------------ */
@@ -76,6 +67,13 @@ const STATUS_LABEL: Record<CallSheetStatus, string> = {
   READY:   'Siap',
   SENT:    'Terkirim',
   UPDATED: 'Diperbarui',
+};
+
+const STATUS_KEY: Record<CallSheetStatus, string> = {
+  DRAFT:   'callSheets.statusDraft',
+  READY:   'callSheets.statusReady',
+  SENT:    'callSheets.statusSent',
+  UPDATED: 'callSheets.statusUpdated',
 };
 
 const statusChipClass = (status?: string) => {
@@ -94,6 +92,11 @@ const getStatusLabel = (s?: string) =>
 const TYPE_LABEL: Record<CallSheetType, string> = {
   FILM:  'Film',
   PHOTO: 'Foto',
+};
+
+const TYPE_KEY: Record<CallSheetType, string> = {
+  FILM:  'callSheets.typeFilm',
+  PHOTO: 'callSheets.typePhoto',
 };
 
 /* ------------------------------------------------------------------ */
@@ -308,8 +311,8 @@ export default function CallSheetsListPageV2() {
   const shell = (children: React.ReactNode) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -424,10 +427,10 @@ export default function CallSheetsListPageV2() {
                   <SelectItem value="all">
                     {t('callSheets.filter.allStatuses', 'Semua Status')}
                   </SelectItem>
-                  <SelectItem value="DRAFT">{STATUS_LABEL.DRAFT}</SelectItem>
-                  <SelectItem value="READY">{STATUS_LABEL.READY}</SelectItem>
-                  <SelectItem value="SENT">{STATUS_LABEL.SENT}</SelectItem>
-                  <SelectItem value="UPDATED">{STATUS_LABEL.UPDATED}</SelectItem>
+                  <SelectItem value="DRAFT">{t(STATUS_KEY.DRAFT, STATUS_LABEL.DRAFT)}</SelectItem>
+                  <SelectItem value="READY">{t(STATUS_KEY.READY, STATUS_LABEL.READY)}</SelectItem>
+                  <SelectItem value="SENT">{t(STATUS_KEY.SENT, STATUS_LABEL.SENT)}</SelectItem>
+                  <SelectItem value="UPDATED">{t(STATUS_KEY.UPDATED, STATUS_LABEL.UPDATED)}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -570,8 +573,8 @@ export default function CallSheetsListPageV2() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PHOTO">{TYPE_LABEL.PHOTO}</SelectItem>
-                  <SelectItem value="FILM">{TYPE_LABEL.FILM}</SelectItem>
+                  <SelectItem value="PHOTO">{t(TYPE_KEY.PHOTO, TYPE_LABEL.PHOTO)}</SelectItem>
+                  <SelectItem value="FILM">{t(TYPE_KEY.FILM, TYPE_LABEL.FILM)}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -675,6 +678,7 @@ interface CallSheetTableProps {
 }
 
 function CallSheetTable({ rows, onRowClick, onView, onEdit, onDelete }: CallSheetTableProps) {
+  const { t } = useTranslation();
   return (
     <DataTable<CallSheet>
       data={rows}
@@ -683,7 +687,7 @@ function CallSheetTable({ rows, onRowClick, onView, onEdit, onDelete }: CallShee
       columns={[
         {
           id: 'day',
-          header: 'Hari',
+          header: t('callSheets.colDay', 'Day'),
           accessorFn: (row) => row.dayNumber ?? row.callSheetNumber ?? 0,
           cell: ({ row }) => {
             const cs = row.original;
@@ -698,7 +702,7 @@ function CallSheetTable({ rows, onRowClick, onView, onEdit, onDelete }: CallShee
         },
         {
           id: 'shootDate',
-          header: 'Tanggal Shoot',
+          header: t('callSheets.colShootDate', 'Shoot Date'),
           accessorFn: (row) => row.shootDate ?? '',
           cell: ({ row }) => {
             const cs = row.original;
@@ -713,7 +717,7 @@ function CallSheetTable({ rows, onRowClick, onView, onEdit, onDelete }: CallShee
                 </div>
                 {cs.callSheetType && (
                   <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mt-0.5">
-                    {TYPE_LABEL[cs.callSheetType]}
+                    {t(TYPE_KEY[cs.callSheetType], TYPE_LABEL[cs.callSheetType])}
                   </div>
                 )}
               </div>
@@ -722,7 +726,7 @@ function CallSheetTable({ rows, onRowClick, onView, onEdit, onDelete }: CallShee
         },
         {
           id: 'production',
-          header: 'Produksi',
+          header: t('callSheets.colProduction', 'Production'),
           accessorFn: (row) => row.productionName ?? '',
           cell: ({ row }) => {
             const cs = row.original;
@@ -742,7 +746,7 @@ function CallSheetTable({ rows, onRowClick, onView, onEdit, onDelete }: CallShee
         },
         {
           id: 'location',
-          header: 'Lokasi',
+          header: t('callSheets.colLocation', 'Location'),
           accessorFn: (row) => row.locationName ?? row.locationAddress ?? '',
           cell: ({ row }) => {
             const cs = row.original;
@@ -768,7 +772,7 @@ function CallSheetTable({ rows, onRowClick, onView, onEdit, onDelete }: CallShee
         },
         {
           id: 'people',
-          header: () => <span className="block text-right">Kru / Talent</span>,
+          header: () => <span className="block text-right">{t('callSheets.colCrewTalent', 'Crew / Talent')}</span>,
           accessorFn: (row) =>
             (row.crewCalls?.length || 0) + (row.castCalls?.length || row.models?.length || 0),
           cell: ({ row }) => {
@@ -778,16 +782,16 @@ function CallSheetTable({ rows, onRowClick, onView, onEdit, onDelete }: CallShee
             return (
               <div className="text-right tabular-nums text-xs text-text-secondary">
                 <span className="text-text-primary">{crew}</span>
-                <span className="text-text-tertiary"> kru · </span>
+                <span className="text-text-tertiary"> {t('callSheets.crew', 'crew')} · </span>
                 <span className="text-text-primary">{cast}</span>
-                <span className="text-text-tertiary"> talent</span>
+                <span className="text-text-tertiary"> {t('callSheets.talent', 'talent')}</span>
               </div>
             );
           },
         },
         {
           accessorKey: 'status',
-          header: 'Status',
+          header: t('callSheets.colStatus', 'Status'),
           cell: ({ row }) => (
             <Badge
               variant="outline"
@@ -796,7 +800,7 @@ function CallSheetTable({ rows, onRowClick, onView, onEdit, onDelete }: CallShee
                 statusChipClass(row.original.status),
               )}
             >
-              {getStatusLabel(row.original.status)}
+              {t(STATUS_KEY[(row.original.status ?? 'DRAFT') as CallSheetStatus], getStatusLabel(row.original.status))}
             </Badge>
           ),
         },
@@ -813,24 +817,24 @@ function CallSheetTable({ rows, onRowClick, onView, onEdit, onDelete }: CallShee
                       variant="ghost"
                       size="icon-sm"
                       className="text-text-tertiary hover:text-text-primary"
-                      aria-label="Aksi call sheet"
+                      aria-label={t('callSheets.callSheetActions', 'Call sheet actions')}
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-44">
                     <DropdownMenuItem onClick={() => onView(cs)}>
-                      <Eye className="h-3.5 w-3.5" /> Lihat
+                      <Eye className="h-3.5 w-3.5" /> {t('common.view', 'View')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEdit(cs)}>
-                      <Pencil className="h-3.5 w-3.5" /> Ubah
+                      <Pencil className="h-3.5 w-3.5" /> {t('common.edit', 'Edit')}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => onDelete(cs)}
                       className="text-danger focus:text-danger"
                     >
-                      <Trash2 className="h-3.5 w-3.5" /> Hapus
+                      <Trash2 className="h-3.5 w-3.5" /> {t('common.delete', 'Delete')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

@@ -8,6 +8,8 @@ import {
   Download, AlertTriangle, Building2, Briefcase, Calendar, Receipt,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -33,16 +35,6 @@ import { cn } from '@/lib/utils';
 /*  state and rhythm read as one app, not a one-off detail screen.     */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Status copy / variant maps — identical to the list page so a       */
 /*  reader sees the same vocabulary in both contexts.                  */
@@ -50,11 +42,11 @@ const sidebarItems = [
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT:     'Draft',
-  SENT:      'Terkirim',
-  PAID:      'Lunas',
-  OVERDUE:   'Jatuh Tempo',
-  PENDING:   'Tertunda',
-  CANCELLED: 'Dibatalkan',
+  SENT:      'Sent',
+  PAID:      'Paid',
+  OVERDUE:   'Overdue',
+  PENDING:   'Pending',
+  CANCELLED: 'Cancelled',
 };
 
 const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
@@ -128,7 +120,7 @@ export default function InvoiceDetailPageV2() {
     mutationFn: () => invoiceService.markAsPaid(id!, {
       paymentMethod: 'BANK_TRANSFER',
       paymentDate:   new Date().toISOString(),
-      notes:         'Ditandai lunas dari halaman detail (v2)',
+      notes:         'Marked as paid from detail page (v2)',
     }),
     onSuccess: invalidate,
   });
@@ -180,7 +172,7 @@ export default function InvoiceDetailPageV2() {
 
   const handleDelete = () => {
     if (!invoice) return;
-    if (confirm(t('invoices.confirmDelete', `Hapus tagihan ${invoice.invoiceNumber}?`))) {
+    if (confirm(t('invoiceDetail.confirmDelete', `Delete invoice ${invoice.invoiceNumber}?  This action cannot be undone.`))) {
       deleteMutation.mutate();
     }
   };
@@ -189,8 +181,8 @@ export default function InvoiceDetailPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -223,20 +215,20 @@ export default function InvoiceDetailPageV2() {
       <Shell>
         <EmptyState
           icon={<FileText className="h-12 w-12" />}
-          title={t('invoices.detail.error.title', 'Tagihan tidak ditemukan')}
+          title={t('invoiceDetail.error.title', 'Invoice not found')}
           description={
             error instanceof Error
               ? error.message
-              : t('invoices.detail.error.desc', 'Tagihan ini mungkin sudah dihapus atau Anda tidak memiliki akses.')
+              : t('invoiceDetail.error.desc', 'This invoice may have been deleted or you do not have access.')
           }
           action={
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => navigate('/v2/invoices')}>
                 <ArrowLeft className="h-4 w-4" />
-                {t('invoices.detail.backToList', 'Kembali ke Tagihan')}
+                {t('invoiceDetail.backToList', 'Back to Invoices')}
               </Button>
               <Button size="sm" onClick={() => refetch()}>
-                {t('common.retry', 'Coba Lagi')}
+                {t('invoiceDetail.retry', 'Try Again')}
               </Button>
             </div>
           }
@@ -263,7 +255,7 @@ export default function InvoiceDetailPageV2() {
         disabled={markPaidMutation.isPending}
       >
         <CheckCircle2 className="h-4 w-4" />
-        {t('invoices.action.markPaid', 'Tandai Lunas')}
+        {t('invoiceDetail.action.markPaid', 'Mark as Paid')}
       </Button>
     )
     : canSend
@@ -274,13 +266,13 @@ export default function InvoiceDetailPageV2() {
         disabled={sendMutation.isPending}
       >
         <Send className="h-4 w-4" />
-        {t('invoices.action.send', 'Kirim')}
+        {t('invoiceDetail.action.send', 'Send')}
       </Button>
     )
     : (
       <Button size="sm" variant="outline" onClick={handleDownloadPdf}>
         <Download className="h-4 w-4" />
-        {t('invoices.action.download', 'Unduh PDF')}
+        {t('invoiceDetail.action.download', 'Download PDF')}
       </Button>
     );
 
@@ -299,7 +291,7 @@ export default function InvoiceDetailPageV2() {
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          {t('invoices.detail.backToList', 'Kembali ke Tagihan')}
+          {t('invoiceDetail.backToList', 'Back to Invoices')}
         </Link>
       </div>
 
@@ -308,7 +300,7 @@ export default function InvoiceDetailPageV2() {
         description={
           invoice.project?.description ||
           invoice.projectName ||
-          t('invoices.detail.subtitle', 'Rincian tagihan, riwayat pembayaran, dan tindakan terkait.')
+          t('invoiceDetail.subtitle', 'Invoice details, payment history, and related actions.')
         }
         actions={
           <div className="flex items-center gap-2">
@@ -322,7 +314,7 @@ export default function InvoiceDetailPageV2() {
                   variant="ghost"
                   size="icon-sm"
                   className="text-text-tertiary hover:text-text-primary"
-                  aria-label={t('common.moreActions', 'Tindakan lain')}
+                  aria-label={t('invoiceDetail.moreActions', 'More actions')}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -331,16 +323,16 @@ export default function InvoiceDetailPageV2() {
                 {canSend && (
                   <DropdownMenuItem onClick={() => sendMutation.mutate()}>
                     <Send className="h-3.5 w-3.5" />
-                    {t('invoices.action.send', 'Kirim')}
+                    {t('invoiceDetail.action.send', 'Send')}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => navigate(`/invoices/${id}/edit`)}>
                   <Pencil className="h-3.5 w-3.5" />
-                  {t('invoices.action.edit', 'Ubah')}
+                  {t('invoiceDetail.action.edit', 'Edit')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleDownloadPdf}>
                   <Download className="h-3.5 w-3.5" />
-                  {t('invoices.action.download', 'Unduh PDF')}
+                  {t('invoiceDetail.action.download', 'Download PDF')}
                 </DropdownMenuItem>
                 {canDelete && (
                   <>
@@ -350,7 +342,7 @@ export default function InvoiceDetailPageV2() {
                       className="text-danger focus:text-danger"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      {t('invoices.action.delete', 'Hapus')}
+                      {t('invoiceDetail.action.delete', 'Delete')}
                     </DropdownMenuItem>
                   </>
                 )}
@@ -378,7 +370,7 @@ export default function InvoiceDetailPageV2() {
               </Avatar>
               <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                  {t('invoices.detail.billedTo', 'Ditagihkan kepada')}
+                  {t('invoiceDetail.billedTo', 'Billed To')}
                 </div>
                 <div className="text-base font-medium text-text-primary truncate">
                   {invoice.client?.name || invoice.clientName || '—'}
@@ -402,7 +394,7 @@ export default function InvoiceDetailPageV2() {
                 {invoice.project && (
                   <div className="min-w-0">
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                      {t('invoices.detail.project', 'Proyek')}
+                      {t('invoiceDetail.project', 'Project')}
                     </div>
                     <button
                       type="button"
@@ -420,7 +412,7 @@ export default function InvoiceDetailPageV2() {
                 {invoice.quotation && (
                   <div className="min-w-0">
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                      {t('invoices.detail.quotation', 'Dari Penawaran')}
+                      {t('invoiceDetail.quotation', 'From Quotation')}
                     </div>
                     <button
                       type="button"
@@ -440,7 +432,7 @@ export default function InvoiceDetailPageV2() {
           <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-4 min-w-[220px]">
             <div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                {t('invoices.detail.totalDue', 'Total Tagihan')}
+                {t('invoiceDetail.totalDue', 'Total Due')}
               </div>
               <MoneyDisplay
                 amount={totals.total}
@@ -450,13 +442,13 @@ export default function InvoiceDetailPageV2() {
             <div className="flex lg:justify-end gap-6 text-xs">
               <div>
                 <div className="text-text-tertiary mb-0.5">
-                  {t('invoices.detail.issued', 'Diterbitkan')}
+                  {t('invoiceDetail.issued', 'Issued')}
                 </div>
                 <DateDisplay date={invoice.creationDate} className="text-text-secondary" />
               </div>
               <div>
                 <div className="text-text-tertiary mb-0.5">
-                  {t('invoices.detail.due', 'Jatuh Tempo')}
+                  {t('invoiceDetail.due', 'Due Date')}
                 </div>
                 <DateDisplay
                   date={invoice.dueDate}
@@ -482,13 +474,10 @@ export default function InvoiceDetailPageV2() {
             <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
             <div className="min-w-0">
               <div className="text-sm font-medium text-text-primary">
-                {t('invoices.detail.materai.title', 'Materai diperlukan')}
+                {t('invoiceDetail.materai.title', 'Materai required')}
               </div>
               <div className="text-xs text-text-secondary mt-1 leading-relaxed">
-                {t(
-                  'invoices.detail.materai.desc',
-                  'Tagihan ini melebihi Rp 5.000.000 dan memerlukan materai Rp 10.000. Tempelkan materai pada cetakan sebelum dikirim ke klien.',
-                )}
+                {t('invoiceDetail.materai.desc', 'This invoice exceeds Rp 5,000,000 and requires a Rp 10,000 stamp duty. Affix the materai to the printed copy before sending to the client.')}
               </div>
             </div>
           </div>
@@ -508,7 +497,7 @@ export default function InvoiceDetailPageV2() {
           <GlassPanel surface="glass" padding="none" className="overflow-hidden">
             <div className="px-6 py-4 border-b border-border-subtle">
               <h2 className="text-sm font-medium text-text-primary">
-                {t('invoices.detail.items', 'Rincian Item')}
+                {t('invoiceDetail.items', 'Line Items')}
               </h2>
               {invoice.scopeOfWork && (
                 <p className="text-xs text-text-tertiary mt-1 leading-relaxed">
@@ -522,10 +511,10 @@ export default function InvoiceDetailPageV2() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-[10px] uppercase tracking-[0.12em] text-text-tertiary border-b border-border-subtle">
-                      <th className="text-left  font-normal px-6 py-3">{t('invoices.detail.col.desc', 'Deskripsi')}</th>
-                      <th className="text-right font-normal px-3 py-3 w-16">{t('invoices.detail.col.qty', 'Qty')}</th>
-                      <th className="text-right font-normal px-3 py-3 w-36">{t('invoices.detail.col.price', 'Harga')}</th>
-                      <th className="text-right font-normal px-6 py-3 w-40">{t('invoices.detail.col.total', 'Total')}</th>
+                      <th className="text-left  font-normal px-6 py-3">{t('invoiceDetail.col.desc', 'Description')}</th>
+                      <th className="text-right font-normal px-3 py-3 w-16">{t('invoiceDetail.col.qty', 'Qty')}</th>
+                      <th className="text-right font-normal px-3 py-3 w-36">{t('invoiceDetail.col.price', 'Price')}</th>
+                      <th className="text-right font-normal px-6 py-3 w-40">{t('invoiceDetail.col.total', 'Total')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -567,7 +556,7 @@ export default function InvoiceDetailPageV2() {
                   <div className="text-sm text-text-primary">
                     {invoice.project?.description ||
                      invoice.projectName ||
-                     t('invoices.detail.lumpSum', 'Biaya proyek')}
+                     t('invoiceDetail.lumpSum', 'Project fee')}
                   </div>
                   {invoice.project?.type && (
                     <div className="text-xs text-text-tertiary mt-1">{invoice.project.type}</div>
@@ -589,7 +578,7 @@ export default function InvoiceDetailPageV2() {
               {invoice.paymentInfo && (
                 <section className="px-6 py-5">
                   <h3 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-2">
-                    {t('invoices.detail.paymentInfo', 'Informasi Pembayaran')}
+                    {t('invoiceDetail.paymentInfo', 'Payment Information')}
                   </h3>
                   <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
                     {invoice.paymentInfo}
@@ -602,7 +591,7 @@ export default function InvoiceDetailPageV2() {
               {invoice.terms && (
                 <section className="px-6 py-5">
                   <h3 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-2">
-                    {t('invoices.detail.terms', 'Syarat & Ketentuan')}
+                    {t('invoiceDetail.terms', 'Terms & Conditions')}
                   </h3>
                   <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
                     {invoice.terms}
@@ -618,12 +607,12 @@ export default function InvoiceDetailPageV2() {
           {/* Totals breakdown */}
           <GlassPanel surface="strong" padding="lg">
             <h2 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-4">
-              {t('invoices.detail.summary', 'Ringkasan')}
+              {t('invoiceDetail.summary', 'Summary')}
             </h2>
             <dl className="space-y-2.5 text-sm">
               <div className="flex items-center justify-between">
                 <dt className="text-text-secondary">
-                  {t('invoices.detail.subtotal', 'Subtotal')}
+                  {t('invoiceDetail.subtotal', 'Subtotal')}
                 </dt>
                 <dd>
                   <MoneyDisplay amount={totals.subtotal} className="text-text-secondary" />
@@ -632,7 +621,7 @@ export default function InvoiceDetailPageV2() {
               {totals.tax > 0 && (
                 <div className="flex items-center justify-between">
                   <dt className="text-text-secondary">
-                    {t('invoices.detail.tax', 'PPN')} {taxRateLabel}
+                    {t('invoiceDetail.tax', 'VAT')} {taxRateLabel}
                   </dt>
                   <dd>
                     <MoneyDisplay amount={totals.tax} className="text-text-secondary" />
@@ -642,22 +631,22 @@ export default function InvoiceDetailPageV2() {
               {invoice.materaiRequired && (
                 <div className="flex items-center justify-between">
                   <dt className="text-text-secondary">
-                    {t('invoices.detail.materaiLine', 'Materai')}
+                    {t('invoiceDetail.materaiLine', 'Materai')}
                   </dt>
                   <dd className={cn(
                     'text-xs',
                     invoice.materaiApplied ? 'text-success' : 'text-warning',
                   )}>
                     {invoice.materaiApplied
-                      ? t('invoices.detail.materaiApplied', 'Terpasang')
-                      : t('invoices.detail.materaiPending', 'Belum dipasang')}
+                      ? t('invoiceDetail.materaiApplied', 'Applied')
+                      : t('invoiceDetail.materaiPending', 'Not applied')}
                   </dd>
                 </div>
               )}
               <Separator className="bg-border-subtle my-3" />
               <div className="flex items-center justify-between">
                 <dt className="text-sm font-medium text-text-primary">
-                  {t('invoices.detail.grandTotal', 'Total')}
+                  {t('invoiceDetail.grandTotal', 'Total')}
                 </dt>
                 <dd>
                   <MoneyDisplay
@@ -675,13 +664,13 @@ export default function InvoiceDetailPageV2() {
           {(totals.paid > 0 || invoice.status === 'PAID' || invoice.paidAt) && (
             <GlassPanel surface="glass" padding="lg">
               <h2 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-4">
-                {t('invoices.detail.payment', 'Pembayaran')}
+                {t('invoiceDetail.payment', 'Payment')}
               </h2>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-text-secondary inline-flex items-center gap-2">
                     <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                    {t('invoices.detail.paid', 'Dibayar')}
+                    {t('invoiceDetail.paid', 'Paid')}
                   </span>
                   <MoneyDisplay amount={totals.paid} className="text-text-primary" />
                 </div>
@@ -689,7 +678,7 @@ export default function InvoiceDetailPageV2() {
                   <div className="flex items-center justify-between">
                     <span className="text-text-secondary inline-flex items-center gap-2">
                       <Receipt className="h-3.5 w-3.5 text-text-tertiary" />
-                      {t('invoices.detail.remaining', 'Sisa')}
+                      {t('invoiceDetail.remaining', 'Remaining')}
                     </span>
                     <MoneyDisplay amount={totals.remaining} className="text-warning" />
                   </div>
@@ -698,7 +687,7 @@ export default function InvoiceDetailPageV2() {
                   <div className="flex items-center justify-between pt-1 border-t border-border-subtle">
                     <span className="text-text-tertiary inline-flex items-center gap-2 text-xs">
                       <Calendar className="h-3.5 w-3.5" />
-                      {t('invoices.detail.paidOn', 'Lunas pada')}
+                      {t('invoiceDetail.paidOn', 'Paid on')}
                     </span>
                     <DateDisplay date={invoice.paidAt} className="text-xs text-text-secondary" />
                   </div>
@@ -707,7 +696,7 @@ export default function InvoiceDetailPageV2() {
                  invoice.paymentSummary.paymentCount > 0 && (
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-text-tertiary">
-                      {t('invoices.detail.paymentCount', 'Jumlah transaksi')}
+                      {t('invoiceDetail.paymentCount', 'Transactions')}
                     </span>
                     <span className="text-text-secondary font-mono tabular-nums">
                       {invoice.paymentSummary.paymentCount}
@@ -723,7 +712,7 @@ export default function InvoiceDetailPageV2() {
           {invoice.paymentMilestone && (
             <GlassPanel surface="glass" padding="lg">
               <h2 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-3">
-                {t('invoices.detail.milestone', 'Termin Pembayaran')}
+                {t('invoiceDetail.milestone', 'Payment Milestone')}
               </h2>
               <div className="text-sm text-text-primary">
                 <span className="font-mono text-xs text-text-tertiary mr-2">
@@ -733,7 +722,7 @@ export default function InvoiceDetailPageV2() {
               </div>
               <div className="mt-2 flex items-center justify-between text-xs">
                 <span className="text-text-tertiary">
-                  {invoice.paymentMilestone.paymentPercentage}% {t('invoices.detail.ofTotal', 'dari total')}
+                  {invoice.paymentMilestone.paymentPercentage}% {t('invoiceDetail.ofTotal', 'of total')}
                 </span>
                 <MoneyDisplay
                   amount={invoice.paymentMilestone.paymentAmount}

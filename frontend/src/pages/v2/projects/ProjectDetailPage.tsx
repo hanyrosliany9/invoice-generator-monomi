@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -39,27 +41,17 @@ import type { Expense } from '@/types/expense';
 /*  carries over without flicker between routes.                       */
 /* ------------------------------------------------------------------ */
 
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Status copy + chip palette — kept in sync with the list page so    */
 /*  a reader sees identical vocabulary in both contexts.               */
 /* ------------------------------------------------------------------ */
 
 const STATUS_LABEL: Record<string, string> = {
-  PLANNING:    'Perencanaan',
-  IN_PROGRESS: 'Berlangsung',
-  COMPLETED:   'Selesai',
-  CANCELLED:   'Dibatalkan',
-  ON_HOLD:     'Ditahan',
+  PLANNING:    'Planning',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED:   'Completed',
+  CANCELLED:   'Cancelled',
+  ON_HOLD:     'On Hold',
 };
 
 const statusChipClass = (status?: string) => {
@@ -189,31 +181,31 @@ export default function ProjectDetailPageV2() {
     mutationFn: (status: string) => projectService.updateStatus(id!, status),
     onSuccess: () => {
       invalidate();
-      toast.success(t('projects.statusUpdated', 'Status proyek berhasil diubah.'));
+      toast.success(t('projectDetail.statusUpdated', 'Project status updated.'));
     },
-    onError: () => toast.error(t('projects.statusFailed', 'Gagal mengubah status.')),
+    onError: () => toast.error(t('projectDetail.statusFailed', 'Failed to update status.')),
   });
 
   const duplicateMutation = useMutation({
     mutationFn: () => projectService.duplicateProject(id!),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      toast.success(t('projects.duplicated', `Proyek diduplikasi: ${created?.number ?? ''}`));
+      toast.success(t('projectDetail.duplicated', 'Project duplicated: {{n}}', { n: created?.number ?? '' }));
       if (created?.id) navigate(`/v2/projects/${created.id}`);
     },
-    onError: () => toast.error(t('projects.duplicateFailed', 'Gagal menduplikasi proyek.')),
+    onError: () => toast.error(t('projectDetail.duplicateFailed', 'Failed to duplicate project.')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => projectService.deleteProject(id!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      toast.success(t('projects.deleted', 'Proyek berhasil dihapus.'));
+      toast.success(t('projectDetail.deleted', 'Project deleted.'));
       navigate('/v2/projects');
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message
-        || t('projects.deleteFailed', 'Gagal menghapus proyek.');
+        || t('projectDetail.deleteFailed', 'Failed to delete project.');
       toast.error(msg);
     },
   });
@@ -238,8 +230,8 @@ export default function ProjectDetailPageV2() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -272,23 +264,20 @@ export default function ProjectDetailPageV2() {
       <Shell>
         <EmptyState
           icon={<Folder className="h-12 w-12" />}
-          title={t('projects.detail.error.title', 'Proyek tidak ditemukan')}
+          title={t('projectDetail.error.title', 'Project not found')}
           description={
             error instanceof Error
               ? error.message
-              : t(
-                  'projects.detail.error.desc',
-                  'Proyek ini mungkin sudah dihapus atau Anda tidak memiliki akses.',
-                )
+              : t('projectDetail.error.desc', 'This project may have been deleted or you do not have access.')
           }
           action={
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => navigate('/v2/projects')}>
                 <ArrowLeft className="h-4 w-4" />
-                {t('projects.detail.backToList', 'Kembali ke Proyek')}
+                {t('projectDetail.backToList', 'Back to Projects')}
               </Button>
               <Button size="sm" onClick={() => refetch()}>
-                {t('common.retry', 'Coba Lagi')}
+                {t('projectDetail.retry', 'Try Again')}
               </Button>
             </div>
           }
@@ -305,10 +294,7 @@ export default function ProjectDetailPageV2() {
   const handleDelete = () => {
     if (
       confirm(
-        t(
-          'projects.confirmDelete',
-          `Hapus proyek ${project.number}? Tindakan ini tidak bisa dibatalkan.`,
-        ),
+        t('projectDetail.confirmDelete', `Delete project ${project.number}? This action cannot be undone.`),
       )
     ) {
       deleteMutation.mutate();
@@ -319,7 +305,7 @@ export default function ProjectDetailPageV2() {
   const invoiceColumns = [
     {
       accessorKey: 'invoiceNumber',
-      header: 'Nomor',
+      header: t('projectDetail.col.number', 'Number'),
       cell: ({ row }: { row: { original: Invoice } }) => (
         <span className="font-mono text-xs text-text-primary tracking-tight">
           {row.original.invoiceNumber || '—'}
@@ -328,21 +314,21 @@ export default function ProjectDetailPageV2() {
     },
     {
       accessorKey: 'creationDate',
-      header: 'Diterbitkan',
+      header: t('projectDetail.col.issued', 'Issued'),
       cell: ({ row }: { row: { original: Invoice } }) => (
         <DateDisplay date={row.original.creationDate} className="text-xs text-text-tertiary" />
       ),
     },
     {
       accessorKey: 'dueDate',
-      header: 'Jatuh Tempo',
+      header: t('projectDetail.col.dueDate', 'Due Date'),
       cell: ({ row }: { row: { original: Invoice } }) => (
         <DateDisplay date={row.original.dueDate} className="text-xs text-text-secondary" />
       ),
     },
     {
       accessorKey: 'totalAmount',
-      header: () => <span className="block text-right">Jumlah</span>,
+      header: () => <span className="block text-right">{t('projectDetail.col.amount', 'Amount')}</span>,
       cell: ({ row }: { row: { original: Invoice } }) => (
         <div className="text-right">
           <MoneyDisplay amount={toNumber(row.original.totalAmount)} className="text-text-primary" />
@@ -351,7 +337,7 @@ export default function ProjectDetailPageV2() {
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: t('projectDetail.col.status', 'Status'),
       cell: ({ row }: { row: { original: Invoice } }) => (
         <Badge
           variant="outline"
@@ -369,7 +355,7 @@ export default function ProjectDetailPageV2() {
   const quotationColumns = [
     {
       accessorKey: 'quotationNumber',
-      header: 'Nomor',
+      header: t('projectDetail.col.number', 'Number'),
       cell: ({ row }: { row: { original: Quotation } }) => (
         <span className="font-mono text-xs text-text-primary tracking-tight">
           {row.original.quotationNumber || '—'}
@@ -378,21 +364,21 @@ export default function ProjectDetailPageV2() {
     },
     {
       accessorKey: 'date',
-      header: 'Tanggal',
+      header: t('projectDetail.col.date', 'Date'),
       cell: ({ row }: { row: { original: Quotation } }) => (
         <DateDisplay date={row.original.date} className="text-xs text-text-tertiary" />
       ),
     },
     {
       accessorKey: 'validUntil',
-      header: 'Berlaku Hingga',
+      header: t('projectDetail.col.validUntil', 'Valid Until'),
       cell: ({ row }: { row: { original: Quotation } }) => (
         <DateDisplay date={row.original.validUntil} className="text-xs text-text-secondary" />
       ),
     },
     {
       accessorKey: 'totalAmount',
-      header: () => <span className="block text-right">Nilai</span>,
+      header: () => <span className="block text-right">{t('projectDetail.col.value', 'Value')}</span>,
       cell: ({ row }: { row: { original: Quotation } }) => (
         <div className="text-right">
           <MoneyDisplay amount={toNumber(row.original.totalAmount)} className="text-text-primary" />
@@ -401,7 +387,7 @@ export default function ProjectDetailPageV2() {
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: t('projectDetail.col.status', 'Status'),
       cell: ({ row }: { row: { original: Quotation } }) => (
         <Badge
           variant="outline"
@@ -419,7 +405,7 @@ export default function ProjectDetailPageV2() {
   const expenseColumns = [
     {
       id: 'description',
-      header: 'Deskripsi',
+      header: t('projectDetail.col.description', 'Description'),
       accessorFn: (row: Expense) => row.description ?? '',
       cell: ({ row }: { row: { original: Expense } }) => (
         <div className="min-w-0 max-w-[320px]">
@@ -436,14 +422,14 @@ export default function ProjectDetailPageV2() {
     },
     {
       accessorKey: 'expenseDate',
-      header: 'Tanggal',
+      header: t('projectDetail.col.date', 'Date'),
       cell: ({ row }: { row: { original: Expense } }) => (
         <DateDisplay date={row.original.expenseDate} className="text-xs text-text-tertiary" />
       ),
     },
     {
       accessorKey: 'totalAmount',
-      header: () => <span className="block text-right">Jumlah</span>,
+      header: () => <span className="block text-right">{t('projectDetail.col.amount', 'Amount')}</span>,
       cell: ({ row }: { row: { original: Expense } }) => (
         <div className="text-right">
           <MoneyDisplay amount={toNumber(row.original.totalAmount)} className="text-text-primary" />
@@ -452,7 +438,7 @@ export default function ProjectDetailPageV2() {
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: t('projectDetail.col.status', 'Status'),
       cell: ({ row }: { row: { original: Expense } }) => (
         <Badge
           variant="outline"
@@ -484,8 +470,8 @@ export default function ProjectDetailPageV2() {
         </h2>
         <p className="mt-0.5 text-xs text-text-tertiary">
           {loading
-            ? t('common.loading', 'Memuat…')
-            : t('projects.detail.recordCount', '{{count}} catatan', { count })}
+            ? t('projectDetail.loading', 'Loading...')
+            : t('projectDetail.recordCount', '{{count}} records', { count })}
         </p>
       </div>
     </div>
@@ -505,7 +491,7 @@ export default function ProjectDetailPageV2() {
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          {t('projects.detail.backToList', 'Kembali ke Proyek')}
+          {t('projectDetail.backToList', 'Back to Projects')}
         </Link>
       </div>
 
@@ -513,7 +499,7 @@ export default function ProjectDetailPageV2() {
         title={project.number || '—'}
         description={
           project.description ||
-          t('projects.detail.subtitle', 'Detail proyek, anggaran, dan riwayat terkait.')
+          t('projectDetail.subtitle', 'Project details, budget, and related history.')
         }
         actions={
           <div className="flex items-center gap-2">
@@ -528,7 +514,7 @@ export default function ProjectDetailPageV2() {
             </Badge>
             <Button size="sm" onClick={() => navigate(`/projects/${id}/edit`)}>
               <Pencil className="h-4 w-4" />
-              {t('common.edit', 'Ubah')}
+              {t('projectDetail.edit', 'Edit')}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -536,7 +522,7 @@ export default function ProjectDetailPageV2() {
                   variant="ghost"
                   size="icon-sm"
                   className="text-text-tertiary hover:text-text-primary"
-                  aria-label={t('common.moreActions', 'Tindakan lain')}
+                  aria-label={t('projectDetail.moreActions', 'More actions')}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -544,25 +530,25 @@ export default function ProjectDetailPageV2() {
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuItem onClick={() => duplicateMutation.mutate()}>
                   <Copy className="h-3.5 w-3.5" />
-                  {t('common.duplicate', 'Duplikasi')}
+                  {t('projectDetail.duplicate', 'Duplicate')}
                 </DropdownMenuItem>
                 {(canStart || canComplete || canHold) && <DropdownMenuSeparator />}
                 {canStart && (
                   <DropdownMenuItem onClick={() => statusMutation.mutate('IN_PROGRESS')}>
                     <PlayCircle className="h-3.5 w-3.5" />
-                    {t('projects.action.start', 'Mulai Proyek')}
+                    {t('projectDetail.action.start', 'Start Project')}
                   </DropdownMenuItem>
                 )}
                 {canComplete && (
                   <DropdownMenuItem onClick={() => statusMutation.mutate('COMPLETED')}>
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    {t('projects.action.complete', 'Selesaikan')}
+                    {t('projectDetail.action.complete', 'Complete')}
                   </DropdownMenuItem>
                 )}
                 {canHold && (
                   <DropdownMenuItem onClick={() => statusMutation.mutate('ON_HOLD')}>
                     <PauseCircle className="h-3.5 w-3.5" />
-                    {t('projects.action.hold', 'Tahan')}
+                    {t('projectDetail.action.hold', 'Put on Hold')}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
@@ -571,7 +557,7 @@ export default function ProjectDetailPageV2() {
                   className="text-danger focus:text-danger"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  {t('common.delete', 'Hapus')}
+                  {t('projectDetail.delete', 'Delete')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -598,7 +584,7 @@ export default function ProjectDetailPageV2() {
                 </Avatar>
                 <div className="min-w-0">
                   <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                    {t('projects.detail.client', 'Klien')}
+                    {t('projectDetail.client', 'Client')}
                   </div>
                   <button
                     type="button"
@@ -627,7 +613,7 @@ export default function ProjectDetailPageV2() {
                 {project.projectType && (
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                      {t('projects.detail.type', 'Tipe Proyek')}
+                      {t('projectDetail.type', 'Project Type')}
                     </div>
                     <div className="inline-flex items-center gap-1.5 text-sm text-text-primary">
                       <Briefcase className="h-3.5 w-3.5 text-text-tertiary" />
@@ -638,7 +624,7 @@ export default function ProjectDetailPageV2() {
                 {project.scopeOfWork && (
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                      {t('projects.detail.scope', 'Lingkup Pekerjaan')}
+                      {t('projectDetail.scope', 'Scope of Work')}
                     </div>
                     <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
                       {project.scopeOfWork}
@@ -653,7 +639,7 @@ export default function ProjectDetailPageV2() {
           <div className="lg:text-right lg:border-l lg:border-border-subtle lg:pl-8 flex flex-col gap-4 lg:min-w-[220px]">
             <div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                {t('projects.detail.budget', 'Anggaran')}
+                {t('projectDetail.budget', 'Budget')}
               </div>
               <MoneyDisplay
                 amount={totals.budget || toNumber(project.basePrice)}
@@ -663,7 +649,7 @@ export default function ProjectDetailPageV2() {
             <div className="flex lg:justify-end gap-6 text-xs">
               <div>
                 <div className="text-text-tertiary mb-0.5">
-                  {t('projects.detail.startDate', 'Mulai')}
+                  {t('projectDetail.startDate', 'Start')}
                 </div>
                 <DateDisplay
                   date={project.startDate ?? undefined}
@@ -672,7 +658,7 @@ export default function ProjectDetailPageV2() {
               </div>
               <div>
                 <div className="text-text-tertiary mb-0.5">
-                  {t('projects.detail.endDate', 'Selesai')}
+                  {t('projectDetail.endDate', 'End')}
                 </div>
                 <DateDisplay
                   date={project.endDate ?? undefined}
@@ -692,22 +678,22 @@ export default function ProjectDetailPageV2() {
       <section className="mb-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
-            label={t('projects.detail.kpi.invoiced', 'Total Tertagih')}
+            label={t('projectDetail.kpi.invoiced', 'Total Invoiced')}
             value={<MoneyDisplay amount={totals.invoiced} />}
-            sublabel={t('projects.detail.kpi.invoicedSub', 'dari semua invoice')}
+            sublabel={t('projectDetail.kpi.invoicedSub', 'across all invoices')}
           />
           <StatCard
-            label={t('projects.detail.kpi.paid', 'Total Diterima')}
+            label={t('projectDetail.kpi.paid', 'Total Received')}
             value={<MoneyDisplay amount={totals.paid} />}
-            sublabel={t('projects.detail.kpi.paidSub', 'pembayaran masuk')}
+            sublabel={t('projectDetail.kpi.paidSub', 'payments received')}
           />
           <StatCard
-            label={t('projects.detail.kpi.expenses', 'Total Pengeluaran')}
+            label={t('projectDetail.kpi.expenses', 'Total Expenses')}
             value={<MoneyDisplay amount={totals.totalExpenses} />}
-            sublabel={t('projects.detail.kpi.expensesSub', 'beban terkait')}
+            sublabel={t('projectDetail.kpi.expensesSub', 'related costs')}
           />
           <StatCard
-            label={t('projects.detail.kpi.margin', 'Margin')}
+            label={t('projectDetail.kpi.margin', 'Margin')}
             value={
               <span
                 className={cn(
@@ -719,8 +705,8 @@ export default function ProjectDetailPageV2() {
             }
             sublabel={
               totals.profit >= 0
-                ? t('projects.detail.kpi.marginSub', 'laba bersih estimasi')
-                : t('projects.detail.kpi.marginLoss', 'rugi estimasi')
+                ? t('projectDetail.kpi.marginSub', 'estimated net profit')
+                : t('projectDetail.kpi.marginLoss', 'estimated loss')
             }
           />
         </div>
@@ -736,7 +722,7 @@ export default function ProjectDetailPageV2() {
       <section className="mb-10">
         <GlassPanel surface="glass" padding="lg">
           <SectionHeader
-            title={t('projects.detail.invoicesSection', 'Invoice Terkait')}
+            title={t('projectDetail.invoicesSection', 'Related Invoices')}
             count={invoices.length}
             loading={invoicesLoading}
           />
@@ -749,11 +735,8 @@ export default function ProjectDetailPageV2() {
           ) : invoices.length === 0 ? (
             <EmptyState
               icon={<FileText className="h-12 w-12" />}
-              title={t('projects.detail.noInvoices', 'Belum ada invoice')}
-              description={t(
-                'projects.detail.noInvoicesDesc',
-                'Belum ada invoice yang dibuat untuk proyek ini.',
-              )}
+              title={t('projectDetail.noInvoices', 'No invoices yet')}
+              description={t('projectDetail.noInvoicesDesc', 'No invoices have been created for this project.')}
             />
           ) : (
             <DataTable
@@ -770,7 +753,7 @@ export default function ProjectDetailPageV2() {
       <section className="mb-10">
         <GlassPanel surface="glass" padding="lg">
           <SectionHeader
-            title={t('projects.detail.quotationsSection', 'Penawaran Terkait')}
+            title={t('projectDetail.quotationsSection', 'Related Quotations')}
             count={quotations.length}
             loading={quotationsLoading}
           />
@@ -783,11 +766,8 @@ export default function ProjectDetailPageV2() {
           ) : quotations.length === 0 ? (
             <EmptyState
               icon={<ReceiptText className="h-12 w-12" />}
-              title={t('projects.detail.noQuotations', 'Belum ada penawaran')}
-              description={t(
-                'projects.detail.noQuotationsDesc',
-                'Belum ada penawaran yang dibuat untuk proyek ini.',
-              )}
+              title={t('projectDetail.noQuotations', 'No quotations yet')}
+              description={t('projectDetail.noQuotationsDesc', 'No quotations have been created for this project.')}
             />
           ) : (
             <DataTable
@@ -804,7 +784,7 @@ export default function ProjectDetailPageV2() {
       <section className="mb-10">
         <GlassPanel surface="glass" padding="lg">
           <SectionHeader
-            title={t('projects.detail.expensesSection', 'Pengeluaran Terkait')}
+            title={t('projectDetail.expensesSection', 'Related Expenses')}
             count={expenses.length}
             loading={expensesLoading}
           />
@@ -817,11 +797,8 @@ export default function ProjectDetailPageV2() {
           ) : expenses.length === 0 ? (
             <EmptyState
               icon={<CreditCard className="h-12 w-12" />}
-              title={t('projects.detail.noExpenses', 'Belum ada pengeluaran')}
-              description={t(
-                'projects.detail.noExpensesDesc',
-                'Belum ada pengeluaran yang dicatat untuk proyek ini.',
-              )}
+              title={t('projectDetail.noExpenses', 'No expenses yet')}
+              description={t('projectDetail.noExpensesDesc', 'No expenses have been recorded for this project.')}
             />
           ) : (
             <DataTable
@@ -841,7 +818,7 @@ export default function ProjectDetailPageV2() {
         <section className="mb-10">
           <GlassPanel surface="glass" padding="lg">
             <SectionHeader
-              title={t('projects.detail.milestonesSection', 'Tahapan Proyek')}
+              title={t('projectDetail.milestonesSection', 'Project Milestones')}
               count={milestones.length}
               loading={false}
             />

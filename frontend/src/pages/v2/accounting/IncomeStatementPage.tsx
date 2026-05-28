@@ -8,7 +8,10 @@ import {
   Download, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -29,20 +32,6 @@ import {
   type IncomeStatement,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
-
-const sidebarItems = [
-  { label: 'Dashboard',    icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',     icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations',   icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',      icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',     icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',     icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Neraca',       icon: <Scale       className="h-4 w-4" />, href: '/v2/accounting/balance-sheet' },
-  { label: 'Laba Rugi',    icon: <TrendingUp  className="h-4 w-4" />, href: '/v2/accounting/income-statement' },
-  { label: 'Arus Kas',     icon: <Activity    className="h-4 w-4" />, href: '/v2/accounting/cash-flow' },
-  { label: 'Neraca Saldo', icon: <BookOpen    className="h-4 w-4" />, href: '/v2/accounting/trial-balance' },
-  { label: 'Settings',     icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Expense sub-type grouping. Editorial intent: split expenses into  */
@@ -169,6 +158,7 @@ const SectionHeaderRow = ({ label }: { label: string }) => (
 /* ------------------------------------------------------------------ */
 
 export default function IncomeStatementPageV2() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const today = new Date();
   const [startDate, setStartDate] = useState<Date>(startOfMonth(today));
@@ -268,8 +258,8 @@ export default function IncomeStatementPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -278,8 +268,8 @@ export default function IncomeStatementPageV2() {
     >
       <PageContainer>
         <PageHeader
-          title="Laporan Laba Rugi"
-          description="Pendapatan dikurangi beban — periode berjalan, dari pendapatan kotor hingga laba bersih."
+          title={t('incomeStatement.title', 'Laporan Laba Rugi')}
+          description={t('incomeStatement.subtitle', 'Pendapatan dikurangi beban — periode berjalan, dari pendapatan kotor hingga laba bersih.')}
           actions={
             <div className="flex items-center gap-2">
               <Button
@@ -340,8 +330,8 @@ export default function IncomeStatementPageV2() {
         {error ? (
           <EmptyState
             icon={<TrendingUp />}
-            title="Tidak bisa memuat laporan"
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan.'}
+            title={t('incomeStatement.error.title', 'Tidak bisa memuat laporan')}
+            description={error instanceof Error ? error.message : t('common.errorGeneric', 'Terjadi kesalahan.')}
             action={<Button onClick={() => refetch()} size="sm">Coba Lagi</Button>}
           />
         ) : isLoading || !data || !waterfall ? (

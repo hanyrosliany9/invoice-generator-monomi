@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useForm, useFieldArray, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,6 +11,8 @@ import {
   BookOpen, Loader2, Plus, Trash2, Save, ArrowLeft, CheckCircle2, AlertTriangle,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -35,17 +38,6 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 /*  Sidebar (consistent with sibling pages)                            */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Akuntansi',  icon: <BookOpen    className="h-4 w-4" />, href: '/v2/accounting/general-ledger' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Schema — refined: every line must have an account; either debit   */
@@ -110,6 +102,7 @@ const toNumber = (v: unknown): number => {
 /* ------------------------------------------------------------------ */
 
 export default function JournalEntryFormPageV2() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -206,7 +199,7 @@ export default function JournalEntryFormPageV2() {
   // Show prefill toast once on mount when handoff arrived from wizard.
   useEffect(() => {
     if (prefilled && !isEdit) {
-      toast.success('Data dari wizard penyesuaian sudah diisi. Periksa dan simpan.');
+      toast.success(t('accounting.journalEntryForm.prefillToast'));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -224,10 +217,10 @@ export default function JournalEntryFormPageV2() {
     mutationFn: createJournalEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
-      toast.success('Jurnal disimpan sebagai draft.');
+      toast.success(t('accounting.journalEntryForm.saveDraftSuccess'));
       navigate('/v2/accounting/journal-entries');
     },
-    onError: (e: Error) => toast.error(e.message || 'Gagal menyimpan jurnal.'),
+    onError: (e: Error) => toast.error(e.message || t('accounting.journalEntryForm.saveDraftFail')),
   });
 
   const updateMutation = useMutation({
@@ -235,20 +228,20 @@ export default function JournalEntryFormPageV2() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entry', id] });
-      toast.success('Jurnal diperbarui.');
+      toast.success(t('accounting.journalEntryForm.updateSuccess'));
       navigate('/v2/accounting/journal-entries');
     },
-    onError: (e: Error) => toast.error(e.message || 'Gagal memperbarui jurnal.'),
+    onError: (e: Error) => toast.error(e.message || t('accounting.journalEntryForm.updateFail')),
   });
 
   const postMutation = useMutation({
     mutationFn: postJournalEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
-      toast.success('Jurnal diposting ke buku besar.');
+      toast.success(t('accounting.journalEntryForm.postSuccess'));
       navigate('/v2/accounting/journal-entries');
     },
-    onError: (e: Error) => toast.error(e.message || 'Gagal memposting jurnal.'),
+    onError: (e: Error) => toast.error(e.message || t('accounting.journalEntryForm.postFail')),
   });
 
   /* ----- submit handlers ----- */
@@ -307,14 +300,13 @@ export default function JournalEntryFormPageV2() {
             <GlassPanel surface="glass" padding="lg" className="text-center">
               <AlertTriangle className="h-8 w-8 text-warning mx-auto mb-3" />
               <h2 className="text-lg font-display font-medium text-text-primary mb-2">
-                Jurnal sudah diposting
+                {t('accounting.journalEntryForm.alreadyPostedTitle')}
               </h2>
               <p className="text-sm text-text-secondary mb-5">
-                Jurnal {existing.entryNumber} sudah diposting ke buku besar dan tidak dapat diedit.
-                Gunakan menu Buat Pembalik dari halaman daftar untuk membalik.
+                {t('accounting.journalEntryForm.alreadyPostedDesc', { number: existing.entryNumber })}
               </p>
               <Button onClick={handleCancel}>
-                <ArrowLeft className="h-4 w-4" /> Kembali ke Daftar
+                <ArrowLeft className="h-4 w-4" /> {t('accounting.journalEntryForm.backToList')}
               </Button>
             </GlassPanel>
           </div>
@@ -342,19 +334,19 @@ export default function JournalEntryFormPageV2() {
       <PageContainer>
         <PageHeader
           breadcrumbs={[
-            { label: 'Akuntansi', href: '/v2/accounting/general-ledger' },
-            { label: 'Jurnal',    href: '/v2/accounting/journal-entries' },
-            { label: isEdit ? (existing?.entryNumber || 'Edit') : 'Baru' },
+            { label: t('accounting.journalEntryForm.breadcrumbAccounting'), href: '/v2/accounting/general-ledger' },
+            { label: t('accounting.journalEntryForm.breadcrumbJournals'),   href: '/v2/accounting/journal-entries' },
+            { label: isEdit ? (existing?.entryNumber || t('accounting.journalEntryForm.editLabel')) : t('accounting.journalEntryForm.newLabel') },
           ]}
-          title={isEdit ? `Edit ${existing?.entryNumber || 'Jurnal'}` : 'Jurnal Baru'}
+          title={isEdit ? t('accounting.journalEntryForm.editTitle', { number: existing?.entryNumber || t('accounting.journalEntryForm.editLabel') }) : t('accounting.journalEntryForm.newTitle')}
           description={
             isEdit
-              ? 'Edit jurnal draft. Perubahan diterapkan saat disimpan.'
-              : 'Buat jurnal manual. Total debit harus sama dengan total kredit sebelum dapat disimpan.'
+              ? t('accounting.journalEntryForm.editDescription')
+              : t('accounting.journalEntryForm.newDescription')
           }
           actions={
             <Button variant="ghost" size="sm" onClick={handleCancel}>
-              <ArrowLeft className="h-4 w-4" /> Kembali
+              <ArrowLeft className="h-4 w-4" /> {t('accounting.journalEntryForm.back')}
             </Button>
           }
         />
@@ -365,9 +357,9 @@ export default function JournalEntryFormPageV2() {
             <div className="space-y-4 min-w-0">
               {/* Identity */}
               <FormSection
-                eyebrow="Identitas"
-                title="Tanggal & Klasifikasi"
-                description="Tanggal entry menentukan periode fiskal jurnal ini."
+                eyebrow={t('accounting.journalEntryForm.sectionIdentityEyebrow')}
+                title={t('accounting.journalEntryForm.sectionIdentityTitle')}
+                description={t('accounting.journalEntryForm.sectionIdentityDesc')}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-1.5">
@@ -447,9 +439,9 @@ export default function JournalEntryFormPageV2() {
 
               {/* Line Items */}
               <FormSection
-                eyebrow="Baris"
-                title="Item Jurnal"
-                description="Setiap baris berisi satu akun dengan debit ATAU kredit. Total harus seimbang."
+                eyebrow={t('accounting.journalEntryForm.sectionLineItemsEyebrow')}
+                title={t('accounting.journalEntryForm.sectionLineItemsTitle')}
+                description={t('accounting.journalEntryForm.sectionLineItemsDesc')}
               >
                 <div
                   className="hidden md:grid grid-cols-[1fr_1fr_140px_140px_32px] gap-3 px-1 pb-2 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle"
@@ -558,7 +550,7 @@ export default function JournalEntryFormPageV2() {
                     className="border-border-subtle text-text-secondary hover:text-text-primary"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    Tambah Baris
+                    {t('accounting.journalEntryForm.addLine')}
                   </Button>
                 </div>
               </FormSection>
@@ -601,8 +593,8 @@ export default function JournalEntryFormPageV2() {
                     : 'bg-warning/10 text-warning',
                 )}>
                   {totals.balanced
-                    ? <><CheckCircle2 className="h-3.5 w-3.5" /> Seimbang — siap disimpan</>
-                    : <><AlertTriangle className="h-3.5 w-3.5" /> Belum seimbang</>}
+                    ? <><CheckCircle2 className="h-3.5 w-3.5" /> {t('accounting.journalEntryForm.balanced')}</>
+                    : <><AlertTriangle className="h-3.5 w-3.5" /> {t('accounting.journalEntryForm.notBalanced')}</>}
                 </div>
               </GlassPanel>
 
@@ -628,8 +620,8 @@ export default function JournalEntryFormPageV2() {
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="text-xs text-text-tertiary">
                 {totals.balanced
-                  ? 'Jurnal seimbang dan dapat disimpan.'
-                  : 'Lengkapi baris dan seimbangkan total debit & kredit.'}
+                  ? t('accounting.journalEntryForm.footerBalanced')
+                  : t('accounting.journalEntryForm.footerUnbalanced')}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -639,7 +631,7 @@ export default function JournalEntryFormPageV2() {
                   disabled={isPending}
                   className="text-text-secondary hover:text-text-primary"
                 >
-                  Batal
+                  {t('accounting.journalEntryForm.cancel')}
                 </Button>
                 <Button
                   type="button"
@@ -648,7 +640,7 @@ export default function JournalEntryFormPageV2() {
                   onClick={handleSubmit(onSaveDraft)}
                 >
                   {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  {isEdit ? 'Perbarui Draft' : 'Simpan Draft'}
+                  {isEdit ? t('accounting.journalEntryForm.updateDraft') : t('accounting.journalEntryForm.saveDraft')}
                 </Button>
                 <Button
                   type="button"
@@ -657,7 +649,7 @@ export default function JournalEntryFormPageV2() {
                   className="bg-brand-cream text-brand-black hover:bg-brand-cream/90 font-medium min-w-[120px]"
                 >
                   {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  Simpan & Posting
+                  {t('accounting.journalEntryForm.saveAndPost')}
                 </Button>
               </div>
             </div>
@@ -676,8 +668,8 @@ function Shell({ user, children }: { user: any; children: React.ReactNode }) {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}

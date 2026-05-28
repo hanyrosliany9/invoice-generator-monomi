@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Download, BookOpen,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -27,16 +30,6 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 /*  Navigation                                                         */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard', icon: <Inbox className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices', icon: <FileText className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients', icon: <Users className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects', icon: <Folder className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses', icon: <CreditCard className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings', icon: <Settings className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Bucket vocabulary — five buckets in the order they read in the     */
@@ -89,6 +82,7 @@ const toNumber = (v: unknown): number => {
 /* ------------------------------------------------------------------ */
 
 export default function ARAgingPageV2() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const [asOfDate, setAsOfDate] = useState<Date>(new Date());
 
@@ -142,18 +136,18 @@ export default function ARAgingPageV2() {
   const handleExportPDF = async () => {
     try {
       await exportARAgingPDF({ asOfDate: isoDate });
-      toast.success('Laporan PDF berhasil diunduh');
+      toast.success(t('accounting.arAging.exportPdfSuccess'));
     } catch {
-      toast.error('Gagal mengunduh PDF');
+      toast.error(t('accounting.arAging.exportPdfFail'));
     }
   };
 
   const handleExportExcel = async () => {
     try {
       await exportARAgingExcel({ asOfDate: isoDate });
-      toast.success('Laporan Excel berhasil diunduh');
+      toast.success(t('accounting.arAging.exportExcelSuccess'));
     } catch {
-      toast.error('Gagal mengunduh Excel');
+      toast.error(t('accounting.arAging.exportExcelFail'));
     }
   };
 
@@ -161,8 +155,8 @@ export default function ARAgingPageV2() {
     return (
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
         topbar={{ right: <Button variant="ghost" size="sm">{user?.name || 'User'}</Button> }}
@@ -170,9 +164,9 @@ export default function ARAgingPageV2() {
         <PageContainer>
           <EmptyState
             icon={<BookOpen className="h-12 w-12" />}
-            title="Tidak bisa memuat aging piutang"
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-            action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+            title={t('accounting.arAging.errorTitle')}
+            description={error instanceof Error ? error.message : t('accounting.arAging.errorDesc')}
+            action={<Button onClick={() => refetch()}>{t('accounting.arAging.retry')}</Button>}
           />
         </PageContainer>
       </AppShell>
@@ -182,19 +176,19 @@ export default function ARAgingPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: <Button variant="ghost" size="sm">{user?.name || 'User'}</Button> }}
     >
       <PageContainer>
         <PageHeader
-          title="Aging Piutang"
-          description="Analisis umur piutang per klien — semakin tua bucket, semakin tinggi risiko gagal bayar."
+          title={t('accounting.arAging.title')}
+          description={t('accounting.arAging.description')}
           breadcrumbs={[
-            { label: 'Akuntansi' },
-            { label: 'Aging Piutang' },
+            { label: t('accounting.arAging.breadcrumbAccounting') },
+            { label: t('accounting.arAging.title') },
           ]}
           actions={
             <div className="flex flex-wrap items-center gap-2">
@@ -255,15 +249,15 @@ export default function ARAgingPageV2() {
           <div className="px-5 py-4 border-b border-border-subtle flex items-center justify-between">
             <div>
               <div className="text-sm font-display font-semibold text-text-primary">
-                Aging per Klien
+                {t('accounting.arAging.panelTitle')}
               </div>
               <div className="text-xs text-text-tertiary mt-0.5">
-                {matrix.length} klien dengan saldo terbuka
+                {t('accounting.arAging.clientCount', { count: matrix.length })}
               </div>
             </div>
             <div className="text-right">
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
-                Total Piutang
+                {t('accounting.arAging.totalReceivable')}
               </div>
               <div className="mt-1">
                 <MoneyDisplay amount={summary.total} className="text-text-primary text-base font-semibold" />
@@ -281,8 +275,8 @@ export default function ARAgingPageV2() {
           ) : matrix.length === 0 ? (
             <EmptyState
               icon={<BookOpen />}
-              title="Tidak ada piutang terbuka"
-              description="Semua faktur telah dilunasi per tanggal ini."
+              title={t('accounting.arAging.noReceivables')}
+              description={t('accounting.arAging.noReceivablesDesc')}
             />
           ) : (
             <div className="overflow-x-auto">

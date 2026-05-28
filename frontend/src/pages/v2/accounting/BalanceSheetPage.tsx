@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation, getI18n } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -9,6 +10,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -36,21 +39,6 @@ import { cn } from '@/lib/utils';
 /*  the bottom. Keeping the array inline (per task rules: no new       */
 /*  shared primitives) trades a bit of repetition for total isolation. */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard',  icon: <Inbox       className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices',   icon: <FileText    className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients',    icon: <Users       className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects',   icon: <Folder      className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses',   icon: <CreditCard  className="h-4 w-4" />, href: '/v2/expenses' },
-  // Akuntansi — financial statements live here
-  { label: 'Neraca',         icon: <Scale      className="h-4 w-4" />, href: '/v2/accounting/balance-sheet' },
-  { label: 'Laba Rugi',      icon: <TrendingUp className="h-4 w-4" />, href: '/v2/accounting/income-statement' },
-  { label: 'Arus Kas',       icon: <Activity   className="h-4 w-4" />, href: '/v2/accounting/cash-flow' },
-  { label: 'Neraca Saldo',   icon: <BookOpen   className="h-4 w-4" />, href: '/v2/accounting/trial-balance' },
-  { label: 'Settings',   icon: <Settings    className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Editorial line components — these are the load-bearing pieces of  */
@@ -80,7 +68,7 @@ const AccountRow = ({ account, indent = 1 }: AccountRowProps) => {
             {account.accountNameId}
             {account.isContraAccount && (
               <span className="ml-2 text-[10px] uppercase tracking-wider text-text-tertiary">
-                (Kontra)
+                ({getI18n().t('accounting.balanceSheet.contra', 'Contra')})
               </span>
             )}
           </span>
@@ -148,22 +136,29 @@ const GrandTotalRow = ({ label, amount, tone = 'asset' }: GrandTotalRowProps) =>
 /*  a flat list. Falls back to a flat dump if no sub-grouping exists. */
 /* ------------------------------------------------------------------ */
 
-const SUBTYPE_LABEL_ID: Record<string, string> = {
-  CURRENT_ASSET: 'Aset Lancar',
-  FIXED_ASSET: 'Aset Tetap',
-  NON_CURRENT_ASSET: 'Aset Tidak Lancar',
-  INTANGIBLE_ASSET: 'Aset Tidak Berwujud',
-  OTHER_ASSET: 'Aset Lainnya',
-  CURRENT_LIABILITY: 'Kewajiban Jangka Pendek',
-  NON_CURRENT_LIABILITY: 'Kewajiban Jangka Panjang',
-  LONG_TERM_LIABILITY: 'Kewajiban Jangka Panjang',
-  OWNERS_EQUITY: 'Modal',
-  RETAINED_EARNINGS: 'Laba Ditahan',
-  CURRENT_YEAR_EARNINGS: 'Laba Tahun Berjalan',
+// SUBTYPE_LABEL_ID is built via getI18n() so it can be used outside the component render.
+const SUBTYPE_LABEL_ID = () => {
+  const i18n = getI18n();
+  const t = (k: string, fb: string) => i18n.t(k, fb);
+  return {
+    CURRENT_ASSET:         t('accounting.balanceSheet.subtypeCurrentAsset', 'Current Assets'),
+    FIXED_ASSET:           t('accounting.balanceSheet.subtypeFixedAsset', 'Fixed Assets'),
+    NON_CURRENT_ASSET:     t('accounting.balanceSheet.subtypeNonCurrentAsset', 'Non-Current Assets'),
+    INTANGIBLE_ASSET:      t('accounting.balanceSheet.subtypeIntangibleAsset', 'Intangible Assets'),
+    OTHER_ASSET:           t('accounting.balanceSheet.subtypeOtherAsset', 'Other Assets'),
+    CURRENT_LIABILITY:     t('accounting.balanceSheet.subtypeCurrentLiability', 'Current Liabilities'),
+    NON_CURRENT_LIABILITY: t('accounting.balanceSheet.subtypeNonCurrentLiability', 'Long-Term Liabilities'),
+    LONG_TERM_LIABILITY:   t('accounting.balanceSheet.subtypeNonCurrentLiability', 'Long-Term Liabilities'),
+    OWNERS_EQUITY:         t('accounting.balanceSheet.subtypeOwnersEquity', 'Capital'),
+    RETAINED_EARNINGS:     t('accounting.balanceSheet.subtypeRetainedEarnings', 'Retained Earnings'),
+    CURRENT_YEAR_EARNINGS: t('accounting.balanceSheet.subtypeCurrentYearEarnings', 'Current Year Earnings'),
+  } as Record<string, string>;
 };
 
-const subtypeLabel = (key: string) =>
-  SUBTYPE_LABEL_ID[key] ?? key.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+const subtypeLabel = (key: string) => {
+  const map = SUBTYPE_LABEL_ID();
+  return map[key] ?? key.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 interface StatementSectionProps {
   title: string; // e.g. "ASET"
@@ -192,8 +187,8 @@ const StatementSection = ({
       {accounts.length === 0 ? (
         <div className="py-10">
           <EmptyState
-            title="Tidak ada akun"
-            description="Belum ada saldo pada bagian ini."
+            title={getI18n().t('accounting.balanceSheet.noAccounts')}
+            description={getI18n().t('accounting.balanceSheet.noAccountsDesc')}
           />
         </div>
       ) : (
@@ -242,6 +237,7 @@ const StatementSection = ({
 /* ------------------------------------------------------------------ */
 
 export default function BalanceSheetPageV2() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const [asOfDate, setAsOfDate] = useState<Date>(new Date());
 
@@ -255,18 +251,18 @@ export default function BalanceSheetPageV2() {
   const handleExportPDF = async () => {
     try {
       await exportBalanceSheetPDF({ endDate: dateStr });
-      toast.success('Neraca berhasil diekspor (PDF).');
+      toast.success(t('accounting.balanceSheet.exportPdfSuccess'));
     } catch {
-      toast.error('Gagal mengekspor PDF.');
+      toast.error(t('accounting.balanceSheet.exportPdfFail'));
     }
   };
 
   const handleExportExcel = async () => {
     try {
       await exportBalanceSheetExcel({ endDate: dateStr });
-      toast.success('Neraca berhasil diekspor (CSV).');
+      toast.success(t('accounting.balanceSheet.exportCsvSuccess'));
     } catch {
-      toast.error('Gagal mengekspor CSV.');
+      toast.error(t('accounting.balanceSheet.exportCsvFail'));
     }
   };
 
@@ -278,8 +274,8 @@ export default function BalanceSheetPageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{
@@ -288,8 +284,8 @@ export default function BalanceSheetPageV2() {
     >
       <PageContainer>
         <PageHeader
-          title="Neraca"
-          description="Laporan posisi keuangan — aset, kewajiban, dan ekuitas pada satu titik waktu."
+          title={t('accounting.balanceSheet.title')}
+          description={t('accounting.balanceSheet.description')}
           actions={
             <div className="flex items-center gap-2">
               <Button
@@ -300,13 +296,13 @@ export default function BalanceSheetPageV2() {
                 className="text-text-tertiary hover:text-text-primary"
               >
                 <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
-                Muat Ulang
+                {t('accounting.balanceSheet.reload')}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
                     <Download className="h-4 w-4" />
-                    Ekspor
+                    {t('accounting.balanceSheet.export')}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
@@ -350,11 +346,10 @@ export default function BalanceSheetPageV2() {
           <div className="mb-6 flex items-start gap-3 rounded-md border border-danger/30 bg-danger/5 px-4 py-3">
             <AlertTriangle className="h-4 w-4 text-danger mt-0.5 shrink-0" />
             <div className="text-sm">
-              <div className="font-medium text-text-primary">Neraca tidak seimbang</div>
+              <div className="font-medium text-text-primary">{t('accounting.balanceSheet.imbalanceTitle')}</div>
               <div className="mt-0.5 text-text-secondary">
-                Selisih{' '}
+                {t('accounting.balanceSheet.imbalanceDesc', { amount: '' })}
                 <MoneyDisplay amount={Math.abs(data.summary.difference)} className="text-danger" />
-                {' '}antara total aset dan total kewajiban + ekuitas. Periksa jurnal entri.
               </div>
             </div>
           </div>
@@ -382,9 +377,9 @@ export default function BalanceSheetPageV2() {
         {error ? (
           <EmptyState
             icon={<Scale />}
-            title="Tidak bisa memuat neraca"
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan.'}
-            action={<Button onClick={() => refetch()} size="sm">Coba Lagi</Button>}
+            title={t('accounting.balanceSheet.errorTitle')}
+            description={error instanceof Error ? error.message : t('accounting.balanceSheet.errorGeneric')}
+            action={<Button onClick={() => refetch()} size="sm">{t('accounting.balanceSheet.retry')}</Button>}
           />
         ) : isLoading || !data ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

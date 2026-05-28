@@ -2,11 +2,14 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Search, Download, X, AlertTriangle, Wallet, BookOpen,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -37,16 +40,6 @@ import { cn } from '@/lib/utils';
 /*  Navigation — identical vocabulary to v2/invoices so the active     */
 /*  shell reads as one app, not a stitched-together suite.             */
 /* ------------------------------------------------------------------ */
-
-const sidebarItems = [
-  { label: 'Dashboard', icon: <Inbox className="h-4 w-4" />, href: '/v2' },
-  { label: 'Invoices', icon: <FileText className="h-4 w-4" />, href: '/v2/invoices' },
-  { label: 'Quotations', icon: <ReceiptText className="h-4 w-4" />, href: '/v2/quotations' },
-  { label: 'Clients', icon: <Users className="h-4 w-4" />, href: '/v2/clients' },
-  { label: 'Projects', icon: <Folder className="h-4 w-4" />, href: '/v2/projects' },
-  { label: 'Expenses', icon: <CreditCard className="h-4 w-4" />, href: '/v2/expenses' },
-  { label: 'Settings', icon: <Settings className="h-4 w-4" />, href: '/v2/settings' },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Aging bucket vocabulary — backend ships English labels, we surface */
@@ -95,6 +88,7 @@ const toNumber = (v: unknown): number => {
 /* ------------------------------------------------------------------ */
 
 export default function AccountsReceivablePageV2() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
 
@@ -158,18 +152,18 @@ export default function AccountsReceivablePageV2() {
   const handleExportPDF = async () => {
     try {
       await exportAccountsReceivablePDF({ endDate: isoDate });
-      toast.success('Laporan PDF berhasil diunduh');
+      toast.success(t('accounting.accountsReceivable.exportPdfSuccess'));
     } catch (e) {
-      toast.error('Gagal mengunduh PDF');
+      toast.error(t('accounting.accountsReceivable.exportPdfFail'));
     }
   };
 
   const handleExportExcel = async () => {
     try {
       await exportAccountsReceivableExcel({ endDate: isoDate });
-      toast.success('Laporan Excel berhasil diunduh');
+      toast.success(t('accounting.accountsReceivable.exportExcelSuccess'));
     } catch (e) {
-      toast.error('Gagal mengunduh Excel');
+      toast.error(t('accounting.accountsReceivable.exportExcelFail'));
     }
   };
 
@@ -178,8 +172,8 @@ export default function AccountsReceivablePageV2() {
     return (
       <AppShell
         sidebar={{
-          brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-          items: sidebarItems,
+          brand: <MonomiBrand />,
+          sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
         topbar={{ right: <Button variant="ghost" size="sm">{user?.name || 'User'}</Button> }}
@@ -187,9 +181,9 @@ export default function AccountsReceivablePageV2() {
         <PageContainer>
           <EmptyState
             icon={<Wallet className="h-12 w-12" />}
-            title="Tidak bisa memuat laporan piutang"
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-            action={<Button onClick={() => refetch()}>Coba Lagi</Button>}
+            title={t('accounting.accountsReceivable.errorTitle')}
+            description={error instanceof Error ? error.message : t('accounting.accountsReceivable.errorDesc')}
+            action={<Button onClick={() => refetch()}>{t('accounting.accountsReceivable.retry')}</Button>}
           />
         </PageContainer>
       </AppShell>
@@ -199,19 +193,19 @@ export default function AccountsReceivablePageV2() {
   return (
     <AppShell
       sidebar={{
-        brand: <div className="font-display font-bold text-text-primary text-lg">monomi</div>,
-        items: sidebarItems,
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{ right: <Button variant="ghost" size="sm">{user?.name || 'User'}</Button> }}
     >
       <PageContainer>
         <PageHeader
-          title="Piutang Usaha"
-          description="Pantau saldo tagihan klien per tanggal pelaporan. Klik baris untuk membuka faktur."
+          title={t('accounting.accountsReceivable.title')}
+          description={t('accounting.accountsReceivable.description')}
           breadcrumbs={[
-            { label: 'Akuntansi' },
-            { label: 'Piutang' },
+            { label: t('accounting.accountsReceivable.breadcrumbAccounting') },
+            { label: t('accounting.accountsReceivable.title') },
           ]}
           actions={
             <div className="flex flex-wrap items-center gap-2">
@@ -346,15 +340,15 @@ export default function AccountsReceivablePageV2() {
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={<BookOpen />}
-              title={hasActiveFilters ? 'Tidak ada faktur yang cocok' : 'Tidak ada piutang terbuka'}
+              title={hasActiveFilters ? t('accounting.accountsReceivable.noMatch') : t('accounting.accountsReceivable.noReceivables')}
               description={
                 hasActiveFilters
-                  ? 'Coba ubah atau hapus filter Anda.'
-                  : 'Semua faktur telah dilunasi per tanggal ini.'
+                  ? t('accounting.accountsReceivable.noMatchDesc')
+                  : t('accounting.accountsReceivable.noReceivablesDesc')
               }
               action={
                 hasActiveFilters && (
-                  <Button variant="outline" size="sm" onClick={resetFilters}>Reset Filter</Button>
+                  <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.accountsReceivable.resetFilter')}</Button>
                 )
               }
             />
