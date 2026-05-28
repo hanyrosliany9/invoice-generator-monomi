@@ -36,7 +36,7 @@ export const LanguageSwitcher = ({ className }: { className?: string }) => {
       role="group"
       aria-label="Language"
       className={cn(
-        'inline-flex items-center rounded-full border border-border-subtle bg-bg-base/40 backdrop-blur-md p-[2px] text-[11px] font-medium tabular-nums tracking-[0.08em]',
+        'inline-flex items-center rounded-full border border-border-subtle bg-bg-base/40 backdrop-blur-md p-[2px] text-xs md:text-[11px] font-medium tabular-nums tracking-[0.08em]',
         className,
       )}
     >
@@ -49,7 +49,7 @@ export const LanguageSwitcher = ({ className }: { className?: string }) => {
             onClick={() => change(lng.code)}
             aria-pressed={isActive}
             className={cn(
-              'min-w-[34px] px-2.5 py-1 rounded-full transition-colors duration-200',
+              'min-h-9 md:min-h-0 inline-flex items-center justify-center min-w-[42px] md:min-w-[34px] px-3 md:px-2.5 py-1.5 md:py-1 rounded-full transition-colors duration-200',
               isActive
                 ? 'bg-brand-cream text-bg-base'
                 : 'text-white/70 hover:text-white',
