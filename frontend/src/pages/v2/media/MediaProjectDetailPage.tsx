@@ -260,9 +260,14 @@ export default function MediaProjectDetailPageV2() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  /* ---------- share link ---------- */
+  /* ---------- share link ----------
+     Public gallery is served from the dedicated share host (share.monomiagency.com)
+     at the /shared/:token route — NOT the admin origin. Overridable via
+     VITE_SHARE_ORIGIN so dev links resolve against the dev tunnel. The old
+     `${origin}/media/public/${token}` had no matching route (dead 404 link). */
+  const shareOrigin = import.meta.env.VITE_SHARE_ORIGIN || 'https://share.monomiagency.com';
   const shareUrl = project?.isPublic && project.publicShareToken
-    ? `${window.location.origin}/media/public/${project.publicShareToken}`
+    ? `${shareOrigin}/shared/${project.publicShareToken}`
     : null;
 
   const copyShareLink = async () => {

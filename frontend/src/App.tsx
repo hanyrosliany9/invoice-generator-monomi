@@ -14,7 +14,6 @@ import { LoginPage } from './pages/auth/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import GuestAcceptInvitePage from './pages/GuestAcceptInvitePage'
 import GuestProjectViewPage from './pages/GuestProjectViewPage'
-import PublicProjectViewPage from './pages/PublicProjectViewPage'
 import { QuotationsPage } from './pages/QuotationsPage'
 import { InvoicesPage } from './pages/InvoicesPage'
 import { ClientsPage } from './pages/ClientsPage'
@@ -347,7 +346,10 @@ function App() {
         {/* Guest Routes (No Auth Required) */}
         <Route path='/guest/accept' element={<GuestAcceptInvitePage />} />
         <Route path='/guest/project/:projectId' element={<GuestProjectViewPage />} />
-        <Route path='/shared/:token' element={<PublicProjectViewPage />} />
+        {/* Clean public share URL renders the polished v2 gallery (no /v2 prefix
+            needed for client-facing links). The /v2/shared route below is kept
+            for in-app navigation. */}
+        <Route path='/shared/:token' element={<Suspense fallback={<PageLoader />}><V2PublicProjectViewPage /></Suspense>} />
 
         {/* v2 Guest Routes (No Auth Required) */}
         <Route path='/v2/guest/accept' element={<Suspense fallback={<PageLoader />}><V2Guard><V2GuestAcceptInvitePage /></V2Guard></Suspense>} />
