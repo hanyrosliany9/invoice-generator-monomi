@@ -667,7 +667,7 @@ function MonthGrid({
                   type="button"
                   onClick={() => onCreate(day)}
                   className={cn(
-                    'h-5 w-5 rounded-md text-text-tertiary hover:text-text-primary hover:bg-bg-sunken',
+                    'h-6 w-6 rounded-md text-text-tertiary hover:text-text-primary hover:bg-bg-sunken',
                     'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity',
                     'inline-flex items-center justify-center',
                   )}
