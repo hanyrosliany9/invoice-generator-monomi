@@ -4691,6 +4691,7 @@
     "removeRow": "Hapus baris"
   },
   "mediaCollab": {
+    "loadMore": "Muat lainnya",
     "deleteSuccess": "Proyek media berhasil dihapus.",
     "deleteFailed": "Gagal menghapus proyek.",
     "confirmDelete": "Hapus proyek “{{name}}”? Semua aset di dalamnya akan ikut terhapus.",

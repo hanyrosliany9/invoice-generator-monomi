@@ -4510,6 +4510,7 @@
     "removeRow": "Remove row"
   },
   "mediaCollab": {
+    "loadMore": "Load more",
     "deleteSuccess": "Media project deleted.",
     "deleteFailed": "Failed to delete project.",
     "confirmDelete": "Delete project “{{name}}”? All assets inside will also be deleted.",

@@ -99,6 +99,10 @@ export default function MediaProjectDetailPageV2() {
   const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
   const [mediaTypeFilter, setMediaTypeFilter] =
     useState<'all' | 'IMAGE' | 'VIDEO'>('all');
+  // Cap how many tiles render at once — a 440-asset project would otherwise
+  // paint a 35,000px DOM. "Load more" reveals the next page on demand.
+  const PAGE_SIZE = 48;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -374,13 +378,12 @@ export default function MediaProjectDetailPageV2() {
         }
       />
 
-      {/* ───────────────────────────────────────────────────────────
-          Hero — single identity panel. Left: creator + client +
-          collaborators avatar stack. Right: public sharing state
-          (with copyable link if active). Avoids the classic page's
-          stat-card sprawl.
-         ─────────────────────────────────────────────────────────── */}
-      <GlassPanel surface="glass" padding="lg" className="mb-4">
+      {/* On mobile the gallery leads (Drive/iCloud-style); flex `order`
+          restores hero → stats → gallery on md+ without duplicating markup. */}
+      <div className="flex flex-col">
+
+      {/* Hero — identity + sharing panel. */}
+      <GlassPanel surface="glass" padding="lg" className="order-3 md:order-1 mb-4">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8">
           <div className="min-w-0 space-y-5">
             {/* Creator */}
@@ -483,8 +486,8 @@ export default function MediaProjectDetailPageV2() {
           KPI band — four supporting numbers. Total + Direview are
           the load-bearing items; Foto / Video are ambient breakdowns.
          ─────────────────────────────────────────────────────────── */}
-      <section className="mb-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <section className="order-2 md:order-2 mb-8 md:mb-12">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard
             label={t('mediaCollab.kpi.totalAssets', 'Total Aset')}
             value={kpis.total}
@@ -508,12 +511,8 @@ export default function MediaProjectDetailPageV2() {
         </div>
       </section>
 
-      {/* ───────────────────────────────────────────────────────────
-          Gallery — filter pill + grid of asset tiles. Header sticky
-          inline (not a separate primitive). Click a tile to open
-          the detail sheet on the right.
-         ─────────────────────────────────────────────────────────── */}
-      <section className="mb-10">
+      {/* Gallery — leads on mobile (order-1), third on desktop. */}
+      <section className="order-1 md:order-3 mb-8 md:mb-10">
         <GlassPanel surface="glass" padding="lg">
           <div className="mb-5 flex items-baseline justify-between gap-4 flex-wrap">
             <div>
@@ -536,7 +535,7 @@ export default function MediaProjectDetailPageV2() {
                   <button
                     key={opt}
                     type="button"
-                    onClick={() => setMediaTypeFilter(opt)}
+                    onClick={() => { setMediaTypeFilter(opt); setVisibleCount(PAGE_SIZE); }}
                     className={cn(
                       'px-3 py-1.5 rounded-sm transition-colors font-medium',
                       active
@@ -553,7 +552,7 @@ export default function MediaProjectDetailPageV2() {
 
           {/* Pending upload tiles — skeleton placeholders, one per filename */}
           {pendingUploads.length > 0 && (
-            <div className="mb-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="mb-4 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
               {pendingUploads.map((name) => (
                 <div
                   key={name}
@@ -569,7 +568,7 @@ export default function MediaProjectDetailPageV2() {
           )}
 
           {assetsLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
               {Array.from({ length: 10 }).map((_, i) => (
                 <Skeleton key={i} className="aspect-square rounded-md" />
               ))}
@@ -577,24 +576,38 @@ export default function MediaProjectDetailPageV2() {
           ) : filteredAssets.length === 0 ? (
             <UploadZone onPick={() => fileInputRef.current?.click()} />
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {filteredAssets.map((asset) => (
-                <AssetTile
-                  key={asset.id}
-                  asset={asset}
-                  mediaToken={mediaToken}
-                  onClick={() => setSelectedAsset(asset)}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+                {filteredAssets.slice(0, visibleCount).map((asset) => (
+                  <AssetTile
+                    key={asset.id}
+                    asset={asset}
+                    mediaToken={mediaToken}
+                    onClick={() => setSelectedAsset(asset)}
+                  />
+                ))}
+              </div>
+              {filteredAssets.length > visibleCount && (
+                <div className="mt-5 flex justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  >
+                    {t('mediaCollab.loadMore', 'Load more')}
+                    <span className="text-text-tertiary ml-1.5 tabular-nums">
+                      {filteredAssets.length - visibleCount}
+                    </span>
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </GlassPanel>
       </section>
 
-      {/* ───────────────────────────────────────────────────────────
-          Collections — folder-like groupings. Quiet inline list.
-         ─────────────────────────────────────────────────────────── */}
-      <section className="mb-10">
+      {/* Collections — folder-like groupings. */}
+      <section className="order-4 md:order-4 mb-10">
         <GlassPanel surface="glass" padding="lg">
           <div className="mb-5 flex items-baseline justify-between gap-4">
             <div>
@@ -629,6 +642,8 @@ export default function MediaProjectDetailPageV2() {
           )}
         </GlassPanel>
       </section>
+
+      </div>{/* end flex-col order wrapper */}
 
       {/* ───────────────────────────────────────────────────────────
           Asset detail sheet — right-side drawer. Preview + status
@@ -949,26 +964,27 @@ function AssetTile({ asset, mediaToken, onClick }: AssetTileProps) {
         </div>
       )}
 
-      {/* Bottom overlay */}
-      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
-        <div className="text-[11px] text-white font-medium truncate text-left">
-          {asset.originalName}
-        </div>
-        <div className="flex items-center justify-between gap-2 mt-1">
+      {/* Status pill — only when meaningful (most assets are DRAFT; showing
+          it on every tile is noise). Top-left, glassy. */}
+      {asset.status && asset.status !== 'DRAFT' && (
+        <div className="absolute left-1.5 top-1.5">
           <Badge
             variant="outline"
             className={cn(
-              'border-transparent px-1.5 py-0 text-[9px] font-medium uppercase tracking-wider',
+              'border-transparent px-1.5 py-0 text-[9px] font-medium uppercase tracking-wider backdrop-blur-sm',
               assetStatusChip(asset.status),
             )}
           >
             {t(`mediaCollab.assetStatus.${asset.status}`, ASSET_STATUS_LABEL[asset.status] ?? asset.status)}
           </Badge>
-          {asset.size && (
-            <span className="text-[10px] text-white/70 tabular-nums">
-              {formatBytes(Number(asset.size) || 0)}
-            </span>
-          )}
+        </div>
+      )}
+
+      {/* Filename — bottom, on a light gradient. Appears on hover for desktop,
+          always visible on touch where there is no hover. */}
+      <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/75 via-black/25 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 transition-opacity">
+        <div className="text-[10px] text-white/90 font-medium truncate text-left">
+          {asset.originalName}
         </div>
       </div>
     </button>

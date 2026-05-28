@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
-  Plus, Search, MoreHorizontal, Trash2, Film, Image as ImageIcon,
+  Plus, Search, MoreHorizontal, Trash2, Film,
   X, Eye, FolderOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -257,13 +257,10 @@ export default function MediaCollaborationPageV2() {
 
         {/* Body */}
         {isLoading ? (
-          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Skeleton className="h-[150px] rounded-lg" />
-            <Skeleton className="h-[150px] rounded-lg" />
-            <Skeleton className="h-[150px] rounded-lg" />
-            <Skeleton className="h-[150px] rounded-lg" />
-            <Skeleton className="h-[150px] rounded-lg" />
-            <Skeleton className="h-[150px] rounded-lg" />
+          <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-[76px] rounded-xl" />
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState
@@ -292,7 +289,7 @@ export default function MediaCollaborationPageV2() {
             }
           />
         ) : (
-          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-2 gap-3">
             {filtered.map((p) => (
               <ProjectCard
                 key={p.id}
@@ -338,90 +335,84 @@ function ProjectCard({ project, onOpen, onDelete }: ProjectCardProps) {
       tabIndex={0}
       role="button"
       className={cn(
-        'group relative flex flex-col h-full p-5 rounded-lg border border-border-subtle',
+        'group relative flex items-center gap-3.5 p-3.5 rounded-xl border border-border-subtle',
         'bg-bg-sunken/60 hover:bg-bg-sunken transition-colors cursor-pointer',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-navy/40',
       )}
     >
-      {/* Top row — name + kebab */}
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <h3 className="text-base font-display font-semibold text-text-primary leading-tight truncate min-w-0">
-          {project.name}
-        </h3>
-        <div onClick={(e) => e.stopPropagation()} className="shrink-0 -mt-1 -mr-1">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="text-text-tertiary hover:text-text-primary opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                aria-label={t('mediaCollab.projectActions', 'Aksi proyek')}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={onOpen}>
-                <Eye className="h-3.5 w-3.5" /> {t('mediaCollab.open', 'Buka')}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={onDelete}
-                className="text-danger focus:text-danger"
-              >
-                <Trash2 className="h-3.5 w-3.5" /> {t('mediaCollab.delete', 'Hapus')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+      {/* Leading folder glyph — reads as a media workspace, Drive/iCloud-style. */}
+      <div className="shrink-0 h-12 w-12 rounded-lg bg-bg-raised border border-border-subtle flex items-center justify-center text-text-tertiary group-hover:text-text-secondary transition-colors">
+        <FolderOpen className="h-5 w-5" strokeWidth={1.5} />
       </div>
 
-      {/* Description */}
-      <p className="text-sm text-text-secondary leading-relaxed line-clamp-2 mb-4 min-h-[2.5rem]">
-        {project.description || t('mediaCollab.noDescription', 'Tanpa deskripsi.')}
-      </p>
-
-      {/* Counts strip */}
-      <div className="flex items-center gap-4 text-xs text-text-tertiary mb-4">
-        <span className="inline-flex items-center gap-1.5">
-          <ImageIcon className="h-3.5 w-3.5" />
-          <span className="text-text-secondary tabular-nums">{assetCount}</span>
-          {t('mediaCollab.assets', 'aset')}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <Users className="h-3.5 w-3.5" />
-          <span className="text-text-secondary tabular-nums">{collaboratorCount}</span>
-          {t('mediaCollab.collaborators', 'kolaborator')}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <Folder className="h-3.5 w-3.5" />
-          <span className="text-text-secondary tabular-nums">{collectionCount}</span>
-          {t('mediaCollab.collections', 'koleksi')}
-        </span>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-auto pt-3 border-t border-border-subtle/60 flex items-center justify-between gap-2 text-xs">
-        <span className="text-text-tertiary truncate min-w-0">
-          {t('mediaCollab.by', 'oleh')}{' '}
-          <span className="text-text-secondary">
-            {project.creator?.name ?? '—'}
-          </span>
-        </span>
-        <div className="flex items-center gap-2 shrink-0">
+      {/* Body — name, then a single quiet meta line. */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h3 className="text-[15px] font-display font-semibold text-text-primary leading-tight truncate min-w-0">
+            {project.name}
+          </h3>
           {project.isPublic && (
             <Badge
               variant="outline"
-              className="border-transparent bg-info/10 text-info px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
+              className="shrink-0 border-transparent bg-info/10 text-info px-1.5 py-0 text-[9px] font-medium uppercase tracking-wider"
             >
               {t('mediaCollab.public', 'Publik')}
             </Badge>
           )}
-          <DateDisplay
-            date={project.updatedAt}
-            className="text-text-tertiary"
-          />
         </div>
+        <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-text-tertiary">
+          <span className="tabular-nums text-text-secondary">{assetCount}</span>
+          {t('mediaCollab.assets', 'aset')}
+          {collaboratorCount > 0 && (
+            <>
+              <span className="text-border-default">·</span>
+              <Users className="h-3 w-3" />
+              <span className="tabular-nums text-text-secondary">{collaboratorCount}</span>
+            </>
+          )}
+          {collectionCount > 0 && (
+            <>
+              <span className="text-border-default">·</span>
+              <Folder className="h-3 w-3" />
+              <span className="tabular-nums text-text-secondary">{collectionCount}</span>
+            </>
+          )}
+          <span className="text-border-default">·</span>
+          <DateDisplay date={project.updatedAt} className="text-text-tertiary" />
+        </div>
+        {project.description && (
+          <p className="mt-1 text-xs text-text-secondary/80 leading-snug line-clamp-1">
+            {project.description}
+          </p>
+        )}
+      </div>
+
+      {/* Kebab */}
+      <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-text-tertiary hover:text-text-primary md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 transition-opacity"
+              aria-label={t('mediaCollab.projectActions', 'Aksi proyek')}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onClick={onOpen}>
+              <Eye className="h-3.5 w-3.5" /> {t('mediaCollab.open', 'Buka')}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={onDelete}
+              className="text-danger focus:text-danger"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> {t('mediaCollab.delete', 'Hapus')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </article>
   );
