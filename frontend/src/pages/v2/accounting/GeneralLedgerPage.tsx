@@ -182,7 +182,7 @@ export default function GeneralLedgerPageV2() {
               <DropdownMenuTrigger asChild>
                 <Button size="sm" variant="outline">
                   <Download className="h-4 w-4" />
-                  Ekspor
+                  {t('accounting.generalLedger.export', 'Export')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -205,19 +205,19 @@ export default function GeneralLedgerPageV2() {
             ) : (
               <>
                 <StatCard
-                  label="Total Entri"
+                  label={t('accounting.generalLedger.statKpiEntries', 'Total Entries')}
                   value={summary.totalEntries.toLocaleString('id-ID')}
-                  sublabel="dalam periode dipilih"
+                  sublabel={t('accounting.generalLedger.statKpiEntriesSub', 'in selected period')}
                 />
                 <StatCard
-                  label="Total Debit"
+                  label={t('accounting.generalLedger.statKpiDebit', 'Total Debit')}
                   value={<MoneyDisplay amount={toNumber(summary.totalDebit)} />}
-                  sublabel="akumulasi seluruh akun"
+                  sublabel={t('accounting.generalLedger.statKpiDebitSub', 'accumulated across all accounts')}
                 />
                 <StatCard
-                  label="Total Kredit"
+                  label={t('accounting.generalLedger.statKpiCredit', 'Total Credit')}
                   value={<MoneyDisplay amount={toNumber(summary.totalCredit)} />}
-                  sublabel="akumulasi seluruh akun"
+                  sublabel={t('accounting.generalLedger.statKpiCreditSub', 'accumulated across all accounts')}
                 />
               </>
             )}
@@ -260,10 +260,10 @@ export default function GeneralLedgerPageV2() {
                     size="sm"
                     className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[200px] max-w-[260px]"
                   >
-                    <SelectValue placeholder="Akun" />
+                    <SelectValue placeholder={t('accounting.generalLedger.allAccounts', 'All Accounts')} />
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
-                    <SelectItem value="all">Semua Akun</SelectItem>
+                    <SelectItem value="all">{t('accounting.generalLedger.allAccounts', 'All Accounts')}</SelectItem>
                     {accounts.map((a) => (
                       <SelectItem key={a.code} value={a.code}>
                         <span className="font-mono text-xs text-text-tertiary mr-2">{a.code}</span>
@@ -284,15 +284,15 @@ export default function GeneralLedgerPageV2() {
                     size="sm"
                     className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[150px]"
                   >
-                    <SelectValue placeholder="Tipe" />
+                    <SelectValue placeholder={t('accounting.generalLedger.allTypes', 'All Types')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Semua Tipe</SelectItem>
-                    <SelectItem value="ASSET">Aset</SelectItem>
-                    <SelectItem value="LIABILITY">Liabilitas</SelectItem>
-                    <SelectItem value="EQUITY">Ekuitas</SelectItem>
-                    <SelectItem value="REVENUE">Pendapatan</SelectItem>
-                    <SelectItem value="EXPENSE">Beban</SelectItem>
+                    <SelectItem value="all">{t('accounting.generalLedger.allTypes', 'All Types')}</SelectItem>
+                    <SelectItem value="ASSET">{t('accounting.accountTypes.ASSET', 'Asset')}</SelectItem>
+                    <SelectItem value="LIABILITY">{t('accounting.accountTypes.LIABILITY', 'Liability')}</SelectItem>
+                    <SelectItem value="EQUITY">{t('accounting.accountTypes.EQUITY', 'Equity')}</SelectItem>
+                    <SelectItem value="REVENUE">{t('accounting.accountTypes.REVENUE', 'Revenue')}</SelectItem>
+                    <SelectItem value="EXPENSE">{t('accounting.accountTypes.EXPENSE', 'Expense')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -304,7 +304,7 @@ export default function GeneralLedgerPageV2() {
                 <Input
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
-                  placeholder="Cari kode akun, nomor jurnal, deskripsi..."
+                  placeholder={t('accounting.generalLedger.searchPlaceholder', 'Search account code, journal number, description...')}
                   className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
                 />
               </div>
@@ -340,7 +340,7 @@ export default function GeneralLedgerPageV2() {
               }
               action={
                 hasActiveFilters ? (
-                  <Button variant="outline" size="sm" onClick={resetFilters}>Reset Filter</Button>
+                  <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.generalLedger.resetFilter', 'Reset Filter')}</Button>
                 ) : undefined
               }
             />
@@ -361,6 +361,7 @@ export default function GeneralLedgerPageV2() {
 /* ------------------------------------------------------------------ */
 
 function LedgerTable({ rows }: { rows: LedgerEntry[] }) {
+  const { t } = useTranslation();
   return (
     <DataTable<LedgerEntry>
       data={rows}
@@ -368,7 +369,7 @@ function LedgerTable({ rows }: { rows: LedgerEntry[] }) {
       columns={[
         {
           accessorKey: 'entryDate',
-          header: 'Tanggal',
+          header: t('accounting.generalLedger.colDate', 'Date'),
           cell: ({ row }) => (
             <span className="text-text-tertiary text-xs">
               <DateDisplay date={row.original.entryDate} />
@@ -377,7 +378,7 @@ function LedgerTable({ rows }: { rows: LedgerEntry[] }) {
         },
         {
           id: 'journal',
-          header: 'Jurnal',
+          header: t('accounting.generalLedger.colJournal', 'Journal'),
           accessorFn: (row) => row.journalEntry?.entryNumber ?? '',
           cell: ({ row }) => (
             <span className="font-mono text-xs text-text-primary tracking-tight">
@@ -387,7 +388,7 @@ function LedgerTable({ rows }: { rows: LedgerEntry[] }) {
         },
         {
           id: 'account',
-          header: 'Akun',
+          header: t('accounting.generalLedger.colAccount', 'Account'),
           accessorFn: (row) => `${row.accountCode} ${row.accountNameId}`,
           cell: ({ row }) => {
             const r = row.original;
@@ -406,7 +407,7 @@ function LedgerTable({ rows }: { rows: LedgerEntry[] }) {
         },
         {
           id: 'description',
-          header: 'Deskripsi',
+          header: t('accounting.generalLedger.colDescription', 'Description'),
           accessorFn: (row) => row.journalEntry?.descriptionId ?? '',
           cell: ({ row }) => (
             <div className="min-w-0 max-w-[280px] text-sm text-text-secondary truncate">
@@ -418,7 +419,7 @@ function LedgerTable({ rows }: { rows: LedgerEntry[] }) {
         },
         {
           accessorKey: 'debit',
-          header: () => <span className="block text-right">Debit</span>,
+          header: () => <span className="block text-right">{t('accounting.generalLedger.colDebit', 'Debit')}</span>,
           cell: ({ row }) => {
             const v = toNumber(row.original.debit);
             return (
@@ -432,7 +433,7 @@ function LedgerTable({ rows }: { rows: LedgerEntry[] }) {
         },
         {
           accessorKey: 'credit',
-          header: () => <span className="block text-right">Kredit</span>,
+          header: () => <span className="block text-right">{t('accounting.generalLedger.colCredit', 'Credit')}</span>,
           cell: ({ row }) => {
             const v = toNumber(row.original.credit);
             return (
@@ -446,7 +447,7 @@ function LedgerTable({ rows }: { rows: LedgerEntry[] }) {
         },
         {
           accessorKey: 'runningBalance',
-          header: () => <span className="block text-right">Saldo</span>,
+          header: () => <span className="block text-right">{t('accounting.generalLedger.colBalance', 'Balance')}</span>,
           cell: ({ row }) => {
             const v = toNumber(row.original.runningBalance);
             return (

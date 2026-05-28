@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { useDateLocale } from '@/lib/dateLocale';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Scale, BookOpen, TrendingUp, Activity,
@@ -65,6 +65,7 @@ const typeChipClass = (type: string) => {
 
 export default function TrialBalancePageV2() {
   const { t } = useTranslation();
+  const idLocale = useDateLocale();
   const user = useAuthStore((state) => state.user);
   const today = new Date();
   const [startDate, setStartDate] = useState<Date>(startOfMonth(today));
@@ -171,13 +172,13 @@ export default function TrialBalancePageV2() {
                 className="text-text-tertiary hover:text-text-primary"
               >
                 <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
-                Muat Ulang
+                {t('accounting.trialBalance.reload', 'Reload')}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
                     <Download className="h-4 w-4" />
-                    Ekspor
+                    {t('accounting.trialBalance.export', 'Export')}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
@@ -193,7 +194,7 @@ export default function TrialBalancePageV2() {
         <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 mb-8 px-4 sm:px-6 lg:px-8 py-3 bg-bg-base/85 backdrop-blur-[24px] border-b border-border-subtle">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3 text-xs text-text-tertiary uppercase tracking-[0.16em]">
-              <span>Periode</span>
+              <span>{t('accounting.trialBalance.period', 'Period')}</span>
               <span className="text-text-primary normal-case tracking-normal font-display text-sm">
                 {format(startDate, 'd MMM yyyy', { locale: idLocale })} – {format(endDate, 'd MMM yyyy', { locale: idLocale })}
               </span>
@@ -203,7 +204,7 @@ export default function TrialBalancePageV2() {
                 <MonomiDatePicker
                   value={startDate}
                   onChange={(d) => d && setStartDate(d)}
-                  placeholder="Tanggal mulai"
+                  placeholder={t('accounting.trialBalance.startDate', 'Start date')}
                 />
               </div>
               <span className="text-text-tertiary text-xs">→</span>
@@ -211,7 +212,7 @@ export default function TrialBalancePageV2() {
                 <MonomiDatePicker
                   value={endDate}
                   onChange={(d) => d && setEndDate(d)}
-                  placeholder="Tanggal akhir"
+                  placeholder={t('accounting.trialBalance.endDate', 'End date')}
                 />
               </div>
             </div>
@@ -224,11 +225,11 @@ export default function TrialBalancePageV2() {
           <div className="mb-6 flex items-start gap-3 rounded-md border border-danger/30 bg-danger/5 px-4 py-3">
             <AlertTriangle className="h-4 w-4 text-danger mt-0.5 shrink-0" />
             <div className="text-sm">
-              <div className="font-medium text-text-primary">Neraca saldo tidak seimbang</div>
+              <div className="font-medium text-text-primary">{t('accounting.trialBalance.imbalanceTitle', 'Trial balance is not balanced')}</div>
               <div className="mt-0.5 text-text-secondary">
-                Selisih{' '}
-                <MoneyDisplay amount={Math.abs(data.summary.difference)} className="text-danger" />
-                {' '}antara total debit dan kredit. Periksa jurnal entri yang tidak seimbang.
+                {t('accounting.trialBalance.imbalanceDesc', {
+                  amount: Math.abs(data.summary.difference).toLocaleString('id-ID'),
+                })}
               </div>
             </div>
           </div>
@@ -238,11 +239,11 @@ export default function TrialBalancePageV2() {
           <div className="mb-6 flex items-center gap-3 text-xs text-text-tertiary">
             <CheckCircle2 className="h-3.5 w-3.5 text-success" />
             <span>
-              Buku besar seimbang —{' '}
+              {t('accounting.trialBalance.balancedMsg', 'General ledger is balanced')} —{' '}
               <MoneyDisplay amount={data.summary.totalDebit} className="text-text-secondary" />
               {' debit = '}
               <MoneyDisplay amount={data.summary.totalCredit} className="text-text-secondary" />
-              {' kredit'}
+              {' credit'}
             </span>
           </div>
         )}
@@ -265,7 +266,7 @@ export default function TrialBalancePageV2() {
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Cari kode atau nama akun..."
+                  placeholder={t('accounting.trialBalance.searchPlaceholder', 'Search by account code or name...')}
                   className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
                 />
               </div>
@@ -275,15 +276,15 @@ export default function TrialBalancePageV2() {
                     size="sm"
                     className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[150px]"
                   >
-                    <SelectValue placeholder="Tipe Akun" />
+                    <SelectValue placeholder={t('accounting.trialBalance.allTypes', 'All Types')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Semua Tipe</SelectItem>
-                    <SelectItem value="ASSET">Aset</SelectItem>
-                    <SelectItem value="LIABILITY">Kewajiban</SelectItem>
-                    <SelectItem value="EQUITY">Ekuitas</SelectItem>
-                    <SelectItem value="REVENUE">Pendapatan</SelectItem>
-                    <SelectItem value="EXPENSE">Beban</SelectItem>
+                    <SelectItem value="all">{t('accounting.trialBalance.allTypes', 'All Types')}</SelectItem>
+                    <SelectItem value="ASSET">{t('accounting.accountTypes.ASSET', 'Asset')}</SelectItem>
+                    <SelectItem value="LIABILITY">{t('accounting.accountTypes.LIABILITY', 'Liability')}</SelectItem>
+                    <SelectItem value="EQUITY">{t('accounting.accountTypes.EQUITY', 'Equity')}</SelectItem>
+                    <SelectItem value="REVENUE">{t('accounting.accountTypes.REVENUE', 'Revenue')}</SelectItem>
+                    <SelectItem value="EXPENSE">{t('accounting.accountTypes.EXPENSE', 'Expense')}</SelectItem>
                   </SelectContent>
                 </Select>
                 {hasActiveFilters && (
@@ -293,7 +294,7 @@ export default function TrialBalancePageV2() {
                     onClick={resetFilters}
                     className="text-text-tertiary hover:text-text-primary"
                   >
-                    Reset
+                    {t('accounting.trialBalance.resetFilter', 'Reset')}
                   </Button>
                 )}
               </div>
@@ -314,7 +315,7 @@ export default function TrialBalancePageV2() {
                   action={
                     hasActiveFilters ? (
                       <Button variant="outline" size="sm" onClick={resetFilters}>
-                        Reset Filter
+                        {t('accounting.trialBalance.resetFilter', 'Reset')}
                       </Button>
                     ) : undefined
                   }
@@ -333,19 +334,19 @@ export default function TrialBalancePageV2() {
                 <thead className="border-b border-border-subtle bg-bg-sunken">
                   <tr>
                     <th className="px-4 py-3 text-left text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">
-                      Kode
+                      {t('accounting.trialBalance.colCode', 'Code')}
                     </th>
                     <th className="px-4 py-3 text-left text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">
-                      Akun
+                      {t('accounting.trialBalance.colAccount', 'Account')}
                     </th>
                     <th className="px-4 py-3 text-left text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">
-                      Tipe
+                      {t('accounting.trialBalance.colType', 'Type')}
                     </th>
                     <th className="px-4 py-3 text-right text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">
-                      Debit
+                      {t('accounting.trialBalance.colDebit', 'Debit')}
                     </th>
                     <th className="px-4 py-3 text-right text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">
-                      Kredit
+                      {t('accounting.trialBalance.colCredit', 'Credit')}
                     </th>
                   </tr>
                 </thead>
@@ -384,7 +385,7 @@ export default function TrialBalancePageV2() {
                             typeChipClass(b.accountType),
                           )}
                         >
-                          {typeLabel(b.accountType)}
+                          {t(`accounting.accountTypes.${b.accountType}`, typeLabel(b.accountType))}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -423,11 +424,11 @@ export default function TrialBalancePageV2() {
                   <tr className="border-t-2 border-border-strong">
                     <td colSpan={3} className="px-4 py-4">
                       <span className="text-xs font-display font-semibold text-text-primary uppercase tracking-wider">
-                        Total
+                        {t('accounting.trialBalance.total', 'Total')}
                       </span>
                       {hasActiveFilters && (
                         <span className="ml-2 text-[10px] uppercase tracking-wider text-text-tertiary">
-                          (terfilter)
+                          ({t('accounting.trialBalance.filtered', 'filtered')})
                         </span>
                       )}
                     </td>

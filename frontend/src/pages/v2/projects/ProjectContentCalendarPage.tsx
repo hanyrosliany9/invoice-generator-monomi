@@ -14,7 +14,6 @@ import {
   isSameMonth, isToday, startOfMonth, startOfWeek,
   isWithinInterval, parseISO,
 } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 import { AppShell } from '@/components/monomi/AppShell';
@@ -48,6 +47,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 import { useAuthStore } from '@/store/auth';
+import { useDateLocale } from '@/lib/dateLocale';
+import type { Locale } from 'date-fns/locale';
 import contentCalendarService, {
   type ContentCalendarItem,
   type CreateContentDto,
@@ -149,6 +150,7 @@ type ViewMode = 'month' | 'list';
 export default function ProjectContentCalendarPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const { t } = useTranslation();
+  const idLocale = useDateLocale();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
@@ -520,6 +522,7 @@ export default function ProjectContentCalendarPage() {
               postsByDay={postsByDay}
               onSelect={setSelectedItem}
               onCreate={openCreate}
+              idLocale={idLocale}
             />
           ) : filtered.length === 0 ? (
             <EmptyState
@@ -552,6 +555,7 @@ export default function ProjectContentCalendarPage() {
               onDelete={(id) => {
                 if (confirm(t('projectContentCalendar.confirmDeleteContent', 'Delete this content?'))) deleteMutation.mutate(id);
               }}
+              idLocale={idLocale}
             />
           )}
         </GlassPanel>
@@ -582,6 +586,7 @@ export default function ProjectContentCalendarPage() {
         onClose={() => setSelectedItem(null)}
         onPublish={(id) => publishMutation.mutate(id)}
         onArchive={(id) => archiveMutation.mutate(id)}
+        idLocale={idLocale}
         onDelete={(id) => {
           if (confirm('Hapus konten ini?')) deleteMutation.mutate(id);
         }}
@@ -605,13 +610,14 @@ export default function ProjectContentCalendarPage() {
 /* ------------------------------------------------------------------ */
 
 function MonthGrid({
-  monthMatrix, cursor, postsByDay, onSelect, onCreate,
+  monthMatrix, cursor, postsByDay, onSelect, onCreate, idLocale,
 }: {
   monthMatrix: Date[];
   cursor: Date;
   postsByDay: Map<string, ContentCalendarItem[]>;
   onSelect: (it: ContentCalendarItem) => void;
   onCreate: (date: Date) => void;
+  idLocale: Locale;
 }) {
   const { t } = useTranslation();
   return (
@@ -725,13 +731,14 @@ function MonthGrid({
 /* ------------------------------------------------------------------ */
 
 function ListView({
-  items, onSelect, onPublish, onArchive, onDelete,
+  items, onSelect, onPublish, onArchive, onDelete, idLocale,
 }: {
   items: ContentCalendarItem[];
   onSelect: (it: ContentCalendarItem) => void;
   onPublish: (id: string) => void;
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
+  idLocale: Locale;
 }) {
   const { t } = useTranslation();
   const sorted = useMemo(() => [...items].sort((a, b) => {
@@ -896,13 +903,14 @@ function DraftCard({ item, onSelect }: { item: ContentCalendarItem; onSelect: ()
 /* ------------------------------------------------------------------ */
 
 function DetailSheet({
-  item, onClose, onPublish, onArchive, onDelete,
+  item, onClose, onPublish, onArchive, onDelete, idLocale,
 }: {
   item: ContentCalendarItem | null;
   onClose: () => void;
   onPublish: (id: string) => void;
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
+  idLocale: Locale;
 }) {
   const { t } = useTranslation();
   return (

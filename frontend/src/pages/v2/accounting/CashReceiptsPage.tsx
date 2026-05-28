@@ -62,13 +62,17 @@ import { cn } from '@/lib/utils';
 /*  pattern mirrors v2/expenses so the eye learns one rule.            */
 /* ------------------------------------------------------------------ */
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT:     'Draft',
-  SUBMITTED: 'Diajukan',
-  APPROVED:  'Disetujui',
-  REJECTED:  'Ditolak',
-  POSTED:    'Diposting',
-  VOID:      'Void',
+const STATUS_LABEL_KEY: Record<string, string> = {
+  DRAFT:     'accounting.cashReceipts.statusDraft',
+  SUBMITTED: 'accounting.cashReceipts.statusSubmitted',
+  APPROVED:  'accounting.cashReceipts.statusApproved',
+  REJECTED:  'accounting.cashReceipts.statusRejected',
+  POSTED:    'accounting.cashReceipts.statusPosted',
+  VOID:      'accounting.cashReceipts.statusVoid',
+};
+const STATUS_LABEL_FALLBACK: Record<string, string> = {
+  DRAFT: 'Draft', SUBMITTED: 'Submitted', APPROVED: 'Approved',
+  REJECTED: 'Rejected', POSTED: 'Posted', VOID: 'Void',
 };
 
 const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
@@ -80,25 +84,30 @@ const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['v
   VOID:      'outline',
 };
 
-const CATEGORY_LABEL: Record<string, string> = {
-  OPERATING: 'Operasional',
-  INVESTING: 'Investasi',
-  FINANCING: 'Pendanaan',
+const CATEGORY_LABEL_KEY: Record<string, string> = {
+  OPERATING: 'accounting.cashReceipts.categoryOperating',
+  INVESTING:  'accounting.cashReceipts.categoryInvesting',
+  FINANCING:  'accounting.cashReceipts.categoryFinancing',
+};
+const CATEGORY_LABEL_FALLBACK: Record<string, string> = {
+  OPERATING: 'Operating', INVESTING: 'Investing', FINANCING: 'Financing',
 };
 
-const PAYMENT_METHOD_LABEL: Record<string, string> = {
-  CASH:          'Tunai',
-  BANK_TRANSFER: 'Transfer Bank',
-  CREDIT_CARD:   'Kartu Kredit',
-  DEBIT_CARD:    'Kartu Debit',
-  CHEQUE:        'Cek',
-  E_WALLET:      'E-Wallet',
-  OTHER:         'Lainnya',
+const PAYMENT_METHOD_LABEL_KEY: Record<string, string> = {
+  CASH:          'accounting.cashReceipts.paymentCash',
+  BANK_TRANSFER: 'accounting.cashReceipts.paymentBankTransfer',
+  CREDIT_CARD:   'accounting.cashReceipts.paymentCreditCard',
+  DEBIT_CARD:    'accounting.cashReceipts.paymentDebitCard',
+  CHEQUE:        'accounting.cashReceipts.paymentCheque',
+  E_WALLET:      'accounting.cashReceipts.paymentEWallet',
+  OTHER:         'accounting.cashReceipts.paymentOther',
+};
+const PAYMENT_METHOD_LABEL_FALLBACK: Record<string, string> = {
+  CASH: 'Cash', BANK_TRANSFER: 'Bank Transfer', CREDIT_CARD: 'Credit Card',
+  DEBIT_CARD: 'Debit Card', CHEQUE: 'Cheque', E_WALLET: 'E-Wallet', OTHER: 'Other',
 };
 
-const getStatusLabel    = (s?: string) => STATUS_LABEL[s ?? ''] ?? (s ?? '—');
 const getStatusVariant  = (s?: string) => STATUS_BADGE_VARIANT[s ?? ''] ?? 'secondary';
-const getCategoryLabel  = (s?: string) => CATEGORY_LABEL[s ?? ''] ?? (s ?? '—');
 
 /* ------------------------------------------------------------------ */
 /*  Numeric helpers                                                    */
@@ -139,6 +148,9 @@ const formatIDR = (n: number) =>
 
 export default function CashReceiptsPageV2() {
   const { t } = useTranslation();
+  const getStatusLabel   = (s?: string) => t(STATUS_LABEL_KEY[s ?? ''] ?? '', STATUS_LABEL_FALLBACK[s ?? ''] ?? (s ?? '—'));
+  const getCategoryLabel = (s?: string) => t(CATEGORY_LABEL_KEY[s ?? ''] ?? '', CATEGORY_LABEL_FALLBACK[s ?? ''] ?? (s ?? '—'));
+  const getPaymentMethodLabel = (s?: string) => t(PAYMENT_METHOD_LABEL_KEY[s ?? ''] ?? '', PAYMENT_METHOD_LABEL_FALLBACK[s ?? ''] ?? (s ?? '—'));
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
@@ -193,28 +205,28 @@ export default function CashReceiptsPageV2() {
 
   const submitMutation = useMutation({
     mutationFn: submitCashTransaction,
-    onSuccess: () => { toast.success(t('accounting.cashReceipts.submitSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.cashReceipts.submitFail')),
+    onSuccess: () => { toast.success(t('accounting.cashReceipts.submitSuccess', 'Receipt submitted')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashReceipts.submitFail', 'Failed to submit receipt')),
   });
   const approveMutation = useMutation({
     mutationFn: approveCashTransaction,
-    onSuccess: () => { toast.success(t('accounting.cashReceipts.approveSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.cashReceipts.approveFail')),
+    onSuccess: () => { toast.success(t('accounting.cashReceipts.approveSuccess', 'Receipt approved')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashReceipts.approveFail', 'Failed to approve receipt')),
   });
   const rejectMutation = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) => rejectCashTransaction(id, reason),
-    onSuccess: () => { toast.success(t('accounting.cashReceipts.rejectSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.cashReceipts.rejectFail')),
+    onSuccess: () => { toast.success(t('accounting.cashReceipts.rejectSuccess', 'Receipt rejected')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashReceipts.rejectFail', 'Failed to reject receipt')),
   });
   const voidMutation = useMutation({
     mutationFn: voidCashTransaction,
-    onSuccess: () => { toast.success(t('accounting.cashReceipts.voidSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.cashReceipts.voidFail')),
+    onSuccess: () => { toast.success(t('accounting.cashReceipts.voidSuccess', 'Receipt voided')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashReceipts.voidFail', 'Failed to void receipt')),
   });
   const deleteMutation = useMutation({
     mutationFn: deleteCashTransaction,
-    onSuccess: () => { toast.success(t('accounting.cashReceipts.deleteSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.cashReceipts.deleteFail')),
+    onSuccess: () => { toast.success(t('accounting.cashReceipts.deleteSuccess', 'Receipt deleted')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashReceipts.deleteFail', 'Failed to delete receipt')),
   });
 
   /* ----- derived KPI band — Hari Ini / Bulan Ini / Top sumber ------- */
@@ -280,9 +292,9 @@ export default function CashReceiptsPageV2() {
       <Shell>
         <EmptyState
           icon={<ArrowDownLeft className="h-12 w-12" />}
-          title={t('accounting.cashReceipts.errorTitle')}
-          description={error instanceof Error ? error.message : t('accounting.cashReceipts.errorDesc')}
-          action={<Button onClick={() => refetch()}>{t('accounting.cashReceipts.retry')}</Button>}
+          title={t('accounting.cashReceipts.errorTitle', 'Cannot load cash receipts')}
+          description={error instanceof Error ? error.message : t('accounting.cashReceipts.errorDesc', 'An error occurred')}
+          action={<Button onClick={() => refetch()}>{t('accounting.cashReceipts.retry', 'Try Again')}</Button>}
         />
       </Shell>
     );
@@ -292,8 +304,8 @@ export default function CashReceiptsPageV2() {
   return (
     <Shell>
       <PageHeader
-        title={t('accounting.cashReceipts.title')}
-        description={t('accounting.cashReceipts.description')}
+        title={t('accounting.cashReceipts.title', 'Cash Receipts')}
+        description={t('accounting.cashReceipts.description', 'Record, submit, and post incoming cash transactions.')}
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -302,11 +314,11 @@ export default function CashReceiptsPageV2() {
               onClick={() => navigate('/accounting/cash-bank-balance')}
             >
               <Wallet className="h-4 w-4" />
-              {t('accounting.cashReceipts.cashBalance')}
+              {t('accounting.cashReceipts.cashBalance', 'Cash Balance')}
             </Button>
             <Button onClick={() => navigate('/accounting/cash-receipts')} size="sm">
               <Plus className="h-4 w-4" />
-              {t('accounting.cashReceipts.newReceipt')}
+              {t('accounting.cashReceipts.newReceipt', 'New Receipt')}
             </Button>
           </div>
         }
@@ -330,28 +342,28 @@ export default function CashReceiptsPageV2() {
           ) : (
             <>
               <StatCard
-                label="Hari Ini"
+                label={t('accounting.cashReceipts.statToday', 'Today')}
                 value={<MoneyDisplay amount={stats.todayAmount} />}
-                sublabel="penerimaan kas hari ini"
+                sublabel={t('accounting.cashReceipts.statTodaySub', "today's cash receipts")}
               />
               <StatCard
-                label="Bulan Ini"
+                label={t('accounting.cashReceipts.statThisMonth', 'This Month')}
                 value={<MoneyDisplay amount={stats.monthAmount} />}
-                sublabel="kas masuk bulan berjalan"
+                sublabel={t('accounting.cashReceipts.statThisMonthSub', 'cash inflow this month')}
               />
               <StatCard
-                label="Total (Filter)"
+                label={t('accounting.cashReceipts.statTotal', 'Total (Filter)')}
                 value={<MoneyDisplay amount={stats.totalAmount} />}
-                sublabel="sesuai filter aktif"
+                sublabel={t('accounting.cashReceipts.statTotalSub', 'matching active filter')}
               />
               <StatCard
-                label="Sumber Teratas"
+                label={t('accounting.cashReceipts.statTopSource', 'Top Source')}
                 value={
                   <span className="text-base sm:text-lg font-display font-semibold text-text-primary truncate block">
                     {stats.topSourceName}
                   </span>
                 }
-                sublabel={stats.topSourceAmount > 0 ? formatIDR(stats.topSourceAmount) : 'belum ada data'}
+                sublabel={stats.topSourceAmount > 0 ? formatIDR(stats.topSourceAmount) : t('accounting.cashReceipts.noData', 'no data yet')}
               />
             </>
           )}
@@ -370,7 +382,7 @@ export default function CashReceiptsPageV2() {
               <Input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Cari nomor transaksi atau deskripsi..."
+                placeholder={t('accounting.cashReceipts.searchPlaceholder', 'Search by transaction number or description...')}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -381,10 +393,10 @@ export default function CashReceiptsPageV2() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[180px]"
                 >
-                  <SelectValue placeholder="Akun Kas" />
+                  <SelectValue placeholder={t('accounting.cashReceipts.cashAccountPlaceholder', 'Cash Account')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Akun Kas</SelectItem>
+                  <SelectItem value="all">{t('accounting.cashReceipts.allCashAccounts', 'All Cash Accounts')}</SelectItem>
                   {cashAccounts.map((acc) => (
                     <SelectItem key={acc.id} value={acc.id}>
                       {acc.code} — {acc.nameId}
@@ -398,13 +410,13 @@ export default function CashReceiptsPageV2() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[140px]"
                 >
-                  <SelectValue placeholder="Kategori" />
+                  <SelectValue placeholder={t('accounting.cashReceipts.categoryPlaceholder', 'Category')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Kategori</SelectItem>
-                  <SelectItem value="OPERATING">Operasional</SelectItem>
-                  <SelectItem value="INVESTING">Investasi</SelectItem>
-                  <SelectItem value="FINANCING">Pendanaan</SelectItem>
+                  <SelectItem value="all">{t('accounting.cashReceipts.allCategories', 'All Categories')}</SelectItem>
+                  <SelectItem value="OPERATING">{t('accounting.cashReceipts.categoryOperating', 'Operating')}</SelectItem>
+                  <SelectItem value="INVESTING">{t('accounting.cashReceipts.categoryInvesting', 'Investing')}</SelectItem>
+                  <SelectItem value="FINANCING">{t('accounting.cashReceipts.categoryFinancing', 'Financing')}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -413,15 +425,15 @@ export default function CashReceiptsPageV2() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[140px]"
                 >
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('accounting.cashReceipts.statusPlaceholder', 'Status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Status</SelectItem>
-                  <SelectItem value="DRAFT">Draft</SelectItem>
-                  <SelectItem value="SUBMITTED">Diajukan</SelectItem>
-                  <SelectItem value="POSTED">Diposting</SelectItem>
-                  <SelectItem value="REJECTED">Ditolak</SelectItem>
-                  <SelectItem value="VOID">Void</SelectItem>
+                  <SelectItem value="all">{t('accounting.cashReceipts.allStatuses', 'All Statuses')}</SelectItem>
+                  <SelectItem value="DRAFT">{t('accounting.cashReceipts.statusDraft', 'Draft')}</SelectItem>
+                  <SelectItem value="SUBMITTED">{t('accounting.cashReceipts.statusSubmitted', 'Submitted')}</SelectItem>
+                  <SelectItem value="POSTED">{t('accounting.cashReceipts.statusPosted', 'Posted')}</SelectItem>
+                  <SelectItem value="REJECTED">{t('accounting.cashReceipts.statusRejected', 'Rejected')}</SelectItem>
+                  <SelectItem value="VOID">{t('accounting.cashReceipts.statusVoid', 'Void')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -430,13 +442,13 @@ export default function CashReceiptsPageV2() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary shrink-0">
-                Rentang
+                {t('accounting.cashReceipts.rangeLabel', 'Range')}
               </span>
               <div className="flex-1 min-w-0 max-w-[200px]">
                 <MonomiDatePicker
                   value={startDate}
                   onChange={setStartDate}
-                  placeholder="Tgl. mulai"
+                  placeholder={t('accounting.cashReceipts.dateFrom', 'Start date')}
                   className="h-9 text-sm bg-bg-sunken border-border-subtle"
                 />
               </div>
@@ -445,7 +457,7 @@ export default function CashReceiptsPageV2() {
                 <MonomiDatePicker
                   value={endDate}
                   onChange={setEndDate}
-                  placeholder="Tgl. akhir"
+                  placeholder={t('accounting.cashReceipts.dateTo', 'End date')}
                   className="h-9 text-sm bg-bg-sunken border-border-subtle"
                 />
               </div>
@@ -475,19 +487,19 @@ export default function CashReceiptsPageV2() {
         ) : receipts.length === 0 ? (
           <EmptyState
             icon={<ArrowDownLeft />}
-            title={hasActiveFilters ? t('accounting.cashReceipts.noMatch') : t('accounting.cashReceipts.noReceipts')}
+            title={hasActiveFilters ? t('accounting.cashReceipts.noMatch', 'No matching receipts') : t('accounting.cashReceipts.noReceipts', 'No cash receipts yet')}
             description={
               hasActiveFilters
-                ? t('accounting.cashReceipts.noMatchDesc')
-                : t('accounting.cashReceipts.noReceiptsDesc')
+                ? t('accounting.cashReceipts.noMatchDesc', 'Try changing the filter.')
+                : t('accounting.cashReceipts.noReceiptsDesc', 'Create your first cash receipt to get started.')
             }
             action={
               hasActiveFilters ? (
-                <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.cashReceipts.resetFilter')}</Button>
+                <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.cashReceipts.resetFilter', 'Reset Filters')}</Button>
               ) : (
                 <Button onClick={() => navigate('/accounting/cash-receipts')} size="sm">
                   <Plus className="h-4 w-4" />
-                  {t('accounting.cashReceipts.newReceipt')}
+                  {t('accounting.cashReceipts.newReceipt', 'New Receipt')}
                 </Button>
               )
             }
@@ -500,7 +512,7 @@ export default function CashReceiptsPageV2() {
               onSubmit={(row) => submitMutation.mutate(row.id)}
               onApprove={(row) => approveMutation.mutate(row.id)}
               onReject={(row) => {
-                const reason = window.prompt(t('accounting.cashReceipts.rejectPrompt'))?.trim();
+                const reason = window.prompt(t('accounting.cashReceipts.rejectPrompt', 'Enter rejection reason'))?.trim();
                 if (!reason) return;
                 rejectMutation.mutate({ id: row.id, reason });
               }}
@@ -524,7 +536,7 @@ export default function CashReceiptsPageV2() {
       <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) setViewing(null); }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle className="font-display">{t('accounting.cashReceipts.detailTitle')}</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.cashReceipts.detailTitle', 'Receipt Detail')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
               {viewing?.transactionNumber}
             </DialogDescription>
@@ -532,34 +544,34 @@ export default function CashReceiptsPageV2() {
 
           {viewing && (
             <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <DetailRow label="Tanggal">
+              <DetailRow label={t('accounting.cashReceipts.fieldDate', 'Date')}>
                 <DateDisplay date={viewing.transactionDate} />
               </DetailRow>
-              <DetailRow label="Status">
+              <DetailRow label={t('accounting.cashReceipts.fieldStatus', 'Status')}>
                 <Badge variant={getStatusVariant(viewing.status)}>{getStatusLabel(viewing.status)}</Badge>
               </DetailRow>
-              <DetailRow label="Jumlah" wide>
+              <DetailRow label={t('accounting.cashReceipts.fieldAmount', 'Amount')} wide>
                 <MoneyDisplay amount={viewing.amount} className="text-success text-base" />
               </DetailRow>
-              <DetailRow label="Kategori">{getCategoryLabel(viewing.category)}</DetailRow>
-              <DetailRow label="Metode">{PAYMENT_METHOD_LABEL[viewing.paymentMethod] ?? viewing.paymentMethod}</DetailRow>
-              <DetailRow label="Akun Kas (Debit)" wide>
+              <DetailRow label={t('accounting.cashReceipts.fieldCategory', 'Category')}>{getCategoryLabel(viewing.category)}</DetailRow>
+              <DetailRow label={t('accounting.cashReceipts.fieldMethod', 'Method')}>{getPaymentMethodLabel(viewing.paymentMethod)}</DetailRow>
+              <DetailRow label={t('accounting.cashReceipts.fieldCashAccountDebit', 'Cash Account (Debit)')} wide>
                 <span className="font-mono text-xs text-text-secondary">{viewing.cashAccount.code}</span>
                 {' — '}
                 {viewing.cashAccount.nameId}
               </DetailRow>
-              <DetailRow label="Akun Pendapatan (Credit)" wide>
+              <DetailRow label={t('accounting.cashReceipts.fieldRevenueAccountCredit', 'Revenue Account (Credit)')} wide>
                 <span className="font-mono text-xs text-text-secondary">{viewing.offsetAccount.code}</span>
                 {' — '}
                 {viewing.offsetAccount.nameId}
               </DetailRow>
-              <DetailRow label="Deskripsi" wide>
+              <DetailRow label={t('accounting.cashReceipts.fieldDescription', 'Description')} wide>
                 {viewing.descriptionId || viewing.description}
               </DetailRow>
-              {viewing.reference && <DetailRow label="Referensi" wide>{viewing.reference}</DetailRow>}
-              {viewing.notes && <DetailRow label="Catatan" wide>{viewing.notes}</DetailRow>}
+              {viewing.reference && <DetailRow label={t('accounting.cashReceipts.fieldReference', 'Reference')} wide>{viewing.reference}</DetailRow>}
+              {viewing.notes && <DetailRow label={t('accounting.cashReceipts.fieldNotes', 'Notes')} wide>{viewing.notes}</DetailRow>}
               {viewing.rejectionReason && (
-                <DetailRow label="Alasan Penolakan" wide>
+                <DetailRow label={t('accounting.cashReceipts.fieldRejectionReason', 'Rejection Reason')} wide>
                   <span className="text-danger">{viewing.rejectionReason}</span>
                 </DetailRow>
               )}
@@ -567,7 +579,7 @@ export default function CashReceiptsPageV2() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewing(null)}>{t('accounting.cashReceipts.close')}</Button>
+            <Button variant="outline" onClick={() => setViewing(null)}>{t('accounting.cashReceipts.close', 'Close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -610,6 +622,9 @@ interface ReceiptsTableProps {
 function CashReceiptsTable({
   rows, onView, onSubmit, onApprove, onReject, onVoid, onDelete,
 }: ReceiptsTableProps) {
+  const { t } = useTranslation();
+  const getStatusLabel   = (s?: string) => t(STATUS_LABEL_KEY[s ?? ''] ?? '', STATUS_LABEL_FALLBACK[s ?? ''] ?? (s ?? '—'));
+  const getCategoryLabel = (s?: string) => t(CATEGORY_LABEL_KEY[s ?? ''] ?? '', CATEGORY_LABEL_FALLBACK[s ?? ''] ?? (s ?? '—'));
   return (
     <DataTable<CashTransaction>
       data={rows}
@@ -618,7 +633,7 @@ function CashReceiptsTable({
       columns={[
         {
           accessorKey: 'transactionNumber',
-          header: 'Nomor',
+          header: t('accounting.cashReceipts.colNumber', 'Number'),
           cell: ({ row }) => (
             <div className="font-mono text-xs text-text-primary tracking-tight">
               {row.original.transactionNumber || '—'}
@@ -627,18 +642,18 @@ function CashReceiptsTable({
         },
         {
           id: 'narrative',
-          header: 'Deskripsi & Akun',
+          header: t('accounting.cashReceipts.colDescriptionAccount', 'Description & Account'),
           accessorFn: (row) => row.descriptionId ?? row.description ?? '',
           cell: ({ row }) => {
-            const t = row.original;
-            const desc = t.descriptionId || t.description;
+            const tx = row.original;
+            const desc = tx.descriptionId || tx.description;
             return (
               <div className="min-w-0">
                 <div className="text-sm text-text-primary truncate">{desc || '—'}</div>
                 <div className="text-xs text-text-tertiary truncate mt-0.5">
-                  {t.cashAccount.nameId}
+                  {tx.cashAccount.nameId}
                   <span className="mx-1.5 text-text-tertiary/60">←</span>
-                  {t.offsetAccount.nameId}
+                  {tx.offsetAccount.nameId}
                 </div>
               </div>
             );
@@ -646,14 +661,14 @@ function CashReceiptsTable({
         },
         {
           accessorKey: 'category',
-          header: 'Kategori',
+          header: t('accounting.cashReceipts.colCategory', 'Category'),
           cell: ({ row }) => (
             <span className="text-xs text-text-secondary">{getCategoryLabel(row.original.category)}</span>
           ),
         },
         {
           accessorKey: 'amount',
-          header: () => <span className="block text-right">Jumlah</span>,
+          header: () => <span className="block text-right">{t('accounting.cashReceipts.colAmount', 'Amount')}</span>,
           cell: ({ row }) => (
             <div className="text-right">
               <MoneyDisplay amount={toNumber(row.original.amount)} className="text-success" />
@@ -662,7 +677,7 @@ function CashReceiptsTable({
         },
         {
           accessorKey: 'transactionDate',
-          header: 'Tanggal',
+          header: t('accounting.cashReceipts.colDate', 'Date'),
           cell: ({ row }) => (
             <span className="text-text-tertiary">
               <DateDisplay date={row.original.transactionDate} />
@@ -671,7 +686,7 @@ function CashReceiptsTable({
         },
         {
           accessorKey: 'status',
-          header: 'Status',
+          header: t('accounting.cashReceipts.colStatus', 'Status'),
           cell: ({ row }) => (
             <Badge variant={getStatusVariant(row.original.status)}>
               {getStatusLabel(row.original.status)}
@@ -680,9 +695,9 @@ function CashReceiptsTable({
         },
         {
           id: 'actions',
-          header: () => <span className="sr-only">Aksi</span>,
+          header: () => <span className="sr-only">{t('accounting.cashReceipts.colActions', 'Actions')}</span>,
           cell: ({ row }) => {
-            const t = row.original;
+            const tx = row.original;
             return (
               <div className="flex justify-end" onClick={(ev) => ev.stopPropagation()}>
                 <DropdownMenu>
@@ -691,51 +706,51 @@ function CashReceiptsTable({
                       variant="ghost"
                       size="icon-sm"
                       className="text-text-tertiary hover:text-text-primary"
-                      aria-label="Aksi penerimaan kas"
+                      aria-label={t('accounting.cashReceipts.ariaActions', 'Cash receipt actions')}
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-44">
-                    <DropdownMenuItem onClick={() => onView(t)}>
-                      <Eye className="h-3.5 w-3.5" /> Lihat
+                    <DropdownMenuItem onClick={() => onView(tx)}>
+                      <Eye className="h-3.5 w-3.5" /> {t('accounting.cashReceipts.actionView', 'View')}
                     </DropdownMenuItem>
-                    {t.status === 'DRAFT' && (
+                    {tx.status === 'DRAFT' && (
                       <>
-                        <DropdownMenuItem onClick={() => onSubmit(t)}>
-                          <Send className="h-3.5 w-3.5" /> Ajukan
+                        <DropdownMenuItem onClick={() => onSubmit(tx)}>
+                          <Send className="h-3.5 w-3.5" /> {t('accounting.cashReceipts.actionSubmit', 'Submit')}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => onDelete(t)}
+                          onClick={() => onDelete(tx)}
                           className="text-danger focus:text-danger"
                         >
-                          <Trash2 className="h-3.5 w-3.5" /> Hapus
+                          <Trash2 className="h-3.5 w-3.5" /> {t('accounting.cashReceipts.actionDelete', 'Delete')}
                         </DropdownMenuItem>
                       </>
                     )}
-                    {t.status === 'SUBMITTED' && (
+                    {tx.status === 'SUBMITTED' && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onApprove(t)}>
-                          <Check className="h-3.5 w-3.5" /> Setujui
+                        <DropdownMenuItem onClick={() => onApprove(tx)}>
+                          <Check className="h-3.5 w-3.5" /> {t('accounting.cashReceipts.actionApprove', 'Approve')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => onReject(t)}
+                          onClick={() => onReject(tx)}
                           className="text-danger focus:text-danger"
                         >
-                          <X className="h-3.5 w-3.5" /> Tolak
+                          <X className="h-3.5 w-3.5" /> {t('accounting.cashReceipts.actionReject', 'Reject')}
                         </DropdownMenuItem>
                       </>
                     )}
-                    {t.status === 'POSTED' && (
+                    {tx.status === 'POSTED' && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => onVoid(t)}
+                          onClick={() => onVoid(tx)}
                           className="text-danger focus:text-danger"
                         >
-                          <Ban className="h-3.5 w-3.5" /> Void
+                          <Ban className="h-3.5 w-3.5" /> {t('accounting.cashReceipts.actionVoid', 'Void')}
                         </DropdownMenuItem>
                       </>
                     )}

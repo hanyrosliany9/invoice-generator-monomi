@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useDateLocale } from '@/lib/dateLocale';
 
 export interface MonomiDatePickerProps {
   value?: Date;
@@ -16,9 +17,12 @@ export interface MonomiDatePickerProps {
 }
 
 export const MonomiDatePicker = ({
-  value, onChange, placeholder = 'Pilih tanggal', disabled, className,
+  value, onChange, placeholder, disabled, className,
 }: MonomiDatePickerProps) => {
+  const { t } = useTranslation();
+  const idLocale = useDateLocale();
   const [open, setOpen] = useState(false);
+  const placeholderText = placeholder ?? t('common.selectDate', 'Select date');
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -32,7 +36,7 @@ export const MonomiDatePicker = ({
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, 'd MMMM yyyy', { locale: idLocale }) : placeholder}
+          {value ? format(value, 'd MMMM yyyy', { locale: idLocale }) : placeholderText}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

@@ -12,9 +12,9 @@ import {
   isSameDay, isSameMonth, isToday, startOfMonth, startOfWeek,
   isWithinInterval, addDays, isBefore,
 } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
 
 import { AppShell } from '@/components/monomi/AppShell';
+import { useDateLocale } from '@/lib/dateLocale';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
@@ -91,6 +91,7 @@ const safeDate = (s?: string | null) => {
 
 export default function CalendarPageV2() {
   const { t } = useTranslation();
+  const idLocale = useDateLocale();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
 

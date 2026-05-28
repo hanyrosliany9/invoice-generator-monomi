@@ -221,7 +221,7 @@ export default function AccountsPayablePageV2() {
                 <MonomiDatePicker
                   value={asOfDate}
                   onChange={(d) => d && setAsOfDate(d)}
-                  placeholder="Per tanggal"
+                  placeholder={t('accounting.accountsPayable.asOfDatePlaceholder', 'As of date')}
                 />
               </div>
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
@@ -248,24 +248,24 @@ export default function AccountsPayablePageV2() {
             ) : (
               <>
                 <StatCard
-                  label="Total Hutang"
+                  label={t('accounting.accountsPayable.statTotalPayable', 'Total Payable')}
                   value={<MoneyDisplay amount={stats.total} />}
-                  sublabel="kewajiban terbuka per tanggal pelaporan"
+                  sublabel={t('accounting.accountsPayable.statTotalPayableSub', 'open obligations as of reporting date')}
                 />
                 <StatCard
-                  label="Belum Jatuh Tempo"
+                  label={t('accounting.accountsPayable.statCurrent', 'Not Yet Due')}
                   value={<MoneyDisplay amount={stats.current} />}
-                  sublabel="masih dalam periode pembayaran"
+                  sublabel={t('accounting.accountsPayable.statCurrentSub', 'still within payment period')}
                 />
                 <StatCard
-                  label="Jatuh Tempo"
+                  label={t('accounting.accountsPayable.statOverdue', 'Overdue')}
                   value={<MoneyDisplay amount={stats.overdue} className="text-danger" />}
-                  sublabel="perlu segera diselesaikan"
+                  sublabel={t('accounting.accountsPayable.statOverdueSub', 'requires immediate settlement')}
                 />
                 <StatCard
-                  label="Jumlah Kategori"
+                  label={t('accounting.accountsPayable.statCategoryCount', 'Category Count')}
                   value={stats.categoryCount}
-                  sublabel="dengan saldo terbuka"
+                  sublabel={t('accounting.accountsPayable.statCategoryCountSub', 'with open balance')}
                 />
               </>
             )}
@@ -279,7 +279,7 @@ export default function AccountsPayablePageV2() {
               <Input
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Cari kategori atau deskripsi beban..."
+                placeholder={t('accounting.accountsPayable.searchPlaceholder', 'Search by category or expense description...')}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -290,10 +290,10 @@ export default function AccountsPayablePageV2() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[180px]"
                 >
-                  <SelectValue placeholder="Kategori" />
+                  <SelectValue placeholder={t('accounting.accountsPayable.filterCategoryLabel', 'Category')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Kategori</SelectItem>
+                  <SelectItem value="all">{t('accounting.accountsPayable.filterAllCategories', 'All Categories')}</SelectItem>
                   {categories.map((c) => (
                     <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
                   ))}
@@ -305,10 +305,10 @@ export default function AccountsPayablePageV2() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[160px]"
                 >
-                  <SelectValue placeholder="Umur" />
+                  <SelectValue placeholder={t('accounting.accountsPayable.filterAgingLabel', 'Aging')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Umur</SelectItem>
+                  <SelectItem value="all">{t('accounting.accountsPayable.filterAllAging', 'All Ages')}</SelectItem>
                   {Object.entries(BUCKET_ID).map(([k, v]) => (
                     <SelectItem key={k} value={k}>{v}</SelectItem>
                   ))}
@@ -378,6 +378,7 @@ interface APTableProps {
 }
 
 function APTable({ rows, total, onRowClick }: APTableProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-3">
       <DataTable<APRow>
@@ -387,7 +388,7 @@ function APTable({ rows, total, onRowClick }: APTableProps) {
         columns={[
           {
             id: 'category',
-            header: 'Kategori',
+            header: t('accounting.accountsPayable.colCategory', 'Category'),
             accessorFn: (row) => row.category?.nameId ?? row.category?.name ?? '',
             cell: ({ row }) => (
               <div className="min-w-0 text-sm text-text-primary truncate">
@@ -397,7 +398,7 @@ function APTable({ rows, total, onRowClick }: APTableProps) {
           },
           {
             accessorKey: 'description',
-            header: 'Deskripsi',
+            header: t('accounting.accountsPayable.colDescription', 'Description'),
             cell: ({ row }) => (
               <span className="text-text-secondary text-sm truncate">
                 {row.original.description || '—'}
@@ -406,7 +407,7 @@ function APTable({ rows, total, onRowClick }: APTableProps) {
           },
           {
             accessorKey: 'expenseDate',
-            header: 'Tgl Beban',
+            header: t('accounting.accountsPayable.colExpenseDate', 'Expense Date'),
             cell: ({ row }) => (
               <span className="text-text-tertiary">
                 <DateDisplay date={row.original.expenseDate} />
@@ -415,7 +416,7 @@ function APTable({ rows, total, onRowClick }: APTableProps) {
           },
           {
             accessorKey: 'dueDate',
-            header: 'Jatuh Tempo',
+            header: t('accounting.accountsPayable.colDueDate', 'Due Date'),
             cell: ({ row }) => {
               const over = (row.original.daysOverdue ?? 0) > 0;
               return (
@@ -427,7 +428,7 @@ function APTable({ rows, total, onRowClick }: APTableProps) {
           },
           {
             accessorKey: 'daysOverdue',
-            header: () => <span className="block text-center">Hari Terlambat</span>,
+            header: () => <span className="block text-center">{t('accounting.accountsPayable.colDaysOverdue', 'Days Overdue')}</span>,
             cell: ({ row }) => {
               const d = row.original.daysOverdue ?? 0;
               if (d <= 0) return <div className="text-center text-text-tertiary">—</div>;
@@ -435,7 +436,7 @@ function APTable({ rows, total, onRowClick }: APTableProps) {
                 <div className="text-center">
                   <span className="inline-flex items-center gap-1 text-xs text-danger font-medium tabular-nums">
                     <AlertTriangle className="h-3 w-3" />
-                    {d} hari
+                    {d} {t('accounting.accountsPayable.daysUnit', 'days')}
                   </span>
                 </div>
               );
@@ -443,7 +444,7 @@ function APTable({ rows, total, onRowClick }: APTableProps) {
           },
           {
             accessorKey: 'agingBucket',
-            header: 'Umur',
+            header: t('accounting.accountsPayable.colAging', 'Aging'),
             cell: ({ row }) => {
               const b = row.original.agingBucket ?? 'Current';
               return (
@@ -455,7 +456,7 @@ function APTable({ rows, total, onRowClick }: APTableProps) {
           },
           {
             accessorKey: 'amount',
-            header: () => <span className="block text-right">Jumlah</span>,
+            header: () => <span className="block text-right">{t('accounting.accountsPayable.colAmount', 'Amount')}</span>,
             cell: ({ row }) => (
               <div className="text-right">
                 <MoneyDisplay
@@ -469,7 +470,7 @@ function APTable({ rows, total, onRowClick }: APTableProps) {
       />
       <div className="flex items-center justify-between px-4 py-3 rounded-md border border-border-subtle bg-bg-sunken">
         <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
-          Total Hutang
+          {t('accounting.accountsPayable.footerTotalPayable', 'Total Payable')}
         </span>
         <MoneyDisplay amount={total} className="text-text-primary text-base font-semibold" />
       </div>

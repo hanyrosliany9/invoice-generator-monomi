@@ -14,7 +14,6 @@ import {
   isSameDay, isSameMonth, isToday, startOfMonth, startOfWeek,
   isWithinInterval, addDays, isBefore, parseISO,
 } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 import { AppShell } from '@/components/monomi/AppShell';
@@ -43,6 +42,8 @@ import {
 } from '@/components/ui/sheet';
 
 import { useAuthStore } from '@/store/auth';
+import { useDateLocale } from '@/lib/dateLocale';
+import type { Locale } from 'date-fns/locale';
 import { projectService } from '@/services/projects';
 import { calendarEventsService, type CalendarEvent, type CreateCalendarEventRequest } from '@/services/calendar-events';
 import { cn } from '@/lib/utils';
@@ -121,6 +122,7 @@ const Textarea = ({
 export default function ProjectCalendarPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const { t } = useTranslation();
+  const idLocale = useDateLocale();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
@@ -569,7 +571,7 @@ export default function ProjectCalendarPage() {
               ) : (
                 <ul className="space-y-2">
                   {selectedDayEvents.map((ev) => (
-                    <EventRow key={ev.id} event={ev} onClick={() => setSelectedEvent(ev)} />
+                    <EventRow key={ev.id} event={ev} onClick={() => setSelectedEvent(ev)} idLocale={idLocale} />
                   ))}
                 </ul>
               )}
@@ -614,7 +616,7 @@ export default function ProjectCalendarPage() {
                 ) : (
                   <ul className="space-y-2">
                     {upcoming14.map((ev) => (
-                      <EventRow key={ev.id} event={ev} onClick={() => setSelectedEvent(ev)} />
+                      <EventRow key={ev.id} event={ev} onClick={() => setSelectedEvent(ev)} idLocale={idLocale} />
                     ))}
                   </ul>
                 );
@@ -631,6 +633,7 @@ export default function ProjectCalendarPage() {
         onDelete={(id) => {
           if (confirm(t('projectCalendar.confirmDeleteEvent', 'Delete this event?'))) deleteMutation.mutate(id);
         }}
+        idLocale={idLocale}
       />
 
       {/* Create dialog */}
@@ -650,7 +653,7 @@ export default function ProjectCalendarPage() {
 /*  EventRow — single row in the side rail.                           */
 /* ------------------------------------------------------------------ */
 
-function EventRow({ event, onClick }: { event: CalendarEvent; onClick?: () => void }) {
+function EventRow({ event, onClick, idLocale }: { event: CalendarEvent; onClick?: () => void; idLocale: Locale }) {
   const { t } = useTranslation();
   const meta = CATEGORY_META[event.category] ?? CATEGORY_META.OTHER;
   const now = new Date();
@@ -694,11 +697,12 @@ function EventRow({ event, onClick }: { event: CalendarEvent; onClick?: () => vo
 /* ------------------------------------------------------------------ */
 
 function EventDetailSheet({
-  event, onClose, onDelete,
+  event, onClose, onDelete, idLocale,
 }: {
   event: CalendarEvent | null;
   onClose: () => void;
   onDelete: (id: string) => void;
+  idLocale: Locale;
 }) {
   const { t } = useTranslation();
   if (!event) return null;

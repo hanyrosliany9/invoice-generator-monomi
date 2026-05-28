@@ -54,12 +54,12 @@ import { cn } from '@/lib/utils';
 /*  Vocabularies                                                       */
 /* ------------------------------------------------------------------ */
 
-const TYPE_LABEL: Record<string, string> = {
-  ASSET:     'Aset',
-  LIABILITY: 'Kewajiban',
-  EQUITY:    'Ekuitas',
-  REVENUE:   'Pendapatan',
-  EXPENSE:   'Beban',
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  ASSET:     'accounting.accountTypes.ASSET',
+  LIABILITY: 'accounting.accountTypes.LIABILITY',
+  EQUITY:    'accounting.accountTypes.EQUITY',
+  REVENUE:   'accounting.accountTypes.REVENUE',
+  EXPENSE:   'accounting.accountTypes.EXPENSE',
 };
 
 const typeChipClass = (t: string) => {
@@ -302,13 +302,13 @@ export default function ChartOfAccountsPageV2() {
             : ACCOUNT_TYPES.map((type) => (
                 <StatCard
                   key={type}
-                  label={TYPE_LABEL[type]}
+                  label={t(TYPE_LABEL_KEYS[type], type)}
                   value={
                     <span className="text-2xl font-display font-semibold text-text-primary">
                       {typeCounts[type]}
                     </span>
                   }
-                  sublabel="akun terdaftar"
+                  sublabel={t('accounting.chartOfAccounts.sublabelRegistered', 'registered accounts')}
                 />
               ))}
         </div>
@@ -322,7 +322,7 @@ export default function ChartOfAccountsPageV2() {
             <Input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Cari kode atau nama akun..."
+              placeholder={t('accounting.chartOfAccounts.searchPlaceholder', 'Search by account code or name...')}
               className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
             />
           </div>
@@ -333,12 +333,12 @@ export default function ChartOfAccountsPageV2() {
                 size="sm"
                 className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[150px]"
               >
-                <SelectValue placeholder="Tipe Akun" />
+                <SelectValue placeholder={t('accounting.chartOfAccounts.filterAccountType', 'Account Type')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua Tipe</SelectItem>
-                {ACCOUNT_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>{TYPE_LABEL[t]}</SelectItem>
+                <SelectItem value="all">{t('accounting.chartOfAccounts.allTypes', 'All Types')}</SelectItem>
+                {ACCOUNT_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>{t(TYPE_LABEL_KEYS[type], type)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -396,10 +396,10 @@ export default function ChartOfAccountsPageV2() {
                       typeChipClass(type),
                     )}>
                       {TYPE_ICON[type]}
-                      {TYPE_LABEL[type]}
+                      {t(TYPE_LABEL_KEYS[type], type)}
                     </span>
                     <span className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">
-                      {rows.length} akun
+                      {t('accounting.chartOfAccounts.accountCount', '{{count}} accounts', { count: rows.length })}
                     </span>
                     <span className="ml-auto text-text-tertiary">
                       {expanded
@@ -417,7 +417,7 @@ export default function ChartOfAccountsPageV2() {
                         columns={[
                           {
                             accessorKey: 'code',
-                            header: 'Kode',
+                            header: t('accounting.chartOfAccounts.colCode', 'Code'),
                             cell: ({ row }) => (
                               <span className="font-mono text-xs text-text-primary tracking-tight">
                                 {row.original.code}
@@ -426,7 +426,7 @@ export default function ChartOfAccountsPageV2() {
                           },
                           {
                             id: 'nameid',
-                            header: 'Nama Akun',
+                            header: t('accounting.chartOfAccounts.colAccountName', 'Account Name'),
                             accessorFn: (r) => r.nameId,
                             cell: ({ row }) => (
                               <div className="min-w-0">
@@ -439,7 +439,7 @@ export default function ChartOfAccountsPageV2() {
                           },
                           {
                             accessorKey: 'accountSubType',
-                            header: 'Sub Tipe',
+                            header: t('accounting.chartOfAccounts.colSubType', 'Sub Type'),
                             cell: ({ row }) => (
                               <span className="text-xs text-text-secondary">
                                 {row.original.accountSubType?.replace(/_/g, ' ') || '—'}
@@ -448,19 +448,21 @@ export default function ChartOfAccountsPageV2() {
                           },
                           {
                             accessorKey: 'normalBalance',
-                            header: 'Normal Balance',
+                            header: t('accounting.chartOfAccounts.colNormalBalance', 'Normal Balance'),
                             cell: ({ row }) => (
                               <span className={cn(
                                 'inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] font-medium',
                                 normalBalanceChipClass(row.original.normalBalance),
                               )}>
-                                {row.original.normalBalance === 'DEBIT' ? 'Debit' : 'Kredit'}
+                                {row.original.normalBalance === 'DEBIT'
+                                  ? t('accounting.chartOfAccounts.normalBalanceDebit', 'Debit')
+                                  : t('accounting.chartOfAccounts.normalBalanceCredit', 'Credit')}
                               </span>
                             ),
                           },
                           {
                             id: 'balance',
-                            header: () => <span className="block text-right">Saldo</span>,
+                            header: () => <span className="block text-right">{t('accounting.chartOfAccounts.colBalance', 'Balance')}</span>,
                             cell: ({ row }) => (
                               <div className="text-right">
                                 {typeof (row.original as any).currentBalance === 'number'
@@ -471,27 +473,27 @@ export default function ChartOfAccountsPageV2() {
                           },
                           {
                             id: 'status',
-                            header: 'Status',
+                            header: t('accounting.chartOfAccounts.colStatus', 'Status'),
                             cell: ({ row }) => (
                               <div className="flex flex-wrap gap-1">
                                 {!row.original.isActive && (
                                   <Badge variant="outline" className="text-[10px] text-text-tertiary">
-                                    Nonaktif
+                                    {t('accounting.chartOfAccounts.statusInactive', 'Inactive')}
                                   </Badge>
                                 )}
                                 {row.original.isControlAccount && (
                                   <Badge variant="outline" className="text-[10px] text-info border-info/30">
-                                    Kontrol
+                                    {t('accounting.chartOfAccounts.statusControl', 'Control')}
                                   </Badge>
                                 )}
                                 {row.original.isTaxAccount && (
                                   <Badge variant="outline" className="text-[10px] text-warning border-warning/30">
-                                    Pajak
+                                    {t('accounting.chartOfAccounts.statusTax', 'Tax')}
                                   </Badge>
                                 )}
                                 {row.original.isSystemAccount && (
                                   <Badge variant="outline" className="text-[10px] text-text-tertiary">
-                                    Sistem
+                                    {t('accounting.chartOfAccounts.statusSystem', 'System')}
                                   </Badge>
                                 )}
                               </div>
@@ -499,7 +501,7 @@ export default function ChartOfAccountsPageV2() {
                           },
                           {
                             id: 'actions',
-                            header: () => <span className="sr-only">Aksi</span>,
+                            header: () => <span className="sr-only">{t('accounting.chartOfAccounts.colActions', 'Actions')}</span>,
                             cell: ({ row }) => {
                               const a = row.original;
                               if (a.isSystemAccount) return null;
@@ -517,7 +519,7 @@ export default function ChartOfAccountsPageV2() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-44">
                                       <DropdownMenuItem onClick={() => openEdit(a)}>
-                                        <Edit2 className="h-3.5 w-3.5" /> Edit
+                                        <Edit2 className="h-3.5 w-3.5" /> {t('accounting.chartOfAccounts.actionEdit', 'Edit')}
                                       </DropdownMenuItem>
                                       <DropdownMenuItem onClick={() => toggleMutation.mutate(a.code)}>
                                         <Power className="h-3.5 w-3.5" />
@@ -532,7 +534,7 @@ export default function ChartOfAccountsPageV2() {
                                         }}
                                         className="text-danger focus:text-danger"
                                       >
-                                        <Trash2 className="h-3.5 w-3.5" /> Hapus
+                                        <Trash2 className="h-3.5 w-3.5" /> {t('accounting.chartOfAccounts.actionDelete', 'Delete')}
                                       </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
@@ -567,7 +569,7 @@ export default function ChartOfAccountsPageV2() {
             {/* Code */}
             <div className="col-span-1">
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">
-                Kode Akun *
+                {t('accounting.chartOfAccounts.fieldAccountCode', 'Account Code *')}
               </label>
               <Input
                 value={form.code}
@@ -581,7 +583,7 @@ export default function ChartOfAccountsPageV2() {
             {/* Account type */}
             <div className="col-span-1">
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">
-                Tipe Akun *
+                {t('accounting.chartOfAccounts.fieldAccountType', 'Account Type *')}
               </label>
               <Select
                 value={form.accountType}
@@ -591,8 +593,8 @@ export default function ChartOfAccountsPageV2() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ACCOUNT_TYPES.map((t) => (
-                    <SelectItem key={t} value={t}>{TYPE_LABEL[t]}</SelectItem>
+                  {ACCOUNT_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>{t(TYPE_LABEL_KEYS[type], type)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -601,7 +603,7 @@ export default function ChartOfAccountsPageV2() {
             {/* Name ID */}
             <div className="col-span-2">
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">
-                Nama Akun (Bahasa Indonesia) *
+                {t('accounting.chartOfAccounts.fieldAccountNameId', 'Account Name (Bahasa Indonesia) *')}
               </label>
               <Input
                 value={form.nameId}
@@ -614,7 +616,7 @@ export default function ChartOfAccountsPageV2() {
             {/* Name EN */}
             <div className="col-span-2">
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">
-                Nama Akun (English)
+                {t('accounting.chartOfAccounts.fieldAccountNameEn', 'Account Name (English)')}
               </label>
               <Input
                 value={form.name}
@@ -627,7 +629,7 @@ export default function ChartOfAccountsPageV2() {
             {/* Sub type */}
             <div className="col-span-1">
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">
-                Sub Tipe
+                {t('accounting.chartOfAccounts.fieldSubType', 'Sub Type')}
               </label>
               <Input
                 value={form.accountSubType}
@@ -640,7 +642,7 @@ export default function ChartOfAccountsPageV2() {
             {/* Normal balance */}
             <div className="col-span-1">
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">
-                Normal Balance *
+                {t('accounting.chartOfAccounts.fieldNormalBalance', 'Normal Balance *')}
               </label>
               <Select
                 value={form.normalBalance}
@@ -650,8 +652,8 @@ export default function ChartOfAccountsPageV2() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="DEBIT">Debit</SelectItem>
-                  <SelectItem value="CREDIT">Kredit</SelectItem>
+                  <SelectItem value="DEBIT">{t('accounting.chartOfAccounts.normalBalanceDebit', 'Debit')}</SelectItem>
+                  <SelectItem value="CREDIT">{t('accounting.chartOfAccounts.normalBalanceCredit', 'Credit')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -659,12 +661,12 @@ export default function ChartOfAccountsPageV2() {
             {/* Parent ID */}
             <div className="col-span-2">
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">
-                Parent Account ID
+                {t('accounting.chartOfAccounts.fieldParentId', 'Parent Account ID')}
               </label>
               <Input
                 value={form.parentId}
                 onChange={(e) => setForm({ ...form, parentId: e.target.value })}
-                placeholder="Opsional"
+                placeholder={t('accounting.chartOfAccounts.parentIdOptional', 'Optional')}
                 className="bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -672,12 +674,12 @@ export default function ChartOfAccountsPageV2() {
             {/* Description ID */}
             <div className="col-span-2">
               <label className="block text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1.5">
-                Deskripsi (Indonesia)
+                {t('accounting.chartOfAccounts.fieldDescriptionId', 'Description (Indonesian)')}
               </label>
               <textarea
                 value={form.descriptionId}
                 onChange={(e) => setForm({ ...form, descriptionId: e.target.value })}
-                placeholder="Deskripsi akun (opsional)"
+                placeholder={t('accounting.chartOfAccounts.fieldDescriptionIdPlaceholder', 'Account description (optional)')}
                 rows={2}
                 className="w-full rounded-md border border-border-subtle bg-bg-sunken px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-navy-ring resize-none"
               />

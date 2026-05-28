@@ -62,24 +62,44 @@ import { cn } from '@/lib/utils';
 /*  shared module until a third caller asks for it.                    */
 /* ------------------------------------------------------------------ */
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: 'Draft', SUBMITTED: 'Diajukan', APPROVED: 'Disetujui',
-  REJECTED: 'Ditolak', POSTED: 'Diposting', VOID: 'Void',
+const STATUS_LABEL_KEY: Record<string, string> = {
+  DRAFT: 'accounting.cashDisbursements.statusDraft',
+  SUBMITTED: 'accounting.cashDisbursements.statusSubmitted',
+  APPROVED: 'accounting.cashDisbursements.statusApproved',
+  REJECTED: 'accounting.cashDisbursements.statusRejected',
+  POSTED: 'accounting.cashDisbursements.statusPosted',
+  VOID: 'accounting.cashDisbursements.statusVoid',
+};
+const STATUS_LABEL_FALLBACK: Record<string, string> = {
+  DRAFT: 'Draft', SUBMITTED: 'Submitted', APPROVED: 'Approved',
+  REJECTED: 'Rejected', POSTED: 'Posted', VOID: 'Void',
 };
 const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
   DRAFT: 'outline', SUBMITTED: 'secondary', APPROVED: 'default',
   REJECTED: 'destructive', POSTED: 'default', VOID: 'outline',
 };
-const CATEGORY_LABEL: Record<string, string> = {
-  OPERATING: 'Operasional', INVESTING: 'Investasi', FINANCING: 'Pendanaan',
+const CATEGORY_LABEL_KEY: Record<string, string> = {
+  OPERATING: 'accounting.cashDisbursements.categoryOperating',
+  INVESTING:  'accounting.cashDisbursements.categoryInvesting',
+  FINANCING:  'accounting.cashDisbursements.categoryFinancing',
 };
-const PAYMENT_METHOD_LABEL: Record<string, string> = {
-  CASH: 'Tunai', BANK_TRANSFER: 'Transfer Bank', CREDIT_CARD: 'Kartu Kredit',
-  DEBIT_CARD: 'Kartu Debit', CHEQUE: 'Cek', E_WALLET: 'E-Wallet', OTHER: 'Lainnya',
+const CATEGORY_LABEL_FALLBACK: Record<string, string> = {
+  OPERATING: 'Operating', INVESTING: 'Investing', FINANCING: 'Financing',
 };
-const getStatusLabel   = (s?: string) => STATUS_LABEL[s ?? ''] ?? (s ?? '—');
+const PAYMENT_METHOD_LABEL_KEY: Record<string, string> = {
+  CASH: 'accounting.cashDisbursements.paymentCash',
+  BANK_TRANSFER: 'accounting.cashDisbursements.paymentBankTransfer',
+  CREDIT_CARD: 'accounting.cashDisbursements.paymentCreditCard',
+  DEBIT_CARD: 'accounting.cashDisbursements.paymentDebitCard',
+  CHEQUE: 'accounting.cashDisbursements.paymentCheque',
+  E_WALLET: 'accounting.cashDisbursements.paymentEWallet',
+  OTHER: 'accounting.cashDisbursements.paymentOther',
+};
+const PAYMENT_METHOD_LABEL_FALLBACK: Record<string, string> = {
+  CASH: 'Cash', BANK_TRANSFER: 'Bank Transfer', CREDIT_CARD: 'Credit Card',
+  DEBIT_CARD: 'Debit Card', CHEQUE: 'Cheque', E_WALLET: 'E-Wallet', OTHER: 'Other',
+};
 const getStatusVariant = (s?: string) => STATUS_BADGE_VARIANT[s ?? ''] ?? 'secondary';
-const getCategoryLabel = (s?: string) => CATEGORY_LABEL[s ?? ''] ?? (s ?? '—');
 
 const toNumber = (v: unknown): number => {
   if (v === null || v === undefined) return 0;
@@ -106,6 +126,9 @@ const formatIDR = (n: number) =>
 
 export default function CashDisbursementsPageV2() {
   const { t } = useTranslation();
+  const getStatusLabel   = (s?: string) => t(STATUS_LABEL_KEY[s ?? ''] ?? '', STATUS_LABEL_FALLBACK[s ?? ''] ?? (s ?? '—'));
+  const getCategoryLabel = (s?: string) => t(CATEGORY_LABEL_KEY[s ?? ''] ?? '', CATEGORY_LABEL_FALLBACK[s ?? ''] ?? (s ?? '—'));
+  const getPaymentMethodLabel = (s?: string) => t(PAYMENT_METHOD_LABEL_KEY[s ?? ''] ?? '', PAYMENT_METHOD_LABEL_FALLBACK[s ?? ''] ?? (s ?? '—'));
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
@@ -154,28 +177,28 @@ export default function CashDisbursementsPageV2() {
 
   const submitMutation = useMutation({
     mutationFn: submitCashTransaction,
-    onSuccess: () => { toast.success(t('accounting.cashDisbursements.submitSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.cashDisbursements.submitFail')),
+    onSuccess: () => { toast.success(t('accounting.cashDisbursements.submitSuccess', 'Disbursement submitted')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashDisbursements.submitFail', 'Failed to submit disbursement')),
   });
   const approveMutation = useMutation({
     mutationFn: approveCashTransaction,
-    onSuccess: () => { toast.success(t('accounting.cashDisbursements.approveSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.cashDisbursements.approveFail')),
+    onSuccess: () => { toast.success(t('accounting.cashDisbursements.approveSuccess', 'Disbursement approved')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashDisbursements.approveFail', 'Failed to approve disbursement')),
   });
   const rejectMutation = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) => rejectCashTransaction(id, reason),
-    onSuccess: () => { toast.success(t('accounting.cashDisbursements.rejectSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.cashDisbursements.rejectFail')),
+    onSuccess: () => { toast.success(t('accounting.cashDisbursements.rejectSuccess', 'Disbursement rejected')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashDisbursements.rejectFail', 'Failed to reject disbursement')),
   });
   const voidMutation = useMutation({
     mutationFn: voidCashTransaction,
-    onSuccess: () => { toast.success(t('accounting.cashDisbursements.voidSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.cashDisbursements.voidFail')),
+    onSuccess: () => { toast.success(t('accounting.cashDisbursements.voidSuccess', 'Disbursement voided')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashDisbursements.voidFail', 'Failed to void disbursement')),
   });
   const deleteMutation = useMutation({
     mutationFn: deleteCashTransaction,
-    onSuccess: () => { toast.success(t('accounting.cashDisbursements.deleteSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.cashDisbursements.deleteFail')),
+    onSuccess: () => { toast.success(t('accounting.cashDisbursements.deleteSuccess', 'Disbursement deleted')); invalidate(); },
+    onError:   () => toast.error(t('accounting.cashDisbursements.deleteFail', 'Failed to delete disbursement')),
   });
 
   /* KPI band — mirrors CashReceipts but the "Top" tile surfaces the
@@ -228,9 +251,9 @@ export default function CashDisbursementsPageV2() {
       <Shell>
         <EmptyState
           icon={<ArrowUpRight className="h-12 w-12" />}
-          title={t('accounting.cashDisbursements.errorTitle')}
-          description={error instanceof Error ? error.message : t('accounting.cashDisbursements.errorDesc')}
-          action={<Button onClick={() => refetch()}>{t('accounting.cashDisbursements.retry')}</Button>}
+          title={t('accounting.cashDisbursements.errorTitle', 'Cannot load cash disbursements')}
+          description={error instanceof Error ? error.message : t('accounting.cashDisbursements.errorDesc', 'An error occurred')}
+          action={<Button onClick={() => refetch()}>{t('accounting.cashDisbursements.retry', 'Try Again')}</Button>}
         />
       </Shell>
     );
@@ -239,8 +262,8 @@ export default function CashDisbursementsPageV2() {
   return (
     <Shell>
       <PageHeader
-        title={t('accounting.cashDisbursements.title')}
-        description={t('accounting.cashDisbursements.description')}
+        title={t('accounting.cashDisbursements.title', 'Cash Disbursements')}
+        description={t('accounting.cashDisbursements.description', 'Record, submit, and post outgoing cash transactions.')}
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -249,11 +272,11 @@ export default function CashDisbursementsPageV2() {
               onClick={() => navigate('/accounting/cash-bank-balance')}
             >
               <Wallet className="h-4 w-4" />
-              {t('accounting.cashDisbursements.cashBalance')}
+              {t('accounting.cashDisbursements.cashBalance', 'Cash Balance')}
             </Button>
             <Button onClick={() => navigate('/accounting/cash-disbursements')} size="sm">
               <Plus className="h-4 w-4" />
-              {t('accounting.cashDisbursements.newDisbursement')}
+              {t('accounting.cashDisbursements.newDisbursement', 'New Disbursement')}
             </Button>
           </div>
         }
@@ -271,28 +294,28 @@ export default function CashDisbursementsPageV2() {
           ) : (
             <>
               <StatCard
-                label="Hari Ini"
+                label={t('accounting.cashDisbursements.statToday', 'Today')}
                 value={<MoneyDisplay amount={stats.todayAmount} />}
-                sublabel="pengeluaran kas hari ini"
+                sublabel={t('accounting.cashDisbursements.statTodaySub', "today's cash disbursements")}
               />
               <StatCard
-                label="Bulan Ini"
+                label={t('accounting.cashDisbursements.statThisMonth', 'This Month')}
                 value={<MoneyDisplay amount={stats.monthAmount} />}
-                sublabel="kas keluar bulan berjalan"
+                sublabel={t('accounting.cashDisbursements.statThisMonthSub', 'cash outflow this month')}
               />
               <StatCard
-                label="Total (Filter)"
+                label={t('accounting.cashDisbursements.statTotal', 'Total (Filter)')}
                 value={<MoneyDisplay amount={stats.totalAmount} />}
-                sublabel="sesuai filter aktif"
+                sublabel={t('accounting.cashDisbursements.statTotalSub', 'matching active filter')}
               />
               <StatCard
-                label="Tujuan Teratas"
+                label={t('accounting.cashDisbursements.statTopPayee', 'Top Payee')}
                 value={
                   <span className="text-base sm:text-lg font-display font-semibold text-text-primary truncate block">
                     {stats.topPayeeName}
                   </span>
                 }
-                sublabel={stats.topPayeeAmount > 0 ? formatIDR(stats.topPayeeAmount) : 'belum ada data'}
+                sublabel={stats.topPayeeAmount > 0 ? formatIDR(stats.topPayeeAmount) : t('accounting.cashDisbursements.noData', 'no data yet')}
               />
             </>
           )}
@@ -307,7 +330,7 @@ export default function CashDisbursementsPageV2() {
               <Input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Cari nomor transaksi atau deskripsi..."
+                placeholder={t('accounting.cashDisbursements.searchPlaceholder', 'Search by transaction number or description...')}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -315,10 +338,10 @@ export default function CashDisbursementsPageV2() {
             <div className="flex items-center gap-2 shrink-0 flex-wrap">
               <Select value={accountFilter} onValueChange={setAccountFilter}>
                 <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[180px]">
-                  <SelectValue placeholder="Akun Kas" />
+                  <SelectValue placeholder={t('accounting.cashDisbursements.cashAccountPlaceholder', 'Cash Account')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Akun Kas</SelectItem>
+                  <SelectItem value="all">{t('accounting.cashDisbursements.allCashAccounts', 'All Cash Accounts')}</SelectItem>
                   {cashAccounts.map((acc) => (
                     <SelectItem key={acc.id} value={acc.id}>
                       {acc.code} — {acc.nameId}
@@ -329,27 +352,27 @@ export default function CashDisbursementsPageV2() {
 
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[140px]">
-                  <SelectValue placeholder="Kategori" />
+                  <SelectValue placeholder={t('accounting.cashDisbursements.categoryPlaceholder', 'Category')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Kategori</SelectItem>
-                  <SelectItem value="OPERATING">Operasional</SelectItem>
-                  <SelectItem value="INVESTING">Investasi</SelectItem>
-                  <SelectItem value="FINANCING">Pendanaan</SelectItem>
+                  <SelectItem value="all">{t('accounting.cashDisbursements.allCategories', 'All Categories')}</SelectItem>
+                  <SelectItem value="OPERATING">{t('accounting.cashDisbursements.categoryOperating', 'Operating')}</SelectItem>
+                  <SelectItem value="INVESTING">{t('accounting.cashDisbursements.categoryInvesting', 'Investing')}</SelectItem>
+                  <SelectItem value="FINANCING">{t('accounting.cashDisbursements.categoryFinancing', 'Financing')}</SelectItem>
                 </SelectContent>
               </Select>
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[140px]">
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('accounting.cashDisbursements.statusPlaceholder', 'Status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Status</SelectItem>
-                  <SelectItem value="DRAFT">Draft</SelectItem>
-                  <SelectItem value="SUBMITTED">Diajukan</SelectItem>
-                  <SelectItem value="POSTED">Diposting</SelectItem>
-                  <SelectItem value="REJECTED">Ditolak</SelectItem>
-                  <SelectItem value="VOID">Void</SelectItem>
+                  <SelectItem value="all">{t('accounting.cashDisbursements.allStatuses', 'All Statuses')}</SelectItem>
+                  <SelectItem value="DRAFT">{t('accounting.cashDisbursements.statusDraft', 'Draft')}</SelectItem>
+                  <SelectItem value="SUBMITTED">{t('accounting.cashDisbursements.statusSubmitted', 'Submitted')}</SelectItem>
+                  <SelectItem value="POSTED">{t('accounting.cashDisbursements.statusPosted', 'Posted')}</SelectItem>
+                  <SelectItem value="REJECTED">{t('accounting.cashDisbursements.statusRejected', 'Rejected')}</SelectItem>
+                  <SelectItem value="VOID">{t('accounting.cashDisbursements.statusVoid', 'Void')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -357,11 +380,11 @@ export default function CashDisbursementsPageV2() {
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary shrink-0">Rentang</span>
+              <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary shrink-0">{t('accounting.cashDisbursements.rangeLabel', 'Range')}</span>
               <div className="flex-1 min-w-0 max-w-[200px]">
                 <MonomiDatePicker
                   value={startDate} onChange={setStartDate}
-                  placeholder="Tgl. mulai"
+                  placeholder={t('accounting.cashDisbursements.dateFrom', 'Start date')}
                   className="h-9 text-sm bg-bg-sunken border-border-subtle"
                 />
               </div>
@@ -369,7 +392,7 @@ export default function CashDisbursementsPageV2() {
               <div className="flex-1 min-w-0 max-w-[200px]">
                 <MonomiDatePicker
                   value={endDate} onChange={setEndDate}
-                  placeholder="Tgl. akhir"
+                  placeholder={t('accounting.cashDisbursements.dateTo', 'End date')}
                   className="h-9 text-sm bg-bg-sunken border-border-subtle"
                 />
               </div>
@@ -395,18 +418,18 @@ export default function CashDisbursementsPageV2() {
         ) : disbursements.length === 0 ? (
           <EmptyState
             icon={<ArrowUpRight />}
-            title={hasActiveFilters ? t('accounting.cashDisbursements.noMatch') : t('accounting.cashDisbursements.noDisbursements')}
+            title={hasActiveFilters ? t('accounting.cashDisbursements.noMatch', 'No matching disbursements') : t('accounting.cashDisbursements.noDisbursements', 'No cash disbursements yet')}
             description={
               hasActiveFilters
-                ? t('accounting.cashDisbursements.noMatchDesc')
-                : t('accounting.cashDisbursements.noDisbursementsDesc')
+                ? t('accounting.cashDisbursements.noMatchDesc', 'Try changing the filter.')
+                : t('accounting.cashDisbursements.noDisbursementsDesc', 'Create your first cash disbursement to get started.')
             }
             action={
               hasActiveFilters ? (
-                <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.cashDisbursements.resetFilter')}</Button>
+                <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.cashDisbursements.resetFilter', 'Reset Filters')}</Button>
               ) : (
                 <Button onClick={() => navigate('/accounting/cash-disbursements')} size="sm">
-                  <Plus className="h-4 w-4" /> {t('accounting.cashDisbursements.newDisbursement')}
+                  <Plus className="h-4 w-4" /> {t('accounting.cashDisbursements.newDisbursement', 'New Disbursement')}
                 </Button>
               )
             }
@@ -419,7 +442,7 @@ export default function CashDisbursementsPageV2() {
               onSubmit={(row) => submitMutation.mutate(row.id)}
               onApprove={(row) => approveMutation.mutate(row.id)}
               onReject={(row) => {
-                const reason = window.prompt(t('accounting.cashDisbursements.rejectPrompt'))?.trim();
+                const reason = window.prompt(t('accounting.cashDisbursements.rejectPrompt', 'Enter rejection reason'))?.trim();
                 if (!reason) return;
                 rejectMutation.mutate({ id: row.id, reason });
               }}
@@ -441,7 +464,7 @@ export default function CashDisbursementsPageV2() {
       <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) setViewing(null); }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle className="font-display">{t('accounting.cashDisbursements.detailTitle')}</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.cashDisbursements.detailTitle', 'Disbursement Detail')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
               {viewing?.transactionNumber}
             </DialogDescription>
@@ -449,30 +472,30 @@ export default function CashDisbursementsPageV2() {
 
           {viewing && (
             <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <DetailRow label="Tanggal"><DateDisplay date={viewing.transactionDate} /></DetailRow>
-              <DetailRow label="Status">
+              <DetailRow label={t('accounting.cashDisbursements.fieldDate', 'Date')}><DateDisplay date={viewing.transactionDate} /></DetailRow>
+              <DetailRow label={t('accounting.cashDisbursements.fieldStatus', 'Status')}>
                 <Badge variant={getStatusVariant(viewing.status)}>{getStatusLabel(viewing.status)}</Badge>
               </DetailRow>
-              <DetailRow label="Jumlah" wide>
+              <DetailRow label={t('accounting.cashDisbursements.fieldAmount', 'Amount')} wide>
                 <MoneyDisplay amount={viewing.amount} className="text-danger text-base" />
               </DetailRow>
-              <DetailRow label="Kategori">{getCategoryLabel(viewing.category)}</DetailRow>
-              <DetailRow label="Metode">{PAYMENT_METHOD_LABEL[viewing.paymentMethod] ?? viewing.paymentMethod}</DetailRow>
-              <DetailRow label="Akun Beban (Debit)" wide>
+              <DetailRow label={t('accounting.cashDisbursements.fieldCategory', 'Category')}>{getCategoryLabel(viewing.category)}</DetailRow>
+              <DetailRow label={t('accounting.cashDisbursements.fieldMethod', 'Method')}>{getPaymentMethodLabel(viewing.paymentMethod)}</DetailRow>
+              <DetailRow label={t('accounting.cashDisbursements.fieldExpenseAccountDebit', 'Expense Account (Debit)')} wide>
                 <span className="font-mono text-xs text-text-secondary">{viewing.offsetAccount.code}</span>
                 {' — '}
                 {viewing.offsetAccount.nameId}
               </DetailRow>
-              <DetailRow label="Akun Kas (Credit)" wide>
+              <DetailRow label={t('accounting.cashDisbursements.fieldCashAccountCredit', 'Cash Account (Credit)')} wide>
                 <span className="font-mono text-xs text-text-secondary">{viewing.cashAccount.code}</span>
                 {' — '}
                 {viewing.cashAccount.nameId}
               </DetailRow>
-              <DetailRow label="Deskripsi" wide>{viewing.descriptionId || viewing.description}</DetailRow>
-              {viewing.reference && <DetailRow label="Referensi" wide>{viewing.reference}</DetailRow>}
-              {viewing.notes && <DetailRow label="Catatan" wide>{viewing.notes}</DetailRow>}
+              <DetailRow label={t('accounting.cashDisbursements.fieldDescription', 'Description')} wide>{viewing.descriptionId || viewing.description}</DetailRow>
+              {viewing.reference && <DetailRow label={t('accounting.cashDisbursements.fieldReference', 'Reference')} wide>{viewing.reference}</DetailRow>}
+              {viewing.notes && <DetailRow label={t('accounting.cashDisbursements.fieldNotes', 'Notes')} wide>{viewing.notes}</DetailRow>}
               {viewing.rejectionReason && (
-                <DetailRow label="Alasan Penolakan" wide>
+                <DetailRow label={t('accounting.cashDisbursements.fieldRejectionReason', 'Rejection Reason')} wide>
                   <span className="text-danger">{viewing.rejectionReason}</span>
                 </DetailRow>
               )}
@@ -480,7 +503,7 @@ export default function CashDisbursementsPageV2() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewing(null)}>{t('accounting.cashDisbursements.close')}</Button>
+            <Button variant="outline" onClick={() => setViewing(null)}>{t('accounting.cashDisbursements.close', 'Close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -519,6 +542,9 @@ interface DisbursementsTableProps {
 function DisbursementsTable({
   rows, onView, onSubmit, onApprove, onReject, onVoid, onDelete,
 }: DisbursementsTableProps) {
+  const { t } = useTranslation();
+  const getStatusLabel   = (s?: string) => t(STATUS_LABEL_KEY[s ?? ''] ?? '', STATUS_LABEL_FALLBACK[s ?? ''] ?? (s ?? '—'));
+  const getCategoryLabel = (s?: string) => t(CATEGORY_LABEL_KEY[s ?? ''] ?? '', CATEGORY_LABEL_FALLBACK[s ?? ''] ?? (s ?? '—'));
   return (
     <DataTable<CashTransaction>
       data={rows}
@@ -527,7 +553,7 @@ function DisbursementsTable({
       columns={[
         {
           accessorKey: 'transactionNumber',
-          header: 'Nomor',
+          header: t('accounting.cashDisbursements.colNumber', 'Number'),
           cell: ({ row }) => (
             <div className="font-mono text-xs text-text-primary tracking-tight">
               {row.original.transactionNumber || '—'}
@@ -536,18 +562,18 @@ function DisbursementsTable({
         },
         {
           id: 'narrative',
-          header: 'Deskripsi & Akun',
+          header: t('accounting.cashDisbursements.colDescriptionAccount', 'Description & Account'),
           accessorFn: (row) => row.descriptionId ?? row.description ?? '',
           cell: ({ row }) => {
-            const t = row.original;
-            const desc = t.descriptionId || t.description;
+            const tx = row.original;
+            const desc = tx.descriptionId || tx.description;
             return (
               <div className="min-w-0">
                 <div className="text-sm text-text-primary truncate">{desc || '—'}</div>
                 <div className="text-xs text-text-tertiary truncate mt-0.5">
-                  {t.offsetAccount.nameId}
+                  {tx.offsetAccount.nameId}
                   <span className="mx-1.5 text-text-tertiary/60">→</span>
-                  {t.cashAccount.nameId}
+                  {tx.cashAccount.nameId}
                 </div>
               </div>
             );
@@ -555,14 +581,14 @@ function DisbursementsTable({
         },
         {
           accessorKey: 'category',
-          header: 'Kategori',
+          header: t('accounting.cashDisbursements.colCategory', 'Category'),
           cell: ({ row }) => (
             <span className="text-xs text-text-secondary">{getCategoryLabel(row.original.category)}</span>
           ),
         },
         {
           accessorKey: 'amount',
-          header: () => <span className="block text-right">Jumlah</span>,
+          header: () => <span className="block text-right">{t('accounting.cashDisbursements.colAmount', 'Amount')}</span>,
           cell: ({ row }) => (
             <div className="text-right">
               <MoneyDisplay amount={toNumber(row.original.amount)} className="text-danger" />
@@ -571,7 +597,7 @@ function DisbursementsTable({
         },
         {
           accessorKey: 'transactionDate',
-          header: 'Tanggal',
+          header: t('accounting.cashDisbursements.colDate', 'Date'),
           cell: ({ row }) => (
             <span className="text-text-tertiary">
               <DateDisplay date={row.original.transactionDate} />
@@ -580,7 +606,7 @@ function DisbursementsTable({
         },
         {
           accessorKey: 'status',
-          header: 'Status',
+          header: t('accounting.cashDisbursements.colStatus', 'Status'),
           cell: ({ row }) => (
             <Badge variant={getStatusVariant(row.original.status)}>
               {getStatusLabel(row.original.status)}
@@ -589,9 +615,9 @@ function DisbursementsTable({
         },
         {
           id: 'actions',
-          header: () => <span className="sr-only">Aksi</span>,
+          header: () => <span className="sr-only">{t('accounting.cashDisbursements.colActions', 'Actions')}</span>,
           cell: ({ row }) => {
-            const t = row.original;
+            const tx = row.original;
             return (
               <div className="flex justify-end" onClick={(ev) => ev.stopPropagation()}>
                 <DropdownMenu>
@@ -599,51 +625,51 @@ function DisbursementsTable({
                     <Button
                       variant="ghost" size="icon-sm"
                       className="text-text-tertiary hover:text-text-primary"
-                      aria-label="Aksi pengeluaran kas"
+                      aria-label={t('accounting.cashDisbursements.ariaActions', 'Cash disbursement actions')}
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-44">
-                    <DropdownMenuItem onClick={() => onView(t)}>
-                      <Eye className="h-3.5 w-3.5" /> Lihat
+                    <DropdownMenuItem onClick={() => onView(tx)}>
+                      <Eye className="h-3.5 w-3.5" /> {t('accounting.cashDisbursements.actionView', 'View')}
                     </DropdownMenuItem>
-                    {t.status === 'DRAFT' && (
+                    {tx.status === 'DRAFT' && (
                       <>
-                        <DropdownMenuItem onClick={() => onSubmit(t)}>
-                          <Send className="h-3.5 w-3.5" /> Ajukan
+                        <DropdownMenuItem onClick={() => onSubmit(tx)}>
+                          <Send className="h-3.5 w-3.5" /> {t('accounting.cashDisbursements.actionSubmit', 'Submit')}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => onDelete(t)}
+                          onClick={() => onDelete(tx)}
                           className="text-danger focus:text-danger"
                         >
-                          <Trash2 className="h-3.5 w-3.5" /> Hapus
+                          <Trash2 className="h-3.5 w-3.5" /> {t('accounting.cashDisbursements.actionDelete', 'Delete')}
                         </DropdownMenuItem>
                       </>
                     )}
-                    {t.status === 'SUBMITTED' && (
+                    {tx.status === 'SUBMITTED' && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onApprove(t)}>
-                          <Check className="h-3.5 w-3.5" /> Setujui
+                        <DropdownMenuItem onClick={() => onApprove(tx)}>
+                          <Check className="h-3.5 w-3.5" /> {t('accounting.cashDisbursements.actionApprove', 'Approve')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => onReject(t)}
+                          onClick={() => onReject(tx)}
                           className="text-danger focus:text-danger"
                         >
-                          <X className="h-3.5 w-3.5" /> Tolak
+                          <X className="h-3.5 w-3.5" /> {t('accounting.cashDisbursements.actionReject', 'Reject')}
                         </DropdownMenuItem>
                       </>
                     )}
-                    {t.status === 'POSTED' && (
+                    {tx.status === 'POSTED' && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => onVoid(t)}
+                          onClick={() => onVoid(tx)}
                           className="text-danger focus:text-danger"
                         >
-                          <Ban className="h-3.5 w-3.5" /> Void
+                          <Ban className="h-3.5 w-3.5" /> {t('accounting.cashDisbursements.actionVoid', 'Void')}
                         </DropdownMenuItem>
                       </>
                     )}

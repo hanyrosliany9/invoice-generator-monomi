@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
+import { useDateLocale } from '@/lib/dateLocale';
 
 export interface DateDisplayProps {
   date: string | Date | null | undefined;
@@ -8,8 +8,9 @@ export interface DateDisplayProps {
 }
 
 export const DateDisplay = ({ date, format: variant = 'short', className }: DateDisplayProps) => {
+  const locale = useDateLocale();
   if (!date) return <span className={className}>—</span>;
   const d = typeof date === 'string' ? new Date(date) : date;
   const pattern = variant === 'long' ? 'd MMMM yyyy, HH:mm' : 'd MMM yyyy';
-  return <span className={className}>{format(d, pattern, { locale: id })}</span>;
+  return <span className={className}>{format(d, pattern, { locale })}</span>;
 };

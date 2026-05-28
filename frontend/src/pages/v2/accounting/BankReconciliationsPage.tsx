@@ -58,13 +58,22 @@ import { cn } from '@/lib/utils';
 /*  Vocab                                                              */
 /* ------------------------------------------------------------------ */
 
-const STATUS_LABEL: Record<string, string> = {
+const STATUS_LABEL_KEY: Record<string, string> = {
+  DRAFT:       'accounting.bankReconciliations.statusDraft',
+  IN_PROGRESS: 'accounting.bankReconciliations.statusInProgress',
+  REVIEWED:    'accounting.bankReconciliations.statusReviewed',
+  APPROVED:    'accounting.bankReconciliations.statusApproved',
+  REJECTED:    'accounting.bankReconciliations.statusRejected',
+  COMPLETED:   'accounting.bankReconciliations.statusCompleted',
+};
+
+const STATUS_LABEL_FALLBACK: Record<string, string> = {
   DRAFT:       'Draft',
-  IN_PROGRESS: 'Proses',
-  REVIEWED:    'Direview',
-  APPROVED:    'Disetujui',
-  REJECTED:    'Ditolak',
-  COMPLETED:   'Selesai',
+  IN_PROGRESS: 'In Progress',
+  REVIEWED:    'Reviewed',
+  APPROVED:    'Approved',
+  REJECTED:    'Rejected',
+  COMPLETED:   'Completed',
 };
 
 const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
@@ -76,7 +85,6 @@ const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['v
   COMPLETED:   'default',
 };
 
-const getStatusLabel   = (s?: string) => STATUS_LABEL[s ?? '']        ?? (s ?? '—');
 const getStatusVariant = (s?: string) => STATUS_BADGE_VARIANT[s ?? ''] ?? 'secondary';
 
 const toNumber = (v: unknown): number => {
@@ -131,6 +139,8 @@ const EMPTY_FORM: CreateFormState = {
 
 export default function BankReconciliationsPage() {
   const { t } = useTranslation();
+  const getStatusLabel = (s?: string) =>
+    t(STATUS_LABEL_KEY[s ?? ''] ?? '', STATUS_LABEL_FALLBACK[s ?? ''] ?? (s ?? '—'));
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
@@ -186,42 +196,42 @@ export default function BankReconciliationsPage() {
   const createMutation = useMutation({
     mutationFn: createBankReconciliation,
     onSuccess: () => {
-      toast.success(t('accounting.bankReconciliations.createSuccess'));
+      toast.success(t('accounting.bankReconciliations.createSuccess', 'Reconciliation created'));
       invalidate();
       setCreateOpen(false);
       setForm(EMPTY_FORM);
     },
-    onError: () => toast.error(t('accounting.bankReconciliations.createFail')),
+    onError: () => toast.error(t('accounting.bankReconciliations.createFail', 'Failed to create reconciliation')),
   });
 
   const reviewMutation = useMutation({
     mutationFn: reviewBankReconciliation,
-    onSuccess: () => { toast.success(t('accounting.bankReconciliations.reviewSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.bankReconciliations.reviewFail')),
+    onSuccess: () => { toast.success(t('accounting.bankReconciliations.reviewSuccess', 'Sent for review')); invalidate(); },
+    onError:   () => toast.error(t('accounting.bankReconciliations.reviewFail', 'Failed to submit for review')),
   });
 
   const approveMutation = useMutation({
     mutationFn: approveBankReconciliation,
-    onSuccess: () => { toast.success(t('accounting.bankReconciliations.approveSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.bankReconciliations.approveFail')),
+    onSuccess: () => { toast.success(t('accounting.bankReconciliations.approveSuccess', 'Reconciliation approved')); invalidate(); },
+    onError:   () => toast.error(t('accounting.bankReconciliations.approveFail', 'Failed to approve')),
   });
 
   const rejectMutation = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       rejectBankReconciliation(id, reason),
     onSuccess: () => {
-      toast.success(t('accounting.bankReconciliations.rejectSuccess'));
+      toast.success(t('accounting.bankReconciliations.rejectSuccess', 'Reconciliation rejected'));
       invalidate();
       setRejectTarget(null);
       setRejectReason('');
     },
-    onError: () => toast.error(t('accounting.bankReconciliations.rejectFail')),
+    onError: () => toast.error(t('accounting.bankReconciliations.rejectFail', 'Failed to reject')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteBankReconciliation,
-    onSuccess: () => { toast.success(t('accounting.bankReconciliations.deleteSuccess')); invalidate(); },
-    onError:   () => toast.error(t('accounting.bankReconciliations.deleteFail')),
+    onSuccess: () => { toast.success(t('accounting.bankReconciliations.deleteSuccess', 'Reconciliation deleted')); invalidate(); },
+    onError:   () => toast.error(t('accounting.bankReconciliations.deleteFail', 'Failed to delete')),
   });
 
   /* derived stats */
@@ -259,11 +269,11 @@ export default function BankReconciliationsPage() {
 
   const handleCreate = () => {
     if (!form.bankAccountId || !form.statementDate || !form.periodStartDate || !form.periodEndDate) {
-      toast.error(t('accounting.bankReconciliations.validationRequired'));
+      toast.error(t('accounting.bankReconciliations.validationRequired', 'Please fill in all required fields'));
       return;
     }
     if (!form.bookBalanceEnd || !form.statementBalance) {
-      toast.error(t('accounting.bankReconciliations.validationBalances'));
+      toast.error(t('accounting.bankReconciliations.validationBalances', 'Please enter book and statement balances'));
       return;
     }
     createMutation.mutate({
@@ -305,9 +315,9 @@ export default function BankReconciliationsPage() {
       <Shell>
         <EmptyState
           icon={<BookOpen className="h-12 w-12" />}
-          title={t('accounting.bankReconciliations.errorTitle')}
-          description={error instanceof Error ? error.message : t('accounting.bankReconciliations.errorDesc')}
-          action={<Button onClick={() => refetch()}>{t('accounting.bankReconciliations.retry')}</Button>}
+          title={t('accounting.bankReconciliations.errorTitle', 'Cannot load bank reconciliations')}
+          description={error instanceof Error ? error.message : t('accounting.bankReconciliations.errorDesc', 'An error occurred')}
+          action={<Button onClick={() => refetch()}>{t('accounting.bankReconciliations.retry', 'Try Again')}</Button>}
         />
       </Shell>
     );
@@ -316,13 +326,13 @@ export default function BankReconciliationsPage() {
   return (
     <Shell>
       <PageHeader
-        title={t('accounting.bankReconciliations.title')}
-        description={t('accounting.bankReconciliations.description')}
+        title={t('accounting.bankReconciliations.title', 'Bank Reconciliations')}
+        description={t('accounting.bankReconciliations.description', 'Match book balance with bank statement and resolve discrepancies.')}
         actions={
           <div className="flex items-center gap-2">
             <Button onClick={() => setCreateOpen(true)} size="sm">
               <Plus className="h-4 w-4" />
-              {t('accounting.bankReconciliations.newReconciliation')}
+              {t('accounting.bankReconciliations.newReconciliation', 'New Reconciliation')}
             </Button>
           </div>
         }
@@ -337,13 +347,13 @@ export default function BankReconciliationsPage() {
             ))
           ) : (
             <>
-              <StatCard label="Total Rekonsiliasi" value={String(stats.total)} sublabel="sesuai filter aktif" />
-              <StatCard label="Balanced" value={String(stats.balanced)} sublabel="saldo sudah cocok" />
-              <StatCard label="Selesai / Disetujui" value={String(stats.completed)} sublabel="rekonsiliasi final" />
+              <StatCard label={t('accounting.bankReconciliations.statTotal', 'Total Reconciliations')} value={String(stats.total)} sublabel={t('accounting.bankReconciliations.statTotalSub', 'matching active filter')} />
+              <StatCard label={t('accounting.bankReconciliations.statBalanced', 'Balanced')} value={String(stats.balanced)} sublabel={t('accounting.bankReconciliations.statBalancedSub', 'balances matched')} />
+              <StatCard label={t('accounting.bankReconciliations.statCompleted', 'Completed / Approved')} value={String(stats.completed)} sublabel={t('accounting.bankReconciliations.statCompletedSub', 'final reconciliations')} />
               <StatCard
-                label="Selisih Terkini"
+                label={t('accounting.bankReconciliations.statLatestDiff', 'Latest Difference')}
                 value={<MoneyDisplay amount={stats.latestDiff} className={stats.latestDiff > 0.01 ? 'text-danger' : 'text-success'} />}
-                sublabel={stats.latestDiff > 0.01 ? 'ada selisih' : 'sudah balance'}
+                sublabel={stats.latestDiff > 0.01 ? t('accounting.bankReconciliations.statHasDiff', 'has discrepancy') : t('accounting.bankReconciliations.statNoDiff', 'balanced')}
               />
             </>
           )}
@@ -359,17 +369,17 @@ export default function BankReconciliationsPage() {
               <Input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Cari nomor rekonsiliasi..."
+                placeholder={t('accounting.bankReconciliations.searchPlaceholder', 'Search by reconciliation number...')}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
             <div className="flex items-center gap-2 shrink-0 flex-wrap">
               <Select value={accountFilter} onValueChange={setAccountFilter}>
                 <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[180px]">
-                  <SelectValue placeholder="Akun Bank" />
+                  <SelectValue placeholder={t('accounting.bankReconciliations.bankAccountPlaceholder', 'Bank Account')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Akun Bank</SelectItem>
+                  <SelectItem value="all">{t('accounting.bankReconciliations.allBankAccounts', 'All Bank Accounts')}</SelectItem>
                   {bankAccounts.map((acc) => (
                     <SelectItem key={acc.id} value={acc.id}>{acc.code} — {acc.nameId}</SelectItem>
                   ))}
@@ -377,26 +387,26 @@ export default function BankReconciliationsPage() {
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[140px]">
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('accounting.bankReconciliations.statusPlaceholder', 'Status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Status</SelectItem>
-                  <SelectItem value="DRAFT">Draft</SelectItem>
-                  <SelectItem value="IN_PROGRESS">Proses</SelectItem>
-                  <SelectItem value="REVIEWED">Direview</SelectItem>
-                  <SelectItem value="APPROVED">Disetujui</SelectItem>
-                  <SelectItem value="REJECTED">Ditolak</SelectItem>
-                  <SelectItem value="COMPLETED">Selesai</SelectItem>
+                  <SelectItem value="all">{t('accounting.bankReconciliations.allStatuses', 'All Statuses')}</SelectItem>
+                  <SelectItem value="DRAFT">{t('accounting.bankReconciliations.statusDraft', 'Draft')}</SelectItem>
+                  <SelectItem value="IN_PROGRESS">{t('accounting.bankReconciliations.statusInProgress', 'In Progress')}</SelectItem>
+                  <SelectItem value="REVIEWED">{t('accounting.bankReconciliations.statusReviewed', 'Reviewed')}</SelectItem>
+                  <SelectItem value="APPROVED">{t('accounting.bankReconciliations.statusApproved', 'Approved')}</SelectItem>
+                  <SelectItem value="REJECTED">{t('accounting.bankReconciliations.statusRejected', 'Rejected')}</SelectItem>
+                  <SelectItem value="COMPLETED">{t('accounting.bankReconciliations.statusCompleted', 'Completed')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={balancedFilter} onValueChange={setBalancedFilter}>
                 <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[140px]">
-                  <SelectValue placeholder="Balance" />
+                  <SelectValue placeholder={t('accounting.bankReconciliations.balancePlaceholder', 'Balance')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua</SelectItem>
-                  <SelectItem value="yes">Balanced</SelectItem>
-                  <SelectItem value="no">Unbalanced</SelectItem>
+                  <SelectItem value="all">{t('accounting.bankReconciliations.balanceAll', 'All')}</SelectItem>
+                  <SelectItem value="yes">{t('accounting.bankReconciliations.balanced', 'Balanced')}</SelectItem>
+                  <SelectItem value="no">{t('accounting.bankReconciliations.unbalanced', 'Unbalanced')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -404,13 +414,13 @@ export default function BankReconciliationsPage() {
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary shrink-0">Periode</span>
+              <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary shrink-0">{t('accounting.bankReconciliations.periodLabel', 'Period')}</span>
               <div className="flex-1 min-w-0 max-w-[200px]">
-                <MonomiDatePicker value={startDate} onChange={setStartDate} placeholder="Tgl. mulai" className="h-9 text-sm bg-bg-sunken border-border-subtle" />
+                <MonomiDatePicker value={startDate} onChange={setStartDate} placeholder={t('accounting.bankReconciliations.dateFrom', 'Start date')} className="h-9 text-sm bg-bg-sunken border-border-subtle" />
               </div>
               <span className="text-text-tertiary text-xs">—</span>
               <div className="flex-1 min-w-0 max-w-[200px]">
-                <MonomiDatePicker value={endDate} onChange={setEndDate} placeholder="Tgl. akhir" className="h-9 text-sm bg-bg-sunken border-border-subtle" />
+                <MonomiDatePicker value={endDate} onChange={setEndDate} placeholder={t('accounting.bankReconciliations.dateTo', 'End date')} className="h-9 text-sm bg-bg-sunken border-border-subtle" />
               </div>
             </div>
             {hasActiveFilters && (
@@ -429,12 +439,12 @@ export default function BankReconciliationsPage() {
         ) : rows.length === 0 ? (
           <EmptyState
             icon={<BookOpen />}
-            title={hasActiveFilters ? t('accounting.bankReconciliations.noMatch') : t('accounting.bankReconciliations.noReconciliations')}
-            description={hasActiveFilters ? t('accounting.bankReconciliations.noMatchDesc') : t('accounting.bankReconciliations.noReconciliationsDesc')}
+            title={hasActiveFilters ? t('accounting.bankReconciliations.noMatch', 'No matching reconciliations') : t('accounting.bankReconciliations.noReconciliations', 'No bank reconciliations yet')}
+            description={hasActiveFilters ? t('accounting.bankReconciliations.noMatchDesc', 'Try changing the filter.') : t('accounting.bankReconciliations.noReconciliationsDesc', 'Create your first bank reconciliation to start matching balances.')}
             action={
               hasActiveFilters
-                ? <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.bankReconciliations.resetFilter')}</Button>
-                : <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4" /> {t('accounting.bankReconciliations.newReconciliation')}</Button>
+                ? <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.bankReconciliations.resetFilter', 'Reset Filters')}</Button>
+                : <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4" /> {t('accounting.bankReconciliations.newReconciliation', 'New Reconciliation')}</Button>
             }
           />
         ) : (
@@ -446,7 +456,7 @@ export default function BankReconciliationsPage() {
               columns={[
                 {
                   accessorKey: 'reconciliationNumber',
-                  header: 'Nomor',
+                  header: t('accounting.bankReconciliations.colNumber', 'Number'),
                   cell: ({ row }) => (
                     <div className="font-mono text-xs text-text-primary tracking-tight">
                       {row.original.reconciliationNumber || '—'}
@@ -455,7 +465,7 @@ export default function BankReconciliationsPage() {
                 },
                 {
                   id: 'bankAccount',
-                  header: 'Akun Bank',
+                  header: t('accounting.bankReconciliations.colBankAccount', 'Bank Account'),
                   cell: ({ row }) => {
                     const r = row.original;
                     return (
@@ -468,14 +478,14 @@ export default function BankReconciliationsPage() {
                 },
                 {
                   accessorKey: 'statementDate',
-                  header: 'Tgl. Statement',
+                  header: t('accounting.bankReconciliations.colStatementDate', 'Statement Date'),
                   cell: ({ row }) => (
                     <span className="text-text-tertiary"><DateDisplay date={row.original.statementDate} /></span>
                   ),
                 },
                 {
                   id: 'period',
-                  header: 'Periode',
+                  header: t('accounting.bankReconciliations.colPeriod', 'Period'),
                   cell: ({ row }) => {
                     const r = row.original;
                     return (
@@ -487,7 +497,7 @@ export default function BankReconciliationsPage() {
                 },
                 {
                   accessorKey: 'statementBalance',
-                  header: () => <span className="block text-right">Saldo Statement</span>,
+                  header: () => <span className="block text-right">{t('accounting.bankReconciliations.colStatementBalance', 'Statement Balance')}</span>,
                   cell: ({ row }) => (
                     <div className="text-right">
                       <MoneyDisplay amount={toNumber(row.original.statementBalance)} />
@@ -496,7 +506,7 @@ export default function BankReconciliationsPage() {
                 },
                 {
                   accessorKey: 'difference',
-                  header: () => <span className="block text-right">Selisih</span>,
+                  header: () => <span className="block text-right">{t('accounting.bankReconciliations.colDifference', 'Difference')}</span>,
                   cell: ({ row }) => {
                     const diff = toNumber(row.original.difference);
                     return (
@@ -508,7 +518,7 @@ export default function BankReconciliationsPage() {
                 },
                 {
                   accessorKey: 'isBalanced',
-                  header: 'Balance',
+                  header: t('accounting.bankReconciliations.colBalance', 'Balance'),
                   cell: ({ row }) => (
                     row.original.isBalanced
                       ? <CheckCircle2 className="h-4 w-4 text-success" />
@@ -517,7 +527,7 @@ export default function BankReconciliationsPage() {
                 },
                 {
                   accessorKey: 'status',
-                  header: 'Status',
+                  header: t('accounting.bankReconciliations.colStatus', 'Status'),
                   cell: ({ row }) => (
                     <Badge variant={getStatusVariant(row.original.status)}>
                       {getStatusLabel(row.original.status)}
@@ -526,7 +536,7 @@ export default function BankReconciliationsPage() {
                 },
                 {
                   id: 'actions',
-                  header: () => <span className="sr-only">Aksi</span>,
+                  header: () => <span className="sr-only">{t('accounting.bankReconciliations.colActions', 'Actions')}</span>,
                   cell: ({ row }) => {
                     const rec = row.original;
                     return (
@@ -539,16 +549,16 @@ export default function BankReconciliationsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-44">
                             <DropdownMenuItem onClick={() => setViewing(rec)}>
-                              <Eye className="h-3.5 w-3.5" /> Lihat Detail
+                              <Eye className="h-3.5 w-3.5" /> {t('accounting.bankReconciliations.actionViewDetail', 'View Detail')}
                             </DropdownMenuItem>
                             {(rec.status === 'DRAFT' || rec.status === 'IN_PROGRESS') && (
                               <>
                                 <DropdownMenuItem onClick={() => reviewMutation.mutate(rec.id)}>
-                                  <FileTextIcon className="h-3.5 w-3.5" /> Review
+                                  <FileTextIcon className="h-3.5 w-3.5" /> {t('accounting.bankReconciliations.actionReview', 'Review')}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => deleteMutation.mutate(rec.id)} className="text-danger focus:text-danger">
-                                  <X className="h-3.5 w-3.5" /> Hapus
+                                  <X className="h-3.5 w-3.5" /> {t('accounting.bankReconciliations.actionDelete', 'Delete')}
                                 </DropdownMenuItem>
                               </>
                             )}
@@ -558,19 +568,19 @@ export default function BankReconciliationsPage() {
                                 <DropdownMenuItem
                                   onClick={() => {
                                     if (!rec.isBalanced) {
-                                      toast.warning(t('accounting.bankReconciliations.mustBeBalanced'));
+                                      toast.warning(t('accounting.bankReconciliations.mustBeBalanced', 'Reconciliation must be balanced before approving'));
                                       return;
                                     }
                                     approveMutation.mutate(rec.id);
                                   }}
                                 >
-                                  <Check className="h-3.5 w-3.5" /> Setujui
+                                  <Check className="h-3.5 w-3.5" /> {t('accounting.bankReconciliations.actionApprove', 'Approve')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => { setRejectTarget(rec); setRejectReason(''); }}
                                   className="text-danger focus:text-danger"
                                 >
-                                  <X className="h-3.5 w-3.5" /> Tolak
+                                  <X className="h-3.5 w-3.5" /> {t('accounting.bankReconciliations.actionReject', 'Reject')}
                                 </DropdownMenuItem>
                               </>
                             )}
@@ -590,45 +600,45 @@ export default function BankReconciliationsPage() {
       <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) setViewing(null); }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display">{t('accounting.bankReconciliations.detailTitle')}</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.bankReconciliations.detailTitle', 'Reconciliation Detail')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">{viewing?.reconciliationNumber}</DialogDescription>
           </DialogHeader>
           {viewing && (
             <div className="space-y-6">
               {/* Info grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                <DetailRow label="Status" wide={false}>
+                <DetailRow label={t('accounting.bankReconciliations.fieldStatus', 'Status')} wide={false}>
                   <div className="flex items-center gap-2">
                     <Badge variant={getStatusVariant(viewing.status)}>{getStatusLabel(viewing.status)}</Badge>
                     {viewing.isBalanced
-                      ? <span className="text-[10px] uppercase tracking-[0.14em] text-success">Balanced</span>
-                      : <span className="text-[10px] uppercase tracking-[0.14em] text-danger">Unbalanced</span>}
+                      ? <span className="text-[10px] uppercase tracking-[0.14em] text-success">{t('accounting.bankReconciliations.balanced', 'Balanced')}</span>
+                      : <span className="text-[10px] uppercase tracking-[0.14em] text-danger">{t('accounting.bankReconciliations.unbalanced', 'Unbalanced')}</span>}
                   </div>
                 </DetailRow>
-                <DetailRow label="Akun Bank" wide={false}>
+                <DetailRow label={t('accounting.bankReconciliations.colBankAccount', 'Bank Account')} wide={false}>
                   <span className="font-mono text-xs text-text-secondary">{viewing.bankAccount.code}</span>{' — '}{viewing.bankAccount.nameId}
                 </DetailRow>
-                <DetailRow label="Tgl. Statement" wide={false}><DateDisplay date={viewing.statementDate} /></DetailRow>
-                <DetailRow label="Periode" wide={false}>
+                <DetailRow label={t('accounting.bankReconciliations.colStatementDate', 'Statement Date')} wide={false}><DateDisplay date={viewing.statementDate} /></DetailRow>
+                <DetailRow label={t('accounting.bankReconciliations.colPeriod', 'Period')} wide={false}>
                   <DateDisplay date={viewing.periodStartDate} /> — <DateDisplay date={viewing.periodEndDate} />
                 </DetailRow>
-                {viewing.statementReference && <DetailRow label="Referensi" wide={false}>{viewing.statementReference}</DetailRow>}
+                {viewing.statementReference && <DetailRow label={t('accounting.bankReconciliations.fieldReference', 'Reference')} wide={false}>{viewing.statementReference}</DetailRow>}
               </div>
 
               {/* Balance section */}
               <div className="bg-bg-sunken rounded-lg p-4 border border-border-subtle">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">Saldo</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">{t('accounting.bankReconciliations.sectionBalances', 'Balances')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div>
-                    <span className="text-text-tertiary text-xs">Saldo Buku Awal</span>
+                    <span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.fieldBookBalanceStart', 'Opening Book Balance')}</span>
                     <div><MoneyDisplay amount={toNumber(viewing.bookBalanceStart)} /></div>
                   </div>
                   <div>
-                    <span className="text-text-tertiary text-xs">Saldo Buku Akhir</span>
+                    <span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.fieldBookBalanceEnd', 'Closing Book Balance')}</span>
                     <div><MoneyDisplay amount={toNumber(viewing.bookBalanceEnd)} /></div>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-text-tertiary text-xs">Saldo Bank Statement</span>
+                    <span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.fieldStatementBalance', 'Bank Statement Balance')}</span>
                     <div><MoneyDisplay amount={toNumber(viewing.statementBalance)} /></div>
                   </div>
                 </div>
@@ -636,30 +646,30 @@ export default function BankReconciliationsPage() {
 
               {/* Adjustments */}
               <div className="bg-bg-sunken rounded-lg p-4 border border-border-subtle">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">Item Penyesuaian</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">{t('accounting.bankReconciliations.sectionAdjustments', 'Adjustment Items')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                  <div><span className="text-text-tertiary text-xs">Deposits in Transit</span><div><MoneyDisplay amount={toNumber(viewing.depositsInTransit)} /></div></div>
-                  <div><span className="text-text-tertiary text-xs">Outstanding Checks</span><div><MoneyDisplay amount={toNumber(viewing.outstandingChecks)} /></div></div>
-                  <div><span className="text-text-tertiary text-xs">Biaya Bank</span><div><MoneyDisplay amount={toNumber(viewing.bankCharges)} /></div></div>
-                  <div><span className="text-text-tertiary text-xs">Bunga Bank</span><div><MoneyDisplay amount={toNumber(viewing.bankInterest)} /></div></div>
-                  <div className="col-span-2"><span className="text-text-tertiary text-xs">Penyesuaian Lainnya</span><div><MoneyDisplay amount={toNumber(viewing.otherAdjustments)} /></div></div>
+                  <div><span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.fieldDepositsInTransit', 'Deposits in Transit')}</span><div><MoneyDisplay amount={toNumber(viewing.depositsInTransit)} /></div></div>
+                  <div><span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.fieldOutstandingChecks', 'Outstanding Checks')}</span><div><MoneyDisplay amount={toNumber(viewing.outstandingChecks)} /></div></div>
+                  <div><span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.fieldBankCharges', 'Bank Charges')}</span><div><MoneyDisplay amount={toNumber(viewing.bankCharges)} /></div></div>
+                  <div><span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.fieldBankInterest', 'Bank Interest')}</span><div><MoneyDisplay amount={toNumber(viewing.bankInterest)} /></div></div>
+                  <div className="col-span-2"><span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.fieldOtherAdjustments', 'Other Adjustments')}</span><div><MoneyDisplay amount={toNumber(viewing.otherAdjustments)} /></div></div>
                 </div>
               </div>
 
               {/* Result */}
               <div className="bg-bg-panel rounded-lg p-4 border border-border-strong">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">Hasil Rekonsiliasi</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">{t('accounting.bankReconciliations.sectionResult', 'Reconciliation Result')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div>
-                    <span className="text-text-tertiary text-xs">Saldo Buku (Adjusted)</span>
+                    <span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.fieldAdjBookBalance', 'Adjusted Book Balance')}</span>
                     <div className="text-base font-semibold"><MoneyDisplay amount={toNumber(viewing.adjustedBookBalance)} /></div>
                   </div>
                   <div>
-                    <span className="text-text-tertiary text-xs">Saldo Bank (Adjusted)</span>
+                    <span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.fieldAdjBankBalance', 'Adjusted Bank Balance')}</span>
                     <div className="text-base font-semibold"><MoneyDisplay amount={toNumber(viewing.adjustedBankBalance)} /></div>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-text-tertiary text-xs">Selisih</span>
+                    <span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.colDifference', 'Difference')}</span>
                     <div className={cn('text-lg font-bold', toNumber(viewing.difference) > 0.01 ? 'text-danger' : 'text-success')}>
                       <MoneyDisplay amount={toNumber(viewing.difference)} />
                     </div>
@@ -668,15 +678,15 @@ export default function BankReconciliationsPage() {
               </div>
 
               {viewing.notes && (
-                <DetailRow label="Catatan" wide><span className="text-text-secondary">{viewing.notes}</span></DetailRow>
+                <DetailRow label={t('accounting.bankReconciliations.fieldNotes', 'Notes')} wide><span className="text-text-secondary">{viewing.notes}</span></DetailRow>
               )}
               {viewing.rejectionReason && (
-                <DetailRow label="Alasan Penolakan" wide><span className="text-danger">{viewing.rejectionReason}</span></DetailRow>
+                <DetailRow label={t('accounting.bankReconciliations.fieldRejectionReason', 'Rejection Reason')} wide><span className="text-danger">{viewing.rejectionReason}</span></DetailRow>
               )}
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewing(null)}>{t('accounting.bankReconciliations.close')}</Button>
+            <Button variant="outline" onClick={() => setViewing(null)}>{t('accounting.bankReconciliations.close', 'Close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -685,9 +695,9 @@ export default function BankReconciliationsPage() {
       <Dialog open={createOpen} onOpenChange={(open) => { if (!open) { setCreateOpen(false); setForm(EMPTY_FORM); } }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display">{t('accounting.bankReconciliations.createDialogTitle')}</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.bankReconciliations.createDialogTitle', 'New Bank Reconciliation')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
-              {t('accounting.bankReconciliations.createDialogDesc')}
+              {t('accounting.bankReconciliations.createDialogDesc', 'Fill in the form to create a new bank reconciliation.')}
             </DialogDescription>
           </DialogHeader>
 
@@ -695,10 +705,10 @@ export default function BankReconciliationsPage() {
             {/* Bank account + statement date */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Akun Bank *</label>
+                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankReconciliations.formBankAccount', 'Bank Account *')}</label>
                 <Select value={form.bankAccountId} onValueChange={(v) => setForm((f) => ({ ...f, bankAccountId: v }))}>
                   <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-primary">
-                    <SelectValue placeholder="Pilih akun bank" />
+                    <SelectValue placeholder={t('accounting.bankReconciliations.formBankAccountPlaceholder', 'Select bank account')} />
                   </SelectTrigger>
                   <SelectContent>
                     {bankAccounts.map((a) => (
@@ -708,68 +718,68 @@ export default function BankReconciliationsPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Tanggal Statement *</label>
-                <MonomiDatePicker value={form.statementDate} onChange={(d) => setForm((f) => ({ ...f, statementDate: d }))} placeholder="Pilih tanggal" className="bg-bg-sunken border-border-subtle" />
+                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankReconciliations.formStatementDate', 'Statement Date *')}</label>
+                <MonomiDatePicker value={form.statementDate} onChange={(d) => setForm((f) => ({ ...f, statementDate: d }))} placeholder={t('accounting.bankReconciliations.formPickDate', 'Select date')} className="bg-bg-sunken border-border-subtle" />
               </div>
             </div>
 
             {/* Period */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Mulai Periode *</label>
-                <MonomiDatePicker value={form.periodStartDate} onChange={(d) => setForm((f) => ({ ...f, periodStartDate: d }))} placeholder="Tgl. mulai" className="bg-bg-sunken border-border-subtle" />
+                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankReconciliations.formPeriodStart', 'Period Start *')}</label>
+                <MonomiDatePicker value={form.periodStartDate} onChange={(d) => setForm((f) => ({ ...f, periodStartDate: d }))} placeholder={t('accounting.bankReconciliations.dateFrom', 'Start date')} className="bg-bg-sunken border-border-subtle" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Akhir Periode *</label>
-                <MonomiDatePicker value={form.periodEndDate} onChange={(d) => setForm((f) => ({ ...f, periodEndDate: d }))} placeholder="Tgl. akhir" className="bg-bg-sunken border-border-subtle" />
+                <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankReconciliations.formPeriodEnd', 'Period End *')}</label>
+                <MonomiDatePicker value={form.periodEndDate} onChange={(d) => setForm((f) => ({ ...f, periodEndDate: d }))} placeholder={t('accounting.bankReconciliations.dateTo', 'End date')} className="bg-bg-sunken border-border-subtle" />
               </div>
             </div>
 
             {/* Ref */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Referensi Statement</label>
-              <Input value={form.statementReference} onChange={(e) => setForm((f) => ({ ...f, statementReference: e.target.value }))} placeholder="Opsional" className="bg-bg-sunken border-border-subtle text-text-primary" />
+              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankReconciliations.formStatementRef', 'Statement Reference')}</label>
+              <Input value={form.statementReference} onChange={(e) => setForm((f) => ({ ...f, statementReference: e.target.value }))} placeholder={t('accounting.bankReconciliations.formOptional', 'Optional')} className="bg-bg-sunken border-border-subtle text-text-primary" />
             </div>
 
             {/* Balances */}
             <div className="bg-bg-sunken rounded-lg p-4 border border-border-subtle space-y-4">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Saldo</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankReconciliations.sectionBalances', 'Balances')}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <AmountField label="Saldo Buku Awal" value={form.bookBalanceStart} onChange={(v) => setForm((f) => ({ ...f, bookBalanceStart: v }))} />
-                <AmountField label="Saldo Buku Akhir *" value={form.bookBalanceEnd} onChange={(v) => setForm((f) => ({ ...f, bookBalanceEnd: v }))} />
+                <AmountField label={t('accounting.bankReconciliations.fieldBookBalanceStart', 'Opening Book Balance')} value={form.bookBalanceStart} onChange={(v) => setForm((f) => ({ ...f, bookBalanceStart: v }))} />
+                <AmountField label={t('accounting.bankReconciliations.formBookBalanceEndReq', 'Closing Book Balance *')} value={form.bookBalanceEnd} onChange={(v) => setForm((f) => ({ ...f, bookBalanceEnd: v }))} />
               </div>
-              <AmountField label="Saldo Bank Statement *" value={form.statementBalance} onChange={(v) => setForm((f) => ({ ...f, statementBalance: v }))} />
+              <AmountField label={t('accounting.bankReconciliations.formStatementBalanceReq', 'Bank Statement Balance *')} value={form.statementBalance} onChange={(v) => setForm((f) => ({ ...f, statementBalance: v }))} />
             </div>
 
             {/* Adjustments */}
             <div className="bg-bg-sunken rounded-lg p-4 border border-border-subtle space-y-4">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Item Penyesuaian</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankReconciliations.sectionAdjustments', 'Adjustment Items')}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <AmountField label="Deposits in Transit" value={form.depositsInTransit} onChange={(v) => setForm((f) => ({ ...f, depositsInTransit: v }))} />
-                <AmountField label="Outstanding Checks" value={form.outstandingChecks} onChange={(v) => setForm((f) => ({ ...f, outstandingChecks: v }))} />
-                <AmountField label="Biaya Bank" value={form.bankCharges} onChange={(v) => setForm((f) => ({ ...f, bankCharges: v }))} />
-                <AmountField label="Bunga Bank" value={form.bankInterest} onChange={(v) => setForm((f) => ({ ...f, bankInterest: v }))} />
+                <AmountField label={t('accounting.bankReconciliations.fieldDepositsInTransit', 'Deposits in Transit')} value={form.depositsInTransit} onChange={(v) => setForm((f) => ({ ...f, depositsInTransit: v }))} />
+                <AmountField label={t('accounting.bankReconciliations.fieldOutstandingChecks', 'Outstanding Checks')} value={form.outstandingChecks} onChange={(v) => setForm((f) => ({ ...f, outstandingChecks: v }))} />
+                <AmountField label={t('accounting.bankReconciliations.fieldBankCharges', 'Bank Charges')} value={form.bankCharges} onChange={(v) => setForm((f) => ({ ...f, bankCharges: v }))} />
+                <AmountField label={t('accounting.bankReconciliations.fieldBankInterest', 'Bank Interest')} value={form.bankInterest} onChange={(v) => setForm((f) => ({ ...f, bankInterest: v }))} />
               </div>
-              <AmountField label="Penyesuaian Lainnya" value={form.otherAdjustments} onChange={(v) => setForm((f) => ({ ...f, otherAdjustments: v }))} />
+              <AmountField label={t('accounting.bankReconciliations.fieldOtherAdjustments', 'Other Adjustments')} value={form.otherAdjustments} onChange={(v) => setForm((f) => ({ ...f, otherAdjustments: v }))} />
             </div>
 
             {/* Calculated result */}
             <div className="bg-bg-panel rounded-lg p-4 border border-border-strong">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">Hasil Perhitungan</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">{t('accounting.bankReconciliations.sectionCalcResult', 'Calculation Result')}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 <div>
-                  <span className="text-text-tertiary text-xs">Saldo Buku (Adj.)</span>
+                  <span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.fieldAdjBookBalanceShort', 'Book Balance (Adj.)')}</span>
                   <div className="font-semibold"><MoneyDisplay amount={calc.adjBook} /></div>
                 </div>
                 <div>
-                  <span className="text-text-tertiary text-xs">Saldo Bank (Adj.)</span>
+                  <span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.fieldAdjBankBalanceShort', 'Bank Balance (Adj.)')}</span>
                   <div className="font-semibold"><MoneyDisplay amount={calc.adjBank} /></div>
                 </div>
                 <div className="col-span-2">
-                  <span className="text-text-tertiary text-xs">Selisih</span>
+                  <span className="text-text-tertiary text-xs">{t('accounting.bankReconciliations.colDifference', 'Difference')}</span>
                   <div className={cn('text-base font-bold', calc.isBalanced ? 'text-success' : 'text-danger')}>
                     <MoneyDisplay amount={calc.diff} />
-                    <span className="ml-2 text-xs font-normal">{calc.isBalanced ? '— Balanced ✓' : '— Belum Balance'}</span>
+                    <span className="ml-2 text-xs font-normal">{calc.isBalanced ? t('accounting.bankReconciliations.balancedCheck', '— Balanced ✓') : t('accounting.bankReconciliations.notYetBalanced', '— Not Yet Balanced')}</span>
                   </div>
                 </div>
               </div>
@@ -777,11 +787,11 @@ export default function BankReconciliationsPage() {
 
             {/* Notes */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Catatan</label>
+              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankReconciliations.fieldNotes', 'Notes')}</label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                placeholder="Catatan tambahan (opsional)"
+                placeholder={t('accounting.bankReconciliations.formNotesPlaceholder', 'Additional notes (optional)')}
                 rows={2}
                 className="w-full rounded-md bg-bg-sunken border border-border-subtle text-text-primary text-sm px-3 py-2 placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-border-default"
               />
@@ -789,14 +799,14 @@ export default function BankReconciliationsPage() {
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setCreateOpen(false); setForm(EMPTY_FORM); }}>{t('accounting.bankReconciliations.cancel')}</Button>
+            <Button variant="outline" onClick={() => { setCreateOpen(false); setForm(EMPTY_FORM); }}>{t('accounting.bankReconciliations.cancel', 'Cancel')}</Button>
             <Button
               onClick={handleCreate}
               disabled={createMutation.isPending || !calc.isBalanced}
             >
               {createMutation.isPending ? (
-                <><RefreshCw className="h-4 w-4 animate-spin" /> Menyimpan...</>
-              ) : calc.isBalanced ? t('accounting.bankReconciliations.createButton') : t('accounting.bankReconciliations.notBalancedButton')}
+                <><RefreshCw className="h-4 w-4 animate-spin" /> {t('accounting.bankReconciliations.saving', 'Saving...')}</>
+              ) : calc.isBalanced ? t('accounting.bankReconciliations.createButton', 'Create Reconciliation') : t('accounting.bankReconciliations.notBalancedButton', 'Not Balanced')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -806,23 +816,23 @@ export default function BankReconciliationsPage() {
       <Dialog open={!!rejectTarget} onOpenChange={(open) => { if (!open) { setRejectTarget(null); setRejectReason(''); } }}>
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display">{t('accounting.bankReconciliations.rejectDialogTitle')}</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.bankReconciliations.rejectDialogTitle', 'Reject Reconciliation')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
               {rejectTarget?.reconciliationNumber}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">Alasan Penolakan *</label>
+            <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.bankReconciliations.fieldRejectionReason', 'Rejection Reason')} *</label>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Tuliskan alasan penolakan..."
+              placeholder={t('accounting.bankReconciliations.rejectReasonPlaceholder', 'Enter rejection reason...')}
               rows={3}
               className="w-full rounded-md bg-bg-sunken border border-border-subtle text-text-primary text-sm px-3 py-2 placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-border-default"
             />
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setRejectTarget(null); setRejectReason(''); }}>{t('accounting.bankReconciliations.cancel')}</Button>
+            <Button variant="outline" onClick={() => { setRejectTarget(null); setRejectReason(''); }}>{t('accounting.bankReconciliations.cancel', 'Cancel')}</Button>
             <Button
               variant="destructive"
               disabled={!rejectReason.trim() || rejectMutation.isPending}
@@ -832,7 +842,7 @@ export default function BankReconciliationsPage() {
                 }
               }}
             >
-              {t('accounting.bankReconciliations.rejectButton')}
+              {t('accounting.bankReconciliations.rejectButton', 'Reject')}
             </Button>
           </DialogFooter>
         </DialogContent>

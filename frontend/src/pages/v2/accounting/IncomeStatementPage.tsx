@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { useDateLocale } from '@/lib/dateLocale';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Scale, BookOpen, TrendingUp, Activity,
@@ -46,27 +46,27 @@ const COGS_SUBTYPES = new Set([
   'DIRECT_COST',
 ]);
 
-const SUBTYPE_LABEL_ID: Record<string, string> = {
-  COST_OF_GOODS_SOLD: 'Harga Pokok Penjualan',
-  COST_OF_SALES: 'Harga Pokok Penjualan',
-  COST_OF_REVENUE: 'Harga Pokok Pendapatan',
-  DIRECT_COST: 'Biaya Langsung',
-  OPERATING_EXPENSE: 'Biaya Operasional',
-  SELLING_EXPENSE: 'Biaya Penjualan',
-  ADMINISTRATIVE_EXPENSE: 'Biaya Administrasi & Umum',
-  GENERAL_EXPENSE: 'Biaya Umum',
-  OTHER_EXPENSE: 'Biaya Lain-lain',
-  DEPRECIATION_EXPENSE: 'Beban Penyusutan',
-  INTEREST_EXPENSE: 'Beban Bunga',
-  TAX_EXPENSE: 'Beban Pajak',
-  OPERATING_REVENUE: 'Pendapatan Operasional',
-  SALES_REVENUE: 'Pendapatan Penjualan',
-  SERVICE_REVENUE: 'Pendapatan Jasa',
-  OTHER_REVENUE: 'Pendapatan Lain-lain',
+const SUBTYPE_LABEL_FALLBACK: Record<string, string> = {
+  COST_OF_GOODS_SOLD: 'Cost of Goods Sold',
+  COST_OF_SALES: 'Cost of Sales',
+  COST_OF_REVENUE: 'Cost of Revenue',
+  DIRECT_COST: 'Direct Cost',
+  OPERATING_EXPENSE: 'Operating Expense',
+  SELLING_EXPENSE: 'Selling Expense',
+  ADMINISTRATIVE_EXPENSE: 'Administrative & General Expense',
+  GENERAL_EXPENSE: 'General Expense',
+  OTHER_EXPENSE: 'Other Expense',
+  DEPRECIATION_EXPENSE: 'Depreciation Expense',
+  INTEREST_EXPENSE: 'Interest Expense',
+  TAX_EXPENSE: 'Tax Expense',
+  OPERATING_REVENUE: 'Operating Revenue',
+  SALES_REVENUE: 'Sales Revenue',
+  SERVICE_REVENUE: 'Service Revenue',
+  OTHER_REVENUE: 'Other Revenue',
 };
 
-const subtypeLabel = (key: string) =>
-  SUBTYPE_LABEL_ID[key] ?? key.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+const subtypeLabel = (key: string, tFn: (k: string, fb: string) => string) =>
+  tFn(`incomeStatement.subtype.${key}`, SUBTYPE_LABEL_FALLBACK[key] ?? key.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()));
 
 /* ------------------------------------------------------------------ */
 /*  Row primitives — same conventions as BalanceSheet, but tuned for  */
@@ -159,6 +159,7 @@ const SectionHeaderRow = ({ label }: { label: string }) => (
 
 export default function IncomeStatementPageV2() {
   const { t } = useTranslation();
+  const idLocale = useDateLocale();
   const user = useAuthStore((state) => state.user);
   const today = new Date();
   const [startDate, setStartDate] = useState<Date>(startOfMonth(today));
@@ -175,18 +176,18 @@ export default function IncomeStatementPageV2() {
   const handleExportPDF = async () => {
     try {
       await exportIncomeStatementPDF({ startDate: startStr, endDate: endStr });
-      toast.success('Laporan laba rugi berhasil diekspor (PDF).');
+      toast.success(t('incomeStatement.exportPdfSuccess', 'Income statement exported (PDF).'));
     } catch {
-      toast.error('Gagal mengekspor PDF.');
+      toast.error(t('incomeStatement.exportPdfFail', 'Failed to export PDF.'));
     }
   };
 
   const handleExportExcel = async () => {
     try {
       await exportIncomeStatementExcel({ startDate: startStr, endDate: endStr });
-      toast.success('Laporan laba rugi berhasil diekspor (CSV).');
+      toast.success(t('incomeStatement.exportCsvSuccess', 'Income statement exported (CSV).'));
     } catch {
-      toast.error('Gagal mengekspor CSV.');
+      toast.error(t('incomeStatement.exportCsvFail', 'Failed to export CSV.'));
     }
   };
 
@@ -280,13 +281,13 @@ export default function IncomeStatementPageV2() {
                 className="text-text-tertiary hover:text-text-primary"
               >
                 <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
-                Muat Ulang
+                {t('incomeStatement.reload', 'Reload')}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
                     <Download className="h-4 w-4" />
-                    Ekspor
+                    {t('incomeStatement.export', 'Export')}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
@@ -302,7 +303,7 @@ export default function IncomeStatementPageV2() {
         <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 mb-8 px-4 sm:px-6 lg:px-8 py-3 bg-bg-base/85 backdrop-blur-[24px] border-b border-border-subtle">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3 text-xs text-text-tertiary uppercase tracking-[0.16em]">
-              <span>Periode</span>
+              <span>{t('incomeStatement.period', 'Period')}</span>
               <span className="text-text-primary normal-case tracking-normal font-display text-sm">
                 {format(startDate, 'd MMM yyyy', { locale: idLocale })} – {format(endDate, 'd MMM yyyy', { locale: idLocale })}
               </span>
@@ -312,7 +313,7 @@ export default function IncomeStatementPageV2() {
                 <MonomiDatePicker
                   value={startDate}
                   onChange={(d) => d && setStartDate(d)}
-                  placeholder="Tanggal mulai"
+                  placeholder={t('incomeStatement.startDate', 'Start date')}
                 />
               </div>
               <span className="text-text-tertiary text-xs">→</span>
@@ -320,7 +321,7 @@ export default function IncomeStatementPageV2() {
                 <MonomiDatePicker
                   value={endDate}
                   onChange={(d) => d && setEndDate(d)}
-                  placeholder="Tanggal akhir"
+                  placeholder={t('incomeStatement.endDate', 'End date')}
                 />
               </div>
             </div>
@@ -332,7 +333,7 @@ export default function IncomeStatementPageV2() {
             icon={<TrendingUp />}
             title={t('incomeStatement.error.title', 'Tidak bisa memuat laporan')}
             description={error instanceof Error ? error.message : t('common.errorGeneric', 'Terjadi kesalahan.')}
-            action={<Button onClick={() => refetch()} size="sm">Coba Lagi</Button>}
+            action={<Button onClick={() => refetch()} size="sm">{t('incomeStatement.retry', 'Try Again')}</Button>}
           />
         ) : isLoading || !data || !waterfall ? (
           <Skeleton className="h-[640px] rounded-lg" />
@@ -340,7 +341,7 @@ export default function IncomeStatementPageV2() {
           <GlassPanel surface="glass" padding="none" className="overflow-hidden">
             <div className="px-5 py-3 border-b border-border-subtle bg-bg-sunken flex items-baseline justify-between">
               <h2 className="text-[11px] font-display font-semibold text-text-primary uppercase tracking-[0.18em]">
-                Laporan Laba Rugi
+                {t('incomeStatement.title', 'Income Statement')}
               </h2>
               <span className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">
                 Margin {waterfall.profitMargin.toFixed(1)}%
@@ -355,7 +356,7 @@ export default function IncomeStatementPageV2() {
                 </colgroup>
                 <tbody>
                   {/* ── PENDAPATAN ── */}
-                  <SectionHeaderRow label="Pendapatan" />
+                  <SectionHeaderRow label={t('incomeStatement.sectionRevenue', 'Revenue')} />
                   {Object.entries(waterfall.revBySubtype).flatMap(([sub, rows]) => [
                     ...rows.map((r) => (
                       <LineRow
@@ -368,14 +369,14 @@ export default function IncomeStatementPageV2() {
                     )),
                   ])}
                   {waterfall.totalRevenue === 0 && Object.keys(waterfall.revBySubtype).length === 0 && (
-                    <LineRow label="Tidak ada pendapatan pada periode ini" amount={0} muted indent={1} />
+                    <LineRow label={t('incomeStatement.noRevenue', 'No revenue in this period')} amount={0} muted indent={1} />
                   )}
-                  <SubtotalRow label="Total Pendapatan" amount={waterfall.totalRevenue} />
+                  <SubtotalRow label={t('incomeStatement.totalRevenue', 'Total Revenue')} amount={waterfall.totalRevenue} />
 
                   {/* ── HPP ── (only if there are COGS accounts) */}
                   {waterfall.cogs.length > 0 && (
                     <>
-                      <SectionHeaderRow label="Harga Pokok Penjualan" />
+                      <SectionHeaderRow label={t('incomeStatement.sectionCOGS', 'Cost of Goods Sold')} />
                       {waterfall.cogs.map((r) => (
                         <LineRow
                           key={r.accountCode}
@@ -386,22 +387,22 @@ export default function IncomeStatementPageV2() {
                           negative
                         />
                       ))}
-                      <SubtotalRow label="Total HPP" amount={-waterfall.totalCogs} />
-                      <SubtotalRow label="Laba Kotor" amount={waterfall.grossProfit} emphasis="normal" />
+                      <SubtotalRow label={t('incomeStatement.totalCOGS', 'Total COGS')} amount={-waterfall.totalCogs} />
+                      <SubtotalRow label={t('incomeStatement.grossProfit', 'Gross Profit')} amount={waterfall.grossProfit} emphasis="normal" />
                     </>
                   )}
 
                   {/* ── BIAYA OPERASIONAL ── */}
                   {Object.keys(waterfall.opexBySubtype).length > 0 && (
                     <>
-                      <SectionHeaderRow label="Biaya Operasional" />
+                      <SectionHeaderRow label={t('incomeStatement.sectionOpex', 'Operating Expenses')} />
                       {Object.entries(waterfall.opexBySubtype).map(([sub, rows]) => {
                         const subTotal = rows.reduce((s, r) => s + (r.balance || 0), 0);
                         return (
                           <>
                             <tr key={`${sub}-head`}>
                               <td colSpan={2} className="pt-3 pb-1 pl-4 text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
-                                {subtypeLabel(sub)}
+                                {subtypeLabel(sub, t)}
                               </td>
                             </tr>
                             {rows.map((r) => (
@@ -416,7 +417,7 @@ export default function IncomeStatementPageV2() {
                             ))}
                             <tr className="border-t border-border-subtle">
                               <td className="py-2 pl-4 text-[11px] text-text-secondary">
-                                Subtotal {subtypeLabel(sub)}
+                                {t('incomeStatement.subtotal', 'Subtotal')} {subtypeLabel(sub, t)}
                               </td>
                               <td className="py-2 pr-4 text-right">
                                 <span className="font-mono tabular-nums text-sm text-text-secondary">
@@ -427,14 +428,14 @@ export default function IncomeStatementPageV2() {
                           </>
                         );
                       })}
-                      <SubtotalRow label="Total Biaya Operasional" amount={-waterfall.totalOpex} />
-                      <SubtotalRow label="Laba Operasional" amount={waterfall.operatingIncome} emphasis="normal" />
+                      <SubtotalRow label={t('incomeStatement.totalOpex', 'Total Operating Expenses')} amount={-waterfall.totalOpex} />
+                      <SubtotalRow label={t('incomeStatement.operatingIncome', 'Operating Income')} amount={waterfall.operatingIncome} emphasis="normal" />
                     </>
                   )}
 
                   {/* ── LABA / RUGI BERSIH ── */}
                   <SubtotalRow
-                    label={waterfall.netIncome >= 0 ? 'Laba Bersih' : 'Rugi Bersih'}
+                    label={waterfall.netIncome >= 0 ? t('incomeStatement.netIncome', 'Net Income') : t('incomeStatement.netLoss', 'Net Loss')}
                     amount={waterfall.netIncome}
                     emphasis="strong"
                   />

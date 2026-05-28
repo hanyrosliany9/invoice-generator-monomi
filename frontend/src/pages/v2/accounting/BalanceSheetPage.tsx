@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation, getI18n } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { useDateLocale } from '@/lib/dateLocale';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Scale, BookOpen, TrendingUp, Activity,
@@ -214,7 +214,7 @@ const StatementSection = ({
                     {rows.map((acc) => (
                       <AccountRow key={acc.accountCode} account={acc} indent={2} />
                     ))}
-                    <SubtotalRow label={`Total ${subtypeLabel(subType)}`} amount={subtotal} />
+                    <SubtotalRow label={`${getI18n().t('accounting.balanceSheet.subtotalPrefix', 'Total')} ${subtypeLabel(subType)}`} amount={subtotal} />
                   </>
                 );
               })
@@ -238,6 +238,7 @@ const StatementSection = ({
 
 export default function BalanceSheetPageV2() {
   const { t } = useTranslation();
+  const idLocale = useDateLocale();
   const user = useAuthStore((state) => state.user);
   const [asOfDate, setAsOfDate] = useState<Date>(new Date());
 
@@ -323,7 +324,7 @@ export default function BalanceSheetPageV2() {
         <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 mb-8 px-4 sm:px-6 lg:px-8 py-3 bg-bg-base/85 backdrop-blur-[24px] border-b border-border-subtle">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3 text-xs text-text-tertiary uppercase tracking-[0.16em]">
-              <span>Per Tanggal</span>
+              <span>{t('accounting.balanceSheet.asOf', 'As of')}</span>
               <span className="text-text-primary normal-case tracking-normal font-display text-sm">
                 {format(asOfDate, 'd MMMM yyyy', { locale: idLocale })}
               </span>
@@ -359,7 +360,7 @@ export default function BalanceSheetPageV2() {
           <div className="mb-6 flex items-center gap-3 text-xs text-text-tertiary">
             <CheckCircle2 className="h-3.5 w-3.5 text-success" />
             <span>
-              Neraca seimbang —{' '}
+              {t('accounting.balanceSheet.balancedMsg', 'Balance sheet is balanced')} —{' '}
               <MoneyDisplay amount={data.summary.totalAssets} className="text-text-secondary" />
               {' = '}
               <MoneyDisplay amount={totalLiabEq} className="text-text-secondary" />
@@ -391,29 +392,29 @@ export default function BalanceSheetPageV2() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* ASET */}
               <StatementSection
-                title="Aset"
+                title={t('accounting.accountTypes.ASSET', 'Asset')}
                 accounts={data.assets.accounts}
                 byType={data.assets.byType}
                 total={data.assets.total}
-                grandLabel="Total Aset"
+                grandLabel={t('accounting.balanceSheet.totalAssets', 'Total Assets')}
                 tone="asset"
               />
 
               {/* KEWAJIBAN + EKUITAS — stacked inside one column */}
               <div className="flex flex-col gap-6">
                 <StatementSection
-                  title="Kewajiban"
+                  title={t('accounting.accountTypes.LIABILITY', 'Liability')}
                   accounts={data.liabilities.accounts}
                   byType={data.liabilities.byType}
                   total={data.liabilities.total}
-                  grandLabel="Total Kewajiban"
+                  grandLabel={t('accounting.balanceSheet.totalLiabilities', 'Total Liabilities')}
                   tone="liabEq"
                 />
                 <StatementSection
-                  title="Ekuitas"
+                  title={t('accounting.accountTypes.EQUITY', 'Equity')}
                   accounts={data.equity.accounts}
                   total={data.equity.total}
-                  grandLabel="Total Ekuitas"
+                  grandLabel={t('accounting.balanceSheet.totalEquity', 'Total Equity')}
                   tone="liabEq"
                 />
                 {/* Reconciliation strip — explicit so the equation reads
@@ -427,7 +428,7 @@ export default function BalanceSheetPageV2() {
                     </colgroup>
                     <tbody>
                       <GrandTotalRow
-                        label="Total Kewajiban + Ekuitas"
+                        label={t('accounting.balanceSheet.totalLiabEq', 'Total Liabilities + Equity')}
                         amount={totalLiabEq}
                         tone="liabEq"
                       />

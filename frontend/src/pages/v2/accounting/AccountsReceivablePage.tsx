@@ -213,7 +213,7 @@ export default function AccountsReceivablePageV2() {
                 <MonomiDatePicker
                   value={asOfDate}
                   onChange={(d) => d && setAsOfDate(d)}
-                  placeholder="Per tanggal"
+                  placeholder={t('accounting.accountsReceivable.asOfDatePlaceholder', 'As of date')}
                 />
               </div>
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
@@ -244,24 +244,24 @@ export default function AccountsReceivablePageV2() {
             ) : (
               <>
                 <StatCard
-                  label="Total Piutang"
+                  label={t('accounting.accountsReceivable.statTotalReceivable', 'Total Receivable')}
                   value={<MoneyDisplay amount={stats.total} />}
-                  sublabel="saldo terbuka per tanggal pelaporan"
+                  sublabel={t('accounting.accountsReceivable.statTotalReceivableSub', 'open balance as of reporting date')}
                 />
                 <StatCard
-                  label="Belum Jatuh Tempo"
+                  label={t('accounting.accountsReceivable.statCurrent', 'Not Yet Due')}
                   value={<MoneyDisplay amount={stats.current} />}
-                  sublabel="masih dalam periode pembayaran"
+                  sublabel={t('accounting.accountsReceivable.statCurrentSub', 'still within payment period')}
                 />
                 <StatCard
-                  label="Jatuh Tempo"
+                  label={t('accounting.accountsReceivable.statOverdue', 'Overdue')}
                   value={<MoneyDisplay amount={stats.overdue} className="text-danger" />}
-                  sublabel="perlu tindak lanjut penagihan"
+                  sublabel={t('accounting.accountsReceivable.statOverdueSub', 'follow-up collection required')}
                 />
                 <StatCard
-                  label="Jumlah Klien"
+                  label={t('accounting.accountsReceivable.statClientCount', 'Client Count')}
                   value={stats.clientCount}
-                  sublabel="dengan saldo terbuka"
+                  sublabel={t('accounting.accountsReceivable.statClientCountSub', 'with open balance')}
                 />
               </>
             )}
@@ -279,7 +279,7 @@ export default function AccountsReceivablePageV2() {
               <Input
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Cari nomor faktur atau nama klien..."
+                placeholder={t('accounting.accountsReceivable.searchPlaceholder', 'Search by invoice number or client name...')}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -290,10 +290,10 @@ export default function AccountsReceivablePageV2() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[180px]"
                 >
-                  <SelectValue placeholder="Klien" />
+                  <SelectValue placeholder={t('accounting.accountsReceivable.filterClientLabel', 'Client')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Klien</SelectItem>
+                  <SelectItem value="all">{t('accounting.accountsReceivable.filterAllClients', 'All Clients')}</SelectItem>
                   {clients.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
@@ -305,10 +305,10 @@ export default function AccountsReceivablePageV2() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[160px]"
                 >
-                  <SelectValue placeholder="Umur" />
+                  <SelectValue placeholder={t('accounting.accountsReceivable.filterAgingLabel', 'Aging')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Umur</SelectItem>
+                  <SelectItem value="all">{t('accounting.accountsReceivable.filterAllAging', 'All Ages')}</SelectItem>
                   {Object.entries(BUCKET_ID).map(([k, v]) => (
                     <SelectItem key={k} value={k}>{v}</SelectItem>
                   ))}
@@ -380,6 +380,7 @@ interface ARTableProps {
 }
 
 function ARTable({ rows, total, onRowClick }: ARTableProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-3">
       <DataTable<ARRow>
@@ -389,7 +390,7 @@ function ARTable({ rows, total, onRowClick }: ARTableProps) {
         columns={[
           {
             accessorKey: 'invoiceNumber',
-            header: 'Nomor',
+            header: t('accounting.accountsReceivable.colNumber', 'Number'),
             cell: ({ row }) => (
               <span className="font-mono text-xs text-text-primary tracking-tight">
                 {row.original.invoiceNumber || '—'}
@@ -398,7 +399,7 @@ function ARTable({ rows, total, onRowClick }: ARTableProps) {
           },
           {
             id: 'client',
-            header: 'Klien',
+            header: t('accounting.accountsReceivable.colClient', 'Client'),
             accessorFn: (row) => row.client?.name ?? '',
             cell: ({ row }) => (
               <div className="min-w-0 text-sm text-text-primary truncate">
@@ -408,7 +409,7 @@ function ARTable({ rows, total, onRowClick }: ARTableProps) {
           },
           {
             accessorKey: 'invoiceDate',
-            header: 'Tgl Faktur',
+            header: t('accounting.accountsReceivable.colInvoiceDate', 'Invoice Date'),
             cell: ({ row }) => (
               <span className="text-text-tertiary">
                 <DateDisplay date={row.original.invoiceDate} />
@@ -417,7 +418,7 @@ function ARTable({ rows, total, onRowClick }: ARTableProps) {
           },
           {
             accessorKey: 'dueDate',
-            header: 'Jatuh Tempo',
+            header: t('accounting.accountsReceivable.colDueDate', 'Due Date'),
             cell: ({ row }) => {
               const over = (row.original.daysOverdue ?? 0) > 0;
               return (
@@ -429,7 +430,7 @@ function ARTable({ rows, total, onRowClick }: ARTableProps) {
           },
           {
             accessorKey: 'daysOverdue',
-            header: () => <span className="block text-center">Hari Terlambat</span>,
+            header: () => <span className="block text-center">{t('accounting.accountsReceivable.colDaysOverdue', 'Days Overdue')}</span>,
             cell: ({ row }) => {
               const d = row.original.daysOverdue ?? 0;
               if (d <= 0) {
@@ -439,7 +440,7 @@ function ARTable({ rows, total, onRowClick }: ARTableProps) {
                 <div className="text-center">
                   <span className="inline-flex items-center gap-1 text-xs text-danger font-medium tabular-nums">
                     <AlertTriangle className="h-3 w-3" />
-                    {d} hari
+                    {d} {t('accounting.accountsReceivable.daysUnit', 'days')}
                   </span>
                 </div>
               );
@@ -447,7 +448,7 @@ function ARTable({ rows, total, onRowClick }: ARTableProps) {
           },
           {
             accessorKey: 'agingBucket',
-            header: 'Umur',
+            header: t('accounting.accountsReceivable.colAging', 'Aging'),
             cell: ({ row }) => {
               const b = row.original.agingBucket ?? 'Current';
               return (
@@ -459,7 +460,7 @@ function ARTable({ rows, total, onRowClick }: ARTableProps) {
           },
           {
             accessorKey: 'amount',
-            header: () => <span className="block text-right">Jumlah</span>,
+            header: () => <span className="block text-right">{t('accounting.accountsReceivable.colAmount', 'Amount')}</span>,
             cell: ({ row }) => (
               <div className="text-right">
                 <MoneyDisplay
@@ -474,7 +475,7 @@ function ARTable({ rows, total, onRowClick }: ARTableProps) {
       {/* Totals row — sits below the table as an editorial colophon */}
       <div className="flex items-center justify-between px-4 py-3 rounded-md border border-border-subtle bg-bg-sunken">
         <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
-          Total Piutang
+          {t('accounting.accountsReceivable.footerTotalReceivable', 'Total Receivable')}
         </span>
         <MoneyDisplay amount={total} className="text-text-primary text-base font-semibold" />
       </div>

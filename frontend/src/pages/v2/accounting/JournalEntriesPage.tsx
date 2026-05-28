@@ -48,9 +48,9 @@ import { cn } from '@/lib/utils';
 /*  Status & helpers                                                  */
 /* ------------------------------------------------------------------ */
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT:  'Draft',
-  POSTED: 'Diposting',
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  DRAFT:  'accounting.journalEntries.statusDraft',
+  POSTED: 'accounting.journalEntries.statusPosted',
 };
 
 const statusChipClass = (status?: string) => {
@@ -61,19 +61,19 @@ const statusChipClass = (status?: string) => {
   }
 };
 
-const TRANSACTION_TYPE_LABEL: Record<string, string> = {
-  ADJUSTMENT:           'Penyesuaian',
-  CASH_RECEIPT:         'Penerimaan Kas',
-  CASH_DISBURSEMENT:    'Pengeluaran Kas',
-  DEPRECIATION:         'Penyusutan',
-  BANK_TRANSFER:        'Transfer Bank',
-  CAPITAL_CONTRIBUTION: 'Setoran Modal',
-  OWNER_DRAWING:        'Penarikan Pemilik',
-  CLOSING:              'Penutupan',
-  OPENING:              'Pembukaan',
-  INVOICE:              'Invoice',
-  PAYMENT:              'Pembayaran',
-  ECL:                  'ECL',
+const TRANSACTION_TYPE_LABEL_KEYS: Record<string, string> = {
+  ADJUSTMENT:           'accounting.journalEntries.typeAdjustment',
+  CASH_RECEIPT:         'accounting.journalEntries.typeCashReceipt',
+  CASH_DISBURSEMENT:    'accounting.journalEntries.typeCashDisbursement',
+  DEPRECIATION:         'accounting.journalEntries.typeDepreciation',
+  BANK_TRANSFER:        'accounting.journalEntries.typeBankTransfer',
+  CAPITAL_CONTRIBUTION: 'accounting.journalEntries.typeCapitalContribution',
+  OWNER_DRAWING:        'accounting.journalEntries.typeOwnerDrawing',
+  CLOSING:              'accounting.journalEntries.typeClosing',
+  OPENING:              'accounting.journalEntries.typeOpening',
+  INVOICE:              'accounting.journalEntries.typeInvoice',
+  PAYMENT:              'accounting.journalEntries.typePayment',
+  ECL:                  'accounting.journalEntries.typeECL',
 };
 
 const toNumber = (v: unknown): number => {
@@ -225,14 +225,14 @@ export default function JournalEntriesPageV2() {
                 onClick={() => navigate('/v2/accounting/journal-entries/adjusting')}
               >
                 <Wand2 className="h-4 w-4" />
-                Penyesuaian
+                {t('accounting.journalEntries.newAdjusting', 'Adjusting')}
               </Button>
               <Button
                 size="sm"
                 onClick={() => navigate('/v2/accounting/journal-entries/new')}
               >
                 <Plus className="h-4 w-4" />
-                Jurnal Baru
+                {t('accounting.journalEntries.newJournal', 'New Journal')}
               </Button>
             </div>
           }
@@ -250,10 +250,10 @@ export default function JournalEntriesPageV2() {
               </>
             ) : (
               <>
-                <StatCard label="Total Entri"    value={stats.totalEntries}   sublabel="dalam filter aktif" />
-                <StatCard label="Total Debit"    value={<MoneyDisplay amount={stats.totalDebit} />} sublabel="akumulasi terlihat" />
-                <StatCard label="Draft Tertunda" value={stats.draftCount}     sublabel="menunggu posting" />
-                <StatCard label="Diposting Bln Ini" value={stats.postedMonth} sublabel="di bulan berjalan" />
+                <StatCard label={t('accounting.journalEntries.statKpiEntries', 'Total Entries')}       value={stats.totalEntries}   sublabel={t('accounting.journalEntries.statKpiEntriesSub', 'in active filter')} />
+                <StatCard label={t('accounting.journalEntries.statKpiDebit', 'Total Debit')}            value={<MoneyDisplay amount={stats.totalDebit} />} sublabel={t('accounting.journalEntries.statKpiDebitSub', 'accumulated visible')} />
+                <StatCard label={t('accounting.journalEntries.statKpiDraft', 'Pending Drafts')}         value={stats.draftCount}     sublabel={t('accounting.journalEntries.statKpiDraftSub', 'awaiting posting')} />
+                <StatCard label={t('accounting.journalEntries.statKpiPostedMonth', 'Posted This Month')} value={stats.postedMonth}   sublabel={t('accounting.journalEntries.statKpiPostedMonthSub', 'in current month')} />
               </>
             )}
           </div>
@@ -268,7 +268,7 @@ export default function JournalEntriesPageV2() {
                 <Input
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
-                  placeholder="Cari nomor jurnal, deskripsi, dokumen..."
+                  placeholder={t('accounting.journalEntries.searchPlaceholder', 'Search journal number, description, document...')}
                   className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
                 />
               </div>
@@ -277,13 +277,13 @@ export default function JournalEntriesPageV2() {
                 <MonomiDatePicker
                   value={startDate}
                   onChange={setStartDate}
-                  placeholder="Dari tanggal"
+                  placeholder={t('accounting.journalEntries.fromDate', 'From date')}
                   className="bg-bg-sunken border-border-subtle"
                 />
                 <MonomiDatePicker
                   value={endDate}
                   onChange={setEndDate}
-                  placeholder="Sampai tanggal"
+                  placeholder={t('accounting.journalEntries.toDate', 'To date')}
                   className="bg-bg-sunken border-border-subtle"
                 />
 
@@ -292,20 +292,20 @@ export default function JournalEntriesPageV2() {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Semua Status</SelectItem>
-                    <SelectItem value="DRAFT">Draft</SelectItem>
-                    <SelectItem value="POSTED">Diposting</SelectItem>
+                    <SelectItem value="all">{t('accounting.journalEntries.allStatuses', 'All Statuses')}</SelectItem>
+                    <SelectItem value="DRAFT">{t('accounting.journalEntries.statusDraft', 'Draft')}</SelectItem>
+                    <SelectItem value="POSTED">{t('accounting.journalEntries.statusPosted', 'Posted')}</SelectItem>
                   </SelectContent>
                 </Select>
 
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
                   <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[160px]">
-                    <SelectValue placeholder="Tipe" />
+                    <SelectValue placeholder={t('accounting.journalEntries.allTypes', 'All Types')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Semua Tipe</SelectItem>
-                    {Object.entries(TRANSACTION_TYPE_LABEL).map(([v, l]) => (
-                      <SelectItem key={v} value={v}>{l}</SelectItem>
+                    <SelectItem value="all">{t('accounting.journalEntries.allTypes', 'All Types')}</SelectItem>
+                    {Object.entries(TRANSACTION_TYPE_LABEL_KEYS).map(([v, key]) => (
+                      <SelectItem key={v} value={v}>{t(key, v)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -343,10 +343,10 @@ export default function JournalEntriesPageV2() {
               }
               action={
                 hasActiveFilters ? (
-                  <Button variant="outline" size="sm" onClick={resetFilters}>Reset Filter</Button>
+                  <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.journalEntries.resetFilter', 'Reset')}</Button>
                 ) : (
                   <Button size="sm" onClick={() => navigate('/v2/accounting/journal-entries/new')}>
-                    <Plus className="h-4 w-4" /> Jurnal Baru
+                    <Plus className="h-4 w-4" /> {t('accounting.journalEntries.newJournal', 'New Journal')}
                   </Button>
                 )
               }
@@ -385,6 +385,7 @@ interface JournalTableProps {
 }
 
 function JournalTable({ rows, onView, onEdit, onPost, onReverse, onDelete }: JournalTableProps) {
+  const { t } = useTranslation();
   return (
     <DataTable<JournalEntry>
       data={rows}
@@ -393,7 +394,7 @@ function JournalTable({ rows, onView, onEdit, onPost, onReverse, onDelete }: Jou
       columns={[
         {
           accessorKey: 'entryNumber',
-          header: 'Nomor',
+          header: t('accounting.journalEntries.colNumber', 'Number'),
           cell: ({ row }) => (
             <span className="font-mono text-xs text-text-primary tracking-tight">
               {row.original.entryNumber || '—'}
@@ -402,7 +403,7 @@ function JournalTable({ rows, onView, onEdit, onPost, onReverse, onDelete }: Jou
         },
         {
           accessorKey: 'entryDate',
-          header: 'Tanggal',
+          header: t('accounting.journalEntries.colDate', 'Date'),
           cell: ({ row }) => (
             <span className="text-text-tertiary text-xs">
               <DateDisplay date={row.original.entryDate} />
@@ -411,19 +412,20 @@ function JournalTable({ rows, onView, onEdit, onPost, onReverse, onDelete }: Jou
         },
         {
           accessorKey: 'transactionType',
-          header: 'Tipe',
+          header: t('accounting.journalEntries.colType', 'Type'),
           cell: ({ row }) => {
-            const t = row.original.transactionType;
+            const type = row.original.transactionType;
+            const key = TRANSACTION_TYPE_LABEL_KEYS[type];
             return (
               <span className="text-xs text-text-secondary">
-                {TRANSACTION_TYPE_LABEL[t] ?? t}
+                {key ? t(key, type) : type}
               </span>
             );
           },
         },
         {
           id: 'description',
-          header: 'Deskripsi',
+          header: t('accounting.journalEntries.colDescription', 'Description'),
           accessorFn: (row) => row.descriptionId ?? row.description ?? '',
           cell: ({ row }) => {
             const e = row.original;
@@ -434,7 +436,7 @@ function JournalTable({ rows, onView, onEdit, onPost, onReverse, onDelete }: Jou
                 </div>
                 {e.documentNumber && (
                   <div className="text-xs text-text-tertiary truncate mt-0.5">
-                    Dok. {e.documentNumber}
+                    {t('accounting.journalEntries.docPrefix', 'Doc.')} {e.documentNumber}
                   </div>
                 )}
               </div>
@@ -443,7 +445,7 @@ function JournalTable({ rows, onView, onEdit, onPost, onReverse, onDelete }: Jou
         },
         {
           id: 'totals',
-          header: () => <span className="block text-right">Debit / Kredit</span>,
+          header: () => <span className="block text-right">{t('accounting.journalEntries.colDebitCredit', 'Debit / Credit')}</span>,
           cell: ({ row }) => {
             const d = sumDebit(row.original);
             const c = sumCredit(row.original);
@@ -463,22 +465,25 @@ function JournalTable({ rows, onView, onEdit, onPost, onReverse, onDelete }: Jou
         },
         {
           accessorKey: 'status',
-          header: 'Status',
-          cell: ({ row }) => (
-            <Badge
-              variant="outline"
-              className={cn(
-                'border-transparent px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider',
-                statusChipClass(row.original.status),
-              )}
-            >
-              {STATUS_LABEL[row.original.status] ?? row.original.status}
-            </Badge>
-          ),
+          header: t('accounting.journalEntries.colStatus', 'Status'),
+          cell: ({ row }) => {
+            const statusKey = STATUS_LABEL_KEYS[row.original.status];
+            return (
+              <Badge
+                variant="outline"
+                className={cn(
+                  'border-transparent px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider',
+                  statusChipClass(row.original.status),
+                )}
+              >
+                {statusKey ? t(statusKey, row.original.status) : row.original.status}
+              </Badge>
+            );
+          },
         },
         {
           id: 'actions',
-          header: () => <span className="sr-only">Aksi</span>,
+          header: () => <span className="sr-only">{t('accounting.journalEntries.actionsAriaLabel', 'Actions')}</span>,
           cell: ({ row }) => {
             const e = row.original;
             const isDraft = e.status === 'DRAFT';
@@ -491,28 +496,28 @@ function JournalTable({ rows, onView, onEdit, onPost, onReverse, onDelete }: Jou
                       variant="ghost"
                       size="icon-sm"
                       className="text-text-tertiary hover:text-text-primary"
-                      aria-label="Aksi jurnal"
+                      aria-label={t('accounting.journalEntries.actionMenuAriaLabel', 'Journal actions')}
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem onClick={() => onView(e)}>
-                      <Eye className="h-3.5 w-3.5" /> Lihat
+                      <Eye className="h-3.5 w-3.5" /> {t('accounting.journalEntries.actionView', 'View')}
                     </DropdownMenuItem>
                     {isDraft && (
                       <DropdownMenuItem onClick={() => onEdit(e)}>
-                        <Pencil className="h-3.5 w-3.5" /> Edit
+                        <Pencil className="h-3.5 w-3.5" /> {t('accounting.journalEntries.actionEdit', 'Edit')}
                       </DropdownMenuItem>
                     )}
                     {isDraft && (
                       <DropdownMenuItem onClick={() => onPost(e)}>
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Posting
+                        <CheckCircle2 className="h-3.5 w-3.5" /> {t('accounting.journalEntries.actionPost', 'Post')}
                       </DropdownMenuItem>
                     )}
                     {isPosted && (
                       <DropdownMenuItem onClick={() => onReverse(e)}>
-                        <RotateCcw className="h-3.5 w-3.5" /> Buat Pembalik
+                        <RotateCcw className="h-3.5 w-3.5" /> {t('accounting.journalEntries.actionReverse', 'Create Reversal')}
                       </DropdownMenuItem>
                     )}
                     {isDraft && (
@@ -522,7 +527,7 @@ function JournalTable({ rows, onView, onEdit, onPost, onReverse, onDelete }: Jou
                           onClick={() => onDelete(e)}
                           className="text-danger focus:text-danger"
                         >
-                          <Trash2 className="h-3.5 w-3.5" /> Hapus
+                          <Trash2 className="h-3.5 w-3.5" /> {t('accounting.journalEntries.actionDelete', 'Delete')}
                         </DropdownMenuItem>
                       </>
                     )}

@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { useTranslation, getI18n } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import type { Locale } from 'date-fns/locale';
+import { useDateLocale } from '@/lib/dateLocale';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Scale, BookOpen, TrendingUp, Activity,
@@ -50,9 +51,10 @@ interface CashFlowTxn {
 
 interface TxnRowProps {
   txn: CashFlowTxn;
+  idLocale: Locale;
 }
 
-const TxnRow = ({ txn }: TxnRowProps) => {
+const TxnRow = ({ txn, idLocale }: TxnRowProps) => {
   const delta = (txn.cashIn || 0) - (txn.cashOut || 0);
   const isOutflow = delta < 0;
   return (
@@ -90,7 +92,11 @@ interface SectionProps {
   netCashFlow: number;
 }
 
-const ActivitySection = ({ title, subtitle, transactions, netCashFlow }: SectionProps) => (
+interface ActivitySectionProps extends SectionProps {
+  idLocale: Locale;
+}
+
+const ActivitySection = ({ title, subtitle, transactions, netCashFlow, idLocale }: ActivitySectionProps) => (
   <GlassPanel surface="glass" padding="none" className="overflow-hidden">
     <div className="px-5 py-3 border-b border-border-subtle bg-bg-sunken">
       <h2 className="text-[11px] font-display font-semibold text-text-primary uppercase tracking-[0.18em]">
@@ -114,7 +120,7 @@ const ActivitySection = ({ title, subtitle, transactions, netCashFlow }: Section
         </colgroup>
         <tbody>
           {transactions.map((t, i) => (
-            <TxnRow key={t.id || `${title}-${i}-${t.date}`} txn={t} />
+            <TxnRow key={t.id || `${title}-${i}-${t.date}`} txn={t} idLocale={idLocale} />
           ))}
           {/* Section subtotal — thin top rule */}
           <tr className="border-t border-border-default">
@@ -203,6 +209,7 @@ const ReconciliationStrip = ({ opening, net, closing }: ReconciliationProps) => 
 
 export default function CashFlowStatementPageV2() {
   const { t } = useTranslation();
+  const idLocale = useDateLocale();
   const user = useAuthStore((state) => state.user);
   const today = new Date();
   const [startDate, setStartDate] = useState<Date>(startOfMonth(today));
@@ -332,18 +339,21 @@ export default function CashFlowStatementPageV2() {
               subtitle={t('accounting.cashFlow.sectionOperatingSub', 'Cash from day-to-day operations — revenue and business expenses.')}
               transactions={data.operatingActivities.transactions as CashFlowTxn[]}
               netCashFlow={data.operatingActivities.netCashFlow}
+              idLocale={idLocale}
             />
             <ActivitySection
               title={t('accounting.cashFlow.sectionInvesting', 'Investing')}
               subtitle={t('accounting.cashFlow.sectionInvestingSub', 'Cash for the purchase/sale of fixed assets and long-term investments.')}
               transactions={data.investingActivities.transactions as CashFlowTxn[]}
               netCashFlow={data.investingActivities.netCashFlow}
+              idLocale={idLocale}
             />
             <ActivitySection
               title={t('accounting.cashFlow.sectionFinancing', 'Financing')}
               subtitle={t('accounting.cashFlow.sectionFinancingSub', 'Cash from loans, debt repayments, and owner transactions.')}
               transactions={data.financingActivities.transactions as CashFlowTxn[]}
               netCashFlow={data.financingActivities.netCashFlow}
+              idLocale={idLocale}
             />
 
             {/* Reconciliation — the canonical opening → net → closing closer */}
