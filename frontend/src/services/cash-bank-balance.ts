@@ -96,6 +96,12 @@ export const recalculateCashBankBalance = async (id: string): Promise<CashBankBa
   return response.data;
 };
 
+// Re-chain every period's running balance chronologically (repairs history)
+export const recalculateAllCashBankBalances = async (): Promise<{ recalculated: number }> => {
+  const response = await apiClient.post('/accounting/cash-bank-balances/recalculate-all');
+  return response.data?.data ?? response.data;
+};
+
 // Delete a cash/bank balance record
 export const deleteCashBankBalance = async (id: string): Promise<void> => {
   await apiClient.delete(`/accounting/cash-bank-balances/${id}`);

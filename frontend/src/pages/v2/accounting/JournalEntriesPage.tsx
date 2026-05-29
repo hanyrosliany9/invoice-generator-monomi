@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   BookOpen, Plus, Search, X, MoreHorizontal,
-  Eye, Pencil, Trash2, CheckCircle2, RotateCcw, Wand2,
+  Eye, Pencil, Trash2, RotateCcw, Wand2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/auth';
 import {
-  deleteJournalEntry, getJournalEntries, postJournalEntry, reverseJournalEntry,
+  deleteJournalEntry, getJournalEntries, reverseJournalEntry,
   type JournalEntry,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
@@ -126,15 +126,6 @@ export default function JournalEntriesPageV2() {
   const entries = data?.data ?? [];
 
   /* ----- mutations ----- */
-  const postMutation = useMutation({
-    mutationFn: postJournalEntry,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
-      toast.success(t('accounting.journalEntries.postSuccess'));
-    },
-    onError: (e: Error) => toast.error(e.message || t('accounting.journalEntries.postFail')),
-  });
-
   const reverseMutation = useMutation({
     mutationFn: reverseJournalEntry,
     onSuccess: (reversing) => {
@@ -357,7 +348,6 @@ export default function JournalEntriesPageV2() {
                 rows={entries}
                 onView={(e) => navigate(`/accounting/journal-entries/${e.id}/edit`)}
                 onEdit={(e) => navigate(`/accounting/journal-entries/${e.id}/edit`)}
-                onPost={(e) => postMutation.mutate(e.id)}
                 onReverse={(e) => reverseMutation.mutate(e.id)}
                 onDelete={handleDelete}
               />
@@ -379,12 +369,11 @@ interface JournalTableProps {
   rows: JournalEntry[];
   onView:    (e: JournalEntry) => void;
   onEdit:    (e: JournalEntry) => void;
-  onPost:    (e: JournalEntry) => void;
   onReverse: (e: JournalEntry) => void;
   onDelete:  (e: JournalEntry) => void;
 }
 
-function JournalTable({ rows, onView, onEdit, onPost, onReverse, onDelete }: JournalTableProps) {
+function JournalTable({ rows, onView, onEdit, onReverse, onDelete }: JournalTableProps) {
   const { t } = useTranslation();
   return (
     <DataTable<JournalEntry>
@@ -510,14 +499,11 @@ function JournalTable({ rows, onView, onEdit, onPost, onReverse, onDelete }: Jou
                         <Pencil className="h-3.5 w-3.5" /> {t('accounting.journalEntries.actionEdit', 'Edit')}
                       </DropdownMenuItem>
                     )}
-                    {isDraft && (
-                      <DropdownMenuItem onClick={() => onPost(e)}>
-                        <CheckCircle2 className="h-3.5 w-3.5" /> {t('accounting.journalEntries.actionPost', 'Post')}
-                      </DropdownMenuItem>
-                    )}
+                    {/* Posting is automatic (expenses post on input); manual Post
+                        removed. Adjustments are made via Reverse. */}
                     {isPosted && (
                       <DropdownMenuItem onClick={() => onReverse(e)}>
-                        <RotateCcw className="h-3.5 w-3.5" /> {t('accounting.journalEntries.actionReverse', 'Create Reversal')}
+                        <RotateCcw className="h-3.5 w-3.5" /> {t('accounting.journalEntries.actionReverse', 'Reverse (adjust)')}
                       </DropdownMenuItem>
                     )}
                     {isDraft && (

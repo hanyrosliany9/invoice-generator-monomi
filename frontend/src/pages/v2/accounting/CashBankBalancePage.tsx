@@ -33,6 +33,7 @@ import {
   getCashBankBalances,
   createCashBankBalance,
   deleteCashBankBalance,
+  recalculateAllCashBankBalances,
   type CashBankBalance,
 } from '@/services/cash-bank-balance';
 import { cn } from '@/lib/utils';
@@ -131,6 +132,19 @@ export default function CashBankBalancePage() {
     onError: () => toast.error(t('accounting.cashBankBalance.deleteFail', 'Failed to delete balance')),
   });
 
+  const recalcAllMutation = useMutation({
+    mutationFn: recalculateAllCashBankBalances,
+    onSuccess: (res) => {
+      toast.success(
+        t('accounting.cashBankBalance.recalcAllSuccess', 'Recalculated {{n}} period(s) chronologically', {
+          n: res?.recalculated ?? 0,
+        }),
+      );
+      invalidate();
+    },
+    onError: () => toast.error(t('accounting.cashBankBalance.recalcAllFail', 'Failed to recalculate balances')),
+  });
+
   const handleCreate = () => {
     if (!form.periodDate) {
       toast.error(t('accounting.cashBankBalance.validationPeriod', 'Please select a period first'));
@@ -194,6 +208,15 @@ export default function CashBankBalancePage() {
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => window.print()}>
               <Printer className="h-4 w-4" /> {t('accounting.cashBankBalance.print', 'Print')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => recalcAllMutation.mutate()}
+              disabled={recalcAllMutation.isPending}
+            >
+              <RefreshCw className={cn('h-4 w-4', recalcAllMutation.isPending && 'animate-spin')} />
+              {t('accounting.cashBankBalance.recalcAll', 'Recalculate')}
             </Button>
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Calculator className="h-4 w-4" /> {t('accounting.cashBankBalance.calcNewPeriod', 'Calculate New Period')}

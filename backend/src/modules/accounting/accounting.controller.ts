@@ -273,6 +273,13 @@ export class AccountingController {
     return this.cashBankBalanceService.create(dto);
   }
 
+  // Re-chain every period's running balance (repairs out-of-order history).
+  // Declared before the ":id" routes so the static segment matches first.
+  @Post("cash-bank-balances/recalculate-all")
+  async recalculateAllCashBankBalances(@Request() req: AuthenticatedRequest) {
+    return this.cashBankBalanceService.recalculateAll(req.user.id);
+  }
+
   @Get("cash-bank-balances")
   async getCashBankBalances(@Query() query: CashBankBalanceQueryDto) {
     return this.cashBankBalanceService.findAll(query);

@@ -10,11 +10,15 @@ import { CreateJournalEntryDto } from "../dto/create-journal-entry.dto";
 import { UpdateJournalEntryDto } from "../dto/update-journal-entry.dto";
 import { JournalQueryDto } from "../dto/journal-query.dto";
 import { JournalStatus, TransactionType } from "@prisma/client";
+import { CashBankBalanceService } from "./cash-bank-balance.service";
 
 @Injectable()
 export class JournalService {
   private readonly logger = new Logger(JournalService.name);
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cashBankBalanceService: CashBankBalanceService,
+  ) {}
 
   /**
    * Get Chart of Accounts
@@ -703,6 +707,16 @@ export class JournalService {
       },
     });
 
+    // Auto-post immediately when requested (e.g. expense-generated entries).
+    // Posting creates the general-ledger entries and triggers the cash & bank
+    // balance sync — no manual posting step needed.
+    if (createDto.autoPost) {
+      return this.postJournalEntry(
+        journalEntry.id,
+        createDto.createdBy || "unknown-user",
+      );
+    }
+
     return journalEntry;
   }
 
@@ -976,199 +990,35 @@ export class JournalService {
   }
 
   /**
-   * Check if journal entry affects cash/bank accounts and sync Cash Bank Balance
-   * Indonesian accounting: Cash/Bank accounts start with 1-1xxx
+   * If a posted entry touches cash/bank accounts (1-1xxx), re-sync that period's
+   * Cash & Bank Balance through the canonical service, which recomputes the
+   * period's movements and re-chains every later period's running balance.
    */
   private async syncCashBankBalanceIfNeeded(
     entry: any,
     userId: string,
   ): Promise<void> {
     try {
-      // Check if any line items affect cash/bank accounts (1-1xxx)
       const hasCashBankAccounts = entry.lineItems.some((line: any) =>
         line.account.code.startsWith("1-1"),
       );
+      if (!hasCashBankAccounts) return;
 
-      if (!hasCashBankAccounts) {
-        return; // No cash/bank accounts affected, skip sync
-      }
-
-      // Get the year and month from entry date
       const entryDate = new Date(entry.entryDate);
       const year = entryDate.getFullYear();
       const month = entryDate.getMonth() + 1;
 
-      // Check if Cash Bank Balance record exists for this period
-      const existingBalance = await this.prisma.cashBankBalance.findUnique({
-        where: {
-          year_month: { year, month },
-        },
-      });
-
-      if (existingBalance) {
-        // Recalculate existing balance
-        await this.recalculateCashBankBalance(
-          existingBalance.id,
-          year,
-          month,
-          userId,
-        );
-        this.logger.log(
-          `✅ AUTO-SYNC: Recalculated Cash Bank Balance for ${year}-${String(month).padStart(2, "0")}`,
-        );
-      } else {
-        // Auto-create Cash Bank Balance for this period
-        await this.createCashBankBalance(year, month, userId);
-        this.logger.log(
-          `✅ AUTO-SYNC: Created Cash Bank Balance for ${year}-${String(month).padStart(2, "0")}`,
-        );
-      }
+      await this.cashBankBalanceService.syncPeriod(year, month, userId);
+      this.logger.log(
+        `✅ AUTO-SYNC: Cash & Bank Balance for ${year}-${String(month).padStart(2, "0")}`,
+      );
     } catch (error) {
-      // Log but don't fail - posting should succeed even if sync fails
+      // Log but don't fail — posting should succeed even if sync fails.
       this.logger.error(
         "⚠️ Failed to sync Cash Bank Balance:",
         error instanceof Error ? error.message : String(error),
       );
     }
-  }
-
-  /**
-   * Auto-create Cash Bank Balance for a period
-   */
-  private async createCashBankBalance(
-    year: number,
-    month: number,
-    userId: string,
-  ): Promise<void> {
-    // Get opening balance from previous month
-    const prevMonth = month === 1 ? 12 : month - 1;
-    const prevYear = month === 1 ? year - 1 : year;
-
-    const previousBalance = await this.prisma.cashBankBalance.findUnique({
-      where: {
-        year_month: { year: prevYear, month: prevMonth },
-      },
-    });
-
-    const openingBalance = previousBalance
-      ? Number(previousBalance.closingBalance)
-      : 0;
-
-    // Calculate movements for current period
-    const { totalInflow, totalOutflow } = await this.calculateCashMovements(
-      year,
-      month,
-    );
-
-    const closingBalance = openingBalance + totalInflow - totalOutflow;
-    const netChange = totalInflow - totalOutflow;
-
-    await this.prisma.cashBankBalance.create({
-      data: {
-        period: `${year}-${String(month).padStart(2, "0")}`,
-        periodDate: new Date(year, month - 1, 1),
-        year,
-        month,
-        openingBalance,
-        closingBalance,
-        totalInflow,
-        totalOutflow,
-        netChange,
-        calculatedAt: new Date(),
-        calculatedBy: userId,
-        createdBy: userId,
-      },
-    });
-  }
-
-  /**
-   * Recalculate Cash Bank Balance for a period
-   */
-  private async recalculateCashBankBalance(
-    id: string,
-    year: number,
-    month: number,
-    userId: string,
-  ): Promise<void> {
-    const existing = await this.prisma.cashBankBalance.findUnique({
-      where: { id },
-    });
-
-    if (!existing) return;
-
-    // ✅ FIX: Recalculate opening balance from previous month's closing balance
-    const prevMonth = month === 1 ? 12 : month - 1;
-    const prevYear = month === 1 ? year - 1 : year;
-
-    const previousBalance = await this.prisma.cashBankBalance.findUnique({
-      where: {
-        year_month: { year: prevYear, month: prevMonth },
-      },
-    });
-
-    const openingBalance = previousBalance
-      ? Number(previousBalance.closingBalance)
-      : 0;
-
-    const { totalInflow, totalOutflow } = await this.calculateCashMovements(
-      year,
-      month,
-    );
-
-    const closingBalance = openingBalance + totalInflow - totalOutflow;
-    const netChange = totalInflow - totalOutflow;
-
-    await this.prisma.cashBankBalance.update({
-      where: { id },
-      data: {
-        openingBalance, // ✅ FIX: Update opening balance from previous month
-        closingBalance,
-        totalInflow,
-        totalOutflow,
-        netChange,
-        calculatedAt: new Date(),
-        calculatedBy: userId,
-        updatedBy: userId,
-      },
-    });
-  }
-
-  /**
-   * Calculate cash/bank movements from journal entries for a period
-   */
-  private async calculateCashMovements(
-    year: number,
-    month: number,
-  ): Promise<{ totalInflow: number; totalOutflow: number }> {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
-
-    // Query all journal line items for cash/bank accounts (1-1xxx) in this period
-    const cashMovements = await this.prisma.journalLineItem.findMany({
-      where: {
-        journalEntry: {
-          entryDate: { gte: startDate, lte: endDate },
-          isPosted: true, // Only count posted entries
-        },
-        account: {
-          code: { startsWith: "1-1" }, // Cash & Bank accounts
-        },
-      },
-      include: { account: true },
-    });
-
-    let totalInflow = 0;
-    let totalOutflow = 0;
-
-    for (const item of cashMovements) {
-      const debitAmount = parseFloat(item.debit?.toString() || "0");
-      const creditAmount = parseFloat(item.credit?.toString() || "0");
-
-      totalInflow += debitAmount; // Cash increases with debits
-      totalOutflow += creditAmount; // Cash decreases with credits
-    }
-
-    return { totalInflow, totalOutflow };
   }
 
   /**
