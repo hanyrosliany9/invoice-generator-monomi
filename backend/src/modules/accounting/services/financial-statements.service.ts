@@ -3,7 +3,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { LedgerService } from "./ledger.service";
 import { JournalService } from "./journal.service";
 import { FinancialStatementQueryDto } from "../dto/financial-statement-query.dto";
-import { AccountType, StatementType } from "@prisma/client";
+import { AccountType, StatementType, TransactionType } from "@prisma/client";
 
 export interface CashFlowActivity {
   date: Date;
@@ -339,11 +339,20 @@ export class FinancialStatementsService {
       {} as Record<string, typeof liabilities>,
     );
 
-    // ✅ FIX: Calculate Current Year Earnings (Laba Rugi Berjalan)
-    // Determine fiscal year start date
-    const fiscalYearStart = new Date(endDate.getFullYear(), 0, 1); // January 1st of current year
+    // ✅ FIX: Calculate Undistributed Earnings (Laba Rugi Belum Dibagi)
+    // If no year-end closing has been performed, all revenue and expenses since
+    // the beginning of time are still "open" in their respective accounts.
+    // We must sum ALL GL entries up to endDate for revenue/expense accounts —
+    // not just the current fiscal year — because prior-year amounts have not
+    // been closed to Retained Earnings yet.
+    //
+    // After a year-end closing, the closing entry zeroes out revenue/expense
+    // accounts and credits Retained Earnings (3-2010), so the all-time sum
+    // naturally reflects only the unclosed post-closing balance.
 
-    // Get revenue and expense accounts for the fiscal year
+    const fiscalYearStart = new Date(endDate.getFullYear(), 0, 1); // kept for reporting only
+
+    // Get revenue and expense accounts
     const revenueExpenseAccounts = await this.prisma.chartOfAccounts.findMany({
       where: {
         accountType: { in: ["REVENUE", "EXPENSE"] },
@@ -351,7 +360,9 @@ export class FinancialStatementsService {
       },
     });
 
-    // Calculate net income for the period
+    // Calculate net income from ALL periods (all-time cumulative), because no
+    // year-end closing has been run that would have moved prior periods into
+    // Retained Earnings.
     let totalRevenue = 0;
     let totalExpenses = 0;
 
@@ -359,7 +370,7 @@ export class FinancialStatementsService {
       const glEntries = await this.prisma.generalLedger.findMany({
         where: {
           accountId: account.id,
-          entryDate: { gte: fiscalYearStart, lte: endDate },
+          entryDate: { lte: endDate }, // all-time, not just current fiscal year
         },
       });
 
@@ -427,13 +438,13 @@ export class FinancialStatementsService {
         currentYearEarnings: currentYearEarnings,
       },
       depreciation: depreciationDetails,
-      // ✅ NEW: Income statement summary for the period
+      // Cumulative income statement summary (all-time, no closing entries run yet)
       incomeStatement: {
         fiscalYearStart,
         totalRevenue,
         totalExpenses,
         netIncome: currentYearEarnings,
-        note: "Revenue and expenses from fiscal year start to balance sheet date",
+        note: "Cumulative revenue and expenses since inception (no year-end closing performed)",
       },
       summary: {
         totalAssets,
@@ -1029,7 +1040,7 @@ export class FinancialStatementsService {
       entryDate: fiscalYearEndDate,
       description: `Year-End Closing Entry for Fiscal Year ${fiscalYearEndDate.getFullYear()}`,
       descriptionId: `Jurnal Penutup Akhir Tahun Fiskal ${fiscalYearEndDate.getFullYear()}`,
-      transactionType: "YEAR_END_CLOSING" as any,
+      transactionType: TransactionType.YEAR_END_CLOSING,
       transactionId: `CLOSING-${fiscalYearEndDate.getFullYear()}`,
       documentNumber: `CLOSE-${fiscalYearEndDate.getFullYear()}`,
       documentDate: fiscalYearEndDate,

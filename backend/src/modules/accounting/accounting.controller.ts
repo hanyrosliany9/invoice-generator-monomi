@@ -603,6 +603,16 @@ export class AccountingController {
     return this.depreciationService.getAssetDepreciationSchedule(assetId);
   }
 
+  /**
+   * Get PSAK 16 depreciation calculation table for an asset.
+   * Returns firstPeriod + lastPeriod rows suitable for "Perhitungan Depresiasi" display,
+   * as well as the full month-by-month schedule.
+   */
+  @Get("depreciation/calculation/:assetId")
+  async getDepreciationCalculationTable(@Param("assetId") assetId: string) {
+    return this.depreciationService.getDepreciationCalculationTable(assetId);
+  }
+
   @Get("depreciation/entries/:assetId")
   async getAssetDepreciationEntries(@Param("assetId") assetId: string) {
     return this.depreciationService.getAssetDepreciationEntries(assetId);

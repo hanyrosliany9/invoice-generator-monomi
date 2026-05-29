@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsOptional,
   IsEnum,
+  IsIn,
   IsArray,
   Min,
   MaxLength,
@@ -24,6 +25,15 @@ export class CreateExpenseDto {
   @IsString()
   @MaxLength(500)
   description: string;
+
+  @ApiPropertyOptional({
+    description: "Which balance to deduct: CASH (Kas) or BANK (default bank account)",
+    enum: ["CASH", "BANK"],
+    default: "CASH",
+  })
+  @IsOptional()
+  @IsIn(["CASH", "BANK"])
+  paymentSource?: "CASH" | "BANK";
 
   @ApiPropertyOptional({ description: "Indonesian description (Uraian)" })
   @IsOptional()

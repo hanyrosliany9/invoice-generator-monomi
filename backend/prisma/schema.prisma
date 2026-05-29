@@ -1654,6 +1654,7 @@ model ChartOfAccounts {
 
   // Bank Reconciliation Relations
   bankReconciliations BankReconciliation[] @relation("BankReconciliationAccount")
+  cashBankBalances    CashBankBalance[]    @relation("CashBankBalanceAccount")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1954,6 +1955,10 @@ enum TransactionType {
 
   // Bank Reconciliation
   BANK_RECONCILIATION // Bank rec adjustment - Various adjustments
+
+  // Asset Management
+  ASSET_PURCHASE // Asset purchase - Debit Fixed Asset, Credit Cash/AP
+  YEAR_END_CLOSING // Year-end closing - Zero revenue/expense to Retained Earnings
 }
 
 enum JournalStatus {
@@ -3805,27 +3810,34 @@ enum HolidayType {
 // ==========================================
 
 model CashBankBalance {
-  id             String    @id @default(cuid())
-  period         String    @db.VarChar(100)
+  id             String          @id @default(cuid())
+  // Per-account running balance: each cash/bank account has its own monthly row.
+  account        ChartOfAccounts @relation("CashBankBalanceAccount", fields: [accountId], references: [id])
+  accountId      String
+  accountCode    String          @db.VarChar(20)
+  accountName    String          @db.VarChar(150)
+  group          String          @db.VarChar(10) // CASH | BANK
+  period         String          @db.VarChar(100)
   periodDate     DateTime
   year           Int
   month          Int
-  openingBalance Decimal   @db.Decimal(15, 2)
-  closingBalance Decimal   @db.Decimal(15, 2)
-  totalInflow    Decimal   @db.Decimal(15, 2)
-  totalOutflow   Decimal   @db.Decimal(15, 2)
-  netChange      Decimal   @db.Decimal(15, 2)
+  openingBalance Decimal         @db.Decimal(15, 2)
+  closingBalance Decimal         @db.Decimal(15, 2)
+  totalInflow    Decimal         @db.Decimal(15, 2)
+  totalOutflow   Decimal         @db.Decimal(15, 2)
+  netChange      Decimal         @db.Decimal(15, 2)
   calculatedAt   DateTime?
   calculatedBy   String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   createdBy      String?
   updatedBy      String?
   notes          String?
 
-  @@unique([year, month])
+  @@unique([accountId, year, month])
   @@index([periodDate])
   @@index([year, month])
+  @@index([group])
   @@index([createdAt])
   @@map("cash_bank_balances")
 }
@@ -5769,4 +5781,66 @@ model McpAuditLog {
   @@index([kind, name, createdAt])
   @@index([createdAt])
   @@map("mcp_audit_logs")
+}
+
+// ============================================================================
+// STAFF SALARY MANAGEMENT
+// ============================================================================
+
+model Staff {
+  id          String   @id @default(cuid())
+  name        String
+  position    String
+  email       String?  @unique
+  phone       String?
+  joinedDate  DateTime?
+  baseSalary  Decimal  @db.Decimal(12, 2)
+  bankName    String?
+  bankAccount String?
+  isActive    Boolean  @default(true)
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  salaryPayments SalaryPayment[]
+
+  @@index([isActive])
+  @@map("staff")
+}
+
+model SalaryPayment {
+  id         String              @id @default(cuid())
+  staffId    String
+  staff      Staff               @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  // Period
+  period     String              // e.g. "Januari 2026" (display label)
+  year       Int
+  month      Int                 // 1-12
+
+  // Amounts
+  baseSalary  Decimal            @db.Decimal(12, 2)
+  allowances  Decimal            @default(0) @db.Decimal(12, 2)
+  deductions  Decimal            @default(0) @db.Decimal(12, 2)
+  netPay      Decimal            @db.Decimal(12, 2)
+
+  // Status
+  status      SalaryPaymentStatus @default(DRAFT)
+  paidAt      DateTime?
+  notes       String?             @db.Text
+
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([staffId, year, month])
+  @@index([staffId])
+  @@index([year, month])
+  @@index([status])
+  @@map("salary_payments")
+}
+
+enum SalaryPaymentStatus {
+  DRAFT
+  PAID
 }

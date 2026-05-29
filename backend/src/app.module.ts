@@ -46,6 +46,7 @@ import { PrismaModule } from "./modules/prisma/prisma.module";
 import { HealthModule } from "./health/health.module";
 import { MetricsModule } from "./metrics/metrics.module";
 import { McpModule } from "./modules/mcp/mcp.module";
+import { SalariesModule } from "./modules/salaries/salaries.module";
 import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 
@@ -109,6 +110,7 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     HealthModule,
     MetricsModule,
     McpModule,
+    SalariesModule,
   ],
   providers: [
     {

@@ -11,7 +11,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { JournalService } from "../accounting/services/journal.service";
 import { CreateAssetDto } from "./dto/create-asset.dto";
 import { UpdateAssetDto } from "./dto/update-asset.dto";
-import { AssetStatus, AssetCondition } from "@prisma/client";
+import { AssetStatus, AssetCondition, TransactionType } from "@prisma/client";
 import * as QRCode from "qrcode";
 
 @Injectable()
@@ -48,14 +48,21 @@ export class AssetsService {
         const assetAccountMap: Record<string, string> = {
           Camera: "1-4510", // Camera & Photography Equipment
           Lens: "1-4510", // Camera & Photography Equipment
+          Lensa: "1-4510",
           Lighting: "1-4550", // Lighting Equipment
           "Video Equipment": "1-4530", // Video & Audio Production Equipment
           "Audio Equipment": "1-4530", // Video & Audio Production Equipment
+          Audio: "1-4530",
+          Video: "1-4530",
+          Gimbal: "1-4530",
+          Tripod: "1-4010",
           Computer: "1-4570", // Editing Workstations & Computers
+          Laptop: "1-4570",
           Vehicle: "1-4310", // Vehicles
           Furniture: "1-4410", // Furniture & Fixtures
           Building: "1-4210", // Buildings
           Land: "1-4110", // Land
+          Accessories: "1-4010",
         };
 
         const assetAccount = assetAccountMap[asset.category] || "1-4010"; // Default to Equipment
@@ -65,7 +72,7 @@ export class AssetsService {
           entryDate: asset.purchaseDate,
           description: `Asset Purchase - ${asset.name}`,
           descriptionId: `Pembelian Aset - ${asset.name}`,
-          transactionType: "ASSET_PURCHASE" as any,
+          transactionType: TransactionType.ASSET_PURCHASE,
           transactionId: asset.id,
           documentNumber: asset.assetCode,
           documentDate: asset.purchaseDate,
@@ -432,18 +439,26 @@ export class AssetsService {
       errors: [] as string[],
     };
 
-    // Map asset category to fixed asset account code
+    // Map asset category to fixed asset account code.
+    // Covers all seed-data categories (including Accessories, Audio, Lens).
     const assetAccountMap: Record<string, string> = {
       Camera: "1-4510",
       Lens: "1-4510",
+      Lensa: "1-4510",
       Lighting: "1-4550",
       "Video Equipment": "1-4530",
       "Audio Equipment": "1-4530",
+      Audio: "1-4530",
+      Video: "1-4530",
       Computer: "1-4570",
+      Laptop: "1-4570",
       Vehicle: "1-4310",
       Furniture: "1-4410",
       Building: "1-4210",
       Land: "1-4110",
+      Accessories: "1-4010", // General equipment
+      Gimbal: "1-4530",
+      Tripod: "1-4010",
     };
 
     for (const asset of assets) {
@@ -455,7 +470,7 @@ export class AssetsService {
         const existingJournal = await this.prisma.journalEntry.findFirst({
           where: {
             transactionId: asset.id,
-            transactionType: "ASSET_PURCHASE" as any,
+            transactionType: TransactionType.ASSET_PURCHASE,
           },
         });
 
@@ -466,12 +481,17 @@ export class AssetsService {
           continue;
         }
 
-        // Create and auto-post journal entry
+        // Backfill uses Owner Capital (3-1010) as the credit account.
+        // Rationale: existing assets were acquired before this accounting system
+        // was set up; recording them as capital contributions avoids artificially
+        // reducing the cash balance and correctly reflects their origin as equity-
+        // funded acquisitions.  New purchases created via the UI should credit
+        // 1-1010 (Cash) or 2-1010 (AP) depending on how payment was made.
         const journalEntry = await this.journalService.createJournalEntry({
           entryDate: asset.purchaseDate,
           description: `Asset Purchase - ${asset.name} (Backfill)`,
           descriptionId: `Pembelian Aset - ${asset.name} (Backfill)`,
-          transactionType: "ASSET_PURCHASE" as any,
+          transactionType: TransactionType.ASSET_PURCHASE,
           transactionId: asset.id,
           documentNumber: asset.assetCode,
           documentDate: asset.purchaseDate,
@@ -486,9 +506,9 @@ export class AssetsService {
               credit: 0,
             },
             {
-              accountCode: "1-1010", // Cash
-              description: `Payment for ${asset.name}`,
-              descriptionId: `Pembayaran ${asset.name}`,
+              accountCode: "3-1010", // Owner Capital — equity-funded acquisition
+              description: `Capital contribution for ${asset.name}`,
+              descriptionId: `Kontribusi modal untuk ${asset.name}`,
               debit: 0,
               credit: purchasePrice,
             },

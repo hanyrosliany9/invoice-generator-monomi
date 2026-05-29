@@ -10,12 +10,16 @@ import {
 import { Type } from "class-transformer";
 
 export class CreateCashBankBalanceDto {
+  // period / periodDate / openingBalance are derived per-account now; only the
+  // target month (year + month) is required to (re)sync that period.
   @IsString()
-  period: string; // e.g., "Januari 2025"
+  @IsOptional()
+  period?: string;
 
   @IsDate()
   @Type(() => Date)
-  periodDate: Date; // First day of the period
+  @IsOptional()
+  periodDate?: Date;
 
   @IsInt()
   @Min(1900)
@@ -29,7 +33,8 @@ export class CreateCashBankBalanceDto {
 
   @IsNumber()
   @Min(0)
-  openingBalance: number; // Manual input
+  @IsOptional()
+  openingBalance?: number; // legacy; ignored (opening is auto-chained)
 
   @IsString()
   @IsOptional()

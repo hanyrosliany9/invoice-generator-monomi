@@ -667,6 +667,131 @@ export class DepreciationService {
   }
 
   /**
+   * Get PSAK 16 depreciation calculation table for a single asset.
+   *
+   * Returns the FULL computed schedule (one row per month) plus a condensed
+   * view showing only the FIRST and LAST period — the two rows required by
+   * "perhitungan depresiasi" tables in Indonesian accounting practice.
+   *
+   * Columns:
+   *   period          – YYYY-MM identifier
+   *   periodDate      – first day of that period
+   *   openingValue    – Saldo Awal  (book value at START of period)
+   *   depreciation    – Perhitungan Depresiasi (amount charged this period)
+   *   accumulated     – Akumulasi Depresiasi   (cumulative to end of period)
+   *   closingValue    – Saldo Akhir (book value at END of period = opening - depreciation)
+   */
+  async getDepreciationCalculationTable(assetId: string) {
+    const schedule = await this.prisma.depreciationSchedule.findFirst({
+      where: { assetId, isActive: true },
+      include: { asset: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!schedule) {
+      // No schedule: return empty structure
+      const asset = await this.prisma.asset.findUnique({ where: { id: assetId } });
+      return {
+        assetId,
+        assetCode: asset?.assetCode,
+        assetName: asset?.name,
+        hasSchedule: false,
+        schedule: null,
+        fullTable: [],
+        firstPeriod: null,
+        lastPeriod: null,
+      };
+    }
+
+    const purchasePrice = Number(schedule.asset.purchasePrice) || 0;
+    const residual = Number(schedule.residualValue);
+    const depreciableAmount = Number(schedule.depreciableAmount);
+    const usefulLifeMonths = schedule.usefulLifeMonths;
+    const method = schedule.method;
+
+    // Build full month-by-month schedule
+    type PeriodRow = {
+      period: string;
+      periodDate: Date;
+      openingValue: number;
+      depreciation: number;
+      accumulated: number;
+      closingValue: number;
+    };
+
+    const rows: PeriodRow[] = [];
+    let accumulated = 0;
+    let currentBookValue = purchasePrice;
+
+    const startDate = new Date(schedule.startDate);
+
+    for (let i = 0; i < usefulLifeMonths; i++) {
+      const periodDate = new Date(startDate);
+      periodDate.setMonth(periodDate.getMonth() + i);
+      const period = periodDate.toISOString().slice(0, 7);
+
+      const openingValue = currentBookValue;
+
+      let periodDep: number;
+      if (method === "STRAIGHT_LINE" || method === "SUM_OF_YEARS_DIGITS") {
+        periodDep = Number(schedule.depreciationPerMonth);
+      } else {
+        // Declining balance: apply monthly rate to current book value
+        const monthlyRate = Number(schedule.annualRate) / 12;
+        periodDep = currentBookValue * monthlyRate;
+      }
+
+      // Do not depreciate below residual value
+      const remainingDepreciable = Math.max(currentBookValue - residual, 0);
+      if (periodDep > remainingDepreciable) {
+        periodDep = remainingDepreciable;
+      }
+
+      accumulated += periodDep;
+      const closingValue = Math.max(currentBookValue - periodDep, residual);
+
+      rows.push({
+        period,
+        periodDate,
+        openingValue: Math.round(openingValue),
+        depreciation: Math.round(periodDep),
+        accumulated: Math.round(accumulated),
+        closingValue: Math.round(closingValue),
+      });
+
+      currentBookValue = closingValue;
+
+      // Stop if fully depreciated
+      if (Math.abs(closingValue - residual) < 1) break;
+    }
+
+    return {
+      assetId,
+      assetCode: schedule.asset.assetCode,
+      assetName: schedule.asset.name,
+      hasSchedule: true,
+      schedule: {
+        id: schedule.id,
+        method: schedule.method,
+        purchasePrice,
+        residualValue: residual,
+        depreciableAmount,
+        usefulLifeMonths,
+        usefulLifeYears: Number(schedule.usefulLifeYears),
+        depreciationPerMonth: Number(schedule.depreciationPerMonth),
+        depreciationPerYear: Number(schedule.depreciationPerYear),
+        annualRate: Number(schedule.annualRate),
+        startDate: schedule.startDate,
+        endDate: schedule.endDate,
+      },
+      fullTable: rows,
+      firstPeriod: rows[0] ?? null,
+      lastPeriod: rows[rows.length - 1] ?? null,
+      totalPeriods: rows.length,
+    };
+  }
+
+  /**
    * Deactivate depreciation schedule
    */
   async deactivateDepreciationSchedule(scheduleId: string) {

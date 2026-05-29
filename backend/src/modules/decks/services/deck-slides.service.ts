@@ -53,6 +53,8 @@ export class DeckSlidesService {
         subtitle: dto.subtitle,
         content: dto.content || {},
         backgroundColor: dto.backgroundColor,
+        backgroundImage: dto.backgroundImage,
+        backgroundImageKey: dto.backgroundImageKey,
         notes: dto.notes,
       },
       include: {
@@ -89,7 +91,10 @@ export class DeckSlidesService {
         subtitle: dto.subtitle,
         content: dto.content,
         backgroundColor: dto.backgroundColor,
+        backgroundImage: dto.backgroundImage,
+        backgroundImageKey: dto.backgroundImageKey,
         notes: dto.notes,
+        ...(dto.order !== undefined ? { order: dto.order } : {}),
       },
       include: {
         elements: true,

@@ -10,6 +10,7 @@ import { PPNCalculatorService } from "./services/ppn-calculator.service";
 import { WithholdingTaxCalculatorService } from "./services/withholding-tax-calculator.service";
 import { EFakturValidatorService } from "./services/efaktur-validator.service";
 import { JournalService } from "../accounting/services/journal.service";
+import { accountForSource } from "../accounting/cash-accounts.util";
 import {
   CreateExpenseDto,
   UpdateExpenseDto,
@@ -102,11 +103,15 @@ export class ExpensesService {
     // Generate Bukti Pengeluaran number
     const buktiPengeluaranNumber = await this.generateBuktiPengeluaranNumber();
 
+    // paymentSource only chooses which balance (Cash/Bank) the payment journal
+    // credits — it is not an Expense column, so keep it out of the create data.
+    const { paymentSource: _paymentSource, ...expenseData } = createExpenseDto;
+
     // Create expense with defaults for optional PPN fields
     // Automatically set status to PAID and create payment journal entry
     const expense = await this.prisma.expense.create({
       data: {
-        ...createExpenseDto,
+        ...expenseData,
         ppnAmount: createExpenseDto.ppnAmount ?? 0,
         ppnRate: createExpenseDto.ppnRate ?? 0,
         ppnCategory: createExpenseDto.ppnCategory || "NON_CREDITABLE",
@@ -144,9 +149,10 @@ export class ExpensesService {
             description: `${expense.description} - ${expense.vendorName}`,
           },
           {
-            accountCode: "1-1010", // Default cash account (adjust as needed)
+            // Credit the chosen balance: Cash (Kas) or the default Bank account.
+            accountCode: accountForSource(createExpenseDto.paymentSource ?? "CASH"),
             debit: 0,
-            credit: Number(createExpenseDto.totalAmount), // Reduce cash
+            credit: Number(createExpenseDto.totalAmount), // Reduce cash/bank
             description: `Pembayaran untuk ${expense.vendorName}`,
           },
         ],

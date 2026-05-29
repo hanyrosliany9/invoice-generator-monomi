@@ -57,6 +57,16 @@ export class CreateSlideDto {
   @IsString()
   backgroundColor?: string;
 
+  @ApiPropertyOptional({ description: "Background image URL (R2)" })
+  @IsOptional()
+  @IsString()
+  backgroundImage?: string;
+
+  @ApiPropertyOptional({ description: "Background image R2 key (for deletion)" })
+  @IsOptional()
+  @IsString()
+  backgroundImageKey?: string;
+
   @ApiPropertyOptional({ description: "Speaker notes" })
   @IsOptional()
   @IsString()
