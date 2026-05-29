@@ -1,12 +1,14 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { App as AntApp, Layout, Spin } from 'antd'
 import { lazy, Suspense, useEffect } from 'react'
+import { Toaster } from 'sonner'
 import { useAuthStore } from './store/auth'
 import { usePermissions } from './hooks/usePermissions'
 import { useMediaTokenStore } from './stores/mediaTokenStore'
 import { dateTimeSync } from './services/dateTimeSync'
 import { tokenRefreshService } from './services/token-refresh.service'
 import ErrorBoundary from './components/ErrorBoundary'
+import { scheduleIdlePrefetch } from './lib/routePrefetch'
 
 // v2 is now the entire app. Pages are lazy-loaded for performance.
 const StyleGuidePage = lazy(() =>
@@ -100,23 +102,32 @@ const V2GuestProjectViewPage = lazy(() => import('./pages/v2/guest/GuestProjectV
 const V2PublicProjectViewPage = lazy(() => import('./pages/v2/guest/PublicProjectViewPage'))
 const V2MediaDownloaderPage = lazy(() => import('./pages/v2/downloaders/MediaDownloaderPage'))
 const V2PinterestDownloaderPage = lazy(() => import('./pages/v2/downloaders/PinterestDownloaderPage'))
+const V2SalariesPage = lazy(() => import('./pages/v2/salaries/SalariesPage'))
+const V2StaffFormPage = lazy(() => import('./pages/v2/salaries/StaffFormPage'))
+const V2SalaryPaymentFormPage = lazy(() => import('./pages/v2/salaries/SalaryPaymentFormPage'))
 
 import './styles/relationships.css'
 
-// Loading component for lazy-loaded routes
+// Loading component for lazy-loaded routes.
+// Intentionally minimal: no full-screen takeover so that already-rendered
+// shell (AppShell + sidebar) stays visible while only the content area shows
+// a brief spinner. The 150 ms opacity-in delay hides the spinner entirely on
+// cache hits (chunk already in browser cache), eliminating the flash.
 const PageLoader = () => (
   <div
     style={{
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      minHeight: '100vh',
+      minHeight: '60vh',
       flexDirection: 'column',
-      gap: '16px',
+      gap: '12px',
+      opacity: 0,
+      animation: 'fadeInLoader 0.15s ease 0.15s forwards',
     }}
   >
+    <style>{`@keyframes fadeInLoader { to { opacity: 1 } }`}</style>
     <Spin size='large' />
-    <div style={{ color: '#666', fontSize: '14px' }}>Loading...</div>
   </div>
 )
 
@@ -174,8 +185,16 @@ function App() {
     }
   }, [isAuthenticated])
 
+  // Prefetch high-traffic route chunks during idle time so first nav is instant
+  useEffect(() => {
+    if (isAuthenticated) {
+      scheduleIdlePrefetch()
+    }
+  }, [isAuthenticated])
+
   return (
     <AntApp>
+      <Toaster theme="dark" position="bottom-right" richColors />
       <Layout style={{ minHeight: '100vh' }}>
         <Routes>
           {/* Public / anonymous routes (no auth) */}
@@ -241,6 +260,13 @@ function App() {
                       <Route path='/assets/new' element={<V2AssetCreatePage />} />
                       <Route path='/assets/:id' element={<V2AssetDetailPage />} />
                       <Route path='/assets/:id/edit' element={<V2AssetEditPage />} />
+
+                      {/* Salaries */}
+                      <Route path='/salaries' element={<V2SalariesPage />} />
+                      <Route path='/salaries/staff/new' element={<V2StaffFormPage />} />
+                      <Route path='/salaries/staff/:id/edit' element={<V2StaffFormPage />} />
+                      <Route path='/salaries/payments/new' element={<V2SalaryPaymentFormPage />} />
+                      <Route path='/salaries/payments/:id/edit' element={<V2SalaryPaymentFormPage />} />
 
                       {/* Users / settings */}
                       <Route path='/users' element={<V2UsersPage />} />

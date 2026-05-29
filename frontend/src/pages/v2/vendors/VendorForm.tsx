@@ -919,7 +919,7 @@ export const VendorForm = ({
       {/* Footer actions — duplicated from PageHeader as a courtesy.
           Long forms shouldn't require scroll-to-top to save.
           Sticky on mobile so Save is always reachable. */}
-      <div className="sticky bottom-0 md:static -mx-4 sm:-mx-6 lg:-mx-8 md:mx-0 px-4 sm:px-6 lg:px-8 md:px-0 py-3 md:py-0 bg-bg-base/95 md:bg-transparent backdrop-blur md:backdrop-blur-none border-t md:border-t-0 border-border-subtle flex items-center justify-end gap-3">
+      <div className="sticky bottom-0 md:static -mx-4 sm:-mx-6 md:-mx-8 md:mx-0 px-4 sm:px-6 md:px-8 md:px-0 py-3 md:py-0 bg-bg-base/95 md:bg-transparent backdrop-blur md:backdrop-blur-none border-t md:border-t-0 border-border-subtle flex items-center justify-end gap-3">
         <p className="text-[11px] text-text-tertiary mr-auto hidden md:block">
           {mode === 'create'
             ? t('vendors.form.requiredNote', 'Tanda * menandakan kolom wajib diisi.')

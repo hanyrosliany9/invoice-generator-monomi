@@ -32,7 +32,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
-import { assetService, type Asset } from '@/services/assets';
+import { assetService, type Asset, type DepreciationPeriodRow } from '@/services/assets';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — identical to the list page so the chrome doesn't shift  */
@@ -122,6 +122,13 @@ export default function AssetDetailPageV2() {
   } = useQuery({
     queryKey: ['asset', id],
     queryFn: () => assetService.getAsset(id!),
+    enabled: !!id,
+  });
+
+  /* ---------- depreciation calculation (PSAK 16 schedule) ---------- */
+  const { data: deprCalc } = useQuery({
+    queryKey: ['asset-depreciation-calc', id],
+    queryFn: () => assetService.getDepreciationCalculation(id!),
     enabled: !!id,
   });
 
@@ -465,7 +472,7 @@ export default function AssetDetailPageV2() {
           the classic detail page.
          ─────────────────────────────────────────────────────────── */}
       <GlassPanel surface="glass" padding="lg" className="mb-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_320px] gap-6 md:gap-8">
           {/* Left: identity */}
           <div className="min-w-0 space-y-5">
             <div className="flex items-start gap-4">
@@ -661,6 +668,138 @@ export default function AssetDetailPageV2() {
                 />
               </div>
             </div>
+          </GlassPanel>
+        </section>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────
+          Perhitungan Depresiasi (PSAK 16 schedule table).
+          Shows the 4-column table for the FIRST and LAST period of
+          the asset's depreciation life, as required by Indonesian
+          accounting practice. Uses the computed schedule from the
+          backend rather than the client-side estimate, so the numbers
+          are authoritative.
+         ─────────────────────────────────────────────────────────── */}
+      {deprCalc?.hasSchedule && deprCalc.firstPeriod && deprCalc.lastPeriod && (
+        <section className="mb-10">
+          <GlassPanel surface="glass" padding="lg">
+            <SectionHeader
+              title={t('assets.detail.deprScheduleSection', 'Perhitungan Depresiasi')}
+              count={deprCalc.totalPeriods}
+            />
+
+            {/* Summary line — method + life */}
+            <div className="flex flex-wrap gap-x-8 gap-y-2 mb-6 text-xs text-text-tertiary">
+              <span>
+                <span className="uppercase tracking-[0.12em] mr-1">
+                  {t('assets.detail.depr.method', 'Metode')}:
+                </span>
+                <span className="text-text-secondary">
+                  {deprCalc.schedule?.method === 'STRAIGHT_LINE'
+                    ? t('assets.detail.depr.straightLine', 'Garis Lurus')
+                    : deprCalc.schedule?.method}
+                </span>
+              </span>
+              <span>
+                <span className="uppercase tracking-[0.12em] mr-1">
+                  {t('assets.detail.depr.usefulLife', 'Umur Ekonomis')}:
+                </span>
+                <span className="text-text-secondary">
+                  {deprCalc.schedule?.usefulLifeYears} {t('assets.detail.depr.years', 'tahun')}
+                  {' '}({deprCalc.schedule?.usefulLifeMonths} {t('assets.detail.deprTable.months', 'bulan')})
+                </span>
+              </span>
+              <span>
+                <span className="uppercase tracking-[0.12em] mr-1">
+                  {t('assets.detail.depr.residual', 'Nilai Sisa')}:
+                </span>
+                <span className="text-text-secondary">
+                  <MoneyDisplay amount={deprCalc.schedule?.residualValue ?? 0} className="inline" />
+                </span>
+              </span>
+            </div>
+
+            {/* 4-column table — first row + last row */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm font-body min-w-[560px]">
+                <thead>
+                  <tr className="border-b border-border-default">
+                    <th className="pb-3 text-left text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium w-24">
+                      {t('assets.detail.deprTable.period', 'Periode')}
+                    </th>
+                    <th className="pb-3 text-right text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
+                      {t('assets.detail.deprTable.openingValue', 'Saldo Awal')}
+                    </th>
+                    <th className="pb-3 text-right text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
+                      {t('assets.detail.deprTable.depreciation', 'Perhitungan Depresiasi')}
+                    </th>
+                    <th className="pb-3 text-right text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
+                      {t('assets.detail.deprTable.accumulated', 'Akumulasi Depresiasi')}
+                    </th>
+                    <th className="pb-3 text-right text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
+                      {t('assets.detail.deprTable.closingValue', 'Saldo Akhir')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* First period */}
+                  {([deprCalc.firstPeriod, deprCalc.lastPeriod] as DepreciationPeriodRow[]).map(
+                    (row, idx) => (
+                      <tr
+                        key={row.period}
+                        className={cn(
+                          'border-b border-border-subtle/50 last:border-0',
+                          idx === 0 ? 'bg-bg-base' : 'bg-bg-sunken/50',
+                        )}
+                      >
+                        <td className="py-3 pr-4">
+                          <div className="font-mono text-text-primary text-[12px]">
+                            {row.period}
+                          </div>
+                          <div className="text-[10px] text-text-tertiary mt-0.5">
+                            {idx === 0
+                              ? t('assets.detail.deprTable.labelFirst', 'Periode Pertama')
+                              : t('assets.detail.deprTable.labelLast', 'Periode Terakhir')}
+                          </div>
+                        </td>
+                        <td className="py-3 text-right">
+                          <MoneyDisplay amount={row.openingValue} className="text-text-secondary" />
+                        </td>
+                        <td className="py-3 text-right">
+                          <MoneyDisplay
+                            amount={row.depreciation}
+                            className="text-warning font-medium"
+                          />
+                        </td>
+                        <td className="py-3 text-right">
+                          <MoneyDisplay amount={row.accumulated} className="text-text-secondary" />
+                        </td>
+                        <td className="py-3 text-right">
+                          <MoneyDisplay
+                            amount={row.closingValue}
+                            className={cn(
+                              'font-medium',
+                              idx === deprCalc.totalPeriods - 1
+                                ? 'text-text-tertiary'
+                                : 'text-text-primary',
+                            )}
+                          />
+                        </td>
+                      </tr>
+                    ),
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Hint about the full schedule */}
+            <p className="mt-4 text-[11px] text-text-tertiary">
+              {t(
+                'assets.detail.deprTable.hint',
+                '{{total}} periode total · hanya menampilkan periode pertama dan terakhir',
+                { total: deprCalc.totalPeriods },
+              )}
+            </p>
           </GlassPanel>
         </section>
       )}

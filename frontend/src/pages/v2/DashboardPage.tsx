@@ -256,7 +256,7 @@ export default function DashboardPageV2() {
         </section>
 
         {/* Recent activity — paired tables in one rhythmic row */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Recent Quotations */}
           <GlassPanel surface="glass" padding="lg">
             <div className="mb-5 flex items-baseline justify-between">

@@ -68,7 +68,12 @@ export const mediaDownloaderService = {
         quality: options.quality || 'best',
         audioOnly: options.audioOnly || false,
       },
-      { responseType: 'blob' }
+      {
+        responseType: 'blob',
+        // yt-dlp can take several minutes for large videos; override the
+        // global 30 s timeout with 10 minutes for this request only.
+        timeout: 600_000,
+      }
     )
 
     // Get filename from Content-Disposition header

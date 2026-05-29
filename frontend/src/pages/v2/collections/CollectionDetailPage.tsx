@@ -472,7 +472,7 @@ export default function CollectionDetailPageV2() {
            ──────────────────────────────────────────────────────── */}
         <section className="mb-12">
           <GlassPanel surface="glass" padding="lg">
-            <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-8 lg:gap-12 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 md:gap-12 items-start">
               <div className="flex items-start gap-5">
                 <div className="h-16 w-16 shrink-0 rounded-md bg-accent-navy-wash flex items-center justify-center">
                   <Folder className="h-7 w-7 text-text-primary" strokeWidth={1.5} />

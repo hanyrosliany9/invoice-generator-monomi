@@ -91,6 +91,57 @@ export default defineConfig({
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
+        /**
+         * Manual chunks — split the giant vendor bundle into focused pieces so:
+         * 1. The initial JS download is smaller (only react+router are critical).
+         * 2. Antd / recharts / editor chunks are shared across pages without
+         *    being bundled into every lazy page chunk.
+         * 3. Long-term browser caching: lib hashes change only when that lib
+         *    version changes, not when an unrelated page component changes.
+         */
+        manualChunks(id) {
+          // React core — must load first; keep tiny
+          if (id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/react-is/')) {
+            return 'vendor-react'
+          }
+          // Router
+          if (id.includes('node_modules/react-router')) {
+            return 'vendor-router'
+          }
+          // TanStack Query + Zustand — state layer
+          if (id.includes('node_modules/@tanstack/') ||
+              id.includes('node_modules/zustand/')) {
+            return 'vendor-state'
+          }
+          // Ant Design (large — isolate so page chunks stay small)
+          if (id.includes('node_modules/antd/') ||
+              id.includes('node_modules/@ant-design/') ||
+              id.includes('node_modules/rc-')) {
+            return 'vendor-antd'
+          }
+          // Charts
+          if (id.includes('node_modules/recharts/') ||
+              id.includes('node_modules/d3') ||
+              id.includes('node_modules/victory')) {
+            return 'vendor-charts'
+          }
+          // Rich-text / Slate editor
+          if (id.includes('node_modules/slate')) {
+            return 'vendor-editor'
+          }
+          // Date utilities
+          if (id.includes('node_modules/dayjs/') ||
+              id.includes('node_modules/date-fns/')) {
+            return 'vendor-dates'
+          }
+          // i18n
+          if (id.includes('node_modules/i18next') ||
+              id.includes('node_modules/react-i18next')) {
+            return 'vendor-i18n'
+          }
+        },
       },
     },
     esbuild: {

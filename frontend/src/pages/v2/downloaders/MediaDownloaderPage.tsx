@@ -80,6 +80,7 @@ const QUALITY_FALLBACK: Record<VideoQuality, string> = {
   '480p':  '480p',
   '360p':  '360p',
   worst: 'Kualitas Terendah',
+  // "audio" key kept for history-row display only; not shown in the quality dropdown
   audio: 'Audio Saja (MP3)',
 };
 // Legacy alias used in HistoryRow (non-component context)
@@ -226,16 +227,20 @@ export default function MediaDownloaderPageV2() {
   }, []);
 
   /* ---- quality options: adapt to detected formats when present ---- */
+  /* The "audio" quality is intentionally excluded here — audio-only is  */
+  /* controlled exclusively by the Switch toggle below to avoid having   */
+  /* two redundant "Audio Only" / "Audio Saja" controls in the same row. */
   const qualityOptions = useMemo<{ value: VideoQuality; label: string }[]>(() => {
     const fromInfo: VideoQuality[] = (mediaInfo?.availableQualities ?? [])
       .map((q) => q.toLowerCase())
-      .filter((q): q is VideoQuality => q in QUALITY_FALLBACK);
+      // exclude the "audio" sentinel from the dropdown
+      .filter((q): q is VideoQuality => q in QUALITY_FALLBACK && q !== 'audio');
 
-    const base: VideoQuality[] = ['best', '1080p', '720p', '480p', '360p', 'audio'];
+    const base: VideoQuality[] = ['best', '1080p', '720p', '480p', '360p'];
     const source: VideoQuality[] = fromInfo.length ? fromInfo : base;
     const seen = new Set<VideoQuality>();
     const merged: VideoQuality[] = [];
-    for (const q of [...source, 'audio' as VideoQuality]) {
+    for (const q of source) {
       if (!seen.has(q)) { seen.add(q); merged.push(q); }
     }
     return merged.map((v) => ({ value: v, label: t(QUALITY_KEYS[v], QUALITY_FALLBACK[v]) }));
@@ -394,21 +399,30 @@ export default function MediaDownloaderPageV2() {
               </Select>
             </div>
 
-            {/* Audio only toggle */}
+            {/* Audio only toggle — single source of truth for audio-only mode.  */}
+            {/* The quality dropdown above is disabled while this is on, and the */}
+            {/* "audio" sentinel is removed from the dropdown so there's no      */}
+            {/* duplicate "Audio Saja" option competing with this control.        */}
             <div className="flex items-center justify-between sm:justify-start gap-3 sm:min-w-[200px]">
               <div className="flex items-center gap-2">
                 <Music className="h-4 w-4 text-text-tertiary" />
                 <div className="flex flex-col">
-                  <span className="text-sm text-text-primary leading-tight">{t('mediaDownloader.audioOnly', 'Audio saja')}</span>
-                  <span className="text-xs text-text-tertiary leading-tight">{t('mediaDownloader.audioOnlySub', 'Ekstrak ke MP3')}</span>
+                  <span className="text-sm text-text-primary leading-tight">
+                    {t('mediaDownloader.audioOnly', 'Audio saja')}
+                  </span>
+                  <span className="text-xs text-text-tertiary leading-tight">
+                    {t('mediaDownloader.audioOnlySub', 'Ekstrak ke MP3')}
+                  </span>
                 </div>
               </div>
               <Switch
                 checked={audioOnly}
-                onCheckedChange={(c) => {
-                  setAudioOnly(c);
-                  if (c) setQuality('audio');
-                  else if (quality === 'audio') setQuality('best');
+                onCheckedChange={(checked) => {
+                  setAudioOnly(checked);
+                  // When turning audio-only ON, set a sentinel quality so the
+                  // backend knows to extract audio. When turning it OFF, reset
+                  // to 'best' so a stale 'audio' quality string never leaks.
+                  setQuality(checked ? 'audio' : 'best');
                 }}
               />
             </div>

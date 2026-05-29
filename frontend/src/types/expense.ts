@@ -328,6 +328,9 @@ export interface CreateExpenseFormData {
   accountName: string;
   expenseClass: ExpenseClass;
 
+  // Which balance ("Saldo") to deduct: Cash (Kas) or Bank (default bank account)
+  paymentSource?: 'CASH' | 'BANK';
+
   // Description
   description: string;
   descriptionId?: string;

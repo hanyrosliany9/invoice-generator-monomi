@@ -87,6 +87,7 @@ const toCreatePayload = async (
     isBillable: values.isBillable,
     projectId:  values.projectId || undefined,
     clientId,
+    paymentSource: values.paymentSource,
 
     expenseDate: values.expenseDate.toISOString(),
     currency: 'IDR',

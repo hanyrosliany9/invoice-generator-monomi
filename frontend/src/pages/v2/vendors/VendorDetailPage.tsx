@@ -355,7 +355,7 @@ export default function VendorDetailPageV2() {
         ───────────────────────────────────────────────────── */}
         <section className="mb-12">
           <GlassPanel surface="glass" padding="lg">
-            <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-8 lg:gap-12 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 md:gap-12 items-start">
               {/* Identity */}
               <div className="flex items-start gap-5">
                 <Avatar className="h-16 w-16 shrink-0">

@@ -39,7 +39,8 @@
     "creating": "Creating...",
     "mobileNotice": "Best editing experience on tablet or desktop. Some controls may be hidden on small screens.",
     "unsavedChanges": "Unsaved changes",
-    "noPendingChanges": "No pending changes"
+    "noPendingChanges": "No pending changes",
+    "optional": "(optional)"
   },
   "table": {
     "number": "Number",
@@ -110,7 +111,8 @@
     "reports": "Reports",
     "milestones": "Milestones",
     "users": "Users",
-    "settings": "Settings"
+    "settings": "Settings",
+    "salaries": "Salaries"
   },
   "breadcrumb": {
     "client": "Client",
@@ -1247,7 +1249,18 @@
       "noMaintenanceDesc": "This asset has never been serviced or maintained.",
       "noReservationsDesc": "This asset has never been reserved or checked out.",
       "recordCount": "{{count}} records",
-      "reservationsSection": "Reservation & Assignment History"
+      "reservationsSection": "Reservation & Assignment History",
+      "deprScheduleSection": "Depreciation Calculation",
+      "deprTable": {
+        "period": "Period",
+        "openingValue": "Opening Value",
+        "depreciation": "Depreciation Calculation",
+        "accumulated": "Accumulated Depreciation",
+        "closingValue": "Closing Value",
+        "months": "months",
+        "labelFirst": "First Period",
+        "labelLast": "Last Period"
+      }
     },
     "edit": {
       "crumb": "Edit",
@@ -1497,7 +1510,9 @@
       "markUpdated": "Mark Updated",
       "saveFailed": "Failed to save.",
       "saved": "Changes saved.",
-      "send": "Mark as Sent"
+      "send": "Mark as Sent",
+      "pdfDownloaded": "PDF downloaded successfully.",
+      "pdfFailed": "Failed to download PDF."
     },
     "empty": {
       "desc": "Create your first call sheet for a production.",
@@ -3032,6 +3047,55 @@
       "EQUITY": "Equity",
       "REVENUE": "Revenue",
       "EXPENSE": "Expense"
+    },
+    "cashBankBalance": {
+      "byAccountLabel": "Balances by account",
+      "calcBalance": "Calculate Balance",
+      "calcNewPeriod": "Calculate New Period",
+      "calculating": "Calculating...",
+      "cancel": "Cancel",
+      "colAccount": "Account",
+      "colCalculatedAt": "Calculated",
+      "colClosing": "Closing Balance",
+      "colInflow": "Total Inflow",
+      "colNetChange": "Net Change",
+      "colOpening": "Opening Balance",
+      "colOutflow": "Total Outflow",
+      "createFail": "Failed to save cash & bank balance",
+      "createSuccess": "Cash & bank balance calculated and saved",
+      "deleteBalance": "Delete Balance",
+      "deleteDialogTitle": "Delete Balance",
+      "deleteDialogDesc": "Are you sure you want to delete the balance for period",
+      "deleteDialogWarn": "This action cannot be undone.",
+      "deleteFail": "Failed to delete balance",
+      "deleteSuccess": "Balance deleted",
+      "deleting": "Deleting...",
+      "dialogDescV2": "Select the month to (re)calculate. Per-account cash & bank balances are derived from posted journal entries.",
+      "dialogTitle": "Calculate Period Balance",
+      "emptyDescV2": "Record an expense or post a journal entry — cash & bank balances build automatically. Or click Recalculate to rebuild from history.",
+      "emptyTitle": "No balance data yet",
+      "errorGeneric": "An error occurred",
+      "errorTitle": "Cannot load cash & bank balance",
+      "fieldNotes": "Notes (Optional)",
+      "fieldNotesPh": "Additional notes...",
+      "fieldPeriodHint": "Select any date within the desired month — the system will use that month.",
+      "fieldPeriod": "Period",
+      "fieldPeriodPh": "Select month",
+      "formula": "Formula:",
+      "groupBank": "Bank",
+      "groupCash": "Cash",
+      "howItWorksLabel": "How It Works",
+      "howItWorksV2": "Each cash and bank account keeps its own running balance, derived automatically from posted journal entries (expenses, payments, etc.) and chained from the previous period. Cash and Bank are shown separately and summed into the total.",
+      "perAccount": "(per account)",
+      "print": "Print",
+      "recalcAllFail": "Failed to recalculate balances",
+      "recalcAll": "Recalculate",
+      "recalcAllSuccess": "Recalculated {{n}} period(s) chronologically",
+      "retry": "Try Again",
+      "statBankTotal": "Bank",
+      "statCashTotal": "Cash",
+      "statCombinedTotal": "Total Cash & Bank",
+      "validationPeriod": "Please select a period first"
     }
   },
   "pinterestDownloader": {
@@ -3054,14 +3118,14 @@
   },
   "mediaDownloader": {
     "title": "Media Downloader",
-    "description": "Paste a link from YouTube, Instagram, TikTok, Twitter, Facebook, or Vimeo. We handle the format — you get the file.",
+    "description": "Paste links from YouTube, Instagram, TikTok, Twitter, Facebook, or Vimeo. We handle the format — you get the file.",
     "urlPlaceholder": "https://youtube.com/watch?v=... or https://instagram.com/p/...",
     "startSuccess": "Download started — check your Downloads folder.",
     "pasteSuccess": "URL pasted from clipboard.",
     "clipboardEmpty": "Clipboard is empty.",
-    "clipboardFail": "Cannot read clipboard. Paste manually.",
+    "clipboardFail": "Cannot read clipboard. Paste manually instead.",
     "noDownloads": "No downloads yet",
-    "noDownloadsDesc": "Paste a link above and click Download to get started. This list only persists for the current browser session.",
+    "noDownloadsDesc": "Paste a link above and click Download to get started. This list only lasts for your browser session.",
     "sessionHistory": "Session history",
     "quality_best": "Best Quality",
     "quality_1080p": "1080p (Full HD)",
@@ -3071,7 +3135,37 @@
     "quality_worst": "Lowest Quality",
     "quality_audio": "Audio Only (MP3)",
     "statusDone": "Done",
-    "statusFailed": "Failed"
+    "statusFailed": "Failed",
+    "audioOnly": "Audio Only",
+    "audioOnlySub": "Extract to MP3",
+    "clearHistory": "Clear",
+    "detected": "Detected",
+    "detecting": "Checking link…",
+    "disclaimer": "Some Instagram and TikTok content requires login. If download fails, the content may be private or restricted by the platform.",
+    "downloading": "Downloading…",
+    "downloadNow": "Download Now",
+    "hoursAgo": "{{count}} hours ago",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} minutes ago",
+    "noTitle": "Untitled",
+    "notSupported": "Platform",
+    "notSupportedSuffix": "not yet supported.",
+    "pastePrompt": "Paste video or image link",
+    "paste": "Paste",
+    "platformsSupported": "6 platforms supported",
+    "quality": "Quality",
+    "stat": {
+      "failedCount": "{{count}} failed",
+      "noFailures": "without failures",
+      "sessionDownloads": "Downloads this session",
+      "sessionSub": "since page opened",
+      "success": "Successful",
+      "successRateSub": "download success ratio",
+      "successRate": "Success Rate"
+    },
+    "step1": "Step 1",
+    "supportedPlatforms": "Supports YouTube, Instagram, TikTok, Twitter, Facebook, Vimeo.",
+    "usePinterestPage": "— use the Pinterest page for batch."
   },
   "shotLists": {
     "title": "Shot Lists",
@@ -4382,7 +4476,10 @@
     "colNotes": "Notes",
     "removeShot": "Remove shot",
     "addShot": "Add Shot",
-    "footnote": "Changes auto-save on blur. Click “Save” to persist identity fields."
+    "footnote": "Changes auto-save on blur. Click “Save” to persist identity fields.",
+    "downloadPdf": "Download PDF",
+    "pdfDownloaded": "PDF downloaded",
+    "pdfFailed": "Failed to generate PDF"
   },
   "callSheetEditor": {
     "openInV1": "Open in v1 (PDF / auto-fill)",
@@ -4507,7 +4604,8 @@
     "savedHeaderChanges": "All header changes saved. Crew/talent/schedule rows save individually.",
     "saveHeader": "Save Header",
     "saveRow": "Save row",
-    "removeRow": "Remove row"
+    "removeRow": "Remove row",
+    "downloadPdf": "Download PDF"
   },
   "mediaCollab": {
     "loadMore": "Load more",
@@ -4624,6 +4722,131 @@
     "shareDisableFailed": "Failed to disable public link.",
     "commentSent": "Comment sent.",
     "commentFailed": "Failed to send comment.",
-    "uploadFailed": "Failed to upload “{{name}}”: {{error}}"
+    "uploadFailed": "Failed to upload “{{name}}”: {{error}}",
+    "createProject": "Create New Media Project",
+    "createProjectDesc": "Give your project a name to start a new media collaboration space.",
+    "projectName": "Project Name",
+    "projectNamePlaceholder": "e.g. Q3 Campaign — Product Photos",
+    "projectDescription": "Description",
+    "projectDescriptionPlaceholder": "Brief summary of this project's purpose…",
+    "creating": "Creating…",
+    "createProjectSubmit": "Create Project",
+    "createSuccess": "Project \"{{name}}\" created successfully.",
+    "createFailed": "Failed to create project."
+  },
+  "salaries": {
+    "pageTitle": "Staff Salaries",
+    "pageSubtitle": "Manage staff payroll and monthly salary payments.",
+    "newStaff": "Add Staff",
+    "newPayment": "New Payment",
+    "tabs": {
+      "staff": "Staff",
+      "payments": "Payments"
+    },
+    "kpi": {
+      "activeStaff": "Active Staff",
+      "activeStaffSub": "currently employed",
+      "thisMonth": "This Month Total",
+      "thisMonthSub": "total payroll this month",
+      "paid": "Paid This Month",
+      "paidSub": "salary payments paid",
+      "unpaid": "Unpaid Drafts",
+      "unpaidSub": "pending payment"
+    },
+    "staff": {
+      "name": "Name",
+      "baseSalary": "Base Salary",
+      "contact": "Contact",
+      "status": "Status",
+      "bank": "Bank",
+      "nameLabel": "Full Name",
+      "namePlaceholder": "Budi Santoso",
+      "positionLabel": "Position",
+      "positionPlaceholder": "Videographer",
+      "baseSalaryLabel": "Base Salary (IDR)",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "bankNameLabel": "Bank Name",
+      "bankAccountLabel": "Account Number",
+      "joinedDateLabel": "Date Joined",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Additional notes...",
+      "baseSalaryRequired": "Base salary is required",
+      "baseSalaryMin": "Must be 0 or more",
+      "nameRequired": "Name is required",
+      "positionRequired": "Position is required",
+      "createTitle": "Add Staff Member",
+      "editTitle": "Edit Staff Member",
+      "formDesc": "Manage staff information and payroll details.",
+      "bankSection": "Bank Details"
+    },
+    "payments": {
+      "staff": "Staff",
+      "period": "Period",
+      "base": "Base",
+      "allowances": "Allowances",
+      "deductions": "Deductions",
+      "netPay": "Net Pay",
+      "status": "Status"
+    },
+    "active": "Active",
+    "inactive": "Inactive",
+    "paid": "Paid",
+    "draft": "Draft",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deactivate": "Deactivate",
+    "markPaid": "Mark as Paid",
+    "back": "Back",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "retry": "Try Again",
+    "createStaff": "Create Staff",
+    "updateStaff": "Update Staff",
+    "payment": {
+      "createTitle": "New Salary Payment",
+      "editTitle": "Edit Salary Payment",
+      "formDesc": "Record a monthly salary payment for a staff member.",
+      "staffLabel": "Staff Member",
+      "staffSelect": "Select staff...",
+      "staffRequired": "Select a staff member",
+      "monthLabel": "Month",
+      "yearLabel": "Year",
+      "amountsSection": "Salary Breakdown",
+      "baseLabel": "Base Salary (IDR)",
+      "baseRequired": "Required",
+      "allowancesLabel": "Allowances (IDR)",
+      "deductionsLabel": "Deductions (IDR)",
+      "paidAtLabel": "Payment Date (leave empty for Draft)",
+      "paidAtHint": "Setting a date will mark the payment as PAID automatically.",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Additional notes...",
+      "summary": "Payment Summary"
+    },
+    "createPayment": "Create Payment",
+    "updatePayment": "Update Payment",
+    "error": {
+      "title": "Cannot load salary data",
+      "generic": "An error occurred",
+      "save": "Save failed. Please try again."
+    },
+    "empty": {
+      "staff": "No staff members yet",
+      "staffDesc": "Add your first staff member to start tracking payroll.",
+      "payments": "No salary payments yet",
+      "paymentsDesc": "Create salary payments for your staff members."
+    },
+    "filter": {
+      "status": "Status",
+      "allStatuses": "All Statuses",
+      "reset": "Reset"
+    },
+    "search": {
+      "staffPlaceholder": "Search by name or position...",
+      "paymentPlaceholder": "Search by staff name or period..."
+    },
+    "confirmDeactivate": "Deactivate this staff member?",
+    "confirmDelete": "Delete this payment?"
   }
 }

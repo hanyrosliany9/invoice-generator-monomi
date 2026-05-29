@@ -299,7 +299,7 @@ export default function ExpenseDetailPageV2() {
           sprawl on what is essentially a transaction record.
          ─────────────────────────────────────────────────────────── */}
       <GlassPanel surface="glass" padding="lg" className="mb-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_320px] gap-6 md:gap-8">
           {/* Left: vendor + category identity */}
           <div className="min-w-0 space-y-5">
             <div className="flex items-start gap-4">
@@ -447,7 +447,7 @@ export default function ExpenseDetailPageV2() {
           approval trail) on the right. Same column proportions as
           v2/invoices so the eye learns the layout once.
          ─────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_340px] gap-4">
         {/* ===== LEFT COLUMN — narrative ===== */}
         <div className="space-y-4 min-w-0">
           {/* Description / notes panel */}

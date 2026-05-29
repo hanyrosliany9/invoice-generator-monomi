@@ -26,6 +26,30 @@
   --color-bg-elevated: var(--bg-elevated);
   --color-bg-glass: var(--bg-glass);
   --color-bg-glass-strong: var(--bg-glass-strong);
+
+  /* Semantic surface aliases used by shadcn/Radix primitives.
+   * Without these, Tailwind v4 generates no background-color rule for
+   * bg-popover / bg-background / bg-accent, leaving popover panels
+   * fully transparent.  Map them to the app's opaque surface tokens. */
+  --color-background:           var(--bg-base);
+  --color-foreground:           var(--text-primary);
+  --color-popover:              var(--bg-panel);
+  --color-popover-foreground:   var(--text-primary);
+  --color-card:                 var(--bg-raised);
+  --color-card-foreground:      var(--text-primary);
+  --color-muted:                var(--bg-sunken);
+  --color-muted-foreground:     var(--text-secondary);
+  --color-accent:               var(--bg-raised);
+  --color-accent-foreground:    var(--text-primary);
+  --color-border:               var(--border-default);
+  --color-input:                var(--bg-sunken);
+  --color-ring:                 var(--accent-navy-ring);
+  --color-destructive:          var(--danger);
+  --color-secondary:            var(--bg-raised);
+  --color-secondary-foreground: var(--text-primary);
+  --color-primary:              var(--brand-white);
+  --color-primary-foreground:   var(--brand-black);
+
   --color-accent-navy-wash: var(--accent-navy-wash);
   --color-accent-navy-soft: var(--accent-navy-soft);
   --color-accent-navy-ring: var(--accent-navy-ring);

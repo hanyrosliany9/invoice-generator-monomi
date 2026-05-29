@@ -81,6 +81,7 @@ export const v2SidebarSections: SidebarSection[] = [
       { label: 'nav.chartOfAccounts', icon: i(BookOpen), href: '/accounting/chart-of-accounts' },
       { label: 'nav.cashBankBalance', icon: i(Wallet), href: '/accounting/cash-bank-balance' },
       { label: 'nav.expenses', icon: i(CreditCard), href: '/expenses' },
+      { label: 'nav.salaries', icon: i(Users), href: '/salaries' },
       { label: 'nav.journalEntries', icon: i(Book), href: '/accounting/journal-entries' },
       { label: 'nav.accountsReceivable', icon: i(Receipt), href: '/accounting/accounts-receivable' },
       { label: 'nav.accountsPayable', icon: i(TrendingDown), href: '/accounting/accounts-payable' },

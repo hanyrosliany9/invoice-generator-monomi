@@ -141,6 +141,7 @@ export default function ExpensesPageV2() {
   const { data: expensesData, isLoading, error, refetch } = useQuery({
     queryKey: ['expenses', queryParams],
     queryFn:  () => expenseService.getExpenses(queryParams),
+    placeholderData: (prev) => prev,
   });
 
   const { data: statistics } = useQuery({

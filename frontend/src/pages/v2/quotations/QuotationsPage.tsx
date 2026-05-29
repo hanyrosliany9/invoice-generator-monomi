@@ -115,6 +115,7 @@ export default function QuotationsPageV2() {
   const { data: quotations = [], isLoading, error, refetch } = useQuery({
     queryKey: ['quotations', apiFilters],
     queryFn: () => quotationService.getQuotations(apiFilters),
+    placeholderData: (prev) => prev,
   });
 
   // Mutations — mirror classic page semantics, but route toasts through sonner.

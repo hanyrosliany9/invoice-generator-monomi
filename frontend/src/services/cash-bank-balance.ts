@@ -2,11 +2,15 @@ import { apiClient } from '../config/api';
 
 export interface CashBankBalance {
   id: string;
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  group: 'CASH' | 'BANK';
   period: string; // e.g., "Januari 2025"
   periodDate: string; // First day of the period
   year: number;
   month: number;
-  openingBalance: number; // Manual input
+  openingBalance: number; // auto-chained from prior period's closing
   closingBalance: number; // Auto-calculated
   totalInflow: number; // Auto-calculated from journal entries
   totalOutflow: number; // Auto-calculated from journal entries
@@ -46,7 +50,7 @@ export const createCashBankBalance = async (data: {
   periodDate: string;
   year: number;
   month: number;
-  openingBalance: number;
+  openingBalance?: number;
   notes?: string;
   createdBy?: string;
 }): Promise<CashBankBalance> => {

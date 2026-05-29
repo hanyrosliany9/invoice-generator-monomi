@@ -359,7 +359,7 @@ export default function InvoiceDetailPageV2() {
           identity.
          ─────────────────────────────────────────────────────────── */}
       <GlassPanel surface="glass" padding="lg" className="mb-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8">
           {/* Left: client + project identity */}
           <div className="min-w-0 space-y-5">
             <div className="flex items-start gap-4">
@@ -490,7 +490,7 @@ export default function InvoiceDetailPageV2() {
           balance sheet). On mobile they stack; on desktop the right
           rail is fixed-width so the table can breathe.
          ─────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_340px] gap-4">
         {/* ===== LEFT COLUMN ===== */}
         <div className="space-y-4 min-w-0">
           {/* Line items */}

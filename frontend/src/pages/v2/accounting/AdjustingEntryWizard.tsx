@@ -492,7 +492,7 @@ export default function AdjustingEntryWizardV2() {
         )}
 
         {/* Sticky action bar */}
-        <div className="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mt-8 bg-bg-base/90 backdrop-blur-[24px] border-t border-border-subtle">
+        <div className="sticky bottom-0 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-4 mt-8 bg-bg-base/90 backdrop-blur-[24px] border-t border-border-subtle">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="text-xs text-text-tertiary">
               {step === 0 && t('accounting.adjustingWizard.hintPickType')}

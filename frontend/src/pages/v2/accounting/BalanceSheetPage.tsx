@@ -321,7 +321,7 @@ export default function BalanceSheetPageV2() {
             the statement body. Sticky keeps it in view as the reader
             scrolls long account lists.
            ───────────────────────────────────────────────────────────── */}
-        <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 mb-8 px-4 sm:px-6 lg:px-8 py-3 bg-bg-base/85 backdrop-blur-[24px] border-b border-border-subtle">
+        <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 md:-mx-8 mb-8 px-4 sm:px-6 md:px-8 py-3 bg-bg-base/85 backdrop-blur-[24px] border-b border-border-subtle">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3 text-xs text-text-tertiary uppercase tracking-[0.16em]">
               <span>{t('accounting.balanceSheet.asOf', 'As of')}</span>
@@ -383,13 +383,13 @@ export default function BalanceSheetPageV2() {
             action={<Button onClick={() => refetch()} size="sm">{t('accounting.balanceSheet.retry')}</Button>}
           />
         ) : isLoading || !data ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Skeleton className="h-[420px] rounded-lg" />
             <Skeleton className="h-[420px] rounded-lg" />
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* ASET */}
               <StatementSection
                 title={t('accounting.accountTypes.ASSET', 'Asset')}

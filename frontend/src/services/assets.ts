@@ -1,5 +1,45 @@
 import { apiClient } from '../config/api'
 
+/* ------------------------------------------------------------------ */
+/*  Depreciation Schedule Types (PSAK 16)                              */
+/* ------------------------------------------------------------------ */
+
+export interface DepreciationPeriodRow {
+  period: string        // YYYY-MM
+  periodDate: string    // ISO date
+  openingValue: number  // Saldo Awal
+  depreciation: number  // Perhitungan Depresiasi
+  accumulated: number   // Akumulasi Depresiasi
+  closingValue: number  // Saldo Akhir
+}
+
+export interface DepreciationScheduleInfo {
+  id: string
+  method: string
+  purchasePrice: number
+  residualValue: number
+  depreciableAmount: number
+  usefulLifeMonths: number
+  usefulLifeYears: number
+  depreciationPerMonth: number
+  depreciationPerYear: number
+  annualRate: number
+  startDate: string
+  endDate: string
+}
+
+export interface DepreciationCalculationTable {
+  assetId: string
+  assetCode: string
+  assetName: string
+  hasSchedule: boolean
+  schedule: DepreciationScheduleInfo | null
+  fullTable: DepreciationPeriodRow[]
+  firstPeriod: DepreciationPeriodRow | null
+  lastPeriod: DepreciationPeriodRow | null
+  totalPeriods: number
+}
+
 export interface Asset {
   id: string
   assetCode: string
@@ -130,5 +170,17 @@ export const assetService = {
   getAssetStats: async () => {
     const response = await apiClient.get('/assets/stats')
     return response?.data?.data || {}
+  },
+
+  /**
+   * Get PSAK 16 depreciation calculation table for a specific asset.
+   * Returns firstPeriod and lastPeriod for "Perhitungan Depresiasi" display.
+   */
+  getDepreciationCalculation: async (assetId: string): Promise<DepreciationCalculationTable> => {
+    const response = await apiClient.get(`/accounting/depreciation/calculation/${assetId}`)
+    if (!response?.data?.data) {
+      throw new Error('Depreciation calculation not found')
+    }
+    return response.data.data
   },
 }

@@ -108,6 +108,7 @@ export default function ProjectsPageV2() {
   const { data: projects = [], isLoading, error, refetch } = useQuery({
     queryKey: ['projects'],
     queryFn: projectService.getProjects,
+    placeholderData: (prev) => prev,
   });
 
   // Clients drive the client filter dropdown. Light query, no risk of

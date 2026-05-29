@@ -40,7 +40,8 @@
     "creating": "Membuat...",
     "mobileNotice": "Pengalaman terbaik di tablet atau desktop. Beberapa kontrol mungkin tersembunyi di layar kecil.",
     "unsavedChanges": "Ada perubahan yang belum disimpan",
-    "noPendingChanges": "Tidak ada perubahan tertunda"
+    "noPendingChanges": "Tidak ada perubahan tertunda",
+    "optional": "(opsional)"
   },
   "table": {
     "number": "Nomor",
@@ -87,7 +88,8 @@
     "reports": "Laporan",
     "milestones": "Milestone",
     "users": "Pengguna",
-    "settings": "Pengaturan"
+    "settings": "Pengaturan",
+    "salaries": "Gaji"
   },
   "auth": {
     "login": "Masuk",
@@ -1026,7 +1028,18 @@
       "noMaintenanceDesc": "Aset ini belum pernah diservis atau dirawat.",
       "noReservationsDesc": "Aset ini belum pernah direservasi atau dipinjam.",
       "recordCount": "{{count}} catatan",
-      "reservationsSection": "Riwayat Reservasi & Penempatan"
+      "reservationsSection": "Riwayat Reservasi & Penempatan",
+      "deprScheduleSection": "Perhitungan Depresiasi",
+      "deprTable": {
+        "period": "Periode",
+        "openingValue": "Saldo Awal",
+        "depreciation": "Perhitungan Depresiasi",
+        "accumulated": "Akumulasi Depresiasi",
+        "closingValue": "Saldo Akhir",
+        "months": "bulan",
+        "labelFirst": "Periode Pertama",
+        "labelLast": "Periode Terakhir"
+      }
     },
     "assetCode": "Kode Aset",
     "name": "Nama Aset",
@@ -1678,7 +1691,9 @@
       "markUpdated": "Tandai Diperbarui",
       "saveFailed": "Gagal menyimpan.",
       "saved": "Perubahan tersimpan.",
-      "send": "Tandai Terkirim"
+      "send": "Tandai Terkirim",
+      "pdfDownloaded": "PDF berhasil diunduh.",
+      "pdfFailed": "Gagal mengunduh PDF."
     },
     "empty": {
       "desc": "Buat call sheet pertama untuk produksi Anda.",
@@ -3213,6 +3228,55 @@
       "EQUITY": "Ekuitas",
       "REVENUE": "Pendapatan",
       "EXPENSE": "Beban"
+    },
+    "cashBankBalance": {
+      "byAccountLabel": "Saldo per akun",
+      "calcBalance": "Hitung Saldo",
+      "calcNewPeriod": "Hitung Periode Baru",
+      "calculating": "Menghitung...",
+      "cancel": "Batalkan",
+      "colAccount": "Akun",
+      "colCalculatedAt": "Dihitung",
+      "colClosing": "Saldo Akhir",
+      "colInflow": "Total Masuk",
+      "colNetChange": "Perubahan Bersih",
+      "colOpening": "Saldo Awal",
+      "colOutflow": "Total Keluar",
+      "createFail": "Gagal menyimpan saldo kas & bank",
+      "createSuccess": "Saldo kas & bank berhasil dihitung dan disimpan",
+      "deleteBalance": "Hapus Saldo",
+      "deleteDialogTitle": "Hapus Saldo",
+      "deleteDialogDesc": "Anda yakin ingin menghapus saldo untuk periode",
+      "deleteDialogWarn": "Tindakan ini tidak dapat dibatalkan.",
+      "deleteFail": "Gagal menghapus saldo",
+      "deleteSuccess": "Saldo berhasil dihapus",
+      "deleting": "Menghapus...",
+      "dialogDescV2": "Pilih bulan untuk (ulang) hitung. Saldo kas & bank per-akun diturunkan dari entri jurnal yang diposting.",
+      "dialogTitle": "Hitung Saldo Periode",
+      "emptyDescV2": "Catat pengeluaran atau posting entri jurnal — saldo kas & bank terbangun otomatis. Atau klik Ulang Hitung untuk membangun kembali dari riwayat.",
+      "emptyTitle": "Belum ada data saldo",
+      "errorGeneric": "Terjadi kesalahan",
+      "errorTitle": "Tidak bisa memuat saldo kas & bank",
+      "fieldNotes": "Catatan (Opsional)",
+      "fieldNotesPh": "Catatan tambahan...",
+      "fieldPeriodHint": "Pilih tanggal apapun dalam bulan yang diinginkan — sistem akan menggunakan bulan itu.",
+      "fieldPeriod": "Periode",
+      "fieldPeriodPh": "Pilih bulan",
+      "formula": "Rumus:",
+      "groupBank": "Bank",
+      "groupCash": "Kas",
+      "howItWorksLabel": "Cara Kerjanya",
+      "howItWorksV2": "Setiap akun kas dan bank mempertahankan saldonya sendiri, diturunkan secara otomatis dari entri jurnal yang diposting (pengeluaran, pembayaran, dll.) dan dirantai dari periode sebelumnya. Kas dan Bank ditampilkan secara terpisah dan dijumlahkan ke total.",
+      "perAccount": "(per akun)",
+      "print": "Cetak",
+      "recalcAllFail": "Gagal menghitung ulang saldo",
+      "recalcAll": "Hitung Ulang",
+      "recalcAllSuccess": "Menghitung ulang {{n}} periode secara kronologis",
+      "retry": "Coba Lagi",
+      "statBankTotal": "Bank",
+      "statCashTotal": "Kas",
+      "statCombinedTotal": "Total Kas & Bank",
+      "validationPeriod": "Silakan pilih periode terlebih dahulu"
     }
   },
   "pinterestDownloader": {
@@ -3252,7 +3316,37 @@
     "quality_worst": "Kualitas Terendah",
     "quality_audio": "Audio Saja (MP3)",
     "statusDone": "Selesai",
-    "statusFailed": "Gagal"
+    "statusFailed": "Gagal",
+    "audioOnly": "Audio saja",
+    "audioOnlySub": "Ekstrak ke MP3",
+    "clearHistory": "Kosongkan",
+    "detected": "Terdeteksi",
+    "detecting": "Memeriksa tautan…",
+    "disclaimer": "Beberapa konten Instagram dan TikTok memerlukan login. Jika unduhan gagal, kemungkinan konten privat atau dibatasi platform.",
+    "downloading": "Mengunduh…",
+    "downloadNow": "Unduh Sekarang",
+    "hoursAgo": "{{count}} jam lalu",
+    "justNow": "Baru saja",
+    "minutesAgo": "{{count}} menit lalu",
+    "noTitle": "Tanpa judul",
+    "notSupported": "Platform",
+    "notSupportedSuffix": "belum didukung.",
+    "pastePrompt": "Tempel tautan video atau gambar",
+    "paste": "Tempel",
+    "platformsSupported": "6 platform didukung",
+    "quality": "Kualitas",
+    "stat": {
+      "failedCount": "{{count}} gagal",
+      "noFailures": "tanpa kegagalan",
+      "sessionDownloads": "Unduhan sesi ini",
+      "sessionSub": "sejak halaman dibuka",
+      "success": "Berhasil",
+      "successRateSub": "rasio unduhan sukses",
+      "successRate": "Tingkat keberhasilan"
+    },
+    "step1": "Langkah 1",
+    "supportedPlatforms": "Mendukung YouTube, Instagram, TikTok, Twitter, Facebook, Vimeo.",
+    "usePinterestPage": "— gunakan halaman Pinterest untuk batch."
   },
   "shotLists": {
     "title": "Shot List",
@@ -3578,7 +3672,7 @@
   },
   "cashBankBalance": {
     "pageTitle": "Saldo Kas & Bank",
-    "pageDesc": "Ringkasan posisi kas dan bank per periode, dihitung otomatis dari jurnal.",
+    "pageDesc": "Ringkasan posisi kas dan bank per periode, dihitung secara otomatis dari entri jurnal.",
     "periodCount": "periode",
     "actions": "Aksi"
   },
@@ -4563,7 +4657,10 @@
     "colNotes": "Catatan",
     "removeShot": "Hapus shot",
     "addShot": "Tambah Shot",
-    "footnote": "Perubahan tersimpan otomatis saat blur. Klik “Simpan” untuk menyimpan field identitas."
+    "footnote": "Perubahan tersimpan otomatis saat blur. Klik “Simpan” untuk menyimpan field identitas.",
+    "downloadPdf": "Unduh PDF",
+    "pdfDownloaded": "PDF berhasil diunduh",
+    "pdfFailed": "Gagal membuat PDF"
   },
   "callSheetEditor": {
     "openInV1": "Buka di v1 (PDF / auto-fill)",
@@ -4688,7 +4785,8 @@
     "savedHeaderChanges": "Semua perubahan info utama tersimpan. Tabel kru/talent/jadwal tersimpan per baris.",
     "saveHeader": "Simpan Info Utama",
     "saveRow": "Simpan baris",
-    "removeRow": "Hapus baris"
+    "removeRow": "Hapus baris",
+    "downloadPdf": "Unduh PDF"
   },
   "mediaCollab": {
     "loadMore": "Muat lainnya",
@@ -4805,6 +4903,131 @@
     "shareDisableFailed": "Gagal menonaktifkan tautan publik.",
     "commentSent": "Komentar terkirim.",
     "commentFailed": "Gagal mengirim komentar.",
-    "uploadFailed": "Gagal unggah “{{name}}”: {{error}}"
+    "uploadFailed": "Gagal unggah “{{name}}”: {{error}}",
+    "createProject": "Buat Proyek Media Baru",
+    "createProjectDesc": "Beri nama proyek Anda untuk memulai ruang kolaborasi media baru.",
+    "projectName": "Nama Proyek",
+    "projectNamePlaceholder": "mis. Kampanye Q3 — Foto Produk",
+    "projectDescription": "Deskripsi",
+    "projectDescriptionPlaceholder": "Ringkasan singkat tujuan proyek ini…",
+    "creating": "Membuat…",
+    "createProjectSubmit": "Buat Proyek",
+    "createSuccess": "Proyek \"{{name}}\" berhasil dibuat.",
+    "createFailed": "Gagal membuat proyek."
+  },
+  "salaries": {
+    "pageTitle": "Gaji Karyawan",
+    "pageSubtitle": "Kelola penggajian karyawan dan pembayaran gaji bulanan.",
+    "newStaff": "Tambah Karyawan",
+    "newPayment": "Pembayaran Baru",
+    "tabs": {
+      "staff": "Karyawan",
+      "payments": "Pembayaran"
+    },
+    "kpi": {
+      "activeStaff": "Karyawan Aktif",
+      "activeStaffSub": "saat ini dipekerjakan",
+      "thisMonth": "Total Bulan Ini",
+      "thisMonthSub": "total penggajian bulan ini",
+      "paid": "Dibayar Bulan Ini",
+      "paidSub": "pembayaran gaji dibayarkan",
+      "unpaid": "Draft Belum Dibayar",
+      "unpaidSub": "menunggu pembayaran"
+    },
+    "staff": {
+      "name": "Nama",
+      "baseSalary": "Gaji Pokok",
+      "contact": "Kontak",
+      "status": "Status",
+      "bank": "Bank",
+      "nameLabel": "Nama Lengkap",
+      "namePlaceholder": "Budi Santoso",
+      "positionLabel": "Posisi",
+      "positionPlaceholder": "Videografer",
+      "baseSalaryLabel": "Gaji Pokok (IDR)",
+      "emailLabel": "Email",
+      "phoneLabel": "Telepon",
+      "bankNameLabel": "Nama Bank",
+      "bankAccountLabel": "Nomor Rekening",
+      "joinedDateLabel": "Tanggal Bergabung",
+      "notesLabel": "Catatan",
+      "notesPlaceholder": "Catatan tambahan...",
+      "baseSalaryRequired": "Gaji pokok diperlukan",
+      "baseSalaryMin": "Harus 0 atau lebih",
+      "nameRequired": "Nama diperlukan",
+      "positionRequired": "Posisi diperlukan",
+      "createTitle": "Tambah Karyawan",
+      "editTitle": "Edit Karyawan",
+      "formDesc": "Kelola informasi karyawan dan detail penggajian.",
+      "bankSection": "Detail Bank"
+    },
+    "payments": {
+      "staff": "Karyawan",
+      "period": "Periode",
+      "base": "Pokok",
+      "allowances": "Tunjangan",
+      "deductions": "Potongan",
+      "netPay": "Gaji Bersih",
+      "status": "Status"
+    },
+    "active": "Aktif",
+    "inactive": "Nonaktif",
+    "paid": "Dibayar",
+    "draft": "Draft",
+    "view": "Lihat",
+    "edit": "Edit",
+    "delete": "Hapus",
+    "deactivate": "Nonaktifkan",
+    "markPaid": "Tandai Dibayar",
+    "back": "Kembali",
+    "cancel": "Batalkan",
+    "saving": "Menyimpan...",
+    "retry": "Coba Lagi",
+    "createStaff": "Buat Karyawan",
+    "updateStaff": "Perbarui Karyawan",
+    "payment": {
+      "createTitle": "Pembayaran Gaji Baru",
+      "editTitle": "Edit Pembayaran Gaji",
+      "formDesc": "Catat pembayaran gaji bulanan untuk karyawan.",
+      "staffLabel": "Karyawan",
+      "staffSelect": "Pilih karyawan...",
+      "staffRequired": "Pilih karyawan",
+      "monthLabel": "Bulan",
+      "yearLabel": "Tahun",
+      "amountsSection": "Rincian Gaji",
+      "baseLabel": "Gaji Pokok (IDR)",
+      "baseRequired": "Diperlukan",
+      "allowancesLabel": "Tunjangan (IDR)",
+      "deductionsLabel": "Potongan (IDR)",
+      "paidAtLabel": "Tanggal Pembayaran (kosongkan untuk Draft)",
+      "paidAtHint": "Menetapkan tanggal akan menandai pembayaran sebagai DIBAYAR secara otomatis.",
+      "notesLabel": "Catatan",
+      "notesPlaceholder": "Catatan tambahan...",
+      "summary": "Ringkasan Pembayaran"
+    },
+    "createPayment": "Buat Pembayaran",
+    "updatePayment": "Perbarui Pembayaran",
+    "error": {
+      "title": "Tidak bisa memuat data gaji",
+      "generic": "Terjadi kesalahan",
+      "save": "Penyimpanan gagal. Silakan coba lagi."
+    },
+    "empty": {
+      "staff": "Belum ada karyawan",
+      "staffDesc": "Tambahkan karyawan pertama Anda untuk mulai melacak penggajian.",
+      "payments": "Belum ada pembayaran gaji",
+      "paymentsDesc": "Buat pembayaran gaji untuk karyawan Anda."
+    },
+    "filter": {
+      "status": "Status",
+      "allStatuses": "Semua Status",
+      "reset": "Reset"
+    },
+    "search": {
+      "staffPlaceholder": "Cari berdasarkan nama atau posisi...",
+      "paymentPlaceholder": "Cari berdasarkan nama karyawan atau periode..."
+    },
+    "confirmDeactivate": "Nonaktifkan karyawan ini?",
+    "confirmDelete": "Hapus pembayaran ini?"
   }
 }

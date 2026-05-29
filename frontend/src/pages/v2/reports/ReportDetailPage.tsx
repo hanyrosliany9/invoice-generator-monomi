@@ -534,7 +534,7 @@ export default function ReportDetailPageV2() {
 
       {/* Identity panel — period, project, client, last updated. */}
       <GlassPanel surface="glass" padding="lg" className="mb-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8">
           <div className="min-w-0 space-y-5">
             <div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">

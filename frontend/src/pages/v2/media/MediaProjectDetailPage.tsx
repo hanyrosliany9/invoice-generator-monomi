@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
+  Users, Folder,
   ArrowLeft, Upload, Image as ImageIcon, Film, Play, Trash2,
   MoreHorizontal, Share2, Copy, Link as LinkIcon, MessageCircle,
   CheckCircle2, X, Loader2, Eye, Globe, FolderOpen,
@@ -389,7 +389,7 @@ export default function MediaProjectDetailPageV2() {
 
       {/* Hero — identity + sharing panel. */}
       <GlassPanel surface="glass" padding="lg" className="order-3 md:order-1 mb-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8">
           <div className="min-w-0 space-y-5">
             {/* Creator */}
             <div className="flex items-start gap-4">

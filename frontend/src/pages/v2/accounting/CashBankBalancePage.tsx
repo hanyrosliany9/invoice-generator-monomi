@@ -21,7 +21,6 @@ import { DateDisplay } from '@/components/monomi/DateDisplay';
 import { DataTable } from '@/components/monomi/DataTable';
 import { MonomiDatePicker } from '@/components/monomi/MonomiDatePicker';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -96,16 +95,31 @@ export default function CashBankBalancePage() {
 
   const balances = useMemo(() => balanceData?.data ?? [], [balanceData]);
 
-  /* stats */
+  /* stats — latest period, split into Cash vs Bank (per account) */
   const stats = useMemo(() => {
-    const latest = balances[0];
-    const prev   = balances[1];
-    const closingLatest = toNumber(latest?.closingBalance);
-    const closingPrev   = toNumber(prev?.closingBalance);
-    const change        = closingLatest - closingPrev;
-    const totalInflow   = toNumber(latest?.totalInflow);
-    const totalOutflow  = toNumber(latest?.totalOutflow);
-    return { closingLatest, change, totalInflow, totalOutflow, latestPeriod: latest?.period ?? '—' };
+    let latestKey = 0;
+    for (const b of balances) {
+      const k = b.year * 100 + b.month;
+      if (k > latestKey) latestKey = k;
+    }
+    const latestYear = Math.floor(latestKey / 100);
+    const latestMonth = latestKey % 100;
+    const latestRows = balances.filter((b) => b.year === latestYear && b.month === latestMonth);
+    const cash = latestRows.filter((b) => b.group === 'CASH');
+    const bank = latestRows.filter((b) => b.group === 'BANK');
+    const sumClosing = (rows: CashBankBalance[]) =>
+      rows.reduce((s, b) => s + toNumber(b.closingBalance), 0);
+    const cashTotal = sumClosing(cash);
+    const bankTotal = sumClosing(bank);
+    return {
+      cash,
+      bank,
+      cashTotal,
+      bankTotal,
+      combined: cashTotal + bankTotal,
+      latestPeriod: latestRows[0]?.period ?? '—',
+      hasData: latestRows.length > 0,
+    };
   }, [balances]);
 
   /* mutations */
@@ -150,26 +164,16 @@ export default function CashBankBalancePage() {
       toast.error(t('accounting.cashBankBalance.validationPeriod', 'Please select a period first'));
       return;
     }
-    if (!form.openingBalance) {
-      toast.error(t('accounting.cashBankBalance.validationOpening', 'Opening balance is required'));
-      return;
-    }
     const d       = form.periodDate;
     const year    = d.getFullYear();
     const month   = d.getMonth() + 1;
     const monthId = MONTHS_ID[d.getMonth()] ?? String(month);
     const period  = `${monthId} ${year}`;
-    // First day of the month as YYYY-MM-DD
     const periodDate = `${year}-${String(month).padStart(2, '0')}-01`;
 
-    createMutation.mutate({
-      period,
-      periodDate,
-      year,
-      month,
-      openingBalance: parseFloat(form.openingBalance),
-      notes: form.notes || undefined,
-    });
+    // Opening balances are auto-chained per account; this just (re)syncs the
+    // period's cash/bank balances from posted journal entries.
+    createMutation.mutate({ period, periodDate, year, month, notes: form.notes || undefined });
   };
 
   /* Shell */
@@ -225,39 +229,27 @@ export default function CashBankBalancePage() {
         }
       />
 
-      {/* KPI band */}
+      {/* KPI band — Cash vs Bank vs combined (latest period) */}
       <section className="mb-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {isLoading ? (
-            Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[108px] rounded-lg" />)
+            Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-[108px] rounded-lg" />)
           ) : (
             <>
               <StatCard
-                label={t('accounting.cashBankBalance.statLatestBalance', 'Latest Balance')}
-                value={<MoneyDisplay amount={stats.closingLatest} className="text-success" />}
+                label={t('accounting.cashBankBalance.statCashTotal', 'Cash')}
+                value={<MoneyDisplay amount={stats.cashTotal} />}
                 sublabel={stats.latestPeriod}
               />
               <StatCard
-                label={t('accounting.cashBankBalance.statTotalInflow', 'Total Inflow (Last Period)')}
-                value={<MoneyDisplay amount={stats.totalInflow} className="text-success" />}
-                sublabel={t('accounting.cashBankBalance.statFromJournal', 'from journal entries')}
+                label={t('accounting.cashBankBalance.statBankTotal', 'Bank')}
+                value={<MoneyDisplay amount={stats.bankTotal} />}
+                sublabel={stats.latestPeriod}
               />
               <StatCard
-                label={t('accounting.cashBankBalance.statTotalOutflow', 'Total Outflow (Last Period)')}
-                value={<MoneyDisplay amount={stats.totalOutflow} className="text-danger" />}
-                sublabel={t('accounting.cashBankBalance.statFromJournal', 'from journal entries')}
-              />
-              <StatCard
-                label={t('accounting.cashBankBalance.statNetChange', 'Net Change')}
-                value={
-                  <div className={cn('flex items-center gap-1', stats.change >= 0 ? 'text-success' : 'text-danger')}>
-                    {stats.change >= 0
-                      ? <TrendingUp className="h-4 w-4 shrink-0" />
-                      : <TrendingDown className="h-4 w-4 shrink-0" />}
-                    <MoneyDisplay amount={Math.abs(stats.change)} />
-                  </div>
-                }
-                sublabel={stats.change >= 0 ? t('accounting.cashBankBalance.statIncreased', 'up from previous period') : t('accounting.cashBankBalance.statDecreased', 'down from previous period')}
+                label={t('accounting.cashBankBalance.statCombinedTotal', 'Total Cash & Bank')}
+                value={<MoneyDisplay amount={stats.combined} className="text-success" />}
+                sublabel={stats.latestPeriod}
               />
             </>
           )}
@@ -273,11 +265,10 @@ export default function CashBankBalancePage() {
           <div>
             <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-1">{t('accounting.cashBankBalance.howItWorksLabel', 'How It Works')}</p>
             <p className="text-sm text-text-secondary">
-              <span className="text-text-primary font-medium">{t('accounting.cashBankBalance.manualInput', 'Manual input:')} </span>{t('accounting.cashBankBalance.manualInputDesc', 'Period and Opening Balance.')}{' '}
-              <span className="text-text-primary font-medium">{t('accounting.cashBankBalance.autoCalc', 'Auto-calculated:')} </span>{t('accounting.cashBankBalance.autoCalcDesc', 'Total Inflow, Total Outflow, Closing Balance — sourced from all cash/bank journal transactions for that period.')}
+              {t('accounting.cashBankBalance.howItWorksV2', 'Each cash and bank account keeps its own running balance, derived automatically from posted journal entries (expenses, payments, etc.) and chained from the previous period. Cash and Bank are shown separately and summed into the total.')}
             </p>
             <p className="text-xs text-text-tertiary mt-1">
-              {t('accounting.cashBankBalance.formula', 'Formula:')} <span className="font-mono">Closing Balance = Opening + Inflow − Outflow</span>
+              {t('accounting.cashBankBalance.formula', 'Formula:')} <span className="font-mono">Closing = Opening + Inflow − Outflow</span> {t('accounting.cashBankBalance.perAccount', '(per account)')}
             </p>
           </div>
         </div>
@@ -287,37 +278,53 @@ export default function CashBankBalancePage() {
       <GlassPanel surface="glass" padding="none" className="overflow-hidden">
         <div className="px-5 py-4 border-b border-border-subtle flex items-center justify-between">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.cashBankBalance.historyLabel', 'Balance History by Period')}</p>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.cashBankBalance.byAccountLabel', 'Balances by account')}</p>
           </div>
-          <span className="text-xs text-text-tertiary">{balances.length} {t('cashBankBalance.periodCount', 'periods')}</span>
+          <span className="text-xs text-text-tertiary">{stats.latestPeriod}</span>
         </div>
 
         {isLoading ? (
           <div className="p-5 space-y-2">
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}
           </div>
-        ) : balances.length === 0 ? (
+        ) : !stats.hasData ? (
           <EmptyState
             icon={<BookOpen />}
             title={t('accounting.cashBankBalance.emptyTitle', 'No balance data yet')}
-            description={t('accounting.cashBankBalance.emptyDesc', 'Calculate the first period balance to start tracking your cash & bank position.')}
+            description={t('accounting.cashBankBalance.emptyDescV2', 'Record an expense or post a journal entry — cash & bank balances build automatically. Or click Recalculate to rebuild from history.')}
             action={
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
-                <Calculator className="h-4 w-4" /> {t('accounting.cashBankBalance.calcNewPeriod', 'Calculate New Period')}
+              <Button size="sm" onClick={() => recalcAllMutation.mutate()} disabled={recalcAllMutation.isPending}>
+                <RefreshCw className={cn('h-4 w-4', recalcAllMutation.isPending && 'animate-spin')} /> {t('accounting.cashBankBalance.recalcAll', 'Recalculate')}
               </Button>
             }
           />
         ) : (
           <div className="px-1 pb-1">
             <DataTable<CashBankBalance>
-              data={balances}
-              enablePagination
+              data={[...stats.cash, ...stats.bank]}
+              enablePagination={false}
               columns={[
                 {
-                  accessorKey: 'period',
-                  header: t('accounting.cashBankBalance.colPeriod', 'Period'),
+                  accessorKey: 'accountName',
+                  header: t('accounting.cashBankBalance.colAccount', 'Account'),
                   cell: ({ row }) => (
-                    <div className="font-medium text-sm text-text-primary">{row.original.period}</div>
+                    <div className="min-w-0">
+                      <div className="font-medium text-sm text-text-primary truncate">{row.original.accountName}</div>
+                      <div className="text-[11px] text-text-tertiary mt-0.5">
+                        <span className="font-mono mr-1.5">{row.original.accountCode}</span>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'px-1.5 py-0 text-[9px] uppercase tracking-wider border-transparent',
+                            row.original.group === 'CASH' ? 'bg-success/10 text-success' : 'bg-info/10 text-info',
+                          )}
+                        >
+                          {row.original.group === 'CASH'
+                            ? t('accounting.cashBankBalance.groupCash', 'Cash')
+                            : t('accounting.cashBankBalance.groupBank', 'Bank')}
+                        </Badge>
+                      </div>
+                    </div>
                   ),
                 },
                 {
@@ -420,9 +427,9 @@ export default function CashBankBalancePage() {
       >
         <DialogContent className="bg-bg-elevated border-border-subtle text-text-primary sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display">{t('accounting.cashBankBalance.dialogTitle', 'Calculate New Period Balance')}</DialogTitle>
+            <DialogTitle className="font-display">{t('accounting.cashBankBalance.dialogTitle', 'Calculate Period Balance')}</DialogTitle>
             <DialogDescription className="text-text-tertiary">
-              {t('accounting.cashBankBalance.dialogDesc', 'Enter the period and opening balance. Inflow/outflow totals are calculated automatically from journal entries.')}
+              {t('accounting.cashBankBalance.dialogDescV2', 'Select the month to (re)calculate. Per-account cash & bank balances are derived from posted journal entries.')}
             </DialogDescription>
           </DialogHeader>
 
@@ -441,38 +448,12 @@ export default function CashBankBalancePage() {
               </p>
             </div>
 
-            {/* Opening balance */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('accounting.cashBankBalance.fieldOpening', 'Opening Balance (IDR)')} *</label>
-              <Input
-                type="number"
-                value={form.openingBalance}
-                onChange={(e) => setForm((f) => ({ ...f, openingBalance: e.target.value }))}
-                placeholder="0"
-                className="bg-bg-sunken border-border-subtle text-text-primary"
-              />
-              <p className="text-xs text-text-tertiary">
-                {t('accounting.cashBankBalance.fieldOpeningHint', 'Usually equal to the closing balance of the previous period.')}
-              </p>
-            </div>
-
-            {/* Auto-calculated info */}
-            <div className="bg-bg-sunken rounded-lg p-4 border border-border-subtle">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-2">{t('accounting.cashBankBalance.autoCalculated', 'Auto-Calculated')}</p>
-              <div className="space-y-1.5 text-sm text-text-secondary">
-                <div className="flex items-center justify-between">
-                  <span>{t('accounting.cashBankBalance.colInflow', 'Total Inflow')}</span>
-                  <span className="text-text-tertiary text-xs">{t('accounting.cashBankBalance.fromCashJournal', 'from cash journal entries')}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>{t('accounting.cashBankBalance.colOutflow', 'Total Outflow')}</span>
-                  <span className="text-text-tertiary text-xs">{t('accounting.cashBankBalance.fromCashJournal', 'from cash journal entries')}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>{t('accounting.cashBankBalance.colClosing', 'Closing Balance')}</span>
-                  <span className="font-mono text-xs text-text-tertiary">= Opening + Inflow − Outflow</span>
-                </div>
-              </div>
+            {/* Auto-calculated note */}
+            <div className="bg-bg-sunken rounded-lg p-4 border border-border-subtle text-sm text-text-secondary">
+              {t(
+                'accounting.cashBankBalance.syncNote',
+                "Each cash/bank account's opening, inflow, outflow and closing for this month are calculated automatically from posted journal entries — and chained from the previous period.",
+              )}
             </div>
 
             {/* Notes */}

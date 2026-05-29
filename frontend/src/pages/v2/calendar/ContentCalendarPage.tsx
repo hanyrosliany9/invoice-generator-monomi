@@ -282,18 +282,26 @@ export default function ContentCalendarPageV2() {
 
   const publishMutation = useMutation({
     mutationFn: (id: string) => contentCalendarService.publishContent(id),
-    onSuccess: () => {
+    onSuccess: (resp) => {
       qc.invalidateQueries({ queryKey: ['content-calendar-v2'] });
       toast.success(t('content.published', 'Konten ditandai terbit.'));
+      // Unwrap double-wrapped response: axios response.data → { data: { data: item } }
+      const updated: ContentCalendarItem | undefined =
+        (resp as any)?.data?.data ?? (resp as any)?.data ?? undefined;
+      if (updated?.id) setSelectedItem(updated);
     },
     onError: () => toast.error(t('content.publishFailed', 'Gagal menerbitkan konten.')),
   });
 
   const archiveMutation = useMutation({
     mutationFn: (id: string) => contentCalendarService.archiveContent(id),
-    onSuccess: () => {
+    onSuccess: (resp) => {
       qc.invalidateQueries({ queryKey: ['content-calendar-v2'] });
       toast.success(t('content.archived', 'Konten diarsipkan.'));
+      // Unwrap double-wrapped response: axios response.data → { data: { data: item } }
+      const updated: ContentCalendarItem | undefined =
+        (resp as any)?.data?.data ?? (resp as any)?.data ?? undefined;
+      if (updated?.id) setSelectedItem(updated);
     },
     onError: () => toast.error(t('content.archiveFailed', 'Gagal mengarsipkan konten.')),
   });

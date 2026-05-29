@@ -393,7 +393,7 @@ export const QuotationForm = ({
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Client */}
               <div className="space-y-1.5">
                 <FieldLabel htmlFor="clientId" required>
@@ -767,7 +767,7 @@ export const QuotationForm = ({
             title={t('quotations.form.section.totalsTitle', 'Ringkasan Nilai')}
           />
           <GlassPanel surface="glass" padding="lg">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 lg:gap-12">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 lg:gap-12">
               {/* Tax toggle */}
               <div className="space-y-3">
                 <label className="flex items-start gap-3 cursor-pointer">
@@ -928,7 +928,7 @@ export const QuotationForm = ({
         {/* ── Footer actions ─────────────────────────────────────
             Mirrors the header — same actions, easier reach on long forms.
             Sticky on mobile so Save is always reachable without scrolling. */}
-        <div className="sticky bottom-0 md:static -mx-4 sm:-mx-6 lg:-mx-8 md:mx-0 px-4 sm:px-6 lg:px-8 md:px-0 py-3 md:py-0 bg-bg-base/95 md:bg-transparent backdrop-blur md:backdrop-blur-none border-t md:border-t-0 border-border-subtle flex items-center justify-end gap-2">
+        <div className="sticky bottom-0 md:static -mx-4 sm:-mx-6 md:-mx-8 md:mx-0 px-4 sm:px-6 md:px-8 md:px-0 py-3 md:py-0 bg-bg-base/95 md:bg-transparent backdrop-blur md:backdrop-blur-none border-t md:border-t-0 border-border-subtle flex items-center justify-end gap-2">
           <Button
             type="button"
             variant="ghost"

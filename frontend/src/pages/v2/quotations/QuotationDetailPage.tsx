@@ -315,7 +315,7 @@ export default function QuotationDetailPageV2() {
         <div className="space-y-5">
           <Skeleton className="h-40 w-full rounded-lg" />
           <Skeleton className="h-72 w-full rounded-lg" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <Skeleton className="h-56 w-full rounded-lg" />
             <Skeleton className="h-56 w-full rounded-lg" />
           </div>
@@ -538,7 +538,7 @@ export default function QuotationDetailPageV2() {
           where the eye lands. Single GlassPanel = one band, not four. */}
       <section className="mb-12">
         <GlassPanel surface="glass" padding="lg">
-          <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr_1fr] gap-8 lg:gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] lg:grid-cols-[1.4fr_1fr_1fr] gap-8 md:gap-10">
             {/* Klien */}
             <div className="min-w-0">
               <Eyebrow>Klien</Eyebrow>
@@ -746,7 +746,7 @@ export default function QuotationDetailPageV2() {
 
       {/* ── Terms / scope + Workflow timeline — paired row.
           Keeps a 2:1 visual weight where prose is wider than the timeline. */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-12">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
         {/* Scope + terms */}
         <div className="lg:col-span-2 space-y-5">
           {quotation.scopeOfWork && (

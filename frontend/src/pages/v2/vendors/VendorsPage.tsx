@@ -414,7 +414,7 @@ export default function VendorsPageV2() {
               className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
             >
               <Plus className="h-4 w-4" />
-              {t('vendors.create', 'Vendor Baru')}
+              {t('vendors.create.title', 'Vendor Baru')}
             </Button>
           }
         />
@@ -662,7 +662,7 @@ export default function VendorsPageV2() {
                       className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                     >
                       <Plus className="h-4 w-4" />
-                      {t('vendors.create', 'Vendor Baru')}
+                      {t('vendors.create.title', 'Vendor Baru')}
                     </Button>
                   }
                 />

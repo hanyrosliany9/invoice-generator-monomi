@@ -100,6 +100,9 @@ export default function InvoicesPageV2() {
   const { data: invoices = [], isLoading, error, refetch } = useQuery({
     queryKey: ['invoices'],
     queryFn: invoiceService.getInvoices,
+    // Keep showing the previous list while a background refetch runs so the
+    // page never blanks on revisit (TanStack Query v5 equivalent of keepPreviousData).
+    placeholderData: (prev) => prev,
   });
 
   /* ----- mutations (row actions) ----- */

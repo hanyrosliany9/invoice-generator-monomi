@@ -1461,7 +1461,7 @@ export default function SettingsPageV2() {
         {/* Two-column layout: nav rail (320px) + content area.
             Falls back to stacked nav-then-content on small screens
             so the body always has room to breathe. */}
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] lg:grid-cols-[260px_1fr] gap-6">
           {/* Left nav — quiet, anchored, doesn't compete with the form */}
           <aside className="lg:sticky lg:top-6 lg:self-start">
             <GlassPanel surface="glass" padding="sm" className="p-2">

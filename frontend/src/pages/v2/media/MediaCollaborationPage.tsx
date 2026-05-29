@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
+  Users, Folder,
   Plus, Search, MoreHorizontal, Trash2, Film,
   X, Eye, FolderOpen,
 } from 'lucide-react';
@@ -29,6 +29,9 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { useAuthStore } from '@/store/auth';
 import { mediaCollabService, type MediaProject } from '@/services/media-collab';
 import { cn } from '@/lib/utils';
@@ -54,6 +57,9 @@ export default function MediaCollaborationPageV2() {
 
   const [searchText, setSearchText] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'busiest'>('recent');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDescription, setNewProjectDescription] = useState('');
 
   const { data: projects = [], isLoading, error, refetch } = useQuery({
     queryKey: ['media-projects'],
@@ -68,6 +74,25 @@ export default function MediaCollaborationPageV2() {
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message || t('mediaCollab.deleteFailed', 'Gagal menghapus proyek.'));
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      mediaCollabService.createProject({
+        name: newProjectName.trim(),
+        description: newProjectDescription.trim() || undefined,
+      }),
+    onSuccess: (project) => {
+      queryClient.invalidateQueries({ queryKey: ['media-projects'] });
+      toast.success(t('mediaCollab.createSuccess', 'Proyek "{{name}}" berhasil dibuat.', { name: project.name }));
+      setCreateDialogOpen(false);
+      setNewProjectName('');
+      setNewProjectDescription('');
+      navigate(`/media-collab/projects/${project.id}`);
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || t('mediaCollab.createFailed', 'Gagal membuat proyek.'));
     },
   });
 
@@ -167,7 +192,7 @@ export default function MediaCollaborationPageV2() {
         title={t('mediaCollaboration.title', 'Kolaborasi Media')}
         description={t('mediaCollaboration.description', 'Ruang berbagi video dan foto untuk tim produksi — komentari, setujui, dan kirim ke klien.')}
         actions={
-          <Button onClick={() => navigate('/media-collab')} size="sm">
+          <Button onClick={() => setCreateDialogOpen(true)} size="sm">
             <Plus className="h-4 w-4" />
             {t('mediaCollab.newProject', 'Proyek Baru')}
           </Button>
@@ -257,7 +282,7 @@ export default function MediaCollaborationPageV2() {
 
         {/* Body */}
         {isLoading ? (
-          <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-[76px] rounded-xl" />
             ))}
@@ -281,7 +306,7 @@ export default function MediaCollaborationPageV2() {
                   {t('common.resetFilters', 'Reset Filter')}
                 </Button>
               ) : (
-                <Button onClick={() => navigate('/media-collab')} size="sm">
+                <Button onClick={() => setCreateDialogOpen(true)} size="sm">
                   <Plus className="h-4 w-4" />
                   {t('mediaCollab.newProject', 'Proyek Baru')}
                 </Button>
@@ -289,7 +314,7 @@ export default function MediaCollaborationPageV2() {
             }
           />
         ) : (
-          <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
             {filtered.map((p) => (
               <ProjectCard
                 key={p.id}
@@ -301,6 +326,86 @@ export default function MediaCollaborationPageV2() {
           </div>
         )}
       </GlassPanel>
+      {/* ─────────────────────────────────────────────────────────────
+          Create Project Dialog
+         ───────────────────────────────────────────────────────────── */}
+      <Dialog
+        open={createDialogOpen}
+        onOpenChange={(open) => {
+          setCreateDialogOpen(open);
+          if (!open) {
+            setNewProjectName('');
+            setNewProjectDescription('');
+          }
+        }}
+      >
+        <DialogContent className="bg-bg-base border-border-default text-text-primary sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-text-primary font-display font-semibold">
+              {t('mediaCollab.createProject', 'Buat Proyek Media Baru')}
+            </DialogTitle>
+            <DialogDescription className="text-text-tertiary text-sm">
+              {t('mediaCollab.createProjectDesc', 'Beri nama proyek untuk memulai ruang kolaborasi media baru.')}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!newProjectName.trim()) return;
+              createMutation.mutate();
+            }}
+            className="space-y-4 pt-2"
+          >
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">
+                {t('mediaCollab.projectName', 'Nama Proyek')}
+                <span className="text-danger ml-1">*</span>
+              </label>
+              <Input
+                autoFocus
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                placeholder={t('mediaCollab.projectNamePlaceholder', 'mis. Kampanye Q3 — Foto Produk')}
+                className="bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
+                maxLength={100}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">
+                {t('mediaCollab.projectDescription', 'Deskripsi')}
+                <span className="text-text-tertiary ml-1 font-normal normal-case">{t('common.optional', '(opsional)')}</span>
+              </label>
+              <Input
+                value={newProjectDescription}
+                onChange={(e) => setNewProjectDescription(e.target.value)}
+                placeholder={t('mediaCollab.projectDescriptionPlaceholder', 'Ringkasan singkat tujuan proyek ini…')}
+                className="bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
+                maxLength={500}
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setCreateDialogOpen(false)}
+                disabled={createMutation.isPending}
+              >
+                {t('common.cancel', 'Batal')}
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={!newProjectName.trim() || createMutation.isPending}
+              >
+                {createMutation.isPending
+                  ? t('mediaCollab.creating', 'Membuat…')
+                  : t('mediaCollab.createProjectSubmit', 'Buat Proyek')}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Shell>
   );
 }

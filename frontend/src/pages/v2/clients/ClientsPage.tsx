@@ -74,6 +74,7 @@ export default function ClientsPageV2() {
   } = useQuery({
     queryKey: ['clients'],
     queryFn: clientService.getClients,
+    placeholderData: (prev) => prev,
   });
 
   const filteredClients = useMemo(() => {
@@ -283,7 +284,7 @@ export default function ClientsPageV2() {
               className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
             >
               <Plus className="h-4 w-4" />
-              {t('clients.create', 'Klien Baru')}
+              {t('clients.create.title', 'Klien Baru')}
             </Button>
           }
         />
@@ -446,7 +447,7 @@ export default function ClientsPageV2() {
                       className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                     >
                       <Plus className="h-4 w-4" />
-                      {t('clients.create', 'Klien Baru')}
+                      {t('clients.create.title', 'Klien Baru')}
                     </Button>
                   }
                 />

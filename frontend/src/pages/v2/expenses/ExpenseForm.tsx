@@ -48,6 +48,8 @@ export const expenseFormSchema = z.object({
   expenseDate:  z.date({ required_error: 'Expense date is required' }),
   description:  z.string().min(1, 'Description is required').max(500, 'Description is too long'),
   grossAmount:  z.coerce.number().min(1, 'Amount must be greater than 0'),
+  // Which balance ("Saldo") to deduct: Cash (Kas) or Bank (default bank account)
+  paymentSource: z.enum(['CASH', 'BANK']),
 
   // 02 · Vendor
   vendorName:    z.string().min(1, 'Vendor name is required').max(160, 'Vendor name is too long'),
@@ -90,6 +92,7 @@ export const emptyExpenseFormValues: ExpenseFormValues = {
   expenseDate:       new Date(),
   description:       '',
   grossAmount:       0,
+  paymentSource:     'CASH',
   vendorName:        '',
   vendorNPWP:        '',
   vendorAddress:     '',
@@ -406,7 +409,7 @@ export const ExpenseForm = ({
       noValidate
       className="space-y-4"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_340px] gap-4 items-start">
         {/* ============================================================ */}
         {/* LEFT — body                                                  */}
         {/* ============================================================ */}
@@ -513,6 +516,40 @@ export const ExpenseForm = ({
                   />
                 </div>
                 <FieldError message={errors.grossAmount?.message} />
+              </div>
+
+              {/* Payment source — which "Saldo" to deduct */}
+              <div className="space-y-1.5">
+                <FieldLabel htmlFor="ef-source">{t('expenseForm.field.paymentSource', 'Pay from (Saldo)')}</FieldLabel>
+                <Controller
+                  control={control}
+                  name="paymentSource"
+                  render={({ field }) => (
+                    <div className="inline-flex w-full sm:w-auto rounded-md border border-border-subtle bg-bg-sunken p-0.5 text-sm" role="group">
+                      {(['CASH', 'BANK'] as const).map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() => field.onChange(opt)}
+                          className={cn(
+                            'flex-1 sm:flex-none px-5 py-1.5 rounded-[5px] font-medium transition-colors',
+                            field.value === opt
+                              ? 'bg-bg-raised text-text-primary shadow-[var(--shadow-glow)]'
+                              : 'text-text-tertiary hover:text-text-secondary',
+                          )}
+                        >
+                          {opt === 'CASH'
+                            ? t('expenseForm.sourceCash', 'Cash (Kas)')
+                            : t('expenseForm.sourceBank', 'Bank')}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                />
+                <p className="text-xs text-text-tertiary">
+                  {t('expenseForm.field.paymentSourceHint', 'Cash deducts the Kas balance; Bank deducts the default bank account.')}
+                </p>
               </div>
 
               {/* Description */}
@@ -1054,7 +1091,7 @@ export const ExpenseForm = ({
       {/* ============================================================ */}
       {/* Sticky bottom action bar — mirrors InvoiceForm rhythm        */}
       {/* ============================================================ */}
-      <div className="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mt-8 bg-bg-base/90 backdrop-blur-[24px] border-t border-border-subtle">
+      <div className="sticky bottom-0 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-4 mt-8 bg-bg-base/90 backdrop-blur-[24px] border-t border-border-subtle">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <p className="text-[11px] text-text-tertiary">
             {mode === 'create'

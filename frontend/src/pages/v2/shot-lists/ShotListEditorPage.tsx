@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
-  ArrowLeft, Plus, Save, Trash2, Loader2, Film,
+  ArrowLeft, Plus, Save, Trash2, Loader2, Film, Download,
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
@@ -152,7 +152,7 @@ export default function ShotListEditorPageV2() {
 
       for (let i = 0; i < values.shots.length; i++) {
         const s = values.shots[i];
-        const payload = {
+        const createPayload = {
           sceneId,
           shotNumber:     s.shotNumber,
           description:    s.description || undefined,
@@ -164,9 +164,12 @@ export default function ShotListEditorPageV2() {
           order:          i,
         };
         if (s.id && originalIds.has(s.id)) {
-          await shotListsApi.updateShot(s.id, payload);
+          // UpdateShotDto omits sceneId (OmitType) — strip it to avoid
+          // forbidNonWhitelisted 400.
+          const { sceneId: _sceneId, ...updatePayload } = createPayload;
+          await shotListsApi.updateShot(s.id, updatePayload);
         } else {
-          await shotListsApi.createShot(payload);
+          await shotListsApi.createShot(createPayload);
         }
       }
     },
@@ -181,6 +184,29 @@ export default function ShotListEditorPageV2() {
   });
 
   const onSubmit: SubmitHandler<FormValues> = (values) => saveMutation.mutateAsync(values);
+
+  /* ---------- PDF download ---------- */
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const handleDownloadPdf = async () => {
+    if (!id) return;
+    setIsDownloadingPdf(true);
+    try {
+      const blob = await shotListsApi.generatePDF(id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `shot-list-${shotList?.name ?? id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(t('shotListEditor.pdfDownloaded', 'PDF downloaded'));
+    } catch {
+      toast.error(t('shotListEditor.pdfFailed', 'Failed to generate PDF'));
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
   /* ---------- loading / error guards ---------- */
   if (isLoading) {
@@ -447,7 +473,7 @@ export default function ShotListEditorPageV2() {
           </FormSection>
 
           {/* sticky action bar */}
-          <div className="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mt-8 bg-bg-base/90 backdrop-blur-[24px] border-t border-border-subtle">
+          <div className="sticky bottom-0 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-4 mt-8 bg-bg-base/90 backdrop-blur-[24px] border-t border-border-subtle">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="text-xs text-text-tertiary">
                 {isDirty
@@ -455,6 +481,21 @@ export default function ShotListEditorPageV2() {
                   : t('common.noPendingChanges', 'No pending changes.')}
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloadingPdf || isPending}
+                  className="border-border-subtle text-text-secondary hover:text-text-primary"
+                >
+                  {isDownloadingPdf ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  {t('shotListEditor.downloadPdf', 'Download PDF')}
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"
@@ -488,7 +529,7 @@ export default function ShotListEditorPageV2() {
 
         {/* Deferred-feature callout — keeps expectations honest. */}
         <p className="mt-6 text-[11px] text-text-tertiary leading-relaxed">
-          {t('shotListEditor.footnote', 'Note: Scene grouping (INT/EXT, Day/Night, location), storyboard uploads, shot status (planned/shot/wrapped), drag-to-reorder, and PDF export are still available in the classic view. The v2 view focuses on structured shot CRUD in a single scene.')}
+          {t('shotListEditor.footnote', 'Note: Scene grouping (INT/EXT, Day/Night, location), storyboard uploads, shot status (planned/shot/wrapped), and drag-to-reorder are still available in the classic view. The v2 view focuses on structured shot CRUD in a single scene. Use the Download PDF button above to export this shot list.')}
         </p>
       </PageContainer>
     </Shell>

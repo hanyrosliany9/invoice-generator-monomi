@@ -18,7 +18,7 @@ export const PageHeader = ({
 }: PageHeaderProps) => (
   <header className={cn(
     'mb-10',
-    sticky && 'sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-bg-base/85 backdrop-blur-[24px] border-b border-border-subtle',
+    sticky && 'sticky top-0 z-10 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-4 bg-bg-base/85 backdrop-blur-[24px] border-b border-border-subtle',
     className,
   )}>
     {breadcrumbs && breadcrumbs.length > 0 && (

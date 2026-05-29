@@ -43,7 +43,7 @@
 /*    - "Send Call Sheet" actual distribution (button stubs status)    */
 /* ------------------------------------------------------------------ */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -52,8 +52,8 @@ import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   ClapperboardIcon as Clapperboard, ArrowLeft, Send, CheckCircle2,
   AlertTriangle, Plus, Trash2, Save, Loader2,
-  Clock, MapPin, FileText as NotesIcon, Info, MoreHorizontal,
-  CloudSun, HeartPulse,
+  Clock, MapPin, FileText as NotesIcon, MoreHorizontal,
+  CloudSun, HeartPulse, Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -418,13 +418,13 @@ export default function CallSheetEditorPageV2() {
     onError: () => toast.error(t('callSheets.deleteFailed', 'Gagal menghapus call sheet.')),
   });
 
-  /* ----- header save submit ----- */
-  const handleSaveHeader = headerForm.handleSubmit((values) => {
+  /* ----- header dto builder (shared by header + save-all) ----- */
+  const buildHeaderDto = (values: CallSheetHeaderForm): Partial<CallSheet> => {
     const toNumOrUndef = (v: string) => {
       const n = parseInt(v, 10);
       return Number.isFinite(n) ? n : undefined;
     };
-    updateMutation.mutate({
+    return {
       productionName: values.productionName || undefined,
       director: values.director || undefined,
       producer: values.producer || undefined,
@@ -446,8 +446,80 @@ export default function CallSheetEditorPageV2() {
       hospitalPhone: values.hospitalPhone || undefined,
       generalNotes: values.generalNotes || undefined,
       productionNotes: values.productionNotes || undefined,
-    });
-  });
+    };
+  };
+
+  /* ----- save EVERYTHING as one call sheet ----- */
+  // The whole sheet is persisted in one action: header fields plus every
+  // crew/cast/activity row (new rows are created, existing rows updated).
+  // This is what "save as one unit" means — no more silently-dropped rows.
+  const [isSavingAll, setIsSavingAll] = useState(false);
+  const handleSaveAll = async () => {
+    if (!id) return;
+    setIsSavingAll(true);
+    try {
+      await callSheetsApi.update(id, buildHeaderDto(headerForm.getValues()));
+
+      const { crew, cast, activities } = arraysForm.getValues();
+
+      for (const row of crew) {
+        if (!row.department || !row.position || !row.name) continue;
+        const dto = {
+          department: row.department,
+          position: row.position,
+          name: row.name,
+          callTime: row.callTime || '7:00 AM',
+          phone: row.phone || undefined,
+          email: row.email || undefined,
+        };
+        if (row.id) await callSheetsApi.updateCrew(row.id, dto as any);
+        else await callSheetsApi.addCrew(id, dto);
+      }
+
+      for (const row of cast) {
+        if (!row.actorName) continue;
+        if (row.id) {
+          await callSheetsApi.updateCast(row.id, {
+            actorName: row.actorName,
+            character: row.character || undefined,
+            callTime: row.callTime || '8:00 AM',
+            castNumber: row.castNumber || undefined,
+            status: row.status,
+          } as any);
+        } else {
+          await callSheetsApi.addCast(id, {
+            actorName: row.actorName,
+            character: row.character || undefined,
+            callTime: row.callTime || '8:00 AM',
+            castNumber: row.castNumber || undefined,
+          });
+        }
+      }
+
+      for (const row of activities) {
+        if (!row.activityName) continue;
+        const dto = {
+          activityType: (row.activityType || 'GENERAL') as any,
+          activityName: row.activityName,
+          startTime: row.startTime || '8:00 AM',
+          endTime: row.endTime || undefined,
+          location: row.location || undefined,
+          notes: row.notes || undefined,
+        };
+        if (row.id) await callSheetsApi.updateActivity(row.id, dto as any);
+        else await callSheetsApi.addActivity(id, dto);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      // Clear the dirty flag so the bar reflects the saved state.
+      headerForm.reset(headerForm.getValues());
+      toast.success(t('callSheetEditor.savedAll', 'Call sheet tersimpan.'));
+    } catch {
+      toast.error(t('callSheetEditor.saveAllFailed', 'Gagal menyimpan call sheet.'));
+    } finally {
+      setIsSavingAll(false);
+    }
+  };
 
   /* ----- status workflow ----- */
   const handleStatusChange = (next: CallSheetStatus) => {
@@ -462,6 +534,29 @@ export default function CallSheetEditorPageV2() {
       deleteMutation.mutate();
     }
   };
+
+  /* ----- PDF download ----- */
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const handleDownloadPdf = useCallback(async () => {
+    if (!id) return;
+    setIsDownloadingPdf(true);
+    try {
+      const blob = await callSheetsApi.generatePDF(id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `call-sheet-${callSheet?.productionName ?? id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(t('callSheets.editor.pdfDownloaded', 'PDF berhasil diunduh.'));
+    } catch {
+      toast.error(t('callSheets.editor.pdfFailed', 'Gagal mengunduh PDF.'));
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  }, [id, callSheet, t]);
 
   /* ----- derived ----- */
   const statusKey = (callSheet?.status ?? 'DRAFT') as CallSheetStatus;
@@ -622,10 +717,15 @@ export default function CallSheetEditorPageV2() {
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => navigate(`/call-sheets/${id}`)}>
-                  <FileText className="h-3.5 w-3.5" />
-                  {t('callSheetEditor.openInV1', 'Open in v1 (PDF / auto-fill)')}
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloadingPdf}
+                >
+                  {isDownloadingPdf
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <Download className="h-3.5 w-3.5" />}
+                  {t('callSheetEditor.downloadPdf', 'Download PDF')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -645,30 +745,6 @@ export default function CallSheetEditorPageV2() {
       <div className="md:hidden mb-5 rounded-md border border-warning/30 bg-warning/[0.06] px-3.5 py-2.5 text-xs text-warning">
         {t('common.mobileNotice', 'Best editing experience on tablet or desktop. Some controls may be hidden on small screens.')}
       </div>
-
-      {/* Deferred-features banner — honest about scope so producers
-          know to bounce to v1 for PDF/auto-fill. */}
-      <section className="mb-5">
-        <GlassPanel
-          surface="glass"
-          padding="sm"
-          className="flex items-start gap-3 px-4 py-3 border-info/25 bg-info/5"
-        >
-          <Info className="h-4 w-4 mt-0.5 text-info shrink-0" />
-          <div className="text-sm text-text-secondary leading-relaxed">
-            <span className="font-medium text-text-primary">{t('callSheetEditor.deferredTitle', 'v2 — core features only.')}</span>{' '}
-            {t('callSheetEditor.deferredDesc', 'Advanced features (PDF export, weather/hospital auto-fill, drag-to-reorder, FILM/PHOTO subsections like shot list, wardrobe, meal breaks) are available in the')}{' '}
-            <button
-              type="button"
-              className="underline underline-offset-2 hover:text-text-primary"
-              onClick={() => navigate(`/call-sheets/${id}`)}
-            >
-              {t('callSheetEditor.classicEditor', 'classic editor')}
-            </button>
-            .
-          </div>
-        </GlassPanel>
-      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 items-start">
         {/* ============================================================ */}
@@ -1380,12 +1456,12 @@ export default function CallSheetEditorPageV2() {
       {/* ============================================================ */}
       {/* Sticky action bar — header save                              */}
       {/* ============================================================ */}
-      <div className="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mt-8 bg-bg-base/90 backdrop-blur-[24px] border-t border-border-subtle">
+      <div className="sticky bottom-0 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-4 mt-8 bg-bg-base/90 backdrop-blur-[24px] border-t border-border-subtle">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="text-xs text-text-tertiary">
             {headerForm.formState.isDirty
-              ? t('callSheetEditor.unsavedHeaderChanges', 'Header changes not yet saved.')
-              : t('callSheetEditor.savedHeaderChanges', 'All header changes saved. Crew/talent/schedule rows save individually.')}
+              ? t('callSheetEditor.unsavedChanges', 'Ada perubahan yang belum disimpan.')
+              : t('callSheetEditor.savedAllChanges', 'Semua perubahan tersimpan.')}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -1398,11 +1474,11 @@ export default function CallSheetEditorPageV2() {
             </Button>
             <Button
               type="button"
-              onClick={handleSaveHeader}
-              disabled={updateMutation.isPending || !headerForm.formState.isDirty}
-              className="min-w-[140px]"
+              onClick={handleSaveAll}
+              disabled={isSavingAll}
+              className="min-w-[160px]"
             >
-              {updateMutation.isPending ? (
+              {isSavingAll ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   {t('common.saving', 'Saving...')}
@@ -1410,7 +1486,7 @@ export default function CallSheetEditorPageV2() {
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  {t('callSheetEditor.saveHeader', 'Save Header')}
+                  {t('callSheetEditor.saveAll', 'Simpan Call Sheet')}
                 </>
               )}
             </Button>
