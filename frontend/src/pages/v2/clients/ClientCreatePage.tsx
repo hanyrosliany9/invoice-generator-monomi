@@ -53,7 +53,7 @@ export default function ClientCreatePageV2() {
           name: client.name,
         }),
       );
-      navigate(`/v2/clients/${client.id}`);
+      navigate(`/clients/${client.id}`);
     },
     onError: (error: unknown) => {
       const message =
@@ -102,7 +102,7 @@ export default function ClientCreatePageV2() {
             'Tambahkan klien baru untuk mulai mencatat proyek, penawaran, dan invoice.',
           )}
           breadcrumbs={[
-            { label: t('clients.title', 'Klien'), href: '/v2/clients' },
+            { label: t('clients.title', 'Klien'), href: '/clients' },
             { label: t('clients.create.title', 'Klien Baru') },
           ]}
           actions={
@@ -110,7 +110,7 @@ export default function ClientCreatePageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/v2/clients')}
+                onClick={() => navigate('/clients')}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >

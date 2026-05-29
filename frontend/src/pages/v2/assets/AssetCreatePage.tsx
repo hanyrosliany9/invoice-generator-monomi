@@ -52,7 +52,7 @@ export default function AssetCreatePageV2() {
           name: asset.name || asset.assetCode || 'baru',
         }),
       );
-      navigate(`/v2/assets/${asset.id}`);
+      navigate(`/assets/${asset.id}`);
     },
     onError: (error: unknown) => {
       const message =
@@ -116,7 +116,7 @@ export default function AssetCreatePageV2() {
             'Tambahkan aset baru — identitas, akuisisi, lokasi, dan parameter penyusutan.',
           )}
           breadcrumbs={[
-            { label: t('assets.title', 'Aset'), href: '/v2/assets' },
+            { label: t('assets.title', 'Aset'), href: '/assets' },
             { label: t('assets.create.title', 'Aset Baru') },
           ]}
           actions={
@@ -124,7 +124,7 @@ export default function AssetCreatePageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/v2/assets')}
+                onClick={() => navigate('/assets')}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >

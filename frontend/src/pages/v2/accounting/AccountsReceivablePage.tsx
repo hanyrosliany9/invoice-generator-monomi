@@ -357,7 +357,7 @@ export default function AccountsReceivablePageV2() {
               <ARTable
                 rows={filtered}
                 total={stats.total}
-                onRowClick={(row) => row.invoiceId && navigate(`/v2/invoices/${row.invoiceId}`)}
+                onRowClick={(row) => row.invoiceId && navigate(`/invoices/${row.invoiceId}`)}
               />
             </div>
           )}

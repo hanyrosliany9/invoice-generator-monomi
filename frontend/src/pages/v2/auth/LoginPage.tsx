@@ -40,7 +40,7 @@ export const LoginPage: React.FC = () => {
     onSuccess: (data) => {
       setErrorMessage(null)
       login(data.user, data.access_token, data.refresh_token, data.expires_in)
-      navigate('/v2')
+      navigate('/')
     },
     onError: (error: any) => {
       setErrorMessage(

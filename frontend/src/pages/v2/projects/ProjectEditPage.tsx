@@ -144,7 +144,7 @@ export default function ProjectEditPageV2() {
       toast.success(
         t('projectEdit.success', 'Changes for "{{name}}" saved.', { name: updated.number || updated.description }),
       );
-      navigate('/v2/projects');
+      navigate('/projects');
     },
     onError: (err: unknown) => {
       const message =
@@ -194,7 +194,7 @@ export default function ProjectEditPageV2() {
           <PageHeader
             title={t('projectEdit.notFoundTitle', 'Project not found')}
             breadcrumbs={[
-              { label: t('projectEdit.listLabel', 'Projects'), href: '/v2/projects' },
+              { label: t('projectEdit.listLabel', 'Projects'), href: '/projects' },
               { label: t('projectEdit.notFound', 'Not found') },
             ]}
           />
@@ -212,7 +212,7 @@ export default function ProjectEditPageV2() {
                   {t('projectEdit.retry', 'Try Again')}
                 </Button>
                 <Button
-                  onClick={() => navigate('/v2/projects')}
+                  onClick={() => navigate('/projects')}
                   className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                 >
                   {t('projectEdit.backToList', 'Back to Projects')}
@@ -236,7 +236,7 @@ export default function ProjectEditPageV2() {
           <PageHeader
             title={t('projectEdit.loading', 'Loading...')}
             breadcrumbs={[
-              { label: t('projectEdit.listLabel', 'Projects'), href: '/v2/projects' },
+              { label: t('projectEdit.listLabel', 'Projects'), href: '/projects' },
               { label: '…' },
             ]}
           />
@@ -299,10 +299,10 @@ export default function ProjectEditPageV2() {
                 })
           }
           breadcrumbs={[
-            { label: t('projectEdit.listLabel', 'Projects'), href: '/v2/projects' },
+            { label: t('projectEdit.listLabel', 'Projects'), href: '/projects' },
             {
               label: project.number || project.description,
-              href: `/v2/projects/${id}`,
+              href: `/projects/${id}`,
             },
             { label: t('projectEdit.crumb', 'Edit') },
           ]}
@@ -311,7 +311,7 @@ export default function ProjectEditPageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate(`/v2/projects`)}
+                onClick={() => navigate(`/projects`)}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >

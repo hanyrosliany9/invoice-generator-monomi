@@ -109,7 +109,7 @@ export default function ExpenseDetailPageV2() {
     mutationFn: () => expenseService.deleteExpense(id!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      navigate('/v2/expenses');
+      navigate('/expenses');
     },
   });
 
@@ -185,7 +185,7 @@ export default function ExpenseDetailPageV2() {
           }
           action={
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/v2/expenses')}>
+              <Button variant="outline" size="sm" onClick={() => navigate('/expenses')}>
                 <ArrowLeft className="h-4 w-4" />
                 {t('expenseDetail.backToList', 'Back to Expenses')}
               </Button>
@@ -232,7 +232,7 @@ export default function ExpenseDetailPageV2() {
       {/* Breadcrumb back link — quiet, sits above the H1 like v2/invoices. */}
       <div className="mb-4">
         <Link
-          to="/v2/expenses"
+          to="/expenses"
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
@@ -372,7 +372,7 @@ export default function ExpenseDetailPageV2() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => navigate(`/v2/clients/${expense.client!.id}`)}
+                    onClick={() => navigate(`/clients/${expense.client!.id}`)}
                     className="inline-flex items-center gap-1.5 text-sm text-text-primary hover:text-text-secondary transition-colors"
                   >
                     <Users className="h-3.5 w-3.5 text-text-tertiary" />

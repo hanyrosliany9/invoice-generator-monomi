@@ -367,7 +367,7 @@ export default function MilestoneAnalyticsPageV2() {
           <PageHeader
             title={t('milestones.analytics.title', 'Analitik Milestone')}
             breadcrumbs={[
-              { label: t('common.analytics', 'Analitik'), href: '/v2' },
+              { label: t('common.analytics', 'Analitik'), href: '/' },
               { label: t('milestones.analytics.title', 'Analitik Milestone') },
             ]}
           />
@@ -426,7 +426,7 @@ export default function MilestoneAnalyticsPageV2() {
             'Performa pembayaran milestone lintas proyek — siklus, ketepatan waktu, dan arus kas.',
           )}
           breadcrumbs={[
-            { label: t('common.analytics', 'Analitik'), href: '/v2' },
+            { label: t('common.analytics', 'Analitik'), href: '/' },
             { label: t('milestones.analytics.title', 'Analitik Milestone') },
           ]}
           actions={
@@ -923,7 +923,7 @@ export default function MilestoneAnalyticsPageV2() {
                     // payload carries a projectId we can resolve. The classic
                     // page didn't navigate, so this is a quiet enhancement.
                     const m = row as unknown as { projectId?: string };
-                    if (m.projectId) navigate(`/v2/projects/${m.projectId}`);
+                    if (m.projectId) navigate(`/projects/${m.projectId}`);
                   }}
                 />
               </div>

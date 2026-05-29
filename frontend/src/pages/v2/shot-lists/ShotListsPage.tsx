@@ -112,7 +112,7 @@ export default function ShotListsPageV2() {
       queryClient.invalidateQueries({ queryKey: ['shot-lists'] });
       toast.success(t('shotLists.createSuccess', 'Shot list created'));
       setCreateOpen(false);
-      navigate(`/v2/shot-lists/${created.id}`);
+      navigate(`/shot-lists/${created.id}`);
     },
     onError: (err: Error) => {
       toast.error(err.message || t('shotLists.createFailed', 'Failed to create shot list'));
@@ -261,7 +261,7 @@ export default function ShotListsPageV2() {
             <div className="px-1 pb-1">
               <DataTable<ShotList>
                 data={filtered}
-                onRowClick={(row) => navigate(`/v2/shot-lists/${row.id}`)}
+                onRowClick={(row) => navigate(`/shot-lists/${row.id}`)}
                 enablePagination
                 columns={[
                   {
@@ -352,7 +352,7 @@ export default function ShotListsPageV2() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-44">
                             <DropdownMenuItem
-                              onClick={() => navigate(`/v2/shot-lists/${row.original.id}`)}
+                              onClick={() => navigate(`/shot-lists/${row.original.id}`)}
                             >
                               <Eye className="h-3.5 w-3.5" /> {t('common.open', 'Open')}
                             </DropdownMenuItem>

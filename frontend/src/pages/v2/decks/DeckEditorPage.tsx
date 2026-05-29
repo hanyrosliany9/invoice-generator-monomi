@@ -218,7 +218,7 @@ export default function DeckEditorPageV2() {
             }
             action={
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigate('/v2/decks')}>
+                <Button variant="outline" size="sm" onClick={() => navigate('/decks')}>
                   <ArrowLeft className="h-4 w-4" />
                   {t('deckEditor.backToDecks', 'Back to Decks')}
                 </Button>
@@ -239,7 +239,7 @@ export default function DeckEditorPageV2() {
       <PageContainer>
         <div className="mb-4">
           <Link
-            to="/v2/decks"
+            to="/decks"
             className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -411,7 +411,7 @@ export default function DeckEditorPageV2() {
                 <Button
                   type="button"
                   variant="ghost"
-                  onClick={() => navigate('/v2/decks')}
+                  onClick={() => navigate('/decks')}
                   disabled={isPending}
                   className="text-text-secondary hover:text-text-primary"
                 >

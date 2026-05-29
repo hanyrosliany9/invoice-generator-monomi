@@ -50,7 +50,7 @@ export const Sidebar = ({ brand, items, sections, footer, collapsed, variant = '
     <NavLink
       key={item.href}
       to={item.href}
-      end={item.href === '/v2'}
+      end={item.href === '/'}
       className={({ isActive }) => cn(
         'group relative flex items-center gap-3 mx-1 my-0.5 px-3 py-2 rounded-md text-sm',
         'transition-colors duration-150',

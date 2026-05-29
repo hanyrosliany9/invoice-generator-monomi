@@ -149,7 +149,7 @@ export default function VendorDetailPageV2() {
           name: vendor?.name ?? '',
         }),
       );
-      navigate('/v2/vendors');
+      navigate('/vendors');
     },
     onError: (err: unknown) => {
       const message =
@@ -196,7 +196,7 @@ export default function VendorDetailPageV2() {
           <PageHeader
             title={t('vendors.detail.notFoundTitle', 'Vendor tidak ditemukan')}
             breadcrumbs={[
-              { label: t('vendors.title', 'Vendor'), href: '/v2/vendors' },
+              { label: t('vendors.title', 'Vendor'), href: '/vendors' },
               { label: t('vendors.detail.notFound', 'Tidak ditemukan') },
             ]}
           />
@@ -217,7 +217,7 @@ export default function VendorDetailPageV2() {
                   {t('common.retry', 'Coba Lagi')}
                 </Button>
                 <Button
-                  onClick={() => navigate('/v2/vendors')}
+                  onClick={() => navigate('/vendors')}
                   className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                 >
                   {t('vendors.detail.backToList', 'Kembali ke Daftar')}
@@ -237,7 +237,7 @@ export default function VendorDetailPageV2() {
           <PageHeader
             title={t('common.loading', 'Memuat…')}
             breadcrumbs={[
-              { label: t('vendors.title', 'Vendor'), href: '/v2/vendors' },
+              { label: t('vendors.title', 'Vendor'), href: '/vendors' },
               { label: '…' },
             ]}
           />
@@ -289,7 +289,7 @@ export default function VendorDetailPageV2() {
         <PageHeader
           title={vendor.nameId || vendor.name}
           breadcrumbs={[
-            { label: t('vendors.title', 'Vendor'), href: '/v2/vendors' },
+            { label: t('vendors.title', 'Vendor'), href: '/vendors' },
             { label: vendor.nameId || vendor.name },
           ]}
           description={
@@ -304,14 +304,14 @@ export default function VendorDetailPageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/v2/vendors')}
+                onClick={() => navigate('/vendors')}
                 className="text-text-secondary hover:text-text-primary"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t('common.back', 'Kembali')}
               </Button>
               <Button
-                onClick={() => navigate(`/v2/vendors/${id}/edit`)}
+                onClick={() => navigate(`/vendors/${id}/edit`)}
                 className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
               >
                 <Pencil className="h-4 w-4" />

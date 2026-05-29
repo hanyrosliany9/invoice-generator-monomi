@@ -326,7 +326,7 @@ export default function MediaProjectDetailPageV2() {
           }
           action={
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/v2/media-collab')}>
+              <Button variant="outline" size="sm" onClick={() => navigate('/media-collab')}>
                 <ArrowLeft className="h-4 w-4" /> {t('mediaCollab.back', 'Kembali')}
               </Button>
               <Button size="sm" onClick={() => refetchProject()}>{t('common.retry', 'Coba Lagi')}</Button>
@@ -343,7 +343,7 @@ export default function MediaProjectDetailPageV2() {
       {/* Back link */}
       <div className="mb-4">
         <Link
-          to="/v2/media-collab"
+          to="/media-collab"
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />

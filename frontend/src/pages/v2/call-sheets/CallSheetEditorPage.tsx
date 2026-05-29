@@ -413,7 +413,7 @@ export default function CallSheetEditorPageV2() {
     mutationFn: () => callSheetsApi.delete(id!),
     onSuccess: () => {
       toast.success(t('callSheets.deleted', 'Call sheet berhasil dihapus.'));
-      navigate('/v2/call-sheets');
+      navigate('/call-sheets');
     },
     onError: () => toast.error(t('callSheets.deleteFailed', 'Gagal menghapus call sheet.')),
   });
@@ -523,7 +523,7 @@ export default function CallSheetEditorPageV2() {
         }
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => navigate('/v2/call-sheets')}>
+            <Button variant="outline" onClick={() => navigate('/call-sheets')}>
               <ArrowLeft className="h-4 w-4" />
               {t('common.back', 'Back')}
             </Button>
@@ -580,7 +580,7 @@ export default function CallSheetEditorPageV2() {
     <>
       <PageHeader
         breadcrumbs={[
-          { label: t('callSheets.title', 'Call Sheet'), href: '/v2/call-sheets' },
+          { label: t('callSheets.title', 'Call Sheet'), href: '/call-sheets' },
           { label: callSheet.productionName || `#${callSheet.callSheetNumber}` },
         ]}
         title={callSheet.productionName || `Call Sheet #${callSheet.callSheetNumber}`}
@@ -1391,7 +1391,7 @@ export default function CallSheetEditorPageV2() {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => navigate('/v2/call-sheets')}
+              onClick={() => navigate('/call-sheets')}
               className="text-text-secondary hover:text-text-primary"
             >
               {t('common.back', 'Back')}

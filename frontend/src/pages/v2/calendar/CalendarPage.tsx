@@ -145,7 +145,7 @@ export default function CalendarPageV2() {
         date: d,
         title: `${inv.invoiceNumber} — ${inv.client?.name ?? inv.clientName ?? '—'}`,
         subtitle: inv.project?.description ?? inv.projectName,
-        href: `/v2/invoices/${inv.id}`,
+        href: `/invoices/${inv.id}`,
         amount: toNumber(inv.totalAmount),
         status: inv.status,
         overdue: unpaid && isBefore(d, now),
@@ -161,7 +161,7 @@ export default function CalendarPageV2() {
         date: d,
         title: `${q.quotationNumber} — ${q.client?.name ?? '—'}`,
         subtitle: q.project?.description,
-        href: `/v2/quotations/${q.id}`,
+        href: `/quotations/${q.id}`,
         amount: toNumber(q.totalAmount),
         status: q.status,
         overdue: q.status === 'SENT' && isBefore(d, now),
@@ -178,7 +178,7 @@ export default function CalendarPageV2() {
         date: d,
         title: `${p.number} — ${p.description ?? '—'}`,
         subtitle: p.client?.name,
-        href: `/v2/projects/${p.id}`,
+        href: `/projects/${p.id}`,
         status: p.status,
         overdue: isBefore(d, now),
       });
@@ -280,7 +280,7 @@ export default function CalendarPageV2() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate('/v2/calendar/content')}
+              onClick={() => navigate('/calendar/content')}
             >
               <ImageIcon className="h-4 w-4" />
               {t('calendarPage.openContent', 'Content Calendar')}

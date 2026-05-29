@@ -315,7 +315,7 @@ export default function QuotationsPageV2() {
                   className="bg-bg-raised border-border-default text-text-primary"
                 >
                   <DropdownMenuItem
-                    onClick={() => navigate(`/v2/quotations/${q.id}`)}
+                    onClick={() => navigate(`/quotations/${q.id}`)}
                   >
                     <Eye className="h-4 w-4" />
                     Lihat detail
@@ -639,7 +639,7 @@ export default function QuotationsPageV2() {
               enablePagination
               enableSorting
               density="comfortable"
-              onRowClick={(row) => navigate(`/v2/quotations/${row.id}`)}
+              onRowClick={(row) => navigate(`/quotations/${row.id}`)}
             />
           )}
         </section>

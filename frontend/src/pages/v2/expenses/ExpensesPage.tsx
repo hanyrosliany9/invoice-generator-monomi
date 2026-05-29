@@ -254,7 +254,7 @@ export default function ExpensesPageV2() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate('/v2/expenses/categories')}
+              onClick={() => navigate('/expenses/categories')}
             >
               <TagIcon className="h-4 w-4" />
               {t('expensesPage.categories', 'Categories')}
@@ -470,8 +470,8 @@ export default function ExpensesPageV2() {
           <div className="px-1 pb-1">
             <ExpenseTable
               rows={expenses}
-              onRowClick={(row) => navigate(`/v2/expenses/${row.id}`)}
-              onView={(row) => navigate(`/v2/expenses/${row.id}`)}
+              onRowClick={(row) => navigate(`/expenses/${row.id}`)}
+              onView={(row) => navigate(`/expenses/${row.id}`)}
               onEdit={(row) => navigate(`/expenses/${row.id}/edit`)}
               onDelete={(row) => {
                 if (confirm(t(

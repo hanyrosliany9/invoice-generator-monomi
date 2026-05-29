@@ -345,7 +345,7 @@ export default function ContentCalendarPageV2() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/v2/calendar')}
+                onClick={() => navigate('/calendar')}
               >
                 <CalendarDays className="h-4 w-4" />
                 {t('content.openGeneral', 'Kalender Umum')}

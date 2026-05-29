@@ -256,7 +256,7 @@ export const InvoiceForm = ({
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       toast.success(t('invoices.form.createSuccess', 'Invoice berhasil dibuat'));
-      navigate(`/v2/invoices/${created.id}`);
+      navigate(`/invoices/${created.id}`);
     },
     onError: (err: Error) => {
       toast.error(err.message || t('invoices.form.createError', 'Gagal membuat invoice'));
@@ -269,7 +269,7 @@ export const InvoiceForm = ({
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       queryClient.invalidateQueries({ queryKey: ['invoice', invoice!.id] });
       toast.success(t('invoices.form.updateSuccess', 'Invoice berhasil diperbarui'));
-      navigate(`/v2/invoices/${updated.id}`);
+      navigate(`/invoices/${updated.id}`);
     },
     onError: (err: Error) => {
       toast.error(err.message || t('invoices.form.updateError', 'Gagal memperbarui invoice'));
@@ -355,8 +355,8 @@ export const InvoiceForm = ({
   const isPending = isSubmitting || createMutation.isPending || updateMutation.isPending;
 
   const handleCancel = () => {
-    if (mode === 'edit' && invoice) navigate(`/v2/invoices/${invoice.id}`);
-    else navigate('/v2/invoices');
+    if (mode === 'edit' && invoice) navigate(`/invoices/${invoice.id}`);
+    else navigate('/invoices');
   };
 
   /* ---------- render ---------- */

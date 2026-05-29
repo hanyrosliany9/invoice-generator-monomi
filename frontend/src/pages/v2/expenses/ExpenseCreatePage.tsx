@@ -200,7 +200,7 @@ export default function ExpenseCreatePageV2() {
         {/* Back link sits above the H1 — matches Invoice/Client v2 rhythm */}
         <div className="mb-4">
           <Link
-            to="/v2/expenses"
+            to="/expenses"
             className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -212,7 +212,7 @@ export default function ExpenseCreatePageV2() {
           title={t('expenseCreate.title', 'New Expense')}
           description={t('expenseCreate.subtitle', 'Record expenses with automatic PPN and PPh calculations per Indonesian standards.')}
           breadcrumbs={[
-            { label: t('expenseCreate.listLabel', 'Expenses'), href: '/v2/expenses' },
+            { label: t('expenseCreate.listLabel', 'Expenses'), href: '/expenses' },
             { label: t('expenseCreate.crumb', 'New') },
           ]}
           actions={
@@ -220,7 +220,7 @@ export default function ExpenseCreatePageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/v2/expenses')}
+                onClick={() => navigate('/expenses')}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >
@@ -253,7 +253,7 @@ export default function ExpenseCreatePageV2() {
           isSubmitting={isSubmitting}
           onSubmit={handleSubmit}
           onSubmitAndApprove={handleSubmitAndApprove}
-          onCancel={() => navigate('/v2/expenses')}
+          onCancel={() => navigate('/expenses')}
         />
       </PageContainer>
     </AppShell>

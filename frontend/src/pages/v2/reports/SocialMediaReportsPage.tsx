@@ -219,7 +219,7 @@ export default function SocialMediaReportsPageV2() {
             'Cross-platform analytics, content performance, and saved client reports.',
           )}
           actions={
-            <Button onClick={() => navigate('/v2/reports/builder')} size="sm">
+            <Button onClick={() => navigate('/reports/builder')} size="sm">
               <Plus className="h-4 w-4" />
               {t('socialMediaReports.new', 'New Report')}
             </Button>
@@ -495,7 +495,7 @@ export default function SocialMediaReportsPageV2() {
                     {t('common.resetFilters', 'Reset Filter')}
                   </Button>
                 ) : (
-                  <Button onClick={() => navigate('/v2/reports/builder')} size="sm">
+                  <Button onClick={() => navigate('/reports/builder')} size="sm">
                     <Plus className="h-4 w-4" />
                     {t('socialMediaReports.new', 'New Report')}
                   </Button>
@@ -506,7 +506,7 @@ export default function SocialMediaReportsPageV2() {
             <div className="px-1 pb-1">
               <DataTable<SocialMediaReport>
                 data={filtered}
-                onRowClick={(row) => navigate(`/v2/reports/${row.id}`)}
+                onRowClick={(row) => navigate(`/reports/${row.id}`)}
                 enablePagination={filtered.length > 10}
                 columns={[
                   {
@@ -597,7 +597,7 @@ export default function SocialMediaReportsPageV2() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem onClick={() => navigate(`/v2/reports/${r.id}`)}>
+                              <DropdownMenuItem onClick={() => navigate(`/reports/${r.id}`)}>
                                 <Eye className="h-3.5 w-3.5" /> {t('common.view', 'View')}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />

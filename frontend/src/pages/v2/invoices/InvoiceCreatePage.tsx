@@ -48,7 +48,7 @@ export default function InvoiceCreatePageV2() {
             title can read as a clean editorial header */}
         <div className="mb-4">
           <Link
-            to="/v2/invoices"
+            to="/invoices"
             className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />

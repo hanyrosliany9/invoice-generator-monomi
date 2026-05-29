@@ -357,7 +357,7 @@ export default function AccountsPayablePageV2() {
               <APTable
                 rows={filtered}
                 total={stats.total}
-                onRowClick={(row) => row.expenseId && navigate(`/v2/expenses/${row.expenseId}`)}
+                onRowClick={(row) => row.expenseId && navigate(`/expenses/${row.expenseId}`)}
               />
             </div>
           )}

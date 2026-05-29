@@ -210,7 +210,7 @@ export default function ExpenseEditPageV2() {
       <Shell>
         <div className="mb-4">
           <Link
-            to="/v2/expenses"
+            to="/expenses"
             className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -220,7 +220,7 @@ export default function ExpenseEditPageV2() {
         <PageHeader
           title={t('expenseEdit.notFoundTitle', 'Expense not found')}
           breadcrumbs={[
-            { label: t('expenseEdit.listLabel', 'Expenses'), href: '/v2/expenses' },
+            { label: t('expenseEdit.listLabel', 'Expenses'), href: '/expenses' },
             { label: t('expenseEdit.notFound', 'Not found') },
           ]}
         />
@@ -241,7 +241,7 @@ export default function ExpenseEditPageV2() {
                 {t('expenseEdit.retry', 'Try Again')}
               </Button>
               <Button
-                onClick={() => navigate('/v2/expenses')}
+                onClick={() => navigate('/expenses')}
                 className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
               >
                 {t('expenseEdit.backToList', 'Back to List')}
@@ -299,7 +299,7 @@ export default function ExpenseEditPageV2() {
         title={t('expenseEdit.title', 'Edit Expense')}
         description={t('expenseEdit.subtitle', 'Editing {{n}} — changes are saved to the expense record.', { n: expense.expenseNumber || '' })}
         breadcrumbs={[
-          { label: t('expenseEdit.listLabel', 'Expenses'), href: '/v2/expenses' },
+          { label: t('expenseEdit.listLabel', 'Expenses'), href: '/expenses' },
           { label: expense.expenseNumber || '—', href: `/expenses/${expense.id}` },
           { label: t('expenseEdit.crumb', 'Edit') },
         ]}

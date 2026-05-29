@@ -63,7 +63,7 @@ export default function UserCreatePageV2() {
           name: created.name,
         }),
       );
-      navigate('/v2/users');
+      navigate('/users');
     },
     onError: (err: unknown) => {
       const message =
@@ -103,7 +103,7 @@ export default function UserCreatePageV2() {
             )}
             action={
               <Button
-                onClick={() => navigate('/v2')}
+                onClick={() => navigate('/')}
                 className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
               >
                 {t('common.backToDashboard', 'Kembali ke Dashboard')}
@@ -125,7 +125,7 @@ export default function UserCreatePageV2() {
             'Tambahkan akun baru dengan peran dan kata sandi awal.',
           )}
           breadcrumbs={[
-            { label: t('users.title', 'Pengguna'), href: '/v2/users' },
+            { label: t('users.title', 'Pengguna'), href: '/users' },
             { label: t('users.create.title', 'Pengguna Baru') },
           ]}
           actions={
@@ -133,7 +133,7 @@ export default function UserCreatePageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/v2/users')}
+                onClick={() => navigate('/users')}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >

@@ -129,7 +129,7 @@ export default function InvoiceDetailPageV2() {
     mutationFn: () => invoiceService.deleteInvoice(id!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      navigate('/v2/invoices');
+      navigate('/invoices');
     },
   });
 
@@ -223,7 +223,7 @@ export default function InvoiceDetailPageV2() {
           }
           action={
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/v2/invoices')}>
+              <Button variant="outline" size="sm" onClick={() => navigate('/invoices')}>
                 <ArrowLeft className="h-4 w-4" />
                 {t('invoiceDetail.backToList', 'Back to Invoices')}
               </Button>
@@ -287,7 +287,7 @@ export default function InvoiceDetailPageV2() {
          ─────────────────────────────────────────────────────────── */}
       <div className="mb-4">
         <Link
-          to="/v2/invoices"
+          to="/invoices"
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />

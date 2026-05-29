@@ -85,7 +85,7 @@ export default function VendorCreatePageV2() {
           name: vendor.nameId || vendor.name,
         }),
       );
-      navigate(`/v2/vendors/${vendor.id}`);
+      navigate(`/vendors/${vendor.id}`);
     },
     onError: (error: unknown) => {
       const message =
@@ -120,7 +120,7 @@ export default function VendorCreatePageV2() {
             'Tambahkan vendor baru untuk mulai mencatat PO, faktur, dan pembayaran.',
           )}
           breadcrumbs={[
-            { label: t('vendors.title', 'Vendor'), href: '/v2/vendors' },
+            { label: t('vendors.title', 'Vendor'), href: '/vendors' },
             { label: t('vendors.create.title', 'Vendor Baru') },
           ]}
           actions={
@@ -128,7 +128,7 @@ export default function VendorCreatePageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/v2/vendors')}
+                onClick={() => navigate('/vendors')}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >

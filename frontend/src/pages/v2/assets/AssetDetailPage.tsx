@@ -131,7 +131,7 @@ export default function AssetDetailPageV2() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       toast.success(t('assets.deleted', 'Aset berhasil dihapus.'));
-      navigate('/v2/assets');
+      navigate('/assets');
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message
@@ -234,7 +234,7 @@ export default function AssetDetailPageV2() {
           }
           action={
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/v2/assets')}>
+              <Button variant="outline" size="sm" onClick={() => navigate('/assets')}>
                 <ArrowLeft className="h-4 w-4" />
                 {t('assets.detail.backToList', 'Kembali ke Aset')}
               </Button>
@@ -397,7 +397,7 @@ export default function AssetDetailPageV2() {
           asset code can own its own line. */}
       <div className="mb-4">
         <Link
-          to="/v2/assets"
+          to="/assets"
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
@@ -423,7 +423,7 @@ export default function AssetDetailPageV2() {
             >
               {STATUS_LABEL[asset.status] ?? asset.status}
             </Badge>
-            <Button size="sm" onClick={() => navigate(`/v2/assets/${id}/edit`)}>
+            <Button size="sm" onClick={() => navigate(`/assets/${id}/edit`)}>
               <Pencil className="h-4 w-4" />
               {t('common.edit', 'Ubah')}
             </Button>
@@ -439,7 +439,7 @@ export default function AssetDetailPageV2() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem onClick={() => navigate(`/v2/assets/${id}/edit`)}>
+                <DropdownMenuItem onClick={() => navigate(`/assets/${id}/edit`)}>
                   <Pencil className="h-3.5 w-3.5" />
                   {t('common.edit', 'Ubah')}
                 </DropdownMenuItem>

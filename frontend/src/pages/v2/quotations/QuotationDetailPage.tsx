@@ -161,7 +161,7 @@ export default function QuotationDetailPageV2() {
       );
       // Match classic page semantics: jump to the new invoice.
       if (data?.invoiceId) {
-        navigate(`/v2/invoices/${data.invoiceId}`);
+        navigate(`/invoices/${data.invoiceId}`);
       }
     },
     onError: () => toast.error('Gagal membuat invoice dari penawaran.'),
@@ -172,7 +172,7 @@ export default function QuotationDetailPageV2() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       toast.success('Penawaran berhasil dihapus.');
-      navigate('/v2/quotations');
+      navigate('/quotations');
     },
     onError: () => toast.error('Gagal menghapus penawaran.'),
   });
@@ -343,7 +343,7 @@ export default function QuotationDetailPageV2() {
         }
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => navigate('/v2/quotations')}>
+            <Button variant="outline" onClick={() => navigate('/quotations')}>
               <ArrowLeft className="h-4 w-4" />
               Kembali ke daftar
             </Button>
@@ -474,7 +474,7 @@ export default function QuotationDetailPageV2() {
     <>
       <PageHeader
         breadcrumbs={[
-          { label: t('quotations.title', 'Penawaran'), href: '/v2/quotations' },
+          { label: t('quotations.title', 'Penawaran'), href: '/quotations' },
           { label: quotation.quotationNumber },
         ]}
         title={quotation.quotationNumber}
@@ -860,7 +860,7 @@ export default function QuotationDetailPageV2() {
                 <li
                   key={inv.id}
                   className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-bg-sunken/40 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/v2/invoices/${inv.id}`)}
+                  onClick={() => navigate(`/invoices/${inv.id}`)}
                 >
                   <div className="min-w-0 flex items-center gap-3">
                     <FileText className="h-4 w-4 text-text-tertiary shrink-0" />

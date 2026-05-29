@@ -191,7 +191,7 @@ export default function AdjustingEntryWizardV2() {
 
   const handleNext = () => setStep((s) => (s < 2 ? ((s + 1) as 0 | 1 | 2) : s));
   const handleBack = () => setStep((s) => (s > 0 ? ((s - 1) as 0 | 1 | 2) : s));
-  const handleCancel = () => navigate('/v2/accounting/journal-entries');
+  const handleCancel = () => navigate('/accounting/journal-entries');
 
   /* ----- submit: hand a prefilled JE shape to the form page ----- */
   const onSubmit: SubmitHandler<FormValues> = (values) => {
@@ -211,7 +211,7 @@ export default function AdjustingEntryWizardV2() {
       ? selectedTemplate.account2Label
       : selectedTemplate.account1Label;
 
-    navigate('/v2/accounting/journal-entries/new', {
+    navigate('/accounting/journal-entries/new', {
       state: {
         prefilled: {
           entryDate:       values.entryDate,
@@ -250,8 +250,8 @@ export default function AdjustingEntryWizardV2() {
       <PageContainer>
         <PageHeader
           breadcrumbs={[
-            { label: t('accounting.adjustingWizard.breadcrumbAccounting'), href: '/v2/accounting/general-ledger' },
-            { label: t('accounting.adjustingWizard.breadcrumbJournal'), href: '/v2/accounting/journal-entries' },
+            { label: t('accounting.adjustingWizard.breadcrumbAccounting'), href: '/accounting/general-ledger' },
+            { label: t('accounting.adjustingWizard.breadcrumbJournal'), href: '/accounting/journal-entries' },
             { label: t('accounting.adjustingWizard.breadcrumbWizard') },
           ]}
           title={t('accounting.adjustingWizard.title')}

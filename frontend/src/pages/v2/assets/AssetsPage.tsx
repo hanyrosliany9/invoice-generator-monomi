@@ -249,7 +249,7 @@ export default function AssetsPageV2() {
             'Inventaris peralatan operasional, nilai, dan status perawatan.',
           )}
           actions={
-            <Button onClick={() => navigate('/v2/assets/new')} size="sm">
+            <Button onClick={() => navigate('/assets/new')} size="sm">
               <Plus className="h-4 w-4" />
               {t('assets.new', 'Aset Baru')}
             </Button>
@@ -423,7 +423,7 @@ export default function AssetsPageV2() {
                     {t('common.resetFilters', 'Reset Filter')}
                   </Button>
                 ) : (
-                  <Button onClick={() => navigate('/v2/assets/new')} size="sm">
+                  <Button onClick={() => navigate('/assets/new')} size="sm">
                     <Plus className="h-4 w-4" />
                     {t('assets.new', 'Aset Baru')}
                   </Button>
@@ -434,9 +434,9 @@ export default function AssetsPageV2() {
             <div className="px-1 pb-1">
               <AssetTable
                 rows={filtered}
-                onRowClick={(row) => navigate(`/v2/assets/${row.id}`)}
-                onView={(row) => navigate(`/v2/assets/${row.id}`)}
-                onEdit={(row) => navigate(`/v2/assets/${row.id}/edit`)}
+                onRowClick={(row) => navigate(`/assets/${row.id}`)}
+                onView={(row) => navigate(`/assets/${row.id}`)}
+                onEdit={(row) => navigate(`/assets/${row.id}/edit`)}
                 onDelete={handleDelete}
               />
             </div>

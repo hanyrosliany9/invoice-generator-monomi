@@ -364,8 +364,8 @@ export default function InvoicesPageV2() {
                   sit inside a GlassPanel. */}
               <InvoiceTable
                 rows={filtered}
-                onRowClick={(row) => navigate(`/v2/invoices/${row.id}`)}
-                onView={(row) => navigate(`/v2/invoices/${row.id}`)}
+                onRowClick={(row) => navigate(`/invoices/${row.id}`)}
+                onView={(row) => navigate(`/invoices/${row.id}`)}
                 onEdit={(row) => navigate(`/invoices/${row.id}/edit`)}
                 onSend={(row) => sendMutation.mutate(row.id)}
                 onMarkPaid={(row) => markPaidMutation.mutate(row.id)}

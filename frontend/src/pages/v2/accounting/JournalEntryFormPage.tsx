@@ -220,7 +220,7 @@ export default function JournalEntryFormPageV2() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       toast.success(t('accounting.journalEntryForm.saveDraftSuccess'));
-      navigate('/v2/accounting/journal-entries');
+      navigate('/accounting/journal-entries');
     },
     onError: (e: Error) => toast.error(e.message || t('accounting.journalEntryForm.saveDraftFail')),
   });
@@ -231,7 +231,7 @@ export default function JournalEntryFormPageV2() {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entry', id] });
       toast.success(t('accounting.journalEntryForm.updateSuccess'));
-      navigate('/v2/accounting/journal-entries');
+      navigate('/accounting/journal-entries');
     },
     onError: (e: Error) => toast.error(e.message || t('accounting.journalEntryForm.updateFail')),
   });
@@ -241,7 +241,7 @@ export default function JournalEntryFormPageV2() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       toast.success(t('accounting.journalEntryForm.postSuccess'));
-      navigate('/v2/accounting/journal-entries');
+      navigate('/accounting/journal-entries');
     },
     onError: (e: Error) => toast.error(e.message || t('accounting.journalEntryForm.postFail')),
   });
@@ -286,7 +286,7 @@ export default function JournalEntryFormPageV2() {
     }
   };
 
-  const handleCancel = () => navigate('/v2/accounting/journal-entries');
+  const handleCancel = () => navigate('/accounting/journal-entries');
 
   const isPending = isSubmitting
     || createMutation.isPending
@@ -336,8 +336,8 @@ export default function JournalEntryFormPageV2() {
       <PageContainer>
         <PageHeader
           breadcrumbs={[
-            { label: t('accounting.journalEntryForm.breadcrumbAccounting'), href: '/v2/accounting/general-ledger' },
-            { label: t('accounting.journalEntryForm.breadcrumbJournals'),   href: '/v2/accounting/journal-entries' },
+            { label: t('accounting.journalEntryForm.breadcrumbAccounting'), href: '/accounting/general-ledger' },
+            { label: t('accounting.journalEntryForm.breadcrumbJournals'),   href: '/accounting/journal-entries' },
             { label: isEdit ? (existing?.entryNumber || t('accounting.journalEntryForm.editLabel')) : t('accounting.journalEntryForm.newLabel') },
           ]}
           title={isEdit ? t('accounting.journalEntryForm.editTitle', { number: existing?.entryNumber || t('accounting.journalEntryForm.editLabel') }) : t('accounting.journalEntryForm.newTitle')}

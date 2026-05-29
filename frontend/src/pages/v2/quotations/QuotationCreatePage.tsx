@@ -77,7 +77,7 @@ export default function QuotationCreatePageV2() {
           `Penawaran ${q.quotationNumber} berhasil dibuat.`,
         ),
       );
-      navigate(`/v2/quotations/${q.id}`);
+      navigate(`/quotations/${q.id}`);
     },
     onError: (err: any) => {
       toast.error(
@@ -153,14 +153,14 @@ export default function QuotationCreatePageV2() {
           breadcrumbs={[
             {
               label: t('quotations.title', 'Penawaran'),
-              href: '/v2/quotations',
+              href: '/quotations',
             },
             { label: t('quotations.form.createTitle', 'Penawaran Baru') },
           ]}
           defaultValues={defaultValues}
           onSubmit={handleSubmit}
           isSubmitting={createMutation.isPending}
-          cancelHref="/v2/quotations"
+          cancelHref="/quotations"
         />
       </PageContainer>
     </AppShell>

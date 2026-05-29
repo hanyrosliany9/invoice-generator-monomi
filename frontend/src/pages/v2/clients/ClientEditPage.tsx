@@ -96,7 +96,7 @@ export default function ClientEditPageV2() {
           name: updated.name,
         }),
       );
-      navigate(`/v2/clients/${id}`);
+      navigate(`/clients/${id}`);
     },
     onError: (err: unknown) => {
       const message =
@@ -137,7 +137,7 @@ export default function ClientEditPageV2() {
           <PageHeader
             title={t('clients.detail.notFoundTitle', 'Klien tidak ditemukan')}
             breadcrumbs={[
-              { label: t('clients.title', 'Klien'), href: '/v2/clients' },
+              { label: t('clients.title', 'Klien'), href: '/clients' },
               { label: t('clients.detail.notFound', 'Tidak ditemukan') },
             ]}
           />
@@ -158,7 +158,7 @@ export default function ClientEditPageV2() {
                   {t('common.retry', 'Coba Lagi')}
                 </Button>
                 <Button
-                  onClick={() => navigate('/v2/clients')}
+                  onClick={() => navigate('/clients')}
                   className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                 >
                   {t('clients.detail.backToList', 'Kembali ke Daftar')}
@@ -178,7 +178,7 @@ export default function ClientEditPageV2() {
           <PageHeader
             title={t('common.loading', 'Memuat…')}
             breadcrumbs={[
-              { label: t('clients.title', 'Klien'), href: '/v2/clients' },
+              { label: t('clients.title', 'Klien'), href: '/clients' },
               { label: '…' },
             ]}
           />
@@ -232,8 +232,8 @@ export default function ClientEditPageV2() {
               : t('clients.edit.subtitle', 'Perbarui informasi {{name}}', { name: client.name })
           }
           breadcrumbs={[
-            { label: t('clients.title', 'Klien'), href: '/v2/clients' },
-            { label: client.name, href: `/v2/clients/${id}` },
+            { label: t('clients.title', 'Klien'), href: '/clients' },
+            { label: client.name, href: `/clients/${id}` },
             { label: t('clients.edit.crumb', 'Ubah') },
           ]}
           actions={
@@ -241,7 +241,7 @@ export default function ClientEditPageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate(`/v2/clients/${id}`)}
+                onClick={() => navigate(`/clients/${id}`)}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >

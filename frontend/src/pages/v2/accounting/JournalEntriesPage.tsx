@@ -222,14 +222,14 @@ export default function JournalEntriesPageV2() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/v2/accounting/journal-entries/adjusting')}
+                onClick={() => navigate('/accounting/journal-entries/adjusting')}
               >
                 <Wand2 className="h-4 w-4" />
                 {t('accounting.journalEntries.newAdjusting', 'Adjusting')}
               </Button>
               <Button
                 size="sm"
-                onClick={() => navigate('/v2/accounting/journal-entries/new')}
+                onClick={() => navigate('/accounting/journal-entries/new')}
               >
                 <Plus className="h-4 w-4" />
                 {t('accounting.journalEntries.newJournal', 'New Journal')}
@@ -345,7 +345,7 @@ export default function JournalEntriesPageV2() {
                 hasActiveFilters ? (
                   <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.journalEntries.resetFilter', 'Reset')}</Button>
                 ) : (
-                  <Button size="sm" onClick={() => navigate('/v2/accounting/journal-entries/new')}>
+                  <Button size="sm" onClick={() => navigate('/accounting/journal-entries/new')}>
                     <Plus className="h-4 w-4" /> {t('accounting.journalEntries.newJournal', 'New Journal')}
                   </Button>
                 )
@@ -355,8 +355,8 @@ export default function JournalEntriesPageV2() {
             <div className="px-1 pb-1">
               <JournalTable
                 rows={entries}
-                onView={(e) => navigate(`/v2/accounting/journal-entries/${e.id}/edit`)}
-                onEdit={(e) => navigate(`/v2/accounting/journal-entries/${e.id}/edit`)}
+                onView={(e) => navigate(`/accounting/journal-entries/${e.id}/edit`)}
+                onEdit={(e) => navigate(`/accounting/journal-entries/${e.id}/edit`)}
                 onPost={(e) => postMutation.mutate(e.id)}
                 onReverse={(e) => reverseMutation.mutate(e.id)}
                 onDelete={handleDelete}

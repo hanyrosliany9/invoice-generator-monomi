@@ -147,7 +147,7 @@ export default function VendorEditPageV2() {
           name: updated.nameId || updated.name,
         }),
       );
-      navigate(`/v2/vendors/${id}`);
+      navigate(`/vendors/${id}`);
     },
     onError: (err: unknown) => {
       const message =
@@ -175,7 +175,7 @@ export default function VendorEditPageV2() {
           <PageHeader
             title={t('vendors.detail.notFoundTitle', 'Vendor tidak ditemukan')}
             breadcrumbs={[
-              { label: t('vendors.title', 'Vendor'), href: '/v2/vendors' },
+              { label: t('vendors.title', 'Vendor'), href: '/vendors' },
               { label: t('vendors.detail.notFound', 'Tidak ditemukan') },
             ]}
           />
@@ -196,7 +196,7 @@ export default function VendorEditPageV2() {
                   {t('common.retry', 'Coba Lagi')}
                 </Button>
                 <Button
-                  onClick={() => navigate('/v2/vendors')}
+                  onClick={() => navigate('/vendors')}
                   className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                 >
                   {t('vendors.detail.backToList', 'Kembali ke Daftar')}
@@ -216,7 +216,7 @@ export default function VendorEditPageV2() {
           <PageHeader
             title={t('common.loading', 'Memuat…')}
             breadcrumbs={[
-              { label: t('vendors.title', 'Vendor'), href: '/v2/vendors' },
+              { label: t('vendors.title', 'Vendor'), href: '/vendors' },
               { label: '…' },
             ]}
           />
@@ -293,8 +293,8 @@ export default function VendorEditPageV2() {
                 })
           }
           breadcrumbs={[
-            { label: t('vendors.title', 'Vendor'), href: '/v2/vendors' },
-            { label: vendor.nameId || vendor.name, href: `/v2/vendors/${id}` },
+            { label: t('vendors.title', 'Vendor'), href: '/vendors' },
+            { label: vendor.nameId || vendor.name, href: `/vendors/${id}` },
             { label: t('vendors.edit.crumb', 'Ubah') },
           ]}
           actions={
@@ -302,7 +302,7 @@ export default function VendorEditPageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate(`/v2/vendors/${id}`)}
+                onClick={() => navigate(`/vendors/${id}`)}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >

@@ -202,7 +202,7 @@ export default function CallSheetsListPageV2() {
         dayNumber: 1,
         totalDays: 1,
       });
-      if (created?.id) navigate(`/v2/call-sheets/${created.id}`);
+      if (created?.id) navigate(`/call-sheets/${created.id}`);
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message
@@ -530,9 +530,9 @@ export default function CallSheetsListPageV2() {
           <div className="px-1 pb-1">
             <CallSheetTable
               rows={filtered}
-              onRowClick={(row) => navigate(`/v2/call-sheets/${row.id}`)}
-              onView={(row) => navigate(`/v2/call-sheets/${row.id}`)}
-              onEdit={(row) => navigate(`/v2/call-sheets/${row.id}`)}
+              onRowClick={(row) => navigate(`/call-sheets/${row.id}`)}
+              onView={(row) => navigate(`/call-sheets/${row.id}`)}
+              onEdit={(row) => navigate(`/call-sheets/${row.id}`)}
               onDelete={handleDelete}
             />
           </div>

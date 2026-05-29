@@ -58,7 +58,7 @@ export default function ProjectCreatePageV2() {
       );
       // Route to v2 detail when it lands; for now fall back to the v2 list
       // (detail page is not built yet) — keep navigation in v2.
-      navigate('/v2/projects');
+      navigate('/projects');
     },
     onError: (error: unknown) => {
       const message =
@@ -126,7 +126,7 @@ export default function ProjectCreatePageV2() {
           title={t('projectCreate.title', 'New Project')}
           description={t('projectCreate.subtitle', 'Set up a new project with client, type, and billable product details.')}
           breadcrumbs={[
-            { label: t('projectCreate.listLabel', 'Projects'), href: '/v2/projects' },
+            { label: t('projectCreate.listLabel', 'Projects'), href: '/projects' },
             { label: t('projectCreate.title', 'New Project') },
           ]}
           actions={
@@ -134,7 +134,7 @@ export default function ProjectCreatePageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/v2/projects')}
+                onClick={() => navigate('/projects')}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >

@@ -124,7 +124,7 @@ export default function DecksPageV2() {
       queryClient.invalidateQueries({ queryKey: ['decks'] });
       toast.success(t('decks.createSuccess', 'Deck created'));
       setCreateOpen(false);
-      navigate(`/v2/decks/${created.id}`);
+      navigate(`/decks/${created.id}`);
     },
     onError: (err: Error) => {
       toast.error(err.message || t('decks.createFailed', 'Failed to create deck'));
@@ -145,7 +145,7 @@ export default function DecksPageV2() {
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['decks'] });
       toast.success(t('decks.duplicateSuccess', 'Deck duplicated'));
-      navigate(`/v2/decks/${created.id}`);
+      navigate(`/decks/${created.id}`);
     },
     onError: () => toast.error(t('decks.duplicateFailed', 'Failed to duplicate deck')),
   });
@@ -288,7 +288,7 @@ export default function DecksPageV2() {
               <DeckCard
                 key={deck.id}
                 deck={deck}
-                onOpen={() => navigate(`/v2/decks/${deck.id}`)}
+                onOpen={() => navigate(`/decks/${deck.id}`)}
                 onDuplicate={() => duplicateMutation.mutate(deck.id)}
                 onDelete={() => handleDelete(deck)}
               />

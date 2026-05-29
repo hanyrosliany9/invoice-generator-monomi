@@ -94,7 +94,7 @@ export default function UserEditPageV2() {
           name: updated.name,
         }),
       );
-      navigate('/v2/users');
+      navigate('/users');
     },
     onError: (err: unknown) => {
       const message =
@@ -138,7 +138,7 @@ export default function UserEditPageV2() {
             )}
             action={
               <Button
-                onClick={() => navigate('/v2')}
+                onClick={() => navigate('/')}
                 className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
               >
                 {t('common.backToDashboard', 'Kembali ke Dashboard')}
@@ -158,7 +158,7 @@ export default function UserEditPageV2() {
           <PageHeader
             title={t('users.edit.notFoundTitle', 'Pengguna tidak ditemukan')}
             breadcrumbs={[
-              { label: t('users.title', 'Pengguna'), href: '/v2/users' },
+              { label: t('users.title', 'Pengguna'), href: '/users' },
               { label: t('users.edit.notFound', 'Tidak ditemukan') },
             ]}
           />
@@ -179,7 +179,7 @@ export default function UserEditPageV2() {
                   {t('common.retry', 'Coba Lagi')}
                 </Button>
                 <Button
-                  onClick={() => navigate('/v2/users')}
+                  onClick={() => navigate('/users')}
                   className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                 >
                   {t('users.edit.backToList', 'Kembali ke Daftar')}
@@ -201,7 +201,7 @@ export default function UserEditPageV2() {
           <PageHeader
             title={t('common.loading', 'Memuat…')}
             breadcrumbs={[
-              { label: t('users.title', 'Pengguna'), href: '/v2/users' },
+              { label: t('users.title', 'Pengguna'), href: '/users' },
               { label: '…' },
             ]}
           />
@@ -239,7 +239,7 @@ export default function UserEditPageV2() {
             { name: user.name },
           )}
           breadcrumbs={[
-            { label: t('users.title', 'Pengguna'), href: '/v2/users' },
+            { label: t('users.title', 'Pengguna'), href: '/users' },
             { label: user.name },
             { label: t('users.edit.crumb', 'Ubah') },
           ]}
@@ -248,7 +248,7 @@ export default function UserEditPageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/v2/users')}
+                onClick={() => navigate('/users')}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >

@@ -279,7 +279,7 @@ export default function ClientsPageV2() {
           )}
           actions={
             <Button
-              onClick={() => navigate('/v2/clients/new')}
+              onClick={() => navigate('/clients/new')}
               className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
             >
               <Plus className="h-4 w-4" />
@@ -442,7 +442,7 @@ export default function ClientsPageV2() {
                   )}
                   action={
                     <Button
-                      onClick={() => navigate('/v2/clients/new')}
+                      onClick={() => navigate('/clients/new')}
                       className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                     >
                       <Plus className="h-4 w-4" />
@@ -456,7 +456,7 @@ export default function ClientsPageV2() {
                 data={filteredClients}
                 columns={columns}
                 enablePagination={filteredClients.length > 10}
-                onRowClick={(row) => navigate(`/v2/clients/${row.id}`)}
+                onRowClick={(row) => navigate(`/clients/${row.id}`)}
               />
             )}
           </GlassPanel>

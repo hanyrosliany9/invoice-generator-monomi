@@ -294,7 +294,7 @@ export default function MediaCollaborationPageV2() {
               <ProjectCard
                 key={p.id}
                 project={p}
-                onOpen={() => navigate(`/v2/media-collab/projects/${p.id}`)}
+                onOpen={() => navigate(`/media-collab/projects/${p.id}`)}
                 onDelete={() => handleDelete(p)}
               />
             ))}

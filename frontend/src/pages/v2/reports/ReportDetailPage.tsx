@@ -365,7 +365,7 @@ export default function ReportDetailPageV2() {
       deleteReport.mutate(report.id, {
         onSuccess: () => {
           toast.success(t('reportDetail.deleted', 'Report deleted.'));
-          navigate('/v2/reports');
+          navigate('/reports');
         },
         onError: () => toast.error(t('reportDetail.deleteFailed', 'Failed to delete report.')),
       });
@@ -416,7 +416,7 @@ export default function ReportDetailPageV2() {
           }
           action={
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/v2/reports')}>
+              <Button variant="outline" size="sm" onClick={() => navigate('/reports')}>
                 <ArrowLeft className="h-4 w-4" />
                 {t('reportDetail.backToList', 'Back to Reports')}
               </Button>
@@ -439,7 +439,7 @@ export default function ReportDetailPageV2() {
       {/* Back-link above H1 so the title gets its own line. */}
       <div className="mb-4">
         <Link
-          to="/v2/reports"
+          to="/reports"
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
@@ -476,7 +476,7 @@ export default function ReportDetailPageV2() {
             {canEdit && (
               <Button
                 size="sm"
-                onClick={() => navigate(`/v2/reports/${report.id}/edit`)}
+                onClick={() => navigate(`/reports/${report.id}/edit`)}
               >
                 <Pencil className="h-4 w-4" />
                 {t('common.edit', 'Ubah')}
@@ -551,7 +551,7 @@ export default function ReportDetailPageV2() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => navigate(`/v2/projects/${report.project!.id}`)}
+                  onClick={() => navigate(`/projects/${report.project!.id}`)}
                   className="text-sm text-text-primary hover:text-text-secondary transition-colors text-left"
                 >
                   {report.project.description}
@@ -625,7 +625,7 @@ export default function ReportDetailPageV2() {
             action={
               <Button
                 size="sm"
-                onClick={() => navigate(`/v2/reports/${report.id}/edit`)}
+                onClick={() => navigate(`/reports/${report.id}/edit`)}
               >
                 <AppWindow className="h-4 w-4" />
                 {t('reportDetail.openBuilder', 'Open Editor')}

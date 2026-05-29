@@ -275,7 +275,7 @@ export default function ProjectCalendarPage() {
         <nav className="flex items-center gap-1.5 mb-5 text-[11px] text-text-tertiary">
           <button
             type="button"
-            onClick={() => navigate('/v2/projects')}
+            onClick={() => navigate('/projects')}
             className="hover:text-text-secondary transition-colors"
           >
             {t('projectCalendar.breadcrumb.projects', 'Projects')}
@@ -286,7 +286,7 @@ export default function ProjectCalendarPage() {
           ) : (
             <button
               type="button"
-              onClick={() => navigate(`/v2/projects/${projectId}`)}
+              onClick={() => navigate(`/projects/${projectId}`)}
               className="hover:text-text-secondary transition-colors"
             >
               {project?.number} — {project?.description}
@@ -308,7 +308,7 @@ export default function ProjectCalendarPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate(`/v2/projects/${projectId}/content-calendar`)}
+                onClick={() => navigate(`/projects/${projectId}/content-calendar`)}
               >
                 <ImageIcon className="h-4 w-4" />
                 {t('projectCalendar.openContentCalendar', 'Content Calendar')}

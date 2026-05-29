@@ -127,7 +127,7 @@ export default function AssetEditPageV2() {
           name: updated.name || updated.assetCode,
         }),
       );
-      navigate(`/v2/assets/${updated.id}`);
+      navigate(`/assets/${updated.id}`);
     },
     onError: (err: unknown) => {
       const message =
@@ -181,7 +181,7 @@ export default function AssetEditPageV2() {
           <PageHeader
             title={t('assets.detail.notFoundTitle', 'Aset tidak ditemukan')}
             breadcrumbs={[
-              { label: t('assets.title', 'Aset'), href: '/v2/assets' },
+              { label: t('assets.title', 'Aset'), href: '/assets' },
               { label: t('assets.detail.notFound', 'Tidak ditemukan') },
             ]}
           />
@@ -202,7 +202,7 @@ export default function AssetEditPageV2() {
                   {t('common.retry', 'Coba Lagi')}
                 </Button>
                 <Button
-                  onClick={() => navigate('/v2/assets')}
+                  onClick={() => navigate('/assets')}
                   className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                 >
                   {t('assets.detail.backToList', 'Kembali ke Aset')}
@@ -226,7 +226,7 @@ export default function AssetEditPageV2() {
           <PageHeader
             title={t('common.loading', 'Memuat…')}
             breadcrumbs={[
-              { label: t('assets.title', 'Aset'), href: '/v2/assets' },
+              { label: t('assets.title', 'Aset'), href: '/assets' },
               { label: '…' },
             ]}
           />
@@ -260,10 +260,10 @@ export default function AssetEditPageV2() {
             },
           )}
           breadcrumbs={[
-            { label: t('assets.title', 'Aset'), href: '/v2/assets' },
+            { label: t('assets.title', 'Aset'), href: '/assets' },
             {
               label: asset.assetCode || asset.name,
-              href: `/v2/assets/${id}`,
+              href: `/assets/${id}`,
             },
             { label: t('assets.edit.crumb', 'Ubah') },
           ]}
@@ -272,7 +272,7 @@ export default function AssetEditPageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate(`/v2/assets/${id}`)}
+                onClick={() => navigate(`/assets/${id}`)}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >

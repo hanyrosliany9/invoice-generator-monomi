@@ -126,7 +126,7 @@ export default function ReportBuilderPageV2() {
     onSuccess: (newReport) => {
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       toast.success(t('reportBuilder.created', 'Report created successfully.'));
-      navigate(`/v2/reports/${newReport.id}/edit`);
+      navigate(`/reports/${newReport.id}/edit`);
     },
     onError: (e: any) =>
       toast.error(e?.response?.data?.message ?? t('reportBuilder.createFailed', 'Failed to create report.')),
@@ -238,7 +238,7 @@ export default function ReportBuilderPageV2() {
           title={t('reportBuilder.notFound.title', 'Report not found')}
           description={t('reportBuilder.notFound.desc', 'This report may have been deleted.')}
           action={
-            <Button variant="outline" size="sm" onClick={() => navigate('/v2/reports')}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/reports')}>
               <ArrowLeft className="h-4 w-4" />
               {t('reportBuilder.backToList', 'Back to Reports')}
             </Button>
@@ -253,7 +253,7 @@ export default function ReportBuilderPageV2() {
     <Shell>
       <div className="mb-4">
         <Link
-          to={isEditMode && id ? `/v2/reports/${id}` : '/v2/reports'}
+          to={isEditMode && id ? `/reports/${id}` : '/reports'}
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />

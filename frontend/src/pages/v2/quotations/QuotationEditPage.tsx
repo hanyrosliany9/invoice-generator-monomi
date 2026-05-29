@@ -117,7 +117,7 @@ export default function QuotationEditPageV2() {
       toast.success(
         t('quotations.form.toast.updated', 'Penawaran berhasil diperbarui.'),
       );
-      navigate(`/v2/quotations/${id}`);
+      navigate(`/quotations/${id}`);
     },
     onError: (err: any) => {
       toast.error(
@@ -222,7 +222,7 @@ export default function QuotationEditPageV2() {
           breadcrumbs={[
             {
               label: t('quotations.title', 'Penawaran'),
-              href: '/v2/quotations',
+              href: '/quotations',
             },
             { label: t('quotations.form.editTitle', 'Ubah Penawaran') },
           ]}
@@ -247,7 +247,7 @@ export default function QuotationEditPageV2() {
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => navigate('/v2/quotations')}
+                  onClick={() => navigate('/quotations')}
                 >
                   <ArrowLeft className="h-4 w-4" />
                   {t('common.backToList', 'Kembali ke daftar')}
@@ -268,17 +268,17 @@ export default function QuotationEditPageV2() {
       mode="edit"
       title={t('quotations.form.editTitle', 'Ubah Penawaran')}
       breadcrumbs={[
-        { label: t('quotations.title', 'Penawaran'), href: '/v2/quotations' },
+        { label: t('quotations.title', 'Penawaran'), href: '/quotations' },
         {
           label: quotation.quotationNumber,
-          href: `/v2/quotations/${quotation.id}`,
+          href: `/quotations/${quotation.id}`,
         },
         { label: t('quotations.form.editShort', 'Ubah') },
       ]}
       defaultValues={defaultValues}
       onSubmit={handleSubmit}
       isSubmitting={updateMutation.isPending}
-      cancelHref={`/v2/quotations/${quotation.id}`}
+      cancelHref={`/quotations/${quotation.id}`}
       status={quotation.status}
       paymentType={quotation.paymentType}
       quotationNumber={quotation.quotationNumber}

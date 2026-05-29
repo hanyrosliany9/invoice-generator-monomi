@@ -191,7 +191,7 @@ export default function ProjectDetailPageV2() {
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success(t('projectDetail.duplicated', 'Project duplicated: {{n}}', { n: created?.number ?? '' }));
-      if (created?.id) navigate(`/v2/projects/${created.id}`);
+      if (created?.id) navigate(`/projects/${created.id}`);
     },
     onError: () => toast.error(t('projectDetail.duplicateFailed', 'Failed to duplicate project.')),
   });
@@ -201,7 +201,7 @@ export default function ProjectDetailPageV2() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success(t('projectDetail.deleted', 'Project deleted.'));
-      navigate('/v2/projects');
+      navigate('/projects');
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message
@@ -272,7 +272,7 @@ export default function ProjectDetailPageV2() {
           }
           action={
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/v2/projects')}>
+              <Button variant="outline" size="sm" onClick={() => navigate('/projects')}>
                 <ArrowLeft className="h-4 w-4" />
                 {t('projectDetail.backToList', 'Back to Projects')}
               </Button>
@@ -487,7 +487,7 @@ export default function ProjectDetailPageV2() {
          ─────────────────────────────────────────────────────────── */}
       <div className="mb-4">
         <Link
-          to="/v2/projects"
+          to="/projects"
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
@@ -588,7 +588,7 @@ export default function ProjectDetailPageV2() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => navigate(`/v2/clients/${project.client!.id}`)}
+                    onClick={() => navigate(`/clients/${project.client!.id}`)}
                     className="block text-base font-medium text-text-primary hover:text-text-secondary transition-colors truncate text-left"
                   >
                     {project.client.name}
@@ -743,7 +743,7 @@ export default function ProjectDetailPageV2() {
               data={invoices}
               columns={invoiceColumns}
               enablePagination={invoices.length > 10}
-              onRowClick={(row) => navigate(`/v2/invoices/${row.id}`)}
+              onRowClick={(row) => navigate(`/invoices/${row.id}`)}
             />
           )}
         </GlassPanel>
@@ -774,7 +774,7 @@ export default function ProjectDetailPageV2() {
               data={quotations}
               columns={quotationColumns}
               enablePagination={quotations.length > 10}
-              onRowClick={(row) => navigate(`/v2/quotations/${row.id}`)}
+              onRowClick={(row) => navigate(`/quotations/${row.id}`)}
             />
           )}
         </GlassPanel>
@@ -805,7 +805,7 @@ export default function ProjectDetailPageV2() {
               data={expenses}
               columns={expenseColumns}
               enablePagination={expenses.length > 10}
-              onRowClick={(row) => navigate(`/v2/expenses/${row.id}`)}
+              onRowClick={(row) => navigate(`/expenses/${row.id}`)}
             />
           )}
         </GlassPanel>

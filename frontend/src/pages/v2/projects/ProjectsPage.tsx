@@ -421,8 +421,8 @@ export default function ProjectsPageV2() {
             <div className="px-1 pb-1">
               <ProjectTable
                 rows={filtered}
-                onRowClick={(row) => navigate(`/v2/projects/${row.id}`)}
-                onView={(row) => navigate(`/v2/projects/${row.id}`)}
+                onRowClick={(row) => navigate(`/projects/${row.id}`)}
+                onView={(row) => navigate(`/projects/${row.id}`)}
                 onEdit={(row) => navigate(`/projects/${row.id}/edit`)}
                 onDuplicate={(row) => duplicateMutation.mutate(row.id)}
                 onStart={(row) => statusMutation.mutate({ id: row.id, status: 'IN_PROGRESS' })}

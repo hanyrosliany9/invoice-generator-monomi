@@ -263,7 +263,7 @@ export default function DashboardPageV2() {
               <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
                 {t('dashboard.recentQuotations', 'Penawaran Terbaru')}
               </h2>
-              <a href="/v2/quotations" className="text-xs text-text-tertiary hover:text-text-primary transition-colors">
+              <a href="/quotations" className="text-xs text-text-tertiary hover:text-text-primary transition-colors">
                 {t('common.viewAll', 'Lihat semua')} →
               </a>
             </div>
@@ -325,7 +325,7 @@ export default function DashboardPageV2() {
               <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
                 {t('dashboard.recentInvoices', 'Invoice Terbaru')}
               </h2>
-              <a href="/v2/invoices" className="text-xs text-text-tertiary hover:text-text-primary transition-colors">
+              <a href="/invoices" className="text-xs text-text-tertiary hover:text-text-primary transition-colors">
                 {t('common.viewAll', 'Lihat semua')} →
               </a>
             </div>

@@ -278,7 +278,7 @@ export default function UsersPageV2() {
             )}
             action={
               <Button
-                onClick={() => navigate('/v2')}
+                onClick={() => navigate('/')}
                 className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
               >
                 {t('common.backToDashboard', 'Kembali ke Dashboard')}
@@ -334,7 +334,7 @@ export default function UsersPageV2() {
           )}
           actions={
             <Button
-              onClick={() => navigate('/v2/users/new')}
+              onClick={() => navigate('/users/new')}
               className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
             >
               <Plus className="h-4 w-4" />
@@ -523,7 +523,7 @@ export default function UsersPageV2() {
                   )}
                   action={
                     <Button
-                      onClick={() => navigate('/v2/users/new')}
+                      onClick={() => navigate('/users/new')}
                       className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                     >
                       <Plus className="h-4 w-4" />
@@ -539,7 +539,7 @@ export default function UsersPageV2() {
                 data={filteredUsers}
                 columns={columns}
                 enablePagination={filteredUsers.length > 10}
-                onRowClick={(row) => navigate(`/v2/users/${row.id}/edit`)}
+                onRowClick={(row) => navigate(`/users/${row.id}/edit`)}
               />
             )}
           </GlassPanel>

@@ -174,7 +174,7 @@ export default function ClientDetailPageV2() {
     mutationFn: () => clientService.deleteClient(id!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      navigate('/v2/clients');
+      navigate('/clients');
     },
   });
 
@@ -202,7 +202,7 @@ export default function ClientDetailPageV2() {
           <PageHeader
             title={t('clients.detail.notFoundTitle', 'Klien tidak ditemukan')}
             breadcrumbs={[
-              { label: t('clients.title', 'Klien'), href: '/v2/clients' },
+              { label: t('clients.title', 'Klien'), href: '/clients' },
               { label: t('clients.detail.notFound', 'Tidak ditemukan') },
             ]}
           />
@@ -223,7 +223,7 @@ export default function ClientDetailPageV2() {
                   {t('common.retry', 'Coba Lagi')}
                 </Button>
                 <Button
-                  onClick={() => navigate('/v2/clients')}
+                  onClick={() => navigate('/clients')}
                   className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                 >
                   {t('clients.detail.backToList', 'Kembali ke Daftar')}
@@ -243,7 +243,7 @@ export default function ClientDetailPageV2() {
           <PageHeader
             title={t('common.loading', 'Memuat…')}
             breadcrumbs={[
-              { label: t('clients.title', 'Klien'), href: '/v2/clients' },
+              { label: t('clients.title', 'Klien'), href: '/clients' },
               { label: '…' },
             ]}
           />
@@ -511,7 +511,7 @@ export default function ClientDetailPageV2() {
         <PageHeader
           title={client.name}
           breadcrumbs={[
-            { label: t('clients.title', 'Klien'), href: '/v2/clients' },
+            { label: t('clients.title', 'Klien'), href: '/clients' },
             { label: client.name },
           ]}
           description={
@@ -526,7 +526,7 @@ export default function ClientDetailPageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/v2/clients')}
+                onClick={() => navigate('/clients')}
                 className="hidden sm:inline-flex text-text-secondary hover:text-text-primary"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -535,7 +535,7 @@ export default function ClientDetailPageV2() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate('/v2/clients')}
+                onClick={() => navigate('/clients')}
                 className="sm:hidden text-text-secondary hover:text-text-primary"
                 aria-label={t('common.back', 'Kembali')}
               >
@@ -825,7 +825,7 @@ export default function ClientDetailPageV2() {
                 data={projects}
                 columns={projectColumns}
                 enablePagination={projects.length > 10}
-                onRowClick={(row) => navigate(`/v2/projects/${row.id}`)}
+                onRowClick={(row) => navigate(`/projects/${row.id}`)}
               />
             )}
           </GlassPanel>
@@ -859,7 +859,7 @@ export default function ClientDetailPageV2() {
                 data={invoices}
                 columns={invoiceColumns}
                 enablePagination={invoices.length > 10}
-                onRowClick={(row) => navigate(`/v2/invoices/${row.id}`)}
+                onRowClick={(row) => navigate(`/invoices/${row.id}`)}
               />
             )}
           </GlassPanel>
@@ -893,7 +893,7 @@ export default function ClientDetailPageV2() {
                 data={quotations}
                 columns={quotationColumns}
                 enablePagination={quotations.length > 10}
-                onRowClick={(row) => navigate(`/v2/quotations/${row.id}`)}
+                onRowClick={(row) => navigate(`/quotations/${row.id}`)}
               />
             )}
           </GlassPanel>

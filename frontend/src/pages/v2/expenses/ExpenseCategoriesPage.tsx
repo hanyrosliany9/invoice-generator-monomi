@@ -306,7 +306,7 @@ export default function ExpenseCategoriesPageV2() {
           sub-page, so its identity threads back to the parent section. */}
       <div className="mb-4">
         <Link
-          to="/v2/expenses"
+          to="/expenses"
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
