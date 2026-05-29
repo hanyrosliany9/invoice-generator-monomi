@@ -84,10 +84,15 @@ export const dashboardService = {
       apiClient.get('/invoices'),
     ])
 
-    // Calculate pending payments from unpaid invoices
+    // Outstanding = invoices awaiting payment. Only SENT + OVERDUE count:
+    // DRAFT isn't billed yet, PAID is settled, and CANCELLED invoices (e.g.
+    // from declined quotations / cancelled projects) are not owed.
     const invoices = allInvoices?.data?.data || []
     const pendingPayments = invoices
-      .filter((invoice: any) => invoice.status !== 'PAID')
+      .filter(
+        (invoice: any) =>
+          invoice.status === 'SENT' || invoice.status === 'OVERDUE'
+      )
       .reduce(
         (sum: number, invoice: any) =>
           sum + (parseFloat(invoice.totalAmount) || 0),

@@ -180,6 +180,8 @@ export default function ProjectsPageV2() {
     );
     const revenue = projects.reduce((acc, p) => acc + toNumber(p.totalPaidAmount), 0);
     const outstanding = projects.reduce((acc, p) => {
+      // Cancelled projects are not owed — exclude from outstanding.
+      if (p.status === 'CANCELLED') return acc;
       // Outstanding = invoiced-but-unpaid (basePrice − paid), floored at 0.
       const billed = toNumber(p.basePrice);
       const paid = toNumber(p.totalPaidAmount);
