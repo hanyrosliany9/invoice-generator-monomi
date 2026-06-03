@@ -25,6 +25,7 @@ import {
   CircleCheck,
   CircleDashed,
   AlertTriangle,
+  RotateCcw,
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
@@ -45,6 +46,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -435,6 +437,29 @@ export default function QuotationDetailPageV2() {
     return null;
   };
 
+  // ── Valid status transitions (mirrors backend state machine) ───────
+  // Always-discoverable status control: the primary CTA covers the happy
+  // path, but this guarantees an explicit "Ubah Status" affordance for every
+  // state — including DECLINED→Draft (revise), which had no button at all.
+  const statusOptions: Array<{
+    to: 'DRAFT' | 'SENT' | 'APPROVED' | 'DECLINED';
+    label: string;
+    icon: typeof Send;
+    danger?: boolean;
+  }> = [];
+  if (statusKey === 'DRAFT') {
+    statusOptions.push({ to: 'SENT', label: 'Tandai Terkirim', icon: Send });
+  } else if (statusKey === 'SENT') {
+    // Backend only allows SENT → APPROVED / DECLINED (not back to DRAFT).
+    if (canApprove) {
+      statusOptions.push({ to: 'APPROVED', label: 'Setujui', icon: CheckCircle2 });
+      statusOptions.push({ to: 'DECLINED', label: 'Tolak', icon: XCircle, danger: true });
+    }
+  } else if (statusKey === 'DECLINED') {
+    statusOptions.push({ to: 'DRAFT', label: 'Revisi (kembali ke Draft)', icon: RotateCcw });
+  }
+  // APPROVED is terminal — no status change (use "Buat Invoice" instead).
+
   // ── Overflow menu ──────────────────────────────────────────────────
   const overflow = (
     <DropdownMenu>
@@ -452,6 +477,27 @@ export default function QuotationDetailPageV2() {
         align="end"
         className="bg-bg-raised border-border-default text-text-primary"
       >
+        {statusOptions.length > 0 && (
+          <>
+            <DropdownMenuLabel className="text-text-tertiary text-[10px] uppercase tracking-[0.14em]">
+              Ubah Status
+            </DropdownMenuLabel>
+            {statusOptions.map((opt) => (
+              <DropdownMenuItem
+                key={opt.to}
+                variant={opt.danger ? 'destructive' : undefined}
+                disabled={statusMutation.isPending}
+                onClick={() =>
+                  statusMutation.mutate({ id: quotation.id, status: opt.to })
+                }
+              >
+                <opt.icon className="h-4 w-4" />
+                {opt.label}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator className="bg-border-subtle" />
+          </>
+        )}
         <DropdownMenuItem
           onClick={() => navigate(`/quotations/${quotation.id}/edit`)}
         >
