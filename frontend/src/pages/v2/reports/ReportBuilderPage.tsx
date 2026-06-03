@@ -87,6 +87,31 @@ const CHART_TYPES: { value: VisualizationConfig['type']; label: string; Icon: ty
 const AGGREGATIONS: VisualizationConfig['aggregation'][] = ['sum', 'average', 'count', 'min', 'max'];
 
 /* ------------------------------------------------------------------ */
+/*  Shell — MUST be module-level. Defining it inside the page          */
+/*  component re-created it on every render, so each keystroke         */
+/*  remounted the whole form subtree and inputs lost focus.            */
+/* ------------------------------------------------------------------ */
+
+const BuilderShell = ({
+  user,
+  children,
+}: {
+  user: { name: string; role: string } | null | undefined;
+  children: React.ReactNode;
+}) => (
+  <AppShell
+    sidebar={{
+      brand: <MonomiBrand />,
+      sections: v2SidebarSections,
+      footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+    }}
+    topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+  >
+    <PageContainer>{children}</PageContainer>
+  </AppShell>
+);
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -203,36 +228,22 @@ export default function ReportBuilderPageV2() {
     }
   };
 
-  /* ---------- shell ---------- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   /* ---------- loading edit ---------- */
   if (isEditMode && reportLoading) {
     return (
-      <Shell>
+      <BuilderShell user={user}>
         <Skeleton className="h-4 w-32 mb-4" />
         <Skeleton className="h-10 w-64 mb-2" />
         <Skeleton className="h-4 w-96 mb-8" />
         <Skeleton className="h-48 rounded-lg mb-4" />
         <Skeleton className="h-64 rounded-lg" />
-      </Shell>
+      </BuilderShell>
     );
   }
 
   if (isEditMode && !report) {
     return (
-      <Shell>
+      <BuilderShell user={user}>
         <EmptyState
           icon={<Layers className="h-12 w-12" />}
           title={t('reportBuilder.notFound.title', 'Report not found')}
@@ -244,13 +255,13 @@ export default function ReportBuilderPageV2() {
             </Button>
           }
         />
-      </Shell>
+      </BuilderShell>
     );
   }
 
   /* ---------- render ---------- */
   return (
-    <Shell>
+    <BuilderShell user={user}>
       <div className="mb-4">
         <Link
           to={isEditMode && id ? `/reports/${id}` : '/reports'}
@@ -432,7 +443,7 @@ export default function ReportBuilderPageV2() {
           </div>
         </GlassPanel>
       )}
-    </Shell>
+    </BuilderShell>
   );
 }
 
