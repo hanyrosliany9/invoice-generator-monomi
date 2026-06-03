@@ -24,7 +24,12 @@ export const AppShell = ({ sidebar, topbar, children }: AppShellProps) => {
   return (
     // `isolate` creates a stacking context so the parallax (z-index 0) is
     // sandwiched between the bg-bg-base canvas and the z-10 content layer.
-    <div className="min-h-screen flex bg-bg-base text-text-primary font-body relative isolate">
+    // h-dvh (NOT min-h-screen) pins the shell to the viewport so <main> below
+    // is a real bounded scroll container — Lenis (useSmoothScroll) drives that
+    // container, and without a fixed height it grew with content, leaving the
+    // document to overflow while Lenis hijacked the wheel onto a non-scrolling
+    // <main> → wheel scrolling was dead on any page taller than the viewport.
+    <div className="h-dvh flex bg-bg-base text-text-primary font-body relative isolate overflow-hidden">
       <ParallaxGlassBackground />
 
       {/* All content sits above the parallax via z-10 wrapper */}
