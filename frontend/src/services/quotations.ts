@@ -182,6 +182,19 @@ export const quotationService = {
     return response.data?.data ?? response.data
   },
 
+  // Replace payment terms (termin) on an existing quotation
+  setPaymentTerms: async (
+    id: string,
+    paymentType: PaymentType,
+    milestones: Array<{ name: string; nameId?: string; paymentPercentage: number }>
+  ): Promise<Quotation> => {
+    const response = await apiClient.patch(`/quotations/${id}/payment-terms`, {
+      paymentType,
+      milestones,
+    })
+    return response.data?.data ?? response.data
+  },
+
   // Generate invoice from quotation
   generateInvoice: async (
     id: string

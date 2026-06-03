@@ -15,6 +15,7 @@ import { QuotationsService } from "./quotations.service";
 import { CreateQuotationDto } from "./dto/create-quotation.dto";
 import { UpdateQuotationDto } from "./dto/update-quotation.dto";
 import { UpdateQuotationStatusDto } from "./dto/update-quotation-status.dto";
+import { SetPaymentTermsDto } from "./dto/set-payment-terms.dto";
 import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import {
   ApiBearerAuth,
@@ -148,6 +149,21 @@ export class QuotationsController {
   })
   async reopen(@Param("id") id: string) {
     return this.quotationsService.reopenQuotation(id);
+  }
+
+  @Patch(":id/payment-terms")
+  @ApiOperation({
+    summary: "Set/replace payment terms (termin) on a quotation",
+  })
+  async setPaymentTerms(
+    @Param("id") id: string,
+    @Body() dto: SetPaymentTermsDto,
+  ) {
+    return this.quotationsService.setPaymentTerms(
+      id,
+      dto.paymentType,
+      dto.milestones ?? [],
+    );
   }
 
   @Post(":id/generate-invoice")

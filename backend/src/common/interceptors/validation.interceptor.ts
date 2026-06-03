@@ -16,15 +16,23 @@ export class ValidationInterceptor implements NestInterceptor {
         if (error instanceof BadRequestException) {
           const response = error.getResponse();
 
-          // Format validation errors properly
-          if (typeof response === "object" && "message" in response) {
+          // Only re-format ACTUAL class-validator failures, where `message` is
+          // an array of constraint strings. A manually-thrown
+          // BadRequestException("some reason") has a string message and must
+          // pass through untouched — otherwise it was being relabelled to the
+          // generic "Validation failed" and the real reason was lost to the UI.
+          if (
+            typeof response === "object" &&
+            response !== null &&
+            Array.isArray((response as { message?: unknown }).message)
+          ) {
             const formattedError = {
               statusCode: 400,
               timestamp: new Date().toISOString(),
               message: "Validation failed",
-              details: response.message,
+              details: (response as { message: string[] }).message,
               errors: this.formatValidationErrors(
-                response.message as string | string[],
+                (response as { message: string[] }).message,
               ),
             };
 

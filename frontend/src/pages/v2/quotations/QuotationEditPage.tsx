@@ -118,8 +118,22 @@ export default function QuotationEditPageV2() {
   // Update mutation — toasts mirror Create page voice, navigate back to detail
   // so the user can verify changes in the canonical read view.
   const updateMutation = useMutation({
-    mutationFn: ({ id: qId, data }: { id: string; data: UpdateQuotationRequest }) =>
-      quotationService.updateQuotation(qId, data),
+    mutationFn: async ({
+      id: qId,
+      data,
+      paymentType,
+      milestones,
+    }: {
+      id: string;
+      data: UpdateQuotationRequest;
+      paymentType: 'FULL_PAYMENT' | 'MILESTONE_BASED';
+      milestones: Array<{ name: string; nameId?: string; paymentPercentage: number }>;
+    }) => {
+      // Update scalar fields first (sets totalAmount), then replace the termin —
+      // the backend computes milestone amounts from the just-saved total.
+      await quotationService.updateQuotation(qId, data);
+      await quotationService.setPaymentTerms(qId, paymentType, milestones);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotation', id] });
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
@@ -129,8 +143,11 @@ export default function QuotationEditPageV2() {
       navigate(`/quotations/${id}`);
     },
     onError: (err: any) => {
+      const resp = err?.response?.data;
       toast.error(
-        err?.message ??
+        resp?.details ||
+          resp?.message ||
+          err?.message ||
           t(
             'quotations.form.toast.updateFailed',
             'Gagal memperbarui penawaran.',
@@ -177,7 +194,21 @@ export default function QuotationEditPageV2() {
       },
     };
 
-    updateMutation.mutate({ id, data: payload });
+    const milestones =
+      values.paymentType === 'MILESTONE_BASED'
+        ? values.milestones.map((m) => ({
+            name: m.name.trim(),
+            nameId: m.name.trim(),
+            paymentPercentage: m.percentage,
+          }))
+        : [];
+
+    updateMutation.mutate({
+      id,
+      data: payload,
+      paymentType: values.paymentType,
+      milestones,
+    });
   };
 
   // Shell wrapper — reused across loading / error / data paths so the chrome
@@ -290,6 +321,9 @@ export default function QuotationEditPageV2() {
       cancelHref={`/quotations/${quotation.id}`}
       status={quotation.status}
       paymentType={quotation.paymentType}
+      terminLocked={(quotation.paymentMilestones ?? []).some(
+        (m) => (m as { isInvoiced?: boolean }).isInvoiced,
+      )}
       quotationNumber={quotation.quotationNumber}
     />,
   );

@@ -228,6 +228,8 @@ export interface QuotationFormProps {
   status?: Quotation['status'];
   /** Edit-only: current payment type (if MILESTONE_BASED, surface a notice). */
   paymentType?: Quotation['paymentType'];
+  /** Termin editing is locked once a milestone has been invoiced. */
+  terminLocked?: boolean;
   /** Edit-only: human-readable quotation number for the read-only header row. */
   quotationNumber?: string;
 }
@@ -242,6 +244,7 @@ export const QuotationForm = ({
   cancelHref,
   status,
   paymentType,
+  terminLocked = false,
   quotationNumber,
 }: QuotationFormProps) => {
   const { t } = useTranslation();
@@ -333,10 +336,10 @@ export const QuotationForm = ({
     (s, m) => s + (Number(m?.percentage) || 0),
     0,
   );
-  // Editing termin rows on an existing quotation isn't persisted by the
-  // update endpoint (and is blocked once a milestone is invoiced), so the
-  // picker is interactive on create and read-only on edit.
-  const termsEditable = mode === 'create';
+  // Termin is editable on create AND edit (persisted via the dedicated
+  // payment-terms endpoint on edit). Only locked once a milestone has been
+  // invoiced — changing the split then would desync issued invoices.
+  const termsEditable = !terminLocked;
   const applyMilestonePreset = (preset: number[], names: string[]) => {
     milestonesArray.replace(
       preset.map((pct, i) => ({ name: names[i] ?? `Termin ${i + 1}`, percentage: pct })),
@@ -1119,7 +1122,7 @@ export const QuotationForm = ({
                   <p className="text-xs text-text-tertiary">
                     {t(
                       'quotations.form.terminReadonly',
-                      'Termin hanya dapat diubah saat pembuatan penawaran. Buat penawaran baru untuk mengubah pola pembayaran.',
+                      'Termin tidak dapat diubah karena sudah ada invoice yang diterbitkan untuk salah satu tahap. Batalkan invoice terlebih dahulu.',
                     )}
                   </p>
                 )}

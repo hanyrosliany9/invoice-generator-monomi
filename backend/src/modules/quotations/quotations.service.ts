@@ -16,7 +16,7 @@ import { PaymentMilestonesService } from "./services/payment-milestones.service"
 import { DocumentsService } from "../documents/documents.service";
 import { CreateQuotationDto } from "./dto/create-quotation.dto";
 import { UpdateQuotationDto } from "./dto/update-quotation.dto";
-import { QuotationStatus, Prisma } from "@prisma/client";
+import { QuotationStatus, PaymentType, Prisma } from "@prisma/client";
 import { getErrorMessage } from "../../common/utils/error-handling.util";
 import {
   validateStatusTransition,
@@ -449,6 +449,81 @@ export class QuotationsService {
         project: true,
         paymentMilestones: { orderBy: { milestoneNumber: "asc" } },
       },
+    });
+  }
+
+  /**
+   * Replace a quotation's payment terms (termin). Used by the edit form, since
+   * the generic update() does not persist milestone changes. Atomic: clears the
+   * existing milestones and recreates them, recomputing amounts from the total.
+   * Blocked once any milestone has been invoiced (real AR already issued).
+   */
+  async setPaymentTerms(
+    id: string,
+    paymentType: PaymentType,
+    milestones: Array<{
+      name: string;
+      nameId?: string;
+      paymentPercentage: number;
+    }> = [],
+  ): Promise<any> {
+    const quotation = await this.findOne(id);
+    const existing = (quotation as any).paymentMilestones ?? [];
+
+    if (existing.some((m: any) => m.isInvoiced)) {
+      throw new ConflictException(
+        "Tidak dapat mengubah termin: sudah ada milestone yang di-invoice. Batalkan invoice terlebih dahulu.",
+      );
+    }
+
+    const isMilestone = paymentType === "MILESTONE_BASED";
+    if (isMilestone) {
+      if (!milestones || milestones.length < 2) {
+        throw new BadRequestException(
+          "Termin membutuhkan minimal 2 tahap pembayaran.",
+        );
+      }
+      const sum = milestones.reduce(
+        (s, m) => s + Number(m.paymentPercentage || 0),
+        0,
+      );
+      if (Math.abs(sum - 100) > 0.01) {
+        throw new BadRequestException(
+          `Total persentase termin harus tepat 100% (sekarang ${sum.toFixed(2)}%).`,
+        );
+      }
+    }
+
+    const total = Number(quotation.totalAmount) || 0;
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.paymentMilestone.deleteMany({ where: { quotationId: id } });
+
+      if (isMilestone) {
+        for (let i = 0; i < milestones.length; i++) {
+          const m = milestones[i];
+          await tx.paymentMilestone.create({
+            data: {
+              quotationId: id,
+              milestoneNumber: i + 1,
+              name: m.name,
+              nameId: m.nameId || m.name,
+              paymentPercentage: m.paymentPercentage,
+              paymentAmount: (total * Number(m.paymentPercentage)) / 100,
+            },
+          });
+        }
+      }
+
+      return tx.quotation.update({
+        where: { id },
+        data: { paymentType },
+        include: {
+          client: true,
+          project: true,
+          paymentMilestones: { orderBy: { milestoneNumber: "asc" } },
+        },
+      });
     });
   }
 
