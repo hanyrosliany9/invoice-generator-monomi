@@ -205,7 +205,16 @@ export default function QuotationDetailPageV2() {
 
   const deleteMutation = useMutation({
     mutationFn: (qId: string) => quotationService.deleteQuotation(qId),
-    onSuccess: () => {
+    onSuccess: (_data, deletedId) => {
+      // Remove the deleted quotation from every cached list AND drop its detail
+      // cache, so the list the user lands on reflects the deletion immediately
+      // without a manual refresh.
+      queryClient.setQueriesData<Quotation[]>(
+        { queryKey: ['quotations'] },
+        (old) =>
+          Array.isArray(old) ? old.filter((q) => q.id !== deletedId) : old,
+      );
+      queryClient.removeQueries({ queryKey: ['quotation', deletedId] });
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       toast.success(t('quotations.toast.deleted', 'Quotation deleted successfully.'));
       navigate('/quotations');

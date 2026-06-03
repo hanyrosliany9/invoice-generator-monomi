@@ -154,7 +154,15 @@ export default function QuotationsPageV2() {
 
   const deleteMutation = useMutation({
     mutationFn: quotationService.deleteQuotation,
-    onSuccess: () => {
+    onSuccess: (_data, deletedId) => {
+      // Optimistically drop the row from every cached quotations list so the
+      // table updates immediately (no manual page refresh), then invalidate to
+      // reconcile with the server.
+      queryClient.setQueriesData<Quotation[]>(
+        { queryKey: ['quotations'] },
+        (old) =>
+          Array.isArray(old) ? old.filter((q) => q.id !== deletedId) : old,
+      );
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       toast.success(t('quotations.toast.deleted', 'Quotation deleted successfully.'));
     },
