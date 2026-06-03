@@ -31,14 +31,33 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = "Terjadi kesalahan pada server";
+    let details: unknown;
+    let errors: unknown;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      message =
-        typeof exceptionResponse === "string"
-          ? exceptionResponse
-          : (exceptionResponse as any).message || message;
+      if (typeof exceptionResponse === "string") {
+        message = exceptionResponse;
+      } else {
+        const ro = exceptionResponse as Record<string, any>;
+        message = ro.message || message;
+        details = ro.details;
+        errors = ro.errors;
+        // The ValidationInterceptor reports field failures as a generic
+        // "Validation failed" with the real reasons in `details`. Surface the
+        // first concrete reason as the message so the client (and user) sees
+        // WHICH field is wrong instead of an opaque "Validation failed".
+        if (
+          message === "Validation failed" &&
+          Array.isArray(ro.details) &&
+          ro.details.length > 0
+        ) {
+          message = String(ro.details[0]);
+        } else if (Array.isArray(ro.message) && ro.message.length > 0) {
+          message = String(ro.message[0]);
+        }
+      }
     } else if (exception instanceof Error) {
       // Handle specific database/Prisma errors
       if (exception.message.includes("ECONNREFUSED")) {
@@ -59,6 +78,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       path: request.url,
       method: request.method,
       message,
+      ...(details !== undefined && { details }),
+      ...(errors !== undefined && { errors }),
       ...(process.env.NODE_ENV === "development" && {
         error: exception instanceof Error ? exception.message : "Unknown error",
         stack: exception instanceof Error ? exception.stack : undefined,

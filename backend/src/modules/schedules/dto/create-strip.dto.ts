@@ -15,8 +15,9 @@ export class CreateStripDto {
   @IsInt()
   order?: number;
 
+  @IsOptional()
   @IsEnum(["SCENE", "BANNER"])
-  stripType: string;
+  stripType?: string;
 
   // === SCENE DATA (when stripType = SCENE) ===
   // Scene reference

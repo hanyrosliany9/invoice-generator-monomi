@@ -156,13 +156,14 @@ export class CreateVendorInvoiceDto {
   @IsString()
   eFakturQRCode?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: "E-Faktur status",
     enum: EFakturStatus,
     default: "NOT_REQUIRED",
   })
+  @IsOptional()
   @IsEnum(EFakturStatus)
-  eFakturStatus: EFakturStatus;
+  eFakturStatus?: EFakturStatus;
 
   // ===== PAYMENT TERMS =====
 
@@ -178,13 +179,14 @@ export class CreateVendorInvoiceDto {
 
   // ===== APPROVAL =====
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: "Approval status",
     enum: ApprovalStatus,
     default: "PENDING",
   })
+  @IsOptional()
   @IsEnum(ApprovalStatus)
-  approvalStatus: ApprovalStatus;
+  approvalStatus?: ApprovalStatus;
 
   // ===== NOTES =====
 

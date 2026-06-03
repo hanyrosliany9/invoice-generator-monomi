@@ -61,11 +61,14 @@ export class MilestonesService {
       }
     }
 
-    // Validate dates
-    const plannedStart = new Date(dto.plannedStartDate);
-    const plannedEnd = new Date(dto.plannedEndDate);
+    // Dates are optional (nullable columns). Parse when present and validate
+    // order only when both are given.
+    const plannedStart = dto.plannedStartDate
+      ? new Date(dto.plannedStartDate)
+      : null;
+    const plannedEnd = dto.plannedEndDate ? new Date(dto.plannedEndDate) : null;
 
-    if (plannedEnd <= plannedStart) {
+    if (plannedStart && plannedEnd && plannedEnd <= plannedStart) {
       throw new BadRequestException(
         "Planned end date must be after planned start date",
       );

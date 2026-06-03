@@ -70,9 +70,10 @@ export class CreateVendorDto {
   // ===== ADDRESS =====
 
   @ApiProperty({ description: "Street address" })
+  @IsOptional()
   @IsString()
   @MaxLength(500)
-  address: string;
+  address?: string;
 
   @ApiPropertyOptional({ description: "City" })
   @IsOptional()
@@ -93,9 +94,10 @@ export class CreateVendorDto {
   postalCode?: string;
 
   @ApiProperty({ description: "Country", default: "Indonesia" })
+  @IsOptional()
   @IsString()
   @MaxLength(100)
-  country: string;
+  country?: string;
 
   // ===== INDONESIAN TAX INFORMATION =====
 
@@ -103,8 +105,9 @@ export class CreateVendorDto {
     description: "PKP status (VAT registration status)",
     enum: PKPStatus,
   })
+  @IsOptional()
   @IsEnum(PKPStatus)
-  pkpStatus: PKPStatus;
+  pkpStatus?: PKPStatus;
 
   @ApiPropertyOptional({
     description: "NPWP (15 digits, required if PKP)",
@@ -124,18 +127,20 @@ export class CreateVendorDto {
   // ===== PAYMENT INFORMATION =====
 
   @ApiProperty({ description: "Currency", default: "IDR" })
+  @IsOptional()
   @IsString()
   @MaxLength(3)
-  currency: string;
+  currency?: string;
 
   @ApiProperty({
     description: "Payment terms",
     example: "NET 30",
     default: "NET 30",
   })
+  @IsOptional()
   @IsString()
   @MaxLength(50)
-  paymentTerms: string;
+  paymentTerms?: string;
 
   // ===== BANKING INFORMATION =====
 
@@ -183,10 +188,12 @@ export class CreateVendorDto {
   // ===== STATUS =====
 
   @ApiProperty({ description: "Is vendor active", default: true })
+  @IsOptional()
   @IsBoolean()
-  isActive: boolean;
+  isActive?: boolean;
 
   @ApiProperty({ description: "Is PKP (VAT registered)", default: false })
+  @IsOptional()
   @IsBoolean()
-  isPKP: boolean;
+  isPKP?: boolean;
 }

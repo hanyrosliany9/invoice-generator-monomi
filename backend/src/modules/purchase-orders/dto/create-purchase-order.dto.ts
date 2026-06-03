@@ -101,10 +101,11 @@ export class CreatePurchaseOrderDto {
   @IsString()
   vendorId: string;
 
-  @ApiProperty({ description: "PO date" })
+  @ApiPropertyOptional({ description: "PO date" })
+  @IsOptional()
   @IsDate()
   @Type(() => Date)
-  poDate: Date;
+  poDate?: Date;
 
   // ===== PROJECT LINK =====
 
@@ -155,22 +156,25 @@ export class CreatePurchaseOrderDto {
 
   // ===== TAX =====
 
-  @ApiProperty({ description: "Is PPN included", default: true })
+  @ApiPropertyOptional({ description: "Is PPN included", default: true })
+  @IsOptional()
   @IsBoolean()
-  isPPNIncluded: boolean;
+  isPPNIncluded?: boolean;
 
-  @ApiProperty({ description: "PPN rate (%)", example: 12, default: 12 })
+  @ApiPropertyOptional({ description: "PPN rate (%)", example: 12, default: 12 })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  ppnRate: number;
+  ppnRate?: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: "Withholding tax type",
     enum: WithholdingTaxType,
     default: "NONE",
   })
+  @IsOptional()
   @IsEnum(WithholdingTaxType)
-  withholdingTaxType: WithholdingTaxType;
+  withholdingTaxType?: WithholdingTaxType;
 
   @ApiPropertyOptional({ description: "Withholding tax rate", example: 2 })
   @IsOptional()
@@ -192,14 +196,15 @@ export class CreatePurchaseOrderDto {
   @Type(() => Date)
   deliveryDate?: Date;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: "Payment terms",
     example: "NET 30",
     default: "NET 30",
   })
+  @IsOptional()
   @IsString()
   @MaxLength(100)
-  paymentTerms: string;
+  paymentTerms?: string;
 
   @ApiPropertyOptional({ description: "Due date" })
   @IsOptional()
@@ -235,11 +240,12 @@ export class CreatePurchaseOrderDto {
   @IsString()
   requestedBy: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: "Approval status",
     enum: ApprovalStatus,
     default: "PENDING",
   })
+  @IsOptional()
   @IsEnum(ApprovalStatus)
-  approvalStatus: ApprovalStatus;
+  approvalStatus?: ApprovalStatus;
 }

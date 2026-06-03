@@ -36,7 +36,10 @@ const productItemSchema = z.object({
   // silently blocked saving any project whose line items had no description.
   description: z.string().max(500, 'Description is too long'),
   quantity: z.coerce.number().min(1, 'Min. 1'),
-  price: z.coerce.number().min(0, 'Min. 0'),
+  // Backend requires a positive price (@IsPositive) — and the estimated budget
+  // (sum of prices) must be > 0. Enforce it here so the user gets an inline
+  // hint instead of an opaque 400 on save.
+  price: z.coerce.number().positive('Harga harus lebih dari 0'),
 });
 
 export const projectFormSchema = z

@@ -44,13 +44,14 @@ export class CreateGoodsReceiptItemDto {
   @Min(0)
   rejectedQuantity?: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: "Quality status",
     enum: QualityStatus,
     default: "PENDING",
   })
+  @IsOptional()
   @IsEnum(QualityStatus)
-  qualityStatus: QualityStatus;
+  qualityStatus?: QualityStatus;
 
   @ApiPropertyOptional({ description: "Rejection reason if any" })
   @IsOptional()
@@ -79,10 +80,11 @@ export class CreateGoodsReceiptDto {
   @IsString()
   poId: string;
 
-  @ApiProperty({ description: "GR date" })
+  @ApiPropertyOptional({ description: "GR date" })
+  @IsOptional()
   @IsDate()
   @Type(() => Date)
-  grDate: Date;
+  grDate?: Date;
 
   // ===== DELIVERY DETAILS =====
 
@@ -104,13 +106,14 @@ export class CreateGoodsReceiptDto {
 
   // ===== QUALITY CHECK =====
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: "Inspection status",
     enum: InspectionStatus,
     default: "PENDING",
   })
+  @IsOptional()
   @IsEnum(InspectionStatus)
-  inspectionStatus: InspectionStatus;
+  inspectionStatus?: InspectionStatus;
 
   @ApiPropertyOptional({ description: "Inspected by (user ID)" })
   @IsOptional()

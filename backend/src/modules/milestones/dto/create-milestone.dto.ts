@@ -42,13 +42,15 @@ export class CreateMilestoneDto {
   @IsString()
   descriptionId?: string;
 
-  @ApiProperty({ description: "Planned start date (ISO 8601 format)" })
+  @ApiPropertyOptional({ description: "Planned start date (ISO 8601 format)" })
+  @IsOptional()
   @IsISO8601()
-  plannedStartDate: string;
+  plannedStartDate?: string;
 
-  @ApiProperty({ description: "Planned end date (ISO 8601 format)" })
+  @ApiPropertyOptional({ description: "Planned end date (ISO 8601 format)" })
+  @IsOptional()
   @IsISO8601()
-  plannedEndDate: string;
+  plannedEndDate?: string;
 
   @ApiPropertyOptional({
     description:

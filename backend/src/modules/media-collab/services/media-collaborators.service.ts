@@ -104,20 +104,22 @@ export class MediaCollaboratorsService {
       throw new NotFoundException("User not found");
     }
 
-    // Check if user is already a collaborator
-    const existingCollaborator = await this.prisma.mediaCollaborator.findUnique(
-      {
-        where: {
-          projectId_userId: {
-            projectId,
-            userId: dto.userId,
+    // Check if user is already a collaborator (only when a userId is given —
+    // guest collaborators have no user account).
+    if (dto.userId) {
+      const existingCollaborator =
+        await this.prisma.mediaCollaborator.findUnique({
+          where: {
+            projectId_userId: {
+              projectId,
+              userId: dto.userId,
+            },
           },
-        },
-      },
-    );
+        });
 
-    if (existingCollaborator) {
-      throw new BadRequestException("User is already a collaborator");
+      if (existingCollaborator) {
+        throw new BadRequestException("User is already a collaborator");
+      }
     }
 
     return this.prisma.mediaCollaborator.create({

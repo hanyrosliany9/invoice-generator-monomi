@@ -132,8 +132,9 @@ export class CreateExpenseDto {
   ppnCategory?: PPNCategory;
 
   @ApiProperty({ description: "Is luxury goods (12% PPN)", default: false })
+  @IsOptional()
   @IsBoolean()
-  isLuxuryGoods: boolean;
+  isLuxuryGoods?: boolean;
 
   @ApiPropertyOptional({
     description: "Withholding tax type",
@@ -150,8 +151,9 @@ export class CreateExpenseDto {
   withholdingTaxRate?: number;
 
   @ApiProperty({ description: "Is tax deductible", default: true })
+  @IsOptional()
   @IsBoolean()
-  isTaxDeductible: boolean;
+  isTaxDeductible?: boolean;
 
   // ===== E-FAKTUR =====
 
@@ -179,8 +181,9 @@ export class CreateExpenseDto {
     enum: EFakturStatus,
     default: "NOT_REQUIRED",
   })
+  @IsOptional()
   @IsEnum(EFakturStatus)
-  eFakturStatus: EFakturStatus;
+  eFakturStatus?: EFakturStatus;
 
   // ===== VENDOR INFORMATION =====
 
@@ -238,9 +241,10 @@ export class CreateExpenseDto {
   expenseDate: Date;
 
   @ApiProperty({ description: "Currency", default: "IDR" })
+  @IsOptional()
   @IsString()
   @MaxLength(3)
-  currency: string;
+  currency?: string;
 
   // ===== RELATIONSHIPS =====
 
@@ -257,8 +261,9 @@ export class CreateExpenseDto {
   // ===== BILLABLE =====
 
   @ApiProperty({ description: "Is billable to client", default: false })
+  @IsOptional()
   @IsBoolean()
-  isBillable: boolean;
+  isBillable?: boolean;
 
   @ApiPropertyOptional({ description: "Billable amount" })
   @IsOptional()
