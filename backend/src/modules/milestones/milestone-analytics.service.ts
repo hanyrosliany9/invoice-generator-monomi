@@ -12,46 +12,49 @@ import {
 } from "./dto/milestone-analytics-query.dto";
 import { Prisma } from "@prisma/client";
 
+/**
+ * Milestone analytics are derived from PAYMENT milestones (termin) — the
+ * structured payment terms that already exist on every quotation/invoice.
+ * There is no separate manual "project milestone" entry; setting termin on a
+ * quotation (e.g. DP 30% / Pelunasan 70%) auto-populates these analytics.
+ *
+ * Each PaymentMilestone carries: paymentAmount, paymentPercentage, isInvoiced,
+ * an optional dueDate, the owning quotation→project→client, and the invoices
+ * generated for it (each with its payments). All metrics below are computed
+ * from that graph.
+ */
 @Injectable()
 export class MilestoneAnalyticsService {
   constructor(private prisma: PrismaService) {}
 
-  /**
-   * Get comprehensive milestone analytics
-   */
   async getAnalytics(
     query: MilestoneAnalyticsQueryDto,
   ): Promise<MilestoneAnalyticsDto> {
     const dateRange = this.calculateDateRange(query);
 
-    // Build where clause for filtering
-    const whereClause: Prisma.ProjectMilestoneWhereInput = {
-      ...(query.projectId && { projectId: query.projectId }),
-      plannedEndDate: {
-        gte: dateRange.startDate,
-        lte: dateRange.endDate,
-      },
+    // Filter by creation date (always present) and, optionally, the project the
+    // owning quotation belongs to. Payment milestones often have no dueDate, so
+    // createdAt is the reliable window field.
+    const whereClause: Prisma.PaymentMilestoneWhereInput = {
+      createdAt: { gte: dateRange.startDate, lte: dateRange.endDate },
+      ...(query.projectId && {
+        quotation: { projectId: query.projectId },
+      }),
     };
 
-    // Fetch all milestones with related data
-    const milestones = await this.prisma.projectMilestone.findMany({
+    const milestones = await this.prisma.paymentMilestone.findMany({
       where: whereClause,
       include: {
-        project: {
-          include: {
-            invoices: {
-              include: {
-                payments: true,
-              },
-            },
-            expenses: true,
-          },
+        quotation: {
+          include: { project: true, client: true },
+        },
+        invoices: {
+          include: { payments: true },
         },
       },
-      orderBy: [{ plannedEndDate: "asc" }, { milestoneNumber: "asc" }],
+      orderBy: [{ createdAt: "asc" }, { milestoneNumber: "asc" }],
     });
 
-    // Calculate metrics
     const [
       averagePaymentCycle,
       onTimePaymentRate,
@@ -64,7 +67,7 @@ export class MilestoneAnalyticsService {
       this.calculateOnTimePaymentRate(milestones),
       this.calculateRevenueRecognitionRate(milestones),
       this.calculateProfitabilityByPhase(milestones),
-      this.calculateCashFlowForecast(milestones, dateRange),
+      this.calculateCashFlowForecast(milestones),
       this.calculateMilestoneMetrics(milestones),
     ]);
 
@@ -78,21 +81,17 @@ export class MilestoneAnalyticsService {
     };
   }
 
-  /**
-   * Calculate date range from query parameters
-   */
   private calculateDateRange(query: MilestoneAnalyticsQueryDto): {
     startDate: Date;
     endDate: Date;
   } {
     const now = new Date();
+    const endDate: Date = new Date(query.endDate || now);
     let startDate: Date;
-    let endDate: Date = new Date(query.endDate || now);
 
     if (query.startDate) {
       startDate = new Date(query.startDate);
     } else {
-      // Calculate based on timeRange
       switch (query.timeRange) {
         case TimeRangeEnum.THIRTY_DAYS:
           startDate = new Date(now);
@@ -113,253 +112,223 @@ export class MilestoneAnalyticsService {
     return { startDate, endDate };
   }
 
-  /**
-   * Calculate average payment cycle (days from invoice to payment)
-   */
+  /** First (earliest) payment across a milestone's invoices, if any. */
+  private firstPayment(milestone: any): any | null {
+    const payments: any[] = [];
+    for (const inv of milestone.invoices ?? []) {
+      for (const p of inv.payments ?? []) payments.push(p);
+    }
+    if (payments.length === 0) return null;
+    return payments.sort(
+      (a, b) =>
+        new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime(),
+    )[0];
+  }
+
+  /** Earliest invoice linked to a milestone, if any. */
+  private firstInvoice(milestone: any): any | null {
+    const invoices: any[] = milestone.invoices ?? [];
+    if (invoices.length === 0) return null;
+    return [...invoices].sort(
+      (a, b) =>
+        new Date(a.creationDate).getTime() - new Date(b.creationDate).getTime(),
+    )[0];
+  }
+
+  private isPaid(milestone: any): boolean {
+    return (milestone.invoices ?? []).some((inv: any) =>
+      (inv.payments ?? []).some(
+        (p: any) => String(p.status).toUpperCase() === "COMPLETED",
+      ),
+    );
+  }
+
+  /** Average days from invoice issue to first payment, across all milestones. */
   private async calculateAveragePaymentCycle(
     milestones: any[],
   ): Promise<number> {
-    const paymentCycles: number[] = [];
-
-    for (const milestone of milestones) {
-      const invoices = milestone.project.invoices;
-
-      for (const invoice of invoices) {
-        if (invoice.payments && invoice.payments.length > 0) {
-          // Get the first payment date (typically the actual payment date)
-          const firstPayment = invoice.payments.sort(
-            (a: any, b: any) =>
-              new Date(a.paymentDate).getTime() -
-              new Date(b.paymentDate).getTime(),
-          )[0];
-
-          const invoiceDate = new Date(invoice.creationDate);
-          const paymentDate = new Date(firstPayment.paymentDate);
-          const diffTime = paymentDate.getTime() - invoiceDate.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-          if (diffDays >= 0) {
-            paymentCycles.push(diffDays);
-          }
-        }
+    const cycles: number[] = [];
+    for (const m of milestones) {
+      for (const inv of m.invoices ?? []) {
+        if (!inv.payments || inv.payments.length === 0) continue;
+        const firstPayment = [...inv.payments].sort(
+          (a: any, b: any) =>
+            new Date(a.paymentDate).getTime() -
+            new Date(b.paymentDate).getTime(),
+        )[0];
+        const invoiceDate = new Date(inv.creationDate);
+        const paymentDate = new Date(firstPayment.paymentDate);
+        const diffDays = Math.ceil(
+          (paymentDate.getTime() - invoiceDate.getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
+        if (diffDays >= 0) cycles.push(diffDays);
       }
     }
-
-    if (paymentCycles.length === 0) return 0;
-
-    const average =
-      paymentCycles.reduce((sum, cycle) => sum + cycle, 0) /
-      paymentCycles.length;
-    return Math.round(average);
+    if (cycles.length === 0) return 0;
+    return Math.round(cycles.reduce((s, c) => s + c, 0) / cycles.length);
   }
 
-  /**
-   * Calculate on-time payment rate (percentage)
-   */
+  /** Percentage of paid milestone-invoices that were paid on or before due. */
   private async calculateOnTimePaymentRate(milestones: any[]): Promise<number> {
-    let totalInvoices = 0;
-    let onTimePayments = 0;
-
-    for (const milestone of milestones) {
-      const invoices = milestone.project.invoices;
-
-      for (const invoice of invoices) {
-        totalInvoices++;
-
-        if (invoice.payments && invoice.payments.length > 0) {
-          const firstPayment = invoice.payments.sort(
-            (a: any, b: any) =>
-              new Date(a.paymentDate).getTime() -
-              new Date(b.paymentDate).getTime(),
-          )[0];
-
-          const dueDate = new Date(invoice.dueDate);
-          const paymentDate = new Date(firstPayment.paymentDate);
-
-          if (paymentDate <= dueDate) {
-            onTimePayments++;
-          }
-        }
+    let total = 0;
+    let onTime = 0;
+    for (const m of milestones) {
+      for (const inv of m.invoices ?? []) {
+        if (!inv.payments || inv.payments.length === 0) continue;
+        total++;
+        const firstPayment = [...inv.payments].sort(
+          (a: any, b: any) =>
+            new Date(a.paymentDate).getTime() -
+            new Date(b.paymentDate).getTime(),
+        )[0];
+        const due = inv.dueDate ? new Date(inv.dueDate) : null;
+        const paid = new Date(firstPayment.paymentDate);
+        if (!due || paid <= due) onTime++;
       }
     }
-
-    if (totalInvoices === 0) return 100;
-
-    return Math.round((onTimePayments / totalInvoices) * 100);
+    if (total === 0) return 100;
+    return Math.round((onTime / total) * 100);
   }
 
-  /**
-   * Calculate revenue recognition rate (percentage)
-   */
+  /** Recognized revenue = invoiced milestone value ÷ total milestone value. */
   private async calculateRevenueRecognitionRate(
     milestones: any[],
   ): Promise<number> {
-    let totalPlannedRevenue = 0;
-    let totalRecognizedRevenue = 0;
-
-    for (const milestone of milestones) {
-      totalPlannedRevenue += Number(milestone.plannedRevenue || 0);
-      totalRecognizedRevenue += Number(milestone.recognizedRevenue || 0);
+    let totalPlanned = 0;
+    let totalRecognized = 0;
+    for (const m of milestones) {
+      const amount = Number(m.paymentAmount || 0);
+      totalPlanned += amount;
+      if (m.isInvoiced || (m.invoices ?? []).length > 0) {
+        totalRecognized += amount;
+      }
     }
-
-    if (totalPlannedRevenue === 0) return 0;
-
-    return Math.round((totalRecognizedRevenue / totalPlannedRevenue) * 100);
+    if (totalPlanned === 0) return 0;
+    return Math.round((totalRecognized / totalPlanned) * 100);
   }
 
-  /**
-   * Calculate profitability by phase
-   */
+  /** Group milestone value by phase name (DP, Pelunasan, …). */
   private async calculateProfitabilityByPhase(
     milestones: any[],
   ): Promise<ProfitabilityDataDto[]> {
-    const profitabilityMap = new Map<string, ProfitabilityDataDto>();
-
-    for (const milestone of milestones) {
-      const milestoneName =
-        milestone.name || `Milestone ${milestone.milestoneNumber}`;
-
-      // Get actual cost from project expenses related to this milestone
-      const actualCost = Number(
-        milestone.actualCost || milestone.estimatedCost || 0,
-      );
-
-      // Get revenue (planned or recognized)
-      const revenue = Number(
-        milestone.recognizedRevenue || milestone.plannedRevenue || 0,
-      );
-
-      // Calculate profit and margin
-      const profit = revenue - actualCost;
-      const profitMargin = revenue > 0 ? (profit / revenue) * 100 : 0;
-
-      if (profitabilityMap.has(milestoneName)) {
-        const existing = profitabilityMap.get(milestoneName)!;
+    const map = new Map<string, ProfitabilityDataDto>();
+    for (const m of milestones) {
+      const name = m.nameId || m.name || `Termin ${m.milestoneNumber}`;
+      const revenue = Number(m.paymentAmount || 0);
+      // Payment milestones do not carry a per-phase cost; profit == revenue.
+      const cost = 0;
+      const profit = revenue - cost;
+      const existing = map.get(name);
+      if (existing) {
         existing.revenue += revenue;
-        existing.cost += actualCost;
+        existing.cost += cost;
         existing.profit += profit;
         existing.profitMargin =
           existing.revenue > 0 ? (existing.profit / existing.revenue) * 100 : 0;
       } else {
-        profitabilityMap.set(milestoneName, {
-          milestone: milestoneName,
+        map.set(name, {
+          milestone: name,
           revenue,
-          cost: actualCost,
+          cost,
           profit,
-          profitMargin,
+          profitMargin: revenue > 0 ? (profit / revenue) * 100 : 0,
         });
       }
     }
-
-    return Array.from(profitabilityMap.values());
+    return Array.from(map.values());
   }
 
-  /**
-   * Calculate cash flow forecast
-   */
+  /** Monthly inflow forecast, bucketed by the milestone's expected date. */
   private async calculateCashFlowForecast(
     milestones: any[],
-    dateRange: { startDate: Date; endDate: Date },
   ): Promise<CashFlowDataDto[]> {
-    const cashFlowMap = new Map<string, CashFlowDataDto>();
+    const map = new Map<string, CashFlowDataDto>();
+    for (const m of milestones) {
+      // Expected date: milestone dueDate → its invoice dueDate → createdAt.
+      const inv = this.firstInvoice(m);
+      const when =
+        (m.dueDate && new Date(m.dueDate)) ||
+        (inv?.dueDate && new Date(inv.dueDate)) ||
+        new Date(m.createdAt);
+      const monthKey = `${when.getFullYear()}-${String(when.getMonth() + 1).padStart(2, "0")}-01`;
 
-    // Group milestones by month
-    for (const milestone of milestones) {
-      const plannedDate = new Date(milestone.plannedEndDate);
-      const monthKey = `${plannedDate.getFullYear()}-${String(plannedDate.getMonth() + 1).padStart(2, "0")}-01`;
+      const revenue = Number(m.paymentAmount || 0);
+      const invoiced = m.isInvoiced || (m.invoices ?? []).length > 0;
+      const paid = this.isPaid(m);
 
-      const revenue = Number(milestone.plannedRevenue || 0);
-      const recognized = Number(milestone.recognizedRevenue || 0);
-
-      // Check if milestone has been invoiced
-      const hasInvoice = milestone.project.invoices.some(
-        (inv: any) => inv.projectId === milestone.projectId,
-      );
-
-      // Check if payment received
-      const hasPayment = milestone.project.invoices.some((inv: any) =>
-        inv.payments?.some((p: any) => p.status === "COMPLETED"),
-      );
-
-      if (cashFlowMap.has(monthKey)) {
-        const existing = cashFlowMap.get(monthKey)!;
+      const existing = map.get(monthKey);
+      if (existing) {
         existing.expectedInflow += revenue;
-        existing.actualInflow += hasPayment ? revenue : 0;
-        existing.forecastedInflow += hasInvoice ? revenue : revenue * 0.9; // 90% forecast if not invoiced
+        existing.actualInflow += paid ? revenue : 0;
+        existing.forecastedInflow += invoiced ? revenue : revenue * 0.9;
       } else {
-        cashFlowMap.set(monthKey, {
+        map.set(monthKey, {
           date: monthKey,
           expectedInflow: revenue,
-          actualInflow: hasPayment ? revenue : 0,
-          forecastedInflow: hasInvoice ? revenue : revenue * 0.9,
+          actualInflow: paid ? revenue : 0,
+          forecastedInflow: invoiced ? revenue : revenue * 0.9,
         });
       }
     }
-
-    // Sort by date and return
-    return Array.from(cashFlowMap.values()).sort((a, b) =>
-      a.date.localeCompare(b.date),
-    );
+    return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
   }
 
-  /**
-   * Calculate milestone metrics for table display
-   */
+  /** Per-milestone rows for the table. */
   private async calculateMilestoneMetrics(
     milestones: any[],
   ): Promise<MilestoneMetricDto[]> {
     const metrics: MilestoneMetricDto[] = [];
+    const now = new Date();
 
-    for (const milestone of milestones) {
-      // Find related invoice
-      const relatedInvoice = milestone.project.invoices.find(
-        (inv: any) => inv.projectId === milestone.projectId,
-      );
+    for (const m of milestones) {
+      const relatedInvoice = this.firstInvoice(m);
+      const payment = this.firstPayment(m);
+      const invoiced = m.isInvoiced || !!relatedInvoice;
 
-      // Find payment
-      const payment = relatedInvoice?.payments?.[0];
-
-      // Calculate status
       let status: MilestoneMetricDto["status"] = "PENDING";
-      if (payment?.status === "COMPLETED") {
+      if (this.isPaid(m)) {
         status = "PAID";
-      } else if (relatedInvoice) {
+      } else if (invoiced) {
         status = "INVOICED";
-      } else if (
-        milestone.status === "COMPLETED" ||
-        milestone.status === "ACCEPTED"
-      ) {
-        const dueDate = new Date(milestone.plannedEndDate);
-        const now = new Date();
-        if (now > dueDate) {
-          status = "OVERDUE";
-        }
+      }
+      // Overdue: a due date has passed and it has not been paid.
+      const due =
+        (m.dueDate && new Date(m.dueDate)) ||
+        (relatedInvoice?.dueDate && new Date(relatedInvoice.dueDate)) ||
+        null;
+      if (status !== "PAID" && due && now > due) {
+        status = "OVERDUE";
       }
 
-      // Calculate days to payment
       let daysToPayment: number | undefined;
       if (relatedInvoice && payment) {
         const invoiceDate = new Date(relatedInvoice.creationDate);
         const paymentDate = new Date(payment.paymentDate);
-        const diffTime = paymentDate.getTime() - invoiceDate.getTime();
-        daysToPayment = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        daysToPayment = Math.ceil(
+          (paymentDate.getTime() - invoiceDate.getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
       }
 
+      const amount = Number(m.paymentAmount || 0);
       metrics.push({
-        id: milestone.id,
-        milestoneNumber: milestone.milestoneNumber,
-        name: milestone.name || `Milestone ${milestone.milestoneNumber}`,
-        amount: Number(milestone.plannedRevenue || 0),
-        dueDate: milestone.plannedEndDate.toISOString().split("T")[0],
+        id: m.id,
+        milestoneNumber: m.milestoneNumber,
+        name: m.nameId || m.name || `Termin ${m.milestoneNumber}`,
+        amount,
+        dueDate: due
+          ? due.toISOString().split("T")[0]
+          : new Date(m.createdAt).toISOString().split("T")[0],
         invoicedDate: relatedInvoice
-          ? relatedInvoice.creationDate.toISOString().split("T")[0]
+          ? new Date(relatedInvoice.creationDate).toISOString().split("T")[0]
           : undefined,
         paidDate: payment
           ? new Date(payment.paymentDate).toISOString().split("T")[0]
           : undefined,
         daysToPayment,
         status,
-        revenueRecognized: Number(milestone.recognizedRevenue || 0),
+        revenueRecognized: invoiced ? amount : 0,
       });
     }
 

@@ -159,7 +159,9 @@ export default function MilestoneAnalyticsPageV2() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
 
-  const [timeRange, setTimeRange] = useState<TimeRange>('90days');
+  // Default to 1 year: payment milestones (termin) are created across the whole
+  // project history, so a 90-day window often shows an empty analytics page.
+  const [timeRange, setTimeRange] = useState<TimeRange>('1year');
   const [projectId, setProjectId] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
@@ -220,12 +222,12 @@ export default function MilestoneAnalyticsPageV2() {
   }, [analytics]);
 
   const hasActiveFilters =
-    projectId !== 'all' || statusFilter !== 'all' || timeRange !== '90days';
+    projectId !== 'all' || statusFilter !== 'all' || timeRange !== '1year';
 
   const resetFilters = () => {
     setProjectId('all');
     setStatusFilter('all');
-    setTimeRange('90days');
+    setTimeRange('1year');
   };
 
   const handleExport = () => {
