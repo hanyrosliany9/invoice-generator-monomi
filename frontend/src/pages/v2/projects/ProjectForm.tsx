@@ -32,7 +32,9 @@ import { cn } from '@/lib/utils';
 
 const productItemSchema = z.object({
   name: z.string().min(1, 'Item name is required'),
-  description: z.string().min(1, 'Description is required'),
+  // Optional — it's a "short description (printed on document)". Requiring it
+  // silently blocked saving any project whose line items had no description.
+  description: z.string().max(500, 'Description is too long'),
   quantity: z.coerce.number().min(1, 'Min. 1'),
   price: z.coerce.number().min(0, 'Min. 0'),
 });
@@ -276,13 +278,14 @@ export const ProjectForm = ({
     return Math.floor(ms / (1000 * 60 * 60 * 24)) + 1;
   }, [startDate, endDate]);
 
-  const estimatedTotal = useMemo(
-    () =>
-      (products ?? []).reduce(
-        (acc, p) => acc + toNumber(p?.quantity) * toNumber(p?.price),
-        0,
-      ),
-    [products],
+  // Computed inline (not memoised): react-hook-form's watch() mutates the
+  // products array entries in place and keeps the SAME array reference, so a
+  // useMemo keyed on [products] would never recompute and the total went
+  // stale while per-row subtotals (computed inline) updated. Recompute every
+  // render — it's a tiny array and stays in lockstep with the subtotals.
+  const estimatedTotal = (products ?? []).reduce(
+    (acc, p) => acc + toNumber(p?.quantity) * toNumber(p?.price),
+    0,
   );
 
   const sortedActiveTypes = useMemo(
