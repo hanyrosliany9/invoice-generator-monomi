@@ -176,6 +176,12 @@ export const quotationService = {
     return response.data.data
   },
 
+  // Reopen an approved quotation back to Draft (voids unpaid generated invoices)
+  reopen: async (id: string): Promise<Quotation> => {
+    const response = await apiClient.post(`/quotations/${id}/reopen`)
+    return response.data?.data ?? response.data
+  },
+
   // Generate invoice from quotation
   generateInvoice: async (
     id: string

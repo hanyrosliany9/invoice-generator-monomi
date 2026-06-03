@@ -2,12 +2,16 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Logger,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { SettingsService } from "../settings/settings.service";
 import { InvoiceCounterService } from "../invoices/services/invoice-counter.service";
+import { InvoicesService } from "../invoices/invoices.service";
 import { PaymentMilestonesService } from "./services/payment-milestones.service";
 import { DocumentsService } from "../documents/documents.service";
 import { CreateQuotationDto } from "./dto/create-quotation.dto";
@@ -30,6 +34,8 @@ export class QuotationsService {
     private invoiceCounterService: InvoiceCounterService,
     private paymentMilestonesService: PaymentMilestonesService,
     private documentsService: DocumentsService,
+    @Inject(forwardRef(() => InvoicesService))
+    private invoicesService: InvoicesService,
   ) {}
 
   async create(
@@ -373,6 +379,77 @@ export class QuotationsService {
     }
 
     return updatedQuotation;
+  }
+
+  /**
+   * Reopen an APPROVED quotation back to DRAFT so its terms/status can change
+   * again. Approval is normally terminal because it auto-generates an invoice,
+   * so this is a guarded "undo": it refuses if any generated invoice has been
+   * issued (SENT) or paid (PAID/OVERDUE/has payments) — those are real AR/cash
+   * records that must be reversed first. Unpaid DRAFT invoices are removed via
+   * the invoice service (which cascades payments/documents and resets the
+   * milestone), then the quotation returns to DRAFT.
+   */
+  async reopenQuotation(id: string): Promise<any> {
+    const quotation = await this.findOne(id);
+
+    if (quotation.status !== QuotationStatus.APPROVED) {
+      throw new BadRequestException(
+        "Hanya penawaran berstatus Disetujui yang dapat dibuka kembali.",
+      );
+    }
+
+    const invoices = (quotation as any).invoices ?? [];
+
+    // Guard: block if any generated invoice is issued or paid.
+    for (const inv of invoices) {
+      const paymentCount = await this.prisma.payment.count({
+        where: { invoiceId: inv.id },
+      });
+      // ConflictException (409), not BadRequestException — the global
+      // ValidationInterceptor relabels BadRequest as "Validation failed" and
+      // drops the real reason, so the user would never learn WHY it refused.
+      if (
+        inv.status === "PAID" ||
+        inv.status === "OVERDUE" ||
+        inv.markedPaidAt ||
+        paymentCount > 0
+      ) {
+        throw new ConflictException(
+          `Tidak dapat membuka kembali: invoice ${inv.invoiceNumber} sudah dibayar. Batalkan pembayaran invoice terlebih dahulu.`,
+        );
+      }
+      if (inv.status === "SENT") {
+        throw new ConflictException(
+          `Tidak dapat membuka kembali: invoice ${inv.invoiceNumber} sudah dikirim ke klien. Batalkan/hapus invoice tersebut terlebih dahulu.`,
+        );
+      }
+    }
+
+    // Safe to undo: remove the (unpaid, un-issued) generated invoices.
+    for (const inv of invoices) {
+      await this.invoicesService.remove(inv.id);
+    }
+
+    // Reset any milestone invoiced flags and return the quotation to DRAFT.
+    await this.prisma.paymentMilestone.updateMany({
+      where: { quotationId: id },
+      data: { isInvoiced: false },
+    });
+
+    this.logger.log(
+      `Reopened quotation ${quotation.quotationNumber}: removed ${invoices.length} generated invoice(s), status → DRAFT`,
+    );
+
+    return this.prisma.quotation.update({
+      where: { id },
+      data: { status: QuotationStatus.DRAFT },
+      include: {
+        client: true,
+        project: true,
+        paymentMilestones: { orderBy: { milestoneNumber: "asc" } },
+      },
+    });
   }
 
   async remove(id: string): Promise<any> {

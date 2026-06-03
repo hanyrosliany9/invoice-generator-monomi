@@ -160,6 +160,31 @@ export default function QuotationDetailPageV2() {
     },
   });
 
+  const reopenMutation = useMutation({
+    mutationFn: () => quotationService.reopen(quotation!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotation', id] });
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success('Penawaran dibuka kembali ke Draft. Invoice otomatis dihapus.');
+    },
+    onError: (err: unknown) => {
+      const resp = (err as { response?: { data?: { details?: string; message?: string } } })?.response?.data;
+      toast.error(resp?.details || resp?.message || 'Gagal membuka kembali penawaran.');
+    },
+  });
+
+  const handleReopen = () => {
+    if (
+      window.confirm(
+        'Buka kembali penawaran ini ke Draft? Invoice yang dibuat otomatis dari ' +
+          'persetujuan akan dihapus (hanya jika belum dikirim/dibayar). Lanjutkan?',
+      )
+    ) {
+      reopenMutation.mutate();
+    }
+  };
+
   const invoiceMutation = useMutation({
     mutationFn: (qId: string) => quotationService.generateInvoice(qId),
     onSuccess: (data) => {
@@ -458,7 +483,8 @@ export default function QuotationDetailPageV2() {
   } else if (statusKey === 'DECLINED') {
     statusOptions.push({ to: 'DRAFT', label: 'Revisi (kembali ke Draft)', icon: RotateCcw });
   }
-  // APPROVED is terminal — no status change (use "Buat Invoice" instead).
+  // APPROVED is terminal in the forward flow, but can be reopened (a guarded
+  // undo) via reopenMutation below — rendered as its own destructive item.
 
   // ── Overflow menu ──────────────────────────────────────────────────
   const overflow = (
@@ -477,7 +503,7 @@ export default function QuotationDetailPageV2() {
         align="end"
         className="bg-bg-raised border-border-default text-text-primary"
       >
-        {statusOptions.length > 0 && (
+        {(statusOptions.length > 0 || statusKey === 'APPROVED') && (
           <>
             <DropdownMenuLabel className="text-text-tertiary text-[10px] uppercase tracking-[0.14em]">
               Ubah Status
@@ -495,6 +521,16 @@ export default function QuotationDetailPageV2() {
                 {opt.label}
               </DropdownMenuItem>
             ))}
+            {statusKey === 'APPROVED' && (
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={reopenMutation.isPending}
+                onClick={handleReopen}
+              >
+                <RotateCcw className="h-4 w-4" />
+                Buka Kembali (Batalkan Persetujuan)
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator className="bg-border-subtle" />
           </>
         )}

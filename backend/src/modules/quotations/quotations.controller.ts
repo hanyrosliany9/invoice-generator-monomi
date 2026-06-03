@@ -141,6 +141,15 @@ export class QuotationsController {
     return this.quotationsService.updateStatus(id, normalizedStatus);
   }
 
+  @Post(":id/reopen")
+  @ApiOperation({
+    summary:
+      "Reopen an approved quotation back to Draft (voids unpaid generated invoices)",
+  })
+  async reopen(@Param("id") id: string) {
+    return this.quotationsService.reopenQuotation(id);
+  }
+
   @Post(":id/generate-invoice")
   @ApiOperation({ summary: "Generate invoice dari quotation yang disetujui" })
   @ApiResponse({
