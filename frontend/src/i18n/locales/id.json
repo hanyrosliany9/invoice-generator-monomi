@@ -4444,7 +4444,12 @@
       "actions": "Tindakan"
     },
     "reportActions": "Tindakan laporan",
-    "downloadPdf": "Unduh PDF"
+    "downloadPdf": "Unduh PDF",
+    "monthly": {
+      "title": "Laporan Bisnis Bulanan",
+      "desc": "Disusun otomatis dari data langsung Anda — pendapatan, piutang, jatuh tempo, konversi, klien & proyek teratas. Tanpa input manual.",
+      "open": "Buka →"
+    }
   },
   "reportDetail": {
     "subtitle": "Detail laporan, bagian, dan visualisasi terkait.",
@@ -5245,6 +5250,40 @@
       "project": "Proyek",
       "status": "Status",
       "revenue": "Pendapatan"
+    }
+  },
+  "monthlyReport": {
+    "title": "Laporan Bisnis Bulanan",
+    "subtitle": "Disusun otomatis dari data langsung Anda — tanpa input manual.",
+    "print": "Cetak / PDF",
+    "revenueByPeriod": "Pendapatan per Periode",
+    "noRevenue": "Tidak ada pendapatan tercatat untuk periode ini.",
+    "topClients": "Klien Teratas (sepanjang waktu)",
+    "topProjects": "Proyek Teratas (sepanjang waktu)",
+    "paymentStatus": "Faktur menurut Status (sepanjang waktu)",
+    "client": "Klien",
+    "project": "Proyek",
+    "revenue": "Pendapatan",
+    "status": "Status",
+    "count": "Jumlah",
+    "amount": "Nilai",
+    "kpi": {
+      "revenue": "Pendapatan (Lunas)",
+      "revenueSub": "diterima bulan ini",
+      "invoiced": "Tertagih",
+      "invoicedSub": "{{n}} faktur",
+      "outstanding": "Piutang (AR)",
+      "outstandingSub": "menunggu pembayaran",
+      "overdue": "Jatuh Tempo",
+      "overdueSub": "{{n}} faktur",
+      "conversion": "Penawaran → Faktur",
+      "conversionSub": "tingkat konversi",
+      "paymentRate": "Tingkat Pembayaran",
+      "paymentRateSub": "faktur lunas",
+      "newClients": "Klien Baru",
+      "newClientsSub": "bulan ini",
+      "newProjects": "Proyek Baru",
+      "newProjectsSub": "bulan ini"
     }
   }
 }

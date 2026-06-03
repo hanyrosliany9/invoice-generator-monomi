@@ -307,6 +307,39 @@ export default function ReportsPageV2() {
           </div>
         </section>
 
+        {/* Auto-compiled monthly business report — zero manual input. */}
+        <section className="mb-12">
+          <button
+            type="button"
+            onClick={() => navigate('/reports/monthly')}
+            className="w-full text-left group"
+          >
+            <GlassPanel
+              surface="strong"
+              padding="lg"
+              className="flex items-center gap-4 transition-colors hover:bg-bg-panel"
+            >
+              <div className="shrink-0 rounded-lg bg-info/10 p-3 text-info">
+                <BarChart3 className="h-6 w-6" strokeWidth={1.5} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-display font-semibold text-text-primary tracking-tight">
+                  {t('reportsPage.monthly.title', 'Monthly Business Report')}
+                </div>
+                <p className="mt-0.5 text-xs text-text-secondary leading-relaxed">
+                  {t(
+                    'reportsPage.monthly.desc',
+                    'Compiled automatically from your live data — revenue, AR, overdue, conversion, top clients & projects. No manual input.',
+                  )}
+                </p>
+              </div>
+              <div className="shrink-0 text-xs text-info group-hover:translate-x-0.5 transition-transform">
+                {t('reportsPage.monthly.open', 'Open →')}
+              </div>
+            </GlassPanel>
+          </button>
+        </section>
+
         {/* ─────────────────────────────────────────────────────────────
             Canonical analytic reports — these are *system* reports, not
             user-created. They live above the saved-report list because

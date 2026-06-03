@@ -4263,7 +4263,12 @@
       "actions": "Actions"
     },
     "reportActions": "Report actions",
-    "downloadPdf": "Download PDF"
+    "downloadPdf": "Download PDF",
+    "monthly": {
+      "title": "Monthly Business Report",
+      "desc": "Compiled automatically from your live data — revenue, AR, overdue, conversion, top clients & projects. No manual input.",
+      "open": "Open →"
+    }
   },
   "reportDetail": {
     "subtitle": "Report details, sections, and associated visualizations.",
@@ -5064,6 +5069,40 @@
       "project": "Project",
       "status": "Status",
       "revenue": "Revenue"
+    }
+  },
+  "monthlyReport": {
+    "title": "Monthly Business Report",
+    "subtitle": "Compiled automatically from your live data — no manual input required.",
+    "print": "Print / PDF",
+    "revenueByPeriod": "Revenue by Period",
+    "noRevenue": "No revenue recorded for this period.",
+    "topClients": "Top Clients (all-time)",
+    "topProjects": "Top Projects (all-time)",
+    "paymentStatus": "Invoices by Status (all-time)",
+    "client": "Client",
+    "project": "Project",
+    "revenue": "Revenue",
+    "status": "Status",
+    "count": "Count",
+    "amount": "Amount",
+    "kpi": {
+      "revenue": "Revenue (Paid)",
+      "revenueSub": "collected this month",
+      "invoiced": "Invoiced",
+      "invoicedSub": "{{n}} invoices",
+      "outstanding": "Outstanding (AR)",
+      "outstandingSub": "awaiting payment",
+      "overdue": "Overdue",
+      "overdueSub": "{{n}} invoices",
+      "conversion": "Quote → Invoice",
+      "conversionSub": "conversion rate",
+      "paymentRate": "Payment Rate",
+      "paymentRateSub": "invoices paid",
+      "newClients": "New Clients",
+      "newClientsSub": "this month",
+      "newProjects": "New Projects",
+      "newProjectsSub": "this month"
     }
   }
 }
