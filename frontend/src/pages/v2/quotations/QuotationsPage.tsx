@@ -100,7 +100,7 @@ export default function QuotationsPageV2() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  const { isAdmin } = usePermissions();
+  const { isAdmin, isSuperAdmin } = usePermissions();
 
   // Filter state — kept intentionally lean. Search is client-side
   // (matches classic page); status is server-side (matches API param).
@@ -295,8 +295,12 @@ export default function QuotationsPageV2() {
         cell: ({ row }) => {
           const q = row.original;
           const status = (q.status || '').toUpperCase() as StatusKey;
+          // Mirror the backend (canApproveOwnSubmission): SUPER_ADMIN may
+          // approve/decline their own quotation; other admins cannot.
           const canApprove =
-            status === 'SENT' && isAdmin() && q.createdBy !== user?.id;
+            status === 'SENT' &&
+            isAdmin() &&
+            (isSuperAdmin() || q.createdBy !== user?.id);
           const canConvert = status === 'APPROVED';
           return (
             <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>

@@ -113,7 +113,7 @@ export default function QuotationDetailPageV2() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  const { isAdmin } = usePermissions();
+  const { isAdmin, isSuperAdmin } = usePermissions();
 
   const {
     data: quotation,
@@ -148,7 +148,14 @@ export default function QuotationDetailPageV2() {
         toast.success('Status berhasil diperbarui.');
       }
     },
-    onError: () => toast.error('Gagal memperbarui status penawaran.'),
+    onError: (err: unknown) => {
+      // Surface the backend reason (e.g. segregation-of-duties block or an
+      // invalid transition) instead of a generic message — otherwise a
+      // refused status change just looks like "nothing happens".
+      const resp = (err as { response?: { data?: { details?: string; message?: string } } })?.response?.data;
+      const msg = resp?.details || resp?.message;
+      toast.error(msg || 'Gagal memperbarui status penawaran.');
+    },
   });
 
   const invoiceMutation = useMutation({
@@ -280,9 +287,15 @@ export default function QuotationDetailPageV2() {
   const isExpiringSoon =
     validityDays !== null && validityDays >= 0 && validityDays <= 3;
 
-  // Permission gates for primary CTA — matches list-page rules.
+  // Permission gates for primary CTA — matches list-page rules AND the
+  // backend (canApproveOwnSubmission): a SUPER_ADMIN may approve/decline their
+  // own quotation; other admins cannot (segregation of duties). Without the
+  // isSuperAdmin() escape the creator never saw the buttons, so a one-person
+  // team (creator == approver) could never move a quotation past SENT.
   const canApprove =
-    statusKey === 'SENT' && isAdmin() && quotation?.createdBy !== user?.id;
+    statusKey === 'SENT' &&
+    isAdmin() &&
+    (isSuperAdmin() || quotation?.createdBy !== user?.id);
   const canDelete = statusKey === 'DRAFT' || statusKey === 'DECLINED';
 
   // ── Shell wrapper — reused across loading / error / data paths ────
