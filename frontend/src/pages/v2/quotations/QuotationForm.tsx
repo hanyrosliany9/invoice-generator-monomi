@@ -57,47 +57,47 @@ import type { Quotation } from '@/services/quotations';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const lineItemSchema = z.object({
-  name: z.string().min(1, 'Nama wajib diisi'),
+  name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
   quantity: z
-    .number({ invalid_type_error: 'Jumlah harus angka' })
-    .int('Jumlah harus bilangan bulat')
-    .min(1, 'Jumlah minimal 1'),
+    .number({ invalid_type_error: 'Quantity must be a number' })
+    .int('Quantity must be a whole number')
+    .min(1, 'Quantity must be at least 1'),
   price: z
-    .number({ invalid_type_error: 'Harga harus angka' })
-    .min(0, 'Harga tidak boleh negatif'),
+    .number({ invalid_type_error: 'Price must be a number' })
+    .min(0, 'Price cannot be negative'),
 });
 
 const milestoneSchema = z.object({
-  name: z.string().min(1, 'Nama termin wajib diisi'),
+  name: z.string().min(1, 'Milestone name is required'),
   percentage: z
-    .number({ invalid_type_error: 'Persen harus angka' })
-    .min(0.01, 'Min. 0,01%')
-    .max(100, 'Maks. 100%'),
+    .number({ invalid_type_error: 'Percentage must be a number' })
+    .min(0.01, 'Min. 0.01%')
+    .max(100, 'Max. 100%'),
 });
 
 export const quotationFormSchema = z
   .object({
-    clientId: z.string().min(1, 'Klien wajib dipilih'),
-    projectId: z.string().min(1, 'Proyek wajib dipilih'),
+    clientId: z.string().min(1, 'Client is required'),
+    projectId: z.string().min(1, 'Project is required'),
     validUntil: z.date({
-      required_error: 'Tanggal berlaku wajib diisi',
-      invalid_type_error: 'Tanggal tidak valid',
+      required_error: 'Validity date is required',
+      invalid_type_error: 'Invalid date',
     }),
     includeTax: z.boolean(),
     lineItems: z
       .array(lineItemSchema)
-      .min(1, 'Minimal satu item harus ditambahkan'),
+      .min(1, 'At least one item must be added'),
     scopeOfWork: z.string().optional(),
     terms: z
       .string()
-      .min(20, 'Syarat & ketentuan minimal 20 karakter'),
+      .min(20, 'Terms & conditions must be at least 20 characters'),
     // Payment terms (termin). FULL = single payment; MILESTONE = split %.
     paymentType: z.enum(['FULL_PAYMENT', 'MILESTONE_BASED']),
     milestones: z.array(milestoneSchema),
   })
   .refine((d) => d.validUntil > new Date(new Date().setHours(0, 0, 0, 0)), {
-    message: 'Tanggal berlaku harus di masa depan',
+    message: 'Validity date must be in the future',
     path: ['validUntil'],
   })
   .superRefine((d, ctx) => {
@@ -105,7 +105,7 @@ export const quotationFormSchema = z
     if (d.milestones.length < 2) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Termin membutuhkan minimal 2 tahap pembayaran.',
+        message: 'Milestones require at least 2 payment stages.',
         path: ['milestones'],
       });
       return;
@@ -115,7 +115,7 @@ export const quotationFormSchema = z
     if (Math.abs(sum - 100) > 0.01) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Total persentase termin harus tepat 100% (sekarang ${sum.toFixed(2)}%).`,
+        message: `Total milestone percentage must be exactly 100% (currently ${sum.toFixed(2)}%).`,
         path: ['milestones'],
       });
     }
@@ -194,16 +194,8 @@ const inputClasses =
   'bg-bg-sunken border-border-default text-text-primary placeholder:text-text-tertiary focus-visible:border-accent-navy-ring focus-visible:ring-accent-navy-ring/40';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Status options for Edit mode (read-only display; transitions happen on
-// the Detail page via workflow buttons — mirrors classic page semantics).
+// Status labels are resolved at render time via t() inside QuotationForm.
 // ─────────────────────────────────────────────────────────────────────────────
-const STATUS_LABELS: Record<NonNullable<Quotation['status']>, string> = {
-  DRAFT: 'Draft',
-  SENT: 'Terkirim',
-  APPROVED: 'Disetujui',
-  DECLINED: 'Ditolak',
-  REVISED: 'Revisi',
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component props
@@ -342,7 +334,7 @@ export const QuotationForm = ({
   const termsEditable = !terminLocked;
   const applyMilestonePreset = (preset: number[], names: string[]) => {
     milestonesArray.replace(
-      preset.map((pct, i) => ({ name: names[i] ?? `Termin ${i + 1}`, percentage: pct })),
+      preset.map((pct, i) => ({ name: names[i] ?? `Milestone ${i + 1}`, percentage: pct })),
     );
   };
 
@@ -360,7 +352,7 @@ export const QuotationForm = ({
         disabled={isSubmitting}
         className="text-text-secondary hover:text-text-primary"
       >
-        {t('common.cancel', 'Batal')}
+        {t('common.cancel', 'Cancel')}
       </Button>
       <Button
         type="submit"
@@ -371,8 +363,8 @@ export const QuotationForm = ({
       >
         {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
         {mode === 'create'
-          ? t('quotations.form.create', 'Simpan')
-          : t('quotations.form.save', 'Simpan Perubahan')}
+          ? t('quotations.form.create', 'Save')
+          : t('quotations.form.save', 'Save Changes')}
       </Button>
     </>
   );
@@ -389,11 +381,11 @@ export const QuotationForm = ({
           mode === 'edit' && quotationNumber
             ? t(
                 'quotations.form.editingSubtitle',
-                'Ubah detail penawaran ini sebelum dikirim atau direvisi.',
+                'Update this quotation before sending or revising.',
               )
             : t(
                 'quotations.form.createSubtitle',
-                'Susun penawaran baru — pilih klien, tambahkan rincian, dan tentukan syarat.',
+                'Create a new quotation — choose a client, add line items, and set terms.',
               )
         }
         actions={<div className="flex items-center gap-2">{headerActions}</div>}
@@ -410,11 +402,11 @@ export const QuotationForm = ({
             desktop so client/project/dates breathe rather than stack. */}
         <section>
           <SectionHeader
-            eyebrow={t('quotations.form.section.identity', 'Identitas')}
-            title={t('quotations.form.section.identityTitle', 'Klien & Proyek')}
+            eyebrow={t('quotations.form.section.identity', 'Identity')}
+            title={t('quotations.form.section.identityTitle', 'Client & Project')}
             hint={t(
               'quotations.form.section.identityHint',
-              'Penawaran terikat pada satu klien dan satu proyek. Pemilihan klien akan memfilter daftar proyek di sebelahnya.',
+              'A quotation is linked to one client and one project. Selecting a client will filter the project list.',
             )}
           />
           <GlassPanel surface="glass" padding="lg">
@@ -423,7 +415,7 @@ export const QuotationForm = ({
               <div className="mb-6 pb-6 border-b border-border-subtle grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {quotationNumber && (
                   <div>
-                    <Eyebrow>{t('quotations.form.number', 'Nomor')}</Eyebrow>
+                    <Eyebrow>{t('quotations.form.number', 'Number')}</Eyebrow>
                     <div className="mt-2 font-mono text-text-primary">
                       {quotationNumber}
                     </div>
@@ -435,12 +427,18 @@ export const QuotationForm = ({
                       {t('quotations.form.status', 'Status')}
                     </Eyebrow>
                     <div className="mt-2 text-sm text-text-secondary">
-                      {STATUS_LABELS[status]}
+                      {({
+                        DRAFT: t('quotations.status.draft', 'Draft'),
+                        SENT: t('quotations.status.sent', 'Sent'),
+                        APPROVED: t('quotations.status.approved', 'Approved'),
+                        DECLINED: t('quotations.status.declined', 'Declined'),
+                        REVISED: t('quotations.status.revised', 'Revised'),
+                      } as Record<NonNullable<Quotation['status']>, string>)[status]}
                       <span className="ml-2 text-[11px] text-text-tertiary">
                         ·{' '}
                         {t(
                           'quotations.form.statusReadonly',
-                          'transisi via alur kerja di halaman detail',
+                          'transitions via workflow on the detail page',
                         )}
                       </span>
                     </div>
@@ -453,7 +451,7 @@ export const QuotationForm = ({
               {/* Client */}
               <div className="space-y-1.5">
                 <FieldLabel htmlFor="clientId" required>
-                  {t('quotations.form.client', 'Klien')}
+                  {t('quotations.form.client', 'Client')}
                 </FieldLabel>
                 {clientsLoading ? (
                   <Skeleton className="h-9 w-full rounded-md" />
@@ -474,7 +472,7 @@ export const QuotationForm = ({
                           <SelectValue
                             placeholder={t(
                               'quotations.form.clientPlaceholder',
-                              'Pilih klien…',
+                              'Select client…',
                             )}
                           />
                         </SelectTrigger>
@@ -486,7 +484,7 @@ export const QuotationForm = ({
                             <div className="px-3 py-6 text-center text-xs text-text-tertiary">
                               {t(
                                 'quotations.form.noClients',
-                                'Belum ada klien.',
+                                'No clients yet.',
                               )}
                             </div>
                           ) : (
@@ -512,7 +510,7 @@ export const QuotationForm = ({
               {/* Project */}
               <div className="space-y-1.5">
                 <FieldLabel htmlFor="projectId" required>
-                  {t('quotations.form.project', 'Proyek')}
+                  {t('quotations.form.project', 'Project')}
                 </FieldLabel>
                 {projectsLoading ? (
                   <Skeleton className="h-9 w-full rounded-md" />
@@ -535,11 +533,11 @@ export const QuotationForm = ({
                               watchedClientId
                                 ? t(
                                     'quotations.form.projectPlaceholder',
-                                    'Pilih proyek…',
+                                    'Select project…',
                                   )
                                 : t(
                                     'quotations.form.projectPlaceholderNoClient',
-                                    'Pilih klien terlebih dahulu',
+                                    'Select a client first',
                                   )
                             }
                           />
@@ -552,7 +550,7 @@ export const QuotationForm = ({
                             <div className="px-3 py-6 text-center text-xs text-text-tertiary">
                               {t(
                                 'quotations.form.noProjects',
-                                'Tidak ada proyek untuk klien ini.',
+                                'No projects for this client.',
                               )}
                             </div>
                           ) : (
@@ -578,7 +576,7 @@ export const QuotationForm = ({
               {/* Valid until */}
               <div className="space-y-1.5">
                 <FieldLabel htmlFor="validUntil" required>
-                  {t('quotations.form.validUntil', 'Berlaku Sampai')}
+                  {t('quotations.form.validUntil', 'Valid Until')}
                 </FieldLabel>
                 <Controller
                   control={control}
@@ -590,7 +588,7 @@ export const QuotationForm = ({
                       disabled={isSubmitting}
                       placeholder={t(
                         'quotations.form.validUntilPlaceholder',
-                        'Pilih tanggal berlaku',
+                        'Select validity date',
                       )}
                       className={cn(
                         'bg-bg-sunken border-border-default text-text-primary',
@@ -611,12 +609,12 @@ export const QuotationForm = ({
                       <span className="text-info font-medium">
                         {t(
                           'quotations.form.milestoneNotice',
-                          'Penawaran ini menggunakan pembayaran bertahap.',
+                          'This quotation uses milestone-based payment.',
                         )}
                       </span>{' '}
                       {t(
                         'quotations.form.milestoneHint',
-                        'Kelola termin pembayaran dari halaman detail untuk menghindari konflik dengan invoice yang sudah terbit.',
+                        'Manage payment milestones from the detail page to avoid conflicts with already-issued invoices.',
                       )}
                     </div>
                   </div>
@@ -633,11 +631,11 @@ export const QuotationForm = ({
             rather than a spreadsheet — hairlines, no zebra striping. */}
         <section>
           <SectionHeader
-            eyebrow={t('quotations.form.section.items', 'Rincian')}
-            title={t('quotations.form.section.itemsTitle', 'Daftar Produk & Jasa')}
+            eyebrow={t('quotations.form.section.items', 'Line Items')}
+            title={t('quotations.form.section.itemsTitle', 'Products & Services')}
             hint={t(
               'quotations.form.section.itemsHint',
-              'Tambahkan setiap produk atau jasa beserta harga satuan. Subtotal dihitung otomatis.',
+              'Add each product or service with its unit price. Subtotals are calculated automatically.',
             )}
           />
           <GlassPanel surface="glass" padding="none">
@@ -646,13 +644,13 @@ export const QuotationForm = ({
                 <thead>
                   <tr className="border-b border-border-subtle">
                     <th className="text-left px-6 py-3 text-[11px] uppercase tracking-wider text-text-tertiary font-medium">
-                      {t('quotations.form.item.name', 'Deskripsi')}
+                      {t('quotations.form.item.name', 'Description')}
                     </th>
                     <th className="text-center px-3 py-3 text-[11px] uppercase tracking-wider text-text-tertiary font-medium w-24">
                       {t('quotations.form.item.qty', 'Qty')}
                     </th>
                     <th className="text-right px-3 py-3 text-[11px] uppercase tracking-wider text-text-tertiary font-medium w-44">
-                      {t('quotations.form.item.price', 'Harga Satuan')}
+                      {t('quotations.form.item.price', 'Unit Price')}
                     </th>
                     <th className="text-right px-6 py-3 text-[11px] uppercase tracking-wider text-text-tertiary font-medium w-44">
                       {t('quotations.form.item.subtotal', 'Subtotal')}
@@ -669,7 +667,7 @@ export const QuotationForm = ({
                       >
                         {t(
                           'quotations.form.item.empty',
-                          'Belum ada item. Tambahkan satu untuk memulai.',
+                          'No items yet. Add one to get started.',
                         )}
                       </td>
                     </tr>
@@ -689,7 +687,7 @@ export const QuotationForm = ({
                               {...register(`lineItems.${index}.name`)}
                               placeholder={t(
                                 'quotations.form.item.namePlaceholder',
-                                'Nama item',
+                                'Item name',
                               )}
                               disabled={isSubmitting}
                               aria-label={`Item ${index + 1} nama`}
@@ -699,7 +697,7 @@ export const QuotationForm = ({
                               {...register(`lineItems.${index}.description`)}
                               placeholder={t(
                                 'quotations.form.item.descriptionPlaceholder',
-                                'Catatan tambahan (opsional)',
+                                'Additional notes (optional)',
                               )}
                               disabled={isSubmitting}
                               aria-label={`Item ${index + 1} deskripsi`}
@@ -770,7 +768,7 @@ export const QuotationForm = ({
                               size="icon-sm"
                               onClick={() => remove(index)}
                               disabled={isSubmitting || fields.length === 1}
-                              aria-label={`Hapus item ${index + 1}`}
+                              aria-label={t('quotations.form.item.removeAria', 'Remove item {{n}}', { n: index + 1 })}
                               className="text-text-tertiary hover:text-danger"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -800,7 +798,7 @@ export const QuotationForm = ({
                 className="gap-2 text-text-secondary hover:text-text-primary"
               >
                 <Plus className="h-3.5 w-3.5" />
-                {t('quotations.form.item.add', 'Tambah item')}
+                {t('quotations.form.item.add', 'Add item')}
               </Button>
               {errors.lineItems &&
                 typeof errors.lineItems.message === 'string' && (
@@ -820,7 +818,7 @@ export const QuotationForm = ({
         <section>
           <SectionHeader
             eyebrow={t('quotations.form.section.totals', 'Total')}
-            title={t('quotations.form.section.totalsTitle', 'Ringkasan Nilai')}
+            title={t('quotations.form.section.totalsTitle', 'Value Summary')}
           />
           <GlassPanel surface="glass" padding="lg">
             <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 lg:gap-12">
@@ -841,12 +839,12 @@ export const QuotationForm = ({
                   />
                   <div className="min-w-0">
                     <div className="text-sm text-text-primary">
-                      {t('quotations.form.includeTax', 'Sertakan PPN 11%')}
+                      {t('quotations.form.includeTax', 'Include VAT 11%')}
                     </div>
                     <div className="text-xs text-text-tertiary mt-0.5">
                       {t(
                         'quotations.form.includeTaxHint',
-                        'Wajib untuk klien dengan NPWP. Pajak dihitung dari subtotal.',
+                        'Required for clients with NPWP. Tax is calculated from subtotal.',
                       )}
                     </div>
                   </div>
@@ -859,12 +857,12 @@ export const QuotationForm = ({
                       <span className="text-warning font-medium">
                         {t(
                           'quotations.form.materaiRequired',
-                          'Materai diperlukan',
+                          'Materai required',
                         )}
                       </span>{' '}
                       {t(
                         'quotations.form.materaiHint',
-                        'nilai melebihi Rp 5.000.000 — siapkan materai pada saat invoice dicetak.',
+                        'value exceeds Rp 5,000,000 — prepare materai when printing the invoice.',
                       )}
                     </div>
                   </div>
@@ -885,7 +883,7 @@ export const QuotationForm = ({
                 {watchedIncludeTax && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-text-tertiary">
-                      {t('quotations.form.tax', 'PPN')} {totals.taxRate}%
+                      {t('quotations.form.tax', 'VAT')} {totals.taxRate}%
                     </span>
                     <MoneyDisplay
                       amount={totals.taxAmount}
@@ -912,17 +910,17 @@ export const QuotationForm = ({
             scope, and this field lets the user override it. */}
         <section>
           <SectionHeader
-            eyebrow={t('quotations.form.section.scope', 'Lingkup')}
-            title={t('quotations.form.section.scopeTitle', 'Lingkup Pekerjaan')}
+            eyebrow={t('quotations.form.section.scope', 'Scope')}
+            title={t('quotations.form.section.scopeTitle', 'Scope of Work')}
             hint={t(
               'quotations.form.section.scopeHint',
-              'Opsional — gambarkan ruang lingkup, deliverable, atau timeline yang relevan.',
+              'Optional — describe the scope, deliverables, or relevant timeline.',
             )}
           />
           <GlassPanel surface="glass" padding="lg">
             <div className="space-y-1.5">
               <FieldLabel htmlFor="scopeOfWork">
-                {t('quotations.form.scope', 'Deskripsi lingkup')}
+                {t('quotations.form.scope', 'Scope description')}
               </FieldLabel>
               <textarea
                 id="scopeOfWork"
@@ -931,7 +929,7 @@ export const QuotationForm = ({
                 rows={6}
                 placeholder={t(
                   'quotations.form.scopePlaceholder',
-                  'Contoh: produksi konten video selama 1 bulan, mencakup 4 reels, 2 long-form, dan revisi maksimal 2 kali per video.',
+                  'Example: video content production for 1 month, covering 4 reels, 2 long-form videos, and up to 2 revisions per video.',
                 )}
                 className={cn(
                   'flex w-full rounded-md px-3 py-2 text-sm transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 resize-y',
@@ -949,11 +947,11 @@ export const QuotationForm = ({
             does not persist milestone changes — manage via detail once built). */}
         <section>
           <SectionHeader
-            eyebrow={t('quotations.form.section.termin', 'Pembayaran')}
-            title={t('quotations.form.section.terminTitle', 'Termin Pembayaran')}
+            eyebrow={t('quotations.form.section.termin', 'Payment')}
+            title={t('quotations.form.section.terminTitle', 'Payment Terms')}
             hint={t(
               'quotations.form.section.terminHint',
-              'Pilih bayar penuh atau termin (cicilan per tahap). Total persentase termin harus 100%.',
+              'Choose full payment or milestone-based installments. Total milestone percentage must equal 100%.',
             )}
           />
           <GlassPanel surface="glass" padding="lg">
@@ -964,8 +962,8 @@ export const QuotationForm = ({
               render={({ field }) => (
                 <div className="inline-flex rounded-lg border border-border-default bg-bg-sunken p-1">
                   {([
-                    ['FULL_PAYMENT', t('quotations.form.paymentFull', 'Bayar Penuh')],
-                    ['MILESTONE_BASED', t('quotations.form.paymentTermin', 'Termin')],
+                    ['FULL_PAYMENT', t('quotations.form.paymentFull', 'Full Payment')],
+                    ['MILESTONE_BASED', t('quotations.form.paymentTermin', 'Milestones')],
                   ] as const).map(([val, label]) => (
                     <button
                       key={val}
@@ -981,7 +979,7 @@ export const QuotationForm = ({
                         ) {
                           applyMilestonePreset(
                             [50, 50],
-                            ['DP 50%', 'Pelunasan 50%'],
+                            [t('quotations.form.milestone.deposit', 'Deposit') + ' 50%', t('quotations.form.milestone.balance', 'Balance') + ' 50%'],
                           );
                         }
                       }}
@@ -1005,13 +1003,13 @@ export const QuotationForm = ({
                 {termsEditable && (
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[11px] uppercase tracking-[0.12em] text-text-tertiary">
-                      {t('quotations.form.terminPreset', 'Pola cepat')}
+                      {t('quotations.form.terminPreset', 'Quick presets')}
                     </span>
                     {[
-                      { label: '50 / 50', pcts: [50, 50], names: ['DP 50%', 'Pelunasan 50%'] },
-                      { label: '30 / 70', pcts: [30, 70], names: ['DP 30%', 'Pelunasan 70%'] },
-                      { label: '40 / 60', pcts: [40, 60], names: ['DP 40%', 'Pelunasan 60%'] },
-                      { label: '30 / 40 / 30', pcts: [30, 40, 30], names: ['DP 30%', 'Progres 40%', 'Pelunasan 30%'] },
+                      { label: '50 / 50', pcts: [50, 50], names: [`${t('quotations.form.milestone.deposit', 'Deposit')} 50%`, `${t('quotations.form.milestone.balance', 'Balance')} 50%`] },
+                      { label: '30 / 70', pcts: [30, 70], names: [`${t('quotations.form.milestone.deposit', 'Deposit')} 30%`, `${t('quotations.form.milestone.balance', 'Balance')} 70%`] },
+                      { label: '40 / 60', pcts: [40, 60], names: [`${t('quotations.form.milestone.deposit', 'Deposit')} 40%`, `${t('quotations.form.milestone.balance', 'Balance')} 60%`] },
+                      { label: '30 / 40 / 30', pcts: [30, 40, 30], names: [`${t('quotations.form.milestone.deposit', 'Deposit')} 30%`, `${t('quotations.form.milestone.progress', 'Progress')} 40%`, `${t('quotations.form.milestone.balance', 'Balance')} 30%`] },
                     ].map((p) => (
                       <Button
                         key={p.label}
@@ -1029,9 +1027,9 @@ export const QuotationForm = ({
 
                 {/* Header row */}
                 <div className="hidden sm:grid grid-cols-[1fr_110px_160px_36px] gap-3 px-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
-                  <div>{t('quotations.form.terminName', 'Nama Termin')}</div>
-                  <div className="text-right">{t('quotations.form.terminPct', 'Persen')}</div>
-                  <div className="text-right">{t('quotations.form.terminAmount', 'Jumlah')}</div>
+                  <div>{t('quotations.form.terminName', 'Milestone Name')}</div>
+                  <div className="text-right">{t('quotations.form.terminPct', 'Percent')}</div>
+                  <div className="text-right">{t('quotations.form.terminAmount', 'Amount')}</div>
                   <div />
                 </div>
 
@@ -1047,7 +1045,7 @@ export const QuotationForm = ({
                         <Input
                           {...register(`milestones.${idx}.name` as const)}
                           disabled={isSubmitting || !termsEditable}
-                          placeholder={t('quotations.form.terminNamePh', 'mis. DP 30%')}
+                          placeholder={t('quotations.form.terminNamePh', 'e.g. Deposit 30%')}
                           className={inputClasses}
                         />
                         <Input
@@ -1072,7 +1070,7 @@ export const QuotationForm = ({
                             size="icon-sm"
                             disabled={isSubmitting}
                             onClick={() => milestonesArray.remove(idx)}
-                            aria-label={t('quotations.form.terminRemove', 'Hapus termin')}
+                            aria-label={t('quotations.form.terminRemove', 'Remove milestone')}
                             className="text-text-tertiary hover:text-danger"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1097,7 +1095,7 @@ export const QuotationForm = ({
                     className="border-border-subtle text-text-secondary hover:text-text-primary"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    {t('quotations.form.terminAdd', 'Tambah Termin')}
+                    {t('quotations.form.terminAdd', 'Add Milestone')}
                   </Button>
                 )}
 
@@ -1111,7 +1109,7 @@ export const QuotationForm = ({
                   )}
                 >
                   <span>
-                    {t('quotations.form.terminTotal', 'Total persentase')}
+                    {t('quotations.form.terminTotal', 'Total percentage')}
                   </span>
                   <span className="font-mono tabular-nums">
                     {milestoneTotalPct.toFixed(2)}% / 100%
@@ -1122,7 +1120,7 @@ export const QuotationForm = ({
                   <p className="text-xs text-text-tertiary">
                     {t(
                       'quotations.form.terminReadonly',
-                      'Termin tidak dapat diubah karena sudah ada invoice yang diterbitkan untuk salah satu tahap. Batalkan invoice terlebih dahulu.',
+                      'Milestones cannot be changed because an invoice has already been issued for one of the stages. Cancel the invoice first.',
                     )}
                   </p>
                 )}
@@ -1131,7 +1129,7 @@ export const QuotationForm = ({
                   <FieldError
                     message={
                       (errors.milestones as { message?: string })?.message ||
-                      t('quotations.form.terminInvalid', 'Periksa kembali termin pembayaran.')
+                      t('quotations.form.terminInvalid', 'Please review the payment milestones.')
                     }
                   />
                 )}
@@ -1144,20 +1142,20 @@ export const QuotationForm = ({
             Required prose block. Min 20 chars enforced by schema. */}
         <section>
           <SectionHeader
-            eyebrow={t('quotations.form.section.terms', 'Syarat')}
+            eyebrow={t('quotations.form.section.terms', 'Terms')}
             title={t(
               'quotations.form.section.termsTitle',
-              'Syarat & Ketentuan',
+              'Terms & Conditions',
             )}
             hint={t(
               'quotations.form.section.termsHint',
-              'Tuliskan ketentuan pembayaran, jadwal pengerjaan, kebijakan revisi, dan klausul lainnya.',
+              'Write out payment terms, delivery schedule, revision policy, and other clauses.',
             )}
           />
           <GlassPanel surface="glass" padding="lg">
             <div className="space-y-1.5">
               <FieldLabel htmlFor="terms" required>
-                {t('quotations.form.terms', 'Ketentuan')}
+                {t('quotations.form.terms', 'Terms')}
               </FieldLabel>
               <textarea
                 id="terms"
@@ -1166,7 +1164,7 @@ export const QuotationForm = ({
                 rows={10}
                 placeholder={t(
                   'quotations.form.termsPlaceholder',
-                  '1. Pembayaran Net 30 dari tanggal invoice.\n2. Termasuk PPN 11%.\n3. Revisi maksimal 3 kali.\n4. ...',
+                  '1. Payment Net 30 from invoice date.\n2. Includes VAT 11%.\n3. Maximum 3 revisions.\n4. ...',
                 )}
                 className={cn(
                   'flex w-full rounded-md px-3 py-2 text-sm font-mono transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 resize-y leading-relaxed',
@@ -1189,7 +1187,7 @@ export const QuotationForm = ({
             disabled={isSubmitting}
             className="text-text-secondary hover:text-text-primary"
           >
-            {t('common.cancel', 'Batal')}
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button
             type="submit"

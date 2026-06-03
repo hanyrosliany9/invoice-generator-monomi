@@ -40,7 +40,10 @@
     "mobileNotice": "Best editing experience on tablet or desktop. Some controls may be hidden on small screens.",
     "unsavedChanges": "Unsaved changes",
     "noPendingChanges": "No pending changes",
-    "optional": "(optional)"
+    "optional": "(optional)",
+    "error": "Something went wrong",
+    "unknownError": "An error occurred",
+    "errorOccurred": "An error occurred"
   },
   "table": {
     "number": "Number",
@@ -182,7 +185,13 @@
     "client": "Client",
     "project": "Project",
     "amount": "Amount",
-    "status": "Status",
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "approved": "Approved",
+      "declined": "Declined",
+      "revised": "Revised"
+    },
     "validUntil": "Valid Until",
     "terms": "Terms & Conditions",
     "statuses": {
@@ -285,14 +294,16 @@
       "number": "Number",
       "project": "Project",
       "status": "Status",
-      "validUntil": "Valid Until"
+      "validUntil": "Valid Until",
+      "actions": "Actions"
     },
     "empty": {
       "title": "No quotations yet",
-      "desc": "Get started by creating your first quotation for a client."
+      "desc": "Start by creating your first quotation for a client."
     },
     "error": {
-      "title": "Cannot load quotations"
+      "title": "Could not load quotations",
+      "generic": "An error occurred"
     },
     "form": {
       "client": "Client",
@@ -300,7 +311,7 @@
       "createTitle": "New Quotation",
       "editShort": "Edit",
       "editTitle": "Edit Quotation",
-      "grandTotal": "Grand Total",
+      "grandTotal": "Total",
       "includeTax": "Include VAT 11%",
       "item": {
         "add": "Add item",
@@ -310,7 +321,8 @@
         "subtotal": "Subtotal",
         "descriptionPlaceholder": "Additional notes (optional)",
         "empty": "No items yet. Add one to get started.",
-        "namePlaceholder": "Item name"
+        "namePlaceholder": "Item name",
+        "removeAria": "Remove item {{n}}"
       },
       "number": "Number",
       "project": "Project",
@@ -324,17 +336,20 @@
         "scope": "Scope",
         "scopeTitle": "Scope of Work",
         "terms": "Terms",
-        "totals": "Totals",
+        "totals": "Total",
         "totalsTitle": "Value Summary",
-        "identityHint": "A quotation is tied to one client and one project. Selecting a client filters the project list accordingly.",
+        "identityHint": "A quotation is linked to one client and one project. Selecting a client will filter the project list.",
         "itemsHint": "Add each product or service with its unit price. Subtotals are calculated automatically.",
         "scopeHint": "Optional — describe the scope, deliverables, or relevant timeline.",
-        "termsHint": "Specify payment terms, delivery schedule, revision policy, and any other conditions.",
-        "termsTitle": "Terms & Conditions"
+        "termsHint": "Write out payment terms, delivery schedule, revision policy, and other clauses.",
+        "termsTitle": "Terms & Conditions",
+        "termin": "Payment",
+        "terminTitle": "Payment Terms",
+        "terminHint": "Choose full payment or milestone-based installments. Total milestone percentage must equal 100%."
       },
       "status": "Status",
       "subtotal": "Subtotal",
-      "tax": "Tax",
+      "tax": "VAT",
       "terms": "Terms",
       "toast": {
         "createFailed": "Failed to create quotation.",
@@ -343,20 +358,38 @@
       },
       "validUntil": "Valid Until",
       "clientPlaceholder": "Select client…",
-      "createSubtitle": "Build a new quotation — choose a client, add line items, and set your terms.",
-      "editingSubtitle": "Edit this quotation's details before sending or revising.",
-      "includeTaxHint": "Required for clients with a tax ID (NPWP). Tax is calculated on the subtotal.",
-      "materaiHint": "Value exceeds IDR 5,000,000 — prepare stamp duty when printing the invoice.",
-      "materaiRequired": "Stamp duty required",
-      "milestoneHint": "Manage installment payments from the detail page to avoid conflicts with already-issued invoices.",
-      "milestoneNotice": "This quotation uses installment-based payment.",
+      "createSubtitle": "Create a new quotation — choose a client, add line items, and set terms.",
+      "editingSubtitle": "Update this quotation before sending or revising.",
+      "includeTaxHint": "Required for clients with NPWP. Tax is calculated from subtotal.",
+      "materaiHint": "value exceeds Rp 5,000,000 — prepare materai when printing the invoice.",
+      "materaiRequired": "Materai required",
+      "milestoneHint": "Manage payment milestones from the detail page to avoid conflicts with already-issued invoices.",
+      "milestoneNotice": "This quotation uses milestone-based payment.",
       "noClients": "No clients yet.",
       "noProjects": "No projects for this client.",
       "projectPlaceholder": "Select project…",
       "projectPlaceholderNoClient": "Select a client first",
-      "scopePlaceholder": "E.g. One month of video content production covering 4 reels, 2 long-form videos, and up to 2 rounds of revisions per video.",
-      "statusReadonly": "Status transitions are managed via the workflow on the detail page.",
-      "validUntilPlaceholder": "Select expiry date"
+      "scopePlaceholder": "Example: video content production for 1 month, covering 4 reels, 2 long-form videos, and up to 2 revisions per video.",
+      "statusReadonly": "transitions via workflow on the detail page",
+      "validUntilPlaceholder": "Select validity date",
+      "paymentFull": "Full Payment",
+      "paymentTermin": "Milestones",
+      "milestone": {
+        "deposit": "Deposit",
+        "balance": "Balance",
+        "progress": "Progress"
+      },
+      "terminPreset": "Quick presets",
+      "terminName": "Milestone Name",
+      "terminPct": "Percent",
+      "terminAmount": "Amount",
+      "terminNamePh": "e.g. Deposit 30%",
+      "terminRemove": "Remove milestone",
+      "terminAdd": "Add Milestone",
+      "terminTotal": "Total percentage",
+      "terminReadonly": "Milestones cannot be changed because an invoice has already been issued for one of the stages. Cancel the invoice first.",
+      "terminInvalid": "Please review the payment milestones.",
+      "termsPlaceholder": "1. Payment Net 30 from invoice date.\n2. Includes VAT 11%.\n3. Maximum 3 revisions.\n4. ..."
     },
     "kpi": {
       "approved": "Approved",
@@ -370,8 +403,8 @@
     },
     "new": "New Quotation",
     "noResults": {
-      "title": "No results found",
-      "desc": "No quotations match your current filters."
+      "title": "No results",
+      "desc": "No quotations match the current filter."
     },
     "table": {
       "amount": "Amount",
@@ -386,8 +419,51 @@
         "title": "Cannot load quotation"
       }
     },
-    "search": "Search by number, client, or project…",
-    "subtitle": "Manage client quotations — from draft through to invoice conversion."
+    "search": {
+      "clear": "Clear search"
+    },
+    "subtitle": "Manage client quotations — from draft through to invoice conversion.",
+    "toast": {
+      "approved": "Quotation approved — invoice created automatically.",
+      "sent": "Quotation sent to client.",
+      "declined": "Quotation declined.",
+      "statusUpdated": "Status updated successfully.",
+      "statusError": "Failed to update quotation status.",
+      "reopened": "Quotation reopened to Draft. Auto-generated invoice deleted.",
+      "reopenError": "Failed to reopen quotation.",
+      "deleted": "Quotation deleted successfully.",
+      "deleteError": "Failed to delete quotation.",
+      "invoiceCreated": "Invoice {{number}} created successfully.",
+      "invoiceError": "Failed to create invoice from quotation.",
+      "pdfDownloaded": "PDF downloaded successfully.",
+      "pdfError": "Failed to download PDF."
+    },
+    "actions": {
+      "aria": "Quotation actions",
+      "view": "View detail",
+      "edit": "Edit",
+      "changeStatus": "Change Status",
+      "markSent": "Mark as Sent",
+      "approve": "Approve",
+      "decline": "Decline",
+      "revise": "Revise (back to Draft)",
+      "reopenConfirm": "Reopen this quotation to Draft? The auto-generated invoice will be deleted (only if not yet sent/paid). Continue?",
+      "reopen": "Reopen (Cancel Approval)",
+      "createInvoice": "Create Invoice",
+      "downloadPdf": "Download PDF",
+      "deleteConfirm": "Delete quotation {{number}}? This action cannot be undone.",
+      "delete": "Delete"
+    },
+    "filter": {
+      "statusPlaceholder": "Status",
+      "allStatuses": "All Statuses",
+      "clear": "Clear",
+      "clearFilter": "Clear filter",
+      "count": "{{filtered}} of {{total}}"
+    },
+    "detail": {
+      "send": "Send"
+    }
   },
   "invoices": {
     "title": "Invoices",
@@ -412,7 +488,13 @@
       "download": "Download PDF",
       "edit": "Edit",
       "markPaid": "Mark as Paid",
-      "send": "Send"
+      "send": "Send",
+      "menuAriaLabel": "Invoice actions",
+      "view": "View",
+      "markSent": "Mark as Sent",
+      "markOverdue": "Mark as Overdue",
+      "cancel": "Cancel Invoice",
+      "changeStatus": "Change Status"
     },
     "detail": {
       "backToList": "Back to Invoices",
@@ -459,21 +541,21 @@
     "empty": {
       "desc": "Get started by creating your first invoice.",
       "filtered": {
-        "desc": "Try adjusting or clearing your filters.",
+        "desc": "Try changing or clearing your filters.",
         "title": "No invoices match your filters"
       },
       "title": "No invoices yet"
     },
     "error": {
-      "title": "Cannot load invoices"
+      "title": "Could not load invoices"
     },
     "filter": {
-      "allMaterai": "All Stamp Duty",
+      "allMaterai": "All Materai",
       "allStatuses": "All Statuses",
-      "materai": "Stamp Duty",
-      "materaiApplied": "Stamp Duty Applied",
-      "materaiPending": "Stamp Duty Pending",
-      "materaiRequired": "Stamp Duty Required",
+      "materai": "Materai",
+      "materaiApplied": "Materai Applied",
+      "materaiPending": "Materai Pending",
+      "materaiRequired": "Materai Required",
       "status": "Status"
     },
     "form": {
@@ -549,23 +631,44 @@
       "drafts": "Drafts",
       "draftsSub": "not yet sent",
       "outstanding": "Outstanding",
-      "outstandingSub": "sent & due",
+      "outstandingSub": "sent & overdue",
       "overdue": "Overdue",
-      "overdueSub": "needs attention",
+      "overdueSub": "needs action",
       "paidThisMonth": "Paid This Month",
-      "paidThisMonthSub": "collected this billing period"
+      "paidThisMonthSub": "paid in current month"
     },
     "new": "New Invoice",
     "search": {
       "placeholder": "Search by number, client, or project..."
     },
-    "subtitle": "Manage your client invoices — send, mark paid, and track overdue.",
+    "subtitle": "Manage client invoices — send, mark as paid, and track overdue ones.",
     "table": {
       "amount": "Amount",
       "date": "Date",
       "dueDate": "Due Date",
       "number": "Number",
       "status": "Status"
+    },
+    "markPaid": {
+      "notes": "Marked as paid from invoice list (v2)"
+    },
+    "statusChanged": "Invoice status updated to {{status}}",
+    "confirmDelete": "Delete invoice {{number}}?",
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "paid": "Paid",
+      "overdue": "Overdue",
+      "cancelled": "Cancelled"
+    },
+    "col": {
+      "number": "Number",
+      "client": "Client",
+      "amount": "Amount",
+      "issued": "Issued",
+      "dueDate": "Due Date",
+      "status": "Status",
+      "actions": "Actions"
     }
   },
   "clients": {
@@ -795,14 +898,14 @@
     },
     "empty": {
       "filtered": {
-        "title": "No projects match your filters",
-        "desc": "Try adjusting or clearing your filters."
+        "title": "No matching projects",
+        "desc": "Try changing or removing your filters."
       },
       "title": "No projects yet",
-      "desc": "Get started by creating your first project."
+      "desc": "Start by creating your first project."
     },
     "error": {
-      "title": "Cannot load projects"
+      "title": "Could not load projects"
     },
     "filter": {
       "allClients": "All Clients",
@@ -864,7 +967,7 @@
       "active": "Active Projects",
       "activeSub": "currently running",
       "completedMonth": "Completed This Month",
-      "completedMonthSub": "this billing period",
+      "completedMonthSub": "in current month",
       "outstanding": "Outstanding",
       "outstandingSub": "awaiting payment",
       "revenue": "Total Revenue",
@@ -872,7 +975,7 @@
     },
     "new": "New Project",
     "statusFailed": "Failed to update status.",
-    "statusUpdated": "Project status updated successfully.",
+    "statusUpdated": "Project status updated.",
     "table": {
       "budget": "Budget",
       "description": "Description",
@@ -883,7 +986,32 @@
     "search": {
       "placeholder": "Search by number, description, or client..."
     },
-    "subtitle": "Manage active projects, monitor budgets, and track delivery status."
+    "subtitle": "Manage active projects, track budgets, and monitor progress.",
+    "status": {
+      "PLANNING": "Planning",
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed",
+      "ON_HOLD": "On Hold",
+      "CANCELLED": "Cancelled"
+    },
+    "col": {
+      "number": "Number",
+      "project": "Project",
+      "client": "Client",
+      "status": "Status",
+      "startDate": "Start",
+      "endDate": "End",
+      "value": "Value",
+      "actions": "Actions"
+    },
+    "actions": {
+      "label": "Project actions",
+      "view": "View",
+      "edit": "Edit",
+      "duplicate": "Duplicate",
+      "changeStatus": "Change Status",
+      "delete": "Delete"
+    }
   },
   "currency": {
     "idr": "IDR",
@@ -1921,10 +2049,53 @@
     }
   },
   "quotationDetail": {
-    "untitled": "Quotation Detail",
+    "untitled": "Quotation detail",
     "error": {
-      "desc": "The quotation you're looking for could not be found or an error occurred.",
-      "title": "Cannot load quotation"
+      "desc": "The quotation you are looking for was not found or an error occurred.",
+      "title": "Could not load quotation",
+      "backToList": "Back to list"
+    },
+    "timeline": {
+      "created": "Quotation created",
+      "sent": "Sent to client",
+      "approved": "Approved by client",
+      "declined": "Declined by client",
+      "awaiting": "Awaiting client response"
+    },
+    "validity": {
+      "expired": "Quotation has expired",
+      "expiringSoon": "Expires in {{days}} days",
+      "expiredHint": "Consider creating a revised quotation with a new validity period.",
+      "expiringSoonHint": "Follow up with the client promptly."
+    },
+    "hero": {
+      "client": "Client",
+      "project": "Project",
+      "total": "Total Amount",
+      "includingTax": "including VAT {{rate}}%",
+      "validUntil": "Valid until",
+      "materaiRequired": "Materai required (> 5M IDR)"
+    },
+    "lineItems": {
+      "title": "Line Items",
+      "description": "Description",
+      "qty": "Qty",
+      "unitPrice": "Unit Price",
+      "subtotal": "Subtotal"
+    },
+    "totals": {
+      "subtotal": "Subtotal",
+      "vat": "VAT"
+    },
+    "sections": {
+      "scopeOfWork": "Scope of Work",
+      "terms": "Terms & Conditions",
+      "noNotes": "No additional notes",
+      "noNotesDesc": "Scope of work and terms were not filled in for this quotation.",
+      "history": "History",
+      "createdBy": "Created by",
+      "relatedInvoices": "Related Invoices",
+      "viewInvoice": "View →"
     }
   },
   "socialReports": {

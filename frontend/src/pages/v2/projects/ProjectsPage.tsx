@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Plus, Search, MoreHorizontal, Eye, Pencil, Copy, Trash2, X,
-  PlayCircle, CheckCircle2, PauseCircle,
+  PlayCircle, CheckCircle2, PauseCircle, Clock, Ban,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -28,7 +28,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/auth';
@@ -48,13 +48,16 @@ import { cn } from '@/lib/utils';
 /*  carries the visual weight.                                         */
 /* ------------------------------------------------------------------ */
 
-const STATUS_LABEL: Record<string, string> = {
-  PLANNING:    'Perencanaan',
-  IN_PROGRESS: 'Berlangsung',
-  COMPLETED:   'Selesai',
-  CANCELLED:   'Dibatalkan',
-  ON_HOLD:     'Ditahan',
-};
+/* All five project statuses — order is intentional (lifecycle order). */
+const PROJECT_STATUSES = [
+  'PLANNING',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'ON_HOLD',
+  'CANCELLED',
+] as const;
+
+type ProjectStatus = typeof PROJECT_STATUSES[number];
 
 const statusChipClass = (status?: string) => {
   switch (status) {
@@ -67,7 +70,17 @@ const statusChipClass = (status?: string) => {
   }
 };
 
-const getStatusLabel = (s?: string) => STATUS_LABEL[s?.toUpperCase() ?? ''] ?? (s ?? '—');
+/* Status icon used in the "Ubah Status" dropdown group. */
+const StatusIcon = ({ status }: { status: string }) => {
+  switch (status) {
+    case 'IN_PROGRESS': return <PlayCircle className="h-3.5 w-3.5" />;
+    case 'COMPLETED':   return <CheckCircle2 className="h-3.5 w-3.5" />;
+    case 'ON_HOLD':     return <PauseCircle className="h-3.5 w-3.5" />;
+    case 'CANCELLED':   return <Ban className="h-3.5 w-3.5" />;
+    case 'PLANNING':
+    default:            return <Clock className="h-3.5 w-3.5" />;
+  }
+};
 
 /* ------------------------------------------------------------------ */
 /*  Numeric helpers — project numeric fields arrive as strings from    */
@@ -123,11 +136,11 @@ export default function ProjectsPageV2() {
     mutationFn: (id: string) => projectService.deleteProject(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      toast.success(t('projects.deleted', 'Proyek berhasil dihapus.'));
+      toast.success(t('projects.deleted', 'Project deleted successfully.'));
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message
-        || t('projects.deleteFailed', 'Gagal menghapus proyek.');
+        || t('projects.deleteFailed', 'Failed to delete project.');
       toast.error(msg);
     },
   });
@@ -136,9 +149,9 @@ export default function ProjectsPageV2() {
     mutationFn: (id: string) => projectService.duplicateProject(id),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      toast.success(t('projects.duplicated', `Proyek diduplikasi: ${created?.number ?? ''}`));
+      toast.success(t('projects.duplicated', `Project duplicated: ${created?.number ?? ''}`));
     },
-    onError: () => toast.error(t('projects.duplicateFailed', 'Gagal menduplikasi proyek.')),
+    onError: () => toast.error(t('projects.duplicateFailed', 'Failed to duplicate project.')),
   });
 
   const statusMutation = useMutation({
@@ -146,9 +159,9 @@ export default function ProjectsPageV2() {
       projectService.updateStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      toast.success(t('projects.statusUpdated', 'Status proyek berhasil diubah.'));
+      toast.success(t('projects.statusUpdated', 'Project status updated.'));
     },
-    onError: () => toast.error(t('projects.statusFailed', 'Gagal mengubah status.')),
+    onError: () => toast.error(t('projects.statusFailed', 'Failed to update status.')),
   });
 
   /* ----- derived: filtered list ----- */
@@ -219,9 +232,9 @@ export default function ProjectsPageV2() {
         <PageContainer>
           <EmptyState
             icon={<Folder className="h-12 w-12" />}
-            title={t('projects.error.title', 'Tidak bisa memuat proyek')}
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-            action={<Button onClick={() => refetch()}>{t('common.retry', 'Coba Lagi')}</Button>}
+            title={t('projects.error.title', 'Could not load projects')}
+            description={error instanceof Error ? error.message : t('common.errorOccurred', 'An error occurred')}
+            action={<Button onClick={() => refetch()}>{t('common.retry', 'Retry')}</Button>}
           />
         </PageContainer>
       </AppShell>
@@ -230,7 +243,7 @@ export default function ProjectsPageV2() {
 
   /* ----- handlers ----- */
   const handleDelete = (p: Project) => {
-    if (confirm(t('projects.confirmDelete', `Hapus proyek ${p.number}? Tindakan ini tidak bisa dibatalkan.`))) {
+    if (confirm(t('projects.confirmDelete', `Delete project {{number}}? This action cannot be undone.`, { number: p.number }))) {
       deleteMutation.mutate(p.id);
     }
   };
@@ -249,15 +262,15 @@ export default function ProjectsPageV2() {
     >
       <PageContainer>
         <PageHeader
-          title={t('projects.title', 'Proyek')}
+          title={t('projects.title', 'Projects')}
           description={t(
             'projects.subtitle',
-            'Kelola proyek aktif, pantau anggaran, dan lihat status pengerjaan.',
+            'Manage active projects, track budgets, and monitor progress.',
           )}
           actions={
             <Button onClick={() => navigate('/projects/new')} size="sm">
               <Plus className="h-4 w-4" />
-              {t('projects.new', 'Proyek Baru')}
+              {t('projects.new', 'New Project')}
             </Button>
           }
         />
@@ -280,24 +293,24 @@ export default function ProjectsPageV2() {
             ) : (
               <>
                 <StatCard
-                  label={t('projects.kpi.active', 'Proyek Aktif')}
+                  label={t('projects.kpi.active', 'Active Projects')}
                   value={stats.activeCount}
-                  sublabel={t('projects.kpi.activeSub', 'sedang berjalan')}
+                  sublabel={t('projects.kpi.activeSub', 'currently running')}
                 />
                 <StatCard
-                  label={t('projects.kpi.revenue', 'Total Pendapatan')}
+                  label={t('projects.kpi.revenue', 'Total Revenue')}
                   value={<MoneyDisplay amount={stats.revenue} />}
-                  sublabel={t('projects.kpi.revenueSub', 'dari proyek terbayar')}
+                  sublabel={t('projects.kpi.revenueSub', 'from paid projects')}
                 />
                 <StatCard
-                  label={t('projects.kpi.completedMonth', 'Selesai Bulan Ini')}
+                  label={t('projects.kpi.completedMonth', 'Completed This Month')}
                   value={stats.completedThisMonth}
-                  sublabel={t('projects.kpi.completedMonthSub', 'di bulan berjalan')}
+                  sublabel={t('projects.kpi.completedMonthSub', 'in current month')}
                 />
                 <StatCard
-                  label={t('projects.kpi.outstanding', 'Belum Tertagih')}
+                  label={t('projects.kpi.outstanding', 'Outstanding')}
                   value={<MoneyDisplay amount={stats.outstanding} />}
-                  sublabel={t('projects.kpi.outstandingSub', 'menunggu pembayaran')}
+                  sublabel={t('projects.kpi.outstandingSub', 'awaiting payment')}
                 />
               </>
             )}
@@ -320,7 +333,7 @@ export default function ProjectsPageV2() {
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder={t(
                   'projects.search.placeholder',
-                  'Cari nomor, deskripsi, atau klien...',
+                  'Search by number, description, or client...',
                 )}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
@@ -336,13 +349,13 @@ export default function ProjectsPageV2() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">
-                    {t('projects.filter.allStatuses', 'Semua Status')}
+                    {t('projects.filter.allStatuses', 'All Statuses')}
                   </SelectItem>
-                  <SelectItem value="PLANNING">{STATUS_LABEL.PLANNING}</SelectItem>
-                  <SelectItem value="IN_PROGRESS">{STATUS_LABEL.IN_PROGRESS}</SelectItem>
-                  <SelectItem value="COMPLETED">{STATUS_LABEL.COMPLETED}</SelectItem>
-                  <SelectItem value="ON_HOLD">{STATUS_LABEL.ON_HOLD}</SelectItem>
-                  <SelectItem value="CANCELLED">{STATUS_LABEL.CANCELLED}</SelectItem>
+                  <SelectItem value="PLANNING">{t('projects.status.PLANNING', 'Planning')}</SelectItem>
+                  <SelectItem value="IN_PROGRESS">{t('projects.status.IN_PROGRESS', 'In Progress')}</SelectItem>
+                  <SelectItem value="COMPLETED">{t('projects.status.COMPLETED', 'Completed')}</SelectItem>
+                  <SelectItem value="ON_HOLD">{t('projects.status.ON_HOLD', 'On Hold')}</SelectItem>
+                  <SelectItem value="CANCELLED">{t('projects.status.CANCELLED', 'Cancelled')}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -351,11 +364,11 @@ export default function ProjectsPageV2() {
                   size="sm"
                   className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[160px] max-w-[220px]"
                 >
-                  <SelectValue placeholder={t('projects.filter.client', 'Klien')} />
+                  <SelectValue placeholder={t('projects.filter.client', 'Client')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">
-                    {t('projects.filter.allClients', 'Semua Klien')}
+                    {t('projects.filter.allClients', 'All Clients')}
                   </SelectItem>
                   {clients.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
@@ -393,29 +406,29 @@ export default function ProjectsPageV2() {
               icon={<Folder />}
               title={
                 hasActiveFilters
-                  ? t('projects.empty.filtered.title', 'Tidak ada proyek yang cocok')
-                  : t('projects.empty.title', 'Belum ada proyek')
+                  ? t('projects.empty.filtered.title', 'No matching projects')
+                  : t('projects.empty.title', 'No projects yet')
               }
               description={
                 hasActiveFilters
                   ? t(
                       'projects.empty.filtered.desc',
-                      'Coba ubah atau hapus filter Anda.',
+                      'Try changing or removing your filters.',
                     )
                   : t(
                       'projects.empty.desc',
-                      'Mulai dengan membuat proyek pertama Anda.',
+                      'Start by creating your first project.',
                     )
               }
               action={
                 hasActiveFilters ? (
                   <Button variant="outline" size="sm" onClick={resetFilters}>
-                    {t('common.resetFilters', 'Reset Filter')}
+                    {t('common.resetFilters', 'Reset Filters')}
                   </Button>
                 ) : (
                   <Button onClick={() => navigate('/projects/new')} size="sm">
                     <Plus className="h-4 w-4" />
-                    {t('projects.new', 'Proyek Baru')}
+                    {t('projects.new', 'New Project')}
                   </Button>
                 )
               }
@@ -428,9 +441,7 @@ export default function ProjectsPageV2() {
                 onView={(row) => navigate(`/projects/${row.id}`)}
                 onEdit={(row) => navigate(`/projects/${row.id}/edit`)}
                 onDuplicate={(row) => duplicateMutation.mutate(row.id)}
-                onStart={(row) => statusMutation.mutate({ id: row.id, status: 'IN_PROGRESS' })}
-                onComplete={(row) => statusMutation.mutate({ id: row.id, status: 'COMPLETED' })}
-                onHold={(row) => statusMutation.mutate({ id: row.id, status: 'ON_HOLD' })}
+                onStatusChange={(row, status) => statusMutation.mutate({ id: row.id, status })}
                 onDelete={handleDelete}
               />
             </div>
@@ -454,16 +465,28 @@ interface ProjectTableProps {
   onView: (row: Project) => void;
   onEdit: (row: Project) => void;
   onDuplicate: (row: Project) => void;
-  onStart: (row: Project) => void;
-  onComplete: (row: Project) => void;
-  onHold: (row: Project) => void;
+  onStatusChange: (row: Project, status: string) => void;
   onDelete: (row: Project) => void;
 }
 
 function ProjectTable({
   rows, onRowClick, onView, onEdit, onDuplicate,
-  onStart, onComplete, onHold, onDelete,
+  onStatusChange, onDelete,
 }: ProjectTableProps) {
+  const { t } = useTranslation();
+
+  /* Translate a status key → display label. */
+  const statusLabel = (s: string) => {
+    switch (s) {
+      case 'PLANNING':    return t('projects.status.PLANNING',    'Planning');
+      case 'IN_PROGRESS': return t('projects.status.IN_PROGRESS', 'In Progress');
+      case 'COMPLETED':   return t('projects.status.COMPLETED',   'Completed');
+      case 'ON_HOLD':     return t('projects.status.ON_HOLD',     'On Hold');
+      case 'CANCELLED':   return t('projects.status.CANCELLED',   'Cancelled');
+      default:            return s || '—';
+    }
+  };
+
   return (
     <DataTable<Project>
       data={rows}
@@ -472,7 +495,7 @@ function ProjectTable({
       columns={[
         {
           accessorKey: 'number',
-          header: 'Nomor',
+          header: t('projects.col.number', 'Number'),
           cell: ({ row }) => (
             <span className="font-mono text-xs text-text-primary tracking-tight">
               {row.original.number || '—'}
@@ -481,7 +504,7 @@ function ProjectTable({
         },
         {
           id: 'description',
-          header: 'Proyek',
+          header: t('projects.col.project', 'Project'),
           accessorFn: (row) => row.description ?? '',
           cell: ({ row }) => {
             const p = row.original;
@@ -501,7 +524,7 @@ function ProjectTable({
         },
         {
           id: 'client',
-          header: 'Klien',
+          header: t('projects.col.client', 'Client'),
           accessorFn: (row) => row.client?.name ?? '',
           cell: ({ row }) => {
             const c = row.original.client;
@@ -520,7 +543,7 @@ function ProjectTable({
         },
         {
           accessorKey: 'status',
-          header: 'Status',
+          header: t('projects.col.status', 'Status'),
           cell: ({ row }) => (
             <Badge
               variant="outline"
@@ -529,13 +552,13 @@ function ProjectTable({
                 statusChipClass(row.original.status),
               )}
             >
-              {getStatusLabel(row.original.status)}
+              {statusLabel(row.original.status ?? '')}
             </Badge>
           ),
         },
         {
           accessorKey: 'startDate',
-          header: 'Mulai',
+          header: t('projects.col.startDate', 'Start'),
           cell: ({ row }) => (
             <span className="text-text-tertiary text-xs">
               <DateDisplay date={row.original.startDate ?? undefined} />
@@ -544,7 +567,7 @@ function ProjectTable({
         },
         {
           accessorKey: 'endDate',
-          header: 'Selesai',
+          header: t('projects.col.endDate', 'End'),
           cell: ({ row }) => (
             <span className="text-text-secondary text-xs">
               <DateDisplay date={row.original.endDate ?? undefined} />
@@ -554,7 +577,11 @@ function ProjectTable({
         {
           id: 'value',
           accessorFn: (row) => projectRevenue(row),
-          header: () => <span className="block text-right">Nilai</span>,
+          header: () => (
+            <span className="block text-right">
+              {t('projects.col.value', 'Value')}
+            </span>
+          ),
           cell: ({ row }) => {
             const value = projectRevenue(row.original);
             return (
@@ -571,12 +598,14 @@ function ProjectTable({
         },
         {
           id: 'actions',
-          header: () => <span className="sr-only">Aksi</span>,
+          header: () => (
+            <span className="sr-only">
+              {t('projects.col.actions', 'Actions')}
+            </span>
+          ),
           cell: ({ row }) => {
             const p = row.original;
-            const canStart = p.status === 'PLANNING' || p.status === 'ON_HOLD';
-            const canComplete = p.status === 'IN_PROGRESS';
-            const canHold = p.status === 'IN_PROGRESS';
+            const currentStatus = p.status ?? '';
             return (
               <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
@@ -585,45 +614,57 @@ function ProjectTable({
                       variant="ghost"
                       size="icon-sm"
                       className="text-text-tertiary hover:text-text-primary"
-                      aria-label="Aksi proyek"
+                      aria-label={t('projects.actions.label', 'Project actions')}
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuContent align="end" className="w-52">
                     <DropdownMenuItem onClick={() => onView(p)}>
-                      <Eye className="h-3.5 w-3.5" /> Lihat
+                      <Eye className="h-3.5 w-3.5" />
+                      {t('projects.actions.view', 'View')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEdit(p)}>
-                      <Pencil className="h-3.5 w-3.5" /> Ubah
+                      <Pencil className="h-3.5 w-3.5" />
+                      {t('projects.actions.edit', 'Edit')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onDuplicate(p)}>
-                      <Copy className="h-3.5 w-3.5" /> Duplikasi
+                      <Copy className="h-3.5 w-3.5" />
+                      {t('projects.actions.duplicate', 'Duplicate')}
                     </DropdownMenuItem>
-                    {(canStart || canComplete || canHold) && (
-                      <DropdownMenuSeparator />
-                    )}
-                    {canStart && (
-                      <DropdownMenuItem onClick={() => onStart(p)}>
-                        <PlayCircle className="h-3.5 w-3.5" /> Mulai
-                      </DropdownMenuItem>
-                    )}
-                    {canComplete && (
-                      <DropdownMenuItem onClick={() => onComplete(p)}>
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Selesaikan
-                      </DropdownMenuItem>
-                    )}
-                    {canHold && (
-                      <DropdownMenuItem onClick={() => onHold(p)}>
-                        <PauseCircle className="h-3.5 w-3.5" /> Tahan
-                      </DropdownMenuItem>
-                    )}
+
+                    {/* ── Change Status group ── */}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs text-text-tertiary font-medium px-2 py-1">
+                      {t('projects.actions.changeStatus', 'Change Status')}
+                    </DropdownMenuLabel>
+                    {PROJECT_STATUSES.map((s) => {
+                      const isCurrent = s === currentStatus;
+                      return (
+                        <DropdownMenuItem
+                          key={s}
+                          disabled={isCurrent}
+                          onClick={() => !isCurrent && onStatusChange(p, s)}
+                          className={cn(isCurrent && 'opacity-50 cursor-default')}
+                        >
+                          <StatusIcon status={s} />
+                          {statusLabel(s)}
+                          {isCurrent && (
+                            <span className="ml-auto">
+                              <CheckCircle2 className="h-3 w-3 text-text-tertiary" />
+                            </span>
+                          )}
+                        </DropdownMenuItem>
+                      );
+                    })}
+
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => onDelete(p)}
                       className="text-danger focus:text-danger"
                     >
-                      <Trash2 className="h-3.5 w-3.5" /> Hapus
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {t('projects.actions.delete', 'Delete')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

@@ -23,6 +23,7 @@ import {
   Printer,
   Trash2,
   X,
+  RotateCcw,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -51,6 +52,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -61,19 +63,12 @@ import type { ColumnDef } from '@tanstack/react-table';
 
 type StatusKey = 'DRAFT' | 'SENT' | 'APPROVED' | 'DECLINED' | 'REVISED';
 
-const STATUS_COPY: Record<StatusKey, string> = {
-  DRAFT: 'Draft',
-  SENT: 'Terkirim',
-  APPROVED: 'Disetujui',
-  DECLINED: 'Ditolak',
-  REVISED: 'Revisi',
-};
-
 /**
  * Editorial status chip — semantic-token tinted, not loud.
  * A 1px hairline on a 12% wash reads as a label, not a button.
  */
 const StatusBadge = ({ status }: { status: string }) => {
+  const { t } = useTranslation();
   const key = (status?.toUpperCase() as StatusKey) || 'DRAFT';
   const tone: Record<StatusKey, string> = {
     DRAFT: 'bg-text-tertiary/10 text-text-secondary border-text-tertiary/25',
@@ -81,6 +76,13 @@ const StatusBadge = ({ status }: { status: string }) => {
     APPROVED: 'bg-success/12 text-success border-success/30',
     DECLINED: 'bg-danger/10 text-danger border-danger/30',
     REVISED: 'bg-warning/12 text-warning border-warning/30',
+  };
+  const STATUS_COPY: Record<StatusKey, string> = {
+    DRAFT: t('quotations.status.draft', 'Draft'),
+    SENT: t('quotations.status.sent', 'Sent'),
+    APPROVED: t('quotations.status.approved', 'Approved'),
+    DECLINED: t('quotations.status.declined', 'Declined'),
+    REVISED: t('quotations.status.revised', 'Revised'),
   };
   return (
     <span
@@ -129,21 +131,34 @@ export default function QuotationsPageV2() {
           () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
           500,
         );
-        toast.success('Penawaran disetujui — invoice otomatis dibuat.');
+        toast.success(t('quotations.toast.approved', 'Quotation approved — invoice created automatically.'));
       } else {
-        toast.success('Status berhasil diperbarui.');
+        toast.success(t('quotations.toast.statusUpdated', 'Status updated successfully.'));
       }
     },
-    onError: () => toast.error('Gagal memperbarui status penawaran.'),
+    onError: () => toast.error(t('quotations.toast.statusError', 'Failed to update quotation status.')),
+  });
+
+  const reopenMutation = useMutation({
+    mutationFn: (id: string) => quotationService.reopen(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success(t('quotations.toast.reopened', 'Quotation reopened to Draft. Auto-generated invoice deleted.'));
+    },
+    onError: (err: unknown) => {
+      const resp = (err as { response?: { data?: { details?: string; message?: string } } })?.response?.data;
+      toast.error(resp?.details || resp?.message || t('quotations.toast.reopenError', 'Failed to reopen quotation.'));
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: quotationService.deleteQuotation,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
-      toast.success('Penawaran berhasil dihapus.');
+      toast.success(t('quotations.toast.deleted', 'Quotation deleted successfully.'));
     },
-    onError: () => toast.error('Gagal menghapus penawaran.'),
+    onError: () => toast.error(t('quotations.toast.deleteError', 'Failed to delete quotation.')),
   });
 
   const invoiceMutation = useMutation({
@@ -151,9 +166,9 @@ export default function QuotationsPageV2() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      toast.success(`Invoice ${data?.invoice?.invoiceNumber ?? ''} berhasil dibuat.`);
+      toast.success(t('quotations.toast.invoiceCreated', 'Invoice {{number}} created successfully.', { number: data?.invoice?.invoiceNumber ?? '' }));
     },
-    onError: () => toast.error('Gagal membuat invoice dari penawaran.'),
+    onError: () => toast.error(t('quotations.toast.invoiceError', 'Failed to create invoice from quotation.')),
   });
 
   const handlePrint = useCallback(async (q: Quotation) => {
@@ -167,11 +182,11 @@ export default function QuotationsPageV2() {
       link.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
-      toast.success('PDF berhasil diunduh.');
+      toast.success(t('quotations.toast.pdfDownloaded', 'PDF downloaded successfully.'));
     } catch {
-      toast.error('Gagal mengunduh PDF.');
+      toast.error(t('quotations.toast.pdfError', 'Failed to download PDF.'));
     }
-  }, []);
+  }, [t]);
 
   // Client-side search across number / client / project (mirrors classic).
   const filtered = useMemo(() => {
@@ -207,7 +222,7 @@ export default function QuotationsPageV2() {
     () => [
       {
         accessorKey: 'quotationNumber',
-        header: t('quotations.col.number', 'Nomor'),
+        header: t('quotations.col.number', 'Number'),
         cell: ({ row }) => (
           <span className="font-mono text-text-primary tracking-tight">
             {row.original.quotationNumber}
@@ -216,7 +231,7 @@ export default function QuotationsPageV2() {
       },
       {
         accessorKey: 'client',
-        header: t('quotations.col.client', 'Klien'),
+        header: t('quotations.col.client', 'Client'),
         cell: ({ row }) => {
           const c = row.original.client;
           if (!c) return <span className="text-text-tertiary">—</span>;
@@ -232,7 +247,7 @@ export default function QuotationsPageV2() {
       },
       {
         accessorKey: 'project',
-        header: t('quotations.col.project', 'Proyek'),
+        header: t('quotations.col.project', 'Project'),
         cell: ({ row }) => {
           const p = row.original.project;
           if (!p) return <span className="text-text-tertiary">—</span>;
@@ -255,7 +270,7 @@ export default function QuotationsPageV2() {
       },
       {
         accessorKey: 'date',
-        header: t('quotations.col.date', 'Tanggal'),
+        header: t('quotations.col.date', 'Date'),
         cell: ({ row }) => (
           <span className="text-text-tertiary">
             <DateDisplay date={row.original.date} />
@@ -264,7 +279,7 @@ export default function QuotationsPageV2() {
       },
       {
         accessorKey: 'validUntil',
-        header: t('quotations.col.validUntil', 'Berlaku Sampai'),
+        header: t('quotations.col.validUntil', 'Valid Until'),
         cell: ({ row }) => (
           <span className="text-text-tertiary">
             <DateDisplay date={row.original.validUntil} />
@@ -276,7 +291,7 @@ export default function QuotationsPageV2() {
         // Right-align money via header + cell wrapper so numerals share a column axis
         header: () => (
           <span className="block w-full text-right">
-            {t('quotations.col.amount', 'Nilai')}
+            {t('quotations.col.amount', 'Amount')}
           </span>
         ),
         cell: ({ row }) => (
@@ -290,7 +305,7 @@ export default function QuotationsPageV2() {
       },
       {
         id: 'actions',
-        header: () => <span className="sr-only">Aksi</span>,
+        header: () => <span className="sr-only">{t('quotations.col.actions', 'Actions')}</span>,
         enableSorting: false,
         cell: ({ row }) => {
           const q = row.original;
@@ -302,6 +317,14 @@ export default function QuotationsPageV2() {
             isAdmin() &&
             (isSuperAdmin() || q.createdBy !== user?.id);
           const canConvert = status === 'APPROVED';
+
+          // Valid status transitions per state — mirrors the detail page pattern.
+          const hasStatusGroup =
+            status === 'DRAFT' ||
+            canApprove ||
+            status === 'DECLINED' ||
+            status === 'APPROVED';
+
           return (
             <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
               <DropdownMenu>
@@ -310,7 +333,7 @@ export default function QuotationsPageV2() {
                     variant="ghost"
                     size="icon-sm"
                     className="text-text-tertiary hover:text-text-primary"
-                    aria-label="Aksi penawaran"
+                    aria-label={t('quotations.actions.aria', 'Quotation actions')}
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
@@ -323,63 +346,124 @@ export default function QuotationsPageV2() {
                     onClick={() => navigate(`/quotations/${q.id}`)}
                   >
                     <Eye className="h-4 w-4" />
-                    Lihat detail
+                    {t('quotations.actions.view', 'View detail')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => navigate(`/quotations/${q.id}/edit`)}
                   >
                     <Pencil className="h-4 w-4" />
-                    Edit
+                    {t('quotations.actions.edit', 'Edit')}
                   </DropdownMenuItem>
-                  {status === 'DRAFT' && (
-                    <DropdownMenuItem
-                      onClick={() =>
-                        statusMutation.mutate({ id: q.id, status: 'SENT' })
-                      }
-                    >
-                      <Send className="h-4 w-4" />
-                      Kirim ke klien
-                    </DropdownMenuItem>
+
+                  {/* ── Ubah Status group ─────────────────────────────── */}
+                  {hasStatusGroup && (
+                    <>
+                      <DropdownMenuSeparator className="bg-border-subtle" />
+                      <DropdownMenuLabel className="text-text-tertiary text-[10px] uppercase tracking-[0.14em]">
+                        {t('quotations.actions.changeStatus', 'Change Status')}
+                      </DropdownMenuLabel>
+
+                      {status === 'DRAFT' && (
+                        <DropdownMenuItem
+                          disabled={statusMutation.isPending}
+                          onClick={() =>
+                            statusMutation.mutate({ id: q.id, status: 'SENT' })
+                          }
+                        >
+                          <Send className="h-4 w-4" />
+                          {t('quotations.actions.markSent', 'Mark as Sent')}
+                        </DropdownMenuItem>
+                      )}
+
+                      {canApprove && (
+                        <DropdownMenuItem
+                          disabled={statusMutation.isPending}
+                          onClick={() =>
+                            statusMutation.mutate({ id: q.id, status: 'APPROVED' })
+                          }
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          {t('quotations.actions.approve', 'Approve')}
+                        </DropdownMenuItem>
+                      )}
+
+                      {canApprove && (
+                        <DropdownMenuItem
+                          variant="destructive"
+                          disabled={statusMutation.isPending}
+                          onClick={() =>
+                            statusMutation.mutate({ id: q.id, status: 'DECLINED' })
+                          }
+                        >
+                          <XCircle className="h-4 w-4" />
+                          {t('quotations.actions.decline', 'Decline')}
+                        </DropdownMenuItem>
+                      )}
+
+                      {status === 'DECLINED' && (
+                        <DropdownMenuItem
+                          disabled={statusMutation.isPending}
+                          onClick={() =>
+                            statusMutation.mutate({ id: q.id, status: 'DRAFT' })
+                          }
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          {t('quotations.actions.revise', 'Revise (back to Draft)')}
+                        </DropdownMenuItem>
+                      )}
+
+                      {status === 'APPROVED' && (
+                        <DropdownMenuItem
+                          variant="destructive"
+                          disabled={reopenMutation.isPending}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                t(
+                                  'quotations.actions.reopenConfirm',
+                                  'Reopen this quotation to Draft? The auto-generated invoice will be deleted (only if not yet sent/paid). Continue?',
+                                ),
+                              )
+                            ) {
+                              reopenMutation.mutate(q.id);
+                            }
+                          }}
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          {t('quotations.actions.reopen', 'Reopen (Cancel Approval)')}
+                        </DropdownMenuItem>
+                      )}
+                    </>
                   )}
-                  {canApprove && (
-                    <DropdownMenuItem
-                      onClick={() =>
-                        statusMutation.mutate({ id: q.id, status: 'APPROVED' })
-                      }
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Setujui
-                    </DropdownMenuItem>
-                  )}
-                  {canApprove && (
-                    <DropdownMenuItem
-                      onClick={() =>
-                        statusMutation.mutate({ id: q.id, status: 'DECLINED' })
-                      }
-                    >
-                      <XCircle className="h-4 w-4" />
-                      Tolak
-                    </DropdownMenuItem>
-                  )}
+
+                  {/* ── Secondary actions ──────────────────────────────── */}
+                  <DropdownMenuSeparator className="bg-border-subtle" />
+
                   {canConvert && (
                     <DropdownMenuItem
                       onClick={() => invoiceMutation.mutate(q.id)}
                     >
                       <FileInput className="h-4 w-4" />
-                      Buat invoice
+                      {t('quotations.actions.createInvoice', 'Create Invoice')}
                     </DropdownMenuItem>
                   )}
+
                   <DropdownMenuItem onClick={() => handlePrint(q)}>
                     <Printer className="h-4 w-4" />
-                    Unduh PDF
+                    {t('quotations.actions.downloadPdf', 'Download PDF')}
                   </DropdownMenuItem>
+
                   <DropdownMenuSeparator className="bg-border-subtle" />
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={() => {
                       if (
                         window.confirm(
-                          `Hapus penawaran ${q.quotationNumber}? Tindakan ini tidak bisa dibatalkan.`,
+                          t(
+                            'quotations.actions.deleteConfirm',
+                            'Delete quotation {{number}}? This action cannot be undone.',
+                            { number: q.quotationNumber },
+                          ),
                         )
                       ) {
                         deleteMutation.mutate(q.id);
@@ -387,7 +471,7 @@ export default function QuotationsPageV2() {
                     }}
                   >
                     <Trash2 className="h-4 w-4" />
-                    Hapus
+                    {t('quotations.actions.delete', 'Delete')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -400,8 +484,10 @@ export default function QuotationsPageV2() {
       t,
       navigate,
       isAdmin,
+      isSuperAdmin,
       user?.id,
       statusMutation,
+      reopenMutation,
       invoiceMutation,
       deleteMutation,
       handlePrint,
@@ -430,11 +516,11 @@ export default function QuotationsPageV2() {
         <PageContainer>
           <EmptyState
             icon={<ReceiptText className="h-12 w-12" />}
-            title={t('quotations.error.title', 'Tidak bisa memuat penawaran')}
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
+            title={t('quotations.error.title', 'Could not load quotations')}
+            description={error instanceof Error ? error.message : t('quotations.error.generic', 'An error occurred')}
             action={
               <Button onClick={() => refetch()}>
-                {t('common.retry', 'Coba Lagi')}
+                {t('common.retry', 'Try Again')}
               </Button>
             }
           />
@@ -464,10 +550,10 @@ export default function QuotationsPageV2() {
     >
       <PageContainer>
         <PageHeader
-          title={t('quotations.title', 'Penawaran')}
+          title={t('quotations.title', 'Quotations')}
           description={t(
             'quotations.subtitle',
-            'Kelola penawaran untuk klien — dari draft hingga konversi menjadi invoice.',
+            'Manage client quotations — from draft through to invoice conversion.',
           )}
           actions={
             <Button
@@ -476,7 +562,7 @@ export default function QuotationsPageV2() {
               className="gap-2"
             >
               <Plus className="h-4 w-4" />
-              {t('quotations.new', 'Penawaran Baru')}
+              {t('quotations.new', 'New Quotation')}
             </Button>
           }
         />
@@ -496,22 +582,22 @@ export default function QuotationsPageV2() {
                 <StatCard
                   label={t('quotations.kpi.draft', 'Draft')}
                   value={stats.draft}
-                  sublabel={t('quotations.kpi.draftSub', 'belum dikirim')}
+                  sublabel={t('quotations.kpi.draftSub', 'not yet sent')}
                 />
                 <StatCard
-                  label={t('quotations.kpi.sent', 'Terkirim')}
+                  label={t('quotations.kpi.sent', 'Sent')}
                   value={stats.sent}
-                  sublabel={t('quotations.kpi.sentSub', 'menunggu respon')}
+                  sublabel={t('quotations.kpi.sentSub', 'awaiting response')}
                 />
                 <StatCard
-                  label={t('quotations.kpi.approved', 'Disetujui')}
+                  label={t('quotations.kpi.approved', 'Approved')}
                   value={stats.approved}
-                  sublabel={t('quotations.kpi.approvedSub', 'siap menjadi invoice')}
+                  sublabel={t('quotations.kpi.approvedSub', 'ready to invoice')}
                 />
                 <StatCard
-                  label={t('quotations.kpi.declined', 'Ditolak')}
+                  label={t('quotations.kpi.declined', 'Declined')}
                   value={stats.declined}
-                  sublabel={t('quotations.kpi.declinedSub', 'perlu revisi')}
+                  sublabel={t('quotations.kpi.declinedSub', 'needs revision')}
                 />
               </>
             )}
@@ -529,7 +615,7 @@ export default function QuotationsPageV2() {
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t(
                     'quotations.search',
-                    'Cari nomor, klien, atau proyek…',
+                    'Search number, client, or project…',
                   )}
                   className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
                 />
@@ -538,7 +624,7 @@ export default function QuotationsPageV2() {
                     type="button"
                     onClick={() => setSearch('')}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary transition-colors"
-                    aria-label="Bersihkan pencarian"
+                    aria-label={t('quotations.search.clear', 'Clear search')}
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -551,14 +637,14 @@ export default function QuotationsPageV2() {
                     size="sm"
                     className="min-w-[160px] bg-bg-sunken border-border-subtle text-text-secondary"
                   >
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('quotations.filter.statusPlaceholder', 'Status')} />
                   </SelectTrigger>
                   <SelectContent className="bg-bg-raised border-border-default text-text-primary">
-                    <SelectItem value="ALL">Semua Status</SelectItem>
-                    <SelectItem value="DRAFT">Draft</SelectItem>
-                    <SelectItem value="SENT">Terkirim</SelectItem>
-                    <SelectItem value="APPROVED">Disetujui</SelectItem>
-                    <SelectItem value="DECLINED">Ditolak</SelectItem>
+                    <SelectItem value="ALL">{t('quotations.filter.allStatuses', 'All Statuses')}</SelectItem>
+                    <SelectItem value="DRAFT">{t('quotations.status.draft', 'Draft')}</SelectItem>
+                    <SelectItem value="SENT">{t('quotations.status.sent', 'Sent')}</SelectItem>
+                    <SelectItem value="APPROVED">{t('quotations.status.approved', 'Approved')}</SelectItem>
+                    <SelectItem value="DECLINED">{t('quotations.status.declined', 'Declined')}</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -573,12 +659,12 @@ export default function QuotationsPageV2() {
                     className="text-text-tertiary hover:text-text-primary"
                   >
                     <X className="h-3.5 w-3.5" />
-                    Bersihkan
+                    {t('quotations.filter.clear', 'Clear')}
                   </Button>
                 )}
 
                 <span className="hidden sm:inline-block text-xs text-text-tertiary tabular-nums whitespace-nowrap">
-                  {filtered.length} dari {quotations.length}
+                  {t('quotations.filter.count', '{{filtered}} of {{total}}', { filtered: filtered.length, total: quotations.length })}
                 </span>
               </div>
             </div>
@@ -602,15 +688,15 @@ export default function QuotationsPageV2() {
             <GlassPanel surface="glass" padding="lg">
               <EmptyState
                 icon={<ReceiptText className="h-12 w-12" />}
-                title={t('quotations.empty.title', 'Belum ada penawaran')}
+                title={t('quotations.empty.title', 'No quotations yet')}
                 description={t(
                   'quotations.empty.desc',
-                  'Mulai dengan membuat penawaran pertama untuk klien Anda.',
+                  'Start by creating your first quotation for a client.',
                 )}
                 action={
                   <Button onClick={() => navigate('/quotations/new')} className="gap-2">
                     <Plus className="h-4 w-4" />
-                    {t('quotations.new', 'Penawaran Baru')}
+                    {t('quotations.new', 'New Quotation')}
                   </Button>
                 }
               />
@@ -619,10 +705,10 @@ export default function QuotationsPageV2() {
             <GlassPanel surface="glass" padding="lg">
               <EmptyState
                 icon={<Search className="h-12 w-12" />}
-                title={t('quotations.noResults.title', 'Tidak ada hasil')}
+                title={t('quotations.noResults.title', 'No results')}
                 description={t(
                   'quotations.noResults.desc',
-                  'Tidak ada penawaran yang cocok dengan filter saat ini.',
+                  'No quotations match the current filter.',
                 )}
                 action={
                   <Button
@@ -632,7 +718,7 @@ export default function QuotationsPageV2() {
                       setStatusFilter('ALL');
                     }}
                   >
-                    Bersihkan filter
+                    {t('quotations.filter.clearFilter', 'Clear filter')}
                   </Button>
                 }
               />

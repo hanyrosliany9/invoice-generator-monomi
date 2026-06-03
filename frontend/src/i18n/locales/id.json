@@ -18,7 +18,7 @@
     "next": "Selanjutnya",
     "previous": "Sebelumnya",
     "submit": "Kirim",
-    "reset": "Reset",
+    "reset": "Atur Ulang",
     "retry": "Coba Lagi",
     "viewAll": "Lihat semua",
     "adding": "Menambahkan…",
@@ -33,7 +33,7 @@
     "filters": "Filter aktif",
     "moreActions": "Tindakan lainnya",
     "refresh": "Muat Ulang",
-    "resetFilters": "Reset Filter",
+    "resetFilters": "Atur Ulang Filter",
     "saving": "Menyimpan…",
     "open": "Buka",
     "view": "Lihat",
@@ -41,7 +41,10 @@
     "mobileNotice": "Pengalaman terbaik di tablet atau desktop. Beberapa kontrol mungkin tersembunyi di layar kecil.",
     "unsavedChanges": "Ada perubahan yang belum disimpan",
     "noPendingChanges": "Tidak ada perubahan tertunda",
-    "optional": "(opsional)"
+    "optional": "(opsional)",
+    "error": "Terjadi kesalahan",
+    "unknownError": "Terjadi suatu kesalahan",
+    "errorOccurred": "Terjadi suatu kesalahan"
   },
   "table": {
     "number": "Nomor",
@@ -268,14 +271,20 @@
     }
   },
   "quotations": {
-    "title": "Quotation",
+    "title": "Penawaran",
     "create": "Buat Quotation",
     "number": "Nomor Quotation",
     "date": "Tanggal",
     "client": "Klien",
     "project": "Proyek",
     "amount": "Jumlah",
-    "status": "Status",
+    "status": {
+      "draft": "Draf",
+      "sent": "Terkirim",
+      "approved": "Disetujui",
+      "declined": "Ditolak",
+      "revised": "Direvisi"
+    },
     "validUntil": "Berlaku Hingga",
     "terms": "Syarat & Ketentuan",
     "statuses": {
@@ -372,20 +381,22 @@
       }
     },
     "col": {
-      "amount": "Nilai",
+      "amount": "Jumlah",
       "client": "Klien",
       "date": "Tanggal",
       "number": "Nomor",
       "project": "Proyek",
       "status": "Status",
-      "validUntil": "Berlaku Sampai"
+      "validUntil": "Berlaku Sampai",
+      "actions": "Aksi"
     },
     "empty": {
       "title": "Belum ada penawaran",
-      "desc": "Mulai dengan membuat penawaran pertama untuk klien Anda."
+      "desc": "Mulailah dengan membuat penawaran pertama untuk klien."
     },
     "error": {
-      "title": "Tidak bisa memuat penawaran"
+      "title": "Tidak dapat memuat penawaran",
+      "generic": "Terjadi suatu kesalahan"
     },
     "form": {
       "client": "Klien",
@@ -399,11 +410,12 @@
         "add": "Tambah item",
         "name": "Deskripsi",
         "price": "Harga Satuan",
-        "qty": "Qty",
+        "qty": "Jml",
         "subtotal": "Subtotal",
         "descriptionPlaceholder": "Catatan tambahan (opsional)",
         "empty": "Belum ada item. Tambahkan satu untuk memulai.",
-        "namePlaceholder": "Nama item"
+        "namePlaceholder": "Nama item",
+        "removeAria": "Hapus item {{n}}"
       },
       "number": "Nomor",
       "project": "Proyek",
@@ -412,18 +424,21 @@
       "section": {
         "identity": "Identitas",
         "identityTitle": "Klien & Proyek",
-        "items": "Rincian",
-        "itemsTitle": "Daftar Produk & Jasa",
+        "items": "Rincian Item",
+        "itemsTitle": "Produk & Layanan",
         "scope": "Lingkup",
-        "scopeTitle": "Lingkup Pekerjaan",
-        "terms": "Syarat",
+        "scopeTitle": "Ruang Lingkup Pekerjaan",
+        "terms": "Ketentuan",
         "totals": "Total",
         "totalsTitle": "Ringkasan Nilai",
-        "identityHint": "Penawaran terikat pada satu klien dan satu proyek. Pemilihan klien akan memfilter daftar proyek di sebelahnya.",
-        "itemsHint": "Tambahkan setiap produk atau jasa beserta harga satuan. Subtotal dihitung otomatis.",
-        "scopeHint": "Opsional — gambarkan ruang lingkup, deliverable, atau timeline yang relevan.",
-        "termsHint": "Tuliskan ketentuan pembayaran, jadwal pengerjaan, kebijakan revisi, dan klausul lainnya.",
-        "termsTitle": "Syarat & Ketentuan"
+        "identityHint": "Penawaran terhubung ke satu klien dan satu proyek. Memilih klien akan memfilter daftar proyek.",
+        "itemsHint": "Tambahkan setiap produk atau layanan beserta harga satuannya. Subtotal dihitung secara otomatis.",
+        "scopeHint": "Opsional — jelaskan ruang lingkup, hasil kerja, atau lini masa yang relevan.",
+        "termsHint": "Tuliskan ketentuan pembayaran, jadwal pengiriman, kebijakan revisi, dan klausul lainnya.",
+        "termsTitle": "Syarat & Ketentuan",
+        "termin": "Pembayaran",
+        "terminTitle": "Ketentuan Pembayaran",
+        "terminHint": "Pilih pembayaran penuh atau termin berbasis cicilan. Total persentase termin harus sama dengan 100%."
       },
       "status": "Status",
       "subtotal": "Subtotal",
@@ -436,30 +451,48 @@
       },
       "validUntil": "Berlaku Sampai",
       "clientPlaceholder": "Pilih klien…",
-      "createSubtitle": "Susun penawaran baru — pilih klien, tambahkan rincian, dan tentukan syarat.",
-      "editingSubtitle": "Ubah detail penawaran ini sebelum dikirim atau direvisi.",
+      "createSubtitle": "Buat penawaran baru — pilih klien, tambahkan rincian item, dan tentukan ketentuan.",
+      "editingSubtitle": "Perbarui penawaran ini sebelum dikirim atau direvisi.",
       "includeTaxHint": "Wajib untuk klien dengan NPWP. Pajak dihitung dari subtotal.",
-      "materaiHint": "nilai melebihi Rp 5.000.000 — siapkan materai pada saat invoice dicetak.",
+      "materaiHint": "nilai melebihi Rp 5.000.000 — siapkan materai saat mencetak tagihan.",
       "materaiRequired": "Materai diperlukan",
-      "milestoneHint": "Kelola termin pembayaran dari halaman detail untuk menghindari konflik dengan invoice yang sudah terbit.",
-      "milestoneNotice": "Penawaran ini menggunakan pembayaran bertahap.",
+      "milestoneHint": "Kelola termin pembayaran dari halaman detail untuk menghindari konflik dengan tagihan yang sudah diterbitkan.",
+      "milestoneNotice": "Penawaran ini menggunakan pembayaran berbasis termin.",
       "noClients": "Belum ada klien.",
       "noProjects": "Tidak ada proyek untuk klien ini.",
       "projectPlaceholder": "Pilih proyek…",
       "projectPlaceholderNoClient": "Pilih klien terlebih dahulu",
-      "scopePlaceholder": "Contoh: produksi konten video selama 1 bulan, mencakup 4 reels, 2 long-form, dan revisi maksimal 2 kali per video.",
-      "statusReadonly": "transisi via alur kerja di halaman detail",
-      "validUntilPlaceholder": "Pilih tanggal berlaku"
+      "scopePlaceholder": "Contoh: produksi konten video selama 1 bulan, meliputi 4 reels, 2 video durasi panjang, dan maksimal 2 revisi per video.",
+      "statusReadonly": "transisi melalui alur kerja di halaman detail",
+      "validUntilPlaceholder": "Pilih tanggal berlaku",
+      "paymentFull": "Pembayaran Penuh",
+      "paymentTermin": "Termin",
+      "milestone": {
+        "deposit": "Uang Muka",
+        "balance": "Pelunasan",
+        "progress": "Progres"
+      },
+      "terminPreset": "Pratata cepat",
+      "terminName": "Nama Termin",
+      "terminPct": "Persen",
+      "terminAmount": "Jumlah",
+      "terminNamePh": "mis. Uang Muka 30%",
+      "terminRemove": "Hapus termin",
+      "terminAdd": "Tambah Termin",
+      "terminTotal": "Total persentase",
+      "terminReadonly": "Termin tidak dapat diubah karena tagihan sudah diterbitkan untuk salah satu tahap. Batalkan tagihan terlebih dahulu.",
+      "terminInvalid": "Mohon periksa kembali termin pembayaran.",
+      "termsPlaceholder": "1. Pembayaran Net 30 sejak tanggal tagihan.\n2. Termasuk PPN 11%.\n3. Maksimal 3 revisi.\n4. ..."
     },
     "kpi": {
       "approved": "Disetujui",
-      "approvedSub": "siap menjadi invoice",
+      "approvedSub": "siap ditagih",
       "declined": "Ditolak",
       "declinedSub": "perlu revisi",
-      "draft": "Draft",
+      "draft": "Draf",
       "draftSub": "belum dikirim",
       "sent": "Terkirim",
-      "sentSub": "menunggu respon"
+      "sentSub": "menunggu tanggapan"
     },
     "new": "Penawaran Baru",
     "noResults": {
@@ -479,11 +512,54 @@
         "title": "Tidak bisa memuat penawaran"
       }
     },
-    "search": "Cari nomor, klien, atau proyek…",
-    "subtitle": "Kelola penawaran untuk klien — dari draft hingga konversi menjadi invoice."
+    "search": {
+      "clear": "Hapus pencarian"
+    },
+    "subtitle": "Kelola penawaran klien — dari draf hingga konversi menjadi tagihan.",
+    "toast": {
+      "approved": "Penawaran disetujui — tagihan dibuat secara otomatis.",
+      "sent": "Penawaran dikirim ke klien.",
+      "declined": "Penawaran ditolak.",
+      "statusUpdated": "Status berhasil diperbarui.",
+      "statusError": "Gagal memperbarui status penawaran.",
+      "reopened": "Penawaran dibuka kembali ke Draf. Tagihan yang dibuat otomatis dihapus.",
+      "reopenError": "Gagal membuka kembali penawaran.",
+      "deleted": "Penawaran berhasil dihapus.",
+      "deleteError": "Gagal menghapus penawaran.",
+      "invoiceCreated": "Tagihan {{number}} berhasil dibuat.",
+      "invoiceError": "Gagal membuat tagihan dari penawaran.",
+      "pdfDownloaded": "PDF berhasil diunduh.",
+      "pdfError": "Gagal mengunduh PDF."
+    },
+    "actions": {
+      "aria": "Aksi penawaran",
+      "view": "Lihat detail",
+      "edit": "Ubah",
+      "changeStatus": "Ubah Status",
+      "markSent": "Tandai Terkirim",
+      "approve": "Setujui",
+      "decline": "Tolak",
+      "revise": "Revisi (kembali ke Draf)",
+      "reopenConfirm": "Buka kembali penawaran ini ke Draf? Tagihan yang dibuat otomatis akan dihapus (hanya jika belum dikirim/dibayar). Lanjutkan?",
+      "reopen": "Buka Kembali (Batalkan Persetujuan)",
+      "createInvoice": "Buat Tagihan",
+      "downloadPdf": "Unduh PDF",
+      "deleteConfirm": "Hapus penawaran {{number}}? Tindakan ini tidak dapat dibatalkan.",
+      "delete": "Hapus"
+    },
+    "filter": {
+      "statusPlaceholder": "Status",
+      "allStatuses": "Semua Status",
+      "clear": "Hapus",
+      "clearFilter": "Hapus filter",
+      "count": "{{filtered}} dari {{total}}"
+    },
+    "detail": {
+      "send": "Kirim"
+    }
   },
   "invoices": {
-    "title": "Invoice",
+    "title": "Tagihan",
     "create": "Buat Invoice",
     "number": "Nomor Invoice",
     "creationDate": "Tanggal Pembuatan",
@@ -505,7 +581,13 @@
       "download": "Unduh PDF",
       "edit": "Ubah",
       "markPaid": "Tandai Lunas",
-      "send": "Kirim"
+      "send": "Kirim",
+      "menuAriaLabel": "Aksi tagihan",
+      "view": "Lihat",
+      "markSent": "Tandai Terkirim",
+      "markOverdue": "Tandai Jatuh Tempo",
+      "cancel": "Batalkan Tagihan",
+      "changeStatus": "Ubah Status"
     },
     "detail": {
       "backToList": "Kembali ke Tagihan",
@@ -550,15 +632,15 @@
       "totalDue": "Total Tagihan"
     },
     "empty": {
-      "desc": "Mulai dengan membuat tagihan pertama Anda.",
+      "desc": "Mulailah dengan membuat tagihan pertama Anda.",
       "filtered": {
         "desc": "Coba ubah atau hapus filter Anda.",
-        "title": "Tidak ada tagihan yang cocok"
+        "title": "Tidak ada tagihan yang cocok dengan filter Anda"
       },
       "title": "Belum ada tagihan"
     },
     "error": {
-      "title": "Tidak bisa memuat tagihan"
+      "title": "Tidak dapat memuat tagihan"
     },
     "filter": {
       "allMaterai": "Semua Materai",
@@ -566,7 +648,7 @@
       "materai": "Materai",
       "materaiApplied": "Materai Terpasang",
       "materaiPending": "Materai Tertunda",
-      "materaiRequired": "Perlu Materai",
+      "materaiRequired": "Materai Diperlukan",
       "status": "Status"
     },
     "form": {
@@ -644,21 +726,42 @@
       "outstanding": "Belum Tertagih",
       "outstandingSub": "terkirim & jatuh tempo",
       "overdue": "Jatuh Tempo",
-      "overdueSub": "perlu ditindak",
+      "overdueSub": "perlu tindakan",
       "paidThisMonth": "Lunas Bulan Ini",
-      "paidThisMonthSub": "dibayar di bulan berjalan"
+      "paidThisMonthSub": "lunas pada bulan berjalan"
     },
     "new": "Tagihan Baru",
     "search": {
-      "placeholder": "Cari nomor, klien, atau proyek..."
+      "placeholder": "Cari berdasarkan nomor, klien, atau proyek..."
     },
-    "subtitle": "Kelola tagihan klien Anda — kirim, tandai lunas, dan pantau yang jatuh tempo.",
+    "subtitle": "Kelola tagihan klien — kirim, tandai lunas, dan pantau yang jatuh tempo.",
     "table": {
       "amount": "Jumlah",
       "date": "Tanggal",
       "dueDate": "Jatuh Tempo",
       "number": "Nomor",
       "status": "Status"
+    },
+    "markPaid": {
+      "notes": "Ditandai lunas dari daftar tagihan (v2)"
+    },
+    "statusChanged": "Status tagihan diperbarui menjadi {{status}}",
+    "confirmDelete": "Hapus tagihan {{number}}?",
+    "status": {
+      "draft": "Draf",
+      "sent": "Terkirim",
+      "paid": "Lunas",
+      "overdue": "Jatuh Tempo",
+      "cancelled": "Dibatalkan"
+    },
+    "col": {
+      "number": "Nomor",
+      "client": "Klien",
+      "amount": "Jumlah",
+      "issued": "Diterbitkan",
+      "dueDate": "Jatuh Tempo",
+      "status": "Status",
+      "actions": "Aksi"
     }
   },
   "clients": {
@@ -877,7 +980,7 @@
       "noQuotationsDesc": "Belum ada penawaran yang dibuat untuk proyek ini.",
       "recordCount": "{{count}} catatan"
     },
-    "duplicateFailed": "Gagal menduplikasi proyek.",
+    "duplicateFailed": "Gagal menggandakan proyek.",
     "edit": {
       "crumb": "Ubah",
       "error": "Gagal menyimpan perubahan. Coba lagi.",
@@ -892,10 +995,10 @@
         "desc": "Coba ubah atau hapus filter Anda."
       },
       "title": "Belum ada proyek",
-      "desc": "Mulai dengan membuat proyek pertama Anda."
+      "desc": "Mulailah dengan membuat proyek pertama Anda."
     },
     "error": {
-      "title": "Tidak bisa memuat proyek"
+      "title": "Tidak dapat memuat proyek"
     },
     "filter": {
       "allClients": "Semua Klien",
@@ -957,15 +1060,15 @@
       "active": "Proyek Aktif",
       "activeSub": "sedang berjalan",
       "completedMonth": "Selesai Bulan Ini",
-      "completedMonthSub": "di bulan berjalan",
+      "completedMonthSub": "pada bulan berjalan",
       "outstanding": "Belum Tertagih",
       "outstandingSub": "menunggu pembayaran",
       "revenue": "Total Pendapatan",
-      "revenueSub": "dari proyek terbayar"
+      "revenueSub": "dari proyek yang lunas"
     },
     "new": "Proyek Baru",
-    "statusFailed": "Gagal mengubah status.",
-    "statusUpdated": "Status proyek berhasil diubah.",
+    "statusFailed": "Gagal memperbarui status.",
+    "statusUpdated": "Status proyek diperbarui.",
     "table": {
       "budget": "Anggaran",
       "description": "Deskripsi",
@@ -974,9 +1077,34 @@
       "status": "Status"
     },
     "search": {
-      "placeholder": "Cari nomor, deskripsi, atau klien..."
+      "placeholder": "Cari berdasarkan nomor, deskripsi, atau klien..."
     },
-    "subtitle": "Kelola proyek aktif, pantau anggaran, dan lihat status pengerjaan."
+    "subtitle": "Kelola proyek aktif, lacak anggaran, dan pantau progres.",
+    "status": {
+      "PLANNING": "Perencanaan",
+      "IN_PROGRESS": "Sedang Berjalan",
+      "COMPLETED": "Selesai",
+      "ON_HOLD": "Ditahan",
+      "CANCELLED": "Dibatalkan"
+    },
+    "col": {
+      "number": "Nomor",
+      "project": "Proyek",
+      "client": "Klien",
+      "status": "Status",
+      "startDate": "Mulai",
+      "endDate": "Selesai",
+      "value": "Nilai",
+      "actions": "Aksi"
+    },
+    "actions": {
+      "label": "Aksi proyek",
+      "view": "Lihat",
+      "edit": "Ubah",
+      "duplicate": "Gandakan",
+      "changeStatus": "Ubah Status",
+      "delete": "Hapus"
+    }
   },
   "assets": {
     "title": "Manajemen Aset",
@@ -2105,7 +2233,50 @@
     "untitled": "Detail penawaran",
     "error": {
       "desc": "Penawaran yang Anda cari tidak ditemukan atau terjadi kesalahan.",
-      "title": "Tidak bisa memuat penawaran"
+      "title": "Tidak dapat memuat penawaran",
+      "backToList": "Kembali ke daftar"
+    },
+    "timeline": {
+      "created": "Penawaran dibuat",
+      "sent": "Dikirim ke klien",
+      "approved": "Disetujui oleh klien",
+      "declined": "Ditolak oleh klien",
+      "awaiting": "Menunggu tanggapan klien"
+    },
+    "validity": {
+      "expired": "Penawaran telah kedaluwarsa",
+      "expiringSoon": "Kedaluwarsa dalam {{days}} hari",
+      "expiredHint": "Pertimbangkan untuk membuat penawaran revisi dengan masa berlaku baru.",
+      "expiringSoonHint": "Segera tindak lanjuti dengan klien."
+    },
+    "hero": {
+      "client": "Klien",
+      "project": "Proyek",
+      "total": "Jumlah Total",
+      "includingTax": "termasuk PPN {{rate}}%",
+      "validUntil": "Berlaku sampai",
+      "materaiRequired": "Materai diperlukan (> Rp 5 Juta)"
+    },
+    "lineItems": {
+      "title": "Rincian Item",
+      "description": "Deskripsi",
+      "qty": "Jml",
+      "unitPrice": "Harga Satuan",
+      "subtotal": "Subtotal"
+    },
+    "totals": {
+      "subtotal": "Subtotal",
+      "vat": "PPN"
+    },
+    "sections": {
+      "scopeOfWork": "Ruang Lingkup Pekerjaan",
+      "terms": "Syarat & Ketentuan",
+      "noNotes": "Tidak ada catatan tambahan",
+      "noNotesDesc": "Ruang lingkup pekerjaan dan syarat belum diisi untuk penawaran ini.",
+      "history": "Riwayat",
+      "createdBy": "Dibuat oleh",
+      "relatedInvoices": "Tagihan Terkait",
+      "viewInvoice": "Lihat →"
     }
   },
   "socialReports": {

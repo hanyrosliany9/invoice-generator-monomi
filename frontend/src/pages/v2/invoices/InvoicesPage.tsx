@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Plus, Search, MoreHorizontal, Eye, Pencil, Send, CheckCircle2, Trash2,
-  AlertTriangle, X,
+  AlertTriangle, X, Clock, Ban, RefreshCw,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -28,31 +29,18 @@ import {
 } from '@/components/ui/select';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/auth';
 import { invoiceService, type Invoice } from '@/services/invoices';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
-/*  Navigation                                                         */
+/*  Status helpers                                                      */
 /* ------------------------------------------------------------------ */
 
-/* ------------------------------------------------------------------ */
-/*  Status helpers — mirrors the Bahasa Indonesia copy on the classic  */
-/*  page, but rendered with our editorial badge palette rather than    */
-/*  AntD's saturated Tag colors.                                       */
-/* ------------------------------------------------------------------ */
-
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT:     'Draft',
-  SENT:      'Terkirim',
-  PAID:      'Lunas',
-  OVERDUE:   'Jatuh Tempo',
-  PENDING:   'Tertunda',
-  CANCELLED: 'Dibatalkan',
-};
-
+// Status labels are rendered via t() in the component; this map is only
+// used as a fallback for the filter <Select> items where we also use t().
 const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
   PAID:      'default',
   SENT:      'secondary',
@@ -62,11 +50,10 @@ const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['v
   OVERDUE:   'destructive',
 };
 
-const getStatusLabel = (s?: string) => STATUS_LABEL[s?.toUpperCase() ?? ''] ?? (s ?? '—');
 const getStatusVariant = (s?: string) => STATUS_BADGE_VARIANT[s?.toUpperCase() ?? ''] ?? 'secondary';
 
 /* ------------------------------------------------------------------ */
-/*  Numeric helpers — invoice.totalAmount can arrive as string or num  */
+/*  Numeric helpers                                                     */
 /* ------------------------------------------------------------------ */
 
 const toNumber = (v: unknown): number => {
@@ -100,8 +87,6 @@ export default function InvoicesPageV2() {
   const { data: invoices = [], isLoading, error, refetch } = useQuery({
     queryKey: ['invoices'],
     queryFn: invoiceService.getInvoices,
-    // Keep showing the previous list while a background refetch runs so the
-    // page never blanks on revisit (TanStack Query v5 equivalent of keepPreviousData).
     placeholderData: (prev) => prev,
   });
 
@@ -115,7 +100,7 @@ export default function InvoicesPageV2() {
     mutationFn: (id: string) => invoiceService.markAsPaid(id, {
       paymentMethod: 'BANK_TRANSFER',
       paymentDate: new Date().toISOString(),
-      notes: 'Ditandai lunas dari daftar invoice (v2)',
+      notes: t('invoices.markPaid.notes', 'Marked as paid from invoice list (v2)'),
     }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
   });
@@ -123,6 +108,24 @@ export default function InvoicesPageV2() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => invoiceService.deleteInvoice(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+  });
+
+  /* ----- statusMutation — generic status change via PATCH /invoices/:id/status ----- */
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      invoiceService.updateStatus(id, status),
+    onSuccess: (_data, { status }) => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success(
+        t('invoices.statusChanged', 'Invoice status updated to {{status}}', { status })
+      );
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || (err instanceof Error ? err.message : t('common.error', 'Something went wrong'));
+      toast.error(msg);
+    },
   });
 
   /* ----- derived: filtered list ----- */
@@ -165,7 +168,7 @@ export default function InvoicesPageV2() {
     setMateraiFilter('all');
   };
 
-  /* ----- error short-circuit (same shape as DashboardPage) ----- */
+  /* ----- error short-circuit ----- */
   if (error) {
     return (
       <AppShell
@@ -185,9 +188,9 @@ export default function InvoicesPageV2() {
         <PageContainer>
           <EmptyState
             icon={<FileText className="h-12 w-12" />}
-            title={t('invoices.error.title', 'Tidak bisa memuat tagihan')}
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-            action={<Button onClick={() => refetch()}>{t('common.retry', 'Coba Lagi')}</Button>}
+            title={t('invoices.error.title', 'Could not load invoices')}
+            description={error instanceof Error ? error.message : t('common.unknownError', 'An error occurred')}
+            action={<Button onClick={() => refetch()}>{t('common.retry', 'Retry')}</Button>}
           />
         </PageContainer>
       </AppShell>
@@ -212,22 +215,17 @@ export default function InvoicesPageV2() {
     >
       <PageContainer>
         <PageHeader
-          title={t('invoices.title', 'Tagihan')}
-          description={t('invoices.subtitle', 'Kelola tagihan klien Anda — kirim, tandai lunas, dan pantau yang jatuh tempo.')}
+          title={t('invoices.title', 'Invoices')}
+          description={t('invoices.subtitle', 'Manage client invoices — send, mark as paid, and track overdue ones.')}
           actions={
             <Button onClick={() => navigate('/invoices/new')} size="sm">
               <Plus className="h-4 w-4" />
-              {t('invoices.new', 'Tagihan Baru')}
+              {t('invoices.new', 'New Invoice')}
             </Button>
           }
         />
 
-        {/* ─────────────────────────────────────────────────────────────
-            KPI band — four supporting numbers, tight gap so they read
-            as one band of context (not four billboards). Outstanding
-            and Overdue are the load-bearing numbers; the other two are
-            quieter ambient stats.
-           ───────────────────────────────────────────────────────────── */}
+        {/* KPI band */}
         <section className="mb-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {isLoading ? (
@@ -240,36 +238,31 @@ export default function InvoicesPageV2() {
             ) : (
               <>
                 <StatCard
-                  label={t('invoices.kpi.outstanding', 'Belum Tertagih')}
+                  label={t('invoices.kpi.outstanding', 'Outstanding')}
                   value={<MoneyDisplay amount={stats.outstanding} />}
-                  sublabel={t('invoices.kpi.outstandingSub', 'terkirim & jatuh tempo')}
+                  sublabel={t('invoices.kpi.outstandingSub', 'sent & overdue')}
                 />
                 <StatCard
-                  label={t('invoices.kpi.overdue', 'Jatuh Tempo')}
+                  label={t('invoices.kpi.overdue', 'Overdue')}
                   value={<MoneyDisplay amount={stats.overdue} className="text-danger" />}
-                  sublabel={t('invoices.kpi.overdueSub', 'perlu ditindak')}
+                  sublabel={t('invoices.kpi.overdueSub', 'needs action')}
                 />
                 <StatCard
-                  label={t('invoices.kpi.paidThisMonth', 'Lunas Bulan Ini')}
+                  label={t('invoices.kpi.paidThisMonth', 'Paid This Month')}
                   value={<MoneyDisplay amount={stats.paidThisMonth} />}
-                  sublabel={t('invoices.kpi.paidThisMonthSub', 'dibayar di bulan berjalan')}
+                  sublabel={t('invoices.kpi.paidThisMonthSub', 'paid in current month')}
                 />
                 <StatCard
-                  label={t('invoices.kpi.drafts', 'Draf')}
+                  label={t('invoices.kpi.drafts', 'Drafts')}
                   value={stats.draftCount}
-                  sublabel={t('invoices.kpi.draftsSub', 'belum dikirim')}
+                  sublabel={t('invoices.kpi.draftsSub', 'not yet sent')}
                 />
               </>
             )}
           </div>
         </section>
 
-        {/* ─────────────────────────────────────────────────────────────
-            Filter + table — wrapped in a single GlassPanel so the strip
-            and the table share one surface (no double border). Filter
-            strip uses a quiet 'subtle' inner well to separate it from
-            the table without competing for visual weight.
-           ───────────────────────────────────────────────────────────── */}
+        {/* Filter + table */}
         <GlassPanel surface="glass" padding="none" className="overflow-hidden">
           {/* Filter strip */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-4 border-b border-border-subtle">
@@ -278,7 +271,7 @@ export default function InvoicesPageV2() {
               <Input
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                placeholder={t('invoices.search.placeholder', 'Cari nomor, klien, atau proyek...')}
+                placeholder={t('invoices.search.placeholder', 'Search by number, client, or project...')}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -292,12 +285,12 @@ export default function InvoicesPageV2() {
                   <SelectValue placeholder={t('invoices.filter.status', 'Status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('invoices.filter.allStatuses', 'Semua Status')}</SelectItem>
-                  <SelectItem value="DRAFT">{STATUS_LABEL.DRAFT}</SelectItem>
-                  <SelectItem value="SENT">{STATUS_LABEL.SENT}</SelectItem>
-                  <SelectItem value="PAID">{STATUS_LABEL.PAID}</SelectItem>
-                  <SelectItem value="OVERDUE">{STATUS_LABEL.OVERDUE}</SelectItem>
-                  <SelectItem value="CANCELLED">{STATUS_LABEL.CANCELLED}</SelectItem>
+                  <SelectItem value="all">{t('invoices.filter.allStatuses', 'All Statuses')}</SelectItem>
+                  <SelectItem value="DRAFT">{t('invoices.status.draft', 'Draft')}</SelectItem>
+                  <SelectItem value="SENT">{t('invoices.status.sent', 'Sent')}</SelectItem>
+                  <SelectItem value="PAID">{t('invoices.status.paid', 'Paid')}</SelectItem>
+                  <SelectItem value="OVERDUE">{t('invoices.status.overdue', 'Overdue')}</SelectItem>
+                  <SelectItem value="CANCELLED">{t('invoices.status.cancelled', 'Cancelled')}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -309,10 +302,10 @@ export default function InvoicesPageV2() {
                   <SelectValue placeholder={t('invoices.filter.materai', 'Materai')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('invoices.filter.allMaterai', 'Semua Materai')}</SelectItem>
-                  <SelectItem value="required">{t('invoices.filter.materaiRequired', 'Perlu Materai')}</SelectItem>
-                  <SelectItem value="pending">{t('invoices.filter.materaiPending', 'Materai Tertunda')}</SelectItem>
-                  <SelectItem value="applied">{t('invoices.filter.materaiApplied', 'Materai Terpasang')}</SelectItem>
+                  <SelectItem value="all">{t('invoices.filter.allMaterai', 'All Materai')}</SelectItem>
+                  <SelectItem value="required">{t('invoices.filter.materaiRequired', 'Materai Required')}</SelectItem>
+                  <SelectItem value="pending">{t('invoices.filter.materaiPending', 'Materai Pending')}</SelectItem>
+                  <SelectItem value="applied">{t('invoices.filter.materaiApplied', 'Materai Applied')}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -339,32 +332,29 @@ export default function InvoicesPageV2() {
               icon={<FileText />}
               title={
                 hasActiveFilters
-                  ? t('invoices.empty.filtered.title', 'Tidak ada tagihan yang cocok')
-                  : t('invoices.empty.title', 'Belum ada tagihan')
+                  ? t('invoices.empty.filtered.title', 'No invoices match your filters')
+                  : t('invoices.empty.title', 'No invoices yet')
               }
               description={
                 hasActiveFilters
-                  ? t('invoices.empty.filtered.desc', 'Coba ubah atau hapus filter Anda.')
-                  : t('invoices.empty.desc', 'Mulai dengan membuat tagihan pertama Anda.')
+                  ? t('invoices.empty.filtered.desc', 'Try changing or clearing your filters.')
+                  : t('invoices.empty.desc', 'Get started by creating your first invoice.')
               }
               action={
                 hasActiveFilters ? (
                   <Button variant="outline" size="sm" onClick={resetFilters}>
-                    {t('common.resetFilters', 'Reset Filter')}
+                    {t('common.resetFilters', 'Reset Filters')}
                   </Button>
                 ) : (
                   <Button onClick={() => navigate('/invoices/new')} size="sm">
                     <Plus className="h-4 w-4" />
-                    {t('invoices.new', 'Tagihan Baru')}
+                    {t('invoices.new', 'New Invoice')}
                   </Button>
                 )
               }
             />
           ) : (
             <div className="px-1 pb-1">
-              {/* The DataTable primitive draws its own border; we strip the
-                  outer ring by overriding via the wrapper since we already
-                  sit inside a GlassPanel. */}
               <InvoiceTable
                 rows={filtered}
                 onRowClick={(row) => navigate(`/invoices/${row.id}`)}
@@ -373,10 +363,11 @@ export default function InvoicesPageV2() {
                 onSend={(row) => sendMutation.mutate(row.id)}
                 onMarkPaid={(row) => markPaidMutation.mutate(row.id)}
                 onDelete={(row) => {
-                  if (confirm(t('invoices.confirmDelete', `Hapus tagihan ${row.invoiceNumber}?`))) {
+                  if (confirm(t('invoices.confirmDelete', 'Delete invoice {{number}}?', { number: row.invoiceNumber }))) {
                     deleteMutation.mutate(row.id);
                   }
                 }}
+                onChangeStatus={(id, status) => statusMutation.mutate({ id, status })}
               />
             </div>
           )}
@@ -387,10 +378,7 @@ export default function InvoicesPageV2() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  InvoiceTable — extracted only inside this file (per task rules,    */
-/*  no new shared primitives this round). Encapsulates the editorial   */
-/*  column rhythm: mono number → narrative client → right-aligned      */
-/*  money → quiet dates → status pill → actions kebab.                 */
+/*  InvoiceTable                                                        */
 /* ------------------------------------------------------------------ */
 
 interface InvoiceTableProps {
@@ -401,11 +389,55 @@ interface InvoiceTableProps {
   onSend: (row: Invoice) => void;
   onMarkPaid: (row: Invoice) => void;
   onDelete: (row: Invoice) => void;
+  onChangeStatus: (id: string, status: string) => void;
 }
 
 function InvoiceTable({
-  rows, onRowClick, onView, onEdit, onSend, onMarkPaid, onDelete,
+  rows, onRowClick, onView, onEdit, onSend, onMarkPaid, onDelete, onChangeStatus,
 }: InvoiceTableProps) {
+  const { t } = useTranslation();
+
+  /** Returns the sensible status transitions for a given current status.
+   *  PAID uses the dedicated markPaid path (handled by onMarkPaid in the
+   *  caller); all others go through the generic updateStatus path.
+   */
+  const statusTransitions = (
+    currentStatus: string
+  ): { status: string; label: string; icon: React.ReactNode; usePaidPath?: boolean }[] => {
+    switch (currentStatus?.toUpperCase()) {
+      case 'DRAFT':
+        return [
+          { status: 'SENT',      label: t('invoices.action.markSent', 'Mark as Sent'),      icon: <Send className="h-3.5 w-3.5" /> },
+          { status: 'CANCELLED', label: t('invoices.action.cancel', 'Cancel Invoice'),      icon: <Ban className="h-3.5 w-3.5" /> },
+        ];
+      case 'SENT':
+        return [
+          { status: 'PAID',      label: t('invoices.action.markPaid', 'Mark as Paid'),      icon: <CheckCircle2 className="h-3.5 w-3.5" />, usePaidPath: true },
+          { status: 'OVERDUE',   label: t('invoices.action.markOverdue', 'Mark as Overdue'), icon: <Clock className="h-3.5 w-3.5" /> },
+          { status: 'CANCELLED', label: t('invoices.action.cancel', 'Cancel Invoice'),      icon: <Ban className="h-3.5 w-3.5" /> },
+        ];
+      case 'OVERDUE':
+        return [
+          { status: 'PAID',      label: t('invoices.action.markPaid', 'Mark as Paid'),      icon: <CheckCircle2 className="h-3.5 w-3.5" />, usePaidPath: true },
+          { status: 'CANCELLED', label: t('invoices.action.cancel', 'Cancel Invoice'),      icon: <Ban className="h-3.5 w-3.5" /> },
+        ];
+      default:
+        // PAID / CANCELLED — no further transitions
+        return [];
+    }
+  };
+
+  const getStatusLabel = (s?: string) => {
+    switch (s?.toUpperCase()) {
+      case 'DRAFT':     return t('invoices.status.draft',     'Draft');
+      case 'SENT':      return t('invoices.status.sent',      'Sent');
+      case 'PAID':      return t('invoices.status.paid',      'Paid');
+      case 'OVERDUE':   return t('invoices.status.overdue',   'Overdue');
+      case 'CANCELLED': return t('invoices.status.cancelled', 'Cancelled');
+      default:          return s ?? '—';
+    }
+  };
+
   return (
     <DataTable<Invoice>
       data={rows}
@@ -414,7 +446,7 @@ function InvoiceTable({
       columns={[
         {
           accessorKey: 'invoiceNumber',
-          header: 'Nomor',
+          header: t('invoices.col.number', 'Number'),
           cell: ({ row }) => (
             <span className="font-mono text-xs text-text-primary tracking-tight">
               {row.original.invoiceNumber || '—'}
@@ -423,7 +455,7 @@ function InvoiceTable({
         },
         {
           id: 'client',
-          header: 'Klien',
+          header: t('invoices.col.client', 'Client'),
           accessorFn: (row) => row.client?.name ?? '',
           cell: ({ row }) => {
             const inv = row.original;
@@ -441,7 +473,7 @@ function InvoiceTable({
         },
         {
           accessorKey: 'totalAmount',
-          header: () => <span className="block text-right">Jumlah</span>,
+          header: () => <span className="block text-right">{t('invoices.col.amount', 'Amount')}</span>,
           cell: ({ row }) => (
             <div className="text-right">
               <MoneyDisplay
@@ -459,7 +491,7 @@ function InvoiceTable({
         },
         {
           accessorKey: 'creationDate',
-          header: 'Diterbitkan',
+          header: t('invoices.col.issued', 'Issued'),
           cell: ({ row }) => (
             <span className="text-text-tertiary">
               <DateDisplay date={row.original.creationDate} />
@@ -468,7 +500,7 @@ function InvoiceTable({
         },
         {
           accessorKey: 'dueDate',
-          header: 'Jatuh Tempo',
+          header: t('invoices.col.dueDate', 'Due Date'),
           cell: ({ row }) => {
             const inv = row.original;
             const overdueish = inv.status === 'OVERDUE'
@@ -483,7 +515,7 @@ function InvoiceTable({
         },
         {
           accessorKey: 'status',
-          header: 'Status',
+          header: t('invoices.col.status', 'Status'),
           cell: ({ row }) => (
             <Badge variant={getStatusVariant(row.original.status)}>
               {getStatusLabel(row.original.status)}
@@ -492,12 +524,14 @@ function InvoiceTable({
         },
         {
           id: 'actions',
-          header: () => <span className="sr-only">Aksi</span>,
+          header: () => <span className="sr-only">{t('invoices.col.actions', 'Actions')}</span>,
           cell: ({ row }) => {
             const inv = row.original;
-            const canSend = inv.status === 'DRAFT';
+            const canSend    = inv.status === 'DRAFT';
             const canMarkPaid = inv.status === 'SENT' || inv.status === 'OVERDUE';
-            const canDelete = inv.status === 'DRAFT';
+            const canDelete  = inv.status === 'DRAFT';
+            const transitions = statusTransitions(inv.status);
+
             return (
               <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
@@ -506,28 +540,56 @@ function InvoiceTable({
                       variant="ghost"
                       size="icon-sm"
                       className="text-text-tertiary hover:text-text-primary"
-                      aria-label="Aksi tagihan"
+                      aria-label={t('invoices.action.menuAriaLabel', 'Invoice actions')}
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuContent align="end" className="w-52">
+                    {/* ── View / Edit ── */}
                     <DropdownMenuItem onClick={() => onView(inv)}>
-                      <Eye className="h-3.5 w-3.5" /> Lihat
+                      <Eye className="h-3.5 w-3.5" /> {t('invoices.action.view', 'View')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEdit(inv)}>
-                      <Pencil className="h-3.5 w-3.5" /> Ubah
+                      <Pencil className="h-3.5 w-3.5" /> {t('invoices.action.edit', 'Edit')}
                     </DropdownMenuItem>
+
+                    {/* ── Quick-send shortcut (DRAFT only) ── */}
                     {canSend && (
                       <DropdownMenuItem onClick={() => onSend(inv)}>
-                        <Send className="h-3.5 w-3.5" /> Kirim
+                        <Send className="h-3.5 w-3.5" /> {t('invoices.action.send', 'Send')}
                       </DropdownMenuItem>
                     )}
+
+                    {/* ── Quick mark-paid shortcut (SENT / OVERDUE) ── */}
                     {canMarkPaid && (
                       <DropdownMenuItem onClick={() => onMarkPaid(inv)}>
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Tandai Lunas
+                        <CheckCircle2 className="h-3.5 w-3.5" /> {t('invoices.action.markPaid', 'Mark as Paid')}
                       </DropdownMenuItem>
                     )}
+
+                    {/* ── Change Status group ── */}
+                    {transitions.length > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="text-xs text-text-tertiary">
+                          {t('invoices.action.changeStatus', 'Change Status')}
+                        </DropdownMenuLabel>
+                        {transitions.map(({ status, label, icon, usePaidPath }) => (
+                          <DropdownMenuItem
+                            key={status}
+                            onClick={() =>
+                              usePaidPath ? onMarkPaid(inv) : onChangeStatus(inv.id, status)
+                            }
+                            className={status === 'CANCELLED' ? 'text-danger focus:text-danger' : ''}
+                          >
+                            {icon} {label}
+                          </DropdownMenuItem>
+                        ))}
+                      </>
+                    )}
+
+                    {/* ── Delete (DRAFT only) ── */}
                     {canDelete && (
                       <>
                         <DropdownMenuSeparator />
@@ -535,7 +597,7 @@ function InvoiceTable({
                           onClick={() => onDelete(inv)}
                           className="text-danger focus:text-danger"
                         >
-                          <Trash2 className="h-3.5 w-3.5" /> Hapus
+                          <Trash2 className="h-3.5 w-3.5" /> {t('invoices.action.delete', 'Delete')}
                         </DropdownMenuItem>
                       </>
                     )}

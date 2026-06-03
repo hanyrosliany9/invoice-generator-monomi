@@ -60,19 +60,12 @@ import { quotationService, type Quotation } from '@/services/quotations';
 // ─────────────────────────────────────────────────────────────────────
 type StatusKey = 'DRAFT' | 'SENT' | 'APPROVED' | 'DECLINED' | 'REVISED';
 
-const STATUS_COPY: Record<StatusKey, string> = {
-  DRAFT: 'Draft',
-  SENT: 'Terkirim',
-  APPROVED: 'Disetujui',
-  DECLINED: 'Ditolak',
-  REVISED: 'Revisi',
-};
-
 /**
  * Status chip — same visual contract as the list page, intentionally quiet.
  * Hairline border on a 10–12% wash; reads as a label, not a button.
  */
 const StatusBadge = ({ status }: { status: string }) => {
+  const { t } = useTranslation();
   const key = (status?.toUpperCase() as StatusKey) || 'DRAFT';
   const tone: Record<StatusKey, string> = {
     DRAFT: 'bg-text-tertiary/10 text-text-secondary border-text-tertiary/25',
@@ -80,6 +73,13 @@ const StatusBadge = ({ status }: { status: string }) => {
     APPROVED: 'bg-success/12 text-success border-success/30',
     DECLINED: 'bg-danger/10 text-danger border-danger/30',
     REVISED: 'bg-warning/12 text-warning border-warning/30',
+  };
+  const STATUS_COPY: Record<StatusKey, string> = {
+    DRAFT: t('quotations.status.draft', 'Draft'),
+    SENT: t('quotations.status.sent', 'Sent'),
+    APPROVED: t('quotations.status.approved', 'Approved'),
+    DECLINED: t('quotations.status.declined', 'Declined'),
+    REVISED: t('quotations.status.revised', 'Revised'),
   };
   return (
     <span
@@ -141,13 +141,13 @@ export default function QuotationDetailPageV2() {
           () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
           500,
         );
-        toast.success('Penawaran disetujui — invoice otomatis dibuat.');
+        toast.success(t('quotations.toast.approved', 'Quotation approved — invoice created automatically.'));
       } else if (variables.status === 'SENT') {
-        toast.success('Penawaran dikirim ke klien.');
+        toast.success(t('quotations.toast.sent', 'Quotation sent to client.'));
       } else if (variables.status === 'DECLINED') {
-        toast.success('Penawaran ditolak.');
+        toast.success(t('quotations.toast.declined', 'Quotation declined.'));
       } else {
-        toast.success('Status berhasil diperbarui.');
+        toast.success(t('quotations.toast.statusUpdated', 'Status updated successfully.'));
       }
     },
     onError: (err: unknown) => {
@@ -156,7 +156,7 @@ export default function QuotationDetailPageV2() {
       // refused status change just looks like "nothing happens".
       const resp = (err as { response?: { data?: { details?: string; message?: string } } })?.response?.data;
       const msg = resp?.details || resp?.message;
-      toast.error(msg || 'Gagal memperbarui status penawaran.');
+      toast.error(msg || t('quotations.toast.statusError', 'Failed to update quotation status.'));
     },
   });
 
@@ -166,19 +166,21 @@ export default function QuotationDetailPageV2() {
       queryClient.invalidateQueries({ queryKey: ['quotation', id] });
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      toast.success('Penawaran dibuka kembali ke Draft. Invoice otomatis dihapus.');
+      toast.success(t('quotations.toast.reopened', 'Quotation reopened to Draft. Auto-generated invoice deleted.'));
     },
     onError: (err: unknown) => {
       const resp = (err as { response?: { data?: { details?: string; message?: string } } })?.response?.data;
-      toast.error(resp?.details || resp?.message || 'Gagal membuka kembali penawaran.');
+      toast.error(resp?.details || resp?.message || t('quotations.toast.reopenError', 'Failed to reopen quotation.'));
     },
   });
 
   const handleReopen = () => {
     if (
       window.confirm(
-        'Buka kembali penawaran ini ke Draft? Invoice yang dibuat otomatis dari ' +
-          'persetujuan akan dihapus (hanya jika belum dikirim/dibayar). Lanjutkan?',
+        t(
+          'quotations.actions.reopenConfirm',
+          'Reopen this quotation to Draft? The auto-generated invoice will be deleted (only if not yet sent/paid). Continue?',
+        ),
       )
     ) {
       reopenMutation.mutate();
@@ -191,24 +193,24 @@ export default function QuotationDetailPageV2() {
       queryClient.invalidateQueries({ queryKey: ['quotation', id] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       toast.success(
-        `Invoice ${data?.invoice?.invoiceNumber ?? ''} berhasil dibuat.`,
+        t('quotations.toast.invoiceCreated', 'Invoice {{number}} created successfully.', { number: data?.invoice?.invoiceNumber ?? '' }),
       );
       // Match classic page semantics: jump to the new invoice.
       if (data?.invoiceId) {
         navigate(`/invoices/${data.invoiceId}`);
       }
     },
-    onError: () => toast.error('Gagal membuat invoice dari penawaran.'),
+    onError: () => toast.error(t('quotations.toast.invoiceError', 'Failed to create invoice from quotation.')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (qId: string) => quotationService.deleteQuotation(qId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
-      toast.success('Penawaran berhasil dihapus.');
+      toast.success(t('quotations.toast.deleted', 'Quotation deleted successfully.'));
       navigate('/quotations');
     },
-    onError: () => toast.error('Gagal menghapus penawaran.'),
+    onError: () => toast.error(t('quotations.toast.deleteError', 'Failed to delete quotation.')),
   });
 
   // ── Handlers ───────────────────────────────────────────────────────
@@ -224,22 +226,26 @@ export default function QuotationDetailPageV2() {
       link.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
-      toast.success('PDF berhasil diunduh.');
+      toast.success(t('quotations.toast.pdfDownloaded', 'PDF downloaded successfully.'));
     } catch {
-      toast.error('Gagal mengunduh PDF.');
+      toast.error(t('quotations.toast.pdfError', 'Failed to download PDF.'));
     }
-  }, [quotation]);
+  }, [quotation, t]);
 
   const handleDelete = useCallback(() => {
     if (!quotation) return;
     if (
       window.confirm(
-        `Hapus penawaran ${quotation.quotationNumber}? Tindakan ini tidak bisa dibatalkan.`,
+        t(
+          'quotations.actions.deleteConfirm',
+          'Delete quotation {{number}}? This action cannot be undone.',
+          { number: quotation.quotationNumber },
+        ),
       )
     ) {
       deleteMutation.mutate(quotation.id);
     }
-  }, [deleteMutation, quotation]);
+  }, [deleteMutation, quotation, t]);
 
   // ── Derived values ─────────────────────────────────────────────────
   const statusKey = (quotation?.status?.toUpperCase() as StatusKey) || 'DRAFT';
@@ -262,7 +268,7 @@ export default function QuotationDetailPageV2() {
     }> = [
       {
         key: 'created',
-        label: 'Penawaran dibuat',
+        label: t('quotationDetail.timeline.created', 'Quotation created'),
         at: quotation.createdAt,
         tone: 'done',
       },
@@ -273,7 +279,7 @@ export default function QuotationDetailPageV2() {
 
     events.push({
       key: 'sent',
-      label: 'Dikirim ke klien',
+      label: t('quotationDetail.timeline.sent', 'Sent to client'),
       at: isPastDraft ? quotation.updatedAt : undefined,
       tone: isPastDraft ? 'done' : statusKey === 'DRAFT' ? 'active' : 'pending',
     });
@@ -281,21 +287,21 @@ export default function QuotationDetailPageV2() {
     if (statusKey === 'APPROVED') {
       events.push({
         key: 'approved',
-        label: 'Disetujui klien',
+        label: t('quotationDetail.timeline.approved', 'Approved by client'),
         at: quotation.approvedAt ?? quotation.updatedAt,
         tone: 'done',
       });
     } else if (statusKey === 'DECLINED') {
       events.push({
         key: 'declined',
-        label: 'Ditolak klien',
+        label: t('quotationDetail.timeline.declined', 'Declined by client'),
         at: quotation.rejectedAt ?? quotation.updatedAt,
         tone: 'danger',
       });
     } else if (statusKey === 'SENT') {
       events.push({
         key: 'awaiting',
-        label: 'Menunggu respon klien',
+        label: t('quotationDetail.timeline.awaiting', 'Awaiting client response'),
         tone: 'active',
       });
     }
@@ -371,24 +377,24 @@ export default function QuotationDetailPageV2() {
         icon={<ReceiptText className="h-12 w-12" />}
         title={t(
           'quotationDetail.error.title',
-          'Tidak bisa memuat penawaran',
+          'Could not load quotation',
         )}
         description={
           error instanceof Error
             ? error.message
             : t(
                 'quotationDetail.error.desc',
-                'Penawaran yang Anda cari tidak ditemukan atau terjadi kesalahan.',
+                'The quotation you are looking for was not found or an error occurred.',
               )
         }
         action={
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => navigate('/quotations')}>
               <ArrowLeft className="h-4 w-4" />
-              Kembali ke daftar
+              {t('quotationDetail.error.backToList', 'Back to list')}
             </Button>
             <Button onClick={() => refetch()}>
-              {t('common.retry', 'Coba Lagi')}
+              {t('common.retry', 'Try Again')}
             </Button>
           </div>
         }
@@ -413,7 +419,7 @@ export default function QuotationDetailPageV2() {
           className="gap-2"
         >
           <Send className="h-4 w-4" />
-          Kirim
+          {t('quotations.detail.send', 'Send')}
         </Button>
       );
     }
@@ -430,7 +436,7 @@ export default function QuotationDetailPageV2() {
             className="gap-2 text-danger hover:text-danger hover:bg-danger/10"
           >
             <XCircle className="h-4 w-4" />
-            Tolak
+            {t('quotations.actions.decline', 'Decline')}
           </Button>
           <Button
             size="sm"
@@ -441,7 +447,7 @@ export default function QuotationDetailPageV2() {
             className="gap-2"
           >
             <CheckCircle2 className="h-4 w-4" />
-            Setujui
+            {t('quotations.actions.approve', 'Approve')}
           </Button>
         </>
       );
@@ -455,7 +461,7 @@ export default function QuotationDetailPageV2() {
           className="gap-2"
         >
           <FileInput className="h-4 w-4" />
-          Buat Invoice
+          {t('quotations.actions.createInvoice', 'Create Invoice')}
         </Button>
       );
     }
@@ -473,15 +479,15 @@ export default function QuotationDetailPageV2() {
     danger?: boolean;
   }> = [];
   if (statusKey === 'DRAFT') {
-    statusOptions.push({ to: 'SENT', label: 'Tandai Terkirim', icon: Send });
+    statusOptions.push({ to: 'SENT', label: t('quotations.actions.markSent', 'Mark as Sent'), icon: Send });
   } else if (statusKey === 'SENT') {
     // Backend only allows SENT → APPROVED / DECLINED (not back to DRAFT).
     if (canApprove) {
-      statusOptions.push({ to: 'APPROVED', label: 'Setujui', icon: CheckCircle2 });
-      statusOptions.push({ to: 'DECLINED', label: 'Tolak', icon: XCircle, danger: true });
+      statusOptions.push({ to: 'APPROVED', label: t('quotations.actions.approve', 'Approve'), icon: CheckCircle2 });
+      statusOptions.push({ to: 'DECLINED', label: t('quotations.actions.decline', 'Decline'), icon: XCircle, danger: true });
     }
   } else if (statusKey === 'DECLINED') {
-    statusOptions.push({ to: 'DRAFT', label: 'Revisi (kembali ke Draft)', icon: RotateCcw });
+    statusOptions.push({ to: 'DRAFT', label: t('quotations.actions.revise', 'Revise (back to Draft)'), icon: RotateCcw });
   }
   // APPROVED is terminal in the forward flow, but can be reopened (a guarded
   // undo) via reopenMutation below — rendered as its own destructive item.
@@ -493,7 +499,7 @@ export default function QuotationDetailPageV2() {
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label="Aksi penawaran"
+          aria-label={t('quotations.actions.aria', 'Quotation actions')}
           className="text-text-tertiary hover:text-text-primary"
         >
           <MoreHorizontal className="h-4 w-4" />
@@ -506,7 +512,7 @@ export default function QuotationDetailPageV2() {
         {(statusOptions.length > 0 || statusKey === 'APPROVED') && (
           <>
             <DropdownMenuLabel className="text-text-tertiary text-[10px] uppercase tracking-[0.14em]">
-              Ubah Status
+              {t('quotations.actions.changeStatus', 'Change Status')}
             </DropdownMenuLabel>
             {statusOptions.map((opt) => (
               <DropdownMenuItem
@@ -528,7 +534,7 @@ export default function QuotationDetailPageV2() {
                 onClick={handleReopen}
               >
                 <RotateCcw className="h-4 w-4" />
-                Buka Kembali (Batalkan Persetujuan)
+                {t('quotations.actions.reopen', 'Reopen (Cancel Approval)')}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator className="bg-border-subtle" />
@@ -538,18 +544,18 @@ export default function QuotationDetailPageV2() {
           onClick={() => navigate(`/quotations/${quotation.id}/edit`)}
         >
           <Pencil className="h-4 w-4" />
-          Edit
+          {t('quotations.actions.edit', 'Edit')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleDownloadPDF}>
           <Printer className="h-4 w-4" />
-          Unduh PDF
+          {t('quotations.actions.downloadPdf', 'Download PDF')}
         </DropdownMenuItem>
         {canDelete && (
           <>
             <DropdownMenuSeparator className="bg-border-subtle" />
             <DropdownMenuItem variant="destructive" onClick={handleDelete}>
               <Trash2 className="h-4 w-4" />
-              Hapus
+              {t('quotations.actions.delete', 'Delete')}
             </DropdownMenuItem>
           </>
         )}
@@ -569,13 +575,13 @@ export default function QuotationDetailPageV2() {
     <>
       <PageHeader
         breadcrumbs={[
-          { label: t('quotations.title', 'Penawaran'), href: '/quotations' },
+          { label: t('quotations.title', 'Quotations'), href: '/quotations' },
           { label: quotation.quotationNumber },
         ]}
         title={quotation.quotationNumber}
         description={
           headerDescription ||
-          t('quotationDetail.untitled', 'Detail penawaran')
+          t('quotationDetail.untitled', 'Quotation detail')
         }
         actions={
           <div className="flex items-center gap-2">
@@ -613,13 +619,13 @@ export default function QuotationDetailPageV2() {
                 )}
               >
                 {isExpired
-                  ? 'Penawaran sudah kedaluwarsa'
-                  : `Berakhir dalam ${validityDays} hari`}
+                  ? t('quotationDetail.validity.expired', 'Quotation has expired')
+                  : t('quotationDetail.validity.expiringSoon', 'Expires in {{days}} days', { days: validityDays })}
               </span>
               <span className="text-text-secondary ml-2">
                 {isExpired
-                  ? 'Pertimbangkan untuk membuat penawaran revisi dengan masa berlaku baru.'
-                  : 'Segera tindaklanjuti dengan klien.'}
+                  ? t('quotationDetail.validity.expiredHint', 'Consider creating a revised quotation with a new validity period.')
+                  : t('quotationDetail.validity.expiringSoonHint', 'Follow up with the client promptly.')}
               </span>
             </div>
           </GlassPanel>
@@ -636,7 +642,7 @@ export default function QuotationDetailPageV2() {
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] lg:grid-cols-[1.4fr_1fr_1fr] gap-8 md:gap-10">
             {/* Klien */}
             <div className="min-w-0">
-              <Eyebrow>Klien</Eyebrow>
+              <Eyebrow>{t('quotationDetail.hero.client', 'Client')}</Eyebrow>
               <div className="mt-4 flex items-center gap-3 min-w-0">
                 <Avatar className="h-11 w-11 shrink-0">
                   <AvatarFallback className="bg-brand-navy text-brand-cream font-medium text-sm">
@@ -668,7 +674,7 @@ export default function QuotationDetailPageV2() {
 
             {/* Proyek */}
             <div className="min-w-0 lg:border-l lg:border-border-subtle lg:pl-8">
-              <Eyebrow>Proyek</Eyebrow>
+              <Eyebrow>{t('quotationDetail.hero.project', 'Project')}</Eyebrow>
               <div className="mt-4 text-base text-text-primary truncate font-mono">
                 {quotation.project?.number ?? '—'}
               </div>
@@ -687,7 +693,7 @@ export default function QuotationDetailPageV2() {
             {/* Total — right-aligned on desktop, big numeric. */}
             <div className="min-w-0 lg:border-l lg:border-border-subtle lg:pl-8 lg:text-right">
               <Eyebrow className={cn(undefined, 'lg:text-right')}>
-                Total Nilai
+                {t('quotationDetail.hero.total', 'Total Amount')}
               </Eyebrow>
               <div className="mt-4 text-3xl font-display font-semibold text-text-primary leading-none">
                 <MoneyDisplay
@@ -697,13 +703,13 @@ export default function QuotationDetailPageV2() {
               </div>
               {quotation.includeTax && (
                 <div className="mt-2 text-xs text-text-tertiary">
-                  termasuk PPN {Number(quotation.taxRate ?? 11)}%
+                  {t('quotationDetail.hero.includingTax', 'including VAT {{rate}}%', { rate: Number(quotation.taxRate ?? 11) })}
                 </div>
               )}
               <div className="mt-3 flex flex-col gap-1 text-xs text-text-tertiary lg:items-end">
                 <div className="inline-flex items-center gap-1.5">
                   <CalendarDays className="h-3 w-3" />
-                  Berlaku sampai{' '}
+                  {t('quotationDetail.hero.validUntil', 'Valid until')}{' '}
                   <span className="text-text-secondary">
                     <DateDisplay date={quotation.validUntil} />
                   </span>
@@ -711,7 +717,7 @@ export default function QuotationDetailPageV2() {
                 {Number(quotation.totalAmount) > 5_000_000 && (
                   <div className="inline-flex items-center gap-1.5 text-warning">
                     <AlertTriangle className="h-3 w-3" />
-                    Materai diperlukan ({'>'} 5 jt IDR)
+                    {t('quotationDetail.hero.materaiRequired', 'Materai required (> 5M IDR)')}
                   </div>
                 )}
               </div>
@@ -729,7 +735,7 @@ export default function QuotationDetailPageV2() {
           <section className="mb-12">
             <div className="mb-5 flex items-baseline justify-between">
               <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                Rincian
+                {t('quotationDetail.lineItems.title', 'Line Items')}
               </h2>
               <span className="text-xs text-text-tertiary tabular-nums">
                 {quotation.priceBreakdown.products.length} item
@@ -741,16 +747,16 @@ export default function QuotationDetailPageV2() {
                   <thead>
                     <tr className="border-b border-border-subtle">
                       <th className="text-left px-6 py-3 text-[11px] uppercase tracking-wider text-text-tertiary font-medium">
-                        Deskripsi
+                        {t('quotationDetail.lineItems.description', 'Description')}
                       </th>
                       <th className="text-center px-4 py-3 text-[11px] uppercase tracking-wider text-text-tertiary font-medium w-24">
-                        Qty
+                        {t('quotationDetail.lineItems.qty', 'Qty')}
                       </th>
                       <th className="text-right px-4 py-3 text-[11px] uppercase tracking-wider text-text-tertiary font-medium w-40">
-                        Harga Satuan
+                        {t('quotationDetail.lineItems.unitPrice', 'Unit Price')}
                       </th>
                       <th className="text-right px-6 py-3 text-[11px] uppercase tracking-wider text-text-tertiary font-medium w-44">
-                        Subtotal
+                        {t('quotationDetail.lineItems.subtotal', 'Subtotal')}
                       </th>
                     </tr>
                   </thead>
@@ -795,7 +801,7 @@ export default function QuotationDetailPageV2() {
                   {quotation.includeTax ? (
                     <>
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-tertiary">Subtotal</span>
+                        <span className="text-text-tertiary">{t('quotationDetail.totals.subtotal', 'Subtotal')}</span>
                         <MoneyDisplay
                           amount={
                             quotation.subtotalAmount ?? quotation.totalAmount
@@ -805,7 +811,7 @@ export default function QuotationDetailPageV2() {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-text-tertiary">
-                          PPN {Number(quotation.taxRate ?? 11)}%
+                          {t('quotationDetail.totals.vat', 'VAT')} {Number(quotation.taxRate ?? 11)}%
                         </span>
                         <MoneyDisplay
                           amount={quotation.taxAmount ?? 0}
@@ -846,7 +852,7 @@ export default function QuotationDetailPageV2() {
         <div className="lg:col-span-2 space-y-5">
           {quotation.scopeOfWork && (
             <GlassPanel surface="glass" padding="lg">
-              <Eyebrow>Lingkup Pekerjaan</Eyebrow>
+              <Eyebrow>{t('quotationDetail.sections.scopeOfWork', 'Scope of Work')}</Eyebrow>
               <p className="mt-4 text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
                 {quotation.scopeOfWork}
               </p>
@@ -854,7 +860,7 @@ export default function QuotationDetailPageV2() {
           )}
           {quotation.terms && (
             <GlassPanel surface="glass" padding="lg">
-              <Eyebrow>Syarat & Ketentuan</Eyebrow>
+              <Eyebrow>{t('quotationDetail.sections.terms', 'Terms & Conditions')}</Eyebrow>
               <p className="mt-4 text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
                 {quotation.terms}
               </p>
@@ -864,8 +870,8 @@ export default function QuotationDetailPageV2() {
             <GlassPanel surface="glass" padding="lg">
               <EmptyState
                 icon={<FileText className="h-8 w-8" />}
-                title="Tidak ada catatan tambahan"
-                description="Lingkup pekerjaan dan syarat tidak diisi untuk penawaran ini."
+                title={t('quotationDetail.sections.noNotes', 'No additional notes')}
+                description={t('quotationDetail.sections.noNotesDesc', 'Scope of work and terms were not filled in for this quotation.')}
               />
             </GlassPanel>
           )}
@@ -873,7 +879,7 @@ export default function QuotationDetailPageV2() {
 
         {/* Timeline */}
         <GlassPanel surface="glass" padding="lg" className="self-start">
-          <Eyebrow>Riwayat</Eyebrow>
+          <Eyebrow>{t('quotationDetail.sections.history', 'History')}</Eyebrow>
           <ol className="mt-5 space-y-5">
             {timeline.map((event, i) => {
               const Icon =
@@ -929,7 +935,7 @@ export default function QuotationDetailPageV2() {
 
           {quotation.user?.name && (
             <div className="mt-6 pt-5 border-t border-border-subtle">
-              <Eyebrow>Dibuat oleh</Eyebrow>
+              <Eyebrow>{t('quotationDetail.sections.createdBy', 'Created by')}</Eyebrow>
               <div className="mt-3">
                 <UserChip name={quotation.user.name} email={quotation.user.email} size="sm" />
               </div>
@@ -943,7 +949,7 @@ export default function QuotationDetailPageV2() {
         <section className="mb-12">
           <div className="mb-5 flex items-baseline justify-between">
             <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-              Invoice Terkait
+              {t('quotationDetail.sections.relatedInvoices', 'Related Invoices')}
             </h2>
             <span className="text-xs text-text-tertiary tabular-nums">
               {quotation.invoices.length}
@@ -965,7 +971,7 @@ export default function QuotationDetailPageV2() {
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <StatusBadge status={inv.status} />
-                    <span className="text-xs text-text-tertiary">Lihat →</span>
+                    <span className="text-xs text-text-tertiary">{t('quotationDetail.sections.viewInvoice', 'View →')}</span>
                   </div>
                 </li>
               ))}
