@@ -68,8 +68,18 @@ export class QuotationsService {
     const priceBreakdown =
       createQuotationDto.priceBreakdown || project.priceBreakdown || undefined;
 
-    // Extract paymentMilestones from DTO (should not be passed to Prisma create)
-    const { paymentMilestones, ...quotationData } = createQuotationDto as any;
+    // Extract paymentMilestones AND fields that are in the DTO but NOT columns
+    // on the Quotation model (includeTax/subtotalAmount/taxRate/taxAmount are
+    // display-only tax helpers). Without this, prisma.quotation.create throws
+    // "Unknown argument `includeTax`" — mirrors the same extraction in update().
+    const {
+      paymentMilestones,
+      includeTax: _includeTax,
+      subtotalAmount: _subtotalAmount,
+      taxRate: _taxRate,
+      taxAmount: _taxAmount,
+      ...quotationData
+    } = createQuotationDto as any;
 
     // Create quotation
     const quotation = await this.prisma.quotation.create({
@@ -211,6 +221,8 @@ export class QuotationsService {
           },
         },
         invoices: true,
+        // Needed so the detail/edit UI can show the configured payment terms.
+        paymentMilestones: { orderBy: { milestoneNumber: "asc" } },
       },
     });
 

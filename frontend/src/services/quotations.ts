@@ -89,6 +89,16 @@ export interface CreateQuotationRequest {
     total: number
     calculatedAt: string
   }
+  // Payment terms (termin). Default FULL_PAYMENT; for MILESTONE_BASED pass the
+  // milestones — the backend computes paymentAmount from totalAmount × %.
+  paymentType?: PaymentType
+  paymentMilestones?: Array<{
+    milestoneNumber: number
+    name: string
+    nameId?: string
+    paymentPercentage: number
+    paymentAmount?: number
+  }>
 }
 
 export interface UpdateQuotationRequest

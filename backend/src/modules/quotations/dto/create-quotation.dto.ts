@@ -8,9 +8,11 @@ import {
   IsArray,
   ValidateNested,
   IsBoolean,
+  IsEnum,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
+import { PaymentType } from "@prisma/client";
 
 export class CreateQuotationDto {
   @ApiProperty({ description: "ID klien" })
@@ -116,6 +118,18 @@ export class CreateQuotationDto {
   @IsOptional()
   @IsString({ message: "Terms harus berupa string" })
   terms?: string;
+
+  @ApiProperty({
+    description: "Payment type: FULL_PAYMENT or MILESTONE_BASED (termin)",
+    required: false,
+    enum: PaymentType,
+    default: PaymentType.FULL_PAYMENT,
+  })
+  @IsOptional()
+  @IsEnum(PaymentType, {
+    message: "Payment type harus FULL_PAYMENT atau MILESTONE_BASED",
+  })
+  paymentType?: PaymentType;
 
   @ApiProperty({
     description: "Payment milestones (optional, for milestone-based payments)",

@@ -68,6 +68,14 @@ const lineItemSchema = z.object({
     .min(0, 'Harga tidak boleh negatif'),
 });
 
+const milestoneSchema = z.object({
+  name: z.string().min(1, 'Nama termin wajib diisi'),
+  percentage: z
+    .number({ invalid_type_error: 'Persen harus angka' })
+    .min(0.01, 'Min. 0,01%')
+    .max(100, 'Maks. 100%'),
+});
+
 export const quotationFormSchema = z
   .object({
     clientId: z.string().min(1, 'Klien wajib dipilih'),
@@ -84,10 +92,33 @@ export const quotationFormSchema = z
     terms: z
       .string()
       .min(20, 'Syarat & ketentuan minimal 20 karakter'),
+    // Payment terms (termin). FULL = single payment; MILESTONE = split %.
+    paymentType: z.enum(['FULL_PAYMENT', 'MILESTONE_BASED']),
+    milestones: z.array(milestoneSchema),
   })
   .refine((d) => d.validUntil > new Date(new Date().setHours(0, 0, 0, 0)), {
     message: 'Tanggal berlaku harus di masa depan',
     path: ['validUntil'],
+  })
+  .superRefine((d, ctx) => {
+    if (d.paymentType !== 'MILESTONE_BASED') return;
+    if (d.milestones.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Termin membutuhkan minimal 2 tahap pembayaran.',
+        path: ['milestones'],
+      });
+      return;
+    }
+    const sum = d.milestones.reduce((s, m) => s + (m.percentage || 0), 0);
+    // Tolerate float dust (e.g. 33.33 × 3) but require ≈100.
+    if (Math.abs(sum - 100) > 0.01) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Total persentase termin harus tepat 100% (sekarang ${sum.toFixed(2)}%).`,
+        path: ['milestones'],
+      });
+    }
   });
 
 export type QuotationFormValues = z.infer<typeof quotationFormSchema>;
@@ -276,7 +307,11 @@ export const QuotationForm = ({
   }, [watchedClientId, watchedProjectId, allProjects, setValue]);
 
   // ── Totals (live) ──
-  const totals = useMemo(() => {
+  // Computed inline (NOT memoised): react-hook-form's watch() mutates the
+  // lineItems array entries in place and keeps the same array reference, so a
+  // useMemo keyed on [watchedLineItems] never recomputed — the grand total,
+  // tax and materai warning all went stale (and milestone amounts read 0).
+  const totals = (() => {
     const subtotal = (watchedLineItems ?? []).reduce(
       (sum, item) =>
         sum + (Number(item?.quantity) || 0) * (Number(item?.price) || 0),
@@ -286,9 +321,27 @@ export const QuotationForm = ({
     const taxAmount = watchedIncludeTax ? subtotal * (taxRate / 100) : 0;
     const grandTotal = subtotal + taxAmount;
     return { subtotal, taxRate, taxAmount, grandTotal };
-  }, [watchedLineItems, watchedIncludeTax]);
+  })();
 
   const requiresMaterai = totals.grandTotal > 5_000_000;
+
+  // ── Payment terms (termin) ──
+  const milestonesArray = useFieldArray({ control, name: 'milestones' });
+  const watchedPaymentType = watch('paymentType');
+  const watchedMilestones = watch('milestones');
+  const milestoneTotalPct = (watchedMilestones ?? []).reduce(
+    (s, m) => s + (Number(m?.percentage) || 0),
+    0,
+  );
+  // Editing termin rows on an existing quotation isn't persisted by the
+  // update endpoint (and is blocked once a milestone is invoiced), so the
+  // picker is interactive on create and read-only on edit.
+  const termsEditable = mode === 'create';
+  const applyMilestonePreset = (preset: number[], names: string[]) => {
+    milestonesArray.replace(
+      preset.map((pct, i) => ({ name: names[i] ?? `Termin ${i + 1}`, percentage: pct })),
+    );
+  };
 
   // ── Submit ──
   const submit = handleSubmit(onSubmit);
@@ -884,6 +937,203 @@ export const QuotationForm = ({
               />
               <FieldError message={errors.scopeOfWork?.message} />
             </div>
+          </GlassPanel>
+        </section>
+
+        {/* ── Payment terms (termin) ─────────────────────────────
+            Full payment vs split milestones (e.g. DP 30% / Pelunasan 70%).
+            Interactive on create; read-only on edit (the update endpoint
+            does not persist milestone changes — manage via detail once built). */}
+        <section>
+          <SectionHeader
+            eyebrow={t('quotations.form.section.termin', 'Pembayaran')}
+            title={t('quotations.form.section.terminTitle', 'Termin Pembayaran')}
+            hint={t(
+              'quotations.form.section.terminHint',
+              'Pilih bayar penuh atau termin (cicilan per tahap). Total persentase termin harus 100%.',
+            )}
+          />
+          <GlassPanel surface="glass" padding="lg">
+            {/* Full vs Termin toggle */}
+            <Controller
+              control={control}
+              name="paymentType"
+              render={({ field }) => (
+                <div className="inline-flex rounded-lg border border-border-default bg-bg-sunken p-1">
+                  {([
+                    ['FULL_PAYMENT', t('quotations.form.paymentFull', 'Bayar Penuh')],
+                    ['MILESTONE_BASED', t('quotations.form.paymentTermin', 'Termin')],
+                  ] as const).map(([val, label]) => (
+                    <button
+                      key={val}
+                      type="button"
+                      disabled={isSubmitting || (!termsEditable && val !== field.value)}
+                      onClick={() => {
+                        field.onChange(val);
+                        // Seed two sensible rows the first time termin is chosen.
+                        if (
+                          val === 'MILESTONE_BASED' &&
+                          termsEditable &&
+                          milestonesArray.fields.length === 0
+                        ) {
+                          applyMilestonePreset(
+                            [50, 50],
+                            ['DP 50%', 'Pelunasan 50%'],
+                          );
+                        }
+                      }}
+                      className={cn(
+                        'px-4 py-1.5 text-sm rounded-md transition-colors',
+                        field.value === val
+                          ? 'bg-brand-cream text-brand-black font-medium'
+                          : 'text-text-secondary hover:text-text-primary',
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            />
+
+            {watchedPaymentType === 'MILESTONE_BASED' && (
+              <div className="mt-5 space-y-4">
+                {/* Presets — create only */}
+                {termsEditable && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] uppercase tracking-[0.12em] text-text-tertiary">
+                      {t('quotations.form.terminPreset', 'Pola cepat')}
+                    </span>
+                    {[
+                      { label: '50 / 50', pcts: [50, 50], names: ['DP 50%', 'Pelunasan 50%'] },
+                      { label: '30 / 70', pcts: [30, 70], names: ['DP 30%', 'Pelunasan 70%'] },
+                      { label: '40 / 60', pcts: [40, 60], names: ['DP 40%', 'Pelunasan 60%'] },
+                      { label: '30 / 40 / 30', pcts: [30, 40, 30], names: ['DP 30%', 'Progres 40%', 'Pelunasan 30%'] },
+                    ].map((p) => (
+                      <Button
+                        key={p.label}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isSubmitting}
+                        onClick={() => applyMilestonePreset(p.pcts, p.names)}
+                      >
+                        {p.label}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Header row */}
+                <div className="hidden sm:grid grid-cols-[1fr_110px_160px_36px] gap-3 px-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
+                  <div>{t('quotations.form.terminName', 'Nama Termin')}</div>
+                  <div className="text-right">{t('quotations.form.terminPct', 'Persen')}</div>
+                  <div className="text-right">{t('quotations.form.terminAmount', 'Jumlah')}</div>
+                  <div />
+                </div>
+
+                <div className="space-y-2">
+                  {milestonesArray.fields.map((f, idx) => {
+                    const pct = Number(watchedMilestones?.[idx]?.percentage) || 0;
+                    const amount = Math.round((totals.grandTotal * pct) / 100);
+                    return (
+                      <div
+                        key={f.id}
+                        className="grid grid-cols-1 sm:grid-cols-[1fr_110px_160px_36px] gap-3 items-center"
+                      >
+                        <Input
+                          {...register(`milestones.${idx}.name` as const)}
+                          disabled={isSubmitting || !termsEditable}
+                          placeholder={t('quotations.form.terminNamePh', 'mis. DP 30%')}
+                          className={inputClasses}
+                        />
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step="0.01"
+                          inputMode="decimal"
+                          disabled={isSubmitting || !termsEditable}
+                          {...register(`milestones.${idx}.percentage` as const, {
+                            valueAsNumber: true,
+                          })}
+                          className={cn(inputClasses, 'text-right font-mono tabular-nums')}
+                        />
+                        <div className="text-right text-sm text-text-secondary tabular-nums">
+                          <MoneyDisplay amount={amount} />
+                        </div>
+                        {termsEditable ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            disabled={isSubmitting}
+                            onClick={() => milestonesArray.remove(idx)}
+                            aria-label={t('quotations.form.terminRemove', 'Hapus termin')}
+                            className="text-text-tertiary hover:text-danger"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <span />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {termsEditable && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isSubmitting}
+                    onClick={() =>
+                      milestonesArray.append({ name: '', percentage: 0 })
+                    }
+                    className="border-border-subtle text-text-secondary hover:text-text-primary"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {t('quotations.form.terminAdd', 'Tambah Termin')}
+                  </Button>
+                )}
+
+                {/* Sum indicator */}
+                <div
+                  className={cn(
+                    'flex items-center justify-between rounded-md border px-3.5 py-2.5 text-sm',
+                    Math.abs(milestoneTotalPct - 100) < 0.01
+                      ? 'border-success/30 bg-success/[0.06] text-success'
+                      : 'border-warning/30 bg-warning/[0.06] text-warning',
+                  )}
+                >
+                  <span>
+                    {t('quotations.form.terminTotal', 'Total persentase')}
+                  </span>
+                  <span className="font-mono tabular-nums">
+                    {milestoneTotalPct.toFixed(2)}% / 100%
+                  </span>
+                </div>
+
+                {!termsEditable && (
+                  <p className="text-xs text-text-tertiary">
+                    {t(
+                      'quotations.form.terminReadonly',
+                      'Termin hanya dapat diubah saat pembuatan penawaran. Buat penawaran baru untuk mengubah pola pembayaran.',
+                    )}
+                  </p>
+                )}
+
+                {errors.milestones && (
+                  <FieldError
+                    message={
+                      (errors.milestones as { message?: string })?.message ||
+                      t('quotations.form.terminInvalid', 'Periksa kembali termin pembayaran.')
+                    }
+                  />
+                )}
+              </div>
+            )}
           </GlassPanel>
         </section>
 

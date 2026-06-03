@@ -75,6 +75,8 @@ export default function QuotationEditPageV2() {
         lineItems: [{ name: '', description: '', quantity: 1, price: 0 }],
         scopeOfWork: '',
         terms: '',
+        paymentType: 'FULL_PAYMENT' as const,
+        milestones: [],
       };
     }
 
@@ -103,6 +105,13 @@ export default function QuotationEditPageV2() {
       lineItems,
       scopeOfWork: quotation.scopeOfWork ?? '',
       terms: quotation.terms ?? '',
+      paymentType:
+        (quotation.paymentType as 'FULL_PAYMENT' | 'MILESTONE_BASED') ??
+        'FULL_PAYMENT',
+      milestones: (quotation.paymentMilestones ?? []).map((m) => ({
+        name: m.nameId || m.name || '',
+        percentage: Number(m.paymentPercentage) || 0,
+      })),
     };
   }, [quotation]);
 

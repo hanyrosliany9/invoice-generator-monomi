@@ -61,6 +61,8 @@ export default function QuotationCreatePageV2() {
       scopeOfWork: '',
       terms:
         '1. Pembayaran Net 30 dari tanggal invoice.\n2. Termasuk PPN 11%.\n3. Revisi maksimal 3 kali.\n4. Materai diperlukan untuk nilai > Rp 5.000.000.\n5. Hukum yang berlaku: Republik Indonesia.',
+      paymentType: 'FULL_PAYMENT' as const,
+      milestones: [],
     }),
     [prefilledClientId, prefilledProjectId],
   );
@@ -122,6 +124,19 @@ export default function QuotationCreatePageV2() {
         total: subtotal,
         calculatedAt: new Date().toISOString(),
       },
+      paymentType: values.paymentType,
+      // Only attach milestones for termin payments. The backend recomputes
+      // paymentAmount from totalAmount × %, but we send it too for parity.
+      paymentMilestones:
+        values.paymentType === 'MILESTONE_BASED'
+          ? values.milestones.map((m, i) => ({
+              milestoneNumber: i + 1,
+              name: m.name.trim(),
+              nameId: m.name.trim(),
+              paymentPercentage: m.percentage,
+              paymentAmount: Math.round((totalAmount * m.percentage) / 100),
+            }))
+          : undefined,
     };
 
     createMutation.mutate(payload);
