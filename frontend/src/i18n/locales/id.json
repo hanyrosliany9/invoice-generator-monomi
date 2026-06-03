@@ -5200,5 +5200,51 @@
     },
     "confirmDeactivate": "Nonaktifkan karyawan ini?",
     "confirmDelete": "Hapus pembayaran ini?"
+  },
+  "systemReport": {
+    "backToReports": "Kembali ke Laporan",
+    "noData": "Tidak ada data untuk periode ini.",
+    "unknown": {
+      "title": "Laporan tidak ditemukan",
+      "desc": "Laporan analitik ini tidak tersedia."
+    },
+    "error": {
+      "title": "Gagal memuat laporan",
+      "desc": "Terjadi kesalahan"
+    },
+    "revenue": {
+      "total": "Total Pendapatan",
+      "average": "Rata-rata / Periode",
+      "invoices": "Faktur",
+      "byPeriod": "Pendapatan per Periode"
+    },
+    "payment": {
+      "overdueCount": "Faktur Jatuh Tempo",
+      "overdueAmount": "Nilai Jatuh Tempo",
+      "statuses": "Kelompok Status",
+      "byStatus": "Faktur menurut Status",
+      "status": "Status",
+      "count": "Jumlah",
+      "amount": "Nilai",
+      "overdueList": "Faktur Jatuh Tempo",
+      "invoice": "Faktur",
+      "client": "Klien"
+    },
+    "clients": {
+      "total": "Total Klien",
+      "ranked": "Diperingkat",
+      "top": "Klien Teratas berdasarkan Pendapatan",
+      "name": "Klien",
+      "invoices": "Faktur",
+      "revenue": "Pendapatan"
+    },
+    "projects": {
+      "total": "Total Proyek",
+      "ranked": "Diperingkat",
+      "top": "Proyek Teratas berdasarkan Pendapatan",
+      "project": "Proyek",
+      "status": "Status",
+      "revenue": "Pendapatan"
+    }
   }
 }

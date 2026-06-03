@@ -5019,5 +5019,51 @@
     },
     "confirmDeactivate": "Deactivate this staff member?",
     "confirmDelete": "Delete this payment?"
+  },
+  "systemReport": {
+    "backToReports": "Back to Reports",
+    "noData": "No data for this period.",
+    "unknown": {
+      "title": "Report not found",
+      "desc": "This analytic report does not exist."
+    },
+    "error": {
+      "title": "Could not load report",
+      "desc": "An error occurred"
+    },
+    "revenue": {
+      "total": "Total Revenue",
+      "average": "Average / Period",
+      "invoices": "Invoices",
+      "byPeriod": "Revenue by Period"
+    },
+    "payment": {
+      "overdueCount": "Overdue Invoices",
+      "overdueAmount": "Overdue Amount",
+      "statuses": "Status Buckets",
+      "byStatus": "Invoices by Status",
+      "status": "Status",
+      "count": "Count",
+      "amount": "Amount",
+      "overdueList": "Overdue Invoices",
+      "invoice": "Invoice",
+      "client": "Client"
+    },
+    "clients": {
+      "total": "Total Clients",
+      "ranked": "Ranked",
+      "top": "Top Clients by Revenue",
+      "name": "Client",
+      "invoices": "Invoices",
+      "revenue": "Revenue"
+    },
+    "projects": {
+      "total": "Total Projects",
+      "ranked": "Ranked",
+      "top": "Top Projects by Revenue",
+      "project": "Project",
+      "status": "Status",
+      "revenue": "Revenue"
+    }
   }
 }

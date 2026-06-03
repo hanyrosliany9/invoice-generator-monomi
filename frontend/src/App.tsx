@@ -63,6 +63,7 @@ const V2ReportsPage = lazy(() => import('./pages/v2/reports/ReportsPage'))
 const V2ReportDetailPage = lazy(() => import('./pages/v2/reports/ReportDetailPage'))
 const V2ReportBuilderPage = lazy(() => import('./pages/v2/reports/ReportBuilderPage'))
 const V2SocialMediaReportsPage = lazy(() => import('./pages/v2/reports/SocialMediaReportsPage'))
+const V2SystemReportPage = lazy(() => import('./pages/v2/reports/SystemReportPage'))
 const V2CalendarPage = lazy(() => import('./pages/v2/calendar/CalendarPage'))
 const V2ContentCalendarPage = lazy(() => import('./pages/v2/calendar/ContentCalendarPage'))
 const V2CallSheetsListPage = lazy(() => import('./pages/v2/call-sheets/CallSheetsListPage'))
@@ -278,6 +279,7 @@ function App() {
                       <Route path='/reports' element={<V2ReportsPage />} />
                       <Route path='/reports/social-media' element={<V2SocialMediaReportsPage />} />
                       <Route path='/reports/builder' element={<V2ReportBuilderPage />} />
+                      <Route path='/reports/system/:slug' element={<V2SystemReportPage />} />
                       <Route path='/reports/:id/edit' element={<V2ReportBuilderPage />} />
                       <Route path='/reports/:id' element={<V2ReportDetailPage />} />
 
