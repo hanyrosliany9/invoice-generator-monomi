@@ -45,23 +45,29 @@ export class CreateClientDto {
   @ApiProperty({
     description: "Nama perusahaan klien",
     example: "PT. Contoh Indonesia",
+    required: false,
   })
+  @IsOptional()
   @IsString({ message: "Nama perusahaan harus berupa string" })
-  company: string;
+  company?: string;
 
   @ApiProperty({
     description: "Nama kontak person",
     example: "John Doe",
+    required: false,
   })
+  @IsOptional()
   @IsString({ message: "Nama kontak person harus berupa string" })
-  contactPerson: string;
+  contactPerson?: string;
 
   @ApiProperty({
     description: "Syarat pembayaran default",
     example: "Net 30",
+    required: false,
   })
+  @IsOptional()
   @IsString({ message: "Syarat pembayaran harus berupa string" })
-  paymentTerms: string;
+  paymentTerms?: string;
 
   @ApiProperty({
     description: "Status klien",
