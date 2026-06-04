@@ -134,7 +134,14 @@ export default function ProjectsPageV2() {
   /* ----- mutations ----- */
   const deleteMutation = useMutation({
     mutationFn: (id: string) => projectService.deleteProject(id),
-    onSuccess: () => {
+    onSuccess: (_data, deletedId) => {
+      // Drop the row from the cached list immediately so the table updates
+      // without a manual refresh, then invalidate to reconcile.
+      queryClient.setQueriesData<Project[]>(
+        { queryKey: ['projects'] },
+        (old) =>
+          Array.isArray(old) ? old.filter((p) => p.id !== deletedId) : old,
+      );
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success(t('projects.deleted', 'Project deleted successfully.'));
     },

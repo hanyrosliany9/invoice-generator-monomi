@@ -107,7 +107,16 @@ export default function InvoicesPageV2() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => invoiceService.deleteInvoice(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+    onSuccess: (_data, deletedId) => {
+      // Remove the deleted invoice from the cached list immediately, then
+      // invalidate to reconcile — no manual page refresh needed.
+      queryClient.setQueriesData<Invoice[]>(
+        { queryKey: ['invoices'] },
+        (old) =>
+          Array.isArray(old) ? old.filter((i) => i.id !== deletedId) : old,
+      );
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    },
   });
 
   /* ----- statusMutation — generic status change via PATCH /invoices/:id/status ----- */
