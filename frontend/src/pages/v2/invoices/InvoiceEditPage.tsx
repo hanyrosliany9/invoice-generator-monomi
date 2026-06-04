@@ -23,6 +23,29 @@ import { InvoiceForm } from './InvoiceForm';
 /*  so cancelling an edit returns the user to the page they came from. */
 /* ------------------------------------------------------------------ */
 
+/* Shell hoisted to module scope to prevent remount on every render.  */
+type ShellUser = { name: string; role: string };
+const Shell = ({
+  user,
+  children,
+}: {
+  user: ShellUser | null | undefined;
+  children: React.ReactNode;
+}) => (
+  <AppShell
+    sidebar={{
+      brand: <MonomiBrand />,
+      sections: v2SidebarSections,
+      footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+    }}
+    topbar={{
+      right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+    }}
+  >
+    <PageContainer>{children}</PageContainer>
+  </AppShell>
+);
+
 export default function InvoiceEditPageV2() {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
@@ -40,24 +63,9 @@ export default function InvoiceEditPageV2() {
     enabled:  !!id,
   });
 
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   if (isLoading) {
     return (
-      <Shell>
+      <Shell user={user}>
         <div className="mb-6">
           <Skeleton className="h-4 w-32 mb-4" />
           <Skeleton className="h-10 w-64 mb-2" />
@@ -71,7 +79,7 @@ export default function InvoiceEditPageV2() {
 
   if (error || !invoice) {
     return (
-      <Shell>
+      <Shell user={user}>
         <EmptyState
           icon={<FileText className="h-12 w-12" />}
           title={t('invoiceEdit.notFoundTitle', 'Invoice not found')}
@@ -97,7 +105,7 @@ export default function InvoiceEditPageV2() {
   }
 
   return (
-    <Shell>
+    <Shell user={user}>
       <div className="mb-4">
         <Link
           to={`/invoices/${invoice.id}`}

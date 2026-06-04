@@ -1010,6 +1010,36 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
 // shape lives on user preferences, so we PUT to updateUserSettings.
 // ──────────────────────────────────────────────────────────────
 
+// SwitchRow hoisted to module scope to prevent remount (and input defocus)
+// on each NotificationsSection render. Receives control + disabled as props.
+interface SwitchRowProps {
+  name: keyof NotificationsFormValues;
+  label: string;
+  description: string;
+  control: import('react-hook-form').Control<NotificationsFormValues>;
+  disabled: boolean;
+}
+
+const SwitchRow = ({ name, label, description, control, disabled }: SwitchRowProps) => (
+  <Controller
+    control={control}
+    name={name}
+    render={({ field }) => (
+      <div className="flex items-center justify-between gap-4 rounded-md border border-border-subtle bg-bg-sunken px-4 py-3">
+        <div className="min-w-0">
+          <div className="text-sm text-text-primary">{label}</div>
+          <div className="text-[11px] text-text-tertiary mt-0.5">{description}</div>
+        </div>
+        <Switch
+          checked={field.value}
+          onCheckedChange={field.onChange}
+          disabled={disabled}
+        />
+      </div>
+    )}
+  />
+);
+
 const notificationsSchema = z.object({
   emailNotifications: z.boolean(),
   pushNotifications: z.boolean(),
@@ -1062,33 +1092,7 @@ const NotificationsSection = ({ data }: { data: UserSettings | undefined }) => {
 
   // Inline switch rows — notifications are visceral, so reading
   // "Email Notifications · ON" at a glance is more honest than a checkbox grid.
-  const SwitchRow = ({
-    name,
-    label,
-    description,
-  }: {
-    name: keyof NotificationsFormValues;
-    label: string;
-    description: string;
-  }) => (
-    <Controller
-      control={control}
-      name={name}
-      render={({ field }) => (
-        <div className="flex items-center justify-between gap-4 rounded-md border border-border-subtle bg-bg-sunken px-4 py-3">
-          <div className="min-w-0">
-            <div className="text-sm text-text-primary">{label}</div>
-            <div className="text-[11px] text-text-tertiary mt-0.5">{description}</div>
-          </div>
-          <Switch
-            checked={field.value}
-            onCheckedChange={field.onChange}
-            disabled={mutation.isPending}
-          />
-        </div>
-      )}
-    />
-  );
+  // SwitchRow is defined at module scope (above) to prevent remount on each render.
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -1102,11 +1106,15 @@ const NotificationsSection = ({ data }: { data: UserSettings | undefined }) => {
           name="emailNotifications"
           label={t('settingsPage.notifications.emailLabel', 'Email Notifications')}
           description={t('settingsPage.notifications.emailDesc', 'Overdue invoices, incoming payments, daily digest.')}
+          control={control}
+          disabled={mutation.isPending}
         />
         <SwitchRow
           name="pushNotifications"
           label={t('settingsPage.notifications.pushLabel', 'Push Notifications')}
           description={t('settingsPage.notifications.pushDesc', 'Instant browser alerts while you are online.')}
+          control={control}
+          disabled={mutation.isPending}
         />
       </div>
       <SectionFooter

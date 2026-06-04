@@ -103,6 +103,53 @@ const categoryIcon = (category?: string) => {
 };
 
 /* ------------------------------------------------------------------ */
+/*  Shell — hoisted to module scope to prevent focus-loss remounts     */
+/* ------------------------------------------------------------------ */
+
+interface ShellProps {
+  user: { name: string; role: string } | null;
+  children: React.ReactNode;
+}
+
+function PageShell({ user, children }: ShellProps) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{
+        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  SectionHeader — hoisted to module scope (was inline inside the     */
+/*  page body, causing the same remount issue as Shell).               */
+/* ------------------------------------------------------------------ */
+
+function SectionHeader({ title, count }: { title: string; count: number }) {
+  const { t } = useTranslation();
+  return (
+    <div className="mb-5 flex items-baseline justify-between gap-4">
+      <div>
+        <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
+          {title}
+        </h2>
+        <p className="mt-0.5 text-xs text-text-tertiary">
+          {t('assets.detail.recordCount', '{{count}} catatan', { count })}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -192,26 +239,10 @@ export default function AssetDetailPageV2() {
     };
   }, [asset]);
 
-  /* ---------- shell wrapper ---------- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   /* ---------- loading ---------- */
   if (isLoading) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <div className="mb-6">
           <Skeleton className="h-4 w-32 mb-4" />
           <Skeleton className="h-10 w-64 mb-2" />
@@ -220,14 +251,14 @@ export default function AssetDetailPageV2() {
         <Skeleton className="h-48 rounded-lg mb-4" />
         <Skeleton className="h-32 rounded-lg mb-4" />
         <Skeleton className="h-64 rounded-lg" />
-      </Shell>
+      </PageShell>
     );
   }
 
   /* ---------- error / not found ---------- */
   if (error || !asset) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <EmptyState
           icon={<Boxes className="h-12 w-12" />}
           title={t('assets.detail.error.title', 'Aset tidak ditemukan')}
@@ -251,7 +282,7 @@ export default function AssetDetailPageV2() {
             </div>
           }
         />
-      </Shell>
+      </PageShell>
     );
   }
 
@@ -373,33 +404,12 @@ export default function AssetDetailPageV2() {
     },
   ];
 
-  // SectionHeader — used twice below, factored inline to avoid
-  // promoting a one-off shape to a new primitive.
-  const SectionHeader = ({
-    title,
-    count,
-  }: {
-    title: string;
-    count: number;
-  }) => (
-    <div className="mb-5 flex items-baseline justify-between gap-4">
-      <div>
-        <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-          {title}
-        </h2>
-        <p className="mt-0.5 text-xs text-text-tertiary">
-          {t('assets.detail.recordCount', '{{count}} catatan', { count })}
-        </p>
-      </div>
-    </div>
-  );
-
   const maintenanceRecords = asset.maintenanceRecords ?? [];
   const reservations = asset.reservations ?? [];
 
   /* ---------- render ---------- */
   return (
-    <Shell>
+    <PageShell user={user}>
       {/* Back-link — quiet tertiary, sits above the header so the
           asset code can own its own line. */}
       <div className="mb-4">
@@ -881,6 +891,6 @@ export default function AssetDetailPageV2() {
           </GlassPanel>
         </section>
       )}
-    </Shell>
+    </PageShell>
   );
 }

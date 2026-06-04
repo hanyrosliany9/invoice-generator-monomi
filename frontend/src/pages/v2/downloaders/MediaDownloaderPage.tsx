@@ -130,6 +130,27 @@ const formatRelative = (iso: string, t: (key: string, fallback: string, opts?: R
 };
 
 /* ------------------------------------------------------------------ */
+/*  Shell — hoisted to module scope to prevent remount on every render */
+/* ------------------------------------------------------------------ */
+
+function Shell({ user, children }: { user: { name: string; role: string } | null; children: React.ReactNode }) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{
+        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -255,21 +276,6 @@ export default function MediaDownloaderPageV2() {
     return { total, success, failed, rate };
   }, [history]);
 
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   /* ---- derived state for the action button ---- */
   const platformSupported = !!platform?.isSupported;
   const isPinterest = platform?.platform === 'pinterest';
@@ -280,7 +286,7 @@ export default function MediaDownloaderPageV2() {
     && !downloading;
 
   return (
-    <Shell>
+    <Shell user={user}>
       <PageHeader
         title={t('mediaDownloader.title', 'Pengunduh Media')}
         description={t('mediaDownloader.description', 'Tempel tautan dari YouTube, Instagram, TikTok, Twitter, Facebook, atau Vimeo. Kami mengurus formatnya — Anda terima file.')}

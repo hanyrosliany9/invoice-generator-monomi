@@ -52,6 +52,29 @@ import { projectService, type Project } from '@/services/projects';
 import { invoiceService, type Invoice } from '@/services/invoices';
 import { quotationService, type Quotation } from '@/services/quotations';
 
+/* ------------------------------------------------------------------ */
+/*  SectionHeader — hoisted to module scope to prevent remount on     */
+/*  every render. Accepts a pre-formatted sublabel so t() stays in    */
+/*  the page component.                                               */
+/* ------------------------------------------------------------------ */
+
+const SectionHeader = ({
+  title,
+  sublabel,
+}: {
+  title: string;
+  sublabel: string;
+}) => (
+  <div className="mb-5 flex items-baseline justify-between gap-4">
+    <div>
+      <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
+        {title}
+      </h2>
+      <p className="mt-0.5 text-xs text-text-tertiary">{sublabel}</p>
+    </div>
+  </div>
+);
+
 // Avatar token — prefer the human name so individuals don't collapse to "PT".
 const getInitials = (client: Pick<Client, 'name' | 'company'>): string => {
   const source = (client.name || client.company || '?').trim();
@@ -481,30 +504,6 @@ export default function ClientDetailPageV2() {
     },
   ];
 
-  // Section header — used three times below, factored inline (not a primitive).
-  const SectionHeader = ({
-    title,
-    count,
-    loading,
-  }: {
-    title: string;
-    count: number;
-    loading: boolean;
-  }) => (
-    <div className="mb-5 flex items-baseline justify-between gap-4">
-      <div>
-        <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-          {title}
-        </h2>
-        <p className="mt-0.5 text-xs text-text-tertiary">
-          {loading
-            ? t('common.loading', 'Memuat…')
-            : t('clients.detail.recordCount', '{{count}} catatan', { count })}
-        </p>
-      </div>
-    </div>
-  );
-
   return (
     <AppShell sidebar={shell.sidebar} topbar={shell.topbar}>
       <PageContainer>
@@ -802,8 +801,7 @@ export default function ClientDetailPageV2() {
           <GlassPanel surface="glass" padding="lg">
             <SectionHeader
               title={t('clients.detail.projectsSection', 'Riwayat Proyek')}
-              count={projects.length}
-              loading={projectsLoading}
+              sublabel={projectsLoading ? t('common.loading', 'Memuat…') : t('clients.detail.recordCount', '{{count}} catatan', { count: projects.length })}
             />
             {projectsLoading ? (
               <div className="space-y-2">
@@ -836,8 +834,7 @@ export default function ClientDetailPageV2() {
           <GlassPanel surface="glass" padding="lg">
             <SectionHeader
               title={t('clients.detail.invoicesSection', 'Riwayat Invoice')}
-              count={invoices.length}
-              loading={invoicesLoading}
+              sublabel={invoicesLoading ? t('common.loading', 'Memuat…') : t('clients.detail.recordCount', '{{count}} catatan', { count: invoices.length })}
             />
             {invoicesLoading ? (
               <div className="space-y-2">
@@ -870,8 +867,7 @@ export default function ClientDetailPageV2() {
           <GlassPanel surface="glass" padding="lg">
             <SectionHeader
               title={t('clients.detail.quotationsSection', 'Riwayat Penawaran')}
-              count={quotations.length}
-              loading={quotationsLoading}
+              sublabel={quotationsLoading ? t('common.loading', 'Memuat…') : t('clients.detail.recordCount', '{{count}} catatan', { count: quotations.length })}
             />
             {quotationsLoading ? (
               <div className="space-y-2">

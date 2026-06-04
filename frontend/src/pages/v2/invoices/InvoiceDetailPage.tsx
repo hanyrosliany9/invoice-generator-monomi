@@ -83,6 +83,32 @@ const sanitize = (s?: string) =>
   (s || '').replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
 
 /* ------------------------------------------------------------------ */
+/*  Shell — hoisted to module scope to prevent remount on every render */
+/* ------------------------------------------------------------------ */
+
+type ShellUser = { name: string; role: string };
+const Shell = ({
+  user,
+  children,
+}: {
+  user: ShellUser | null | undefined;
+  children: React.ReactNode;
+}) => (
+  <AppShell
+    sidebar={{
+      brand: <MonomiBrand />,
+      sections: v2SidebarSections,
+      footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+    }}
+    topbar={{
+      right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+    }}
+  >
+    <PageContainer>{children}</PageContainer>
+  </AppShell>
+);
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -177,26 +203,10 @@ export default function InvoiceDetailPageV2() {
     }
   };
 
-  /* ---------- shell wrapper to avoid repeating sidebar/topbar ---------- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   /* ---------- loading ---------- */
   if (isLoading) {
     return (
-      <Shell>
+      <Shell user={user}>
         <div className="mb-6">
           <Skeleton className="h-4 w-32 mb-4" />
           <Skeleton className="h-10 w-64 mb-2" />
@@ -212,7 +222,7 @@ export default function InvoiceDetailPageV2() {
   /* ---------- error / not found ---------- */
   if (error || !invoice || !totals) {
     return (
-      <Shell>
+      <Shell user={user}>
         <EmptyState
           icon={<FileText className="h-12 w-12" />}
           title={t('invoiceDetail.error.title', 'Invoice not found')}
@@ -278,7 +288,7 @@ export default function InvoiceDetailPageV2() {
 
   /* ---------- render ---------- */
   return (
-    <Shell>
+    <Shell user={user}>
       {/* ───────────────────────────────────────────────────────────
           PageHeader — the invoice number IS the title; the back-link
           sits in the breadcrumb slot so the visual weight goes to

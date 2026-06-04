@@ -130,6 +130,32 @@ const toUpdatePayload = async (
 };
 
 /* ------------------------------------------------------------------ */
+/*  Shell — hoisted to module scope to prevent focus-loss remounts     */
+/* ------------------------------------------------------------------ */
+
+interface ShellProps {
+  user: { name: string; role: string } | null;
+  children: React.ReactNode;
+}
+
+function PageShell({ user, children }: ShellProps) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{
+        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                                */
 /* ------------------------------------------------------------------ */
 
@@ -188,26 +214,9 @@ export default function ExpenseEditPageV2() {
     updateMutation.mutate(apiPayload);
   };
 
-  /* ---------- shells ---------- */
-
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   if (error || (!isLoading && !expense)) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <div className="mb-4">
           <Link
             to="/expenses"
@@ -249,13 +258,13 @@ export default function ExpenseEditPageV2() {
             </div>
           }
         />
-      </Shell>
+      </PageShell>
     );
   }
 
   if (isLoading || !expense || !defaultValues) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <div className="mb-6">
           <Skeleton className="h-4 w-32 mb-4" />
           <Skeleton className="h-10 w-64 mb-2" />
@@ -279,12 +288,12 @@ export default function ExpenseEditPageV2() {
             </GlassPanel>
           ))}
         </div>
-      </Shell>
+      </PageShell>
     );
   }
 
   return (
-    <Shell>
+    <PageShell user={user}>
       <div className="mb-4">
         <Link
           to={`/expenses/${expense.id}`}
@@ -342,6 +351,6 @@ export default function ExpenseEditPageV2() {
         onSubmit={handleSubmit}
         onCancel={() => navigate(`/expenses/${expense.id}`)}
       />
-    </Shell>
+    </PageShell>
   );
 }

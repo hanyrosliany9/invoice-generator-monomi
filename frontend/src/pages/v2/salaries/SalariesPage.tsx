@@ -45,6 +45,27 @@ const toNum = (v: unknown): number => {
 type ActiveTab = 'staff' | 'payments';
 
 /* ------------------------------------------------------------------ */
+/*  Shell — hoisted to module scope to prevent remount on every render */
+/* ------------------------------------------------------------------ */
+
+function Shell({ user, children }: { user: { name: string; role: string } | null; children: React.ReactNode }) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{
+        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                                */
 /* ------------------------------------------------------------------ */
 
@@ -95,7 +116,11 @@ export default function SalariesPage() {
 
   const deletePaymentMutation = useMutation({
     mutationFn: (id: string) => salaryService.deletePayment(id),
-    onSuccess: () => {
+    onSuccess: (_d, id) => {
+      queryClient.setQueriesData(
+        { queryKey: ['salary-payments'] },
+        (old: unknown) => Array.isArray(old) ? old.filter((x: SalaryPayment) => x.id !== id) : old,
+      );
       queryClient.invalidateQueries({ queryKey: ['salary-payments'] });
       queryClient.invalidateQueries({ queryKey: ['salary-stats'] });
     },
@@ -330,25 +355,9 @@ export default function SalariesPage() {
   const error = tab === 'staff' ? staffError : paymentsError;
   const refetch = tab === 'staff' ? refetchStaff : refetchPayments;
 
-  /* ----- shell ----- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   if (error) {
     return (
-      <Shell>
+      <Shell user={user}>
         <EmptyState
           icon={<Wallet className="h-12 w-12" />}
           title={t('salaries.error.title', 'Cannot load salary data')}
@@ -360,7 +369,7 @@ export default function SalariesPage() {
   }
 
   return (
-    <Shell>
+    <Shell user={user}>
       <PageHeader
         title={t('salaries.pageTitle', 'Staff Salaries')}
         description={t('salaries.pageSubtitle', 'Manage staff payroll and monthly salary payments.')}

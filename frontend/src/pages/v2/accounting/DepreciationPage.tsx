@@ -69,6 +69,26 @@ const fmt = (d: Date) => d.toISOString().slice(0, 10);
 type AssetRow = DepreciationSummary['byAsset'][number];
 
 /* ------------------------------------------------------------------ */
+/*  Page shell — hoisted to module scope so React never unmounts it    */
+/*  on re-render (fixes focus loss on every keystroke).               */
+/* ------------------------------------------------------------------ */
+
+function PageShell({ user, children }: { user: { name: string; role: string } | null; children: React.ReactNode }) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -123,37 +143,23 @@ export default function DepreciationPageV2() {
     return d;
   }, [endDate]);
 
-  /* ----- shell ----- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   if (error) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <EmptyState
           icon={<TrendingDown className="h-12 w-12" />}
           title={t('accounting.depreciation.errorTitle')}
           description={error instanceof Error ? error.message : t('accounting.depreciation.errorGeneric')}
           action={<Button onClick={() => refetch()}>{t('accounting.depreciation.retry')}</Button>}
         />
-      </Shell>
+      </PageShell>
     );
   }
 
   const byAsset = summary?.byAsset ?? [];
 
   return (
-    <Shell>
+    <PageShell user={user}>
       <PageHeader
         title={t('accounting.depreciation.title')}
         description={t('accounting.depreciation.description')}
@@ -488,7 +494,7 @@ export default function DepreciationPageV2() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Shell>
+    </PageShell>
   );
 }
 

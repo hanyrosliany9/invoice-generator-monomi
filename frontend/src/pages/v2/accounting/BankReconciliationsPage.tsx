@@ -134,6 +134,26 @@ const EMPTY_FORM: CreateFormState = {
 };
 
 /* ------------------------------------------------------------------ */
+/*  Page shell — hoisted to module scope so React never unmounts it    */
+/*  on re-render (fixes focus loss on every keystroke).               */
+/* ------------------------------------------------------------------ */
+
+function PageShell({ user, children }: { user: { name: string; role: string } | null; children: React.ReactNode }) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -296,35 +316,21 @@ export default function BankReconciliationsPage() {
     });
   };
 
-  /* Shell */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   if (error) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <EmptyState
           icon={<BookOpen className="h-12 w-12" />}
           title={t('accounting.bankReconciliations.errorTitle', 'Cannot load bank reconciliations')}
           description={error instanceof Error ? error.message : t('accounting.bankReconciliations.errorDesc', 'An error occurred')}
           action={<Button onClick={() => refetch()}>{t('accounting.bankReconciliations.retry', 'Try Again')}</Button>}
         />
-      </Shell>
+      </PageShell>
     );
   }
 
   return (
-    <Shell>
+    <PageShell user={user}>
       <PageHeader
         title={t('accounting.bankReconciliations.title', 'Bank Reconciliations')}
         description={t('accounting.bankReconciliations.description', 'Match book balance with bank statement and resolve discrepancies.')}
@@ -847,7 +853,7 @@ export default function BankReconciliationsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Shell>
+    </PageShell>
   );
 }
 

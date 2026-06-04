@@ -71,6 +71,27 @@ const formatDate = (iso: string): string =>
 const PIN_FILE_URL = (pinId: string) => `/api/v1/pinterest/pins/${pinId}/file`;
 
 /* ------------------------------------------------------------------ */
+/*  Shell — hoisted to module scope to prevent remount on every render */
+/* ------------------------------------------------------------------ */
+
+function Shell({ user, children }: { user: { name: string; role: string } | null; children: React.ReactNode }) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{
+        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                                */
 /* ------------------------------------------------------------------ */
 
@@ -211,23 +232,8 @@ export default function PinterestDownloaderPageV2() {
     document.body.removeChild(link);
   };
 
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   return (
-    <Shell>
+    <Shell user={user}>
       <PageHeader
         title={t('pinterestDownloader.title', 'Pengunduh Pinterest')}
         description={t('pinterestDownloader.description', 'Unduh satu pin, seluruh board, atau profil pengguna. Pekerjaan batch berjalan di latar belakang — Anda bisa menutup tab dan kembali nanti.')}

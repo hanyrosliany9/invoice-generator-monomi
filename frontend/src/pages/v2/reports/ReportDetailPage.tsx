@@ -299,6 +299,25 @@ function VizRenderer({ config, data }: { config: VisualizationConfig; data: any[
 }
 
 /* ------------------------------------------------------------------ */
+/*  Shell — hoisted to module scope to prevent remount on every render */
+/* ------------------------------------------------------------------ */
+
+function Shell({ user, children }: { user: { name: string; role: string } | null; children: React.ReactNode }) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -325,19 +344,6 @@ export default function ReportDetailPageV2() {
   }, [report]);
 
   /* ---------- handlers ---------- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   const handleGeneratePdf = async () => {
     if (!id) return;
     try {
@@ -386,7 +392,7 @@ export default function ReportDetailPageV2() {
   /* ---------- loading ---------- */
   if (isLoading) {
     return (
-      <Shell>
+      <Shell user={user}>
         <div className="mb-6">
           <Skeleton className="h-4 w-32 mb-4" />
           <Skeleton className="h-10 w-64 mb-2" />
@@ -402,7 +408,7 @@ export default function ReportDetailPageV2() {
   /* ---------- error / not found ---------- */
   if (error || !report) {
     return (
-      <Shell>
+      <Shell user={user}>
         <EmptyState
           icon={<FileBarChart className="h-12 w-12" />}
           title={t('reportDetail.notFound.title', 'Report not found')}
@@ -435,7 +441,7 @@ export default function ReportDetailPageV2() {
 
   /* ---------- render ---------- */
   return (
-    <Shell>
+    <Shell user={user}>
       {/* Back-link above H1 so the title gets its own line. */}
       <div className="mb-4">
         <Link

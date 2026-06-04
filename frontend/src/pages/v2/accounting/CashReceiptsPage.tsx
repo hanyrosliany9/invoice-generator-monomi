@@ -143,6 +143,26 @@ const formatIDR = (n: number) =>
   }).format(n);
 
 /* ------------------------------------------------------------------ */
+/*  Page shell — hoisted to module scope so React never unmounts it    */
+/*  on re-render (fixes focus loss on every keystroke).               */
+/* ------------------------------------------------------------------ */
+
+function PageShell({ user, children }: { user: { name: string; role: string } | null; children: React.ReactNode }) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -272,37 +292,23 @@ export default function CashReceiptsPageV2() {
     setEndDate(undefined);
   };
 
-  /* ----- shell so error + happy paths share chrome ----- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   /* ----- error short-circuit ----- */
   if (error) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <EmptyState
           icon={<ArrowDownLeft className="h-12 w-12" />}
           title={t('accounting.cashReceipts.errorTitle', 'Cannot load cash receipts')}
           description={error instanceof Error ? error.message : t('accounting.cashReceipts.errorDesc', 'An error occurred')}
           action={<Button onClick={() => refetch()}>{t('accounting.cashReceipts.retry', 'Try Again')}</Button>}
         />
-      </Shell>
+      </PageShell>
     );
   }
 
   /* ----- render ----- */
   return (
-    <Shell>
+    <PageShell user={user}>
       <PageHeader
         title={t('accounting.cashReceipts.title', 'Cash Receipts')}
         description={t('accounting.cashReceipts.description', 'Record, submit, and post incoming cash transactions.')}
@@ -583,7 +589,7 @@ export default function CashReceiptsPageV2() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Shell>
+    </PageShell>
   );
 }
 

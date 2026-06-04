@@ -109,6 +109,26 @@ const BLANK_FORM = {
 };
 
 /* ------------------------------------------------------------------ */
+/*  Page shell — hoisted to module scope so React never unmounts it    */
+/*  on re-render (fixes focus loss on every keystroke).               */
+/* ------------------------------------------------------------------ */
+
+function PageShell({ user, children }: { user: { name: string; role: string } | null; children: React.ReactNode }) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -239,37 +259,23 @@ export default function ChartOfAccountsPageV2() {
     }
   };
 
-  /* ----- shell ----- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   if (error) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <EmptyState
           icon={<BookOpen className="h-12 w-12" />}
           title={t('accounting.chartOfAccounts.errorTitle')}
           description={error instanceof Error ? error.message : t('accounting.chartOfAccounts.errorGeneric')}
           action={<Button onClick={() => refetch()}>{t('accounting.chartOfAccounts.retry')}</Button>}
         />
-      </Shell>
+      </PageShell>
     );
   }
 
   const isMutating = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <Shell>
+    <PageShell user={user}>
       <PageHeader
         title={t('accounting.chartOfAccounts.title')}
         description={t('accounting.chartOfAccounts.description')}
@@ -696,6 +702,6 @@ export default function ChartOfAccountsPageV2() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Shell>
+    </PageShell>
   );
 }

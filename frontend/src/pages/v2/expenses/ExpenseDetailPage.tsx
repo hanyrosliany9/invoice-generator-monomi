@@ -77,6 +77,32 @@ const initialsOf = (name?: string) =>
     .toUpperCase();
 
 /* ------------------------------------------------------------------ */
+/*  Shell — hoisted to module scope to prevent focus-loss remounts     */
+/* ------------------------------------------------------------------ */
+
+interface ShellProps {
+  user: { name: string; role: string } | null;
+  children: React.ReactNode;
+}
+
+function PageShell({ user, children }: ShellProps) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{
+        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -136,26 +162,10 @@ export default function ExpenseDetailPageV2() {
     }
   };
 
-  /* ---------- shell wrapper ---------- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   /* ---------- loading ---------- */
   if (isLoading) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <div className="mb-6">
           <Skeleton className="h-4 w-32 mb-4" />
           <Skeleton className="h-10 w-64 mb-2" />
@@ -164,14 +174,14 @@ export default function ExpenseDetailPageV2() {
         <Skeleton className="h-48 rounded-lg mb-4" />
         <Skeleton className="h-64 rounded-lg mb-4" />
         <Skeleton className="h-40 rounded-lg" />
-      </Shell>
+      </PageShell>
     );
   }
 
   /* ---------- error / not found ---------- */
   if (error || !expense || !totals) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <EmptyState
           icon={<CreditCard className="h-12 w-12" />}
           title={t('expenseDetail.error.title', 'Expense not found')}
@@ -195,7 +205,7 @@ export default function ExpenseDetailPageV2() {
             </div>
           }
         />
-      </Shell>
+      </PageShell>
     );
   }
 
@@ -228,7 +238,7 @@ export default function ExpenseDetailPageV2() {
 
   /* ---------- render ---------- */
   return (
-    <Shell>
+    <PageShell user={user}>
       {/* Breadcrumb back link — quiet, sits above the H1 like v2/invoices. */}
       <div className="mb-4">
         <Link
@@ -707,6 +717,6 @@ export default function ExpenseDetailPageV2() {
           )}
         </div>
       </div>
-    </Shell>
+    </PageShell>
   );
 }

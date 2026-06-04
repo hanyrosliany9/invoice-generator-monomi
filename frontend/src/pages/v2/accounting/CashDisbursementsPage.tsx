@@ -123,6 +123,26 @@ const formatIDR = (n: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
 /* ------------------------------------------------------------------ */
+/*  Page shell — hoisted to module scope so React never unmounts it    */
+/*  on re-render (fixes focus loss on every keystroke).               */
+/* ------------------------------------------------------------------ */
+
+function PageShell({ user, children }: { user: { name: string; role: string } | null; children: React.ReactNode }) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 
 export default function CashDisbursementsPageV2() {
   const { t } = useTranslation();
@@ -233,34 +253,21 @@ export default function CashDisbursementsPageV2() {
     setAccountFilter('all'); setStartDate(undefined); setEndDate(undefined);
   };
 
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   if (error) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <EmptyState
           icon={<ArrowUpRight className="h-12 w-12" />}
           title={t('accounting.cashDisbursements.errorTitle', 'Cannot load cash disbursements')}
           description={error instanceof Error ? error.message : t('accounting.cashDisbursements.errorDesc', 'An error occurred')}
           action={<Button onClick={() => refetch()}>{t('accounting.cashDisbursements.retry', 'Try Again')}</Button>}
         />
-      </Shell>
+      </PageShell>
     );
   }
 
   return (
-    <Shell>
+    <PageShell user={user}>
       <PageHeader
         title={t('accounting.cashDisbursements.title', 'Cash Disbursements')}
         description={t('accounting.cashDisbursements.description', 'Record, submit, and post outgoing cash transactions.')}
@@ -507,7 +514,7 @@ export default function CashDisbursementsPageV2() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Shell>
+    </PageShell>
   );
 }
 

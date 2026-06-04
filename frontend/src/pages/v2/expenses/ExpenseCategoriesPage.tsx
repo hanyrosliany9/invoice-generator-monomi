@@ -113,6 +113,32 @@ const fromPercentString = (s: string): number => {
 };
 
 /* ------------------------------------------------------------------ */
+/*  Shell — hoisted to module scope to prevent focus-loss remounts     */
+/* ------------------------------------------------------------------ */
+
+interface ShellProps {
+  user: { name: string; role: string } | null;
+  children: React.ReactNode;
+}
+
+function PageShell({ user, children }: ShellProps) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{
+        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -269,39 +295,23 @@ export default function ExpenseCategoriesPageV2() {
     }
   };
 
-  /* ----- shell wrapper ----- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   /* ----- error short-circuit ----- */
   if (error) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <EmptyState
           icon={<TagIcon className="h-12 w-12" />}
           title={t('expenseCategories.error.title', 'Cannot load categories')}
           description={error instanceof Error ? error.message : t('expenseCategories.error.generic', 'An error occurred')}
           action={<Button onClick={() => refetch()}>{t('expenseCategories.retry', 'Try Again')}</Button>}
         />
-      </Shell>
+      </PageShell>
     );
   }
 
   /* ----- render ----- */
   return (
-    <Shell>
+    <PageShell user={user}>
       {/* Breadcrumb back link to Expenses list — this is a settings-style
           sub-page, so its identity threads back to the parent section. */}
       <div className="mb-4">
@@ -631,7 +641,7 @@ export default function ExpenseCategoriesPageV2() {
           </form>
         </DialogContent>
       </Dialog>
-    </Shell>
+    </PageShell>
   );
 }
 

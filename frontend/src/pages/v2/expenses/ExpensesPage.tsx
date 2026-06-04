@@ -105,6 +105,33 @@ const isThisMonth = (dateStr?: string | null) => {
 const toIsoOrUndef = (d: Date | undefined) => (d ? d.toISOString() : undefined);
 
 /* ------------------------------------------------------------------ */
+/*  Shell — hoisted to module scope so React never sees a new          */
+/*  component type on re-render (prevents focus-loss on every keystroke*/
+/* ------------------------------------------------------------------ */
+
+interface ShellProps {
+  user: { name: string; role: string } | null;
+  children: React.ReactNode;
+}
+
+function PageShell({ user, children }: ShellProps) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{
+        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -159,7 +186,24 @@ export default function ExpensesPageV2() {
   /* ----- mutations (row actions) ----- */
   const deleteMutation = useMutation({
     mutationFn: (id: string) => expenseService.deleteExpense(id),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['expenses'] }),
+    onSuccess: (_data, deletedId) => {
+      // Optimistically remove the deleted row before the refetch lands.
+      // The list query returns { data: Expense[]; ... } so we target the
+      // nested array; fall back gracefully for any other cache shape.
+      queryClient.setQueriesData({ queryKey: ['expenses'] }, (old: unknown) => {
+        if (old && typeof old === 'object' && Array.isArray((old as { data: unknown }).data)) {
+          return {
+            ...(old as object),
+            data: (old as { data: { id: string }[] }).data.filter((x) => x.id !== deletedId),
+          };
+        }
+        if (Array.isArray(old)) {
+          return (old as { id: string }[]).filter((x) => x.id !== deletedId);
+        }
+        return old;
+      });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    },
   });
 
   /* ----- derived KPI band — leans on /statistics so totals reflect the
@@ -210,40 +254,23 @@ export default function ExpensesPageV2() {
     setEndDate(undefined);
   };
 
-  /* ----- shell wrapper so the error short-circuit and the happy path
-       both render with the same chrome ----- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   /* ----- error short-circuit ----- */
   if (error) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <EmptyState
           icon={<CreditCard className="h-12 w-12" />}
           title={t('expensesPage.error.title', 'Cannot load expenses')}
           description={error instanceof Error ? error.message : t('expensesPage.error.generic', 'An error occurred')}
           action={<Button onClick={() => refetch()}>{t('expensesPage.retry', 'Try Again')}</Button>}
         />
-      </Shell>
+      </PageShell>
     );
   }
 
   /* ----- render ----- */
   return (
-    <Shell>
+    <PageShell user={user}>
       <PageHeader
         title={t('expensesPage.title', 'Expenses')}
         description={t(
@@ -486,7 +513,7 @@ export default function ExpensesPageV2() {
           </div>
         )}
       </GlassPanel>
-    </Shell>
+    </PageShell>
   );
 }
 

@@ -144,6 +144,26 @@ const EMPTY_FORM: CreateForm = {
 };
 
 /* ------------------------------------------------------------------ */
+/*  Page shell — hoisted to module scope so React never unmounts it    */
+/*  on re-render (fixes focus loss on every keystroke).               */
+/* ------------------------------------------------------------------ */
+
+function PageShell({ user, children }: { user: { name: string; role: string } | null; children: React.ReactNode }) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -295,35 +315,21 @@ export default function BankTransfersPage() {
     });
   };
 
-  /* Shell */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   if (error) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <EmptyState
           icon={<BookOpen className="h-12 w-12" />}
           title={t('accounting.bankTransfers.errorTitle', 'Cannot load bank transfers')}
           description={error instanceof Error ? error.message : t('accounting.bankTransfers.errorGeneric', 'An error occurred')}
           action={<Button onClick={() => refetch()}>{t('accounting.bankTransfers.retry', 'Try Again')}</Button>}
         />
-      </Shell>
+      </PageShell>
     );
   }
 
   return (
-    <Shell>
+    <PageShell user={user}>
       <PageHeader
         title={t('accounting.bankTransfers.title', 'Bank Transfers')}
         description={t('accounting.bankTransfers.description', 'Record and approve transfers between cash and bank accounts.')}
@@ -863,7 +869,7 @@ export default function BankTransfersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Shell>
+    </PageShell>
   );
 }
 

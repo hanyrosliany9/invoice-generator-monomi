@@ -86,6 +86,26 @@ const endOfMonth   = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 0)
 const fmt          = (d: Date) => d.toISOString().slice(0, 10);
 
 /* ------------------------------------------------------------------ */
+/*  Page shell — hoisted to module scope so React never unmounts it    */
+/*  on re-render (fixes focus loss on every keystroke).               */
+/* ------------------------------------------------------------------ */
+
+function PageShell({ user, children }: { user: { name: string; role: string } | null; children: React.ReactNode }) {
+  return (
+    <AppShell
+      sidebar={{
+        brand: <MonomiBrand />,
+        sections: v2SidebarSections,
+        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+      }}
+      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+    >
+      <PageContainer>{children}</PageContainer>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -153,35 +173,21 @@ export default function ECLProvisionPageV2() {
 
   const provisions = summary?.provisions ?? [];
 
-  /* ----- shell ----- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   if (error) {
     return (
-      <Shell>
+      <PageShell user={user}>
         <EmptyState
           icon={<AlertTriangle className="h-12 w-12" />}
           title={t('accounting.eclProvision.errorTitle', 'Unable to load ECL data')}
           description={error instanceof Error ? error.message : t('accounting.eclProvision.errorGeneric', 'An error occurred')}
           action={<Button onClick={() => refetch()}>{t('accounting.eclProvision.retry', 'Try Again')}</Button>}
         />
-      </Shell>
+      </PageShell>
     );
   }
 
   return (
-    <Shell>
+    <PageShell user={user}>
       <PageHeader
         title={t('accounting.eclProvision.title', 'ECL Provision')}
         description={t('accounting.eclProvision.description', 'Expected Credit Loss provision for receivables under PSAK 71.')}
@@ -605,7 +611,7 @@ export default function ECLProvisionPageV2() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Shell>
+    </PageShell>
   );
 }
 

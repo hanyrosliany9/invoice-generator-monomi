@@ -117,6 +117,49 @@ const initialsOf = (name?: string) =>
     .toUpperCase();
 
 /* ------------------------------------------------------------------ */
+/*  Module-scope components (hoisted to prevent remount on render)    */
+/* ------------------------------------------------------------------ */
+
+type ShellUser = { name: string; role: string };
+const Shell = ({
+  user,
+  children,
+}: {
+  user: ShellUser | null | undefined;
+  children: React.ReactNode;
+}) => (
+  <AppShell
+    sidebar={{
+      brand: <MonomiBrand />,
+      sections: v2SidebarSections,
+      footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+    }}
+    topbar={{
+      right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+    }}
+  >
+    <PageContainer>{children}</PageContainer>
+  </AppShell>
+);
+
+const SectionHeader = ({
+  title,
+  sublabel,
+}: {
+  title: string;
+  sublabel: string;
+}) => (
+  <div className="mb-5 flex items-baseline justify-between gap-4">
+    <div>
+      <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
+        {title}
+      </h2>
+      <p className="mt-0.5 text-xs text-text-tertiary">{sublabel}</p>
+    </div>
+  </div>
+);
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -226,26 +269,10 @@ export default function ProjectDetailPageV2() {
     return { invoiced, paid, totalExpenses, budget, profit, margin };
   }, [project, invoices, expenses]);
 
-  /* ---------- shell wrapper ---------- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
-
   /* ---------- loading ---------- */
   if (isLoading) {
     return (
-      <Shell>
+      <Shell user={user}>
         <div className="mb-6">
           <Skeleton className="h-4 w-32 mb-4" />
           <Skeleton className="h-10 w-64 mb-2" />
@@ -261,7 +288,7 @@ export default function ProjectDetailPageV2() {
   /* ---------- error / not found ---------- */
   if (error || !project) {
     return (
-      <Shell>
+      <Shell user={user}>
         <EmptyState
           icon={<Folder className="h-12 w-12" />}
           title={t('projectDetail.error.title', 'Project not found')}
@@ -453,33 +480,9 @@ export default function ProjectDetailPageV2() {
     },
   ];
 
-  // Section header — used four times below, factored inline (not a primitive).
-  const SectionHeader = ({
-    title,
-    count,
-    loading,
-  }: {
-    title: string;
-    count: number;
-    loading: boolean;
-  }) => (
-    <div className="mb-5 flex items-baseline justify-between gap-4">
-      <div>
-        <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-          {title}
-        </h2>
-        <p className="mt-0.5 text-xs text-text-tertiary">
-          {loading
-            ? t('projectDetail.loading', 'Loading...')
-            : t('projectDetail.recordCount', '{{count}} records', { count })}
-        </p>
-      </div>
-    </div>
-  );
-
   /* ---------- render ---------- */
   return (
-    <Shell>
+    <Shell user={user}>
       {/* ───────────────────────────────────────────────────────────
           Back-link — sits above the header so the H1 owns its own
           line. Quiet tertiary text so it never competes with the
@@ -723,8 +726,7 @@ export default function ProjectDetailPageV2() {
         <GlassPanel surface="glass" padding="lg">
           <SectionHeader
             title={t('projectDetail.invoicesSection', 'Related Invoices')}
-            count={invoices.length}
-            loading={invoicesLoading}
+            sublabel={invoicesLoading ? t('projectDetail.loading', 'Loading...') : t('projectDetail.recordCount', '{{count}} records', { count: invoices.length })}
           />
           {invoicesLoading ? (
             <div className="space-y-2">
@@ -754,8 +756,7 @@ export default function ProjectDetailPageV2() {
         <GlassPanel surface="glass" padding="lg">
           <SectionHeader
             title={t('projectDetail.quotationsSection', 'Related Quotations')}
-            count={quotations.length}
-            loading={quotationsLoading}
+            sublabel={quotationsLoading ? t('projectDetail.loading', 'Loading...') : t('projectDetail.recordCount', '{{count}} records', { count: quotations.length })}
           />
           {quotationsLoading ? (
             <div className="space-y-2">
@@ -785,8 +786,7 @@ export default function ProjectDetailPageV2() {
         <GlassPanel surface="glass" padding="lg">
           <SectionHeader
             title={t('projectDetail.expensesSection', 'Related Expenses')}
-            count={expenses.length}
-            loading={expensesLoading}
+            sublabel={expensesLoading ? t('projectDetail.loading', 'Loading...') : t('projectDetail.recordCount', '{{count}} records', { count: expenses.length })}
           />
           {expensesLoading ? (
             <div className="space-y-2">
@@ -819,8 +819,7 @@ export default function ProjectDetailPageV2() {
           <GlassPanel surface="glass" padding="lg">
             <SectionHeader
               title={t('projectDetail.milestonesSection', 'Project Milestones')}
-              count={milestones.length}
-              loading={false}
+              sublabel={t('projectDetail.recordCount', '{{count}} records', { count: milestones.length })}
             />
             <ol className="space-y-3">
               {milestones.map((m) => (
