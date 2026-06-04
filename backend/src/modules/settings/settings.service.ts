@@ -97,11 +97,16 @@ export class SettingsService {
   }
 
   async getCompanySettings() {
-    let settings = await this.prisma.companySettings.findFirst();
+    let settings = await this.prisma.companySettings.findUnique({
+      where: { id: "default" },
+    });
 
     if (!settings) {
-      settings = await this.prisma.companySettings.create({
-        data: {
+      settings = await this.prisma.companySettings.upsert({
+        where: { id: "default" },
+        update: {},
+        create: {
+          id: "default",
           companyName: "PT Teknologi Indonesia",
           address: "Jl. Sudirman No. 123, Jakarta Pusat",
           phone: "021-1234567",

@@ -2,8 +2,10 @@ import {
   Injectable,
   Logger,
   BadRequestException,
+  ForbiddenException,
   InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
   Optional,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -424,7 +426,16 @@ export class MediaService {
     try {
       const payload = {
         sub: userId,
+        // Explicit userId claim (duplicate of sub for worker convenience and forward-compat)
+        userId,
         purpose: "media-access",
+        // NOTE: Scope claim intentionally omitted here — generateMediaAccessToken has no
+        // per-asset/per-project context at call time. The token currently grants access to
+        // ALL media for the user. To add scope: pass an allowed key prefix or projectId to
+        // this method and include it as e.g. `scope: { keyPrefix: "content/projectId/" }`.
+        // The media WORKER (workers/media-worker.js — deployed separately) must then be
+        // updated to reject requests whose key does not match the token scope before
+        // full enforcement is live.
         iat: Math.floor(Date.now() / 1000),
       };
 
@@ -465,7 +476,7 @@ export class MediaService {
       const payload = this.jwtService.verify(token);
 
       if (payload.purpose !== "media-access") {
-        throw new Error("Invalid token purpose");
+        throw new UnauthorizedException("Invalid token purpose");
       }
 
       this.logger.debug(
@@ -474,12 +485,15 @@ export class MediaService {
 
       return payload.sub;
     } catch (error) {
-      this.logger.error(`❌ Failed to validate media access token:`, error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      throw new InternalServerErrorException(
-        `Failed to validate media access token: ${errorMessage}`,
-      );
+      // Re-throw NestJS HTTP exceptions (UnauthorizedException, etc.) as-is
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      this.logger.warn(`❌ Invalid media access token: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new UnauthorizedException("Invalid or expired media access token");
     }
   }
 
@@ -548,6 +562,18 @@ export class MediaService {
     statusCode?: number;
     contentRange?: string;
   }> {
+    // Reject keys that contain path traversal sequences regardless of storage backend.
+    // This blocks directory escape in local-storage fallback AND prevents malformed R2 keys.
+    if (
+      key.includes("..") ||
+      key.startsWith("/") ||
+      key.includes("\0")
+    ) {
+      throw new ForbiddenException(
+        "Access denied: invalid or unsafe file key",
+      );
+    }
+
     try {
       // Try R2 first if available
       if (this.isR2Enabled()) {
@@ -623,13 +649,19 @@ export class MediaService {
       const path_module = await import("path");
       const fsSync = await import("fs");
 
-      // Construct local file path
+      // Construct local file path and prevent path traversal
       // key format: "content/filename.jpg" or "content/2025-01-08/hash-filename.jpg"
-      const localFilePath = path_module.default.join(
-        process.cwd(),
-        "uploads",
-        key,
-      );
+      const uploadDir = path_module.default.resolve(process.cwd(), "uploads");
+      const resolved = path_module.default.resolve(uploadDir, key);
+
+      // Reject any path that escapes the uploads directory
+      if (!resolved.startsWith(uploadDir + path_module.default.sep)) {
+        throw new ForbiddenException(
+          "Access denied: path traversal attempt detected",
+        );
+      }
+
+      const localFilePath = resolved;
 
       this.logger.log(
         `Trying to load file from local storage: ${localFilePath}`,
@@ -676,7 +708,11 @@ export class MediaService {
         originalName,
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      // Re-throw NestJS HTTP exceptions (NotFoundException, ForbiddenException, etc.) as-is
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
       this.logger.error(`❌ Failed to get file stream:`, error);

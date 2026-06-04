@@ -7,6 +7,7 @@ import {
   Inject,
   forwardRef,
 } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import { PrismaService } from "../prisma/prisma.service";
 import { QuotationsService } from "../quotations/quotations.service";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -197,14 +198,20 @@ export class InvoicesService {
           });
         }
 
-        // Create audit log
+        // Create audit log (only whitelisted fields — no PII)
         await prisma.auditLog
           .create({
             data: {
               action: "CREATE",
               entityType: "invoice",
               entityId: invoice.id,
-              newValues: invoice as any,
+              newValues: {
+                id: invoice.id,
+                invoiceNumber: invoice.invoiceNumber,
+                status: invoice.status,
+                totalAmount: invoice.totalAmount,
+                clientId: invoice.clientId,
+              } as any,
               userId: userId,
             },
           })
@@ -1642,6 +1649,24 @@ export class InvoicesService {
       return results;
     } catch (error) {
       handleServiceError(error, "bulk update invoice status", "invoice");
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  async markOverdueInvoices(): Promise<void> {
+    try {
+      const result = await this.prisma.invoice.updateMany({
+        where: {
+          status: InvoiceStatus.SENT,
+          dueDate: { lt: new Date() },
+        },
+        data: { status: InvoiceStatus.OVERDUE },
+      });
+      this.logger.log(
+        `Overdue cron: marked ${result.count} invoice(s) as OVERDUE`,
+      );
+    } catch (error) {
+      this.logger.error("Overdue cron failed", error);
     }
   }
 }

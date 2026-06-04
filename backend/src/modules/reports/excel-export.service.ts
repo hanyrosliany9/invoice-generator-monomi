@@ -95,6 +95,7 @@ export class ExcelExportService {
       receivablesMonthlySummary,
       salesClientSummary,
       receivablesClientSummary,
+      paymentTotals,
     ] = await Promise.all([
       this.getSalesDetailData(filters),
       this.getReceivablesDetailData(filters),
@@ -102,6 +103,7 @@ export class ExcelExportService {
       this.getReceivablesMonthlySummary(filters, targetMonth),
       this.getSalesClientSummary(filters),
       this.getReceivablesClientSummary(filters),
+      this.getPaymentTotals(filters),
     ]);
 
     // Create worksheets with Indonesian formatting
@@ -134,12 +136,14 @@ export class ExcelExportService {
       receivablesMonthlySummary,
       companyInfo,
       targetMonth,
+      paymentTotals.byMonth,
     );
     this.createReceivablesClientSummarySheet(
       workbook,
       receivablesClientSummary,
       companyInfo,
       targetMonth,
+      paymentTotals.byClient,
     );
 
     // Write to buffer
@@ -901,6 +905,7 @@ export class ExcelExportService {
     data: ClientMonthlySummary[],
     companyInfo: IndonesianCompanyInfo,
     targetMonth?: number | null,
+    paymentsByMonth?: Map<number, number>,
   ): void {
     const worksheet = workbook.addWorksheet("(AR) RKP PER BULAN");
 
@@ -945,7 +950,7 @@ export class ExcelExportService {
     if (targetMonth !== null && targetMonth !== undefined) {
       const targetMonthName = monthNames[targetMonth];
       let monthSales = 0;
-      let monthPayments = 0; // This would need to be tracked separately
+      let monthPayments = paymentsByMonth?.get(targetMonth) ?? 0;
 
       data.forEach((clientData) => {
         monthSales += (clientData[targetMonthName] as number) || 0;
@@ -986,7 +991,7 @@ export class ExcelExportService {
       monthNames.forEach((monthName, index) => {
         // Calculate totals for this month across all clients
         let monthSales = 0;
-        let monthPayments = 0; // This would need to be tracked separately - for now using 0
+        let monthPayments = paymentsByMonth?.get(index) ?? 0;
 
         data.forEach((clientData) => {
           monthSales += (clientData[monthName] as number) || 0;
@@ -1048,6 +1053,7 @@ export class ExcelExportService {
     data: ClientMonthlySummary[],
     companyInfo: IndonesianCompanyInfo,
     targetMonth?: number | null,
+    paymentsByClient?: Map<string, Map<number, number>>,
   ): void {
     const worksheet = workbook.addWorksheet("(AR) RKP PER CLIENT");
 
@@ -1092,8 +1098,9 @@ export class ExcelExportService {
       // Add client data
       data.forEach((item) => {
         const clientPenjualan = (item[targetMonthName] as number) || 0;
-        const clientSaldoAwal = 0; // Would need to track separately
-        const clientPembayaran = 0; // Would need to track separately
+        const clientSaldoAwal = 0;
+        const clientPembayaran =
+          paymentsByClient?.get(item.clientName)?.get(targetMonth!) ?? 0;
         const clientSaldoAkhir =
           clientSaldoAwal + clientPenjualan - clientPembayaran;
 
@@ -1151,8 +1158,11 @@ export class ExcelExportService {
           (sum, month) => sum + ((item[month] as number) || 0),
           0,
         );
-        const clientSaldoAwal = 0; // Would need to track separately
-        const clientPembayaran = 0; // Would need to track separately
+        const clientSaldoAwal = 0;
+        const clientMonthMap = paymentsByClient?.get(item.clientName);
+        const clientPembayaran = clientMonthMap
+          ? Array.from(clientMonthMap.values()).reduce((s, v) => s + v, 0)
+          : 0;
         const clientSaldoAkhir =
           clientSaldoAwal + clientPenjualan - clientPembayaran;
 
@@ -1201,6 +1211,56 @@ export class ExcelExportService {
     worksheet.columns.forEach((column: any) => {
       column.width = 15;
     });
+  }
+
+  /**
+   * Returns confirmed payment totals indexed by month (0-11) and by clientName.
+   * Used by the AR summary sheets so Pembayaran columns show real data.
+   */
+  private async getPaymentTotals(filters: ExportFilters): Promise<{
+    byMonth: Map<number, number>; // month-index → total payments
+    byClient: Map<string, Map<number, number>>; // clientName → month-index → total payments
+  }> {
+    const dateFilter = this.buildDateFilter(
+      filters.startDate,
+      filters.endDate,
+      "paymentDate",
+    );
+    const clientFilter = filters.clientIds?.length
+      ? { invoice: { client: { id: { in: filters.clientIds } } } }
+      : {};
+
+    const payments = await this.prisma.payment.findMany({
+      where: {
+        status: "CONFIRMED",
+        ...dateFilter,
+        ...clientFilter,
+      },
+      select: {
+        amount: true,
+        paymentDate: true,
+        invoice: { select: { client: { select: { name: true } } } },
+      },
+    });
+
+    const byMonth = new Map<number, number>();
+    const byClient = new Map<string, Map<number, number>>();
+
+    for (const p of payments) {
+      const monthIdx = p.paymentDate.getMonth();
+      const amount = Number(p.amount);
+      const clientName = p.invoice?.client?.name ?? "Unknown";
+
+      byMonth.set(monthIdx, (byMonth.get(monthIdx) ?? 0) + amount);
+
+      if (!byClient.has(clientName)) {
+        byClient.set(clientName, new Map());
+      }
+      const clientMap = byClient.get(clientName)!;
+      clientMap.set(monthIdx, (clientMap.get(monthIdx) ?? 0) + amount);
+    }
+
+    return { byMonth, byClient };
   }
 
   private isSingleMonthReport(filters: ExportFilters): boolean {

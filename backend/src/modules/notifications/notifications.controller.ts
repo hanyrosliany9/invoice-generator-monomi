@@ -8,6 +8,7 @@ import {
 import { NotificationsService } from "./notifications.service";
 import { SendNotificationDto } from "./dto/send-notification.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import { ApiResponse as ApiResponseDto } from "../../common/dto/api-response.dto";
 
 @ApiTags("notifications")
@@ -18,6 +19,7 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Post("send")
+  @RequireAdmin()
   @ApiOperation({ summary: "Send notification email" })
   @ApiResponse({ status: 201, description: "Notification sent successfully" })
   @ApiResponse({ status: 400, description: "Invalid notification data" })
@@ -33,6 +35,7 @@ export class NotificationsController {
   }
 
   @Get("test")
+  @RequireAdmin()
   @ApiOperation({ summary: "Test notification system" })
   async testNotification(
     @Query("email") email?: string,

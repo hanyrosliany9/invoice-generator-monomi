@@ -12,6 +12,7 @@ import {
   UploadedFile,
   Res,
   HttpStatus,
+  BadRequestException,
 } from "@nestjs/common";
 import { Response } from "express";
 import { ApiBearerAuth } from "@nestjs/swagger";
@@ -78,7 +79,26 @@ export class ReportsController {
   // Sections
   @Post(":id/sections")
   @RequireAdmin()
-  @UseInterceptors(FileInterceptor("csvFile"))
+  @UseInterceptors(
+    FileInterceptor("csvFile", {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (req, file, cb) => {
+        const allowedMimeTypes = [
+          "text/csv",
+          "application/vnd.ms-excel",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ];
+        const allowedExtensions = /\.(csv|xlsx?)$/i;
+        const mimeOk = allowedMimeTypes.includes(file.mimetype);
+        const extOk = allowedExtensions.test(file.originalname);
+        if (mimeOk || extOk) {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException("Only CSV/XLSX files are allowed"), false);
+        }
+      },
+    }),
+  )
   async addSection(
     @Param("id") reportId: string,
     @UploadedFile() file: Express.Multer.File,

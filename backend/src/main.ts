@@ -139,9 +139,15 @@ async function bootstrap() {
         transform: true,
         whitelist: true,
         forbidNonWhitelisted: true,
-        disableErrorMessages: false, // TEMPORARY: Enable detailed validation errors for debugging
+        disableErrorMessages: process.env.NODE_ENV === "production",
         exceptionFactory: (errors) => {
-          console.error("VALIDATION ERRORS:", JSON.stringify(errors, null, 2));
+          // Strip value/target (may contain passwords or PII) before logging
+          const safeErrors = errors.map(({ property, constraints, children }) => ({
+            property,
+            constraints,
+            ...(children?.length ? { children } : {}),
+          }));
+          logger.warn(`Validation failed: ${JSON.stringify(safeErrors)}`);
           return new ValidationPipe().createExceptionFactory()(errors);
         },
       }),

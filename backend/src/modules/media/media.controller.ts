@@ -227,8 +227,10 @@ export class MediaController {
    *
    * Returns user ID if token is valid, otherwise throws error.
    * Used by Cloudflare Workers to validate tokens before serving media.
+   * Requires JWT authentication to prevent oracle enumeration of token validity.
    */
   @Get("validate-token")
+  @RequireMediaRole()
   @ApiOperation({ summary: "Validate media access token" })
   async validateMediaAccessToken(@Query("token") token: string) {
     if (!token) {
@@ -299,9 +301,11 @@ export class MediaController {
    * Param: key - R2 object key (URL-encoded)
    *
    * This endpoint streams R2 files through the backend,
-   * avoiding CORS errors when R2 bucket doesn't have CORS configured
+   * avoiding CORS errors when R2 bucket doesn't have CORS configured.
+   * Requires JWT authentication — must NOT be reachable anonymously.
    */
   @Get("proxy/:key(*)")
+  @RequireMediaRole()
   @ApiOperation({ summary: "Proxy R2 file to avoid CORS" })
   async proxyFile(
     @Param("key") key: string,
