@@ -55,7 +55,7 @@ export const createCashBankBalance = async (data: {
   createdBy?: string;
 }): Promise<CashBankBalance> => {
   const response = await apiClient.post('/accounting/cash-bank-balances', data);
-  return response.data;
+  return response.data.data;
 };
 
 // Get all cash/bank balances with pagination and filtering
@@ -70,7 +70,7 @@ export const getCashBankBalances = async (
 // Get a single cash/bank balance by ID
 export const getCashBankBalance = async (id: string): Promise<CashBankBalance> => {
   const response = await apiClient.get(`/accounting/cash-bank-balances/${id}`);
-  return response.data;
+  return response.data.data;
 };
 
 // Get cash/bank balance by year and month
@@ -79,7 +79,7 @@ export const getCashBankBalanceByPeriod = async (
   month: number
 ): Promise<CashBankBalance> => {
   const response = await apiClient.get(`/accounting/cash-bank-balances/period/${year}/${month}`);
-  return response.data;
+  return response.data.data;
 };
 
 // Update a cash/bank balance record
@@ -91,13 +91,13 @@ export const updateCashBankBalance = async (
   }
 ): Promise<CashBankBalance> => {
   const response = await apiClient.patch(`/accounting/cash-bank-balances/${id}`, data);
-  return response.data;
+  return response.data.data;
 };
 
 // Recalculate balance from journal entries
 export const recalculateCashBankBalance = async (id: string): Promise<CashBankBalance> => {
   const response = await apiClient.post(`/accounting/cash-bank-balances/${id}/recalculate`);
-  return response.data;
+  return response.data.data;
 };
 
 // Re-chain every period's running balance chronologically (repairs history)

@@ -489,13 +489,74 @@ export class InvoicesService {
     return { ...invoice, paymentSummary };
   }
 
-  async update(id: string, updateInvoiceDto: UpdateInvoiceDto): Promise<any> {
+  async update(id: string, updateInvoiceDto: UpdateInvoiceDto, userId?: string): Promise<any> {
     const invoice = await this.findOne(id);
 
     // Recalculate materai requirement if total amount changed
     const data = { ...updateInvoiceDto };
     if (data.totalAmount) {
       data.materaiRequired = data.totalAmount > 5000000;
+    }
+
+    // FIX 5 (CRITICAL): Keep the GL balanced when totalAmount changes on a SENT
+    // invoice that already has a posted journal.  Without this, AR stays at the
+    // old amount permanently.
+    const amountIsChanging =
+      data.totalAmount !== undefined &&
+      Number(data.totalAmount) !== Number(invoice.totalAmount);
+
+    if (amountIsChanging && invoice.journalEntryId) {
+      const reversalUserId = userId || 'system';
+      try {
+        const existingJournal = await this.prisma.journalEntry.findUnique({
+          where: { id: invoice.journalEntryId },
+          select: { id: true, isPosted: true, entryNumber: true },
+        });
+
+        if (existingJournal?.isPosted) {
+          // Check it hasn't already been reversed
+          const alreadyReversed = await this.prisma.journalEntry.findFirst({
+            where: { reversedEntryId: invoice.journalEntryId },
+            select: { id: true },
+          });
+
+          if (!alreadyReversed) {
+            await this.journalService.reverseJournalEntry(
+              invoice.journalEntryId,
+              reversalUserId,
+            );
+            this.logger.log(
+              `✅ Reversed SENT journal ${existingJournal.entryNumber} for invoice ${invoice.invoiceNumber} (amount edit)`,
+            );
+          }
+
+          // Create a new SENT journal at the new amount and post it
+          const newJournal = await this.journalService.createInvoiceJournalEntry(
+            invoice.id,
+            invoice.invoiceNumber,
+            invoice.clientId,
+            Number(data.totalAmount),
+            'SENT',
+            reversalUserId,
+          );
+          await this.journalService.postJournalEntry(newJournal.id, reversalUserId);
+
+          // Record the new journal entry ID in data so it's persisted below
+          (data as any).journalEntryId = newJournal.id;
+
+          this.logger.log(
+            `✅ Created and posted new SENT journal for invoice ${invoice.invoiceNumber} at new amount ${data.totalAmount}`,
+          );
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to re-journal invoice ${id} on amount change:`,
+          error,
+        );
+        throw new BadRequestException(
+          'Gagal menyesuaikan jurnal GL untuk perubahan jumlah invoice.',
+        );
+      }
     }
 
     return this.prisma.invoice.update({

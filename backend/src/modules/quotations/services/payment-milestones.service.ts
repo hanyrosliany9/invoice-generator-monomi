@@ -192,9 +192,12 @@ export class PaymentMilestonesService {
       0,
     );
 
-    if (total !== 100) {
+    // FIX 4 (HIGH): Use epsilon comparison instead of strict float equality.
+    // 33.33 + 33.33 + 33.34 = 99.999... which strict !== 100 would reject.
+    // Mirrors the same tolerance already used in setPaymentTerms().
+    if (Math.abs(total - 100) > 0.01) {
       throw new BadRequestException(
-        `Payment milestones must total exactly 100%. Current total: ${total}%`,
+        `Payment milestones must total exactly 100%. Current total: ${total.toFixed(2)}%`,
       );
     }
   }

@@ -236,9 +236,7 @@ export class CreatePurchaseOrderDto {
 
   // ===== WORKFLOW =====
 
-  @ApiProperty({ description: "Requested by user ID" })
-  @IsString()
-  requestedBy: string;
+  // requestedBy is set server-side from the authenticated user — not accepted from client body.
 
   @ApiPropertyOptional({
     description: "Approval status",

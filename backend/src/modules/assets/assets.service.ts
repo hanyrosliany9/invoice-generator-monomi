@@ -27,16 +27,31 @@ export class AssetsService {
     const assetCode = await this.generateAssetCode(createAssetDto.category);
     const qrCode = await this.generateQRCode(assetCode);
 
-    const asset = await this.prisma.asset.create({
-      data: {
-        ...createAssetDto,
-        assetCode,
-        qrCode,
-      },
-      include: {
-        createdBy: true,
-      },
-    });
+    let asset: any;
+    try {
+      asset = await this.prisma.asset.create({
+        data: {
+          ...createAssetDto,
+          assetCode,
+          qrCode,
+        },
+        include: {
+          createdBy: true,
+        },
+      });
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        throw new ConflictException(
+          "Duplicate asset code — please retry",
+        );
+      }
+      throw error;
+    }
 
     // ✅ FIX: Create journal entry for asset purchase
     // Debit: Fixed Asset Account, Credit: Cash/Accounts Payable

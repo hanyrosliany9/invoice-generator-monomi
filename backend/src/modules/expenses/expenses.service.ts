@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Logger,
 } from "@nestjs/common";
@@ -109,28 +110,43 @@ export class ExpensesService {
 
     // Create expense with defaults for optional PPN fields
     // Automatically set status to PAID and create payment journal entry
-    const expense = await this.prisma.expense.create({
-      data: {
-        ...expenseData,
-        ppnAmount: createExpenseDto.ppnAmount ?? 0,
-        ppnRate: createExpenseDto.ppnRate ?? 0,
-        ppnCategory: createExpenseDto.ppnCategory || "NON_CREDITABLE",
-        expenseNumber,
-        buktiPengeluaranNumber,
-        userId,
-        status: ExpenseStatus.PAID, // Automatically PAID
-        paymentStatus: ExpensePaymentStatus.PAID, // Automatically PAID
-        paidAt: new Date(), // Set payment timestamp
-        paymentMethod: "Automatic", // System-generated payment
-        createdBy: userId,
-      },
-      include: {
-        category: true,
-        user: { select: { id: true, name: true, email: true } },
-        project: { select: { id: true, number: true, description: true } },
-        client: { select: { id: true, name: true } },
-      },
-    });
+    let expense: any;
+    try {
+      expense = await this.prisma.expense.create({
+        data: {
+          ...expenseData,
+          ppnAmount: createExpenseDto.ppnAmount ?? 0,
+          ppnRate: createExpenseDto.ppnRate ?? 0,
+          ppnCategory: createExpenseDto.ppnCategory || "NON_CREDITABLE",
+          expenseNumber,
+          buktiPengeluaranNumber,
+          userId,
+          status: ExpenseStatus.PAID, // Automatically PAID
+          paymentStatus: ExpensePaymentStatus.PAID, // Automatically PAID
+          paidAt: new Date(), // Set payment timestamp
+          paymentMethod: "Automatic", // System-generated payment
+          createdBy: userId,
+        },
+        include: {
+          category: true,
+          user: { select: { id: true, name: true, email: true } },
+          project: { select: { id: true, number: true, description: true } },
+          client: { select: { id: true, name: true } },
+        },
+      });
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        throw new ConflictException(
+          "Duplicate expense number — please retry",
+        );
+      }
+      throw error;
+    }
 
     // Create payment journal entry to reduce cash
     try {

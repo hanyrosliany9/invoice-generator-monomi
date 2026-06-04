@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateVendorDto, UpdateVendorDto, VendorQueryDto } from "./dto";
@@ -39,14 +40,29 @@ export class VendorsService {
     }
 
     // Create vendor
-    const vendor = await this.prisma.vendor.create({
-      data: {
-        ...createVendorDto,
-        vendorCode: vendorCode,
-        createdBy: userId,
-        updatedBy: userId,
-      },
-    });
+    let vendor: any;
+    try {
+      vendor = await this.prisma.vendor.create({
+        data: {
+          ...createVendorDto,
+          vendorCode: vendorCode,
+          createdBy: userId,
+          updatedBy: userId,
+        },
+      });
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        throw new ConflictException(
+          "Duplicate vendor code or NPWP — please retry",
+        );
+      }
+      throw error;
+    }
 
     return vendor;
   }

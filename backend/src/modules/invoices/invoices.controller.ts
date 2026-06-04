@@ -239,8 +239,9 @@ export class InvoicesController {
   async update(
     @Param("id") id: string,
     @Body() updateInvoiceDto: UpdateInvoiceDto,
+    @Request() req: any,
   ) {
-    return this.invoicesService.update(id, updateInvoiceDto);
+    return this.invoicesService.update(id, updateInvoiceDto, req.user?.id);
   }
 
   @Patch(":id/status")

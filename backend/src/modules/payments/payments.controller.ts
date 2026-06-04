@@ -12,6 +12,7 @@ import {
   HttpStatus,
   BadRequestException,
   NotFoundException,
+  HttpException,
 } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { PaymentsService } from "./payments.service";
@@ -39,6 +40,7 @@ export class PaymentsController {
         status: "success",
       };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       throw new BadRequestException(
         getErrorMessage(error) || "Failed to create payment",
       );

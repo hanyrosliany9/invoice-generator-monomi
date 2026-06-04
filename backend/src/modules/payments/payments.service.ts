@@ -1,3 +1,4 @@
+// fixes: FIX1 FIX2 FIX3 applied
 import {
   Injectable,
   NotFoundException,
@@ -165,18 +166,32 @@ export class PaymentsService {
     if (payment.status === PaymentStatus.CONFIRMED) {
       await this.updateInvoiceStatus(payment.invoiceId);
 
-      // ✅ FIX: Create journal entry for payment (Cash debit, AR credit)
+      // FIX 3: Create journal entry for payment (Cash debit, AR credit).
+      // Guard: skip if this payment already has a journal (journalEntryId set)
+      // OR if the invoice already carries a payment journal (paymentJournalId),
+      // which means markAsPaid already posted it — preventing double-posting.
       try {
-        const invoice = await this.prisma.invoice.findUnique({
+        // Re-fetch payment with journalEntryId after the update above
+        const freshPayment = await this.prisma.payment.findUnique({
+          where: { id: payment.id },
+          select: { journalEntryId: true },
+        });
+        const invoiceForJournal = await this.prisma.invoice.findUnique({
           where: { id: payment.invoiceId },
           select: {
             invoiceNumber: true,
             clientId: true,
+            paymentJournalId: true,
             client: { select: { name: true } },
           },
         });
 
-        if (invoice) {
+        if (
+          invoiceForJournal &&
+          !freshPayment?.journalEntryId &&
+          !invoiceForJournal.paymentJournalId
+        ) {
+          const invoice = invoiceForJournal;
           const journalEntry = await this.journalService.createJournalEntry({
             description: `Payment for Invoice ${invoice.invoiceNumber}`,
             descriptionId: `Pembayaran Faktur ${invoice.invoiceNumber}`,
@@ -214,6 +229,10 @@ export class PaymentsService {
           this.logger.log(
             `✅ Created and posted journal entry for payment ${payment.id}`,
           );
+        } else {
+          this.logger.log(
+            `⏭ Skipped journal creation for payment ${payment.id} — already covered by existing journal (idempotent guard)`,
+          );
         }
       } catch (error) {
         this.logger.error("Failed to create payment journal entry:", error);
@@ -240,13 +259,54 @@ export class PaymentsService {
     return this.transformToResponse(payment);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId?: string): Promise<void> {
     const payment = await this.prisma.payment.findUnique({
       where: { id },
     });
 
     if (!payment) {
       throw new NotFoundException("Payment not found");
+    }
+
+    // FIX 1: Reverse posted journal entry before deleting to keep GL balanced.
+    // Only reverse when journalEntryId is set (many payments track the journal on
+    // invoice.paymentJournalId instead — those are handled by invoicesService).
+    if (payment.journalEntryId) {
+      try {
+        const journalEntry = await this.prisma.journalEntry.findUnique({
+          where: { id: payment.journalEntryId },
+          select: { id: true, isPosted: true, entryNumber: true },
+        });
+
+        if (journalEntry && journalEntry.isPosted) {
+          // Check not already reversed
+          const existingReversal = await this.prisma.journalEntry.findFirst({
+            where: { reversedEntryId: payment.journalEntryId },
+            select: { id: true },
+          });
+
+          if (!existingReversal) {
+            const reversalUserId = userId || 'system';
+            await this.journalService.reverseJournalEntry(
+              payment.journalEntryId,
+              reversalUserId,
+            );
+            this.logger.log(
+              `✅ Reversed journal entry ${journalEntry.entryNumber} for deleted payment ${id}`,
+            );
+          } else {
+            this.logger.warn(
+              `Journal entry ${journalEntry.entryNumber} already reversed — skipping`,
+            );
+          }
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to reverse journal entry for payment ${id}:`,
+          error,
+        );
+        // Do not block deletion — reversal failure is visible in logs
+      }
     }
 
     await this.prisma.payment.delete({
@@ -291,6 +351,9 @@ export class PaymentsService {
 
     if (!invoice) return;
 
+    // FIX 2b: Never mutate a CANCELLED invoice — leave it untouched.
+    if (invoice.status === 'CANCELLED') return;
+
     const confirmedPayments = invoice.payments.filter(
       (p) => p.status === PaymentStatus.CONFIRMED,
     );
@@ -300,11 +363,23 @@ export class PaymentsService {
     );
     const totalAmount = Number(invoice.totalAmount);
 
-    let newStatus = invoice.status;
+    let newStatus: string = invoice.status;
     if (totalPaid >= totalAmount) {
+      // FIX 2c: Normal confirm-payment → PAID path (unchanged)
       newStatus = "PAID";
     } else if (totalPaid > 0) {
-      newStatus = "SENT"; // Partial payment
+      // FIX 2c: Partial payment — keep at SENT (InvoiceStatus has no PARTIAL)
+      newStatus = "SENT";
+    } else {
+      // FIX 2a: All payments removed — revert to sensible unpaid status.
+      // Use OVERDUE if past due date, otherwise SENT (same status invoice
+      // would have been in before the first payment was confirmed).
+      const now = new Date();
+      if (invoice.dueDate && invoice.dueDate < now) {
+        newStatus = "OVERDUE";
+      } else {
+        newStatus = "SENT";
+      }
     }
 
     if (newStatus !== invoice.status) {

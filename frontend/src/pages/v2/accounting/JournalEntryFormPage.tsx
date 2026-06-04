@@ -208,11 +208,11 @@ export default function JournalEntryFormPageV2() {
 
   /* ----- live derived totals — drives the balance pill & the summary ----- */
   const lines = watch('lineItems');
-  const totals = useMemo(() => {
+  const totals = (() => {
     const debit  = (lines ?? []).reduce((a, l) => a + toNumber(l.debit), 0);
     const credit = (lines ?? []).reduce((a, l) => a + toNumber(l.credit), 0);
     return { debit, credit, diff: debit - credit, balanced: Math.abs(debit - credit) < 0.01 };
-  }, [lines]);
+  })();
 
   /* ----- mutations: save + post in two flavors ----- */
   const createMutation = useMutation({

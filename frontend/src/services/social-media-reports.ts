@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { apiClient } from '../config/api';
 import {
   SocialMediaReport,
   CreateReportDto,
@@ -7,12 +7,12 @@ import {
   ReportStatus,
 } from '../types/report';
 
-const API_BASE = '/api/v1/reports';
+const API_BASE = '/reports';
 
 export const socialMediaReportsService = {
   // Reports CRUD
   async createReport(data: CreateReportDto): Promise<SocialMediaReport> {
-    const response = await axios.post(API_BASE, data);
+    const response = await apiClient.post(API_BASE, data);
     return response.data.data;
   },
 
@@ -22,21 +22,21 @@ export const socialMediaReportsService = {
     month?: number;
     status?: ReportStatus;
   }): Promise<SocialMediaReport[]> {
-    const response = await axios.get(API_BASE, { params: filters });
+    const response = await apiClient.get(API_BASE, { params: filters });
     return response.data.data;
   },
 
   async getReport(id: string): Promise<SocialMediaReport> {
-    const response = await axios.get(`${API_BASE}/${id}`);
+    const response = await apiClient.get(`${API_BASE}/${id}`);
     return response.data.data;
   },
 
   async deleteReport(id: string): Promise<void> {
-    await axios.delete(`${API_BASE}/${id}`);
+    await apiClient.delete(`${API_BASE}/${id}`);
   },
 
   async updateStatus(id: string, status: ReportStatus): Promise<SocialMediaReport> {
-    const response = await axios.post(`${API_BASE}/${id}/status`, { status });
+    const response = await apiClient.post(`${API_BASE}/${id}/status`, { status });
     return response.data.data;
   },
 
@@ -53,18 +53,18 @@ export const socialMediaReportsService = {
       formData.append('description', data.description);
     }
 
-    const response = await axios.post(`${API_BASE}/${reportId}/sections`, formData, {
+    const response = await apiClient.post(`${API_BASE}/${reportId}/sections`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data.data;
   },
 
   async removeSection(reportId: string, sectionId: string): Promise<void> {
-    await axios.delete(`${API_BASE}/${reportId}/sections/${sectionId}`);
+    await apiClient.delete(`${API_BASE}/${reportId}/sections/${sectionId}`);
   },
 
   async reorderSections(reportId: string, sectionIds: string[]): Promise<SocialMediaReport> {
-    const response = await axios.post(`${API_BASE}/${reportId}/sections/reorder`, {
+    const response = await apiClient.post(`${API_BASE}/${reportId}/sections/reorder`, {
       sectionIds,
     });
     return response.data.data;
@@ -76,7 +76,7 @@ export const socialMediaReportsService = {
     sectionId: string,
     data: UpdateVisualizationsDto,
   ): Promise<any> {
-    const response = await axios.patch(
+    const response = await apiClient.patch(
       `${API_BASE}/${reportId}/sections/${sectionId}/visualizations`,
       data,
     );
@@ -89,7 +89,7 @@ export const socialMediaReportsService = {
     sectionId: string,
     layout: any,
   ): Promise<any> {
-    const response = await axios.patch(
+    const response = await apiClient.patch(
       `${API_BASE}/${reportId}/sections/${sectionId}/layout`,
       { layout },
     );
@@ -108,7 +108,7 @@ export const socialMediaReportsService = {
 
     console.log('📤 Sending PDF generation request:', { reportId, requestBody, options });
 
-    const response = await axios.post(
+    const response = await apiClient.post(
       `${API_BASE}/${reportId}/generate-pdf`,
       requestBody,
       { responseType: 'blob' },
@@ -126,7 +126,7 @@ export const socialMediaReportsService = {
   },
 
   async downloadPDF(reportId: string): Promise<void> {
-    const response = await axios.get(
+    const response = await apiClient.get(
       `${API_BASE}/${reportId}/download-pdf`,
       { responseType: 'blob' },
     );

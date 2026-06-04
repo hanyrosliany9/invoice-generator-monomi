@@ -530,6 +530,17 @@ export class QuotationsService {
   async remove(id: string): Promise<any> {
     const quotation = await this.findOne(id);
 
+    // FIX 3 (CRITICAL): Block deletion if related invoices exist — deleting an
+    // APPROVED quotation with invoices would orphan AR/GL records permanently.
+    const invoiceCount = await this.prisma.invoice.count({
+      where: { quotationId: id },
+    });
+    if (invoiceCount > 0) {
+      throw new ConflictException(
+        `Tidak dapat menghapus penawaran yang sudah memiliki ${invoiceCount} invoice. Hapus invoice terlebih dahulu.`,
+      );
+    }
+
     // CRITICAL: Delete document files from filesystem BEFORE database deletion
     await this.documentsService.deleteDocumentsByQuotation(id);
 
@@ -673,8 +684,26 @@ export class QuotationsService {
   }
 
   private async autoGenerateInvoice(quotation: any): Promise<any> {
-    // Generate unique invoice number
-    const invoiceNumber = await this.generateInvoiceNumber();
+    // FIX 1 (CRITICAL): Idempotency guard — skip if invoice already exists for
+    // this quotation (re-approval / reopen→approve must not create duplicates).
+    // For MILESTONE_BASED quotations the per-milestone guard is handled further
+    // down; for all other payment types a single invoice per quotation suffices.
+    if (quotation.paymentType !== "MILESTONE_BASED") {
+      const existing = await this.prisma.invoice.findFirst({
+        where: { quotationId: quotation.id },
+        select: { id: true, invoiceNumber: true },
+      });
+      if (existing) {
+        this.logger.warn(
+          `autoGenerateInvoice: invoice ${existing.invoiceNumber} already exists for quotation ${quotation.quotationNumber} — skipping duplicate creation`,
+        );
+        return existing;
+      }
+    }
+
+    // FIX 2 (HIGH): Use canonical InvoiceCounterService (atomic, correct format
+    // INV-YYYY/MM/NNNN) instead of the private count-based generator.
+    const invoiceNumber = await this.invoiceCounterService.getNextInvoiceNumber();
 
     // Calculate due date (default 30 days from now)
     const dueDate = new Date();
@@ -717,28 +746,6 @@ export class QuotationsService {
       `Auto-generated invoice ${invoiceNumber} from quotation ${quotation.quotationNumber}`,
     );
     return invoice;
-  }
-
-  private async generateInvoiceNumber(): Promise<string> {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, "0");
-
-    // Get count of invoices this month
-    const startOfMonth = new Date(year, now.getMonth(), 1);
-    const endOfMonth = new Date(year, now.getMonth() + 1, 0);
-
-    const count = await this.prisma.invoice.count({
-      where: {
-        createdAt: {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        },
-      },
-    });
-
-    const sequence = (count + 1).toString().padStart(3, "0");
-    return `INV-${year}${month}-${sequence}`;
   }
 
   /**
@@ -808,23 +815,21 @@ export class QuotationsService {
       throw new BadRequestException("Semua milestone sudah diinvoice");
     }
 
-    // Use PaymentMilestonesService to generate invoice
-    // This will be injected when we update the module
-    // For now, create invoice directly
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, "0");
-
-    const count = await this.prisma.invoice.count({
-      where: {
-        creationDate: {
-          gte: new Date(year, now.getMonth(), 1),
-          lt: new Date(year, now.getMonth() + 1, 1),
-        },
-      },
+    // FIX 1 (CRITICAL): Idempotency guard for milestone — don't create a second
+    // invoice if this milestone already has one (re-entrance protection).
+    const existingMilestoneInvoice = await this.prisma.invoice.findFirst({
+      where: { paymentMilestoneId: nextMilestone.id },
+      select: { id: true, invoiceNumber: true },
     });
+    if (existingMilestoneInvoice) {
+      this.logger.warn(
+        `generateNextMilestoneInvoice: invoice ${existingMilestoneInvoice.invoiceNumber} already exists for milestone ${nextMilestone.id} — skipping duplicate creation`,
+      );
+      return existingMilestoneInvoice;
+    }
 
-    const invoiceNumber = `INV-${year}-${month}-${String(count + 1).padStart(5, "0")}`;
+    // FIX 2 (HIGH): Use canonical InvoiceCounterService (atomic, correct format).
+    const invoiceNumber = await this.invoiceCounterService.getNextInvoiceNumber();
 
     // Calculate due date
     let dueDate = nextMilestone.dueDate;

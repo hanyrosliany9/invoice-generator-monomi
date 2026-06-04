@@ -217,7 +217,7 @@ export const InvoiceForm = ({
   const materaiRequired = watch('materaiRequired');
   const clientId = watch('clientId');
 
-  const totals = useMemo(() => {
+  const totals = (() => {
     const subtotal = (items ?? []).reduce(
       (acc, it) => acc + toNumber(it.quantity) * toNumber(it.price),
       0,
@@ -226,7 +226,7 @@ export const InvoiceForm = ({
     const grand = subtotal + tax;
     const materaiAuto = grand > MATERAI_THRESHOLD;
     return { subtotal, tax, grand, materaiAuto };
-  }, [items, includeTax]);
+  })();
 
   // Auto-flip materaiRequired when threshold crossed
   useEffect(() => {

@@ -85,7 +85,7 @@ export class PurchaseOrdersController {
     @Body() createPODto: CreatePurchaseOrderDto,
   ) {
     const userId = req.user.id;
-    return this.purchaseOrdersService.create(userId, createPODto);
+    return this.purchaseOrdersService.create(userId, createPODto, userId);
   }
 
   /**

@@ -561,6 +561,36 @@ export class BankTransferService {
       );
     }
 
+    // FIX 5: Reverse posted journal entry before marking CANCELLED so GL stays balanced.
+    if (transfer.journalEntryId) {
+      try {
+        const journalEntry = await this.prisma.journalEntry.findUnique({
+          where: { id: transfer.journalEntryId },
+          select: { id: true, isPosted: true, entryNumber: true },
+        });
+
+        if (journalEntry && journalEntry.isPosted) {
+          const existingReversal = await this.prisma.journalEntry.findFirst({
+            where: { reversedEntryId: transfer.journalEntryId },
+            select: { id: true },
+          });
+
+          if (!existingReversal) {
+            await this.journalService.reverseJournalEntry(
+              transfer.journalEntryId,
+              userId,
+            );
+          }
+        }
+      } catch (error) {
+        // Log but don't block the cancellation
+        console.error(
+          `Failed to reverse journal entry for bank transfer ${id}:`,
+          error,
+        );
+      }
+    }
+
     const updatedTransfer = await this.prisma.bankTransfer.update({
       where: { id },
       data: {

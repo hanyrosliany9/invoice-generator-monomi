@@ -276,9 +276,23 @@ export class ClientsService {
       );
     }
 
-    return this.prisma.client.delete({
-      where: { id },
-    });
+    try {
+      return await this.prisma.client.delete({
+        where: { id },
+      });
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2003"
+      ) {
+        throw new ConflictException(
+          "Cannot delete: it still has related records (expenses, calendar items, media projects, decks, events). Remove or reassign them first.",
+        );
+      }
+      throw error;
+    }
   }
 
   async getClientStats(): Promise<{ total: number; recent: any[] }> {

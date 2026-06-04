@@ -1012,10 +1012,13 @@ export class FinancialStatementsService {
     const closingLineItems: any[] = [];
 
     for (const account of revenueExpenseAccounts) {
+      // FIX 4: Add isPosted filter — every other GL query in this file has it;
+      // missing it here would include unposted (draft) entries in year-end closing.
       const glEntries = await this.prisma.generalLedger.findMany({
         where: {
           accountId: account.id,
           entryDate: { gte: fiscalYearStart, lte: fiscalYearEndDate },
+          journalEntry: { isPosted: true },
         },
       });
 

@@ -26,7 +26,7 @@ export class PurchaseOrdersService {
   /**
    * Create a new purchase order
    */
-  async create(userId: string, createPODto: CreatePurchaseOrderDto) {
+  async create(userId: string, createPODto: CreatePurchaseOrderDto, requestedBy?: string) {
     // Validate vendor exists
     const vendor = await this.prisma.vendor.findUnique({
       where: { id: createPODto.vendorId },
@@ -86,7 +86,7 @@ export class PurchaseOrdersService {
         descriptionId: createPODto.descriptionId,
         notes: createPODto.notes,
         termsConditions: createPODto.termsConditions,
-        requestedBy: createPODto.requestedBy,
+        requestedBy: requestedBy ?? userId,
         approvalStatus: createPODto.approvalStatus,
         status: POStatus.DRAFT,
         createdBy: userId,

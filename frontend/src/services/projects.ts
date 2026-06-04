@@ -274,18 +274,6 @@ export const projectService = {
     return response?.data?.data || {}
   },
 
-  // Get projects by type
-  getProjectsByType: async (type: string) => {
-    const response = await apiClient.get(`/projects/by-type/${type}`)
-    return response?.data?.data || []
-  },
-
-  // Get project timeline
-  getProjectTimeline: async (id: string) => {
-    const response = await apiClient.get(`/projects/${id}/timeline`)
-    return response?.data?.data || {}
-  },
-
   // ⭐ NEW: Calculate project profit projections before creation
   calculateProjection: async (data: {
     products?: Array<{

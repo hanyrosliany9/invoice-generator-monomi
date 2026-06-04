@@ -507,9 +507,23 @@ export class ProjectsService {
     await this.documentsService.deleteDocumentsByProject(id);
 
     // CASCADE will delete Document DB records
-    return this.prisma.project.delete({
-      where: { id },
-    });
+    try {
+      return await this.prisma.project.delete({
+        where: { id },
+      });
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2003"
+      ) {
+        throw new ConflictException(
+          "Cannot delete: it still has related records (expenses, expense budgets, purchase orders, team members, labor entries, social media reports). Remove or reassign them first.",
+        );
+      }
+      throw error;
+    }
   }
 
   async generateProjectNumber(typePrefix: string): Promise<string> {

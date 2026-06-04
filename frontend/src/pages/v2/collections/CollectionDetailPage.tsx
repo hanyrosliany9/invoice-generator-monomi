@@ -169,7 +169,7 @@ export default function CollectionDetailPageV2() {
     onSuccess: () => {
       toast.success(t('collections.detail.updated', 'Koleksi berhasil diperbarui.'));
       queryClient.invalidateQueries({ queryKey: ['collection', collectionId] });
-      queryClient.invalidateQueries({ queryKey: ['collections', collection?.projectId] });
+      queryClient.invalidateQueries({ queryKey: ['media-collections', collection?.projectId] });
       setEditOpen(false);
     },
     onError: () =>
@@ -180,6 +180,7 @@ export default function CollectionDetailPageV2() {
     mutationFn: () => mediaCollabService.deleteCollection(collectionId!),
     onSuccess: () => {
       toast.success(t('collections.detail.deleted', 'Koleksi berhasil dihapus.'));
+      queryClient.invalidateQueries({ queryKey: ['media-collections', collection?.projectId] });
       navigate(`/media/project/${collection?.projectId}`);
     },
     onError: () =>
