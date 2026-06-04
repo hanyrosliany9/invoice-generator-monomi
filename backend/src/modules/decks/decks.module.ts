@@ -3,6 +3,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { PrismaModule } from "../prisma/prisma.module";
 import { MediaModule } from "../media/media.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 
 // Services
 import { DecksService } from "./services/decks.service";
@@ -54,6 +55,8 @@ import { DeckCollaborationGateway } from "./deck-collaboration.gateway";
   imports: [
     PrismaModule,
     MediaModule,
+    NotificationsModule,
+    ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

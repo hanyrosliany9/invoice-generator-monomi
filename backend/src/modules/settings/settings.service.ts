@@ -289,7 +289,7 @@ export class SettingsService {
 
       return {
         filename,
-        content: fileBuffer.toString("base64"),
+        buffer: fileBuffer,
         size: stats.size,
         createdAt: new Date().toISOString(),
       };

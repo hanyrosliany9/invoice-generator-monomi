@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AnyToolDef } from "./tool.types";
 import type { ToolDeps } from "./tool-registry";
-import { ALL_ROLES } from "../mcp.types";
+import { ALL_ROLES, MCP_SCOPE_READ } from "../mcp.types";
 
 export function createMeWhoamiTool(_deps: ToolDeps): AnyToolDef {
   return {
@@ -9,6 +9,7 @@ export function createMeWhoamiTool(_deps: ToolDeps): AnyToolDef {
     description:
       "Returns the currently authenticated Monomi user (id, name, email, role). Use this to confirm the connector is wired up correctly.",
     allowedRoles: ALL_ROLES,
+    requiredScope: MCP_SCOPE_READ,
     inputSchema: { _: z.string().optional().describe("unused — pass anything") },
     handler: async (_args, ctx) => {
       return {

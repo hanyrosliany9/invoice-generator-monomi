@@ -40,12 +40,15 @@ export class WithholdingTaxCalculatorService {
    * @param grossAmount - Base amount before withholding
    * @param taxType - Type of withholding tax
    * @param customRate - Optional custom rate (overrides default)
+   * @param vendorNPWP - Vendor NPWP; if absent/empty the PPh 23 rate doubles
+   *   per Indonesian tax regulation (PMK-224/PMK.03/2012).
    * @returns Withholding tax amount
    */
   calculateWithholdingTax(
     grossAmount: number | Decimal,
     taxType: WithholdingTaxType,
     customRate?: number,
+    vendorNPWP?: string | null,
   ): number {
     const amount =
       typeof grossAmount === "number" ? grossAmount : grossAmount.toNumber();
@@ -54,7 +57,14 @@ export class WithholdingTaxCalculatorService {
       return 0;
     }
 
-    const rate = customRate ?? this.getDefaultRate(taxType);
+    let rate = customRate ?? this.getDefaultRate(taxType);
+
+    // FIX 5: PPh 23 rate doubles when payee has no NPWP (Indonesian law)
+    const hasNPWP = !!(vendorNPWP && vendorNPWP.trim() !== "");
+    if (!hasNPWP && taxType === WithholdingTaxType.PPH23) {
+      rate = rate * 2;
+    }
+
     return this.roundToTwoDecimals(amount * rate);
   }
 
@@ -203,6 +213,7 @@ export class WithholdingTaxCalculatorService {
    * @param ppnAmount - PPN amount
    * @param taxType - Withholding tax type
    * @param customRate - Optional custom rate
+   * @param vendorNPWP - Vendor NPWP; absent/empty doubles PPh 23 rate
    * @returns Complete breakdown
    */
   calculateExpenseBreakdown(
@@ -210,6 +221,7 @@ export class WithholdingTaxCalculatorService {
     ppnAmount: number | Decimal,
     taxType: WithholdingTaxType,
     customRate?: number,
+    vendorNPWP?: string | null,
   ) {
     const gross =
       typeof grossAmount === "number" ? grossAmount : grossAmount.toNumber();
@@ -221,6 +233,7 @@ export class WithholdingTaxCalculatorService {
       gross,
       taxType,
       withholdingRate,
+      vendorNPWP,
     );
     const netPayment = this.calculateNetPayment(gross, ppn, withholdingAmount);
     const totalAmount = gross + ppn;

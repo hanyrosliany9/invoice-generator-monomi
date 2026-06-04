@@ -1,4 +1,4 @@
-// fixes: FIX1 FIX2 FIX3 applied
+// fixes: FIX1 FIX2 FIX3 FIX4-payment applied
 import {
   Injectable,
   NotFoundException,
@@ -10,6 +10,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { InvoicesService } from "../invoices/invoices.service";
 import { JournalService } from "../accounting/services/journal.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { CreatePaymentDto, UpdatePaymentDto, PaymentResponseDto } from "./dto";
 import { PaymentStatus } from "@prisma/client";
 
@@ -21,6 +22,7 @@ export class PaymentsService {
     @Inject(forwardRef(() => InvoicesService))
     private invoicesService: InvoicesService,
     private journalService: JournalService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(
@@ -253,6 +255,19 @@ export class PaymentsService {
           error,
         );
         // Don't fail payment confirmation if advance payment detection fails
+      }
+
+      // FIX4: Send payment-received notification; never throw on failure
+      try {
+        await this.notificationsService.sendPaymentReceived(
+          payment.invoiceId,
+          payment.id,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to send payment-received notification for payment ${payment.id}:`,
+          error,
+        );
       }
     }
 

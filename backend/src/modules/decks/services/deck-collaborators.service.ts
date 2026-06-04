@@ -3,14 +3,23 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../../prisma/prisma.service";
+import { NotificationsService } from "../../notifications/notifications.service";
 import { InviteCollaboratorDto } from "../dto/invite-collaborator.dto";
 import { generateInviteToken } from "../utils/deck-share.util";
 
 @Injectable()
 export class DeckCollaboratorsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(DeckCollaboratorsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async invite(userId: string, dto: InviteCollaboratorDto) {
     // Verify deck and permission
@@ -54,7 +63,7 @@ export class DeckCollaboratorsService {
     const inviteToken = dto.guestEmail ? generateInviteToken() : undefined;
     const expiresAt = dto.expiresAt ? new Date(dto.expiresAt) : undefined;
 
-    return this.prisma.deckCollaborator.create({
+    const collaborator = await this.prisma.deckCollaborator.create({
       data: {
         deckId: dto.deckId,
         userId: dto.userId,
@@ -72,6 +81,27 @@ export class DeckCollaboratorsService {
         inviter: { select: { id: true, name: true } },
       },
     });
+
+    // FIX4: Send invite email to guest email (never throw on failure)
+    if (dto.guestEmail && inviteToken) {
+      try {
+        const frontendUrl =
+          this.configService.get<string>("FRONTEND_URL") ||
+          "http://localhost:3000";
+        const inviteLink = `${frontendUrl}/deck/invite/${inviteToken}`;
+        await this.notificationsService.sendDeckInvite(
+          collaborator.id,
+          inviteLink,
+        );
+      } catch (err) {
+        this.logger.error(
+          `Failed to send deck invite email for collaborator ${collaborator.id}:`,
+          err,
+        );
+      }
+    }
+
+    return collaborator;
   }
 
   async acceptInvite(

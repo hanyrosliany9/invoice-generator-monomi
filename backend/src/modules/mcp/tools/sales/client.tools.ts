@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AnyToolDef } from "../tool.types";
 import type { ToolDeps } from "../tool-registry";
-import { ADMIN_ROLES } from "../../mcp.types";
+import { ADMIN_ROLES, MCP_SCOPE_READ } from "../../mcp.types";
 import { formatIDR, formatJakartaDate, daysBetween, trunc } from "../format.util";
 
 export function createClientTimelineTool(deps: ToolDeps): AnyToolDef {
@@ -10,6 +10,7 @@ export function createClientTimelineTool(deps: ToolDeps): AnyToolDef {
     description:
       "Returns a chronological business-journey timeline for a client: inquiries, proposals, quotations, contracts, payments, deliveries — useful for understanding context before composing outreach.",
     allowedRoles: ADMIN_ROLES,
+    requiredScope: MCP_SCOPE_READ,
     inputSchema: {
       clientId: z.string(),
       limit: z.number().int().min(1).max(50).optional(),
@@ -91,6 +92,7 @@ export function createClientPaymentPersonalityTool(deps: ToolDeps): AnyToolDef {
     description:
       "Profile of a client's payment behavior: average days-to-pay, partial-payment frequency, and a tone suggestion for follow-ups (formal/casual/strategic-late-payer). Computed from confirmed payments against issued invoices.",
     allowedRoles: ADMIN_ROLES,
+    requiredScope: MCP_SCOPE_READ,
     inputSchema: {
       clientId: z.string(),
     },

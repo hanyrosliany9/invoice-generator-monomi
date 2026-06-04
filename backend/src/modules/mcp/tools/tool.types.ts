@@ -8,6 +8,12 @@ export interface McpToolDef<TInputShape extends ZodRawShape = ZodRawShape> {
   description: string;
   /** Roles allowed to see + call this tool */
   allowedRoles: RoleSet;
+  /**
+   * OAuth scope required to invoke this tool.
+   * Use MCP_SCOPE_READ for read-only tools, MCP_SCOPE_WRITE for mutating tools.
+   * Enforced at dispatch time via scopeAllows().
+   */
+  requiredScope: string;
   /** Input schema as a zod raw shape (passed straight to McpServer.registerTool) */
   inputSchema: TInputShape;
   /** Optional output schema for structured content */

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AnyToolDef } from "../tool.types";
 import type { ToolDeps } from "../tool-registry";
-import { ADMIN_ROLES } from "../../mcp.types";
+import { ADMIN_ROLES, MCP_SCOPE_READ } from "../../mcp.types";
 import { formatIDR, formatJakartaDate } from "../format.util";
 
 export function createPaymentListTool(deps: ToolDeps): AnyToolDef {
@@ -10,6 +10,7 @@ export function createPaymentListTool(deps: ToolDeps): AnyToolDef {
     description:
       "List payments, optionally filtered by invoiceId, clientId, status, or a date range. Use this to verify payment history before recording a new one.",
     allowedRoles: ADMIN_ROLES,
+    requiredScope: MCP_SCOPE_READ,
     inputSchema: {
       invoiceId: z.string().optional(),
       clientId: z.string().optional(),

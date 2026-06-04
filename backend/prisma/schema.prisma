@@ -5858,3 +5858,27 @@ enum SalaryPaymentStatus {
   DRAFT
   PAID
 }
+
+// ─── Notification Logging ───────────────────────────────────────────────────
+
+model NotificationLog {
+  id                String   @id @default(cuid())
+  type              String   // NotificationType value
+  recipient         String   // email address
+  subject           String
+  status            NotificationLogStatus
+  error             String?  @db.Text
+  relatedEntityType String?  // e.g. "invoice", "quotation", "deck"
+  relatedEntityId   String?  // UUID of the related entity
+  createdAt         DateTime @default(now())
+
+  @@index([type])
+  @@index([createdAt])
+  @@index([status])
+  @@map("notification_logs")
+}
+
+enum NotificationLogStatus {
+  SENT
+  FAILED
+}

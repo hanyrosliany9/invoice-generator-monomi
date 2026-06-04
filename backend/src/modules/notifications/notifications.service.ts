@@ -88,7 +88,7 @@ export class NotificationsService {
         `Failed to send notification: ${getErrorMessage(error)}`,
         isError(error) ? error.stack : undefined,
       );
-      await this.logNotification(dto, "FAILED");
+      await this.logNotification(dto, "FAILED", getErrorMessage(error));
       throw error;
     }
   }
@@ -107,6 +107,10 @@ export class NotificationsService {
         return this.generateInvoiceOverdueEmail(data);
       case NotificationType.MATERAI_REMINDER:
         return this.generateMateraiReminderEmail(data);
+      case NotificationType.PAYMENT_RECEIVED:
+        return this.generatePaymentReceivedEmail(data);
+      case NotificationType.DECK_INVITE:
+        return this.generateDeckInviteEmail(data);
       default:
         return `<p>${dto.subject}</p>`;
     }
@@ -225,17 +229,73 @@ export class NotificationsService {
     `;
   }
 
+  private generatePaymentReceivedEmail(data: any): string {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #28a745;">Pembayaran Diterima</h2>
+        <p>Yth. Bapak/Ibu,</p>
+        <p>Pembayaran untuk invoice <strong>${data.invoiceNumber}</strong> telah kami terima dan dikonfirmasi.</p>
+        <div style="background-color: #d4edda; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
+          <p><strong>Detail Pembayaran:</strong></p>
+          <ul>
+            <li>Nomor Invoice: ${data.invoiceNumber}</li>
+            <li>Klien: ${data.clientName}</li>
+            <li>Jumlah Dibayar: ${data.amountPaid}</li>
+            <li>Metode Pembayaran: ${data.paymentMethod || '-'}</li>
+            <li>Tanggal Pembayaran: ${data.paymentDate}</li>
+            ${data.transactionRef ? `<li>Referensi Transaksi: ${data.transactionRef}</li>` : ''}
+          </ul>
+        </div>
+        <p>Terima kasih atas pembayaran Anda yang tepat waktu.</p>
+        <p>Salam,<br>Tim Monomi Finance</p>
+      </div>
+    `;
+  }
+
+  private generateDeckInviteEmail(data: any): string {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #6f42c1;">Undangan Kolaborasi Deck</h2>
+        <p>Yth. ${data.guestName || 'Tamu'},</p>
+        <p><strong>${data.inviterName}</strong> mengundang Anda untuk berkolaborasi pada deck presentasi <strong>${data.deckTitle}</strong>.</p>
+        <div style="background-color: #f3eeff; padding: 15px; border-left: 4px solid #6f42c1; margin: 20px 0;">
+          <p><strong>Detail Undangan:</strong></p>
+          <ul>
+            <li>Deck: ${data.deckTitle}</li>
+            <li>Peran: ${data.role}</li>
+            ${data.expiresAt ? `<li>Berlaku Hingga: ${data.expiresAt}</li>` : ''}
+          </ul>
+        </div>
+        <p>Klik tautan berikut untuk menerima undangan:</p>
+        <p><a href="${data.inviteLink}" style="background-color:#6f42c1;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;">Terima Undangan</a></p>
+        <p style="font-size:12px;color:#888;">Atau salin tautan: ${data.inviteLink}</p>
+        <p>Terima kasih.</p>
+        <p>Salam,<br>Tim Monomi</p>
+      </div>
+    `;
+  }
+
   private async logNotification(
     dto: SendNotificationDto,
     status: "SENT" | "FAILED",
+    errorMessage?: string,
   ): Promise<void> {
     try {
-      // Note: You'll need to create a notification_logs table in your Prisma schema
-      // For now, we'll just log to console
-      this.logger.log(`Notification ${status}: ${dto.type} to ${dto.to}`);
+      await this.prisma.notificationLog.create({
+        data: {
+          type: dto.type,
+          recipient: dto.to,
+          subject: dto.subject,
+          status: status as any,
+          error: errorMessage ?? null,
+          relatedEntityType: dto.entityType ?? null,
+          relatedEntityId: dto.entityId ?? null,
+        },
+      });
     } catch (error) {
+      // Never let logging failure bubble up — just warn
       this.logger.error(
-        `Failed to log notification: ${getErrorMessage(error)}`,
+        `Failed to persist notification log: ${getErrorMessage(error)}`,
       );
     }
   }
@@ -432,19 +492,140 @@ export class NotificationsService {
   }
 
   async getNotificationStats() {
-    // In a real implementation, you would query a notification_logs table
-    // For now, return mock data
+    const [statusCounts, typeCounts, recentNotifications] = await Promise.all([
+      this.prisma.notificationLog.groupBy({
+        by: ["status"],
+        _count: { id: true },
+      }),
+      this.prisma.notificationLog.groupBy({
+        by: ["type"],
+        _count: { id: true },
+      }),
+      this.prisma.notificationLog.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          type: true,
+          recipient: true,
+          subject: true,
+          status: true,
+          relatedEntityType: true,
+          relatedEntityId: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    const totalSent =
+      statusCounts.find((s) => s.status === "SENT")?._count.id ?? 0;
+    const totalFailed =
+      statusCounts.find((s) => s.status === "FAILED")?._count.id ?? 0;
+
+    const byType: Record<string, number> = {};
+    for (const row of typeCounts) {
+      byType[row.type] = row._count.id;
+    }
+
     return {
-      totalSent: 0,
-      totalFailed: 0,
-      byType: {
-        QUOTATION_STATUS_CHANGE: 0,
-        INVOICE_GENERATED: 0,
-        QUOTATION_EXPIRING: 0,
-        INVOICE_OVERDUE: 0,
-        MATERAI_REMINDER: 0,
-      },
-      recentNotifications: [],
+      totalSent,
+      totalFailed,
+      byType,
+      recentNotifications,
     };
+  }
+
+  // ── New workflow helpers ─────────────────────────────────────────────────
+
+  async sendPaymentReceived(
+    invoiceId: string,
+    paymentId: string,
+  ): Promise<void> {
+    try {
+      const payment = await this.prisma.payment.findUnique({
+        where: { id: paymentId },
+        include: {
+          invoice: {
+            include: {
+              client: { select: { id: true, name: true, email: true } },
+            },
+          },
+        },
+      });
+
+      if (!payment || !payment.invoice?.client?.email) {
+        this.logger.warn(
+          `sendPaymentReceived: invoice/client email not found for payment ${paymentId}`,
+        );
+        return;
+      }
+
+      const invoice = payment.invoice;
+      await this.sendNotification({
+        type: NotificationType.PAYMENT_RECEIVED,
+        to: invoice.client.email!,
+        subject: `Pembayaran Diterima untuk Invoice ${invoice.invoiceNumber}`,
+        entityType: "payment",
+        entityId: paymentId,
+        data: {
+          invoiceNumber: invoice.invoiceNumber,
+          clientName: invoice.client.name,
+          amountPaid: `IDR ${Number(payment.amount).toLocaleString("id-ID")}`,
+          paymentMethod: payment.paymentMethod,
+          paymentDate: new Date(payment.paymentDate).toLocaleDateString("id-ID"),
+          transactionRef: payment.transactionRef,
+        },
+      });
+    } catch (error) {
+      this.logger.error(
+        `sendPaymentReceived failed: ${getErrorMessage(error)}`,
+        isError(error) ? error.stack : undefined,
+      );
+    }
+  }
+
+  async sendDeckInvite(
+    collaboratorId: string,
+    inviteLink: string,
+  ): Promise<void> {
+    try {
+      const collab = await this.prisma.deckCollaborator.findUnique({
+        where: { id: collaboratorId },
+        include: {
+          deck: { select: { id: true, title: true } },
+          inviter: { select: { id: true, name: true } },
+        },
+      });
+
+      if (!collab || !collab.guestEmail) {
+        this.logger.warn(
+          `sendDeckInvite: no guestEmail on collaborator ${collaboratorId}`,
+        );
+        return;
+      }
+
+      await this.sendNotification({
+        type: NotificationType.DECK_INVITE,
+        to: collab.guestEmail,
+        subject: `Undangan Kolaborasi: ${collab.deck.title}`,
+        entityType: "deck",
+        entityId: collab.deckId,
+        data: {
+          deckTitle: collab.deck.title,
+          guestName: collab.guestName,
+          inviterName: collab.inviter.name,
+          role: collab.role,
+          inviteLink,
+          expiresAt: collab.expiresAt
+            ? new Date(collab.expiresAt).toLocaleDateString("id-ID")
+            : null,
+        },
+      });
+    } catch (error) {
+      this.logger.error(
+        `sendDeckInvite failed: ${getErrorMessage(error)}`,
+        isError(error) ? error.stack : undefined,
+      );
+    }
   }
 }

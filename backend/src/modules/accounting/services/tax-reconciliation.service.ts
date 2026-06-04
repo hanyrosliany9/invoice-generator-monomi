@@ -27,10 +27,11 @@ export class TaxReconciliationService {
    */
   async getPPNReconciliation(startDate: Date, endDate: Date) {
     // Get PPN Input (from Expenses - purchases)
+    // FIX 3: Only APPROVED/PAID expenses yield creditable input VAT (drop SUBMITTED)
     const expensesWithPPN = await this.prisma.expense.findMany({
       where: {
         expenseDate: { gte: startDate, lte: endDate },
-        status: { in: ["SUBMITTED", "APPROVED", "PAID"] },
+        status: { in: ["APPROVED", "PAID"] },
         ppnAmount: { gt: 0 },
       },
       select: {
@@ -97,17 +98,20 @@ export class TaxReconciliationService {
       .reduce((sum, e) => sum + Number(e.ppnAmount), 0);
 
     // Get PPN Output (from Invoices - sales)
-    // Note: For now, we assume all invoices are subject to 11% or 12% PPN
-    // In a real system, you'd have PPN fields on invoices
+    // FIX 2a: Select actual taxAmount/taxRate/includeTax fields from invoices
+    // FIX 2b: Include OVERDUE status alongside SENT/PAID
     const invoicesWithPPN = await this.prisma.invoice.findMany({
       where: {
         creationDate: { gte: startDate, lte: endDate },
-        status: { in: ["SENT", "PAID"] },
+        status: { in: ["SENT", "PAID", "OVERDUE"] },
       },
       select: {
         id: true,
         invoiceNumber: true,
         totalAmount: true,
+        taxAmount: true,
+        taxRate: true,
+        includeTax: true,
         creationDate: true,
         client: {
           select: {
@@ -120,20 +124,19 @@ export class TaxReconciliationService {
       orderBy: { creationDate: "asc" },
     });
 
-    // Calculate PPN Output (assuming 11% PPN on all invoices)
-    // In production, you'd have a ppnRate field on invoices
-    const DEFAULT_PPN_RATE = 0.11; // 11% standard rate for 2025
+    // FIX 2a: Use the stored taxAmount field; only invoices with taxAmount > 0 contribute PPN output
     const invoicesWithPPNData = invoicesWithPPN.map((invoice) => {
-      const grossAmount = Number(invoice.totalAmount) / (1 + DEFAULT_PPN_RATE);
-      const ppnAmount = Number(invoice.totalAmount) - grossAmount;
+      const totalAmount = Number(invoice.totalAmount);
+      const ppnAmount = Number(invoice.taxAmount ?? 0);
+      const ppnRate = Number(invoice.taxRate ?? 0) / 100; // stored as percentage e.g. 11.00
 
       return {
         invoiceNumber: invoice.invoiceNumber,
         clientName: invoice.client.company || invoice.client.name,
-        totalAmount: Number(invoice.totalAmount),
-        grossAmount,
+        totalAmount,
+        grossAmount: totalAmount - ppnAmount,
         ppnAmount,
-        ppnRate: DEFAULT_PPN_RATE,
+        ppnRate,
         invoiceDate: invoice.creationDate,
       };
     });
@@ -148,6 +151,7 @@ export class TaxReconciliationService {
     const isPPNPayable = ppnPayable > 0;
 
     // Group by month
+    // FIX 2c: group PPN output by taxAmount (not totalAmount)
     const ppnInputByMonth = this.groupByMonth(
       expensesWithPPN,
       "expenseDate",
@@ -156,7 +160,7 @@ export class TaxReconciliationService {
     const ppnOutputByMonth = this.groupByMonth(
       invoicesWithPPN,
       "creationDate",
-      "totalAmount",
+      "taxAmount",
     );
 
     return {
@@ -213,10 +217,11 @@ export class TaxReconciliationService {
    * - PPh Pasal 15: Specific activities
    */
   async getPPhSummary(startDate: Date, endDate: Date) {
+    // FIX 3 (PPh side): Only APPROVED/PAID expenses are settled; drop SUBMITTED
     const expensesWithPPh = await this.prisma.expense.findMany({
       where: {
         expenseDate: { gte: startDate, lte: endDate },
-        status: { in: ["SUBMITTED", "APPROVED", "PAID"] },
+        status: { in: ["APPROVED", "PAID"] },
         withholdingTaxAmount: { gt: 0 },
       },
       select: {
@@ -331,7 +336,9 @@ export class TaxReconciliationService {
    */
   async getMonthlyTaxReport(year: number, month: number) {
     const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    // FIX 4: Use exclusive upper bound (first moment of next month) so no
+    // end-of-month records are dropped by the 23:59:59 truncation.
+    const endDate = new Date(year, month, 1);
 
     // Get PPN reconciliation
     const ppnReport = await this.getPPNReconciliation(startDate, endDate);

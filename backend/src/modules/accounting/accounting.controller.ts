@@ -30,6 +30,7 @@ import { BankTransferService } from "./services/bank-transfer.service";
 import { BankReconciliationService } from "./services/bank-reconciliation.service";
 import { RevenueRecognitionService } from "./services/revenue-recognition.service";
 import { CashBankBalanceService } from "./services/cash-bank-balance.service";
+import { TaxReconciliationService } from "./services/tax-reconciliation.service";
 import { CreateJournalEntryDto } from "./dto/create-journal-entry.dto";
 import { UpdateJournalEntryDto } from "./dto/update-journal-entry.dto";
 import { JournalQueryDto } from "./dto/journal-query.dto";
@@ -70,6 +71,7 @@ export class AccountingController {
     private readonly bankReconciliationService: BankReconciliationService,
     private readonly revenueRecognitionService: RevenueRecognitionService,
     private readonly cashBankBalanceService: CashBankBalanceService,
+    private readonly taxReconciliationService: TaxReconciliationService,
   ) {}
 
   // ============ CHART OF ACCOUNTS ============
@@ -1378,5 +1380,74 @@ export class AccountingController {
   @Post("admin/backfill-invoice-journals")
   async backfillMissingInvoiceJournals(@Request() req: any) {
     return this.journalService.backfillMissingInvoiceJournals(req.user.id);
+  }
+
+  // ============ TAX RECONCILIATION (Indonesian DGT compliance) ============
+
+  /**
+   * PPN (VAT) Input vs Output reconciliation for a date range.
+   * Query params: startDate, endDate (ISO date strings)
+   */
+  @Get("tax/ppn-reconciliation")
+  async getPPNReconciliation(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+  ) {
+    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
+    const end = endDate ? new Date(endDate) : new Date();
+    return this.taxReconciliationService.getPPNReconciliation(start, end);
+  }
+
+  /**
+   * PPh (Withholding Tax) summary by type for a date range.
+   * Query params: startDate, endDate (ISO date strings)
+   */
+  @Get("tax/pph-summary")
+  async getPPhSummary(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+  ) {
+    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
+    const end = endDate ? new Date(endDate) : new Date();
+    return this.taxReconciliationService.getPPhSummary(start, end);
+  }
+
+  /**
+   * Monthly tax report (PPN + PPh + e-Faktur) for DGT.
+   * Path params: year, month (1-12)
+   */
+  @Get("tax/monthly-report/:year/:month")
+  async getMonthlyTaxReport(
+    @Param("year") year: string,
+    @Param("month") month: string,
+  ) {
+    return this.taxReconciliationService.getMonthlyTaxReport(
+      parseInt(year),
+      parseInt(month),
+    );
+  }
+
+  /**
+   * e-Faktur validation status for a date range.
+   * Query params: startDate, endDate (ISO date strings)
+   */
+  @Get("tax/efaktur-status")
+  async getEFakturValidationStatus(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+  ) {
+    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
+    const end = endDate ? new Date(endDate) : new Date();
+    return this.taxReconciliationService.getEFakturValidationStatus(start, end);
+  }
+
+  /**
+   * Tax payment reminders for upcoming DGT deadlines.
+   * Query param: asOfDate (ISO date string, defaults to today)
+   */
+  @Get("tax/payment-reminders")
+  async getTaxPaymentReminders(@Query("asOfDate") asOfDate?: string) {
+    const date = asOfDate ? new Date(asOfDate) : new Date();
+    return this.taxReconciliationService.getTaxPaymentReminders(date);
   }
 }

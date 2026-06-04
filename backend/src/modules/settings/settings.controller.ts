@@ -6,8 +6,10 @@ import {
   Body,
   UseGuards,
   Request,
+  Res,
   Logger,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { ApiBearerAuth, ApiTags, ApiOperation } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RequireSuperAdmin } from "../auth/decorators/auth.decorators";
@@ -119,8 +121,14 @@ export class SettingsController {
 
   @Get("backup/download")
   @RequireSuperAdmin() // CRITICAL SECURITY: Only admins can download database backups
-  @ApiOperation({ summary: "Download database backup" })
-  async downloadBackup(@Request() req: any) {
-    return this.settingsService.createBackup(req.user.id);
+  @ApiOperation({ summary: "Download database backup as a .sql file" })
+  async downloadBackup(@Request() req: any, @Res() res: Response) {
+    const backup = await this.settingsService.createBackup(req.user.id);
+    res.set({
+      "Content-Type": "application/octet-stream",
+      "Content-Disposition": `attachment; filename="${backup.filename}"`,
+      "Content-Length": String(backup.size),
+    });
+    res.send(backup.buffer);
   }
 }

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AnyToolDef } from "../tool.types";
 import type { ToolDeps } from "../tool-registry";
-import { ADMIN_ROLES } from "../../mcp.types";
+import { ADMIN_ROLES, MCP_SCOPE_READ } from "../../mcp.types";
 import { formatIDR, formatJakartaDate, daysBetween, trunc } from "../format.util";
 
 const InvoiceStatusEnum = z.enum([
@@ -18,6 +18,7 @@ export function createInvoiceListTool(deps: ToolDeps): AnyToolDef {
     description:
       "List invoices with optional filters. Filters: status, clientId, overdue (status=SENT and dueDate past), materaiPending (totalAmount>=5jt and materaiApplied=false). Returns up to 50; cursor-paginated.",
     allowedRoles: ADMIN_ROLES,
+    requiredScope: MCP_SCOPE_READ,
     inputSchema: {
       status: InvoiceStatusEnum.optional(),
       clientId: z.string().optional(),
@@ -114,6 +115,7 @@ export function createInvoiceGetTool(deps: ToolDeps): AnyToolDef {
     description:
       "Fetch one invoice by id or invoiceNumber with full detail (amounts, materai status, payments, linked quotation).",
     allowedRoles: ADMIN_ROLES,
+    requiredScope: MCP_SCOPE_READ,
     inputSchema: {
       id: z.string().optional(),
       invoiceNumber: z.string().optional(),

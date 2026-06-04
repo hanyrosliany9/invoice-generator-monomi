@@ -17,6 +17,7 @@ import { McpPromptRegistry } from "./prompts/prompt-registry";
 import { McpAuditService } from "./services/audit.service";
 import { McpRateLimitService } from "./services/rate-limit.service";
 import type { McpContext, McpUser } from "./mcp.types";
+import { scopeAllows } from "./mcp.types";
 import type { UserRole } from "@prisma/client";
 
 @Controller("mcp")
@@ -61,6 +62,7 @@ export class McpController {
         user,
         clientId: info.clientId,
         tokenId: extra.tokenId,
+        scopes: info.scopes ?? [],
         ipAddress: this.ipFrom(req),
         userAgent: req.headers["user-agent"]?.toString(),
       };
@@ -116,6 +118,19 @@ export class McpController {
           inputSchema: tool.inputSchema,
         },
         async (args: Record<string, unknown>) => {
+          // Scope enforcement: check AFTER role (role gates visibility;
+          // scope gates runtime invocation).
+          if (!scopeAllows(ctx, tool.requiredScope)) {
+            return {
+              isError: true,
+              content: [
+                {
+                  type: "text" as const,
+                  text: `Error: insufficient_scope — token does not grant '${tool.requiredScope}' required by tool '${tool.name}'`,
+                },
+              ],
+            };
+          }
           const start = Date.now();
           try {
             const out = await tool.handler(args, ctx);

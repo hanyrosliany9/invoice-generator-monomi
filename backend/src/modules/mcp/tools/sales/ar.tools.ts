@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AnyToolDef } from "../tool.types";
 import type { ToolDeps } from "../tool-registry";
-import { ADMIN_ROLES } from "../../mcp.types";
+import { ADMIN_ROLES, MCP_SCOPE_READ } from "../../mcp.types";
 import { formatIDR, daysBetween } from "../format.util";
 
 interface BucketAgg {
@@ -37,6 +37,7 @@ export function createArAgingSummaryTool(deps: ToolDeps): AnyToolDef {
     description:
       "Accounts Receivable aging: invoices with outstanding balance bucketed by days past due (Current / 1-30 / 31-60 / 61-90 / 90+). Returns totals and per-client breakdown. Optionally filter to a single client.",
     allowedRoles: ADMIN_ROLES,
+    requiredScope: MCP_SCOPE_READ,
     inputSchema: {
       clientId: z.string().optional(),
       asOf: z

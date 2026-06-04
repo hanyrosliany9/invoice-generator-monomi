@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AnyToolDef } from "../tool.types";
 import type { ToolDeps } from "../tool-registry";
-import { ADMIN_ROLES } from "../../mcp.types";
+import { ADMIN_ROLES, MCP_SCOPE_READ } from "../../mcp.types";
 import { formatIDR, formatJakartaDate, trunc } from "../format.util";
 
 const QuotationStatusEnum = z.enum([
@@ -18,6 +18,7 @@ export function createQuotationListTool(deps: ToolDeps): AnyToolDef {
     description:
       "List quotations with optional filters. Returns up to 50 rows; use cursor to page. Filters: status, clientId, expiring (validUntil within 7 days and not yet APPROVED).",
     allowedRoles: ADMIN_ROLES,
+    requiredScope: MCP_SCOPE_READ,
     inputSchema: {
       status: QuotationStatusEnum.optional().describe(
         "Filter by status (DRAFT|SENT|APPROVED|DECLINED|REVISED)",
@@ -107,6 +108,7 @@ export function createQuotationGetTool(deps: ToolDeps): AnyToolDef {
     description:
       "Fetch one quotation by id or quotationNumber with full detail (amounts, scope, terms, payment milestones, approval audit).",
     allowedRoles: ADMIN_ROLES,
+    requiredScope: MCP_SCOPE_READ,
     inputSchema: {
       id: z.string().optional(),
       quotationNumber: z.string().optional(),

@@ -52,8 +52,9 @@ export class EFakturValidatorService {
     const year = parseInt(yearStr, 10);
     const currentYear = new Date().getFullYear() % 100; // Last 2 digits
 
-    // Year should be within reasonable range (current year ± 2 years)
-    if (year < currentYear - 2 || year > currentYear + 1) {
+    // FIX 6: Widen backward window to 3 years to cover the DGT correction window
+    // (previously 2 years, which falsely rejected valid prior-year e-Faktur)
+    if (year < currentYear - 3 || year > currentYear + 1) {
       return false;
     }
 
