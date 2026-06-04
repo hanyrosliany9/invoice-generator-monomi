@@ -1,0 +1,2 @@
+-- Add SALARY_PAYMENT to TransactionType enum
+ALTER TYPE "TransactionType" ADD VALUE IF NOT EXISTS 'SALARY_PAYMENT';

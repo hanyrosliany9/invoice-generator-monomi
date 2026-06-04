@@ -12,7 +12,12 @@ import { JournalService } from "../accounting/services/journal.service";
 import { DepreciationService } from "../accounting/services/depreciation.service";
 import { CreateAssetDto } from "./dto/create-asset.dto";
 import { UpdateAssetDto } from "./dto/update-asset.dto";
-import { AssetStatus, AssetCondition, TransactionType } from "@prisma/client";
+import {
+  AssetStatus,
+  AssetCondition,
+  TransactionType,
+  Prisma,
+} from "@prisma/client";
 import * as QRCode from "qrcode";
 
 @Injectable()
@@ -552,6 +557,252 @@ export class AssetsService {
         {} as Record<string, number>,
       ),
       totalValue: totalValue._sum.purchasePrice || 0,
+    };
+  }
+
+  // -----------------------------------------------------------------------
+  // Dispose / Retire an asset with a balanced double-entry GL journal
+  // -----------------------------------------------------------------------
+
+  /**
+   * Maps an asset category to its cost account code (same mapping used on purchase).
+   */
+  private getAssetCostAccount(category: string): string {
+    const map: Record<string, string> = {
+      Camera: "1-4510",
+      Lens: "1-4510",
+      Lensa: "1-4510",
+      Lighting: "1-4550",
+      "Video Equipment": "1-4530",
+      "Audio Equipment": "1-4530",
+      Audio: "1-4530",
+      Video: "1-4530",
+      Gimbal: "1-4530",
+      Tripod: "1-4010",
+      Computer: "1-4570",
+      Laptop: "1-4570",
+      Vehicle: "1-4310",
+      Furniture: "1-4410",
+      Building: "1-4210",
+      Land: "1-4110",
+      Accessories: "1-4010",
+    };
+    return map[category] ?? "1-4010";
+  }
+
+  /**
+   * Maps an asset cost account code to its matching accumulated-depreciation account.
+   */
+  private getAccumDeprecAccount(costAccountCode: string): string {
+    const map: Record<string, string> = {
+      "1-4510": "1-4520", // Camera → Accum. Depr - Camera
+      "1-4530": "1-4540", // Video/Audio → Accum. Depr - Video/Audio
+      "1-4550": "1-4560", // Lighting → Accum. Depr - Lighting
+      "1-4570": "1-4580", // Computers → Accum. Depr - Computers
+      "1-4310": "1-4320", // Vehicles → Accum. Depr - Vehicles
+    };
+    return map[costAccountCode] ?? "1-4020"; // Generic Accumulated Depreciation
+  }
+
+  /**
+   * Dispose (retire) an asset.
+   *
+   * Posts a balanced journal entry:
+   *   Dr  Accumulated Depreciation  (accumDeprec)
+   *   Dr  Cash (1-1010)             (proceeds, if > 0)
+   *   Dr  Loss on disposal (8-2010) (if book value > proceeds)
+   *   Cr  Fixed Asset cost account  (purchasePrice)
+   *   Cr  Gain on disposal (4-8030) (if proceeds > book value)
+   *
+   * Sets asset status to DISPOSED and deactivates its depreciation schedule.
+   */
+  async dispose(
+    id: string,
+    dto: { proceeds?: number; disposalDate?: string },
+    userId: string,
+  ) {
+    // --- 1. Load asset -------------------------------------------------
+    const asset = await this.prisma.asset.findUnique({
+      where: { id },
+      include: { depreciationEntries: true },
+    });
+    if (!asset) {
+      throw new NotFoundException("Asset tidak ditemukan");
+    }
+    if (asset.status === AssetStatus.DISPOSED) {
+      throw new BadRequestException("Asset sudah di-dispose sebelumnya");
+    }
+
+    // --- 2. Compute accumulated depreciation from posted entries -------
+    const accumDeprec = asset.depreciationEntries.reduce((sum, entry) => {
+      return sum + Number(entry.depreciationAmount);
+    }, 0);
+
+    const purchasePrice = Number(asset.purchasePrice);
+    const proceeds = dto.proceeds ?? 0;
+    const disposalDate = dto.disposalDate
+      ? new Date(dto.disposalDate)
+      : new Date();
+
+    // book value = cost − accumulated depreciation
+    const bookValue = purchasePrice - accumDeprec;
+    // gain (positive) or loss (negative)
+    const gainLoss = proceeds - bookValue;
+
+    // --- 3. Map to GL accounts -----------------------------------------
+    const costAccount = this.getAssetCostAccount(asset.category);
+    const accumDeprecAccount = this.getAccumDeprecAccount(costAccount);
+
+    // --- 4. Build journal line items -----------------------------------
+    type LineItem = {
+      accountCode: string;
+      description: string;
+      descriptionId: string;
+      debit: number;
+      credit: number;
+    };
+
+    const lineItems: LineItem[] = [];
+
+    // Dr Accumulated Depreciation (removes the contra-asset balance)
+    if (accumDeprec > 0) {
+      lineItems.push({
+        accountCode: accumDeprecAccount,
+        description: `Remove accumulated depreciation - ${asset.name}`,
+        descriptionId: `Hapus akumulasi penyusutan - ${asset.name}`,
+        debit: accumDeprec,
+        credit: 0,
+      });
+    }
+
+    // Dr Cash (proceeds received)
+    if (proceeds > 0) {
+      lineItems.push({
+        accountCode: "1-1010",
+        description: `Disposal proceeds - ${asset.name}`,
+        descriptionId: `Penerimaan disposal - ${asset.name}`,
+        debit: proceeds,
+        credit: 0,
+      });
+    }
+
+    // Dr Loss on disposal (if book value > proceeds)
+    if (gainLoss < 0) {
+      lineItems.push({
+        accountCode: "8-2010",
+        description: `Loss on disposal of ${asset.name}`,
+        descriptionId: `Kerugian pelepasan ${asset.name}`,
+        debit: Math.abs(gainLoss),
+        credit: 0,
+      });
+    }
+
+    // Cr Asset cost account (removes the asset from books)
+    lineItems.push({
+      accountCode: costAccount,
+      description: `Remove asset cost - ${asset.name}`,
+      descriptionId: `Hapus nilai aset - ${asset.name}`,
+      debit: 0,
+      credit: purchasePrice,
+    });
+
+    // Cr Gain on disposal (if proceeds > book value)
+    if (gainLoss > 0) {
+      lineItems.push({
+        accountCode: "4-8030",
+        description: `Gain on disposal of ${asset.name}`,
+        descriptionId: `Keuntungan pelepasan ${asset.name}`,
+        debit: 0,
+        credit: gainLoss,
+      });
+    }
+
+    // --- 5. Verify journal balances (safety check) ---------------------
+    const totalDebits = lineItems.reduce((s, l) => s + l.debit, 0);
+    const totalCredits = lineItems.reduce((s, l) => s + l.credit, 0);
+    if (Math.abs(totalDebits - totalCredits) > 0.001) {
+      // This should never happen; guard against rounding edge cases
+      throw new BadRequestException(
+        `Jurnal tidak seimbang: debit ${totalDebits} ≠ kredit ${totalCredits}`,
+      );
+    }
+
+    // --- 6. Create & auto-post the journal entry -----------------------
+    const journalEntry = await this.journalService.createJournalEntry({
+      entryDate: disposalDate,
+      description: `Asset Disposal - ${asset.name}`,
+      descriptionId: `Pelepasan Aset - ${asset.name}`,
+      transactionType: TransactionType.ASSET_DISPOSAL,
+      transactionId: asset.id,
+      documentNumber: asset.assetCode,
+      documentDate: disposalDate,
+      createdBy: userId,
+      autoPost: true,
+      lineItems,
+    });
+
+    this.logger.log(
+      `✅ Posted disposal journal ${journalEntry.entryNumber} for ${asset.assetCode} ` +
+        `| cost=${purchasePrice} accumDeprec=${accumDeprec} proceeds=${proceeds} gainLoss=${gainLoss}`,
+    );
+
+    // --- 7. Deactivate depreciation schedule ---------------------------
+    try {
+      const activeSchedules = await this.prisma.depreciationSchedule.findMany({
+        where: { assetId: id, isActive: true },
+      });
+      for (const schedule of activeSchedules) {
+        try {
+          await this.depreciationService.deactivateDepreciationSchedule(
+            schedule.id,
+          );
+        } catch {
+          await this.prisma.depreciationSchedule.update({
+            where: { id: schedule.id },
+            data: { isActive: false },
+          });
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(
+        `Could not deactivate schedule for ${asset.assetCode}: ${err.message}`,
+      );
+    }
+
+    // --- 8. Mark asset DISPOSED ----------------------------------------
+    const updatedAsset = await this.prisma.asset.update({
+      where: { id },
+      data: {
+        status: AssetStatus.DISPOSED,
+        disposalDate,
+        disposalProceeds: proceeds > 0 ? new Prisma.Decimal(proceeds) : null,
+        disposalJournalId: journalEntry.id,
+      },
+    });
+
+    return {
+      asset: {
+        ...updatedAsset,
+        purchasePrice: Number(updatedAsset.purchasePrice),
+        disposalProceeds: updatedAsset.disposalProceeds
+          ? Number(updatedAsset.disposalProceeds)
+          : null,
+      },
+      journal: {
+        id: journalEntry.id,
+        entryNumber: journalEntry.entryNumber,
+        status: journalEntry.status,
+      },
+      summary: {
+        purchasePrice,
+        accumDeprec,
+        bookValue,
+        proceeds,
+        gainLoss,
+        totalDebits,
+        totalCredits,
+        balanced: Math.abs(totalDebits - totalCredits) < 0.001,
+      },
     };
   }
 

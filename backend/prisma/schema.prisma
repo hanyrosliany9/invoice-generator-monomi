@@ -921,6 +921,11 @@ model Asset {
   condition AssetCondition @default(GOOD)
   location  String?
 
+  // Disposal fields
+  disposalDate      DateTime? // Date the asset was disposed
+  disposalProceeds  Decimal?  @db.Decimal(15, 2) // Cash received on disposal
+  disposalJournalId String?   // Journal entry id for the disposal transaction
+
   // Media and tracking
   photos    String[] // Array of file paths
   documents String[] // Array of file paths
@@ -1126,6 +1131,7 @@ enum AssetStatus {
   IN_MAINTENANCE
   BROKEN
   RETIRED
+  DISPOSED
 }
 
 enum AssetCondition {
@@ -1958,7 +1964,11 @@ enum TransactionType {
 
   // Asset Management
   ASSET_PURCHASE // Asset purchase - Debit Fixed Asset, Credit Cash/AP
+  ASSET_DISPOSAL // Asset disposal - Remove cost/accum-depr, recognize gain/loss
   YEAR_END_CLOSING // Year-end closing - Zero revenue/expense to Retained Earnings
+
+  // Payroll
+  SALARY_PAYMENT // Salary disbursement - Debit Salary Expense, Credit Cash/Bank
 }
 
 enum JournalStatus {
@@ -5830,6 +5840,9 @@ model SalaryPayment {
   status      SalaryPaymentStatus @default(DRAFT)
   paidAt      DateTime?
   notes       String?             @db.Text
+
+  // GL link — set when the payment is posted; cleared on reversal
+  journalEntryId String?
 
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt

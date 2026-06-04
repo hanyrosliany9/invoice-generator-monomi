@@ -13,6 +13,7 @@ import {
 import { AssetsService } from "./assets.service";
 import { CreateAssetDto } from "./dto/create-asset.dto";
 import { UpdateAssetDto } from "./dto/update-asset.dto";
+import { DisposeAssetDto } from "./dto/dispose-asset.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import { AssetStatus } from "@prisma/client";
@@ -70,6 +71,21 @@ export class AssetsController {
   @RequireAdmin()
   remove(@Param("id") id: string) {
     return this.assetsService.remove(id);
+  }
+
+  /**
+   * Dispose / retire an asset.
+   * Posts a balanced double-entry journal: removes cost + accum-depr,
+   * credits proceeds to Cash, recognizes gain (4-8030) or loss (8-2010).
+   */
+  @Post(":id/dispose")
+  @RequireAdmin()
+  dispose(
+    @Param("id") id: string,
+    @Body() dto: DisposeAssetDto,
+    @Req() req: any,
+  ) {
+    return this.assetsService.dispose(id, dto, req.user.id);
   }
 
   @Post(":id/reserve")

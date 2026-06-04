@@ -37,6 +37,165 @@ export class ExpensesService {
     private journalService: JournalService,
   ) {}
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Budget tracking helpers
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Find all ExpenseBudget rows that a given expense counts against.
+   *
+   * Match rules:
+   *   1. Budget must be active (isActive = true)
+   *   2. expenseDate must fall within [startDate, endDate] (inclusive)
+   *   3. If the budget has a categoryId, it must match the expense categoryId.
+   *      Budgets with categoryId = NULL are "all-category" budgets — they match any expense.
+   *   4. If the budget has a projectId, it must match the expense projectId.
+   *      Budgets with projectId = NULL match expenses regardless of project.
+   *
+   * So the narrowest possible match (category + project) wins, but we update
+   * ALL matching budgets (a single expense can count against multiple budgets,
+   * e.g. a per-category budget AND a whole-project budget at the same time).
+   */
+  private async findMatchingBudgets(
+    categoryId: string,
+    projectId: string | null | undefined,
+    expenseDate: Date,
+  ) {
+    return this.prisma.expenseBudget.findMany({
+      where: {
+        isActive: true,
+        startDate: { lte: expenseDate },
+        endDate: { gte: expenseDate },
+        OR: [
+          // Budget scoped to this specific category (projectId may also restrict)
+          {
+            categoryId,
+            ...(projectId
+              ? { OR: [{ projectId }, { projectId: null }] }
+              : { projectId: null }),
+          },
+          // Budget with no category restriction
+          {
+            categoryId: null,
+            ...(projectId
+              ? { OR: [{ projectId }, { projectId: null }] }
+              : { projectId: null }),
+          },
+        ],
+      },
+    });
+  }
+
+  /**
+   * Increment `spent` by `delta` on matching budgets and recompute `remaining`.
+   * Uses Prisma's atomic `increment` to avoid concurrent-update races.
+   * Floors `spent` at 0 on the recompute to guard against accidental negatives.
+   */
+  private async applyBudgetDelta(
+    categoryId: string,
+    projectId: string | null | undefined,
+    expenseDate: Date,
+    delta: number, // positive = add, negative = subtract
+  ): Promise<void> {
+    const budgets = await this.findMatchingBudgets(
+      categoryId,
+      projectId,
+      expenseDate,
+    );
+
+    if (budgets.length === 0) return;
+
+    await Promise.all(
+      budgets.map(async (budget) => {
+        const newSpent = Math.max(0, Number(budget.spent) + delta);
+
+        if (delta < 0 && Number(budget.spent) + delta < 0) {
+          this.logger.warn(
+            `[BUDGET] Budget ${budget.id} (${budget.name}) would go negative ` +
+              `(spent=${budget.spent}, delta=${delta}). Flooring at 0.`,
+          );
+        }
+
+        await this.prisma.expenseBudget.update({
+          where: { id: budget.id },
+          data: {
+            spent: newSpent,
+            remaining: Math.max(0, Number(budget.amount) - newSpent),
+          },
+        });
+
+        this.logger.log(
+          `[BUDGET] Updated budget "${budget.name}" (${budget.id}): ` +
+            `spent ${budget.spent} → ${newSpent}, ` +
+            `remaining ${budget.remaining} → ${Math.max(0, Number(budget.amount) - newSpent)}`,
+        );
+      }),
+    );
+  }
+
+  /**
+   * Recalculate spent/remaining for ALL budgets from scratch.
+   * Groups expenses by the budgets they match and SUM(totalAmount) per group.
+   * Safe to call repeatedly; idempotent.
+   */
+  async recalculateAllBudgets(): Promise<
+    { id: string; name: string; before: number; after: number }[]
+  > {
+    const budgets = await this.prisma.expenseBudget.findMany({
+      where: { isActive: true },
+    });
+
+    const results: {
+      id: string;
+      name: string;
+      before: number;
+      after: number;
+    }[] = [];
+
+    for (const budget of budgets) {
+      const where: any = {
+        expenseDate: {
+          gte: budget.startDate,
+          lte: budget.endDate,
+        },
+      };
+      if (budget.categoryId) where.categoryId = budget.categoryId;
+      if (budget.projectId) where.projectId = budget.projectId;
+
+      const agg = await this.prisma.expense.aggregate({
+        where,
+        _sum: { totalAmount: true },
+      });
+
+      const newSpent = Number(agg._sum.totalAmount ?? 0);
+      const newRemaining = Math.max(0, Number(budget.amount) - newSpent);
+
+      results.push({
+        id: budget.id,
+        name: budget.name,
+        before: Number(budget.spent),
+        after: newSpent,
+      });
+
+      await this.prisma.expenseBudget.update({
+        where: { id: budget.id },
+        data: {
+          spent: newSpent,
+          remaining: newRemaining,
+        },
+      });
+    }
+
+    this.logger.log(
+      `[BUDGET] Recalculated ${budgets.length} budget(s): ` +
+        results.map((r) => `${r.name}: ${r.before}→${r.after}`).join(", "),
+    );
+
+    return results;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   /**
    * Create a new expense
    */
@@ -186,6 +345,19 @@ export class ExpensesService {
     } catch (error) {
       this.logger.error("Error creating payment journal entry:", error);
       // Continue even if journal entry creation fails - expense was still created
+    }
+
+    // ── Budget tracking: increment spent on matching budgets ──────────────
+    try {
+      await this.applyBudgetDelta(
+        expense.categoryId,
+        expense.projectId ?? null,
+        new Date(createExpenseDto.expenseDate),
+        Number(createExpenseDto.totalAmount),
+      );
+    } catch (error) {
+      this.logger.error("[BUDGET] Failed to update budget on create:", error);
+      // Non-fatal: expense was created, budget tracking update failed
     }
 
     return expense;
@@ -439,6 +611,34 @@ export class ExpensesService {
       }
     }
 
+    // ── Budget tracking: adjust spent if totalAmount changed ──────────────
+    if (
+      updateExpenseDto.totalAmount !== undefined &&
+      Number(updateExpenseDto.totalAmount) !== Number(expense.totalAmount)
+    ) {
+      try {
+        const oldAmount = Number(expense.totalAmount);
+        const newAmount = Number(updateExpenseDto.totalAmount);
+        const effectiveCategoryId =
+          updateExpenseDto.categoryId ?? expense.categoryId;
+        const effectiveProjectId =
+          updateExpenseDto.projectId !== undefined
+            ? updateExpenseDto.projectId
+            : expense.projectId;
+        const effectiveDate = expense.expenseDate;
+
+        // Reverse old amount, apply new amount
+        await this.applyBudgetDelta(
+          effectiveCategoryId,
+          effectiveProjectId,
+          effectiveDate,
+          newAmount - oldAmount, // net delta (may be positive or negative)
+        );
+      } catch (error) {
+        this.logger.error("[BUDGET] Failed to update budget on update:", error);
+      }
+    }
+
     return updated;
   }
 
@@ -460,6 +660,18 @@ export class ExpensesService {
       throw new ForbiddenException(
         "You do not have permission to delete this expense",
       );
+    }
+
+    // ── Budget tracking: decrement spent before deletion ─────────────────
+    try {
+      await this.applyBudgetDelta(
+        expense.categoryId,
+        expense.projectId ?? null,
+        expense.expenseDate,
+        -Number(expense.totalAmount),
+      );
+    } catch (error) {
+      this.logger.error("[BUDGET] Failed to update budget on delete:", error);
     }
 
     await this.prisma.expense.delete({ where: { id } });

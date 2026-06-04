@@ -54,6 +54,27 @@ export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
 
   /**
+   * Recalculate all budget spent/remaining from existing expenses.
+   * Admin-only. Safe to call repeatedly (idempotent).
+   *
+   * @returns Per-budget before/after summary
+   */
+  @Post("budgets/recalculate")
+  @ApiOperation({
+    summary: "Recalculate all budget spent/remaining (admin backfill)",
+    description:
+      "Recomputes spent and remaining for every active ExpenseBudget " +
+      "from the full expense history. Idempotent; use to fix stale data.",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Recalculation complete; returns per-budget before/after",
+  })
+  async recalculateBudgets() {
+    return this.expensesService.recalculateAllBudgets();
+  }
+
+  /**
    * Create a new expense
    *
    * Creates a new expense in DRAFT status. The expense will be validated for:

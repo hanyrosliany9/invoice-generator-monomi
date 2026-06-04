@@ -5,6 +5,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { JournalService } from "../accounting/services/journal.service";
 import {
   CreateStaffDto,
   UpdateStaffDto,
@@ -13,11 +14,35 @@ import {
 } from "./dto";
 import { SalaryPaymentStatus } from "@prisma/client";
 
+// Map staff position keywords → salary-expense GL account
+const SALARY_EXPENSE_ACCOUNT = "6-5020"; // default: Salaries - Administrative
+const MANAGEMENT_ACCOUNT = "6-5010"; // Salaries - Management
+const SALES_ACCOUNT = "6-1010"; // Sales Salaries
+const CASH_ACCOUNT = "1-1010"; // Kas (Cash)
+const BANK_ACCOUNT = "1-1020"; // Rekening Bank
+
+function salaryExpenseAccount(position: string | null | undefined): string {
+  if (!position) return SALARY_EXPENSE_ACCOUNT;
+  const p = position.toLowerCase();
+  if (/manager|management|direktur|director|ceo|cfo|coo|kepala/.test(p))
+    return MANAGEMENT_ACCOUNT;
+  if (/sales|penjualan|marketing/.test(p)) return SALES_ACCOUNT;
+  return SALARY_EXPENSE_ACCOUNT;
+}
+
+function cashOrBankAccount(bankName: string | null | undefined): string {
+  // If staff has a bank account on record, credit Bank; otherwise cash
+  return bankName ? BANK_ACCOUNT : CASH_ACCOUNT;
+}
+
 @Injectable()
 export class SalariesService {
   private readonly logger = new Logger(SalariesService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private journalService: JournalService,
+  ) {}
 
   // ============================================================================
   // STAFF CRUD
@@ -91,7 +116,7 @@ export class SalariesService {
 
   async createPayment(dto: CreateSalaryPaymentDto) {
     // Ensure staff exists
-    await this.findOneStaff(dto.staffId);
+    const staff = await this.findOneStaff(dto.staffId);
 
     // Check for duplicate period
     const existing = await this.prisma.salaryPayment.findUnique({
@@ -131,10 +156,17 @@ export class SalariesService {
       data.status = SalaryPaymentStatus.PAID;
     }
 
-    return this.prisma.salaryPayment.create({
+    const payment = await this.prisma.salaryPayment.create({
       data,
       include: { staff: true },
     });
+
+    // If created already-PAID, post the GL journal immediately
+    if (payment.status === SalaryPaymentStatus.PAID) {
+      await this.postSalaryJournal(payment, staff as any, "system");
+    }
+
+    return payment;
   }
 
   async findAllPayments(
@@ -228,14 +260,34 @@ export class SalariesService {
     });
   }
 
-  async removePayment(id: string) {
-    await this.findOnePayment(id);
+  async removePayment(id: string, userId = "system") {
+    const payment = await this.findOnePayment(id);
+
+    // Reverse posted journal before deleting (keeps GL balanced)
+    if (payment.journalEntryId) {
+      try {
+        await this.journalService.reverseJournalEntry(
+          payment.journalEntryId,
+          userId,
+        );
+        this.logger.log(
+          `✅ Reversed salary journal ${payment.journalEntryId} before deleting payment ${id}`,
+        );
+      } catch (err: any) {
+        // Already reversed or not posted — safe to proceed
+        this.logger.warn(
+          `Journal reversal skipped for ${payment.journalEntryId}: ${err?.message}`,
+        );
+      }
+    }
+
     return this.prisma.salaryPayment.delete({ where: { id } });
   }
 
-  async markPaymentPaid(id: string) {
-    await this.findOnePayment(id);
-    return this.prisma.salaryPayment.update({
+  async markPaymentPaid(id: string, userId = "system") {
+    const current = await this.findOnePayment(id);
+
+    const payment = await this.prisma.salaryPayment.update({
       where: { id },
       data: {
         status: SalaryPaymentStatus.PAID,
@@ -243,6 +295,11 @@ export class SalariesService {
       },
       include: { staff: true },
     });
+
+    // Post GL journal (idempotent — skips if journalEntryId already set)
+    await this.postSalaryJournal(payment, payment.staff as any, userId);
+
+    return payment;
   }
 
   async getStats() {
@@ -279,5 +336,80 @@ export class SalariesService {
       ).length,
       totalUnpaid: unpaidCount,
     };
+  }
+
+  // ============================================================================
+  // PRIVATE HELPERS
+  // ============================================================================
+
+  /**
+   * Post a double-entry salary journal for a PAID salary payment.
+   * Idempotent: skips if `journalEntryId` is already set on the payment.
+   *
+   * Dr  <salary-expense account>   netPay   (6-5010 / 6-5020 / 6-1010)
+   * Cr  <cash or bank account>     netPay   (1-1010 Cash or 1-1020 Bank)
+   */
+  private async postSalaryJournal(
+    payment: any,
+    staff: { position?: string | null; bankName?: string | null; name: string },
+    userId: string,
+  ): Promise<void> {
+    // Idempotency: do not double-post
+    const current = await this.prisma.salaryPayment.findUnique({
+      where: { id: payment.id },
+      select: { journalEntryId: true },
+    });
+    if (current?.journalEntryId) {
+      this.logger.log(
+        `Salary journal already posted for payment ${payment.id} — skipping`,
+      );
+      return;
+    }
+
+    const netPay = Number(payment.netPay);
+    const expenseAccount = salaryExpenseAccount(staff.position);
+    const creditAccount = cashOrBankAccount(staff.bankName);
+
+    try {
+      const journal = await this.journalService.createJournalEntry({
+        description: `Pembayaran Gaji - ${staff.name} (${payment.period})`,
+        entryDate: payment.paidAt ?? new Date(),
+        transactionId: payment.id,
+        transactionType: "SALARY_PAYMENT",
+        createdBy: userId,
+        autoPost: true,
+        lineItems: [
+          {
+            accountCode: expenseAccount,
+            debit: netPay,
+            credit: 0,
+            description: `Beban Gaji ${staff.name} - ${payment.period}`,
+          },
+          {
+            accountCode: creditAccount,
+            debit: 0,
+            credit: netPay,
+            description: `Pembayaran Gaji ${staff.name} - ${payment.period}`,
+          },
+        ],
+      });
+
+      // Link journal to payment
+      await this.prisma.salaryPayment.update({
+        where: { id: payment.id },
+        data: { journalEntryId: journal.id },
+      });
+
+      this.logger.log(
+        `✅ Posted salary journal ${journal.id} for payment ${payment.id} ` +
+          `(Dr ${expenseAccount} / Cr ${creditAccount} = ${netPay})`,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Failed to post salary journal for payment ${payment.id}:`,
+        err,
+      );
+      // Do not rethrow — payment was recorded successfully
+    }
   }
 }

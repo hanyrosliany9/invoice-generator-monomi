@@ -9,6 +9,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Request,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -164,8 +165,8 @@ export class SalariesController {
   @ApiParam({ name: "id", description: "Payment ID" })
   @ApiResponse({ status: 200, description: "Payment marked as PAID" })
   @ApiResponse({ status: 404, description: "Payment not found" })
-  async markPaid(@Param("id") id: string) {
-    return this.salariesService.markPaymentPaid(id);
+  async markPaid(@Param("id") id: string, @Request() req: any) {
+    return this.salariesService.markPaymentPaid(id, req.user?.userId ?? "system");
   }
 
   @Delete("payments/:id")
@@ -174,7 +175,7 @@ export class SalariesController {
   @ApiParam({ name: "id", description: "Payment ID" })
   @ApiResponse({ status: 204, description: "Payment deleted" })
   @ApiResponse({ status: 404, description: "Payment not found" })
-  async removePayment(@Param("id") id: string) {
-    return this.salariesService.removePayment(id);
+  async removePayment(@Param("id") id: string, @Request() req: any) {
+    return this.salariesService.removePayment(id, req.user?.userId ?? "system");
   }
 }
