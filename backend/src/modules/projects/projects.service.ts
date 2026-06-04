@@ -218,6 +218,9 @@ export class ProjectsService {
       include: {
         client: true,
         projectType: true,
+        milestones: {
+          orderBy: { milestoneNumber: "asc" },
+        },
         quotations: {
           orderBy: { createdAt: "desc" },
         },
@@ -249,6 +252,9 @@ export class ProjectsService {
         include: {
           client: true,
           projectType: true,
+          milestones: {
+            orderBy: { milestoneNumber: "asc" },
+          },
           quotations: {
             orderBy: { createdAt: "desc" },
           },
@@ -268,6 +274,26 @@ export class ProjectsService {
     }
 
     return project;
+  }
+
+  async findByClient(clientId: string) {
+    return this.prisma.project.findMany({
+      where: { clientId },
+      include: {
+        client: true,
+        projectType: true,
+        milestones: {
+          orderBy: { milestoneNumber: "asc" },
+        },
+        _count: {
+          select: {
+            quotations: true,
+            invoices: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   async update(id: string, updateProjectDto: UpdateProjectDto) {

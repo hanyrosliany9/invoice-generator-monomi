@@ -14,6 +14,7 @@ import { AssetsService } from "./assets.service";
 import { CreateAssetDto } from "./dto/create-asset.dto";
 import { UpdateAssetDto } from "./dto/update-asset.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import { AssetStatus } from "@prisma/client";
 
 @Controller("assets")
@@ -22,6 +23,7 @@ export class AssetsController {
   constructor(private readonly assetsService: AssetsService) {}
 
   @Post()
+  @RequireAdmin()
   create(@Body() createAssetDto: CreateAssetDto) {
     return this.assetsService.create(createAssetDto);
   }
@@ -48,6 +50,7 @@ export class AssetsController {
    * Creates journal entries for existing assets that don't have them
    */
   @Post("backfill-journal-entries")
+  @RequireAdmin()
   async backfillJournalEntries(@Req() req: any) {
     return this.assetsService.backfillAssetJournalEntries(req.user.id);
   }
@@ -58,11 +61,13 @@ export class AssetsController {
   }
 
   @Patch(":id")
+  @RequireAdmin()
   update(@Param("id") id: string, @Body() updateAssetDto: UpdateAssetDto) {
     return this.assetsService.update(id, updateAssetDto);
   }
 
   @Delete(":id")
+  @RequireAdmin()
   remove(@Param("id") id: string) {
     return this.assetsService.remove(id);
   }

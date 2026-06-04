@@ -77,10 +77,9 @@ export default function TrialBalancePageV2() {
   const endStr = format(endDate, 'yyyy-MM-dd');
 
   const { data, isLoading, error, refetch, isFetching } = useQuery<TrialBalance>({
-    queryKey: ['v2', 'trial-balance', startStr, endStr],
+    queryKey: ['v2', 'trial-balance', endStr],
     queryFn: () =>
       getTrialBalance({
-        startDate: startStr,
         endDate: endStr,
         includeInactive: false,
         includeZeroBalances: false,
@@ -90,7 +89,6 @@ export default function TrialBalancePageV2() {
   const handleExportPDF = async () => {
     try {
       await exportTrialBalancePDF({
-        startDate: startStr,
         endDate: endStr,
         includeInactive: false,
         includeZeroBalances: false,
@@ -104,7 +102,6 @@ export default function TrialBalancePageV2() {
   const handleExportExcel = async () => {
     try {
       await exportTrialBalanceExcel({
-        startDate: startStr,
         endDate: endStr,
         includeInactive: false,
         includeZeroBalances: false,

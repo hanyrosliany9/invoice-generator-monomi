@@ -62,6 +62,9 @@ export class MilestoneMetricDto {
 
   @ApiProperty({ example: 15000000 })
   revenueRecognized: number;
+
+  @ApiProperty({ example: "cle1234567890abcdefgh", required: false })
+  projectId?: string;
 }
 
 export class MilestoneAnalyticsDto {

@@ -740,7 +740,11 @@ export class InvoicesService {
 
     const updatedInvoice = await this.prisma.invoice.update({
       where: { id },
-      data: { status: InvoiceStatus.PAID },
+      data: {
+        status: InvoiceStatus.PAID,
+        markedPaidAt: new Date(),
+        markedPaidBy: userId || 'system',
+      },
       include: {
         client: true,
         project: true,

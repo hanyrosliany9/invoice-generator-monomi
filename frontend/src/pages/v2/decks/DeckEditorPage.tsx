@@ -165,7 +165,7 @@ export default function DeckEditorPageV2() {
         const payload = {
           template:        s.template as SlideTemplate,
           title:           s.title || undefined,
-          subtitle:        s.subtitle || undefined,
+          subtitle:        s.subtitle ?? '',
           backgroundImage: s.backgroundImage || undefined,
           notes:           s.notes || undefined,
           order:           i,

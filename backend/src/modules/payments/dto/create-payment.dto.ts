@@ -1,10 +1,11 @@
 import {
   IsString,
   IsNotEmpty,
-  IsDecimal,
+  IsNumber,
   IsDateString,
   IsEnum,
   IsOptional,
+  Min,
 } from "class-validator";
 import { Transform } from "class-transformer";
 import { PaymentMethod } from "@prisma/client";
@@ -15,7 +16,8 @@ export class CreatePaymentDto {
   invoiceId!: string;
 
   @Transform(({ value }) => parseFloat(value))
-  @IsDecimal({ decimal_digits: "2" })
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
   amount!: number;
 
   @IsDateString()

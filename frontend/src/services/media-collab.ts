@@ -128,7 +128,7 @@ export interface AssetMetadata {
   cameraMake?: string;
   lens?: string;
   iso?: number;
-  aperture?: string;
+  aperture?: number;
   shutterSpeed?: string;
   focalLength?: number;
   capturedAt?: string;
@@ -699,7 +699,7 @@ class MediaCollabService {
   // ============================================
 
   async updateAssetMetadata(assetId: string, metadata: Partial<AssetMetadata>): Promise<MediaAsset> {
-    const response = await apiClient.put(`/media-collab/metadata/${assetId}`, { metadata });
+    const response = await apiClient.put(`/media-collab/metadata/${assetId}`, metadata);
     return response.data.data;
   }
 

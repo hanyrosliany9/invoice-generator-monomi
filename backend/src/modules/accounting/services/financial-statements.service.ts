@@ -54,6 +54,7 @@ export class FinancialStatementsService {
           where: {
             accountId: account.id,
             entryDate: { gte: startDate, lte: endDate },
+            journalEntry: { isPosted: true },
           },
         });
 
@@ -255,6 +256,7 @@ export class FinancialStatementsService {
           where: {
             accountId: account.id,
             entryDate: { lte: endDate },
+            journalEntry: { isPosted: true },
           },
         });
 
@@ -371,6 +373,7 @@ export class FinancialStatementsService {
         where: {
           accountId: account.id,
           entryDate: { lte: endDate }, // all-time, not just current fiscal year
+          journalEntry: { isPosted: true },
         },
       });
 

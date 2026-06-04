@@ -8,12 +8,15 @@ import {
   Param,
   Query,
   UseInterceptors,
+  UseGuards,
   UploadedFile,
   Res,
   HttpStatus,
 } from "@nestjs/common";
 import { Response } from "express";
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import { SocialMediaReportService } from "../services/social-media-report.service";
 import { PDFGeneratorService } from "../services/pdf-generator.service";
 import { CreateReportDto } from "../dto/create-report.dto";
@@ -21,6 +24,8 @@ import { AddSectionDto } from "../dto/add-section.dto";
 import { UpdateVisualizationsDto } from "../dto/update-visualizations.dto";
 
 @Controller("reports")
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class ReportsController {
   constructor(
     private readonly reportsService: SocialMediaReportService,

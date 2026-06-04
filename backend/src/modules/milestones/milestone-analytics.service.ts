@@ -329,6 +329,7 @@ export class MilestoneAnalyticsService {
         daysToPayment,
         status,
         revenueRecognized: invoiced ? amount : 0,
+        projectId: m.quotation?.project?.id,
       });
     }
 

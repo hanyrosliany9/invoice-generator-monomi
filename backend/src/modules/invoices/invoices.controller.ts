@@ -277,8 +277,9 @@ export class InvoicesController {
       paymentDate?: string;
       notes?: string;
     },
+    @Request() req?: any,
   ) {
-    return this.invoicesService.markAsPaid(id, paymentData);
+    return this.invoicesService.markAsPaid(id, paymentData, req?.user?.id);
   }
 
   @Post("bulk-status-update")

@@ -53,7 +53,7 @@ export interface UpdateClientRequest extends Partial<CreateClientRequest> {
 export const clientService = {
   // Get all clients
   getClients: async (): Promise<Client[]> => {
-    const response = await apiClient.get('/clients')
+    const response = await apiClient.get('/clients', { params: { limit: 200 } })
     return response?.data?.data || []
   },
 

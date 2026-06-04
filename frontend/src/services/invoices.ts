@@ -253,8 +253,12 @@ export const invoiceService = {
   },
 
   // Send invoice via email
-  sendInvoice: async (id: string, email?: string): Promise<void> => {
-    await apiClient.post(`/invoices/${id}/send`, { email })
+  sendInvoice: async (id: string): Promise<Invoice> => {
+    const response = await apiClient.patch(`/invoices/${id}/status`, { status: 'SENT' })
+    if (!response?.data?.data) {
+      throw new Error('Invoice send failed')
+    }
+    return response.data.data
   },
 
   // Get invoice statistics

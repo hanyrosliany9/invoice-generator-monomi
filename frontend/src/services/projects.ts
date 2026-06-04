@@ -205,7 +205,7 @@ export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {
 export const projectService = {
   // Get all projects
   getProjects: async (): Promise<Project[]> => {
-    const response = await apiClient.get('/projects')
+    const response = await apiClient.get('/projects', { params: { limit: 200 } })
     return response?.data?.data || []
   },
 

@@ -316,7 +316,7 @@ export const getAccountLedger = async (
 };
 
 export const getTrialBalance = async (params: {
-  startDate: string;
+  startDate?: string; // optional → backend returns cumulative balances as of endDate
   endDate: string;
   fiscalPeriodId?: string;
   includeInactive?: boolean;
@@ -671,7 +671,7 @@ const downloadBlob = (blob: Blob, filename: string) => {
 };
 
 export const exportTrialBalancePDF = async (params: {
-  startDate: string;
+  startDate?: string;
   endDate: string;
   fiscalPeriodId?: string;
   includeInactive?: boolean;
@@ -771,7 +771,7 @@ export const exportGeneralLedgerPDF = async (params: {
 
 // ============ EXCEL EXPORT FUNCTIONS (NEW) ============
 export const exportTrialBalanceExcel = async (params: {
-  startDate: string;
+  startDate?: string;
   endDate: string;
   fiscalPeriodId?: string;
   includeInactive?: boolean;

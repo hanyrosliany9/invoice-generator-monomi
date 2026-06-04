@@ -172,6 +172,16 @@ export class ProjectsController {
     return this.projectsService.getProjectStats();
   }
 
+  @Get("by-client/:clientId")
+  @ApiOperation({ summary: "Mendapatkan daftar proyek berdasarkan klien" })
+  @ApiResponse({
+    status: 200,
+    description: "Daftar proyek klien berhasil diambil",
+  })
+  async findByClient(@Param("clientId") clientId: string) {
+    return this.projectsService.findByClient(clientId);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Mendapatkan proyek berdasarkan ID" })
   @ApiResponse({

@@ -50,7 +50,7 @@ const buildPayload = (values: VendorFormValues): CreateVendorRequest => ({
   province: values.province?.trim() || undefined,
   postalCode: values.postalCode?.trim() || undefined,
   country: values.country?.trim() || 'Indonesia',
-  npwp: values.npwp?.trim() || undefined,
+  npwp: values.npwp ? values.npwp.replace(/\D/g, '') || undefined : undefined,
   pkpStatus: values.pkpStatus,
   taxAddress: values.taxAddress?.trim() || undefined,
   bankName: values.bankName?.trim() || undefined,

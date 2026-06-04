@@ -126,6 +126,7 @@ export interface CashFlowData {
 
 export interface MilestoneMetric {
   id: string
+  projectId?: string
   milestoneNumber: number
   name: string
   amount: number

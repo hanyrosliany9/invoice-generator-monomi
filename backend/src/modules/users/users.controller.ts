@@ -12,6 +12,8 @@ import {
   HttpStatus,
   BadRequestException,
   NotFoundException,
+  ConflictException,
+  InternalServerErrorException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -24,7 +26,6 @@ import { UsersService } from "./users.service";
 import { CreateUserDto, UpdateUserDto, UserResponseDto } from "./dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RequireSuperAdmin } from "../auth/decorators/auth.decorators";
-import { ApiResponse as ApiResponseDto } from "../../common/dto/api-response.dto";
 import * as bcrypt from "bcrypt";
 
 @ApiTags("Users")
@@ -48,23 +49,19 @@ export class UsersController {
     status: 409,
     description: "Email sudah terdaftar",
   })
-  async create(
-    @Body() createUserDto: CreateUserDto,
-  ): Promise<ApiResponseDto<UserResponseDto | null>> {
-    try {
-      // Hash password before creating user
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(
-        createUserDto.password,
-        saltRounds,
-      );
+  async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
+    // Hash password before creating user
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(
+      createUserDto.password,
+      saltRounds,
+    );
 
-      const user = await this.usersService.create({
+    try {
+      return await this.usersService.create({
         ...createUserDto,
         password: hashedPassword,
       });
-
-      return ApiResponseDto.success(user, "Pengguna berhasil dibuat");
     } catch (error) {
       if (
         error &&
@@ -72,9 +69,9 @@ export class UsersController {
         "code" in error &&
         error.code === "P2002"
       ) {
-        return ApiResponseDto.error("Email sudah terdaftar", null);
+        throw new ConflictException("Email sudah terdaftar");
       }
-      return ApiResponseDto.error("Gagal membuat pengguna", null);
+      throw new InternalServerErrorException("Gagal membuat pengguna");
     }
   }
 
@@ -95,14 +92,9 @@ export class UsersController {
     @Query("search") search?: string,
     @Query("role") role?: string,
     @Query("isActive") isActive?: boolean,
-  ): Promise<ApiResponseDto<UserResponseDto[]>> {
-    try {
-      const filters = { page, limit, search, role, isActive };
-      const users = await this.usersService.findAll(filters);
-      return ApiResponseDto.success(users, "Daftar pengguna berhasil diambil");
-    } catch {
-      return ApiResponseDto.error("Gagal mengambil daftar pengguna", []);
-    }
+  ): Promise<UserResponseDto[]> {
+    const filters = { page, limit, search, role, isActive };
+    return this.usersService.findAll(filters);
   }
 
   @Get("lookup-by-email")
@@ -126,32 +118,17 @@ export class UsersController {
   })
   async findByEmail(
     @Query("email") email: string,
-  ): Promise<
-    ApiResponseDto<{ id: string; name: string; email: string } | null>
-  > {
-    try {
-      if (!email || !email.includes("@")) {
-        throw new BadRequestException("Valid email address is required");
-      }
-
-      const user = await this.usersService.findByEmail(email);
-      if (!user) {
-        throw new NotFoundException(`No user found with email: ${email}`);
-      }
-
-      return ApiResponseDto.success(
-        { id: user.id, name: user.name, email: user.email },
-        "User found successfully",
-      );
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      return ApiResponseDto.error("Failed to lookup user", null);
+  ): Promise<{ id: string; name: string; email: string }> {
+    if (!email || !email.includes("@")) {
+      throw new BadRequestException("Valid email address is required");
     }
+
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException(`No user found with email: ${email}`);
+    }
+
+    return { id: user.id, name: user.name, email: user.email };
   }
 
   @Get("stats")
@@ -160,16 +137,8 @@ export class UsersController {
     status: 200,
     description: "Statistik pengguna berhasil diambil",
   })
-  async getUserStats(): Promise<ApiResponseDto<any>> {
-    try {
-      const stats = await this.usersService.getUserStats();
-      return ApiResponseDto.success(
-        stats,
-        "Statistik pengguna berhasil diambil",
-      );
-    } catch {
-      return ApiResponseDto.error("Gagal mengambil statistik pengguna", null);
-    }
+  async getUserStats(): Promise<any> {
+    return this.usersService.getUserStats();
   }
 
   @Get(":id")
@@ -182,18 +151,12 @@ export class UsersController {
     status: 404,
     description: "Pengguna tidak ditemukan",
   })
-  async findOne(
-    @Param("id") id: string,
-  ): Promise<ApiResponseDto<UserResponseDto | null>> {
-    try {
-      const user = await this.usersService.findById(id);
-      if (!user) {
-        return ApiResponseDto.error("Pengguna tidak ditemukan", null);
-      }
-      return ApiResponseDto.success(user, "Pengguna berhasil ditemukan");
-    } catch {
-      return ApiResponseDto.error("Gagal mengambil pengguna", null);
+  async findOne(@Param("id") id: string): Promise<UserResponseDto> {
+    const user = await this.usersService.findById(id);
+    if (!user) {
+      throw new NotFoundException("Pengguna tidak ditemukan");
     }
+    return user;
   }
 
   @Patch(":id")
@@ -209,19 +172,18 @@ export class UsersController {
   async update(
     @Param("id") id: string,
     @Body() updateUserDto: UpdateUserDto,
-  ): Promise<ApiResponseDto<UserResponseDto | null>> {
-    try {
-      // Hash password if provided
-      if (updateUserDto.password) {
-        const saltRounds = 10;
-        updateUserDto.password = await bcrypt.hash(
-          updateUserDto.password,
-          saltRounds,
-        );
-      }
+  ): Promise<UserResponseDto> {
+    // Hash password if provided
+    if (updateUserDto.password) {
+      const saltRounds = 10;
+      updateUserDto.password = await bcrypt.hash(
+        updateUserDto.password,
+        saltRounds,
+      );
+    }
 
-      const user = await this.usersService.update(id, updateUserDto);
-      return ApiResponseDto.success(user, "Pengguna berhasil diperbarui");
+    try {
+      return await this.usersService.update(id, updateUserDto);
     } catch (error) {
       if (
         error &&
@@ -229,9 +191,9 @@ export class UsersController {
         "code" in error &&
         error.code === "P2025"
       ) {
-        return ApiResponseDto.error("Pengguna tidak ditemukan", null);
+        throw new NotFoundException("Pengguna tidak ditemukan");
       }
-      return ApiResponseDto.error("Gagal memperbarui pengguna", null);
+      throw new InternalServerErrorException("Gagal memperbarui pengguna");
     }
   }
 
@@ -241,15 +203,8 @@ export class UsersController {
     status: 200,
     description: "Pengguna berhasil diaktifkan",
   })
-  async activateUser(
-    @Param("id") id: string,
-  ): Promise<ApiResponseDto<UserResponseDto | null>> {
-    try {
-      const user = await this.usersService.update(id, { isActive: true });
-      return ApiResponseDto.success(user, "Pengguna berhasil diaktifkan");
-    } catch {
-      return ApiResponseDto.error("Gagal mengaktifkan pengguna", null);
-    }
+  async activateUser(@Param("id") id: string): Promise<UserResponseDto> {
+    return this.usersService.update(id, { isActive: true });
   }
 
   @Patch(":id/deactivate")
@@ -258,15 +213,8 @@ export class UsersController {
     status: 200,
     description: "Pengguna berhasil dinonaktifkan",
   })
-  async deactivateUser(
-    @Param("id") id: string,
-  ): Promise<ApiResponseDto<UserResponseDto | null>> {
-    try {
-      const user = await this.usersService.update(id, { isActive: false });
-      return ApiResponseDto.success(user, "Pengguna berhasil dinonaktifkan");
-    } catch {
-      return ApiResponseDto.error("Gagal menonaktifkan pengguna", null);
-    }
+  async deactivateUser(@Param("id") id: string): Promise<UserResponseDto> {
+    return this.usersService.update(id, { isActive: false });
   }
 
   @Delete(":id")
@@ -280,12 +228,7 @@ export class UsersController {
     status: 404,
     description: "Pengguna tidak ditemukan",
   })
-  async remove(@Param("id") id: string): Promise<ApiResponseDto<null>> {
-    try {
-      await this.usersService.remove(id);
-      return ApiResponseDto.success(null, "Pengguna berhasil dihapus");
-    } catch {
-      return ApiResponseDto.error("Gagal menghapus pengguna", null);
-    }
+  async remove(@Param("id") id: string): Promise<void> {
+    await this.usersService.remove(id);
   }
 }

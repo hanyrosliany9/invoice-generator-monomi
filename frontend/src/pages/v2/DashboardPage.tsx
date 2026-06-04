@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
+import { reportsService } from '@/services/reports';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { MonomiBrand } from '@/components/monomi/MonomiBrand';
@@ -26,15 +28,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/store/auth';
 import { useDashboardData } from '@/hooks/useDashboard';
 
-// Generate stub revenue trend data (6 months)
-const generateRevenueData = () => [
-  { month: 'Jan', revenue: 12500000 },
-  { month: 'Feb', revenue: 15800000 },
-  { month: 'Mar', revenue: 14200000 },
-  { month: 'Apr', revenue: 18900000 },
-  { month: 'May', revenue: 21500000 },
-  { month: 'Jun', revenue: 19300000 },
-];
 
 // Helper to get badge variant based on status
 const getStatusBadgeVariant = (status: string) => {
@@ -94,7 +87,18 @@ export default function DashboardPageV2() {
 
   const recentQuotations = dashboardData?.recentQuotations || [];
   const recentInvoices = dashboardData?.recentInvoices || [];
-  const revenueData = useMemo(() => generateRevenueData(), []);
+
+  const { data: revenueAnalytics } = useQuery({
+    queryKey: ['dashboard-revenue'],
+    queryFn: () => reportsService.getRevenueAnalytics({ period: 'monthly' }),
+  });
+  const revenueData = useMemo(
+    () => (revenueAnalytics?.revenueByPeriod ?? []).map((item) => ({
+      month: item.period,
+      revenue: item.amount,
+    })),
+    [revenueAnalytics],
+  );
 
   if (error) {
     return (
@@ -251,7 +255,6 @@ export default function DashboardPageV2() {
                 </LineChart>
               </ResponsiveContainer>
             )}
-            {/* TODO: Replace with real revenue trend data from API when available */}
           </GlassPanel>
         </section>
 
