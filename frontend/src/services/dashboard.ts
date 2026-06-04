@@ -81,7 +81,8 @@ export const dashboardService = {
       dashboardService.getInvoiceStats(),
       dashboardService.getClientStats(),
       dashboardService.getProjectStats(),
-      apiClient.get('/invoices'),
+      // FIX 3: pass a high limit so all SENT/OVERDUE invoices are included
+      apiClient.get('/invoices?limit=1000'),
     ])
 
     // Outstanding = invoices awaiting payment. Only SENT + OVERDUE count:

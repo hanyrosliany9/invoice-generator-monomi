@@ -21,6 +21,9 @@ export class ReportsService {
       select: {
         totalAmount: true,
         creationDate: true,
+        // FIX 5: fetch markedPaidAt for cash-basis date resolution
+        markedPaidAt: true,
+        updatedAt: true,
       },
     });
 
@@ -184,13 +187,24 @@ export class ReportsService {
       },
     });
 
-    // Overdue invoices
+    // FIX 6: Coerce Prisma Decimal _sum.totalAmount to JS number for each group
+    const invoicesByStatusNormalized = invoicesByStatus.map((row) => ({
+      ...row,
+      _sum: {
+        totalAmount: Number(row._sum.totalAmount ?? 0),
+      },
+    }));
+
+    // Overdue invoices (FIX 2: include explicit OVERDUE status rows)
     const overdueInvoices = await this.prisma.invoice.findMany({
       where: {
-        status: "SENT",
-        dueDate: {
-          lt: new Date(),
-        },
+        OR: [
+          { status: "OVERDUE" },
+          {
+            status: "SENT",
+            dueDate: { lt: new Date() },
+          },
+        ],
       },
       select: {
         id: true,
@@ -214,13 +228,16 @@ export class ReportsService {
       select: {
         totalAmount: true,
         creationDate: true,
+        // FIX 5: include payment date fields for correct period bucketing
+        markedPaidAt: true,
+        updatedAt: true,
       },
     });
 
     const paymentTrends = this.groupByPeriod(paidInvoices, "monthly");
 
     return {
-      invoicesByStatus,
+      invoicesByStatus: invoicesByStatusNormalized,
       overdueInvoices,
       overdueCount: overdueInvoices.length,
       overdueAmount: overdueInvoices.reduce(
@@ -285,10 +302,10 @@ export class ReportsService {
       total: quotations.length,
       approved: quotations.filter((q) => q.status === "APPROVED").length,
       pending: quotations.filter((q) => q.status === "SENT").length,
-      totalValue: quotations.reduce(
-        (sum, q) => sum + parseFloat(q.totalAmount.toString()),
-        0,
-      ),
+      // FIX 4: Exclude DRAFT from pipeline value (committed pipeline only)
+      totalValue: quotations
+        .filter((q) => q.status !== "DRAFT")
+        .reduce((sum, q) => sum + parseFloat(q.totalAmount.toString()), 0),
     };
 
     // Calculate invoice metrics
@@ -316,13 +333,15 @@ export class ReportsService {
       invoices: invoiceMetrics,
       newClients: clients,
       newProjects: projects,
-      conversionRate:
-        quotationMetrics.total > 0
-          ? (
-              (quotationMetrics.approved / quotationMetrics.total) *
-              100
-            ).toFixed(2)
-          : 0,
+      // FIX 1: Denominator = quotations actually sent (exclude DRAFT)
+      conversionRate: (() => {
+        const sentCount = quotations.filter(
+          (q) => q.status !== "DRAFT",
+        ).length;
+        return sentCount > 0
+          ? ((quotationMetrics.approved / sentCount) * 100).toFixed(2)
+          : 0;
+      })(),
       paymentRate:
         invoiceMetrics.total > 0
           ? ((invoiceMetrics.paid / invoiceMetrics.total) * 100).toFixed(2)
@@ -351,7 +370,9 @@ export class ReportsService {
 
     data.forEach((item) => {
       let key: string;
-      const date = new Date(item.creationDate);
+      // FIX 5: bucket PAID invoices by payment date (markedPaidAt → updatedAt → creationDate)
+      const rawDate = item.markedPaidAt ?? item.updatedAt ?? item.creationDate;
+      const date = new Date(rawDate);
 
       switch (period) {
         case "yearly":
