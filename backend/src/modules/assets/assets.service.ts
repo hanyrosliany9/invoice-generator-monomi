@@ -231,13 +231,84 @@ export class AssetsService {
 
   async update(id: string, updateAssetDto: UpdateAssetDto) {
     await this.findOne(id);
-    return this.prisma.asset.update({
+
+    const updated = await this.prisma.asset.update({
       where: { id },
       data: updateAssetDto,
       include: {
         createdBy: true,
       },
     });
+
+    // FIX 1: If depreciation-relevant fields changed, recalculate and upsert schedule
+    const deprecFields = ['purchasePrice', 'usefulLifeYears', 'residualValue', 'depreciationMethod'] as const;
+    const needsRecalc = deprecFields.some((f) => (updateAssetDto as any)[f] !== undefined);
+
+    if (needsRecalc && updated.purchasePrice) {
+      try {
+        const purchasePrice = parseFloat(updated.purchasePrice.toString());
+        const residualValue = updated.residualValue
+          ? parseFloat(updated.residualValue.toString())
+          : purchasePrice * 0.1;
+        const usefulLifeYears = (updateAssetDto as any).usefulLifeYears ?? 5;
+        const usefulLifeMonths = Math.round(usefulLifeYears * 12);
+        const depreciableAmount = purchasePrice - residualValue;
+        const depreciationPerMonth = depreciableAmount / usefulLifeMonths;
+        const depreciationPerYear = depreciableAmount / usefulLifeYears;
+        const annualRate = 1 / usefulLifeYears;
+
+        const startDate = updated.purchaseDate ?? new Date();
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + usefulLifeMonths);
+
+        const existingSchedule = await this.prisma.depreciationSchedule.findFirst({
+          where: { assetId: id },
+        });
+
+        if (existingSchedule) {
+          await this.prisma.depreciationSchedule.update({
+            where: { id: existingSchedule.id },
+            data: {
+              depreciableAmount,
+              residualValue,
+              usefulLifeMonths,
+              usefulLifeYears,
+              depreciationPerMonth,
+              depreciationPerYear,
+              annualRate,
+              startDate,
+              endDate,
+            },
+          });
+        } else {
+          await this.prisma.depreciationSchedule.create({
+            data: {
+              assetId: id,
+              method: 'STRAIGHT_LINE',
+              depreciableAmount,
+              residualValue,
+              usefulLifeMonths,
+              usefulLifeYears,
+              depreciationPerMonth,
+              depreciationPerYear,
+              annualRate,
+              startDate,
+              endDate,
+              isActive: true,
+              isFulfilled: false,
+            },
+          });
+        }
+
+        this.logger.log(`Recalculated depreciation schedule for asset ${updated.assetCode}`);
+      } catch (error: any) {
+        this.logger.warn(
+          `Failed to recalculate depreciation schedule for asset ${updated.assetCode}: ${error.message}`,
+        );
+      }
+    }
+
+    return updated;
   }
 
   async remove(id: string) {

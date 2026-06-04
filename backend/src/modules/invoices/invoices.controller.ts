@@ -362,7 +362,7 @@ export class InvoicesController {
     status: 404,
     description: "Invoice tidak ditemukan",
   })
-  async remove(@Param("id") id: string) {
-    return this.invoicesService.remove(id);
+  async remove(@Param("id") id: string, @Request() req: any) {
+    return this.invoicesService.remove(id, req.user?.id);
   }
 }

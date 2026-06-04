@@ -628,6 +628,9 @@ export class FinancialStatementsService {
       };
 
       // Categorize based on transaction type
+      // NOTE: DEPRECIATION entries never touch a cash account (Dr 6-30xx / Cr 1-40xx),
+      // so they will never appear in cashTransactions and this branch is unreachable
+      // here.  The add-back is handled separately below via indirect method.
       const txType = transaction.journalEntry?.transactionType;
       if (
         txType === "INVOICE_SENT" ||
@@ -638,9 +641,41 @@ export class FinancialStatementsService {
       ) {
         operatingActivities.push(cashFlow);
       } else if (txType === "DEPRECIATION") {
+        // DEPRECIATION is a non-cash charge — it does not move cash, so it
+        // should never be in investingActivities.  Kept here as a safety guard.
         investingActivities.push(cashFlow);
       } else {
         financingActivities.push(cashFlow);
+      }
+    }
+
+    // ── Indirect-method: depreciation add-back ────────────────────────────────
+    // Depreciation reduces net income but does NOT consume cash.  Under the
+    // indirect method we must add it back to arrive at operating cash flow.
+    // We fetch posted DEPRECIATION journal entries for the period and sum the
+    // debit to the depreciation-expense account (6-30xx).
+    const depreciationJournals = await this.prisma.journalEntry.findMany({
+      where: {
+        transactionType: "DEPRECIATION" as any,
+        isPosted: true,
+        entryDate: { gte: startDate, lte: endDate },
+      },
+      include: {
+        lineItems: {
+          include: {
+            account: { select: { code: true } },
+          },
+        },
+      },
+    });
+
+    let depreciationAddBack = 0;
+    for (const je of depreciationJournals) {
+      for (const line of je.lineItems) {
+        // Depreciation-expense accounts: 6-30xx
+        if (/^6-30/.test(line.account.code) && Number(line.debit) > 0) {
+          depreciationAddBack += Number(line.debit);
+        }
       }
     }
 
@@ -649,7 +684,9 @@ export class FinancialStatementsService {
       return activities.reduce((sum, a) => sum + a.netCashFlow, 0);
     };
 
-    const operatingCashFlow = calculateTotal(operatingActivities);
+    const operatingCashFlowBeforeAddBack = calculateTotal(operatingActivities);
+    // Add depreciation back to operating cash flow (non-cash charge)
+    const operatingCashFlow = operatingCashFlowBeforeAddBack + depreciationAddBack;
     const investingCashFlow = calculateTotal(investingActivities);
     const financingCashFlow = calculateTotal(financingActivities);
     const netCashFlow =
@@ -670,6 +707,10 @@ export class FinancialStatementsService {
       operatingActivities: {
         transactions: operatingActivities,
         netCashFlow: operatingCashFlow,
+        // Non-cash adjustments (indirect method)
+        nonCashAdjustments: {
+          depreciationAddBack,
+        },
       },
       investingActivities: {
         transactions: investingActivities,
@@ -686,6 +727,7 @@ export class FinancialStatementsService {
         financingCashFlow,
         netCashFlow,
         closingBalance,
+        depreciationAddBack,
       },
     };
   }

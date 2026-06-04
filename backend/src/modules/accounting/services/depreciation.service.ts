@@ -255,8 +255,27 @@ export class DepreciationService {
 
       newAccumulatedDepreciation = previousAccumulated + depreciationAmount;
       bookValue = currentBookValue - depreciationAmount;
+    } else if (schedule.method === DepreciationMethod.SUM_OF_YEARS_DIGITS) {
+      // SYD: the rate changes each year.
+      // Determine which month index this period corresponds to by counting
+      // prior posted/calculated entries for this asset.
+      const periodIndex = previousEntries.length; // 0-based month index
+      const usefulLifeYears = Number(schedule.usefulLifeYears);
+      const sumOfYears = (usefulLifeYears * (usefulLifeYears + 1)) / 2;
+      const completedYears = Math.floor(periodIndex / 12);
+      const remainingYears = usefulLifeYears - completedYears;
+
+      // Guard: if remaining life exhausted, charge zero
+      const yearFraction = remainingYears > 0 ? remainingYears / sumOfYears : 0;
+      depreciationAmount = (Number(schedule.depreciableAmount) * yearFraction) / 12;
+
+      newAccumulatedDepreciation = previousAccumulated + depreciationAmount;
+      bookValue =
+        Number(schedule.depreciableAmount) +
+        Number(schedule.residualValue) -
+        newAccumulatedDepreciation;
     } else {
-      // Sum of years digits and other methods
+      // Other methods: fall back to stored monthly amount
       depreciationAmount = Number(schedule.depreciationPerMonth);
       newAccumulatedDepreciation = previousAccumulated + depreciationAmount;
       bookValue =
@@ -733,8 +752,16 @@ export class DepreciationService {
       const openingValue = currentBookValue;
 
       let periodDep: number;
-      if (method === "STRAIGHT_LINE" || method === "SUM_OF_YEARS_DIGITS") {
+      if (method === "STRAIGHT_LINE") {
         periodDep = Number(schedule.depreciationPerMonth);
+      } else if (method === "SUM_OF_YEARS_DIGITS") {
+        // SYD: per-period rate depends on remaining life at that year
+        const usefulLifeYears = Number(schedule.usefulLifeYears);
+        const sumOfYears = (usefulLifeYears * (usefulLifeYears + 1)) / 2;
+        const completedYears = Math.floor(i / 12);
+        const remainingYears = usefulLifeYears - completedYears;
+        const yearFraction = remainingYears > 0 ? remainingYears / sumOfYears : 0;
+        periodDep = (Number(schedule.depreciableAmount) * yearFraction) / 12;
       } else {
         // Declining balance: apply monthly rate to current book value
         const monthlyRate = Number(schedule.annualRate) / 12;

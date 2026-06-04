@@ -471,7 +471,22 @@ export class InvoicesService {
       throw new NotFoundException("Invoice tidak ditemukan");
     }
 
-    return invoice;
+    // Compute payment summary from the payments array
+    const payments: any[] = invoice.payments || [];
+    const totalPaid = payments.reduce(
+      (sum: number, p: any) => sum + Number(p.amount),
+      0,
+    );
+    const totalAmount = Number(invoice.totalAmount);
+    const remainingAmount = totalAmount - totalPaid;
+    const paymentSummary = {
+      totalPaid,
+      remainingAmount,
+      isPaid: remainingAmount <= 0,
+      paymentCount: payments.length,
+    };
+
+    return { ...invoice, paymentSummary };
   }
 
   async update(id: string, updateInvoiceDto: UpdateInvoiceDto): Promise<any> {
@@ -982,14 +997,73 @@ export class InvoicesService {
     });
   }
 
-  async remove(id: string): Promise<any> {
+  async remove(id: string, userId?: string): Promise<any> {
     const invoice = await this.prisma.invoice.findUnique({
       where: { id },
       include: { paymentMilestone: true },
+      // Also select journal entry fields for GL reversal
     });
 
     if (!invoice) {
       throw new NotFoundException("Invoice tidak ditemukan");
+    }
+
+    // FIX: Reverse posted journal entries BEFORE deleting the invoice so the
+    // General Ledger does not stay permanently overstated (AR / Revenue).
+    const reversalUserId = userId || 'system';
+    const journalIdsToReverse: string[] = [];
+    if (invoice.journalEntryId) {
+      journalIdsToReverse.push(invoice.journalEntryId);
+    }
+    if (invoice.paymentJournalId) {
+      journalIdsToReverse.push(invoice.paymentJournalId);
+    }
+
+    for (const journalId of journalIdsToReverse) {
+      try {
+        const journalEntry = await this.prisma.journalEntry.findUnique({
+          where: { id: journalId },
+          select: { id: true, isPosted: true, isReversing: true, entryNumber: true },
+        });
+
+        if (!journalEntry) {
+          this.logger.warn(
+            `Journal entry ${journalId} not found during invoice ${id} deletion — skipping reversal`,
+          );
+          continue;
+        }
+
+        if (!journalEntry.isPosted) {
+          this.logger.warn(
+            `Journal entry ${journalEntry.entryNumber} is not posted — skipping reversal`,
+          );
+          continue;
+        }
+
+        // Check if already reversed
+        const existingReversal = await this.prisma.journalEntry.findFirst({
+          where: { reversedEntryId: journalId },
+          select: { id: true },
+        });
+
+        if (existingReversal) {
+          this.logger.warn(
+            `Journal entry ${journalEntry.entryNumber} already reversed — skipping`,
+          );
+          continue;
+        }
+
+        await this.journalService.reverseJournalEntry(journalId, reversalUserId);
+        this.logger.log(
+          `✅ Reversed journal entry ${journalEntry.entryNumber} for deleted invoice ${invoice.invoiceNumber}`,
+        );
+      } catch (error) {
+        // Log but do not block deletion — reversal failure should be visible in logs
+        this.logger.error(
+          `Failed to reverse journal entry ${journalId} for invoice ${id}:`,
+          error,
+        );
+      }
     }
 
     // CRITICAL: Delete document files from filesystem BEFORE database deletion

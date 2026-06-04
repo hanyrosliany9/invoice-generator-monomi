@@ -351,21 +351,72 @@ export class ExpensesService {
       },
     });
 
-    // If amounts changed and expense is PAID with a journal entry, update the journal
-    if (amountsChanged && expense.paymentJournalId) {
+    // If totalAmount changed and expense has a payment journal, reverse and repost
+    if (
+      updateExpenseDto.totalAmount !== undefined &&
+      Number(updateExpenseDto.totalAmount) !== Number(expense.totalAmount) &&
+      expense.paymentJournalId
+    ) {
       try {
-        const amountDifference =
-          Number(updateExpenseDto.totalAmount || expense.totalAmount) -
-          Number(expense.totalAmount);
+        const newAmount = Number(updateExpenseDto.totalAmount);
 
-        if (amountDifference !== 0) {
-          // Reverse the old journal entry by creating offsetting entries
-          // Then the new amounts will be reflected in the expense record
-          this.logger.log(
-            `Journal entry would need adjustment for amount difference: ${amountDifference}`,
-          );
-          // In a full implementation, you would reverse and recreate the journal entry
-        }
+        // Reverse the old payment journal entry
+        await this.journalService.reverseJournalEntry(
+          expense.paymentJournalId,
+          userId,
+        );
+
+        // Look up the cash/bank account used in the original journal so we
+        // can mirror it in the new entry.  The original credit line is the
+        // cash/bank leg (account code starts with 1-101 or 1-102).
+        const originalJournal = await this.journalService.getJournalEntry(
+          expense.paymentJournalId,
+        );
+        const cashLine = originalJournal.lineItems.find(
+          (l) => /^1-10[12]/.test(l.account.code) && Number(l.credit) > 0,
+        );
+        const cashAccountCode = cashLine?.account.code ?? "1-1010"; // default: Cash
+
+        // Reload the updated expense to get the category's accountCode
+        const freshExpense = await this.prisma.expense.findUnique({
+          where: { id },
+          include: { category: true },
+        });
+
+        // Post a new payment journal at the new amount
+        const newPaymentJournal = await this.journalService.createJournalEntry({
+          description: `Pembayaran Expense (Koreksi) - ${expense.expenseNumber}`,
+          entryDate: new Date(),
+          transactionId: expense.expenseNumber,
+          transactionType: "EXPENSE_PAID",
+          createdBy: userId,
+          autoPost: true,
+          lineItems: [
+            {
+              accountCode: freshExpense!.category!.accountCode, // Debit expense account
+              debit: newAmount,
+              credit: 0,
+              description: `${expense.description} - koreksi jumlah`,
+            },
+            {
+              accountCode: cashAccountCode, // Credit cash/bank
+              debit: 0,
+              credit: newAmount,
+              description: `Koreksi pembayaran untuk ${expense.vendorName}`,
+            },
+          ],
+        });
+
+        // Update the expense's paymentJournalId to the new entry
+        await this.prisma.expense.update({
+          where: { id },
+          data: { paymentJournalId: newPaymentJournal.id },
+        });
+
+        this.logger.log(
+          `✅ Reversed old payment journal and posted new one (${newPaymentJournal.id}) ` +
+            `for expense ${expense.expenseNumber} at new amount ${newAmount}`,
+        );
       } catch (error) {
         this.logger.error("Error updating journal entry for expense:", error);
         // Continue - the expense record was updated successfully

@@ -136,29 +136,56 @@ export class ProjectsService {
       ...projectData
     } = createProjectDto;
 
-    return this.prisma.project.create({
-      data: {
-        ...projectData,
-        number: projectNumber,
-        basePrice: basePrice,
-        priceBreakdown: priceBreakdown || undefined,
-        estimatedBudget,
-        estimatedExpenses, // ⭐ NEW: Store estimated expenses
-        projectedGrossMargin, // ⭐ NEW: Store projected margins
-        projectedNetMargin,
-        projectedProfit,
-        output: projectData.output || "", // Provide default empty string if not provided
-        client: {
-          connect: { id: clientId },
+    // FIX 3: Wrap number generation + insert in a transaction so the FOR UPDATE
+    // row lock on the counter row is held until the project row is committed,
+    // preventing duplicate numbers under concurrent requests.
+    return this.prisma.$transaction(async (tx) => {
+      // Re-generate project number inside the transaction so the lock is effective
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = (now.getMonth() + 1).toString().padStart(2, "0");
+      const txPrefix = `PRJ-${projectType.prefix}-${year}${month}-`;
+
+      const txResult = await tx.$queryRaw<Array<{ number: string }>>`
+        SELECT number
+        FROM projects
+        WHERE number LIKE ${txPrefix + "%"}
+        ORDER BY number DESC
+        LIMIT 1
+        FOR UPDATE
+      `;
+
+      let txSequence = 1;
+      if (txResult.length > 0) {
+        const lastSeq = parseInt(txResult[0].number.split("-").pop() || "0", 10);
+        txSequence = lastSeq + 1;
+      }
+      const txProjectNumber = createProjectDto.number || `${txPrefix}${txSequence.toString().padStart(3, "0")}`;
+
+      return tx.project.create({
+        data: {
+          ...projectData,
+          number: txProjectNumber,
+          basePrice: basePrice,
+          priceBreakdown: priceBreakdown || undefined,
+          estimatedBudget,
+          estimatedExpenses, // ⭐ NEW: Store estimated expenses
+          projectedGrossMargin, // ⭐ NEW: Store projected margins
+          projectedNetMargin,
+          projectedProfit,
+          output: projectData.output || "", // Provide default empty string if not provided
+          client: {
+            connect: { id: clientId },
+          },
+          projectType: {
+            connect: { id: projectTypeId },
+          },
         },
-        projectType: {
-          connect: { id: projectTypeId },
+        include: {
+          client: true,
+          projectType: true,
         },
-      },
-      include: {
-        client: true,
-        projectType: true,
-      },
+      });
     });
   }
 

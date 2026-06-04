@@ -392,11 +392,11 @@ export class PurchaseOrdersService {
       );
     }
 
-    // Update PO status (use CANCELLED since REJECTED doesn't exist)
+    // Update PO status to REJECTED
     const updated = await this.prisma.purchaseOrder.update({
       where: { id },
       data: {
-        status: POStatus.CANCELLED,
+        status: POStatus.REJECTED,
         rejectedBy: userId,
         rejectedAt: new Date(),
         rejectionReason: rejectDto.rejectionReason,

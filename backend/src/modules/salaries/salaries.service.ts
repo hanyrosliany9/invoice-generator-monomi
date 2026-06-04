@@ -165,7 +165,31 @@ export class SalariesService {
   }
 
   async updatePayment(id: string, dto: UpdateSalaryPaymentDto) {
-    await this.findOnePayment(id);
+    const current = await this.findOnePayment(id);
+
+    // FIX 2: Check for duplicate staffId+year+month when those fields are changing
+    const newStaffId = dto.staffId ?? current.staffId;
+    const newYear    = dto.year    ?? current.year;
+    const newMonth   = dto.month   ?? current.month;
+
+    const isKeyChanging =
+      dto.staffId !== undefined || dto.year !== undefined || dto.month !== undefined;
+
+    if (isKeyChanging) {
+      const collision = await this.prisma.salaryPayment.findFirst({
+        where: {
+          staffId: newStaffId,
+          year: newYear,
+          month: newMonth,
+          id: { not: id },
+        },
+      });
+      if (collision) {
+        throw new ConflictException(
+          `Salary payment for staff ${newStaffId} in ${newYear}/${newMonth} already exists`,
+        );
+      }
+    }
 
     const data: any = { ...dto };
 
