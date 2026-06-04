@@ -151,9 +151,10 @@ export class BankTransferService {
         exchangeRate = Number(rate.rate);
       }
 
-      // Calculate IDR amount if not provided
+      // Calculate IDR amount if not provided.
+      // Math.round ensures whole rupiah (no sub-rupiah fractions in the GL).
       if (!idrAmount) {
-        idrAmount = originalAmount * exchangeRate;
+        idrAmount = Math.round(originalAmount * exchangeRate);
       }
     }
 
@@ -501,11 +502,19 @@ export class BankTransferService {
         where: { id: transfer.feeAccountId },
       });
       if (feeAccount) {
+        // The fee is stored in the transfer's original currency.
+        // Convert to IDR using the same exchangeRate that produced idrAmount
+        // so both legs balance in the IDR ledger.
+        // For IDR transfers exchangeRate === 1, so behaviour is unchanged.
+        // Example: 10 USD fee × 16 000 (USD→IDR rate) = 160 000 IDR per leg.
+        const feeInIdr = Math.round(
+          Number(transfer.transferFee) * Number(transfer.exchangeRate),
+        );
         lineItems.push({
           accountCode: feeAccount.code,
           description: `Transfer fee for ${transfer.transferNumber}`,
           descriptionId: `Biaya transfer untuk ${transfer.transferNumber}`,
-          debit: Number(transfer.transferFee),
+          debit: feeInIdr,
           credit: 0,
           projectId: transfer.projectId || undefined,
           clientId: transfer.clientId || undefined,
@@ -515,7 +524,7 @@ export class BankTransferService {
           description: `Transfer fee for ${transfer.transferNumber}`,
           descriptionId: `Biaya transfer untuk ${transfer.transferNumber}`,
           debit: 0,
-          credit: Number(transfer.transferFee),
+          credit: feeInIdr,
           projectId: transfer.projectId || undefined,
           clientId: transfer.clientId || undefined,
         });

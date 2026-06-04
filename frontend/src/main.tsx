@@ -4,30 +4,16 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { App as AntdApp } from 'antd'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 // import { ReactQueryDevtools } from '@tanstack/react-query-devtools' // DISABLED: Causes 3 dev tabs to reopen repeatedly
 import { ThemeProvider } from './theme'
 import App from './App.tsx'
+import { queryClient } from './lib/queryClient'
 import './i18n/config' // Initialize i18n
 import './styles/tokens.css'
 import './index.css'
 
 // Fix for theme initialization order - v1.1
-
-// Create a client for React Query
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-})
 
 // Development logging
 if (import.meta.env.DEV) {

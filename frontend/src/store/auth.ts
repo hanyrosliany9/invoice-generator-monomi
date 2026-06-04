@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { queryClient } from '../lib/queryClient'
 
 export interface User {
   id: string
@@ -54,6 +55,9 @@ export const useAuthStore = create<AuthState>()(
           tokenData: null,
           isAuthenticated: false,
         })
+        // Clear TanStack Query cache so prior user's PII/financial data is
+        // never served to the next user who logs in on the same browser session.
+        queryClient.clear()
       },
 
       updateTokens: (accessToken: string, refreshToken: string, expiresIn: number) => {

@@ -44,8 +44,10 @@ export class ExchangeRateService {
     });
 
     if (!rate) {
-      throw new NotFoundException(
-        `No active exchange rate found for ${fromCurrency} to ${toCurrency}`,
+      // Throw BadRequestException so callers get a clean 400 with actionable guidance
+      // rather than an opaque 404/500 when the admin has not yet configured a rate.
+      throw new BadRequestException(
+        `No exchange rate configured for ${fromCurrency}→IDR. Please add an exchange rate before recording this transaction.`,
       );
     }
 
@@ -65,27 +67,39 @@ export class ExchangeRateService {
   }
 
   /**
-   * Convert amount between currencies
+   * Convert amount between currencies.
+   *
+   * All rates are stored as FOREIGN→IDR (e.g. USD→IDR = 16 000).
+   * The three non-trivial cases:
+   *   (a) from === IDR, to = foreign  →  IDR ÷ rate        e.g. 16 000 000 IDR ÷ 16 000 = 1 000 USD
+   *   (b) from = foreign, to === IDR  →  foreign × rate    e.g. 1 000 USD × 16 000 = 16 000 000 IDR
+   *   (c) foreign → foreign           →  via IDR (b then a)
    */
   async convertCurrency(
     amount: number,
     fromCurrency: Currency,
     toCurrency: Currency,
   ): Promise<number> {
+    // (0) Same currency — no conversion needed
     if (fromCurrency === toCurrency) {
       return amount;
     }
 
-    // Always convert through IDR
-    if (fromCurrency !== Currency.IDR && toCurrency !== Currency.IDR) {
-      // Convert from -> IDR -> to
-      const idrAmount = await this.convertToIDR(amount, fromCurrency);
-      const toRate = await this.getCurrentRate(toCurrency, Currency.IDR);
-      return idrAmount / Number(toRate.rate);
+    // (a) IDR → foreign: look up the FOREIGN→IDR rate and divide
+    if (fromCurrency === Currency.IDR) {
+      const rate = await this.getCurrentRate(toCurrency, Currency.IDR);
+      return amount / Number(rate.rate);
     }
 
-    const rate = await this.getCurrentRate(fromCurrency, toCurrency);
-    return amount * Number(rate.rate);
+    // (b) foreign → IDR: look up the FOREIGN→IDR rate and multiply
+    if (toCurrency === Currency.IDR) {
+      const rate = await this.getCurrentRate(fromCurrency, Currency.IDR);
+      return amount * Number(rate.rate);
+    }
+
+    // (c) foreign → foreign: convert via IDR
+    const idrAmount = await this.convertCurrency(amount, fromCurrency, Currency.IDR);
+    return this.convertCurrency(idrAmount, Currency.IDR, toCurrency);
   }
 
   /**

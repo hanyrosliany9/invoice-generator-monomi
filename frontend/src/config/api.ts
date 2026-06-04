@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
+import { toast } from 'sonner'
 import { useAuthStore } from '../store/auth'
 
 // API Configuration
@@ -140,6 +141,12 @@ apiClient.interceptors.response.use(
   response => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    // Handle 403 Forbidden — show toast and reject without retry or redirect
+    if (error.response?.status === 403) {
+      toast.error('Akses ditolak — Anda tidak memiliki izin.');
+      return Promise.reject(error);
+    }
 
     // Skip handling for non-401 errors or missing config
     if (!originalRequest || error.response?.status !== 401) {

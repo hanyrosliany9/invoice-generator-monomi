@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { App as AntApp, Layout, Spin } from 'antd'
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, type ReactNode } from 'react'
 import { Toaster } from 'sonner'
 import { useAuthStore } from './store/auth'
 import { usePermissions } from './hooks/usePermissions'
@@ -140,6 +140,20 @@ function RootLanding() {
   return isAdmin() ? <V2DashboardPage /> : <Navigate to='/media-collab' replace />
 }
 
+/**
+ * AdminRoute — renders children only when the current user is ADMIN or
+ * SUPER_ADMIN (i.e. usePermissions().isAdmin() === true).
+ *
+ * isAdmin() returns true for ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'] and false
+ * for VIDEOGRAPHER. A VIDEOGRAPHER hitting an admin URL is redirected to their
+ * allowed landing page (/media-collab) instead of the dashboard to avoid an
+ * empty/403 experience.
+ */
+function AdminRoute({ children }: { children: ReactNode }) {
+  const { isAdmin } = usePermissions()
+  return isAdmin() ? <>{children}</> : <Navigate to='/media-collab' replace />
+}
+
 // Back-compat: old /v2/* deep links and bookmarks redirect to the same path
 // without the prefix (e.g. /v2/invoices/123 -> /invoices/123).
 function StripV2Redirect() {
@@ -228,62 +242,73 @@ function App() {
                       <Route path='/' element={<RootLanding />} />
                       <Route path='/style-guide' element={<StyleGuidePage />} />
 
+                      {/* ── Admin-only routes ─────────────────────────────────────────────
+                       *  All routes below require ADMIN or SUPER_ADMIN.
+                       *  A VIDEOGRAPHER hitting any of these URLs is redirected to
+                       *  /media-collab by <AdminRoute>.
+                       * ─────────────────────────────────────────────────────────────── */}
+
                       {/* Sales */}
-                      <Route path='/invoices' element={<V2InvoicesPage />} />
-                      <Route path='/invoices/new' element={<V2InvoiceCreatePage />} />
-                      <Route path='/invoices/:id' element={<V2InvoiceDetailPage />} />
-                      <Route path='/invoices/:id/edit' element={<V2InvoiceEditPage />} />
-                      <Route path='/quotations' element={<V2QuotationsPage />} />
-                      <Route path='/quotations/new' element={<V2QuotationCreatePage />} />
-                      <Route path='/quotations/:id' element={<V2QuotationDetailPage />} />
-                      <Route path='/quotations/:id/edit' element={<V2QuotationEditPage />} />
-                      <Route path='/clients' element={<V2ClientsPage />} />
-                      <Route path='/clients/new' element={<V2ClientCreatePage />} />
-                      <Route path='/clients/:id' element={<V2ClientDetailPage />} />
-                      <Route path='/clients/:id/edit' element={<V2ClientEditPage />} />
+                      <Route path='/invoices' element={<AdminRoute><V2InvoicesPage /></AdminRoute>} />
+                      <Route path='/invoices/new' element={<AdminRoute><V2InvoiceCreatePage /></AdminRoute>} />
+                      <Route path='/invoices/:id' element={<AdminRoute><V2InvoiceDetailPage /></AdminRoute>} />
+                      <Route path='/invoices/:id/edit' element={<AdminRoute><V2InvoiceEditPage /></AdminRoute>} />
+                      <Route path='/quotations' element={<AdminRoute><V2QuotationsPage /></AdminRoute>} />
+                      <Route path='/quotations/new' element={<AdminRoute><V2QuotationCreatePage /></AdminRoute>} />
+                      <Route path='/quotations/:id' element={<AdminRoute><V2QuotationDetailPage /></AdminRoute>} />
+                      <Route path='/quotations/:id/edit' element={<AdminRoute><V2QuotationEditPage /></AdminRoute>} />
+                      <Route path='/clients' element={<AdminRoute><V2ClientsPage /></AdminRoute>} />
+                      <Route path='/clients/new' element={<AdminRoute><V2ClientCreatePage /></AdminRoute>} />
+                      <Route path='/clients/:id' element={<AdminRoute><V2ClientDetailPage /></AdminRoute>} />
+                      <Route path='/clients/:id/edit' element={<AdminRoute><V2ClientEditPage /></AdminRoute>} />
 
                       {/* Projects / expenses / vendors / assets */}
-                      <Route path='/projects' element={<V2ProjectsPage />} />
-                      <Route path='/projects/new' element={<V2ProjectCreatePage />} />
-                      <Route path='/projects/:id' element={<V2ProjectDetailPage />} />
-                      <Route path='/projects/:id/edit' element={<V2ProjectEditPage />} />
-                      <Route path='/projects/:projectId/calendar' element={<V2ProjectCalendarPage />} />
-                      <Route path='/projects/:projectId/content-calendar' element={<V2ProjectContentCalendarPage />} />
-                      <Route path='/expenses' element={<V2ExpensesPage />} />
-                      <Route path='/expenses/new' element={<V2ExpenseCreatePage />} />
-                      <Route path='/expenses/categories' element={<V2ExpenseCategoriesPage />} />
-                      <Route path='/expenses/:id' element={<V2ExpenseDetailPage />} />
-                      <Route path='/expenses/:id/edit' element={<V2ExpenseEditPage />} />
-                      <Route path='/vendors' element={<V2VendorsPage />} />
-                      <Route path='/vendors/new' element={<V2VendorCreatePage />} />
-                      <Route path='/vendors/:id' element={<V2VendorDetailPage />} />
-                      <Route path='/vendors/:id/edit' element={<V2VendorEditPage />} />
-                      <Route path='/assets' element={<V2AssetsPage />} />
-                      <Route path='/assets/new' element={<V2AssetCreatePage />} />
-                      <Route path='/assets/:id' element={<V2AssetDetailPage />} />
-                      <Route path='/assets/:id/edit' element={<V2AssetEditPage />} />
+                      <Route path='/projects' element={<AdminRoute><V2ProjectsPage /></AdminRoute>} />
+                      <Route path='/projects/new' element={<AdminRoute><V2ProjectCreatePage /></AdminRoute>} />
+                      <Route path='/projects/:id' element={<AdminRoute><V2ProjectDetailPage /></AdminRoute>} />
+                      <Route path='/projects/:id/edit' element={<AdminRoute><V2ProjectEditPage /></AdminRoute>} />
+                      <Route path='/projects/:projectId/calendar' element={<AdminRoute><V2ProjectCalendarPage /></AdminRoute>} />
+                      <Route path='/projects/:projectId/content-calendar' element={<AdminRoute><V2ProjectContentCalendarPage /></AdminRoute>} />
+                      <Route path='/expenses' element={<AdminRoute><V2ExpensesPage /></AdminRoute>} />
+                      <Route path='/expenses/new' element={<AdminRoute><V2ExpenseCreatePage /></AdminRoute>} />
+                      <Route path='/expenses/categories' element={<AdminRoute><V2ExpenseCategoriesPage /></AdminRoute>} />
+                      <Route path='/expenses/:id' element={<AdminRoute><V2ExpenseDetailPage /></AdminRoute>} />
+                      <Route path='/expenses/:id/edit' element={<AdminRoute><V2ExpenseEditPage /></AdminRoute>} />
+                      <Route path='/vendors' element={<AdminRoute><V2VendorsPage /></AdminRoute>} />
+                      <Route path='/vendors/new' element={<AdminRoute><V2VendorCreatePage /></AdminRoute>} />
+                      <Route path='/vendors/:id' element={<AdminRoute><V2VendorDetailPage /></AdminRoute>} />
+                      <Route path='/vendors/:id/edit' element={<AdminRoute><V2VendorEditPage /></AdminRoute>} />
+                      <Route path='/assets' element={<AdminRoute><V2AssetsPage /></AdminRoute>} />
+                      <Route path='/assets/new' element={<AdminRoute><V2AssetCreatePage /></AdminRoute>} />
+                      <Route path='/assets/:id' element={<AdminRoute><V2AssetDetailPage /></AdminRoute>} />
+                      <Route path='/assets/:id/edit' element={<AdminRoute><V2AssetEditPage /></AdminRoute>} />
 
                       {/* Salaries */}
-                      <Route path='/salaries' element={<V2SalariesPage />} />
-                      <Route path='/salaries/staff/new' element={<V2StaffFormPage />} />
-                      <Route path='/salaries/staff/:id/edit' element={<V2StaffFormPage />} />
-                      <Route path='/salaries/payments/new' element={<V2SalaryPaymentFormPage />} />
-                      <Route path='/salaries/payments/:id/edit' element={<V2SalaryPaymentFormPage />} />
+                      <Route path='/salaries' element={<AdminRoute><V2SalariesPage /></AdminRoute>} />
+                      <Route path='/salaries/staff/new' element={<AdminRoute><V2StaffFormPage /></AdminRoute>} />
+                      <Route path='/salaries/staff/:id/edit' element={<AdminRoute><V2StaffFormPage /></AdminRoute>} />
+                      <Route path='/salaries/payments/new' element={<AdminRoute><V2SalaryPaymentFormPage /></AdminRoute>} />
+                      <Route path='/salaries/payments/:id/edit' element={<AdminRoute><V2SalaryPaymentFormPage /></AdminRoute>} />
 
                       {/* Users / settings */}
-                      <Route path='/users' element={<V2UsersPage />} />
-                      <Route path='/users/new' element={<V2UserCreatePage />} />
-                      <Route path='/users/:id/edit' element={<V2UserEditPage />} />
-                      <Route path='/settings' element={<V2SettingsPage />} />
+                      <Route path='/users' element={<AdminRoute><V2UsersPage /></AdminRoute>} />
+                      <Route path='/users/new' element={<AdminRoute><V2UserCreatePage /></AdminRoute>} />
+                      <Route path='/users/:id/edit' element={<AdminRoute><V2UserEditPage /></AdminRoute>} />
+                      <Route path='/settings' element={<AdminRoute><V2SettingsPage /></AdminRoute>} />
 
                       {/* Reports */}
-                      <Route path='/reports' element={<V2ReportsPage />} />
-                      <Route path='/reports/social-media' element={<V2SocialMediaReportsPage />} />
-                      <Route path='/reports/builder' element={<V2ReportBuilderPage />} />
-                      <Route path='/reports/monthly' element={<V2MonthlyBusinessReportPage />} />
-                      <Route path='/reports/system/:slug' element={<V2SystemReportPage />} />
-                      <Route path='/reports/:id/edit' element={<V2ReportBuilderPage />} />
-                      <Route path='/reports/:id' element={<V2ReportDetailPage />} />
+                      <Route path='/reports' element={<AdminRoute><V2ReportsPage /></AdminRoute>} />
+                      <Route path='/reports/social-media' element={<AdminRoute><V2SocialMediaReportsPage /></AdminRoute>} />
+                      <Route path='/reports/builder' element={<AdminRoute><V2ReportBuilderPage /></AdminRoute>} />
+                      <Route path='/reports/monthly' element={<AdminRoute><V2MonthlyBusinessReportPage /></AdminRoute>} />
+                      <Route path='/reports/system/:slug' element={<AdminRoute><V2SystemReportPage /></AdminRoute>} />
+                      <Route path='/reports/:id/edit' element={<AdminRoute><V2ReportBuilderPage /></AdminRoute>} />
+                      <Route path='/reports/:id' element={<AdminRoute><V2ReportDetailPage /></AdminRoute>} />
+
+                      {/* ── All-roles routes (VIDEOGRAPHER allowed) ──────────────────────
+                       *  Dashboard, media-collab, creative tools, and utility pages are
+                       *  accessible to every authenticated role.
+                       * ─────────────────────────────────────────────────────────────── */}
 
                       {/* Calendar / creative tooling */}
                       <Route path='/calendar' element={<V2CalendarPage />} />

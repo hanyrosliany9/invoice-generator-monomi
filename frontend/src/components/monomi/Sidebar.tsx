@@ -4,18 +4,27 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { SheetClose } from '@/components/ui/sheet';
 import { makePrefetchHandlers } from '@/lib/routePrefetch';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export interface SidebarItem {
   label: string;
   icon: ReactNode;
   href: string;
   children?: SidebarItem[];
+  /** When true the item is hidden for VIDEOGRAPHER users. */
+  requiresAdmin?: boolean;
 }
 
 export interface SidebarSection {
   /** Section header label (uppercased in UI). Omit for the first/main section. */
   label?: string;
   items: SidebarItem[];
+  /**
+   * When true the entire section (header + all items) is hidden for
+   * VIDEOGRAPHER users.  Individual items can also carry requiresAdmin for
+   * mixed sections.
+   */
+  requiresAdmin?: boolean;
 }
 
 export interface SidebarProps {
@@ -42,10 +51,26 @@ export const Sidebar = ({ brand, items, sections, footer, collapsed, variant = '
   // key like 'nav.foo' renders as 'nav.foo', making bugs obvious in dev.
   const tr = (k?: string) => (k ? t(k) : '');
 
+  // Role-based nav filtering — VIDEOGRAPHER sees only items without
+  // requiresAdmin; ADMIN and SUPER_ADMIN see everything.
+  const { isAdmin } = usePermissions();
+  const adminUser = isAdmin();
+
   // Normalize: if sections passed, use them. Otherwise wrap flat items in a single
   // unlabeled section so the renderer has one code path.
-  const resolvedSections: SidebarSection[] = sections
+  const rawSections: SidebarSection[] = sections
     ?? (items ? [{ label: 'Workspace', items }] : []);
+
+  // Strip admin-only sections and items for non-admin users.
+  const resolvedSections: SidebarSection[] = adminUser
+    ? rawSections
+    : rawSections
+        .filter(section => !section.requiresAdmin)
+        .map(section => ({
+          ...section,
+          items: section.items.filter(item => !item.requiresAdmin),
+        }))
+        .filter(section => section.items.length > 0);
 
   const navItem = (item: SidebarItem) => (
     <NavLink

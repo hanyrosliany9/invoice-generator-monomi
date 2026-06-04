@@ -144,9 +144,10 @@ export class CashTransactionService {
         exchangeRate = Number(rate.rate);
       }
 
-      // Calculate IDR amount if not provided
+      // Calculate IDR amount if not provided.
+      // Math.round ensures whole rupiah (no sub-rupiah fractions in the GL).
       if (!idrAmount) {
-        idrAmount = originalAmount * exchangeRate;
+        idrAmount = Math.round(originalAmount * exchangeRate);
       }
     }
 
