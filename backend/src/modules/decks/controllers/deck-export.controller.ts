@@ -5,6 +5,7 @@ import {
   Param,
   Res,
   Query,
+  Request,
   UseGuards,
   HttpStatus,
   BadRequestException,
@@ -36,10 +37,11 @@ export class DeckExportController {
   })
   @ApiResponse({ status: 200, description: "Returns job ID for tracking" })
   async generatePdf(
+    @Request() req: any,
     @Param("id") deckId: string,
     @Query("quality") quality: "draft" | "standard" | "high" = "standard",
   ) {
-    const jobId = await this.exportService.startPdfGeneration(deckId, quality);
+    const jobId = await this.exportService.startPdfGeneration(deckId, quality, req.user.id);
     return { jobId, message: "PDF generation started" };
   }
 

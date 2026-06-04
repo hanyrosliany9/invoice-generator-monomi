@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  ForbiddenException,
   BadRequestException,
   Logger,
 } from "@nestjs/common";
@@ -43,7 +44,18 @@ export class DeckExportService {
   async startPdfGeneration(
     deckId: string,
     quality: "draft" | "standard" | "high" = "standard",
+    userId?: string,
   ): Promise<string> {
+    // Enforce membership: only deck collaborators/owners may export
+    if (userId) {
+      const membership = await this.prisma.deckCollaborator.findFirst({
+        where: { deckId, userId, status: "ACCEPTED" },
+      });
+      if (!membership) {
+        throw new ForbiddenException("Access denied to this deck");
+      }
+    }
+
     // Verify deck exists
     const deck = await this.prisma.deck.findUnique({
       where: { id: deckId },

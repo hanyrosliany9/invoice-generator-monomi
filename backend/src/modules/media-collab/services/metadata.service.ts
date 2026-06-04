@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Logger } from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException, Logger } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 const ExifParser = require("exif-parser");
 
@@ -118,11 +118,22 @@ export class MetadataService {
   }
 
   /**
-   * Update star rating for an asset
+   * Update star rating for an asset.
+   * When projectId is supplied the asset must belong to that project (IDOR guard).
    */
-  async updateStarRating(assetId: string, starRating: number, userId: string) {
+  async updateStarRating(assetId: string, starRating: number, userId: string, projectId?: string) {
     if (starRating < 0 || starRating > 5) {
       throw new BadRequestException("Star rating must be between 0 and 5");
+    }
+
+    if (projectId) {
+      const asset = await this.prisma.mediaAsset.findUnique({
+        where: { id: assetId },
+        select: { id: true, projectId: true },
+      });
+      if (!asset || asset.projectId !== projectId) {
+        throw new NotFoundException("Asset not found");
+      }
     }
 
     return this.prisma.mediaAsset.update({

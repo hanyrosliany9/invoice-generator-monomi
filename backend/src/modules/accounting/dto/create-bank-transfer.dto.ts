@@ -115,11 +115,6 @@ export class CreateBankTransferDto {
   @IsOptional()
   clientId?: string;
 
-  // Status
-  @IsEnum(BankTransferStatus)
-  @IsOptional()
-  status?: BankTransferStatus = BankTransferStatus.PENDING;
-
   // Notes
   @IsString()
   @IsOptional()
@@ -130,5 +125,6 @@ export class CreateBankTransferDto {
   notesId?: string; // Indonesian notes
 
   @IsString()
-  createdBy: string;
+  @IsOptional()
+  createdBy?: string; // Always set by the server from req.user.id
 }

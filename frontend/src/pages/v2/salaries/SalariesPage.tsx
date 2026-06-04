@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   Wallet, Users, Plus, Search, MoreHorizontal, Eye, Pencil,
@@ -116,13 +117,30 @@ export default function SalariesPage() {
 
   const deletePaymentMutation = useMutation({
     mutationFn: (id: string) => salaryService.deletePayment(id),
-    onSuccess: (_d, id) => {
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['salary-payments'] });
+      const previousPayments = queryClient.getQueriesData<SalaryPayment[]>({ queryKey: ['salary-payments'] });
       queryClient.setQueriesData(
         { queryKey: ['salary-payments'] },
         (old: unknown) => Array.isArray(old) ? old.filter((x: SalaryPayment) => x.id !== id) : old,
       );
+      return { previousPayments };
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['salary-payments'] });
       queryClient.invalidateQueries({ queryKey: ['salary-stats'] });
+    },
+    onError: (err: unknown, _id, context) => {
+      // Restore cache to pre-mutation state
+      if (context?.previousPayments) {
+        context.previousPayments.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || (err instanceof Error ? err.message : 'Something went wrong');
+      toast.error(msg);
     },
   });
 

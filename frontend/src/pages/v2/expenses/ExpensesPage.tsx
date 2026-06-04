@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Plus, Search, MoreHorizontal, Eye, Pencil, Trash2, X, Tag as TagIcon,
@@ -203,6 +204,12 @@ export default function ExpensesPageV2() {
         return old;
       });
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || (err instanceof Error ? err.message : 'Something went wrong');
+      toast.error(msg);
     },
   });
 

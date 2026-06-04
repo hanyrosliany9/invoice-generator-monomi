@@ -1652,7 +1652,7 @@ export class InvoicesService {
     }
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  @Cron(CronExpression.EVERY_DAY_AT_1AM, { timeZone: 'Asia/Jakarta' })
   async markOverdueInvoices(): Promise<void> {
     try {
       const result = await this.prisma.invoice.updateMany({

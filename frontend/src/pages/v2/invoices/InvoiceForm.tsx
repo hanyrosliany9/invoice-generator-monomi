@@ -52,7 +52,7 @@ const baseSchema = z.object({
   includeTax:      z.boolean(),
   materaiRequired: z.boolean(),
   scopeOfWork:     z.string().optional(),
-  paymentInfo:     z.string().min(20, 'Informasi pembayaran terlalu pendek'),
+  paymentInfo:     z.string().optional().refine((v) => !v || v.length >= 20, 'Informasi pembayaran terlalu pendek'),
   terms:           z.string().min(20, 'Syarat & ketentuan terlalu pendek'),
   // edit-only — optional in base
   status:          z.enum(['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED']).optional(),
@@ -199,7 +199,7 @@ export const InvoiceForm = ({
   }, [mode, invoice, prefilledClientId, prefilledProjectId]);
 
   const {
-    register, handleSubmit, control, watch, setValue, reset, formState: { errors, isSubmitting },
+    register, handleSubmit, control, watch, setValue, getValues, reset, formState: { errors, isSubmitting },
   } = useForm<InvoiceFormValues>({
     resolver: zodResolver(baseSchema),
     defaultValues,
@@ -238,11 +238,11 @@ export const InvoiceForm = ({
   // Auto-fill default payment info once company settings arrive and field is empty
   useEffect(() => {
     if (!companySettings) return;
-    const current = (watch('paymentInfo') ?? '').trim();
+    const current = (getValues('paymentInfo') ?? '').trim();
     if (!current) {
       setValue('paymentInfo', buildPaymentInfo(companySettings), { shouldDirty: false });
     }
-  }, [companySettings, setValue, watch]);
+  }, [companySettings, setValue, getValues]);
 
   /* ---------- filter projects by client (client picked first) ---------- */
   const projectsForClient = useMemo(
@@ -253,8 +253,8 @@ export const InvoiceForm = ({
   /* ---------- mutations ---------- */
   const createMutation = useMutation({
     mutationFn: invoiceService.createInvoice,
-    onSuccess: (created) => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    onSuccess: async (created) => {
+      await queryClient.invalidateQueries({ queryKey: ['invoices'] });
       toast.success(t('invoices.form.createSuccess', 'Invoice berhasil dibuat'));
       navigate(`/invoices/${created.id}`);
     },
@@ -265,11 +265,11 @@ export const InvoiceForm = ({
 
   const updateMutation = useMutation({
     mutationFn: (data: UpdateInvoiceRequest) => invoiceService.updateInvoice(invoice!.id, data),
-    onSuccess: (updated) => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['invoice', invoice!.id] });
+    onSuccess: async (updated) => {
+      await queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      await queryClient.invalidateQueries({ queryKey: ['invoice', invoice!.id] });
       toast.success(t('invoices.form.updateSuccess', 'Invoice berhasil diperbarui'));
-      navigate(`/invoices/${updated.id}`);
+      navigate(`/invoices/${updated?.id ?? invoice!.id}`);
     },
     onError: (err: Error) => {
       toast.error(err.message || t('invoices.form.updateError', 'Gagal memperbarui invoice'));
@@ -299,7 +299,7 @@ export const InvoiceForm = ({
       amountPerProject: subtotal,
       totalAmount:     total,
       scopeOfWork:     values.scopeOfWork || undefined,
-      paymentInfo:     values.paymentInfo,
+      paymentInfo:     values.paymentInfo ?? '',
       terms:           values.terms,
       dueDate:         values.dueDate.toISOString(),
       materaiRequired: values.materaiRequired,

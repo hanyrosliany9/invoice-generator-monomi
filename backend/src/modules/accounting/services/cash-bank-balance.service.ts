@@ -109,14 +109,18 @@ export class CashBankBalanceService {
         ? this.toNum(prior.closingBalance)
         : this.toNum(accRows[0].openingBalance);
       for (const r of accRows) {
-        const inflow = this.toNum(r.totalInflow);
-        const outflow = this.toNum(r.totalOutflow);
+        // Recompute inflow/outflow from posted line items for this account+period
+        // to correct any stale values left by back-dated journal entries.
+        const { totalInflow: inflow, totalOutflow: outflow } =
+          await this.calculateAccountMovements(accountId, r.year, r.month);
         const opening = prevClosing;
         const closing = opening + inflow - outflow;
         ops.push(
           this.prisma.cashBankBalance.update({
             where: { id: r.id },
             data: {
+              totalInflow: new Prisma.Decimal(inflow),
+              totalOutflow: new Prisma.Decimal(outflow),
               openingBalance: new Prisma.Decimal(opening),
               closingBalance: new Prisma.Decimal(closing),
               netChange: new Prisma.Decimal(inflow - outflow),

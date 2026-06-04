@@ -574,7 +574,17 @@ export class MediaProjectsService {
   async getPublicProject(token: string) {
     const project = await this.prisma.mediaProject.findUnique({
       where: { publicShareToken: token },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        isPublic: true,
+        publicAccessLevel: true,
+        publicViewCount: true,
+        createdAt: true,
+        updatedAt: true,
+        // createdBy is kept internally for authorId usage but NOT exposed in the return shape
+        createdBy: true,
         client: {
           select: {
             id: true,
@@ -605,7 +615,13 @@ export class MediaProjectsService {
       data: { publicViewCount: { increment: 1 } },
     });
 
-    return project;
+    // Strip internal fields before returning to anonymous callers
+    const { createdBy, ...publicProject } = project;
+    // Re-attach createdBy as a non-enumerable property so internal callers
+    // (e.g. public.controller.ts) can still read project.createdBy for authorId.
+    Object.defineProperty(publicProject, 'createdBy', { value: createdBy, enumerable: false });
+
+    return publicProject as typeof publicProject & { createdBy: string };
   }
 
   /**
@@ -630,7 +646,7 @@ export class MediaProjectsService {
         originalName: true,
         description: true,
         url: true,
-        key: true,
+        // key (internal R2 path) intentionally omitted from public responses
         thumbnailUrl: true,
         mediaType: true,
         mimeType: true,

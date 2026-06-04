@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -249,7 +249,7 @@ export default function ContentCalendarPageV2() {
     };
 
     const monthItems = filtered.filter((it) => inMonth(it.scheduledAt) || inMonth(it.publishedAt));
-    const drafts    = filtered.filter((it) => it.status === 'DRAFT');
+    const drafts    = filtered.filter((it) => it.status === 'DRAFT' && (inMonth(it.scheduledAt) || inMonth(it.publishedAt) || (!it.scheduledAt && !it.publishedAt)));
     const scheduled = monthItems.filter((it) => it.status === 'SCHEDULED');
     const published = monthItems.filter((it) => it.status === 'PUBLISHED');
 
@@ -1115,7 +1115,7 @@ function CreateDialog({
   // Reset every time we open with a different initial date so the
   // calendar's "+" button always gives a clean slate prefilled with
   // the day the operator clicked.
-  useState(() => { setScheduledAt(initialDate); });
+  useEffect(() => { setScheduledAt(initialDate); }, [initialDate]);
 
   const togglePlatform = (p: Platform) => {
     setSelectedPlatforms((prev) =>

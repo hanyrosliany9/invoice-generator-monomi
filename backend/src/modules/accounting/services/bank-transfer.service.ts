@@ -10,6 +10,7 @@ import { BankTransferQueryDto } from "../dto/bank-transfer-query.dto";
 import { BankTransferStatus, TransactionType, Currency } from "@prisma/client";
 import { JournalService } from "./journal.service";
 import { ExchangeRateService } from "./exchange-rate.service";
+import { isCashOrBank } from "../cash-accounts.util";
 
 @Injectable()
 export class BankTransferService {
@@ -62,10 +63,10 @@ export class BankTransferService {
       throw new BadRequestException("Bank account not found");
     }
 
-    // Bank accounts should be in the 1-1xxx range (Cash & Bank accounts)
-    if (!account.code.startsWith("1-1")) {
+    // Validate using the canonical cash/bank classifier (excludes inventory 1-15xx etc.)
+    if (!isCashOrBank(account.code)) {
       throw new BadRequestException(
-        `Account ${account.code} is not a valid cash/bank account. Must use 1-1xxx accounts.`,
+        `Account ${account.code} is not a valid cash/bank account. Must use cash (1-101x) or bank (1-102x) accounts.`,
       );
     }
 
@@ -91,7 +92,9 @@ export class BankTransferService {
   /**
    * Create bank transfer
    */
-  async createBankTransfer(createDto: CreateBankTransferDto) {
+  async createBankTransfer(
+    createDto: CreateBankTransferDto & { createdBy: string },
+  ) {
     // Validate accounts
     await this.validateBankAccount(createDto.fromAccountId);
     await this.validateBankAccount(createDto.toAccountId);
@@ -101,11 +104,12 @@ export class BankTransferService {
     );
 
     // Validate fee account if fee is provided
-    if (
-      createDto.transferFee &&
-      createDto.transferFee > 0 &&
-      createDto.feeAccountId
-    ) {
+    if (createDto.transferFee && createDto.transferFee > 0) {
+      if (!createDto.feeAccountId) {
+        throw new BadRequestException(
+          "feeAccountId is required when transferFee > 0",
+        );
+      }
       const feeAccount = await this.prisma.chartOfAccounts.findUnique({
         where: { id: createDto.feeAccountId },
       });
@@ -176,7 +180,7 @@ export class BankTransferService {
         confirmationCode: createDto.confirmationCode,
         projectId: createDto.projectId,
         clientId: createDto.clientId,
-        status: createDto.status || BankTransferStatus.PENDING,
+        status: BankTransferStatus.PENDING,
         notes: createDto.notes,
         notesId: createDto.notesId,
         createdBy: createDto.createdBy,
@@ -403,6 +407,9 @@ export class BankTransferService {
       );
     }
 
+    // CRITICAL: Use idrAmount for journal entries (accounting must be in IDR)
+    const amountForJournal = Number(transfer.idrAmount);
+
     // Create journal entry for this bank transfer
     const lineItems = [
       // Debit destination account
@@ -410,7 +417,7 @@ export class BankTransferService {
         accountCode: transfer.toAccount.code,
         description: transfer.description,
         descriptionId: transfer.descriptionId || undefined,
-        debit: Number(transfer.amount),
+        debit: amountForJournal,
         credit: 0,
         projectId: transfer.projectId || undefined,
         clientId: transfer.clientId || undefined,
@@ -421,7 +428,7 @@ export class BankTransferService {
         description: transfer.description,
         descriptionId: transfer.descriptionId || undefined,
         debit: 0,
-        credit: Number(transfer.amount),
+        credit: amountForJournal,
         projectId: transfer.projectId || undefined,
         clientId: transfer.clientId || undefined,
       },
@@ -631,6 +638,12 @@ export class BankTransferService {
     if (transfer.status === BankTransferStatus.IN_PROGRESS) {
       throw new BadRequestException(
         "Cannot delete transfer that is in progress.",
+      );
+    }
+
+    if (transfer.status === BankTransferStatus.CANCELLED) {
+      throw new BadRequestException(
+        "Cannot delete cancelled bank transfer — it has posted reversal journals.",
       );
     }
 

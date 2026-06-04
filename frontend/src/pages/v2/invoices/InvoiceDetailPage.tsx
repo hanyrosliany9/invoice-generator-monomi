@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   ArrowLeft, MoreHorizontal, Send, CheckCircle2, Trash2, Pencil,
@@ -137,9 +138,17 @@ export default function InvoiceDetailPageV2() {
     queryClient.invalidateQueries({ queryKey: ['invoices'] });
   };
 
+  const onMutationError = (err: unknown) => {
+    const msg =
+      (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      || (err instanceof Error ? err.message : 'Something went wrong');
+    toast.error(msg);
+  };
+
   const sendMutation = useMutation({
     mutationFn: () => invoiceService.sendInvoice(id!),
     onSuccess: invalidate,
+    onError: onMutationError,
   });
 
   const markPaidMutation = useMutation({
@@ -149,6 +158,7 @@ export default function InvoiceDetailPageV2() {
       notes:         'Marked as paid from detail page (v2)',
     }),
     onSuccess: invalidate,
+    onError: onMutationError,
   });
 
   const deleteMutation = useMutation({
@@ -157,6 +167,7 @@ export default function InvoiceDetailPageV2() {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       navigate('/invoices');
     },
+    onError: onMutationError,
   });
 
   /* ---------- derived totals ---------- */
@@ -331,7 +342,10 @@ export default function InvoiceDetailPageV2() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 {canSend && (
-                  <DropdownMenuItem onClick={() => sendMutation.mutate()}>
+                  <DropdownMenuItem
+                    onClick={() => sendMutation.mutate()}
+                    disabled={sendMutation.isPending}
+                  >
                     <Send className="h-3.5 w-3.5" />
                     {t('invoiceDetail.action.send', 'Send')}
                   </DropdownMenuItem>

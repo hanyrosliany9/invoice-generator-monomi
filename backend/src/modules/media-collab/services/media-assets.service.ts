@@ -499,6 +499,17 @@ export class MediaAssetsService {
   }
 
   /**
+   * Lightweight ownership lookup used by public endpoints for IDOR checks.
+   * Returns only id + projectId (no auth check — caller must verify ownership).
+   */
+  async findOneRaw(assetId: string) {
+    return this.prisma.mediaAsset.findUnique({
+      where: { id: assetId },
+      select: { id: true, projectId: true },
+    });
+  }
+
+  /**
    * Update asset status
    */
   async updateStatus(assetId: string, userId: string, status: string) {

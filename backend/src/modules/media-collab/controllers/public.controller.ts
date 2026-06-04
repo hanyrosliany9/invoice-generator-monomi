@@ -7,6 +7,7 @@ import {
   Body,
   Query,
   BadRequestException,
+  NotFoundException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -193,6 +194,12 @@ export class PublicController {
     // Validate public link and get project creator's userId
     const project = await this.projectsService.getPublicProject(token);
 
+    // IDOR guard: confirm the asset belongs to the project resolved by this token
+    const asset = await this.assetsService.findOneRaw(assetId);
+    if (!asset || asset.projectId !== project.id) {
+      throw new NotFoundException("Asset not found");
+    }
+
     const guestName = (body.guestName || "Anonymous").trim();
     const prefixedContent = `[${guestName}]: ${body.content}`;
 
@@ -238,6 +245,12 @@ export class PublicController {
     // Verify token is valid and get project
     const project = await this.projectsService.getPublicProject(token);
 
+    // IDOR guard: confirm the asset belongs to the project resolved by this token
+    const asset = await this.assetsService.findOneRaw(assetId);
+    if (!asset || asset.projectId !== project.id) {
+      throw new NotFoundException("Asset not found");
+    }
+
     // Update asset status (using guest user ID from project creator)
     return await this.assetsService.updateStatus(
       assetId,
@@ -279,6 +292,12 @@ export class PublicController {
   ) {
     // Verify token is valid and get project
     const project = await this.projectsService.getPublicProject(token);
+
+    // IDOR guard: confirm the asset belongs to the project resolved by this token
+    const asset = await this.assetsService.findOneRaw(assetId);
+    if (!asset || asset.projectId !== project.id) {
+      throw new NotFoundException("Asset not found");
+    }
 
     // Update star rating (using guest user ID from project creator)
     return await this.metadataService.updateStarRating(

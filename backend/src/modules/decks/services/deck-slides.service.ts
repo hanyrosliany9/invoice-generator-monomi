@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
   Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -138,6 +139,17 @@ export class DeckSlidesService {
    */
   async reorder(deckId: string, userId: string, dto: ReorderSlidesDto) {
     await this.verifyDeckAccess(deckId, userId, ["OWNER", "EDITOR"]);
+
+    // Ownership guard: all provided slideIds must belong to this deck
+    const ownedSlides = await this.prisma.deckSlide.findMany({
+      where: { id: { in: dto.slideIds }, deckId },
+      select: { id: true },
+    });
+    if (ownedSlides.length !== dto.slideIds.length) {
+      throw new BadRequestException(
+        "One or more slide IDs do not belong to this deck",
+      );
+    }
 
     // Update each slide's order
     const updates = dto.slideIds.map((slideId, index) =>

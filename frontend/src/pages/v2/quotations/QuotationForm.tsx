@@ -96,8 +96,8 @@ export const quotationFormSchema = z
     paymentType: z.enum(['FULL_PAYMENT', 'MILESTONE_BASED']),
     milestones: z.array(milestoneSchema),
   })
-  .refine((d) => d.validUntil > new Date(new Date().setHours(0, 0, 0, 0)), {
-    message: 'Validity date must be in the future',
+  .refine((d) => d.validUntil >= new Date(new Date().setHours(0, 0, 0, 0)), {
+    message: 'Validity date must be today or in the future',
     path: ['validUntil'],
   })
   .superRefine((d, ctx) => {

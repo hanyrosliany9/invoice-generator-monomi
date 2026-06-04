@@ -133,9 +133,13 @@ export class CalendarEventsService {
       throw new NotFoundException(`Calendar event with ID ${id} not found`);
     }
 
-    // Delete existing attendees and reminders if updating
-    if (attendees !== undefined || reminders !== undefined) {
+    // Delete and recreate attendees only when provided
+    if (attendees !== undefined) {
       await this.prisma.eventAttendee.deleteMany({ where: { eventId: id } });
+    }
+
+    // Delete and recreate reminders only when provided
+    if (reminders !== undefined) {
       await this.prisma.eventReminder.deleteMany({ where: { eventId: id } });
     }
 

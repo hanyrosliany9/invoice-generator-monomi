@@ -11,6 +11,7 @@ import { UpdateJournalEntryDto } from "../dto/update-journal-entry.dto";
 import { JournalQueryDto } from "../dto/journal-query.dto";
 import { JournalStatus, TransactionType } from "@prisma/client";
 import { CashBankBalanceService } from "./cash-bank-balance.service";
+import { isCashOrBank } from "../cash-accounts.util";
 
 @Injectable()
 export class JournalService {
@@ -1000,7 +1001,7 @@ export class JournalService {
   ): Promise<void> {
     try {
       const hasCashBankAccounts = entry.lineItems.some((line: any) =>
-        line.account.code.startsWith("1-1"),
+        isCashOrBank(line.account.code),
       );
       if (!hasCashBankAccounts) return;
 

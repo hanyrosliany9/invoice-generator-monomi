@@ -44,7 +44,8 @@
     "optional": "(opsional)",
     "error": "Terjadi kesalahan",
     "unknownError": "Terjadi suatu kesalahan",
-    "errorOccurred": "Terjadi suatu kesalahan"
+    "errorOccurred": "Terjadi suatu kesalahan",
+    "noDescription": "Tidak ada deskripsi"
   },
   "table": {
     "number": "Nomor",
@@ -117,7 +118,9 @@
     "projects": "Proyek",
     "assets": "Aset",
     "reports": "Laporan",
-    "settings": "Pengaturan"
+    "settings": "Pengaturan",
+    "nextActions": "Tindakan Berikutnya",
+    "viewRelated": "Lihat Terkait"
   },
   "businessJourney": {
     "timeline": {
@@ -769,7 +772,8 @@
     "create": {
       "error": "Gagal menambahkan klien. Coba lagi.",
       "subtitle": "Tambahkan klien baru untuk mulai mencatat proyek, penawaran, dan invoice.",
-      "title": "Klien Baru"
+      "title": "Klien Baru",
+      "success": "Klien \"{{name}}\" berhasil ditambahkan."
     },
     "detail": {
       "address": "Alamat",
@@ -825,7 +829,8 @@
       "title": "Ubah Klien",
       "notFoundDesc": "Klien yang Anda coba ubah tidak ada atau telah dihapus.",
       "subtitle": "Perbarui informasi {{name}}",
-      "subtitleWithCompany": "Perbarui informasi {{name}} · {{company}}"
+      "subtitleWithCompany": "Perbarui informasi {{name}} · {{company}}",
+      "success": "Perubahan untuk \"{{name}}\" tersimpan."
     },
     "empty": {
       "filtered": {
@@ -883,7 +888,8 @@
       "taxNumber": "NPWP",
       "addressPlaceholder": "Jl. Sudirman No. 1, Jakarta Selatan, DKI Jakarta 12190",
       "notesPlaceholder": "Preferensi komunikasi, sejarah hubungan, hal-hal yang perlu diingat…",
-      "statusHint": "Klien nonaktif tidak muncul di pemilih default."
+      "statusHint": "Klien nonaktif tidak muncul di pemilih default.",
+      "editNote": "Perubahan disimpan saat Anda menekan \"Simpan\"."
     },
     "kpi": {
       "active": "Klien Aktif",
@@ -1104,14 +1110,17 @@
       "duplicate": "Gandakan",
       "changeStatus": "Ubah Status",
       "delete": "Hapus"
-    }
+    },
+    "confirmDelete": "Hapus proyek {{number}}? Tindakan ini tidak dapat dibatalkan.",
+    "duplicated": "Proyek berhasil diduplikasi: {{number}}"
   },
   "assets": {
     "title": "Manajemen Aset",
     "create": {
       "error": "Gagal membuat aset. Coba lagi.",
       "title": "Aset Baru",
-      "subtitle": "Tambahkan aset baru — identitas, akuisisi, lokasi, dan parameter penyusutan."
+      "subtitle": "Tambahkan aset baru — identitas, akuisisi, lokasi, dan parameter penyusutan.",
+      "success": "Aset \"{{name}}\" berhasil dibuat."
     },
     "detail": {
       "backToList": "Kembali ke Aset",
@@ -1264,7 +1273,8 @@
       "error": "Gagal menyimpan perubahan. Coba lagi.",
       "title": "Ubah Aset",
       "notFoundDesc": "Aset yang Anda coba ubah tidak ada atau telah dihapus.",
-      "subtitleWithCode": "Perbarui {{name}} · {{code}}"
+      "subtitleWithCode": "Perbarui {{name}} · {{code}}",
+      "success": "Perubahan untuk \"{{name}}\" tersimpan."
     },
     "empty": {
       "filtered": {
@@ -2324,7 +2334,8 @@
     "create": {
       "error": "Gagal menambahkan pengguna. Coba lagi.",
       "subtitle": "Tambahkan akun baru dengan peran dan kata sandi awal.",
-      "title": "Pengguna Baru"
+      "title": "Pengguna Baru",
+      "success": "Pengguna \"{{name}}\" berhasil ditambahkan."
     },
     "denied": {
       "title": "Akses ditolak",
@@ -2339,7 +2350,8 @@
       "notFoundTitle": "Pengguna tidak ditemukan",
       "title": "Ubah Pengguna",
       "notFoundDesc": "Pengguna yang Anda coba ubah tidak ada atau telah dihapus.",
-      "subtitle": "Perbarui informasi akun {{name}}"
+      "subtitle": "Perbarui informasi akun {{name}}",
+      "success": "Perubahan untuk \"{{name}}\" tersimpan."
     },
     "empty": {
       "filtered": {
@@ -2425,7 +2437,8 @@
     "create": {
       "error": "Gagal menambahkan vendor. Coba lagi.",
       "subtitle": "Tambahkan vendor baru untuk mulai mencatat PO, faktur, dan pembayaran.",
-      "title": "Vendor Baru"
+      "title": "Vendor Baru",
+      "success": "Vendor \"{{name}}\" berhasil ditambahkan."
     },
     "detail": {
       "address": "Alamat",
@@ -2489,7 +2502,8 @@
       "noActivityDesc": "Vendor ini belum memiliki PO, faktur, atau pembayaran tercatat.",
       "notFoundDesc": "Vendor yang Anda cari tidak ada atau telah dihapus.",
       "relationsSub": "Ringkasan transaksi yang terhubung dengan vendor ini.",
-      "termsSub": "Termin pembayaran, mata uang, dan jejak audit dasar."
+      "termsSub": "Termin pembayaran, mata uang, dan jejak audit dasar.",
+      "deleteSuccess": "Vendor \"{{name}}\" berhasil dihapus."
     },
     "directory": "Daftar Vendor",
     "edit": {
@@ -2498,7 +2512,8 @@
       "title": "Ubah Vendor",
       "notFoundDesc": "Vendor yang Anda coba ubah tidak ada atau telah dihapus.",
       "subtitle": "Perbarui informasi {{name}}",
-      "subtitleWithCode": "Perbarui informasi {{name}} · {{code}}"
+      "subtitleWithCode": "Perbarui informasi {{name}} · {{code}}",
+      "success": "Perubahan untuk \"{{name}}\" tersimpan."
     },
     "empty": {
       "filtered": {
@@ -2576,7 +2591,8 @@
       "statusHint": "Vendor nonaktif tidak muncul di pemilih default.",
       "taxAddressHint": "Isi jika berbeda dengan alamat operasional.",
       "taxAddressPlaceholder": "Alamat resmi sesuai NPWP untuk dokumen perpajakan",
-      "vendorTypeHint": "Menentukan bagaimana transaksi akan dikelompokkan."
+      "vendorTypeHint": "Menentukan bagaimana transaksi akan dikelompokkan.",
+      "editNote": "Perubahan disimpan saat Anda menekan \"Simpan\"."
     },
     "kpi": {
       "active": "Vendor Aktif",
@@ -2688,7 +2704,16 @@
       "pdfSuccess": "Laporan PDF berhasil diunduh",
       "pdfFail": "Gagal mengunduh PDF",
       "excelSuccess": "Laporan Excel berhasil diunduh",
-      "excelFail": "Gagal mengunduh Excel"
+      "excelFail": "Gagal mengunduh Excel",
+      "breadcrumbAccounting": "Akuntansi",
+      "clientCount": "{{count}} klien dengan saldo terbuka",
+      "errorDesc": "Terjadi kesalahan",
+      "exportExcelFail": "Gagal mengunduh Excel",
+      "exportExcelSuccess": "Laporan Excel diunduh",
+      "exportPdfFail": "Gagal mengunduh PDF",
+      "exportPdfSuccess": "Laporan PDF diunduh",
+      "panelTitle": "Analisis Umur per Klien",
+      "totalReceivable": "Total Piutang"
     },
     "apAging": {
       "title": "Aging Hutang",
@@ -2704,7 +2729,16 @@
       "pdfSuccess": "Laporan PDF berhasil diunduh",
       "pdfFail": "Gagal mengunduh PDF",
       "excelSuccess": "Laporan Excel berhasil diunduh",
-      "excelFail": "Gagal mengunduh Excel"
+      "excelFail": "Gagal mengunduh Excel",
+      "breadcrumbAccounting": "Akuntansi",
+      "categoryCount": "{{count}} kategori dengan saldo terbuka",
+      "errorDesc": "Terjadi kesalahan",
+      "exportExcelFail": "Gagal mengunduh Excel",
+      "exportExcelSuccess": "Laporan Excel diunduh",
+      "exportPdfFail": "Gagal mengunduh PDF",
+      "exportPdfSuccess": "Laporan PDF diunduh",
+      "panelTitle": "Analisis Umur per Kategori",
+      "totalPayable": "Total Utang"
     },
     "journalEntryForm": {
       "newTitle": "Jurnal Baru",
@@ -3175,7 +3209,13 @@
       "exportPdfFail": "Gagal mengekspor PDF.",
       "exportCsvFail": "Gagal mengekspor CSV.",
       "startDate": "Tanggal mulai",
-      "endDate": "Tanggal akhir"
+      "endDate": "Tanggal akhir",
+      "sectionFinancing": "Pendanaan",
+      "sectionFinancingSub": "Kas dari pinjaman, pembayaran utang, dan transaksi pemilik.",
+      "sectionInvesting": "Investasi",
+      "sectionInvestingSub": "Kas untuk pembelian/penjualan aset tetap dan investasi jangka panjang.",
+      "sectionOperating": "Operasional",
+      "sectionOperatingSub": "Kas dari operasional sehari-hari — pendapatan dan beban usaha."
     },
     "balanceSheet": {
       "title": "Neraca",
@@ -3200,7 +3240,17 @@
       "totalLiabilities": "Total Kewajiban",
       "totalEquity": "Total Ekuitas",
       "subtotalPrefix": "Total",
-      "contra": "Kontra"
+      "contra": "Kontra",
+      "subtypeCurrentAsset": "Aset Lancar",
+      "subtypeCurrentLiability": "Kewajiban Lancar",
+      "subtypeCurrentYearEarnings": "Laba Tahun Berjalan",
+      "subtypeFixedAsset": "Aset Tetap",
+      "subtypeIntangibleAsset": "Aset Tidak Berwujud",
+      "subtypeNonCurrentAsset": "Aset Tidak Lancar",
+      "subtypeNonCurrentLiability": "Kewajiban Jangka Panjang",
+      "subtypeOtherAsset": "Aset Lainnya",
+      "subtypeOwnersEquity": "Modal",
+      "subtypeRetainedEarnings": "Laba Ditahan"
     },
     "adjustingWizard": {
       "title": "Wizard Jurnal Penyesuaian",
@@ -3223,7 +3273,47 @@
       "reviewDesc": "Periksa kembali sebelum melanjutkan. Setelah klik Lanjut, Anda diarahkan ke form jurnal dengan data terisi.",
       "breadcrumbAccounting": "Akuntansi",
       "breadcrumbJournal": "Jurnal",
-      "breadcrumbWizard": "Wizard Penyesuaian"
+      "breadcrumbWizard": "Wizard Penyesuaian",
+      "credit": "Kredit",
+      "debit": "Debit",
+      "errorAmountMin": "Jumlah harus > 0",
+      "errorDateRequired": "Tanggal wajib diisi",
+      "errorDescMin": "Deskripsi minimal 10 karakter",
+      "errorSelectAccount": "Pilih akun",
+      "examplePrefix": "Contoh:",
+      "fieldAmount": "Jumlah",
+      "fieldAmountPh": "cth. 1500000",
+      "fieldDate": "Tanggal",
+      "fieldDesc": "Deskripsi",
+      "fieldDescPh": "Deskripsi lengkap penyesuaian (minimal 10 karakter)",
+      "jePreview": "Jurnal yang akan dibuat",
+      "reviewRowAmount": "Jumlah",
+      "reviewRowDate": "Tanggal",
+      "reviewRowDesc": "Deskripsi",
+      "reviewRowType": "Tipe",
+      "selectAccount": "Pilih akun",
+      "step0Desc": "Pilih pola yang sesuai dengan transaksi. Setiap pola menentukan akun debit dan kredit secara otomatis.",
+      "step0Title": "Pilih Tipe Penyesuaian",
+      "templateAccruedExpAcc1": "Akun Beban",
+      "templateAccruedExpAcc2": "Kewajiban: Beban Akrual",
+      "templateAccruedExpDesc": "Akui beban atas jasa yang diterima namun belum dibayar.",
+      "templateAccruedExpExample": "Listrik bulan ini sudah dikonsumsi namun tagihan belum datang.",
+      "templateAccruedExpTitle": "Beban Akrual",
+      "templateAccruedRevAcc1": "Aset: Pendapatan Akrual",
+      "templateAccruedRevAcc2": "Akun Pendapatan",
+      "templateAccruedRevDesc": "Akui pendapatan atas jasa yang diselesaikan namun belum ditagih.",
+      "templateAccruedRevExample": "Pekerjaan konsultasi selesai namun invoice belum diterbitkan.",
+      "templateAccruedRevTitle": "Pendapatan Akrual",
+      "templatePrepaidAcc1": "Aset: Beban Dibayar Dimuka",
+      "templatePrepaidAcc2": "Akun Beban",
+      "templatePrepaidDesc": "Akui beban dari pembayaran yang telah dilakukan di muka.",
+      "templatePrepaidExample": "Asuransi 12 bulan dibayar di muka — mengakui 1 bulan beban.",
+      "templatePrepaidTitle": "Beban Dibayar Dimuka",
+      "templateUnearnedAcc1": "Kewajiban: Pendapatan Diterima Dimuka",
+      "templateUnearnedAcc2": "Akun Pendapatan",
+      "templateUnearnedDesc": "Akui pendapatan dari pembayaran yang diterima di muka.",
+      "templateUnearnedExample": "Langganan tahunan diterima di muka — mengakui 1 bulan pendapatan.",
+      "templateUnearnedTitle": "Pendapatan Diterima Dimuka"
     },
     "trialBalance": {
       "title": "Neraca Saldo",
@@ -3391,7 +3481,42 @@
       "accumulated": "Akumulasi Depresiasi",
       "netBookValue": "Nilai Buku Bersih",
       "close": "Tutup",
-      "yearsUnit": "tahun"
+      "yearsUnit": "tahun",
+      "cancel": "Batal",
+      "colAccumulated": "Akumulasi",
+      "colAsset": "Aset",
+      "colNetBook": "Nilai Buku Bersih",
+      "colPeriodDep": "Dep. Periode",
+      "colPurchasePrice": "Harga Perolehan",
+      "colStatus": "Status",
+      "colUsefulLife": "Umur Ekonomis",
+      "colYearsInUse": "Tahun Pakai",
+      "detailAccumulated": "Akumulasi Depresiasi",
+      "detailAssetCode": "Kode Aset",
+      "detailAssetName": "Nama Aset",
+      "detailEntryCount": "Jumlah Entri",
+      "detailNetBook": "Nilai Buku Bersih",
+      "detailPeriodDep": "Depresiasi Periode",
+      "detailPurchasePrice": "Harga Perolehan",
+      "detailUsefulLife": "Umur Ekonomis",
+      "detailYearsInUse": "Tahun Pakai",
+      "endDate": "Tanggal akhir",
+      "period": "Periode",
+      "processFieldDate": "Tanggal Periode",
+      "processFieldPosting": "Opsi Posting",
+      "startDate": "Tanggal mulai",
+      "statAccumulated": "Total Akumulasi",
+      "statAccumulatedSub": "akumulasi depresiasi",
+      "statAssets": "Aset Tersusut",
+      "statAssetsSub": "aset dengan jadwal aktif",
+      "statNextRun": "Proses Berikutnya",
+      "statNextRunSub": "estimasi run depresiasi",
+      "statPeriod": "Depresiasi Periode",
+      "statPeriodSub": "nilai penyusutan periode ini",
+      "statusActive": "Aktif",
+      "statusExpired": "Kedaluwarsa",
+      "years": "tahun",
+      "yr": "thn"
     },
     "accountTypes": {
       "ASSET": "Aset",
@@ -3448,6 +3573,179 @@
       "statCashTotal": "Kas",
       "statCombinedTotal": "Total Kas & Bank",
       "validationPeriod": "Silakan pilih periode terlebih dahulu"
+    },
+    "bankTransfers": {
+      "actionApprove": "Setujui",
+      "actionCancel": "Batalkan",
+      "actionDelete": "Hapus",
+      "actionReject": "Tolak",
+      "actionView": "Lihat Detail",
+      "allMethods": "Semua Metode",
+      "allStatuses": "Semua Status",
+      "approveFail": "Gagal menyetujui transfer bank",
+      "approveSuccess": "Transfer bank disetujui dan diposting",
+      "cancel": "Batal",
+      "cancelFail": "Gagal membatalkan transfer bank",
+      "cancelSuccess": "Transfer bank dibatalkan",
+      "close": "Tutup",
+      "colAmount": "Jumlah",
+      "colDate": "Tanggal",
+      "colMethod": "Metode",
+      "colNumber": "Nomor",
+      "colRoute": "Dari → Ke",
+      "colStatus": "Status",
+      "confirmCancel": "Batalkan transfer",
+      "confirmDelete": "Hapus transfer",
+      "createDesc": "Pindahkan dana antar akun kas dan bank.",
+      "createFail": "Gagal membuat transfer bank",
+      "createSubmit": "Buat Transfer",
+      "createSuccess": "Transfer bank berhasil dibuat",
+      "createTitle": "Transfer Bank Baru",
+      "dateRange": "Rentang",
+      "deleteFail": "Gagal menghapus transfer bank",
+      "deleteSuccess": "Transfer bank dihapus",
+      "description": "Catat dan setujui transfer antar akun kas dan bank.",
+      "emptyDesc": "Buat transfer bank pertama untuk mulai mencatat pergerakan dana.",
+      "emptyTitle": "Belum ada transfer bank",
+      "endDate": "Tanggal akhir",
+      "errorGeneric": "Terjadi kesalahan",
+      "errorTitle": "Tidak dapat memuat transfer bank",
+      "fee": "Biaya",
+      "fieldAmount": "Jumlah Transfer (IDR)",
+      "fieldBankRef": "Referensi Bank",
+      "fieldConfirmCode": "Kode Konfirmasi",
+      "fieldDate": "Tanggal Transfer",
+      "fieldDatePh": "Pilih tanggal",
+      "fieldDescId": "Deskripsi (Bahasa Indonesia)",
+      "fieldDescIdPh": "cth. Transfer dana operasional ke rekening BCA",
+      "fieldFee": "Biaya Transfer (Opsional)",
+      "fieldFeeAccount": "Akun Biaya",
+      "fieldFeeAccountPh": "Pilih akun",
+      "fieldFromAccount": "Dari Akun (Debit)",
+      "fieldFromAccountPh": "Pilih akun sumber",
+      "fieldMethod": "Metode Transfer",
+      "fieldNotes": "Catatan",
+      "fieldNotesPh": "Catatan tambahan (opsional)",
+      "fieldToAccount": "Ke Akun (Kredit)",
+      "fieldToAccountPh": "Pilih akun tujuan",
+      "methodClearing": "Kliring",
+      "methodInterbank": "Antar Bank",
+      "methodInternal": "Internal",
+      "methodOther": "Lainnya",
+      "newTransfer": "Transfer Baru",
+      "noMatch": "Tidak ada transfer yang cocok",
+      "noMatchDesc": "Coba sesuaikan filter.",
+      "optional": "Opsional",
+      "rejectFail": "Gagal menolak transfer bank",
+      "rejectReasonLabel": "Alasan Penolakan",
+      "rejectReasonPh": "Jelaskan alasan penolakan...",
+      "rejectSubmit": "Tolak Transfer",
+      "rejectSuccess": "Transfer bank ditolak",
+      "rejectTitle": "Tolak Transfer Bank",
+      "resetFilter": "Reset Filter",
+      "retry": "Coba Lagi",
+      "saving": "Menyimpan...",
+      "searchPlaceholder": "Cari nomor transfer, deskripsi...",
+      "startDate": "Tanggal mulai",
+      "statCompleted": "Selesai",
+      "statCompletedSub": "transfer selesai",
+      "statFiltered": "Total (Filter)",
+      "statFilteredSub": "sesuai filter aktif",
+      "statPending": "Menunggu Persetujuan",
+      "statPendingSub": "transfer tertunda",
+      "statThisMonth": "Total Bulan Ini",
+      "statThisMonthSub": "nilai transfer bulan ini",
+      "statusApproved": "Disetujui",
+      "statusCancelled": "Dibatalkan",
+      "statusCompleted": "Selesai",
+      "statusFailed": "Gagal",
+      "statusInProgress": "Dalam Proses",
+      "statusPending": "Tertunda",
+      "statusRejected": "Ditolak",
+      "title": "Transfer Bank",
+      "validationAmount": "Jumlah transfer wajib diisi dan harus lebih dari 0",
+      "validationDesc": "Deskripsi transfer wajib diisi",
+      "validationRequired": "Lengkapi semua field yang wajib diisi",
+      "viewAmount": "Jumlah Transfer",
+      "viewApproved": "Disetujui",
+      "viewBankRef": "Ref. Bank",
+      "viewCompleted": "Selesai",
+      "viewConfirmCode": "Kode Konfirmasi",
+      "viewDate": "Tanggal",
+      "viewDescription": "Deskripsi",
+      "viewFeeLabel": "Biaya transfer:",
+      "viewFrom": "Dari",
+      "viewJournalId": "ID Entri Jurnal",
+      "viewMethod": "Metode",
+      "viewNotes": "Catatan",
+      "viewReference": "Referensi",
+      "viewRejectionReason": "Alasan Penolakan",
+      "viewRoute": "Jalur Transfer",
+      "viewStatus": "Status",
+      "viewTitle": "Detail Transfer Bank",
+      "viewTo": "Ke"
+    },
+    "eclProvision": {
+      "agingAnalysis": "Analisis Umur",
+      "atRiskHeader": "Invoice Berisiko",
+      "autoPost": "Posting otomatis ke jurnal",
+      "bucketAvgRate": "Rata-rata",
+      "bucketInvoices": "Invoice",
+      "bucketTotalECL": "Total ECL",
+      "calcECL": "Hitung ECL",
+      "calculating": "Menghitung...",
+      "cancel": "Batal",
+      "close": "Tutup",
+      "colAging": "Umur",
+      "colCalcDate": "Tgl. Hitung",
+      "colECLAmount": "Cadangan ECL",
+      "colECLRate": "Tarif ECL",
+      "colInvoiceClient": "Invoice & Klien",
+      "colOutstanding": "Terutang",
+      "days": "hari",
+      "description": "Cadangan Kerugian Kredit Ekspektasian (CKKE) atas piutang sesuai PSAK 71.",
+      "detailAging": "Umur Piutang",
+      "detailCalcDate": "Tanggal Perhitungan",
+      "detailClient": "Klien",
+      "detailDaysPastDue": "Hari Terlambat",
+      "detailECLAmount": "Cadangan ECL",
+      "detailECLRate": "Tarif ECL",
+      "detailInvoiceNo": "No. Invoice",
+      "detailNote": "Catatan",
+      "detailNoteText": "Cadangan ECL dihitung berdasarkan umur piutang menggunakan tarif ECL default PSAK 71. Tarif dapat disesuaikan berdasarkan pengalaman historis perusahaan.",
+      "detailOutstanding": "Jumlah Terutang",
+      "detailStatus": "Status",
+      "detailTitle": "Detail ECL Invoice",
+      "emptyDesc": "Tidak ada data ECL untuk periode dan filter yang dipilih.",
+      "emptyTitle": "Tidak ada invoice berisiko",
+      "endDate": "Tanggal akhir",
+      "errorGeneric": "Terjadi kesalahan",
+      "errorTitle": "Tidak dapat memuat data ECL",
+      "excludeWriteOff": "Tidak termasuk penghapusan",
+      "includeWriteOff": "Termasuk penghapusan",
+      "invoicesCount": "invoice",
+      "period": "Periode",
+      "processDialogDesc": "Hitung Kerugian Kredit Ekspektasian untuk semua invoice yang masih outstanding.",
+      "processDialogTitle": "Hitung ECL Bulanan",
+      "processFail": "Gagal memproses ECL",
+      "processFieldDate": "Tanggal Perhitungan",
+      "processFieldPosting": "Opsi Posting",
+      "processInfo": "Proses ini menghitung Kerugian Kredit Ekspektasian untuk semua invoice outstanding pada tanggal yang dipilih, berdasarkan umur piutang dan tarif ECL default PSAK 71.",
+      "processSuccess": "Berhasil memproses {{count}} cadangan ECL. {{posted}} diposting ke jurnal.",
+      "refresh": "Segarkan",
+      "retry": "Coba Lagi",
+      "saveDraft": "Simpan sebagai draft (posting manual)",
+      "startDate": "Tanggal mulai",
+      "statECL": "Total Cadangan ECL",
+      "statECLSub": "kerugian kredit ekspektasian",
+      "statLastCalc": "Perhitungan Terakhir",
+      "statLastCalcSub": "tanggal perhitungan ECL",
+      "statNone": "Belum ada",
+      "statProvisionRate": "Rasio Cadangan",
+      "statProvisionRateSub": "ECL terhadap total piutang",
+      "statReceivables": "Total Piutang",
+      "statReceivablesSub": "piutang outstanding",
+      "title": "Cadangan ECL"
     }
   },
   "pinterestDownloader": {
@@ -3466,7 +3764,49 @@
     "noJobs": "Belum ada pekerjaan unduhan",
     "noJobsDesc": "Tempel URL board atau profil Pinterest di atas untuk memulai unduhan batch pertama Anda.",
     "noPins": "Belum ada pin",
-    "noPinsDesc": "Pin akan muncul di sini setelah selesai diunduh."
+    "noPinsDesc": "Pin akan muncul di sini setelah selesai diunduh.",
+    "cancel": "Batal",
+    "closePanel": "Tutup panel",
+    "confirmDelete": "Hapus pekerjaan \"{{name}}\"? File yang sudah diunduh juga akan ikut terhapus.",
+    "delete": "Hapus",
+    "detected": "Terdeteksi",
+    "detecting": "Memeriksa tautan…",
+    "downloadJobs": "Pekerjaan unduhan",
+    "downloadPin": "Unduh Pin",
+    "downloadZip": "Unduh semua sebagai ZIP",
+    "image": "Gambar",
+    "images": "Gambar",
+    "jobCount": "{{count}} pekerjaan",
+    "jobDetail": "Detail pekerjaan",
+    "mediaType": "Jenis media",
+    "miniDone": "Selesai",
+    "miniFailed": "Gagal",
+    "miniTotal": "Total",
+    "noTitle": "Tanpa judul",
+    "notPinterest": "Tautan ini bukan dari Pinterest.",
+    "paste": "Tempel",
+    "pastePrompt": "Tempel tautan Pinterest",
+    "pinDownloadFail": "Gagal mengunduh pin.",
+    "pinId": "ID pin:",
+    "savedAt": "Tersimpan di",
+    "singlePinHint": "— akan langsung diunduh ke browser.",
+    "startBatch": "Mulai Unduhan Batch",
+    "startFail": "Gagal memulai unduhan.",
+    "starting": "Memulai…",
+    "stat": {
+      "running": "Sedang berjalan",
+      "runningSub": "diperbarui tiap 5 detik",
+      "totalJobs": "Total pekerjaan",
+      "totalJobsSub": "batch + tunggal tersimpan",
+      "totalPins": "Total pin diunduh",
+      "totalPinsSub": "lintas semua pekerjaan"
+    },
+    "step1": "Langkah 1",
+    "typeBadge": "Pin · Board · Profil",
+    "urlHint": "Hanya tautan pinterest.com atau pin.it yang diterima.",
+    "video": "Video",
+    "videos": "Video",
+    "viewPins": "Lihat pin"
   },
   "mediaDownloader": {
     "title": "Pengunduh Media",
@@ -3549,7 +3889,10 @@
     "fieldDescription": "Deskripsi",
     "namePlaceholder": "Nama shot list",
     "noProject": "Tanpa deskripsi",
-    "descriptionPlaceholder": "Deskripsi singkat (opsional)"
+    "descriptionPlaceholder": "Deskripsi singkat (opsional)",
+    "createSubmit": "Buat Shot List",
+    "newShotList": "Shot List Baru",
+    "selectProject": "Pilih proyek"
   },
   "projectCalendar": {
     "title": "Kalender Proyek",
@@ -3571,7 +3914,12 @@
       "overdueTasks": "Tugas Terlewat",
       "overdueTasksSub": "perlu perhatian",
       "milestones": "Tonggak",
-      "milestonesSub": "dipantau"
+      "milestonesSub": "dipantau",
+      "completed": "Selesai Bulan Ini",
+      "completedSub": "terkonfirmasi",
+      "overdue": "Terlewat",
+      "overdueSub": "perlu perhatian",
+      "thisMonth": "Bulan Ini"
     },
     "today": "Hari Ini",
     "selectedDay": "Hari Terpilih",
@@ -3609,6 +3957,40 @@
       "assignLabel": "Tugaskan ke",
       "cancel": "Batal",
       "save": "Simpan Acara"
+    },
+    "createDialog": {
+      "date": "Tanggal",
+      "dateRequired": "Pilih tanggal acara.",
+      "desc": "Tambah tonggak, batas waktu, atau acara ke kalender proyek ini.",
+      "description": "Deskripsi",
+      "descriptionPlaceholder": "Catatan tambahan (opsional)...",
+      "endTime": "Selesai",
+      "eventTitle": "Judul Acara",
+      "eventTitlePlaceholder": "Nama tonggak / acara...",
+      "location": "Lokasi",
+      "locationPlaceholder": "Lokasi / tautan rapat (opsional)...",
+      "saveEvent": "Simpan Acara",
+      "startTime": "Mulai",
+      "title": "Tambah Acara",
+      "titleRequired": "Judul acara wajib diisi.",
+      "type": "Tipe"
+    },
+    "detailSheet": {
+      "assignedTo": "Ditugaskan ke",
+      "description": "Deskripsi",
+      "end": "Selesai",
+      "location": "Lokasi",
+      "start": "Mulai"
+    },
+    "eventCreateFailed": "Gagal membuat acara.",
+    "eventDeleteFailed": "Gagal menghapus acara.",
+    "noProjectId": {
+      "desc": "Buka halaman ini melalui daftar proyek.",
+      "title": "Project ID diperlukan"
+    },
+    "noUpcoming": {
+      "desc": "Tidak ada acara dalam 14 hari ke depan.",
+      "title": "Tidak ada agenda mendatang"
     }
   },
   "mediaCollaboration": {
@@ -3667,7 +4049,12 @@
     "preset916vertical": "9:16 Vertikal (1080×1920)",
     "createSubmit": "Buat Deck",
     "newDeckTitle": "Deck Baru",
-    "newDeckDesc": "Buat deck presentasi baru."
+    "newDeckDesc": "Buat deck presentasi baru.",
+    "createDesc": "Kumpulan slide untuk pitch, moodboard, dan storyboard.",
+    "createTitle": "Deck Baru",
+    "descriptionPlaceholder": "Deskripsi singkat (opsional)",
+    "selectRatio": "Pilih Ukuran Canvas",
+    "titlePlaceholder": "Judul deck..."
   },
   "incomeStatement": {
     "title": "Laporan Laba Rugi",
@@ -4033,7 +4420,9 @@
       "nsfpHint": "Format XXX.XXX-XX.XXXXXXXX",
       "eFakturStatus": "Status e-Faktur",
       "approvalStatus": "Status Persetujuan",
-      "notesPlaceholder": "contoh: faktur duplikat, perlu persetujuan manajer keuangan..."
+      "notesPlaceholder": "contoh: faktur duplikat, perlu persetujuan manajer keuangan...",
+      "paymentSource": "Bayar dari (Saldo)",
+      "paymentSourceHint": "Kas mengurangi saldo Kas; Bank mengurangi rekening bank default."
     },
     "noCategories": "Belum ada kategori pengeluaran",
     "submitNote": "Simpan sebagai draf untuk ditinjau nanti, atau kirim langsung untuk persetujuan.",
@@ -4045,7 +4434,9 @@
     },
     "cancel": "Batal",
     "saving": "Menyimpan...",
-    "save": "Simpan"
+    "save": "Simpan",
+    "sourceBank": "Bank",
+    "sourceCash": "Kas"
   },
   "expenseCreate": {
     "success": "Pengeluaran {{n}} berhasil dibuat.",
@@ -4572,7 +4963,9 @@
     "advancedDeferred": {
       "title": "Fitur lanjutan tertunda",
       "body": "Editor drag-and-drop kanvas, palet widget (Teks/Metrik/Gambar/Callout), tata letak grid bebas, dan pratinjau langsung tersedia di editor klasik. Versi v2 fokus pada alur identitas + bagian CSV + visualisasi yang dikonfigurasi melalui formulir."
-    }
+    },
+    "vizFailed": "Gagal menyimpan visualisasi.",
+    "vizSaved": "Visualisasi tersimpan."
   },
   "socialMediaReports": {
     "title": "Laporan Sosial Media",
@@ -4653,7 +5046,28 @@
       "quotation": "Penawaran",
       "project": "Proyek",
       "event": "Acara"
-    }
+    },
+    "emptyDay": "Tidak ada agenda pada hari ini.",
+    "kpi": {
+      "due30": "Jatuh Tempo 30 Hari",
+      "due30Sub": "invoice & penawaran",
+      "events": "Acara Mendatang",
+      "eventsSub": "rapat & tonggak",
+      "moneyDue": "Nilai Piutang",
+      "moneyDueSub": "dalam 30 hari ke depan",
+      "overdue": "Terlewat",
+      "overdueSub": "perlu perhatian"
+    },
+    "more": "lainnya",
+    "next": "Bulan berikutnya",
+    "openContent": "Kalender Konten",
+    "prev": "Bulan sebelumnya",
+    "selected": "Hari Terpilih",
+    "upcoming": "14 Hari ke Depan",
+    "upcomingEmpty": {
+      "title": "Tidak ada agenda mendatang"
+    },
+    "upcomingTitle": "Agenda Mendatang"
   },
   "contentCalendar": {
     "title": "Kalender Konten",
@@ -4683,7 +5097,30 @@
     "noneOption": "Tidak ada",
     "cancelButton": "Batal",
     "scheduleButton": "Jadwalkan",
-    "saveDraftButton": "Simpan Draf"
+    "saveDraftButton": "Simpan Draf",
+    "createDialog": {
+      "caption": "Keterangan",
+      "captionPlaceholder": "Tulis keterangan media sosial Anda...",
+      "captionRequired": "Keterangan wajib diisi.",
+      "client": "Klien",
+      "clientPlaceholder": "Pilih klien (opsional)",
+      "desc": "Buat draft konten — jadwalkan sekarang atau simpan sebagai draft untuk diatur nanti.",
+      "none": "Tidak ada",
+      "platform": "Platform",
+      "project": "Proyek",
+      "projectPlaceholder": "Pilih proyek (opsional)",
+      "saveDraft": "Simpan Draft",
+      "schedule": "Jadwalkan",
+      "scheduleDate": "Tanggal Jadwal",
+      "time": "Waktu",
+      "title": "Tambah Konten"
+    },
+    "detailSheet": {
+      "created": "Dibuat",
+      "publishFailed": "Publikasi gagal — perlu pemeriksaan",
+      "published": "Terbit",
+      "title": "Detail Konten"
+    }
   },
   "projectContentCalendar": {
     "title": "Kalender Konten",
@@ -4701,7 +5138,9 @@
       "scheduled": "Terjadwal",
       "scheduledSub": "menunggu publikasi",
       "drafts": "Draf",
-      "draftsSub": "dalam pengerjaan"
+      "draftsSub": "dalam pengerjaan",
+      "total": "Konten Bulan Ini",
+      "totalSub": "terjadwal & terbit"
     },
     "view": {
       "month": "Bulan",
@@ -4762,7 +5201,37 @@
       "cancel": "Batal",
       "schedule": "Jadwalkan",
       "saveDraft": "Simpan Draf"
-    }
+    },
+    "archive": "Arsipkan",
+    "confirmDeleteContent": "Hapus konten ini?",
+    "contentActions": "Aksi konten",
+    "contentArchiveFailed": "Gagal mengarsipkan konten.",
+    "contentCreateFailed": "Gagal membuat konten.",
+    "contentDeleteFailed": "Gagal menghapus konten.",
+    "contentPublishFailed": "Gagal menerbitkan konten.",
+    "createDialog": {
+      "caption": "Keterangan",
+      "captionPlaceholder": "Tulis keterangan media sosial Anda...",
+      "captionRequired": "Keterangan wajib diisi.",
+      "desc": "Buat draft konten untuk proyek ini — jadwalkan sekarang atau simpan sebagai draft.",
+      "platform": "Platform",
+      "saveDraft": "Simpan Draft",
+      "schedule": "Jadwalkan",
+      "scheduleDate": "Tanggal Jadwal",
+      "time": "Waktu",
+      "title": "Tambah Konten"
+    },
+    "detailSheet": {
+      "created": "Dibuat",
+      "files": "file",
+      "platform": "Platform",
+      "publishFailed": "Publikasi gagal — perlu pemeriksaan",
+      "published": "Terbit",
+      "title": "Detail Konten"
+    },
+    "publish": "Terbitkan",
+    "today": "Hari Ini",
+    "viewDetail": "Lihat Detail"
   },
   "deckEditor": {
     "title": "Editor Deck",
@@ -4804,7 +5273,9 @@
     "layoutImage": "Gambar Penuh",
     "layoutBlank": "Kosong",
     "layoutQuote": "Kutipan",
-    "layoutSection": "Pemisah Bagian"
+    "layoutSection": "Pemisah Bagian",
+    "descriptionPlaceholder": "Deskripsi singkat (opsional)",
+    "slide": "Slide {{index}}"
   },
   "shotListEditor": {
     "saveSuccess": "Shot list tersimpan",
@@ -4836,7 +5307,16 @@
     "footnote": "Perubahan tersimpan otomatis saat blur. Klik “Simpan” untuk menyimpan field identitas.",
     "downloadPdf": "Unduh PDF",
     "pdfDownloaded": "PDF berhasil diunduh",
-    "pdfFailed": "Gagal membuat PDF"
+    "pdfFailed": "Gagal membuat PDF",
+    "cameraPlaceholder": "Kamera",
+    "description": "Susun shot untuk proyek produksi. Setiap baris adalah satu pengambilan.",
+    "descriptionShotPlaceholder": "Aksi / lokasi / subjek",
+    "durationPlaceholder": "mnt",
+    "movementPlaceholder": "Gerakan (Pan / Track)",
+    "notesPlaceholder": "Catatan kru / properti / lensa",
+    "shotNumberPlaceholder": "1A",
+    "shotTypePlaceholder": "LS / CU",
+    "title": "Editor Shot List"
   },
   "callSheetEditor": {
     "openInV1": "Buka di v1 (PDF / auto-fill)",
@@ -4962,7 +5442,12 @@
     "saveHeader": "Simpan Info Utama",
     "saveRow": "Simpan baris",
     "removeRow": "Hapus baris",
-    "downloadPdf": "Unduh PDF"
+    "downloadPdf": "Unduh PDF",
+    "saveAll": "Simpan Call Sheet",
+    "saveAllFailed": "Gagal menyimpan call sheet.",
+    "savedAll": "Call sheet tersimpan.",
+    "savedAllChanges": "Semua perubahan tersimpan.",
+    "unsavedChanges": "Ada perubahan yang belum disimpan."
   },
   "mediaCollab": {
     "loadMore": "Muat lainnya",
@@ -5179,7 +5664,11 @@
       "paidAtHint": "Menetapkan tanggal akan menandai pembayaran sebagai DIBAYAR secara otomatis.",
       "notesLabel": "Catatan",
       "notesPlaceholder": "Catatan tambahan...",
-      "summary": "Ringkasan Pembayaran"
+      "summary": "Ringkasan Pembayaran",
+      "allowances": "Tunjangan",
+      "base": "Gaji Pokok",
+      "deductions": "Potongan",
+      "netPay": "Gaji Bersih"
     },
     "createPayment": "Buat Pembayaran",
     "updatePayment": "Perbarui Pembayaran",
@@ -5284,6 +5773,30 @@
       "newClientsSub": "bulan ini",
       "newProjects": "Proyek Baru",
       "newProjectsSub": "bulan ini"
+    }
+  },
+  "assetDetail": {
+    "col": {
+      "cost": "Biaya",
+      "date": "Tanggal",
+      "description": "Deskripsi",
+      "period": "Periode",
+      "purpose": "Tujuan",
+      "status": "Status",
+      "type": "Tipe",
+      "user": "Pengguna"
+    }
+  },
+  "assetsPage": {
+    "assetActions": "Aksi aset",
+    "col": {
+      "actions": "Aksi",
+      "asset": "Aset",
+      "category": "Kategori",
+      "code": "Kode",
+      "location": "Lokasi",
+      "status": "Status",
+      "value": "Nilai"
     }
   }
 }

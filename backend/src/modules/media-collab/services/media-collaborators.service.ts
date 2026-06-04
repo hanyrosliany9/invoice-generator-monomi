@@ -363,12 +363,13 @@ export class MediaCollaboratorsService {
       throw new NotFoundException("Invalid invite token");
     }
 
-    if (collaborator.expiresAt && collaborator.expiresAt < new Date()) {
-      throw new BadRequestException("Invite has expired");
+    if (collaborator.status !== "PENDING") {
+      // Covers ACCEPTED, REVOKED, EXPIRED — all non-pending states are terminal
+      throw new BadRequestException("Invite already processed");
     }
 
-    if (collaborator.status === "REVOKED") {
-      throw new ForbiddenException("Invite has been revoked");
+    if (collaborator.expiresAt && collaborator.expiresAt < new Date()) {
+      throw new BadRequestException("Invite has expired");
     }
 
     // Mark as accepted

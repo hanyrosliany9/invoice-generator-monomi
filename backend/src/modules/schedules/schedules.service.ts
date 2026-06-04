@@ -299,6 +299,7 @@ export class SchedulesService {
               year: "numeric",
               month: "long",
               day: "numeric",
+              timeZone: 'Asia/Jakarta',
             })
           : "No date set";
 

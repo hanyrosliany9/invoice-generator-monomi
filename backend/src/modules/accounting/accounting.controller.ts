@@ -111,12 +111,12 @@ export class AccountingController {
   ) {
     const entry = await this.journalService.createJournalEntry({
       ...createJournalEntryDto,
-      createdBy: req.user.userId,
+      createdBy: req.user.id,
     });
 
     // Auto-post if requested
     if (createJournalEntryDto.autoPost) {
-      return this.journalService.postJournalEntry(entry.id, req.user.userId);
+      return this.journalService.postJournalEntry(entry.id, req.user.id);
     }
 
     return entry;
@@ -140,18 +140,18 @@ export class AccountingController {
   ) {
     return this.journalService.updateJournalEntry(id, {
       ...updateJournalEntryDto,
-      updatedBy: req.user.userId,
+      updatedBy: req.user.id,
     });
   }
 
   @Post("journal-entries/:id/post")
   async postJournalEntry(@Param("id") id: string, @Request() req: any) {
-    return this.journalService.postJournalEntry(id, req.user.userId);
+    return this.journalService.postJournalEntry(id, req.user.id);
   }
 
   @Post("journal-entries/:id/reverse")
   async reverseJournalEntry(@Param("id") id: string, @Request() req: any) {
-    return this.journalService.reverseJournalEntry(id, req.user.userId);
+    return this.journalService.reverseJournalEntry(id, req.user.id);
   }
 
   @Delete("journal-entries/:id")
@@ -198,7 +198,7 @@ export class AccountingController {
   ) {
     return this.cashTransactionService.createCashTransaction({
       ...createCashTransactionDto,
-      createdBy: req.user.userId,
+      createdBy: req.user.id,
     });
   }
 
@@ -220,7 +220,7 @@ export class AccountingController {
   ) {
     return this.cashTransactionService.updateCashTransaction(id, {
       ...updateCashTransactionDto,
-      updatedBy: req.user.userId,
+      updatedBy: req.user.id,
     });
   }
 
@@ -228,7 +228,7 @@ export class AccountingController {
   async submitCashTransaction(@Param("id") id: string, @Request() req: any) {
     return this.cashTransactionService.submitCashTransaction(
       id,
-      req.user.userId,
+      req.user.id,
     );
   }
 
@@ -236,7 +236,7 @@ export class AccountingController {
   async approveCashTransaction(@Param("id") id: string, @Request() req: any) {
     return this.cashTransactionService.approveCashTransaction(
       id,
-      req.user.userId,
+      req.user.id,
     );
   }
 
@@ -248,14 +248,14 @@ export class AccountingController {
   ) {
     return this.cashTransactionService.rejectCashTransaction(
       id,
-      req.user.userId,
+      req.user.id,
       data.reason,
     );
   }
 
   @Post("cash-transactions/:id/void")
   async voidCashTransaction(@Param("id") id: string, @Request() req: any) {
-    return this.cashTransactionService.voidCashTransaction(id, req.user.userId);
+    return this.cashTransactionService.voidCashTransaction(id, req.user.id);
   }
 
   @Delete("cash-transactions/:id")
@@ -332,7 +332,7 @@ export class AccountingController {
   ) {
     return this.bankTransferService.createBankTransfer({
       ...createBankTransferDto,
-      createdBy: req.user.userId,
+      createdBy: req.user.id,
     });
   }
 
@@ -354,13 +354,13 @@ export class AccountingController {
   ) {
     return this.bankTransferService.updateBankTransfer(id, {
       ...updateBankTransferDto,
-      updatedBy: req.user.userId,
+      updatedBy: req.user.id,
     });
   }
 
   @Post("bank-transfers/:id/approve")
   async approveBankTransfer(@Param("id") id: string, @Request() req: any) {
-    return this.bankTransferService.approveBankTransfer(id, req.user.userId);
+    return this.bankTransferService.approveBankTransfer(id, req.user.id);
   }
 
   @Post("bank-transfers/:id/reject")
@@ -371,14 +371,14 @@ export class AccountingController {
   ) {
     return this.bankTransferService.rejectBankTransfer(
       id,
-      req.user.userId,
+      req.user.id,
       data.reason,
     );
   }
 
   @Post("bank-transfers/:id/cancel")
   async cancelBankTransfer(@Param("id") id: string, @Request() req: any) {
-    return this.bankTransferService.cancelBankTransfer(id, req.user.userId);
+    return this.bankTransferService.cancelBankTransfer(id, req.user.id);
   }
 
   @Delete("bank-transfers/:id")
@@ -394,7 +394,7 @@ export class AccountingController {
   ) {
     return this.bankReconciliationService.createBankReconciliation({
       ...createBankReconciliationDto,
-      createdBy: req.user.userId,
+      createdBy: req.user.id,
     });
   }
 
@@ -416,7 +416,7 @@ export class AccountingController {
   ) {
     return this.bankReconciliationService.updateBankReconciliation(id, {
       ...updateBankReconciliationDto,
-      updatedBy: req.user.userId,
+      updatedBy: req.user.id,
     });
   }
 
@@ -429,7 +429,7 @@ export class AccountingController {
     return this.bankReconciliationService.addReconciliationItem(
       id,
       itemDto,
-      req.user.userId,
+      req.user.id,
     );
   }
 
@@ -442,7 +442,7 @@ export class AccountingController {
     return this.bankReconciliationService.matchReconciliationItem(
       itemId,
       data.transactionId,
-      req.user.userId,
+      req.user.id,
     );
   }
 
@@ -450,7 +450,7 @@ export class AccountingController {
   async reviewBankReconciliation(@Param("id") id: string, @Request() req: any) {
     return this.bankReconciliationService.reviewBankReconciliation(
       id,
-      req.user.userId,
+      req.user.id,
     );
   }
 
@@ -461,7 +461,7 @@ export class AccountingController {
   ) {
     return this.bankReconciliationService.approveBankReconciliation(
       id,
-      req.user.userId,
+      req.user.id,
     );
   }
 
@@ -473,7 +473,7 @@ export class AccountingController {
   ) {
     return this.bankReconciliationService.rejectBankReconciliation(
       id,
-      req.user.userId,
+      req.user.id,
       data.reason,
     );
   }
@@ -524,7 +524,7 @@ export class AccountingController {
 
   @Post("fiscal-periods/:id/close")
   async closeFiscalPeriod(@Param("id") id: string, @Request() req: any) {
-    return this.journalService.closeFiscalPeriod(id, req.user.userId);
+    return this.journalService.closeFiscalPeriod(id, req.user.id);
   }
 
   /**
@@ -576,7 +576,7 @@ export class AccountingController {
   ) {
     return this.depreciationService.postDepreciationEntry(
       data.entryId,
-      req.user.userId,
+      req.user.id,
     );
   }
 
@@ -593,7 +593,7 @@ export class AccountingController {
     return this.depreciationService.processMonthlyDepreciation({
       periodDate: new Date(data.periodDate),
       fiscalPeriodId: data.fiscalPeriodId,
-      userId: req.user.userId,
+      userId: req.user.id,
       autoPost: data.autoPost || false,
     });
   }
@@ -668,7 +668,7 @@ export class AccountingController {
 
   @Post("ecl/post")
   async postECL(@Body() data: { provisionId: string }, @Request() req: any) {
-    return this.eclService.postECLProvision(data.provisionId, req.user.userId);
+    return this.eclService.postECLProvision(data.provisionId, req.user.id);
   }
 
   @Post("ecl/process-monthly")
@@ -685,7 +685,7 @@ export class AccountingController {
     return this.eclService.processMonthlyECL({
       calculationDate: new Date(data.calculationDate),
       fiscalPeriodId: data.fiscalPeriodId,
-      userId: req.user.userId,
+      userId: req.user.id,
       autoPost: data.autoPost || false,
       customECLRates: data.customECLRates,
     });
@@ -703,7 +703,7 @@ export class AccountingController {
   ) {
     return this.eclService.writeOffBadDebt({
       ...data,
-      userId: req.user.userId,
+      userId: req.user.id,
     });
   }
 
@@ -718,7 +718,7 @@ export class AccountingController {
   ) {
     return this.eclService.recordBadDebtRecovery({
       ...data,
-      userId: req.user.userId,
+      userId: req.user.id,
     });
   }
 
@@ -1377,6 +1377,6 @@ export class AccountingController {
    */
   @Post("admin/backfill-invoice-journals")
   async backfillMissingInvoiceJournals(@Request() req: any) {
-    return this.journalService.backfillMissingInvoiceJournals(req.user.userId);
+    return this.journalService.backfillMissingInvoiceJournals(req.user.id);
   }
 }

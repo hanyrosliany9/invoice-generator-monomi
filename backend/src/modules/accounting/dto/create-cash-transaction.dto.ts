@@ -11,7 +11,6 @@ import {
   CashTransactionType,
   CashCategory,
   PaymentMethod,
-  CashTransactionStatus,
   Currency,
 } from "@prisma/client";
 
@@ -91,10 +90,6 @@ export class CreateCashTransactionDto {
   @IsOptional()
   clientId?: string;
 
-  @IsEnum(CashTransactionStatus)
-  @IsOptional()
-  status?: CashTransactionStatus = CashTransactionStatus.DRAFT;
-
   @IsString()
   @IsOptional()
   notes?: string;
@@ -104,5 +99,6 @@ export class CreateCashTransactionDto {
   notesId?: string;
 
   @IsString()
-  createdBy: string;
+  @IsOptional()
+  createdBy?: string; // Always set by the server from req.user.id
 }

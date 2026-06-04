@@ -15,6 +15,7 @@ import {
 } from "@prisma/client";
 import { JournalService } from "./journal.service";
 import { ExchangeRateService } from "./exchange-rate.service";
+import { isCashOrBank } from "../cash-accounts.util";
 
 @Injectable()
 export class CashTransactionService {
@@ -74,10 +75,10 @@ export class CashTransactionService {
       throw new BadRequestException("Cash account not found");
     }
 
-    // Cash accounts should be in the 1-1xxx range (Cash & Bank accounts)
-    if (!account.code.startsWith("1-1")) {
+    // Validate using the canonical cash/bank classifier (excludes inventory 1-15xx etc.)
+    if (!isCashOrBank(account.code)) {
       throw new BadRequestException(
-        `Account ${account.code} is not a valid cash/bank account. Must use 1-1xxx accounts.`,
+        `Account ${account.code} is not a valid cash/bank account. Must use cash (1-101x) or bank (1-102x) accounts.`,
       );
     }
 
@@ -106,7 +107,9 @@ export class CashTransactionService {
   /**
    * Create cash transaction
    */
-  async createCashTransaction(createDto: CreateCashTransactionDto) {
+  async createCashTransaction(
+    createDto: CreateCashTransactionDto & { createdBy: string },
+  ) {
     // Validate accounts
     await this.validateCashAccount(createDto.cashAccountId);
     await this.validateOffsetAccount(createDto.offsetAccountId);
@@ -169,7 +172,7 @@ export class CashTransactionService {
         bankReference: createDto.bankReference,
         projectId: createDto.projectId,
         clientId: createDto.clientId,
-        status: createDto.status || CashTransactionStatus.DRAFT,
+        status: CashTransactionStatus.DRAFT,
         notes: createDto.notes,
         notesId: createDto.notesId,
         createdBy: createDto.createdBy,

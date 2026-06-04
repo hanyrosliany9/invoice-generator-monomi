@@ -134,37 +134,35 @@ export class BusinessJourneyService {
       // Build filter conditions
       const whereConditions = this.buildWhereConditions(clientId, filters);
 
-      // Get events with pagination
-      const events = await this.prisma.businessJourneyEvent.findMany({
-        where: whereConditions,
-        include: {
-          metadata: true,
-          client: true,
-          project: true,
-          quotation: true,
-          invoice: true,
-          payment: true,
-        },
-        orderBy: {
-          [filters.sortBy || "createdAt"]: filters.sortOrder || "desc",
-        },
-        skip: ((filters.page || 1) - 1) * (filters.limit || 20),
-        take: filters.limit || 20,
-      });
-
-      // Get summary data
-      const summary = await this.getBusinessJourneySummary(clientId);
-
-      // Get materai compliance status
-      const materaiCompliance = await this.getMateraiComplianceStatus(clientId);
-
-      // Calculate total revenue
-      const totalRevenue = await this.calculateTotalRevenue(clientId);
+      // Get events with pagination and total count in parallel
+      const [events, totalCount, summary, materaiCompliance, totalRevenue] =
+        await Promise.all([
+          this.prisma.businessJourneyEvent.findMany({
+            where: whereConditions,
+            include: {
+              metadata: true,
+              client: true,
+              project: true,
+              quotation: true,
+              invoice: true,
+              payment: true,
+            },
+            orderBy: {
+              [filters.sortBy || "createdAt"]: filters.sortOrder || "desc",
+            },
+            skip: ((filters.page || 1) - 1) * (filters.limit || 20),
+            take: filters.limit || 20,
+          }),
+          this.prisma.businessJourneyEvent.count({ where: whereConditions }),
+          this.getBusinessJourneySummary(clientId),
+          this.getMateraiComplianceStatus(clientId),
+          this.calculateTotalRevenue(clientId),
+        ]);
 
       return {
         clientId,
         clientName: client.name,
-        totalEvents: events.length,
+        totalEvents: totalCount,
         totalRevenue,
         events: events.map((event) => this.mapEventToResponse(event)),
         summary,

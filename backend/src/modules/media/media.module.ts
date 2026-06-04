@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { ScheduleModule } from "@nestjs/schedule";
 import { JwtModule } from "@nestjs/jwt";
 import r2Config from "../../config/r2.config";
 import { MediaService } from "./media.service";
@@ -21,7 +20,7 @@ import { PrismaService } from "../prisma/prisma.service";
  * Dependencies:
  * - @aws-sdk/client-s3 (S3-compatible API)
  * - @nestjs/config (environment variables)
- * - @nestjs/schedule (cron jobs)
+ * - @nestjs/schedule (cron jobs — forRoot registered in app.module.ts)
  * - @nestjs/jwt (token generation)
  *
  * Environment variables required:
@@ -36,7 +35,6 @@ import { PrismaService } from "../prisma/prisma.service";
 @Module({
   imports: [
     ConfigModule.forFeature(r2Config),
-    ScheduleModule.forRoot(), // Enable cron jobs
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

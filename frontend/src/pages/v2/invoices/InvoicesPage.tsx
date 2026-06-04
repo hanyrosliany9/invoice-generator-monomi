@@ -94,6 +94,12 @@ export default function InvoicesPageV2() {
   const sendMutation = useMutation({
     mutationFn: (id: string) => invoiceService.sendInvoice(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || (err instanceof Error ? err.message : t('common.error', 'Something went wrong'));
+      toast.error(msg);
+    },
   });
 
   const markPaidMutation = useMutation({
@@ -103,6 +109,12 @@ export default function InvoicesPageV2() {
       notes: t('invoices.markPaid.notes', 'Marked as paid from invoice list (v2)'),
     }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || (err instanceof Error ? err.message : t('common.error', 'Something went wrong'));
+      toast.error(msg);
+    },
   });
 
   const deleteMutation = useMutation({
@@ -371,6 +383,8 @@ export default function InvoicesPageV2() {
                 onEdit={(row) => navigate(`/invoices/${row.id}/edit`)}
                 onSend={(row) => sendMutation.mutate(row.id)}
                 onMarkPaid={(row) => markPaidMutation.mutate(row.id)}
+                isSendPending={sendMutation.isPending}
+                isMarkPaidPending={markPaidMutation.isPending}
                 onDelete={(row) => {
                   if (confirm(t('invoices.confirmDelete', 'Delete invoice {{number}}?', { number: row.invoiceNumber }))) {
                     deleteMutation.mutate(row.id);
@@ -399,10 +413,13 @@ interface InvoiceTableProps {
   onMarkPaid: (row: Invoice) => void;
   onDelete: (row: Invoice) => void;
   onChangeStatus: (id: string, status: string) => void;
+  isSendPending?: boolean;
+  isMarkPaidPending?: boolean;
 }
 
 function InvoiceTable({
   rows, onRowClick, onView, onEdit, onSend, onMarkPaid, onDelete, onChangeStatus,
+  isSendPending, isMarkPaidPending,
 }: InvoiceTableProps) {
   const { t } = useTranslation();
 
@@ -565,14 +582,20 @@ function InvoiceTable({
 
                     {/* ── Quick-send shortcut (DRAFT only) ── */}
                     {canSend && (
-                      <DropdownMenuItem onClick={() => onSend(inv)}>
+                      <DropdownMenuItem
+                        onClick={() => onSend(inv)}
+                        disabled={isSendPending || isMarkPaidPending}
+                      >
                         <Send className="h-3.5 w-3.5" /> {t('invoices.action.send', 'Send')}
                       </DropdownMenuItem>
                     )}
 
                     {/* ── Quick mark-paid shortcut (SENT / OVERDUE) ── */}
                     {canMarkPaid && (
-                      <DropdownMenuItem onClick={() => onMarkPaid(inv)}>
+                      <DropdownMenuItem
+                        onClick={() => onMarkPaid(inv)}
+                        disabled={isSendPending || isMarkPaidPending}
+                      >
                         <CheckCircle2 className="h-3.5 w-3.5" /> {t('invoices.action.markPaid', 'Mark as Paid')}
                       </DropdownMenuItem>
                     )}

@@ -43,7 +43,9 @@
     "optional": "(optional)",
     "error": "Something went wrong",
     "unknownError": "An error occurred",
-    "errorOccurred": "An error occurred"
+    "errorOccurred": "An error occurred",
+    "close": "Close",
+    "noDescription": "No description"
   },
   "table": {
     "number": "Number",
@@ -75,7 +77,10 @@
     "clients": "Clients",
     "projects": "Projects",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "nextActions": "Next Actions",
+    "viewRelated": "View Related",
+    "assets": "Assets"
   },
   "sectionLabels": {
     "workspace": "Workspace",
@@ -676,7 +681,8 @@
     "create": {
       "error": "Failed to add client. Please try again.",
       "subtitle": "Add a new client to start recording projects, quotations, and invoices.",
-      "title": "New Client"
+      "title": "New Client",
+      "success": "Client \"{{name}}\" added successfully."
     },
     "name": "Name",
     "email": "Email",
@@ -732,7 +738,8 @@
       "title": "Edit Client",
       "notFoundDesc": "The client you're trying to edit does not exist or has been deleted.",
       "subtitle": "Update {{name}}'s information",
-      "subtitleWithCompany": "Update {{name}}'s information · {{company}}"
+      "subtitleWithCompany": "Update {{name}}'s information · {{company}}",
+      "success": "Changes for \"{{name}}\" saved."
     },
     "empty": {
       "filtered": {
@@ -790,7 +797,8 @@
       "taxNumber": "Tax ID (NPWP)",
       "addressPlaceholder": "Jl. Sudirman No. 1, South Jakarta, DKI Jakarta 12190",
       "notesPlaceholder": "Communication preferences, relationship history, important notes to remember…",
-      "statusHint": "Inactive clients do not appear in default selection lists."
+      "statusHint": "Inactive clients do not appear in default selection lists.",
+      "editNote": "Changes are saved when you press \"Save\"."
     },
     "kpi": {
       "active": "Active Clients",
@@ -1011,7 +1019,9 @@
       "duplicate": "Duplicate",
       "changeStatus": "Change Status",
       "delete": "Delete"
-    }
+    },
+    "confirmDelete": "Delete project {{number}}? This action cannot be undone.",
+    "duplicated": "Project duplicated: {{number}}"
   },
   "currency": {
     "idr": "IDR",
@@ -1330,7 +1340,8 @@
     "create": {
       "error": "Failed to create asset. Please try again.",
       "title": "New Asset",
-      "subtitle": "Add a new asset — identity, acquisition details, location, and depreciation parameters."
+      "subtitle": "Add a new asset — identity, acquisition details, location, and depreciation parameters.",
+      "success": "Asset \"{{name}}\" created successfully."
     },
     "deleteFailed": "Failed to delete asset.",
     "deleted": "Asset deleted successfully.",
@@ -1395,7 +1406,8 @@
       "error": "Failed to save changes. Please try again.",
       "title": "Edit Asset",
       "notFoundDesc": "The asset you're trying to edit does not exist or has been deleted.",
-      "subtitleWithCode": "Update {{name}} · {{code}}"
+      "subtitleWithCode": "Update {{name}} · {{code}}",
+      "success": "Changes for \"{{name}}\" saved."
     },
     "empty": {
       "filtered": {
@@ -1487,7 +1499,95 @@
     "search": {
       "placeholder": "Search by code, name, model, or serial..."
     },
-    "subtitle": "Operational equipment inventory, values, and maintenance status."
+    "subtitle": "Operational equipment inventory, values, and maintenance status.",
+    "actions": {
+      "checkIn": "Check In",
+      "checkOut": "Check Out",
+      "maintenance": "Schedule Maintenance",
+      "printQR": "Print QR Code",
+      "reserve": "Reserve",
+      "viewQR": "View QR Code"
+    },
+    "assetCode": "Asset Code",
+    "categories": {
+      "accessories": "Accessories",
+      "audio": "Audio",
+      "camera": "Camera",
+      "computer": "Computer",
+      "drone": "Drone",
+      "lens": "Lens",
+      "lighting": "Lighting"
+    },
+    "category": "Category",
+    "condition": "Condition",
+    "conditions": {
+      "broken": "Broken",
+      "excellent": "Excellent",
+      "fair": "Fair",
+      "good": "Good",
+      "poor": "Poor"
+    },
+    "location": "Location",
+    "maintenance": {
+      "cost": "Cost",
+      "description": "Description",
+      "history": "Maintenance History",
+      "nextDate": "Next Maintenance",
+      "performedBy": "Performed By",
+      "performedDate": "Date Performed",
+      "schedule": "Maintenance Schedule",
+      "title": "Maintenance",
+      "type": "Maintenance Type"
+    },
+    "manufacturer": "Manufacturer",
+    "messages": {
+      "checkInSuccess": "Asset checked in successfully",
+      "checkOutSuccess": "Asset checked out successfully",
+      "conflictError": "Asset is already reserved for this period",
+      "deleteSuccess": "Asset deleted successfully",
+      "notAvailable": "Asset is not available",
+      "reserveSuccess": "Asset reserved successfully"
+    },
+    "model": "Model",
+    "name": "Asset Name",
+    "purchaseDate": "Purchase Date",
+    "purchasePrice": "Purchase Price",
+    "qrCode": "QR Code",
+    "reservation": {
+      "endDate": "End Date",
+      "history": "Reservation History",
+      "purpose": "Purpose",
+      "startDate": "Start Date",
+      "status": "Status",
+      "statuses": {
+        "cancelled": "Cancelled",
+        "completed": "Completed",
+        "confirmed": "Confirmed",
+        "pending": "Pending"
+      },
+      "title": "Asset Reservation",
+      "user": "User"
+    },
+    "serialNumber": "Serial Number",
+    "statistics": {
+      "available": "Available",
+      "checkedOut": "Checked Out",
+      "inMaintenance": "In Maintenance",
+      "reserved": "Reserved",
+      "totalAssets": "Total Assets",
+      "totalValue": "Total Asset Value"
+    },
+    "statuses": {
+      "available": "Available",
+      "broken": "Broken",
+      "checkedOut": "Checked Out",
+      "inMaintenance": "In Maintenance",
+      "reserved": "Reserved",
+      "retired": "Retired"
+    },
+    "subcategory": "Subcategory",
+    "supplier": "Supplier",
+    "warranty": "Warranty"
   },
   "builder": {
     "addSection": "Add Section",
@@ -2143,7 +2243,8 @@
     "create": {
       "error": "Failed to add user. Please try again.",
       "subtitle": "Add a new account with a role and initial password.",
-      "title": "New User"
+      "title": "New User",
+      "success": "User \"{{name}}\" added successfully."
     },
     "denied": {
       "title": "Access Denied",
@@ -2158,7 +2259,8 @@
       "notFoundTitle": "User not found",
       "title": "Edit User",
       "notFoundDesc": "The user you're trying to edit does not exist or has been deleted.",
-      "subtitle": "Update {{name}}'s account information"
+      "subtitle": "Update {{name}}'s account information",
+      "success": "Changes for \"{{name}}\" saved."
     },
     "empty": {
       "filtered": {
@@ -2244,7 +2346,8 @@
     "create": {
       "error": "Failed to add vendor. Please try again.",
       "subtitle": "Add a new vendor to start recording POs, invoices, and payments.",
-      "title": "New Vendor"
+      "title": "New Vendor",
+      "success": "Vendor \"{{name}}\" added successfully."
     },
     "detail": {
       "address": "Address",
@@ -2308,7 +2411,8 @@
       "noActivityDesc": "This vendor has no POs, invoices, or payments on record.",
       "notFoundDesc": "The vendor you're looking for does not exist or has been deleted.",
       "relationsSub": "Overview of transactions linked to this vendor.",
-      "termsSub": "Payment terms, currency, and basic audit trail."
+      "termsSub": "Payment terms, currency, and basic audit trail.",
+      "deleteSuccess": "Vendor \"{{name}}\" deleted successfully."
     },
     "directory": "Vendor Directory",
     "edit": {
@@ -2317,7 +2421,8 @@
       "title": "Edit Vendor",
       "notFoundDesc": "The vendor you're trying to edit does not exist or has been deleted.",
       "subtitle": "Update {{name}}'s information",
-      "subtitleWithCode": "Update {{name}}'s information · {{code}}"
+      "subtitleWithCode": "Update {{name}}'s information · {{code}}",
+      "success": "Changes for \"{{name}}\" saved."
     },
     "empty": {
       "filtered": {
@@ -2395,7 +2500,8 @@
       "statusHint": "Inactive vendors do not appear in default selection lists.",
       "taxAddressHint": "Fill in if different from the operational address.",
       "taxAddressPlaceholder": "Official address as registered for tax documents",
-      "vendorTypeHint": "Determines how transactions will be grouped."
+      "vendorTypeHint": "Determines how transactions will be grouped.",
+      "editNote": "Changes are saved when you press \"Save\"."
     },
     "kpi": {
       "active": "Active Vendors",
@@ -2507,7 +2613,16 @@
       "pdfSuccess": "PDF report downloaded",
       "pdfFail": "Failed to download PDF",
       "excelSuccess": "Excel report downloaded",
-      "excelFail": "Failed to download Excel"
+      "excelFail": "Failed to download Excel",
+      "breadcrumbAccounting": "Accounting",
+      "clientCount": "{{count}} clients with open balance",
+      "errorDesc": "An error occurred",
+      "exportExcelFail": "Failed to download Excel",
+      "exportExcelSuccess": "Excel report downloaded",
+      "exportPdfFail": "Failed to download PDF",
+      "exportPdfSuccess": "PDF report downloaded",
+      "panelTitle": "Aging Analysis by Client",
+      "totalReceivable": "Total Receivable"
     },
     "apAging": {
       "title": "Accounts Payable Aging",
@@ -2523,7 +2638,16 @@
       "pdfSuccess": "PDF report downloaded",
       "pdfFail": "Failed to download PDF",
       "excelSuccess": "Excel report downloaded",
-      "excelFail": "Failed to download Excel"
+      "excelFail": "Failed to download Excel",
+      "breadcrumbAccounting": "Accounting",
+      "categoryCount": "{{count}} categories with open balance",
+      "errorDesc": "An error occurred",
+      "exportExcelFail": "Failed to download Excel",
+      "exportExcelSuccess": "Excel report downloaded",
+      "exportPdfFail": "Failed to download PDF",
+      "exportPdfSuccess": "PDF report downloaded",
+      "panelTitle": "Aging Analysis by Category",
+      "totalPayable": "Total Payable"
     },
     "journalEntryForm": {
       "newTitle": "New Journal",
@@ -2994,7 +3118,13 @@
       "exportPdfFail": "Failed to export PDF.",
       "exportCsvFail": "Failed to export CSV.",
       "startDate": "Start date",
-      "endDate": "End date"
+      "endDate": "End date",
+      "sectionFinancing": "Financing",
+      "sectionFinancingSub": "Cash from loans, debt repayments, and owner transactions.",
+      "sectionInvesting": "Investing",
+      "sectionInvestingSub": "Cash for the purchase/sale of fixed assets and long-term investments.",
+      "sectionOperating": "Operating",
+      "sectionOperatingSub": "Cash from day-to-day operations — revenue and business expenses."
     },
     "balanceSheet": {
       "title": "Balance Sheet",
@@ -3019,7 +3149,17 @@
       "totalLiabilities": "Total Liabilities",
       "totalEquity": "Total Equity",
       "subtotalPrefix": "Total",
-      "contra": "Contra"
+      "contra": "Contra",
+      "subtypeCurrentAsset": "Current Assets",
+      "subtypeCurrentLiability": "Current Liabilities",
+      "subtypeCurrentYearEarnings": "Current Year Earnings",
+      "subtypeFixedAsset": "Fixed Assets",
+      "subtypeIntangibleAsset": "Intangible Assets",
+      "subtypeNonCurrentAsset": "Non-Current Assets",
+      "subtypeNonCurrentLiability": "Long-Term Liabilities",
+      "subtypeOtherAsset": "Other Assets",
+      "subtypeOwnersEquity": "Capital",
+      "subtypeRetainedEarnings": "Retained Earnings"
     },
     "adjustingWizard": {
       "title": "Adjusting Journal Entry Wizard",
@@ -3042,7 +3182,47 @@
       "reviewDesc": "Check before continuing. After clicking Proceed, you will be redirected to the journal form with pre-filled data.",
       "breadcrumbAccounting": "Accounting",
       "breadcrumbJournal": "Journal",
-      "breadcrumbWizard": "Adjustment Wizard"
+      "breadcrumbWizard": "Adjustment Wizard",
+      "credit": "Credit",
+      "debit": "Debit",
+      "errorAmountMin": "Amount must be > 0",
+      "errorDateRequired": "Date is required",
+      "errorDescMin": "Description must be at least 10 characters",
+      "errorSelectAccount": "Select an account",
+      "examplePrefix": "Example:",
+      "fieldAmount": "Amount",
+      "fieldAmountPh": "e.g. 1500000",
+      "fieldDate": "Date",
+      "fieldDesc": "Description",
+      "fieldDescPh": "Full description of the adjustment (at least 10 characters)",
+      "jePreview": "Journal Entry to be Created",
+      "reviewRowAmount": "Amount",
+      "reviewRowDate": "Date",
+      "reviewRowDesc": "Description",
+      "reviewRowType": "Type",
+      "selectAccount": "Select account",
+      "step0Desc": "Choose the pattern that matches your transaction. Each pattern determines the debit and credit accounts automatically.",
+      "step0Title": "Choose Adjustment Type",
+      "templateAccruedExpAcc1": "Expense Account",
+      "templateAccruedExpAcc2": "Liability: Accrued Expense",
+      "templateAccruedExpDesc": "Recognize expense for services received but not yet paid.",
+      "templateAccruedExpExample": "This month's electricity has been consumed but the bill has not arrived.",
+      "templateAccruedExpTitle": "Accrued Expense",
+      "templateAccruedRevAcc1": "Asset: Accrued Revenue",
+      "templateAccruedRevAcc2": "Revenue Account",
+      "templateAccruedRevDesc": "Recognize revenue for services rendered but not yet billed.",
+      "templateAccruedRevExample": "Consulting work completed but invoice not yet issued.",
+      "templateAccruedRevTitle": "Accrued Revenue",
+      "templatePrepaidAcc1": "Asset: Prepaid Expense",
+      "templatePrepaidAcc2": "Expense Account",
+      "templatePrepaidDesc": "Recognize expense from a payment made in advance.",
+      "templatePrepaidExample": "12-month insurance paid upfront — now recognizing 1 month of expense.",
+      "templatePrepaidTitle": "Prepaid Expense",
+      "templateUnearnedAcc1": "Liability: Unearned Revenue",
+      "templateUnearnedAcc2": "Revenue Account",
+      "templateUnearnedDesc": "Recognize revenue from a payment received in advance.",
+      "templateUnearnedExample": "Annual subscription received upfront — now recognizing 1 month of revenue.",
+      "templateUnearnedTitle": "Unearned Revenue"
     },
     "trialBalance": {
       "title": "Trial Balance",
@@ -3210,7 +3390,42 @@
       "accumulated": "Accumulated Depreciation",
       "netBookValue": "Net Book Value",
       "close": "Close",
-      "yearsUnit": "yrs"
+      "yearsUnit": "yrs",
+      "cancel": "Cancel",
+      "colAccumulated": "Accumulated",
+      "colAsset": "Asset",
+      "colNetBook": "Net Book Value",
+      "colPeriodDep": "Period Dep.",
+      "colPurchasePrice": "Cost",
+      "colStatus": "Status",
+      "colUsefulLife": "Useful Life",
+      "colYearsInUse": "Years in Use",
+      "detailAccumulated": "Accumulated Depreciation",
+      "detailAssetCode": "Asset Code",
+      "detailAssetName": "Asset Name",
+      "detailEntryCount": "Entry Count",
+      "detailNetBook": "Net Book Value",
+      "detailPeriodDep": "Period Depreciation",
+      "detailPurchasePrice": "Acquisition Cost",
+      "detailUsefulLife": "Useful Life",
+      "detailYearsInUse": "Years in Use",
+      "endDate": "End date",
+      "period": "Period",
+      "processFieldDate": "Period Date",
+      "processFieldPosting": "Posting Option",
+      "startDate": "Start date",
+      "statAccumulated": "Total Accumulated",
+      "statAccumulatedSub": "accumulated depreciation",
+      "statAssets": "Depreciated Assets",
+      "statAssetsSub": "assets with active schedule",
+      "statNextRun": "Next Run",
+      "statNextRunSub": "estimated depreciation run",
+      "statPeriod": "Period Depreciation",
+      "statPeriodSub": "depreciation value this period",
+      "statusActive": "Active",
+      "statusExpired": "Expired",
+      "years": "years",
+      "yr": "yr"
     },
     "accountTypes": {
       "ASSET": "Asset",
@@ -3267,6 +3482,179 @@
       "statCashTotal": "Cash",
       "statCombinedTotal": "Total Cash & Bank",
       "validationPeriod": "Please select a period first"
+    },
+    "bankTransfers": {
+      "actionApprove": "Approve",
+      "actionCancel": "Cancel",
+      "actionDelete": "Delete",
+      "actionReject": "Reject",
+      "actionView": "View Details",
+      "allMethods": "All Methods",
+      "allStatuses": "All Statuses",
+      "approveFail": "Failed to approve bank transfer",
+      "approveSuccess": "Bank transfer approved and posted",
+      "cancel": "Cancel",
+      "cancelFail": "Failed to cancel bank transfer",
+      "cancelSuccess": "Bank transfer cancelled",
+      "close": "Close",
+      "colAmount": "Amount",
+      "colDate": "Date",
+      "colMethod": "Method",
+      "colNumber": "Number",
+      "colRoute": "From → To",
+      "colStatus": "Status",
+      "confirmCancel": "Cancel transfer",
+      "confirmDelete": "Delete transfer",
+      "createDesc": "Move funds between cash and bank accounts.",
+      "createFail": "Failed to create bank transfer",
+      "createSubmit": "Create Transfer",
+      "createSuccess": "Bank transfer created",
+      "createTitle": "New Bank Transfer",
+      "dateRange": "Range",
+      "deleteFail": "Failed to delete bank transfer",
+      "deleteSuccess": "Bank transfer deleted",
+      "description": "Record and approve transfers between cash and bank accounts.",
+      "emptyDesc": "Create the first bank transfer to start recording fund movements.",
+      "emptyTitle": "No bank transfers yet",
+      "endDate": "End date",
+      "errorGeneric": "An error occurred",
+      "errorTitle": "Cannot load bank transfers",
+      "fee": "Fee",
+      "fieldAmount": "Transfer Amount (IDR)",
+      "fieldBankRef": "Bank Reference",
+      "fieldConfirmCode": "Confirmation Code",
+      "fieldDate": "Transfer Date",
+      "fieldDatePh": "Select date",
+      "fieldDescId": "Description (Indonesian)",
+      "fieldDescIdPh": "e.g. Transfer operational funds to BCA account",
+      "fieldFee": "Transfer Fee (Optional)",
+      "fieldFeeAccount": "Fee Account",
+      "fieldFeeAccountPh": "Select account",
+      "fieldFromAccount": "From Account (Debit)",
+      "fieldFromAccountPh": "Select source account",
+      "fieldMethod": "Transfer Method",
+      "fieldNotes": "Notes",
+      "fieldNotesPh": "Additional notes (optional)",
+      "fieldToAccount": "To Account (Credit)",
+      "fieldToAccountPh": "Select destination account",
+      "methodClearing": "Clearing",
+      "methodInterbank": "Interbank",
+      "methodInternal": "Internal",
+      "methodOther": "Other",
+      "newTransfer": "New Transfer",
+      "noMatch": "No matching transfers",
+      "noMatchDesc": "Try adjusting the filter.",
+      "optional": "Optional",
+      "rejectFail": "Failed to reject bank transfer",
+      "rejectReasonLabel": "Rejection Reason",
+      "rejectReasonPh": "State the reason for rejection...",
+      "rejectSubmit": "Reject Transfer",
+      "rejectSuccess": "Bank transfer rejected",
+      "rejectTitle": "Reject Bank Transfer",
+      "resetFilter": "Reset Filter",
+      "retry": "Try Again",
+      "saving": "Saving...",
+      "searchPlaceholder": "Search transfer number, description...",
+      "startDate": "Start date",
+      "statCompleted": "Completed",
+      "statCompletedSub": "completed transfers",
+      "statFiltered": "Total (Filtered)",
+      "statFilteredSub": "matching active filter",
+      "statPending": "Awaiting Approval",
+      "statPendingSub": "pending transfers",
+      "statThisMonth": "This Month Total",
+      "statThisMonthSub": "transfer value this month",
+      "statusApproved": "Approved",
+      "statusCancelled": "Cancelled",
+      "statusCompleted": "Completed",
+      "statusFailed": "Failed",
+      "statusInProgress": "In Progress",
+      "statusPending": "Pending",
+      "statusRejected": "Rejected",
+      "title": "Bank Transfers",
+      "validationAmount": "Transfer amount is required and must be greater than 0",
+      "validationDesc": "Transfer description is required",
+      "validationRequired": "Please complete all required fields",
+      "viewAmount": "Transfer Amount",
+      "viewApproved": "Approved",
+      "viewBankRef": "Bank Ref.",
+      "viewCompleted": "Completed",
+      "viewConfirmCode": "Confirmation Code",
+      "viewDate": "Date",
+      "viewDescription": "Description",
+      "viewFeeLabel": "Transfer fee:",
+      "viewFrom": "From",
+      "viewJournalId": "Journal Entry ID",
+      "viewMethod": "Method",
+      "viewNotes": "Notes",
+      "viewReference": "Reference",
+      "viewRejectionReason": "Rejection Reason",
+      "viewRoute": "Transfer Route",
+      "viewStatus": "Status",
+      "viewTitle": "Bank Transfer Detail",
+      "viewTo": "To"
+    },
+    "eclProvision": {
+      "agingAnalysis": "Aging Analysis",
+      "atRiskHeader": "At-Risk Invoices",
+      "autoPost": "Auto-post to journal",
+      "bucketAvgRate": "Avg Rate",
+      "bucketInvoices": "Invoices",
+      "bucketTotalECL": "Total ECL",
+      "calcECL": "Calculate ECL",
+      "calculating": "Calculating...",
+      "cancel": "Cancel",
+      "close": "Close",
+      "colAging": "Aging",
+      "colCalcDate": "Calc. Date",
+      "colECLAmount": "ECL Provision",
+      "colECLRate": "ECL Rate",
+      "colInvoiceClient": "Invoice & Client",
+      "colOutstanding": "Outstanding",
+      "days": "days",
+      "description": "Expected Credit Loss provision for receivables under PSAK 71.",
+      "detailAging": "Aging",
+      "detailCalcDate": "Calculation Date",
+      "detailClient": "Client",
+      "detailDaysPastDue": "Days Past Due",
+      "detailECLAmount": "ECL Provision",
+      "detailECLRate": "ECL Rate",
+      "detailInvoiceNo": "Invoice No.",
+      "detailNote": "Note",
+      "detailNoteText": "ECL provision is calculated based on receivable aging using PSAK 71 default ECL rates. Rates can be adjusted based on the company's historical experience.",
+      "detailOutstanding": "Outstanding Amount",
+      "detailStatus": "Status",
+      "detailTitle": "Invoice ECL Detail",
+      "emptyDesc": "No ECL data for the selected period and filters.",
+      "emptyTitle": "No at-risk invoices",
+      "endDate": "End date",
+      "errorGeneric": "An error occurred",
+      "errorTitle": "Unable to load ECL data",
+      "excludeWriteOff": "Exclude Write-offs",
+      "includeWriteOff": "Include Write-offs",
+      "invoicesCount": "invoices",
+      "period": "Period",
+      "processDialogDesc": "Calculate Expected Credit Loss for all outstanding invoices.",
+      "processDialogTitle": "Calculate Monthly ECL",
+      "processFail": "Failed to process ECL",
+      "processFieldDate": "Calculation Date",
+      "processFieldPosting": "Posting Option",
+      "processInfo": "This process calculates Expected Credit Loss for all outstanding invoices on the selected date, based on receivable aging and PSAK 71 default ECL rates.",
+      "processSuccess": "Processed {{count}} ECL provisions. {{posted}} posted to journal.",
+      "refresh": "Refresh",
+      "retry": "Try Again",
+      "saveDraft": "Save as draft (manual posting)",
+      "startDate": "Start date",
+      "statECL": "Total ECL Provision",
+      "statECLSub": "expected credit loss",
+      "statLastCalc": "Last Calculation",
+      "statLastCalcSub": "ECL calculation date",
+      "statNone": "None yet",
+      "statProvisionRate": "Provision Ratio",
+      "statProvisionRateSub": "ECL to total receivables",
+      "statReceivables": "Total Receivables",
+      "statReceivablesSub": "outstanding receivables",
+      "title": "ECL Provision"
     }
   },
   "pinterestDownloader": {
@@ -3285,7 +3673,49 @@
     "noJobs": "No download jobs yet",
     "noJobsDesc": "Paste a board or Pinterest profile URL above to start your first batch download.",
     "noPins": "No pins",
-    "noPinsDesc": "Pins will appear here once they finish downloading."
+    "noPinsDesc": "Pins will appear here once they finish downloading.",
+    "cancel": "Cancel",
+    "closePanel": "Close panel",
+    "confirmDelete": "Delete job \"{{name}}\"? Downloaded files will also be removed.",
+    "delete": "Delete",
+    "detected": "Detected",
+    "detecting": "Checking link…",
+    "downloadJobs": "Download jobs",
+    "downloadPin": "Download Pin",
+    "downloadZip": "Download all as ZIP",
+    "image": "Image",
+    "images": "Images",
+    "jobCount": "{{count}} jobs",
+    "jobDetail": "Job detail",
+    "mediaType": "Media type",
+    "miniDone": "Done",
+    "miniFailed": "Failed",
+    "miniTotal": "Total",
+    "noTitle": "No title",
+    "notPinterest": "This link is not from Pinterest.",
+    "paste": "Paste",
+    "pastePrompt": "Paste Pinterest link",
+    "pinDownloadFail": "Failed to download pin.",
+    "pinId": "Pin ID:",
+    "savedAt": "Saved at",
+    "singlePinHint": "— will download directly to browser.",
+    "startBatch": "Start Batch Download",
+    "startFail": "Failed to start download.",
+    "starting": "Starting…",
+    "stat": {
+      "running": "Running",
+      "runningSub": "updated every 5 seconds",
+      "totalJobs": "Total jobs",
+      "totalJobsSub": "batch + single saved",
+      "totalPins": "Total pins downloaded",
+      "totalPinsSub": "across all jobs"
+    },
+    "step1": "Step 1",
+    "typeBadge": "Pin · Board · Profile",
+    "urlHint": "Only pinterest.com or pin.it links are accepted.",
+    "video": "Video",
+    "videos": "Videos",
+    "viewPins": "View pins"
   },
   "mediaDownloader": {
     "title": "Media Downloader",
@@ -3368,7 +3798,10 @@
     "fieldDescription": "Description",
     "namePlaceholder": "Shot list name",
     "noProject": "No description",
-    "descriptionPlaceholder": "Brief description (optional)"
+    "descriptionPlaceholder": "Brief description (optional)",
+    "createSubmit": "Create Shot List",
+    "newShotList": "New Shot List",
+    "selectProject": "Select a project"
   },
   "projectCalendar": {
     "title": "Project Calendar",
@@ -3390,7 +3823,12 @@
       "overdueTasks": "Overdue Tasks",
       "overdueTasksSub": "need attention",
       "milestones": "Milestones",
-      "milestonesSub": "tracked"
+      "milestonesSub": "tracked",
+      "completed": "Completed This Month",
+      "completedSub": "confirmed",
+      "overdue": "Overdue",
+      "overdueSub": "needs attention",
+      "thisMonth": "This Month"
     },
     "today": "Today",
     "selectedDay": "Selected Day",
@@ -3428,6 +3866,40 @@
       "assignLabel": "Assign to",
       "cancel": "Cancel",
       "save": "Save Event"
+    },
+    "createDialog": {
+      "date": "Date",
+      "dateRequired": "Select an event date.",
+      "desc": "Add a milestone, deadline, or event to this project calendar.",
+      "description": "Description",
+      "descriptionPlaceholder": "Additional notes (optional)...",
+      "endTime": "End",
+      "eventTitle": "Event Title",
+      "eventTitlePlaceholder": "Milestone / event name...",
+      "location": "Location",
+      "locationPlaceholder": "Location / meeting link (optional)...",
+      "saveEvent": "Save Event",
+      "startTime": "Start",
+      "title": "Add Event",
+      "titleRequired": "Event title is required.",
+      "type": "Type"
+    },
+    "detailSheet": {
+      "assignedTo": "Assigned to",
+      "description": "Description",
+      "end": "End",
+      "location": "Location",
+      "start": "Start"
+    },
+    "eventCreateFailed": "Failed to create event.",
+    "eventDeleteFailed": "Failed to delete event.",
+    "noProjectId": {
+      "desc": "Open this page via the projects list.",
+      "title": "Project ID required"
+    },
+    "noUpcoming": {
+      "desc": "No events in the next 14 days.",
+      "title": "No upcoming agenda"
     }
   },
   "mediaCollaboration": {
@@ -3486,7 +3958,12 @@
     "preset916vertical": "9:16 Vertical (1080×1920)",
     "createSubmit": "Create Deck",
     "newDeckTitle": "New Deck",
-    "newDeckDesc": "Create a new presentation deck."
+    "newDeckDesc": "Create a new presentation deck.",
+    "createDesc": "Slide collections for pitches, moodboards, and storyboards.",
+    "createTitle": "New Deck",
+    "descriptionPlaceholder": "Brief description (optional)",
+    "selectRatio": "Select Canvas Size",
+    "titlePlaceholder": "Deck title..."
   },
   "incomeStatement": {
     "title": "Income Statement",
@@ -3852,7 +4329,9 @@
       "nsfpHint": "Format XXX.XXX-XX.XXXXXXXX",
       "eFakturStatus": "e-Invoice Status",
       "approvalStatus": "Approval Status",
-      "notesPlaceholder": "e.g. duplicate invoice, requires finance manager approval..."
+      "notesPlaceholder": "e.g. duplicate invoice, requires finance manager approval...",
+      "paymentSource": "Pay from (Balance)",
+      "paymentSourceHint": "Cash deducts the Cash balance; Bank deducts the default bank account."
     },
     "noCategories": "No expense categories yet",
     "submitNote": "Save as draft to review later, or submit immediately for approval.",
@@ -3864,7 +4343,9 @@
     },
     "cancel": "Cancel",
     "saving": "Saving...",
-    "save": "Save"
+    "save": "Save",
+    "sourceBank": "Bank",
+    "sourceCash": "Cash"
   },
   "expenseCreate": {
     "success": "Expense {{n}} created successfully.",
@@ -4391,7 +4872,9 @@
     "advancedDeferred": {
       "title": "Advanced features deferred",
       "body": "Drag-and-drop canvas editor, widget palette (Text/Metric/Image/Callout), freeform grid layout, and live preview are available in the classic editor. The v2 version focuses on the identity + CSV sections + form-configured visualizations flow."
-    }
+    },
+    "vizFailed": "Failed to save visualization.",
+    "vizSaved": "Visualization saved."
   },
   "socialMediaReports": {
     "title": "Social Media Reports",
@@ -4472,7 +4955,28 @@
       "quotation": "Quotation",
       "project": "Project",
       "event": "Event"
-    }
+    },
+    "emptyDay": "No agenda on this day.",
+    "kpi": {
+      "due30": "Due in 30 Days",
+      "due30Sub": "invoices & quotations",
+      "events": "Upcoming Events",
+      "eventsSub": "meetings & milestones",
+      "moneyDue": "Receivable Value",
+      "moneyDueSub": "in the next 30 days",
+      "overdue": "Overdue",
+      "overdueSub": "needs attention"
+    },
+    "more": "more",
+    "next": "Next month",
+    "openContent": "Content Calendar",
+    "prev": "Previous month",
+    "selected": "Selected Day",
+    "upcoming": "Next 14 Days",
+    "upcomingEmpty": {
+      "title": "No upcoming agenda"
+    },
+    "upcomingTitle": "Upcoming Agenda"
   },
   "contentCalendar": {
     "title": "Content Calendar",
@@ -4502,7 +5006,30 @@
     "noneOption": "None",
     "cancelButton": "Cancel",
     "scheduleButton": "Schedule",
-    "saveDraftButton": "Save Draft"
+    "saveDraftButton": "Save Draft",
+    "createDialog": {
+      "caption": "Caption",
+      "captionPlaceholder": "Write your social media caption...",
+      "captionRequired": "Caption is required.",
+      "client": "Client",
+      "clientPlaceholder": "Select client (optional)",
+      "desc": "Create a content draft — schedule it now or save as draft to arrange later.",
+      "none": "None",
+      "platform": "Platform",
+      "project": "Project",
+      "projectPlaceholder": "Select project (optional)",
+      "saveDraft": "Save Draft",
+      "schedule": "Schedule",
+      "scheduleDate": "Schedule Date",
+      "time": "Time",
+      "title": "Add Content"
+    },
+    "detailSheet": {
+      "created": "Created",
+      "publishFailed": "Publish failed — needs review",
+      "published": "Published",
+      "title": "Content Detail"
+    }
   },
   "projectContentCalendar": {
     "title": "Content Calendar",
@@ -4520,7 +5047,9 @@
       "scheduled": "Scheduled",
       "scheduledSub": "awaiting publish",
       "drafts": "Drafts",
-      "draftsSub": "in progress"
+      "draftsSub": "in progress",
+      "total": "Content This Month",
+      "totalSub": "scheduled & published"
     },
     "view": {
       "month": "Month",
@@ -4581,7 +5110,37 @@
       "cancel": "Cancel",
       "schedule": "Schedule",
       "saveDraft": "Save Draft"
-    }
+    },
+    "archive": "Archive",
+    "confirmDeleteContent": "Delete this content?",
+    "contentActions": "Content actions",
+    "contentArchiveFailed": "Failed to archive content.",
+    "contentCreateFailed": "Failed to create content.",
+    "contentDeleteFailed": "Failed to delete content.",
+    "contentPublishFailed": "Failed to publish content.",
+    "createDialog": {
+      "caption": "Caption",
+      "captionPlaceholder": "Write your social media caption...",
+      "captionRequired": "Caption is required.",
+      "desc": "Create a content draft for this project — schedule now or save as draft.",
+      "platform": "Platform",
+      "saveDraft": "Save Draft",
+      "schedule": "Schedule",
+      "scheduleDate": "Schedule Date",
+      "time": "Time",
+      "title": "Add Content"
+    },
+    "detailSheet": {
+      "created": "Created",
+      "files": "files",
+      "platform": "Platform",
+      "publishFailed": "Publish failed — needs review",
+      "published": "Published",
+      "title": "Content Detail"
+    },
+    "publish": "Publish",
+    "today": "Today",
+    "viewDetail": "View Detail"
   },
   "deckEditor": {
     "title": "Deck Editor",
@@ -4623,7 +5182,9 @@
     "layoutImage": "Full Image",
     "layoutBlank": "Blank",
     "layoutQuote": "Quote",
-    "layoutSection": "Section Break"
+    "layoutSection": "Section Break",
+    "descriptionPlaceholder": "Brief description (optional)",
+    "slide": "Slide {{index}}"
   },
   "shotListEditor": {
     "saveSuccess": "Shot list saved",
@@ -4655,7 +5216,16 @@
     "footnote": "Changes auto-save on blur. Click “Save” to persist identity fields.",
     "downloadPdf": "Download PDF",
     "pdfDownloaded": "PDF downloaded",
-    "pdfFailed": "Failed to generate PDF"
+    "pdfFailed": "Failed to generate PDF",
+    "cameraPlaceholder": "Camera",
+    "description": "Arrange shots for a production project. Each row is one take.",
+    "descriptionShotPlaceholder": "Action / location / subject",
+    "durationPlaceholder": "min",
+    "movementPlaceholder": "Move (Pan / Track)",
+    "notesPlaceholder": "Crew / props / lens notes",
+    "shotNumberPlaceholder": "1A",
+    "shotTypePlaceholder": "WS / CU",
+    "title": "Shot List Editor"
   },
   "callSheetEditor": {
     "openInV1": "Open in v1 (PDF / auto-fill)",
@@ -4781,7 +5351,12 @@
     "saveHeader": "Save Header",
     "saveRow": "Save row",
     "removeRow": "Remove row",
-    "downloadPdf": "Download PDF"
+    "downloadPdf": "Download PDF",
+    "saveAll": "Save Call Sheet",
+    "saveAllFailed": "Failed to save call sheet.",
+    "savedAll": "Call sheet saved.",
+    "savedAllChanges": "All changes saved.",
+    "unsavedChanges": "You have unsaved changes."
   },
   "mediaCollab": {
     "loadMore": "Load more",
@@ -4998,7 +5573,11 @@
       "paidAtHint": "Setting a date will mark the payment as PAID automatically.",
       "notesLabel": "Notes",
       "notesPlaceholder": "Additional notes...",
-      "summary": "Payment Summary"
+      "summary": "Payment Summary",
+      "allowances": "Allowances",
+      "base": "Base Salary",
+      "deductions": "Deductions",
+      "netPay": "Net Pay"
     },
     "createPayment": "Create Payment",
     "updatePayment": "Update Payment",
@@ -5104,5 +5683,120 @@
       "newProjects": "New Projects",
       "newProjectsSub": "this month"
     }
+  },
+  "assetDetail": {
+    "col": {
+      "cost": "Cost",
+      "date": "Date",
+      "description": "Description",
+      "period": "Period",
+      "purpose": "Purpose",
+      "status": "Status",
+      "type": "Type",
+      "user": "User"
+    }
+  },
+  "assetsPage": {
+    "assetActions": "Asset actions",
+    "col": {
+      "actions": "Actions",
+      "asset": "Asset",
+      "category": "Category",
+      "code": "Code",
+      "location": "Location",
+      "status": "Status",
+      "value": "Value"
+    }
+  },
+  "businessJourney": {
+    "priceInheritance": {
+      "modes": {
+        "custom": "Enter Custom Price",
+        "inherit": "Use Price from Project"
+      },
+      "suggestions": {
+        "adjust_price": "Consider adjusting the price or document the reason for the deviation",
+        "justify_increase": "Consider whether the additional scope justifies the price increase",
+        "verify_intentional": "Make sure this is intentional or check for a pricing error"
+      },
+      "title": "Price Configuration",
+      "warnings": {
+        "price_deviation": "Price deviates {{percentage}}% from source",
+        "price_too_high": "Price is much higher than source",
+        "price_too_low": "Price is much lower than source"
+      }
+    },
+    "timeline": {
+      "actions": {
+        "export_data": "Export Data",
+        "send_whatsapp": "Send via WhatsApp",
+        "view_details": "View Details"
+      },
+      "description": "Track the complete client relationship journey from first contact to payment",
+      "empty_state": {
+        "description": "Business activity will appear here once interactions with the client occur",
+        "title": "No business activity yet"
+      },
+      "events": {
+        "client_created": "Client Created",
+        "invoice_generated": "Invoice Created",
+        "invoice_sent": "Invoice Sent",
+        "materai_applied": "Stamp Duty Applied",
+        "materai_required": "Stamp Duty Required",
+        "payment_overdue": "Payment Overdue",
+        "payment_received": "Payment Received",
+        "project_started": "Project Started",
+        "quotation_approved": "Quotation Approved",
+        "quotation_declined": "Quotation Declined",
+        "quotation_draft": "Quotation Draft",
+        "quotation_revised": "Quotation Revised",
+        "quotation_sent": "Quotation Sent"
+      },
+      "filters": {
+        "date_from": "From date",
+        "date_to": "To date",
+        "event_types": "Filter activity types",
+        "search_placeholder": "Search activity...",
+        "status_filter": "Filter by status"
+      },
+      "summary": {
+        "completion_rate": "Completion rate",
+        "payment_rate": "Payment rate",
+        "total_activities": "Total activities",
+        "total_revenue": "Total revenue"
+      },
+      "title": "Business Journey"
+    },
+    "whatsapp": {
+      "message_template": {
+        "document_sent": "Please find attached {{document_type}} {{document_number}} for the amount of {{amount}}",
+        "due_date": "Payment due date: {{date}}",
+        "greeting_afternoon": "Good afternoon",
+        "greeting_evening": "Good evening",
+        "greeting_morning": "Good morning",
+        "greeting_night": "Good night",
+        "regards": "Best regards",
+        "thank_you": "Thank you for your trust",
+        "view_details": "Please click the following link to view the details:"
+      },
+      "opening_whatsapp": "Opening WhatsApp to share document",
+      "share_invoice": "Share Invoice via WhatsApp",
+      "share_quotation": "Share Quotation via WhatsApp"
+    }
+  },
+  "materai": {
+    "amount": "Stamp Duty Amount",
+    "applied": "Stamp Duty Applied",
+    "compliance": {
+      "amount_1b": "IDR 20,000 stamp duty required for values > IDR 1 billion",
+      "amount_5m": "IDR 10,000 stamp duty required for values > IDR 5 million",
+      "compliance_rate": "Stamp duty compliance rate: {{percentage}}%",
+      "pending_amount": "There are invoices requiring stamp duty totalling {{amount}}",
+      "purchase_info": "Stamp duty can be purchased at post offices, banks, or stationery stores",
+      "reminder": "Remember to affix the stamp duty to the physical document",
+      "validity_check": "Ensure the stamp duty is not damaged and is still valid",
+      "warning": "This invoice requires stamp duty in accordance with Indonesian regulations"
+    },
+    "required": "Stamp Duty Required"
   }
 }
