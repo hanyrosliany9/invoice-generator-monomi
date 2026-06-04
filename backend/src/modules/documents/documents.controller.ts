@@ -11,6 +11,7 @@ import {
   Body,
   Res,
   Query,
+  UseGuards,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
@@ -19,12 +20,16 @@ import { DocumentCategory } from "@prisma/client";
 import { diskStorage } from "multer";
 import { extname } from "path";
 import * as fs from "fs";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 
 @Controller("documents")
+@UseGuards(JwtAuthGuard)
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Post("upload")
+  @RequireAdmin()
   @UseInterceptors(
     FileInterceptor("file", {
       storage: diskStorage({
@@ -157,6 +162,7 @@ export class DocumentsController {
   }
 
   @Delete(":id")
+  @RequireAdmin()
   async deleteDocument(@Param("id") id: string) {
     const document = await this.documentsService.getDocumentById(id);
 

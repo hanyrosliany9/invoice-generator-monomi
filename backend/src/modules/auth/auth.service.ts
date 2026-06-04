@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, Logger } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UsersService } from "../users/users.service";
 import * as bcrypt from "bcryptjs";
+import { UserRole } from "@prisma/client";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { getErrorMessage } from "../../common/utils/error-handling.util";
@@ -93,10 +94,13 @@ export class AuthService {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(registerDto.password, saltRounds);
 
-    // Create user
+    // Create user — role is always hardcoded to the lowest-privilege role;
+    // the request body role field has been removed from RegisterDto entirely.
     const user = await this.usersService.create({
-      ...registerDto,
+      email: registerDto.email,
+      name: registerDto.name,
       password: hashedPassword,
+      role: UserRole.VIDEOGRAPHER,
     });
 
     // Password already filtered out by service

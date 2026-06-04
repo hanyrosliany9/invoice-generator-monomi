@@ -66,10 +66,7 @@ export class ContentCalendarController {
 
     const content = await this.contentCalendarService.create(createDto, userId);
 
-    return {
-      success: true,
-      data: content,
-    };
+    return content;
   }
 
   /**
@@ -106,11 +103,7 @@ export class ContentCalendarController {
 
     const contents = await this.contentCalendarService.findAll(filters);
 
-    return {
-      success: true,
-      data: contents,
-      count: contents.length,
-    };
+    return contents;
   }
 
   /**
@@ -122,10 +115,7 @@ export class ContentCalendarController {
   async findOne(@Param("id") id: string) {
     const content = await this.contentCalendarService.findOne(id);
 
-    return {
-      success: true,
-      data: content,
-    };
+    return content;
   }
 
   /**
@@ -149,10 +139,7 @@ export class ContentCalendarController {
       userRole,
     );
 
-    return {
-      success: true,
-      data: content,
-    };
+    return content;
   }
 
   /**
@@ -167,10 +154,7 @@ export class ContentCalendarController {
 
     await this.contentCalendarService.remove(id, userId, userRole);
 
-    return {
-      success: true,
-      message: "Content deleted successfully",
-    };
+    return { message: "Content deleted successfully" };
   }
 
   /**
@@ -189,11 +173,7 @@ export class ContentCalendarController {
       userRole,
     );
 
-    return {
-      success: true,
-      data: content,
-      message: "Content published successfully",
-    };
+    return content;
   }
 
   /**
@@ -212,10 +192,6 @@ export class ContentCalendarController {
       userRole,
     );
 
-    return {
-      success: true,
-      data: content,
-      message: "Content archived successfully",
-    };
+    return content;
   }
 }

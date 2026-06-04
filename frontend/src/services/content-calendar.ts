@@ -85,7 +85,7 @@ export interface MediaUploadResponse {
 }
 
 class ContentCalendarService {
-  async getContents(filters?: ContentCalendarFilters): Promise<{ success: boolean; data: ContentCalendarItem[]; count: number }> {
+  async getContents(filters?: ContentCalendarFilters): Promise<ContentCalendarItem[]> {
     const params = new URLSearchParams();
 
     if (filters?.status) params.append('status', filters.status);
@@ -101,37 +101,37 @@ class ContentCalendarService {
     const url = `/content-calendar${queryString ? `?${queryString}` : ''}`;
 
     const response = await apiClient.get(url);
-    return response.data;
+    return response.data.data;
   }
 
-  async getContent(id: string): Promise<{ success: boolean; data: ContentCalendarItem }> {
+  async getContent(id: string): Promise<ContentCalendarItem> {
     const response = await apiClient.get(`/content-calendar/${id}`);
-    return response.data;
+    return response.data.data;
   }
 
-  async createContent(data: CreateContentDto): Promise<{ success: boolean; data: ContentCalendarItem }> {
+  async createContent(data: CreateContentDto): Promise<ContentCalendarItem> {
     const response = await apiClient.post(`/content-calendar`, data);
-    return response.data;
+    return response.data.data;
   }
 
-  async updateContent(id: string, data: UpdateContentDto): Promise<{ success: boolean; data: ContentCalendarItem }> {
+  async updateContent(id: string, data: UpdateContentDto): Promise<ContentCalendarItem> {
     const response = await apiClient.put(`/content-calendar/${id}`, data);
-    return response.data;
+    return response.data.data;
   }
 
-  async deleteContent(id: string): Promise<{ success: boolean; message: string }> {
+  async deleteContent(id: string): Promise<{ message: string }> {
     const response = await apiClient.delete(`/content-calendar/${id}`);
-    return response.data;
+    return response.data.data;
   }
 
-  async publishContent(id: string): Promise<{ success: boolean; data: ContentCalendarItem; message: string }> {
+  async publishContent(id: string): Promise<ContentCalendarItem> {
     const response = await apiClient.post(`/content-calendar/${id}/publish`, {});
-    return response.data;
+    return response.data.data;
   }
 
-  async archiveContent(id: string): Promise<{ success: boolean; data: ContentCalendarItem; message: string }> {
+  async archiveContent(id: string): Promise<ContentCalendarItem> {
     const response = await apiClient.post(`/content-calendar/${id}/archive`, {});
-    return response.data;
+    return response.data.data;
   }
 
   async uploadMedia(file: File, thumbnail?: string): Promise<MediaUploadResponse> {

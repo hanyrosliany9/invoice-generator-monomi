@@ -7,15 +7,15 @@ import {
 } from "@nestjs/swagger";
 import { MetricsService } from "./metrics.service";
 import { JwtAuthGuard } from "../modules/auth/guards/jwt-auth.guard";
-import { Public } from "../common/decorators/public.decorator";
 
 @ApiTags("Metrics")
 @Controller("metrics")
+@UseGuards(JwtAuthGuard)
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
 
   @Get("health")
-  @Public()
+  @ApiBearerAuth()
   @ApiOperation({ summary: "System health metrics" })
   @ApiResponse({
     status: 200,
@@ -58,7 +58,7 @@ export class MetricsController {
   }
 
   @Get("prometheus")
-  @Public()
+  @ApiBearerAuth()
   @ApiOperation({ summary: "Prometheus metrics format" })
   @ApiResponse({
     status: 200,

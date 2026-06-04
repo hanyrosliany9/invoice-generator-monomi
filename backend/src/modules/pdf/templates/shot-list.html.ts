@@ -3,25 +3,17 @@
  * Detailed shot list with camera information and descriptions
  */
 
-export function generateShotListHTML(shotList: any): string {
-  const escapeHtml = (text: string): string => {
-    if (!text) return "";
-    return text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  };
+import { escapeHtml } from "./escape-html.util";
 
+export function generateShotListHTML(shotList: any): string {
   const scenesHtml = shotList.scenes
     .map(
       (scene: any) => `
     <div class="scene">
       <div class="scene-header">
-        <strong>${scene.sceneNumber}</strong> - ${scene.name}
-        ${scene.intExt ? `(${scene.intExt})` : ""}
-        ${scene.dayNight ? `/ ${scene.dayNight}` : ""}
+        <strong>${escapeHtml(scene.sceneNumber)}</strong> - ${escapeHtml(scene.name)}
+        ${scene.intExt ? `(${escapeHtml(scene.intExt)})` : ""}
+        ${scene.dayNight ? `/ ${escapeHtml(scene.dayNight)}` : ""}
       </div>
       <table>
         <thead>
@@ -40,13 +32,13 @@ export function generateShotListHTML(shotList: any): string {
             .map(
               (shot: any) => `
             <tr>
-              <td>${shot.shotNumber}</td>
-              <td>${shot.shotSize || "-"}</td>
-              <td>${shot.shotType || "-"}</td>
-              <td>${shot.cameraMovement || "-"}</td>
-              <td>${shot.lens || "-"}</td>
-              <td>${shot.description || "-"}</td>
-              <td>${shot.status}</td>
+              <td>${escapeHtml(shot.shotNumber)}</td>
+              <td>${escapeHtml(shot.shotSize) || "-"}</td>
+              <td>${escapeHtml(shot.shotType) || "-"}</td>
+              <td>${escapeHtml(shot.cameraMovement) || "-"}</td>
+              <td>${escapeHtml(shot.lens) || "-"}</td>
+              <td>${escapeHtml(shot.description) || "-"}</td>
+              <td>${escapeHtml(shot.status)}</td>
             </tr>
           `,
             )

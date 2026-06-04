@@ -4,6 +4,8 @@
  * Heavy use of borders and grid-based layout
  */
 
+import { escapeHtml } from "./escape-html.util";
+
 const THEME_COLORS = {
   primary: "#337EA9",
   primaryDark: "#37352F",
@@ -63,15 +65,15 @@ export function generateCallSheetHTML(
       ?.map(
         (cast: any) => `
     <tr>
-      <td>${cast.castNumber || ""}</td>
-      <td>${cast.character || ""}</td>
-      <td>${cast.actorName}</td>
-      <td style="text-align: center;">${cast.workStatus || "W"}</td>
-      <td style="text-align: center;">${cast.pickupTime || "-"}</td>
-      <td style="text-align: center;">${cast.callTime || "-"}</td>
-      <td style="text-align: center;">${cast.onSetTime || "-"}</td>
-      <td style="text-align: center;">${cast.muCallTime || "-"}</td>
-      <td>${cast.notes || ""}</td>
+      <td>${escapeHtml(cast.castNumber) || ""}</td>
+      <td>${escapeHtml(cast.character) || ""}</td>
+      <td>${escapeHtml(cast.actorName)}</td>
+      <td style="text-align: center;">${escapeHtml(cast.workStatus) || "W"}</td>
+      <td style="text-align: center;">${escapeHtml(cast.pickupTime) || "-"}</td>
+      <td style="text-align: center;">${escapeHtml(cast.callTime) || "-"}</td>
+      <td style="text-align: center;">${escapeHtml(cast.onSetTime) || "-"}</td>
+      <td style="text-align: center;">${escapeHtml(cast.muCallTime) || "-"}</td>
+      <td>${escapeHtml(cast.notes) || ""}</td>
     </tr>
   `,
       )
@@ -85,10 +87,10 @@ export function generateCallSheetHTML(
             .map(
               (c: any) => `
       <tr>
-        <td><strong>${c.position}</strong></td>
-        <td>${c.name}</td>
-        <td>${c.callTime}</td>
-        <td>${c.phone || ""}</td>
+        <td><strong>${escapeHtml(c.position)}</strong></td>
+        <td>${escapeHtml(c.name)}</td>
+        <td>${escapeHtml(c.callTime)}</td>
+        <td>${escapeHtml(c.phone) || ""}</td>
       </tr>
     `,
             )
@@ -96,7 +98,7 @@ export function generateCallSheetHTML(
 
           return `
       <tr>
-        <td colspan="4" style="background: ${THEME_COLORS.mediumBg}; font-weight: bold; padding: 4px 8px;"><strong>${dept}</strong></td>
+        <td colspan="4" style="background: ${THEME_COLORS.mediumBg}; font-weight: bold; padding: 4px 8px;"><strong>${escapeHtml(dept)}</strong></td>
       </tr>
       ${crewRows}
     `;
@@ -533,21 +535,21 @@ export function generateCallSheetHTML(
         <div class="header-left">
           ${logoBase64 ? `<img src="${logoBase64}" alt="Company Logo" class="company-logo-small" />` : ""}
           <div class="production-info-box">
-            <div><span class="production-info-label">Company:</span> ${cs.companyName || "Production"}</div>
-            <div><span class="production-info-label">Producer:</span> ${cs.producer || ""}</div>
-            <div><span class="production-info-label">Director:</span> ${cs.director || ""}</div>
-            <div><span class="production-info-label">1st AD:</span> ${cs.firstAd || ""}</div>
+            <div><span class="production-info-label">Company:</span> ${escapeHtml(cs.companyName) || "Production"}</div>
+            <div><span class="production-info-label">Producer:</span> ${escapeHtml(cs.producer) || ""}</div>
+            <div><span class="production-info-label">Director:</span> ${escapeHtml(cs.director) || ""}</div>
+            <div><span class="production-info-label">1st AD:</span> ${escapeHtml(cs.firstAd) || ""}</div>
           </div>
         </div>
 
         <!-- Center: Title -->
         <div class="header-center">
-          <div class="call-sheet-title">${cs.productionName || "CALL SHEET"}</div>
+          <div class="call-sheet-title">${escapeHtml(cs.productionName) || "CALL SHEET"}</div>
           <div class="shoot-info">
             <div class="shoot-info-line"><strong>${shootDate}</strong></div>
             ${cs.dayNumber ? `<div class="shoot-info-line">DAY ${cs.dayNumber}${cs.totalDays ? " of " + cs.totalDays : ""}</div>` : ""}
             <div class="shoot-info-line"><strong>GENERAL CREW CALL</strong></div>
-            <div style="font-size: 24px; font-weight: bold; color: ${THEME_COLORS.warning};">${cs.crewCallTime || cs.generalCallTime || "—"}</div>
+            <div style="font-size: 24px; font-weight: bold; color: ${THEME_COLORS.warning};">${escapeHtml(cs.crewCallTime || cs.generalCallTime) || "—"}</div>
           </div>
         </div>
 
@@ -556,23 +558,23 @@ export function generateCallSheetHTML(
           <table class="key-times-table">
             <tr>
               <td class="key-times-label">Shooting Call:</td>
-              <td class="key-times-value">${cs.firstShotTime || "—"}</td>
+              <td class="key-times-value">${escapeHtml(cs.firstShotTime) || "—"}</td>
             </tr>
             <tr>
               <td class="key-times-label">Lunch:</td>
-              <td class="key-times-value">${cs.lunchTime || "—"}</td>
+              <td class="key-times-value">${escapeHtml(cs.lunchTime) || "—"}</td>
             </tr>
             <tr>
               <td class="key-times-label">Est. Wrap:</td>
-              <td class="key-times-value">${cs.estimatedWrap || cs.wrapTime || "—"}</td>
+              <td class="key-times-value">${escapeHtml(cs.estimatedWrap || cs.wrapTime) || "—"}</td>
             </tr>
             <tr>
               <td class="key-times-label">Sunrise:</td>
-              <td class="key-times-value">${cs.sunrise || "—"}</td>
+              <td class="key-times-value">${escapeHtml(cs.sunrise) || "—"}</td>
             </tr>
             <tr>
               <td class="key-times-label">Sunset:</td>
-              <td class="key-times-value">${cs.sunset || "—"}</td>
+              <td class="key-times-value">${escapeHtml(cs.sunset) || "—"}</td>
             </tr>
           </table>
         </div>
@@ -584,35 +586,35 @@ export function generateCallSheetHTML(
       <div class="logistics-grid">
         <div class="logistics-box">
           <div class="logistics-label">BASECAMP</div>
-          <div class="logistics-value">${cs.basecamp || ""}</div>
+          <div class="logistics-value">${escapeHtml(cs.basecamp) || ""}</div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">CREW PARKING</div>
-          <div class="logistics-value">${cs.crewParking || ""}</div>
+          <div class="logistics-value">${escapeHtml(cs.crewParking) || ""}</div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">BATHROOMS</div>
-          <div class="logistics-value">${cs.bathrooms || ""}</div>
+          <div class="logistics-value">${escapeHtml(cs.bathrooms) || ""}</div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">LOCATION(S)</div>
-          <div class="logistics-value">${cs.locationName || cs.locationAddress || ""}</div>
+          <div class="logistics-value">${escapeHtml(cs.locationName || cs.locationAddress) || ""}</div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">LUNCH LOCATION</div>
-          <div class="logistics-value">${cs.lunchLocation || ""}</div>
+          <div class="logistics-value">${escapeHtml(cs.lunchLocation) || ""}</div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">WORKING TRUCKS</div>
-          <div class="logistics-value">${cs.workingTrucks || ""}</div>
+          <div class="logistics-value">${escapeHtml(cs.workingTrucks) || ""}</div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">NEAREST HOSPITAL</div>
-          <div class="logistics-value">${cs.nearestHospital || ""}<br/><small>${cs.hospitalAddress || ""}</small></div>
+          <div class="logistics-value">${escapeHtml(cs.nearestHospital) || ""}<br/><small>${escapeHtml(cs.hospitalAddress) || ""}</small></div>
         </div>
         <div class="logistics-box">
           <div class="logistics-label">WEATHER</div>
-          <div class="logistics-value">H: ${cs.weatherHigh || "—"}° / L: ${cs.weatherLow || "—"}°<br/>${cs.weatherCondition || ""}</div>
+          <div class="logistics-value">H: ${escapeHtml(cs.weatherHigh) || "—"}° / L: ${escapeHtml(cs.weatherLow) || "—"}°<br/>${escapeHtml(cs.weatherCondition) || ""}</div>
         </div>
       </div>
     </div>
@@ -623,7 +625,7 @@ export function generateCallSheetHTML(
         ? `
     <div class="safety-section">
       <div class="safety-title">⚠️ SAFETY NOTES</div>
-      <div>${cs.safetyNotes}</div>
+      <div>${escapeHtml(cs.safetyNotes)}</div>
     </div>
     `
         : ""
@@ -660,22 +662,22 @@ export function generateCallSheetHTML(
               (activity: any) => `
             <tr class="${activity.isHighlighted ? 'activity-highlighted' : ''}">
               <td style="font-weight: bold; white-space: nowrap;">
-                ${activity.startTime || ''}${activity.endTime ? ' - ' + activity.endTime : ''}
-                ${activity.duration ? '<br/><small>(' + activity.duration + ' min)</small>' : ''}
+                ${escapeHtml(activity.startTime) || ''}${activity.endTime ? ' - ' + escapeHtml(activity.endTime) : ''}
+                ${activity.duration ? '<br/><small>(' + escapeHtml(activity.duration) + ' min)</small>' : ''}
               </td>
-              <td style="font-weight: bold;">${activity.activityType || 'GENERAL'}</td>
+              <td style="font-weight: bold;">${escapeHtml(activity.activityType) || 'GENERAL'}</td>
               <td>
-                <strong>${activity.activityName || ''}</strong>
-                ${activity.description ? '<br/><small>' + activity.description + '</small>' : ''}
+                <strong>${escapeHtml(activity.activityName) || ''}</strong>
+                ${activity.description ? '<br/><small>' + escapeHtml(activity.description) + '</small>' : ''}
               </td>
-              <td>${activity.location || ''}</td>
+              <td>${escapeHtml(activity.location) || ''}</td>
               <td>
-                ${activity.personnel || ''}
-                ${activity.responsibleParty ? '<br/><small><em>In charge: ' + activity.responsibleParty + '</em></small>' : ''}
+                ${escapeHtml(activity.personnel) || ''}
+                ${activity.responsibleParty ? '<br/><small><em>In charge: ' + escapeHtml(activity.responsibleParty) + '</em></small>' : ''}
               </td>
               <td>
-                ${activity.notes || ''}
-                ${activity.technicalNotes ? '<br/><small><em>Tech: ' + activity.technicalNotes + '</em></small>' : ''}
+                ${escapeHtml(activity.notes) || ''}
+                ${activity.technicalNotes ? '<br/><small><em>Tech: ' + escapeHtml(activity.technicalNotes) + '</em></small>' : ''}
               </td>
             </tr>
           `,
@@ -711,13 +713,13 @@ export function generateCallSheetHTML(
             .map(
               (scene: any) => `
             <tr>
-              <td><strong>${scene.sceneNumber}</strong></td>
-              <td>${scene.intExt || ""}</td>
-              <td>${scene.dayNight || ""}</td>
-              <td>${scene.sceneName || scene.description || ""}</td>
-              <td>${scene.castIds || ""}</td>
+              <td><strong>${escapeHtml(scene.sceneNumber)}</strong></td>
+              <td>${escapeHtml(scene.intExt) || ""}</td>
+              <td>${escapeHtml(scene.dayNight) || ""}</td>
+              <td>${escapeHtml(scene.sceneName || scene.description) || ""}</td>
+              <td>${escapeHtml(scene.castIds) || ""}</td>
               <td style="text-align: center;">${scene.pageCount?.toFixed(1) || ""}</td>
-              <td>${scene.location || ""}</td>
+              <td>${escapeHtml(scene.location) || ""}</td>
             </tr>
           `,
             )
@@ -788,7 +790,7 @@ export function generateCallSheetHTML(
         ? `
     <div class="notes-section">
       <div class="section-title">GENERAL NOTES</div>
-      <div class="notes-content">${cs.generalNotes}</div>
+      <div class="notes-content">${escapeHtml(cs.generalNotes)}</div>
     </div>
     `
         : ""
@@ -799,7 +801,7 @@ export function generateCallSheetHTML(
         ? `
     <div class="notes-section">
       <div class="section-title">PRODUCTION NOTES</div>
-      <div class="notes-content">${cs.productionNotes}</div>
+      <div class="notes-content">${escapeHtml(cs.productionNotes)}</div>
     </div>
     `
         : ""
@@ -810,19 +812,19 @@ export function generateCallSheetHTML(
       <div class="footer-grid">
         <div class="footer-box">
           <div class="footer-label">UPM</div>
-          <div class="footer-value">${cs.upm || ""}</div>
+          <div class="footer-value">${escapeHtml(cs.upm) || ""}</div>
         </div>
         <div class="footer-box">
           <div class="footer-label">1st AD</div>
-          <div class="footer-value">${cs.firstAd || ""}</div>
+          <div class="footer-value">${escapeHtml(cs.firstAd) || ""}</div>
         </div>
         <div class="footer-box">
           <div class="footer-label">2nd AD</div>
-          <div class="footer-value">${cs.secondAd || ""}<br/><small>${cs.secondAdPhone || ""}</small></div>
+          <div class="footer-value">${escapeHtml(cs.secondAd) || ""}<br/><small>${escapeHtml(cs.secondAdPhone) || ""}</small></div>
         </div>
         <div class="footer-box">
           <div class="footer-label">SET MEDIC</div>
-          <div class="footer-value">${cs.setMedic || ""}<br/><small>${cs.setMedicPhone || ""}</small></div>
+          <div class="footer-value">${escapeHtml(cs.setMedic) || ""}<br/><small>${escapeHtml(cs.setMedicPhone) || ""}</small></div>
         </div>
         <div class="footer-box">
           <div class="footer-label">LOCATION MANAGER</div>
@@ -830,7 +832,7 @@ export function generateCallSheetHTML(
         </div>
         <div class="footer-box">
           <div class="footer-label">PRODUCTION OFFICE</div>
-          <div class="footer-value">${cs.productionOfficePhone || ""}</div>
+          <div class="footer-value">${escapeHtml(cs.productionOfficePhone) || ""}</div>
         </div>
       </div>
     </div>

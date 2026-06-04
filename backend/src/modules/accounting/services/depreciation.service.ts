@@ -169,6 +169,12 @@ export class DepreciationService {
     periodDate: Date;
     fiscalPeriodId?: string;
   }) {
+    // Normalize periodDate to the first day of the month (UTC) so that
+    // "2025-01-01" and "2025-01-15" both resolve to the same period,
+    // preventing double-posting for the same calendar month.
+    const d = data.periodDate;
+    data.periodDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+
     // Get active depreciation schedule
     const schedule = await this.prisma.depreciationSchedule.findFirst({
       where: {
@@ -429,6 +435,11 @@ export class DepreciationService {
     userId: string;
     autoPost?: boolean;
   }) {
+    // Normalize to first of month so the batch call and per-asset call share
+    // the same canonical date, preventing duplicate entries.
+    const pd = data.periodDate;
+    data.periodDate = new Date(Date.UTC(pd.getUTCFullYear(), pd.getUTCMonth(), 1));
+
     // First, auto-create schedules for assets that don't have them
     try {
       const backfillResult = await this.backfillDepreciationSchedules();

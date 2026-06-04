@@ -4,6 +4,8 @@
  * Uses professional styling with cards, progress bars, and visual hierarchy
  */
 
+import { escapeHtml } from "./escape-html.util";
+
 export function generateProjectHTML(projectData: any): string {
   const {
     number,
@@ -433,9 +435,9 @@ export function generateProjectHTML(projectData: any): string {
         <div class="header-subtitle">Project Details & Financial Summary</div>
       </div>
       <div class="header-right">
-        <div class="project-number">Proyek #${number || "N/A"}</div>
+        <div class="project-number">Proyek #${escapeHtml(number) || "N/A"}</div>
         <div class="print-date">Dicetak: ${formatDate(new Date().toISOString())}</div>
-        <div class="status-badge" style="background-color: ${statusColor};">${status?.toUpperCase() || "N/A"}</div>
+        <div class="status-badge" style="background-color: ${statusColor};">${escapeHtml(status?.toUpperCase()) || "N/A"}</div>
       </div>
     </div>
 
@@ -479,11 +481,11 @@ export function generateProjectHTML(projectData: any): string {
       <div class="info-grid">
         <div class="info-item">
           <span class="info-label">Nomor Proyek</span>
-          <span class="info-value">${number || "N/A"}</span>
+          <span class="info-value">${escapeHtml(number) || "N/A"}</span>
         </div>
         <div class="info-item">
           <span class="info-label">Tipe Proyek</span>
-          <span class="info-value">${projectType?.name || "N/A"}</span>
+          <span class="info-value">${escapeHtml(projectType?.name) || "N/A"}</span>
         </div>
         <div class="info-item">
           <span class="info-label">Tanggal Mulai</span>
@@ -497,12 +499,12 @@ export function generateProjectHTML(projectData: any): string {
 
       <div style="margin-bottom: 2mm;">
         <span class="info-label" style="display: block; margin-bottom: 1mm;">Deskripsi</span>
-        <span class="info-value">${description || "Tidak ada deskripsi"}</span>
+        <span class="info-value">${escapeHtml(description) || "Tidak ada deskripsi"}</span>
       </div>
 
       <div>
         <span class="info-label" style="display: block; margin-bottom: 1mm;">Output</span>
-        <span class="info-value">${output || "Tidak ada output"}</span>
+        <span class="info-value">${escapeHtml(output) || "Tidak ada output"}</span>
       </div>
     </div>
 
@@ -515,7 +517,7 @@ export function generateProjectHTML(projectData: any): string {
         <div class="card-title">Ruang Lingkup Pekerjaan (Scope of Work)</div>
       </div>
       <div style="white-space: pre-wrap; font-size: 9px; line-height: 1.6;">
-        ${scopeOfWork}
+        ${escapeHtml(scopeOfWork)}
       </div>
     </div>
     `
@@ -531,19 +533,19 @@ export function generateProjectHTML(projectData: any): string {
       <div class="info-grid">
         <div class="info-item">
           <span class="info-label">Nama Klien</span>
-          <span class="info-value">${client?.name || "N/A"}</span>
+          <span class="info-value">${escapeHtml(client?.name) || "N/A"}</span>
         </div>
         <div class="info-item">
           <span class="info-label">Perusahaan</span>
-          <span class="info-value">${client?.company || "N/A"}</span>
+          <span class="info-value">${escapeHtml(client?.company) || "N/A"}</span>
         </div>
         <div class="info-item">
           <span class="info-label">Email</span>
-          <span class="info-value">${client?.email || "N/A"}</span>
+          <span class="info-value">${escapeHtml(client?.email) || "N/A"}</span>
         </div>
         <div class="info-item">
           <span class="info-label">Telepon</span>
-          <span class="info-value">${client?.phone || "N/A"}</span>
+          <span class="info-value">${escapeHtml(client?.phone) || "N/A"}</span>
         </div>
       </div>
     </div>
@@ -574,7 +576,7 @@ export function generateProjectHTML(projectData: any): string {
         <div class="info-item">
           <span class="info-label">Status</span>
           <span class="info-value" style="color: ${statusColor}; font-weight: 700;">
-            ${status?.toUpperCase() || "N/A"}
+            ${escapeHtml(status?.toUpperCase()) || "N/A"}
           </span>
         </div>
       </div>
@@ -606,8 +608,8 @@ export function generateProjectHTML(projectData: any): string {
           <tr>
             <td style="text-align: center; font-weight: 600;">${String(index + 1).padStart(2, "0")}</td>
             <td>
-              <strong>${product.name || "N/A"}</strong>
-              ${product.description ? `<div style="font-size: 9px; color: #666;">` + product.description + `</div>` : ""}
+              <strong>${escapeHtml(product.name) || "N/A"}</strong>
+              ${product.description ? `<div style="font-size: 9px; color: #666;">${escapeHtml(product.description)}</div>` : ""}
             </td>
             <td class="table-amount">${formatIDR(product.price || 0)}</td>
             <td style="text-align: center;">${product.quantity || 1}</td>
@@ -784,11 +786,11 @@ export function generateProjectHTML(projectData: any): string {
                   ">
                     ${expense.costType === "direct" ? "Langsung" : "Tidak Langsung"}
                   </span>
-                  <span>${expense.categoryNameId || expense.categoryName || "N/A"}</span>
+                  <span>${escapeHtml(expense.categoryNameId || expense.categoryName) || "N/A"}</span>
                 </div>
               </td>
               <td class="table-amount">${formatIDR(expense.amount)}</td>
-              <td style="font-size: 7px; color: #666;">${expense.notes || "-"}</td>
+              <td style="font-size: 7px; color: #666;">${escapeHtml(expense.notes) || "-"}</td>
             </tr>
             `,
               )
@@ -956,17 +958,17 @@ export function generateProjectHTML(projectData: any): string {
               ${formatDate(expense.expenseDate)}
             </td>
             <td style="font-size: 7.5px; font-weight: 600;">
-              ${expense.expenseNumber || "-"}
+              ${escapeHtml(expense.expenseNumber) || "-"}
             </td>
             <td style="font-size: 8px;">
-              ${expense.description || expense.descriptionId || "-"}
-              ${expense.notes ? `<div style="font-size: 7px; color: #666; margin-top: 0.5mm;">Catatan: ${expense.notes}</div>` : ""}
+              ${escapeHtml(expense.description || expense.descriptionId) || "-"}
+              ${expense.notes ? `<div style="font-size: 7px; color: #666; margin-top: 0.5mm;">Catatan: ${escapeHtml(expense.notes)}</div>` : ""}
             </td>
             <td style="font-size: 8px;">
-              ${expense.vendorName || "-"}
+              ${escapeHtml(expense.vendorName) || "-"}
             </td>
             <td style="font-size: 8px;">
-              ${expense.category?.nameId || expense.category?.name || "-"}
+              ${escapeHtml(expense.category?.nameId || expense.category?.name) || "-"}
             </td>
             <td class="table-amount" style="font-weight: 600;">
               ${formatIDR(parseFloat(expense.totalAmount))}
@@ -981,7 +983,7 @@ export function generateProjectHTML(projectData: any): string {
                 font-size: 7px;
                 font-weight: 600;
               ">
-                ${statusLabelMap[expense.status] || expense.status}
+                ${escapeHtml(statusLabelMap[expense.status] || expense.status)}
               </span>
             </td>
             <td style="text-align: center;">
@@ -994,7 +996,7 @@ export function generateProjectHTML(projectData: any): string {
                 font-size: 6px;
                 font-weight: 600;
               ">
-                ${paymentLabelMap[expense.paymentStatus] || expense.paymentStatus}
+                ${escapeHtml(paymentLabelMap[expense.paymentStatus] || expense.paymentStatus)}
               </span>
             </td>
           </tr>
@@ -1205,7 +1207,7 @@ export function generateProjectHTML(projectData: any): string {
       <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
         ${createdAt ? `<span style="margin-right: 2mm;">Dibuat: ${formatDate(createdAt)}</span>` : ""}
         ${updatedAt ? `<span style="margin-right: 2mm;">Terakhir diubah: ${formatDate(updatedAt)}</span>` : ""}
-        ${profitMargin?.calculatedBy ? `<span>Profit dihitung oleh: ${profitMargin.calculatedBy}</span>` : ""}
+        ${profitMargin?.calculatedBy ? `<span>Profit dihitung oleh: ${escapeHtml(profitMargin.calculatedBy)}</span>` : ""}
       </div>
     </div>
 

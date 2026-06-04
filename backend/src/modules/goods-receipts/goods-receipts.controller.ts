@@ -46,7 +46,7 @@ export class GoodsReceiptsController {
     @Body() createGoodsReceiptDto: CreateGoodsReceiptDto,
   ) {
     return this.goodsReceiptsService.create(
-      req.user.userId,
+      req.user.id,
       createGoodsReceiptDto,
     );
   }
@@ -89,7 +89,7 @@ export class GoodsReceiptsController {
   ) {
     return this.goodsReceiptsService.update(
       id,
-      req.user.userId,
+      req.user.id,
       updateGoodsReceiptDto,
     );
   }
@@ -116,7 +116,7 @@ export class GoodsReceiptsController {
     @Param("id") id: string,
     @Body() inspectDto: InspectGoodsReceiptDto,
   ) {
-    return this.goodsReceiptsService.inspect(id, req.user.userId, inspectDto);
+    return this.goodsReceiptsService.inspect(id, req.user.id, inspectDto);
   }
 
   @Post(":id/post")
@@ -134,7 +134,7 @@ export class GoodsReceiptsController {
     @Param("id") id: string,
     @Body() postDto: PostGoodsReceiptDto,
   ) {
-    return this.goodsReceiptsService.post(id, req.user.userId, postDto);
+    return this.goodsReceiptsService.post(id, req.user.id, postDto);
   }
 
   @Post(":id/cancel")
@@ -147,6 +147,6 @@ export class GoodsReceiptsController {
     @Param("id") id: string,
     @Body() cancelDto: CancelGoodsReceiptDto,
   ) {
-    return this.goodsReceiptsService.cancel(id, req.user.userId, cancelDto);
+    return this.goodsReceiptsService.cancel(id, req.user.id, cancelDto);
   }
 }

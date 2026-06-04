@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { JournalService } from "../accounting/services/journal.service";
@@ -63,67 +64,82 @@ export class PurchaseOrdersService {
     const poNumber = await this.generatePONumber();
 
     // Create PO with items
-    const po = await this.prisma.purchaseOrder.create({
-      data: {
-        poNumber,
-        vendorId: createPODto.vendorId,
-        projectId: createPODto.projectId,
-        poDate: createPODto.poDate,
-        deliveryAddress: createPODto.deliveryAddress,
-        deliveryDate: createPODto.deliveryDate,
-        paymentTerms: createPODto.paymentTerms,
-        dueDate: createPODto.dueDate,
-        subtotal: createPODto.subtotal,
-        discountAmount: createPODto.discountAmount || 0,
-        ppnAmount: createPODto.ppnAmount,
-        pphAmount: createPODto.pphAmount || 0,
-        totalAmount: createPODto.totalAmount,
-        isPPNIncluded: createPODto.isPPNIncluded,
-        ppnRate: createPODto.ppnRate,
-        withholdingTaxType: createPODto.withholdingTaxType,
-        withholdingTaxRate: createPODto.withholdingTaxRate,
-        description: createPODto.description,
-        descriptionId: createPODto.descriptionId,
-        notes: createPODto.notes,
-        termsConditions: createPODto.termsConditions,
-        requestedBy: requestedBy ?? userId,
-        approvalStatus: createPODto.approvalStatus,
-        status: POStatus.DRAFT,
-        createdBy: userId,
-        updatedBy: userId,
-        items: {
-          create: createPODto.items.map((item) => ({
-            lineNumber: item.lineNumber,
-            itemType: item.itemType,
-            itemCode: item.itemCode,
-            description: item.description,
-            descriptionId: item.descriptionId,
-            quantity: item.quantity,
-            unit: item.unit,
-            unitPrice: item.unitPrice,
-            discountPercent: item.discountPercent || 0,
-            discountAmount: item.discountAmount || 0,
-            lineTotal: item.lineTotal,
-            ppnAmount: item.ppnAmount,
-            quantityReceived: 0,
-            quantityInvoiced: 0,
-            quantityOutstanding: item.quantityOutstanding,
-            expenseCategoryId: item.expenseCategoryId,
-            assetId: item.assetId,
-          })),
-        },
-      },
-      include: {
-        vendor: true,
-        project: true,
-        items: {
-          include: {
-            expenseCategory: true,
-            asset: true,
+    let po: any;
+    try {
+      po = await this.prisma.purchaseOrder.create({
+        data: {
+          poNumber,
+          vendorId: createPODto.vendorId,
+          projectId: createPODto.projectId,
+          poDate: createPODto.poDate,
+          deliveryAddress: createPODto.deliveryAddress,
+          deliveryDate: createPODto.deliveryDate,
+          paymentTerms: createPODto.paymentTerms,
+          dueDate: createPODto.dueDate,
+          subtotal: createPODto.subtotal,
+          discountAmount: createPODto.discountAmount || 0,
+          ppnAmount: createPODto.ppnAmount,
+          pphAmount: createPODto.pphAmount || 0,
+          totalAmount: createPODto.totalAmount,
+          isPPNIncluded: createPODto.isPPNIncluded,
+          ppnRate: createPODto.ppnRate,
+          withholdingTaxType: createPODto.withholdingTaxType,
+          withholdingTaxRate: createPODto.withholdingTaxRate,
+          description: createPODto.description,
+          descriptionId: createPODto.descriptionId,
+          notes: createPODto.notes,
+          termsConditions: createPODto.termsConditions,
+          requestedBy: requestedBy ?? userId,
+          approvalStatus: createPODto.approvalStatus,
+          status: POStatus.DRAFT,
+          createdBy: userId,
+          updatedBy: userId,
+          items: {
+            create: createPODto.items.map((item) => ({
+              lineNumber: item.lineNumber,
+              itemType: item.itemType,
+              itemCode: item.itemCode,
+              description: item.description,
+              descriptionId: item.descriptionId,
+              quantity: item.quantity,
+              unit: item.unit,
+              unitPrice: item.unitPrice,
+              discountPercent: item.discountPercent || 0,
+              discountAmount: item.discountAmount || 0,
+              lineTotal: item.lineTotal,
+              ppnAmount: item.ppnAmount,
+              quantityReceived: 0,
+              quantityInvoiced: 0,
+              quantityOutstanding: item.quantityOutstanding,
+              expenseCategoryId: item.expenseCategoryId,
+              assetId: item.assetId,
+            })),
           },
         },
-      },
-    });
+        include: {
+          vendor: true,
+          project: true,
+          items: {
+            include: {
+              expenseCategory: true,
+              asset: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        throw new ConflictException(
+          "Duplicate PO number — please retry",
+        );
+      }
+      throw error;
+    }
 
     return po;
   }

@@ -774,11 +774,11 @@ function CallSheetTable({ rows, onRowClick, onView, onEdit, onDelete }: CallShee
           id: 'people',
           header: () => <span className="block text-right">{t('callSheets.colCrewTalent', 'Crew / Talent')}</span>,
           accessorFn: (row) =>
-            (row.crewCalls?.length || 0) + (row.castCalls?.length || row.models?.length || 0),
+            (row._count?.crewCalls ?? 0) + (row._count?.castCalls ?? 0),
           cell: ({ row }) => {
             const cs = row.original;
-            const crew = cs.crewCalls?.length || 0;
-            const cast = cs.castCalls?.length || cs.models?.length || 0;
+            const crew = cs._count?.crewCalls ?? 0;
+            const cast = cs._count?.castCalls ?? 0;
             return (
               <div className="text-right tabular-nums text-xs text-text-secondary">
                 <span className="text-text-primary">{crew}</span>

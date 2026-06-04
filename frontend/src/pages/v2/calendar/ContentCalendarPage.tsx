@@ -176,16 +176,8 @@ export default function ContentCalendarPageV2() {
     queryFn: () => contentCalendarService.getContents(filters),
   });
 
-  // Service returns `{ data: ContentCalendarItem[] }` in the typing but
-  // the classic page peels `data.data` because the controller wraps a
-  // second time. We defend against both shapes.
   const items: ContentCalendarItem[] = useMemo(() => {
-    const raw = contentsResp as unknown as
-      | { data?: ContentCalendarItem[] | { data?: ContentCalendarItem[] } }
-      | undefined;
-    const inner = (raw as any)?.data;
-    if (Array.isArray(inner)) return inner;
-    if (Array.isArray(inner?.data)) return inner.data;
+    if (Array.isArray(contentsResp)) return contentsResp;
     return [];
   }, [contentsResp]);
 
@@ -282,12 +274,9 @@ export default function ContentCalendarPageV2() {
 
   const publishMutation = useMutation({
     mutationFn: (id: string) => contentCalendarService.publishContent(id),
-    onSuccess: (resp) => {
+    onSuccess: (updated) => {
       qc.invalidateQueries({ queryKey: ['content-calendar-v2'] });
       toast.success(t('content.published', 'Konten ditandai terbit.'));
-      // Unwrap double-wrapped response: axios response.data → { data: { data: item } }
-      const updated: ContentCalendarItem | undefined =
-        (resp as any)?.data?.data ?? (resp as any)?.data ?? undefined;
       if (updated?.id) setSelectedItem(updated);
     },
     onError: () => toast.error(t('content.publishFailed', 'Gagal menerbitkan konten.')),
@@ -295,12 +284,9 @@ export default function ContentCalendarPageV2() {
 
   const archiveMutation = useMutation({
     mutationFn: (id: string) => contentCalendarService.archiveContent(id),
-    onSuccess: (resp) => {
+    onSuccess: (updated) => {
       qc.invalidateQueries({ queryKey: ['content-calendar-v2'] });
       toast.success(t('content.archived', 'Konten diarsipkan.'));
-      // Unwrap double-wrapped response: axios response.data → { data: { data: item } }
-      const updated: ContentCalendarItem | undefined =
-        (resp as any)?.data?.data ?? (resp as any)?.data ?? undefined;
       if (updated?.id) setSelectedItem(updated);
     },
     onError: () => toast.error(t('content.archiveFailed', 'Gagal mengarsipkan konten.')),

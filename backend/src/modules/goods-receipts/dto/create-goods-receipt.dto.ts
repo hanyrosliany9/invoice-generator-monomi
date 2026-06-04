@@ -94,10 +94,6 @@ export class CreateGoodsReceiptDto {
   @MaxLength(100)
   deliveryNoteNumber?: string;
 
-  @ApiProperty({ description: "Received by (user ID)" })
-  @IsString()
-  receivedBy: string;
-
   @ApiPropertyOptional({ description: "Warehouse location" })
   @IsOptional()
   @IsString()

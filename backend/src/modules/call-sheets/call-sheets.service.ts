@@ -77,7 +77,7 @@ export class CallSheetsService {
     return this.prisma.callSheet.findMany({
       include: {
         shootDay: true,
-        schedule: { select: { id: true, name: true } },
+        schedule: { select: { id: true, name: true, project: { select: { id: true, number: true, description: true } } } },
         _count: { select: { castCalls: true, crewCalls: true } },
       },
       orderBy: { shootDate: "asc" },

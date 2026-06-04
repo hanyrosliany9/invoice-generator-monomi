@@ -110,7 +110,7 @@ const formatBytes = (raw?: string | number) => {
 /* ------------------------------------------------------------------ */
 
 export default function CollectionDetailPageV2() {
-  const { collectionId } = useParams<{ collectionId: string }>();
+  const { id: collectionId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -181,7 +181,7 @@ export default function CollectionDetailPageV2() {
     onSuccess: () => {
       toast.success(t('collections.detail.deleted', 'Koleksi berhasil dihapus.'));
       queryClient.invalidateQueries({ queryKey: ['media-collections', collection?.projectId] });
-      navigate(`/media/project/${collection?.projectId}`);
+      navigate(`/media-collab/projects/${collection?.projectId}`);
     },
     onError: () =>
       toast.error(t('collections.detail.deleteFailed', 'Gagal menghapus koleksi.')),
@@ -400,7 +400,7 @@ export default function CollectionDetailPageV2() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate(`/media/project/${collection.projectId}`)}
+                onClick={() => navigate(`/media-collab/projects/${collection.projectId}`)}
                 className="text-text-secondary hover:text-text-primary"
               >
                 <ArrowLeft className="h-4 w-4" />

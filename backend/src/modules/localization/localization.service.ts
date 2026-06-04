@@ -54,16 +54,52 @@ export class LocalizationService {
         "Pembayaran dimuka 50%",
       ],
       bankHolidays: [
-        "2024-01-01", // New Year
-        "2024-02-10", // Chinese New Year
+        // ── 2024 ──────────────────────────────────────────────────────────────
+        "2024-01-01", // New Year's Day
+        "2024-02-10", // Chinese New Year (Lunar)
         "2024-03-29", // Good Friday
-        "2024-04-10", // Eid al-Fitr
-        "2024-05-01", // Labor Day
-        "2024-05-09", // Ascension Day
+        "2024-04-10", // Eid al-Fitr (Idul Fitri)
+        "2024-04-11", // Eid al-Fitr (Idul Fitri, day 2)
+        "2024-05-01", // Labor Day (Hari Buruh)
+        "2024-05-09", // Ascension Day (Kenaikan Isa Al-Masih)
+        "2024-05-23", // Waisak Day (Buddha)
         "2024-06-01", // Pancasila Day
-        "2024-06-17", // Eid al-Adha
-        "2024-08-17", // Independence Day
-        "2024-12-25", // Christmas
+        "2024-06-17", // Eid al-Adha (Idul Adha)
+        "2024-08-17", // Independence Day (Hari Kemerdekaan)
+        "2024-09-16", // Islamic New Year (Tahun Baru Hijriah)
+        "2024-11-15", // Prophet's Birthday (Maulid Nabi)
+        "2024-12-25", // Christmas Day
+        "2024-12-26", // Christmas (boxing day substitute / joint leave common)
+
+        // ── 2025 ─────────────────────────────────────────────────────────────
+        // NOTE: Islamic calendar dates shift ~11 days earlier each year.
+        // Dates below are based on official Keppres/SKB for 2025.
+        // Fixed/predictable dates are exact; lunar ones are best estimates.
+        "2025-01-01", // New Year's Day
+        "2025-01-29", // Chinese New Year
+        "2025-03-29", // Nyepi (Hindu New Year, Bali)
+        "2025-03-31", // Eid al-Fitr (Idul Fitri 1446H)
+        "2025-04-01", // Eid al-Fitr (Idul Fitri, day 2)
+        "2025-04-18", // Good Friday
+        "2025-05-01", // Labor Day
+        "2025-05-12", // Waisak Day
+        "2025-05-29", // Ascension Day
+        "2025-06-01", // Pancasila Day
+        "2025-06-06", // Eid al-Adha (Idul Adha 1446H)
+        "2025-06-27", // Islamic New Year (1447H)
+        "2025-08-17", // Independence Day
+        "2025-09-05", // Prophet's Birthday (Maulid Nabi 1447H)
+        "2025-12-25", // Christmas Day
+
+        // ── 2026 ─────────────────────────────────────────────────────────────
+        // Fixed national public holidays only; lunar holidays TBD by government.
+        "2026-01-01", // New Year's Day
+        "2026-05-01", // Labor Day
+        "2026-06-01", // Pancasila Day
+        "2026-08-17", // Independence Day
+        "2026-12-25", // Christmas Day
+        // TODO: Update 2026 lunar holiday dates (Eid, Nyepi, CNY, etc.)
+        // once official Keppres/SKB for 2026 is published.
       ],
       workingDays: [1, 2, 3, 4, 5], // Monday to Friday
     };
@@ -268,7 +304,13 @@ export class LocalizationService {
    * Check if date is Indonesian bank holiday
    */
   isIndonesianBankHoliday(date: Date): boolean {
-    const dateStr = date.toISOString().split("T")[0];
+    // Build local-time YYYY-MM-DD string using local date parts to avoid the
+    // UTC-offset off-by-one bug that toISOString() causes for WIB (UTC+7)
+    // dates: a WIB midnight date would convert to the previous calendar day.
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
     return this.config.bankHolidays.includes(dateStr);
   }
 

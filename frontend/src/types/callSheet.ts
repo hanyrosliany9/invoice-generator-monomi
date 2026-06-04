@@ -97,9 +97,10 @@ export interface CallSheet {
   wardrobeProvider?: string;
   stylingNotes?: string;
 
-  schedule?: { id: string; project?: { name: string } };
+  schedule?: { id: string; name?: string; project?: { id: string; name: string } };
   shootDay?: { dayNumber: number };
   createdBy?: { id: string; name: string };
+  _count?: { crewCalls: number; castCalls: number };
   createdAt: string;
   updatedAt: string;
 }

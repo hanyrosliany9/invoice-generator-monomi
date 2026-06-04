@@ -93,7 +93,7 @@ export class MateraiService {
 
     const amount = Number(invoice.totalAmount);
     const required =
-      this.materaiConfig.enabled && amount > this.materaiConfig.threshold;
+      this.materaiConfig.enabled && amount >= this.materaiConfig.threshold;
 
     return {
       required,

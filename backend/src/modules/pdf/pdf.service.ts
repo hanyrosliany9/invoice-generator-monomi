@@ -11,6 +11,18 @@ import { generateCallSheetHTML } from "./templates/call-sheet.html";
 import { generatePhotoCallSheetHTML } from "./templates/photo-call-sheet.html";
 import { generateShotListHTML } from "./templates/shot-list.html";
 
+// HTML escape helper — wrap every user/DB-supplied string field in esc() before
+// interpolating into template literals so Puppeteer cannot execute injected markup.
+const esc = (v: unknown): string =>
+  v == null
+    ? ""
+    : String(v)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
 @Injectable()
 export class PdfService {
   private templatePath = join(__dirname, "templates");
@@ -267,21 +279,23 @@ export class PdfService {
     const bankAccounts: string[] = [];
 
     // Build bank account list from new flexible fields
+    // esc() each DB-sourced field individually — the <br> separators are static HTML
     if (companyData.bank1Name && companyData.bank1Number) {
-      bankAccounts.push(`${companyData.bank1Name}: ${companyData.bank1Number}`);
+      bankAccounts.push(`${esc(companyData.bank1Name)}: ${esc(companyData.bank1Number)}`);
     }
     if (companyData.bank2Name && companyData.bank2Number) {
-      bankAccounts.push(`${companyData.bank2Name}: ${companyData.bank2Number}`);
+      bankAccounts.push(`${esc(companyData.bank2Name)}: ${esc(companyData.bank2Number)}`);
     }
     if (companyData.bank3Name && companyData.bank3Number) {
-      bankAccounts.push(`${companyData.bank3Name}: ${companyData.bank3Number}`);
+      bankAccounts.push(`${esc(companyData.bank3Name)}: ${esc(companyData.bank3Number)}`);
     }
 
     // Format payment info based on available bank accounts
     if (bankAccounts.length > 0) {
       // Use bankAccountName if set, otherwise fall back to companyName
-      const accountName =
-        companyData.bankAccountName || companyData.companyName || "Company";
+      const accountName = esc(
+        companyData.bankAccountName || companyData.companyName || "Company",
+      );
       return `Bank Transfer<br>Rekening atas nama: ${accountName}<br>${bankAccounts.join("<br>")}`;
     }
 
@@ -909,10 +923,10 @@ export class PdfService {
       <div class="company-info">
         ${this.logoBase64 ? `<img src="${this.logoBase64}" alt="Company Logo" class="company-logo" />` : ""}
         <div class="company-details">
-          ${companyData.address ? `<div class="company-details-line">${companyData.address}</div>` : ""}
-          ${companyData.phone ? `<div class="company-details-line">Tel: ${companyData.phone}</div>` : ""}
-          ${companyData.email ? `<div class="company-details-line">Email: ${companyData.email}</div>` : ""}
-          ${companyData.website ? `<div class="company-details-line">${companyData.website}</div>` : ""}
+          ${companyData.address ? `<div class="company-details-line">${esc(companyData.address)}</div>` : ""}
+          ${companyData.phone ? `<div class="company-details-line">Tel: ${esc(companyData.phone)}</div>` : ""}
+          ${companyData.email ? `<div class="company-details-line">Email: ${esc(companyData.email)}</div>` : ""}
+          ${companyData.website ? `<div class="company-details-line">${esc(companyData.website)}</div>` : ""}
         </div>
       </div>
       <div class="invoice-title-section">
@@ -920,7 +934,7 @@ export class PdfService {
         <div class="invoice-meta">
           <div class="invoice-meta-item">
             <span class="invoice-meta-label">Invoice No:</span>
-            <span class="invoice-meta-value">${invoiceNumber}</span>
+            <span class="invoice-meta-value">${esc(invoiceNumber)}</span>
           </div>
           <div class="invoice-meta-item">
             <span class="invoice-meta-label">Date:</span>
@@ -939,13 +953,13 @@ export class PdfService {
       <div class="detail-card">
         <div class="section-title">Bill To</div>
         <div class="detail-row">
-          <span class="detail-value" style="flex: 1; text-align: left;">${client.name}</span>
+          <span class="detail-value" style="flex: 1; text-align: left;">${esc(client.name)}</span>
         </div>
         ${
           client.company
             ? `
         <div class="detail-row">
-          <span class="detail-value" style="flex: 1; text-align: left; color: #6b7280; font-size: 9px;">${client.company}</span>
+          <span class="detail-value" style="flex: 1; text-align: left; color: #6b7280; font-size: 9px;">${esc(client.company)}</span>
         </div>
         `
             : ""
@@ -954,7 +968,7 @@ export class PdfService {
           client.address
             ? `
         <div class="detail-row">
-          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.address}</span>
+          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${esc(client.address)}</span>
         </div>
         `
             : ""
@@ -963,7 +977,7 @@ export class PdfService {
           client.phone
             ? `
         <div class="detail-row">
-          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.phone}</span>
+          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${esc(client.phone)}</span>
         </div>
         `
             : ""
@@ -972,7 +986,7 @@ export class PdfService {
           client.email
             ? `
         <div class="detail-row">
-          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.email}</span>
+          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${esc(client.email)}</span>
         </div>
         `
             : ""
@@ -983,7 +997,7 @@ export class PdfService {
         <div class="section-title">Invoice Info</div>
         <div class="detail-row">
           <span class="detail-label">Project:</span>
-          <span class="detail-value">${project.description || project.name || "N/A"}</span>
+          <span class="detail-value">${esc(project.description || project.name || "N/A")}</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Status:</span>
@@ -1012,8 +1026,8 @@ export class PdfService {
         <tr>
           <td>${String(index + 1).padStart(2, "0")}</td>
           <td>
-            <span class="service-desc-main">${product.name}</span>
-            ${product.description ? `<span class="service-desc-detail">${product.description}</span>` : ""}
+            <span class="service-desc-main">${esc(product.name)}</span>
+            ${product.description ? `<span class="service-desc-detail">${esc(product.description)}</span>` : ""}
           </td>
           <td>${formatIDR(product.price || 0)}</td>
           <td>${product.quantity || 1}</td>
@@ -1026,7 +1040,7 @@ export class PdfService {
         <tr>
           <td>01</td>
           <td>
-            <span class="service-desc-main">${project.description || project.name || "Service"}</span>
+            <span class="service-desc-main">${esc(project.description || project.name || "Service")}</span>
           </td>
           <td>${formatIDR(amountPerProject)}</td>
           <td>1</td>
@@ -1053,7 +1067,7 @@ export class PdfService {
 
           <!-- This Termin -->
           <tr>
-            <td>Termin ${paymentMilestone.milestoneNumber} - ${paymentMilestone.nameId || paymentMilestone.name} (${paymentMilestone.paymentPercentage}%)</td>
+            <td>Termin ${paymentMilestone.milestoneNumber} - ${esc(paymentMilestone.nameId || paymentMilestone.name)} (${paymentMilestone.paymentPercentage}%)</td>
             <td>${formatIDR(paymentMilestone.paymentAmount)}</td>
           </tr>
 
@@ -1062,7 +1076,7 @@ export class PdfService {
             includeTax
               ? `
           <tr>
-            <td>Tax (${taxLabel} ${Math.round(taxRate * 100)}%)</td>
+            <td>Tax (${esc(taxLabel)} ${Math.round(taxRate * 100)}%)</td>
             <td>${formatIDR(taxAmount)}</td>
           </tr>
           `
@@ -1075,7 +1089,7 @@ export class PdfService {
               ? `
           <tr>
             <td colspan="2" style="font-size: 9px; color: #6b7280; text-align: center; padding: 3mm;">
-              ${taxExemptReason}
+              ${esc(taxExemptReason)}
             </td>
           </tr>
           `
@@ -1108,7 +1122,7 @@ export class PdfService {
                 .map(
                   (inv: any) => `
               <tr style="font-size: 8px; color: #6b7280;">
-                <td>&nbsp;&nbsp;↳ ${inv.invoiceNumber} - Termin ${inv.paymentMilestone?.milestoneNumber}</td>
+                <td>&nbsp;&nbsp;↳ ${esc(inv.invoiceNumber)} - Termin ${inv.paymentMilestone?.milestoneNumber}</td>
                 <td>${formatIDR(inv.totalAmount)}</td>
               </tr>
               `,
@@ -1160,7 +1174,7 @@ export class PdfService {
             includeTax
               ? `
           <tr>
-            <td>Tax (${taxLabel} ${Math.round(taxRate * 100)}%)</td>
+            <td>Tax (${esc(taxLabel)} ${Math.round(taxRate * 100)}%)</td>
             <td>${formatIDR(taxAmount)}</td>
           </tr>
           `
@@ -1171,7 +1185,7 @@ export class PdfService {
               ? `
           <tr>
             <td colspan="2" style="font-size: 9px; color: #6b7280; text-align: center; padding: 3mm;">
-              ${taxExemptReason}
+              ${esc(taxExemptReason)}
             </td>
           </tr>
           `
@@ -1193,7 +1207,7 @@ export class PdfService {
         ? `
     <div class="section-box scope">
       <div class="section-box-title">Scope of Work</div>
-      <div class="section-box-content">${scopeOfWork}</div>
+      <div class="section-box-content">${esc(scopeOfWork)}</div>
     </div>
     `
         : ""
@@ -1209,7 +1223,7 @@ export class PdfService {
     <div class="footer-section">
       <div class="footer-content">
         <div class="footer-title">Terms & Conditions</div>
-        <div class="footer-text">${terms || "Payment due within 30 days of invoice date. All prices are in Indonesian Rupiah (IDR). This invoice is valid until the due date specified above."}</div>
+        <div class="footer-text">${esc(terms || "Payment due within 30 days of invoice date. All prices are in Indonesian Rupiah (IDR). This invoice is valid until the due date specified above.")}</div>
       </div>
     </div>
 
@@ -1243,9 +1257,9 @@ export class PdfService {
 
     <!-- Contact Information Bar (inside invoice-container to prevent separation) -->
     <div class="contact-bar">
-      <span class="contact-bar-item">${companyData.phone || "N/A"}</span>
-      <span class="contact-bar-item">${companyData.address || "N/A"}</span>
-      <span class="contact-bar-item">${companyData.email || "N/A"}</span>
+      <span class="contact-bar-item">${esc(companyData.phone || "N/A")}</span>
+      <span class="contact-bar-item">${esc(companyData.address || "N/A")}</span>
+      <span class="contact-bar-item">${esc(companyData.email || "N/A")}</span>
     </div>
   </div>
 </body>
@@ -1785,10 +1799,10 @@ export class PdfService {
       <div class="company-info">
         ${this.logoBase64 ? `<img src="${this.logoBase64}" alt="Company Logo" class="company-logo" />` : ""}
         <div class="company-details">
-          ${companyData.address ? `<div class="company-details-line">${companyData.address}</div>` : ""}
-          ${companyData.phone ? `<div class="company-details-line">Tel: ${companyData.phone}</div>` : ""}
-          ${companyData.email ? `<div class="company-details-line">Email: ${companyData.email}</div>` : ""}
-          ${companyData.website ? `<div class="company-details-line">${companyData.website}</div>` : ""}
+          ${companyData.address ? `<div class="company-details-line">${esc(companyData.address)}</div>` : ""}
+          ${companyData.phone ? `<div class="company-details-line">Tel: ${esc(companyData.phone)}</div>` : ""}
+          ${companyData.email ? `<div class="company-details-line">Email: ${esc(companyData.email)}</div>` : ""}
+          ${companyData.website ? `<div class="company-details-line">${esc(companyData.website)}</div>` : ""}
         </div>
       </div>
       <div class="quotation-title-section">
@@ -1796,7 +1810,7 @@ export class PdfService {
         <div class="quotation-meta">
           <div class="quotation-meta-item">
             <span class="quotation-meta-label">Quotation No:</span>
-            <span class="quotation-meta-value">${quotationNumber}</span>
+            <span class="quotation-meta-value">${esc(quotationNumber)}</span>
           </div>
           <div class="quotation-meta-item">
             <span class="quotation-meta-label">Date:</span>
@@ -1815,13 +1829,13 @@ export class PdfService {
       <div class="detail-card">
         <div class="section-title">Quotation To</div>
         <div class="detail-row">
-          <span class="detail-value" style="flex: 1; text-align: left;">${client.name}</span>
+          <span class="detail-value" style="flex: 1; text-align: left;">${esc(client.name)}</span>
         </div>
         ${
           client.company
             ? `
         <div class="detail-row">
-          <span class="detail-value" style="flex: 1; text-align: left; color: #6b7280; font-size: 9px;">${client.company}</span>
+          <span class="detail-value" style="flex: 1; text-align: left; color: #6b7280; font-size: 9px;">${esc(client.company)}</span>
         </div>
         `
             : ""
@@ -1830,7 +1844,7 @@ export class PdfService {
           client.address
             ? `
         <div class="detail-row">
-          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.address}</span>
+          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${esc(client.address)}</span>
         </div>
         `
             : ""
@@ -1839,7 +1853,7 @@ export class PdfService {
           client.phone
             ? `
         <div class="detail-row">
-          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.phone}</span>
+          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${esc(client.phone)}</span>
         </div>
         `
             : ""
@@ -1848,7 +1862,7 @@ export class PdfService {
           client.email
             ? `
         <div class="detail-row">
-          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${client.email}</span>
+          <span class="detail-value" style="flex: 1; text-align: left; font-size: 9px;">${esc(client.email)}</span>
         </div>
         `
             : ""
@@ -1859,7 +1873,7 @@ export class PdfService {
         <div class="section-title">Quotation Info</div>
         <div class="detail-row">
           <span class="detail-label">Project:</span>
-          <span class="detail-value">${project.description || project.name || "N/A"}</span>
+          <span class="detail-value">${esc(project.description || project.name || "N/A")}</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Status:</span>
@@ -1888,8 +1902,8 @@ export class PdfService {
         <tr>
           <td>${String(index + 1).padStart(2, "0")}</td>
           <td>
-            <span class="service-desc-main">${product.name}</span>
-            ${product.description ? `<span class="service-desc-detail">${product.description}</span>` : ""}
+            <span class="service-desc-main">${esc(product.name)}</span>
+            ${product.description ? `<span class="service-desc-detail">${esc(product.description)}</span>` : ""}
           </td>
           <td>${formatIDR(product.price || 0)}</td>
           <td>${product.quantity || 1}</td>
@@ -1902,7 +1916,7 @@ export class PdfService {
         <tr>
           <td>01</td>
           <td>
-            <span class="service-desc-main">${project.description || project.name || "Service"}</span>
+            <span class="service-desc-main">${esc(project.description || project.name || "Service")}</span>
           </td>
           <td>${formatIDR(amountPerProject)}</td>
           <td>1</td>
@@ -1948,7 +1962,7 @@ export class PdfService {
         ? `
     <div class="section-box scope">
       <div class="section-box-title">Scope of Work</div>
-      <div class="section-box-content">${scopeOfWork}</div>
+      <div class="section-box-content">${esc(scopeOfWork)}</div>
     </div>
     `
         : ""
@@ -1958,15 +1972,15 @@ export class PdfService {
     <div class="footer-section">
       <div class="footer-content">
         <div class="footer-title">Terms & Conditions</div>
-        <div class="footer-text">${terms || "This quotation is valid for 30 days from the date specified above. All prices are in Indonesian Rupiah (IDR). Payment is due within 30 days upon invoice submission."}</div>
+        <div class="footer-text">${esc(terms || "This quotation is valid for 30 days from the date specified above. All prices are in Indonesian Rupiah (IDR). Payment is due within 30 days upon invoice submission.")}</div>
       </div>
     </div>
 
     <!-- Contact Information Bar -->
     <div class="contact-bar">
-      <span class="contact-bar-item">${companyData.phone || "N/A"}</span>
-      <span class="contact-bar-item">${companyData.address || "N/A"}</span>
-      <span class="contact-bar-item">${companyData.email || "N/A"}</span>
+      <span class="contact-bar-item">${esc(companyData.phone || "N/A")}</span>
+      <span class="contact-bar-item">${esc(companyData.address || "N/A")}</span>
+      <span class="contact-bar-item">${esc(companyData.email || "N/A")}</span>
     </div>
   </div>
 </body>

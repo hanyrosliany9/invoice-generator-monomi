@@ -9,6 +9,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { JournalService } from "../accounting/services/journal.service";
+import { DepreciationService } from "../accounting/services/depreciation.service";
 import { CreateAssetDto } from "./dto/create-asset.dto";
 import { UpdateAssetDto } from "./dto/update-asset.dto";
 import { AssetStatus, AssetCondition, TransactionType } from "@prisma/client";
@@ -21,6 +22,8 @@ export class AssetsService {
     private prisma: PrismaService,
     @Inject(forwardRef(() => JournalService))
     private journalService: JournalService,
+    @Inject(forwardRef(() => DepreciationService))
+    private depreciationService: DepreciationService,
   ) {}
 
   async create(createAssetDto: CreateAssetDto) {
@@ -255,6 +258,42 @@ export class AssetsService {
       },
     });
 
+    // FIX 2a: Deactivate depreciation schedule when asset becomes RETIRED or BROKEN
+    // so processMonthlyDepreciation (which filters isActive:true) stops generating expense.
+    const inactiveStatuses: string[] = ['RETIRED', 'BROKEN'];
+    if (
+      updateAssetDto.status &&
+      inactiveStatuses.includes(updateAssetDto.status as string)
+    ) {
+      try {
+        const activeSchedules = await this.prisma.depreciationSchedule.findMany({
+          where: { assetId: id, isActive: true },
+        });
+        for (const schedule of activeSchedules) {
+          // deactivateDepreciationSchedule throws if there are posted entries —
+          // in that case fall back to a direct isActive:false update so the
+          // status change is never blocked.
+          try {
+            await this.depreciationService.deactivateDepreciationSchedule(schedule.id);
+          } catch {
+            await this.prisma.depreciationSchedule.update({
+              where: { id: schedule.id },
+              data: { isActive: false },
+            });
+          }
+        }
+        if (activeSchedules.length > 0) {
+          this.logger.log(
+            `Deactivated ${activeSchedules.length} depreciation schedule(s) for asset ${updated.assetCode} (status: ${updateAssetDto.status})`,
+          );
+        }
+      } catch (error: any) {
+        this.logger.warn(
+          `Could not deactivate depreciation schedule for asset ${updated.assetCode}: ${error.message}`,
+        );
+      }
+    }
+
     // FIX 1: If depreciation-relevant fields changed, recalculate and upsert schedule
     const deprecFields = ['purchasePrice', 'usefulLifeYears', 'residualValue', 'depreciationMethod'] as const;
     const needsRecalc = deprecFields.some((f) => (updateAssetDto as any)[f] !== undefined);
@@ -384,37 +423,50 @@ export class AssetsService {
       throw new BadRequestException("Asset tidak tersedia");
     }
 
-    const conflicts = await this.prisma.assetReservation.findMany({
-      where: {
-        assetId,
-        status: { in: ["PENDING", "CONFIRMED"] },
-        OR: [
-          {
-            startDate: { lte: new Date(reserveDto.endDate) },
-            endDate: { gte: new Date(reserveDto.startDate) },
-          },
-        ],
-      },
-    });
+    // FIX 2c: Wrap overlap-check + insert in a single transaction so two
+    // concurrent requests can't both pass the conflict check and create
+    // duplicate reservations for the same period.
+    return this.prisma.$transaction(async (tx) => {
+      const conflicts = await tx.assetReservation.findMany({
+        where: {
+          assetId,
+          status: { in: ["PENDING", "CONFIRMED"] },
+          OR: [
+            {
+              startDate: { lte: new Date(reserveDto.endDate) },
+              endDate: { gte: new Date(reserveDto.startDate) },
+            },
+          ],
+        },
+      });
 
-    if (conflicts.length > 0) {
-      throw new ConflictException("Asset sudah direservasi untuk periode ini");
-    }
+      if (conflicts.length > 0) {
+        throw new ConflictException("Asset sudah direservasi untuk periode ini");
+      }
 
-    return this.prisma.assetReservation.create({
-      data: {
-        ...reserveDto,
-        assetId,
-      },
-      include: {
-        asset: true,
-        user: true,
-      },
+      return tx.assetReservation.create({
+        data: {
+          ...reserveDto,
+          assetId,
+        },
+        include: {
+          asset: true,
+          user: true,
+        },
+      });
     });
   }
 
   async checkOut(assetId: string, userId: string, projectId?: string) {
-    await this.findOne(assetId);
+    const asset = await this.findOne(assetId);
+
+    // FIX 2b: Prevent checking out assets that are not in a usable state
+    const checkOutAllowed: string[] = ['AVAILABLE', 'RESERVED'];
+    if (!checkOutAllowed.includes(asset.status as string)) {
+      throw new BadRequestException(
+        `Asset tidak dapat di-checkout: status saat ini adalah ${asset.status}. Hanya AVAILABLE atau RESERVED yang diizinkan.`,
+      );
+    }
 
     return this.prisma.$transaction([
       this.prisma.asset.update({

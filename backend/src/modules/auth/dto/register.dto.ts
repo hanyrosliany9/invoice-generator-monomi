@@ -2,11 +2,8 @@ import {
   IsEmail,
   IsString,
   MinLength,
-  IsOptional,
-  IsEnum,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-import { UserRole } from "@prisma/client";
 
 export class RegisterDto {
   @ApiProperty({
@@ -31,14 +28,4 @@ export class RegisterDto {
   })
   @IsString({ message: "Nama harus berupa string" })
   name: string;
-
-  @ApiProperty({
-    description: "Role pengguna",
-    enum: UserRole,
-    example: UserRole.VIDEOGRAPHER,
-    required: false,
-  })
-  @IsOptional()
-  @IsEnum(UserRole, { message: "Role tidak valid" })
-  role?: UserRole;
 }

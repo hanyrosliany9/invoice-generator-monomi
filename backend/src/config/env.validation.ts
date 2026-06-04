@@ -162,10 +162,6 @@ export class EnvironmentVariables {
   @IsOptional()
   DEBUG: boolean = false;
 
-  @IsBoolean()
-  @IsOptional()
-  DISABLE_AUTH: boolean = false;
-
   // Cloudflare R2 Storage (Optional - for content planning calendar)
   @IsString()
   @IsOptional()

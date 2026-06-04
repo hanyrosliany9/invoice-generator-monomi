@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { JournalService } from "../accounting/services/journal.service";
@@ -85,48 +86,63 @@ export class GoodsReceiptsService {
     const grNumber = await this.generateGRNumber();
 
     // Create GR with items
-    const gr = await this.prisma.goodsReceipt.create({
-      data: {
-        grNumber,
-        grDate: createGRDto.grDate,
-        poId: createGRDto.poId,
-        vendorId: po.vendorId,
-        deliveryNoteNumber: createGRDto.deliveryNoteNumber,
-        receivedBy: createGRDto.receivedBy,
-        receivedAt: new Date(),
-        warehouseLocation: createGRDto.warehouseLocation,
-        inspectionStatus: createGRDto.inspectionStatus,
-        inspectedBy: createGRDto.inspectedBy,
-        inspectionNotes: createGRDto.inspectionNotes,
-        notes: createGRDto.notes,
-        notesId: createGRDto.notesId,
-        status: GRStatus.DRAFT,
-        createdBy: userId,
-        items: {
-          create: createGRDto.items.map((item) => ({
-            poItemId: item.poItemId,
-            lineNumber: item.lineNumber,
-            orderedQuantity: item.orderedQuantity,
-            receivedQuantity: item.receivedQuantity,
-            acceptedQuantity: item.acceptedQuantity,
-            rejectedQuantity: item.rejectedQuantity || 0,
-            qualityStatus: item.qualityStatus,
-            rejectionReason: item.rejectionReason,
-            unitPrice: item.unitPrice,
-            lineTotal: item.lineTotal,
-          })),
-        },
-      },
-      include: {
-        vendor: true,
-        po: true,
-        items: {
-          include: {
-            poItem: true,
+    let gr: any;
+    try {
+      gr = await this.prisma.goodsReceipt.create({
+        data: {
+          grNumber,
+          grDate: createGRDto.grDate,
+          poId: createGRDto.poId,
+          vendorId: po.vendorId,
+          deliveryNoteNumber: createGRDto.deliveryNoteNumber,
+          receivedBy: userId,
+          receivedAt: new Date(),
+          warehouseLocation: createGRDto.warehouseLocation,
+          inspectionStatus: createGRDto.inspectionStatus,
+          inspectedBy: createGRDto.inspectedBy,
+          inspectionNotes: createGRDto.inspectionNotes,
+          notes: createGRDto.notes,
+          notesId: createGRDto.notesId,
+          status: GRStatus.DRAFT,
+          createdBy: userId,
+          items: {
+            create: createGRDto.items.map((item) => ({
+              poItemId: item.poItemId,
+              lineNumber: item.lineNumber,
+              orderedQuantity: item.orderedQuantity,
+              receivedQuantity: item.receivedQuantity,
+              acceptedQuantity: item.acceptedQuantity,
+              rejectedQuantity: item.rejectedQuantity || 0,
+              qualityStatus: item.qualityStatus,
+              rejectionReason: item.rejectionReason,
+              unitPrice: item.unitPrice,
+              lineTotal: item.lineTotal,
+            })),
           },
         },
-      },
-    });
+        include: {
+          vendor: true,
+          po: true,
+          items: {
+            include: {
+              poItem: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        throw new ConflictException(
+          "Duplicate GR number — please retry",
+        );
+      }
+      throw error;
+    }
 
     return gr;
   }
@@ -271,6 +287,41 @@ export class GoodsReceiptsService {
     // Destructure items from updateGRDto to handle separately
     const { items, ...grDataWithoutItems } = updateGRDto;
 
+    // Validate updated items against outstanding quantities (same as create)
+    if (items && items.length > 0) {
+      const po = await this.prisma.purchaseOrder.findUnique({
+        where: { id: gr.poId },
+        include: { items: true },
+      });
+
+      if (!po) {
+        throw new NotFoundException(`Purchase order not found: ${gr.poId}`);
+      }
+
+      for (const item of items) {
+        const poItem = po.items.find((pi) => pi.id === item.poItemId);
+        if (!poItem) {
+          throw new NotFoundException(`PO item not found: ${item.poItemId}`);
+        }
+
+        // Outstanding is what's left BEFORE this GR posted; for a DRAFT GR being
+        // updated we treat the current quantityOutstanding as the available budget
+        // (the original draft hasn't touched quantityReceived yet).
+        const outstanding = Number(poItem.quantityOutstanding);
+        if (outstanding <= 0) {
+          throw new BadRequestException(
+            `PO item ${item.poItemId} has no outstanding quantity to receive`,
+          );
+        }
+
+        if (item.receivedQuantity !== undefined && item.receivedQuantity > outstanding) {
+          throw new BadRequestException(
+            `Received quantity (${item.receivedQuantity}) exceeds outstanding quantity (${outstanding}) for PO item ${item.poItemId}`,
+          );
+        }
+      }
+    }
+
     // Update GR
     const updated = await this.prisma.goodsReceipt.update({
       where: { id },
@@ -379,6 +430,26 @@ export class GoodsReceiptsService {
 
     // Start transaction
     return await this.prisma.$transaction(async (tx) => {
+      // Verify parent PO is in a postable status (re-read inside tx for consistency)
+      const currentPO = await tx.purchaseOrder.findUnique({
+        where: { id: gr.poId },
+      });
+
+      if (!currentPO) {
+        throw new NotFoundException(`Purchase order not found: ${gr.poId}`);
+      }
+
+      const postablePOStatuses: POStatus[] = [
+        POStatus.APPROVED,
+        POStatus.PARTIAL,
+        POStatus.SENT,
+      ];
+      if (!postablePOStatuses.includes(currentPO.status)) {
+        throw new BadRequestException(
+          `Cannot post GR: parent PO is in status '${currentPO.status}'. PO must be APPROVED, SENT, or PARTIAL.`,
+        );
+      }
+
       // Update PO item quantities
       for (const grItem of gr.items) {
         const poItem = await tx.purchaseOrderItem.findUnique({
