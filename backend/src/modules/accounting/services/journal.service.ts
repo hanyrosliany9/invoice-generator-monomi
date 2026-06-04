@@ -660,53 +660,85 @@ export class JournalService {
     });
     const accountMap = new Map(accounts.map((a) => [a.code, a.id]));
 
-    // Create journal entry with line items
-    const journalEntry = await this.prisma.journalEntry.create({
-      data: {
-        entryNumber,
-        entryDate: createDto.entryDate,
-        description: createDto.description,
-        descriptionId: createDto.descriptionId || undefined,
-        descriptionEn: createDto.descriptionEn || undefined,
-        transactionType: createDto.transactionType,
-        transactionId: createDto.transactionId,
-        documentNumber: createDto.documentNumber || undefined,
-        documentDate: createDto.documentDate || undefined,
-        status: createDto.status || JournalStatus.DRAFT,
-        isPosted: false,
-        fiscalPeriodId: fiscalPeriodId || undefined,
-        isReversing: createDto.isReversing || false,
-        reversedEntryId: createDto.reversedEntryId || undefined,
-        createdBy: createDto.createdBy || "unknown-user",
-        lineItems: {
-          create: createDto.lineItems.map((item, index) => ({
-            lineNumber: index + 1,
-            accountId: accountMap.get(item.accountCode)!,
-            description: item.description,
-            descriptionId: item.descriptionId,
-            debit: item.debit,
-            credit: item.credit,
-            projectId: item.projectId,
-            clientId: item.clientId,
-            departmentId: item.departmentId,
-          })),
-        },
-      },
-      include: {
-        lineItems: {
-          orderBy: { lineNumber: "asc" },
-          include: {
-            account: {
-              select: {
-                code: true,
-                name: true,
-              },
+    // Create journal entry with line items.
+    // FIX 5 (HIGH) — entry-number race: generateEntryNumber uses findFirst+1
+    // with no lock, so two concurrent calls can produce the same number and one
+    // will hit a P2002 unique constraint. Retry up to 3 times with a fresh
+    // number on each attempt, then surface a ConflictException.
+    let journalEntry: any;
+    let lastCreateError: any;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const attemptNumber = attempt === 1 ? entryNumber : await this.generateEntryNumber();
+      try {
+        journalEntry = await this.prisma.journalEntry.create({
+          data: {
+            entryNumber: attemptNumber,
+            entryDate: createDto.entryDate,
+            description: createDto.description,
+            descriptionId: createDto.descriptionId || undefined,
+            descriptionEn: createDto.descriptionEn || undefined,
+            transactionType: createDto.transactionType,
+            transactionId: createDto.transactionId,
+            documentNumber: createDto.documentNumber || undefined,
+            documentDate: createDto.documentDate || undefined,
+            status: createDto.status || JournalStatus.DRAFT,
+            isPosted: false,
+            fiscalPeriodId: fiscalPeriodId || undefined,
+            isReversing: createDto.isReversing || false,
+            reversedEntryId: createDto.reversedEntryId || undefined,
+            createdBy: createDto.createdBy || "unknown-user",
+            lineItems: {
+              create: createDto.lineItems.map((item, index) => ({
+                lineNumber: index + 1,
+                accountId: accountMap.get(item.accountCode)!,
+                description: item.description,
+                descriptionId: item.descriptionId,
+                debit: item.debit,
+                credit: item.credit,
+                projectId: item.projectId,
+                clientId: item.clientId,
+                departmentId: item.departmentId,
+              })),
             },
           },
-        },
-        fiscalPeriod: true,
-      },
-    });
+          include: {
+            lineItems: {
+              orderBy: { lineNumber: "asc" },
+              include: {
+                account: {
+                  select: {
+                    code: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+            fiscalPeriod: true,
+          },
+        });
+        lastCreateError = undefined;
+        break; // success
+      } catch (err: any) {
+        lastCreateError = err;
+        // P2002 = unique constraint violation (duplicate entryNumber)
+        if (err?.code === 'P2002' && attempt < 3) {
+          this.logger.warn(
+            `Journal entry number collision on attempt ${attempt}, retrying with new number...`,
+          );
+          continue;
+        }
+        // Non-P2002 error or exhausted retries — re-throw
+        if (err?.code === 'P2002') {
+          throw new ConflictException(
+            `Failed to generate a unique journal entry number after ${attempt} attempts`,
+          );
+        }
+        throw err;
+      }
+    }
+    if (!journalEntry) {
+      throw lastCreateError ?? new ConflictException('Failed to create journal entry');
+    }
 
     // Auto-post immediately when requested (e.g. expense-generated entries).
     // Posting creates the general-ledger entries and triggers the cash & bank
@@ -936,17 +968,21 @@ export class JournalService {
 
   /**
    * Post journal entry to ledger
+   *
+   * FIX 2 (CRITICAL) — double-post / TOCTOU guard:
+   * The posting is made atomic by doing a compare-and-set on isPosted first.
+   * updateMany({ where: { id, isPosted: false } }) returns count=0 when the
+   * entry is already posted (concurrent call already claimed it), so we abort
+   * gracefully instead of inserting duplicate GL rows.
    */
   async postJournalEntry(id: string, userId: string) {
+    // Re-read the entry for line items (needed to build ledger rows)
     const entry = await this.getJournalEntry(id);
-
-    if (entry.isPosted) {
-      throw new BadRequestException("Journal entry is already posted");
-    }
 
     const now = new Date();
 
-    // Create general ledger entries for each line item
+    // Build ledger rows from the entry (populated before the claim so we don't
+    // need to re-query inside the transaction)
     const ledgerEntries = entry.lineItems.map((line) => ({
       journalEntryId: entry.id,
       journalEntryNumber: entry.entryNumber,
@@ -967,22 +1003,29 @@ export class JournalService {
       clientId: line.clientId || null,
     }));
 
-    await this.prisma.$transaction([
-      // Create ledger entries
-      this.prisma.generalLedger.createMany({
-        data: ledgerEntries,
-      }),
-      // Update journal entry status
-      this.prisma.journalEntry.update({
-        where: { id },
+    await this.prisma.$transaction(async (tx) => {
+      // Atomic compare-and-set: claim the entry only if still unposted.
+      // This prevents two concurrent calls from both inserting GL rows.
+      const claimed = await tx.journalEntry.updateMany({
+        where: { id, isPosted: false },
         data: {
           isPosted: true,
           status: JournalStatus.POSTED,
           postedAt: now,
           postedBy: userId,
         },
-      }),
-    ]);
+      });
+
+      if (claimed.count === 0) {
+        // Another call already posted this entry — bail out gracefully.
+        throw new ConflictException(
+          `Journal entry ${entry.entryNumber} is already posted`,
+        );
+      }
+
+      // Only reached when WE won the claim — insert GL rows now.
+      await tx.generalLedger.createMany({ data: ledgerEntries });
+    });
 
     // AUTO-SYNC: Update Cash Bank Balance if this entry affects cash/bank accounts
     await this.syncCashBankBalanceIfNeeded(entry, userId);

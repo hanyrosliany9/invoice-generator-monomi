@@ -26,7 +26,7 @@ export class MediaCleanupService {
    * Clean up orphaned thumbnails daily at 2 AM
    * Cron: 0 2 * * * (every day at 2:00 AM)
    */
-  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  @Cron(CronExpression.EVERY_DAY_AT_2AM, { timeZone: 'Asia/Jakarta' })
   async cleanupOrphanedThumbnails(): Promise<void> {
     if (!this.mediaService.isR2Enabled()) {
       this.logger.warn("R2 is not enabled. Skipping thumbnail cleanup.");
@@ -80,7 +80,7 @@ export class MediaCleanupService {
    * Clean up old temporary files (> 7 days)
    * Runs weekly on Sunday at 3 AM
    */
-  @Cron("0 3 * * 0") // Every Sunday at 3 AM
+  @Cron("0 3 * * 0", { timeZone: 'Asia/Jakarta' }) // Every Sunday at 3 AM WIB
   async cleanupOldTemporaryFiles(): Promise<void> {
     if (!this.mediaService.isR2Enabled()) {
       this.logger.warn("R2 is not enabled. Skipping temporary file cleanup.");

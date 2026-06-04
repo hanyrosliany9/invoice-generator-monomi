@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -149,51 +150,86 @@ export class CashTransactionService {
       }
     }
 
-    // Create cash transaction
-    const transaction = await this.prisma.cashTransaction.create({
-      data: {
-        transactionNumber,
-        transactionType: createDto.transactionType,
-        category: createDto.category,
-        transactionDate: createDto.transactionDate,
-        amount: createDto.amount,
-        currency,
-        originalAmount,
-        exchangeRate,
-        idrAmount,
-        cashAccountId: createDto.cashAccountId,
-        offsetAccountId: createDto.offsetAccountId,
-        description: createDto.description,
-        descriptionId: createDto.descriptionId,
-        descriptionEn: createDto.descriptionEn,
-        reference: createDto.reference,
-        paymentMethod: createDto.paymentMethod,
-        checkNumber: createDto.checkNumber,
-        bankReference: createDto.bankReference,
-        projectId: createDto.projectId,
-        clientId: createDto.clientId,
-        status: CashTransactionStatus.DRAFT,
-        notes: createDto.notes,
-        notesId: createDto.notesId,
-        createdBy: createDto.createdBy,
-      },
-      include: {
-        cashAccount: {
-          select: {
-            code: true,
-            name: true,
-            nameId: true,
+    // Create cash transaction — retry once on unique number collision (FIX 2: number race)
+    const createTransactionData = async (number: string) =>
+      this.prisma.cashTransaction.create({
+        data: {
+          transactionNumber: number,
+          transactionType: createDto.transactionType,
+          category: createDto.category,
+          transactionDate: createDto.transactionDate,
+          amount: createDto.amount,
+          currency,
+          originalAmount,
+          exchangeRate,
+          idrAmount,
+          cashAccountId: createDto.cashAccountId,
+          offsetAccountId: createDto.offsetAccountId,
+          description: createDto.description,
+          descriptionId: createDto.descriptionId,
+          descriptionEn: createDto.descriptionEn,
+          reference: createDto.reference,
+          paymentMethod: createDto.paymentMethod,
+          checkNumber: createDto.checkNumber,
+          bankReference: createDto.bankReference,
+          projectId: createDto.projectId,
+          clientId: createDto.clientId,
+          status: CashTransactionStatus.DRAFT,
+          notes: createDto.notes,
+          notesId: createDto.notesId,
+          createdBy: createDto.createdBy,
+        },
+        include: {
+          cashAccount: {
+            select: {
+              code: true,
+              name: true,
+              nameId: true,
+            },
+          },
+          offsetAccount: {
+            select: {
+              code: true,
+              name: true,
+              nameId: true,
+            },
           },
         },
-        offsetAccount: {
-          select: {
-            code: true,
-            name: true,
-            nameId: true,
-          },
-        },
-      },
-    });
+      });
+
+    let transaction: Awaited<ReturnType<typeof createTransactionData>>;
+    try {
+      transaction = await createTransactionData(transactionNumber);
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        // Regenerate number and retry once
+        const retryNumber = await this.generateTransactionNumber(
+          createDto.transactionType,
+        );
+        try {
+          transaction = await createTransactionData(retryNumber);
+        } catch (retryError) {
+          if (
+            retryError &&
+            typeof retryError === "object" &&
+            "code" in retryError &&
+            retryError.code === "P2002"
+          ) {
+            throw new ConflictException(
+              "Duplicate transaction number — please retry",
+            );
+          }
+          throw retryError;
+        }
+      } else {
+        throw error;
+      }
+    }
 
     return transaction;
   }
@@ -382,15 +418,39 @@ export class CashTransactionService {
    * This creates the journal entry and posts to general ledger
    */
   async approveCashTransaction(id: string, userId: string) {
+    // FIX 1a: Idempotency gate — if already posted return early, no second journal
+    const existing = await this.getCashTransaction(id);
+    if (existing.status === CashTransactionStatus.POSTED) {
+      return existing;
+    }
+
+    // FIX 1b: Atomic claim — only one caller wins; others get count===0 and bail
+    const approvableStatuses = [
+      CashTransactionStatus.DRAFT,
+      CashTransactionStatus.SUBMITTED,
+    ];
+    const claimed = await this.prisma.cashTransaction.updateMany({
+      where: {
+        id,
+        journalEntryId: null,
+        status: { in: approvableStatuses },
+      },
+      data: { status: CashTransactionStatus.POSTED },
+    });
+    if (claimed.count === 0) {
+      // Another concurrent caller already claimed or it was already processed
+      return this.getCashTransaction(id);
+    }
+
+    // Re-fetch with full includes needed for journal line items
     const transaction = await this.getCashTransaction(id);
 
     if (
-      transaction.status !== CashTransactionStatus.SUBMITTED &&
-      transaction.status !== CashTransactionStatus.DRAFT
+      transaction.status !== CashTransactionStatus.POSTED ||
+      transaction.journalEntryId !== null
     ) {
-      throw new BadRequestException(
-        `Cannot approve transaction with status: ${transaction.status}`,
-      );
+      // Defensive: shouldn't happen after the claim, but guard anyway
+      return transaction;
     }
 
     // Create journal entry for this cash transaction
@@ -469,11 +529,11 @@ export class CashTransactionService {
     // Post the journal entry to general ledger
     await this.journalService.postJournalEntry(journalEntry.id, userId);
 
-    // Update cash transaction status
+    // Update cash transaction — status already set to POSTED by atomic claim above;
+    // now stamp approvedBy/At and journalEntryId atomically
     const updatedTransaction = await this.prisma.cashTransaction.update({
       where: { id },
       data: {
-        status: CashTransactionStatus.POSTED,
         approvedBy: userId,
         approvedAt: new Date(),
         journalEntryId: journalEntry.id,

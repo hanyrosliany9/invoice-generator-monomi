@@ -85,11 +85,16 @@ export class PdfExportService {
         ? this.getIndonesianMonthName(targetMonth)
         : "SEMUA BULAN";
 
+    // FIX 1: derive year from filters instead of hardcoding "2025"
+    const reportYear = filters?.startDate
+      ? new Date(filters.startDate).getFullYear()
+      : new Date().getFullYear();
+
     // Create report header
     const reportHeader: IndonesianReportHeader = {
       reportTitle: "LAPORAN PENJUALAN DAN PIUTANG",
       reportSubtitle: "LAPORAN KEUANGAN SAK EMKM",
-      reportPeriod: `${monthName} 2025`,
+      reportPeriod: `${monthName} ${reportYear}`,
       preparationDate: new Date(),
       reportType: "COMPREHENSIVE_SALES_RECEIVABLES",
     };
@@ -107,6 +112,16 @@ export class PdfExportService {
       this.getReceivablesMonthlySummary(filters, targetMonth),
     ]);
 
+    // FIX 2: Derive per-client opening balances from the detail data.
+    // receivablesDetailData is ordered by [clientName ASC, creationDate ASC],
+    // so the first row per client holds the correct pre-period beginningBalance.
+    const clientOpeningBalances = new Map<string, number>();
+    for (const row of receivablesDetailData) {
+      if (!clientOpeningBalances.has(row.clientName)) {
+        clientOpeningBalances.set(row.clientName, row.beginningBalance);
+      }
+    }
+
     // Generate HTML content for each section
     const tablesHtml = this.generateAllTablesHtml(
       salesDetailData,
@@ -114,6 +129,7 @@ export class PdfExportService {
       salesMonthlySummary,
       receivablesMonthlySummary,
       targetMonth,
+      clientOpeningBalances,
     );
 
     // Generate complete HTML document
@@ -140,6 +156,7 @@ export class PdfExportService {
     salesMonthlySummary: ClientMonthlySummary[],
     receivablesMonthlySummary: ClientMonthlySummary[],
     targetMonth?: number | null,
+    clientOpeningBalances?: Map<string, number>,
   ): string {
     let html = "";
 
@@ -162,6 +179,7 @@ export class PdfExportService {
     html += this.generateReceivablesMonthlySummaryTableHtml(
       receivablesMonthlySummary,
       targetMonth,
+      clientOpeningBalances,
     );
 
     return html;
@@ -417,6 +435,7 @@ export class PdfExportService {
   private generateReceivablesMonthlySummaryTableHtml(
     data: ClientMonthlySummary[],
     targetMonth?: number | null,
+    clientOpeningBalances?: Map<string, number>,
   ): string {
     const monthNames = [
       "JANUARI",
@@ -453,7 +472,13 @@ export class PdfExportService {
         monthSales += (clientData[targetMonthName] as number) || 0;
       });
 
-      const beginningBalance = 0;
+      // FIX 2: opening balance = sum of all clients' pre-period balances
+      const beginningBalance = clientOpeningBalances
+        ? Array.from(clientOpeningBalances.values()).reduce(
+            (sum, b) => sum + b,
+            0,
+          )
+        : 0;
       const endingBalance = beginningBalance + monthSales - monthPayments;
 
       tableData = [

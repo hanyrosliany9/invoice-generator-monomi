@@ -355,7 +355,7 @@ export class QuotationsService {
       // Auto-generate invoice when quotation is approved (inside transaction)
       if (status === QuotationStatus.APPROVED) {
         try {
-          await this.autoGenerateInvoice(updated);
+          await this.autoGenerateInvoice(updated, tx);
           this.logger.log(
             `Auto-generated invoice for approved quotation ${updated.quotationNumber}`,
           );
@@ -683,13 +683,24 @@ export class QuotationsService {
     }
   }
 
-  private async autoGenerateInvoice(quotation: any): Promise<any> {
-    // FIX 1 (CRITICAL): Idempotency guard — skip if invoice already exists for
-    // this quotation (re-approval / reopen→approve must not create duplicates).
+  /**
+   * FIX 1 (CRITICAL) — autoGenerateInvoice MUST run inside the caller's transaction.
+   * Previously it used `this.prisma.*` directly, so the duplicate-check and
+   * invoice.create ran OUTSIDE the $transaction in updateStatus.  Two concurrent
+   * approvals could both pass the findFirst check before either create committed,
+   * resulting in duplicate invoices.  Now the caller passes its `tx` client and
+   * all writes go through it.
+   */
+  private async autoGenerateInvoice(
+    quotation: any,
+    tx: Prisma.TransactionClient,
+  ): Promise<any> {
+    // Idempotency guard — skip if invoice already exists for this quotation.
     // For MILESTONE_BASED quotations the per-milestone guard is handled further
     // down; for all other payment types a single invoice per quotation suffices.
+    // Uses tx so the check is serialised within the same transaction snapshot.
     if (quotation.paymentType !== "MILESTONE_BASED") {
-      const existing = await this.prisma.invoice.findFirst({
+      const existing = await tx.invoice.findFirst({
         where: { quotationId: quotation.id },
         select: { id: true, invoiceNumber: true },
       });
@@ -701,8 +712,6 @@ export class QuotationsService {
       }
     }
 
-    // FIX 2 (HIGH): Use canonical InvoiceCounterService (atomic, correct format
-    // INV-YYYY/MM/NNNN) instead of the private count-based generator.
     const invoiceNumber = await this.invoiceCounterService.getNextInvoiceNumber();
 
     // Calculate due date (default 30 days from now)
@@ -715,8 +724,8 @@ export class QuotationsService {
     // Generate payment info from company settings
     const paymentInfo = await this.generatePaymentInfo();
 
-    // Create invoice from quotation data (with scopeOfWork and priceBreakdown cascade)
-    const invoice = await this.prisma.invoice.create({
+    // Create invoice inside the transaction so dup-check + create are atomic.
+    const invoice = await tx.invoice.create({
       data: {
         invoiceNumber,
         dueDate,
@@ -860,31 +869,37 @@ export class QuotationsService {
     // Generate payment info from company settings
     const paymentInfo = await this.generatePaymentInfo();
 
-    const invoice = await this.prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        creationDate: new Date(),
-        dueDate,
-        clientId: quotation.clientId,
-        projectId: quotation.projectId,
-        quotationId,
-        paymentMilestoneId: nextMilestone.id,
-        amountPerProject: quotation.amountPerProject,
-        totalAmount: nextMilestone.paymentAmount,
-        scopeOfWork: quotation.scopeOfWork,
-        priceBreakdown: quotation.priceBreakdown,
-        paymentInfo,
-        materaiRequired,
-        status: "DRAFT",
-        createdBy: userId,
-      },
-      include: { client: true, project: true },
-    });
+    // FIX 1 (CRITICAL): wrap invoice create + milestone flag in one transaction
+    // so a partial failure cannot leave the milestone un-flagged after the
+    // invoice was created (or vice versa).
+    const invoice = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.invoice.create({
+        data: {
+          invoiceNumber,
+          creationDate: new Date(),
+          dueDate,
+          clientId: quotation.clientId,
+          projectId: quotation.projectId,
+          quotationId,
+          paymentMilestoneId: nextMilestone.id,
+          amountPerProject: quotation.amountPerProject,
+          totalAmount: nextMilestone.paymentAmount,
+          scopeOfWork: quotation.scopeOfWork,
+          priceBreakdown: quotation.priceBreakdown,
+          paymentInfo,
+          materaiRequired,
+          status: "DRAFT",
+          createdBy: userId,
+        },
+        include: { client: true, project: true },
+      });
 
-    // Update milestone as invoiced
-    await this.prisma.paymentMilestone.update({
-      where: { id: nextMilestone.id },
-      data: { isInvoiced: true },
+      await tx.paymentMilestone.update({
+        where: { id: nextMilestone.id },
+        data: { isInvoiced: true },
+      });
+
+      return created;
     });
 
     return invoice;

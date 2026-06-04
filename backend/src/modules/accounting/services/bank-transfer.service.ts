@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -156,52 +157,85 @@ export class BankTransferService {
       }
     }
 
-    // Create bank transfer
-    const transfer = await this.prisma.bankTransfer.create({
-      data: {
-        transferNumber,
-        transferDate: createDto.transferDate,
-        amount: createDto.amount,
-        currency,
-        originalAmount,
-        exchangeRate,
-        idrAmount,
-        fromAccountId: createDto.fromAccountId,
-        toAccountId: createDto.toAccountId,
-        description: createDto.description,
-        descriptionId: createDto.descriptionId,
-        descriptionEn: createDto.descriptionEn,
-        reference: createDto.reference,
-        transferFee: createDto.transferFee,
-        feeAccountId: createDto.feeAccountId,
-        feePaymentMethod: createDto.feePaymentMethod,
-        transferMethod: createDto.transferMethod,
-        bankReference: createDto.bankReference,
-        confirmationCode: createDto.confirmationCode,
-        projectId: createDto.projectId,
-        clientId: createDto.clientId,
-        status: BankTransferStatus.PENDING,
-        notes: createDto.notes,
-        notesId: createDto.notesId,
-        createdBy: createDto.createdBy,
-      },
-      include: {
-        fromAccount: {
-          select: {
-            code: true,
-            name: true,
-            nameId: true,
+    // Create bank transfer — retry once on unique number collision (FIX 2: number race)
+    const createTransferData = async (number: string) =>
+      this.prisma.bankTransfer.create({
+        data: {
+          transferNumber: number,
+          transferDate: createDto.transferDate,
+          amount: createDto.amount,
+          currency,
+          originalAmount,
+          exchangeRate,
+          idrAmount,
+          fromAccountId: createDto.fromAccountId,
+          toAccountId: createDto.toAccountId,
+          description: createDto.description,
+          descriptionId: createDto.descriptionId,
+          descriptionEn: createDto.descriptionEn,
+          reference: createDto.reference,
+          transferFee: createDto.transferFee,
+          feeAccountId: createDto.feeAccountId,
+          feePaymentMethod: createDto.feePaymentMethod,
+          transferMethod: createDto.transferMethod,
+          bankReference: createDto.bankReference,
+          confirmationCode: createDto.confirmationCode,
+          projectId: createDto.projectId,
+          clientId: createDto.clientId,
+          status: BankTransferStatus.PENDING,
+          notes: createDto.notes,
+          notesId: createDto.notesId,
+          createdBy: createDto.createdBy,
+        },
+        include: {
+          fromAccount: {
+            select: {
+              code: true,
+              name: true,
+              nameId: true,
+            },
+          },
+          toAccount: {
+            select: {
+              code: true,
+              name: true,
+              nameId: true,
+            },
           },
         },
-        toAccount: {
-          select: {
-            code: true,
-            name: true,
-            nameId: true,
-          },
-        },
-      },
-    });
+      });
+
+    let transfer: Awaited<ReturnType<typeof createTransferData>>;
+    try {
+      transfer = await createTransferData(transferNumber);
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        // Regenerate number and retry once
+        const retryNumber = await this.generateTransferNumber();
+        try {
+          transfer = await createTransferData(retryNumber);
+        } catch (retryError) {
+          if (
+            retryError &&
+            typeof retryError === "object" &&
+            "code" in retryError &&
+            retryError.code === "P2002"
+          ) {
+            throw new ConflictException(
+              "Duplicate transfer number — please retry",
+            );
+          }
+          throw retryError;
+        }
+      } else {
+        throw error;
+      }
+    }
 
     return transfer;
   }
@@ -399,12 +433,35 @@ export class BankTransferService {
    * This creates the journal entry and posts to general ledger
    */
   async approveBankTransfer(id: string, userId: string) {
+    // FIX 1a: Idempotency gate — if already completed return early, no second journal
+    const existing = await this.getBankTransfer(id);
+    if (existing.status === BankTransferStatus.COMPLETED) {
+      return existing;
+    }
+
+    // FIX 1b: Atomic claim — only one caller wins; others get count===0 and bail
+    const claimed = await this.prisma.bankTransfer.updateMany({
+      where: {
+        id,
+        journalEntryId: null,
+        status: BankTransferStatus.PENDING,
+      },
+      data: { status: BankTransferStatus.COMPLETED },
+    });
+    if (claimed.count === 0) {
+      // Another concurrent caller already claimed or it was already processed
+      return this.getBankTransfer(id);
+    }
+
+    // Re-fetch with full includes needed for journal line items
     const transfer = await this.getBankTransfer(id);
 
-    if (transfer.status !== BankTransferStatus.PENDING) {
-      throw new BadRequestException(
-        `Cannot approve transfer with status: ${transfer.status}`,
-      );
+    if (
+      transfer.status !== BankTransferStatus.COMPLETED ||
+      transfer.journalEntryId !== null
+    ) {
+      // Defensive: shouldn't happen after the claim, but guard anyway
+      return transfer;
     }
 
     // CRITICAL: Use idrAmount for journal entries (accounting must be in IDR)
@@ -481,11 +538,11 @@ export class BankTransferService {
     // Post the journal entry to general ledger
     await this.journalService.postJournalEntry(journalEntry.id, userId);
 
-    // Update bank transfer status
+    // Update bank transfer — status already set to COMPLETED by atomic claim above;
+    // now stamp approvedBy/At, completedAt/By, and journalEntryId atomically
     const updatedTransfer = await this.prisma.bankTransfer.update({
       where: { id },
       data: {
-        status: BankTransferStatus.COMPLETED,
         approvedBy: userId,
         approvedAt: new Date(),
         completedAt: new Date(),

@@ -601,7 +601,11 @@ export class InvoicesService {
     // Validate status transition
     this.validateStatusTransition(invoice.status, status);
 
-    // Create journal entry if status changes to SENT (revenue recognition)
+    // FIX 4 (MED) — SENT journal + journalEntryId must be written atomically:
+    // If we create+post the journal and then the invoice.update for status+journalEntryId
+    // fails, the journal is orphaned and markAsPaid will post a 2nd SENT journal later
+    // (double AR/Revenue). Solution: combine the status update AND journalEntryId
+    // persisting into a single write, done AFTER the journal is successfully created+posted.
     if (
       status === InvoiceStatus.SENT &&
       invoice.status !== InvoiceStatus.SENT
@@ -623,15 +627,18 @@ export class InvoicesService {
           userId || "system",
         );
 
-        // Update invoice with journal entry ID
-        await this.prisma.invoice.update({
+        // Persist status AND journalEntryId in a single write so they are
+        // never out of sync (no partial-failure orphan window).
+        const updated = await this.prisma.invoice.update({
           where: { id },
-          data: { journalEntryId: journalEntry.id },
+          data: { status, journalEntryId: journalEntry.id },
+          include: { client: true, project: true },
         });
 
         this.logger.log(
           `✅ Created and posted SENT journal entry for invoice ${invoice.invoiceNumber}`,
         );
+        return updated;
       } catch (error) {
         this.logger.error("Failed to create journal entry for invoice:", error);
         // ✅ FIX: Don't update status if journal entry fails
@@ -661,19 +668,46 @@ export class InvoicesService {
     },
     userId?: string,
   ): Promise<any> {
-    const invoice = await this.findOne(id);
+    // FIX 3 (HIGH) — concurrent double-payment guard:
+    // Atomically claim the invoice by flipping status only when it is still
+    // SENT/OVERDUE AND paymentJournalId is null.  If count===0 the invoice was
+    // already claimed by another concurrent call → return it without creating
+    // a second payment journal.
+    const claimed = await this.prisma.invoice.updateMany({
+      where: {
+        id,
+        status: { in: [InvoiceStatus.SENT, InvoiceStatus.OVERDUE] },
+        paymentJournalId: null,
+      },
+      data: {
+        status: InvoiceStatus.PAID,
+        markedPaidAt: new Date(),
+        markedPaidBy: userId || 'system',
+      },
+    });
 
-    // Validate that invoice can be marked as paid
-    if (
-      invoice.status !== InvoiceStatus.SENT &&
-      invoice.status !== InvoiceStatus.OVERDUE
-    ) {
-      throw new BadRequestException(
-        "Hanya invoice dengan status SENT atau OVERDUE yang dapat ditandai sebagai lunas",
+    if (claimed.count === 0) {
+      // Either already paid/claimed or wrong status — return the invoice as-is.
+      const existing = await this.findOne(id);
+      if (
+        existing.status !== InvoiceStatus.SENT &&
+        existing.status !== InvoiceStatus.OVERDUE &&
+        existing.status !== InvoiceStatus.PAID
+      ) {
+        throw new BadRequestException(
+          "Hanya invoice dengan status SENT atau OVERDUE yang dapat ditandai sebagai lunas",
+        );
+      }
+      this.logger.warn(
+        `markAsPaid: invoice ${existing.invoiceNumber} already paid or concurrently claimed — returning existing`,
       );
+      return existing;
     }
 
-    // ✅ FIX: Ensure SENT journal entry exists AND is posted before marking as PAID
+    // We won the claim — re-read with full includes for downstream logic.
+    const invoice = await this.findOne(id);
+
+    // ✅ FIX: Ensure SENT journal entry exists AND is posted before creating payment journal
     // This prevents AR from going negative if SENT journal failed or wasn't posted
     if (!invoice.journalEntryId) {
       this.logger.warn(
@@ -821,13 +855,9 @@ export class InvoicesService {
       // Continue even if ECL reversal fails
     }
 
-    const updatedInvoice = await this.prisma.invoice.update({
+    // Re-read final state (status already set by the atomic claim above)
+    const updatedInvoice = await this.prisma.invoice.findUnique({
       where: { id },
-      data: {
-        status: InvoiceStatus.PAID,
-        markedPaidAt: new Date(),
-        markedPaidBy: userId || 'system',
-      },
       include: {
         client: true,
         project: true,

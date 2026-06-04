@@ -87,6 +87,11 @@ export class ExcelExportService {
     const isSingleMonth = this.isSingleMonthReport(filters);
     const targetMonth = isSingleMonth ? this.getTargetMonth(filters) : null;
 
+    // Derive report year from filters (FIX 1: avoid hardcoded "2025")
+    const reportYear = filters?.startDate
+      ? new Date(filters.startDate).getFullYear()
+      : new Date().getFullYear();
+
     // Generate all report data
     const [
       salesDetailData,
@@ -106,18 +111,30 @@ export class ExcelExportService {
       this.getPaymentTotals(filters),
     ]);
 
+    // FIX 2: Derive per-client opening balances from the detail data.
+    // receivablesDetailData is ordered by [clientName ASC, creationDate ASC],
+    // so the first row per client holds the correct pre-period beginningBalance.
+    const clientOpeningBalances = new Map<string, number>();
+    for (const row of receivablesDetailData) {
+      if (!clientOpeningBalances.has(row.clientName)) {
+        clientOpeningBalances.set(row.clientName, row.beginningBalance);
+      }
+    }
+
     // Create worksheets with Indonesian formatting
     this.createSalesDetailSheet(
       workbook,
       salesDetailData,
       companyInfo,
       targetMonth,
+      reportYear,
     );
     this.createReceivablesDetailSheet(
       workbook,
       receivablesDetailData,
       companyInfo,
       targetMonth,
+      reportYear,
     );
     this.createSalesMonthlySummarySheet(
       workbook,
@@ -137,6 +154,7 @@ export class ExcelExportService {
       companyInfo,
       targetMonth,
       paymentTotals.byMonth,
+      clientOpeningBalances,
     );
     this.createReceivablesClientSummarySheet(
       workbook,
@@ -144,6 +162,7 @@ export class ExcelExportService {
       companyInfo,
       targetMonth,
       paymentTotals.byClient,
+      clientOpeningBalances,
     );
 
     // Write to buffer
@@ -445,6 +464,7 @@ export class ExcelExportService {
     data: SalesReportData[],
     companyInfo: IndonesianCompanyInfo,
     targetMonth?: number | null,
+    reportYear?: number,
   ): void {
     const worksheet = workbook.addWorksheet("(SALES) RINCIAN PENJUALAN");
 
@@ -453,11 +473,12 @@ export class ExcelExportService {
       targetMonth !== null && targetMonth !== undefined
         ? this.getIndonesianMonthName(targetMonth)
         : "SEMUA BULAN";
+    const year = reportYear ?? new Date().getFullYear();
 
     const reportHeader: IndonesianReportHeader = {
       reportTitle: "RINCIAN PENJUALAN",
       reportSubtitle: "LAPORAN DETAIL TRANSAKSI PENJUALAN",
-      reportPeriod: `${monthName} 2025`,
+      reportPeriod: `${monthName} ${year}`,
       preparationDate: new Date(),
       reportType: "RINCIAN_PENJUALAN",
     };
@@ -588,6 +609,7 @@ export class ExcelExportService {
     data: ReceivablesReportData[],
     companyInfo: IndonesianCompanyInfo,
     targetMonth?: number | null,
+    reportYear?: number,
   ): void {
     const worksheet = workbook.addWorksheet("(AR) MONTHLY");
 
@@ -598,7 +620,8 @@ export class ExcelExportService {
       targetMonth !== null && targetMonth !== undefined
         ? this.getIndonesianMonthName(targetMonth)
         : "SEMUA BULAN";
-    worksheet.addRow([monthName + " 2025", "", "", "", "", "", "", "", ""]);
+    const year = reportYear ?? new Date().getFullYear();
+    worksheet.addRow([monthName + ` ${year}`, "", "", "", "", "", "", "", ""]);
     worksheet.addRow(["", "", "", "", "", "", "", "", ""]); // Empty spacer row
 
     // Add column headers (row 5) - Indonesian SAK terminology
@@ -906,6 +929,7 @@ export class ExcelExportService {
     companyInfo: IndonesianCompanyInfo,
     targetMonth?: number | null,
     paymentsByMonth?: Map<number, number>,
+    clientOpeningBalances?: Map<string, number>,
   ): void {
     const worksheet = workbook.addWorksheet("(AR) RKP PER BULAN");
 
@@ -956,7 +980,13 @@ export class ExcelExportService {
         monthSales += (clientData[targetMonthName] as number) || 0;
       });
 
-      const beginningBalance = 0; // Starting balance for the month
+      // FIX 2: opening balance = sum of all clients' pre-period balances
+      const beginningBalance = clientOpeningBalances
+        ? Array.from(clientOpeningBalances.values()).reduce(
+            (sum, b) => sum + b,
+            0,
+          )
+        : 0;
       const endingBalance = beginningBalance + monthSales - monthPayments;
 
       worksheet.addRow([
@@ -1054,6 +1084,7 @@ export class ExcelExportService {
     companyInfo: IndonesianCompanyInfo,
     targetMonth?: number | null,
     paymentsByClient?: Map<string, Map<number, number>>,
+    clientOpeningBalances?: Map<string, number>,
   ): void {
     const worksheet = workbook.addWorksheet("(AR) RKP PER CLIENT");
 
@@ -1098,7 +1129,9 @@ export class ExcelExportService {
       // Add client data
       data.forEach((item) => {
         const clientPenjualan = (item[targetMonthName] as number) || 0;
-        const clientSaldoAwal = 0;
+        // FIX 2: use pre-period opening balance per client instead of hardcoded 0
+        const clientSaldoAwal =
+          clientOpeningBalances?.get(item.clientName) ?? 0;
         const clientPembayaran =
           paymentsByClient?.get(item.clientName)?.get(targetMonth!) ?? 0;
         const clientSaldoAkhir =
@@ -1158,7 +1191,9 @@ export class ExcelExportService {
           (sum, month) => sum + ((item[month] as number) || 0),
           0,
         );
-        const clientSaldoAwal = 0;
+        // FIX 2: use pre-period opening balance per client instead of hardcoded 0
+        const clientSaldoAwal =
+          clientOpeningBalances?.get(item.clientName) ?? 0;
         const clientMonthMap = paymentsByClient?.get(item.clientName);
         const clientPembayaran = clientMonthMap
           ? Array.from(clientMonthMap.values()).reduce((s, v) => s + v, 0)

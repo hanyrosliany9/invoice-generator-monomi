@@ -107,27 +107,44 @@ export class ExpensesService {
 
     await Promise.all(
       budgets.map(async (budget) => {
-        const newSpent = Math.max(0, Number(budget.spent) + delta);
+        // FIX 1: Atomic increment — avoids lost-update race when two concurrent
+        // expenses hit the same budget.  Prisma translates this to:
+        //   UPDATE "ExpenseBudget" SET spent = spent + $delta WHERE id = $id
+        // The returned row carries the committed new value of `spent`.
+        const updated = await this.prisma.expenseBudget.update({
+          where: { id: budget.id },
+          data: { spent: { increment: delta } },
+        });
 
-        if (delta < 0 && Number(budget.spent) + delta < 0) {
+        const committedSpent = Number(updated.spent);
+
+        // Guard against negative spent (e.g. delete races or data-repair deltas).
+        if (committedSpent < 0) {
           this.logger.warn(
-            `[BUDGET] Budget ${budget.id} (${budget.name}) would go negative ` +
-              `(spent=${budget.spent}, delta=${delta}). Flooring at 0.`,
+            `[BUDGET] Budget ${budget.id} (${budget.name}) went negative ` +
+              `(spent=${committedSpent}, delta=${delta}). Clamping to 0.`,
           );
+          await this.prisma.expenseBudget.update({
+            where: { id: budget.id },
+            data: {
+              spent: 0,
+              remaining: Number(budget.amount),
+            },
+          });
+          return;
         }
 
+        // Derive remaining from the authoritative post-increment value.
+        const newRemaining = Math.max(0, Number(budget.amount) - committedSpent);
         await this.prisma.expenseBudget.update({
           where: { id: budget.id },
-          data: {
-            spent: newSpent,
-            remaining: Math.max(0, Number(budget.amount) - newSpent),
-          },
+          data: { remaining: newRemaining },
         });
 
         this.logger.log(
           `[BUDGET] Updated budget "${budget.name}" (${budget.id}): ` +
-            `spent ${budget.spent} → ${newSpent}, ` +
-            `remaining ${budget.remaining} → ${Math.max(0, Number(budget.amount) - newSpent)}`,
+            `spent ${budget.spent} → ${committedSpent}, ` +
+            `remaining → ${newRemaining}`,
         );
       }),
     );
@@ -269,42 +286,64 @@ export class ExpensesService {
 
     // Create expense with defaults for optional PPN fields
     // Automatically set status to PAID and create payment journal entry
+    // FIX 3: On a P2002 unique-key collision (number race), regenerate both
+    // numbers and retry up to 2 more times before surfacing ConflictException.
     let expense: any;
-    try {
-      expense = await this.prisma.expense.create({
-        data: {
-          ...expenseData,
-          ppnAmount: createExpenseDto.ppnAmount ?? 0,
-          ppnRate: createExpenseDto.ppnRate ?? 0,
-          ppnCategory: createExpenseDto.ppnCategory || "NON_CREDITABLE",
-          expenseNumber,
-          buktiPengeluaranNumber,
-          userId,
-          status: ExpenseStatus.PAID, // Automatically PAID
-          paymentStatus: ExpensePaymentStatus.PAID, // Automatically PAID
-          paidAt: new Date(), // Set payment timestamp
-          paymentMethod: "Automatic", // System-generated payment
-          createdBy: userId,
-        },
-        include: {
-          category: true,
-          user: { select: { id: true, name: true, email: true } },
-          project: { select: { id: true, number: true, description: true } },
-          client: { select: { id: true, name: true } },
-        },
-      });
-    } catch (error) {
-      if (
-        error &&
-        typeof error === "object" &&
-        "code" in error &&
-        error.code === "P2002"
-      ) {
-        throw new ConflictException(
-          "Duplicate expense number — please retry",
-        );
+    let currentExpenseNumber = expenseNumber;
+    let currentBuktiNumber = buktiPengeluaranNumber;
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        expense = await this.prisma.expense.create({
+          data: {
+            ...expenseData,
+            ppnAmount: createExpenseDto.ppnAmount ?? 0,
+            ppnRate: createExpenseDto.ppnRate ?? 0,
+            ppnCategory: createExpenseDto.ppnCategory || "NON_CREDITABLE",
+            expenseNumber: currentExpenseNumber,
+            buktiPengeluaranNumber: currentBuktiNumber,
+            userId,
+            status: ExpenseStatus.PAID, // Automatically PAID
+            paymentStatus: ExpensePaymentStatus.PAID, // Automatically PAID
+            paidAt: new Date(), // Set payment timestamp
+            paymentMethod: "Automatic", // System-generated payment
+            createdBy: userId,
+          },
+          include: {
+            category: true,
+            user: { select: { id: true, name: true, email: true } },
+            project: { select: { id: true, number: true, description: true } },
+            client: { select: { id: true, name: true } },
+          },
+        });
+        break; // success — exit retry loop
+      } catch (error) {
+        if (
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "P2002" &&
+          attempt < maxAttempts
+        ) {
+          this.logger.warn(
+            `[EXPENSE_CREATE] P2002 collision on attempt ${attempt}; regenerating numbers.`,
+          );
+          currentExpenseNumber = await this.generateExpenseNumber();
+          currentBuktiNumber = await this.generateBuktiPengeluaranNumber();
+          continue;
+        }
+        if (
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "P2002"
+        ) {
+          throw new ConflictException(
+            "Duplicate expense number — please retry",
+          );
+        }
+        throw error;
       }
-      throw error;
     }
 
     // Create payment journal entry to reduce cash
@@ -870,34 +909,65 @@ export class ExpensesService {
       );
     }
 
-    // Create journal entry for payment (Debit AP, Credit Cash/Bank)
-    try {
-      const journalEntry = await this.journalService.createExpenseJournalEntry(
-        expense.id,
-        expense.expenseNumber,
-        expense.category.accountCode,
-        Number(expense.totalAmount),
-        "PAID",
-        userId,
+    // FIX 2a: Idempotency guard — if the payment journal was already created
+    // (e.g. prior call that timed out before returning), skip journal creation
+    // entirely so we never double-post.
+    if (expense.paymentJournalId) {
+      this.logger.log(
+        `[MARK_PAID] Expense ${id} already has paymentJournalId=${expense.paymentJournalId}; ` +
+          `skipping journal creation to avoid double-post.`,
       );
-
-      // Post journal entry immediately
-      await this.journalService.postJournalEntry(journalEntry.id, userId);
-
-      // Update expense with payment journal entry ID
-      await this.prisma.expense.update({
-        where: { id },
-        data: { paymentJournalId: journalEntry.id },
+    } else {
+      // FIX 2b: Atomic status claim — only proceed if still APPROVED,
+      // preventing two concurrent markPaid calls from both posting a journal.
+      const claimed = await this.prisma.expense.updateMany({
+        where: { id, status: ExpenseStatus.APPROVED, paymentJournalId: null },
+        data: { status: ExpenseStatus.PAID },
       });
-    } catch (error) {
-      this.logger.error(
-        "Failed to create payment journal entry for expense:",
-        error,
-      );
-      // Continue with status update even if journal entry fails
+
+      if (claimed.count === 0) {
+        // Another concurrent call won the race; re-read and return current state.
+        const current = await this.prisma.expense.findUnique({ where: { id } });
+        if (current) return current;
+        throw new NotFoundException(`Expense not found: ${id}`);
+      }
+
+      // Create journal entry for payment (Debit AP, Credit Cash/Bank)
+      try {
+        const journalEntry =
+          await this.journalService.createExpenseJournalEntry(
+            expense.id,
+            expense.expenseNumber,
+            expense.category.accountCode,
+            Number(expense.totalAmount),
+            "PAID",
+            userId,
+          );
+
+        // Post journal entry immediately
+        await this.journalService.postJournalEntry(journalEntry.id, userId);
+
+        // Link the journal entry; also persist the remaining payment fields.
+        await this.prisma.expense.update({
+          where: { id },
+          data: {
+            paymentJournalId: journalEntry.id,
+            paymentStatus: ExpensePaymentStatus.PAID,
+            paidAt: markPaidDto.paymentDate,
+            paymentMethod: markPaidDto.paymentMethod,
+            paymentReference: markPaidDto.paymentReference,
+          },
+        });
+      } catch (error) {
+        this.logger.error(
+          "Failed to create payment journal entry for expense:",
+          error,
+        );
+        // Continue with status update even if journal entry fails
+      }
     }
 
-    // Update expense
+    // Update expense (status already set atomically above; update remaining fields)
     const updated = await this.prisma.expense.update({
       where: { id },
       data: {
