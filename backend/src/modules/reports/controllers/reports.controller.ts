@@ -17,6 +17,7 @@ import { Response } from "express";
 import { ApiBearerAuth } from "@nestjs/swagger";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { RequireAdmin } from "../../auth/decorators/auth.decorators";
 import { SocialMediaReportService } from "../services/social-media-report.service";
 import { PDFGeneratorService } from "../services/pdf-generator.service";
 import { CreateReportDto } from "../dto/create-report.dto";
@@ -34,6 +35,7 @@ export class ReportsController {
 
   // Reports CRUD
   @Post()
+  @RequireAdmin()
   async createReport(@Body() dto: CreateReportDto) {
     return this.reportsService.createReport(dto);
   }
@@ -59,11 +61,13 @@ export class ReportsController {
   }
 
   @Delete(":id")
+  @RequireAdmin()
   async deleteReport(@Param("id") id: string) {
     return this.reportsService.deleteReport(id);
   }
 
   @Post(":id/status")
+  @RequireAdmin()
   async updateStatus(
     @Param("id") id: string,
     @Body("status") status: "DRAFT" | "COMPLETED" | "SENT",
@@ -73,6 +77,7 @@ export class ReportsController {
 
   // Sections
   @Post(":id/sections")
+  @RequireAdmin()
   @UseInterceptors(FileInterceptor("csvFile"))
   async addSection(
     @Param("id") reportId: string,
@@ -83,6 +88,7 @@ export class ReportsController {
   }
 
   @Delete(":id/sections/:sid")
+  @RequireAdmin()
   async removeSection(
     @Param("id") reportId: string,
     @Param("sid") sectionId: string,
@@ -91,6 +97,7 @@ export class ReportsController {
   }
 
   @Post(":id/sections/reorder")
+  @RequireAdmin()
   async reorderSections(
     @Param("id") reportId: string,
     @Body("sectionIds") sectionIds: string[],
@@ -100,6 +107,7 @@ export class ReportsController {
 
   // Visualizations
   @Patch(":id/sections/:sid/visualizations")
+  @RequireAdmin()
   async updateVisualizations(
     @Param("id") reportId: string,
     @Param("sid") sectionId: string,
@@ -110,6 +118,7 @@ export class ReportsController {
 
   // Layout (NEW - for visual report builder)
   @Patch(":id/sections/:sid/layout")
+  @RequireAdmin()
   async updateLayout(
     @Param("id") reportId: string,
     @Param("sid") sectionId: string,
@@ -120,6 +129,7 @@ export class ReportsController {
 
   // PDF Generation (Template-Based Only - Legacy Removed)
   @Post(":id/generate-pdf")
+  @RequireAdmin()
   async generatePDF(
     @Param("id") id: string,
     @Body()

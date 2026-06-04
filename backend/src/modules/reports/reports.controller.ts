@@ -16,6 +16,7 @@ import {
 } from "@nestjs/swagger";
 import { Response } from "express";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import { ReportsService } from "./reports.service";
 import { ExcelExportService } from "./excel-export.service";
 import { PdfExportService } from "./pdf-export.service";
@@ -140,6 +141,7 @@ export class ReportsController {
   }
 
   @Post("export/excel")
+  @RequireAdmin()
   @ApiOperation({
     summary: "Export reports to Excel (generic endpoint for frontend)",
   })
@@ -255,6 +257,7 @@ export class ReportsController {
   }
 
   @Post("export/pdf")
+  @RequireAdmin()
   @ApiOperation({
     summary: "Export reports to PDF (generic endpoint for frontend)",
   })

@@ -18,6 +18,7 @@ import { Throttle } from "@nestjs/throttler";
 import { PaymentsService } from "./payments.service";
 import { CreatePaymentDto, UpdatePaymentDto, PaymentResponseDto } from "./dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import { ApiResponse } from "../../common/dto/api-response.dto";
 import { getErrorMessage } from "../../common/utils/error-handling.util";
 
@@ -27,6 +28,7 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post()
+  @RequireAdmin()
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 payments per minute (fraud protection)
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -129,6 +131,7 @@ export class PaymentsController {
   }
 
   @Patch(":id")
+  @RequireAdmin()
   async update(
     @Param("id") id: string,
     @Body() updatePaymentDto: UpdatePaymentDto,
@@ -148,6 +151,7 @@ export class PaymentsController {
   }
 
   @Patch(":id/confirm")
+  @RequireAdmin()
   @HttpCode(HttpStatus.OK)
   async confirmPayment(
     @Param("id") id: string,
@@ -170,6 +174,7 @@ export class PaymentsController {
   }
 
   @Delete(":id")
+  @RequireAdmin()
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param("id") id: string): Promise<ApiResponse<null>> {
     try {

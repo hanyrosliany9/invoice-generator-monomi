@@ -24,6 +24,7 @@ import { UpdateProjectDto } from "./dto/update-project.dto";
 import { CalculateProjectionDto } from "./dto/calculate-projection.dto";
 import { ProjectProjectionService } from "./project-projection.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import { ProjectStatus } from "@prisma/client";
 
 @ApiTags("Projects")
@@ -37,6 +38,7 @@ export class ProjectsController {
   ) {}
 
   @Post()
+  @RequireAdmin()
   @ApiOperation({ summary: "Membuat proyek baru" })
   @ApiResponse({
     status: 201,
@@ -197,6 +199,7 @@ export class ProjectsController {
   }
 
   @Patch(":id")
+  @RequireAdmin()
   @ApiOperation({ summary: "Memperbarui proyek" })
   @ApiResponse({
     status: 200,
@@ -214,6 +217,7 @@ export class ProjectsController {
   }
 
   @Patch(":id/status")
+  @RequireAdmin()
   @ApiOperation({ summary: "Mengubah status proyek" })
   @ApiResponse({
     status: 200,
@@ -235,6 +239,7 @@ export class ProjectsController {
   }
 
   @Delete(":id")
+  @RequireAdmin()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Menghapus proyek" })
   @ApiResponse({
@@ -254,6 +259,7 @@ export class ProjectsController {
   }
 
   @Post(":id/calculate-profit")
+  @RequireAdmin()
   @ApiOperation({ summary: "Recalculate profit margins for project" })
   @ApiResponse({
     status: 200,
@@ -301,6 +307,7 @@ export class ProjectsController {
   }
 
   @Post("calculate-projection")
+  @RequireAdmin()
   @ApiOperation({
     summary: "Calculate project profit projections before creating project",
   })
@@ -317,6 +324,7 @@ export class ProjectsController {
   }
 
   @Post(":id/duplicate")
+  @RequireAdmin()
   @ApiOperation({ summary: "Duplicate an existing project" })
   @ApiResponse({
     status: 201,

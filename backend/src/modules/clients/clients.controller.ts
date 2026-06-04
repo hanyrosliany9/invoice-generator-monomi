@@ -22,6 +22,7 @@ import { ClientsService } from "./clients.service";
 import { CreateClientDto } from "./dto/create-client.dto";
 import { UpdateClientDto } from "./dto/update-client.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 
 @ApiTags("Clients")
 @Controller("clients")
@@ -31,6 +32,7 @@ export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Post()
+  @RequireAdmin()
   @ApiOperation({ summary: "Membuat klien baru" })
   @ApiResponse({
     status: 201,
@@ -168,6 +170,7 @@ export class ClientsController {
   }
 
   @Patch(":id")
+  @RequireAdmin()
   @ApiOperation({ summary: "Memperbarui klien" })
   @ApiResponse({
     status: 200,
@@ -185,6 +188,7 @@ export class ClientsController {
   }
 
   @Delete(":id")
+  @RequireAdmin()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Menghapus klien" })
   @ApiResponse({
