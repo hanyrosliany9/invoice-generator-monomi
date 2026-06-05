@@ -22,6 +22,7 @@ import { MediaAssetsService } from "../services/media-assets.service";
 import { MetadataService } from "../services/metadata.service";
 import { MediaCommentsService } from "../services/media-comments.service";
 import { BulkDownloadService } from "../services/bulk-download.service";
+import { MediaService } from "../../media/media.service";
 
 /**
  * Public API Controller
@@ -37,6 +38,7 @@ export class PublicController {
     private readonly jwtService: JwtService,
     private readonly commentsService: MediaCommentsService,
     private readonly bulkDownloadService: BulkDownloadService,
+    private readonly mediaService: MediaService,
   ) {}
 
   /**
@@ -129,15 +131,22 @@ export class PublicController {
   @ApiResponse({ status: 200, description: "Media token returned" })
   @ApiResponse({ status: 404, description: "Share link not found or disabled" })
   async getPublicMediaToken(@Param("token") token: string) {
-    // Validates token — throws 404 if not found/disabled
-    await this.projectsService.getPublicProject(token);
+    // Validates share token — throws 404 if not found/disabled; returns project with id
+    const project = await this.projectsService.getPublicProject(token);
 
-    const payload = {
-      purpose: "public-share",
-      isPublic: true,
-      shareToken: token,
-    };
-    const mediaToken = this.jwtService.sign(payload, { expiresIn: "24h" });
+    // Derive the R2 key prefixes actually used by this project's assets so the
+    // Cloudflare Worker can enforce that this token only unlocks those keys.
+    // Falls back to an empty array if the project has no assets yet (new projects);
+    // the worker treats an empty keyPrefixes list as "allow all for this project"
+    // because there are no assets to scope against.
+    const keyPrefixes = await this.projectsService.getPublicProjectKeyPrefixes(token);
+
+    // Issue a scoped JWT via MediaService (wraps JwtService with scope logic)
+    const mediaToken = this.mediaService.generatePublicShareMediaToken(
+      project.id,
+      token,
+      keyPrefixes,
+    );
 
     return { mediaToken };
   }

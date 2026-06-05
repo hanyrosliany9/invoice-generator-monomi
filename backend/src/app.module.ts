@@ -3,6 +3,8 @@ import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { APP_INTERCEPTOR, APP_FILTER, APP_GUARD } from "@nestjs/core";
+import { RedisThrottlerStorage } from "./common/throttler/redis-throttler.storage";
+import { RedisThrottlerStorageModule } from "./common/throttler/redis-throttler.module";
 import { validate } from "./config/env.validation";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UsersModule } from "./modules/users/users.module";
@@ -62,12 +64,19 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
       },
     }),
     ScheduleModule.forRoot(),
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
-      },
-    ]),
+    ThrottlerModule.forRootAsync({
+      imports: [RedisThrottlerStorageModule],
+      useFactory: (storage: RedisThrottlerStorage) => ({
+        throttlers: [
+          {
+            ttl: 60000, // 1 minute
+            limit: 100, // 100 requests per minute
+          },
+        ],
+        storage,
+      }),
+      inject: [RedisThrottlerStorage],
+    }),
     PrismaModule,
     AuthModule,
     UsersModule,

@@ -47,22 +47,36 @@ export class FinancialStatementsService {
       orderBy: [{ accountType: "asc" }, { code: "asc" }],
     });
 
-    // Calculate balance for each account for the period
-    const accountBalances = await Promise.all(
-      accounts.map(async (account) => {
-        const entries = await this.prisma.generalLedger.findMany({
-          where: {
-            accountId: account.id,
-            entryDate: { gte: startDate, lte: endDate },
-            journalEntry: { isPosted: true },
-          },
-        });
+    // FIX 1 (N+1): single groupBy query instead of one GL query per account.
+    // Prisma groupBy cannot filter on relations, so we use $queryRaw to push
+    // the isPosted + date filter into one round-trip.  The WHERE clause mirrors
+    // the per-account filters exactly: entryDate in [startDate, endDate] AND
+    // the parent JournalEntry is posted.
+    type GlSum = { accountId: string; totalDebit: string; totalCredit: string };
+    const glSums: GlSum[] = await this.prisma.$queryRaw`
+      SELECT gl."accountId",
+             CAST(SUM(gl.debit)  AS TEXT) AS "totalDebit",
+             CAST(SUM(gl.credit) AS TEXT) AS "totalCredit"
+      FROM   general_ledger gl
+      JOIN   journal_entries je ON je.id = gl."journalEntryId"
+      WHERE  je."isPosted" = true
+        AND  gl."entryDate" >= ${startDate}
+        AND  gl."entryDate" <= ${endDate}
+      GROUP BY gl."accountId"
+    `;
 
-        const totalDebit = entries.reduce((sum, e) => sum + Number(e.debit), 0);
-        const totalCredit = entries.reduce(
-          (sum, e) => sum + Number(e.credit),
-          0,
-        );
+    // Build a Map for O(1) lookup
+    const sumMap = new Map<string, { totalDebit: number; totalCredit: number }>(
+      glSums.map((r) => [
+        r.accountId,
+        { totalDebit: Number(r.totalDebit), totalCredit: Number(r.totalCredit) },
+      ]),
+    );
+
+    // Join sums to accounts in memory — identical logic to the original per-account loop
+    const accountBalances = accounts.map((account) => {
+      const sums = sumMap.get(account.id) ?? { totalDebit: 0, totalCredit: 0 };
+      const { totalDebit, totalCredit } = sums;
 
         // For income statement, revenue is credit balance, expenses are debit balance
         let balance = 0;
@@ -82,8 +96,7 @@ export class FinancialStatementsService {
           totalDebit,
           totalCredit,
         };
-      }),
-    );
+    });
 
     // Filter out zero balances
     const nonZeroBalances = accountBalances.filter(
@@ -249,22 +262,32 @@ export class FinancialStatementsService {
       orderBy: [{ accountType: "asc" }, { code: "asc" }],
     });
 
-    // Calculate balance for each account as of the end date
-    const accountBalances = await Promise.all(
-      accounts.map(async (account) => {
-        const entries = await this.prisma.generalLedger.findMany({
-          where: {
-            accountId: account.id,
-            entryDate: { lte: endDate },
-            journalEntry: { isPosted: true },
-          },
-        });
+    // FIX 1 (N+1): single grouped query for all BS account sums instead of
+    // one GL query per account.  Mirrors the original filter exactly:
+    // entryDate <= endDate AND journalEntry.isPosted = true.
+    type GlSumBS = { accountId: string; totalDebit: string; totalCredit: string };
+    const glSumsBS: GlSumBS[] = await this.prisma.$queryRaw`
+      SELECT gl."accountId",
+             CAST(SUM(gl.debit)  AS TEXT) AS "totalDebit",
+             CAST(SUM(gl.credit) AS TEXT) AS "totalCredit"
+      FROM   general_ledger gl
+      JOIN   journal_entries je ON je.id = gl."journalEntryId"
+      WHERE  je."isPosted" = true
+        AND  gl."entryDate" <= ${endDate}
+      GROUP BY gl."accountId"
+    `;
 
-        const totalDebit = entries.reduce((sum, e) => sum + Number(e.debit), 0);
-        const totalCredit = entries.reduce(
-          (sum, e) => sum + Number(e.credit),
-          0,
-        );
+    const bsSumMap = new Map<string, { totalDebit: number; totalCredit: number }>(
+      glSumsBS.map((r) => [
+        r.accountId,
+        { totalDebit: Number(r.totalDebit), totalCredit: Number(r.totalCredit) },
+      ]),
+    );
+
+    // Calculate balance for each account as of the end date — same logic as before
+    const accountBalances = accounts.map((account) => {
+        const sums = bsSumMap.get(account.id) ?? { totalDebit: 0, totalCredit: 0 };
+        const { totalDebit, totalCredit } = sums;
 
         // Calculate balance based on normal balance type
         let balance = 0;
@@ -300,8 +323,7 @@ export class FinancialStatementsService {
           totalDebit,
           totalCredit,
         };
-      }),
-    );
+    });
 
     // Filter out zero balances
     const nonZeroBalances = accountBalances.filter(
@@ -362,23 +384,15 @@ export class FinancialStatementsService {
       },
     });
 
-    // Calculate net income from ALL periods (all-time cumulative), because no
-    // year-end closing has been run that would have moved prior periods into
-    // Retained Earnings.
+    // FIX 1 (N+1): reuse the glSumsBS map already computed above (same filter:
+    // entryDate <= endDate AND isPosted = true) — no additional DB queries needed.
+    // This is the all-time cumulative net income calculation for the balance sheet.
     let totalRevenue = 0;
     let totalExpenses = 0;
 
     for (const account of revenueExpenseAccounts) {
-      const glEntries = await this.prisma.generalLedger.findMany({
-        where: {
-          accountId: account.id,
-          entryDate: { lte: endDate }, // all-time, not just current fiscal year
-          journalEntry: { isPosted: true },
-        },
-      });
-
-      const debit = glEntries.reduce((sum, e) => sum + Number(e.debit), 0);
-      const credit = glEntries.reduce((sum, e) => sum + Number(e.credit), 0);
+      const sums = bsSumMap.get(account.id) ?? { totalDebit: 0, totalCredit: 0 };
+      const { totalDebit: debit, totalCredit: credit } = sums;
 
       if (account.accountType === "REVENUE") {
         totalRevenue += credit - debit; // Revenue increases with credits
@@ -1025,23 +1039,32 @@ export class FinancialStatementsService {
     });
 
     // Calculate net income and build closing entries
+    // FIX 1 (N+1): batch all account sums in one query instead of per-account GL fetches.
+    type GlSumClose = { accountId: string; totalDebit: string; totalCredit: string };
+    const glSumsClose: GlSumClose[] = await this.prisma.$queryRaw`
+      SELECT gl."accountId",
+             CAST(SUM(gl.debit)  AS TEXT) AS "totalDebit",
+             CAST(SUM(gl.credit) AS TEXT) AS "totalCredit"
+      FROM   general_ledger gl
+      JOIN   journal_entries je ON je.id = gl."journalEntryId"
+      WHERE  je."isPosted" = true
+        AND  gl."entryDate" >= ${fiscalYearStart}
+        AND  gl."entryDate" <= ${fiscalYearEndDate}
+      GROUP BY gl."accountId"
+    `;
+    const closeSumMap = new Map<string, { debit: number; credit: number }>(
+      glSumsClose.map((r) => [
+        r.accountId,
+        { debit: Number(r.totalDebit), credit: Number(r.totalCredit) },
+      ]),
+    );
+
     let totalRevenue = 0;
     let totalExpenses = 0;
     const closingLineItems: any[] = [];
 
     for (const account of revenueExpenseAccounts) {
-      // FIX 4: Add isPosted filter — every other GL query in this file has it;
-      // missing it here would include unposted (draft) entries in year-end closing.
-      const glEntries = await this.prisma.generalLedger.findMany({
-        where: {
-          accountId: account.id,
-          entryDate: { gte: fiscalYearStart, lte: fiscalYearEndDate },
-          journalEntry: { isPosted: true },
-        },
-      });
-
-      const debit = glEntries.reduce((sum, e) => sum + Number(e.debit), 0);
-      const credit = glEntries.reduce((sum, e) => sum + Number(e.credit), 0);
+      const { debit = 0, credit = 0 } = closeSumMap.get(account.id) ?? { debit: 0, credit: 0 };
 
       let accountBalance = 0;
 

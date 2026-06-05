@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, OnModuleDestroy } from "@nestjs/common";
 import * as puppeteer from "puppeteer";
 import { join, resolve } from "path";
 import { readFileSync, existsSync } from "fs";
@@ -10,6 +10,37 @@ import { generateScheduleHTML } from "./templates/schedule.html";
 import { generateCallSheetHTML } from "./templates/call-sheet.html";
 import { generatePhotoCallSheetHTML } from "./templates/photo-call-sheet.html";
 import { generateShotListHTML } from "./templates/shot-list.html";
+
+// ---------------------------------------------------------------------------
+// Simple async semaphore — limits concurrent Puppeteer pages to MAX_PAGES.
+// No external dependency: just a counter + a FIFO queue of resolve callbacks.
+// ---------------------------------------------------------------------------
+class Semaphore {
+  private count: number;
+  private readonly queue: Array<() => void> = [];
+
+  constructor(private readonly max: number) {
+    this.count = max;
+  }
+
+  acquire(): Promise<void> {
+    if (this.count > 0) {
+      this.count--;
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => this.queue.push(resolve));
+  }
+
+  release(): void {
+    if (this.queue.length > 0) {
+      // Wake the oldest waiter; count stays at 0 (slot transferred directly)
+      const next = this.queue.shift()!;
+      next();
+    } else {
+      this.count++;
+    }
+  }
+}
 
 // HTML escape helper — wrap every user/DB-supplied string field in esc() before
 // interpolating into template literals so Puppeteer cannot execute injected markup.
@@ -23,14 +54,131 @@ const esc = (v: unknown): string =>
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
 
+// Maximum number of Puppeteer pages allowed to render concurrently.
+const MAX_CONCURRENT_PAGES = 4;
+
+// Puppeteer launch args shared across the single browser instance.
+const BROWSER_ARGS = [
+  "--no-sandbox",
+  "--disable-setuid-sandbox",
+  "--disable-dev-shm-usage",
+];
+
 @Injectable()
-export class PdfService {
+export class PdfService implements OnModuleDestroy {
   private templatePath = join(__dirname, "templates");
   private readonly logger = new Logger(PdfService.name);
   private logoBase64: string | null = null;
 
+  // ---------------------------------------------------------------------------
+  // Shared browser state
+  // ---------------------------------------------------------------------------
+  /** The single shared Chromium instance. Null until first use. */
+  private browser: puppeteer.Browser | null = null;
+  /** Serialises access to the lazy-launch so only one caller creates the browser. */
+  private browserLaunchPromise: Promise<puppeteer.Browser> | null = null;
+  /** Caps concurrent in-flight pages so we never OOM under bursts. */
+  private readonly semaphore = new Semaphore(MAX_CONCURRENT_PAGES);
+
   constructor(private readonly settingsService: SettingsService) {
     this.initializeLogo();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Browser lifecycle helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the shared browser, launching it lazily on first use.
+   * If the browser has crashed/disconnected it is automatically relaunched.
+   * Concurrent callers await the same in-flight launch promise so only one
+   * Chromium process is ever started.
+   */
+  private async getBrowser(): Promise<puppeteer.Browser> {
+    // Fast path: browser is alive and connected
+    if (this.browser && this.browser.connected) {
+      return this.browser;
+    }
+
+    // Serialise concurrent launchers: if a launch is already in progress,
+    // wait for it rather than spawning a second Chromium.
+    if (this.browserLaunchPromise) {
+      return this.browserLaunchPromise;
+    }
+
+    this.browserLaunchPromise = (async () => {
+      this.logger.log("Launching shared Puppeteer browser...");
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: BROWSER_ARGS,
+      });
+
+      // Auto-relaunch on unexpected disconnect
+      browser.once("disconnected", () => {
+        this.logger.warn(
+          "Shared Puppeteer browser disconnected — will relaunch on next request",
+        );
+        this.browser = null;
+        this.browserLaunchPromise = null;
+      });
+
+      this.browser = browser;
+      this.browserLaunchPromise = null;
+      this.logger.log("Shared Puppeteer browser launched successfully");
+      return browser;
+    })();
+
+    return this.browserLaunchPromise;
+  }
+
+  /**
+   * Acquires a semaphore slot, opens a new page on the shared browser, and
+   * returns the page together with a `release()` function that the caller MUST
+   * invoke in a `finally` block to close the page and free the slot.
+   */
+  private async acquirePage(): Promise<{
+    page: puppeteer.Page;
+    release: () => Promise<void>;
+  }> {
+    await this.semaphore.acquire();
+    let page: puppeteer.Page;
+    try {
+      const browser = await this.getBrowser();
+      page = await browser.newPage();
+    } catch (err) {
+      // If we can't open a page, release the semaphore slot immediately
+      this.semaphore.release();
+      throw err;
+    }
+    const release = async () => {
+      try {
+        if (!page.isClosed()) {
+          await page.close();
+        }
+      } catch (closeErr) {
+        this.logger.warn(`Error closing page: ${closeErr}`);
+      } finally {
+        this.semaphore.release();
+      }
+    };
+    return { page, release };
+  }
+
+  // ---------------------------------------------------------------------------
+  // NestJS lifecycle: close the shared browser when the module is torn down
+  // ---------------------------------------------------------------------------
+  async onModuleDestroy(): Promise<void> {
+    if (this.browser) {
+      this.logger.log("Closing shared Puppeteer browser (module destroy)...");
+      try {
+        await this.browser.close();
+      } catch (err) {
+        this.logger.warn(`Error closing shared browser on destroy: ${err}`);
+      } finally {
+        this.browser = null;
+        this.browserLaunchPromise = null;
+      }
+    }
   }
 
   private initializeLogo() {
@@ -91,14 +239,9 @@ export class PdfService {
     continuous: boolean = true,
     showMaterai: boolean = true,
   ): Promise<Buffer> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const { page, release } = await this.acquirePage();
 
     try {
-      const page = await browser.newPage();
-
       // Generate HTML content
       const htmlContent = await this.generateInvoiceHTML(
         invoiceData,
@@ -165,7 +308,7 @@ export class PdfService {
         return Buffer.from(pdf);
       }
     } finally {
-      await browser.close();
+      await release();
     }
   }
 
@@ -173,14 +316,9 @@ export class PdfService {
     quotationData: any,
     continuous: boolean = true,
   ): Promise<Buffer> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const { page, release } = await this.acquirePage();
 
     try {
-      const page = await browser.newPage();
-
       // Generate HTML content
       const htmlContent = await this.generateQuotationHTML(quotationData);
 
@@ -244,7 +382,7 @@ export class PdfService {
         return Buffer.from(pdf);
       }
     } finally {
-      await browser.close();
+      await release();
     }
   }
 
@@ -2018,20 +2156,8 @@ export class PdfService {
     projectData: any,
     continuous: boolean = true,
   ): Promise<Buffer> {
-    let browser: puppeteer.Browser | null = null;
+    const { page, release } = await this.acquirePage();
     try {
-      this.logger.debug("Launching Puppeteer browser...");
-      browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage", // Disable /dev/shm usage - useful in containers
-        ],
-      });
-
-      const page = await browser.newPage();
-
       // Generate HTML content using the new project template
       this.logger.debug("Generating project HTML...");
       const htmlContent = generateProjectHTML(projectData);
@@ -2136,14 +2262,7 @@ export class PdfService {
       );
       throw error;
     } finally {
-      if (browser) {
-        this.logger.debug("Closing Puppeteer browser...");
-        try {
-          await browser.close();
-        } catch (closeError) {
-          this.logger.error(`Error closing browser: ${closeError}`);
-        }
-      }
+      await release();
     }
   }
 
@@ -2151,13 +2270,9 @@ export class PdfService {
     scheduleData: any,
     continuous: boolean = true,
   ): Promise<Buffer> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const { page, release } = await this.acquirePage();
 
     try {
-      const page = await browser.newPage();
       const htmlContent = generateScheduleHTML(scheduleData);
 
       if (continuous) {
@@ -2197,7 +2312,7 @@ export class PdfService {
         return Buffer.from(pdf);
       }
     } finally {
-      await browser.close();
+      await release();
     }
   }
 
@@ -2212,13 +2327,9 @@ export class PdfService {
       this.logger.log(`[PDF DEBUG] shootDay.shootDate: ${callSheetData.shootDay?.shootDate}`);
     }
 
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const { page, release } = await this.acquirePage();
 
     try {
-      const page = await browser.newPage();
       // Select template based on call sheet type (FILM or PHOTO)
       const htmlContent =
         callSheetData.callSheetType === "PHOTO"
@@ -2265,7 +2376,7 @@ export class PdfService {
         return Buffer.from(pdf);
       }
     } finally {
-      await browser.close();
+      await release();
     }
   }
 
@@ -2273,13 +2384,9 @@ export class PdfService {
     shotListData: any,
     continuous: boolean = true,
   ): Promise<Buffer> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const { page, release } = await this.acquirePage();
 
     try {
-      const page = await browser.newPage();
       const htmlContent = generateShotListHTML(shotListData);
 
       if (continuous) {
@@ -2319,7 +2426,7 @@ export class PdfService {
         return Buffer.from(pdf);
       }
     } finally {
-      await browser.close();
+      await release();
     }
   }
 }

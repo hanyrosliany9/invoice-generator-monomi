@@ -88,7 +88,7 @@ describe("AuthController", () => {
 
       mockAuthService.login.mockResolvedValue(expectedResult);
 
-      const result = await controller.login(loginDto, mockRequest);
+      const result = await controller.login(loginDto, mockRequest, { cookie: jest.fn(), clearCookie: jest.fn() } as any);
 
       expect(result).toEqual(expectedResult);
       expect(mockAuthService.login).toHaveBeenCalledWith(loginDto, {
@@ -107,7 +107,7 @@ describe("AuthController", () => {
         new UnauthorizedException("Email atau password salah"),
       );
 
-      await expect(controller.login(loginDto, mockRequest)).rejects.toThrow(
+      await expect(controller.login(loginDto, mockRequest, { cookie: jest.fn(), clearCookie: jest.fn() } as any)).rejects.toThrow(
         UnauthorizedException,
       );
     });

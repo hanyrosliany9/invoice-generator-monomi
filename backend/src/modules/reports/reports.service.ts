@@ -31,9 +31,10 @@ export class ReportsService {
     // Group by period
     const revenueByPeriod = this.groupByPeriod(invoices, period || "monthly");
 
-    // Calculate totals
+    // FIX 4 (precision): use Number() on Prisma Decimal to avoid parseFloat
+    // string-round-trip drift; accumulate with integer-safe addition.
     const totalRevenue = invoices.reduce(
-      (sum, invoice) => sum + parseFloat(invoice.totalAmount.toString()),
+      (sum, invoice) => sum + Number(invoice.totalAmount),
       0,
     );
 
@@ -67,8 +68,7 @@ export class ReportsService {
     const topClientIds = clientRevenue
       .sort(
         (a, b) =>
-          parseFloat(b._sum.totalAmount?.toString() || "0") -
-          parseFloat(a._sum.totalAmount?.toString() || "0"),
+          Number(b._sum.totalAmount ?? 0) - Number(a._sum.totalAmount ?? 0),
       )
       .slice(0, limit || 10)
       .map((item) => item.clientId);
@@ -90,13 +90,12 @@ export class ReportsService {
     const topClients = clientRevenue
       .sort(
         (a, b) =>
-          parseFloat(b._sum.totalAmount?.toString() || "0") -
-          parseFloat(a._sum.totalAmount?.toString() || "0"),
+          Number(b._sum.totalAmount ?? 0) - Number(a._sum.totalAmount ?? 0),
       )
       .slice(0, limit || 10)
       .map((item) => ({
         client: clientMap.get(item.clientId),
-        revenue: parseFloat(item._sum.totalAmount?.toString() || "0"),
+        revenue: Number(item._sum.totalAmount ?? 0),
         invoiceCount: item._count.id,
       }));
 
@@ -121,45 +120,47 @@ export class ReportsService {
       },
     });
 
-    // Get project details
-    const topProjects = await Promise.all(
-      projectRevenue
-        .sort(
-          (a, b) =>
-            parseFloat(b._sum.totalAmount?.toString() || "0") -
-            parseFloat(a._sum.totalAmount?.toString() || "0"),
-        )
-        .slice(0, limit || 10)
-        .map(async (item) => {
-          const project = await this.prisma.project.findUnique({
-            where: { id: item.projectId },
-            select: {
-              id: true,
-              number: true,
-              description: true,
-              projectType: {
-                select: {
-                  code: true,
-                  name: true,
-                },
-              },
-              status: true,
-              client: {
-                select: {
-                  name: true,
-                  company: true,
-                },
-              },
-            },
-          });
+    // FIX 3 (N+1): replace per-project findUnique inside Promise.all with a
+    // single findMany + Map lookup.
+    const sortedTopRevenue = projectRevenue
+      .sort(
+        (a, b) =>
+          Number(b._sum.totalAmount ?? 0) - Number(a._sum.totalAmount ?? 0),
+      )
+      .slice(0, limit || 10);
 
-          return {
-            project,
-            revenue: parseFloat(item._sum.totalAmount?.toString() || "0"),
-            invoiceCount: item._count.id,
-          };
-        }),
-    );
+    const topProjectIds = sortedTopRevenue
+      .map((item) => item.projectId)
+      .filter((id): id is string => id !== null);
+
+    const projectDetails = await this.prisma.project.findMany({
+      where: { id: { in: topProjectIds } },
+      select: {
+        id: true,
+        number: true,
+        description: true,
+        projectType: {
+          select: {
+            code: true,
+            name: true,
+          },
+        },
+        status: true,
+        client: {
+          select: {
+            name: true,
+            company: true,
+          },
+        },
+      },
+    });
+    const projectMap = new Map(projectDetails.map((p) => [p.id, p]));
+
+    const topProjects = sortedTopRevenue.map((item) => ({
+      project: item.projectId ? projectMap.get(item.projectId) ?? null : null,
+      revenue: Number(item._sum.totalAmount ?? 0),
+      invoiceCount: item._count.id,
+    }));
 
     // Get project type distribution
     const projectTypes = await this.prisma.project.groupBy({
@@ -242,7 +243,7 @@ export class ReportsService {
       overdueInvoices,
       overdueCount: overdueInvoices.length,
       overdueAmount: overdueInvoices.reduce(
-        (sum, inv) => sum + parseFloat(inv.totalAmount.toString()),
+        (sum, inv) => sum + Number(inv.totalAmount),
         0,
       ),
       paymentTrends,
@@ -306,7 +307,7 @@ export class ReportsService {
       // FIX 4: Exclude DRAFT from pipeline value (committed pipeline only)
       totalValue: quotations
         .filter((q) => q.status !== "DRAFT")
-        .reduce((sum, q) => sum + parseFloat(q.totalAmount.toString()), 0),
+        .reduce((sum, q) => sum + Number(q.totalAmount), 0),
     };
 
     // Calculate invoice metrics (exclude CANCELLED from totals and rate)
@@ -317,12 +318,12 @@ export class ReportsService {
       pending: activeInvoices.filter((i) => i.status === "SENT").length,
       overdue: activeInvoices.filter((i) => i.status === "OVERDUE").length,
       totalValue: activeInvoices.reduce(
-        (sum, i) => sum + parseFloat(i.totalAmount.toString()),
+        (sum, i) => sum + Number(i.totalAmount),
         0,
       ),
       paidValue: activeInvoices
         .filter((i) => i.status === "PAID")
-        .reduce((sum, i) => sum + parseFloat(i.totalAmount.toString()), 0),
+        .reduce((sum, i) => sum + Number(i.totalAmount), 0),
       materaiRequired: activeInvoices.filter((i) => i.materaiRequired).length,
     };
 
@@ -392,8 +393,7 @@ export class ReportsService {
           break;
       }
 
-      grouped[key] =
-        (grouped[key] || 0) + parseFloat(item.totalAmount.toString());
+      grouped[key] = (grouped[key] || 0) + Number(item.totalAmount);
     });
 
     return Object.entries(grouped)

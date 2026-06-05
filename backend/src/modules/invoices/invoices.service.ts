@@ -134,6 +134,23 @@ export class InvoicesService {
       createInvoiceDto.quotationId = paymentMilestone.quotationId;
     }
 
+    // Server-side tax/discount recompute — do NOT trust client-sent totals.
+    // Only run when priceBreakdown.products is present; skip for milestone-
+    // amount overrides (handled above) and plain lump-sum invoices.
+    if (!createInvoiceDto.paymentMilestoneId) {
+      const recomputed = this.recomputeTotals(createInvoiceDto);
+      if (recomputed !== null) {
+        createInvoiceDto.totalAmount = recomputed.totalAmount;
+        createInvoiceDto.amountPerProject = recomputed.subtotal;
+        if (createInvoiceDto.subtotalAmount !== undefined) {
+          createInvoiceDto.subtotalAmount = recomputed.subtotal;
+        }
+        if (createInvoiceDto.taxAmount !== undefined) {
+          createInvoiceDto.taxAmount = recomputed.taxAmount;
+        }
+      }
+    }
+
     // Validate business rules
     await this.validateBusinessRules(createInvoiceDto);
 
@@ -1443,6 +1460,87 @@ export class InvoicesService {
   }
 
   // Removed old sanitizeInput method - now using comprehensive sanitization utility
+
+  /**
+   * Server-side tax/discount recompute from priceBreakdown.products.
+   *
+   * Expected product line shape:
+   *   { name, quantity, price, isTaxable?: boolean }
+   *
+   * Tax logic:
+   *   - If a line has `isTaxable` field, we respect it (per-line taxability).
+   *   - If no line has `isTaxable`, we fall back to the top-level `includeTax`
+   *     flag on the DTO: when true, PPN 11% is applied to the entire subtotal.
+   *
+   * Returns null when priceBreakdown is absent or has no valid product lines
+   * (caller skips recompute in that case).
+   *
+   * Limitation: when `isTaxable` is absent from all lines and `includeTax` is
+   * true, PPN is applied to the full subtotal (no per-line granularity).
+   */
+  private recomputeTotals(
+    dto: CreateInvoiceDto,
+  ): { subtotal: number; taxAmount: number; totalAmount: number } | null {
+    const pb = dto.priceBreakdown as any;
+    if (!pb || !Array.isArray(pb.products) || pb.products.length === 0) {
+      return null;
+    }
+
+    const taxRate = typeof dto.taxRate === "number" ? dto.taxRate : 11; // PPN default 11%
+    const taxMultiplier = taxRate / 100;
+
+    let subtotal = 0;
+    let taxableSubtotal = 0;
+    let hasPerLineTaxFlag = false;
+
+    for (const line of pb.products) {
+      const qty = Number(line.quantity ?? 1);
+      const price = Number(line.price ?? 0);
+      if (!isFinite(qty) || !isFinite(price)) continue;
+
+      const lineTotal = Math.round(qty * price);
+      subtotal += lineTotal;
+
+      if (typeof line.isTaxable === "boolean") {
+        hasPerLineTaxFlag = true;
+        if (line.isTaxable) {
+          taxableSubtotal += lineTotal;
+        }
+      }
+    }
+
+    if (subtotal === 0) return null;
+
+    // If no line carried isTaxable, fall back to top-level includeTax flag.
+    if (!hasPerLineTaxFlag) {
+      taxableSubtotal = dto.includeTax ? subtotal : 0;
+    }
+
+    const taxAmount = Math.round(taxableSubtotal * taxMultiplier);
+
+    // Apply discount if present in priceBreakdown.discountAmount or top-level DTO.
+    const discountAmount =
+      Math.round(Number(pb.discountAmount ?? 0)) ||
+      Math.round(Number((dto as any).discountAmount ?? 0));
+
+    // Materai: do NOT add to server total — it is tracked separately.
+    const totalAmount = subtotal + taxAmount - discountAmount;
+
+    if (totalAmount <= 0) return null;
+
+    // Assert: if the client sent a totalAmount that differs by more than 1 IDR,
+    // log a warning (we overwrite with the server value rather than rejecting,
+    // so existing integrations that round differently still work).
+    const clientTotal = Number(dto.totalAmount ?? 0);
+    if (Math.abs(clientTotal - totalAmount) > 1) {
+      this.logger.warn(
+        `recomputeTotals: client total ${clientTotal} differs from server-computed ${totalAmount} ` +
+          `(subtotal=${subtotal}, tax=${taxAmount}, discount=${discountAmount}) — overwriting with server value`,
+      );
+    }
+
+    return { subtotal, taxAmount, totalAmount };
+  }
 
   private async validateBusinessRules(dto: CreateInvoiceDto) {
     // Check due date is in future (use WIB day boundary, not UTC midnight)

@@ -5,21 +5,18 @@ export enum QuotationStatus {
   SENT = "SENT",
   APPROVED = "APPROVED",
   DECLINED = "DECLINED",
-  EXPIRED = "EXPIRED",
-  CANCELLED = "CANCELLED",
+  REVISED = "REVISED",
 }
 
 const VALID_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
-  [QuotationStatus.DRAFT]: [QuotationStatus.SENT, QuotationStatus.CANCELLED],
+  [QuotationStatus.DRAFT]: [QuotationStatus.SENT],
   [QuotationStatus.SENT]: [
     QuotationStatus.APPROVED,
     QuotationStatus.DECLINED,
-    QuotationStatus.EXPIRED,
   ],
   [QuotationStatus.APPROVED]: [], // Terminal state
-  [QuotationStatus.DECLINED]: [QuotationStatus.DRAFT], // Allow revision
-  [QuotationStatus.EXPIRED]: [QuotationStatus.DRAFT], // Allow renewal
-  [QuotationStatus.CANCELLED]: [], // Terminal state
+  [QuotationStatus.DECLINED]: [QuotationStatus.REVISED], // Revision workflow supersedes the old quotation
+  [QuotationStatus.REVISED]: [], // Terminal — a new DRAFT revision was created
 };
 
 /**

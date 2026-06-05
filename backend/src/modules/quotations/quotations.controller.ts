@@ -151,6 +151,24 @@ export class QuotationsController {
     return this.quotationsService.reopenQuotation(id);
   }
 
+  @Post(":id/revise")
+  @ApiOperation({
+    summary:
+      "Create a revised DRAFT copy of a DECLINED quotation; original becomes REVISED",
+  })
+  @ApiResponse({
+    status: 201,
+    description:
+      "New DRAFT quotation created with parentQuotationId pointing to the original. Milestones cloned.",
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Quotation is not in DECLINED status",
+  })
+  async revise(@Param("id") id: string, @Request() req: any) {
+    return this.quotationsService.reviseQuotation(id, req.user.id);
+  }
+
   @Patch(":id/payment-terms")
   @ApiOperation({
     summary: "Set/replace payment terms (termin) on a quotation",

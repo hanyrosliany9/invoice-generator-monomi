@@ -7,6 +7,7 @@ import {
   Get,
   UseGuards,
   Request,
+  Res,
   Delete,
   Param,
 } from "@nestjs/common";
@@ -17,12 +18,30 @@ import {
   ApiBearerAuth,
 } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
+import { Response } from "express";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { Public } from "../../common/decorators/public.decorator";
 import { RefreshTokenService } from "./refresh-token.service";
+
+// TTLs must match JwtModule (15 min access, 30 day refresh).
+const ACCESS_TOKEN_MAX_AGE = 15 * 60 * 1000;       // 15 minutes in ms
+const REFRESH_TOKEN_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
+
+/** Set the two auth cookies on a response. */
+function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+  const isProduction = process.env.NODE_ENV === "production";
+  const baseOpts = {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: isProduction,
+    path: "/",
+  };
+  res.cookie("accessToken", accessToken, { ...baseOpts, maxAge: ACCESS_TOKEN_MAX_AGE });
+  res.cookie("refreshToken", refreshToken, { ...baseOpts, maxAge: REFRESH_TOKEN_MAX_AGE });
+}
 
 @ApiTags("Authentication")
 @Controller("auth")
@@ -60,12 +79,19 @@ export class AuthController {
     status: 401,
     description: "Email atau password salah",
   })
-  async login(@Body() loginDto: LoginDto, @Request() req: any) {
+  async login(
+    @Body() loginDto: LoginDto,
+    @Request() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const deviceInfo = {
       userAgent: req.headers["user-agent"],
       ipAddress: req.ip,
     };
-    return this.authService.login(loginDto, deviceInfo);
+    const result = await this.authService.login(loginDto, deviceInfo);
+    // Hardening 2: set httpOnly cookies in addition to returning body tokens.
+    setAuthCookies(res, result.access_token, result.refresh_token);
+    return result;
   }
 
   @Public()
@@ -150,14 +176,21 @@ export class AuthController {
     description: "Refresh token tidak valid atau kedaluwarsa",
   })
   async refresh(
-    @Body("refresh_token") refreshToken: string,
+    @Body("refresh_token") bodyRefreshToken: string | undefined,
     @Request() req: any,
+    @Res({ passthrough: true }) res: Response,
   ) {
+    // Hardening 2: accept refresh token from httpOnly cookie first (XSS-safe),
+    // fall back to request body for backward compatibility with existing clients.
+    const refreshToken: string = req.cookies?.refreshToken ?? bodyRefreshToken;
     const deviceInfo = {
       userAgent: req.headers["user-agent"],
       ipAddress: req.ip,
     };
-    return this.authService.refreshAccessToken(refreshToken, deviceInfo);
+    const result = await this.authService.refreshAccessToken(refreshToken, deviceInfo);
+    // Rotate both cookies on refresh.
+    setAuthCookies(res, result.access_token, result.refresh_token);
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)
@@ -177,13 +210,23 @@ export class AuthController {
   })
   async logout(
     @Request() req: any,
-    @Body("refresh_token") refreshToken?: string,
+    @Res({ passthrough: true }) res: Response,
+    @Body("refresh_token") bodyRefreshToken?: string,
     @Body("logout_all") logoutAll?: boolean,
   ) {
+    // Accept refresh token from cookie (preferred) or body (backward compat).
+    const refreshToken: string | undefined =
+      req.cookies?.refreshToken ?? bodyRefreshToken;
+
     await this.authService.logout(
       req.user.id,
       logoutAll ? undefined : refreshToken,
     );
+
+    // Hardening 2: clear both auth cookies on logout.
+    res.clearCookie("accessToken", { path: "/" });
+    res.clearCookie("refreshToken", { path: "/" });
+
     return {
       message: logoutAll
         ? "Logout dari semua perangkat berhasil"

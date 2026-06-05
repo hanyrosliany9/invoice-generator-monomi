@@ -7,7 +7,7 @@ import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { LocalStrategy } from "./strategies/local.strategy";
 import { UsersModule } from "../users/users.module";
-import { RefreshTokenService } from "./refresh-token.service";
+import { RefreshTokenModule } from "./refresh-token.module";
 import { PrismaModule } from "../prisma/prisma.module";
 
 @Module({
@@ -22,9 +22,10 @@ import { PrismaModule } from "../prisma/prisma.module";
     }),
     UsersModule,
     PrismaModule,
+    RefreshTokenModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalStrategy, RefreshTokenService],
-  exports: [AuthService, RefreshTokenService],
+  providers: [AuthService, JwtStrategy, LocalStrategy],
+  exports: [AuthService, RefreshTokenModule],
 })
 export class AuthModule {}

@@ -3,6 +3,7 @@ import { ValidationPipe, Logger, RequestMethod } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import helmet from "helmet";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
 import { initDatabase } from "./scripts/init-db";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
@@ -63,6 +64,10 @@ async function bootstrap() {
       }),
     );
 
+    // Hardening 2: parse cookies so httpOnly auth cookies are accessible in
+    // jwt.strategy and auth.controller.  Must be registered before CORS/routes.
+    app.use(cookieParser());
+
     const isProduction = process.env.NODE_ENV === "production";
 
     // ---- CORS, two layers ----
@@ -112,6 +117,9 @@ async function bootstrap() {
           "http://localhost:3000",
           "http://127.0.0.1:3001",
           "http://127.0.0.1:3000",
+          // Vite hybrid-dev default port
+          "http://localhost:5173",
+          "http://127.0.0.1:5173",
         ];
 
     const apiCors = cors({

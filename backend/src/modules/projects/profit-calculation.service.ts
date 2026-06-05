@@ -242,17 +242,164 @@ export class ProfitCalculationService {
   /**
    * Recalculate profit margins for all active projects
    * Use for scheduled jobs (daily recalculation)
+   *
+   * FIX 2 (N+1): batch-load all needed relations in parallel with WHERE IN (...)
+   * queries, then compute each project in memory instead of issuing 5+ queries
+   * per project serially.  calculateProjectProfitMargin is still used for
+   * single-project updates (its DB queries are fine for one project).
    */
   async recalculateAllProjects(): Promise<{ processed: number }> {
     const projects = await this.prisma.project.findMany({
       where: {
         status: { in: ["IN_PROGRESS", "PLANNING"] },
       },
-      select: { id: true },
+      select: { id: true, estimatedBudget: true },
     });
 
+    if (projects.length === 0) return { processed: 0 };
+
+    const projectIds = projects.map((p) => p.id);
+
+    // Batch-load all relations in parallel — one query per relation type
+    const [invoices, directAllocations, indirectAllocations, wipEntries] =
+      await Promise.all([
+        this.prisma.invoice.findMany({
+          where: { projectId: { in: projectIds } },
+          select: { projectId: true, totalAmount: true, status: true },
+        }),
+        this.prisma.projectCostAllocation.findMany({
+          where: {
+            projectId: { in: projectIds },
+            isDirect: true,
+            costType: { in: ["MATERIAL", "LABOR"] },
+          },
+          select: { projectId: true, allocatedAmount: true },
+        }),
+        this.prisma.projectCostAllocation.findMany({
+          where: {
+            projectId: { in: projectIds },
+            isDirect: false,
+            costType: "OVERHEAD",
+          },
+          select: { projectId: true, allocatedAmount: true },
+        }),
+        this.prisma.workInProgress.findMany({
+          where: { projectId: { in: projectIds }, isCompleted: false },
+          select: {
+            projectId: true,
+            directMaterialCost: true,
+            directLaborCost: true,
+            directExpenses: true,
+            allocatedOverhead: true,
+          },
+        }),
+      ]);
+
+    // Group by projectId for O(1) lookup
+    const invoicesByProject = new Map<string, typeof invoices>();
+    for (const inv of invoices) {
+      const list = invoicesByProject.get(inv.projectId) ?? [];
+      list.push(inv);
+      invoicesByProject.set(inv.projectId, list);
+    }
+
+    const directByProject = new Map<string, typeof directAllocations>();
+    for (const a of directAllocations) {
+      const list = directByProject.get(a.projectId) ?? [];
+      list.push(a);
+      directByProject.set(a.projectId, list);
+    }
+
+    const indirectByProject = new Map<string, typeof indirectAllocations>();
+    for (const a of indirectAllocations) {
+      const list = indirectByProject.get(a.projectId) ?? [];
+      list.push(a);
+      indirectByProject.set(a.projectId, list);
+    }
+
+    const wipByProject = new Map<string, typeof wipEntries>();
+    for (const w of wipEntries) {
+      const list = wipByProject.get(w.projectId) ?? [];
+      list.push(w);
+      wipByProject.set(w.projectId, list);
+    }
+
+    // Compute per-project metrics in memory using the same formulas as
+    // calculateProjectProfitMargin / calculateDirectCosts / calculateIndirectCosts
+    const updates: Array<{ projectId: string; metrics: ProfitMetrics }> = [];
+
     for (const project of projects) {
-      await this.calculateProjectProfitMargin(project.id, "SYSTEM");
+      const pid = project.id;
+
+      // Revenue
+      const projInvoices = invoicesByProject.get(pid) ?? [];
+      const invoiced = projInvoices.reduce(
+        (sum, inv) => sum + this.toNumber(inv.totalAmount),
+        0,
+      );
+      const paid = projInvoices
+        .filter((inv) => inv.status === "PAID")
+        .reduce((sum, inv) => sum + this.toNumber(inv.totalAmount), 0);
+
+      // Direct costs
+      const allocatedDirect = (directByProject.get(pid) ?? []).reduce(
+        (sum, a) => sum + this.toNumber(a.allocatedAmount),
+        0,
+      );
+      const projWip = wipByProject.get(pid) ?? [];
+      const wipDirect = projWip.reduce(
+        (sum, w) =>
+          sum +
+          this.toNumber(w.directMaterialCost) +
+          this.toNumber(w.directLaborCost) +
+          this.toNumber(w.directExpenses),
+        0,
+      );
+      const totalDirectCosts = allocatedDirect + wipDirect;
+
+      // Indirect costs
+      const allocatedIndirect = (indirectByProject.get(pid) ?? []).reduce(
+        (sum, a) => sum + this.toNumber(a.allocatedAmount),
+        0,
+      );
+      const wipOverhead = projWip.reduce(
+        (sum, w) => sum + this.toNumber(w.allocatedOverhead),
+        0,
+      );
+      const totalIndirectCosts = allocatedIndirect + wipOverhead;
+
+      const totalCosts = totalDirectCosts + totalIndirectCosts;
+      const grossProfit = paid - totalDirectCosts;
+      const netProfit = paid - totalCosts;
+      const grossMargin = paid > 0 ? (grossProfit / paid) * 100 : 0;
+      const netMargin = paid > 0 ? (netProfit / paid) * 100 : 0;
+
+      // Budget variance
+      const estimated = this.toNumber(project.estimatedBudget ?? 0);
+      const varianceAmount = totalCosts - estimated;
+      const variancePercent = estimated > 0 ? (varianceAmount / estimated) * 100 : 0;
+
+      const metrics: ProfitMetrics = {
+        totalDirectCosts,
+        totalIndirectCosts,
+        totalAllocatedCosts: totalCosts,
+        totalInvoicedAmount: invoiced,
+        totalPaidAmount: paid,
+        grossProfit,
+        netProfit,
+        grossMarginPercent: grossMargin,
+        netMarginPercent: netMargin,
+        budgetVariance: varianceAmount,
+        budgetVariancePercent: variancePercent,
+        profitCalculatedAt: new Date(),
+      };
+
+      updates.push({ projectId: pid, metrics });
+    }
+
+    // Write updates — still per-project (no bulk upsert in Prisma without $queryRaw)
+    for (const { projectId, metrics } of updates) {
+      await this.updateProjectProfitMetrics(projectId, metrics, "SYSTEM");
     }
 
     return { processed: projects.length };

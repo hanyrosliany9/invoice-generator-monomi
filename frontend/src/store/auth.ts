@@ -12,7 +12,10 @@ export interface User {
 
 interface TokenData {
   accessToken: string
-  refreshToken: string
+  // Hardening 2: refreshToken is no longer persisted to localStorage (XSS risk).
+  // The httpOnly cookie carries it for browser refresh flows.
+  // We keep the field optional so existing serialised stores deserialise cleanly.
+  refreshToken?: string
   expiresAt: number // Timestamp when access token expires
 }
 
@@ -103,9 +106,16 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      // Hardening 2: strip refreshToken from localStorage persistence.
+      // The httpOnly cookie is the authoritative refresh token store;
+      // removing it from JS-accessible storage eliminates the XSS prize.
+      // accessToken is still stored so the Bearer header can be set on
+      // page reload before the first cookie-based refresh fires.
       partialize: state => ({
         user: state.user,
-        tokenData: state.tokenData,
+        tokenData: state.tokenData
+          ? { accessToken: state.tokenData.accessToken, expiresAt: state.tokenData.expiresAt }
+          : null,
         isAuthenticated: state.isAuthenticated,
       }),
     }

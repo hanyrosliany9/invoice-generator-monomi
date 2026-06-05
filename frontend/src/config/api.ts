@@ -32,11 +32,16 @@ export const DEFAULT_HEADERS = {
   'Content-Type': 'application/json',
 }
 
-// Create axios instance with interceptors
+// Create axios instance with interceptors.
+// withCredentials: true is required so the browser sends the httpOnly
+// accessToken/refreshToken cookies on every request (Hardening 2).
+// The Bearer Authorization header is still set by the request interceptor
+// below for full backward compatibility.
 export const apiClient = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   timeout: API_CONFIG.TIMEOUT,
   headers: DEFAULT_HEADERS,
+  withCredentials: true,
 })
 
 // Export alias for backward compatibility
@@ -76,24 +81,31 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 };
 
 /**
- * Perform token refresh - called only once even with multiple 401s
+ * Perform token refresh - called only once even with multiple 401s.
+ *
+ * Hardening 2: The httpOnly refreshToken cookie is sent automatically by the
+ * browser (withCredentials: true on the axios instance below).  We still
+ * include the stored refreshToken in the request body as a backward-compat
+ * fallback for clients that don't have the cookie (e.g. native apps, tests).
  */
 const performTokenRefresh = async (): Promise<string> => {
   const { getRefreshToken, updateTokens, logout } = useAuthStore.getState();
+  // May be null if refreshToken was stripped from localStorage (new behaviour).
+  // That is fine — the httpOnly cookie carries it for browser clients.
   const refreshToken = getRefreshToken();
 
-  if (!refreshToken) {
-    throw new Error('No refresh token available');
-  }
-
   try {
-    // Use axios directly (not apiClient) to avoid interceptor loop
-    // This is the recommended pattern per axios-auth-refresh docs
-    const response = await axios.post(`${API_CONFIG.BASE_URL}/auth/refresh`, {
-      refresh_token: refreshToken,
-    }, {
-      headers: DEFAULT_HEADERS,
-    });
+    // Use plain axios (not apiClient) to avoid interceptor loop.
+    // withCredentials ensures the httpOnly refreshToken cookie is sent.
+    const response = await axios.post(
+      `${API_CONFIG.BASE_URL}/auth/refresh`,
+      // Include body token only when available (backward compat for non-cookie clients).
+      refreshToken ? { refresh_token: refreshToken } : {},
+      {
+        headers: DEFAULT_HEADERS,
+        withCredentials: true,
+      },
+    );
 
     // Backend wraps response in ApiResponse { data: {...}, message, status, timestamp }
     const { access_token, refresh_token: new_refresh_token, expires_in } = response.data.data;

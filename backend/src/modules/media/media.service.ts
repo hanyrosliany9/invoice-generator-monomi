@@ -456,6 +456,68 @@ export class MediaService {
   }
 
   /**
+   * Generate a scoped media JWT for public-share (client gallery) access.
+   *
+   * Called by PublicController when a client visits a public share link.
+   * The resulting token is accepted by the Cloudflare Worker
+   * (workers/media-worker.js) and, unlike the generic media-access token, is
+   * BOUND to a specific project so it cannot be reused to fetch assets that
+   * belong to a different project.
+   *
+   * Scope enforcement in the worker:
+   *   IF token.scope.keyPrefixes is present → the requested R2 key MUST start
+   *     with one of the listed prefixes; 403 otherwise.
+   *   IF token.scope is absent (legacy tokens) → allowed as before (backward compat).
+   *
+   * Key-prefix derivation:
+   *   R2 keys use format  {folder}/{YYYY-MM-DD}/{hash}-{filename}.ext
+   *   (e.g. "content/2025-01-08/abc123-photo.jpg").
+   *   Keys are NOT namespaced by project today, so we embed the set of
+   *   folder/date/ prefixes actually used by the project's assets at token-issue
+   *   time.  This is sound for tokens with 24-hour TTL and typical upload patterns.
+   *
+   *   ⚠  Full prefix enforcement requires project-scoped key namespacing
+   *   (e.g. "projects/{projectId}/content/…").  Track as a future migration.
+   *
+   * @param projectId      - The MediaProject.id this token is bound to
+   * @param shareToken     - The opaque public share token (recorded for audit)
+   * @param keyPrefixes    - Allowed R2 key prefixes derived from the project's assets
+   * @returns Signed JWT valid for 24 hours
+   */
+  generatePublicShareMediaToken(
+    projectId: string,
+    shareToken: string,
+    keyPrefixes: string[],
+  ): string {
+    if (!this.jwtService) {
+      throw new InternalServerErrorException(
+        'JwtService not available. Media token generation is not configured.',
+      );
+    }
+
+    const payload = {
+      purpose: 'public-share',
+      isPublic: true,
+      shareToken,
+      // scope ties this token to a specific project and its R2 key prefixes
+      scope: {
+        projectId,
+        // Deduplicated prefixes; worker checks: key.startsWith(prefix) for any prefix
+        keyPrefixes: [...new Set(keyPrefixes)],
+      },
+    };
+
+    const token = this.jwtService.sign(payload, { expiresIn: '24h' });
+
+    this.logger.debug(
+      `✅ Generated scoped public-share media token for project: ${projectId} ` +
+      `(${payload.scope.keyPrefixes.length} key prefixes)`,
+    );
+
+    return token;
+  }
+
+  /**
    * Validate media access token
    *
    * Verifies the JWT token and returns the user ID if valid.

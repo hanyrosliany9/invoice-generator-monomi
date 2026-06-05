@@ -274,7 +274,6 @@ model Project {
   calendarEvents CalendarEvent[]
 
   @@index([number])
-  @@index([status])
   @@index([projectTypeId])
   @@index([clientId])
   @@index([createdAt])
@@ -340,6 +339,11 @@ model Quotation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Self-relation for DECLINED → REVISED revision workflow
+  parentQuotationId String?
+  parentQuotation   Quotation?  @relation("QuotationRevisions", fields: [parentQuotationId], references: [id], onDelete: SetNull)
+  revisions         Quotation[] @relation("QuotationRevisions")
+
   // Relations
   invoices              Invoice[]
   paymentMilestones     PaymentMilestone[] // Phase 1 Enhancement: Payment milestones for quotations
@@ -347,11 +351,8 @@ model Quotation {
   documents             Document[]
 
   @@index([quotationNumber])
-  @@index([status])
-  @@index([clientId])
-  @@index([projectId])
-  @@index([createdAt])
   @@index([validUntil])
+  @@index([parentQuotationId])
   // Composite indexes for performance optimization
   @@index([clientId, status])
   @@index([status, validUntil])
@@ -443,8 +444,6 @@ model Invoice {
   deferredRevenues      DeferredRevenue[] // PSAK 72: Deferred revenue entries
 
   @@index([invoiceNumber])
-  @@index([status])
-  @@index([clientId])
   @@index([projectId])
   @@index([createdAt])
   @@index([dueDate])
@@ -1334,7 +1333,6 @@ model Expense {
   @@index([buktiPengeluaranNumber])
   @@index([accountCode])
   @@index([expenseClass])
-  @@index([status])
   @@index([userId])
   @@index([projectId])
   @@index([clientId])
@@ -1669,7 +1667,6 @@ model ChartOfAccounts {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([code])
   @@index([accountType])
   @@index([isActive])
   @@index([parentId])
@@ -1731,7 +1728,6 @@ model JournalEntry {
   @@index([transactionType])
   @@index([transactionId])
   @@index([fiscalPeriodId])
-  @@index([isPosted])
   @@index([isPosted, fiscalPeriodId, entryDate])
   @@map("journal_entries")
 }
@@ -1811,7 +1807,6 @@ model GeneralLedger {
 
   createdAt DateTime @default(now())
 
-  @@index([accountId])
   @@index([entryDate])
   @@index([postingDate])
   @@index([journalEntryId])

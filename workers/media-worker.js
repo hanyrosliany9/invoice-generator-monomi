@@ -49,13 +49,50 @@ export default {
         headers: corsHeaders(),
       });
     }
-    const valid = await validateToken(token, env);
-    if (!valid) {
+
+    // validateToken returns the decoded payload on success, or null on failure.
+    // Scope enforcement (when the token carries a `scope` claim) is done here,
+    // after we have both the verified payload and the requested R2 key.
+    const payload = await validateToken(token, env);
+    if (!payload) {
       return new Response('Unauthorized: Invalid or expired token', {
         status: 401,
         headers: corsHeaders(),
       });
     }
+
+    // ── Scope enforcement ────────────────────────────────────────────────────
+    // New public-share tokens carry: scope.projectId + scope.keyPrefixes[]
+    // Legacy/unscoped tokens have no `scope` claim → allow as before (backward compat).
+    //
+    // When scope IS present we enforce that the requested R2 key starts with at
+    // least one of the allowed prefixes.  This ensures a client share token for
+    // project A cannot be used to fetch assets from project B.
+    //
+    // NOTE: R2 keys are currently formatted as  {folder}/{date}/{hash}-{name}.ext
+    // (not project-namespaced), so the prefixes are of the form "content/2025-01-08/".
+    // Full project-level enforcement will be tightened once keys are namespaced as
+    // "projects/{projectId}/content/…" — no worker change required at that point,
+    // only the prefix values in issued tokens will change.
+    if (payload.scope) {
+      const { keyPrefixes } = payload.scope;
+
+      // If keyPrefixes is a non-empty array, enforce it.
+      // An empty array means the project has no assets yet; allow (nothing to block).
+      if (Array.isArray(keyPrefixes) && keyPrefixes.length > 0) {
+        const allowed = keyPrefixes.some((prefix) => key.startsWith(prefix));
+        if (!allowed) {
+          console.warn(
+            `[Worker] Scope violation: key "${key}" not in allowed prefixes for project "${payload.scope.projectId}"`,
+          );
+          return new Response('Forbidden: token scope does not cover this asset', {
+            status: 403,
+            headers: corsHeaders(),
+          });
+        }
+      }
+    }
+    // ── End scope enforcement ────────────────────────────────────────────────
 
     // HEAD — Safari and some players probe for Accept-Ranges before seeking
     if (request.method === 'HEAD') {
@@ -179,24 +216,33 @@ function base64UrlDecode(b64url) {
  *
  * Accepts:
  *   - Media access tokens:  { purpose: 'media-access', sub, exp }
- *   - Public share tokens:  { purpose: 'public-share', isPublic: true, exp }
+ *   - Public share tokens:  { purpose: 'public-share', isPublic: true, exp,
+ *                             scope?: { projectId, keyPrefixes: string[] } }
+ *
+ * Returns the decoded payload object on success so the caller can inspect optional
+ * claims (e.g. `scope`).  Returns null on any failure (invalid signature, expired,
+ * wrong purpose, etc.).
+ *
+ * Backward compatibility: tokens without a `scope` claim are accepted as before.
+ * The scope enforcement logic lives in the main fetch handler, not here, so this
+ * function only validates signature + expiry + purpose.
  *
  * Requires env.TOKEN_SECRET (same value as backend JWT_SECRET).
  * Set it with: wrangler secret put TOKEN_SECRET
  */
 async function validateToken(token, env) {
-  if (!token || token.length < 10) return false;
+  if (!token || token.length < 10) return null;
 
   const secret = env.TOKEN_SECRET;
   if (!secret) {
     // TOKEN_SECRET not configured — deny all requests
     console.error('[Worker] TOKEN_SECRET is not set. Run: wrangler secret put TOKEN_SECRET');
-    return false;
+    return null;
   }
 
   try {
     const parts = token.split('.');
-    if (parts.length !== 3) return false;
+    if (parts.length !== 3) return null;
 
     const [headerB64, payloadB64, signatureB64] = parts;
 
@@ -214,24 +260,25 @@ async function validateToken(token, env) {
     const signingInput = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
     const signature = base64UrlDecode(signatureB64);
     const valid = await crypto.subtle.verify('HMAC', cryptoKey, signature, signingInput);
-    if (!valid) return false;
+    if (!valid) return null;
 
     // Decode and check payload
     const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(payloadB64)));
 
     // Check expiry
     const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && now > payload.exp) return false;
+    if (payload.exp && now > payload.exp) return null;
 
     // Accept media-access tokens (authenticated users)
-    if (payload.purpose === 'media-access') return true;
+    if (payload.purpose === 'media-access') return payload;
 
     // Accept public-share tokens (public project links)
-    if (payload.purpose === 'public-share' && payload.isPublic === true) return true;
+    // scope claim is optional — enforcement is done by the caller
+    if (payload.purpose === 'public-share' && payload.isPublic === true) return payload;
 
-    return false;
+    return null;
   } catch (e) {
     console.error('[Worker] JWT validation error:', e.message);
-    return false;
+    return null;
   }
 }

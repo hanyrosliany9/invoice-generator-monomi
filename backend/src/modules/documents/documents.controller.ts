@@ -108,27 +108,28 @@ export class DocumentsController {
   }
 
   @Get("invoice/:invoiceId")
+  @RequireAdmin()
   async getInvoiceDocuments(@Param("invoiceId") invoiceId: string) {
     return this.documentsService.getDocumentsByInvoice(invoiceId);
   }
 
   @Get("quotation/:quotationId")
+  @RequireAdmin()
   async getQuotationDocuments(@Param("quotationId") quotationId: string) {
     return this.documentsService.getDocumentsByQuotation(quotationId);
   }
 
   @Get("project/:projectId")
+  @RequireAdmin()
   async getProjectDocuments(@Param("projectId") projectId: string) {
     return this.documentsService.getDocumentsByProject(projectId);
   }
 
   @Get("download/:id")
+  @RequireAdmin()
   async downloadDocument(@Param("id") id: string, @Res() res: Response) {
-    const document = await this.documentsService.getDocumentById(id);
-
-    if (!document) {
-      throw new NotFoundException("Document not found");
-    }
+    // getDocumentWithParentCheck throws NotFoundException if document or parent is missing
+    const document = await this.documentsService.getDocumentWithParentCheck(id);
 
     if (!fs.existsSync(document.filePath)) {
       throw new NotFoundException("File not found on disk");
@@ -154,12 +155,10 @@ export class DocumentsController {
   }
 
   @Get("preview/:id")
+  @RequireAdmin()
   async previewDocument(@Param("id") id: string, @Res() res: Response) {
-    const document = await this.documentsService.getDocumentById(id);
-
-    if (!document) {
-      throw new NotFoundException("Document not found");
-    }
+    // getDocumentWithParentCheck throws NotFoundException if document or parent is missing
+    const document = await this.documentsService.getDocumentWithParentCheck(id);
 
     if (!fs.existsSync(document.filePath)) {
       throw new NotFoundException("File not found on disk");

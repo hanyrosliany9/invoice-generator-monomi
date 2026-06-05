@@ -63,6 +63,51 @@ export class DocumentsService {
     });
   }
 
+  /**
+   * Defense-in-depth: load a document and verify its parent entity still exists.
+   * Throws NotFoundException if the document or its linked parent is not found.
+   * Used by download/preview routes so a dangling document (orphaned after
+   * the parent was deleted outside a cascade) cannot be served.
+   */
+  async getDocumentWithParentCheck(id: string): Promise<Document> {
+    const document = await this.prisma.document.findUnique({
+      where: { id },
+    });
+
+    if (!document) {
+      throw new NotFoundException(`Document not found: ${id}`);
+    }
+
+    // Verify parent entity still exists (defense against orphaned documents)
+    if (document.invoiceId) {
+      const invoice = await this.prisma.invoice.findUnique({
+        where: { id: document.invoiceId },
+        select: { id: true },
+      });
+      if (!invoice) {
+        throw new NotFoundException(`Parent invoice not found for document: ${id}`);
+      }
+    } else if (document.quotationId) {
+      const quotation = await this.prisma.quotation.findUnique({
+        where: { id: document.quotationId },
+        select: { id: true },
+      });
+      if (!quotation) {
+        throw new NotFoundException(`Parent quotation not found for document: ${id}`);
+      }
+    } else if (document.projectId) {
+      const project = await this.prisma.project.findUnique({
+        where: { id: document.projectId },
+        select: { id: true },
+      });
+      if (!project) {
+        throw new NotFoundException(`Parent project not found for document: ${id}`);
+      }
+    }
+
+    return document;
+  }
+
   async deleteDocument(id: string): Promise<Document> {
     // Get document to retrieve file path
     const document = await this.prisma.document.findUnique({

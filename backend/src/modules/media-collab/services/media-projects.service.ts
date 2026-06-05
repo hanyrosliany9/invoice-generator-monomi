@@ -686,6 +686,74 @@ export class MediaProjectsService {
   }
 
   /**
+   * Return the unique R2 key prefixes (folder/date/ segments) for all assets in a
+   * public project.  Used when issuing a scoped media-access JWT so the Cloudflare
+   * Worker can enforce that a public-share token only unlocks its own project's files.
+   *
+   * Example return value: ["content/2025-01-08/", "thumbnails/2025-01-08/"]
+   */
+  async getPublicProjectKeyPrefixes(token: string): Promise<string[]> {
+    const project = await this.prisma.mediaProject.findUnique({
+      where: { publicShareToken: token },
+      select: { id: true, isPublic: true },
+    });
+
+    if (!project || !project.isPublic) {
+      throw new NotFoundException("Public share link not found or disabled");
+    }
+
+    // Fetch the R2 `key` for every asset in this project.
+    // `thumbnailUrl` is stored as a full URL (not a bare R2 key), so we only
+    // need the asset's primary key here.  Thumbnail R2 keys follow the same
+    // folder/date/ prefix pattern ("thumbnails/YYYY-MM-DD/…") and would match
+    // the same prefix extracted from a sibling asset key if uploads happen on
+    // the same day; for robustness we also include "thumbnails/" as a blanket
+    // prefix whenever the project contains at least one VIDEO asset.
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: { projectId: project.id },
+      select: { key: true, mediaType: true },
+    });
+
+    const prefixSet = new Set<string>();
+    let hasVideos = false;
+    for (const asset of assets) {
+      if (asset.key) {
+        prefixSet.add(this.extractKeyPrefix(asset.key));
+      }
+      // Track whether any video assets exist so we can add the thumbnails prefix
+      if (asset.mediaType === 'VIDEO') {
+        hasVideos = true;
+      }
+    }
+
+    // If the project has video assets, their thumbnails are stored under
+    // "thumbnails/{date}/…".  We add a broader prefix to cover all thumbnail
+    // dates rather than trying to enumerate them from a non-keyed URL field.
+    if (hasVideos) {
+      prefixSet.add('thumbnails/');
+    }
+
+    return Array.from(prefixSet);
+  }
+
+  /**
+   * Derive the folder/date/ prefix from a full R2 key.
+   * Key format: "{folder}/{date}/{hash}-{filename}.ext"
+   * Returns: "{folder}/{date}/" (the first two path segments + trailing slash)
+   */
+  private extractKeyPrefix(key: string): string {
+    const parts = key.split('/');
+    // At minimum take the first two segments (folder + date), fall back to first segment
+    if (parts.length >= 3) {
+      return `${parts[0]}/${parts[1]}/`;
+    }
+    if (parts.length >= 2) {
+      return `${parts[0]}/`;
+    }
+    return '';
+  }
+
+  /**
    * Get public project folders (no auth required)
    */
   async getPublicProjectFolders(token: string) {

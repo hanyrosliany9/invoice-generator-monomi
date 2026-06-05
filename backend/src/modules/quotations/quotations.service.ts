@@ -244,6 +244,14 @@ export class QuotationsService {
         invoices: true,
         // Needed so the detail/edit UI can show the configured payment terms.
         paymentMilestones: { orderBy: { milestoneNumber: "asc" } },
+        // Revision links
+        parentQuotation: {
+          select: { id: true, quotationNumber: true, status: true },
+        },
+        revisions: {
+          select: { id: true, quotationNumber: true, status: true },
+          orderBy: { createdAt: "asc" },
+        },
       },
     });
 
@@ -549,6 +557,99 @@ export class QuotationsService {
           paymentMilestones: { orderBy: { milestoneNumber: "asc" } },
         },
       });
+    });
+  }
+
+  /**
+   * Create a revised (new DRAFT) copy of a DECLINED quotation.
+   * The original quotation is moved to REVISED (terminal) to mark it superseded.
+   * The new quotation has parentQuotationId pointing to the original, a fresh
+   * quotationNumber, status=DRAFT, and all financial/payment data cloned.
+   * Payment milestones are copied fresh (isInvoiced=false) so the new quotation
+   * can be edited, sent, and independently approved.
+   */
+  async reviseQuotation(id: string, userId: string): Promise<any> {
+    const original = await this.prisma.quotation.findUnique({
+      where: { id },
+      include: {
+        paymentMilestones: { orderBy: { milestoneNumber: "asc" } },
+      },
+    });
+
+    if (!original) {
+      throw new NotFoundException("Quotation tidak ditemukan");
+    }
+
+    if (original.status !== QuotationStatus.DECLINED) {
+      throw new BadRequestException(
+        `Hanya quotation berstatus DECLINED yang dapat direvisi (status saat ini: ${original.status}).`,
+      );
+    }
+
+    const newQuotationNumber = await this.generateQuotationNumber();
+
+    return this.prisma.$transaction(async (tx) => {
+      // Mark the original as REVISED (superseded)
+      await tx.quotation.update({
+        where: { id },
+        data: { status: QuotationStatus.REVISED },
+      });
+
+      // Clone into a new DRAFT quotation linked to the original
+      const revised = await tx.quotation.create({
+        data: {
+          quotationNumber: newQuotationNumber,
+          date: new Date(),
+          validUntil: original.validUntil,
+          clientId: original.clientId,
+          projectId: original.projectId,
+          amountPerProject: original.amountPerProject,
+          totalAmount: original.totalAmount,
+          scopeOfWork: original.scopeOfWork,
+          priceBreakdown: original.priceBreakdown ?? undefined,
+          terms: original.terms,
+          paymentType: original.paymentType,
+          paymentTermsText: original.paymentTermsText,
+          status: QuotationStatus.DRAFT,
+          createdBy: userId,
+          parentQuotationId: original.id,
+        },
+        include: {
+          client: true,
+          project: true,
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      });
+
+      // Copy payment milestones (fresh, not invoiced)
+      if (original.paymentMilestones && original.paymentMilestones.length > 0) {
+        for (const m of original.paymentMilestones) {
+          await tx.paymentMilestone.create({
+            data: {
+              quotationId: revised.id,
+              milestoneNumber: m.milestoneNumber,
+              name: m.name,
+              nameId: m.nameId,
+              description: m.description,
+              descriptionId: m.descriptionId,
+              paymentPercentage: m.paymentPercentage,
+              paymentAmount: m.paymentAmount,
+              dueDate: m.dueDate,
+              dueDaysFromPrev: m.dueDaysFromPrev,
+              deliverables: m.deliverables ?? undefined,
+              isInvoiced: false,
+            },
+          });
+        }
+      }
+
+      this.logger.log(
+        `Revised quotation ${original.quotationNumber} → new DRAFT ${newQuotationNumber} (parentQuotationId=${original.id})`,
+      );
+
+      return revised;
     });
   }
 
