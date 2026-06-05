@@ -6,9 +6,29 @@
 import { escapeHtml } from "./escape-html.util";
 
 export function generateShotListHTML(shotList: any): string {
-  const scenesHtml = shotList.scenes
+  const scenes: any[] = shotList.scenes || [];
+  const scenesHtml = scenes.length === 0
+    ? '<p style="color:#9ca3af; font-style:italic; padding:16px 0;">No scenes have been added yet.</p>'
+    : scenes
     .map(
-      (scene: any) => `
+      (scene: any) => {
+        const shots: any[] = scene.shots || [];
+        const shotsBody = shots.length === 0
+          ? '<tr><td colspan="7" style="color:#9ca3af; font-style:italic; text-align:center;">No shots added for this scene.</td></tr>'
+          : shots.map(
+              (shot: any) => `
+            <tr>
+              <td>${escapeHtml(shot.shotNumber)}</td>
+              <td>${escapeHtml(shot.shotSize) || "-"}</td>
+              <td>${escapeHtml(shot.shotType) || "-"}</td>
+              <td>${escapeHtml(shot.cameraMovement) || "-"}</td>
+              <td>${escapeHtml(shot.lens) || "-"}</td>
+              <td>${escapeHtml(shot.description) || "-"}</td>
+              <td>${escapeHtml(shot.status)}</td>
+            </tr>
+          `,
+            ).join("");
+        return `
     <div class="scene">
       <div class="scene-header">
         <strong>${escapeHtml(scene.sceneNumber)}</strong> - ${escapeHtml(scene.name)}
@@ -28,25 +48,12 @@ export function generateShotListHTML(shotList: any): string {
           </tr>
         </thead>
         <tbody>
-          ${scene.shots
-            .map(
-              (shot: any) => `
-            <tr>
-              <td>${escapeHtml(shot.shotNumber)}</td>
-              <td>${escapeHtml(shot.shotSize) || "-"}</td>
-              <td>${escapeHtml(shot.shotType) || "-"}</td>
-              <td>${escapeHtml(shot.cameraMovement) || "-"}</td>
-              <td>${escapeHtml(shot.lens) || "-"}</td>
-              <td>${escapeHtml(shot.description) || "-"}</td>
-              <td>${escapeHtml(shot.status)}</td>
-            </tr>
-          `,
-            )
-            .join("")}
+          ${shotsBody}
         </tbody>
       </table>
     </div>
-  `,
+  `;
+      }
     )
     .join("");
 

@@ -366,7 +366,8 @@ export class PdfService {
     };
 
     // Format date in Indonesian format (short format for compact design)
-    const formatDate = (date: string) => {
+    const formatDate = (date: string | null | undefined) => {
+      if (!date) return "—";
       return new Date(date).toLocaleDateString("id-ID", {
         year: "numeric",
         month: "2-digit",
@@ -901,10 +902,17 @@ export class PdfService {
         page-break-inside: avoid;
       }
 
+      /* Repeat table header on each printed page */
+      .service-table thead,
+      .summary-table thead {
+        display: table-header-group;
+      }
+
       /* Prevent table rows from breaking mid-row */
       .service-table tr,
       .summary-table tr {
         page-break-inside: avoid;
+        break-inside: avoid;
       }
 
       /* Keep section titles with following content */
@@ -1005,11 +1013,11 @@ export class PdfService {
         <div class="section-title">Invoice Info</div>
         <div class="detail-row">
           <span class="detail-label">Project:</span>
-          <span class="detail-value">${esc(project.description || project.name || "N/A")}</span>
+          <span class="detail-value">${esc(project?.description || project?.name || "N/A")}</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Status:</span>
-          <span class="detail-value" style="color: #059669; font-weight: 600;">Pending</span>
+          <span class="detail-value" style="color: #059669; font-weight: 600;">${esc(invoiceData.status)}</span>
         </div>
       </div>
     </div>
@@ -1039,7 +1047,7 @@ export class PdfService {
           </td>
           <td>${formatIDR(product.price || 0)}</td>
           <td>${product.quantity || 1}</td>
-          <td>${formatIDR(product.subtotal || product.price * (product.quantity || 1))}</td>
+          <td>${formatIDR(product.subtotal ?? product.price * (product.quantity || 1))}</td>
         </tr>
           `,
                 )
@@ -1048,7 +1056,7 @@ export class PdfService {
         <tr>
           <td>01</td>
           <td>
-            <span class="service-desc-main">${esc(project.description || project.name || "Service")}</span>
+            <span class="service-desc-main">${esc(project?.description || project?.name || "Service")}</span>
           </td>
           <td>${formatIDR(amountPerProject)}</td>
           <td>1</td>
@@ -1312,7 +1320,8 @@ export class PdfService {
     };
 
     // Format date in Indonesian format (short format for compact design)
-    const formatDate = (date: string) => {
+    const formatDate = (date: string | null | undefined) => {
+      if (!date) return "—";
       return new Date(date).toLocaleDateString("id-ID", {
         year: "numeric",
         month: "2-digit",
@@ -1780,10 +1789,17 @@ export class PdfService {
         page-break-inside: avoid;
       }
 
+      /* Repeat table header on each printed page */
+      .service-table thead,
+      .summary-table thead {
+        display: table-header-group;
+      }
+
       /* Prevent table rows from breaking mid-row */
       .service-table tr,
       .summary-table tr {
         page-break-inside: avoid;
+        break-inside: avoid;
       }
 
       /* Keep section titles with following content */
@@ -1884,11 +1900,11 @@ export class PdfService {
         <div class="section-title">Quotation Info</div>
         <div class="detail-row">
           <span class="detail-label">Project:</span>
-          <span class="detail-value">${esc(project.description || project.name || "N/A")}</span>
+          <span class="detail-value">${esc(project?.description || project?.name || "N/A")}</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Status:</span>
-          <span class="detail-value" style="color: #0369a1; font-weight: 600;">Available</span>
+          <span class="detail-value" style="color: #0369a1; font-weight: 600;">${esc(quotationData.status)}</span>
         </div>
       </div>
     </div>
@@ -1918,7 +1934,7 @@ export class PdfService {
           </td>
           <td>${formatIDR(product.price || 0)}</td>
           <td>${product.quantity || 1}</td>
-          <td>${formatIDR(product.subtotal || product.price * (product.quantity || 1))}</td>
+          <td>${formatIDR(product.subtotal ?? product.price * (product.quantity || 1))}</td>
         </tr>
           `,
                 )
@@ -1927,7 +1943,7 @@ export class PdfService {
         <tr>
           <td>01</td>
           <td>
-            <span class="service-desc-main">${esc(project.description || project.name || "Service")}</span>
+            <span class="service-desc-main">${esc(project?.description || project?.name || "Service")}</span>
           </td>
           <td>${formatIDR(amountPerProject)}</td>
           <td>1</td>

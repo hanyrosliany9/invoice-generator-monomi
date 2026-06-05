@@ -29,6 +29,7 @@ import {
   PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts';
 import { toast } from 'sonner';
+import { safeUrl } from '@/utils/safeUrl';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { MonomiBrand } from '@/components/monomi/MonomiBrand';
@@ -507,7 +508,11 @@ export default function ReportDetailPageV2() {
                   </DropdownMenuItem>
                 )}
                 {report.pdfUrl && (
-                  <DropdownMenuItem onClick={() => window.open(report.pdfUrl, '_blank')}>
+                  <DropdownMenuItem onClick={() => {
+                    const u = safeUrl(report.pdfUrl);
+                    if (u) window.open(u, '_blank');
+                    else toast.error(t('reportDetail.invalidPdfUrl', 'Invalid PDF URL'));
+                  }}>
                     <Download className="h-3.5 w-3.5" />
                     {t('reportDetail.downloadPdf', 'Download PDF')}
                   </DropdownMenuItem>

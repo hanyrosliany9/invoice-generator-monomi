@@ -24,6 +24,7 @@ import {
   TrendingUp, PieChart, LineChart as LineChartIcon, Building2, Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { safeUrl } from '@/utils/safeUrl';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { MonomiBrand } from '@/components/monomi/MonomiBrand';
@@ -605,7 +606,11 @@ export default function ReportsPageV2() {
                               </DropdownMenuItem>
                               {r.pdfUrl && (
                                 <DropdownMenuItem
-                                  onClick={() => window.open(r.pdfUrl, '_blank')}
+                                  onClick={() => {
+                                    const u = safeUrl(r.pdfUrl);
+                                    if (u) window.open(u, '_blank');
+                                    else toast.error(t('reportsPage.invalidPdfUrl', 'Invalid PDF URL'));
+                                  }}
                                 >
                                   <Download className="h-3.5 w-3.5" /> {t('reportsPage.downloadPdf', 'Download PDF')}
                                 </DropdownMenuItem>

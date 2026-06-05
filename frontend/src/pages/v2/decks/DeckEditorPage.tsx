@@ -6,6 +6,7 @@ import { useFieldArray, useForm, Controller, type SubmitHandler } from 'react-ho
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { safeUrl } from '@/utils/safeUrl';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   ArrowLeft, Plus, Save, Trash2, ChevronUp, ChevronDown, Loader2, Image as ImageIcon,
@@ -66,7 +67,10 @@ const slideSchema = z.object({
   template:        z.string().min(1),
   title:           z.string().optional(),
   subtitle:        z.string().optional(),
-  backgroundImage: z.string().optional(),
+  backgroundImage: z.string().optional().refine(
+    (v) => !v || !!safeUrl(v),
+    { message: 'Background image URL must start with http:// or https://' },
+  ),
   notes:           z.string().optional(),
 });
 

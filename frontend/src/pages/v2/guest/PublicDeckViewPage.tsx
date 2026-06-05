@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { decksApi } from '@/services/decks';
 import type { DeckSlide } from '@/types/deck';
 import { cn } from '@/lib/utils';
+import { safeUrl } from '@/utils/safeUrl';
 
 /* ------------------------------------------------------------------ */
 /*  PublicDeckViewPage                                                  */
@@ -285,9 +286,9 @@ function SlideCanvas({ slide }: { slide: DeckSlide }) {
       style={slideStyle}
     >
       {/* Background image — full-bleed, object-cover */}
-      {backgroundImage && (
+      {safeUrl(backgroundImage) && (
         <img
-          src={backgroundImage}
+          src={safeUrl(backgroundImage)}
           alt="Latar belakang slide"
           className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
           aria-hidden="true"
@@ -370,10 +371,10 @@ function SlideCanvas({ slide }: { slide: DeckSlide }) {
             images.length === 1 ? 'grid-cols-1' :
             images.length <= 4 ? 'grid-cols-2' : 'grid-cols-3',
           )}>
-            {images.map((img, i) => img.url && (
+            {images.map((img, i) => safeUrl(img.url) && (
               <div key={i} className="overflow-hidden rounded-md border border-border-subtle bg-bg-sunken">
                 <img
-                  src={img.url}
+                  src={safeUrl(img.url)}
                   alt={img.caption ?? `Gambar ${i + 1}`}
                   loading="lazy"
                   className="h-full w-full object-cover"
@@ -421,9 +422,9 @@ function SlideCanvas({ slide }: { slide: DeckSlide }) {
                       {el.content.text}
                     </span>
                   )}
-                  {el.type === 'IMAGE' && el.content?.url && (
+                  {el.type === 'IMAGE' && safeUrl(el.content?.url) && (
                     <img
-                      src={el.content.url}
+                      src={safeUrl(el.content.url)}
                       alt={el.content.alt ?? ''}
                       loading="lazy"
                       className="h-full w-full object-contain"

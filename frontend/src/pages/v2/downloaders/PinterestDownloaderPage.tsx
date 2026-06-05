@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { safeUrl } from '@/utils/safeUrl';
 
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -386,9 +387,9 @@ export default function PinterestDownloaderPageV2() {
         {/* Single-pin preview strip */}
         {isSinglePin && pinInfo && (
           <div className="border-t border-border-subtle px-6 sm:px-8 py-5 flex items-start gap-4">
-            {pinInfo.previewUrl ? (
+            {safeUrl(pinInfo.previewUrl) ? (
               <img
-                src={pinInfo.previewUrl}
+                src={safeUrl(pinInfo.previewUrl)}
                 alt=""
                 className="w-20 h-20 object-cover rounded-md border border-border-subtle shrink-0 bg-bg-sunken"
                 loading="lazy"

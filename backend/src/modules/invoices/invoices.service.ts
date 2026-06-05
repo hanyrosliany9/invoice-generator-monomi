@@ -1533,18 +1533,26 @@ export class InvoicesService {
 
       return (
         settings || {
-          bankBCA: "1234567890",
-          bankMandiri: "0987654321",
-          bankBNI: "1122334455",
+          bank1Name: null,
+          bank1Number: null,
+          bank2Name: null,
+          bank2Number: null,
+          bank3Name: null,
+          bank3Number: null,
+          bankAccountName: null,
           companyName: "PT Teknologi Indonesia",
         }
       );
     } catch (error) {
       // Return default settings if not found
       return {
-        bankBCA: "1234567890",
-        bankMandiri: "0987654321",
-        bankBNI: "1122334455",
+        bank1Name: null,
+        bank1Number: null,
+        bank2Name: null,
+        bank2Number: null,
+        bank3Name: null,
+        bank3Number: null,
+        bankAccountName: null,
         companyName: "PT Teknologi Indonesia",
       };
     }
@@ -1586,23 +1594,16 @@ export class InvoicesService {
 
   private generateSmartPaymentInfo(companySettings: any): string {
     const paymentMethods = [];
+    const accountName =
+      companySettings.bankAccountName || companySettings.companyName;
 
-    if (companySettings.bankBCA) {
-      paymentMethods.push(
-        `Bank BCA Digital (Blu): ${companySettings.bankBCA} a.n. ${companySettings.companyName}`,
-      );
-    }
-
-    if (companySettings.bankMandiri) {
-      paymentMethods.push(
-        `Bank Mandiri: ${companySettings.bankMandiri} a.n. ${companySettings.companyName}`,
-      );
-    }
-
-    if (companySettings.bankBNI) {
-      paymentMethods.push(
-        `Bank BNI: ${companySettings.bankBNI} a.n. ${companySettings.companyName}`,
-      );
+    // Use real bank1/bank2/bank3 fields from CompanySettings schema
+    for (const n of [1, 2, 3] as const) {
+      const name: string | null = companySettings[`bank${n}Name`];
+      const number: string | null = companySettings[`bank${n}Number`];
+      if (name && number) {
+        paymentMethods.push(`${name}: ${number} a.n. ${accountName}`);
+      }
     }
 
     paymentMethods.push("");

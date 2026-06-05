@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { wibStartOfMonth } from '../src/common/utils/wib-date.util';
 
 const prisma = new PrismaClient();
 
@@ -23,6 +24,13 @@ async function main() {
     await prisma.projectTeamMember.deleteMany({});
     await prisma.laborEntry.deleteMany({});
     await prisma.purchaseOrder.deleteMany({});
+    // Delete GL-dependent children before journalEntry and fiscalPeriod
+    await prisma.generalLedger.deleteMany({});
+    await prisma.accountBalance.deleteMany({});
+    await prisma.financialStatement.deleteMany({});
+    await prisma.depreciationEntry.deleteMany({});
+    await prisma.allowanceForDoubtfulAccounts.deleteMany({});
+    await prisma.deferredRevenue.deleteMany({});
     await prisma.journalEntry.deleteMany({});
     await prisma.invoice.deleteMany({});
     await prisma.quotation.deleteMany({});
@@ -46,8 +54,12 @@ async function main() {
   }
 
   // Hash passwords for test users
-  const hashedPasswordAdmin = await bcrypt.hash('password123', 10);
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'password123';
+  const hashedPasswordAdmin = await bcrypt.hash(adminPassword, 10);
   const hashedPasswordTest = await bcrypt.hash('Test1234', 10);
+  const adminPasswordLabel = process.env.SEED_ADMIN_PASSWORD
+    ? '(custom via SEED_ADMIN_PASSWORD)'
+    : '(default dev password)';
 
   // Create 3 test users matching the simplified role system
   console.log('🔐 Creating test users...');
@@ -122,6 +134,25 @@ async function main() {
   });
 
   console.log('✅ Company settings created:', companySettings.companyName);
+
+  // Seed system settings (required by invoice counter, notifications, etc.)
+  await prisma.systemSettings.upsert({
+    where: { id: 'default' },
+    update: {},
+    create: {
+      id: 'default',
+      defaultPaymentTerms: 'NET 30',
+      materaiThreshold: 5000000,
+      invoicePrefix: 'INV-',
+      quotationPrefix: 'QT-',
+      autoBackup: true,
+      backupFrequency: 'daily',
+      backupTime: '02:00',
+      autoMateraiReminder: true,
+      defaultCurrency: 'IDR',
+    },
+  });
+  console.log('✅ System settings created/verified');
 
   // Create test clients
   const client1 = await prisma.client.upsert({
@@ -2750,8 +2781,8 @@ async function main() {
         name: `${new Date(2025, month - 1).toLocaleString('en-US', { month: 'long' })} 2025`,
         code: `2025-${monthStr}`,
         periodType: 'MONTHLY',
-        startDate: new Date(2025, month - 1, 1),
-        endDate: new Date(2025, month, 0, 23, 59, 59),
+        startDate: wibStartOfMonth(new Date(Date.UTC(2025, month - 1, 1))),
+        endDate: wibStartOfMonth(new Date(Date.UTC(2025, month, 1))),
         status: month <= 10 ? 'OPEN' : 'OPEN', // All open for now
       },
     });
@@ -5528,8 +5559,8 @@ async function main() {
 
   console.log('✅ Database seeding completed successfully!');
   console.log('\n🔑 Test Credentials (Legacy - Backward Compatibility):');
-  console.log('  Admin: admin@monomi.id / password123');
-  console.log('  User: user@bisnis.co.id / password123');
+  console.log(`  Admin: admin@monomi.id / ${adminPasswordLabel}`);
+  console.log(`  User: user@bisnis.co.id / ${adminPasswordLabel}`);
 
   console.log('\n🔐 RBAC Test Users (Password: Test1234):');
   console.log('  Super Admin: super.admin@monomi.id');

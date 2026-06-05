@@ -1,11 +1,10 @@
 import { Injectable, Logger, BadRequestException } from "@nestjs/common";
-import { exec, execFile } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
 
-const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
 
 export interface MediaInfo {
@@ -118,9 +117,11 @@ export class YtdlpService {
    */
   async isSupported(url: string): Promise<boolean> {
     try {
-      await execAsync(`${this.ytdlpPath} --simulate --no-warnings "${url}"`, {
-        timeout: 10000,
-      });
+      await execFileAsync(
+        this.ytdlpPath,
+        ["--simulate", "--no-warnings", url],
+        { timeout: 10000 },
+      );
       return true;
     } catch {
       return false;
@@ -165,8 +166,9 @@ export class YtdlpService {
     this.logger.log(`Getting info for: ${url}`);
 
     try {
-      const { stdout } = await execAsync(
-        `${this.ytdlpPath} --dump-json --no-download --no-warnings "${url}"`,
+      const { stdout } = await execFileAsync(
+        this.ytdlpPath,
+        ["--dump-json", "--no-download", "--no-warnings", url],
         { timeout: 30000, maxBuffer: 10 * 1024 * 1024 },
       );
 
@@ -294,21 +296,23 @@ export class YtdlpService {
     outputDir: string,
     options: DownloadOptions = {},
   ): Promise<string> {
-    const formatArg = this.buildFormatArg(options);
     const outputTemplate = path.join(outputDir, "%(title)s.%(ext)s");
 
-    const args = [
-      "--no-warnings",
-      "-o",
-      `"${outputTemplate}"`,
-      formatArg,
-      options.audioOnly ? "-x --audio-format mp3" : "",
-      `"${url}"`,
-    ]
-      .filter(Boolean)
-      .join(" ");
+    // Build args as an array — never interpolated into a shell string
+    const args: string[] = ["--no-warnings", "-o", outputTemplate];
 
-    await execAsync(`${this.ytdlpPath} ${args}`, {
+    const formatString = this.getFormatString(options);
+    if (formatString) {
+      args.push("-f", formatString);
+    }
+
+    if (options.audioOnly) {
+      args.push("-x", "--audio-format", "mp3");
+    }
+
+    args.push(url);
+
+    await execFileAsync(this.ytdlpPath, args, {
       timeout: 600000, // 10 minutes
       maxBuffer: 50 * 1024 * 1024,
     });
@@ -346,16 +350,6 @@ export class YtdlpService {
       default:
         return "bestvideo+bestaudio/best";
     }
-  }
-
-  /**
-   * Build format argument based on quality options (legacy, for shell commands)
-   * @deprecated Use getFormatString with execFile instead
-   */
-  private buildFormatArg(options: DownloadOptions): string {
-    const formatString = this.getFormatString(options);
-    if (!formatString) return "";
-    return `-f "${formatString}"`;
   }
 
   /**

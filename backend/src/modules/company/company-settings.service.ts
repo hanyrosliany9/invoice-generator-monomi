@@ -48,7 +48,7 @@ export class CompanySettingsService {
       email: settings.email || "-",
       website: settings.website || "-",
       npwp: settings.taxNumber || "00.000.000.0-000.000", // Default NPWP format
-      siup: "SIUP/2024/001", // TODO: Add SIUP field to database schema
+      siup: "", // No SIUP column in schema yet — leave blank rather than printing a fake value
     };
 
     // Cache the result

@@ -109,9 +109,33 @@ export class PdfController {
         throw new NotFoundException("Invoice tidak ditemukan");
       }
 
-      // Quick fix: Use current project priceBreakdown instead of stale snapshot
-      if (invoice.project?.priceBreakdown) {
+      // FIX 1: Only refresh the priceBreakdown from the live project for
+      // non-termin invoices. Termin invoices carry a snapshot of the FULL
+      // project breakdown which would make the line-items table sum to the
+      // full project price while TOTAL DUE correctly shows only the termin
+      // amount — a self-contradictory legal document.
+      if (!invoice.paymentMilestoneId && invoice.project?.priceBreakdown) {
         invoice.priceBreakdown = invoice.project.priceBreakdown;
+      }
+      // For termin invoices, synthesise a single line item that matches the
+      // termin amount so that line-items and TOTAL DUE are always consistent.
+      if (invoice.paymentMilestoneId && invoice.paymentMilestone) {
+        const pm = invoice.paymentMilestone;
+        const terminName = `Termin ${pm.milestoneNumber} - ${pm.nameId || pm.name} (${pm.paymentPercentage}%)`;
+        const terminAmount = Number(invoice.amountPerProject) || Number(invoice.totalAmount);
+        invoice.priceBreakdown = {
+          products: [
+            {
+              name: terminName,
+              description: pm.description || pm.descriptionId || null,
+              price: terminAmount,
+              quantity: 1,
+              subtotal: terminAmount,
+            },
+          ],
+          total: terminAmount,
+          calculatedAt: new Date().toISOString(),
+        };
       }
 
       // Parse continuous parameter (default: true for digital viewing)
@@ -178,7 +202,7 @@ export class PdfController {
         throw new NotFoundException("Quotation tidak ditemukan");
       }
 
-      // Quick fix: Use current project priceBreakdown instead of stale snapshot
+      // Refresh priceBreakdown from live project for quotations (no termin risk).
       if (quotation.project?.priceBreakdown) {
         quotation.priceBreakdown = quotation.project.priceBreakdown;
       }
@@ -238,9 +262,27 @@ export class PdfController {
         throw new NotFoundException("Invoice tidak ditemukan");
       }
 
-      // Quick fix: Use current project priceBreakdown instead of stale snapshot
-      if (invoice.project?.priceBreakdown) {
+      // FIX 1 (preview): same termin-safe logic as the download endpoint.
+      if (!invoice.paymentMilestoneId && invoice.project?.priceBreakdown) {
         invoice.priceBreakdown = invoice.project.priceBreakdown;
+      }
+      if (invoice.paymentMilestoneId && invoice.paymentMilestone) {
+        const pm = invoice.paymentMilestone;
+        const terminName = `Termin ${pm.milestoneNumber} - ${pm.nameId || pm.name} (${pm.paymentPercentage}%)`;
+        const terminAmount = Number(invoice.amountPerProject) || Number(invoice.totalAmount);
+        invoice.priceBreakdown = {
+          products: [
+            {
+              name: terminName,
+              description: pm.description || pm.descriptionId || null,
+              price: terminAmount,
+              quantity: 1,
+              subtotal: terminAmount,
+            },
+          ],
+          total: terminAmount,
+          calculatedAt: new Date().toISOString(),
+        };
       }
 
       // Parse continuous parameter (default: true for digital viewing)
@@ -300,7 +342,7 @@ export class PdfController {
         throw new NotFoundException("Quotation tidak ditemukan");
       }
 
-      // Quick fix: Use current project priceBreakdown instead of stale snapshot
+      // Refresh priceBreakdown from live project for quotations (no termin risk).
       if (quotation.project?.priceBreakdown) {
         quotation.priceBreakdown = quotation.project.priceBreakdown;
       }

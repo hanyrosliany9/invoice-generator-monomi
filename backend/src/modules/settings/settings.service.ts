@@ -9,12 +9,12 @@ import { UpdateUserSettingsDto } from "./dto/update-user-settings.dto";
 import { UpdateSystemSettingsDto } from "./dto/update-system-settings.dto";
 import { UpdateCompanySettingsDto } from "./dto/update-company-settings.dto";
 import { CompanySettingsService } from "../company/company-settings.service";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs";
 import * as path from "path";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class SettingsService {
@@ -269,10 +269,27 @@ export class SettingsService {
 
       const [, dbUser, dbPassword, dbHost, dbPort, dbName] = dbMatch;
 
-      // Create backup using pg_dump
-      const command = `PGPASSWORD="${dbPassword}" pg_dump -h ${dbHost} -p ${dbPort} -U ${dbUser} -d ${dbName} --clean --if-exists --create > ${backupPath}`;
-
-      await execAsync(command);
+      // Create backup using pg_dump — use execFile so no shell is spawned and
+      // none of the DB credentials or host values can be used for injection.
+      // PGPASSWORD is passed via env, never interpolated into a shell string.
+      // pg_dump writes to stdout; we capture it and write to backupPath ourselves.
+      const { stdout: pgDumpOutput } = await execFileAsync(
+        "pg_dump",
+        [
+          "-h", dbHost,
+          "-p", dbPort,
+          "-U", dbUser,
+          "-d", dbName,
+          "--clean",
+          "--if-exists",
+          "--create",
+        ],
+        {
+          env: { ...process.env, PGPASSWORD: dbPassword },
+          maxBuffer: 500 * 1024 * 1024, // 500 MB
+        },
+      );
+      fs.writeFileSync(backupPath, pgDumpOutput);
 
       // Check if file was created and has content
       if (!fs.existsSync(backupPath)) {

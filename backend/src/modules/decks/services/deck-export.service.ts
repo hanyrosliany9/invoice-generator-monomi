@@ -210,23 +210,70 @@ export class DeckExportService {
     }
   }
 
+  /**
+   * Return true only when the URL is safe to embed as a CSS background-image
+   * inside Puppeteer-rendered HTML.  We require https and reject anything that
+   * could be a loopback / private-range / file-system URL.
+   */
+  private isSafeBackgroundUrl(raw: string): boolean {
+    let parsed: URL;
+    try {
+      parsed = new URL(raw);
+    } catch {
+      return false;
+    }
+    if (parsed.protocol !== "https:") {
+      // Reject file:, http:, data:, blob:, etc.
+      return false;
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    // Reject loopback / link-local / private ranges expressed as hostnames
+    const blockedPatterns = [
+      /^localhost$/,
+      /^127\./,
+      /^0\.0\.0\.0$/,
+      /^10\./,
+      /^172\.(1[6-9]|2\d|3[01])\./,
+      /^192\.168\./,
+      /^169\.254\./, // link-local / IMDS
+      /^::1$/,
+      /^\[::1\]$/,
+      /^fd[0-9a-f]{2}:/i, // ULA IPv6
+    ];
+    if (blockedPatterns.some((re) => re.test(hostname))) {
+      return false;
+    }
+    return true;
+  }
+
   private generateSlideHtml(slide: any, width: number, height: number): string {
     // DeckSlide has no `data` field — read the real Prisma columns:
     // title, subtitle, backgroundColor, backgroundImage, content (Json, already a JS object)
     const bgColor = slide.backgroundColor || "#ffffff";
-    const bgImage = slide.backgroundImage || null;
+    const rawBgImage: string | null = slide.backgroundImage || null;
     const title = slide.title || "";
     const subtitle = slide.subtitle || "";
     // `content` is returned by Prisma as a JS object (not a string)
     const content: Record<string, any> =
       slide.content && typeof slide.content === "object" ? slide.content : {};
 
-    const bgStyle = bgImage
-      ? `background: url('${bgImage}') center center / cover no-repeat; background-color: ${bgColor};`
+    // SSRF / path-traversal guard: only embed background images from https
+    // public URLs; silently drop anything else (file:, http:, internal hosts).
+    const safeBgImage =
+      rawBgImage && this.isSafeBackgroundUrl(rawBgImage) ? rawBgImage : null;
+
+    const bgStyle = safeBgImage
+      ? `background: url('${safeBgImage}') center center / cover no-repeat; background-color: ${bgColor};`
       : `background-color: ${bgColor};`;
 
-    // Serialize content JSON for the fabric.js canvas (objects array path)
+    // Serialize content JSON for the fabric.js canvas.
+    // Replace </script> sequences so an attacker-controlled JSON value cannot
+    // break out of the <script> block (JSON.stringify alone does NOT do this).
     const canvasData = content;
+    const safeCanvasJson = JSON.stringify(canvasData).replace(
+      /</g,
+      "\\u003c",
+    );
 
     return `
       <!DOCTYPE html>
@@ -285,7 +332,7 @@ export class DeckExportService {
             height: ${height}
           });
 
-          const data = ${JSON.stringify(canvasData)};
+          const data = ${safeCanvasJson};
 
           if (data && data.objects) {
             canvas.loadFromJSON(data, function() {

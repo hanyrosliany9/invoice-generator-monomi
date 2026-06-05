@@ -42,6 +42,35 @@ const PINTEREST_API = {
   PIN_RESOURCE: "https://www.pinterest.com/resource/PinResource/get/",
 };
 
+/** Allowed Pinterest hostnames — anything else is rejected to prevent SSRF. */
+const PINTEREST_ALLOWED_HOSTS = new Set([
+  "pinterest.com",
+  "www.pinterest.com",
+  "id.pinterest.com",
+  "pin.it",
+]);
+
+/**
+ * Throw BadRequestException if the URL's hostname is not in the Pinterest
+ * allowlist, or if the URL scheme is not https.
+ */
+function assertPinterestHost(url: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new BadRequestException("Invalid URL");
+  }
+  if (parsed.protocol !== "https:") {
+    throw new BadRequestException("Only https Pinterest URLs are accepted");
+  }
+  if (!PINTEREST_ALLOWED_HOSTS.has(parsed.hostname)) {
+    throw new BadRequestException(
+      `URL hostname "${parsed.hostname}" is not an allowed Pinterest domain`,
+    );
+  }
+}
+
 @Injectable()
 export class PinterestService {
   private readonly logger = new Logger(PinterestService.name);
@@ -172,6 +201,8 @@ export class PinterestService {
     url: string,
     options: { downloadImages: boolean; downloadVideos: boolean },
   ): Promise<PinterestPinData[]> {
+    // SSRF guard — only allow known Pinterest hostnames over https
+    assertPinterestHost(url);
     const parsed = this.parseUrl(url);
     this.logger.log(`Fetching pins from ${url} (type: ${parsed.type})`);
 
@@ -227,6 +258,9 @@ export class PinterestService {
    * Fetch page and extract initialReduxState data
    */
   private async fetchPageData(url: string): Promise<any> {
+    // Re-assert allowlist in case this private method is called with a
+    // different URL in the future (defence-in-depth).
+    assertPinterestHost(url);
     const response = await axios.get(url, {
       headers: {
         "User-Agent":

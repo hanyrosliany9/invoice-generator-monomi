@@ -7,6 +7,7 @@ import {
   Res,
   UseGuards,
   Logger,
+  BadRequestException,
 } from "@nestjs/common";
 import { Response } from "express";
 import {
@@ -25,6 +26,21 @@ import {
   SupportedPlatformsDto,
   PlatformDetectionDto,
 } from "./dto/media-download.dto";
+
+/** Validate that a raw query-param URL is http(s) and not an internal address. */
+function validatePublicHttpUrl(url: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new BadRequestException("Invalid URL");
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new BadRequestException(
+      "Only http and https URLs are accepted",
+    );
+  }
+}
 
 @ApiTags("Media Downloader")
 @ApiBearerAuth()
@@ -57,6 +73,7 @@ export class MediaDownloaderController {
   async detectPlatform(
     @Query("url") url: string,
   ): Promise<PlatformDetectionDto> {
+    validatePublicHttpUrl(url);
     const platform = this.ytdlpService.detectPlatform(url);
 
     // Pinterest uses custom scraping, not yt-dlp
