@@ -139,6 +139,10 @@ export class AuthService {
       throw new UnauthorizedException("User tidak ditemukan");
     }
 
+    if (!user.isActive) {
+      throw new UnauthorizedException("Account is deactivated");
+    }
+
     // Generate new access token
     const payload = { email: user.email, sub: user.id, role: user.role };
     const access_token = this.jwtService.sign(payload);

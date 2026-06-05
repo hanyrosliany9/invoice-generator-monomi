@@ -12,7 +12,7 @@ import { JournalQueryDto } from "../dto/journal-query.dto";
 import { JournalStatus, TransactionType } from "@prisma/client";
 import { CashBankBalanceService } from "./cash-bank-balance.service";
 import { isCashOrBank } from "../cash-accounts.util";
-import { wibYear, wibMonth, wibPeriodKey } from "../../../common/utils/wib-date.util";
+import { wibYear, wibMonth, wibPeriodKey, wibStartOfMonth } from "../../../common/utils/wib-date.util";
 
 @Injectable()
 export class JournalService {
@@ -567,7 +567,14 @@ export class JournalService {
   }
 
   /**
-   * Get current fiscal period, auto-creating if it doesn't exist
+   * Get current fiscal period, auto-creating if it doesn't exist.
+   *
+   * FIX 3 — never return a CLOSED period as the "current" posting period.
+   * The findFirst already filters for OPEN. If nothing is found, we fall
+   * through to getOrCreateFiscalPeriod, but that does a findUnique by code
+   * with no status filter — it could return a CLOSED record for the current
+   * month. We re-check the status and throw if it is CLOSED/LOCKED rather
+   * than silently accepting posts into a closed period.
    */
   async getCurrentFiscalPeriod() {
     const now = new Date();
@@ -580,8 +587,15 @@ export class JournalService {
     });
 
     if (!period) {
-      // Auto-create fiscal period for current month
+      // getOrCreateFiscalPeriod may return an existing period of any status.
       period = await this.getOrCreateFiscalPeriod(now);
+
+      // FIX 3: Guard — reject if the existing record is CLOSED or LOCKED.
+      if (period.status === "CLOSED" || period.status === "LOCKED") {
+        throw new BadRequestException(
+          `Current fiscal period (${period.code}) is ${period.status}. Cannot post to a closed/locked fiscal period.`,
+        );
+      }
     }
 
     return period;
@@ -589,11 +603,17 @@ export class JournalService {
 
   /**
    * Get or create fiscal period for a specific date
-   * Auto-creates monthly fiscal periods when they don't exist
+   * Auto-creates monthly fiscal periods when they don't exist.
+   *
+   * FIX 2 — use WIB calendar for period code + stored dates.
+   * date.getFullYear()/getMonth() are UTC, which is wrong around midnight WIB
+   * (e.g. 2026-03-31T17:30Z is already April 2026 in WIB). Use wibYear/wibMonth
+   * for the period code and wibStartOfMonth for the stored startDate so the
+   * period boundaries are correct for the Asia/Jakarta timezone.
    */
   async getOrCreateFiscalPeriod(date: Date) {
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
+    const year = wibYear(date);
+    const month = wibMonth(date);
     const code = `${year}-${month.toString().padStart(2, "0")}`;
 
     let period = await this.prisma.fiscalPeriod.findUnique({
@@ -601,12 +621,25 @@ export class JournalService {
     });
 
     if (!period) {
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+      // WIB start of month: wibStartOfMonth returns the UTC instant equal to
+      // 00:00 WIB on the 1st of the WIB month.
+      const startDate = wibStartOfMonth(date);
+
+      // WIB end of month: first instant of next WIB month minus 1 ms.
+      // Compute next-month anchor as the 1st of month+1, then use wibStartOfMonth.
+      const nextMonthAnchor = new Date(
+        Date.UTC(year, month - 1 + 1, 1, 0, 0, 0) - 7 * 60 * 60 * 1000,
+      );
+      const endDate = new Date(nextMonthAnchor.getTime() - 1);
+
+      // Human-readable month name in WIB locale.
+      const monthName = new Date(
+        Date.UTC(year, month - 1, 1),
+      ).toLocaleString("en-US", { month: "long" });
 
       period = await this.prisma.fiscalPeriod.create({
         data: {
-          name: `${date.toLocaleString("en-US", { month: "long" })} ${year}`,
+          name: `${monthName} ${year}`,
           code,
           periodType: "MONTHLY",
           startDate,
@@ -646,6 +679,24 @@ export class JournalService {
     if (!fiscalPeriodId) {
       const currentPeriod = await this.getCurrentFiscalPeriod();
       fiscalPeriodId = currentPeriod.id;
+    } else {
+      // FIX 1 — explicit fiscalPeriodId provided: verify the period exists and
+      // is not CLOSED/LOCKED before accepting the entry.
+      // CONSERVATIVE: if the period record doesn't exist at all (shouldn't
+      // happen but guard it), we let the DB FK error surface naturally — we
+      // only block when the period explicitly shows as CLOSED or LOCKED.
+      const resolvedPeriod = await this.prisma.fiscalPeriod.findUnique({
+        where: { id: fiscalPeriodId },
+        select: { id: true, code: true, status: true },
+      });
+      if (
+        resolvedPeriod &&
+        (resolvedPeriod.status === "CLOSED" || resolvedPeriod.status === "LOCKED")
+      ) {
+        throw new BadRequestException(
+          `Cannot post to a closed/locked fiscal period (${resolvedPeriod.code})`,
+        );
+      }
     }
 
     // Generate entry number
@@ -992,6 +1043,21 @@ export class JournalService {
     // Re-read the entry for line items (needed to build ledger rows)
     const entry = await this.getJournalEntry(id);
 
+    // FIX 1 — closed-period guard in postJournalEntry.
+    // Check the entry's resolved fiscal period before inserting any GL rows.
+    // CONSERVATIVE: no period assigned = no block (period may not yet exist).
+    if (entry.fiscalPeriodId) {
+      const period = await this.prisma.fiscalPeriod.findUnique({
+        where: { id: entry.fiscalPeriodId },
+        select: { code: true, status: true },
+      });
+      if (period && (period.status === "CLOSED" || period.status === "LOCKED")) {
+        throw new BadRequestException(
+          `Cannot post to a closed/locked fiscal period (${period.code})`,
+        );
+      }
+    }
+
     const now = new Date();
 
     // Build ledger rows from the entry (populated before the claim so we don't
@@ -1113,6 +1179,12 @@ export class JournalService {
       departmentId: line.departmentId || undefined,
     }));
 
+    // FIX 4 — reversal must post into the CURRENT open period, not the
+    // original entry's period (which may now be CLOSED). Resolve the current
+    // open period for today's reversal date; let getCurrentFiscalPeriod
+    // auto-create one if needed. Do NOT pass fiscalPeriodId so that
+    // createJournalEntry picks it up via getCurrentFiscalPeriod, which already
+    // enforces the OPEN status guard (Fix 3).
     const reversingEntry = await this.createJournalEntry({
       entryDate: new Date(),
       description: `REVERSAL: ${originalEntry.description}`,
@@ -1122,7 +1194,7 @@ export class JournalService {
       transactionId: originalEntry.transactionId ?? id, // Use entry ID if no transaction ID
       documentNumber: originalEntry.documentNumber ?? undefined,
       documentDate: originalEntry.documentDate ?? undefined,
-      fiscalPeriodId: originalEntry.fiscalPeriodId ?? undefined,
+      // fiscalPeriodId intentionally omitted — resolved to current OPEN period
       isReversing: true,
       reversedEntryId: id,
       createdBy: userId,

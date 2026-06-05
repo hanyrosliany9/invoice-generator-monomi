@@ -62,16 +62,32 @@ export const REDIS_CLIENT = "REDIS_CLIENT";
         const redisUrl = configService.get<string>("REDIS_URL");
 
         if (!redisUrl) {
-          throw new Error("REDIS_URL environment variable is required");
+          logger.warn(
+            "REDIS_URL is not set — caching features will be degraded",
+          );
+          // Return a stub so dependent services can degrade gracefully.
+          return null;
         }
 
-        const client = new Redis(redisUrl);
+        const client = new Redis(redisUrl, {
+          // Fail fast on individual commands rather than queuing them
+          // indefinitely; this prevents request pile-up during outages.
+          maxRetriesPerRequest: 1,
+          // Do not buffer commands while the connection is down.
+          enableOfflineQueue: false,
+          // Limit reconnection attempts to avoid log spam.
+          retryStrategy: (times: number) => {
+            if (times > 5) return null; // Stop retrying
+            return Math.min(times * 500, 3000);
+          },
+        });
 
         client.on("connect", () => {
           logger.log("Redis client connected");
         });
 
         client.on("error", (err) => {
+          // Log but do not crash — callers wrap Redis calls in try/catch.
           logger.error(`Redis client error: ${err.message}`);
         });
 

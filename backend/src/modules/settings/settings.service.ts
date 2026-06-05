@@ -8,6 +8,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { UpdateUserSettingsDto } from "./dto/update-user-settings.dto";
 import { UpdateSystemSettingsDto } from "./dto/update-system-settings.dto";
 import { UpdateCompanySettingsDto } from "./dto/update-company-settings.dto";
+import { CompanySettingsService } from "../company/company-settings.service";
 import { exec } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs";
@@ -19,7 +20,10 @@ const execAsync = promisify(exec);
 export class SettingsService {
   private readonly logger = new Logger(SettingsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private companySettingsService: CompanySettingsService,
+  ) {}
 
   async getUserSettings(userId: string) {
     this.logger.log("getUserSettings called with userId:", userId);
@@ -132,6 +136,11 @@ export class SettingsService {
         ...updateData,
       },
     });
+
+    // Invalidate the in-process cache in CompanySettingsService so that the
+    // next PDF generation picks up the new company info immediately instead of
+    // serving stale data for up to 5 minutes.
+    this.companySettingsService.clearCache();
 
     return settings;
   }

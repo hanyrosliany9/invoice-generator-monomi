@@ -66,12 +66,21 @@ export class ClientsService {
     page = 1,
     limit = 10,
     search?: string,
+    status?: string,
   ): Promise<PaginatedResponse<any[]>> {
     try {
       const skip = (page - 1) * limit;
 
+      // Default to active clients only; caller may pass status='all' or a
+      // specific value to override (e.g. admin list showing every client).
+      const statusFilter: any =
+        status === "all"
+          ? {}
+          : { status: status ?? "active" };
+
       const where = search
         ? {
+            ...statusFilter,
             OR: [
               { name: { contains: search, mode: "insensitive" as const } },
               { email: { contains: search, mode: "insensitive" as const } },
@@ -79,7 +88,7 @@ export class ClientsService {
               { company: { contains: search, mode: "insensitive" as const } },
             ],
           }
-        : {};
+        : { ...statusFilter };
 
       const [clients, total] = await Promise.all([
         this.prisma.client.findMany({

@@ -309,20 +309,21 @@ export class ReportsService {
         .reduce((sum, q) => sum + parseFloat(q.totalAmount.toString()), 0),
     };
 
-    // Calculate invoice metrics
+    // Calculate invoice metrics (exclude CANCELLED from totals and rate)
+    const activeInvoices = invoices.filter((i) => i.status !== "CANCELLED");
     const invoiceMetrics = {
-      total: invoices.length,
-      paid: invoices.filter((i) => i.status === "PAID").length,
-      pending: invoices.filter((i) => i.status === "SENT").length,
-      overdue: invoices.filter((i) => i.status === "OVERDUE").length,
-      totalValue: invoices.reduce(
+      total: activeInvoices.length,
+      paid: activeInvoices.filter((i) => i.status === "PAID").length,
+      pending: activeInvoices.filter((i) => i.status === "SENT").length,
+      overdue: activeInvoices.filter((i) => i.status === "OVERDUE").length,
+      totalValue: activeInvoices.reduce(
         (sum, i) => sum + parseFloat(i.totalAmount.toString()),
         0,
       ),
-      paidValue: invoices
+      paidValue: activeInvoices
         .filter((i) => i.status === "PAID")
         .reduce((sum, i) => sum + parseFloat(i.totalAmount.toString()), 0),
-      materaiRequired: invoices.filter((i) => i.materaiRequired).length,
+      materaiRequired: activeInvoices.filter((i) => i.materaiRequired).length,
     };
 
     return {

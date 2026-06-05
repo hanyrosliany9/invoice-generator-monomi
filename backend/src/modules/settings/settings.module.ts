@@ -2,9 +2,10 @@ import { Module } from "@nestjs/common";
 import { SettingsController } from "./settings.controller";
 import { SettingsService } from "./settings.service";
 import { PrismaModule } from "../prisma/prisma.module";
+import { CompanyModule } from "../company/company.module";
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, CompanyModule],
   controllers: [SettingsController],
   providers: [SettingsService],
   exports: [SettingsService],

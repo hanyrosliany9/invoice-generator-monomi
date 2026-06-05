@@ -81,11 +81,21 @@ export class BulkDownloadService {
   }
 
   /**
-   * Get cached ZIP if exists and not expired
+   * Get cached ZIP if exists and not expired.
+   * Returns null (cache miss) on any Redis error so the caller falls through
+   * to regenerating the ZIP rather than surfacing a 500.
    */
   async getCachedZip(contentHash: string): Promise<ZipCacheEntry | null> {
+    if (!this.redis) return null; // Redis not configured
+
     const key = `${ZIP_CACHE_PREFIX}${contentHash}`;
-    const cached = await this.redis.get(key);
+    let cached: string | null;
+    try {
+      cached = await this.redis.get(key);
+    } catch (redisErr) {
+      this.logger.warn(`Redis unavailable during getCachedZip — falling through to regenerate: ${redisErr}`);
+      return null;
+    }
 
     if (!cached) {
       return null;
@@ -97,7 +107,7 @@ export class BulkDownloadService {
       // Double-check expiry (Redis TTL should handle this, but be safe)
       if (new Date(entry.expiresAt) < new Date()) {
         this.logger.debug(`Cached ZIP expired: ${contentHash}`);
-        await this.redis.del(key);
+        try { await this.redis.del(key); } catch { /* ignore cleanup errors */ }
         return null;
       }
 
@@ -110,12 +120,20 @@ export class BulkDownloadService {
   }
 
   /**
-   * Save ZIP to cache
+   * Save ZIP to cache.
+   * Failures are logged and swallowed — a cache write error must not fail
+   * the download response.
    */
   async saveZipToCache(entry: ZipCacheEntry): Promise<void> {
+    if (!this.redis) return; // Redis not configured
+
     const key = `${ZIP_CACHE_PREFIX}${entry.contentHash}`;
-    await this.redis.setex(key, ZIP_CACHE_TTL, JSON.stringify(entry));
-    this.logger.log(`Saved ZIP to cache: ${entry.contentHash} (${entry.fileCount} files, ${entry.zipSize} bytes)`);
+    try {
+      await this.redis.setex(key, ZIP_CACHE_TTL, JSON.stringify(entry));
+      this.logger.log(`Saved ZIP to cache: ${entry.contentHash} (${entry.fileCount} files, ${entry.zipSize} bytes)`);
+    } catch (redisErr) {
+      this.logger.warn(`Redis unavailable during saveZipToCache — continuing without caching: ${redisErr}`);
+    }
   }
 
   /**

@@ -127,10 +127,8 @@ export class VendorsService {
       where.industryType = filters.category;
     }
 
-    // Active status filter
-    if (filters.isActive !== undefined) {
-      where.isActive = filters.isActive;
-    }
+    // Active status filter — default to active-only when not explicitly provided
+    where.isActive = filters.isActive !== undefined ? filters.isActive : true;
 
     // City filter
     if (filters.city) {

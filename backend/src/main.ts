@@ -213,6 +213,16 @@ async function bootstrap() {
     // Enable graceful shutdown (handles SIGTERM/SIGINT from Docker/deploy)
     app.enableShutdownHooks();
 
+    // Trust the first proxy hop (Cloudflare/nginx) so req.ip resolves to the
+    // real client IP via X-Forwarded-For rather than the proxy's IP.
+    // Without this all users share a single throttler bucket (the proxy IP).
+    try {
+      app.getHttpAdapter().getInstance().set("trust proxy", 1);
+      logger.log("✅ Express trust proxy enabled (hop depth: 1)");
+    } catch (err) {
+      logger.warn(`⚠️  Could not set trust proxy: ${err}`);
+    }
+
     const port = process.env.PORT || 5000;
     await app.listen(port, "0.0.0.0");
 

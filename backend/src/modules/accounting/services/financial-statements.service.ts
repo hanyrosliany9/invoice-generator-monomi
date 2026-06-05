@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { LedgerService } from "./ledger.service";
 import { JournalService } from "./journal.service";
@@ -995,8 +995,26 @@ export class FinancialStatementsService {
       `Starting year-end closing for fiscal year ending ${fiscalYearEndDate.toISOString()}`,
     );
 
+    const closingYear = fiscalYearEndDate.getFullYear();
+
+    // FIX 5 — idempotency guard: if a closing entry already exists for this
+    // year, reject the call immediately so a double-click or retry cannot
+    // create a second closing entry and unbalance the ledger.
+    const existingClosing = await this.prisma.journalEntry.findFirst({
+      where: {
+        transactionId: `CLOSING-${closingYear}`,
+        transactionType: TransactionType.YEAR_END_CLOSING,
+      },
+      select: { id: true, entryNumber: true },
+    });
+    if (existingClosing) {
+      throw new ConflictException(
+        `Year-end closing for ${closingYear} has already been performed (entry ${existingClosing.entryNumber}). Use the existing closing entry or reverse it first.`,
+      );
+    }
+
     // Determine fiscal year start date
-    const fiscalYearStart = new Date(fiscalYearEndDate.getFullYear(), 0, 1);
+    const fiscalYearStart = new Date(closingYear, 0, 1);
 
     // Get all revenue and expense accounts
     const revenueExpenseAccounts = await this.prisma.chartOfAccounts.findMany({
@@ -1098,6 +1116,23 @@ export class FinancialStatementsService {
 
     // Post the closing entry
     await this.journalService.postJournalEntry(closingJournalEntry.id, userId);
+
+    // FIX 5 — lock all fiscal periods for the closed year so no further
+    // entries can be posted into them. This runs after the closing entry is
+    // successfully posted, making the operation safe to reason about: if
+    // postJournalEntry throws, the periods remain OPEN and no partial state
+    // is written.
+    const lockedCount = await this.prisma.fiscalPeriod.updateMany({
+      where: {
+        startDate: { gte: fiscalYearStart },
+        endDate: { lte: fiscalYearEndDate },
+        status: { not: "CLOSED" },
+      },
+      data: { status: "CLOSED" },
+    });
+    this.logger.log(
+      `🔒 Locked ${lockedCount.count} fiscal period(s) for year ${closingYear}`,
+    );
 
     this.logger.log(
       `✅ Year-end closing completed. Net income: ${netIncome.toFixed(2)} transferred to Retained Earnings`,

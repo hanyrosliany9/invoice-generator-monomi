@@ -1,13 +1,19 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UserResponseDto } from "./dto/user-response.dto";
 import { TransformationUtil } from "../../common/utils/transformation.util";
+import { RefreshTokenService } from "../auth/refresh-token.service";
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(UsersService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private refreshTokenService: RefreshTokenService,
+  ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     const user = await this.prisma.user.create({
@@ -128,6 +134,8 @@ export class UsersService {
     id: string,
     updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
+    const isPasswordChange = !!updateUserDto.password;
+
     const user = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
@@ -142,6 +150,25 @@ export class UsersService {
         preferences: true,
       },
     });
+
+    // Revoke all existing refresh tokens when password is changed so that
+    // sessions on other devices are invalidated immediately.
+    if (isPasswordChange) {
+      try {
+        const revoked = await this.refreshTokenService.revokeAllUserTokens(
+          id,
+          "password_changed",
+        );
+        this.logger.log(
+          `Revoked ${revoked} refresh token(s) for user ${id} after password change`,
+        );
+      } catch (err) {
+        // Log but do not fail the update — the password has already been saved.
+        this.logger.error(
+          `Failed to revoke refresh tokens for user ${id} after password change: ${err}`,
+        );
+      }
+    }
 
     return this.transformToResponse(user);
   }

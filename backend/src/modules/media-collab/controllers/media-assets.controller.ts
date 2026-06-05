@@ -24,7 +24,7 @@ import {
   ApiBody,
   ApiProduces,
 } from "@nestjs/swagger";
-import { SkipThrottle } from "@nestjs/throttler";
+import { Throttle } from "@nestjs/throttler";
 import { RequireMediaRole } from "../../auth/decorators/auth.decorators";
 import { MediaAssetsService } from "../services/media-assets.service";
 import { AuthenticatedRequest } from "../interfaces/authenticated-request.interface";
@@ -141,7 +141,7 @@ export class MediaAssetsController {
   }
 
   @Post("bulk-delete")
-  @SkipThrottle() // Exempt from rate limiting - handles bulk operations internally
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests/min per user — bulk deletes are expensive
   @ApiOperation({
     summary: "Bulk delete multiple assets",
     description:
@@ -198,7 +198,7 @@ export class MediaAssetsController {
   }
 
   @Post("bulk-download")
-  @SkipThrottle() // Exempt from rate limiting - handles bulk operations
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests/min per user — bulk downloads are CPU/bandwidth-heavy
   @ApiOperation({
     summary: "Bulk download multiple assets as ZIP",
     description:
@@ -270,7 +270,7 @@ export class MediaAssetsController {
   }
 
   @Post("register-batch/:projectId")
-  @SkipThrottle()
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests/min per user — batch DB writes are expensive
   @ApiOperation({ summary: "Register assets after direct R2 upload (batch)" })
   @ApiResponse({ status: 201, description: "Assets registered in database" })
   @ApiResponse({

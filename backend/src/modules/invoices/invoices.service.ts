@@ -55,13 +55,18 @@ export class InvoicesService {
     createInvoiceDto: CreateInvoiceDto,
     userId: string,
   ): Promise<any> {
-    // Validate client exists
+    // Validate client exists and is active
     const client = await this.prisma.client.findUnique({
       where: { id: createInvoiceDto.clientId },
     });
     if (!client) {
       throw new NotFoundException(
         `Client dengan ID ${createInvoiceDto.clientId} tidak ditemukan`,
+      );
+    }
+    if (client.status !== "active") {
+      throw new BadRequestException(
+        "Cannot create document for an inactive client",
       );
     }
 

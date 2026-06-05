@@ -64,6 +64,20 @@ export class QuotationsService {
       );
     }
 
+    // Guard: reject if client is inactive
+    const client = await this.prisma.client.findUnique({
+      where: { id: createQuotationDto.clientId },
+      select: { status: true },
+    });
+    if (!client) {
+      throw new NotFoundException("Klien tidak ditemukan");
+    }
+    if (client.status !== "active") {
+      throw new BadRequestException(
+        "Cannot create document for an inactive client",
+      );
+    }
+
     // Generate unique quotation number
     const quotationNumber = await this.generateQuotationNumber();
 

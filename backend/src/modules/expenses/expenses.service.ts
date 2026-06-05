@@ -249,6 +249,12 @@ export class ExpensesService {
       );
     }
 
+    if (!category.isActive) {
+      throw new BadRequestException(
+        `Expense category is inactive: ${createExpenseDto.categoryId}`,
+      );
+    }
+
     // Validate project if provided
     if (createExpenseDto.projectId) {
       const project = await this.prisma.project.findUnique({
@@ -1128,8 +1134,9 @@ export class ExpensesService {
   /**
    * Get expense categories
    */
-  async getCategories() {
+  async getCategories(onlyActive = true) {
     return this.prisma.expenseCategory.findMany({
+      where: onlyActive ? { isActive: true } : undefined,
       orderBy: [{ expenseClass: "asc" }, { accountCode: "asc" }],
     });
   }
