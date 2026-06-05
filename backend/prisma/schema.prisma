@@ -357,6 +357,7 @@ model Quotation {
   @@index([status, validUntil])
   @@index([projectId, status])
   @@index([createdAt, status])
+  @@index([status, createdAt])
   @@map("quotations")
 }
 
@@ -621,6 +622,8 @@ model AuditLog {
   userAgent  String?
   createdAt  DateTime @default(now())
 
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
   @@map("audit_logs")
 }
 
@@ -1728,6 +1731,7 @@ model JournalEntry {
   @@index([transactionId])
   @@index([fiscalPeriodId])
   @@index([isPosted])
+  @@index([isPosted, fiscalPeriodId, entryDate])
   @@map("journal_entries")
 }
 
@@ -1763,6 +1767,7 @@ model JournalLineItem {
   @@index([accountId])
   @@index([projectId])
   @@index([clientId])
+  @@index([accountId, journalEntryId])
   @@map("journal_line_items")
 }
 
@@ -1816,6 +1821,7 @@ model GeneralLedger {
   // Phase 2: Composite indexes for critical accounting queries
   @@index([accountId, postingDate])
   @@index([accountId, fiscalPeriodId])
+  @@index([fiscalPeriodId, accountId, postingDate])
   @@map("general_ledger")
 }
 
@@ -1884,6 +1890,7 @@ model FiscalPeriod {
   @@index([status])
   @@index([startDate])
   @@index([endDate])
+  @@index([status, startDate, endDate])
   @@map("fiscal_periods")
 }
 
@@ -4119,6 +4126,7 @@ model MediaAsset {
   @@index([starRating])
   @@index([mediaType])
   @@index([projectId, starRating])
+  @@index([status, mediaType])
   @@map("media_assets")
 }
 

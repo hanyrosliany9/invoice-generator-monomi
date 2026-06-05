@@ -44,11 +44,10 @@ export interface CreateClientRequest {
   taxNumber?: string
   bankAccount?: string
   notes?: string
+  status?: 'active' | 'inactive'
 }
 
-export interface UpdateClientRequest extends Partial<CreateClientRequest> {
-  status?: string
-}
+export type UpdateClientRequest = Partial<CreateClientRequest>
 
 export const clientService = {
   // Get all clients

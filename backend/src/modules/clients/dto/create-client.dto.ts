@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsPhoneNumber,
   IsIn,
+  Matches,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
@@ -89,6 +90,9 @@ export class CreateClientDto {
   })
   @IsOptional()
   @IsString({ message: "NPWP harus berupa string" })
+  @Matches(/^\d{2}\.\d{3}\.\d{3}\.\d{1}-\d{3}\.\d{3}$/, {
+    message: "Format NPWP tidak valid (XX.XXX.XXX.X-XXX.XXX)",
+  })
   taxNumber?: string;
 
   @ApiProperty({

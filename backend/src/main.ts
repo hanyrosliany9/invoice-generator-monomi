@@ -37,7 +37,10 @@ async function bootstrap() {
     }
 
     const app = await NestFactory.create(AppModule, {
-      logger: ["error", "warn", "log", "debug", "verbose"],
+      logger:
+        process.env.NODE_ENV === "production"
+          ? ["error", "warn", "log"]
+          : ["error", "warn", "log", "debug", "verbose"],
     });
 
     // BigInt serialization fix for JSON.stringify
@@ -175,32 +178,40 @@ async function bootstrap() {
       ],
     });
 
-    // Swagger documentation
-    const config = new DocumentBuilder()
-      .setTitle("Indonesian Business Management System")
-      .setDescription(
-        "Comprehensive quotation-to-invoice platform for Indonesian businesses",
-      )
-      .setVersion("1.0")
-      .addBearerAuth()
-      .addServer("http://localhost:5000", "Development server")
-      .build();
+    // Swagger documentation (disabled in production unless explicitly enabled)
+    if (
+      process.env.NODE_ENV !== "production" ||
+      process.env.ENABLE_SWAGGER === "true"
+    ) {
+      const config = new DocumentBuilder()
+        .setTitle("Indonesian Business Management System")
+        .setDescription(
+          "Comprehensive quotation-to-invoice platform for Indonesian businesses",
+        )
+        .setVersion("1.0")
+        .addBearerAuth()
+        .addServer("http://localhost:5000", "Development server")
+        .build();
 
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup("api/docs", app, document, {
-      customSiteTitle: "Monomi API Documentation",
-      customfavIcon: "/favicon.ico",
-      customJs: [
-        "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.min.js",
-        "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.min.js",
-      ],
-      customCssUrl: [
-        "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css",
-      ],
-    });
+      const document = SwaggerModule.createDocument(app, config);
+      SwaggerModule.setup("api/docs", app, document, {
+        customSiteTitle: "Monomi API Documentation",
+        customfavIcon: "/favicon.ico",
+        customJs: [
+          "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.min.js",
+          "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.min.js",
+        ],
+        customCssUrl: [
+          "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css",
+        ],
+      });
+    }
 
     // Validate URL configuration
     validateUrls();
+
+    // Enable graceful shutdown (handles SIGTERM/SIGINT from Docker/deploy)
+    app.enableShutdownHooks();
 
     const port = process.env.PORT || 5000;
     await app.listen(port, "0.0.0.0");

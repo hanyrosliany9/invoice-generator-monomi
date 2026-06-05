@@ -137,6 +137,15 @@ export class ProjectsService {
       ...projectData
     } = createProjectDto;
 
+    // Validate that the client exists before entering the transaction
+    const existingClient = await this.prisma.client.findUnique({
+      where: { id: clientId },
+      select: { id: true },
+    });
+    if (!existingClient) {
+      throw new NotFoundException("Client tidak ditemukan");
+    }
+
     // FIX 3: Wrap number generation + insert in a transaction so the FOR UPDATE
     // row lock on the counter row is held until the project row is committed,
     // preventing duplicate numbers under concurrent requests.
@@ -174,7 +183,7 @@ export class ProjectsService {
           projectedGrossMargin, // ⭐ NEW: Store projected margins
           projectedNetMargin,
           projectedProfit,
-          output: projectData.output || "", // Provide default empty string if not provided
+          output: projectData.output || "", // Schema: output String (NOT NULL) — keep "" not null
           client: {
             connect: { id: clientId },
           },

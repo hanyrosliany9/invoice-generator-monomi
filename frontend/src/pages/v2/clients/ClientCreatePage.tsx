@@ -70,6 +70,7 @@ export default function ClientCreatePageV2() {
     // is happier with `undefined` so it doesn't store empty strings.
     const payload: CreateClientRequest = {
       name: values.name.trim(),
+      status: values.status,
       company: values.company?.trim() || undefined,
       contactPerson: values.contactPerson?.trim() || undefined,
       email: values.email?.trim() || undefined,

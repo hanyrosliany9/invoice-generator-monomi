@@ -22,6 +22,17 @@ export class ClientsService {
       // Validate Indonesian business rules
       validateIndonesianBusinessRules(createClientDto);
 
+      // Check for duplicate NPWP (only when provided)
+      if (createClientDto.taxNumber) {
+        const existing = await this.prisma.client.findFirst({
+          where: { taxNumber: createClientDto.taxNumber },
+          select: { id: true },
+        });
+        if (existing) {
+          throw new ConflictException("Klien dengan NPWP ini sudah ada");
+        }
+      }
+
       // Sanitize input data
       const sanitizedData = {
         name: sanitizeIndonesianInput(createClientDto.name),
@@ -241,6 +252,20 @@ export class ClientsService {
 
   async update(id: string, updateClientDto: UpdateClientDto): Promise<any> {
     const client = await this.findOne(id);
+
+    // Check for duplicate NPWP on update (skip own record)
+    if (updateClientDto.taxNumber) {
+      const existing = await this.prisma.client.findFirst({
+        where: {
+          taxNumber: updateClientDto.taxNumber,
+          NOT: { id },
+        },
+        select: { id: true },
+      });
+      if (existing) {
+        throw new ConflictException("Klien dengan NPWP ini sudah ada");
+      }
+    }
 
     return this.prisma.client.update({
       where: { id },

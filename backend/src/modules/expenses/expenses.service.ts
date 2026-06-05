@@ -11,6 +11,8 @@ import { PPNCalculatorService } from "./services/ppn-calculator.service";
 import { WithholdingTaxCalculatorService } from "./services/withholding-tax-calculator.service";
 import { EFakturValidatorService } from "./services/efaktur-validator.service";
 import { JournalService } from "../accounting/services/journal.service";
+import { ProjectCostingService } from "../accounting/services/project-costing.service";
+import { ProfitCalculationService } from "../projects/profit-calculation.service";
 import { accountForSource } from "../accounting/cash-accounts.util";
 import {
   CreateExpenseDto,
@@ -52,6 +54,8 @@ export class ExpensesService {
     private withholdingTaxCalculator: WithholdingTaxCalculatorService,
     private eFakturValidator: EFakturValidatorService,
     private journalService: JournalService,
+    private projectCostingService: ProjectCostingService,
+    private profitCalculationService: ProfitCalculationService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -378,6 +382,9 @@ export class ExpensesService {
             debit: Number(createExpenseDto.totalAmount),
             credit: 0,
             description: `${expense.description} - ${expense.vendorName}`,
+            // FIX 1: stamp projectId/clientId so GL lines are project-attributable
+            projectId: createExpenseDto.projectId ?? undefined,
+            clientId: createExpenseDto.clientId ?? undefined,
           },
           {
             // Credit the chosen balance: Cash (Kas) or the default Bank account.
@@ -385,6 +392,9 @@ export class ExpensesService {
             debit: 0,
             credit: Number(createExpenseDto.totalAmount), // Reduce cash/bank
             description: `Pembayaran untuk ${expense.vendorName}`,
+            // FIX 1: stamp projectId/clientId on cash leg as well for full traceability
+            projectId: createExpenseDto.projectId ?? undefined,
+            clientId: createExpenseDto.clientId ?? undefined,
           },
         ],
       });
@@ -401,6 +411,48 @@ export class ExpensesService {
     } catch (error) {
       this.logger.error("Error creating payment journal entry:", error);
       // Continue even if journal entry creation fails - expense was still created
+    }
+
+    // FIX 2: Flow the expense into project-level cost tracking and profitability.
+    // Only when a projectId is present. Wrapped in its own try/catch so a costing
+    // failure NEVER rolls back the expense or its GL journal (project-costing is a
+    // recomputable rollup, not part of double-entry bookkeeping).
+    if (createExpenseDto.projectId) {
+      try {
+        // Accumulate into WIP directExpenses for the period of the expense date.
+        // accumulateProjectCosts' createWIPJournalEntry is a stub (console.log only)
+        // so there is NO second GL posting — the EXPENSE_PAID journal above is
+        // the sole double-entry record for this cost.
+        const periodDate = new Date(createExpenseDto.expenseDate);
+        periodDate.setDate(1);   // first day of the month
+        periodDate.setHours(0, 0, 0, 0);
+
+        await this.projectCostingService.accumulateProjectCosts(
+          createExpenseDto.projectId,
+          periodDate,
+          { directExpenses: Number(createExpenseDto.totalAmount) },
+          userId,
+        );
+
+        // Refresh the project's denormalized profit/margin fields.
+        await this.profitCalculationService.calculateProjectProfitMargin(
+          createExpenseDto.projectId,
+          userId,
+        );
+
+        this.logger.log(
+          `✅ [PROJECT_COST] Accumulated ${createExpenseDto.totalAmount} ` +
+            `into WIP directExpenses for project ${createExpenseDto.projectId}`,
+        );
+      } catch (costError) {
+        this.logger.error(
+          `[PROJECT_COST] Failed to update project costing for expense ` +
+            `${expense.expenseNumber} / project ${createExpenseDto.projectId}: ` +
+            String(costError),
+        );
+        // Non-fatal: expense and GL journal are intact. Costing can be
+        // recomputed later via recalculateAllProjects().
+      }
     }
 
     // ── Budget tracking: increment spent on matching budgets ──────────────

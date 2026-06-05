@@ -6,6 +6,7 @@ import { WithholdingTaxCalculatorService } from "./services/withholding-tax-calc
 import { EFakturValidatorService } from "./services/efaktur-validator.service";
 import { PrismaModule } from "../prisma/prisma.module";
 import { AccountingModule } from "../accounting/accounting.module";
+import { ProjectsModule } from "../projects/projects.module";
 
 /**
  * Expenses Module
@@ -34,7 +35,7 @@ import { AccountingModule } from "../accounting/accounting.module";
  * - AuthModule: JWT authentication (imported by guards)
  */
 @Module({
-  imports: [PrismaModule, AccountingModule],
+  imports: [PrismaModule, AccountingModule, ProjectsModule],
   controllers: [ExpensesController],
   providers: [
     ExpensesService,

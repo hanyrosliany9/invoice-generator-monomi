@@ -223,7 +223,7 @@ services:
 
   # Cloudflare Tunnel #1 (Main App - HTTP/REST API)
   cloudflared:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:2025.2.1
     container_name: invoice-cloudflared-prod
     environment:
       - TZ=Asia/Jakarta
@@ -242,7 +242,7 @@ services:
 
   # Cloudflare Tunnel #2 (WebSocket - Real-time Collaboration)
   cloudflared-ws:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:2025.2.1
     container_name: invoice-cloudflared-ws-prod
     environment:
       - TZ=Asia/Jakarta
@@ -280,7 +280,7 @@ services:
       - ./scripts:/scripts:ro
     networks:
       - invoice-network
-    restart: "no"
+    restart: on-failure
     command: |
       sh -c "
         while ! pg_isready -h db -U invoiceuser; do
@@ -291,6 +291,8 @@ services:
         while true; do
           pg_dump -h db -U invoiceuser -d invoices > /backup/backup_$$(date +%Y%m%d_%H%M%S).sql
           echo 'Backup completed at $$(date)'
+          find /backup -name '*.sql' -mtime +7 -delete
+          echo 'Old backups pruned (retention: 7 days)'
           sleep 86400
         done
       "
