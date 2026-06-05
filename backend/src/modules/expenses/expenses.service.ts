@@ -682,15 +682,28 @@ export class ExpensesService {
   }
 
   /**
-   * Delete an expense (only in DRAFT status)
+   * Delete an expense.
+   *
+   * Expenses are created in PAID status (create() always sets PAID), so the
+   * old DRAFT-only guard made every expense un-deletable.  The corrected guard
+   * blocks only SUBMITTED and APPROVED expenses (mid-approval workflow) where
+   * hard-deletion would leave dangling approval history without a conclusion.
+   * DRAFT, PAID, and REJECTED expenses can all be safely deleted.
+   *
+   * When deleting a PAID expense whose payment journal has already been posted
+   * (and not yet reversed), we reverse it here so the books stay balanced.
    */
   async remove(id: string, userId: string, userRole: string) {
     const expense = await this.findOne(id, userId, userRole);
 
-    // Only allow deletion for DRAFT expenses
-    if (expense.status !== ExpenseStatus.DRAFT) {
+    // Block mid-approval-workflow states where deletion would be destructive
+    if (
+      expense.status === ExpenseStatus.SUBMITTED ||
+      expense.status === ExpenseStatus.APPROVED
+    ) {
       throw new BadRequestException(
-        "Only expenses in DRAFT status can be deleted",
+        `Expenses in ${expense.status} status cannot be deleted. ` +
+          "Reject or cancel the approval first.",
       );
     }
 
@@ -699,6 +712,33 @@ export class ExpensesService {
       throw new ForbiddenException(
         "You do not have permission to delete this expense",
       );
+    }
+
+    // ── Reverse payment journal if present, posted, and not already reversed ──
+    if (expense.paymentJournalId) {
+      try {
+        await this.journalService.reverseJournalEntry(
+          expense.paymentJournalId,
+          userId,
+        );
+        this.logger.log(
+          `[EXPENSE_DELETE] Reversed payment journal ${expense.paymentJournalId} ` +
+            `for expense ${expense.expenseNumber}`,
+        );
+      } catch (error: any) {
+        // ConflictException = already reversed (idempotent — proceed)
+        // BadRequestException "not posted" = journal was never posted (proceed)
+        const alreadyReversed =
+          error?.status === 409 ||
+          (error?.message ?? "").includes("already been reversed");
+        if (!alreadyReversed) {
+          this.logger.warn(
+            `[EXPENSE_DELETE] Could not reverse payment journal ` +
+              `${expense.paymentJournalId}: ${error?.message}`,
+          );
+        }
+        // Non-fatal: proceed with deletion regardless
+      }
     }
 
     // ── Budget tracking: decrement spent before deletion ─────────────────

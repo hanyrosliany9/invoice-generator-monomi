@@ -2,6 +2,8 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ConflictException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import {
@@ -19,6 +21,8 @@ import { JournalService } from "./journal.service";
 
 @Injectable()
 export class BankReconciliationService {
+  private readonly logger = new Logger(BankReconciliationService.name);
+
   constructor(
     private prisma: PrismaService,
     private journalService: JournalService,
@@ -143,63 +147,95 @@ export class BankReconciliationService {
       otherAdjustments: createDto.otherAdjustments || 0,
     });
 
-    // Create bank reconciliation with items
-    const reconciliation = await this.prisma.bankReconciliation.create({
-      data: {
-        reconciliationNumber,
-        bankAccountId: createDto.bankAccountId,
-        statementDate: createDto.statementDate,
-        periodStartDate: createDto.periodStartDate,
-        periodEndDate: createDto.periodEndDate,
-        bookBalanceStart: createDto.bookBalanceStart,
-        bookBalanceEnd: createDto.bookBalanceEnd,
-        statementBalance: createDto.statementBalance,
-        depositsInTransit: createDto.depositsInTransit || 0,
-        outstandingChecks: createDto.outstandingChecks || 0,
-        bankCharges: createDto.bankCharges || 0,
-        bankInterest: createDto.bankInterest || 0,
-        otherAdjustments: createDto.otherAdjustments || 0,
-        adjustedBookBalance: calculations.adjustedBookBalance,
-        adjustedBankBalance: calculations.adjustedBankBalance,
-        difference: calculations.difference,
-        isBalanced: calculations.isBalanced,
-        statementReference: createDto.statementReference,
-        statementFilePath: createDto.statementFilePath,
-        status: createDto.status || BankRecStatus.DRAFT,
-        notes: createDto.notes,
-        notesId: createDto.notesId,
-        createdBy: createDto.createdBy,
-        reconciliationItems: createDto.reconciliationItems
-          ? {
-              create: createDto.reconciliationItems.map((item) => ({
-                itemDate: item.itemDate,
-                itemType: item.itemType,
-                description: item.description,
-                descriptionId: item.descriptionId,
-                amount: item.amount,
-                isMatched: item.isMatched || false,
-                matchedTransactionId: item.matchedTransactionId,
-                status: item.status,
-                requiresAdjustment: item.requiresAdjustment || false,
-                checkNumber: item.checkNumber,
-                reference: item.reference,
-                notes: item.notes,
-                createdBy: createDto.createdBy,
-              })),
-            }
-          : undefined,
-      },
-      include: {
-        bankAccount: {
-          select: {
-            code: true,
-            name: true,
-            nameId: true,
-          },
-        },
-        reconciliationItems: true,
-      },
+    // Build the reconciliation data payload
+    const buildRecData = (recNumber: string) => ({
+      reconciliationNumber: recNumber,
+      bankAccountId: createDto.bankAccountId,
+      statementDate: createDto.statementDate,
+      periodStartDate: createDto.periodStartDate,
+      periodEndDate: createDto.periodEndDate,
+      bookBalanceStart: createDto.bookBalanceStart,
+      bookBalanceEnd: createDto.bookBalanceEnd,
+      statementBalance: createDto.statementBalance,
+      depositsInTransit: createDto.depositsInTransit || 0,
+      outstandingChecks: createDto.outstandingChecks || 0,
+      bankCharges: createDto.bankCharges || 0,
+      bankInterest: createDto.bankInterest || 0,
+      otherAdjustments: createDto.otherAdjustments || 0,
+      adjustedBookBalance: calculations.adjustedBookBalance,
+      adjustedBankBalance: calculations.adjustedBankBalance,
+      difference: calculations.difference,
+      isBalanced: calculations.isBalanced,
+      statementReference: createDto.statementReference,
+      statementFilePath: createDto.statementFilePath,
+      status: createDto.status || BankRecStatus.DRAFT,
+      notes: createDto.notes,
+      notesId: createDto.notesId,
+      createdBy: createDto.createdBy,
+      reconciliationItems: createDto.reconciliationItems
+        ? {
+            create: createDto.reconciliationItems.map((item) => ({
+              itemDate: item.itemDate,
+              itemType: item.itemType,
+              description: item.description,
+              descriptionId: item.descriptionId,
+              amount: item.amount,
+              isMatched: item.isMatched || false,
+              matchedTransactionId: item.matchedTransactionId,
+              status: item.status,
+              requiresAdjustment: item.requiresAdjustment || false,
+              checkNumber: item.checkNumber,
+              reference: item.reference,
+              notes: item.notes,
+              createdBy: createDto.createdBy,
+            })),
+          }
+        : undefined,
     });
+
+    // Create bank reconciliation with items — retry on P2002 (number collision)
+    let reconciliation: any;
+    let lastBrcError: any;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const attemptNumber =
+        attempt === 1
+          ? reconciliationNumber
+          : await this.generateReconciliationNumber();
+      try {
+        reconciliation = await this.prisma.bankReconciliation.create({
+          data: buildRecData(attemptNumber),
+          include: {
+            bankAccount: {
+              select: {
+                code: true,
+                name: true,
+                nameId: true,
+              },
+            },
+            reconciliationItems: true,
+          },
+        });
+        lastBrcError = undefined;
+        break; // success
+      } catch (err: any) {
+        lastBrcError = err;
+        if (err?.code === "P2002" && attempt < 3) {
+          this.logger.warn(
+            `BRC number collision on attempt ${attempt}, retrying...`,
+          );
+          continue;
+        }
+        if (err?.code === "P2002") {
+          throw new ConflictException(
+            `Failed to generate a unique reconciliation number after ${attempt} attempts`,
+          );
+        }
+        throw err;
+      }
+    }
+    if (!reconciliation) {
+      throw lastBrcError ?? new ConflictException("Failed to create bank reconciliation");
+    }
 
     return reconciliation;
   }
@@ -515,7 +551,7 @@ export class BankReconciliationService {
     // Add bank charges (if any)
     if (Number(reconciliation.bankCharges) > 0) {
       const bankChargesAccount = await this.prisma.chartOfAccounts.findFirst({
-        where: { code: { startsWith: "6-3" } }, // Bank charges expense account
+        where: { code: "6-2160" }, // Bank Charges (exact code to avoid hitting 6-3010 Depreciation)
       });
       if (bankChargesAccount) {
         lineItems.push({

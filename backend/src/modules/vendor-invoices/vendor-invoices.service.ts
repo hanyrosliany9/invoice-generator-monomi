@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { JournalService } from "../accounting/services/journal.service";
@@ -19,6 +21,8 @@ import { VIStatus, MatchingStatus } from "@prisma/client";
 
 @Injectable()
 export class VendorInvoicesService {
+  private readonly logger = new Logger(VendorInvoicesService.name);
+
   constructor(
     private prisma: PrismaService,
     private journalService: JournalService,
@@ -84,62 +88,89 @@ export class VendorInvoicesService {
     // Validate amounts
     this.validateAmounts(createVIDto);
 
-    // Generate internal number
+    // Generate internal number (with P2002 retry for concurrent races)
     const internalNumber = await this.generateInternalNumber();
 
-    // Create VI with items
-    const vi = await this.prisma.vendorInvoice.create({
-      data: {
-        vendorInvoiceNumber: createVIDto.vendorInvoiceNumber,
-        internalNumber,
-        invoiceDate: createVIDto.invoiceDate,
-        vendorId: createVIDto.vendorId,
-        poId: createVIDto.poId,
-        grId: createVIDto.grId,
-        subtotal: createVIDto.subtotal,
-        discountAmount: createVIDto.discountAmount || 0,
-        ppnAmount: createVIDto.ppnAmount,
-        pphAmount: createVIDto.pphAmount || 0,
-        totalAmount: createVIDto.totalAmount,
-        eFakturNSFP: createVIDto.eFakturNSFP,
-        eFakturQRCode: createVIDto.eFakturQRCode,
-        eFakturStatus: createVIDto.eFakturStatus,
-        paymentTerms: createVIDto.paymentTerms,
-        dueDate: createVIDto.dueDate,
-        approvalStatus: createVIDto.approvalStatus,
-        description: createVIDto.description,
-        descriptionId: createVIDto.descriptionId,
-        notes: createVIDto.notes,
-        status: VIStatus.DRAFT,
-        matchingStatus: MatchingStatus.UNMATCHED,
-        createdBy: userId,
-        items: {
-          create: createVIDto.items.map((item) => ({
-            poItemId: item.poItemId,
-            lineNumber: item.lineNumber,
-            description: item.description,
-            descriptionId: item.descriptionId,
-            quantity: item.quantity,
-            unit: item.unit,
-            unitPrice: item.unitPrice,
-            discountAmount: item.discountAmount || 0,
-            lineTotal: item.lineTotal,
-            ppnAmount: item.ppnAmount,
-            varianceReason: item.varianceReason,
-          })),
-        },
-      },
-      include: {
-        vendor: true,
-        po: true,
-        gr: true,
-        items: {
-          include: {
-            poItem: true,
+    // Create VI with items — retry on unique internalNumber collision (P2002)
+    let vi: any;
+    let lastVIError: any;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const attemptNumber =
+        attempt === 1 ? internalNumber : await this.generateInternalNumber();
+      try {
+        vi = await this.prisma.vendorInvoice.create({
+          data: {
+            vendorInvoiceNumber: createVIDto.vendorInvoiceNumber,
+            internalNumber: attemptNumber,
+            invoiceDate: createVIDto.invoiceDate,
+            vendorId: createVIDto.vendorId,
+            poId: createVIDto.poId,
+            grId: createVIDto.grId,
+            subtotal: createVIDto.subtotal,
+            discountAmount: createVIDto.discountAmount || 0,
+            ppnAmount: createVIDto.ppnAmount,
+            pphAmount: createVIDto.pphAmount || 0,
+            totalAmount: createVIDto.totalAmount,
+            eFakturNSFP: createVIDto.eFakturNSFP,
+            eFakturQRCode: createVIDto.eFakturQRCode,
+            eFakturStatus: createVIDto.eFakturStatus,
+            paymentTerms: createVIDto.paymentTerms,
+            dueDate: createVIDto.dueDate,
+            approvalStatus: createVIDto.approvalStatus,
+            description: createVIDto.description,
+            descriptionId: createVIDto.descriptionId,
+            notes: createVIDto.notes,
+            status: VIStatus.DRAFT,
+            matchingStatus: MatchingStatus.UNMATCHED,
+            createdBy: userId,
+            items: {
+              create: createVIDto.items.map((item) => ({
+                poItemId: item.poItemId,
+                lineNumber: item.lineNumber,
+                description: item.description,
+                descriptionId: item.descriptionId,
+                quantity: item.quantity,
+                unit: item.unit,
+                unitPrice: item.unitPrice,
+                discountAmount: item.discountAmount || 0,
+                lineTotal: item.lineTotal,
+                ppnAmount: item.ppnAmount,
+                varianceReason: item.varianceReason,
+              })),
+            },
           },
-        },
-      },
-    });
+          include: {
+            vendor: true,
+            po: true,
+            gr: true,
+            items: {
+              include: {
+                poItem: true,
+              },
+            },
+          },
+        });
+        lastVIError = undefined;
+        break; // success
+      } catch (err: any) {
+        lastVIError = err;
+        if (err?.code === "P2002" && attempt < 3) {
+          this.logger.warn(
+            `VI internal number collision on attempt ${attempt}, retrying...`,
+          );
+          continue;
+        }
+        if (err?.code === "P2002") {
+          throw new ConflictException(
+            `Failed to generate a unique VI number after ${attempt} attempts`,
+          );
+        }
+        throw err;
+      }
+    }
+    if (!vi) {
+      throw lastVIError ?? new ConflictException("Failed to create vendor invoice");
+    }
 
     return vi;
   }
@@ -545,23 +576,59 @@ export class VendorInvoicesService {
 
     // Start transaction
     return await this.prisma.$transaction(async (tx) => {
-      // Create Accounts Payable entry
-      const ap = await tx.accountsPayable.create({
-        data: {
-          apNumber: await this.generateAPNumber(),
-          sourceType: "VENDOR_INVOICE",
-          vendorId: vi.vendorId,
-          originalAmount: vi.totalAmount,
-          outstandingAmount: vi.totalAmount,
-          invoiceDate: vi.invoiceDate,
-          dueDate: vi.dueDate,
-          paymentStatus: "UNPAID",
-          createdBy: userId,
-        },
+      // Create Accounts Payable entry (with P2002 retry for apNumber races)
+      // Pass `tx` so the AP row participates in this transaction.
+      const ap = await this.createAccountsPayableWithRetry(tx, {
+        vendorId: vi.vendorId,
+        originalAmount: vi.totalAmount,
+        invoiceDate: vi.invoiceDate,
+        dueDate: vi.dueDate,
+        userId,
       });
 
-      // Create journal entry (optional - can be added later)
-      // await this.journalService.createVIJournalEntry(...)
+      // Determine the debit account for this vendor invoice.
+      // Prefer the expense-category account from the first line item (if one
+      // was linked to an expense). Falling back to 5-1010 Cost of Goods Sold
+      // keeps the entry valid when no category mapping is available.
+      let debitAccountCode = "5-1010"; // default: Cost of Goods Sold
+      if (vi.items.length > 0) {
+        // Try to resolve via the linked expense category when available.
+        const firstItem = vi.items[0];
+        if ((firstItem as any).categoryAccountCode) {
+          debitAccountCode = (firstItem as any).categoryAccountCode;
+        }
+      }
+
+      // Create the AP journal entry:
+      //   DR  Expense/Asset account       (debitAccountCode)  totalAmount
+      //   CR  Accounts Payable  2-1010                        totalAmount
+      const journalEntry = await this.journalService.createJournalEntry({
+        entryDate: vi.invoiceDate,
+        description: `Vendor Invoice Posted - ${vi.internalNumber}`,
+        descriptionId: `Faktur Vendor Diposting - ${vi.internalNumber}`,
+        transactionType: "VENDOR_INVOICE_APPROVED" as any,
+        transactionId: vi.id,
+        documentNumber: vi.internalNumber,
+        documentDate: vi.invoiceDate,
+        createdBy: userId,
+        autoPost: true,
+        lineItems: [
+          {
+            accountCode: debitAccountCode,
+            description: `Vendor Invoice ${vi.internalNumber} - ${vi.vendor?.name || vi.vendorId}`,
+            descriptionId: `Faktur Vendor ${vi.internalNumber} - ${vi.vendor?.name || vi.vendorId}`,
+            debit: Number(vi.totalAmount),
+            credit: 0,
+          },
+          {
+            accountCode: "2-1010", // Accounts Payable
+            description: `AP - ${vi.internalNumber}`,
+            descriptionId: `Hutang Usaha - ${vi.internalNumber}`,
+            debit: 0,
+            credit: Number(vi.totalAmount),
+          },
+        ],
+      });
 
       // Update VI status
       const posted = await tx.vendorInvoice.update({
@@ -569,6 +636,7 @@ export class VendorInvoicesService {
         data: {
           status: VIStatus.POSTED,
           accountsPayableId: ap.id,
+          journalEntryId: journalEntry.id,
           notes: postDto.notes || vi.notes,
           updatedBy: userId,
         },
@@ -699,6 +767,58 @@ export class VendorInvoicesService {
     }
 
     return `${prefix}${nextNumber.toString().padStart(5, "0")}`;
+  }
+
+  /**
+   * Create AccountsPayable record with retry on P2002 (unique apNumber collision).
+   * Accepts an explicit prisma client so it can participate in an outer
+   * $transaction context (pass `tx` from the transaction callback).
+   * Uses the same pattern as journal.service.ts generateEntryNumber retry.
+   */
+  private async createAccountsPayableWithRetry(
+    prismaClient: any,
+    data: {
+      vendorId: string;
+      originalAmount: any;
+      invoiceDate: Date;
+      dueDate: Date;
+      userId: string;
+    },
+  ): Promise<any> {
+    let lastError: any;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const apNumber = await this.generateAPNumber();
+      try {
+        return await prismaClient.accountsPayable.create({
+          data: {
+            apNumber,
+            sourceType: "VENDOR_INVOICE",
+            vendorId: data.vendorId,
+            originalAmount: data.originalAmount,
+            outstandingAmount: data.originalAmount,
+            invoiceDate: data.invoiceDate,
+            dueDate: data.dueDate,
+            paymentStatus: "UNPAID",
+            createdBy: data.userId,
+          },
+        });
+      } catch (err: any) {
+        lastError = err;
+        if (err?.code === "P2002" && attempt < 3) {
+          this.logger.warn(
+            `AP number collision on attempt ${attempt}, retrying...`,
+          );
+          continue;
+        }
+        if (err?.code === "P2002") {
+          throw new ConflictException(
+            `Failed to generate a unique AP number after ${attempt} attempts`,
+          );
+        }
+        throw err;
+      }
+    }
+    throw lastError ?? new ConflictException("Failed to create AP record");
   }
 
   /**

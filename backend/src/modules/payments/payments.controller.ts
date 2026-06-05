@@ -33,14 +33,13 @@ export class PaymentsController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createPaymentDto: CreatePaymentDto,
-  ): Promise<ApiResponse<PaymentResponseDto>> {
+  ): Promise<PaymentResponseDto> {
+    // FIX 4 (MED): Return the raw entity so the global ResponseInterceptor wraps
+    // it exactly once.  Previously the controller returned a manually-constructed
+    // {data,message,status} object which the interceptor then wrapped again,
+    // producing a double-nested response.
     try {
-      const payment = await this.paymentsService.create(createPaymentDto);
-      return {
-        data: payment,
-        message: "Payment created successfully",
-        status: "success",
-      };
+      return await this.paymentsService.create(createPaymentDto);
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new BadRequestException(
@@ -155,17 +154,13 @@ export class PaymentsController {
   @HttpCode(HttpStatus.OK)
   async confirmPayment(
     @Param("id") id: string,
-  ): Promise<ApiResponse<PaymentResponseDto>> {
+  ): Promise<PaymentResponseDto> {
+    // FIX 4 (MED): Return raw entity for single-wrap by ResponseInterceptor.
     try {
-      const payment = await this.paymentsService.update(id, {
+      return await this.paymentsService.update(id, {
         status: "CONFIRMED" as any,
         confirmedAt: new Date().toISOString(),
       });
-      return {
-        data: payment,
-        message: "Payment confirmed successfully",
-        status: "success",
-      };
     } catch (error) {
       throw new BadRequestException(
         getErrorMessage(error) || "Failed to confirm payment",

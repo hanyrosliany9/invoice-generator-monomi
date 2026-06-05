@@ -423,9 +423,9 @@ export class ECLService {
       throw new BadRequestException("Provision has already been written off");
     }
 
-    if (data.writeOffAmount > Number(provision.outstandingAmount)) {
+    if (data.writeOffAmount > Number(provision.eclAmount)) {
       throw new BadRequestException(
-        "Write-off amount cannot exceed outstanding amount",
+        "Write-off amount cannot exceed the ECL allowance (provision balance)",
       );
     }
 

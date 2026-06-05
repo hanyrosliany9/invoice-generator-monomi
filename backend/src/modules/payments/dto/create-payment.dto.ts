@@ -17,7 +17,7 @@ export class CreatePaymentDto {
 
   @Transform(({ value }) => parseFloat(value))
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
+  @Min(0.01)
   amount!: number;
 
   @IsDateString()

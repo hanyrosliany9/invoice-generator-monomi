@@ -10,6 +10,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { JournalService } from "../accounting/services/journal.service";
 import { DepreciationService } from "../accounting/services/depreciation.service";
+import { accountForSource } from "../accounting/cash-accounts.util";
 import { CreateAssetDto } from "./dto/create-asset.dto";
 import { UpdateAssetDto } from "./dto/update-asset.dto";
 import {
@@ -90,6 +91,21 @@ export class AssetsService {
 
         const assetAccount = assetAccountMap[asset.category] || "1-4010"; // Default to Equipment
 
+        // Resolve the credit account from paymentSource:
+        //   CASH   → 1-1010  (Kas)
+        //   BANK   → 1-1020  (Rekening Bank)
+        //   CREDIT → 2-1010  (Hutang Usaha / Accounts Payable)
+        // Default: CASH (consistent with expense module default).
+        const paymentSource = createAssetDto.paymentSource ?? "CASH";
+        const creditAccount =
+          paymentSource === "CREDIT"
+            ? "2-1010"
+            : accountForSource(paymentSource);
+        const creditDescription =
+          paymentSource === "CREDIT"
+            ? `Hutang pembelian ${asset.name}`
+            : `Pembayaran ${asset.name}`;
+
         // Create and auto-post journal entry for asset purchase
         const journalEntry = await this.journalService.createJournalEntry({
           entryDate: asset.purchaseDate,
@@ -110,9 +126,9 @@ export class AssetsService {
               credit: 0,
             },
             {
-              accountCode: "1-1010", // Credit: Cash (assume cash purchase)
+              accountCode: creditAccount, // Credit: Cash / Bank / AP
               description: `Payment for ${asset.name}`,
-              descriptionId: `Pembayaran ${asset.name}`,
+              descriptionId: creditDescription,
               debit: 0,
               credit: purchasePrice,
             },

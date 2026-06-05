@@ -478,10 +478,13 @@ export class InvoicesService {
       throw new NotFoundException("Invoice tidak ditemukan");
     }
 
-    // Compute payment summary from the payments array
+    // Compute payment summary from the payments array — CONFIRMED only
+    // (matches payments.service.ts updateInvoiceStatus filter so PENDING/FAILED
+    // payments do not inflate totalPaid / understate remainingAmount)
     const payments: any[] = invoice.payments || [];
     const totalPaid = payments.reduce(
-      (sum: number, p: any) => sum + Number(p.amount),
+      (sum: number, p: any) =>
+        p.status === 'CONFIRMED' ? sum + Number(p.amount) : sum,
       0,
     );
     const totalAmount = Number(invoice.totalAmount);
@@ -498,6 +501,24 @@ export class InvoicesService {
 
   async update(id: string, updateInvoiceDto: UpdateInvoiceDto, userId?: string): Promise<any> {
     const invoice = await this.findOne(id);
+
+    // FIX 3 (HIGH): Block amount edits on PAID invoices.
+    // Changing totalAmount (or amountPerProject) re-issues the SENT journal but
+    // never adjusts the payment journal → permanent GL mismatch.  Non-amount
+    // edits (notes, terms, etc.) are still allowed.
+    if (invoice.status === 'PAID') {
+      const wouldChangeAmount =
+        (updateInvoiceDto.totalAmount !== undefined &&
+          Number(updateInvoiceDto.totalAmount) !== Number(invoice.totalAmount)) ||
+        (updateInvoiceDto.amountPerProject !== undefined &&
+          Number(updateInvoiceDto.amountPerProject) !== Number(invoice.amountPerProject));
+
+      if (wouldChangeAmount) {
+        throw new BadRequestException(
+          'Cannot edit the amount of a paid invoice. Reverse the payment first.',
+        );
+      }
+    }
 
     // Recalculate materai requirement if total amount changed
     const data = { ...updateInvoiceDto };
@@ -781,35 +802,64 @@ export class InvoicesService {
       }
     }
 
-    // Create journal entry for payment (Cash/Bank debit, AR credit)
-    try {
-      const journalEntry = await this.journalService.createInvoiceJournalEntry(
-        invoice.id,
-        invoice.invoiceNumber,
-        invoice.clientId,
-        Number(invoice.totalAmount),
-        "PAID",
-        userId || "system",
-      );
+    // FIX 1 (CRITICAL): Compute how much has already been paid via CONFIRMED
+    // payments recorded through POST /payments, so we only post the remainder.
+    // Without this, markAsPaid double-credits AR / over-records cash when a
+    // partial payment already exists.
+    const existingConfirmedPayments = await this.prisma.payment.findMany({
+      where: { invoiceId: id, status: PaymentStatus.CONFIRMED },
+      select: { amount: true },
+    });
+    const alreadyPaid = existingConfirmedPayments.reduce(
+      (sum, p) => sum + Number(p.amount),
+      0,
+    );
+    const amountToPay = Number(invoice.totalAmount) - alreadyPaid;
 
-      // Post journal entry immediately
-      await this.journalService.postJournalEntry(
-        journalEntry.id,
-        userId || "system",
-      );
+    if (amountToPay > 0) {
+      // Create journal entry for payment (Cash/Bank debit, AR credit)
+      try {
+        const journalEntry = await this.journalService.createInvoiceJournalEntry(
+          invoice.id,
+          invoice.invoiceNumber,
+          invoice.clientId,
+          amountToPay,
+          "PAID",
+          userId || "system",
+        );
 
-      // Update invoice with payment journal entry ID
-      await this.prisma.invoice.update({
-        where: { id },
-        data: { paymentJournalId: journalEntry.id },
-      });
-    } catch (error) {
-      this.logger.error(
-        "Failed to create payment journal entry for invoice:",
-        error,
-      );
-      throw new BadRequestException(
-        "Gagal membuat jurnal entry untuk pembayaran.",
+        // Post journal entry immediately
+        await this.journalService.postJournalEntry(
+          journalEntry.id,
+          userId || "system",
+        );
+
+        // Update invoice with payment journal entry ID
+        await this.prisma.invoice.update({
+          where: { id },
+          data: { paymentJournalId: journalEntry.id },
+        });
+
+        this.logger.log(
+          `✅ markAsPaid: posted payment journal for ${invoice.invoiceNumber} ` +
+          `amount=${amountToPay} (totalAmount=${Number(invoice.totalAmount)}, alreadyPaid=${alreadyPaid})`,
+        );
+      } catch (error) {
+        this.logger.error(
+          "Failed to create payment journal entry for invoice:",
+          error,
+        );
+        throw new BadRequestException(
+          "Gagal membuat jurnal entry untuk pembayaran.",
+        );
+      }
+    } else {
+      // Invoice was already fully covered by confirmed payments — no additional
+      // journal or Payment record needed.  Just ensure the status is PAID
+      // (already set by the atomic claim above) and log for auditability.
+      this.logger.log(
+        `✅ markAsPaid: invoice ${invoice.invoiceNumber} already fully covered ` +
+        `by existing CONFIRMED payments (alreadyPaid=${alreadyPaid}, totalAmount=${Number(invoice.totalAmount)}) — skipping duplicate journal/payment`,
       );
     }
 
@@ -864,12 +914,14 @@ export class InvoicesService {
       },
     });
 
-    // Create payment record if payment data is provided
-    if (paymentData) {
+    // Create payment record if payment data is provided AND there is a remaining
+    // amount to record (FIX 1: don't create a duplicate Payment when the invoice
+    // was already fully covered by prior CONFIRMED payments).
+    if (paymentData && amountToPay > 0) {
       const payment = await this.prisma.payment.create({
         data: {
           invoiceId: id,
-          amount: invoice.totalAmount,
+          amount: amountToPay,
           paymentMethod:
             (paymentData.paymentMethod as PaymentMethod) ||
             PaymentMethod.BANK_TRANSFER,

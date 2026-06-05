@@ -421,6 +421,21 @@ export class RevenueRecognitionService {
       );
     }
 
+    // Idempotency guard: if the milestone is already fully recognized at or
+    // above the requested completion level, skip silently to prevent
+    // double-posting on concurrent/retry calls.
+    if (
+      data.completionPercentage >= 100 &&
+      (milestone.status === MilestoneStatus.COMPLETED ||
+        milestone.status === MilestoneStatus.ACCEPTED) &&
+      milestone.journalEntryId
+    ) {
+      return this.prisma.projectMilestone.findUnique({
+        where: { id: data.milestoneId },
+        include: { project: { include: { client: true } } },
+      }) as any;
+    }
+
     // Calculate revenue to recognize
     const totalEarnedRevenue = this.calculateMilestoneRevenue(
       Number(milestone.plannedRevenue),
@@ -431,9 +446,11 @@ export class RevenueRecognitionService {
     const revenueToRecognize = totalEarnedRevenue - previouslyRecognized;
 
     if (revenueToRecognize < 0.01) {
-      throw new BadRequestException(
-        "No revenue to recognize at this completion level",
-      );
+      // Nothing new to recognize — return current state without posting
+      return this.prisma.projectMilestone.findUnique({
+        where: { id: data.milestoneId },
+        include: { project: { include: { client: true } } },
+      }) as any;
     }
 
     // Create revenue recognition journal entry
@@ -944,6 +961,21 @@ export class RevenueRecognitionService {
       throw new NotFoundException(
         `Project milestone ${invoice.projectMilestoneId} not found`,
       );
+    }
+
+    // Short-circuit: if the milestone is already fully recognized, don't
+    // re-post — a payment retry should not 500 with "No revenue to recognize".
+    if (
+      (milestone.status === MilestoneStatus.COMPLETED ||
+        milestone.status === MilestoneStatus.ACCEPTED) &&
+      milestone.journalEntryId
+    ) {
+      return {
+        invoiceId,
+        milestoneId: milestone.id,
+        revenueRecognized: Number(milestone.recognizedRevenue),
+        message: `Revenue already fully recognized for milestone ${milestone.name}`,
+      };
     }
 
     // Recognize revenue for the milestone

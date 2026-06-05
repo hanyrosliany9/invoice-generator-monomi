@@ -48,7 +48,7 @@ export class VendorInvoicesController {
     @Body() createVendorInvoiceDto: CreateVendorInvoiceDto,
   ) {
     return this.vendorInvoicesService.create(
-      req.user.userId,
+      req.user.id,
       createVendorInvoiceDto,
     );
   }
@@ -97,7 +97,7 @@ export class VendorInvoicesController {
   ) {
     return this.vendorInvoicesService.update(
       id,
-      req.user.userId,
+      req.user.id,
       updateVendorInvoiceDto,
     );
   }
@@ -124,7 +124,7 @@ export class VendorInvoicesController {
     @Param("id") id: string,
     @Body() matchDto: MatchVendorInvoiceDto,
   ) {
-    return this.vendorInvoicesService.match(id, req.user.userId, matchDto);
+    return this.vendorInvoicesService.match(id, req.user.id, matchDto);
   }
 
   @Post(":id/approve")
@@ -140,7 +140,7 @@ export class VendorInvoicesController {
     @Param("id") id: string,
     @Body() approveDto: ApproveVendorInvoiceDto,
   ) {
-    return this.vendorInvoicesService.approve(id, req.user.userId, approveDto);
+    return this.vendorInvoicesService.approve(id, req.user.id, approveDto);
   }
 
   @Post(":id/reject")
@@ -153,7 +153,7 @@ export class VendorInvoicesController {
     @Param("id") id: string,
     @Body() rejectDto: RejectVendorInvoiceDto,
   ) {
-    return this.vendorInvoicesService.reject(id, req.user.userId, rejectDto);
+    return this.vendorInvoicesService.reject(id, req.user.id, rejectDto);
   }
 
   @Post(":id/post")
@@ -168,7 +168,7 @@ export class VendorInvoicesController {
     @Param("id") id: string,
     @Body() postDto: PostVendorInvoiceDto,
   ) {
-    return this.vendorInvoicesService.post(id, req.user.userId, postDto);
+    return this.vendorInvoicesService.post(id, req.user.id, postDto);
   }
 
   @Post(":id/cancel")
@@ -181,6 +181,6 @@ export class VendorInvoicesController {
     @Param("id") id: string,
     @Body() cancelDto: CancelVendorInvoiceDto,
   ) {
-    return this.vendorInvoicesService.cancel(id, req.user.userId, cancelDto);
+    return this.vendorInvoicesService.cancel(id, req.user.id, cancelDto);
   }
 }

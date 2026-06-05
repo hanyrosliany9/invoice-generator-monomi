@@ -55,6 +55,16 @@ import {
   TrialBalanceQueryDto,
 } from "./dto/financial-statement-query.dto";
 
+/** Normalize a date to end-of-day (23:59:59.999 local time) so that entries
+ *  timestamped at any point during the day are included in date-bounded
+ *  statement queries.  startDate is intentionally left at the start of day.
+ */
+function toEndOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
 @Controller("accounting")
 @RequireAdmin()
 export class AccountingController {
@@ -164,6 +174,7 @@ export class AccountingController {
   // ============ GENERAL LEDGER ============
   @Get("ledger")
   async getGeneralLedger(@Query() query: LedgerQueryDto) {
+    if (query.endDate) query.endDate = toEndOfDay(query.endDate);
     return this.ledgerService.getGeneralLedger(query);
   }
 
@@ -172,23 +183,25 @@ export class AccountingController {
     @Param("accountCode") accountCode: string,
     @Query() query: LedgerQueryDto,
   ) {
+    if (query.endDate) query.endDate = toEndOfDay(query.endDate);
     return this.ledgerService.getAccountLedger(accountCode, query);
   }
 
   @Get("ledger/trial-balance")
   async getTrialBalance(@Query() query: TrialBalanceQueryDto) {
+    query.endDate = toEndOfDay(query.endDate);
     return this.ledgerService.getTrialBalance(query);
   }
 
   @Get("ledger/ar-aging")
   async getAccountsReceivableAging(@Query("asOfDate") asOfDate: string) {
-    const date = asOfDate ? new Date(asOfDate) : new Date();
+    const date = asOfDate ? toEndOfDay(new Date(asOfDate)) : new Date();
     return this.ledgerService.getAccountsReceivableAging(date);
   }
 
   @Get("ledger/ap-aging")
   async getAccountsPayableAging(@Query("asOfDate") asOfDate: string) {
-    const date = asOfDate ? new Date(asOfDate) : new Date();
+    const date = asOfDate ? toEndOfDay(new Date(asOfDate)) : new Date();
     return this.ledgerService.getAccountsPayableAging(date);
   }
 
@@ -488,16 +501,19 @@ export class AccountingController {
   // ============ FINANCIAL STATEMENTS ============
   @Get("financial-statements/income-statement")
   async getIncomeStatement(@Query() query: FinancialStatementQueryDto) {
+    query.endDate = toEndOfDay(query.endDate);
     return this.financialStatementsService.getIncomeStatement(query);
   }
 
   @Get("financial-statements/balance-sheet")
   async getBalanceSheet(@Query() query: FinancialStatementQueryDto) {
+    query.endDate = toEndOfDay(query.endDate);
     return this.financialStatementsService.getBalanceSheet(query);
   }
 
   @Get("financial-statements/cash-flow")
   async getCashFlowStatement(@Query() query: FinancialStatementQueryDto) {
+    query.endDate = toEndOfDay(query.endDate);
     return this.financialStatementsService.getCashFlowStatement(query);
   }
 
@@ -505,11 +521,13 @@ export class AccountingController {
   async getAccountsReceivableReport(
     @Query() query: FinancialStatementQueryDto,
   ) {
+    query.endDate = toEndOfDay(query.endDate);
     return this.financialStatementsService.getAccountsReceivableReport(query);
   }
 
   @Get("financial-statements/accounts-payable")
   async getAccountsPayableReport(@Query() query: FinancialStatementQueryDto) {
+    query.endDate = toEndOfDay(query.endDate);
     return this.financialStatementsService.getAccountsPayableReport(query);
   }
 
@@ -626,9 +644,14 @@ export class AccountingController {
     @Query("endDate") endDate: string,
     @Query("assetId") assetId?: string,
   ) {
+    const now = new Date();
+    const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const defaultEnd = toEndOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    const parsedStart = startDate ? new Date(startDate) : defaultStart;
+    const parsedEnd = endDate ? toEndOfDay(new Date(endDate)) : defaultEnd;
     return this.depreciationService.getDepreciationSummary({
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      startDate: isNaN(parsedStart.getTime()) ? defaultStart : parsedStart,
+      endDate: isNaN(parsedEnd.getTime()) ? defaultEnd : parsedEnd,
       assetId,
     });
   }
@@ -730,9 +753,14 @@ export class AccountingController {
     @Query("endDate") endDate: string,
     @Query("includeWrittenOff") includeWrittenOff?: string,
   ) {
+    const now = new Date();
+    const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const defaultEnd = toEndOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    const parsedStart = startDate ? new Date(startDate) : defaultStart;
+    const parsedEnd = endDate ? toEndOfDay(new Date(endDate)) : defaultEnd;
     return this.eclService.getECLSummary({
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      startDate: isNaN(parsedStart.getTime()) ? defaultStart : parsedStart,
+      endDate: isNaN(parsedEnd.getTime()) ? defaultEnd : parsedEnd,
       includeWrittenOff: includeWrittenOff === "true",
     });
   }

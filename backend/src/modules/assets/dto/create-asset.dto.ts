@@ -6,6 +6,7 @@ import {
   IsDateString,
   IsArray,
   IsJSON,
+  IsIn,
 } from "class-validator";
 import { Type } from "class-transformer";
 
@@ -85,4 +86,17 @@ export class CreateAssetDto {
   @IsString()
   @IsOptional()
   createdById?: string;
+
+  /**
+   * Payment source for the asset purchase journal entry.
+   *
+   * CASH  → credits 1-1010 (Kas)
+   * BANK  → credits 1-1020 (Rekening Bank)
+   * CREDIT → credits 2-1010 (Accounts Payable / Hutang Usaha)
+   *
+   * Defaults to CASH (consistent with the expense module default).
+   */
+  @IsIn(["CASH", "BANK", "CREDIT"])
+  @IsOptional()
+  paymentSource?: "CASH" | "BANK" | "CREDIT";
 }

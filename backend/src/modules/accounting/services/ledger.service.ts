@@ -53,6 +53,10 @@ export class LedgerService {
       where.fiscalPeriodId = fiscalPeriodId;
     }
 
+    // Only include GL entries from posted journal entries (consistent with
+    // every other GL query in this service).
+    where.journalEntry = { isPosted: true };
+
     const entries = await this.prisma.generalLedger.findMany({
       where,
       orderBy: [
@@ -528,6 +532,7 @@ export class LedgerService {
         where: {
           accountId: arAccount.id,
           entryDate: { lte: asOfDate },
+          journalEntry: { isPosted: true },
         },
       });
 
