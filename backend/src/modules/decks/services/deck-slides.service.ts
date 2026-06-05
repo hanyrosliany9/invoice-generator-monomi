@@ -261,7 +261,7 @@ export class DeckSlidesService {
   ) {
     const deck = await this.prisma.deck.findUnique({
       where: { id: deckId },
-      include: { collaborators: { where: { userId } } },
+      include: { collaborators: { where: { userId, status: "ACCEPTED" } } },
     });
 
     if (!deck) throw new NotFoundException("Deck not found");

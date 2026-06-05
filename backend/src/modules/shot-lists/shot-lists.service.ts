@@ -110,6 +110,7 @@ export class ShotListsService {
               <th>#</th>
               <th>Size</th>
               <th>Type</th>
+              <th>Camera</th>
               <th>Movement</th>
               <th>Lens</th>
               <th>Description</th>
@@ -124,6 +125,7 @@ export class ShotListsService {
                 <td>${shot.shotNumber}</td>
                 <td>${shot.shotSize || "-"}</td>
                 <td>${shot.shotType || "-"}</td>
+                <td>${shot.camera || "-"}</td>
                 <td>${shot.cameraMovement || "-"}</td>
                 <td>${shot.lens || "-"}</td>
                 <td>${shot.description || "-"}</td>

@@ -41,6 +41,10 @@ import type { Shot } from '@/types/shotList';
 
 const shotRowSchema = z.object({
   id:             z.string().optional(),
+  // sceneId tracks which scene this shot belongs to so multi-scene lists
+  // are preserved on save. Undefined only for brand-new shots (fallback to
+  // scenes[0] or a freshly created scene).
+  sceneId:        z.string().optional(),
   shotNumber:     z.string().min(1, 'Required'),
   description:    z.string().optional(),
   shotType:       z.string().optional(), // e.g. CU / WS / MS
@@ -61,9 +65,11 @@ type FormValues = z.infer<typeof formSchema>;
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const flattenShots = (scenes: Array<{ shots?: Shot[] }> | undefined): Shot[] => {
+// Returns all shots across all scenes, each annotated with its owning sceneId
+// so the save loop can upsert each shot back into the correct scene.
+const flattenShots = (scenes: Array<{ id: string; shots?: Shot[] }> | undefined): (Shot & { sceneId: string })[] => {
   if (!scenes?.length) return [];
-  return scenes.flatMap((sc) => (sc.shots ?? []));
+  return scenes.flatMap((sc) => (sc.shots ?? []).map((s) => ({ ...s, sceneId: sc.id })));
 };
 
 /* ------------------------------------------------------------------ */
@@ -95,6 +101,7 @@ export default function ShotListEditorPageV2() {
         .sort((a, b) => a.order - b.order)
         .map((s) => ({
           id:             s.id,
+          sceneId:        s.sceneId,   // preserved so save loop targets correct scene
           shotNumber:     s.shotNumber,
           description:    s.description ?? '',
           shotType:       s.shotType ?? '',
@@ -129,17 +136,20 @@ export default function ShotListEditorPageV2() {
         description: values.description || undefined,
       });
 
-      // 2. resolve/ensure a target scene exists. v2 treats all shots as
-      //    living inside the first scene; create one if the list is empty.
-      let sceneId = shotList.scenes?.[0]?.id;
-      if (!sceneId) {
+      // 2. Ensure at least one scene exists. This is only the fallback for
+      //    genuinely new shots that carry no sceneId (e.g. shots added before
+      //    the list had any scenes, which shouldn't normally happen).
+      //    We do NOT blindly reassign all shots to scenes[0] — each shot
+      //    carries its original sceneId from the form row.
+      let fallbackSceneId = shotList.scenes?.[0]?.id;
+      if (!fallbackSceneId) {
         const created = await shotListsApi.createScene({
           shotListId:  id,
           name:        'Scene 1',
           sceneNumber: '1',
           order:       0,
         });
-        sceneId = created.id;
+        fallbackSceneId = created.id;
       }
 
       // 3. shot diff against the flattened original set
@@ -152,8 +162,11 @@ export default function ShotListEditorPageV2() {
 
       for (let i = 0; i < values.shots.length; i++) {
         const s = values.shots[i];
+        // Use the shot's own sceneId (set when the form was populated from the
+        // server). New shots with no sceneId fall back to the first scene.
+        const targetSceneId = s.sceneId ?? fallbackSceneId;
         const createPayload = {
-          sceneId,
+          sceneId:        targetSceneId,
           shotNumber:     s.shotNumber,
           description:    s.description || undefined,
           shotType:       s.shotType || undefined,
@@ -455,6 +468,7 @@ export default function ShotListEditorPageV2() {
                 onClick={() =>
                   append({
                     id:             undefined,
+                    sceneId:        undefined, // new shots fall back to fallbackSceneId on save
                     shotNumber:     String(fields.length + 1),
                     description:    '',
                     shotType:       '',

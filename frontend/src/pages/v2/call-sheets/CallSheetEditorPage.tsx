@@ -452,7 +452,21 @@ export default function CallSheetEditorPageV2() {
   /* ----- save EVERYTHING as one call sheet ----- */
   // The whole sheet is persisted in one action: header fields plus every
   // crew/cast/activity row (new rows are created, existing rows updated).
-  // This is what "save as one unit" means — no more silently-dropped rows.
+  //
+  // Race-condition fix: rows newly created by an individual per-row save
+  // only receive their server-assigned id after invalidateQueries → refetch
+  // → the useEffect([callSheet]) reset runs. If Save All fires before that
+  // settles, those rows still show id=undefined in form state and would be
+  // duplicated. We prevent this by:
+  //   (b) Writing each newly created row's id back into arraysForm
+  //       immediately after the CREATE call so any subsequent iteration (or
+  //       a rapid second Save All press) sees the id and PATCHes instead.
+  //   (c) After all saves, awaiting invalidateQueries, then resetting
+  //       arraysForm ourselves from the freshly-fetched callSheet data so
+  //       the reactive useEffect([callSheet]) becomes a no-op and cannot
+  //       clobber in-flight edits with stale server state.
+  //   (a) The Save All button (and individual row Save buttons) are disabled
+  //       while isSavingAll is true, preventing concurrent Save All runs.
   const [isSavingAll, setIsSavingAll] = useState(false);
   const handleSaveAll = async () => {
     if (!id) return;
@@ -462,7 +476,8 @@ export default function CallSheetEditorPageV2() {
 
       const { crew, cast, activities } = arraysForm.getValues();
 
-      for (const row of crew) {
+      for (let i = 0; i < crew.length; i++) {
+        const row = crew[i];
         if (!row.department || !row.position || !row.name) continue;
         const dto = {
           department: row.department,
@@ -472,11 +487,17 @@ export default function CallSheetEditorPageV2() {
           phone: row.phone || undefined,
           email: row.email || undefined,
         };
-        if (row.id) await callSheetsApi.updateCrew(row.id, dto as any);
-        else await callSheetsApi.addCrew(id, dto);
+        if (row.id) {
+          await callSheetsApi.updateCrew(row.id, dto as any);
+        } else {
+          // (b) write back the returned id so a second pass won't re-create
+          const created: any = await callSheetsApi.addCrew(id, dto);
+          if (created?.id) arraysForm.setValue(`crew.${i}.id`, created.id);
+        }
       }
 
-      for (const row of cast) {
+      for (let i = 0; i < cast.length; i++) {
+        const row = cast[i];
         if (!row.actorName) continue;
         if (row.id) {
           await callSheetsApi.updateCast(row.id, {
@@ -487,16 +508,19 @@ export default function CallSheetEditorPageV2() {
             status: row.status,
           } as any);
         } else {
-          await callSheetsApi.addCast(id, {
+          // (b) write back the returned id
+          const created: any = await callSheetsApi.addCast(id, {
             actorName: row.actorName,
             character: row.character || undefined,
             callTime: row.callTime || '8:00 AM',
             castNumber: row.castNumber || undefined,
           });
+          if (created?.id) arraysForm.setValue(`cast.${i}.id`, created.id);
         }
       }
 
-      for (const row of activities) {
+      for (let i = 0; i < activities.length; i++) {
+        const row = activities[i];
         if (!row.activityName) continue;
         const dto = {
           activityType: (row.activityType || 'GENERAL') as any,
@@ -506,11 +530,51 @@ export default function CallSheetEditorPageV2() {
           location: row.location || undefined,
           notes: row.notes || undefined,
         };
-        if (row.id) await callSheetsApi.updateActivity(row.id, dto as any);
-        else await callSheetsApi.addActivity(id, dto);
+        if (row.id) {
+          await callSheetsApi.updateActivity(row.id, dto as any);
+        } else {
+          // (b) write back the returned id
+          const created: any = await callSheetsApi.addActivity(id, dto);
+          if (created?.id) arraysForm.setValue(`activities.${i}.id`, created.id);
+        }
       }
 
+      // (c) Await refetch before resetting forms. Reset arraysForm from the
+      // fresh server data ourselves so the reactive useEffect([callSheet])
+      // becomes a no-op (same values, no dirty diff) and cannot clobber
+      // any still-in-progress edits the user started after clicking Save All.
       await queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      const fresh = queryClient.getQueryData<CallSheet>(['call-sheet', id]);
+      if (fresh) {
+        arraysForm.reset({
+          crew: (fresh.crewCalls ?? []).map((c) => ({
+            id: c.id,
+            department: c.department,
+            position: c.position,
+            name: c.name,
+            callTime: c.callTime,
+            phone: c.phone ?? '',
+            email: c.email ?? '',
+          })),
+          cast: (fresh.castCalls ?? []).map((c) => ({
+            id: c.id,
+            castNumber: c.castNumber ?? '',
+            actorName: c.actorName,
+            character: c.character ?? '',
+            callTime: c.callTime,
+            status: c.status,
+          })),
+          activities: (fresh.activities ?? []).map((a) => ({
+            id: a.id,
+            activityType: a.activityType ?? 'GENERAL',
+            activityName: a.activityName,
+            startTime: a.startTime,
+            endTime: a.endTime ?? '',
+            location: a.location ?? '',
+            notes: a.notes ?? '',
+          })),
+        });
+      }
       // Clear the dirty flag so the bar reflects the saved state.
       headerForm.reset(headerForm.getValues());
       toast.success(t('callSheetEditor.savedAll', 'Call sheet tersimpan.'));
@@ -1031,6 +1095,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <RowActions
                           isSaved={!!row?.id}
+                          disabled={isSavingAll}
                           onSave={() => {
                             if (!row.activityName) {
                               toast.error(t('callSheetEditor.activityNameRequired', 'Activity name is required.'));
@@ -1170,6 +1235,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <RowActions
                           isSaved={!!row?.id}
+                          disabled={isSavingAll}
                           onSave={() => {
                             if (!row.department || !row.position || !row.name) {
                               toast.error(t('callSheetEditor.crewRequiredFields', 'Department, position, and name are required.'));
@@ -1312,6 +1378,7 @@ export default function CallSheetEditorPageV2() {
                         />
                         <RowActions
                           isSaved={!!row?.id}
+                          disabled={isSavingAll}
                           onSave={() => {
                             if (!row.actorName) {
                               toast.error(t('callSheetEditor.talentNameRequired', 'Talent name is required.'));
@@ -1551,10 +1618,11 @@ const TimeInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
 );
 
 /* Row save/remove pair — unsaved rows show Save, saved rows show only
-   the trash icon (per-field updates fire onBlur). */
+   the trash icon (per-field updates fire onBlur).
+   disabled=true while a Save All is in progress (prevents races). */
 const RowActions = ({
-  isSaved, onSave, onRemove,
-}: { isSaved: boolean; onSave: () => void; onRemove: () => void }) => {
+  isSaved, onSave, onRemove, disabled,
+}: { isSaved: boolean; onSave: () => void; onRemove: () => void; disabled?: boolean }) => {
   const { t } = useTranslation();
   return (
     <div className="flex items-center justify-end gap-1">
@@ -1564,6 +1632,7 @@ const RowActions = ({
           variant="ghost"
           size="icon-sm"
           onClick={onSave}
+          disabled={disabled}
           className="text-success hover:text-success hover:bg-success/10"
           aria-label={t('callSheetEditor.saveRow', 'Save row')}
         >
@@ -1575,6 +1644,7 @@ const RowActions = ({
         variant="ghost"
         size="icon-sm"
         onClick={onRemove}
+        disabled={disabled}
         className="text-text-tertiary hover:text-danger"
         aria-label={t('callSheetEditor.removeRow', 'Remove row')}
       >

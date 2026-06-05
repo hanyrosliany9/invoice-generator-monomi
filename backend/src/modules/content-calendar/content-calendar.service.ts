@@ -73,6 +73,18 @@ export class ContentCalendarService {
       }
     }
 
+    // Fix 6: reject past scheduledAt when status is SCHEDULED
+    if (
+      createDto.status === ContentStatus.SCHEDULED ||
+      (!createDto.status && createDto.scheduledAt)
+    ) {
+      if (createDto.scheduledAt && new Date(createDto.scheduledAt) < new Date()) {
+        throw new BadRequestException(
+          "scheduledAt must be a future date when status is SCHEDULED",
+        );
+      }
+    }
+
     // Validate references if provided
     if (createDto.clientId) {
       const client = await this.prisma.client.findUnique({
@@ -299,6 +311,32 @@ export class ContentCalendarService {
     const existing = await this.findOne(id);
     this.checkPermission(existing, userId, userRole);
 
+    // Fix 4: validate status transitions when status is changing
+    if (updateDto.status !== undefined && updateDto.status !== existing.status) {
+      const TERMINAL_STATES: ContentStatus[] = [
+        ContentStatus.ARCHIVED,
+      ];
+      if (TERMINAL_STATES.includes(existing.status as ContentStatus)) {
+        throw new BadRequestException(
+          `Cannot change status from terminal state "${existing.status}"`,
+        );
+      }
+      // Setting PUBLISHED via PUT: enforce publishedAt
+      if (updateDto.status === ContentStatus.PUBLISHED) {
+        // publishedAt will be set below if not provided
+      }
+    }
+
+    // Fix 6: reject past scheduledAt when SCHEDULED
+    const effectiveStatus = updateDto.status ?? existing.status;
+    if (effectiveStatus === ContentStatus.SCHEDULED && updateDto.scheduledAt) {
+      if (new Date(updateDto.scheduledAt) < new Date()) {
+        throw new BadRequestException(
+          "scheduledAt must be a future date when status is SCHEDULED",
+        );
+      }
+    }
+
     // Validate media count against platform limits (if both are being updated)
     const platforms = updateDto.platforms || existing.platforms;
     const mediaCount = updateDto.media?.length || existing.media?.length || 0;
@@ -364,7 +402,12 @@ export class ContentCalendarService {
         ...(updateDto.scheduledAt && {
           scheduledAt: new Date(updateDto.scheduledAt),
         }),
-        ...(updateDto.status && { status: updateDto.status }),
+        ...(updateDto.status && {
+          status: updateDto.status,
+          // Fix 4: auto-set publishedAt when transitioning to PUBLISHED
+          ...(updateDto.status === ContentStatus.PUBLISHED &&
+            !existing.publishedAt && { publishedAt: new Date() }),
+        }),
         ...(updateDto.platforms && { platforms: updateDto.platforms }),
         ...(updateDto.clientId !== undefined && {
           clientId: updateDto.clientId,
@@ -467,8 +510,13 @@ export class ContentCalendarService {
     const content = await this.findOne(id);
     this.checkPermission(content, userId, userRole);
 
-    if (content.status === ContentStatus.PUBLISHED) {
-      throw new BadRequestException("Content is already published");
+    if (
+      content.status === ContentStatus.PUBLISHED ||
+      content.status === ContentStatus.ARCHIVED
+    ) {
+      throw new BadRequestException(
+        `Content cannot be published from its current state "${content.status}"`,
+      );
     }
 
     const updated = await this.prisma.contentCalendarItem.update({

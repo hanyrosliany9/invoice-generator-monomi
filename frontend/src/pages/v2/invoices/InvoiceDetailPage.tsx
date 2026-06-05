@@ -203,7 +203,7 @@ export default function InvoiceDetailPageV2() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      /* swallow — toast layer is wave 3 */
+      toast.error(t('invoiceDetail.pdfFailed', 'Gagal mengunduh PDF'));
     }
   };
 

@@ -51,8 +51,9 @@ export class MediaCommentsController {
   async updateComment(
     @Param("commentId") commentId: string,
     @Body() updateDto: UpdateFrameCommentDto,
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.commentsService.update(commentId, updateDto.content || "");
+    return this.commentsService.update(commentId, updateDto.content || "", req.user.id);
   }
 
   @Post(":commentId/resolve")
@@ -66,7 +67,10 @@ export class MediaCommentsController {
 
   @Delete(":commentId")
   @ApiOperation({ summary: "Delete a comment" })
-  async deleteComment(@Param("commentId") commentId: string) {
-    return this.commentsService.remove(commentId);
+  async deleteComment(
+    @Param("commentId") commentId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.commentsService.remove(commentId, req.user.id);
   }
 }

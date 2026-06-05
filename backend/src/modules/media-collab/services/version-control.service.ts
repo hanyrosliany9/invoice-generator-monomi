@@ -142,7 +142,8 @@ export class VersionControlService {
       },
     });
 
-    // Update asset to point to latest version
+    // Update asset to point to latest version and reset approval status so
+    // the new file requires re-review before it can be marked APPROVED again.
     await this.prisma.mediaAsset.update({
       where: { id: assetId },
       data: {
@@ -153,6 +154,7 @@ export class VersionControlService {
         duration: duration ? duration.toString() : null,
         width,
         height,
+        status: "IN_REVIEW",
       },
     });
 
@@ -299,8 +301,14 @@ export class VersionControlService {
     // Delete from R2
     await this.mediaService.deleteFile(version.key);
     if (version.thumbnailUrl) {
-      const thumbnailKey = version.key + "_thumb.jpg";
-      await this.mediaService.deleteFile(thumbnailKey);
+      // Extract the storage key from the proxy URL (same pattern as MediaAssetsService.remove)
+      const thumbnailKey = version.thumbnailUrl.replace(
+        /^https?:\/\/[^\/]+\/api\/v1\/media\/proxy\//,
+        "",
+      );
+      if (thumbnailKey) {
+        await this.mediaService.deleteFile(thumbnailKey);
+      }
     }
 
     // Delete version record

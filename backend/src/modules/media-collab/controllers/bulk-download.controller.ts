@@ -73,7 +73,7 @@ export class BulkDownloadController {
     @Body() dto: CreateBulkDownloadJobDto,
     @Request() req: any,
   ): Promise<BulkDownloadJobCreatedDto> {
-    const userId = req.user.userId || req.user.sub || req.user.id;
+    const userId = req.user.id;
     return this.bulkDownloadService.createJob(dto, userId);
   }
 
@@ -106,7 +106,7 @@ export class BulkDownloadController {
     @Param("jobId") jobId: string,
     @Request() req: any,
   ): Promise<BulkDownloadJobStatusDto> {
-    const userId = req.user.userId || req.user.sub || req.user.id;
+    const userId = req.user.id;
     return this.bulkDownloadService.getJobStatus(jobId, userId);
   }
 
@@ -149,7 +149,7 @@ export class BulkDownloadController {
     @Param("jobId") jobId: string,
     @Request() req: any,
   ): Promise<{ success: boolean; message: string }> {
-    const userId = req.user.userId || req.user.sub || req.user.id;
+    const userId = req.user.id;
     return this.bulkDownloadService.cancelJob(jobId, userId);
   }
 }

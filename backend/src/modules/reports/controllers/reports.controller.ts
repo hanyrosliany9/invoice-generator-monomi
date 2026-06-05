@@ -104,6 +104,9 @@ export class ReportsController {
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: AddSectionDto,
   ) {
+    if (!file) {
+      throw new BadRequestException("CSV/Excel file is required");
+    }
     return this.reportsService.addSection(reportId, file, dto);
   }
 
@@ -113,7 +116,7 @@ export class ReportsController {
     @Param("id") reportId: string,
     @Param("sid") sectionId: string,
   ) {
-    return this.reportsService.removeSection(sectionId);
+    return this.reportsService.removeSection(reportId, sectionId);
   }
 
   @Post(":id/sections/reorder")
@@ -133,7 +136,7 @@ export class ReportsController {
     @Param("sid") sectionId: string,
     @Body() dto: UpdateVisualizationsDto,
   ) {
-    return this.reportsService.updateVisualizations(sectionId, dto);
+    return this.reportsService.updateVisualizations(reportId, sectionId, dto);
   }
 
   // Layout (NEW - for visual report builder)
@@ -144,7 +147,7 @@ export class ReportsController {
     @Param("sid") sectionId: string,
     @Body("layout") layout: any,
   ) {
-    return this.reportsService.updateLayout(sectionId, layout);
+    return this.reportsService.updateLayout(reportId, sectionId, layout);
   }
 
   // PDF Generation (Template-Based Only - Legacy Removed)

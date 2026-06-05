@@ -30,6 +30,25 @@ const ACTIVITY_TYPE_COLORS: Record<string, string> = {
 };
 
 /**
+ * Parses a 12-hour time string like "7:00 AM" or "2:30 PM" into minutes since midnight.
+ * Returns Infinity for falsy/unparseable values so they sort to the end.
+ */
+function parseTimeToMinutes(time: string | null | undefined): number {
+  if (!time) return Infinity;
+  const match = time.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return Infinity;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const period = match[3].toUpperCase();
+  if (period === "AM") {
+    if (hours === 12) hours = 0; // 12:xx AM → 0:xx
+  } else {
+    if (hours !== 12) hours += 12; // 1:xx PM → 13:xx, but 12:xx PM stays 12:xx
+  }
+  return hours * 60 + minutes;
+}
+
+/**
  * Generates page-break property only for print mode
  * In continuous/digital view mode, returns empty string to allow infinite scroll
  */
@@ -651,11 +670,11 @@ export function generateCallSheetHTML(
         <tbody>
           ${cs.activities
             .sort((a: any, b: any) => {
-              // Sort by startTime, then by order
-              if (a.startTime && b.startTime) {
-                const timeCompare = a.startTime.localeCompare(b.startTime);
-                if (timeCompare !== 0) return timeCompare;
-              }
+              // Sort by startTime (parsed as AM/PM minutes), then by order
+              const timeDiff =
+                parseTimeToMinutes(a.startTime) -
+                parseTimeToMinutes(b.startTime);
+              if (timeDiff !== 0) return timeDiff;
               return (a.order || 0) - (b.order || 0);
             })
             .map(

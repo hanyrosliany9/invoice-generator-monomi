@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { CreateCollectionDto } from "../dto/create-collection.dto";
@@ -210,6 +211,32 @@ export class CollectionsService {
 
     if (!collection) {
       throw new NotFoundException("Collection not found");
+    }
+
+    // Verify all assets belong to the same project as the collection
+    if (assetIds.length > 0) {
+      const assets = await this.prisma.mediaAsset.findMany({
+        where: { id: { in: assetIds } },
+        select: { id: true, projectId: true },
+      });
+
+      const foreignAssets = assets.filter(
+        (a) => a.projectId !== collection.projectId,
+      );
+      if (foreignAssets.length > 0) {
+        throw new BadRequestException(
+          `Assets [${foreignAssets.map((a) => a.id).join(", ")}] do not belong to this collection's project`,
+        );
+      }
+
+      // Also catch any IDs that weren't found at all
+      if (assets.length !== assetIds.length) {
+        const foundIds = new Set(assets.map((a) => a.id));
+        const missing = assetIds.filter((id) => !foundIds.has(id));
+        throw new NotFoundException(
+          `Assets not found: ${missing.join(", ")}`,
+        );
+      }
     }
 
     // Create collection items

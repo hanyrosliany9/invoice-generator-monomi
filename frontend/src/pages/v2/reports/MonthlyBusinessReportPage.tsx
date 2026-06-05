@@ -27,6 +27,7 @@ import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
+import { EmptyState } from '@/components/monomi/EmptyState';
 import { StatCard } from '@/components/monomi/StatCard';
 import { UserChip } from '@/components/monomi/UserChip';
 import { MoneyDisplay } from '@/components/monomi/MoneyDisplay';
@@ -100,6 +101,8 @@ export default function MonthlyBusinessReportPageV2() {
 
   const isLoading =
     summaryQ.isLoading || revenueQ.isLoading || clientsQ.isLoading || projectsQ.isLoading;
+  const isError =
+    summaryQ.isError || revenueQ.isError || clientsQ.isError || projectsQ.isError;
 
   const s = summaryQ.data;
   const outstanding = toNumber(s?.invoices.totalValue) - toNumber(s?.invoices.paidValue);
@@ -165,6 +168,29 @@ export default function MonthlyBusinessReportPageV2() {
             </div>
             <Skeleton className="h-72 w-full rounded-lg" />
           </div>
+        ) : isError ? (
+          <GlassPanel surface="glass" padding="lg">
+            <EmptyState
+              icon={<AlertTriangle className="h-12 w-12 text-danger" />}
+              title={t('monthlyReport.error.title', 'Failed to load report data')}
+              description={t('monthlyReport.error.description', 'One or more data sources could not be fetched. Please try again.')}
+              action={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    summaryQ.refetch();
+                    revenueQ.refetch();
+                    clientsQ.refetch();
+                    projectsQ.refetch();
+                    paymentsQ.refetch();
+                  }}
+                >
+                  {t('common.retry', 'Coba Lagi')}
+                </Button>
+              }
+            />
+          </GlassPanel>
         ) : (
           <>
             {/* Headline KPIs */}

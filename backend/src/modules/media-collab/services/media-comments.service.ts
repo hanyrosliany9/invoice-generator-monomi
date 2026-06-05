@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 
 /**
@@ -87,6 +87,7 @@ export class MediaCommentsService {
   async findByAsset(assetId: string) {
     return this.prisma.frameComment.findMany({
       where: {
+        parentId: null,
         frame: {
           assetId,
         },
@@ -112,7 +113,61 @@ export class MediaCommentsService {
     });
   }
 
-  async update(commentId: string, text: string) {
+  /**
+   * Load a comment and verify that `userId` is allowed to mutate it.
+   * Allowed when: caller is the comment author, OR caller is OWNER/EDITOR
+   * on the project that owns the frame/asset.
+   */
+  private async assertMutationAllowed(
+    commentId: string,
+    userId: string,
+  ): Promise<void> {
+    const comment = await this.prisma.frameComment.findUnique({
+      where: { id: commentId },
+      select: {
+        authorId: true,
+        frame: {
+          select: {
+            asset: {
+              select: {
+                project: {
+                  select: {
+                    collaborators: {
+                      select: { userId: true, role: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!comment) {
+      throw new NotFoundException("Comment not found");
+    }
+
+    // Comment author can always edit/delete their own comment
+    if (comment.authorId === userId) {
+      return;
+    }
+
+    // OWNER or EDITOR on the project can also mutate any comment
+    const collab = comment.frame.asset.project.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (collab && (collab.role === "OWNER" || collab.role === "EDITOR")) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      "You can only edit or delete your own comments, or you must be an OWNER/EDITOR of the project",
+    );
+  }
+
+  async update(commentId: string, text: string, userId: string) {
+    await this.assertMutationAllowed(commentId, userId);
     return this.prisma.frameComment.update({
       where: { id: commentId },
       data: { text },
@@ -130,7 +185,8 @@ export class MediaCommentsService {
     });
   }
 
-  async remove(commentId: string) {
+  async remove(commentId: string, userId: string) {
+    await this.assertMutationAllowed(commentId, userId);
     return this.prisma.frameComment.delete({
       where: { id: commentId },
     });

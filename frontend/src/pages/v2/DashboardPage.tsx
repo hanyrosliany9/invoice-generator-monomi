@@ -49,29 +49,33 @@ const getStatusBadgeVariant = (status: string) => {
   }
 };
 
-// Helper to get status display text
-const getStatusText = (status: string, type: 'quotation' | 'invoice') => {
-  const quotationMap: Record<string, string> = {
-    DRAFT: 'Draft',
-    SENT: 'Terkirim',
-    APPROVED: 'Disetujui',
-    DECLINED: 'Ditolak',
+// Helper to get status display text — locale-aware via i18next
+const useStatusText = () => {
+  const { t } = useTranslation();
+  return (status: string, type: 'quotation' | 'invoice'): string => {
+    if (type === 'quotation') {
+      const map: Record<string, string> = {
+        DRAFT:    t('quotations.status.draft',    'Draft'),
+        SENT:     t('quotations.status.sent',     'Terkirim'),
+        APPROVED: t('quotations.status.approved', 'Disetujui'),
+        DECLINED: t('quotations.status.declined', 'Ditolak'),
+      };
+      return map[status?.toUpperCase()] ?? status;
+    }
+    const map: Record<string, string> = {
+      DRAFT:   t('invoices.status.draft',   'Draft'),
+      SENT:    t('invoices.status.sent',    'Terkirim'),
+      PAID:    t('invoices.status.paid',    'Lunas'),
+      OVERDUE: t('invoices.status.overdue', 'Jatuh Tempo'),
+      PENDING: t('invoices.status.pending', 'Tertunda'),
+    };
+    return map[status?.toUpperCase()] ?? status;
   };
-
-  const invoiceMap: Record<string, string> = {
-    DRAFT: 'Draft',
-    SENT: 'Terkirim',
-    PAID: 'Lunas',
-    OVERDUE: 'Jatuh Tempo',
-    PENDING: 'Tertunda',
-  };
-
-  const map = type === 'quotation' ? quotationMap : invoiceMap;
-  return map[status?.toUpperCase() as keyof typeof map] || status;
 };
 
 export default function DashboardPageV2() {
   const { t } = useTranslation();
+  const getStatusText = useStatusText();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const { data: dashboardData, isLoading, error, refetch } = useDashboardData();

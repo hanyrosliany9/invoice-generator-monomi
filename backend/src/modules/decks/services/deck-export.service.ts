@@ -211,15 +211,23 @@ export class DeckExportService {
   }
 
   private generateSlideHtml(slide: any, width: number, height: number): string {
-    // Parse the canvas JSON data
-    let canvasData = {};
-    try {
-      canvasData = JSON.parse(slide.data || "{}");
-    } catch (e) {
-      this.logger.error("Failed to parse canvas data:", e);
-    }
+    // DeckSlide has no `data` field — read the real Prisma columns:
+    // title, subtitle, backgroundColor, backgroundImage, content (Json, already a JS object)
+    const bgColor = slide.backgroundColor || "#ffffff";
+    const bgImage = slide.backgroundImage || null;
+    const title = slide.title || "";
+    const subtitle = slide.subtitle || "";
+    // `content` is returned by Prisma as a JS object (not a string)
+    const content: Record<string, any> =
+      slide.content && typeof slide.content === "object" ? slide.content : {};
 
-    // Generate HTML that renders the fabric.js canvas data
+    const bgStyle = bgImage
+      ? `background: url('${bgImage}') center center / cover no-repeat; background-color: ${bgColor};`
+      : `background-color: ${bgColor};`;
+
+    // Serialize content JSON for the fabric.js canvas (objects array path)
+    const canvasData = content;
+
     return `
       <!DOCTYPE html>
       <html>
@@ -232,20 +240,44 @@ export class DeckExportService {
             height: ${height}px;
             overflow: hidden;
           }
-          #canvas-container {
+          #slide-wrapper {
             width: ${width}px;
             height: ${height}px;
-            background: ${(canvasData as any).background || "#ffffff"};
+            position: relative;
+            ${bgStyle}
           }
-          canvas {
-            display: block;
+          canvas { display: block; position: absolute; top: 0; left: 0; }
+          .slide-title {
+            position: absolute;
+            bottom: 60px;
+            left: 60px;
+            right: 60px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: ${Math.round(width * 0.03)}px;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+            z-index: 10;
+          }
+          .slide-subtitle {
+            position: absolute;
+            bottom: 20px;
+            left: 60px;
+            right: 60px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: ${Math.round(width * 0.018)}px;
+            color: rgba(255,255,255,0.85);
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+            z-index: 10;
           }
         </style>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
       </head>
       <body>
-        <div id="canvas-container">
+        <div id="slide-wrapper">
           <canvas id="slide-canvas" width="${width}" height="${height}"></canvas>
+          ${title ? `<div class="slide-title">${title.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>` : ""}
+          ${subtitle ? `<div class="slide-subtitle">${subtitle.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>` : ""}
         </div>
         <script>
           const canvas = new fabric.StaticCanvas('slide-canvas', {

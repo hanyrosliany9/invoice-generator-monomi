@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
   ConflictException,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -112,6 +113,14 @@ export class SocialMediaReportService {
     file: Express.Multer.File,
     dto: AddSectionDto,
   ) {
+    // 0. Guard: file is required
+    if (!file) {
+      throw new BadRequestException("CSV/Excel file is required");
+    }
+
+    // 0b. Guard: report must exist (throws NotFoundException for bad reportId)
+    await this.findOne(reportId);
+
     // 1. Parse CSV
     const parsedData = await this.csvParser.parseFile(
       file.buffer,
@@ -156,7 +165,19 @@ export class SocialMediaReportService {
   /**
    * Update visualizations for a section
    */
-  async updateVisualizations(sectionId: string, dto: UpdateVisualizationsDto) {
+  async updateVisualizations(
+    reportId: string,
+    sectionId: string,
+    dto: UpdateVisualizationsDto,
+  ) {
+    const section = await this.prisma.reportSection.findUnique({
+      where: { id: sectionId },
+    });
+    if (!section || section.reportId !== reportId) {
+      throw new NotFoundException(
+        `Section ${sectionId} not found in report ${reportId}`,
+      );
+    }
     return this.prisma.reportSection.update({
       where: { id: sectionId },
       data: {
@@ -168,7 +189,15 @@ export class SocialMediaReportService {
   /**
    * Update layout for a section (for visual report builder)
    */
-  async updateLayout(sectionId: string, layout: any) {
+  async updateLayout(reportId: string, sectionId: string, layout: any) {
+    const section = await this.prisma.reportSection.findUnique({
+      where: { id: sectionId },
+    });
+    if (!section || section.reportId !== reportId) {
+      throw new NotFoundException(
+        `Section ${sectionId} not found in report ${reportId}`,
+      );
+    }
     return this.prisma.reportSection.update({
       where: { id: sectionId },
       data: {
@@ -181,7 +210,15 @@ export class SocialMediaReportService {
   /**
    * Remove a section
    */
-  async removeSection(sectionId: string) {
+  async removeSection(reportId: string, sectionId: string) {
+    const section = await this.prisma.reportSection.findUnique({
+      where: { id: sectionId },
+    });
+    if (!section || section.reportId !== reportId) {
+      throw new NotFoundException(
+        `Section ${sectionId} not found in report ${reportId}`,
+      );
+    }
     return this.prisma.reportSection.delete({
       where: { id: sectionId },
     });
@@ -191,15 +228,26 @@ export class SocialMediaReportService {
    * Reorder sections
    */
   async reorderSections(reportId: string, sectionIds: string[]) {
-    // Update order for each section
-    const updates = sectionIds.map((id, index) =>
-      this.prisma.reportSection.update({
-        where: { id },
-        data: { order: index + 1 },
-      }),
-    );
+    // Verify all sectionIds belong to this report (Fix 2: IDOR)
+    const sections = await this.prisma.reportSection.findMany({
+      where: { id: { in: sectionIds }, reportId },
+      select: { id: true },
+    });
+    if (sections.length !== sectionIds.length) {
+      throw new BadRequestException(
+        "One or more section IDs do not belong to this report",
+      );
+    }
 
-    await Promise.all(updates);
+    // Fix 3: wrap per-section order updates in a transaction
+    await this.prisma.$transaction(
+      sectionIds.map((id, index) =>
+        this.prisma.reportSection.update({
+          where: { id },
+          data: { order: index + 1 },
+        }),
+      ),
+    );
 
     return this.findOne(reportId);
   }

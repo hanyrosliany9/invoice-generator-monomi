@@ -510,11 +510,45 @@ export class MediaAssetsService {
   }
 
   /**
-   * Update asset status
+   * Update asset review status.
+   *
+   * Role rules:
+   *  - Any collaborator (VIEWER+) can move to DRAFT / IN_REVIEW / NEEDS_CHANGES.
+   *  - Only OWNER or EDITOR can set APPROVED or ARCHIVED (privileged transitions).
+   *  - The value must be a valid MediaReviewStatus enum member.
    */
   async updateStatus(assetId: string, userId: string, status: string) {
-    // Verify access and permissions
+    // 1. Validate enum value
+    const validStatuses = ["DRAFT", "IN_REVIEW", "NEEDS_CHANGES", "APPROVED", "ARCHIVED"];
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException(
+        `Invalid status "${status}". Must be one of: ${validStatuses.join(", ")}`,
+      );
+    }
+
+    // 2. Verify access and load collaborator info
     const asset = await this.findOne(assetId, userId);
+
+    const collaborator = asset.project.collaborators.find(
+      (c) => c.userId === userId,
+    );
+
+    // findOne already checked membership, but guard just in case
+    if (!collaborator) {
+      throw new ForbiddenException("You are not a collaborator on this project");
+    }
+
+    // 3. Privileged statuses require OWNER or EDITOR
+    const privilegedStatuses = ["APPROVED", "ARCHIVED"];
+    if (
+      privilegedStatuses.includes(status) &&
+      collaborator.role !== "OWNER" &&
+      collaborator.role !== "EDITOR"
+    ) {
+      throw new ForbiddenException(
+        `Only OWNER or EDITOR can set status to ${status}`,
+      );
+    }
 
     const updatedAsset = await this.prisma.mediaAsset.update({
       where: { id: assetId },

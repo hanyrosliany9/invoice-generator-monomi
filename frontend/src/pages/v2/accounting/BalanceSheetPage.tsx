@@ -65,7 +65,9 @@ const AccountRow = ({ account, indent = 1 }: AccountRowProps) => {
             {account.accountCode}
           </span>
           <span className="text-sm">
-            {account.accountNameId}
+            {getI18n().language === 'en'
+              ? (account.accountName || account.accountNameId)
+              : (account.accountNameId || account.accountName)}
             {account.isContraAccount && (
               <span className="ml-2 text-[10px] uppercase tracking-wider text-text-tertiary">
                 ({getI18n().t('accounting.balanceSheet.contra', 'Contra')})
