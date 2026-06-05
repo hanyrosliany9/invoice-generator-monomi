@@ -283,10 +283,14 @@ export class InvoicesController {
     status: 404,
     description: "Invoice tidak ditemukan",
   })
-  async updateStatus(@Param("id") id: string, @Body("status") status: string) {
+  async updateStatus(
+    @Param("id") id: string,
+    @Body("status") status: string,
+    @Request() req: any,
+  ) {
     // Convert lowercase status to uppercase enum
     const normalizedStatus = status.toUpperCase() as InvoiceStatus;
-    return this.invoicesService.updateStatus(id, normalizedStatus);
+    return this.invoicesService.updateStatus(id, normalizedStatus, req.user?.id);
   }
 
   @Patch(":id/mark-paid")

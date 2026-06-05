@@ -108,6 +108,7 @@ const V2SalariesPage = lazy(() => import('./pages/v2/salaries/SalariesPage'))
 const V2StaffFormPage = lazy(() => import('./pages/v2/salaries/StaffFormPage'))
 const V2SalaryPaymentFormPage = lazy(() => import('./pages/v2/salaries/SalaryPaymentFormPage'))
 const V2PublicDeckViewPage = lazy(() => import('./pages/v2/guest/PublicDeckViewPage'))
+const V2DeckAcceptInvitePage = lazy(() => import('./pages/v2/guest/DeckAcceptInvitePage'))
 
 import './styles/relationships.css'
 
@@ -219,6 +220,7 @@ function App() {
           <Route path='/guest/project/:projectId' element={<Suspense fallback={<PageLoader />}><V2GuestProjectViewPage /></Suspense>} />
           <Route path='/shared/:token' element={<Suspense fallback={<PageLoader />}><V2PublicProjectViewPage /></Suspense>} />
           <Route path='/deck/shared/:token' element={<Suspense fallback={<PageLoader />}><V2PublicDeckViewPage /></Suspense>} />
+          <Route path='/deck/invite/:token' element={<Suspense fallback={<PageLoader />}><V2DeckAcceptInvitePage /></Suspense>} />
 
           {/* Login — anonymous only */}
           <Route

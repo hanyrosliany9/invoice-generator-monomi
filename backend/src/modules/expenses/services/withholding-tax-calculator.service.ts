@@ -202,8 +202,8 @@ export class WithholdingTaxCalculatorService {
         ? withholdingAmount
         : withholdingAmount.toNumber();
 
-    // Allow small rounding differences (< 1 cent)
-    return Math.abs(expectedWithholding - actualWithholding) < 0.01;
+    // FIX 3: IDR is whole-rupiah; allow <0.5 for float noise (rounds to same rupiah)
+    return Math.abs(expectedWithholding - actualWithholding) < 0.5;
   }
 
   /**
@@ -304,12 +304,13 @@ export class WithholdingTaxCalculatorService {
   }
 
   /**
-   * Round number to 2 decimal places (IDR cents)
+   * Round to whole rupiah (IDR has no sub-unit in business transactions).
+   * FIX 3: was Math.round(v*100)/100 which produced fractional rupiah into GL.
    *
    * @param value - Number to round
-   * @returns Rounded number
+   * @returns Rounded whole-rupiah number
    */
   private roundToTwoDecimals(value: number): number {
-    return Math.round(value * 100) / 100;
+    return Math.round(value);
   }
 }

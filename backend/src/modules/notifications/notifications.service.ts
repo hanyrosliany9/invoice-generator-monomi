@@ -10,6 +10,9 @@ import {
   getErrorMessage,
   isError,
 } from "../../common/utils/error-handling.util";
+import { escapeHtml } from "../pdf/templates/escape-html.util";
+
+const WIB_LOCALE_OPTS: Intl.DateTimeFormatOptions = { timeZone: "Asia/Jakarta" };
 
 @Injectable()
 export class NotificationsService {
@@ -55,7 +58,34 @@ export class NotificationsService {
     }
   }
 
+  // ── FIX 3: check per-user emailNotifications preference ────────────────────
+  private async isEmailNotificationsEnabled(recipientEmail: string): Promise<boolean> {
+    try {
+      const user = await this.prisma.user.findFirst({
+        where: { email: recipientEmail },
+        select: { id: true },
+      });
+      if (!user) return true; // guest/external — no preference row, allow
+      const prefs = await this.prisma.userPreferences.findUnique({
+        where: { userId: user.id },
+        select: { emailNotifications: true },
+      });
+      return prefs?.emailNotifications ?? true;
+    } catch {
+      return true; // fail open
+    }
+  }
+
   async sendNotification(dto: SendNotificationDto): Promise<void> {
+    // FIX 3: per-user preference guard
+    const emailEnabled = await this.isEmailNotificationsEnabled(dto.to);
+    if (!emailEnabled) {
+      this.logger.log(
+        `sendNotification: skipping ${dto.type} to ${dto.to} — emailNotifications disabled`,
+      );
+      return;
+    }
+
     try {
       const fromEmail =
         this.configService.get("FROM_EMAIL") || "noreply@monomi.finance";
@@ -64,7 +94,7 @@ export class NotificationsService {
         from: fromEmail,
         to: dto.to,
         subject: dto.subject,
-        html: this.generateEmailContent(dto),
+        html: await this.generateEmailContent(dto),
       };
 
       const isDevelopment =
@@ -97,184 +127,189 @@ export class NotificationsService {
     }
   }
 
-  private generateEmailContent(dto: SendNotificationDto): string {
+  private async generateEmailContent(dto: SendNotificationDto): Promise<string> {
     const { type, data } = dto;
+    const companyName = await this.getCompanyName();
 
     switch (type) {
       case NotificationType.QUOTATION_STATUS_CHANGE:
-        return this.generateQuotationStatusChangeEmail(data);
+        return this.generateQuotationStatusChangeEmail(data, companyName);
       case NotificationType.INVOICE_GENERATED:
-        return this.generateInvoiceGeneratedEmail(data);
+        return this.generateInvoiceGeneratedEmail(data, companyName);
       case NotificationType.QUOTATION_EXPIRING:
-        return this.generateQuotationExpiringEmail(data);
+        return this.generateQuotationExpiringEmail(data, companyName);
       case NotificationType.INVOICE_OVERDUE:
-        return this.generateInvoiceOverdueEmail(data);
+        return this.generateInvoiceOverdueEmail(data, companyName);
       case NotificationType.MATERAI_REMINDER:
-        return this.generateMateraiReminderEmail(data);
+        return this.generateMateraiReminderEmail(data, companyName);
       case NotificationType.PAYMENT_RECEIVED:
-        return this.generatePaymentReceivedEmail(data);
+        return this.generatePaymentReceivedEmail(data, companyName);
       case NotificationType.DECK_INVITE:
-        return this.generateDeckInviteEmail(data);
+        return this.generateDeckInviteEmail(data, companyName);
       default:
-        return `<p>${dto.subject}</p>`;
+        return `<p>${escapeHtml(dto.subject)}</p>`;
     }
   }
 
-  private generateQuotationStatusChangeEmail(data: any): string {
+  private generateQuotationStatusChangeEmail(data: any, companyName: string): string {
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Status Quotation Diperbarui</h2>
         <p>Yth. Bapak/Ibu,</p>
-        <p>Status quotation <strong>${data.quotationNumber}</strong> telah diperbarui menjadi <strong>${data.newStatus}</strong>.</p>
+        <p>Status quotation <strong>${escapeHtml(data.quotationNumber)}</strong> telah diperbarui menjadi <strong>${escapeHtml(data.newStatus)}</strong>.</p>
         <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0;">
           <p><strong>Detail Quotation:</strong></p>
           <ul>
-            <li>Nomor: ${data.quotationNumber}</li>
-            <li>Klien: ${data.clientName}</li>
-            <li>Proyek: ${data.projectName}</li>
-            <li>Total: ${data.totalAmount}</li>
-            <li>Status: ${data.newStatus}</li>
+            <li>Nomor: ${escapeHtml(data.quotationNumber)}</li>
+            <li>Klien: ${escapeHtml(data.clientName)}</li>
+            <li>Proyek: ${escapeHtml(data.projectName)}</li>
+            <li>Total: ${escapeHtml(data.totalAmount)}</li>
+            <li>Status: ${escapeHtml(data.newStatus)}</li>
           </ul>
         </div>
         <p>Terima kasih atas perhatian Anda.</p>
-        <p>Salam,<br>Tim Monomi Finance</p>
+        <p>Salam,<br>${escapeHtml(companyName)}</p>
       </div>
     `;
   }
 
-  private generateInvoiceGeneratedEmail(data: any): string {
+  private generateInvoiceGeneratedEmail(data: any, companyName: string): string {
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #28a745;">Invoice Telah Dibuat</h2>
         <p>Yth. Bapak/Ibu,</p>
-        <p>Invoice <strong>${data.invoiceNumber}</strong> telah berhasil dibuat dari quotation yang telah disetujui.</p>
+        <p>Invoice <strong>${escapeHtml(data.invoiceNumber)}</strong> telah berhasil dibuat dari quotation yang telah disetujui.</p>
         <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
           <p><strong>Detail Invoice:</strong></p>
           <ul>
-            <li>Nomor Invoice: ${data.invoiceNumber}</li>
-            <li>Dari Quotation: ${data.quotationNumber}</li>
-            <li>Klien: ${data.clientName}</li>
-            <li>Proyek: ${data.projectName}</li>
-            <li>Total: ${data.totalAmount}</li>
-            <li>Jatuh Tempo: ${data.dueDate}</li>
+            <li>Nomor Invoice: ${escapeHtml(data.invoiceNumber)}</li>
+            <li>Dari Quotation: ${escapeHtml(data.quotationNumber)}</li>
+            <li>Klien: ${escapeHtml(data.clientName)}</li>
+            <li>Proyek: ${escapeHtml(data.projectName)}</li>
+            <li>Total: ${escapeHtml(data.totalAmount)}</li>
+            <li>Jatuh Tempo: ${escapeHtml(data.dueDate)}</li>
           </ul>
         </div>
-        ${data.materaiRequired ? '<p style="color: #ffc107; font-weight: bold;">⚠️ Invoice ini memerlukan materai IDR 10.000</p>' : ""}
+        ${data.materaiRequired ? '<p style="color: #ffc107; font-weight: bold;">&#9888;&#65039; Invoice ini memerlukan materai IDR 10.000</p>' : ""}
         <p>Silakan lakukan pembayaran sesuai dengan tanggal jatuh tempo.</p>
         <p>Terima kasih atas kerjasamanya.</p>
-        <p>Salam,<br>Tim Monomi Finance</p>
+        <p>Salam,<br>${escapeHtml(companyName)}</p>
       </div>
     `;
   }
 
-  private generateQuotationExpiringEmail(data: any): string {
+  private generateQuotationExpiringEmail(data: any, companyName: string): string {
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #ffc107;">Quotation Akan Berakhir</h2>
         <p>Yth. Bapak/Ibu,</p>
-        <p>Quotation <strong>${data.quotationNumber}</strong> akan berakhir dalam <strong>${data.daysRemaining} hari</strong>.</p>
+        <p>Quotation <strong>${escapeHtml(data.quotationNumber)}</strong> akan berakhir dalam <strong>${escapeHtml(String(data.daysRemaining))} hari</strong>.</p>
         <div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;">
           <p><strong>Detail Quotation:</strong></p>
           <ul>
-            <li>Nomor: ${data.quotationNumber}</li>
-            <li>Klien: ${data.clientName}</li>
-            <li>Berlaku Hingga: ${data.validUntil}</li>
-            <li>Total: ${data.totalAmount}</li>
+            <li>Nomor: ${escapeHtml(data.quotationNumber)}</li>
+            <li>Klien: ${escapeHtml(data.clientName)}</li>
+            <li>Berlaku Hingga: ${escapeHtml(data.validUntil)}</li>
+            <li>Total: ${escapeHtml(data.totalAmount)}</li>
           </ul>
         </div>
         <p>Mohon segera melakukan tindak lanjut jika Anda masih berminat dengan penawaran ini.</p>
         <p>Terima kasih atas perhatian Anda.</p>
-        <p>Salam,<br>Tim Monomi Finance</p>
+        <p>Salam,<br>${escapeHtml(companyName)}</p>
       </div>
     `;
   }
 
-  private generateInvoiceOverdueEmail(data: any): string {
+  private generateInvoiceOverdueEmail(data: any, companyName: string): string {
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #dc3545;">Invoice Jatuh Tempo</h2>
         <p>Yth. Bapak/Ibu,</p>
-        <p>Invoice <strong>${data.invoiceNumber}</strong> telah melewati tanggal jatuh tempo.</p>
+        <p>Invoice <strong>${escapeHtml(data.invoiceNumber)}</strong> telah melewati tanggal jatuh tempo.</p>
         <div style="background-color: #f8d7da; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0;">
           <p><strong>Detail Invoice:</strong></p>
           <ul>
-            <li>Nomor: ${data.invoiceNumber}</li>
-            <li>Klien: ${data.clientName}</li>
-            <li>Tanggal Jatuh Tempo: ${data.dueDate}</li>
-            <li>Jumlah Terlambat: ${data.daysOverdue} hari</li>
-            <li>Total: ${data.totalAmount}</li>
+            <li>Nomor: ${escapeHtml(data.invoiceNumber)}</li>
+            <li>Klien: ${escapeHtml(data.clientName)}</li>
+            <li>Tanggal Jatuh Tempo: ${escapeHtml(data.dueDate)}</li>
+            <li>Jumlah Terlambat: ${escapeHtml(String(data.daysOverdue))} hari</li>
+            <li>Total: ${escapeHtml(data.totalAmount)}</li>
           </ul>
         </div>
         <p>Mohon segera melakukan pembayaran untuk menghindari denda keterlambatan.</p>
         <p>Terima kasih atas perhatian Anda.</p>
-        <p>Salam,<br>Tim Monomi Finance</p>
+        <p>Salam,<br>${escapeHtml(companyName)}</p>
       </div>
     `;
   }
 
-  private generateMateraiReminderEmail(data: any): string {
+  private generateMateraiReminderEmail(data: any, companyName: string): string {
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #17a2b8;">Pengingat Materai</h2>
         <p>Yth. Bapak/Ibu,</p>
-        <p>Invoice <strong>${data.invoiceNumber}</strong> dengan nilai di atas IDR 5.000.000 memerlukan materai.</p>
+        <p>Invoice <strong>${escapeHtml(data.invoiceNumber)}</strong> dengan nilai di atas IDR 5.000.000 memerlukan materai.</p>
         <div style="background-color: #d1ecf1; padding: 15px; border-left: 4px solid #17a2b8; margin: 20px 0;">
           <p><strong>Detail Invoice:</strong></p>
           <ul>
-            <li>Nomor: ${data.invoiceNumber}</li>
-            <li>Total: ${data.totalAmount}</li>
+            <li>Nomor: ${escapeHtml(data.invoiceNumber)}</li>
+            <li>Total: ${escapeHtml(data.totalAmount)}</li>
             <li>Materai yang Diperlukan: IDR 10.000</li>
           </ul>
         </div>
         <p>Silakan tempelkan materai IDR 10.000 pada dokumen invoice sebelum diserahkan.</p>
         <p>Terima kasih atas perhatian Anda.</p>
-        <p>Salam,<br>Tim Monomi Finance</p>
+        <p>Salam,<br>${escapeHtml(companyName)}</p>
       </div>
     `;
   }
 
-  private generatePaymentReceivedEmail(data: any): string {
+  private generatePaymentReceivedEmail(data: any, companyName: string): string {
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #28a745;">Pembayaran Diterima</h2>
         <p>Yth. Bapak/Ibu,</p>
-        <p>Pembayaran untuk invoice <strong>${data.invoiceNumber}</strong> telah kami terima dan dikonfirmasi.</p>
+        <p>Pembayaran untuk invoice <strong>${escapeHtml(data.invoiceNumber)}</strong> telah kami terima dan dikonfirmasi.</p>
         <div style="background-color: #d4edda; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
           <p><strong>Detail Pembayaran:</strong></p>
           <ul>
-            <li>Nomor Invoice: ${data.invoiceNumber}</li>
-            <li>Klien: ${data.clientName}</li>
-            <li>Jumlah Dibayar: ${data.amountPaid}</li>
-            <li>Metode Pembayaran: ${data.paymentMethod || '-'}</li>
-            <li>Tanggal Pembayaran: ${data.paymentDate}</li>
-            ${data.transactionRef ? `<li>Referensi Transaksi: ${data.transactionRef}</li>` : ''}
+            <li>Nomor Invoice: ${escapeHtml(data.invoiceNumber)}</li>
+            <li>Klien: ${escapeHtml(data.clientName)}</li>
+            <li>Jumlah Dibayar: ${escapeHtml(data.amountPaid)}</li>
+            <li>Metode Pembayaran: ${escapeHtml(data.paymentMethod || '-')}</li>
+            <li>Tanggal Pembayaran: ${escapeHtml(data.paymentDate)}</li>
+            ${data.transactionRef ? `<li>Referensi Transaksi: ${escapeHtml(data.transactionRef)}</li>` : ''}
           </ul>
         </div>
         <p>Terima kasih atas pembayaran Anda yang tepat waktu.</p>
-        <p>Salam,<br>Tim Monomi Finance</p>
+        <p>Salam,<br>${escapeHtml(companyName)}</p>
       </div>
     `;
   }
 
-  private generateDeckInviteEmail(data: any): string {
+  private generateDeckInviteEmail(data: any, companyName: string): string {
+    // FIX 4: sanitize inviteLink — reject javascript: / data: schemes, keep only http(s)
+    const rawLink = String(data.inviteLink || "");
+    const safeLink = /^https?:\/\//i.test(rawLink) ? rawLink : "#";
+
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #6f42c1;">Undangan Kolaborasi Deck</h2>
-        <p>Yth. ${data.guestName || 'Tamu'},</p>
-        <p><strong>${data.inviterName}</strong> mengundang Anda untuk berkolaborasi pada deck presentasi <strong>${data.deckTitle}</strong>.</p>
+        <p>Yth. ${escapeHtml(data.guestName || 'Tamu')},</p>
+        <p><strong>${escapeHtml(data.inviterName)}</strong> mengundang Anda untuk berkolaborasi pada deck presentasi <strong>${escapeHtml(data.deckTitle)}</strong>.</p>
         <div style="background-color: #f3eeff; padding: 15px; border-left: 4px solid #6f42c1; margin: 20px 0;">
           <p><strong>Detail Undangan:</strong></p>
           <ul>
-            <li>Deck: ${data.deckTitle}</li>
-            <li>Peran: ${data.role}</li>
-            ${data.expiresAt ? `<li>Berlaku Hingga: ${data.expiresAt}</li>` : ''}
+            <li>Deck: ${escapeHtml(data.deckTitle)}</li>
+            <li>Peran: ${escapeHtml(data.role)}</li>
+            ${data.expiresAt ? `<li>Berlaku Hingga: ${escapeHtml(data.expiresAt)}</li>` : ''}
           </ul>
         </div>
         <p>Klik tautan berikut untuk menerima undangan:</p>
-        <p><a href="${data.inviteLink}" style="background-color:#6f42c1;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;">Terima Undangan</a></p>
-        <p style="font-size:12px;color:#888;">Atau salin tautan: ${data.inviteLink}</p>
+        <p><a href="${safeLink}" style="background-color:#6f42c1;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;">Terima Undangan</a></p>
+        <p style="font-size:12px;color:#888;">Atau salin tautan: ${escapeHtml(rawLink)}</p>
         <p>Terima kasih.</p>
-        <p>Salam,<br>Tim Monomi</p>
+        <p>Salam,<br>${escapeHtml(companyName)}</p>
       </div>
     `;
   }
@@ -301,6 +336,19 @@ export class NotificationsService {
       this.logger.error(
         `Failed to persist notification log: ${getErrorMessage(error)}`,
       );
+    }
+  }
+
+  // ── FIX 5: real company name from CompanySettings ───────────────────────────
+  private async getCompanyName(): Promise<string> {
+    try {
+      const settings = await this.prisma.companySettings.findUnique({
+        where: { id: "default" },
+        select: { companyName: true },
+      });
+      return settings?.companyName || "Tim Monomi Finance";
+    } catch {
+      return "Tim Monomi Finance";
     }
   }
 
@@ -384,7 +432,7 @@ export class NotificationsService {
           clientName: invoice.client.name,
           projectName: invoice.project?.description || "",
           totalAmount: `IDR ${Number(invoice.totalAmount).toLocaleString("id-ID")}`,
-          dueDate: new Date(invoice.dueDate).toLocaleDateString("id-ID"),
+          dueDate: new Date(invoice.dueDate).toLocaleDateString("id-ID", WIB_LOCALE_OPTS),
           materaiRequired: invoice.materaiRequired,
         },
       });
@@ -421,6 +469,7 @@ export class NotificationsService {
           daysRemaining,
           validUntil: new Date(quotation.validUntil).toLocaleDateString(
             "id-ID",
+            WIB_LOCALE_OPTS,
           ),
           totalAmount: `IDR ${Number(quotation.totalAmount).toLocaleString("id-ID")}`,
         },
@@ -576,7 +625,7 @@ export class NotificationsService {
           clientName: invoice.client.name,
           amountPaid: `IDR ${Number(payment.amount).toLocaleString("id-ID")}`,
           paymentMethod: payment.paymentMethod,
-          paymentDate: new Date(payment.paymentDate).toLocaleDateString("id-ID"),
+          paymentDate: new Date(payment.paymentDate).toLocaleDateString("id-ID", WIB_LOCALE_OPTS),
           transactionRef: payment.transactionRef,
         },
       });
@@ -621,7 +670,7 @@ export class NotificationsService {
           role: collab.role,
           inviteLink,
           expiresAt: collab.expiresAt
-            ? new Date(collab.expiresAt).toLocaleDateString("id-ID")
+            ? new Date(collab.expiresAt).toLocaleDateString("id-ID", WIB_LOCALE_OPTS)
             : null,
         },
       });

@@ -44,8 +44,9 @@ export class LoggingInterceptor implements NestInterceptor {
             `${method} ${url} - ${statusCode} - ${responseTime}ms`,
           );
 
-          // Log response data for debugging (only in development)
-          if (process.env.NODE_ENV === "development" && data) {
+          // Log response data only when explicitly opted-in via VERBOSE_RESPONSE_LOG=true.
+          // Never gate on NODE_ENV alone — dev/tunnel logs must not leak PII by default.
+          if (process.env.VERBOSE_RESPONSE_LOG === "true" && data) {
             this.logger.debug(`Response: ${JSON.stringify(data)}`);
           }
         },

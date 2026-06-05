@@ -515,8 +515,18 @@ export class QuotationsService {
       await tx.paymentMilestone.deleteMany({ where: { quotationId: id } });
 
       if (isMilestone) {
+        // FIX 2: Round each milestone to whole rupiah, then adjust the last
+        // milestone so the sum equals the quotation total exactly.
+        // Example: total=10_000_000, three equal 33.33% milestones →
+        //   rounds to 3_333_333 + 3_333_333 + 3_333_334 = 10_000_000 ✓
+        let runningSum = 0;
         for (let i = 0; i < milestones.length; i++) {
           const m = milestones[i];
+          const isLast = i === milestones.length - 1;
+          const paymentAmount = isLast
+            ? total - runningSum // last milestone absorbs any rounding remainder
+            : Math.round((total * Number(m.paymentPercentage)) / 100);
+          runningSum += paymentAmount;
           await tx.paymentMilestone.create({
             data: {
               quotationId: id,
@@ -524,7 +534,7 @@ export class QuotationsService {
               name: m.name,
               nameId: m.nameId || m.name,
               paymentPercentage: m.paymentPercentage,
-              paymentAmount: (total * Number(m.paymentPercentage)) / 100,
+              paymentAmount,
             },
           });
         }

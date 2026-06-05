@@ -204,26 +204,26 @@ export class InvoicesService {
           });
         }
 
-        // Create audit log (only whitelisted fields — no PII)
+        // Create audit log — ALWAYS write only the explicit whitelist, never the
+        // full Prisma response (which includes nested client/project/user PII).
+        const auditPayload = {
+          id: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          status: invoice.status,
+          totalAmount: invoice.totalAmount,
+          clientId: invoice.clientId,
+        };
         await prisma.auditLog
           .create({
             data: {
               action: "CREATE",
               entityType: "invoice",
               entityId: invoice.id,
-              newValues: {
-                id: invoice.id,
-                invoiceNumber: invoice.invoiceNumber,
-                status: invoice.status,
-                totalAmount: invoice.totalAmount,
-                clientId: invoice.clientId,
-              } as any,
+              newValues: auditPayload as any,
               userId: userId,
             },
           })
-          .catch(() => {
-            // Audit log is optional, don't fail the transaction if audit table doesn't exist
-          });
+          .catch((err) => this.logger.error('Audit log write failed', err));
 
         return invoice;
       });

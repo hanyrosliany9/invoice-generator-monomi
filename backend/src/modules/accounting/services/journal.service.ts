@@ -528,7 +528,10 @@ export class JournalService {
     const totalDebit = lineItems.reduce((sum, item) => sum + item.debit, 0);
     const totalCredit = lineItems.reduce((sum, item) => sum + item.credit, 0);
 
-    if (Math.abs(totalDebit - totalCredit) > 0.01) {
+    // FIX 4: IDR is whole-rupiah. Tolerance 0.5 lets float-noise (e.g. 0.0000002)
+    // pass while still rejecting any real ≥1-rupiah imbalance.
+    // (0.01 was too tight AND could mask a 0.99-rupiah drift silently accepted.)
+    if (Math.abs(totalDebit - totalCredit) > 0.5) {
       throw new BadRequestException(
         `Journal entry is not balanced. Debit: ${totalDebit}, Credit: ${totalCredit}`,
       );

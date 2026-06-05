@@ -344,8 +344,15 @@ export class PdfService {
     const products = priceBreakdown?.products || [];
 
     // Enhanced tax calculations (optional)
+    // FIX 1: taxRate is stored as a PERCENT (e.g. 11 for 11%), not a decimal.
+    // Prefer the authoritative stored taxAmount when present; only recompute as
+    // fallback using taxRate/100 so we never multiply by 11 and get 1100%.
     const subTotal = Number(amountPerProject) || 0;
-    const taxAmount = includeTax ? subTotal * taxRate : 0;
+    const taxAmount = includeTax
+      ? invoiceData.taxAmount != null
+        ? Number(invoiceData.taxAmount)
+        : Math.round(subTotal * (Number(taxRate) / 100))
+      : 0;
     const finalTotal = subTotal + taxAmount;
 
     // Format currency in Indonesian Rupiah
@@ -1077,7 +1084,7 @@ export class PdfService {
             includeTax
               ? `
           <tr>
-            <td>Tax (${esc(taxLabel)} ${Math.round(taxRate * 100)}%)</td>
+            <td>Tax (${esc(taxLabel)} ${Math.round(Number(taxRate))}%)</td>
             <td>${formatIDR(taxAmount)}</td>
           </tr>
           `
@@ -1175,7 +1182,7 @@ export class PdfService {
             includeTax
               ? `
           <tr>
-            <td>Tax (${esc(taxLabel)} ${Math.round(taxRate * 100)}%)</td>
+            <td>Tax (${esc(taxLabel)} ${Math.round(Number(taxRate))}%)</td>
             <td>${formatIDR(taxAmount)}</td>
           </tr>
           `
@@ -1280,8 +1287,10 @@ export class PdfService {
       terms,
       priceBreakdown,
       // Tax fields (Indonesian PPN compliance)
+      // FIX 1: taxRate is stored as PERCENT (e.g. 11), not a decimal fraction.
+      // Default changed from 0.11 → 11 to match the DTO/DB convention.
       includeTax = false,
-      taxRate = 0.11,
+      taxRate = 11,
       taxAmount = 0,
       subtotalAmount,
     } = quotationData;
@@ -1940,7 +1949,7 @@ export class PdfService {
           <td>${formatIDR(subtotalAmount || amountPerProject)}</td>
         </tr>
         <tr>
-          <td>Tax (PPN ${Math.round((taxRate || 0.11) * 100)}%)</td>
+          <td>Tax (PPN ${Math.round(Number(taxRate) || 11)}%)</td>
           <td>${formatIDR(taxAmount || 0)}</td>
         </tr>
         `

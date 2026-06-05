@@ -528,6 +528,12 @@ export class MilestonesService {
         `(Project budget: ${budgetNumber} / ${totalMilestones} milestones)`,
     );
 
+    // FIX 5 (NOTE): Each milestone is created independently so we cannot apply
+    // the largest-remainder / last-adjust technique without also updating all
+    // previously saved milestone rows (high-risk, requires a separate rebalance
+    // endpoint). Drift is bounded at ≤ (totalMilestones - 1) rupiah, which is
+    // acceptable for planning purposes. A bulk-rebalance helper should be added
+    // as a follow-up task.
     return Math.round(revenuePerMilestone);
   }
 }
