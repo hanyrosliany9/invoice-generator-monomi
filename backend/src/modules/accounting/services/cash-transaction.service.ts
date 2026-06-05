@@ -17,6 +17,7 @@ import {
 import { JournalService } from "./journal.service";
 import { ExchangeRateService } from "./exchange-rate.service";
 import { isCashOrBank } from "../cash-accounts.util";
+import { wibYear, wibMonth } from "../../../common/utils/wib-date.util";
 
 @Injectable()
 export class CashTransactionService {
@@ -33,8 +34,8 @@ export class CashTransactionService {
     type: CashTransactionType,
   ): Promise<string> {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = wibYear(now);
+    const month = String(wibMonth(now)).padStart(2, "0");
 
     // CSH-R for receipts, CSH-D for disbursements
     const prefix =

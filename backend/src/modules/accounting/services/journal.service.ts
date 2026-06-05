@@ -12,6 +12,7 @@ import { JournalQueryDto } from "../dto/journal-query.dto";
 import { JournalStatus, TransactionType } from "@prisma/client";
 import { CashBankBalanceService } from "./cash-bank-balance.service";
 import { isCashOrBank } from "../cash-accounts.util";
+import { wibYear, wibMonth, wibPeriodKey } from "../../../common/utils/wib-date.util";
 
 @Injectable()
 export class JournalService {
@@ -493,8 +494,8 @@ export class JournalService {
    */
   private async generateEntryNumber(): Promise<string> {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = wibYear(now);
+    const month = String(wibMonth(now)).padStart(2, "0");
 
     // Get the latest entry number for this month
     const prefix = `JE-${year}-${month}`;
@@ -769,9 +770,21 @@ export class JournalService {
       search,
       page = 1,
       limit = 50,
-      sortBy = "entryDate",
+      sortBy: rawSortBy = "entryDate",
       sortOrder = "desc",
     } = query;
+
+    const ALLOWED_SORT_FIELDS = new Set([
+      "entryDate",
+      "entryNumber",
+      "createdAt",
+      "updatedAt",
+      "totalDebit",
+      "totalCredit",
+      "description",
+      "documentNumber",
+    ]);
+    const sortBy = ALLOWED_SORT_FIELDS.has(rawSortBy) ? rawSortBy : "entryDate";
 
     const where: any = {};
 
@@ -1049,8 +1062,8 @@ export class JournalService {
       if (!hasCashBankAccounts) return;
 
       const entryDate = new Date(entry.entryDate);
-      const year = entryDate.getFullYear();
-      const month = entryDate.getMonth() + 1;
+      const year = wibYear(entryDate);
+      const month = wibMonth(entryDate);
 
       await this.cashBankBalanceService.syncPeriod(year, month, userId);
       this.logger.log(

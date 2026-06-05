@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { wibYear, wibMonth, wibParts } from "../../common/utils/wib-date.util";
 
 @Injectable()
 export class ReportsService {
@@ -376,15 +377,17 @@ export class ReportsService {
 
       switch (period) {
         case "yearly":
-          key = date.getFullYear().toString();
+          key = wibYear(date).toString();
           break;
-        case "quarterly":
-          const quarter = Math.floor(date.getMonth() / 3) + 1;
-          key = `${date.getFullYear()}-Q${quarter}`;
+        case "quarterly": {
+          const { year, month } = wibParts(date);
+          const quarter = Math.floor((month - 1) / 3) + 1;
+          key = `${year}-Q${quarter}`;
           break;
+        }
         case "monthly":
         default:
-          key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`;
+          key = `${wibYear(date)}-${wibMonth(date).toString().padStart(2, "0")}`;
           break;
       }
 

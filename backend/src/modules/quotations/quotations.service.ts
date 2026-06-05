@@ -22,6 +22,7 @@ import {
   validateStatusTransition,
   QuotationStatus as ValidatorQuotationStatus,
 } from "./validators/status-transition.validator";
+import { wibStartOfDay } from "../../common/utils/wib-date.util";
 
 @Injectable()
 export class QuotationsService {
@@ -714,9 +715,17 @@ export class QuotationsService {
 
     const invoiceNumber = await this.invoiceCounterService.getNextInvoiceNumber();
 
-    // Calculate due date (default 30 days from now)
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 30);
+    // FIX 3: Base due date on WIB calendar day; honour client.paymentTerms when set.
+    // paymentTerms is e.g. "NET 30", "NET 60", "COD".  Extract the numeric days;
+    // fall back to 30 if the field is absent or unparseable.
+    const paymentTermsDays = (() => {
+      const terms: string | null | undefined = quotation.client?.paymentTerms;
+      if (!terms) return 30;
+      const m = terms.match(/\b(\d+)\b/);
+      return m ? parseInt(m[1], 10) : 30;
+    })();
+    const dueDate = wibStartOfDay(new Date());
+    dueDate.setDate(dueDate.getDate() + paymentTermsDays);
 
     // Check if materai is required (> 5M IDR)
     const materaiRequired = Number(quotation.totalAmount) > 5000000;
@@ -854,13 +863,15 @@ export class QuotationsService {
         dueDate = new Date(prevMilestone.dueDate);
         dueDate.setDate(dueDate.getDate() + nextMilestone.dueDaysFromPrev);
       } else {
-        dueDate = new Date();
+        // FIX 3: use WIB baseline for milestone offset
+        dueDate = wibStartOfDay(new Date());
         dueDate.setDate(dueDate.getDate() + nextMilestone.dueDaysFromPrev);
       }
     }
 
     if (!dueDate) {
-      dueDate = new Date();
+      // FIX 3: use WIB baseline for fallback 30-day due date
+      dueDate = wibStartOfDay(new Date());
       dueDate.setDate(dueDate.getDate() + 30);
     }
 

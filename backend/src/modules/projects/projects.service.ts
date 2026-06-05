@@ -8,6 +8,7 @@ import { DocumentsService } from "../documents/documents.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
 import { UpdateProjectDto } from "./dto/update-project.dto";
 import { ProjectStatus, Prisma } from "@prisma/client";
+import { wibYear, wibMonth } from "../../common/utils/wib-date.util";
 import { ProfitCalculationService } from "./profit-calculation.service";
 
 @Injectable()
@@ -142,8 +143,8 @@ export class ProjectsService {
     return this.prisma.$transaction(async (tx) => {
       // Re-generate project number inside the transaction so the lock is effective
       const now = new Date();
-      const year = now.getFullYear();
-      const month = (now.getMonth() + 1).toString().padStart(2, "0");
+      const year = wibYear(now);
+      const month = wibMonth(now).toString().padStart(2, "0");
       const txPrefix = `PRJ-${projectType.prefix}-${year}${month}-`;
 
       const txResult = await tx.$queryRaw<Array<{ number: string }>>`
@@ -194,12 +195,37 @@ export class ProjectsService {
     limit = 10,
     status?: ProjectStatus,
     projectTypeId?: string,
+    search?: string,
+    sortBy?: string,
+    sortOrder: "asc" | "desc" = "desc",
   ) {
+    const ALLOWED_SORT_COLUMNS = [
+      "createdAt",
+      "updatedAt",
+      "number",
+      "name",
+      "status",
+      "startDate",
+      "endDate",
+    ] as const;
+    const safeSortBy: string = ALLOWED_SORT_COLUMNS.includes(
+      sortBy as (typeof ALLOWED_SORT_COLUMNS)[number],
+    )
+      ? sortBy!
+      : "createdAt";
+
     const skip = (page - 1) * limit;
 
     const where: any = {};
     if (status) where.status = status;
     if (projectTypeId) where.projectTypeId = projectTypeId;
+    if (search) {
+      where.OR = [
+        { number: { contains: search, mode: "insensitive" } },
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
+    }
 
     const [projects, total] = await Promise.all([
       this.prisma.project.findMany({
@@ -222,7 +248,7 @@ export class ProjectsService {
           },
         },
         orderBy: {
-          createdAt: "desc",
+          [safeSortBy]: sortOrder,
         },
       }),
       this.prisma.project.count({ where }),
@@ -528,8 +554,8 @@ export class ProjectsService {
 
   async generateProjectNumber(typePrefix: string): Promise<string> {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, "0");
+    const year = wibYear(now);
+    const month = wibMonth(now).toString().padStart(2, "0");
     const prefix = `PRJ-${typePrefix}-${year}${month}-`;
 
     // Use raw query with FOR UPDATE to lock and get max sequence atomically

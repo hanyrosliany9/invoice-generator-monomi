@@ -35,10 +35,21 @@ export class AssetsController {
     @Query("limit") limit?: string,
     @Query("status") status?: AssetStatus,
     @Query("category") category?: string,
+    @Query("search") search?: string,
+    @Query("sortBy") sortBy?: string,
+    @Query("sortOrder") sortOrder?: "asc" | "desc",
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    return this.assetsService.findAll(pageNum, limitNum, status, category);
+    return this.assetsService.findAll(
+      pageNum,
+      limitNum,
+      status,
+      category,
+      search,
+      sortBy,
+      sortOrder,
+    );
   }
 
   @Get("stats")

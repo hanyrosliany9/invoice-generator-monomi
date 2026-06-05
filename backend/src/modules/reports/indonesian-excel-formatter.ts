@@ -291,9 +291,16 @@ export class IndonesianExcelFormatter {
    * Format Indonesian date string
    */
   static formatIndonesianDate(date: Date): string {
-    const day = date.getDate().toString().padStart(2, "0");
-    const month = date.getMonth() + 1;
-    const year = date.getFullYear();
+    const wib = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Jakarta",
+      year: "numeric",
+      month: "numeric",
+      day: "2-digit",
+    }).formatToParts(date);
+    const p = Object.fromEntries(wib.map(({ type, value }) => [type, value]));
+    const day = p.day;
+    const month = Number(p.month);
+    const year = Number(p.year);
 
     // Indonesian month names
     const indonesianMonths = [

@@ -18,6 +18,7 @@ import {
   TransactionType,
 } from "@prisma/client";
 import { JournalService } from "./journal.service";
+import { wibYear, wibMonth } from "../../../common/utils/wib-date.util";
 
 @Injectable()
 export class BankReconciliationService {
@@ -33,8 +34,8 @@ export class BankReconciliationService {
    */
   private async generateReconciliationNumber(): Promise<string> {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = wibYear(now);
+    const month = String(wibMonth(now)).padStart(2, "0");
     const prefix = `BRC-${year}-${month}`;
 
     const latestReconciliation = await this.prisma.bankReconciliation.findFirst(

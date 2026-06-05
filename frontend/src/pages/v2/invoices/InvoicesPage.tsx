@@ -458,6 +458,7 @@ function InvoiceTable({
       case 'DRAFT':     return t('invoices.status.draft',     'Draft');
       case 'SENT':      return t('invoices.status.sent',      'Sent');
       case 'PAID':      return t('invoices.status.paid',      'Paid');
+      case 'PENDING':   return t('invoices.status.pending',   'Tertunda');
       case 'OVERDUE':   return t('invoices.status.overdue',   'Overdue');
       case 'CANCELLED': return t('invoices.status.cancelled', 'Cancelled');
       default:          return s ?? '—';

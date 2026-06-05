@@ -7,6 +7,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateVendorDto, UpdateVendorDto, VendorQueryDto } from "./dto";
 import { PKPStatus } from "@prisma/client";
+import { wibYear } from "../../common/utils/wib-date.util";
 
 @Injectable()
 export class VendorsService {
@@ -79,6 +80,22 @@ export class VendorsService {
       ...filters
     } = query;
 
+    const ALLOWED_SORT_COLUMNS = [
+      "name",
+      "vendorCode",
+      "createdAt",
+      "updatedAt",
+      "email",
+      "city",
+      "province",
+      "isActive",
+    ] as const;
+    const safeSortBy: string = ALLOWED_SORT_COLUMNS.includes(
+      sortBy as (typeof ALLOWED_SORT_COLUMNS)[number],
+    )
+      ? sortBy
+      : "name";
+
     const skip = (page - 1) * limit;
 
     // Build where clause
@@ -131,7 +148,7 @@ export class VendorsService {
         where,
         skip,
         take: limit,
-        orderBy: { [sortBy]: sortOrder },
+        orderBy: { [safeSortBy]: sortOrder },
       }),
       this.prisma.vendor.count({ where }),
     ]);
@@ -328,7 +345,7 @@ export class VendorsService {
    * Format: VEN-YYYY-NNNNN
    */
   private async generateVendorCode(): Promise<string> {
-    const year = new Date().getFullYear();
+    const year = wibYear();
     const prefix = `VEN-${year}-`;
 
     const lastVendor = await this.prisma.vendor.findFirst({

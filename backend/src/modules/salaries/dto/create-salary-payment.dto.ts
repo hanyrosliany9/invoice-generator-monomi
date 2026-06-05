@@ -1,12 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import {
-  IsString,
   IsNumber,
   IsOptional,
   IsDateString,
+  IsString,
   Min,
   Max,
-  MaxLength,
 } from "class-validator";
 import { Type } from "class-transformer";
 
@@ -15,10 +14,8 @@ export class CreateSalaryPaymentDto {
   @IsString()
   staffId: string;
 
-  @ApiProperty({ description: "Display period label e.g. 'Januari 2026'" })
-  @IsString()
-  @MaxLength(50)
-  period: string;
+  // FIX 6: `period` is derived server-side from year+month ("Januari 2026").
+  // It is no longer accepted from the client to prevent mismatch.
 
   @ApiProperty({ description: "Year e.g. 2026", example: 2026 })
   @IsNumber()

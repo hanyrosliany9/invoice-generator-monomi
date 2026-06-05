@@ -18,6 +18,7 @@ interface AuthenticatedRequest extends ExpressRequest {
   user: { id: string };
 }
 import { RequireAdmin } from "../auth/decorators/auth.decorators";
+import { wibStartOfMonth, wibParts } from "../../common/utils/wib-date.util";
 import { JournalService } from "./services/journal.service";
 import { LedgerService } from "./services/ledger.service";
 import { FinancialStatementsService } from "./services/financial-statements.service";
@@ -645,8 +646,9 @@ export class AccountingController {
     @Query("assetId") assetId?: string,
   ) {
     const now = new Date();
-    const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const defaultEnd = toEndOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    const { year: wYear, month: wMon } = wibParts(now);
+    const defaultStart = wibStartOfMonth(now);
+    const defaultEnd = toEndOfDay(new Date(Date.UTC(wYear, wMon - 1 + 1, 0, 0, 0, 0) - 7 * 60 * 60 * 1000));
     const parsedStart = startDate ? new Date(startDate) : defaultStart;
     const parsedEnd = endDate ? toEndOfDay(new Date(endDate)) : defaultEnd;
     return this.depreciationService.getDepreciationSummary({
@@ -754,8 +756,9 @@ export class AccountingController {
     @Query("includeWrittenOff") includeWrittenOff?: string,
   ) {
     const now = new Date();
-    const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const defaultEnd = toEndOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    const { year: wYear, month: wMon } = wibParts(now);
+    const defaultStart = wibStartOfMonth(now);
+    const defaultEnd = toEndOfDay(new Date(Date.UTC(wYear, wMon - 1 + 1, 0, 0, 0, 0) - 7 * 60 * 60 * 1000));
     const parsedStart = startDate ? new Date(startDate) : defaultStart;
     const parsedEnd = endDate ? toEndOfDay(new Date(endDate)) : defaultEnd;
     return this.eclService.getECLSummary({

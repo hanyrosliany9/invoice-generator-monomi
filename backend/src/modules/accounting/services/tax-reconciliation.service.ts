@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { PPNCategory, WithholdingTaxType, EFakturStatus } from "@prisma/client";
+import { wibPeriodKey } from "../../../common/utils/wib-date.util";
 
 /**
  * Tax Reconciliation Service - Indonesian Tax Compliance
@@ -613,7 +614,7 @@ export class TaxReconciliationService {
     return transactions.reduce(
       (acc, transaction) => {
         const date = new Date(transaction[dateField]);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        const monthKey = wibPeriodKey(date);
 
         if (!acc[monthKey]) {
           acc[monthKey] = {

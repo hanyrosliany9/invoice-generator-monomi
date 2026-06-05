@@ -364,6 +364,7 @@ export class PdfService {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
+        timeZone: "Asia/Jakarta",
       });
     };
 
@@ -1307,6 +1308,7 @@ export class PdfService {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
+        timeZone: "Asia/Jakarta",
       });
     };
 

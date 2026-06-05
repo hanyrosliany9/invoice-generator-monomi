@@ -26,6 +26,23 @@ import {
   ExpenseApprovalAction,
 } from "@prisma/client";
 
+/** Columns that callers are allowed to sort expenses by. */
+const EXPENSE_SORT_ALLOWLIST = [
+  "expenseDate",
+  "totalAmount",
+  "createdAt",
+  "status",
+  "paymentStatus",
+  "expenseNumber",
+  "vendorName",
+  "updatedAt",
+] as const;
+
+/** True for both ADMIN and SUPER_ADMIN roles. */
+function isAdminRole(role: string): boolean {
+  return role === "ADMIN" || role === "SUPER_ADMIN";
+}
+
 @Injectable()
 export class ExpensesService {
   private readonly logger = new Logger(ExpensesService.name);
@@ -409,18 +426,23 @@ export class ExpensesService {
     const {
       page = 1,
       limit = 20,
-      sortBy = "expenseDate",
+      sortBy: rawSortBy = "expenseDate",
       sortOrder = "desc",
       ...filters
     } = query;
+
+    // FIX 2: validate sortBy against allowlist to prevent arbitrary-column 500s
+    const sortBy = (EXPENSE_SORT_ALLOWLIST as readonly string[]).includes(rawSortBy)
+      ? rawSortBy
+      : "expenseDate";
 
     const skip = (page - 1) * limit;
 
     // Build where clause
     const where: any = {};
 
-    // Role-based filtering: regular users see only their expenses
-    if (userRole !== "ADMIN") {
+    // FIX 1: Role-based filtering — both ADMIN and SUPER_ADMIN see all expenses
+    if (!isAdminRole(userRole)) {
       where.userId = userId;
     }
 
@@ -443,7 +465,7 @@ export class ExpensesService {
     if (filters.categoryId) where.categoryId = filters.categoryId;
     if (filters.projectId) where.projectId = filters.projectId;
     if (filters.clientId) where.clientId = filters.clientId;
-    if (filters.userId && userRole === "ADMIN") where.userId = filters.userId;
+    if (filters.userId && isAdminRole(userRole)) where.userId = filters.userId;
     if (filters.approvedBy) where.approvedBy = filters.approvedBy;
     if (filters.isBillable !== undefined) where.isBillable = filters.isBillable;
     if (filters.accountCode) where.accountCode = filters.accountCode;
@@ -522,7 +544,7 @@ export class ExpensesService {
     }
 
     // Check access: users can only see their own expenses unless admin
-    if (userRole !== "ADMIN" && expense.userId !== userId) {
+    if (!isAdminRole(userRole) && expense.userId !== userId) {
       throw new ForbiddenException(
         "You do not have permission to view this expense",
       );
@@ -545,7 +567,7 @@ export class ExpensesService {
     // Allow updates to any expense for corrections (including PAID expenses)
 
     // Check ownership
-    if (userRole !== "ADMIN" && expense.userId !== userId) {
+    if (!isAdminRole(userRole) && expense.userId !== userId) {
       throw new ForbiddenException(
         "You do not have permission to update this expense",
       );
@@ -708,7 +730,7 @@ export class ExpensesService {
     }
 
     // Check ownership
-    if (userRole !== "ADMIN" && expense.userId !== userId) {
+    if (!isAdminRole(userRole) && expense.userId !== userId) {
       throw new ForbiddenException(
         "You do not have permission to delete this expense",
       );
@@ -789,7 +811,7 @@ export class ExpensesService {
       );
     }
 
-    if (userRole !== "ADMIN" && expense.userId !== userId) {
+    if (!isAdminRole(userRole) && expense.userId !== userId) {
       throw new ForbiddenException(
         "You do not have permission to submit this expense",
       );
@@ -1186,7 +1208,7 @@ export class ExpensesService {
     const where: any = {};
 
     // Role-based filtering
-    if (userRole !== "ADMIN") {
+    if (!isAdminRole(userRole)) {
       where.userId = userId;
     }
 

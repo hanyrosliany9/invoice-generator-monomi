@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
+import { wibYear, wibMonth } from "../../../common/utils/wib-date.util";
 
 @Injectable()
 export class InvoiceCounterService {
@@ -12,8 +13,8 @@ export class InvoiceCounterService {
    */
   async getNextInvoiceNumber(): Promise<string> {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
+    const year = wibYear(now);
+    const month = wibMonth(now);
 
     // Use transaction with row-level lock for thread safety
     const result = await this.prisma.$transaction(async (tx) => {
@@ -57,8 +58,8 @@ export class InvoiceCounterService {
    */
   async getNextQuotationNumber(): Promise<string> {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
+    const year = wibYear(now);
+    const month = wibMonth(now);
 
     const result = await this.prisma.$transaction(async (tx) => {
       // Get quotation prefix from system settings

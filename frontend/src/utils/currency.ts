@@ -366,8 +366,7 @@ export const safeFormatDate = (
   if (!date) return ''
 
   try {
-    // Use dayjs for date formatting (assuming it's available)
-    return new Date(date).toLocaleDateString('id-ID')
+    return new Date(date).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })
   } catch (error) {
     console.error('safeFormatDate: Invalid date', date, error)
     return ''
@@ -387,6 +386,7 @@ export const formatIndonesianDate = (
       day: 'numeric',
       month: 'long',
       year: 'numeric',
+      timeZone: 'Asia/Jakarta',
     })
   } catch (error) {
     console.error('formatIndonesianDate: Invalid date', date, error)
@@ -406,6 +406,7 @@ export const formatMonthYear = (
     return new Date(date).toLocaleDateString('id-ID', {
       month: 'short',
       year: 'numeric',
+      timeZone: 'Asia/Jakarta',
     })
   } catch (error) {
     console.error('formatMonthYear: Invalid date', date, error)

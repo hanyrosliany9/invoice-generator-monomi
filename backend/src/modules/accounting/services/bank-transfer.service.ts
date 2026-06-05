@@ -12,6 +12,7 @@ import { BankTransferStatus, TransactionType, Currency } from "@prisma/client";
 import { JournalService } from "./journal.service";
 import { ExchangeRateService } from "./exchange-rate.service";
 import { isCashOrBank } from "../cash-accounts.util";
+import { wibYear, wibMonth } from "../../../common/utils/wib-date.util";
 
 @Injectable()
 export class BankTransferService {
@@ -26,8 +27,8 @@ export class BankTransferService {
    */
   private async generateTransferNumber(): Promise<string> {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = wibYear(now);
+    const month = String(wibMonth(now)).padStart(2, "0");
     const prefix = `BTR-${year}-${month}`;
 
     const latestTransfer = await this.prisma.bankTransfer.findFirst({

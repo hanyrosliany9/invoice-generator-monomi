@@ -13,6 +13,8 @@ import {
   BadRequestException,
   NotFoundException,
   HttpException,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { PaymentsService } from "./payments.service";
@@ -51,21 +53,12 @@ export class PaymentsController {
   @Get()
   async findAll(
     @Query("invoiceId") invoiceId?: string,
-  ): Promise<ApiResponse<PaymentResponseDto[]>> {
-    try {
-      const payments = await this.paymentsService.findAll(invoiceId);
-      return {
-        data: payments,
-        message: "Payments retrieved successfully",
-        status: "success",
-      };
-    } catch (error) {
-      return {
-        data: [],
-        message: getErrorMessage(error) || "Failed to retrieve payments",
-        status: "error",
-      };
-    }
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page = 1,
+    @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit = 20,
+  ) {
+    // Returns { data, pagination }; the global ResponseInterceptor passes it
+    // through unwrapped because the "pagination" key is present.
+    return this.paymentsService.findAll(invoiceId, page, limit);
   }
 
   @Get("stats")

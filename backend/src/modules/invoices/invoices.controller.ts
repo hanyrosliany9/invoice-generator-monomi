@@ -86,13 +86,32 @@ export class InvoicesController {
     name: "limit",
     required: false,
     type: Number,
-    description: "Jumlah data per halaman (default: 10)",
+    description: "Jumlah data per halaman (default: 10, min: 1, max: 200)",
   })
   @ApiQuery({
     name: "status",
     required: false,
     enum: InvoiceStatus,
     description: "Filter berdasarkan status invoice",
+  })
+  @ApiQuery({
+    name: "search",
+    required: false,
+    type: String,
+    description: "Cari berdasarkan nomor invoice atau nama klien",
+  })
+  @ApiQuery({
+    name: "sortBy",
+    required: false,
+    type: String,
+    description:
+      "Kolom urutan: creationDate | dueDate | totalAmount | invoiceNumber | status (default: createdAt)",
+  })
+  @ApiQuery({
+    name: "sortOrder",
+    required: false,
+    enum: ["asc", "desc"],
+    description: "Arah urutan: asc atau desc (default: desc)",
   })
   @ApiResponse({
     status: 200,
@@ -160,8 +179,18 @@ export class InvoicesController {
     @Query("page") page = 1,
     @Query("limit") limit = 10,
     @Query("status") status?: InvoiceStatus,
+    @Query("search") search?: string,
+    @Query("sortBy") sortBy?: string,
+    @Query("sortOrder") sortOrder?: "asc" | "desc",
   ) {
-    return this.invoicesService.findAll(+page, +limit, status);
+    return this.invoicesService.findAll(
+      +page,
+      +limit,
+      status,
+      search,
+      sortBy,
+      sortOrder,
+    );
   }
 
   @Get("stats")

@@ -549,10 +549,14 @@ export class IndonesianPdfFormatter {
    * Format Indonesian short date (dd/mm/yyyy)
    */
   static formatIndonesianShortDate(date: Date): string {
-    const day = date.getDate().toString().padStart(2, "0");
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    const wib = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Jakarta",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+    const p = Object.fromEntries(wib.map(({ type, value }) => [type, value]));
+    return `${p.day}/${p.month}/${p.year}`;
   }
 
   /**

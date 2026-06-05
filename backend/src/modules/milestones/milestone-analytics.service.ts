@@ -11,6 +11,7 @@ import {
   TimeRangeEnum,
 } from "./dto/milestone-analytics-query.dto";
 import { Prisma } from "@prisma/client";
+import { wibPeriodKey } from "../../common/utils/wib-date.util";
 
 /**
  * Milestone analytics are derived from PAYMENT milestones (termin) — the
@@ -251,7 +252,7 @@ export class MilestoneAnalyticsService {
         (m.dueDate && new Date(m.dueDate)) ||
         (inv?.dueDate && new Date(inv.dueDate)) ||
         new Date(m.createdAt);
-      const monthKey = `${when.getFullYear()}-${String(when.getMonth() + 1).padStart(2, "0")}-01`;
+      const monthKey = `${wibPeriodKey(when)}-01`;
 
       const revenue = Number(m.paymentAmount || 0);
       const invoiced = m.isInvoiced || (m.invoices ?? []).length > 0;

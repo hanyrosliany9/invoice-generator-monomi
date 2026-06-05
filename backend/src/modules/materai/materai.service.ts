@@ -4,6 +4,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
 import { TransformationUtil } from "../../common/utils/transformation.util";
 import { getErrorMessage } from "../../common/utils/error-handling.util";
+import { wibDayDiff } from "../../common/utils/wib-date.util";
 
 export interface MateraiConfig {
   enabled: boolean;
@@ -255,10 +256,8 @@ export class MateraiService {
     });
 
     return invoices.map((invoice) => {
-      const daysUntilDue = Math.ceil(
-        (new Date(invoice.dueDate).getTime() - new Date().getTime()) /
-          (1000 * 60 * 60 * 24),
-      );
+      // FIX 4: use WIB calendar-day difference so reminders fire on the correct day
+      const daysUntilDue = wibDayDiff(new Date(), new Date(invoice.dueDate));
 
       return {
         ...invoice,
@@ -419,10 +418,8 @@ export class MateraiService {
       // Calculate urgency based on invoice status and due date
       let urgencyLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" = "LOW";
       if (requiresMaterai && !invoice.materaiApplied) {
-        const daysUntilDue = Math.ceil(
-          (new Date(invoice.dueDate).getTime() - new Date().getTime()) /
-            (1000 * 60 * 60 * 24),
-        );
+        // FIX 4: WIB calendar-day difference
+        const daysUntilDue = wibDayDiff(new Date(), new Date(invoice.dueDate));
 
         if (daysUntilDue <= 1) urgencyLevel = "CRITICAL";
         else if (daysUntilDue <= 3) urgencyLevel = "HIGH";
@@ -443,12 +440,10 @@ export class MateraiService {
         } else if (invoice.status === "SENT") {
           riskLevel = "HIGH";
           penalties.push("Denda 2x lipat nilai materai jika terlambat");
+          // FIX 4: WIB calendar-day difference
           timeToCompliance = Math.max(
             0,
-            Math.ceil(
-              (new Date(invoice.dueDate).getTime() - new Date().getTime()) /
-                (1000 * 60 * 60 * 24),
-            ),
+            wibDayDiff(new Date(), new Date(invoice.dueDate)),
           );
         } else {
           riskLevel = "MEDIUM";

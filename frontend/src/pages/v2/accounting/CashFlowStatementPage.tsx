@@ -19,6 +19,7 @@ import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { EmptyState } from '@/components/monomi/EmptyState';
 import { UserChip } from '@/components/monomi/UserChip';
 import { MoneyDisplay } from '@/components/monomi/MoneyDisplay';
+import { formatIDR } from '@/utils/currency';
 import { MonomiDatePicker } from '@/components/monomi/MonomiDatePicker';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -72,7 +73,7 @@ const TxnRow = ({ txn, idLocale }: TxnRowProps) => {
       <td className="py-2.5 pr-4 text-right">
         {isOutflow ? (
           <span className="font-mono tabular-nums text-sm text-text-secondary">
-            ({Math.round(Math.abs(delta)).toLocaleString('id-ID')})
+            ({formatIDR(Math.abs(delta))})
           </span>
         ) : (
           <MoneyDisplay

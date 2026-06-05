@@ -33,6 +33,7 @@ import {
   sanitizeRichText,
   sanitizeJsonObject,
 } from "../../common/utils/sanitization.util";
+import { wibStartOfDay } from "../../common/utils/wib-date.util";
 
 @Injectable()
 export class InvoicesService {
@@ -383,20 +384,68 @@ export class InvoicesService {
     }
   }
 
+  /** Allowlist of columns that may be used for sorting. */
+  private static readonly SORT_COLUMNS: Record<string, string> = {
+    creationDate: "creationDate",
+    dueDate: "dueDate",
+    totalAmount: "totalAmount",
+    invoiceNumber: "invoiceNumber",
+    status: "status",
+    createdAt: "createdAt",
+  };
+
   async findAll(
     page = 1,
     limit = 10,
     status?: InvoiceStatus,
+    search?: string,
+    sortBy?: string,
+    sortOrder?: "asc" | "desc",
   ): Promise<PaginatedResponse<any[]>> {
-    const skip = (page - 1) * limit;
+    // Clamp limit: must be at least 1 and at most 200
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(200, Math.max(1, limit));
+    const skip = (safePage - 1) * safeLimit;
 
-    const where = status ? { status } : {};
+    // Validate status against the enum to prevent Prisma 500s
+    if (status !== undefined) {
+      const validStatuses = Object.values(InvoiceStatus) as string[];
+      if (!validStatuses.includes(status as string)) {
+        throw new BadRequestException(
+          `Status tidak valid. Nilai yang diperbolehkan: ${validStatuses.join(", ")}`,
+        );
+      }
+    }
+
+    // Build where clause with optional search filter
+    const searchFilter = search
+      ? {
+          OR: [
+            { invoiceNumber: { contains: search, mode: "insensitive" as const } },
+            { client: { name: { contains: search, mode: "insensitive" as const } } },
+          ],
+        }
+      : {};
+
+    const where = {
+      ...(status ? { status } : {}),
+      ...searchFilter,
+    };
+
+    // Resolve orderBy: validate column against allowlist, default to createdAt desc
+    const resolvedSortColumn =
+      sortBy && InvoicesService.SORT_COLUMNS[sortBy]
+        ? InvoicesService.SORT_COLUMNS[sortBy]
+        : "createdAt";
+    const resolvedSortOrder: "asc" | "desc" =
+      sortOrder === "asc" ? "asc" : "desc";
+    const orderBy = { [resolvedSortColumn]: resolvedSortOrder };
 
     const [invoices, total] = await Promise.all([
       this.prisma.invoice.findMany({
         where,
         skip,
-        take: limit,
+        take: safeLimit,
         include: {
           client: true,
           project: true,
@@ -410,9 +459,7 @@ export class InvoicesService {
             },
           },
         },
-        orderBy: {
-          createdAt: "desc",
-        },
+        orderBy,
       }),
       this.prisma.invoice.count({ where }),
     ]);
@@ -420,10 +467,10 @@ export class InvoicesService {
     return new PaginatedResponse(
       invoices,
       {
-        page,
-        limit,
+        page: safePage,
+        limit: safeLimit,
         total,
-        pages: Math.ceil(total / limit),
+        pages: Math.ceil(total / safeLimit),
       },
       "Invoices retrieved successfully",
     );
@@ -1393,10 +1440,9 @@ export class InvoicesService {
   // Removed old sanitizeInput method - now using comprehensive sanitization utility
 
   private async validateBusinessRules(dto: CreateInvoiceDto) {
-    // Check due date is in future
+    // Check due date is in future (use WIB day boundary, not UTC midnight)
     const dueDate = new Date(dto.dueDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = wibStartOfDay(new Date());
 
     if (dueDate <= today) {
       throw new BadRequestException("Tanggal jatuh tempo harus di masa depan");
@@ -1515,8 +1561,9 @@ export class InvoicesService {
       daysToAdd = 1; // Cash on delivery
     }
 
-    // Add business days only (Indonesian business practice)
-    const dueDate = new Date();
+    // Add business days only (Indonesian business practice).
+    // Anchor to WIB start-of-day so the calculation is timezone-stable.
+    const dueDate = wibStartOfDay(new Date());
     let addedDays = 0;
 
     while (addedDays < daysToAdd) {

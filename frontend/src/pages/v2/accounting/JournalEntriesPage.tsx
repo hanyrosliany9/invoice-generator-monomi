@@ -19,6 +19,7 @@ import { EmptyState } from '@/components/monomi/EmptyState';
 import { UserChip } from '@/components/monomi/UserChip';
 import { MoneyDisplay } from '@/components/monomi/MoneyDisplay';
 import { DateDisplay } from '@/components/monomi/DateDisplay';
+import { formatIDR } from '@/utils/currency';
 import { DataTable } from '@/components/monomi/DataTable';
 import { MonomiDatePicker } from '@/components/monomi/MonomiDatePicker';
 import { Button } from '@/components/ui/button';
@@ -446,7 +447,7 @@ function JournalTable({ rows, onView, onEdit, onReverse, onDelete }: JournalTabl
                   className={cn('tabular-nums', balanced ? 'text-text-primary' : 'text-warning')}
                 />
                 <div className="text-[10px] uppercase tracking-[0.12em] text-text-tertiary">
-                  {balanced ? 'balanced' : `Δ ${(d - c).toLocaleString('id-ID')}`}
+                  {balanced ? 'balanced' : `Δ ${formatIDR(Math.abs(d - c))}`}
                 </div>
               </div>
             );

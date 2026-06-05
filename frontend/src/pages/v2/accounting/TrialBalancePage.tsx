@@ -18,6 +18,7 @@ import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { EmptyState } from '@/components/monomi/EmptyState';
 import { UserChip } from '@/components/monomi/UserChip';
 import { MoneyDisplay } from '@/components/monomi/MoneyDisplay';
+import { formatIDR } from '@/utils/currency';
 import { MonomiDatePicker } from '@/components/monomi/MonomiDatePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -225,7 +226,7 @@ export default function TrialBalancePageV2() {
               <div className="font-medium text-text-primary">{t('accounting.trialBalance.imbalanceTitle', 'Trial balance is not balanced')}</div>
               <div className="mt-0.5 text-text-secondary">
                 {t('accounting.trialBalance.imbalanceDesc', {
-                  amount: Math.abs(data.summary.difference).toLocaleString('id-ID'),
+                  amount: formatIDR(Math.abs(data.summary.difference)),
                 })}
               </div>
             </div>

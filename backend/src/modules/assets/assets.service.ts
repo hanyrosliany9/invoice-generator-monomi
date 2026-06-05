@@ -182,11 +182,44 @@ export class AssetsService {
     return asset;
   }
 
-  async findAll(page = 1, limit = 10, status?: AssetStatus, category?: string) {
+  /** Columns callers may sort assets by. */
+  private static readonly ASSET_SORT_ALLOWLIST = [
+    "createdAt",
+    "updatedAt",
+    "name",
+    "assetCode",
+    "purchaseDate",
+    "purchasePrice",
+    "currentValue",
+    "status",
+  ] as const;
+
+  async findAll(
+    page = 1,
+    limit = 10,
+    status?: AssetStatus,
+    category?: string,
+    search?: string,
+    sortBy = "createdAt",
+    sortOrder: "asc" | "desc" = "desc",
+  ) {
     const skip = (page - 1) * limit;
     const where: any = {};
     if (status) where.status = status;
     if (category) where.category = category;
+
+    // FIX 6: wire search filter (name / assetCode contains, case-insensitive)
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { assetCode: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    // FIX 6: validate sortBy against allowlist
+    const safeSortBy = (AssetsService.ASSET_SORT_ALLOWLIST as readonly string[]).includes(sortBy)
+      ? sortBy
+      : "createdAt";
 
     const [assets, total] = await Promise.all([
       this.prisma.asset.findMany({
@@ -203,7 +236,7 @@ export class AssetsService {
           },
         },
         orderBy: {
-          createdAt: "desc",
+          [safeSortBy]: sortOrder,
         },
       }),
       this.prisma.asset.count({ where }),

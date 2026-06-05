@@ -146,8 +146,19 @@ export class ProjectsController {
     @Query("limit") limit = 10,
     @Query("status") status?: ProjectStatus,
     @Query("projectTypeId") projectTypeId?: string,
+    @Query("search") search?: string,
+    @Query("sortBy") sortBy?: string,
+    @Query("sortOrder") sortOrder?: "asc" | "desc",
   ) {
-    return this.projectsService.findAll(+page, +limit, status, projectTypeId);
+    return this.projectsService.findAll(
+      +page,
+      +limit,
+      status,
+      projectTypeId,
+      search,
+      sortBy,
+      sortOrder,
+    );
   }
 
   @Get("stats")

@@ -5,6 +5,7 @@ import {
   TrialBalanceQueryDto,
 } from "../dto/financial-statement-query.dto";
 import { AccountType, BalanceType } from "@prisma/client";
+import { wibDateStr } from "../../../common/utils/wib-date.util";
 
 @Injectable()
 export class LedgerService {
@@ -636,9 +637,9 @@ export class LedgerService {
 
     // Calculate aging buckets (similar to AR aging)
     const aging = expenses.map((expense) => {
-      // Assuming 30 days payment term for expenses
-      const dueDate = new Date(expense.expenseDate);
-      dueDate.setDate(dueDate.getDate() + 30);
+      // Assuming 30 days payment term for expenses (WIB-stable: anchor to WIB calendar date)
+      const dueDate = new Date(wibDateStr(new Date(expense.expenseDate)) + "T00:00:00Z");
+      dueDate.setUTCDate(dueDate.getUTCDate() + 30);
 
       const daysOverdue = Math.floor(
         (asOfDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),

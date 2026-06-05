@@ -80,25 +80,48 @@ export class PaymentsService {
     return this.transformToResponse(payment);
   }
 
-  async findAll(invoiceId?: string): Promise<PaymentResponseDto[]> {
-    const payments = await this.prisma.payment.findMany({
-      where: invoiceId ? { invoiceId } : {},
-      include: {
-        invoice: {
-          select: {
-            id: true,
-            invoiceNumber: true,
-            totalAmount: true,
-            client: {
-              select: { id: true, name: true, email: true },
+  async findAll(
+    invoiceId?: string,
+    page = 1,
+    limit = 20,
+  ): Promise<{ data: PaymentResponseDto[]; pagination: { total: number; page: number; limit: number; totalPages: number } }> {
+    // FIX 5: paginate payments — cap limit at 200 to prevent full-table dumps
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(Math.max(1, limit), 200);
+    const skip = (safePage - 1) * safeLimit;
+    const where = invoiceId ? { invoiceId } : {};
+
+    const [payments, total] = await Promise.all([
+      this.prisma.payment.findMany({
+        where,
+        include: {
+          invoice: {
+            select: {
+              id: true,
+              invoiceNumber: true,
+              totalAmount: true,
+              client: {
+                select: { id: true, name: true, email: true },
+              },
             },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: safeLimit,
+      }),
+      this.prisma.payment.count({ where }),
+    ]);
 
-    return payments.map((payment) => this.transformToResponse(payment));
+    return {
+      data: payments.map((payment) => this.transformToResponse(payment)),
+      pagination: {
+        total,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    };
   }
 
   async findOne(id: string): Promise<PaymentResponseDto> {
@@ -333,7 +356,7 @@ export class PaymentsService {
   }
 
   async getPaymentsByInvoice(invoiceId: string): Promise<PaymentResponseDto[]> {
-    return this.findAll(invoiceId);
+    return (await this.findAll(invoiceId)).data;
   }
 
   async getPaymentStats(invoiceId?: string) {

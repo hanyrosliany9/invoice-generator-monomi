@@ -612,7 +612,7 @@ export default function MilestoneAnalyticsPageV2() {
                   label={t('milestones.metric.cycle', 'Siklus Pembayaran')}
                   value={
                     <span className="tabular-nums">
-                      {(analytics?.averagePaymentCycle ?? 0).toFixed(0)}h
+                      {(analytics?.averagePaymentCycle ?? 0).toFixed(0)} {t('milestones.metric.days', 'hari')}
                     </span>
                   }
                   sublabel={t('milestones.metric.cycleSub', 'rata-rata waktu bayar')}

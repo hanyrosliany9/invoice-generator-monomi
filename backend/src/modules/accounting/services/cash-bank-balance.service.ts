@@ -8,6 +8,7 @@ import { UpdateCashBankBalanceDto } from "../dto/update-cash-bank-balance.dto";
 import { CashBankBalanceQueryDto } from "../dto/cash-bank-balance-query.dto";
 import { Prisma } from "@prisma/client";
 import { classifyCashAccount } from "../cash-accounts.util";
+import { wibYear, wibMonth } from "../../../common/utils/wib-date.util";
 
 /**
  * Per-account cash & bank running balances.
@@ -225,7 +226,7 @@ export class CashBankBalanceService {
     const buckets = new Map<string, Agg>(); // key: accountId|year|month
     for (const l of lines) {
       const d = new Date(l.journalEntry.entryDate);
-      const key = `${l.accountId}|${d.getFullYear()}|${d.getMonth() + 1}`;
+      const key = `${l.accountId}|${wibYear(d)}|${wibMonth(d)}`;
       const b = buckets.get(key) || { inflow: 0, outflow: 0 };
       b.inflow += this.toNum(l.debit);
       b.outflow += this.toNum(l.credit);

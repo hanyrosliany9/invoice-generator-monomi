@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { safeNumber } from '@/utils/currency';
 
 export interface MoneyDisplayProps {
   amount: number | string | null | undefined;
@@ -8,7 +9,7 @@ export interface MoneyDisplayProps {
 }
 
 export const MoneyDisplay = ({ amount, currency = 'IDR', colorize, className }: MoneyDisplayProps) => {
-  const n = amount === null || amount === undefined ? 0 : Number(amount);
+  const n = safeNumber(amount);
   const isNeg = n < 0;
   const formatted = `Rp ${Math.round(Math.abs(n)).toLocaleString('id-ID')}`;
   return (
