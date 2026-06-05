@@ -6,6 +6,7 @@ import {
   Res,
   UseGuards,
   NotFoundException,
+  InternalServerErrorException,
   Logger,
   Request,
 } from "@nestjs/common";
@@ -146,7 +147,7 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error("Gagal membuat PDF invoice");
+      throw new InternalServerErrorException("Gagal membuat PDF invoice");
     }
   }
 
@@ -213,7 +214,7 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error("Gagal membuat PDF quotation");
+      throw new InternalServerErrorException("Gagal membuat PDF quotation");
     }
   }
 
@@ -274,7 +275,7 @@ export class PdfController {
       }
       // Log the actual error for debugging
       console.error("PDF Preview Error:", error);
-      throw new Error(
+      throw new InternalServerErrorException(
         `Gagal membuat preview PDF invoice: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
@@ -332,7 +333,7 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error("Gagal membuat preview PDF quotation");
+      throw new InternalServerErrorException("Gagal membuat preview PDF quotation");
     }
   }
 
@@ -509,7 +510,7 @@ export class PdfController {
         `Failed to generate project PDF for project ${id}: ${errorMessage}`,
         error instanceof Error ? error.stack : "",
       );
-      throw new Error("Gagal membuat PDF proyek");
+      throw new InternalServerErrorException("Gagal membuat PDF proyek");
     }
   }
 
@@ -683,7 +684,7 @@ export class PdfController {
         `Failed to generate project PDF preview for project ${id}: ${errorMessage}`,
         error instanceof Error ? error.stack : "",
       );
-      throw new Error("Gagal membuat preview PDF proyek");
+      throw new InternalServerErrorException("Gagal membuat preview PDF proyek");
     }
   }
 
@@ -731,7 +732,7 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error("Failed to generate schedule PDF");
+      throw new InternalServerErrorException("Failed to generate schedule PDF");
     }
   }
 
@@ -771,7 +772,7 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error("Failed to generate schedule PDF preview");
+      throw new InternalServerErrorException("Failed to generate schedule PDF preview");
     }
   }
 
@@ -828,7 +829,7 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error("Failed to generate call sheet PDF");
+      throw new InternalServerErrorException("Failed to generate call sheet PDF");
     }
   }
 
@@ -877,7 +878,7 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error("Failed to generate call sheet PDF preview");
+      throw new InternalServerErrorException("Failed to generate call sheet PDF preview");
     }
   }
 
@@ -925,7 +926,7 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error("Failed to generate shot list PDF");
+      throw new InternalServerErrorException("Failed to generate shot list PDF");
     }
   }
 
@@ -965,7 +966,7 @@ export class PdfController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error("Failed to generate shot list PDF preview");
+      throw new InternalServerErrorException("Failed to generate shot list PDF preview");
     }
   }
 }

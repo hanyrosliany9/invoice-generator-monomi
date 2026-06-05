@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { queryClient } from '../lib/queryClient'
+import { useMediaTokenStore } from '../stores/mediaTokenStore'
 
 export interface User {
   id: string
@@ -58,6 +59,9 @@ export const useAuthStore = create<AuthState>()(
         // Clear TanStack Query cache so prior user's PII/financial data is
         // never served to the next user who logs in on the same browser session.
         queryClient.clear()
+        // Clear the signed media JWT so the next user on this browser cannot
+        // reuse a token issued for the previous session.
+        useMediaTokenStore.getState().clearToken()
       },
 
       updateTokens: (accessToken: string, refreshToken: string, expiresIn: number) => {

@@ -37,8 +37,15 @@ export class DeckExportService {
       fs.mkdirSync(this.tempDir, { recursive: true });
     }
 
-    // Start cleanup interval
-    setInterval(() => this.cleanupOldJobs(), 5 * 60 * 1000); // Every 5 minutes
+    // Start cleanup interval — guard with try/catch so a throw never
+    // crashes the process or emits an unhandled rejection.
+    setInterval(() => {
+      try {
+        this.cleanupOldJobs();
+      } catch (err) {
+        this.logger.error("cleanupOldJobs interval error", err);
+      }
+    }, 5 * 60 * 1000); // Every 5 minutes
   }
 
   async startPdfGeneration(

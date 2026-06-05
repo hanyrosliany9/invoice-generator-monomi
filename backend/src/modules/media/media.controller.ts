@@ -69,7 +69,9 @@ export class MediaController {
    */
   @Post("upload")
   @RequireMediaRole()
-  @UseInterceptors(FileInterceptor("file"))
+  // FIX 3: enforce multer-level size limit so oversized uploads are rejected
+  // before the entire body is buffered into memory (matches service 100 MB cap).
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 100 * 1024 * 1024 } }))
   @ApiOperation({
     summary: "Upload a single file to R2 with optional thumbnail",
   })
@@ -138,7 +140,8 @@ export class MediaController {
    */
   @Post("upload-multiple")
   @RequireMediaRole()
-  @UseInterceptors(FilesInterceptor("files", 10)) // Max 10 files at once
+  // FIX 3: enforce multer-level size limit per file (100 MB, matches service cap).
+  @UseInterceptors(FilesInterceptor("files", 10, { limits: { fileSize: 100 * 1024 * 1024 } })) // Max 10 files at once
   @ApiOperation({ summary: "Upload multiple files to R2" })
   @ApiConsumes("multipart/form-data")
   @ApiBody({

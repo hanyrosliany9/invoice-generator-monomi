@@ -10,11 +10,12 @@ import {
   NotFoundException,
   Body,
   Res,
+  Req,
   Query,
   UseGuards,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { Response } from "express";
+import { Request, Response } from "express";
 import { DocumentsService } from "./documents.service";
 import { DocumentCategory } from "@prisma/client";
 import { diskStorage } from "multer";
@@ -64,20 +65,22 @@ export class DocumentsController {
     }),
   )
   async uploadFile(
+    @Req() req: Request,
     @UploadedFile() file: Express.Multer.File,
     @Body("invoiceId") invoiceId?: string,
     @Body("quotationId") quotationId?: string,
     @Body("projectId") projectId?: string,
     @Body("category") category: DocumentCategory = DocumentCategory.OTHER,
     @Body("description") description?: string,
-    @Body("uploadedBy") uploadedBy?: string,
   ) {
     if (!file) {
       throw new BadRequestException("No file uploaded");
     }
 
+    // FIX 1: derive uploadedBy from the authenticated JWT principal, not caller-supplied body
+    const uploadedBy: string = (req as any).user?.id;
     if (!uploadedBy) {
-      throw new BadRequestException("uploadedBy is required");
+      throw new BadRequestException("Could not resolve authenticated user");
     }
 
     try {
@@ -131,10 +134,20 @@ export class DocumentsController {
       throw new NotFoundException("File not found on disk");
     }
 
+    // FIX 2a: harden Content-Type for downloads — always force attachment so the
+    // browser never renders the file inline regardless of stored mimeType.
     res.setHeader("Content-Type", document.mimeType);
+    res.setHeader("X-Content-Type-Options", "nosniff");
+
+    // FIX 2b: sanitize filename before embedding in Content-Disposition header.
+    // Strip double-quotes, newlines, and other control characters, then provide
+    // an RFC 5987 encoded filename* fallback for non-ASCII characters.
+    const rawName = document.originalFileName ?? "download";
+    const safeAsciiName = rawName.replace(/[\x00-\x1f"\\]/g, "_");
+    const encodedName = encodeURIComponent(rawName);
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${document.originalFileName}"`,
+      `attachment; filename="${safeAsciiName}"; filename*=UTF-8''${encodedName}`,
     );
 
     return res.sendFile(document.filePath);
@@ -152,10 +165,28 @@ export class DocumentsController {
       throw new NotFoundException("File not found on disk");
     }
 
+    // FIX 2a: only serve inline for explicitly safe MIME types to prevent a
+    // client-supplied mimeType (e.g. text/html) from executing in the browser.
+    const SAFE_INLINE_TYPES = new Set([
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ]);
+    const isSafeInline = SAFE_INLINE_TYPES.has(document.mimeType);
+    const disposition = isSafeInline ? "inline" : "attachment";
+
     res.setHeader("Content-Type", document.mimeType);
+    res.setHeader("X-Content-Type-Options", "nosniff");
+
+    // FIX 2b: sanitize filename — same approach as download route.
+    const rawName = document.originalFileName ?? "preview";
+    const safeAsciiName = rawName.replace(/[\x00-\x1f"\\]/g, "_");
+    const encodedName = encodeURIComponent(rawName);
     res.setHeader(
       "Content-Disposition",
-      `inline; filename="${document.originalFileName}"`,
+      `${disposition}; filename="${safeAsciiName}"; filename*=UTF-8''${encodedName}`,
     );
 
     return res.sendFile(document.filePath);

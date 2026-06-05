@@ -69,7 +69,10 @@ export const useMediaTokenStore = create<MediaTokenStore>((set, get) => {
 
   return {
     token,
-    isLoading: !token, // If no token, we're loading
+    // Initialize as false: absence of a token means "not yet fetched", not
+    // "currently loading". Components should treat token===null as the
+    // uninitialized state; isLoading only becomes true during an active fetch.
+    isLoading: false,
     error: null,
     isFetching: false,
 

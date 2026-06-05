@@ -1,7 +1,8 @@
 // usePriceInheritance Hook - Indonesian Business Management System
 // React hook for price inheritance with Indonesian business compliance and form integration
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Form from 'antd/es/form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { MessageInstance } from 'antd/es/message/interface'
 
@@ -169,12 +170,19 @@ export const usePriceInheritance = (
     },
   })
 
+  // Stable ref for validateMutation.mutate so the effect dep array doesn't
+  // change on every render (which would cause an infinite loop).
+  const validateMutateRef = useRef(validateMutation.mutate)
+  useEffect(() => {
+    validateMutateRef.current = validateMutation.mutate
+  })
+
   // Real-time validation effect
   useEffect(() => {
     if (!enableRealTimeValidation || currentAmount <= 0) return
 
     const timeoutId = setTimeout(() => {
-      validateMutation.mutate({
+      validateMutateRef.current({
         amount: currentAmount,
         mode,
         ...(selectedSource?.id && { sourceId: selectedSource.id }),
@@ -429,13 +437,15 @@ export const usePriceInheritanceFormField = (
     }
   }, [state.currentAmount, fieldName, form])
 
-  // Watch form field changes
+  // Watch form field changes reactively — Form.useWatch returns a stable
+  // reactive value so the effect re-runs whenever the field value changes,
+  // avoiding the stale-closure bug of using form.getFieldValue() as a dep.
+  const watchedFieldValue = Form.useWatch(fieldName, form)
   useEffect(() => {
-    const currentFieldValue = form.getFieldValue(fieldName)
-    if (currentFieldValue !== state.currentAmount && state.mode === 'custom') {
-      actions.setAmount(currentFieldValue || 0)
+    if (watchedFieldValue !== state.currentAmount && state.mode === 'custom') {
+      actions.setAmount(watchedFieldValue || 0)
     }
-  }, [form.getFieldValue(fieldName)])
+  }, [watchedFieldValue, state.currentAmount, state.mode, actions.setAmount])
 
   return [state, actions]
 }

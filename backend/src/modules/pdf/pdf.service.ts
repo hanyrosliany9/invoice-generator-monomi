@@ -109,7 +109,7 @@ export class PdfService {
         // CONTINUOUS MODE: For digital viewing (email, web, mobile)
         // Use 'screen' media type to prevent automatic pagination
         await page.emulateMediaType("screen");
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
 
         // Wait for fonts to load for accurate height calculation
         await page.evaluate(() =>
@@ -147,7 +147,7 @@ export class PdfService {
       } else {
         // PAGINATED MODE: For printing on physical paper
         // DON'T use emulateMediaType - let Puppeteer naturally paginate with A4 format
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
 
         this.logger.log(`Invoice PDF (paginated) mode for printing`);
 
@@ -188,7 +188,7 @@ export class PdfService {
         // CONTINUOUS MODE: For digital viewing (email, web, mobile)
         // Use 'screen' media type to prevent automatic pagination
         await page.emulateMediaType("screen");
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
 
         // Wait for fonts to load for accurate height calculation
         await page.evaluate(() =>
@@ -226,7 +226,7 @@ export class PdfService {
       } else {
         // PAGINATED MODE: For printing on physical paper
         // DON'T use emulateMediaType - let Puppeteer naturally paginate with A4 format
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
 
         this.logger.log(`Quotation PDF (paginated) mode for printing`);
 
@@ -2137,7 +2137,7 @@ export class PdfService {
 
       if (continuous) {
         await page.emulateMediaType("screen");
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
         const height = await page.evaluate(
           "document.documentElement.offsetHeight",
         );
@@ -2154,7 +2154,7 @@ export class PdfService {
 
         return Buffer.from(pdf);
       } else {
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
         this.logger.log(`Schedule PDF (paginated) mode for printing`);
 
         const pdf = await page.pdf({
@@ -2206,7 +2206,7 @@ export class PdfService {
 
       if (continuous) {
         await page.emulateMediaType("screen");
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
         const height = await page.evaluate(
           "document.documentElement.offsetHeight",
         );
@@ -2223,7 +2223,7 @@ export class PdfService {
 
         return Buffer.from(pdf);
       } else {
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
         this.logger.log(`Call Sheet PDF (paginated) mode for printing`);
 
         const pdf = await page.pdf({
@@ -2259,7 +2259,7 @@ export class PdfService {
 
       if (continuous) {
         await page.emulateMediaType("screen");
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
         const height = await page.evaluate(
           "document.documentElement.offsetHeight",
         );
@@ -2276,7 +2276,7 @@ export class PdfService {
 
         return Buffer.from(pdf);
       } else {
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
         this.logger.log(`Shot List PDF (paginated) mode for printing`);
 
         const pdf = await page.pdf({

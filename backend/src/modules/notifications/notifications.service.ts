@@ -46,6 +46,10 @@ export class NotificationsService {
           user: this.configService.get("SMTP_USER"),
           pass: this.configService.get("SMTP_PASSWORD"),
         },
+        // Fail fast on unreachable mail servers instead of hanging ~2 min
+        connectionTimeout: 10000, // 10 s to establish TCP connection
+        greetingTimeout: 10000,   // 10 s to receive SMTP greeting
+        socketTimeout: 30000,     // 30 s idle socket timeout
       });
       this.logger.log("Email transporter initialized for production");
     }

@@ -1718,8 +1718,33 @@ export class InvoicesService {
     newStatus: InvoiceStatus,
     userId: string,
   ): Promise<{ updated: number; failed: string[] }> {
+    // PAID and OVERDUE transitions require GL journal entries that are only
+    // posted by markAsPaid / the overdue cron. Allowing a raw bulk updateMany
+    // to these states would leave Cash and AR unrecorded — block them here.
+    if (
+      newStatus === InvoiceStatus.PAID ||
+      newStatus === InvoiceStatus.OVERDUE
+    ) {
+      throw new BadRequestException(
+        `Bulk status update to "${newStatus}" is not allowed because it bypasses required GL journal entries. ` +
+          `To mark invoices as PAID use the individual mark-as-paid endpoint. ` +
+          `OVERDUE status is managed automatically by the nightly cron job.`,
+      );
+    }
+
     try {
       const results = { updated: 0, failed: [] as string[] };
+
+      // Map newStatus to the corresponding business-journey event name.
+      // Only emit an event for status values that have a meaningful journey step.
+      // Only SENT has a meaningful business-journey event; other bulk
+      // transitions (e.g. CANCELLED) emit none.
+      const statusEventMap: Partial<
+        Record<InvoiceStatus, BusinessJourneyEventType>
+      > = {
+        [InvoiceStatus.SENT]: "INVOICE_SENT",
+      };
+      const journeyEvent = statusEventMap[newStatus] ?? null;
 
       // Process in batches of 10 for better performance
       const batchSize = 10;
@@ -1758,13 +1783,16 @@ export class InvoicesService {
 
             results.updated += updateResult.count;
 
-            // Track business journey events for successful updates
-            for (const invoiceId of validInvoices) {
-              await this.trackBusinessJourneyEvent(
-                "INVOICE_SENT", // Assuming status change to sent
-                { invoiceId, newStatus, bulkOperation: true },
-                userId,
-              );
+            // Only emit a business-journey event when there is a meaningful
+            // event type mapped for this status transition.
+            if (journeyEvent) {
+              for (const invoiceId of validInvoices) {
+                await this.trackBusinessJourneyEvent(
+                  journeyEvent,
+                  { invoiceId, newStatus, bulkOperation: true },
+                  userId,
+                );
+              }
             }
           }
         } catch (error) {

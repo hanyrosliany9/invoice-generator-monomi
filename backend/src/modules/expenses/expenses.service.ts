@@ -859,39 +859,32 @@ export class ExpensesService {
       throw new BadRequestException("Only SUBMITTED expenses can be approved");
     }
 
-    // Update expense
+    // FIX 3 (CRITICAL): Post the GL journal BEFORE writing APPROVED so that a
+    // journal failure leaves the expense still SUBMITTED (no silent GL corruption).
+    // If createExpenseJournalEntry or postJournalEntry throws, the error propagates
+    // to the caller and the expense status is never changed.
+    const journalEntry = await this.journalService.createExpenseJournalEntry(
+      expense.id,
+      expense.expenseNumber,
+      expense.category.accountCode,
+      Number(expense.totalAmount),
+      "APPROVED",
+      userId,
+    );
+
+    // Post journal entry immediately — throws on failure (still SUBMITTED at this point)
+    await this.journalService.postJournalEntry(journalEntry.id, userId);
+
+    // Journal posted successfully — now write APPROVED + link the journal.
     const updated = await this.prisma.expense.update({
       where: { id },
       data: {
         status: ExpenseStatus.APPROVED,
         approvedAt: new Date(),
         approvedBy: userId,
+        journalEntryId: journalEntry.id,
       },
     });
-
-    // Create journal entry (Debit Expense, Credit AP)
-    try {
-      const journalEntry = await this.journalService.createExpenseJournalEntry(
-        expense.id,
-        expense.expenseNumber,
-        expense.category.accountCode,
-        Number(expense.totalAmount),
-        "APPROVED",
-        userId,
-      );
-
-      // Post journal entry immediately
-      await this.journalService.postJournalEntry(journalEntry.id, userId);
-
-      // Update expense with journal entry ID
-      await this.prisma.expense.update({
-        where: { id },
-        data: { journalEntryId: journalEntry.id },
-      });
-    } catch (error) {
-      this.logger.error("Failed to create journal entry for expense:", error);
-      // Continue with approval even if journal entry fails
-    }
 
     // Create approval history
     await this.prisma.expenseApprovalHistory.create({
@@ -994,7 +987,11 @@ export class ExpensesService {
         throw new NotFoundException(`Expense not found: ${id}`);
       }
 
-      // Create journal entry for payment (Debit AP, Credit Cash/Bank)
+      // FIX 2 (CRITICAL): Create the payment journal entry and post it.
+      // If journal creation or posting fails, roll back the PAID status claim
+      // (reset to APPROVED) and rethrow — preventing an expense from being
+      // left PAID-without-GL-entry (silent GL corruption).
+      let journalEntryId: string;
       try {
         const journalEntry =
           await this.journalService.createExpenseJournalEntry(
@@ -1008,28 +1005,48 @@ export class ExpensesService {
 
         // Post journal entry immediately
         await this.journalService.postJournalEntry(journalEntry.id, userId);
-
-        // Link the journal entry; also persist the remaining payment fields.
-        await this.prisma.expense.update({
-          where: { id },
-          data: {
-            paymentJournalId: journalEntry.id,
-            paymentStatus: ExpensePaymentStatus.PAID,
-            paidAt: markPaidDto.paymentDate,
-            paymentMethod: markPaidDto.paymentMethod,
-            paymentReference: markPaidDto.paymentReference,
-          },
-        });
+        journalEntryId = journalEntry.id;
       } catch (error) {
         this.logger.error(
-          "Failed to create payment journal entry for expense:",
+          "Failed to create/post payment journal entry for expense — rolling back PAID claim:",
           error,
         );
-        // Continue with status update even if journal entry fails
+        // Roll back: return the expense to APPROVED so the caller can retry.
+        await this.prisma.expense.update({
+          where: { id },
+          data: { status: ExpenseStatus.APPROVED },
+        });
+        throw error; // propagate — expense is NOT left PAID without a journal
       }
+
+      // Link the journal entry and persist the payment fields atomically.
+      const updated = await this.prisma.expense.update({
+        where: { id },
+        data: {
+          paymentJournalId: journalEntryId,
+          paymentStatus: ExpensePaymentStatus.PAID,
+          paidAt: markPaidDto.paymentDate,
+          paymentMethod: markPaidDto.paymentMethod,
+          paymentReference: markPaidDto.paymentReference,
+        },
+      });
+
+      // Create approval history
+      await this.prisma.expenseApprovalHistory.create({
+        data: {
+          expenseId: id,
+          action: ExpenseApprovalAction.PAYMENT_COMPLETED,
+          actionBy: userId,
+          previousStatus: ExpenseStatus.APPROVED,
+          newStatus: ExpenseStatus.PAID,
+          comments: markPaidDto.notes,
+        },
+      });
+
+      return updated;
     }
 
-    // Update expense (status already set atomically above; update remaining fields)
+    // Idempotent path: paymentJournalId already exists — update remaining fields only.
     const updated = await this.prisma.expense.update({
       where: { id },
       data: {

@@ -151,6 +151,7 @@ export class PaymentsService {
   async update(
     id: string,
     updatePaymentDto: UpdatePaymentDto,
+    userId?: string,
   ): Promise<PaymentResponseDto> {
     const existingPayment = await this.prisma.payment.findUnique({
       where: { id },
@@ -161,126 +162,115 @@ export class PaymentsService {
       throw new NotFoundException("Payment not found");
     }
 
-    // If confirming payment, set confirmedAt timestamp
-    const updateData = { ...updatePaymentDto };
-    if (
+    const isConfirming =
       updatePaymentDto.status === PaymentStatus.CONFIRMED &&
-      !updatePaymentDto.confirmedAt
-    ) {
-      updateData.confirmedAt = new Date().toISOString();
-    }
+      existingPayment.status !== PaymentStatus.CONFIRMED;
 
-    const payment = await this.prisma.payment.update({
-      where: { id },
-      data: updateData,
-      include: {
-        invoice: {
-          select: {
-            id: true,
-            invoiceNumber: true,
-            totalAmount: true,
-            client: {
-              select: { id: true, name: true, email: true },
+    // FIX 1 (CRITICAL): Post the GL journal BEFORE writing CONFIRMED so that a
+    // journal failure leaves the payment in its pre-confirmation state.
+    // Idempotency guard: skip journal creation if this payment or its invoice
+    // already has a journal entry (prevents double-posting on retry).
+    if (isConfirming) {
+      const freshPayment = await this.prisma.payment.findUnique({
+        where: { id },
+        select: { journalEntryId: true },
+      });
+      const invoiceForJournal = await this.prisma.invoice.findUnique({
+        where: { id: existingPayment.invoiceId },
+        select: {
+          invoiceNumber: true,
+          clientId: true,
+          paymentJournalId: true,
+          client: { select: { name: true } },
+        },
+      });
+
+      let journalEntryId: string | undefined;
+
+      if (
+        invoiceForJournal &&
+        !freshPayment?.journalEntryId &&
+        !invoiceForJournal.paymentJournalId
+      ) {
+        // FIX 4: use the real userId when available; fall back to "system".
+        const journalCreatedBy = userId ?? "system";
+        const invoice = invoiceForJournal;
+
+        // Post journal FIRST — if this throws, the catch in the caller will see
+        // the error and the payment status is never updated to CONFIRMED.
+        const journalEntry = await this.journalService.createJournalEntry({
+          description: `Payment for Invoice ${invoice.invoiceNumber}`,
+          descriptionId: `Pembayaran Faktur ${invoice.invoiceNumber}`,
+          entryDate: new Date(existingPayment.paymentDate),
+          transactionId: id,
+          transactionType: "PAYMENT_RECEIVED",
+          createdBy: journalCreatedBy,
+          autoPost: true,
+          lineItems: [
+            {
+              accountCode: "1-1020", // Bank Account
+              description: `Payment from ${invoice.client.name}`,
+              descriptionId: `Pembayaran dari ${invoice.client.name}`,
+              debit: Number(existingPayment.amount),
+              credit: 0,
+              clientId: invoice.clientId,
+            },
+            {
+              accountCode: "1-2010", // Accounts Receivable
+              description: `Payment for Invoice ${invoice.invoiceNumber}`,
+              descriptionId: `Pembayaran Faktur ${invoice.invoiceNumber}`,
+              debit: 0,
+              credit: Number(existingPayment.amount),
+              clientId: invoice.clientId,
+            },
+          ],
+        });
+
+        journalEntryId = journalEntry.id;
+        this.logger.log(`✅ Created and posted journal entry for payment ${id}`);
+      } else {
+        this.logger.log(
+          `⏭ Skipped journal creation for payment ${id} — already covered by existing journal (idempotent guard)`,
+        );
+      }
+
+      // Journal posted (or idempotently skipped) — now write CONFIRMED.
+      const updateData: any = {
+        ...updatePaymentDto,
+        confirmedAt: updatePaymentDto.confirmedAt ?? new Date().toISOString(),
+      };
+      if (journalEntryId) updateData.journalEntryId = journalEntryId;
+
+      const payment = await this.prisma.payment.update({
+        where: { id },
+        data: updateData,
+        include: {
+          invoice: {
+            select: {
+              id: true,
+              invoiceNumber: true,
+              totalAmount: true,
+              client: { select: { id: true, name: true, email: true } },
             },
           },
         },
-      },
-    });
+      });
 
-    // Update invoice status if payment is confirmed
-    if (payment.status === PaymentStatus.CONFIRMED) {
       await this.updateInvoiceStatus(payment.invoiceId);
 
-      // FIX 3: Create journal entry for payment (Cash debit, AR credit).
-      // Guard: skip if this payment already has a journal (journalEntryId set)
-      // OR if the invoice already carries a payment journal (paymentJournalId),
-      // which means markAsPaid already posted it — preventing double-posting.
-      try {
-        // Re-fetch payment with journalEntryId after the update above
-        const freshPayment = await this.prisma.payment.findUnique({
-          where: { id: payment.id },
-          select: { journalEntryId: true },
-        });
-        const invoiceForJournal = await this.prisma.invoice.findUnique({
-          where: { id: payment.invoiceId },
-          select: {
-            invoiceNumber: true,
-            clientId: true,
-            paymentJournalId: true,
-            client: { select: { name: true } },
-          },
-        });
-
-        if (
-          invoiceForJournal &&
-          !freshPayment?.journalEntryId &&
-          !invoiceForJournal.paymentJournalId
-        ) {
-          const invoice = invoiceForJournal;
-          const journalEntry = await this.journalService.createJournalEntry({
-            description: `Payment for Invoice ${invoice.invoiceNumber}`,
-            descriptionId: `Pembayaran Faktur ${invoice.invoiceNumber}`,
-            entryDate: new Date(payment.paymentDate),
-            transactionId: payment.id,
-            transactionType: "PAYMENT_RECEIVED",
-            createdBy: "system", // TODO: Get actual user ID from context
-            autoPost: true, // Auto-post to General Ledger
-            lineItems: [
-              {
-                accountCode: "1-1020", // Bank Account (adjust based on payment method)
-                description: `Payment from ${invoice.client.name}`,
-                descriptionId: `Pembayaran dari ${invoice.client.name}`,
-                debit: Number(payment.amount),
-                credit: 0,
-                clientId: invoice.clientId,
-              },
-              {
-                accountCode: "1-2010", // Accounts Receivable
-                description: `Payment for Invoice ${invoice.invoiceNumber}`,
-                descriptionId: `Pembayaran Faktur ${invoice.invoiceNumber}`,
-                debit: 0,
-                credit: Number(payment.amount),
-                clientId: invoice.clientId,
-              },
-            ],
-          });
-
-          // Link journal entry to payment
-          await this.prisma.payment.update({
-            where: { id: payment.id },
-            data: { journalEntryId: journalEntry.id },
-          });
-
-          this.logger.log(
-            `✅ Created and posted journal entry for payment ${payment.id}`,
-          );
-        } else {
-          this.logger.log(
-            `⏭ Skipped journal creation for payment ${payment.id} — already covered by existing journal (idempotent guard)`,
-          );
-        }
-      } catch (error) {
-        this.logger.error("Failed to create payment journal entry:", error);
-        // Don't fail payment confirmation if journal entry fails
-      }
-
-      // Detect and handle advance payment (PSAK 72)
+      // Detect and handle advance payment (PSAK 72) — non-fatal
       try {
         await this.invoicesService.processAdvancePaymentForInvoice(
           payment.invoiceId,
           payment.paymentDate,
           Number(payment.amount),
-          "system", // TODO: Get actual user ID from context
+          userId ?? "system",
         );
       } catch (error) {
-        this.logger.error(
-          "Failed to process advance payment detection:",
-          error,
-        );
-        // Don't fail payment confirmation if advance payment detection fails
+        this.logger.error("Failed to process advance payment detection:", error);
       }
 
-      // FIX4: Send payment-received notification; never throw on failure
+      // Send payment-received notification — non-fatal
       try {
         await this.notificationsService.sendPaymentReceived(
           payment.invoiceId,
@@ -292,7 +282,33 @@ export class PaymentsService {
           error,
         );
       }
+
+      return this.transformToResponse(payment);
     }
+
+    // Non-confirmation update (status change other than → CONFIRMED, or field edits)
+    const updateData = { ...updatePaymentDto };
+    if (
+      updatePaymentDto.status === PaymentStatus.CONFIRMED &&
+      !updatePaymentDto.confirmedAt
+    ) {
+      (updateData as any).confirmedAt = new Date().toISOString();
+    }
+
+    const payment = await this.prisma.payment.update({
+      where: { id },
+      data: updateData,
+      include: {
+        invoice: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+            totalAmount: true,
+            client: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
+    });
 
     return this.transformToResponse(payment);
   }

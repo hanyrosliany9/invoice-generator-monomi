@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  Request,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -127,9 +128,10 @@ export class PaymentsController {
   async update(
     @Param("id") id: string,
     @Body() updatePaymentDto: UpdatePaymentDto,
+    @Request() req: any,
   ): Promise<ApiResponse<PaymentResponseDto>> {
     try {
-      const payment = await this.paymentsService.update(id, updatePaymentDto);
+      const payment = await this.paymentsService.update(id, updatePaymentDto, req.user?.id);
       return {
         data: payment,
         message: "Payment updated successfully",
@@ -147,13 +149,18 @@ export class PaymentsController {
   @HttpCode(HttpStatus.OK)
   async confirmPayment(
     @Param("id") id: string,
+    @Request() req: any,
   ): Promise<PaymentResponseDto> {
-    // FIX 4 (MED): Return raw entity for single-wrap by ResponseInterceptor.
+    // FIX 4: Pass real userId so journal entries are attributed to the acting user.
     try {
-      return await this.paymentsService.update(id, {
-        status: "CONFIRMED" as any,
-        confirmedAt: new Date().toISOString(),
-      });
+      return await this.paymentsService.update(
+        id,
+        {
+          status: "CONFIRMED" as any,
+          confirmedAt: new Date().toISOString(),
+        },
+        req.user?.id,
+      );
     } catch (error) {
       throw new BadRequestException(
         getErrorMessage(error) || "Failed to confirm payment",
