@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -110,8 +110,19 @@ export default function ExpenseDetailPageV2() {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
+
+  // Where "back" returns to. When opened from a project (via the "View" toast
+  // after creating an expense there), ?from carries that project route so the
+  // back button closes the loop instead of dumping to the global list.
+  const fromParam = searchParams.get('from');
+  const backTo = fromParam && fromParam.startsWith('/') ? fromParam : '/expenses';
+  const backToProject = backTo.startsWith('/projects/');
+  const backLabel = backToProject
+    ? t('expenseDetail.backToProject', 'Back to project')
+    : t('expenseDetail.backToList', 'Back to Expenses');
 
   /* ---------- data ---------- */
   const { data: expense, isLoading, error, refetch } = useQuery({
@@ -135,7 +146,7 @@ export default function ExpenseDetailPageV2() {
     mutationFn: () => expenseService.deleteExpense(id!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      navigate('/expenses');
+      navigate(backTo);
     },
   });
 
@@ -195,9 +206,9 @@ export default function ExpenseDetailPageV2() {
           }
           action={
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/expenses')}>
+              <Button variant="outline" size="sm" onClick={() => navigate(backTo)}>
                 <ArrowLeft className="h-4 w-4" />
-                {t('expenseDetail.backToList', 'Back to Expenses')}
+                {backLabel}
               </Button>
               <Button size="sm" onClick={() => refetch()}>
                 {t('expenseDetail.retry', 'Try Again')}
@@ -242,11 +253,11 @@ export default function ExpenseDetailPageV2() {
       {/* Breadcrumb back link — quiet, sits above the H1 like v2/invoices. */}
       <div className="mb-4">
         <Link
-          to="/expenses"
+          to={backTo}
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          {t('expenseDetail.backToList', 'Back to Expenses')}
+          {backLabel}
         </Link>
       </div>
 

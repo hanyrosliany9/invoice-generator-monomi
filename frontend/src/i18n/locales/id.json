@@ -4490,7 +4490,8 @@
     "method": "Metode",
     "reference": "Ref.",
     "paidOn": "Dibayar pada",
-    "approvedBy": "Disetujui Oleh"
+    "approvedBy": "Disetujui Oleh",
+    "backToProject": "Kembali ke proyek"
   },
   "expenseForm": {
     "section1": {
@@ -4576,7 +4577,11 @@
       "notesPlaceholder": "contoh: faktur duplikat, perlu persetujuan manajer keuangan...",
       "paymentSource": "Bayar dari (Saldo)",
       "paymentSourceHint": "Kas mengurangi saldo Kas; Bank mengurangi rekening bank default.",
-      "categorySearch": "Cari berdasarkan nama atau kode akun…"
+      "categorySearch": "Cari berdasarkan nama atau kode akun…",
+      "projectSearch": "Cari berdasarkan nama atau nomor…",
+      "noProjectsFound": "Proyek tidak ditemukan",
+      "projectLocked": "Proyek terpilih",
+      "projectLockedHint": "Pengeluaran ini akan dicatat untuk proyek ini."
     },
     "noCategories": "Belum ada kategori pengeluaran",
     "submitNote": "Simpan sebagai draf untuk ditinjau nanti, atau kirim langsung untuk persetujuan.",
@@ -4590,7 +4595,8 @@
     "saving": "Menyimpan...",
     "save": "Simpan",
     "sourceBank": "Bank",
-    "sourceCash": "Kas"
+    "sourceCash": "Kas",
+    "optional": "opsional"
   },
   "expenseCreate": {
     "success": "Pengeluaran {{n}} berhasil dibuat.",
@@ -4604,7 +4610,11 @@
     "crumb": "Baru",
     "cancel": "Batal",
     "saving": "Menyimpan...",
-    "save": "Simpan"
+    "save": "Simpan",
+    "viewExpense": "Lihat",
+    "projectsLabel": "Proyek",
+    "projectCrumb": "Proyek",
+    "backToProject": "Kembali ke proyek"
   },
   "expenseEdit": {
     "success": "Perubahan untuk {{n}} tersimpan.",
@@ -6201,5 +6211,19 @@
   },
   "styleGuidePage": {
     "dueDatePlaceholder": "Tanggal jatuh tempo"
+  },
+  "quickExpense": {
+    "title": "Catat Pengeluaran",
+    "subtitle": "Dicatat untuk proyek ini.",
+    "subtitleNamed": "Untuk proyek: {{name}}",
+    "success": "Pengeluaran {{n}} dibuat.",
+    "successSubmitted": "Pengeluaran {{n}} dibuat dan diajukan.",
+    "view": "Lihat",
+    "error": "Gagal membuat pengeluaran. Silakan coba lagi.",
+    "submitWarn": "Pengeluaran tersimpan tetapi pengajuan persetujuan gagal: {{m}}",
+    "openFull": "Buka formulir lengkap",
+    "cancel": "Batal",
+    "saving": "Menyimpan...",
+    "save": "Simpan Pengeluaran"
   }
 }

@@ -4399,7 +4399,8 @@
     "method": "Method",
     "reference": "Ref.",
     "paidOn": "Paid on",
-    "approvedBy": "Approved By"
+    "approvedBy": "Approved By",
+    "backToProject": "Back to project"
   },
   "expenseForm": {
     "section1": {
@@ -4485,7 +4486,11 @@
       "notesPlaceholder": "e.g. duplicate invoice, requires finance manager approval...",
       "paymentSource": "Pay from (Balance)",
       "paymentSourceHint": "Cash deducts the Cash balance; Bank deducts the default bank account.",
-      "categorySearch": "Search by name or account code…"
+      "categorySearch": "Search by name or account code…",
+      "projectSearch": "Search by name or number…",
+      "noProjectsFound": "No projects found",
+      "projectLocked": "Selected project",
+      "projectLockedHint": "This expense will be recorded against this project."
     },
     "noCategories": "No expense categories yet",
     "submitNote": "Save as draft to review later, or submit immediately for approval.",
@@ -4499,7 +4504,8 @@
     "saving": "Saving...",
     "save": "Save",
     "sourceBank": "Bank",
-    "sourceCash": "Cash"
+    "sourceCash": "Cash",
+    "optional": "optional"
   },
   "expenseCreate": {
     "success": "Expense {{n}} created successfully.",
@@ -4513,7 +4519,11 @@
     "crumb": "New",
     "cancel": "Cancel",
     "saving": "Saving...",
-    "save": "Save"
+    "save": "Save",
+    "viewExpense": "View",
+    "projectsLabel": "Projects",
+    "projectCrumb": "Project",
+    "backToProject": "Back to project"
   },
   "expenseEdit": {
     "success": "Changes for {{n}} saved.",
@@ -6201,5 +6211,19 @@
   },
   "styleGuidePage": {
     "dueDatePlaceholder": "Due date"
+  },
+  "quickExpense": {
+    "title": "Record Expense",
+    "subtitle": "Recorded against this project.",
+    "subtitleNamed": "For project: {{name}}",
+    "success": "Expense {{n}} created.",
+    "successSubmitted": "Expense {{n}} created and submitted.",
+    "view": "View",
+    "error": "Failed to create expense. Please try again.",
+    "submitWarn": "Expense saved but approval submission failed: {{m}}",
+    "openFull": "Open full form",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save Expense"
   }
 }

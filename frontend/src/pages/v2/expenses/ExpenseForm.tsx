@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, AlertTriangle, Receipt } from 'lucide-react';
+import { Loader2, AlertTriangle, Receipt, ChevronDown, FolderOpen } from 'lucide-react';
 
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { MoneyDisplay } from '@/components/monomi/MoneyDisplay';
@@ -202,6 +202,66 @@ const SectionHeader = ({
   </div>
 );
 
+/**
+ * A section that's collapsed by default — used to tuck away the optional
+ * tax / e-Faktur / notes / status panels so the common case stays short.
+ * The title shows inline on the collapsed bar; description + body reveal on open.
+ */
+const CollapsibleSection = ({
+  index, eyebrow, title, description, optionalLabel, defaultOpen = false, children,
+}: {
+  index: number;
+  eyebrow: string;
+  title: string;
+  description: string;
+  optionalLabel?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <GlassPanel surface="glass" padding="lg">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
+        <span className="flex items-baseline gap-3 min-w-0">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-text-tertiary font-medium tabular-nums">
+            {String(index).padStart(2, '0')}
+          </span>
+          <span className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">
+            {eyebrow}
+          </span>
+          <span className="text-base font-display font-semibold text-text-primary tracking-tight truncate">
+            {title}
+          </span>
+          {optionalLabel && (
+            <span className="text-[10px] uppercase tracking-[0.12em] text-text-tertiary/70">
+              · {optionalLabel}
+            </span>
+          )}
+        </span>
+        <ChevronDown
+          className={cn(
+            'h-4 w-4 shrink-0 text-text-tertiary transition-transform',
+            open && 'rotate-180',
+          )}
+        />
+      </button>
+      {open && (
+        <div className="mt-5">
+          <p className="text-xs text-text-tertiary leading-relaxed max-w-xl mb-5">
+            {description}
+          </p>
+          {children}
+        </div>
+      )}
+    </GlassPanel>
+  );
+};
+
 const FieldLabel = ({
   htmlFor, children, required,
 }: {
@@ -266,6 +326,11 @@ export interface ExpenseFormProps {
   isSubmitting?: boolean;
   /** Header "Simpan" button binds to this id via the `form` attribute. */
   formId?: string;
+  /**
+   * When set (e.g. launched from a project), the project is fixed: the picker is
+   * replaced by a read-only chip and the value can't be changed.
+   */
+  lockedProjectId?: string;
   /** "Simpan & Ajukan" (create only). When omitted, the secondary CTA is hidden. */
   onSubmitAndApprove?: (payload: ExpenseFormPayload) => void;
   onSubmit: (payload: ExpenseFormPayload) => void;
@@ -277,6 +342,7 @@ export const ExpenseForm = ({
   defaultValues,
   isSubmitting,
   formId = 'expense-form',
+  lockedProjectId,
   onSubmit,
   onSubmitAndApprove,
   onCancel,
@@ -294,10 +360,15 @@ export const ExpenseForm = ({
   });
 
   const initialValues = useMemo<ExpenseFormValues>(
-    () => ({ ...emptyExpenseFormValues, ...defaultValues }),
+    () => ({
+      ...emptyExpenseFormValues,
+      ...defaultValues,
+      // A locked project always wins so the value can't drift.
+      ...(lockedProjectId ? { projectId: lockedProjectId } : {}),
+    }),
     // serialize for stability — parent rebuilds the object every render
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(defaultValues)],
+    [JSON.stringify(defaultValues), lockedProjectId],
   );
 
   const {
@@ -626,13 +697,13 @@ export const ExpenseForm = ({
           </GlassPanel>
 
           {/* ─── 03 · Pajak ─── */}
-          <GlassPanel surface="glass" padding="lg">
-            <SectionHeader
-              index={3}
-              eyebrow={t('expenseForm.section3.eyebrow', 'Tax')}
-              title={t('expenseForm.section3.title', 'VAT & Income Tax')}
-              description={t('expenseForm.section3.desc', 'VAT and withholding tax are calculated automatically from the gross amount.')}
-            />
+          <CollapsibleSection
+            index={3}
+            eyebrow={t('expenseForm.section3.eyebrow', 'Tax')}
+            title={t('expenseForm.section3.title', 'VAT & Income Tax')}
+            description={t('expenseForm.section3.desc', 'VAT and withholding tax are calculated automatically from the gross amount.')}
+            optionalLabel={t('expenseForm.optional', 'optional')}
+          >
 
             <div className="space-y-5">
               {/* PPN toggle row */}
@@ -752,7 +823,7 @@ export const ExpenseForm = ({
                 </div>
               </div>
             </div>
-          </GlassPanel>
+          </CollapsibleSection>
 
           {/* ─── 04 · Konteks ─── */}
           <GlassPanel surface="glass" padding="lg">
@@ -794,55 +865,87 @@ export const ExpenseForm = ({
 
               <div className="space-y-1.5">
                 <FieldLabel>{t('expenseForm.field.project', 'Related Project')}</FieldLabel>
-                <Controller
-                  control={control}
-                  name="projectId"
-                  render={({ field }) => (
-                    <Select
-                      value={field.value || undefined}
-                      onValueChange={(v) => field.onChange(v === '__none__' ? '' : v)}
-                      disabled={projectsLoading || isSubmitting}
-                    >
-                      <SelectTrigger className={cn('w-full', fieldInputClass)}>
-                        <SelectValue
-                          placeholder={
-                            isBillable
-                              ? t('expenseForm.field.projectBillablePlaceholder', 'Select billing project')
-                              : t('expenseForm.field.projectPlaceholder', 'Optional — select related project')
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-72 bg-bg-raised border-border-subtle">
-                        <SelectItem value="__none__">
-                          <span className="text-text-tertiary italic">{t('expenseForm.field.noProject', 'No project')}</span>
-                        </SelectItem>
-                        {projects.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
+                {lockedProjectId ? (
+                  <div className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-sunken px-3 py-2.5">
+                    <FolderOpen className="h-4 w-4 shrink-0 text-text-tertiary" />
+                    <span className="min-w-0 flex-1 truncate text-sm text-text-primary">
+                      {(() => {
+                        const lp = projects.find((p) => p.id === lockedProjectId);
+                        return lp ? (
+                          <>
                             <span className="font-mono text-xs text-text-tertiary mr-2">
-                              {p.number || '—'}
+                              {lp.number || '—'}
                             </span>
-                            {p.description}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
+                            {lp.description}
+                          </>
+                        ) : (
+                          t('expenseForm.field.projectLocked', 'Selected project')
+                        );
+                      })()}
+                    </span>
+                  </div>
+                ) : (
+                  <Controller
+                    control={control}
+                    name="projectId"
+                    render={({ field }) => (
+                      <Combobox
+                        value={field.value || undefined}
+                        onChange={(v) => field.onChange(v === '__none__' ? '' : v)}
+                        disabled={projectsLoading || isSubmitting}
+                        className={cn('w-full', fieldInputClass)}
+                        placeholder={
+                          isBillable
+                            ? t('expenseForm.field.projectBillablePlaceholder', 'Select billing project')
+                            : t('expenseForm.field.projectPlaceholder', 'Optional — select related project')
+                        }
+                        searchPlaceholder={t('expenseForm.field.projectSearch', 'Search by name or number…')}
+                        emptyText={t('expenseForm.field.noProjectsFound', 'No projects found')}
+                        options={[
+                          {
+                            value: '__none__',
+                            label: t('expenseForm.field.noProject', 'No project'),
+                            node: (
+                              <span className="text-text-tertiary italic">
+                                {t('expenseForm.field.noProject', 'No project')}
+                              </span>
+                            ),
+                          },
+                          ...projects.map((p) => ({
+                            value: p.id,
+                            label: p.description,
+                            keywords: [p.number || '', p.description],
+                            node: (
+                              <span className="flex items-baseline gap-2">
+                                <span className="font-mono text-xs text-text-tertiary">
+                                  {p.number || '—'}
+                                </span>
+                                <span className="truncate">{p.description}</span>
+                              </span>
+                            ),
+                          })),
+                        ]}
+                      />
+                    )}
+                  />
+                )}
                 <FieldHint>
-                  {t('expenseForm.field.projectHint', 'Client will be auto-filled from the selected project.')}
+                  {lockedProjectId
+                    ? t('expenseForm.field.projectLockedHint', 'This expense will be recorded against this project.')
+                    : t('expenseForm.field.projectHint', 'Client will be auto-filled from the selected project.')}
                 </FieldHint>
               </div>
             </div>
           </GlassPanel>
 
           {/* ─── 05 · e-Faktur (opsional) ─── */}
-          <GlassPanel surface="glass" padding="lg">
-            <SectionHeader
-              index={5}
-              eyebrow={t('expenseForm.section5.eyebrow', 'e-Invoice')}
-              title={t('expenseForm.section5.title', 'Electronic Tax Invoice')}
-              description={t('expenseForm.section5.desc', 'Fill in if the vendor issues a tax invoice. Required to credit input VAT.')}
-            />
+          <CollapsibleSection
+            index={5}
+            eyebrow={t('expenseForm.section5.eyebrow', 'e-Invoice')}
+            title={t('expenseForm.section5.title', 'Electronic Tax Invoice')}
+            description={t('expenseForm.section5.desc', 'Fill in if the vendor issues a tax invoice. Required to credit input VAT.')}
+            optionalLabel={t('expenseForm.optional', 'optional')}
+          >
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
               <div className="space-y-1.5">
@@ -889,17 +992,16 @@ export const ExpenseForm = ({
                 />
               </div>
             </div>
-          </GlassPanel>
+          </CollapsibleSection>
 
           {/* ─── 06 · Catatan ─── */}
-          <GlassPanel surface="subtle" padding="lg">
-            <SectionHeader
-              index={6}
-              eyebrow={t('expenseForm.section6.eyebrow', 'Notes')}
-              title={t('expenseForm.section6.title', 'Internal Notes')}
-              description={t('expenseForm.section6.desc', 'Additional context for the team — not shown to clients.')}
-            />
-
+          <CollapsibleSection
+            index={6}
+            eyebrow={t('expenseForm.section6.eyebrow', 'Notes')}
+            title={t('expenseForm.section6.title', 'Internal Notes')}
+            description={t('expenseForm.section6.desc', 'Additional context for the team — not shown to clients.')}
+            optionalLabel={t('expenseForm.optional', 'optional')}
+          >
             <Textarea
               id="ef-notes"
               rows={4}
@@ -910,17 +1012,17 @@ export const ExpenseForm = ({
               {...register('notes')}
             />
             <FieldError message={errors.notes?.message} />
-          </GlassPanel>
+          </CollapsibleSection>
 
           {/* ─── 07 · Status (edit only) ─── */}
           {mode === 'edit' && (
-            <GlassPanel surface="glass" padding="lg">
-              <SectionHeader
-                index={7}
-                eyebrow={t('expenseForm.section7.eyebrow', 'Status')}
-                title={t('expenseForm.section7.title', 'Approval Workflow')}
-                description={t('expenseForm.section7.desc', 'Status changes here only apply via the approval endpoint. Use dedicated actions on the detail page for full transitions.')}
-              />
+            <CollapsibleSection
+              index={7}
+              eyebrow={t('expenseForm.section7.eyebrow', 'Status')}
+              title={t('expenseForm.section7.title', 'Approval Workflow')}
+              description={t('expenseForm.section7.desc', 'Status changes here only apply via the approval endpoint. Use dedicated actions on the detail page for full transitions.')}
+              optionalLabel={t('expenseForm.optional', 'optional')}
+            >
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
                 <div className="space-y-1.5">
@@ -950,7 +1052,7 @@ export const ExpenseForm = ({
                   </FieldHint>
                 </div>
               </div>
-            </GlassPanel>
+            </CollapsibleSection>
           )}
         </div>
 

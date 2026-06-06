@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -35,6 +35,7 @@ import { invoiceService, type Invoice } from '@/services/invoices';
 import { quotationService, type Quotation } from '@/services/quotations';
 import { expenseService } from '@/services/expenses';
 import type { Expense } from '@/types/expense';
+import { QuickExpenseSheet } from '@/pages/v2/expenses/QuickExpenseSheet';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — identical shape to the list page so navigation rhythm    */
@@ -174,6 +175,8 @@ export default function ProjectDetailPageV2() {
   // Expense creation is admin-only (the /expenses/new route is guarded by
   // AdminRoute), so only surface the CTA to admins to avoid a dead-end click.
   const canAddExpense = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+  // Quick-add slide-over so recording an expense never leaves the project page.
+  const [quickExpenseOpen, setQuickExpenseOpen] = useState(false);
   const queryClient = useQueryClient();
 
   /* ---------- data ---------- */
@@ -797,7 +800,7 @@ export default function ProjectDetailPageV2() {
               canAddExpense ? (
                 <Button
                   size="sm"
-                  onClick={() => navigate(`/expenses/new?projectId=${id}`)}
+                  onClick={() => setQuickExpenseOpen(true)}
                 >
                   <Plus className="h-4 w-4" />
                   {t('projectDetail.addExpense', 'Add Expense')}
@@ -820,7 +823,7 @@ export default function ProjectDetailPageV2() {
                 canAddExpense ? (
                   <Button
                     size="sm"
-                    onClick={() => navigate(`/expenses/new?projectId=${id}`)}
+                    onClick={() => setQuickExpenseOpen(true)}
                   >
                     <Plus className="h-4 w-4" />
                     {t('projectDetail.addFirstExpense', 'Record Expense')}
@@ -909,6 +912,15 @@ export default function ProjectDetailPageV2() {
             </ol>
           </GlassPanel>
         </section>
+      )}
+
+      {canAddExpense && id && (
+        <QuickExpenseSheet
+          projectId={id}
+          projectLabel={project?.description}
+          open={quickExpenseOpen}
+          onOpenChange={setQuickExpenseOpen}
+        />
       )}
     </Shell>
   );

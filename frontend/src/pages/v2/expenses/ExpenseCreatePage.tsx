@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import {
-  Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
-  ArrowLeft, Loader2,
-} from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -25,75 +22,9 @@ import {
   type ExpenseFormPayload,
   type ExpenseFormValues,
 } from './ExpenseForm';
-
-/* ------------------------------------------------------------------ */
-/*  Sidebar — identical across v2 surface. "Expenses" stays selected   */
-/*  while we're creating one.                                          */
-/* ------------------------------------------------------------------ */
+import { buildCreateExpensePayload } from './expense-payload';
 
 const FORM_ID = 'expense-create-form';
-
-/* ------------------------------------------------------------------ */
-/*  Build the CreateExpense payload — keeps the form ignorant of API   */
-/*  shape and lets us derive clientId from the picked project.         */
-/* ------------------------------------------------------------------ */
-
-const toCreatePayload = async (
-  payload: ExpenseFormPayload,
-): Promise<CreateExpenseFormData> => {
-  const { values, category, amounts } = payload;
-
-  // Resolve client from project so the page doesn't need a separate picker.
-  let clientId: string | undefined;
-  if (values.projectId) {
-    try {
-      const project = await projectService.getProject(values.projectId);
-      clientId = project?.clientId;
-    } catch {
-      // Non-fatal: server can still validate; we just won't tag a client.
-      clientId = undefined;
-    }
-  }
-
-  return {
-    categoryId:   category.id,
-    accountCode:  category.accountCode,
-    accountName:  category.accountName,
-    expenseClass: category.expenseClass,
-
-    description: values.description.trim(),
-    notes:       values.notes?.trim() || undefined,
-
-    vendorName:    values.vendorName.trim(),
-    vendorNPWP:    values.vendorNPWP?.trim() || undefined,
-    vendorAddress: values.vendorAddress?.trim() || undefined,
-
-    grossAmount:       amounts.grossAmount,
-    ppnAmount:         amounts.ppnAmount,
-    withholdingAmount: amounts.withholdingAmount,
-    netAmount:         amounts.netAmount,
-    totalAmount:       amounts.totalAmount,
-
-    ppnRate:        amounts.ppnRate,
-    ppnCategory:    values.ppnCategory,
-    isLuxuryGoods:  values.includePPN ? values.isLuxuryGoods : false,
-
-    eFakturNSFP:   values.eFakturNSFP?.trim() || undefined,
-    eFakturStatus: values.eFakturStatus,
-
-    withholdingTaxType: values.withholdingTaxType,
-    withholdingTaxRate: amounts.withholdingTaxRate,
-
-    isBillable: values.isBillable,
-    projectId:  values.projectId || undefined,
-    clientId,
-    paymentSource: values.paymentSource,
-
-    expenseDate: values.expenseDate.toISOString(),
-    currency: 'IDR',
-    isTaxDeductible: true,
-  };
-};
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                                */
@@ -108,26 +39,53 @@ export default function ExpenseCreatePageV2() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Optional prefill from a project context (e.g. "Tambah biaya" CTA on a
-  // project detail page) — mirrors how InvoiceCreatePage handles prefill.
+  // Optional prefill from a project context (e.g. "Add Expense" CTA on a
+  // project detail page) — the whole sub-flow then threads back to that project.
   const prefilledProjectId = searchParams.get('projectId') ?? undefined;
+
+  // Where Cancel / back / post-save should land. Default to the expenses list;
+  // when launched from a project, close the loop back to that project.
+  const backTo = prefilledProjectId
+    ? `/projects/${prefilledProjectId}`
+    : '/expenses';
+
+  // Fetch the originating project so the breadcrumb reads in project context.
+  const { data: originProject } = useQuery({
+    queryKey: ['project', prefilledProjectId],
+    queryFn: () => projectService.getProject(prefilledProjectId as string),
+    enabled: !!prefilledProjectId,
+  });
 
   const defaultValues: Partial<ExpenseFormValues> | undefined = prefilledProjectId
     ? { projectId: prefilledProjectId, isBillable: true }
     : undefined;
 
+  // After save: return to where we came from, with a toast that links to the
+  // newly created expense so the user can still jump to it.
+  const handleCreated = (
+    created: { id: string; expenseNumber?: string },
+    submitted: boolean,
+  ) => {
+    queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    const viewHref = `/expenses/${created.id}?from=${encodeURIComponent(backTo)}`;
+    toast.success(
+      submitted
+        ? t('expenseCreate.successSubmitted', 'Expense {{n}} created and submitted.', { n: created.expenseNumber || '' })
+        : t('expenseCreate.success', 'Expense {{n}} created successfully.', { n: created.expenseNumber || '' }),
+      {
+        action: {
+          label: t('expenseCreate.viewExpense', 'View'),
+          onClick: () => navigate(viewHref),
+        },
+      },
+    );
+    navigate(backTo);
+  };
+
   const createMutation = useMutation({
     mutationFn: (data: CreateExpenseFormData) => expenseService.createExpense(data),
     onMutate: () => setIsSubmitting(true),
-    onSuccess: (created) => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      toast.success(
-        t('expenseCreate.success', 'Expense {{n}} created successfully.', {
-          n: created.expenseNumber || '',
-        }),
-      );
-      navigate(`/expenses/${created.id}`);
-    },
+    onSuccess: (created) => handleCreated(created, false),
     onError: (err: unknown) => {
       const message =
         err instanceof Error
@@ -144,8 +102,6 @@ export default function ExpenseCreatePageV2() {
       try {
         await expenseService.submitExpense(created.id);
       } catch (err) {
-        // Surface to the user but still resolve to the created expense
-        // so they aren't left thinking save failed.
         toast.error(
           t(
             'expenseCreate.submitWarn',
@@ -157,15 +113,7 @@ export default function ExpenseCreatePageV2() {
       return created;
     },
     onMutate: () => setIsSubmitting(true),
-    onSuccess: (created) => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      toast.success(
-        t('expenseCreate.successSubmitted', 'Expense {{n}} created and submitted.', {
-          n: created.expenseNumber || '',
-        }),
-      );
-      navigate(`/expenses/${created.id}`);
-    },
+    onSuccess: (created) => handleCreated(created, true),
     onError: (err: unknown) => {
       const message =
         err instanceof Error
@@ -177,14 +125,33 @@ export default function ExpenseCreatePageV2() {
   });
 
   const handleSubmit = async (payload: ExpenseFormPayload) => {
-    const apiPayload = await toCreatePayload(payload);
+    const apiPayload = await buildCreateExpensePayload(payload);
     createMutation.mutate(apiPayload);
   };
 
   const handleSubmitAndApprove = async (payload: ExpenseFormPayload) => {
-    const apiPayload = await toCreatePayload(payload);
+    const apiPayload = await buildCreateExpensePayload(payload);
     submitAndApproveMutation.mutate(apiPayload);
   };
+
+  // Breadcrumb: stay in project context when we came from a project.
+  const breadcrumbs = prefilledProjectId
+    ? [
+        { label: t('expenseCreate.projectsLabel', 'Projects'), href: '/projects' },
+        {
+          label: originProject?.description || t('expenseCreate.projectCrumb', 'Project'),
+          href: backTo,
+        },
+        { label: t('expenseCreate.crumb', 'New Expense') },
+      ]
+    : [
+        { label: t('expenseCreate.listLabel', 'Expenses'), href: '/expenses' },
+        { label: t('expenseCreate.crumb', 'New Expense') },
+      ];
+
+  const backLabel = prefilledProjectId
+    ? t('expenseCreate.backToProject', 'Back to project')
+    : t('expenseCreate.backToList', 'Back to Expenses');
 
   return (
     <AppShell
@@ -198,30 +165,26 @@ export default function ExpenseCreatePageV2() {
       }}
     >
       <PageContainer>
-        {/* Back link sits above the H1 — matches Invoice/Client v2 rhythm */}
         <div className="mb-4">
           <Link
-            to="/expenses"
+            to={backTo}
             className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            {t('expenseCreate.backToList', 'Back to Expenses')}
+            {backLabel}
           </Link>
         </div>
 
         <PageHeader
           title={t('expenseCreate.title', 'New Expense')}
           description={t('expenseCreate.subtitle', 'Record expenses with automatic PPN and PPh calculations per Indonesian standards.')}
-          breadcrumbs={[
-            { label: t('expenseCreate.listLabel', 'Expenses'), href: '/expenses' },
-            { label: t('expenseCreate.crumb', 'New') },
-          ]}
+          breadcrumbs={breadcrumbs}
           actions={
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/expenses')}
+                onClick={() => navigate(backTo)}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
               >
@@ -251,10 +214,11 @@ export default function ExpenseCreatePageV2() {
           mode="create"
           formId={FORM_ID}
           defaultValues={defaultValues}
+          lockedProjectId={prefilledProjectId}
           isSubmitting={isSubmitting}
           onSubmit={handleSubmit}
           onSubmitAndApprove={handleSubmitAndApprove}
-          onCancel={() => navigate('/expenses')}
+          onCancel={() => navigate(backTo)}
         />
       </PageContainer>
     </AppShell>
